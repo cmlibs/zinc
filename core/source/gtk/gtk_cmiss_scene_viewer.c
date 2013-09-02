@@ -4,10 +4,10 @@ FILE : gtk_cmiss_scene_viewer.c
 LAST MODIFIED : 10 September 2002
 
 DESCRIPTION :
-The gtk interface to the Cmiss_scene_viewer object for rendering cmiss
+The gtk interface to the cmzn_scene_viewer object for rendering cmiss
 scenes.  This creates a GtkWidget that represents the scene viewer and allows
-the Cmiss_scene_viewer to be integrated with other Gtk widgets.  To control
-the scene viewer get the contained Cmiss_scene_viewer object and use its api.
+the cmzn_scene_viewer to be integrated with other Gtk widgets.  To control
+the scene viewer get the contained cmzn_scene_viewer object and use its api.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -74,14 +74,14 @@ DESCRIPTION :
 Clear the scene viewer reference when it is no longer valid.
 ==============================================================================*/
 {
-	GtkCmissSceneViewer *gtk_cmiss_scene_viewer;
+	GtkcmznSceneViewer *gtk_cmiss_scene_viewer;
 
 	USE_PARAMETER(scene_viewer);
 	USE_PARAMETER(dummy_void);
 	ENTER(gtk_cmiss_scene_viewer_destroy_callback);
-	if ((gtk_cmiss_scene_viewer = (GtkCmissSceneViewer *)gtk_cmiss_scene_viewer_void))
+	if ((gtk_cmiss_scene_viewer = (GtkcmznSceneViewer *)gtk_cmiss_scene_viewer_void))
 	{
-		gtk_cmiss_scene_viewer->cmiss_scene_viewer = (Cmiss_scene_viewer_id)NULL;
+		gtk_cmiss_scene_viewer->cmiss_scene_viewer = (cmzn_scene_viewer_id)NULL;
 	}
 	else
 	{
@@ -124,7 +124,7 @@ LAST MODIFIED : 19 August 2002
 DESCRIPTION:
 ==============================================================================*/
 {
-  GtkCmissSceneViewer *gtk_cmiss_scene_viewer;
+  GtkcmznSceneViewer *gtk_cmiss_scene_viewer;
 
   ENTER(gtk_cmiss_scene_viewer_destroy);
 
@@ -155,7 +155,7 @@ DESCRIPTION:
   LEAVE;
 }
 
-static void gtk_cmiss_scene_viewer_class_init (GtkCmissSceneViewerClass *klass)
+static void gtk_cmiss_scene_viewer_class_init (GtkcmznSceneViewerClass *klass)
 /*******************************************************************************
 LAST MODIFIED : 19 August 2002
 
@@ -182,7 +182,7 @@ DESCRIPTION:
   LEAVE;
 }
 
-static void gtk_cmiss_scene_viewer_init(GtkCmissSceneViewer *cmiss_scene_viewer)
+static void gtk_cmiss_scene_viewer_init(GtkcmznSceneViewer *cmiss_scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 19 August 2002
 
@@ -207,14 +207,14 @@ Global functions
 */
 
 GtkWidget *gtk_cmiss_scene_viewer_new(
-	struct Cmiss_scene_viewer_module *scene_viewer_module)
+	struct cmzn_scene_viewer_module *scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
 
 DESCRIPTION:
 ==============================================================================*/
 {
-	GtkCmissSceneViewer *gtk_cmiss_scene_viewer;
+	GtkcmznSceneViewer *gtk_cmiss_scene_viewer;
 
 	ENTER(gtk_cmiss_scene_viewer_new);
 
@@ -224,7 +224,7 @@ DESCRIPTION:
 	gtk_cmiss_scene_viewer = gtk_type_new(gtk_cmiss_scene_viewer_get_type());
 #endif /* GTK_MAJOR_VERSION >= 2 */
 
-	gtk_cmiss_scene_viewer->cmiss_scene_viewer = Cmiss_scene_viewer_create_gtk(
+	gtk_cmiss_scene_viewer->cmiss_scene_viewer = cmzn_scene_viewer_create_gtk(
 		scene_viewer_module,
 		GTK_CONTAINER(gtk_cmiss_scene_viewer), CMISS_SCENE_VIEWER_BUFFERING_DOUBLE,
 		CMISS_SCENE_VIEWER_STEREO_MONO, /*minimum_colour_buffer_depth*/0, 
@@ -265,9 +265,9 @@ DESCRIPTION :
     {
       static const GtkTypeInfo object_info =
       {
-			"GtkCmissSceneViewer",
-			sizeof (GtkCmissSceneViewer),
-			sizeof (GtkCmissSceneViewerClass),
+			"GtkcmznSceneViewer",
+			sizeof (GtkcmznSceneViewer),
+			sizeof (GtkcmznSceneViewerClass),
 			(GtkClassInitFunc) gtk_cmiss_scene_viewer_class_init,
 			(GtkObjectInitFunc) gtk_cmiss_scene_viewer_init,
 			/* reserved_1 */ NULL,
@@ -282,18 +282,18 @@ DESCRIPTION :
   return object_type;
 }
 
-Cmiss_scene_viewer_id gtk_cmiss_scene_viewer_get_cmiss_scene_viewer(
-	GtkCmissSceneViewer *gtk_cmiss_scene_viewer)
+cmzn_scene_viewer_id gtk_cmiss_scene_viewer_get_cmiss_scene_viewer(
+	GtkcmznSceneViewer *gtk_cmiss_scene_viewer)
 /*******************************************************************************
 LAST MODIFIED : 9 September 2002
 
 DESCRIPTION:
-Returns a handle to the Cmiss_scene_viewer object which this
+Returns a handle to the cmzn_scene_viewer object which this
 <gtk_cmiss_scene_viewer> wraps.  This handle can then be used to interact with
 the scene_viewer.
 ==============================================================================*/
 {
-	Cmiss_scene_viewer_id cmiss_scene_viewer;
+	cmzn_scene_viewer_id cmiss_scene_viewer;
   
 	ENTER(gtk_cmiss_scene_viewer_get_cmiss_scene_viewer);
 	if (gtk_cmiss_scene_viewer)
@@ -304,7 +304,7 @@ the scene_viewer.
 	{
 		display_message(ERROR_MESSAGE,"gtk_cmiss_scene_viewer_get_cmiss_scene_viewer.  "
 			"Invalid arguments.");
-		cmiss_scene_viewer = (struct Cmiss_scene_viewer *)NULL;
+		cmiss_scene_viewer = (struct cmzn_scene_viewer *)NULL;
 	}
 
 	LEAVE;

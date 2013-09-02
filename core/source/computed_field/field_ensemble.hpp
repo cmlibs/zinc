@@ -44,18 +44,18 @@
 #include "field_io/cmiss_field_ensemble.h"
 #include "general/block_array.hpp"
 
-namespace Cmiss
+namespace cmzn
 {
 
 /***************************************************************************//**
  * An internal reference to an ensemble entry.
  * Actually an array index starting at 0 with -1 == invalid.
- * Must not be in external API - use Cmiss_ensemble_iterator instead.
- * @see Cmiss_ensemble_iterator.
+ * Must not be in external API - use cmzn_ensemble_iterator instead.
+ * @see cmzn_ensemble_iterator.
  */
 typedef int EnsembleEntryRef;
 
-const Cmiss_ensemble_identifier CMISS_INVALID_ENSEMBLE_IDENTIFIER = -1;
+const cmzn_ensemble_identifier CMISS_INVALID_ENSEMBLE_IDENTIFIER = -1;
 const EnsembleEntryRef CMISS_INVALID_ENSEMBLE_ENTRY_REF = -1;
 
 /***************************************************************************//**
@@ -66,21 +66,21 @@ class Field_ensemble : public Computed_field_core
 {
 private:
 
-typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef> EnsembleEntryMap;
-typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::iterator EnsembleEntryMapIterator;
-typedef std::map<Cmiss_ensemble_identifier,EnsembleEntryRef>::reverse_iterator EnsembleEntryMapReverseIterator;
+typedef std::map<cmzn_ensemble_identifier,EnsembleEntryRef> EnsembleEntryMap;
+typedef std::map<cmzn_ensemble_identifier,EnsembleEntryRef>::iterator EnsembleEntryMapIterator;
+typedef std::map<cmzn_ensemble_identifier,EnsembleEntryRef>::reverse_iterator EnsembleEntryMapReverseIterator;
 
 	bool contiguous; // true while all entries from firstIdentifier..lastIdentifier exist and are in order
-	block_array<EnsembleEntryRef,Cmiss_ensemble_identifier> entries; // used only if not contiguous
+	block_array<EnsembleEntryRef,cmzn_ensemble_identifier> entries; // used only if not contiguous
 	EnsembleEntryMap identifierMap; // used only if not contiguous
-	Cmiss_ensemble_identifier firstFreeIdentifier, firstIdentifier, lastIdentifier;
+	cmzn_ensemble_identifier firstFreeIdentifier, firstIdentifier, lastIdentifier;
 	int entryCount; // number of valid entries
 	int refCount; // number of array slots allocated; some unused where members removed
 
 	// linked-lists of active iterators is maintained to keep track of entry refs for
 	// reclaiming memory. When destroyed these are placed on the available list for
 	// re-use without hitting the heap.
-	Cmiss_ensemble_iterator *activeIterators, *availableIterators;
+	cmzn_ensemble_iterator *activeIterators, *availableIterators;
 	
 public:
 	Field_ensemble() :
@@ -111,7 +111,7 @@ private:
 		return (NULL != dynamic_cast<Field_ensemble*>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -124,7 +124,7 @@ private:
 
 	void setNotContiguous();
 
-	EnsembleEntryRef createEntryPrivate(Cmiss_ensemble_identifier identifier);
+	EnsembleEntryRef createEntryPrivate(cmzn_ensemble_identifier identifier);
 
 public:
 
@@ -146,12 +146,12 @@ public:
 	}
 	
 	EnsembleEntryRef createEntry();
-	EnsembleEntryRef createEntry(Cmiss_ensemble_identifier identifier);
-	EnsembleEntryRef findOrCreateEntry(Cmiss_ensemble_identifier identifier);
-	EnsembleEntryRef findEntryByIdentifier(Cmiss_ensemble_identifier identifier);
+	EnsembleEntryRef createEntry(cmzn_ensemble_identifier identifier);
+	EnsembleEntryRef findOrCreateEntry(cmzn_ensemble_identifier identifier);
+	EnsembleEntryRef findEntryByIdentifier(cmzn_ensemble_identifier identifier);
 	int removeEntry(EnsembleEntryRef ref);
-	int removeEntryWithIdentifier(Cmiss_ensemble_identifier identifier);
-	Cmiss_ensemble_identifier getEntryIdentifier(EnsembleEntryRef ref);
+	int removeEntryWithIdentifier(cmzn_ensemble_identifier identifier);
+	cmzn_ensemble_identifier getEntryIdentifier(EnsembleEntryRef ref);
 
 	/** Get ref to entry in group with lowest identifier */
 	EnsembleEntryRef getFirstEntryRef();
@@ -159,11 +159,11 @@ public:
 	EnsembleEntryRef getNextEntryRef(EnsembleEntryRef ref);
 	EnsembleEntryRef getNextEntryRefBoolTrue(EnsembleEntryRef ref, bool_array<EnsembleEntryRef>& values);
 
-	static int incrementEnsembleEntry(Cmiss_ensemble_iterator *iterator);
+	static int incrementEnsembleEntry(cmzn_ensemble_iterator *iterator);
 	
 	/** creates an iterator out of an internal ref including ensemble pointer */
-	Cmiss_ensemble_iterator *createEnsembleIterator(EnsembleEntryRef ref);
-	static void freeEnsembleIterator(Cmiss_ensemble_iterator *&iterator);
+	cmzn_ensemble_iterator *createEnsembleIterator(EnsembleEntryRef ref);
+	static void freeEnsembleIterator(cmzn_ensemble_iterator *&iterator);
 };
 
 
@@ -217,7 +217,7 @@ private:
 		return (NULL != dynamic_cast<Field_ensemble_group*>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -307,9 +307,9 @@ public:
 		return 0;
 	}
 
-	bool hasEntry(const Cmiss_ensemble_iterator *iterator) const;
+	bool hasEntry(const cmzn_ensemble_iterator *iterator) const;
 
-	int setEntry(const Cmiss_ensemble_iterator *iterator, bool inGroup);
+	int setEntry(const cmzn_ensemble_iterator *iterator, bool inGroup);
 
 	/** Get ref to entry in group with lowest identifier */
 	EnsembleEntryRef getFirstEntryRef()
@@ -325,25 +325,25 @@ public:
 		return ensemble->getNextEntryRefBoolTrue(ref, values);		
 	}
 
-	int incrementEnsembleEntry(Cmiss_ensemble_iterator *iterator);
+	int incrementEnsembleEntry(cmzn_ensemble_iterator *iterator);
 
 };
 
 
-} // namespace Cmiss
+} // namespace cmzn
 
-inline Cmiss::Field_ensemble *Cmiss_field_ensemble_core_cast(
-	Cmiss_field_ensemble *ensemble_field)
+inline cmzn::Field_ensemble *cmzn_field_ensemble_core_cast(
+	cmzn_field_ensemble *ensemble_field)
 {
-	return (static_cast<Cmiss::Field_ensemble*>(
-		reinterpret_cast<Cmiss_field*>(ensemble_field)->core));
+	return (static_cast<cmzn::Field_ensemble*>(
+		reinterpret_cast<cmzn_field*>(ensemble_field)->core));
 }
 
-inline Cmiss::Field_ensemble_group *Cmiss_field_ensemble_group_core_cast(
-	Cmiss_field_ensemble_group *ensemble_group_field)
+inline cmzn::Field_ensemble_group *cmzn_field_ensemble_group_core_cast(
+	cmzn_field_ensemble_group *ensemble_group_field)
 {
-	return (static_cast<Cmiss::Field_ensemble_group*>(
-		reinterpret_cast<Cmiss_field*>(ensemble_group_field)->core));
+	return (static_cast<cmzn::Field_ensemble_group*>(
+		reinterpret_cast<cmzn_field*>(ensemble_group_field)->core));
 }
 
 /***************************************************************************//**
@@ -351,23 +351,23 @@ inline Cmiss::Field_ensemble_group *Cmiss_field_ensemble_group_core_cast(
  * Maintains pointer to owning ensemble for type safety.
  * ???GRC add map iterator member to improve efficiency.
  */
-struct Cmiss_ensemble_iterator
+struct cmzn_ensemble_iterator
 {
-	friend class Cmiss::Field_ensemble;
-	friend class Cmiss::Field_ensemble_group;
+	friend class cmzn::Field_ensemble;
+	friend class cmzn::Field_ensemble_group;
 	
 private:
-	Cmiss::Field_ensemble *ensemble;
-	Cmiss::EnsembleEntryRef ref;
-	Cmiss_ensemble_iterator *next, *previous; // for linked-list in owning ensemble
+	cmzn::Field_ensemble *ensemble;
+	cmzn::EnsembleEntryRef ref;
+	cmzn_ensemble_iterator *next, *previous; // for linked-list in owning ensemble
 
 public:
-	void setRef(Cmiss::EnsembleEntryRef newRef) { ref = newRef; }
+	void setRef(cmzn::EnsembleEntryRef newRef) { ref = newRef; }
 
 	bool isValid() const { return (ref != 0); }
-	Cmiss::Field_ensemble *getEnsemble() const { return ensemble; }
-	Cmiss::EnsembleEntryRef getRef() const { return ref; }
-	Cmiss_ensemble_identifier getIdentifier() const { return ensemble->getEntryIdentifier(ref); }
+	cmzn::Field_ensemble *getEnsemble() const { return ensemble; }
+	cmzn::EnsembleEntryRef getRef() const { return ref; }
+	cmzn_ensemble_identifier getIdentifier() const { return ensemble->getEntryIdentifier(ref); }
 	bool increment()
 	{
 		ref = ensemble->getNextEntryRef(ref);
@@ -379,9 +379,9 @@ public:
  * Index to 1 or multiple entries in N ensembles, used to address parameters.
  * For each ensemble it may represent:
  * - unspecified = all entries in ensemble in order of increasing identifier.
- * - a single entry, specified using a Cmiss_ensemble_iterator
+ * - a single entry, specified using a cmzn_ensemble_iterator
  * - a group of entries in order of increasing identifier, specified using a
- *   Cmiss_field_ensemble_group.
+ *   cmzn_field_ensemble_group.
  * - (Future: may need to permit a sequence of entries in specified order)
  * Where there are groups specified for multiple ensembles, all permutations of
  * all entries in the groups are indexed in order of first ensemble changing
@@ -391,35 +391,35 @@ public:
  * Not to be shared between threads as internal mutable members are modified
  * by Field_parameter::setValues();
  */
-struct Cmiss_ensemble_index
+struct cmzn_ensemble_index
 {
 	class Indexing
 	{
 
 	public:
-		Cmiss::Field_ensemble *ensemble;
+		cmzn::Field_ensemble *ensemble;
 		// only zero or one of following set; zero means use all entries in ensemble
-		Cmiss_ensemble_iterator *iterator;
-		Cmiss::Field_ensemble_group *ensemble_group;
+		cmzn_ensemble_iterator *iterator;
+		cmzn::Field_ensemble_group *ensemble_group;
 		// following mutable members are used by Field_parameter::setValues
-		mutable Cmiss::EnsembleEntryRef indexRefLimit;
-		mutable Cmiss::EnsembleEntryRef firstRef;
-		mutable Cmiss_ensemble_iterator *valuesIterator;
+		mutable cmzn::EnsembleEntryRef indexRefLimit;
+		mutable cmzn::EnsembleEntryRef firstRef;
+		mutable cmzn_ensemble_iterator *valuesIterator;
 
 	private:
 
 		void clear_iterator()
 		{
 			if (iterator)
-				Cmiss_ensemble_iterator_destroy(&iterator);
+				cmzn_ensemble_iterator_destroy(&iterator);
 		}
 
 		void clear_ensemble_group()
 		{
 			if (ensemble_group)
 			{
-				Cmiss_field *field = ensemble_group->getField();
-				Cmiss_field_destroy(&field);
+				cmzn_field *field = ensemble_group->getField();
+				cmzn_field_destroy(&field);
 				ensemble_group = NULL;
 			}
 		}
@@ -431,13 +431,13 @@ struct Cmiss_ensemble_index
 			iterator(NULL),
 			ensemble_group(NULL),
 			indexRefLimit(0),
-			firstRef(Cmiss::CMISS_INVALID_ENSEMBLE_ENTRY_REF),
+			firstRef(cmzn::CMISS_INVALID_ENSEMBLE_ENTRY_REF),
 			valuesIterator(NULL)
 		{
 		}
 
 		/* second stage of construction */
-		void setEnsemble(Cmiss::Field_ensemble *in_ensemble)
+		void setEnsemble(cmzn::Field_ensemble *in_ensemble)
 		{
 			ensemble = in_ensemble;
 		}
@@ -445,7 +445,7 @@ struct Cmiss_ensemble_index
 		~Indexing()
 		{
 			if (valuesIterator)
-				Cmiss_ensemble_iterator_destroy(&valuesIterator);
+				cmzn_ensemble_iterator_destroy(&valuesIterator);
 			clear_iterator();
 			clear_ensemble_group();
 		}
@@ -465,7 +465,7 @@ struct Cmiss_ensemble_index
 			clear_ensemble_group();
 		}
 
-		void setEntry(Cmiss_ensemble_iterator *in_iterator)
+		void setEntry(cmzn_ensemble_iterator *in_iterator)
 		{
 			if (iterator)
 				iterator->setRef(in_iterator->getRef());
@@ -474,9 +474,9 @@ struct Cmiss_ensemble_index
 			clear_ensemble_group();
 		}
 
-		void setGroup(Cmiss::Field_ensemble_group *in_ensemble_group)
+		void setGroup(cmzn::Field_ensemble_group *in_ensemble_group)
 		{
-			Cmiss_field_access(in_ensemble_group->getField());
+			cmzn_field_access(in_ensemble_group->getField());
 			clear_ensemble_group();
 			ensemble_group = in_ensemble_group;
 			clear_iterator();
@@ -504,7 +504,7 @@ struct Cmiss_ensemble_index
 			return true;
 		}
 
-		bool isDenseAbove(Cmiss::EnsembleEntryRef belowRef)
+		bool isDenseAbove(cmzn::EnsembleEntryRef belowRef)
 		{
 			if (ensemble->hasVoidRefs())
 				return false;
@@ -538,7 +538,7 @@ struct Cmiss_ensemble_index
 			return (firstRef >= 0) && (iterator || valuesIterator);
 		}
 
-		Cmiss::EnsembleEntryRef iterationRef()
+		cmzn::EnsembleEntryRef iterationRef()
 		{
 			return (iterator ? iterator->getRef() : valuesIterator->getRef());
 		}
@@ -565,20 +565,20 @@ struct Cmiss_ensemble_index
 		void iterationEnd()
 		{
 			if (valuesIterator)
-				Cmiss_ensemble_iterator_destroy(&valuesIterator);
+				cmzn_ensemble_iterator_destroy(&valuesIterator);
 			firstRef = 0;
 		}
 
 	};
 
 private:
-	Cmiss_field *indexee;
+	cmzn_field *indexee;
 	int number_of_ensembles;
 	Indexing *indexing;
 
-	Cmiss_ensemble_index(Cmiss_field *in_indexee,
-		int in_number_of_ensembles, Cmiss::Field_ensemble **in_ensembles) :
-			indexee(Cmiss_field_access(in_indexee)),
+	cmzn_ensemble_index(cmzn_field *in_indexee,
+		int in_number_of_ensembles, cmzn::Field_ensemble **in_ensembles) :
+			indexee(cmzn_field_access(in_indexee)),
 			number_of_ensembles(in_number_of_ensembles),
 			indexing(new Indexing[number_of_ensembles])
 	{
@@ -588,7 +588,7 @@ private:
 		}
 	}
 
-	Indexing *getIndexing(Cmiss::Field_ensemble *ensemble)
+	Indexing *getIndexing(cmzn::Field_ensemble *ensemble)
 	{
 		for (int i = 0; i < number_of_ensembles; i++)
 		{
@@ -600,8 +600,8 @@ private:
 
 public:
 	
-	static Cmiss_ensemble_index *create(Cmiss_field *in_indexee,
-		int in_number_of_ensembles, Cmiss::Field_ensemble **in_ensembles)
+	static cmzn_ensemble_index *create(cmzn_field *in_indexee,
+		int in_number_of_ensembles, cmzn::Field_ensemble **in_ensembles)
 	{
 		if ((NULL == in_indexee) || (in_number_of_ensembles < 0) ||
 			((in_number_of_ensembles > 0) && (NULL == in_ensembles)))
@@ -611,22 +611,22 @@ public:
 			if (NULL == in_ensembles[i])
 				return NULL;
 		}
-		return new Cmiss_ensemble_index(in_indexee, in_number_of_ensembles, in_ensembles);
+		return new cmzn_ensemble_index(in_indexee, in_number_of_ensembles, in_ensembles);
 	}
 
-	~Cmiss_ensemble_index()
+	~cmzn_ensemble_index()
 	{
 		delete[] indexing;
-		Cmiss_field_destroy(&indexee);
+		cmzn_field_destroy(&indexee);
 	}
 
 	/** @return  1 if the indexee of this index is field, 0 if not */
-	int indexesField(Cmiss_field *field) const
+	int indexesField(cmzn_field *field) const
 	{
 		return (field == indexee);
 	}
 
-	int hasIndexEnsembles(int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+	int hasIndexEnsembles(int number_of_index_ensembles, cmzn_field_ensemble **index_ensemble_fields)
 	{
 		if (number_of_index_ensembles != number_of_ensembles)
 			return 0;
@@ -634,7 +634,7 @@ public:
 		{
 			if (!index_ensemble_fields[i])
 				return 0;
-			if (Cmiss_field_ensemble_core_cast(index_ensemble_fields[i]) != indexing[i].ensemble)
+			if (cmzn_field_ensemble_core_cast(index_ensemble_fields[i]) != indexing[i].ensemble)
 				return 0;
 		}
 		return 1;
@@ -651,7 +651,7 @@ public:
 		return count;
 	}
 
-	int setAllEnsemble(Cmiss::Field_ensemble *ensemble)
+	int setAllEnsemble(cmzn::Field_ensemble *ensemble)
 	{
 		Indexing *indexing = getIndexing(ensemble);
 		if (!indexing)
@@ -660,7 +660,7 @@ public:
 		return 1;
 	}
 
-	int setEntry(Cmiss_ensemble_iterator *iterator)
+	int setEntry(cmzn_ensemble_iterator *iterator)
 	{
 		Indexing *indexing = getIndexing(iterator->getEnsemble());
 		if (!indexing)
@@ -669,7 +669,7 @@ public:
 		return 1;
 	}
 
-	int setGroup(Cmiss::Field_ensemble_group *ensemble_group)
+	int setGroup(cmzn::Field_ensemble_group *ensemble_group)
 	{
 		Indexing *indexing = getIndexing(ensemble_group->getEnsemble());
 		if (!indexing)
@@ -695,7 +695,7 @@ public:
 	 * Must have called calculateIndexRefLimits first
 	 * @param ensemble_array_index  Index from 0 to number_of_ensembles-1
 	 */
-	Cmiss::EnsembleEntryRef indexRefLimit(int ensemble_array_index)
+	cmzn::EnsembleEntryRef indexRefLimit(int ensemble_array_index)
 	{
 		return indexing[ensemble_array_index].indexRefLimit;
 	}
@@ -717,7 +717,7 @@ public:
 	 * @param belowRef  Ref one below dense range being checked.
 	 */
 	bool isDenseOnEnsembleAbove(int ensemble_array_index,
-		Cmiss::EnsembleEntryRef belowRef)
+		cmzn::EnsembleEntryRef belowRef)
 	{
 		return indexing[ensemble_array_index].isDenseAbove(belowRef);
 	}
@@ -740,7 +740,7 @@ public:
 		return true;
 	}
 
-	Cmiss::EnsembleEntryRef iterationRef(int ensemble_array_index)
+	cmzn::EnsembleEntryRef iterationRef(int ensemble_array_index)
 	{
 		return indexing[ensemble_array_index].iterationRef();
 	}
@@ -765,10 +765,10 @@ public:
 	}
 };
 
-namespace Cmiss
+namespace cmzn
 {
 
-inline int Field_ensemble::incrementEnsembleEntry(Cmiss_ensemble_iterator *iterator)
+inline int Field_ensemble::incrementEnsembleEntry(cmzn_ensemble_iterator *iterator)
 {
 	if ((!iterator) || (NULL == iterator->getEnsemble()))
 		return 0;
@@ -776,21 +776,21 @@ inline int Field_ensemble::incrementEnsembleEntry(Cmiss_ensemble_iterator *itera
 	return (iterator->ref >= 0);
 }
 
-inline bool Field_ensemble_group::hasEntry(const Cmiss_ensemble_iterator *iterator) const
+inline bool Field_ensemble_group::hasEntry(const cmzn_ensemble_iterator *iterator) const
 {
 	if (iterator->getEnsemble() != ensemble)
 		return 0;
 	return hasEntryRef(iterator->getRef());
 }
 
-inline int Field_ensemble_group::setEntry(const Cmiss_ensemble_iterator *iterator, bool inGroup)
+inline int Field_ensemble_group::setEntry(const cmzn_ensemble_iterator *iterator, bool inGroup)
 {
 	if (iterator->getEnsemble() != ensemble)
 		return 0;
 	return setEntryRef(iterator->getRef(), inGroup);
 }
 
-inline int Field_ensemble_group::incrementEnsembleEntry(Cmiss_ensemble_iterator *iterator)
+inline int Field_ensemble_group::incrementEnsembleEntry(cmzn_ensemble_iterator *iterator)
 {
 	if (!iterator || (iterator->getEnsemble() != ensemble))
 		return 0;
@@ -798,6 +798,6 @@ inline int Field_ensemble_group::incrementEnsembleEntry(Cmiss_ensemble_iterator 
 	return (iterator->getRef() >= 0);
 }
 
-} // namespace Cmiss
+} // namespace cmzn
 
 #endif /* !defined (FIELD_ENSEMBLE_HPP) */

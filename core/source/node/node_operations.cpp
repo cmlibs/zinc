@@ -65,7 +65,7 @@ DESCRIPTION :
 {
 	struct FE_region *fe_region;
 	struct Multi_range *node_ranges;
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	struct Computed_field *group_field;
 	struct Computed_field *conditional_field;
 	struct LIST(FE_node) *node_list;
@@ -96,9 +96,9 @@ DESCRIPTION :
 		{
 			if (data->group_field || data->conditional_field)
 			{
-				Cmiss_field_cache_set_node(data->field_cache, node);
-				if ((data->group_field && !Cmiss_field_evaluate_boolean(data->group_field, data->field_cache)) ||
-					(data->conditional_field && !Cmiss_field_evaluate_boolean(data->conditional_field, data->field_cache)))
+				cmzn_field_cache_set_node(data->field_cache, node);
+				if ((data->group_field && !cmzn_field_evaluate_boolean(data->group_field, data->field_cache)) ||
+					(data->conditional_field && !cmzn_field_evaluate_boolean(data->conditional_field, data->field_cache)))
 				{
 					selected = 0;
 				}
@@ -180,7 +180,7 @@ are identival. Used as a compare function for qsort.
 
 struct FE_node_and_values_to_array_data
 {
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	struct FE_node_values_number *node_values;
 	struct Computed_field *sort_by_field;
 	int number_of_values;
@@ -198,12 +198,12 @@ static int FE_node_and_values_to_array(struct FE_node *node,
 		array_data->node_values)
 	{
 		return_code = 1;
-		Cmiss_field_cache_set_node(array_data->field_cache, node);
+		cmzn_field_cache_set_node(array_data->field_cache, node);
 		array_data->node_values->node = node;
 		if (array_data->sort_by_field)
 		{
 			if (!(array_data->node_values->values &&
-				Cmiss_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
+				cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
 					array_data->number_of_values, array_data->node_values->values)))
 			{
 				display_message(ERROR_MESSAGE, "FE_node_and_values_to_array.  "
@@ -226,7 +226,7 @@ static int FE_node_and_values_to_array(struct FE_node *node,
 
 int FE_region_change_node_identifiers(struct FE_region *fe_region,
 	int node_offset, struct Computed_field *sort_by_field, FE_value time,
-	Cmiss_field_node_group_id node_group)
+	cmzn_field_node_group_id node_group)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2003
 
@@ -256,8 +256,8 @@ allowed during identifier changes.
 		number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 		if (0 < number_of_nodes)
 		{
-			Cmiss_field_module_id field_module;
-			Cmiss_field_cache_id field_cache;
+			cmzn_field_module_id field_module;
+			cmzn_field_cache_id field_cache;
 			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (sort_by_field)
 			{
@@ -291,9 +291,9 @@ allowed during identifier changes.
 				}
 				if (return_code)
 				{
-					field_module = Cmiss_region_get_field_module(FE_region_get_Cmiss_region(fe_region));
-					field_cache = Cmiss_field_module_create_cache(field_module);
-					Cmiss_field_cache_set_time(field_cache, time);
+					field_module = cmzn_region_get_field_module(FE_region_get_cmzn_region(fe_region));
+					field_cache = cmzn_field_module_create_cache(field_module);
+					cmzn_field_cache_set_time(field_cache, time);
 					/* make a linear array of the nodes in the group in current order */
 					array_data.field_cache = field_cache;
 					array_data.node_values = node_values;
@@ -307,8 +307,8 @@ allowed during identifier changes.
 							"Could not build node/field values array");
 						return_code = 0;
 					}
-					Cmiss_field_cache_destroy(&field_cache);
-					Cmiss_field_module_destroy(&field_module);
+					cmzn_field_cache_destroy(&field_cache);
+					cmzn_field_module_destroy(&field_module);
 				}
 				if (return_code)
 				{
@@ -376,7 +376,7 @@ allowed during identifier changes.
 						 which already have the same number as the new_number */
 					next_spare_node_number =
 						node_values[number_of_nodes - 1].new_number + 1;
-					Cmiss_nodeset_group_id nodeset = Cmiss_field_node_group_get_nodeset(node_group);
+					cmzn_nodeset_group_id nodeset = cmzn_field_node_group_get_nodeset(node_group);
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
 						node_with_identifier = FE_region_get_FE_node_from_identifier(
@@ -385,9 +385,9 @@ allowed during identifier changes.
 						if (node_with_identifier != node_values[i].node)
 						{
 							if ((nodeset == NULL) || (((node_with_identifier == NULL) ||
-								Cmiss_nodeset_contains_node(Cmiss_nodeset_group_base_cast(nodeset),
+								cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodeset),
 									node_with_identifier)) &&
-								(Cmiss_nodeset_contains_node(Cmiss_nodeset_group_base_cast(nodeset),
+								(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodeset),
 									node_values[i].node))))
 							{
 								if (node_with_identifier)
@@ -415,7 +415,7 @@ allowed during identifier changes.
 							}
 						}
 					}
-					Cmiss_nodeset_group_destroy(&nodeset);
+					cmzn_nodeset_group_destroy(&nodeset);
 				}
 				for (i = 0; i < number_of_nodes; i++)
 				{
@@ -447,7 +447,7 @@ allowed during identifier changes.
 
 struct LIST(FE_node) *
 	FE_node_list_from_region_and_selection_group(
-		struct Cmiss_region *region, struct Multi_range *node_ranges,
+		struct cmzn_region *region, struct Multi_range *node_ranges,
 		struct Computed_field *group_field, struct Computed_field *conditional_field,
 		FE_value time, int use_data)
 {
@@ -461,7 +461,7 @@ struct LIST(FE_node) *
 	data.node_list = (struct LIST(FE_node) *)NULL;
 	if (region)
 	{
-		fe_region = Cmiss_region_get_FE_region(region);
+		fe_region = cmzn_region_get_FE_region(region);
 		if (use_data)
 			fe_region=FE_region_get_data_FE_region(fe_region);
 	}
@@ -470,9 +470,9 @@ struct LIST(FE_node) *
 		data.node_list = CREATE(LIST(FE_node))();
 		if (NULL != data.node_list)
 		{
-			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-			data.field_cache = Cmiss_field_module_create_cache(field_module);
-			Cmiss_field_cache_set_time(data.field_cache, time);
+			cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+			data.field_cache = cmzn_field_module_create_cache(field_module);
+			cmzn_field_cache_set_time(data.field_cache, time);
 			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
 			if (node_ranges)
 			{
@@ -508,9 +508,9 @@ struct LIST(FE_node) *
 							int selected = 1;
 							if (group_field || conditional_field)
 							{
-								Cmiss_field_cache_set_node(data.field_cache, node);
-								if ((group_field && !Cmiss_field_evaluate_boolean(group_field, data.field_cache)) ||
-									(conditional_field && !Cmiss_field_evaluate_boolean(conditional_field, data.field_cache)))
+								cmzn_field_cache_set_node(data.field_cache, node);
+								if ((group_field && !cmzn_field_evaluate_boolean(group_field, data.field_cache)) ||
+									(conditional_field && !cmzn_field_evaluate_boolean(conditional_field, data.field_cache)))
 								{
 									selected = 0;
 								}
@@ -535,8 +535,8 @@ struct LIST(FE_node) *
 					"Error building list");
 				DESTROY(LIST(FE_node))(&data.node_list);
 			}
-			Cmiss_field_cache_destroy(&data.field_cache);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_cache_destroy(&data.field_cache);
+			cmzn_field_module_destroy(&field_module);
 		}
 		else
 		{
@@ -562,7 +562,7 @@ struct LIST(FE_node) *
 		struct Computed_field *conditional_field, FE_value time)
 {
 	return FE_node_list_from_region_and_selection_group(
-		FE_region_get_Cmiss_region(fe_region), node_ranges,
-		/*group_field*/(Cmiss_field_id)0, conditional_field,
+		FE_region_get_cmzn_region(fe_region), node_ranges,
+		/*group_field*/(cmzn_field_id)0, conditional_field,
 		time, FE_region_is_data_FE_region(fe_region));
 }

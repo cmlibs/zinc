@@ -2,7 +2,7 @@
  * @file optimisation.hpp
  *
  * Minimisation object for performing optimisation algorithm from description
- * in Cmiss_optimisation.
+ * in cmzn_optimisation.
  *
  * @see-also api/zinc/optimisation.h
  *
@@ -52,15 +52,15 @@
 class ObjectiveFieldData
 {
 public:
-	Cmiss_field_id field;
+	cmzn_field_id field;
 	int numComponents;
 	int numTerms;
 	int bufferSize;
 	FE_value *buffer;
 
-	ObjectiveFieldData(Cmiss_field_id objectiveField) :
-		field(Cmiss_field_access(objectiveField)),
-		numComponents(Cmiss_field_get_number_of_components(field)),
+	ObjectiveFieldData(cmzn_field_id objectiveField) :
+		field(cmzn_field_access(objectiveField)),
+		numComponents(cmzn_field_get_number_of_components(field)),
 		numTerms(0),
 		bufferSize(0),
 		buffer(0)
@@ -69,24 +69,24 @@ public:
 
 	~ObjectiveFieldData()
 	{
-		Cmiss_field_destroy(&field);
+		cmzn_field_destroy(&field);
 		delete[] buffer;
 	}
 
 	int prepareTerms();
 };
 
-typedef std::vector<Cmiss_field_id> FieldVector;
+typedef std::vector<cmzn_field_id> FieldVector;
 typedef std::vector<ObjectiveFieldData*> ObjectiveFieldDataVector;
 
 class Minimisation
 {
 private:
-	Cmiss_optimisation& optimisation;
+	cmzn_optimisation& optimisation;
 
 public:
-	Cmiss_field_module_id field_module;
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_module_id field_module;
+	cmzn_field_cache_id field_cache;
 	FE_value current_time;
 	int total_dof;
 	ObjectiveFieldDataVector objectiveFields;
@@ -101,10 +101,10 @@ private:
 	std::ostream optppMessageStream;
 
 public:
-	Minimisation(Cmiss_optimisation& optimisation) :
+	Minimisation(cmzn_optimisation& optimisation) :
 		optimisation(optimisation),
-		field_module(Cmiss_field_module_access(optimisation.fieldModule)),
-		field_cache(Cmiss_field_module_create_cache(field_module)),
+		field_module(cmzn_field_module_access(optimisation.fieldModule)),
+		field_cache(cmzn_field_module_create_cache(field_module)),
 		current_time(0.0),
 		total_dof(0),
 		dof_storage_array(0),
@@ -114,15 +114,15 @@ public:
 		for (FieldList::iterator iter = optimisation.independentFields.begin();
 			iter != optimisation.independentFields.end(); ++iter)
 		{
-			Cmiss_field_access(*iter);
+			cmzn_field_access(*iter);
 			independentFields.push_back(*iter);
 		}
 		totalObjectiveFieldComponents = 0;
 		for (FieldList::iterator iter = optimisation.objectiveFields.begin();
 			iter != optimisation.objectiveFields.end(); ++iter)
 		{
-			Cmiss_field_id objectiveField = *iter;
-			totalObjectiveFieldComponents += Cmiss_field_get_number_of_components(objectiveField);
+			cmzn_field_id objectiveField = *iter;
+			totalObjectiveFieldComponents += cmzn_field_get_number_of_components(objectiveField);
 			objectiveFields.push_back(new ObjectiveFieldData(objectiveField));
 		}
 		objectiveValues = new FE_value[totalObjectiveFieldComponents];

@@ -106,8 +106,8 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
  * @see write_exregion_to_stream.
  */
 int write_exregion_file_of_name(const char *file_name,
-	struct Cmiss_region *region, Cmiss_field_group_id group,
-	struct Cmiss_region *root_region,
+	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
@@ -115,8 +115,8 @@ int write_exregion_file_of_name(const char *file_name,
 	enum FE_write_recursion write_recursion);
 
 int write_exregion_file_to_memory_block(
-	struct Cmiss_region *region, Cmiss_field_group_id group,
-	struct Cmiss_region *root_region, int write_elements,
+	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *root_region, int write_elements,
 	int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,

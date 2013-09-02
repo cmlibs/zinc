@@ -74,10 +74,10 @@ if a value is already known.
 #include "general/object.h"
 #include "general/message.h"
 
-struct Cmiss_region;
+struct cmzn_region;
 
 /*
-The Cmiss_computed_field which is Public is currently the same object as the
+The cmzn_computed_field which is Public is currently the same object as the
 cmgui internal Computed_field.  The Public interface is contained in
 zinc/field.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
@@ -85,12 +85,12 @@ functions are given their public names.
 */
 
 /* Convert to use external field object name */
-#define Computed_field Cmiss_field
+#define Computed_field cmzn_field
 
 /* Convert the functions that have identical interfaces */
 #define Computed_field_get_number_of_components \
-	Cmiss_field_get_number_of_components
-#define Computed_field_set_type Cmiss_field_set_type
+	cmzn_field_get_number_of_components
+#define Computed_field_set_type cmzn_field_set_type
 
 /*
 Global types
@@ -127,7 +127,7 @@ struct Computed_field_conditional_data
  * Stores data and settings needed to create field, including the region to add
  * it to.
  */
-struct Cmiss_field_module;
+struct cmzn_field_module;
 
 /*
 Global functions
@@ -141,14 +141,14 @@ PROTOTYPE_LIST_FUNCTIONS(Computed_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,const char *);
 
 /***************************************************************************//**
- * Internal variant of public Cmiss_field_iterator_next() which does not access
+ * Internal variant of public cmzn_field_iterator_next() which does not access
  * the returned field, for more efficient if less safe usage.
  *
  * @param field_iterator  Field iterator to query and advance.
  * @return  Non-accessed pointer to the next field, or NULL if none remaining.
  */
-Cmiss_field_id Cmiss_field_iterator_next_non_access(
-	Cmiss_field_iterator_id field_iterator);
+cmzn_field_id cmzn_field_iterator_next_non_access(
+	cmzn_field_iterator_id field_iterator);
 
 PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
@@ -159,7 +159,7 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,const char *);
  * on any other fields, this function is recursively called for them.
  * Warning: inefficient as field cache is created and destroyed with each call.
  * For new code, prefer managing your own field cache and directly using
- * Cmiss_field_id_defined_at_location.
+ * cmzn_field_id_defined_at_location.
  */
 int Computed_field_is_defined_in_element(struct Computed_field *field,
 	struct FE_element *element);
@@ -169,7 +169,7 @@ int Computed_field_is_defined_in_element(struct Computed_field *field,
  * Returns true if <field> can be calculated in <element>.
  * Warning: inefficient as field cache is created and destroyed with each call.
  * For new code, prefer managing your own field cache and directly using
- * Cmiss_field_id_defined_at_location.
+ * cmzn_field_id_defined_at_location.
  */
 int Computed_field_is_defined_in_element_conditional(
 	struct Computed_field *field,void *element_void);
@@ -179,7 +179,7 @@ int Computed_field_is_defined_in_element_conditional(
  * on any other fields, this function is recursively called for them.
  * Warning: inefficient as field cache is created and destroyed with each call.
  * For new code, prefer managing your own field cache and directly using
- * Cmiss_field_id_defined_at_location.
+ * cmzn_field_id_defined_at_location.
  */
 int Computed_field_is_defined_at_node(struct Computed_field *field,
 	struct FE_node *node);
@@ -189,7 +189,7 @@ int Computed_field_is_defined_at_node(struct Computed_field *field,
  * Returns true if <field> can be calculated in <element>.
  * Warning: inefficient as field cache is created and destroyed with each call.
  * For new code, prefer managing your own field cache and directly using
- * Cmiss_field_id_defined_at_location.
+ * cmzn_field_id_defined_at_location.
  */
 int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	void *node_void);
@@ -251,10 +251,10 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
  * inherit fields from.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_cache_set_mesh_location_with_parent(
-	Cmiss_field_cache_id cache, Cmiss_element_id element,
+int cmzn_field_cache_set_mesh_location_with_parent(
+	cmzn_field_cache_id cache, cmzn_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates,
-	Cmiss_element_id top_level_element);
+	cmzn_element_id top_level_element);
 
 /***************************************************************************//**
  * Internal function which if set means subsequent values are assigned into the
@@ -268,7 +268,7 @@ int Cmiss_field_cache_set_mesh_location_with_parent(
  * @param assign_to_cache  The new state of the assign-to-cache-only flag.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_cache_set_assign_in_cache(Cmiss_field_cache_id cache, int assign_in_cache);
+int cmzn_field_cache_set_assign_in_cache(cmzn_field_cache_id cache, int assign_in_cache);
 
 /***************************************************************************//**
  * Internal function.
@@ -277,8 +277,8 @@ int Cmiss_field_cache_set_assign_in_cache(Cmiss_field_cache_id cache, int assign
  * @return  1 if any field component value is non zero with a small tolerance,
  * otherwise 0.
  */
-int Cmiss_field_evaluate_boolean(Cmiss_field_id field,
-	Cmiss_field_cache_id cache);
+int cmzn_field_evaluate_boolean(cmzn_field_id field,
+	cmzn_field_cache_id cache);
 
 /***************************************************************************//**
  * Temporary function to allow derivatives to be evaluated with value.
@@ -287,8 +287,8 @@ int Cmiss_field_evaluate_boolean(Cmiss_field_id field,
  * @param derivatives  Array of size number_of_values*number_of_derivatives.
  * IMPORTANT: Not approved for external API!
  */
-int Cmiss_field_evaluate_real_with_derivatives(Cmiss_field_id field,
-	Cmiss_field_cache_id cache, int number_of_values, double *values,
+int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
+	cmzn_field_cache_id cache, int number_of_values, double *values,
 	int number_of_derivatives, double *derivatives);
 
 int Computed_field_get_native_discretization_in_element(
@@ -547,9 +547,9 @@ The number of components controls how the field is interpreted:
  * found, or 0 if failed.
  */
 int Computed_field_find_element_xi(struct Computed_field *field,
-	Cmiss_field_cache_id field_cache, const FE_value *values,
+	cmzn_field_cache_id field_cache, const FE_value *values,
 	int number_of_values, struct FE_element **element_address, FE_value *xi,
-	Cmiss_mesh_id mesh, int propagate_to_source, int find_nearest);
+	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest);
 
 int Computed_field_is_find_element_xi_capable(struct Computed_field *field,
 	void *dummy_void);
@@ -635,7 +635,7 @@ be destroyed, assuming it is only accessed by this field and its manager.
  * @param field  The field.
  * @return  A handle to the owning region if in one, or NULL if none.
  */
-struct Cmiss_region *Computed_field_get_region(struct Computed_field *field);
+struct cmzn_region *Computed_field_get_region(struct Computed_field *field);
 
 /**
  * Returns true if the field is a coordinate field, false otherwise
@@ -672,8 +672,8 @@ int Computed_field_is_non_linear(struct Computed_field *field);
 /***************************************************************************//**
  * @return  Allocated field name unused by any other field in field_module.
  */
-char *Cmiss_field_module_get_unique_field_name(
-	struct Cmiss_field_module *field_module);
+char *cmzn_field_module_get_unique_field_name(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.
@@ -691,7 +691,7 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field);
  * @param field the field to query the access count from
  * @return the access count
  */
-int Cmiss_field_get_access_count(Cmiss_field_id field);
+int cmzn_field_get_access_count(cmzn_field_id field);
 #endif /* defined (DEBUG_CODE) */
 
 #endif /* !defined (COMPUTED_FIELD_H) */

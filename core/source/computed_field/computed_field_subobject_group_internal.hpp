@@ -47,14 +47,14 @@
 /***************************************************************************//**
  * List statistics about btree structure of node_group.
  */
-void Cmiss_field_node_group_list_btree_statistics(
-	Cmiss_field_node_group_id node_group);
+void cmzn_field_node_group_list_btree_statistics(
+	cmzn_field_node_group_id node_group);
 
 /***************************************************************************//**
  * List statistics about btree structure of element_group.
  */
-void Cmiss_field_element_group_list_btree_statistics(
-	Cmiss_field_element_group_id element_group);
+void cmzn_field_element_group_list_btree_statistics(
+	cmzn_field_element_group_id element_group);
 
 #endif /* COMPUTED_FIELD_SUBOBJECT_GROUP_INTERNAL_HPP */
 

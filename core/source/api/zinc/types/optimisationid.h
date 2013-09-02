@@ -41,7 +41,7 @@
 #ifndef CMZN_OPTIMISATIONID_H__
 #define CMZN_OPTIMISATIONID_H__
 
-	struct Cmiss_optimisation;
-	typedef struct Cmiss_optimisation* Cmiss_optimisation_id;
+	struct cmzn_optimisation;
+	typedef struct cmzn_optimisation* cmzn_optimisation_id;
 
 #endif /* CMISS_OPTIMISATION_ID_DEFINED */

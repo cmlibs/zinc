@@ -56,6 +56,6 @@ This provides an object which supplies a concept of time to Cmgui
  * @return  1 if successfully set the time keeper, otherwise 0.
  */
 int Time_object_set_time_keeper(struct Time_object *time,
-	struct Cmiss_time_keeper *time_keeper);
+	struct cmzn_time_keeper *time_keeper);
 
 #endif  /* !defined (TIME_TIME_PRIVATE_H) */

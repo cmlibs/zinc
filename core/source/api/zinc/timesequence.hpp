@@ -47,7 +47,7 @@ namespace zinc
 class TimeSequence
 {
 protected:
-	Cmiss_time_sequence_id id;
+	cmzn_time_sequence_id id;
 
 public:
 
@@ -55,20 +55,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeSequence(Cmiss_time_sequence_id in_time_sequence_id) :
+	explicit TimeSequence(cmzn_time_sequence_id in_time_sequence_id) :
 		id(in_time_sequence_id)
 	{  }
 
 	TimeSequence(const TimeSequence& timeSequence) :
-		id(Cmiss_time_sequence_access(timeSequence.id))
+		id(cmzn_time_sequence_access(timeSequence.id))
 	{  }
 
 	TimeSequence& operator=(const TimeSequence& timeSequence)
 	{
-		Cmiss_time_sequence_id temp_id = Cmiss_time_sequence_access(timeSequence.id);
+		cmzn_time_sequence_id temp_id = cmzn_time_sequence_access(timeSequence.id);
 		if (0 != id)
 		{
-			Cmiss_time_sequence_destroy(&id);
+			cmzn_time_sequence_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -78,7 +78,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_time_sequence_destroy(&id);
+			cmzn_time_sequence_destroy(&id);
 		}
 	}
 
@@ -87,14 +87,14 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_time_sequence_id getId()
+	cmzn_time_sequence_id getId()
 	{
 		return id;
 	}
 
 	int setValue(int timeIndex, double time)
 	{
-		return Cmiss_time_sequence_set_value(id, timeIndex, time);
+		return cmzn_time_sequence_set_value(id, timeIndex, time);
 
 	}
 

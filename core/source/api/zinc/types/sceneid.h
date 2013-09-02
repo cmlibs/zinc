@@ -50,7 +50,7 @@
  * This single display list, however it is up to others - ie. the Scene_viewer
  * to display.
  */
-	struct Cmiss_scene;
-	typedef struct Cmiss_scene * Cmiss_scene_id;
+	struct cmzn_scene;
+	typedef struct cmzn_scene * cmzn_scene_id;
 
 #endif

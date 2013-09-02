@@ -41,7 +41,7 @@
 #ifndef CMZN_TIMESEQUENCEID_H__
 #define CMZN_TIMESEQUENCEID_H__
 
-	struct Cmiss_time_sequence;
-	typedef struct Cmiss_time_sequence *Cmiss_time_sequence_id;
+	struct cmzn_time_sequence;
+	typedef struct cmzn_time_sequence *cmzn_time_sequence_id;
 
 #endif /* CMISS_TIME_SEQUENCE_ID_H */

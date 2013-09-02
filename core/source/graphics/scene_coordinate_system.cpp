@@ -45,10 +45,10 @@
 #include "general/enumerator_private.hpp"
 #include "graphics/scene_coordinate_system.hpp"
 
-class Cmiss_scene_coordinate_system_conversion
+class cmzn_scene_coordinate_system_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_scene_coordinate_system system)
+    static const char *to_string(enum cmzn_scene_coordinate_system system)
     {
         const char *enum_string = 0;
         switch (system)
@@ -90,29 +90,29 @@ public:
     }
 };
 
-enum Cmiss_scene_coordinate_system	Cmiss_scene_coordinate_system_enum_from_string(
+enum cmzn_scene_coordinate_system	cmzn_scene_coordinate_system_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_scene_coordinate_system,
-		Cmiss_scene_coordinate_system_conversion>(string);
+	return string_to_enum<enum cmzn_scene_coordinate_system,
+		cmzn_scene_coordinate_system_conversion>(string);
 }
 
-char *Cmiss_scene_coordinate_system_enum_to_string(
-	enum Cmiss_scene_coordinate_system coordinate_system)
+char *cmzn_scene_coordinate_system_enum_to_string(
+	enum cmzn_scene_coordinate_system coordinate_system)
 {
-	const char *system_string = Cmiss_scene_coordinate_system_conversion::to_string(coordinate_system);
+	const char *system_string = cmzn_scene_coordinate_system_conversion::to_string(coordinate_system);
 	return (system_string ? duplicate_string(system_string) : 0);
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_scene_coordinate_system)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_scene_coordinate_system)
 {
-	return Cmiss_scene_coordinate_system_conversion::to_string(enumerator_value);
+	return cmzn_scene_coordinate_system_conversion::to_string(enumerator_value);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_scene_coordinate_system)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_scene_coordinate_system)
 
-int Cmiss_scene_coordinate_system_get_viewport(
-	enum Cmiss_scene_coordinate_system coordinate_system,
+int cmzn_scene_coordinate_system_get_viewport(
+	enum cmzn_scene_coordinate_system coordinate_system,
 	double viewport_width, double viewport_height,
 	double *left, double *right, double *bottom, double *top)
 {
@@ -190,7 +190,7 @@ int Cmiss_scene_coordinate_system_get_viewport(
 	if (!return_code)
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_coordinate_system_get_viewport.  Unsupported coordinate system");
+			"cmzn_scene_coordinate_system_get_viewport.  Unsupported coordinate system");
 	}
 	return return_code;
 }
@@ -202,8 +202,8 @@ int Cmiss_scene_coordinate_system_get_viewport(
  * @param coordinate_system  The scene coordinate system.
  * @return  1 if window-relative, 0 if not.
  */
-int Cmiss_scene_coordinate_system_is_window_relative(
-	enum Cmiss_scene_coordinate_system coordinate_system)
+int cmzn_scene_coordinate_system_is_window_relative(
+	enum cmzn_scene_coordinate_system coordinate_system)
 {
 	return
 		(coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL) ||

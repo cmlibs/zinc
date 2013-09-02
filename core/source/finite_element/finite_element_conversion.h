@@ -81,8 +81,8 @@ Global functions
  * in <destination_fe_region> according to the <mode> defining the fields
  * in <field_array>.
  */
-int finite_element_conversion(struct Cmiss_region *source_region,
-	struct Cmiss_region *destination_region,
+int finite_element_conversion(struct cmzn_region *source_region,
+	struct cmzn_region *destination_region,
 	enum Convert_finite_elements_mode mode, int number_of_fields,
 	struct Computed_field **field_array,
 	struct Element_refinement refinement, FE_value tolerance);

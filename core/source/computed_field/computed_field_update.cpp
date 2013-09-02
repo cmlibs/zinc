@@ -53,9 +53,9 @@ Functions for updating values of one computed field from those of another.
 #include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 
-int Cmiss_nodeset_assign_field_from_source(
-	Cmiss_nodeset_id nodeset, Cmiss_field_id destination_field,
-	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+int cmzn_nodeset_assign_field_from_source(
+	cmzn_nodeset_id nodeset, cmzn_field_id destination_field,
+	cmzn_field_id source_field, cmzn_field_id conditional_field,
 	FE_value time)
 {
 	int return_code = 1;
@@ -63,60 +63,60 @@ int Cmiss_nodeset_assign_field_from_source(
 	{
 		const int number_of_components =
 			Computed_field_get_number_of_components(destination_field);
-		Cmiss_field_value_type value_type = Cmiss_field_get_value_type(destination_field);
+		cmzn_field_value_type value_type = cmzn_field_get_value_type(destination_field);
 		// can always evaluate to a string value
 		if ((value_type == CMISS_FIELD_VALUE_TYPE_STRING) ||
 			((Computed_field_get_number_of_components(source_field) == number_of_components) &&
-				(Cmiss_field_get_value_type(source_field) == value_type)))
+				(cmzn_field_get_value_type(source_field) == value_type)))
 		{
-			Cmiss_field_module_id field_module = Cmiss_field_get_field_module(destination_field);
-			Cmiss_field_module_begin_change(field_module);
-			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
+			cmzn_field_module_id field_module = cmzn_field_get_field_module(destination_field);
+			cmzn_field_module_begin_change(field_module);
+			cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
 			FE_value *values = new FE_value[number_of_components];
 			// all fields evaluated at same time so set once
-			Cmiss_field_cache_set_time(field_cache, time);
-			Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-			Cmiss_node_id node = 0;
+			cmzn_field_cache_set_time(field_cache, time);
+			cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+			cmzn_node_id node = 0;
 			int selected_count = 0;
 			int success_count = 0;
-			while (return_code && (0 != (node = Cmiss_node_iterator_next(iterator))))
+			while (return_code && (0 != (node = cmzn_node_iterator_next(iterator))))
 			{
-				Cmiss_field_cache_set_node(field_cache, node);
-				if ((!conditional_field) || (CMISS_OK == Cmiss_field_evaluate_boolean(conditional_field, field_cache)))
+				cmzn_field_cache_set_node(field_cache, node);
+				if ((!conditional_field) || (CMISS_OK == cmzn_field_evaluate_boolean(conditional_field, field_cache)))
 				{
-					if ((CMISS_OK == Cmiss_field_is_defined_at_location(destination_field, field_cache)))
+					if ((CMISS_OK == cmzn_field_is_defined_at_location(destination_field, field_cache)))
 					{
 						switch (value_type)
 						{
 						case CMISS_FIELD_VALUE_TYPE_MESH_LOCATION:
 							{
 								FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-								Cmiss_element_id element = Cmiss_field_evaluate_mesh_location(
+								cmzn_element_id element = cmzn_field_evaluate_mesh_location(
 									source_field, field_cache, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
 								if (element)
 								{
-									if ((CMISS_OK == Cmiss_field_assign_mesh_location(destination_field, field_cache,
+									if ((CMISS_OK == cmzn_field_assign_mesh_location(destination_field, field_cache,
 										element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)))
 									{
 										++success_count;
 									}
-									Cmiss_element_destroy(&element);
+									cmzn_element_destroy(&element);
 								}
 							} break;
 						case CMISS_FIELD_VALUE_TYPE_REAL:
 							{
-								if ((CMISS_OK == Cmiss_field_evaluate_real(source_field, field_cache, number_of_components, values)) &&
-									(CMISS_OK == Cmiss_field_assign_real(destination_field, field_cache, number_of_components, values)))
+								if ((CMISS_OK == cmzn_field_evaluate_real(source_field, field_cache, number_of_components, values)) &&
+									(CMISS_OK == cmzn_field_assign_real(destination_field, field_cache, number_of_components, values)))
 								{
 									++success_count;
 								}
 							} break;
 						case CMISS_FIELD_VALUE_TYPE_STRING:
 							{
-								char *string_value = Cmiss_field_evaluate_string(source_field, field_cache);
+								char *string_value = cmzn_field_evaluate_string(source_field, field_cache);
 								if (string_value)
 								{
-									if ((CMISS_OK == Cmiss_field_assign_string(destination_field, field_cache, string_value)))
+									if ((CMISS_OK == cmzn_field_assign_string(destination_field, field_cache, string_value)))
 									{
 										++success_count;
 									}
@@ -126,34 +126,34 @@ int Cmiss_nodeset_assign_field_from_source(
 						default:
 							{
 								display_message(ERROR_MESSAGE,
-									"Cmiss_nodeset_assign_field_from_source.  Unsupported value type.");
+									"cmzn_nodeset_assign_field_from_source.  Unsupported value type.");
 								return_code = 0;
 							} break;
 						}
 					}
 					++selected_count;
 				}
-				Cmiss_node_destroy(&node);
+				cmzn_node_destroy(&node);
 			}
-			Cmiss_node_iterator_destroy(&iterator);
+			cmzn_node_iterator_destroy(&iterator);
 			if (success_count != selected_count)
 			{
 				display_message(WARNING_MESSAGE,
-					"Cmiss_nodeset_assign_field_from_source.  "
+					"cmzn_nodeset_assign_field_from_source.  "
 					"Only able to set values for %d nodes out of %d\n"
 					"  Either source field isn't defined at node "
 					"or destination field could not be set.",
 					success_count, selected_count);
 			}
 			delete[] values;
-			Cmiss_field_cache_destroy(&field_cache);
-			Cmiss_field_module_end_change(field_module);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_cache_destroy(&field_cache);
+			cmzn_field_module_end_change(field_module);
+			cmzn_field_module_destroy(&field_module);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_nodeset_assign_field_from_source.  "
+				"cmzn_nodeset_assign_field_from_source.  "
 				"Value type and number of components in source and destination fields must match.");
 			return_code = 0;
 		}
@@ -161,15 +161,15 @@ int Cmiss_nodeset_assign_field_from_source(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_nodeset_assign_field_from_source.  Invalid argument(s)");
+			"cmzn_nodeset_assign_field_from_source.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return (return_code);
 }
 
-struct Cmiss_element_assign_grid_field_from_source_data
+struct cmzn_element_assign_grid_field_from_source_data
 {
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	int selected_count, success_count, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
@@ -177,8 +177,8 @@ struct Cmiss_element_assign_grid_field_from_source_data
 	struct Computed_field *group_field;
 };
 
-int Cmiss_element_assign_grid_field_from_source_sub(
-	Cmiss_element_id element, Cmiss_element_assign_grid_field_from_source_data *data)
+int cmzn_element_assign_grid_field_from_source_sub(
+	cmzn_element_id element, cmzn_element_assign_grid_field_from_source_data *data)
 {
 	FE_value *values, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int can_select_individual_points, destination_field_is_grid_based,
@@ -188,10 +188,10 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct Multi_range *selected_ranges;
 
-	ENTER(Cmiss_element_assign_grid_field_from_source_sub);
+	ENTER(cmzn_element_assign_grid_field_from_source_sub);
 	if (element && data)
 	{
-		int number_of_components = Cmiss_field_get_number_of_components(data->source_field);
+		int number_of_components = cmzn_field_get_number_of_components(data->source_field);
 		element_point_ranges = (struct Element_point_ranges *)NULL;
 		return_code = 1;
 		/* trivial rejection to see if element has storage for any grid based field 
@@ -210,8 +210,8 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 			}
 			if (data->group_field)
 			{
-				if (Cmiss_field_cache_set_element(data->field_cache, element) &&
-					Cmiss_field_evaluate_boolean(data->group_field, data->field_cache))
+				if (cmzn_field_cache_set_element(data->field_cache, element) &&
+					cmzn_field_evaluate_boolean(data->group_field, data->field_cache))
 				{
 					element_selected = 1;
 					can_select_individual_points = 0;
@@ -262,7 +262,7 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 						element_point_ranges_identifier.sample_mode,
 						element_point_ranges_identifier.number_in_xi,
 						element_point_ranges_identifier.exact_xi,
-						(Cmiss_field_cache_id)0,
+						(cmzn_field_cache_id)0,
 						/*coordinate_field*/(struct Computed_field *)NULL,
 						/*density_field*/(struct Computed_field *)NULL,
 						&maximum_element_point_number,
@@ -275,8 +275,8 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 			{
 				data->selected_count++;
 				if (destination_field_is_grid_based &&
-					Cmiss_field_cache_set_element(data->field_cache, element) &&
-					Cmiss_field_is_defined_at_location(data->source_field, data->field_cache) &&
+					cmzn_field_cache_set_element(data->field_cache, element) &&
+					cmzn_field_is_defined_at_location(data->source_field, data->field_cache) &&
 					ALLOCATE(values, FE_value, number_of_components))
 				{
 					if (element_point_ranges)
@@ -295,17 +295,17 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 									if (FE_element_get_numbered_xi_point(
 											 element, element_point_ranges_identifier.sample_mode,
 											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
-											 (Cmiss_field_cache_id)0,
+											 (cmzn_field_cache_id)0,
 											 /*coordinate_field*/(struct Computed_field *)NULL,
 											 /*density_field*/(struct Computed_field *)NULL,
 											 grid_point_number, xi))
 									{
-										if (Cmiss_field_cache_set_mesh_location(data->field_cache,
+										if (cmzn_field_cache_set_mesh_location(data->field_cache,
 												element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
-											Cmiss_field_evaluate_real(data->source_field,
+											cmzn_field_evaluate_real(data->source_field,
 												data->field_cache, number_of_components, values))
 										{
-											Cmiss_field_assign_real(data->destination_field,
+											cmzn_field_assign_real(data->destination_field,
 												data->field_cache, number_of_components, values);
 										}
 									}
@@ -326,18 +326,18 @@ int Cmiss_element_assign_grid_field_from_source_sub(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_element_assign_grid_field_from_source_sub.  "
+			"cmzn_element_assign_grid_field_from_source_sub.  "
 			"Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_element_assign_grid_field_from_source_sub */
+} /* cmzn_element_assign_grid_field_from_source_sub */
 
-int Cmiss_mesh_assign_grid_field_from_source(
-	Cmiss_mesh_id mesh, Cmiss_field_id destination_field,
-	Cmiss_field_id source_field, Cmiss_field_id conditional_field,
+int cmzn_mesh_assign_grid_field_from_source(
+	cmzn_mesh_id mesh, cmzn_field_id destination_field,
+	cmzn_field_id source_field, cmzn_field_id conditional_field,
 	struct Element_point_ranges_selection *element_point_ranges_selection,
 	FE_value time)
 {
@@ -347,12 +347,12 @@ int Cmiss_mesh_assign_grid_field_from_source(
 		if (Computed_field_get_number_of_components(source_field) ==
 			 Computed_field_get_number_of_components(destination_field))
 		{
-			Cmiss_region_id region = Cmiss_mesh_get_region_internal(mesh);
-			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-			Cmiss_field_module_begin_change(field_module);
-			Cmiss_field_cache_id field_cache = Cmiss_field_module_create_cache(field_module);
-			Cmiss_field_cache_set_time(field_cache, time);
-			Cmiss_element_assign_grid_field_from_source_data data;
+			cmzn_region_id region = cmzn_mesh_get_region_internal(mesh);
+			cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+			cmzn_field_module_begin_change(field_module);
+			cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+			cmzn_field_cache_set_time(field_cache, time);
+			cmzn_element_assign_grid_field_from_source_data data;
 			data.field_cache = field_cache;
 			data.source_field = source_field;
 			data.destination_field = destination_field;
@@ -360,35 +360,35 @@ int Cmiss_mesh_assign_grid_field_from_source(
 			data.group_field = conditional_field;
 			data.selected_count = 0;
 			data.success_count = 0;
-			Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
-			Cmiss_element_id element = 0;
-			while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+			cmzn_element_iterator_id iter = cmzn_mesh_create_element_iterator(mesh);
+			cmzn_element_id element = 0;
+			while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
 			{
-				if (!Cmiss_element_assign_grid_field_from_source_sub(element, &data))
+				if (!cmzn_element_assign_grid_field_from_source_sub(element, &data))
 				{
 					return_code = 0;
 					break;
 				}
 			}
-			Cmiss_element_iterator_destroy(&iter);
+			cmzn_element_iterator_destroy(&iter);
 			if (data.success_count != data.selected_count)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_mesh_assign_grid_field_from_source."
+					"cmzn_mesh_assign_grid_field_from_source."
 					"  Only able to set values for %d elements out of %d\n"
 					"  Either source field isn't defined in element "
 					"or destination field could not be set.",
 					data.success_count, data.selected_count);
 				return_code = 0;
 			}
-			Cmiss_field_cache_destroy(&field_cache);
-			Cmiss_field_module_end_change(field_module);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_cache_destroy(&field_cache);
+			cmzn_field_module_end_change(field_module);
+			cmzn_field_module_destroy(&field_module);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_mesh_assign_grid_field_from_source.  "
+				"cmzn_mesh_assign_grid_field_from_source.  "
 				"Number of components in source and destination fields must match.");
 			return_code = 0;
 		}
@@ -396,7 +396,7 @@ int Cmiss_mesh_assign_grid_field_from_source(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_mesh_assign_grid_field_from_source.  "
+			"cmzn_mesh_assign_grid_field_from_source.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}

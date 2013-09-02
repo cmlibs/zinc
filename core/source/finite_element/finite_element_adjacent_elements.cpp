@@ -134,7 +134,7 @@ int adjacent_FE_element_from_nodes(struct FE_element *element,
 	int node_index, int *number_of_adjacent_elements, 
 	struct FE_element ***adjacent_elements, 
 	struct LIST(Index_multi_range) *node_element_list,
-	Cmiss_mesh_id mesh)
+	cmzn_mesh_id mesh)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
@@ -184,11 +184,11 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 								{
 									if (j != element_number)
 									{
-										adjacent_element = Cmiss_mesh_find_element_by_identifier(mesh, j);
+										adjacent_element = cmzn_mesh_find_element_by_identifier(mesh, j);
 										if (adjacent_element)
 										{
 											(*adjacent_elements)[i] = adjacent_element;
-											Cmiss_element_destroy(&adjacent_element); // this function never accessed elements
+											cmzn_element_destroy(&adjacent_element); // this function never accessed elements
 											i++;
 										}
 										else
@@ -240,18 +240,18 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	return (return_code);
 } /* adjacent_FE_element_from_nodes */
 
-struct LIST(Index_multi_range) *create_node_element_list(Cmiss_mesh_id mesh)
+struct LIST(Index_multi_range) *create_node_element_list(cmzn_mesh_id mesh)
 {
 	struct LIST(Index_multi_range) *list;
 
 	ENTER(create_node_element_list);
 	if (mesh)
 	{
-		Cmiss_element_iterator_id iter;
-		Cmiss_element_id element;
+		cmzn_element_iterator_id iter;
+		cmzn_element_id element;
 		list = CREATE(LIST(Index_multi_range))();
-		iter = Cmiss_mesh_create_element_iterator(mesh);
-		while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+		iter = cmzn_mesh_create_element_iterator(mesh);
+		while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
 		{
 			if (!FE_element_add_nodes_to_node_element_list(element, list))
 			{
@@ -260,7 +260,7 @@ struct LIST(Index_multi_range) *create_node_element_list(Cmiss_mesh_id mesh)
 				break;
 			}
 		}
-		Cmiss_element_iterator_destroy(&iter);
+		cmzn_element_iterator_destroy(&iter);
 	}
 	else
 	{

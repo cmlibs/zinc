@@ -51,7 +51,7 @@ namespace zinc
 class FieldCache
 {
 protected:
-	Cmiss_field_cache_id id;
+	cmzn_field_cache_id id;
 
 public:
 
@@ -59,20 +59,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCache(Cmiss_field_cache_id in_field_cache_id) :
+	explicit FieldCache(cmzn_field_cache_id in_field_cache_id) :
 		id(in_field_cache_id)
 	{  }
 
 	FieldCache(const FieldCache& fieldCache) :
-		id(Cmiss_field_cache_access(fieldCache.id))
+		id(cmzn_field_cache_access(fieldCache.id))
 	{  }
 
 	FieldCache& operator=(const FieldCache& fieldCache)
 	{
-		Cmiss_field_cache_id temp_id = Cmiss_field_cache_access(fieldCache.id);
+		cmzn_field_cache_id temp_id = cmzn_field_cache_access(fieldCache.id);
 		if (0 != id)
 		{
-			Cmiss_field_cache_destroy(&id);
+			cmzn_field_cache_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -82,7 +82,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_field_cache_destroy(&id);
+			cmzn_field_cache_destroy(&id);
 		}
 	}
 
@@ -91,85 +91,85 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_field_cache_id getId()
+	cmzn_field_cache_id getId()
 	{
 		return id;
 	}
 
 	int setElement(Element& element)
 	{
-		return Cmiss_field_cache_set_element(id, element.getId());
+		return cmzn_field_cache_set_element(id, element.getId());
 	}
 
 	int setMeshLocation(Element& element, int coordinatesCount,
 		const double *coordinatesIn)
 	{
-		return Cmiss_field_cache_set_mesh_location(id, element.getId(),
+		return cmzn_field_cache_set_mesh_location(id, element.getId(),
 			coordinatesCount, coordinatesIn);
 	}
 
 	int setFieldReal(Field& referenceField, int valuesCount,
 		const double *valuesIn)
 	{
-		return Cmiss_field_cache_set_field_real(id,
+		return cmzn_field_cache_set_field_real(id,
 			referenceField.getId(), valuesCount, valuesIn);
 	}
 
 	int setNode(Node& node)
 	{
-		return Cmiss_field_cache_set_node(id, node.getId());
+		return cmzn_field_cache_set_node(id, node.getId());
 	}
 
 	int setTime(double time)
 	{
-		return Cmiss_field_cache_set_time(id, time);
+		return cmzn_field_cache_set_time(id, time);
 	}
 };
 
 inline int Field::assignMeshLocation(FieldCache& cache, Element element,
 	int coordinatesCount, const double *coordinatesIn)
 {
-	return Cmiss_field_assign_mesh_location(id, cache.getId(), element.getId(),
+	return cmzn_field_assign_mesh_location(id, cache.getId(), element.getId(),
 		coordinatesCount, coordinatesIn);
 }
 
 inline int Field::assignReal(FieldCache& cache,	int valuesCount, const double *valuesIn)
 {
-	return Cmiss_field_assign_real(id, cache.getId(), valuesCount, valuesIn);
+	return cmzn_field_assign_real(id, cache.getId(), valuesCount, valuesIn);
 }
 
 inline int Field::assignString(FieldCache& cache, const char *stringValue)
 {
-	return Cmiss_field_assign_string(id, cache.getId(), stringValue);
+	return cmzn_field_assign_string(id, cache.getId(), stringValue);
 }
 
 inline Element Field::evaluateMeshLocation(FieldCache& cache, int coordinatesCount,
 	double *coordinatesOut)
 {
-	return Element(Cmiss_field_evaluate_mesh_location(id,
+	return Element(cmzn_field_evaluate_mesh_location(id,
 		cache.getId(), coordinatesCount, coordinatesOut));
 }
 
 inline int Field::evaluateReal(FieldCache& cache, int valuesCount, double *valuesOut)
 {
-	return Cmiss_field_evaluate_real(id, cache.getId(), valuesCount, valuesOut);
+	return cmzn_field_evaluate_real(id, cache.getId(), valuesCount, valuesOut);
 }
 
 inline char *Field::evaluateString(FieldCache& cache)
 {
-	return Cmiss_field_evaluate_string(id, cache.getId());
+	return cmzn_field_evaluate_string(id, cache.getId());
 }
 
 inline int Field::evaluateDerivative(DifferentialOperator& differentialOperator,
 	FieldCache& cache, int valuesCount, double *valuesOut)
 {
-	return Cmiss_field_evaluate_derivative(id, differentialOperator.getId(),
+	return cmzn_field_evaluate_derivative(id, differentialOperator.getId(),
 		cache.getId(), valuesCount, valuesOut);
 }
 
 inline bool Field::isDefinedAtLocation(FieldCache& cache)
 {
-	return (0 != Cmiss_field_is_defined_at_location(id, cache.getId()));
+	return (0 != cmzn_field_is_defined_at_location(id, cache.getId()));
 }
 
 }  // namespace zinc

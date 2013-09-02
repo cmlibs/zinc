@@ -53,14 +53,14 @@ Module types
 ------------
 */
 
-enum Cmiss_region_write_status
+enum cmzn_region_write_status
 {
 	CMISS_REGION_NOT_WRITTEN,
 	CMISS_REGION_DECLARED,
 	CMISS_REGION_WRITTEN
 };
 
-struct Cmiss_region_write_info;
+struct cmzn_region_write_info;
 /*******************************************************************************
 LAST MODIFIED : 16 May 2003
 
@@ -68,38 +68,38 @@ DESCRIPTION :
 Data structure shared by several region export modules.
 ==============================================================================*/
 
-DECLARE_LIST_TYPES(Cmiss_region_write_info);
+DECLARE_LIST_TYPES(cmzn_region_write_info);
 
 /*
 Module functions
 ----------------
 */
 
-struct Cmiss_region_write_info *CREATE(Cmiss_region_write_info)(void);
+struct cmzn_region_write_info *CREATE(cmzn_region_write_info)(void);
 /*******************************************************************************
 LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
 
-int DESTROY(Cmiss_region_write_info)(
-	struct Cmiss_region_write_info **write_info_address);
+int DESTROY(cmzn_region_write_info)(
+	struct cmzn_region_write_info **write_info_address);
 /*******************************************************************************
 LAST MODIFIED : 16 May 2003
 
 DESCRIPTION :
 ==============================================================================*/
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region_write_info);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region_write_info);
 
-PROTOTYPE_LIST_FUNCTIONS(Cmiss_region_write_info);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_region_write_info);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_region_write_info, \
-	region, struct Cmiss_region *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_region_write_info, \
+	region, struct cmzn_region *);
 
-int set_Cmiss_region_write_info(
-	struct LIST(Cmiss_region_write_info) *write_info_list,
-	struct Cmiss_region *region, enum Cmiss_region_write_status write_status,
+int set_cmzn_region_write_info(
+	struct LIST(cmzn_region_write_info) *write_info_list,
+	struct cmzn_region *region, enum cmzn_region_write_status write_status,
 	char *path);
 /*******************************************************************************
 LAST MODIFIED : 16 May 2003
@@ -107,10 +107,10 @@ LAST MODIFIED : 16 May 2003
 DESCRIPTION :
 ==============================================================================*/
 
-int get_Cmiss_region_write_info(
-	struct LIST(Cmiss_region_write_info) *write_info_list,
-	struct Cmiss_region *region,
-	enum Cmiss_region_write_status *write_status_address,
+int get_cmzn_region_write_info(
+	struct LIST(cmzn_region_write_info) *write_info_list,
+	struct cmzn_region *region,
+	enum cmzn_region_write_status *write_status_address,
 	char **path_address);
 /*******************************************************************************
 LAST MODIFIED : 16 May 2003

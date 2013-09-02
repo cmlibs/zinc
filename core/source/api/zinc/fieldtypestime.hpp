@@ -50,7 +50,7 @@ class FieldTimeLookup : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTimeLookup(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldTimeLookup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField,
@@ -67,7 +67,7 @@ class FieldTimeValue : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldTimeValue(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldTimeValue(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper);
@@ -81,13 +81,13 @@ public:
 
 inline FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField, Field& timeField)
 {
-	return FieldTimeLookup(Cmiss_field_module_create_time_lookup(id,
+	return FieldTimeLookup(cmzn_field_module_create_time_lookup(id,
 		sourceField.getId(), timeField.getId()));
 }
 
 inline FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper)
 {
-	return FieldTimeValue(Cmiss_field_module_create_time_value(id, timeKeeper.getId()));
+	return FieldTimeValue(cmzn_field_module_create_time_value(id, timeKeeper.getId()));
 }
 
 }  // namespace zinc

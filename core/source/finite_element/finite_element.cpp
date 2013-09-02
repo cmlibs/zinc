@@ -185,7 +185,7 @@ the point and the Xi coordinates of the point within the element.
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
 class FE_field_identifier : private FE_field
 {
@@ -206,7 +206,7 @@ public:
 	}
 };
 
-/** functor for ordering Cmiss_set<FE_field> by field name */
+/** functor for ordering cmzn_set<FE_field> by field name */
 struct FE_field_compare_name
 {
 	bool operator() (const FE_field* field1, const FE_field* field2) const
@@ -215,7 +215,7 @@ struct FE_field_compare_name
 	}
 };
 
-typedef Cmiss_set<FE_field *,FE_field_compare_name> Cmiss_set_FE_field;
+typedef cmzn_set<FE_field *,FE_field_compare_name> cmzn_set_FE_field;
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_field);
 
@@ -349,7 +349,7 @@ DESCRIPTION :
 #ifdef NODE_STL_CONTAINER
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
 class FE_node_identifier : private FE_node
 {
@@ -365,7 +365,7 @@ public:
 	}
 };
 
-/** functor for ordering Cmiss_set<FE_node *> by cm_node_identifier */
+/** functor for ordering cmzn_set<FE_node *> by cm_node_identifier */
 struct FE_node_compare_number
 {
 	bool operator() (const FE_node* node1, const FE_node* node2) const
@@ -374,24 +374,24 @@ struct FE_node_compare_number
 	}
 };
 
-typedef Cmiss_set<Cmiss_node *,FE_node_compare_number> Cmiss_set_Cmiss_node;
+typedef cmzn_set<cmzn_node *,FE_node_compare_number> cmzn_set_cmzn_node;
 
-struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
+struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
 {
 	int access_count;
-	Cmiss_node_iterator(Cmiss_set_Cmiss_node *container) :
-		Cmiss_set_Cmiss_node::ext_iterator(container),
+	cmzn_node_iterator(cmzn_set_cmzn_node *container) :
+		cmzn_set_cmzn_node::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	Cmiss_node_iterator access()
+	cmzn_node_iterator access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_node_iterator_id &iterator)
+	static int deaccess(cmzn_node_iterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -407,24 +407,24 @@ struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
 /** can tweak this to vary performance */
 const int CMISS_NODE_BTREE_ORDER = 10;
 
-typedef Cmiss_btree<Cmiss_node,int,CMISS_NODE_BTREE_ORDER> Cmiss_set_Cmiss_node;
+typedef cmzn_btree<cmzn_node,int,CMISS_NODE_BTREE_ORDER> cmzn_set_cmzn_node;
 
-struct Cmiss_node_iterator : public Cmiss_set_Cmiss_node::ext_iterator
+struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
 {
 	int access_count;
-	Cmiss_node_iterator(Cmiss_set_Cmiss_node *container) :
-		Cmiss_set_Cmiss_node::ext_iterator(container),
+	cmzn_node_iterator(cmzn_set_cmzn_node *container) :
+		cmzn_set_cmzn_node::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	Cmiss_node_iterator_id access()
+	cmzn_node_iterator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_node_iterator_id &iterator)
+	static int deaccess(cmzn_node_iterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -892,7 +892,7 @@ variables.
 #ifdef ELEMENT_STL_CONTAINER
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
 class FE_element_identifier : private FE_element
 {
@@ -908,7 +908,7 @@ public:
 	}
 };
 
-/** functor for ordering Cmiss_set<FE_element *> by struct CM_element_information */
+/** functor for ordering cmzn_set<FE_element *> by struct CM_element_information */
 struct FE_element_compare_identifier
 {
 	bool operator() (const FE_element* element1, const FE_element* element2) const
@@ -921,25 +921,25 @@ struct FE_element_compare_identifier
 	}
 };
 
-typedef Cmiss_set<FE_element *,FE_element_compare_identifier> Cmiss_set_Cmiss_element;
+typedef cmzn_set<FE_element *,FE_element_compare_identifier> cmzn_set_cmzn_element;
 
-struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
+struct cmzn_element_iterator : public cmzn_set_cmzn_element::ext_iterator
 {
 	int access_count;
 
-	Cmiss_element_iterator(Cmiss_set_Cmiss_element *container) :
-		Cmiss_set_Cmiss_element::ext_iterator(container),
+	cmzn_element_iterator(cmzn_set_cmzn_element *container) :
+		cmzn_set_cmzn_element::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	Cmiss_element_iterator_id access()
+	cmzn_element_iterator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_element_iterator_id &iterator)
+	static int deaccess(cmzn_element_iterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -952,7 +952,7 @@ struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
 };
 #endif
 
-struct Cmiss_element_identifier_less
+struct cmzn_element_identifier_less
 {
 	bool operator() (const CM_element_information *identifier1, const CM_element_information *identifier2) const
 	{
@@ -966,25 +966,25 @@ struct Cmiss_element_identifier_less
 /** can tweak this to vary performance */
 const int CMISS_ELEMENT_BTREE_ORDER = 10;
 
-typedef Cmiss_btree<Cmiss_element,const CM_element_information *,CMISS_ELEMENT_BTREE_ORDER,Cmiss_element_identifier_less> Cmiss_set_Cmiss_element;
+typedef cmzn_btree<cmzn_element,const CM_element_information *,CMISS_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
 
-struct Cmiss_element_iterator : public Cmiss_set_Cmiss_element::ext_iterator
+struct cmzn_element_iterator : public cmzn_set_cmzn_element::ext_iterator
 {
 	int access_count;
 
-	Cmiss_element_iterator(Cmiss_set_Cmiss_element *container) :
-		Cmiss_set_Cmiss_element::ext_iterator(container),
+	cmzn_element_iterator(cmzn_set_cmzn_element *container) :
+		cmzn_set_cmzn_element::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	Cmiss_element_iterator_id access()
+	cmzn_element_iterator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_element_iterator_id &iterator)
+	static int deaccess(cmzn_element_iterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -10338,7 +10338,7 @@ Up to the calling function to deallocate the returned char string.
 	return (return_code);
 } /* GET_NAME(FE_field_component) */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_element_point_sample_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sample_mode)
 {
 	switch (enumerator_value)
 	{
@@ -10360,11 +10360,11 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_element_point_sample_mode)
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_element_point_sample_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_point_sample_mode)
 
 /** Important: check other enumerator functions work when adding new values.
  * They assume enums are powers of 2 */
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_domain_type)
 {
 	switch (enumerator_value)
 	{
@@ -10397,21 +10397,21 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_field_domain_type)
 
 
 /** Note: assumes valid enums are powers of 2, starting at 1 */
-int STRING_TO_ENUMERATOR(Cmiss_field_domain_type)(const char *enumerator_string,
-	enum Cmiss_field_domain_type *enumerator_value_address)
+int STRING_TO_ENUMERATOR(cmzn_field_domain_type)(const char *enumerator_string,
+	enum cmzn_field_domain_type *enumerator_value_address)
 {
 	if (enumerator_string && enumerator_value_address)
 	{
-		enum Cmiss_field_domain_type value = static_cast<Cmiss_field_domain_type>(1);
+		enum cmzn_field_domain_type value = static_cast<cmzn_field_domain_type>(1);
 		const char *valid_string;
-		while (0 != (valid_string = ENUMERATOR_STRING(Cmiss_field_domain_type)(value)))
+		while (0 != (valid_string = ENUMERATOR_STRING(cmzn_field_domain_type)(value)))
 		{
 			if (fuzzy_string_compare_same_length(enumerator_string, valid_string))
 			{
 				*enumerator_value_address = value;
 				return 1;
 			}
-			value = static_cast<Cmiss_field_domain_type>(2*value);
+			value = static_cast<cmzn_field_domain_type>(2*value);
 		}
 	}
 	return 0;
@@ -10419,25 +10419,25 @@ int STRING_TO_ENUMERATOR(Cmiss_field_domain_type)(const char *enumerator_string,
 
 
 /** Note: assumes valid enums are powers of 2, starting at 1 */
-const char **ENUMERATOR_GET_VALID_STRINGS(Cmiss_field_domain_type)(
+const char **ENUMERATOR_GET_VALID_STRINGS(cmzn_field_domain_type)(
 	int *number_of_valid_strings,
-	ENUMERATOR_CONDITIONAL_FUNCTION(Cmiss_field_domain_type) conditional_function,
+	ENUMERATOR_CONDITIONAL_FUNCTION(cmzn_field_domain_type) conditional_function,
 	void *user_data)
 {
 	*number_of_valid_strings = 0;
 	const char **valid_strings;
 
 	ALLOCATE(valid_strings, const char *, 64); // bits in a 64-bit integer, to be safe
-	enum Cmiss_field_domain_type value = static_cast<Cmiss_field_domain_type>(1);
+	enum cmzn_field_domain_type value = static_cast<cmzn_field_domain_type>(1);
 	const char *valid_string;
-	while (0 != (valid_string = ENUMERATOR_STRING(Cmiss_field_domain_type)(value)))
+	while (0 != (valid_string = ENUMERATOR_STRING(cmzn_field_domain_type)(value)))
 	{
 		if ((0 == conditional_function) || (conditional_function(value, user_data)))
 		{
 			valid_strings[*number_of_valid_strings] = valid_string;
 			++(*number_of_valid_strings);
 		}
-		value = static_cast<Cmiss_field_domain_type>(2*value);
+		value = static_cast<cmzn_field_domain_type>(2*value);
 	}
 	return valid_strings;
 }
@@ -13208,17 +13208,17 @@ int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
 {
 	if (!field_list || !node_list)
 		return 0;
-	Cmiss_set_Cmiss_node *nodes = reinterpret_cast<Cmiss_set_Cmiss_node*>(node_list);
-	Cmiss_set_FE_field *fields = reinterpret_cast<Cmiss_set_FE_field*>(field_list);
+	cmzn_set_cmzn_node *nodes = reinterpret_cast<cmzn_set_cmzn_node*>(node_list);
+	cmzn_set_FE_field *fields = reinterpret_cast<cmzn_set_FE_field*>(field_list);
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
-	for (Cmiss_set_FE_field::iterator field_iter = fields->begin(); field_iter != fields->end(); ++field_iter)
+	for (cmzn_set_FE_field::iterator field_iter = fields->begin(); field_iter != fields->end(); ++field_iter)
 	{
 		FE_field *field = *field_iter;
 		if ((ELEMENT_XI_VALUE == field->value_type) &&
 			(GENERAL_FE_FIELD == field->fe_field_type))
 		{
-			Cmiss_node_iterator node_iter(nodes);
-			Cmiss_node_id node = 0;
+			cmzn_node_iterator node_iter(nodes);
+			cmzn_node_id node = 0;
 			while (0 != (node = node_iter.next_non_access()))
 			{
 				if (node->fields && (node->fields->fe_region == fe_region))
@@ -15065,28 +15065,28 @@ int list_FE_node(struct FE_node *node)
 DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_node)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_node,cm_node_identifier,int)
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
-DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator)
+DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,cmzn_node_iterator)
 
-Cmiss_node_iterator_id Cmiss_node_iterator_access(Cmiss_node_iterator_id node_iterator)
+cmzn_node_iterator_id cmzn_node_iterator_access(cmzn_node_iterator_id node_iterator)
 {
 	return node_iterator->access();
 }
 
-int Cmiss_node_iterator_destroy(Cmiss_node_iterator_id *node_iterator_address)
+int cmzn_node_iterator_destroy(cmzn_node_iterator_id *node_iterator_address)
 {
 	if (node_iterator_address)
-		return Cmiss_node_iterator::deaccess(*node_iterator_address);
+		return cmzn_node_iterator::deaccess(*node_iterator_address);
 	return 0;
 }
 
-Cmiss_node_id Cmiss_node_iterator_next(Cmiss_node_iterator_id node_iterator)
+cmzn_node_id cmzn_node_iterator_next(cmzn_node_iterator_id node_iterator)
 {
 	if (node_iterator)
 		return node_iterator->next();
 	return 0;
 }
 
-Cmiss_node_id Cmiss_node_iterator_next_non_access(Cmiss_node_iterator_id node_iterator)
+cmzn_node_id cmzn_node_iterator_next_non_access(cmzn_node_iterator_id node_iterator)
 {
 	if (node_iterator)
 		return node_iterator->next_non_access();
@@ -21510,14 +21510,14 @@ DECLARE_LIST_FUNCTIONS(FE_element_shape)
 #endif
 #define INT_SHAPE_TYPE_ARRAY_LENGTH 6
 
-struct Cmiss_element_shape_type_map
+struct cmzn_element_shape_type_map
 {
-	enum Cmiss_element_shape_type shape_type;
+	enum cmzn_element_shape_type shape_type;
 	const int dimension;
 	const int int_shape_type_array[INT_SHAPE_TYPE_ARRAY_LENGTH];
 };
 
-const struct Cmiss_element_shape_type_map standard_shape_type_maps[] =
+const struct cmzn_element_shape_type_map standard_shape_type_maps[] =
 {
 	{ CMISS_ELEMENT_SHAPE_LINE,        1, { LINE_SHAPE, 0, 0, 0, 0, 0 } },
 	{ CMISS_ELEMENT_SHAPE_SQUARE,      2, { LINE_SHAPE, 0, LINE_SHAPE, 0, 0, 0 } },
@@ -21529,10 +21529,10 @@ const struct Cmiss_element_shape_type_map standard_shape_type_maps[] =
 	{ CMISS_ELEMENT_SHAPE_WEDGE23,     3, { LINE_SHAPE, 0, 0, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } }
 };
 
-const int standard_shape_type_maps_length = sizeof(standard_shape_type_maps) / sizeof(struct Cmiss_element_shape_type_map);
+const int standard_shape_type_maps_length = sizeof(standard_shape_type_maps) / sizeof(struct cmzn_element_shape_type_map);
 
 struct FE_element_shape *FE_element_shape_create_simple_type(
-	struct FE_region *fe_region, enum Cmiss_element_shape_type shape_type)
+	struct FE_region *fe_region, enum cmzn_element_shape_type shape_type)
 {
 	struct FE_element_shape *fe_element_shape;
 	int i;
@@ -21559,11 +21559,11 @@ struct FE_element_shape *FE_element_shape_create_simple_type(
 	return fe_element_shape;
 }
 
-enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
+enum cmzn_element_shape_type FE_element_shape_get_simple_type(
 	struct FE_element_shape *element_shape)
 {
 	int dimension, i, j, length;
-	enum Cmiss_element_shape_type shape_type;
+	enum cmzn_element_shape_type shape_type;
 
 	shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element_shape)
@@ -22395,7 +22395,7 @@ static int FE_element_get_child_face_number(struct FE_element *parent,
  * @return  Parent element matching criteria, or NULL if none found.
  */
 struct FE_element *FE_element_get_parent_on_face(
-	struct FE_element *element, Cmiss_element_face_type face,
+	struct FE_element *element, cmzn_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
 	int face_number = static_cast<int>(face) - CMISS_ELEMENT_FACE_XI1_0;
@@ -22802,28 +22802,28 @@ DECLARE_OBJECT_FUNCTIONS(FE_element)
 DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_element)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,const CM_element_information *)
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
-DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator)
+DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,cmzn_element_iterator)
 
-Cmiss_element_iterator_id Cmiss_element_iterator_access(Cmiss_element_iterator_id element_iterator)
+cmzn_element_iterator_id cmzn_element_iterator_access(cmzn_element_iterator_id element_iterator)
 {
 	return element_iterator->access();
 }
 
-int Cmiss_element_iterator_destroy(Cmiss_element_iterator_id *element_iterator_address)
+int cmzn_element_iterator_destroy(cmzn_element_iterator_id *element_iterator_address)
 {
 	if (element_iterator_address)
-		return Cmiss_element_iterator::deaccess(*element_iterator_address);
+		return cmzn_element_iterator::deaccess(*element_iterator_address);
 	return 0;
 }
 
-Cmiss_element_id Cmiss_element_iterator_next(Cmiss_element_iterator_id element_iterator)
+cmzn_element_id cmzn_element_iterator_next(cmzn_element_iterator_id element_iterator)
 {
 	if (element_iterator)
 		return element_iterator->next();
 	return 0;
 }
 
-Cmiss_element_id Cmiss_element_iterator_next_non_access(Cmiss_element_iterator_id element_iterator)
+cmzn_element_id cmzn_element_iterator_next_non_access(cmzn_element_iterator_id element_iterator)
 {
 	if (element_iterator)
 		return element_iterator->next_non_access();
@@ -23267,7 +23267,7 @@ output FE_element_field_info is expected to be at this address too.
 } /* FE_element_log_FE_field_changes */
 
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, Cmiss_element_face_type face,
+	int dimension, int exterior, cmzn_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
 	int i, return_code;
@@ -29486,7 +29486,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_element_face_type specified_face, FE_value *element_to_top_level)
+	cmzn_element_face_type specified_face, FE_value *element_to_top_level)
 {
 	int face_number, i,  size;
 	FE_value *face_to_element;
@@ -29767,7 +29767,7 @@ as remaining values up to this size are cleared to zero.
 
 int get_FE_element_discretization(struct FE_element *element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_element_face_type face, struct FE_field *native_discretization_field,
+	cmzn_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi)
 {
@@ -34899,7 +34899,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 	return (return_code);
 } /* FE_element_define_tensor_product_basis */
 
-int Cmiss_node_set_identifier(Cmiss_node_id node, int identifier)
+int cmzn_node_set_identifier(cmzn_node_id node, int identifier)
 {
 	if (node && node->fields &&(identifier > 0))
 	{
@@ -34913,7 +34913,7 @@ int Cmiss_node_set_identifier(Cmiss_node_id node, int identifier)
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_element_set_identifier(Cmiss_element_id element, int identifier)
+int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
 {
 	if (element && element->fields &&(identifier > 0))
 	{

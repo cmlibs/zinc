@@ -1304,8 +1304,8 @@ Global functions
 ----------------
 */
 
-int export_to_wavefront(char *file_name, Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter, int full_comments)
+int export_to_wavefront(char *file_name, cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter, int full_comments)
 /******************************************************************************
 LAST MODIFIED : 31 May 2000
 

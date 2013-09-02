@@ -94,19 +94,19 @@ Global functions
  *        will be read into an array and the correct index put into the
  *        corresponding time array.
  */
-int read_exregion_file(struct Cmiss_region *region,
+int read_exregion_file(struct cmzn_region *region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index);
 
 /*****************************************************************************//**
  * Version of read_exregion_file that reads nodes as data points. 
  */
-int read_exdata_file(struct Cmiss_region *region,
+int read_exdata_file(struct cmzn_region *region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index);
 
 /*****************************************************************************//**
  * Version of read_exregion_file that opens and closes file <file_name>.
  */
-int read_exregion_file_of_name(struct Cmiss_region *region, const char *file_name,
+int read_exregion_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct FE_import_time_index *time_index, int useData);
 

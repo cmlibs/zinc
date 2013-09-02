@@ -27,10 +27,10 @@ void Computed_field_scene_viewer_projection_scene_viewer_destroy_callback(
 	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
 
 void Computed_field_scene_viewer_projection_transformation_callback(
-	Cmiss_scene_id scene, gtMatrix *matrix, void *field_void);
+	cmzn_scene_id scene, gtMatrix *matrix, void *field_void);
 
 void Computed_field_scene_viewer_top_scene_change_callback(
-	Cmiss_scene_id scene, Cmiss_scene_id top_scene, void *field_void);
+	cmzn_scene_id scene, cmzn_scene_id top_scene, void *field_void);
 
 class Computed_field_scene_viewer_projection : public Computed_field_core
 {
@@ -44,10 +44,10 @@ public:
 		a destroy callback and then must evaluate correctly with a NULL scene_viewer */
 	struct Scene_viewer *scene_viewer;
 	gtMatrix *current_local_transformation;
-	enum Cmiss_scene_coordinate_system from_coordinate_system;
-	enum Cmiss_scene_coordinate_system to_coordinate_system;
+	enum cmzn_scene_coordinate_system from_coordinate_system;
+	enum cmzn_scene_coordinate_system to_coordinate_system;
 	int change_required;
-	Cmiss_scene_id current_scene;
+	cmzn_scene_id current_scene;
 
 	/* This flag indicates if the field has registered for callbacks with the
 		scene_viewer */
@@ -56,8 +56,8 @@ public:
 
 	Computed_field_scene_viewer_projection(
 		Scene_viewer *scene_viewer,
-		enum Cmiss_scene_coordinate_system from_coordinate_system,
-		enum Cmiss_scene_coordinate_system to_coordinate_system) :
+		enum cmzn_scene_coordinate_system from_coordinate_system,
+		enum cmzn_scene_coordinate_system to_coordinate_system) :
 		Computed_field_core(),
 		graphics_window_name(NULL),
 		pane_number(-1), scene_viewer(scene_viewer),
@@ -118,7 +118,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -292,10 +292,10 @@ DESCRIPTION :
 				Scene_viewer_get_background_texture_info(scene_viewer,
 					&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
 					&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
-				Cmiss_field_image_id image_field=
+				cmzn_field_image_id image_field=
 					Scene_viewer_get_background_image_field(scene_viewer);
-				texture = Cmiss_field_image_get_texture(image_field);
-				Cmiss_field_image_destroy(&image_field);
+				texture = cmzn_field_image_get_texture(image_field);
+				cmzn_field_image_destroy(&image_field);
 				if (texture)
 				{
 					Texture_get_distortion_info(texture, &distortion_centre_x,
@@ -448,7 +448,7 @@ Clear the type specific data used by this type.
 		}
 		if (current_scene)
 		{
-			Cmiss_scene_destroy(&current_scene);
+			cmzn_scene_destroy(&current_scene);
 		}
 		if (graphics_window_name)
 		{
@@ -499,7 +499,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_scene_viewer_projection::compare */
 
-int Computed_field_scene_viewer_projection::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_scene_viewer_projection::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	if (scene_viewer)
@@ -551,18 +551,18 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 	if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
 		(to_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL))
 	{
-		Cmiss_field_id field = getField();
-		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+		cmzn_field_id field = getField();
+		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
 		if (!field_module)
 		{
 			return 0;
 		}
-		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-		Cmiss_scene_id scene = Cmiss_region_get_scene_private(region);
-		Cmiss_scene_id top_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
-		gtMatrix *local_transformation_matrix = Cmiss_scene_get_total_transformation(
+		cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+		cmzn_scene_id scene = cmzn_region_get_scene_private(region);
+		cmzn_scene_id top_scene = cmzn_scene_viewer_get_scene(scene_viewer);
+		gtMatrix *local_transformation_matrix = cmzn_scene_get_total_transformation(
 			scene, top_scene);
-		Cmiss_scene_destroy(&top_scene);
+		cmzn_scene_destroy(&top_scene);
 		if (!current_local_transformation && local_transformation_matrix)
 		{
 			return_code = 1;
@@ -590,7 +590,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 				return_code = 1;
 			}
 		}
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_field_module_destroy(&field_module);
 		if (current_local_transformation)
 			DEALLOCATE(current_local_transformation);
 		current_local_transformation = local_transformation_matrix;
@@ -624,9 +624,9 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE,"    pane number : %d\n",
 				pane_number + 1);
 		display_message(INFORMATION_MESSAGE,"    from_coordinate_system : %s\n",
-			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(from_coordinate_system));
+			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(from_coordinate_system));
 		display_message(INFORMATION_MESSAGE,"    to_coordinate_system : %s\n",
-			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(to_coordinate_system));
+			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(to_coordinate_system));
 	}
 	else
 	{
@@ -671,10 +671,10 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " from_coordinate_system ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(from_coordinate_system), &error);
+			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(from_coordinate_system), &error);
 		append_string(&command_string, " to_coordinate_system ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(Cmiss_scene_coordinate_system)(to_coordinate_system), &error);
+			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(to_coordinate_system), &error);
 	}
 	else
 	{
@@ -703,19 +703,19 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 	if (!transformation_callback_flag)
 	{
 		if (current_scene)
-			Cmiss_scene_destroy(&current_scene);
-		current_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
-		Cmiss_field_id field = getField();
-		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+			cmzn_scene_destroy(&current_scene);
+		current_scene = cmzn_scene_viewer_get_scene(scene_viewer);
+		cmzn_field_id field = getField();
+		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
 		if (field_module)
 		{
-			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			struct Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-			transformation_callback_flag = Cmiss_scene_add_total_transformation_callback(
+			cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			transformation_callback_flag = cmzn_scene_add_total_transformation_callback(
 				scene, current_scene,
 				Computed_field_scene_viewer_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_module_destroy(&field_module);
 		}
 	}
 }
@@ -724,16 +724,16 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 {
 	if (transformation_callback_flag)
 	{
-		Cmiss_field_id field = getField();
-		Cmiss_field_module_id field_module = Cmiss_field_get_field_module(field);
+		cmzn_field_id field = getField();
+		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
 		if (field_module)
 		{
-			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
-			struct Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-			Cmiss_scene_remove_total_transformation_callback(scene,
+			cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
+			cmzn_scene_remove_total_transformation_callback(scene,
 				current_scene,	Computed_field_scene_viewer_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_module_destroy(&field_module);
 			transformation_callback_flag = 0;
 		}
 	}
@@ -741,7 +741,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 
 void Computed_field_scene_viewer_projection::update_current_scene()
 {
-	Cmiss_scene_id top_scene = Cmiss_scene_viewer_get_scene(scene_viewer);
+	cmzn_scene_id top_scene = cmzn_scene_viewer_get_scene(scene_viewer);
 	if (current_scene != top_scene)
 	{
 		if ((from_coordinate_system == CMISS_SCENE_COORDINATE_SYSTEM_LOCAL) ||
@@ -751,10 +751,10 @@ void Computed_field_scene_viewer_projection::update_current_scene()
 			add_transformation_callback();
 		}
 		if (current_scene)
-			Cmiss_scene_destroy(&current_scene);
-		current_scene = Cmiss_scene_access(top_scene);
+			cmzn_scene_destroy(&current_scene);
+		current_scene = cmzn_scene_access(top_scene);
 	}
-	Cmiss_scene_destroy(&top_scene);
+	cmzn_scene_destroy(&top_scene);
 }
 
 void Computed_field_scene_viewer_projection_scene_viewer_callback(
@@ -839,7 +839,7 @@ Clear the scene viewer reference when it is no longer valid.
 } /* Computed_field_scene_viewer_projection_scene_viewer_callback */
 
 void Computed_field_scene_viewer_projection_transformation_callback(
-	Cmiss_scene_id scene, gtMatrix *matrix,
+	cmzn_scene_id scene, gtMatrix *matrix,
 	void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
@@ -874,7 +874,7 @@ that the computed field has changed.
 } /* Computed_field_scene_viewer_projection_scene_viewer_callback */
 
 void Computed_field_scene_viewer_top_scene_change_callback(
-	Cmiss_scene_id scene, Cmiss_scene_id top_scene, void *field_void)
+	cmzn_scene_id scene, cmzn_scene_id top_scene, void *field_void)
 {
 	Computed_field* field;
 	Computed_field_scene_viewer_projection* core;
@@ -905,11 +905,11 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
-	Cmiss_field_module_id field_module,
+cmzn_field_id cmzn_field_module_create_scene_viewer_projection(
+	cmzn_field_module_id field_module,
 	struct Scene_viewer *scene_viewer,
-	enum Cmiss_scene_coordinate_system from_coordinate_system,
-	enum Cmiss_scene_coordinate_system to_coordinate_system)
+	enum cmzn_scene_coordinate_system from_coordinate_system,
+	enum cmzn_scene_coordinate_system to_coordinate_system)
 {
 	Computed_field *field = NULL;
 	if (scene_viewer)
@@ -931,7 +931,7 @@ Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
 	return (field);
 }
 
-int Cmiss_field_projection_set_window_name(struct Computed_field *field, const char *graphics_window_name)
+int cmzn_field_projection_set_window_name(struct Computed_field *field, const char *graphics_window_name)
 {
 	int return_code = 0;
 	Computed_field_scene_viewer_projection* core = 0;
@@ -945,7 +945,7 @@ int Cmiss_field_projection_set_window_name(struct Computed_field *field, const c
 	return return_code;
 }
 
-int Cmiss_field_projection_set_pane_number(struct Computed_field *field, int pane_number)
+int cmzn_field_projection_set_pane_number(struct Computed_field *field, int pane_number)
 {
 	int return_code = 0;
 	Computed_field_scene_viewer_projection* core = 0;
@@ -961,8 +961,8 @@ int Cmiss_field_projection_set_pane_number(struct Computed_field *field, int pan
 
 int Computed_field_get_type_scene_viewer_projection(struct Computed_field *field,
 	struct Scene_viewer **scene_viewer, char **graphics_window_name, int *pane_number,
-	enum Cmiss_scene_coordinate_system *from_coordinate_system,
-	enum Cmiss_scene_coordinate_system *to_coordinate_system)
+	enum cmzn_scene_coordinate_system *from_coordinate_system,
+	enum cmzn_scene_coordinate_system *to_coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 

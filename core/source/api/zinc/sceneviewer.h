@@ -4,7 +4,7 @@ FILE : cmiss_scene_viewer.h
 LAST MODIFIED : 7 November 2007
 
 DESCRIPTION :
-The public interface to the Cmiss_scene_viewer object for rendering cmiss
+The public interface to the cmzn_scene_viewer object for rendering cmiss
 scenes.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
@@ -52,6 +52,7 @@ scenes.
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
 #include "types/sceneid.h"
+#include "types/scenecoordinatesystem.h"
 #include "types/sceneviewerinputid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -72,11 +73,11 @@ extern "C" {
  * window, such as when the graphics are to be composited by an external program.
  * These are currently only implemeneted for winapi.
  * The graphics will be drawn offscreen and only rendered on screen when requested,
- * such as with the Cmiss_scene_viewer_handle_windows_event.  The COPY version will
+ * such as with the cmzn_scene_viewer_handle_windows_event.  The COPY version will
  * overwrite any existing pixels when drawing and the BLEND version will use the
  * alpha channel of the rendered scene to blend itself with the existing pixels.
  */
-enum Cmiss_scene_viewer_buffering_mode
+enum cmzn_scene_viewer_buffering_mode
 {
 	CMISS_SCENE_VIEWER_BUFFERING_ANY_MODE,
 	CMISS_SCENE_VIEWER_BUFFERING_SINGLE,
@@ -96,7 +97,7 @@ enum Cmiss_scene_viewer_buffering_mode
  *   Rotate: Middle mouse button
  *   Zoom: Right mouse button
  */
-enum Cmiss_scene_viewer_interact_mode
+enum cmzn_scene_viewer_interact_mode
 {
 	CMISS_SCENE_VIEWER_INTERACT_STANDARD,
 	CMISS_SCENE_VIEWER_INTERACT_2D
@@ -108,7 +109,7 @@ enum Cmiss_scene_viewer_interact_mode
  * ANY_STEREO_MODE means that either STEREO or MONO will may be chosen
  * depending on the other requirements of the scene_viewer.
  */
-enum Cmiss_scene_viewer_stereo_mode
+enum cmzn_scene_viewer_stereo_mode
 {
 	CMISS_SCENE_VIEWER_STEREO_ANY_MODE,
 	CMISS_SCENE_VIEWER_STEREO_MONO,
@@ -126,7 +127,7 @@ enum Cmiss_scene_viewer_stereo_mode
  * large as possible in the physical viewport, and the aspect ratio may be
  * changed.
  */
-enum Cmiss_scene_viewer_viewport_mode
+enum cmzn_scene_viewer_viewport_mode
 {
 	CMISS_SCENE_VIEWER_VIEWPORT_ABSOLUTE,
 	CMISS_SCENE_VIEWER_VIEWPORT_RELATIVE,
@@ -136,7 +137,7 @@ enum Cmiss_scene_viewer_viewport_mode
 /**
  * Specifies the sort of projection matrix used to render the 3D scene.
  */
-enum Cmiss_scene_viewer_projection_mode
+enum cmzn_scene_viewer_projection_mode
 {
 	CMISS_SCENE_VIEWER_PROJECTION_PARALLEL,
 	CMISS_SCENE_VIEWER_PROJECTION_PERSPECTIVE
@@ -149,7 +150,7 @@ enum Cmiss_scene_viewer_projection_mode
  * for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha, which
  * results in the correct final alpha value in a saved image.
  */
-enum Cmiss_scene_viewer_blending_mode
+enum cmzn_scene_viewer_blending_mode
 {
 	CMISS_SCENE_VIEWER_BLENDING_NORMAL,
 	CMISS_SCENE_VIEWER_BLENDING_NONE,
@@ -159,7 +160,7 @@ enum Cmiss_scene_viewer_blending_mode
 /**
  * Specifies the scene viewer input event type.
  */
-enum Cmiss_scene_viewer_input_event_type
+enum cmzn_scene_viewer_input_event_type
 {
 	CMISS_SCENE_VIEWER_INPUT_INVALID,
 	CMISS_SCENE_VIEWER_INPUT_MOTION_NOTIFY,
@@ -172,7 +173,7 @@ enum Cmiss_scene_viewer_input_event_type
 /**
  * Specifies the scene viewer input modifier.
  */
-enum Cmiss_scene_viewer_input_modifier_flags
+enum cmzn_scene_viewer_input_modifier_flags
 {
 	CMISS_SCENE_VIEWER_INPUT_MODIFIER_NONE = 0,
 	CMISS_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
@@ -193,7 +194,7 @@ Global functions
  * @param scene_viewer  The scene_viewer to obtain a new reference to.
  * @return  New scene_viewer reference with incremented reference count.
  */
-ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_access(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API cmzn_scene_viewer_id cmzn_scene_viewer_access(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Destroys this reference to the scene_viewer (and sets it to NULL).
@@ -203,23 +204,23 @@ ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_access(Cmiss_scene_viewer_id s
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address);
+ZINC_API int cmzn_scene_viewer_destroy(cmzn_scene_viewer_id *scene_viewer_id_address);
 
 /**
  * Returns the mouse and keyboard interaction mode of the Scene_viewer.
  * See the definition of the
- * Cmiss_scene_viewer_interact_mode enumerator.
+ * cmzn_scene_viewer_interact_mode enumerator.
  */
-ZINC_API int Cmiss_scene_viewer_get_interact_mode(Cmiss_scene_viewer_id scene_viewer,
- enum Cmiss_scene_viewer_interact_mode *interact_mode);
+ZINC_API int cmzn_scene_viewer_get_interact_mode(cmzn_scene_viewer_id scene_viewer,
+ enum cmzn_scene_viewer_interact_mode *interact_mode);
 
 /**
  * Sets the interaction mode of the Scene_viewer.  See the definition of the
-Cmiss_scene_viewer_interact_mode enumerator.
+cmzn_scene_viewer_interact_mode enumerator.
 
  */
-ZINC_API int Cmiss_scene_viewer_set_interact_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_interact_mode interact_mode);
+ZINC_API int cmzn_scene_viewer_set_interact_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_interact_mode interact_mode);
 
 /**
  * Set the eye position of the scene viewer.
@@ -228,7 +229,7 @@ ZINC_API int Cmiss_scene_viewer_set_interact_mode(Cmiss_scene_viewer_id scene_vi
  * @param eye  Array of three values containing the new eye position.
  * @return Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_set_eye_position(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_eye_position(cmzn_scene_viewer_id scene_viewer,
 	double const *eye);
 
 /**
@@ -238,7 +239,7 @@ ZINC_API int Cmiss_scene_viewer_set_eye_position(Cmiss_scene_viewer_id scene_vie
  * @param  eye  Array of size 3 to hold the values of the eye position.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_get_eye_position(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_eye_position(cmzn_scene_viewer_id scene_viewer,
 	double *eye);
 
 /**
@@ -248,7 +249,7 @@ ZINC_API int Cmiss_scene_viewer_get_eye_position(Cmiss_scene_viewer_id scene_vie
  * @param lookat  Array of three values containing the new lookat position.
  * @return Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_set_lookat_position(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_lookat_position(cmzn_scene_viewer_id scene_viewer,
 	double const *lookat);
 
 /**
@@ -258,7 +259,7 @@ ZINC_API int Cmiss_scene_viewer_set_lookat_position(Cmiss_scene_viewer_id scene_
  * @param  lookat  Array of size 3 to hold the values of the lookat position.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_get_lookat_position(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_lookat_position(cmzn_scene_viewer_id scene_viewer,
 	double *lookat);
 
 /**
@@ -268,7 +269,7 @@ ZINC_API int Cmiss_scene_viewer_get_lookat_position(Cmiss_scene_viewer_id scene_
  * @param upVector  Array of three values containing the new up vector.
  * @return Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_set_up_vector(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_up_vector(cmzn_scene_viewer_id scene_viewer,
 	double const *upVector);
 
 /**
@@ -278,14 +279,14 @@ ZINC_API int Cmiss_scene_viewer_set_up_vector(Cmiss_scene_viewer_id scene_viewer
  * @param  upVector  Array of size 3 to hold the values of the up vector.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_get_up_vector(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_up_vector(cmzn_scene_viewer_id scene_viewer,
 	double *upVector);
 
 /**
  * Gets the view direction and orientation of the Scene_viewer.
  */
-ZINC_API int Cmiss_scene_viewer_get_lookat_parameters(
-	Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_lookat_parameters(
+	cmzn_scene_viewer_id scene_viewer,
 	double *eyex,double *eyey,double *eyez,
 	double *lookatx,double *lookaty,double *lookatz,
 	double *upx,double *upy,double *upz);
@@ -295,8 +296,8 @@ ZINC_API int Cmiss_scene_viewer_get_lookat_parameters(
  * the up vector is orthogonal to the view direction - so projection is not skew.
  *
  */
-ZINC_API int Cmiss_scene_viewer_set_lookat_parameters_non_skew(
-	Cmiss_scene_viewer_id scene_viewer,double eyex,double eyey,double eyez,
+ZINC_API int cmzn_scene_viewer_set_lookat_parameters_non_skew(
+	cmzn_scene_viewer_id scene_viewer,double eyex,double eyey,double eyez,
 	double lookatx,double lookaty,double lookatz,
 	double upx,double upy,double upz);
 
@@ -304,68 +305,68 @@ ZINC_API int Cmiss_scene_viewer_set_lookat_parameters_non_skew(
  * Gets the distance from the eye_point to the <near> clip plane and to the <far>
  * clip plane in the <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_near_and_far_plane(cmzn_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane);
 
 /**
  * Sets the distance from the eye_point to the <near> clip plane and to the <far>
  * clip plane in the <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_set_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_near_and_far_plane(cmzn_scene_viewer_id scene_viewer,
 	double near_plane, double far_plane);
 
 /**
  * Gets the viewport mode(absolute/relative/distorting relative) for the
  * <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_get_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_viewport_mode *viewport_mode);
+ZINC_API int cmzn_scene_viewer_get_viewport_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_viewport_mode *viewport_mode);
 
 /**
  * Sets the width and height of the Scene_viewers drawing area.
  */
-ZINC_API int Cmiss_scene_viewer_set_viewport_size(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_viewport_size(cmzn_scene_viewer_id scene_viewer,
 	int width, int height);
 
 /**
  * Sets the viewport mode(absolute/relative/distorting relative) for the
  * <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_viewport_mode viewport_mode);
+ZINC_API int cmzn_scene_viewer_set_viewport_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_viewport_mode viewport_mode);
 
 /**
  *Returns the projection mode - parallel/perspective - of the Scene_viewer.
  */
-ZINC_API int Cmiss_scene_viewer_get_projection_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_projection_mode *projection_mode);
+ZINC_API int cmzn_scene_viewer_get_projection_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_projection_mode *projection_mode);
 
 /**
  * Sets the projection mode - parallel/perspective - of the Scene_viewer.
  */
-ZINC_API int Cmiss_scene_viewer_set_projection_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_projection_mode projection_mode);
+ZINC_API int cmzn_scene_viewer_set_projection_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_projection_mode projection_mode);
 
 /**
  * Returns the blending mode of the Scene_viewer.  See the definition of the
- * Cmiss_scene_viewer_blending_mode enumerator.
+ * cmzn_scene_viewer_blending_mode enumerator.
  */
-ZINC_API int Cmiss_scene_viewer_get_blending_mode(Cmiss_scene_viewer_id scene_viewer,
- enum Cmiss_scene_viewer_blending_mode *blending_mode);
+ZINC_API int cmzn_scene_viewer_get_blending_mode(cmzn_scene_viewer_id scene_viewer,
+ enum cmzn_scene_viewer_blending_mode *blending_mode);
 
 /**
  * Sets the blending mode of the Scene_viewer.  See the definition of the
- * Cmiss_scene_viewer_blending_mode enumerator.
+ * cmzn_scene_viewer_blending_mode enumerator.
  */
-ZINC_API int Cmiss_scene_viewer_set_blending_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_blending_mode blending_mode);
+ZINC_API int cmzn_scene_viewer_set_blending_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_blending_mode blending_mode);
 
 /**
  * Gets the diagonal view angle, in radians, of the <scene_viewer>.
  * View angle is measured across the largest square which fits inside the viewing
  * window.
  */
-ZINC_API int Cmiss_scene_viewer_get_view_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_view_angle(cmzn_scene_viewer_id scene_viewer,
 	double *view_angle);
 
 /**
@@ -373,38 +374,38 @@ ZINC_API int Cmiss_scene_viewer_get_view_angle(Cmiss_scene_viewer_id scene_viewe
  * View angle is measured across the largest square which fits inside the viewing
  * window.
  */
-ZINC_API int Cmiss_scene_viewer_set_view_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_view_angle(cmzn_scene_viewer_id scene_viewer,
 	double view_angle);
 
 /**
  * Set the width of the graphics buffer.
  */
-ZINC_API int Cmiss_scene_viewer_set_graphics_buffer_width(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_graphics_buffer_width(cmzn_scene_viewer_id scene_viewer,
 	unsigned int width);
 
 /**
  * Set the height of the graphics buffer.
  */
-ZINC_API int Cmiss_scene_viewer_set_graphics_buffer_height(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_graphics_buffer_height(cmzn_scene_viewer_id scene_viewer,
 	unsigned int height);
 
 /**
  * Gets the number of jitter samples used to antialias the scene_viewer.
  */
-ZINC_API int Cmiss_scene_viewer_get_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_antialias_mode(cmzn_scene_viewer_id scene_viewer,
 	unsigned int *antialias);
 
 /**
  * Sets the number of jitter samples used to antialias the scene_viewer.
  * Zero turns antialiasing off.
  */
-ZINC_API int Cmiss_scene_viewer_set_antialias_mode(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_antialias_mode(cmzn_scene_viewer_id scene_viewer,
 	unsigned int antialias_mode);
 
 /**
  * Get the depth of field and focal depth of the scene viewer.
  */
-ZINC_API int Cmiss_scene_viewer_get_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_depth_of_field(cmzn_scene_viewer_id scene_viewer,
 	double *depth_of_field, double *focal_depth);
 
 /**
@@ -416,7 +417,7 @@ ZINC_API int Cmiss_scene_viewer_get_depth_of_field(Cmiss_scene_viewer_id scene_v
  * and +1 at far plane.  At this <focal_depth> the image is in focus no matter
  * how small the <depth_of_field>.
  */
-ZINC_API int Cmiss_scene_viewer_set_depth_of_field(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_depth_of_field(cmzn_scene_viewer_id scene_viewer,
 	double depth_of_field, double focal_depth);
 
 /**
@@ -424,7 +425,7 @@ ZINC_API int Cmiss_scene_viewer_set_depth_of_field(Cmiss_scene_viewer_id scene_v
  * GL_EXT_polygon_offset extension is used to offset the lines from the surfaces
  * in the z direction of the scene viewer.
  */
-ZINC_API int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_perturb_lines(cmzn_scene_viewer_id scene_viewer,
 	int *perturb_lines);
 
 /**
@@ -433,7 +434,7 @@ ZINC_API int Cmiss_scene_viewer_get_perturb_lines(Cmiss_scene_viewer_id scene_vi
  * Server.  This means that the lines appear solid rather than interfering with a
  * surface in the same space.
  */
-ZINC_API int Cmiss_scene_viewer_set_perturb_lines(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_perturb_lines(cmzn_scene_viewer_id scene_viewer,
 	int perturb_lines);
 
 /**
@@ -444,8 +445,8 @@ ZINC_API int Cmiss_scene_viewer_set_perturb_lines(Cmiss_scene_viewer_id scene_vi
  * @param valuesOut3 The rgb components of the colour with values between [0, 1.0]
  * @return CMISS_OK if successful, any other value otherwise
  */
-ZINC_API int Cmiss_scene_viewer_get_background_colour_rgb(
-	Cmiss_scene_viewer_id scene_viewer, double *valuesOut3);
+ZINC_API int cmzn_scene_viewer_get_background_colour_rgb(
+	cmzn_scene_viewer_id scene_viewer, double *valuesOut3);
 
 /**
  * Sets the background_colour of the scene_viewer by individual component.
@@ -457,8 +458,8 @@ ZINC_API int Cmiss_scene_viewer_get_background_colour_rgb(
  * @param blue The blue component value between [0, 1.0]
  * @return CMISS_OK if successful, any other value otherwise
  */
-ZINC_API int Cmiss_scene_viewer_set_background_colour_component_rgb(
-	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue);
+ZINC_API int cmzn_scene_viewer_set_background_colour_component_rgb(
+	cmzn_scene_viewer_id scene_viewer, double red, double green, double blue);
 
 /**
  * Sets the background_colour of the scene_viewer.
@@ -469,8 +470,8 @@ ZINC_API int Cmiss_scene_viewer_set_background_colour_component_rgb(
  * @param valuesIn3 The rgb components of the colour
  * @return CMISS_OK if successful, any other value otherwise
  */
-ZINC_API int Cmiss_scene_viewer_set_background_colour_rgb(
-	Cmiss_scene_viewer_id scene_viewer, const double *valuesIn3);
+ZINC_API int cmzn_scene_viewer_set_background_colour_rgb(
+	cmzn_scene_viewer_id scene_viewer, const double *valuesIn3);
 
 /**
  * If there is a background_texture in the scene_viewer, these values specify the
@@ -480,7 +481,7 @@ ZINC_API int Cmiss_scene_viewer_set_background_colour_rgb(
  * texture is displayed. It does this by drawing it as a collection of polygons;
  * the last parameter controls the size of polygons used to do this.
  */
-ZINC_API int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_background_texture_info(cmzn_scene_viewer_id scene_viewer,
 	double bk_texture_left,double bk_texture_top,
 	double bk_texture_width,double bk_texture_height,
 	int bk_texture_undistort_on,double bk_texture_max_pixels_per_polygon);
@@ -491,66 +492,66 @@ ZINC_API int Cmiss_scene_viewer_set_background_texture_info(Cmiss_scene_viewer_i
  * near and far clipping planes; if specific values are required, should follow
  * with commands for setting these.
  */
-ZINC_API int Cmiss_scene_viewer_view_all(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int cmzn_scene_viewer_view_all(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Forces a redraw of the given scene viewer to take place immediately
  */
-ZINC_API int Cmiss_scene_viewer_render_scene(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int cmzn_scene_viewer_render_scene(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Gets the scene viewer translation rate.
  */
-ZINC_API int Cmiss_scene_viewer_get_translation_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_translation_rate(cmzn_scene_viewer_id scene_viewer,
 	double *translation_rate);
 
 /**
  * Sets the scene viewer translation rate.
  */
-ZINC_API int Cmiss_scene_viewer_set_translation_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_translation_rate(cmzn_scene_viewer_id scene_viewer,
 	double translation_rate);
 
 /**
  * Gets the scene viewer tumble rate.
  */
-ZINC_API int Cmiss_scene_viewer_get_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_tumble_rate(cmzn_scene_viewer_id scene_viewer,
 	double *tumble_rate);
 
 /**
  * Sets the scene viewer tumble rate.
  */
-ZINC_API int Cmiss_scene_viewer_set_tumble_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_tumble_rate(cmzn_scene_viewer_id scene_viewer,
 	double tumble_rate);
 
 /**
  * Gets the scene viewer zoom rate.
  */
-ZINC_API int Cmiss_scene_viewer_get_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_zoom_rate(cmzn_scene_viewer_id scene_viewer,
 	double *zoom_rate);
 
 /**
  * Sets the scene viewer zoom rate.
  */
-ZINC_API int Cmiss_scene_viewer_set_zoom_rate(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_zoom_rate(cmzn_scene_viewer_id scene_viewer,
 	double zoom_rate);
 
 /**
  * Returns the scene viewer freespin tool tumble angle.
  */
-ZINC_API int Cmiss_scene_viewer_get_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_freespin_tumble_angle(cmzn_scene_viewer_id scene_viewer,
 	double *tumble_angle);
 
 /**
  * Sets the <scene_viewer> freespin tool tumble angle.
  */
-ZINC_API int Cmiss_scene_viewer_set_freespin_tumble_angle(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_freespin_tumble_angle(cmzn_scene_viewer_id scene_viewer,
 	double tumble_angle);
 
 /**
  * Gets the <scene_viewer> tumble axis.  The <tumble_axis> is the vector
  * about which the scene is turning relative to its lookat point.
  */
-ZINC_API int Cmiss_scene_viewer_get_freespin_tumble_axis(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_freespin_tumble_axis(cmzn_scene_viewer_id scene_viewer,
 	double *tumble_axis);
 
 /**
@@ -558,14 +559,14 @@ ZINC_API int Cmiss_scene_viewer_get_freespin_tumble_axis(Cmiss_scene_viewer_id s
  * about which the scene is turning relative to its lookat point and the
  * <tumble_angle> controls how much it turns on each redraw.
  */
-ZINC_API int Cmiss_scene_viewer_start_freespin(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_start_freespin(cmzn_scene_viewer_id scene_viewer,
 	double *tumble_axis, double tumble_angle);
 
 /**
  * Tells the <scene_viewer> to stop all automatic informations that it produces,
  * eg. automatic tumble.
  */
-ZINC_API int Cmiss_scene_viewer_stop_animations(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int cmzn_scene_viewer_stop_animations(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Writes the view in the scene_viewer to the specified filename.
@@ -574,26 +575,26 @@ ZINC_API int Cmiss_scene_viewer_stop_animations(Cmiss_scene_viewer_id scene_view
  * default values for just this write.  The width and height cannot be overridden
  * when the <force_onscreen> flag is set.
  */
-ZINC_API int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_write_image_to_file(cmzn_scene_viewer_id scene_viewer,
 	const char *file_name, int force_onscreen, int preferred_width,
 	int preferred_height, int preferred_antialias, int preferred_transparency_layers);
 
 /**
  * Gets the NDC information.
  */
-ZINC_API int Cmiss_scene_viewer_get_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_NDC_info(cmzn_scene_viewer_id scene_viewer,
 	double *NDC_left,double *NDC_top,double *NDC_width,double *NDC_height);
 
 /**
  * Gets the NDC information.
  */
-ZINC_API int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_NDC_info(cmzn_scene_viewer_id scene_viewer,
 	double NDC_left,double NDC_top,double NDC_width,double NDC_height);
 
 /**
  * Gets the viewing volume of the scene viewer.
  */
-ZINC_API int Cmiss_scene_viewer_get_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_get_viewing_volume(cmzn_scene_viewer_id scene_viewer,
 	double *left,double *right,double *bottom,double *top,double *near_plane,
 	double *far_plane);
 
@@ -607,7 +608,7 @@ ZINC_API int Cmiss_scene_viewer_get_viewing_volume(Cmiss_scene_viewer_id scene_v
  * The viewing volume can be made unsymmetric to create special effects such as
  * rendering a higher resolution image in parts.
  */
-ZINC_API int Cmiss_scene_viewer_set_viewing_volume(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_viewing_volume(cmzn_scene_viewer_id scene_viewer,
 	double left,double right,double bottom,double top,double near_plane,double far_plane);
 
 /**
@@ -619,25 +620,25 @@ ZINC_API int Cmiss_scene_viewer_set_viewing_volume(Cmiss_scene_viewer_id scene_v
  * If <force_onscreen> is non zero then the pixels will always be grabbed from the
  * scene viewer on screen.
  */
-ZINC_API int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id  scene_viewer,
-	enum Cmiss_stream_information_image_pixel_format storage, int *width, int *height,
+ZINC_API int cmzn_scene_viewer_get_frame_pixels(cmzn_scene_viewer_id  scene_viewer,
+	enum cmzn_stream_information_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 
 /**
  * Add the callback <function> with <user_data> to <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_add_transform_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_callback function,void *user_data);
+ZINC_API int cmzn_scene_viewer_add_transform_callback(
+	cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_callback function,void *user_data);
 
 /**
  * Removes the callback calling <function> with <user_data> from
  * <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_remove_transform_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_callback function,void *user_data);
+ZINC_API int cmzn_scene_viewer_remove_transform_callback(
+	cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_callback function,void *user_data);
 
 /**
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
@@ -646,18 +647,18 @@ ZINC_API int Cmiss_scene_viewer_remove_transform_callback(
  *    to be destroyed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-//-- ZINC_API int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *input_address);
+//-- ZINC_API int cmzn_scene_viewer_input_destroy(cmzn_scene_viewer_input_id *input_address);
 
 /**
  * Manually calls the scene viewer's list of input callbacks with the supplied
  * input data.
  *
- * @param scene_viewer  Handle to Cmiss_scene_viewer object.
+ * @param scene_viewer  Handle to cmzn_scene_viewer object.
  * @param input_data  Description of the input event.
  * @return  Status CMISS_OK on success, any other value if failed.
  */
-ZINC_API int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_input_id input_data);
+ZINC_API int cmzn_scene_viewer_process_input(cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_input_id input_data);
 
 /**
  * Adds callback <function> that will be activated each time input is received
@@ -668,26 +669,26 @@ ZINC_API int Cmiss_scene_viewer_process_input(Cmiss_scene_viewer_id scene_viewer
  * callback function returns true, so to stop processing and not call any more
  * of the callbacks registered after your handler then return false.
  */
-ZINC_API int Cmiss_scene_viewer_add_input_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_input_callback function,
+ZINC_API int cmzn_scene_viewer_add_input_callback(
+	cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_input_callback function,
 	void *user_data, int add_first);
 
 /**
  * Remove the input callback <function> with <user_data> from <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_remove_input_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_input_callback function,
+ZINC_API int cmzn_scene_viewer_remove_input_callback(
+	cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_input_callback function,
 	void *user_data);
 
 /**
  * Set the scene for the scene viewer.
  */
-ZINC_API int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_id scene);
+ZINC_API int cmzn_scene_viewer_set_scene(cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_id scene);
 
-ZINC_API Cmiss_scene_id Cmiss_scene_viewer_get_scene(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API cmzn_scene_id cmzn_scene_viewer_get_scene(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Set the filter to be used in <scene_viewer>. All graphics will be shown
@@ -697,8 +698,8 @@ ZINC_API Cmiss_scene_id Cmiss_scene_viewer_get_scene(Cmiss_scene_viewer_id scene
  * @param filter  Filter to be set for scene viewer.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_graphics_filter_id filter);
+ZINC_API int cmzn_scene_viewer_set_filter(cmzn_scene_viewer_id scene_viewer,
+	cmzn_graphics_filter_id filter);
 
 /**
  * Get the filter currently used in <scene_viewer>.
@@ -706,29 +707,29 @@ ZINC_API int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
  * @param scene_viewer  Scene_viewer to get the filters from.
  * @return  filter if successful, otherwise NULL.
  */
-ZINC_API Cmiss_graphics_filter_id Cmiss_scene_viewer_get_filter(
-	Cmiss_scene_viewer_id scene_viewer);
+ZINC_API cmzn_graphics_filter_id cmzn_scene_viewer_get_filter(
+	cmzn_scene_viewer_id scene_viewer);
 
 /**
  * This callback will be notified when a repaint is required by a windowless mode
  * scene_viewer, so that the host application can do the redraw.
  */
-ZINC_API int Cmiss_scene_viewer_add_repaint_required_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_callback function,void *user_data);
+ZINC_API int cmzn_scene_viewer_add_repaint_required_callback(
+	cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_callback function,void *user_data);
 
 /**
  * Removes the callback calling <function> with <user_data> from
  * <scene_viewer>.
  */
-ZINC_API int Cmiss_scene_viewer_remove_repaint_required_callback(
-	Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_viewer_callback function,void *user_data);
+ZINC_API int cmzn_scene_viewer_remove_repaint_required_callback(
+	cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_viewer_callback function,void *user_data);
 
 /**
  * Returns a count of the number of scene viewer redraws.
  */
-ZINC_API unsigned int Cmiss_scene_viewer_get_frame_count(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API unsigned int cmzn_scene_viewer_get_frame_count(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Returns a handle to a scene viewer object.  The scene viewer attributes for
@@ -739,10 +740,10 @@ ZINC_API unsigned int Cmiss_scene_viewer_get_frame_count(Cmiss_scene_viewer_id s
  * @param stereo_mode  The stereo mode in use for the OpenGL context.
  * @return  A handle to a scene viewer if successfully created otherwise 0.
  */
-ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
-	Cmiss_scene_viewer_module_id cmiss_scene_viewer_module,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode);
+ZINC_API cmzn_scene_viewer_id cmzn_scene_viewer_module_create_scene_viewer(
+	cmzn_scene_viewer_module_id cmiss_scene_viewer_module,
+	enum cmzn_scene_viewer_buffering_mode buffer_mode,
+	enum cmzn_scene_viewer_stereo_mode stereo_mode);
 
 /**
  * Returns a new reference to the scene viewer module with the reference counter
@@ -751,7 +752,7 @@ ZINC_API Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
  * @param scene_viewer_module  The scene viewer module to obtain a reference to.
  * @return New scene viewer module reference with incremented reference count.
  */
-ZINC_API Cmiss_scene_viewer_module_id Cmiss_scene_viewer_module_access(Cmiss_scene_viewer_module_id scene_viewer_module);
+ZINC_API cmzn_scene_viewer_module_id cmzn_scene_viewer_module_access(cmzn_scene_viewer_module_id scene_viewer_module);
 
 /**
  * Destroys the scene viewer module and sets the pointer to 0.
@@ -759,12 +760,12 @@ ZINC_API Cmiss_scene_viewer_module_id Cmiss_scene_viewer_module_access(Cmiss_sce
  * @param scene_viewer_module_address  The pointer to the handle of the scene viewer module.
  * @return  Status CMISS_OK if handle successfully destroyed, otherwise any other value.
  */
-ZINC_API int Cmiss_scene_viewer_module_destroy(Cmiss_scene_viewer_module_id *scene_viewer_module_address);
+ZINC_API int cmzn_scene_viewer_module_destroy(cmzn_scene_viewer_module_id *scene_viewer_module_address);
 
 /**
  * Controls the way partially transparent objects are rendered in scene viewer.
  */
-enum Cmiss_scene_viewer_transparency_mode
+enum cmzn_scene_viewer_transparency_mode
 {
 	CMISS_SCENE_VIEWER_TRANSPARENCY_INVALID = 0,
 	CMISS_SCENE_VIEWER_TRANSPARENCY_FAST = 1,
@@ -798,8 +799,8 @@ enum Cmiss_scene_viewer_transparency_mode
  * semi-transparent objects are rendered without writing the depth buffer. Hence,
  * you can even see through the first semi-transparent surface drawn.
  *
- * @See Cmiss_scene_viewer_transparency_mode
- * @See Cmiss_scene_viewer_set_transparency_mode
+ * @See cmzn_scene_viewer_transparency_mode
+ * @See cmzn_scene_viewer_set_transparency_mode
  *
  * @param scene_viewer  Handle to the scene_viewer.
  *
@@ -807,14 +808,14 @@ enum Cmiss_scene_viewer_transparency_mode
  *   CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT if failed or
  *   mode is not set correctly
  */
-ZINC_API enum Cmiss_scene_viewer_transparency_mode Cmiss_scene_viewer_get_transparency_mode(
-	Cmiss_scene_viewer_id scene_viewer);
+ZINC_API enum cmzn_scene_viewer_transparency_mode cmzn_scene_viewer_get_transparency_mode(
+	cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Set the transparency_mode of the Scene_viewer.
  *
- * @See Cmiss_scene_viewer_transparency_mode
- * @See Cmiss_scene_viewer_get_transparency_mode
+ * @See cmzn_scene_viewer_transparency_mode
+ * @See cmzn_scene_viewer_get_transparency_mode
  *
  * @param scene_viewer  Handle to the scene_viewer.
  * @param transparency_mode  Transparency mode to be set for scene_viewer
@@ -822,28 +823,28 @@ ZINC_API enum Cmiss_scene_viewer_transparency_mode Cmiss_scene_viewer_get_transp
  * @return  CMISS_OK if value is set successfully, any other value if
  * 	failed.
  */
-ZINC_API int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_transparency_mode transparency_mode);
+ZINC_API int cmzn_scene_viewer_set_transparency_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_transparency_mode transparency_mode);
 
 
 /**
  * Get the number of layers used in the CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
  * transparency_mode.
  *
- * @See Cmiss_scene_viewer_transparency_mode
+ * @See cmzn_scene_viewer_transparency_mode
  *
  * @param scene_viewer  Handle to the cmiss scene_viewer component.
  *
  * @return  number of layers for this scene viewer. Any otehr value if failed or
  *   it is not set correctly.
  */
-ZINC_API int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer);
+ZINC_API int cmzn_scene_viewer_get_transparency_layers(cmzn_scene_viewer_id scene_viewer);
 
 /**
  * Set the number of layers used in the CMISS_SCENE_VIEWER_TRANSPARENCY_ORDER_INDEPENDENT
  * transparency_mode.
  *
- * @See Cmiss_scene_viewer_transparency_mode
+ * @See cmzn_scene_viewer_transparency_mode
  *
  * @param scene_viewer  Handle to the cmiss scene_viewer component.
  * @param layers  number of layers to be set for this scene viewer.
@@ -851,7 +852,7 @@ ZINC_API int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id sc
  * @return  CMISS_OK if value is set successfully, any other value if
  * 	failed.
  */
-ZINC_API int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
+ZINC_API int cmzn_scene_viewer_set_transparency_layers(cmzn_scene_viewer_id scene_viewer,
 	int layers);
 
 #ifdef __cplusplus

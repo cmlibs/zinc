@@ -92,9 +92,9 @@
  * Object to pass into field create functions, supplying region field is to
  * go into and other default parameters.
  */
-struct Cmiss_field_module
+struct cmzn_field_module
 {
-	Cmiss_region *region;
+	cmzn_region *region;
 	char *field_name;
 	struct Coordinate_system coordinate_system;
 	int coordinate_system_override; // true if coordinate system has been set
@@ -102,16 +102,16 @@ struct Cmiss_field_module
 	int access_count;
 };
 
-struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region)
+struct cmzn_field_module *cmzn_field_module_create(struct cmzn_region *region)
 {
-	ENTER(Cmiss_field_module_create);
-	Cmiss_field_module *field_module = NULL;
+	ENTER(cmzn_field_module_create);
+	cmzn_field_module *field_module = NULL;
 	if (region)
 	{
-		ALLOCATE(field_module, struct Cmiss_field_module, sizeof(struct Cmiss_field_module));
+		ALLOCATE(field_module, struct cmzn_field_module, sizeof(struct cmzn_field_module));
 		if (field_module)
 		{
-			field_module->region = ACCESS(Cmiss_region)(region);
+			field_module->region = ACCESS(cmzn_region)(region);
 			field_module->field_name = (char *)NULL;
 			field_module->replace_field = (Computed_field *)NULL;
 			field_module->coordinate_system.type = RECTANGULAR_CARTESIAN;
@@ -121,14 +121,14 @@ struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "Cmiss_field_module_create.  Missing region");
+		display_message(ERROR_MESSAGE, "cmzn_field_module_create.  Missing region");
 	}
 	LEAVE;
 
 	return (field_module);
 };
 
-struct Cmiss_field_module *Cmiss_field_module_access(struct Cmiss_field_module *field_module)
+struct cmzn_field_module *cmzn_field_module_access(struct cmzn_field_module *field_module)
 {
 	if (field_module)
 	{
@@ -137,19 +137,19 @@ struct Cmiss_field_module *Cmiss_field_module_access(struct Cmiss_field_module *
 	return field_module;
 }
 
-int Cmiss_field_module_destroy(
-	struct Cmiss_field_module **field_module_address)
+int cmzn_field_module_destroy(
+	struct cmzn_field_module **field_module_address)
 {
 	int return_code;
-	struct Cmiss_field_module *field_module;
+	struct cmzn_field_module *field_module;
 
-	ENTER(Cmiss_field_module_destroy);
+	ENTER(cmzn_field_module_destroy);
 	if (field_module_address && (NULL != (field_module = *field_module_address)))
 	{
 		field_module->access_count--;
 		if (0 == field_module->access_count)
 		{
-			DEACCESS(Cmiss_region)(&field_module->region);
+			DEACCESS(cmzn_region)(&field_module->region);
 			DEALLOCATE(field_module->field_name)
 			REACCESS(Computed_field)(&field_module->replace_field, NULL);
 			DEALLOCATE(*field_module_address);
@@ -160,40 +160,40 @@ int Cmiss_field_module_destroy(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_destroy.  Missing field module");
+			"cmzn_field_module_destroy.  Missing field module");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_field_module_destroy */
+} /* cmzn_field_module_destroy */
 
-char *Cmiss_field_module_get_unique_field_name(
-	struct Cmiss_field_module *field_module)
+char *cmzn_field_module_get_unique_field_name(
+	struct cmzn_field_module *field_module)
 {
 	struct MANAGER(Computed_field) *manager;
 	if (field_module &&
-		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
+		(manager = cmzn_region_get_Computed_field_manager(field_module->region)))
 	{
 		return Computed_field_manager_get_unique_field_name(manager);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_get_unique_field_name.  Invalid argument(s)");
+			"cmzn_field_module_get_unique_field_name.  Invalid argument(s)");
 	}
 	return NULL;
 }
 
-struct Computed_field *Cmiss_field_module_find_field_by_name(
-	struct Cmiss_field_module *field_module, const char *field_name)
+struct Computed_field *cmzn_field_module_find_field_by_name(
+	struct cmzn_field_module *field_module, const char *field_name)
 {
 	struct Computed_field *field;
 	struct MANAGER(Computed_field) *manager;
 
-	ENTER(Cmiss_field_module_find_field_by_name);
+	ENTER(cmzn_field_module_find_field_by_name);
 	if (field_module && field_name &&
-		(manager = Cmiss_region_get_Computed_field_manager(field_module->region)))
+		(manager = cmzn_region_get_Computed_field_manager(field_module->region)))
 	{
 		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			(char *)field_name, manager);
@@ -205,7 +205,7 @@ struct Computed_field *Cmiss_field_module_find_field_by_name(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_find_field_by_name.  Invalid argument(s)");
+			"cmzn_field_module_find_field_by_name.  Invalid argument(s)");
 		field = (struct Computed_field *)NULL;
 	}
 	LEAVE;
@@ -213,19 +213,19 @@ struct Computed_field *Cmiss_field_module_find_field_by_name(
 	return (field);
 }
 
-int Cmiss_field_module_contains_field(Cmiss_field_module_id field_module,
-	Cmiss_field_id field)
+int cmzn_field_module_contains_field(cmzn_field_module_id field_module,
+	cmzn_field_id field)
 {
 	if (field_module && field)
 	{
-		return (Cmiss_field_module_get_master_region_internal(field_module) ==
+		return (cmzn_field_module_get_master_region_internal(field_module) ==
 			Computed_field_get_region(field));
 	}
 	return 0;
 }
 
-struct Cmiss_region *Cmiss_field_module_get_region_internal(
-	struct Cmiss_field_module *field_module)
+struct cmzn_region *cmzn_field_module_get_region_internal(
+	struct cmzn_field_module *field_module)
 {
 	if (field_module)
 	{
@@ -234,27 +234,27 @@ struct Cmiss_region *Cmiss_field_module_get_region_internal(
 	return NULL;
 }
 
-struct Cmiss_region *Cmiss_field_module_get_master_region_internal(
-	struct Cmiss_field_module *field_module)
+struct cmzn_region *cmzn_field_module_get_master_region_internal(
+	struct cmzn_field_module *field_module)
 {
 	if (!field_module)
 		return 0;
-	Cmiss_region_id region = field_module->region;
+	cmzn_region_id region = field_module->region;
 	return region;
 }
 
-struct Cmiss_region *Cmiss_field_module_get_region(
-	struct Cmiss_field_module *field_module)
+struct cmzn_region *cmzn_field_module_get_region(
+	struct cmzn_field_module *field_module)
 {
 	if (field_module)
 	{
-		return ACCESS(Cmiss_region)(field_module->region);
+		return ACCESS(cmzn_region)(field_module->region);
 	}
 	return NULL;
 }
 
-int Cmiss_field_module_set_field_name(
-	struct Cmiss_field_module *field_module, const char *field_name)
+int cmzn_field_module_set_field_name(
+	struct cmzn_field_module *field_module, const char *field_name)
 {
 	int return_code = 0;
 	if (field_module)
@@ -269,8 +269,8 @@ int Cmiss_field_module_set_field_name(
 	return (return_code);
 }
 
-char *Cmiss_field_module_get_field_name(
-	struct Cmiss_field_module *field_module)
+char *cmzn_field_module_get_field_name(
+	struct cmzn_field_module *field_module)
 {
 	if (field_module && field_module->field_name)
 	{
@@ -279,8 +279,8 @@ char *Cmiss_field_module_get_field_name(
 	return NULL;
 }
 
-int Cmiss_field_module_set_coordinate_system(
-	struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_coordinate_system(
+	struct cmzn_field_module *field_module,
 	struct Coordinate_system coordinate_system)
 {
 	if (field_module)
@@ -292,8 +292,8 @@ int Cmiss_field_module_set_coordinate_system(
 	return 0;
 }
 
-struct Coordinate_system Cmiss_field_module_get_coordinate_system(
-	struct Cmiss_field_module *field_module)
+struct Coordinate_system cmzn_field_module_get_coordinate_system(
+	struct cmzn_field_module *field_module)
 {
 	if (field_module)
 	{
@@ -305,8 +305,8 @@ struct Coordinate_system Cmiss_field_module_get_coordinate_system(
 	return (coordinate_system);
 }
 
-int Cmiss_field_module_coordinate_system_is_set(
-	struct Cmiss_field_module *field_module)
+int cmzn_field_module_coordinate_system_is_set(
+	struct cmzn_field_module *field_module)
 {
 	if (field_module)
 	{
@@ -315,8 +315,8 @@ int Cmiss_field_module_coordinate_system_is_set(
 	return 0;
 }
 
-int Cmiss_field_module_set_replace_field(
-	struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_replace_field(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *replace_field)
 {
 	int return_code;
@@ -345,15 +345,15 @@ int Cmiss_field_module_set_replace_field(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_set_replace_field.  Invalid arguments");
+			"cmzn_field_module_set_replace_field.  Invalid arguments");
 		return_code = 0;
 	}
 
 	return (return_code);
 }
 
-struct Computed_field *Cmiss_field_module_get_replace_field(
-	struct Cmiss_field_module *field_module)
+struct Computed_field *cmzn_field_module_get_replace_field(
+	struct cmzn_field_module *field_module)
 {
 	Computed_field *replace_field = NULL;
 	if (field_module)
@@ -363,20 +363,20 @@ struct Computed_field *Cmiss_field_module_get_replace_field(
 	return (replace_field);
 }
 
-Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
-	Cmiss_field_module_id field_module)
+cmzn_field_iterator_id cmzn_field_module_create_field_iterator(
+	cmzn_field_module_id field_module)
 {
 	if (!field_module)
 		return 0;
-	MANAGER(Computed_field) *manager = Cmiss_region_get_Computed_field_manager(field_module->region);
+	MANAGER(Computed_field) *manager = cmzn_region_get_Computed_field_manager(field_module->region);
 	return Computed_field_manager_create_iterator(manager);
 }
 
-Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
-	Cmiss_field_module_id field_module, int number_of_times, const double *times)
+cmzn_time_sequence_id cmzn_field_module_get_matching_time_sequence(
+	cmzn_field_module_id field_module, int number_of_times, const double *times)
 {
 	if (!field_module)
 		return NULL;
-	return (Cmiss_time_sequence_id)FE_region_get_FE_time_sequence_matching_series(
-		Cmiss_region_get_FE_region(field_module->region), number_of_times, times);
+	return (cmzn_time_sequence_id)FE_region_get_FE_time_sequence_matching_series(
+		cmzn_region_get_FE_region(field_module->region), number_of_times, times);
 }

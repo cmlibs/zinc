@@ -48,7 +48,7 @@ namespace zinc
 class TimeKeeper
 {
 protected:
-	Cmiss_time_keeper_id id;
+	cmzn_time_keeper_id id;
 
 public:
 
@@ -56,20 +56,20 @@ public:
 	{   }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeKeeper(Cmiss_time_keeper_id in_time_keeper_id) :
+	explicit TimeKeeper(cmzn_time_keeper_id in_time_keeper_id) :
 		id(in_time_keeper_id)
 	{  }
 
 	TimeKeeper(const TimeKeeper& timeKeeper) :
-		id(Cmiss_time_keeper_access(timeKeeper.id))
+		id(cmzn_time_keeper_access(timeKeeper.id))
 	{  }
 
 	TimeKeeper& operator=(const TimeKeeper& timeKeeper)
 	{
-		Cmiss_time_keeper_id temp_id = Cmiss_time_keeper_access(timeKeeper.id);
+		cmzn_time_keeper_id temp_id = cmzn_time_keeper_access(timeKeeper.id);
 		if (0 != id)
 		{
-			Cmiss_time_keeper_destroy(&id);
+			cmzn_time_keeper_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -79,7 +79,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_time_keeper_destroy(&id);
+			cmzn_time_keeper_destroy(&id);
 		}
 	}
 
@@ -88,7 +88,7 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_time_keeper_id getId()
+	cmzn_time_keeper_id getId()
 	{
 		return id;
 	}
@@ -103,30 +103,30 @@ public:
 
 	double getAttributeReal(Attribute attribute)
 	{
-		return Cmiss_time_keeper_get_attribute_real(id,
-			static_cast<Cmiss_time_keeper_attribute>(attribute));
+		return cmzn_time_keeper_get_attribute_real(id,
+			static_cast<cmzn_time_keeper_attribute>(attribute));
 	}
 
 	int setAttributeReal(Attribute attribute, double value)
 	{
-		return Cmiss_time_keeper_set_attribute_real(id,
-			static_cast<Cmiss_time_keeper_attribute>(attribute), value);
+		return cmzn_time_keeper_set_attribute_real(id,
+			static_cast<cmzn_time_keeper_attribute>(attribute), value);
 	}
 
 	TimeNotifier createNotifierRegular(double updateFrequency, double timeOffset)
 	{
-		return TimeNotifier(Cmiss_time_keeper_create_notifier_regular(
+		return TimeNotifier(cmzn_time_keeper_create_notifier_regular(
 			id, updateFrequency, timeOffset));
 	}
 
 	int addTimeNotifier(TimeNotifier timeNotifier)
 	{
-		return Cmiss_time_keeper_add_time_notifier(id, timeNotifier.getId());
+		return cmzn_time_keeper_add_time_notifier(id, timeNotifier.getId());
 	}
 
 	int removeTimeNotifier(TimeNotifier timeNotifier)
 	{
-		return Cmiss_time_keeper_remove_time_notifier(id, timeNotifier.getId());
+		return cmzn_time_keeper_remove_time_notifier(id, timeNotifier.getId());
 	}
 
 };

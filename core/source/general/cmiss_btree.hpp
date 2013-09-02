@@ -44,7 +44,7 @@
 #include <functional>
 
 template<typename object_type, typename identifier_type, int B_TREE_ORDER = 5,
-	typename _Compare = std::less<identifier_type> > class Cmiss_btree
+	typename _Compare = std::less<identifier_type> > class cmzn_btree
 {
 private:
 	typedef int CONDITIONAL_FUNCTION(object_type *object,void *user_data);
@@ -977,11 +977,11 @@ public:
 	 */
 	struct ext_iterator
 	{
-		Cmiss_btree *container;
+		cmzn_btree *container;
 		int_iterator iter;
 		ext_iterator *next_iterator; // for linked list of active_iterators in btree to invalidate on change
 
-		ext_iterator(Cmiss_btree *container) :
+		ext_iterator(cmzn_btree *container) :
 			container(container->access()),
 			iter(container->index),
 			next_iterator(0)
@@ -1030,11 +1030,11 @@ private:
 	INDEX_NODE *index;
 	int count;
 	int access_count;
-	mutable Cmiss_btree *next, *prev; // linked list of related sets
+	mutable cmzn_btree *next, *prev; // linked list of related sets
 	object_type *temp_removed_object; // removed while changing identifier
 	ext_iterator *active_iterators; // linked-list of iterators to invalidate if btree is modified
 
-	Cmiss_btree() :
+	cmzn_btree() :
 		index(0),
 		count(0),
 		access_count(1),
@@ -1048,7 +1048,7 @@ private:
 	}
 
 	/** copy constructor */
-	Cmiss_btree(const Cmiss_btree& source) :
+	cmzn_btree(const cmzn_btree& source) :
 		index(source.index->duplicate()),
 		count(source.count),
 		access_count(1),
@@ -1062,12 +1062,12 @@ private:
 	}
 
 	/** creates a related set, not a copy constructor */
-	Cmiss_btree(const Cmiss_btree *source) :
+	cmzn_btree(const cmzn_btree *source) :
 		index(0),
 		count(0),
 		access_count(1),
 		next(source->next),
-		prev(const_cast<Cmiss_btree *>(source)),
+		prev(const_cast<cmzn_btree *>(source)),
 		temp_removed_object(0),
 		active_iterators(0)
 	{
@@ -1075,7 +1075,7 @@ private:
 		next->prev = this;
 	}
 
-	~Cmiss_btree()
+	~cmzn_btree()
 	{
 		delete index;
 		index = 0;
@@ -1117,27 +1117,27 @@ private:
 
 public:
 
-	static Cmiss_btree *create_independent()
+	static cmzn_btree *create_independent()
 	{
-		return new Cmiss_btree();
+		return new cmzn_btree();
 	}
 
-	Cmiss_btree *create_related() const
+	cmzn_btree *create_related() const
 	{
-		return new Cmiss_btree(this);
+		return new cmzn_btree(this);
 	}
 
-	Cmiss_btree *create_copy() const
+	cmzn_btree *create_copy() const
 	{
-		return new Cmiss_btree(*this);
+		return new cmzn_btree(*this);
 	}
 
-	Cmiss_btree& operator=(const Cmiss_btree& source)
+	cmzn_btree& operator=(const cmzn_btree& source)
 	{
 		if (&source == this)
 			return *this;
 		invalidateIterators();
-		const Cmiss_btree *related_set = this->next;
+		const cmzn_btree *related_set = this->next;
 		while (related_set != this)
 		{
 			if (related_set == &source)
@@ -1162,7 +1162,7 @@ public:
 			// copy from unrelated set: switch linked-lists
 			this->next->prev = this->prev;
 			this->prev->next = this->next;
-			this->prev = const_cast<Cmiss_btree *>(&source);
+			this->prev = const_cast<cmzn_btree *>(&source);
 			this->next = source.next;
 			source.next->prev = this;
 			source.next = this;
@@ -1170,13 +1170,13 @@ public:
 		return *this;
 	}
 
-	inline Cmiss_btree *access()
+	inline cmzn_btree *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static inline int deaccess(Cmiss_btree **set_address)
+	static inline int deaccess(cmzn_btree **set_address)
 	{
 		if (set_address && *set_address)
 		{
@@ -1276,7 +1276,7 @@ public:
 
 	bool begin_identifier_change(object_type *object)
 	{
-		Cmiss_btree *related_btree = this;
+		cmzn_btree *related_btree = this;
 		do
 		{
 			if (related_btree->contains(object))
@@ -1296,7 +1296,7 @@ public:
 
 	void end_identifier_change()
 	{
-		Cmiss_btree *related_btree = this;
+		cmzn_btree *related_btree = this;
 		do
 		{
 			if (related_btree->temp_removed_object)

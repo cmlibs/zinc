@@ -64,7 +64,7 @@
 #include "minimise/minimise.h"
 #include "general/enumerator_private.hpp"
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_optimisation_method)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_optimisation_method)
 {
 	const char *enumerator_string = 0;
 	switch (enumerator_value)
@@ -81,5 +81,5 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_optimisation_method)
 	return enumerator_string;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS( Cmiss_optimisation_method);
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS( cmzn_optimisation_method);
 

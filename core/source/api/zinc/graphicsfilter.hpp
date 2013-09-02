@@ -49,7 +49,7 @@ namespace zinc
 class GraphicsFilter
 {
 protected:
-	Cmiss_graphics_filter_id id;
+	cmzn_graphics_filter_id id;
 
 public:
 
@@ -57,20 +57,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsFilter(Cmiss_graphics_filter_id in_graphics_filter_id) :
+	explicit GraphicsFilter(cmzn_graphics_filter_id in_graphics_filter_id) :
 		id(in_graphics_filter_id)
 	{  }
 
 	GraphicsFilter(const GraphicsFilter& graphicsFilter) :
-		id(Cmiss_graphics_filter_access(graphicsFilter.id))
+		id(cmzn_graphics_filter_access(graphicsFilter.id))
 	{  }
 
 	GraphicsFilter& operator=(const GraphicsFilter& graphicsFilter)
 	{
-		Cmiss_graphics_filter_id temp_id = Cmiss_graphics_filter_access(graphicsFilter.id);
+		cmzn_graphics_filter_id temp_id = cmzn_graphics_filter_access(graphicsFilter.id);
 		if (0 != id)
 		{
-			Cmiss_graphics_filter_destroy(&id);
+			cmzn_graphics_filter_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -80,7 +80,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_graphics_filter_destroy(&id);
+			cmzn_graphics_filter_destroy(&id);
 		}
 	}
 
@@ -89,44 +89,44 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_graphics_filter_id getId()
+	cmzn_graphics_filter_id getId()
 	{
 		return id;
 	}
 
 	bool isManaged()
 	{
-		return Cmiss_graphics_filter_is_managed(id);
+		return cmzn_graphics_filter_is_managed(id);
 	}
 
 	int setManaged(bool value)
 	{
-		return Cmiss_graphics_filter_set_managed(id, value);
+		return cmzn_graphics_filter_set_managed(id, value);
 	}
 
 	int evaluateGraphic(Graphic& graphic)
 	{
-		return Cmiss_graphics_filter_evaluate_graphic(id, graphic.getId());
+		return cmzn_graphics_filter_evaluate_graphic(id, graphic.getId());
 	}
 
 	bool isInverse()
 	{
-		return Cmiss_graphics_filter_is_inverse(id);
+		return cmzn_graphics_filter_is_inverse(id);
 	}
 
 	int setInverse(bool value)
 	{
-		return Cmiss_graphics_filter_set_inverse(id, value);
+		return cmzn_graphics_filter_set_inverse(id, value);
 	}
 
 	char *getName()
 	{
-		return Cmiss_graphics_filter_get_name(id);
+		return cmzn_graphics_filter_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_graphics_filter_set_name(id, name);
+		return cmzn_graphics_filter_set_name(id, name);
 	}
 };
 
@@ -135,62 +135,62 @@ class GraphicsFilterOperator : public GraphicsFilter
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsFilterOperator(Cmiss_graphics_filter_operator_id graphics_filter_id) :
-		GraphicsFilter(reinterpret_cast<Cmiss_graphics_filter_id>(graphics_filter_id))
+	explicit GraphicsFilterOperator(cmzn_graphics_filter_operator_id graphics_filter_id) :
+		GraphicsFilter(reinterpret_cast<cmzn_graphics_filter_id>(graphics_filter_id))
 	{ }
 
 	GraphicsFilterOperator(GraphicsFilter& graphicsFilter) :
-		GraphicsFilter(reinterpret_cast<Cmiss_graphics_filter_id>(
-			Cmiss_graphics_filter_cast_operator(graphicsFilter.getId())))
+		GraphicsFilter(reinterpret_cast<cmzn_graphics_filter_id>(
+			cmzn_graphics_filter_cast_operator(graphicsFilter.getId())))
 	{	}
 
 	int appendOperand(GraphicsFilter& operand)
 	{
-		return Cmiss_graphics_filter_operator_append_operand(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), operand.getId());
+		return cmzn_graphics_filter_operator_append_operand(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id), operand.getId());
 	}
 
 	GraphicsFilter getFirstOperand()
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_operator_get_first_operand(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id)));
+		return GraphicsFilter(cmzn_graphics_filter_operator_get_first_operand(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id)));
 	}
 
 	GraphicsFilter getNextOperand(GraphicsFilter& refOperand)
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_operator_get_next_operand(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), refOperand.getId()));
+		return GraphicsFilter(cmzn_graphics_filter_operator_get_next_operand(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id), refOperand.getId()));
 	}
 
 	int getOperandIsActive(GraphicsFilter& operand)
 	{
-		return Cmiss_graphics_filter_operator_get_operand_is_active(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), operand.getId());
+		return cmzn_graphics_filter_operator_get_operand_is_active(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id), operand.getId());
 	}
 
 	int setOperandIsActive(GraphicsFilter& operand, int isActive)
 	{
-		return Cmiss_graphics_filter_operator_set_operand_is_active(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), operand.getId(), isActive);
+		return cmzn_graphics_filter_operator_set_operand_is_active(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id), operand.getId(), isActive);
 	}
 
 	int insertOperandBefore(GraphicsFilter& operand, GraphicsFilter& refOperand)
 	{
-		return Cmiss_graphics_filter_operator_insert_operand_before(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), operand.getId(), refOperand.getId());
+		return cmzn_graphics_filter_operator_insert_operand_before(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id), operand.getId(), refOperand.getId());
 	}
 
 	int removeOperand(GraphicsFilter& operand)
 	{
-		return Cmiss_graphics_filter_operator_remove_operand(
-			reinterpret_cast<Cmiss_graphics_filter_operator_id>(id), operand.getId());
+		return cmzn_graphics_filter_operator_remove_operand(
+			reinterpret_cast<cmzn_graphics_filter_operator_id>(id), operand.getId());
 	}
 };
 
 class GraphicsFilterModule
 {
 protected:
-	Cmiss_graphics_filter_module_id id;
+	cmzn_graphics_filter_module_id id;
 
 public:
 
@@ -198,21 +198,21 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GraphicsFilterModule(Cmiss_graphics_filter_module_id in_graphics_filter_module_id) :
+	explicit GraphicsFilterModule(cmzn_graphics_filter_module_id in_graphics_filter_module_id) :
 		id(in_graphics_filter_module_id)
 	{  }
 
 	GraphicsFilterModule(const GraphicsFilterModule& graphicsFiltermodule) :
-		id(Cmiss_graphics_filter_module_access(graphicsFiltermodule.id))
+		id(cmzn_graphics_filter_module_access(graphicsFiltermodule.id))
 	{  }
 
 	GraphicsFilterModule& operator=(const GraphicsFilterModule& graphicsFiltermodule)
 	{
-		Cmiss_graphics_filter_module_id temp_id = Cmiss_graphics_filter_module_access(
+		cmzn_graphics_filter_module_id temp_id = cmzn_graphics_filter_module_access(
 			graphicsFiltermodule.id);
 		if (0 != id)
 		{
-			Cmiss_graphics_filter_module_destroy(&id);
+			cmzn_graphics_filter_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -222,7 +222,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_graphics_filter_module_destroy(&id);
+			cmzn_graphics_filter_module_destroy(&id);
 		}
 	}
 
@@ -231,74 +231,74 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_graphics_filter_module_id getId()
+	cmzn_graphics_filter_module_id getId()
 	{
 		return id;
 	}
 
 	GraphicsFilter createFilterVisibilityFlags()
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_visibility_flags(id));
+		return GraphicsFilter(cmzn_graphics_filter_module_create_filter_visibility_flags(id));
 	}
 
 	GraphicsFilter createFilterDomainType(Field::DomainType domainType)
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_domain_type(id,
-			static_cast<Cmiss_field_domain_type>(domainType)));
+		return GraphicsFilter(cmzn_graphics_filter_module_create_filter_domain_type(id,
+			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 
 	GraphicsFilter createFilterGraphicName(const char *matchName)
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_name(id, matchName));
+		return GraphicsFilter(cmzn_graphics_filter_module_create_filter_graphic_name(id, matchName));
 	}
 
 	GraphicsFilter createFilterGraphicType(Graphic::Type graphicType)
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_graphic_type(id,
-			static_cast<Cmiss_graphic_type>(graphicType)));
+		return GraphicsFilter(cmzn_graphics_filter_module_create_filter_graphic_type(id,
+			static_cast<cmzn_graphic_type>(graphicType)));
 	}
 
 	GraphicsFilter createFilterRegion(Region& matchRegion)
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_create_filter_region(
+		return GraphicsFilter(cmzn_graphics_filter_module_create_filter_region(
 			id, matchRegion.getId()));
 	}
 
 	GraphicsFilterOperator createFilterOperatorAnd()
 	{
-		return GraphicsFilterOperator(reinterpret_cast<Cmiss_graphics_filter_operator_id>(
-			Cmiss_graphics_filter_module_create_filter_operator_and(id)));
+		return GraphicsFilterOperator(reinterpret_cast<cmzn_graphics_filter_operator_id>(
+			cmzn_graphics_filter_module_create_filter_operator_and(id)));
 	}
 
 	GraphicsFilterOperator createFilterOperatorOr()
 	{
-		return GraphicsFilterOperator(reinterpret_cast<Cmiss_graphics_filter_operator_id>(
-			Cmiss_graphics_filter_module_create_filter_operator_or(id)));
+		return GraphicsFilterOperator(reinterpret_cast<cmzn_graphics_filter_operator_id>(
+			cmzn_graphics_filter_module_create_filter_operator_or(id)));
 	}
 
 	GraphicsFilter findFilterByName(const char *name)
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_find_filter_by_name(id, name));
+		return GraphicsFilter(cmzn_graphics_filter_module_find_filter_by_name(id, name));
 	}
 
 	int beginChange()
 	{
-		return Cmiss_graphics_filter_module_begin_change(id);
+		return cmzn_graphics_filter_module_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return Cmiss_graphics_filter_module_end_change(id);
+		return cmzn_graphics_filter_module_end_change(id);
 	}
 
 	GraphicsFilter getDefaultFilter()
 	{
-		return GraphicsFilter(Cmiss_graphics_filter_module_get_default_filter(id));
+		return GraphicsFilter(cmzn_graphics_filter_module_get_default_filter(id));
 	}
 
 	int setDefaultFilter(GraphicsFilter &filter)
 	{
-		return Cmiss_graphics_filter_module_set_default_filter(id, filter.getId());
+		return cmzn_graphics_filter_module_set_default_filter(id, filter.getId());
 	}
 };
 

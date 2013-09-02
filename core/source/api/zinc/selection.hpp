@@ -47,7 +47,7 @@ namespace zinc
 class SelectionHandler
 {
 protected:
-	Cmiss_selection_handler_id id;
+	cmzn_selection_handler_id id;
 
 public:
 
@@ -55,20 +55,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit SelectionHandler(Cmiss_selection_handler_id in_selection_handler_id) :
+	explicit SelectionHandler(cmzn_selection_handler_id in_selection_handler_id) :
 		id(in_selection_handler_id)
 	{  }
 
 	SelectionHandler(const SelectionHandler& selectionHandler) :
-		id(Cmiss_selection_handler_access(selectionHandler.id))
+		id(cmzn_selection_handler_access(selectionHandler.id))
 	{  }
 
 	SelectionHandler& operator=(const SelectionHandler& selectionHandler)
 	{
-		Cmiss_selection_handler_id temp_id = Cmiss_selection_handler_access(selectionHandler.id);
+		cmzn_selection_handler_id temp_id = cmzn_selection_handler_access(selectionHandler.id);
 		if (0 != id)
 		{
-			Cmiss_selection_handler_destroy(&id);
+			cmzn_selection_handler_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -78,7 +78,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_selection_handler_destroy(&id);
+			cmzn_selection_handler_destroy(&id);
 		}
 	}
 
@@ -87,19 +87,19 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_selection_handler_id getId()
+	cmzn_selection_handler_id getId()
 	{
 		return id;
 	}
 
 	bool getHierarchical()
 	{
-		return (0 != Cmiss_selection_handler_get_hierarchical(id));
+		return (0 != cmzn_selection_handler_get_hierarchical(id));
 	}
 
 	int setHierarchical(bool hierarchicalFlag)
 	{
-		return Cmiss_selection_handler_set_hierarchical(id, (int)hierarchicalFlag);
+		return cmzn_selection_handler_set_hierarchical(id, (int)hierarchicalFlag);
 	}
 
 };
@@ -108,7 +108,7 @@ public:
 class SelectionEvent
 {
 protected:
-	Cmiss_selection_event_id id;
+	cmzn_selection_event_id id;
 
 public:
 
@@ -116,12 +116,12 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit SelectionEvent(Cmiss_selection_event_id in_selection_event_id) :
+	explicit SelectionEvent(cmzn_selection_event_id in_selection_event_id) :
 		id(in_selection_event_id)
 	{  }
 
 	SelectionEvent(const SelectionEvent& selectionEvent) :
-		id(Cmiss_selection_event_access(selectionEvent.id))
+		id(cmzn_selection_event_access(selectionEvent.id))
 	{  }
 
 	enum ChangeType
@@ -135,10 +135,10 @@ public:
 
 	SelectionEvent& operator=(const SelectionEvent& selectionEvent)
 	{
-		Cmiss_selection_event_id temp_id = Cmiss_selection_event_access(selectionEvent.id);
+		cmzn_selection_event_id temp_id = cmzn_selection_event_access(selectionEvent.id);
 		if (0 != id)
 		{
-			Cmiss_selection_event_destroy(&id);
+			cmzn_selection_event_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -148,7 +148,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_selection_event_destroy(&id);
+			cmzn_selection_event_destroy(&id);
 		}
 	}
 
@@ -157,19 +157,19 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_selection_event_id getId()
+	cmzn_selection_event_id getId()
 	{
 		return id;
 	}
 
 	ChangeType getChangeType()
 	{
-		return static_cast<ChangeType>(Cmiss_selection_event_get_change_type(id));
+		return static_cast<ChangeType>(cmzn_selection_event_get_change_type(id));
 	}
 
 	int owningSceneIsDestroyed()
 	{
-		return Cmiss_selection_event_owning_scene_is_destroyed(id);
+		return cmzn_selection_event_owning_scene_is_destroyed(id);
 	}
 
 };

@@ -45,13 +45,13 @@ namespace zinc
 {
 class TimeNotifier;
 /*
-typedef int (*Time_notifier_callback)(Cmiss_time_notifier_id time_notifier,
+typedef int (*Time_notifier_callback)(cmzn_time_notifier_id time_notifier,
 	double current_time, void *user_data);
 */
 class TimeNotifier
 {
 protected:
-	Cmiss_time_notifier_id id;
+	cmzn_time_notifier_id id;
 
 public:
 
@@ -59,20 +59,20 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeNotifier(Cmiss_time_notifier_id in_time_notifier_id) :
+	explicit TimeNotifier(cmzn_time_notifier_id in_time_notifier_id) :
 		id(in_time_notifier_id)
 	{  }
 
 	TimeNotifier(const TimeNotifier& time_notifier) :
-		id(Cmiss_time_notifier_access(time_notifier.id))
+		id(cmzn_time_notifier_access(time_notifier.id))
 	{  }
 
 	TimeNotifier& operator=(const TimeNotifier& time_notifierNotifier)
 	{
-		Cmiss_time_notifier_id temp_id = Cmiss_time_notifier_access(time_notifierNotifier.id);
+		cmzn_time_notifier_id temp_id = cmzn_time_notifier_access(time_notifierNotifier.id);
 		if (0 != id)
 		{
-			Cmiss_time_notifier_destroy(&id);
+			cmzn_time_notifier_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -82,7 +82,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_time_notifier_destroy(&id);
+			cmzn_time_notifier_destroy(&id);
 		}
 	}
 
@@ -91,29 +91,29 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_time_notifier_id getId()
+	cmzn_time_notifier_id getId()
 	{
 		return id;
 	}
 /*
 	int addCallback(Time_notifier_callback callback, void *user_data)
 	{
-		return Cmiss_time_notifier_add_callback(id, callback, user_data);
+		return cmzn_time_notifier_add_callback(id, callback, user_data);
 	}
 
 	int removeCallback(Time_notifier_callback callback, void *user_data)
 	{
-		return Cmiss_time_notifier_remove_callback(id, callback, user_data);
+		return cmzn_time_notifier_remove_callback(id, callback, user_data);
 	}
 */
 	int setFrequency(double frequency)
 	{
-		return Cmiss_time_notifier_regular_set_frequency(id, frequency);
+		return cmzn_time_notifier_regular_set_frequency(id, frequency);
 	}
 
 	int setOffset(double timeOffset)
 	{
-		return Cmiss_time_notifier_regular_set_offset(id, timeOffset);
+		return cmzn_time_notifier_regular_set_offset(id, timeOffset);
 	}
 
 };

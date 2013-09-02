@@ -61,9 +61,9 @@ extern "C" {
  * @param nodeset  The set of nodes to sum field over.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_sum(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_nodeset_id nodeset);
 
 /**
  * Creates a field which computes the mean of each source field component over
@@ -75,9 +75,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum(
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_mean(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_nodeset_id nodeset);
 
 /**
  * Creates a field which computes the sum of the squares of each source field
@@ -85,16 +85,16 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean(
  * field has same number of components as the source field.
  * This field type supports least-squares optimisation by giving individual
  * terms being squared and summed.
- * @see Cmiss_optimisation_add_objective_field
+ * @see cmzn_optimisation_add_objective_field
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum squared component values of.
  * @param nodeset  The set of nodes to sum field over.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_sum_squares(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_nodeset_id nodeset);
 
 /**
  * Creates a field which computes the mean of the squares of each source field
@@ -103,16 +103,16 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_sum_squares(
  * This field type supports least-squares optimisation by giving individual
  * terms being squared and summed, each divided by the square root of the number
  * of terms.
- * @see Cmiss_optimisation_add_objective_field
+ * @see cmzn_optimisation_add_objective_field
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to obtain mean squared component values for.
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_mean_squares(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_nodeset_id nodeset);
 
 /**
  * Creates a field which computes the minimum of each source field
@@ -124,9 +124,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_mean_squares(
  * @param nodeset  The set of nodes to obtain minimum over.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_minimum(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_minimum(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_nodeset_id nodeset);
 
 /**
  * Creates a field which computes the maximum of each source field
@@ -138,9 +138,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_minimum(
  * @param nodeset  The set of nodes to obtain maximum over.
  * @return  Handle to newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_nodeset_maximum(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_maximum(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_nodeset_id nodeset);
 
 #ifdef __cplusplus
 }

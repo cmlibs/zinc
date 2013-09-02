@@ -46,7 +46,7 @@
  * with the system clock to drive animation. It sends callbacks to time notifiers
  * at the requested time or interval.
  */
-	struct Cmiss_time_keeper;
-	typedef struct Cmiss_time_keeper *Cmiss_time_keeper_id;
+	struct cmzn_time_keeper;
+	typedef struct cmzn_time_keeper *cmzn_time_keeper_id;
 
 #endif

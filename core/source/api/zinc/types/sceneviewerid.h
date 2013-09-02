@@ -41,21 +41,21 @@
 #ifndef CMZN_SCENEVIEWERID_H__
 #define CMZN_SCENEVIEWERID_H__
 
-	struct Cmiss_scene_viewer_module;
-	typedef struct Cmiss_scene_viewer_module * Cmiss_scene_viewer_module_id;
+	struct cmzn_scene_viewer_module;
+	typedef struct cmzn_scene_viewer_module * cmzn_scene_viewer_module_id;
 
-	//-- struct Cmiss_scene_viewer_input;
-	//-- typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;
+	//-- struct cmzn_scene_viewer_input;
+	//-- typedef struct cmzn_scene_viewer_input *cmzn_scene_viewer_input_id;
 
-	struct Cmiss_scene_viewer;
-	typedef struct Cmiss_scene_viewer *Cmiss_scene_viewer_id;
+	struct cmzn_scene_viewer;
+	typedef struct cmzn_scene_viewer *cmzn_scene_viewer_id;
 
-	/* The Cmiss_scene_viewer_input describes the input event */
-	typedef int (*Cmiss_scene_viewer_input_callback)(
-		Cmiss_scene_viewer_id scene_viewer,
-		struct Cmiss_scene_viewer_input *, void *user_data);
+	/* The cmzn_scene_viewer_input describes the input event */
+	typedef int (*cmzn_scene_viewer_input_callback)(
+		cmzn_scene_viewer_id scene_viewer,
+		struct cmzn_scene_viewer_input *, void *user_data);
 
-	typedef void (*Cmiss_scene_viewer_callback)(Cmiss_scene_viewer_id scene_viewer,
+	typedef void (*cmzn_scene_viewer_callback)(cmzn_scene_viewer_id scene_viewer,
 		void *callback_data, void *user_data);
 
 #endif

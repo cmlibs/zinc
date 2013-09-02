@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_region.h
  *
- * Definition of Cmiss_region, container of fields for representing model data,
+ * Definition of cmzn_region, container of fields for representing model data,
  * and child regions for building hierarchical models.
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -54,7 +54,7 @@ Global constants
 ----------------
 */
 
-/* separator character for Cmiss_region in path strings */
+/* separator character for cmzn_region in path strings */
 #define CMISS_REGION_PATH_SEPARATOR_CHAR '/'
 #define CMISS_REGION_PATH_SEPARATOR_STRING "/"
 
@@ -63,53 +63,53 @@ Global types
 ------------
 */
 
-struct Cmiss_region;
+struct cmzn_region;
 /*******************************************************************************
 LAST MODIFIED : 30 September 2002
 
 DESCRIPTION :
-Object responsible for building directed acyclic graph hierarchies in Cmiss.
-Implements hierarchies by contains a list of Cmiss_region_child objects, each
+Object responsible for building directed acyclic graph hierarchies in cmzn.
+Implements hierarchies by contains a list of cmzn_region_child objects, each
 with their own name as seen by this parent.
 Implements advanced hierarchical functionality through context objects stored
-within it. Type and role of context objects are not known to the Cmiss_region.
+within it. Type and role of context objects are not known to the cmzn_region.
 ==============================================================================*/
 
-struct Cmiss_region_changes
+struct cmzn_region_changes
 /*******************************************************************************
 LAST MODIFIED : 11 March 2010
 
 DESCRIPTION :
-Data broadcast with callbacks from <Cmiss_region> describing the changes.
+Data broadcast with callbacks from <cmzn_region> describing the changes.
 ==============================================================================*/
 {
 	/* true if the name of this region has changed */
 	int name_changed;
-	/* true if children added, removed or reordered in Cmiss_region */
+	/* true if children added, removed or reordered in cmzn_region */
 	int children_changed;
 	/* if a single child has been added (and none removed) it is indicated here */
-	struct Cmiss_region *child_added;
+	struct cmzn_region *child_added;
 	/* if a single child has been removed (and none added) it is indicated here */
-	struct Cmiss_region *child_removed;
-}; /* struct Cmiss_region_changes */
+	struct cmzn_region *child_removed;
+}; /* struct cmzn_region_changes */
 
-DECLARE_CMISS_CALLBACK_TYPES(Cmiss_region_change, \
-	struct Cmiss_region *, struct Cmiss_region_changes *, void);
+DECLARE_CMISS_CALLBACK_TYPES(cmzn_region_change, \
+	struct cmzn_region *, struct cmzn_region_changes *, void);
 
 /*
 Global functions
 ----------------
 */
 
-PROTOTYPE_OBJECT_FUNCTIONS(Cmiss_region);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_region);
 
 /***************************************************************************//**
- * Creates a Cmiss_region, able to have its own fields. This is an internal
+ * Creates a cmzn_region, able to have its own fields. This is an internal
  * function and should not be exposed to the API.
  *
  * @return  Accessed reference to the newly created region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_create_internal(void);
+struct cmzn_region *cmzn_region_create_internal(void);
 
 /***************************************************************************//**
  * Remove all nodes, elements, data and finite element fields from this region.
@@ -117,48 +117,48 @@ struct Cmiss_region *Cmiss_region_create_internal(void);
  * @param region  The region to clear the fields from. Must not be a group.
  * @return  1 on success, 0 if no region supplied.
  */
-int Cmiss_region_clear_finite_elements(struct Cmiss_region *region);
+int cmzn_region_clear_finite_elements(struct cmzn_region *region);
 
 /***************************************************************************//**
- * Returns FE_region for this Cmiss_region.
+ * Returns FE_region for this cmzn_region.
  */
-struct FE_region *Cmiss_region_get_FE_region(struct Cmiss_region *region);
+struct FE_region *cmzn_region_get_FE_region(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns the field manager for this region.
  */
-struct MANAGER(Computed_field) *Cmiss_region_get_Computed_field_manager(
-	struct Cmiss_region *region);
+struct MANAGER(Computed_field) *cmzn_region_get_Computed_field_manager(
+	struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns the size a field cache array needs to be to fit the assigned field
  * cache indexes.
  */
-int Cmiss_region_get_field_cache_size(Cmiss_region_id region);
+int cmzn_region_get_field_cache_size(cmzn_region_id region);
 
 /***************************************************************************//**
  * Adds cache to the list of caches for this region. Region needs this list to
  * add new value caches for any fields created while the cache exists.
  */
-void Cmiss_region_add_field_cache(Cmiss_region_id region, Cmiss_field_cache_id cache);
+void cmzn_region_add_field_cache(cmzn_region_id region, cmzn_field_cache_id cache);
 
 /***************************************************************************//**
  * Removes cache from the list of caches for this region.
  */
-void Cmiss_region_remove_field_cache(Cmiss_region_id region,
-	Cmiss_field_cache_id cache);
+void cmzn_region_remove_field_cache(cmzn_region_id region,
+	cmzn_field_cache_id cache);
 
-int Cmiss_region_begin_change(struct Cmiss_region *region);
+int cmzn_region_begin_change(struct cmzn_region *region);
 /*******************************************************************************
 LAST MODIFIED : 10 December 2002
 
 DESCRIPTION :
 Increments the change counter in <region>. No update callbacks will occur until
-change counter is restored to zero by calls to Cmiss_region_end_change.
+change counter is restored to zero by calls to cmzn_region_end_change.
 ???RC Make recursive/hierarchical?
 ==============================================================================*/
 
-int Cmiss_region_end_change(struct Cmiss_region *region);
+int cmzn_region_end_change(struct cmzn_region *region);
 /*******************************************************************************
 LAST MODIFIED : 10 December 2002
 
@@ -168,19 +168,19 @@ change counter is restored to zero by this function.
 ???RC Make recursive/hierarchical?
 ==============================================================================*/
 
-int Cmiss_region_add_callback(struct Cmiss_region *region,
-	CMISS_CALLBACK_FUNCTION(Cmiss_region_change) *function, void *user_data);
+int cmzn_region_add_callback(struct cmzn_region *region,
+	CMISS_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
 DESCRIPTION :
 Adds a callback to <region> so that when it changes <function> is called with
-<user_data>. <function> has 3 arguments, a struct Cmiss_region *, a
-struct Cmiss_region_changes * and the void *user_data.
+<user_data>. <function> has 3 arguments, a struct cmzn_region *, a
+struct cmzn_region_changes * and the void *user_data.
 ==============================================================================*/
 
-int Cmiss_region_remove_callback(struct Cmiss_region *region,
-	CMISS_CALLBACK_FUNCTION(Cmiss_region_change) *function, void *user_data);
+int cmzn_region_remove_callback(struct cmzn_region *region,
+	CMISS_CALLBACK_FUNCTION(cmzn_region_change) *function, void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 2 December 2002
 
@@ -194,7 +194,7 @@ Removes the callback calling <function> with <user_data> from <region>.
  * @param region  The region whose name is requested.
  * @return  On success: allocated string containing region name.
  */
-char *Cmiss_region_get_name(struct Cmiss_region *region);
+char *cmzn_region_get_name(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Sets the name of the region.
@@ -207,14 +207,14 @@ char *Cmiss_region_get_name(struct Cmiss_region *region);
  * @param name  The new name for the region.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_region_set_name(struct Cmiss_region *region, const char *name);
+int cmzn_region_set_name(struct cmzn_region *region, const char *name);
 
 /***************************************************************************//**
  * Allocates and returns the path to the root_region ("/").
  *
  * @return  Allocated string "/".
  */
-char *Cmiss_region_get_root_region_path(void);
+char *cmzn_region_get_root_region_path(void);
 
 /***************************************************************************//**
  * Returns the full path name from the root region to this region. Path name
@@ -223,7 +223,7 @@ char *Cmiss_region_get_root_region_path(void);
  * @param region  The region whose path is requested.
  * @return  On success: allocated string containing full region path.
  */
-char *Cmiss_region_get_path(struct Cmiss_region *region);
+char *cmzn_region_get_path(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns the relative path name to this region from other_region. Path name
@@ -234,8 +234,8 @@ char *Cmiss_region_get_path(struct Cmiss_region *region);
  * @return  On success: allocated string containing relative region path; on
  * failure: NULL, including case when region is not within other_region.
  */
-char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
-	struct Cmiss_region *other_region);
+char *cmzn_region_get_relative_path(struct cmzn_region *region,
+	struct cmzn_region *other_region);
 
 /***************************************************************************//**
  * Returns a reference to the parent region of this region.
@@ -243,7 +243,7 @@ char *Cmiss_region_get_relative_path(struct Cmiss_region *region,
  * @param region  The child region.
  * @return  Accessed reference to parent region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region);
+struct cmzn_region *cmzn_region_get_parent(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns a non-accessed pointer to parent region of this region, if any.
@@ -252,7 +252,7 @@ struct Cmiss_region *Cmiss_region_get_parent(struct Cmiss_region *region);
  * @param region  The child region.
  * @return  Non-accessed reference to parent region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_get_parent_internal(struct Cmiss_region *region);
+struct cmzn_region *cmzn_region_get_parent_internal(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns a reference to the first child region of this region.
@@ -260,7 +260,7 @@ struct Cmiss_region *Cmiss_region_get_parent_internal(struct Cmiss_region *regio
  * @param region  The region whose first child is requested.
  * @return  Accessed reference to first child region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_get_first_child(struct Cmiss_region *region);
+struct cmzn_region *cmzn_region_get_first_child(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns a reference to this region's next sibling region.
@@ -268,7 +268,7 @@ struct Cmiss_region *Cmiss_region_get_first_child(struct Cmiss_region *region);
  * @param region  The region whose next sibling is requested.
  * @return  Accessed reference to next sibling region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_get_next_sibling(struct Cmiss_region *region);
+struct cmzn_region *cmzn_region_get_next_sibling(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Returns a reference to this region's previous sibling region.
@@ -276,20 +276,20 @@ struct Cmiss_region *Cmiss_region_get_next_sibling(struct Cmiss_region *region);
  * @param region  The region whose previous sibling is requested.
  * @return  Accessed reference to previous sibling region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_get_previous_sibling(struct Cmiss_region *region);
+struct cmzn_region *cmzn_region_get_previous_sibling(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Replaces the region reference with a reference to its next sibling.
  * Convenient for iterating through a child list, equivalent to:
  * {
- *   struct Cmiss_region *temp = Cmiss_region_get_next_sibling(*region_address);
- *   Cmiss_region_destroy(region_address);
+ *   struct cmzn_region *temp = cmzn_region_get_next_sibling(*region_address);
+ *   cmzn_region_destroy(region_address);
  *   *region_address = temp;
  * }
  *
  * @param region_address  The address of the region reference to replace.
  */
-void Cmiss_region_reaccess_next_sibling(struct Cmiss_region **region_address);
+void cmzn_region_reaccess_next_sibling(struct cmzn_region **region_address);
 
 /***************************************************************************//**
  * Adds new_child to the end of the list of child regions of this region.
@@ -302,8 +302,8 @@ void Cmiss_region_reaccess_next_sibling(struct Cmiss_region **region_address);
  * @param new_child  The child to add.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_region_append_child(struct Cmiss_region *region,
-	struct Cmiss_region *new_child);
+int cmzn_region_append_child(struct cmzn_region *region,
+	struct cmzn_region *new_child);
 
 /***************************************************************************//**
  * Inserts new_child before the existing ref_child in the list of child regions
@@ -317,8 +317,8 @@ int Cmiss_region_append_child(struct Cmiss_region *region,
  * @param new_child  The child to append.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_region_insert_child_before(struct Cmiss_region *region,
-	struct Cmiss_region *new_child, struct Cmiss_region *ref_child);
+int cmzn_region_insert_child_before(struct cmzn_region *region,
+	struct cmzn_region *new_child, struct cmzn_region *ref_child);
 
 /***************************************************************************//**
  * Removes old_child from the list of child regions of this region.
@@ -328,8 +328,8 @@ int Cmiss_region_insert_child_before(struct Cmiss_region *region,
  * @param old_child  The child to remove.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_region_remove_child(struct Cmiss_region *region,
-	struct Cmiss_region *old_child);
+int cmzn_region_remove_child(struct cmzn_region *region,
+	struct cmzn_region *old_child);
 
 /***************************************************************************//**
  * Returns true if region is or contains the subregion.
@@ -338,8 +338,8 @@ int Cmiss_region_remove_child(struct Cmiss_region *region,
  * @param subregion  The region being tested for containment.
  * @return  1 if this region is or contains subregion, 0 if not.
  */
-int Cmiss_region_contains_subregion(struct Cmiss_region *region,
-	struct Cmiss_region *subregion);
+int cmzn_region_contains_subregion(struct cmzn_region *region,
+	struct cmzn_region *subregion);
 
 /***************************************************************************//**
  * Returns a reference to the child region with supplied name, if any.
@@ -348,8 +348,8 @@ int Cmiss_region_contains_subregion(struct Cmiss_region *region,
  * @param name  The name of the child.
  * @return  Accessed reference to the named child, or NULL if no match.
  */
-struct Cmiss_region *Cmiss_region_find_child_by_name(
-	struct Cmiss_region *region, const char *name);
+struct cmzn_region *cmzn_region_find_child_by_name(
+	struct cmzn_region *region, const char *name);
 
 /***************************************************************************//**
  * Returns a reference to the subregion at the path relative to this region.
@@ -362,18 +362,18 @@ struct Cmiss_region *Cmiss_region_find_child_by_name(
  * @param path  The directory-style path to the subregion.
  * @return  Accessed reference to subregion, or NULL no match.
  */
-struct Cmiss_region *Cmiss_region_find_subregion_at_path(
-	struct Cmiss_region *region, const char *path);
+struct cmzn_region *cmzn_region_find_subregion_at_path(
+	struct cmzn_region *region, const char *path);
 
 /*******************************************************************************
- * Internal only. External API is Cmiss_field_module_find_field_by_name.
+ * Internal only. External API is cmzn_field_module_find_field_by_name.
  * @return  Accessed handle to field of given name, or NULL if none.
  */
-Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
+cmzn_field_id cmzn_region_find_field_by_name(cmzn_region_id region,
 	const char *field_name);
 
 /***************************************************************************//**
- * Deprecated legacy version of Cmiss_region_find_subregion_at_path returning
+ * Deprecated legacy version of cmzn_region_find_subregion_at_path returning
  * non-ACCESSed region as final argument.
  *
  * @param region  The region to search.
@@ -382,8 +382,8 @@ Cmiss_field_id Cmiss_region_find_field_by_name(Cmiss_region_id region,
  * region is identified.
  * @return  1 if region found, 0 otherwise.
  */
-int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
-	const char *path, struct Cmiss_region **subregion_address);
+int cmzn_region_get_region_from_path_deprecated(struct cmzn_region *region,
+	const char *path, struct cmzn_region **subregion_address);
 
 /**
  * Returns a reference to the root region of this region.
@@ -391,12 +391,12 @@ int Cmiss_region_get_region_from_path_deprecated(struct Cmiss_region *region,
  * @param region  The region.
  * @return  Accessed reference to root region, or NULL if none.
  */
-struct Cmiss_region *Cmiss_region_get_root(struct Cmiss_region *region);
+struct cmzn_region *cmzn_region_get_root(struct cmzn_region *region);
 
 /**
  * Returns true if region has no parent.
  */
-bool Cmiss_region_is_root(struct Cmiss_region *region);
+bool cmzn_region_is_root(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Separates a region/path/name into the region plus region-path and remainder
@@ -422,17 +422,17 @@ bool Cmiss_region_is_root(struct Cmiss_region *region);
  *   if all of path was resolved
  * @return 1 on success, 0 on failure
  */
-int Cmiss_region_get_partial_region_path(struct Cmiss_region *root_region,
-	const char *path, struct Cmiss_region **region_address,
+int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
+	const char *path, struct cmzn_region **region_address,
 	char **region_path_address,	char **remainder_address);
 
-int Cmiss_region_list(struct Cmiss_region *region,
+int cmzn_region_list(struct cmzn_region *region,
 	int indent, int indent_increment);
 /*******************************************************************************
 LAST MODIFIED : 5 March 2003
 
 DESCRIPTION :
-Lists the Cmiss_region hierarchy starting from <region>. Contents are listed
+Lists the cmzn_region hierarchy starting from <region>. Contents are listed
 indented from the left margin by <indent> spaces; this is incremented by
 <indent_increment> for each child level.
 ==============================================================================*/
@@ -440,12 +440,12 @@ indented from the left margin by <indent> spaces; this is incremented by
 /***************************************************************************//**
  * Call to confirm compatibility of fields and other object definitions in
  * source region tree versus those in global region. Call this before calling
- * Cmiss_region_merge.
+ * cmzn_region_merge.
  * @param target_region  Target / global region to merge into.
  * @param source_region  Source region to check compatibility of fields for.
  * @return  1 if compatible, 0 if not.
  */
-int Cmiss_region_can_merge(Cmiss_region_id target_region, Cmiss_region_id source_region);
+int cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_region);
 
 /***************************************************************************//**
  * Merge fields and other objects from source region tree into global region.
@@ -455,6 +455,6 @@ int Cmiss_region_can_merge(Cmiss_region_id target_region, Cmiss_region_id source
  * @param source_region  Source region to merge from.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_region_merge(Cmiss_region_id target_region, Cmiss_region_id source_region);
+int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region);
 
 #endif /* !defined (CMISS_REGION_H) */

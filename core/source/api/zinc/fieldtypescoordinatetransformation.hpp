@@ -50,7 +50,7 @@ class FieldCoordinateTransformation: public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldCoordinateTransformation(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldCoordinateTransformation FieldModule::createCoordinateTransformation(
@@ -66,7 +66,7 @@ class FieldVectorCoordinateTransformation: public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldVectorCoordinateTransformation(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldVectorCoordinateTransformation(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldVectorCoordinateTransformation FieldModule::createVectorCoordinateTransformation(
@@ -82,14 +82,14 @@ public:
 inline FieldCoordinateTransformation FieldModule::createCoordinateTransformation(
 	Field& sourceField)
 {
-	return FieldCoordinateTransformation(Cmiss_field_module_create_coordinate_transformation(
+	return FieldCoordinateTransformation(cmzn_field_module_create_coordinate_transformation(
 		id, sourceField.getId()));
 }
 
 inline FieldVectorCoordinateTransformation FieldModule::createVectorCoordinateTransformation(
 	Field& vectorField, Field& coordinateField)
 {
-	return FieldVectorCoordinateTransformation(Cmiss_field_module_create_vector_coordinate_transformation(id,
+	return FieldVectorCoordinateTransformation(cmzn_field_module_create_vector_coordinate_transformation(id,
 		vectorField.getId(), coordinateField.getId()));
 }
 

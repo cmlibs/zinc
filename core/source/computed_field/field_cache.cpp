@@ -49,7 +49,7 @@
 FieldValueCache::~FieldValueCache()
 {
 	if (extraCache)
-		Cmiss_field_cache::deaccess(extraCache);
+		cmzn_field_cache::deaccess(extraCache);
 }
 
 void FieldValueCache::clear()
@@ -117,9 +117,9 @@ char *MeshLocationFieldValueCache::getAsString()
 	char *valueAsString = 0;
 	int error = 0;
 	char tmp_string[50];
-	sprintf(tmp_string,"%d :", Cmiss_element_get_identifier(element));
+	sprintf(tmp_string,"%d :", cmzn_element_get_identifier(element));
 	append_string(&valueAsString, tmp_string, &error);
-	int dimension = Cmiss_element_get_dimension(element);
+	int dimension = cmzn_element_get_dimension(element);
 	for (int i = 0; i < dimension; i++)
 	{
 		sprintf(tmp_string, " %g", xi[i]);
@@ -128,19 +128,19 @@ char *MeshLocationFieldValueCache::getAsString()
 	return valueAsString;
 }
 
-Cmiss_field_cache::~Cmiss_field_cache()
+cmzn_field_cache::~cmzn_field_cache()
 {
 	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
 	{
 		delete (*iter);
 		*iter = 0;
 	}
-	Cmiss_region_remove_field_cache(region, this);
+	cmzn_region_remove_field_cache(region, this);
 	delete location;
-	Cmiss_region_destroy(&region);
+	cmzn_region_destroy(&region);
 }
 
-int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, const double *values)
+int cmzn_field_cache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
 	// check (numberOfValues >= field->number_of_components), just pad with zeros
@@ -161,7 +161,7 @@ int Cmiss_field_cache::setFieldReal(Cmiss_field_id field, int numberOfValues, co
 	return 1;
 }
 
-int Cmiss_field_cache::setFieldRealWithDerivatives(Cmiss_field_id field, int numberOfValues, const double *values,
+int cmzn_field_cache::setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
 	int numberOfDerivatives, const double *derivatives)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
@@ -194,26 +194,26 @@ Global functions
 ----------------
 */
 
-Cmiss_field_cache_id Cmiss_field_module_create_cache(Cmiss_field_module_id field_module)
+cmzn_field_cache_id cmzn_field_module_create_cache(cmzn_field_module_id field_module)
 {
 	if (field_module)
-		return new Cmiss_field_cache(Cmiss_field_module_get_region_internal(field_module));
+		return new cmzn_field_cache(cmzn_field_module_get_region_internal(field_module));
 	return 0;
 }
 
-Cmiss_field_cache_id Cmiss_field_cache_access(Cmiss_field_cache_id cache)
+cmzn_field_cache_id cmzn_field_cache_access(cmzn_field_cache_id cache)
 {
 	return cache->access();
 }
 
-int Cmiss_field_cache_destroy(Cmiss_field_cache_id *cache_address)
+int cmzn_field_cache_destroy(cmzn_field_cache_id *cache_address)
 {
 	if (!cache_address)
 		return 0;
-	return Cmiss_field_cache::deaccess(*cache_address);
+	return cmzn_field_cache::deaccess(*cache_address);
 }
 
-int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time)
+int cmzn_field_cache_set_time(cmzn_field_cache_id cache, double time)
 {
 	if (!cache)
 		return 0;
@@ -221,34 +221,34 @@ int Cmiss_field_cache_set_time(Cmiss_field_cache_id cache, double time)
 	return 1;
 }
 
-int Cmiss_field_cache_set_element(Cmiss_field_cache_id cache,
-	Cmiss_element_id element)
+int cmzn_field_cache_set_element(cmzn_field_cache_id cache,
+	cmzn_element_id element)
 {
 	const double chart_coordinates[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
-	return Cmiss_field_cache_set_mesh_location_with_parent(cache, element,
+	return cmzn_field_cache_set_mesh_location_with_parent(cache, element,
 		MAXIMUM_ELEMENT_XI_DIMENSIONS, chart_coordinates, /*top_level_element*/0);
 }
 
-int Cmiss_field_cache_set_mesh_location_with_parent(
-	Cmiss_field_cache_id cache, Cmiss_element_id element,
+int cmzn_field_cache_set_mesh_location_with_parent(
+	cmzn_field_cache_id cache, cmzn_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates,
-	Cmiss_element_id top_level_element)
+	cmzn_element_id top_level_element)
 {
-	if (!(cache && element && (number_of_chart_coordinates >= Cmiss_element_get_dimension(element))))
+	if (!(cache && element && (number_of_chart_coordinates >= cmzn_element_get_dimension(element))))
 		return 0;
 	cache->setMeshLocation(element, chart_coordinates, top_level_element);
 	return 1;
 }
 
-int Cmiss_field_cache_set_mesh_location(Cmiss_field_cache_id cache,
-	Cmiss_element_id element, int number_of_chart_coordinates,
+int cmzn_field_cache_set_mesh_location(cmzn_field_cache_id cache,
+	cmzn_element_id element, int number_of_chart_coordinates,
 	const double *chart_coordinates)
 {
-	return Cmiss_field_cache_set_mesh_location_with_parent(cache, element,
+	return cmzn_field_cache_set_mesh_location_with_parent(cache, element,
 		number_of_chart_coordinates, chart_coordinates, /*top_level_element*/0);
 }
 
-int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node)
+int cmzn_field_cache_set_node(cmzn_field_cache_id cache, cmzn_node_id node)
 {
 	if (!(cache && node))
 		return 0;
@@ -256,8 +256,8 @@ int Cmiss_field_cache_set_node(Cmiss_field_cache_id cache, Cmiss_node_id node)
 	return 1;
 }
 
-int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
-	Cmiss_field_id reference_field, int number_of_values, const double *values)
+int cmzn_field_cache_set_field_real(cmzn_field_cache_id cache,
+	cmzn_field_id reference_field, int number_of_values, const double *values)
 {
 	if (!cache)
 		return 0;
@@ -265,7 +265,7 @@ int Cmiss_field_cache_set_field_real(Cmiss_field_cache_id cache,
 }
 
 // Internal function
-int Cmiss_field_cache_set_assign_in_cache(Cmiss_field_cache_id cache, int assign_in_cache)
+int cmzn_field_cache_set_assign_in_cache(cmzn_field_cache_id cache, int assign_in_cache)
 {
 	if (!cache)
 		return 0;

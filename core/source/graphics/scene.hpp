@@ -41,30 +41,30 @@
 
 #include "general/callback_class.hpp"
 
-struct Cmiss_scene;
+struct cmzn_scene;
 class Render_graphics_compile_members;
 class Render_graphics_opengl;
 
-int Cmiss_scene_compile_scene(Cmiss_scene *cmiss_scene,
+int cmzn_scene_compile_scene(cmzn_scene *cmiss_scene,
 	Render_graphics_compile_members *renderer);
 
-int Cmiss_scene_compile_graphics(Cmiss_scene *cmiss_scene,
+int cmzn_scene_compile_graphics(cmzn_scene *cmiss_scene,
 	Render_graphics_compile_members *renderer);
 
-int execute_Cmiss_scene(Cmiss_scene *cmiss_scene,
+int execute_cmzn_scene(cmzn_scene *cmiss_scene,
 	Render_graphics_opengl *renderer);
 
-int Cmiss_scene_graphics_render_opengl(struct Cmiss_scene *cmiss_scene,
+int cmzn_scene_graphics_render_opengl(struct cmzn_scene *cmiss_scene,
 	Render_graphics_opengl *renderer);
 
-int Cmiss_scene_render_child_scene(struct Cmiss_scene *scene,
+int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 	Render_graphics_opengl *renderer);
 
-int Scene_render_opengl(Cmiss_scene *scene, Render_graphics_opengl *renderer);
+int Scene_render_opengl(cmzn_scene *scene, Render_graphics_opengl *renderer);
 
-int Cmiss_scene_compile_tree(Cmiss_scene *cmiss_scene,
+int cmzn_scene_compile_tree(cmzn_scene *cmiss_scene,
 	Render_graphics_compile_members *renderer);
 
-int build_Scene(Cmiss_scene_id scene, Cmiss_graphics_filter_id filter);
+int build_Scene(cmzn_scene_id scene, cmzn_graphics_filter_id filter);
 
 #endif /* !defined (CMISS_SCENE_HPP) */

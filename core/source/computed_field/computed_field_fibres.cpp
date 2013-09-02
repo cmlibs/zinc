@@ -91,16 +91,16 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 };
 
-bool Computed_field_fibre_axes::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_fibre_axes::is_defined_at_location(cmzn_field_cache& cache)
 {
 	Field_element_xi_location* element_xi_location;
 	// only works for element_xi locations & at least 2-D
@@ -125,7 +125,7 @@ bool Computed_field_fibre_axes::is_defined_at_location(Cmiss_field_cache& cache)
  * <element_dimension> may be 2 or 3 only.
  * Derivatives may not be computed for this type of Computed_field [yet].
  */
-int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_fibre_axes::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	/* Only works for element_xi locations */
 	Field_element_xi_location* element_xi_location;
@@ -141,7 +141,7 @@ int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			element_xi_location->get_xi(), element_dimension,
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		// use the normal cache if already on a top level element, otherwise use extra cache
-		Cmiss_field_cache *workingCache = &cache;
+		cmzn_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
 			workingCache = valueCache.getOrCreateExtraCache(cache);
@@ -149,8 +149,8 @@ int Computed_field_fibre_axes::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			workingCache->setMeshLocation(top_level_element, top_level_xi);
 		}
 
-		Cmiss_field_id fibre_field = getSourceField(0);
-		Cmiss_field_id coordinate_field = getSourceField(1);
+		cmzn_field_id fibre_field = getSourceField(0);
+		cmzn_field_id coordinate_field = getSourceField(1);
 		RealFieldValueCache *fibreCache = RealFieldValueCache::cast(fibre_field->evaluate(*workingCache));
 		RealFieldValueCache *coordinateCache = RealFieldValueCache::cast(coordinate_field->evaluateWithDerivatives(*workingCache, top_level_element_dimension));
 		FE_value x[3], dx_dxi[9];
@@ -342,9 +342,9 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_fibre_axes(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id fibre_field, Cmiss_field_id coordinate_field)
+cmzn_field_id cmzn_field_module_create_fibre_axes(
+	cmzn_field_module_id field_module,
+	cmzn_field_id fibre_field, cmzn_field_id coordinate_field)
 {
 	Computed_field *field = NULL;
 	if (field_module && fibre_field && fibre_field->isNumerical() &&
@@ -365,7 +365,7 @@ Cmiss_field_id Cmiss_field_module_create_fibre_axes(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_fibre_axes.  Invalid argument(s)");
+			"cmzn_field_module_create_fibre_axes.  Invalid argument(s)");
 	}
 	LEAVE;
 

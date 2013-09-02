@@ -54,7 +54,7 @@ extern "C" {
 /*******************************************************************************
  * Automatic scalar broadcast
  *
- * For field constructors (Cmiss_field_module_create~ functions) which specify
+ * For field constructors (cmzn_field_module_create~ functions) which specify
  * the they apply automatic scalar broadcast for their source fields arguments,
  * if the one of the source fields has multiple components and the
  * other is a scalar, then the scalar will be automatically replicated so that
@@ -75,7 +75,7 @@ Global functions
  * @param field_module  The field module to obtain a new reference to.
  * @return  New field module reference with incremented reference count.
  */
-ZINC_API Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id field_module);
+ZINC_API cmzn_field_module_id cmzn_field_module_access(cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * Destroys reference to the field module and sets pointer/handle to NULL.
@@ -84,32 +84,32 @@ ZINC_API Cmiss_field_module_id Cmiss_field_module_access(Cmiss_field_module_id f
  * @param field_module_address  Address of field module reference.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_module_destroy(Cmiss_field_module_id *field_module_address);
+ZINC_API int cmzn_field_module_destroy(cmzn_field_module_id *field_module_address);
 
 /***************************************************************************//**
  * Begin caching or increment cache level for this field module. Call this
  * function before making multiple changes to fields, nodes, elements etc. from
  * this field module to minimise number of change messages sent to clients.
- * Must call Cmiss_field_module_end_change after making changes.
+ * Must call cmzn_field_module_end_change after making changes.
  * Note that field module changes are always cached when the region changes are
  * being cached.
  *
- * @see Cmiss_region_begin_change
+ * @see cmzn_region_begin_change
  * @param field_module  The field_module to begin change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_module_begin_change(Cmiss_field_module_id field_module);
+ZINC_API int cmzn_field_module_begin_change(cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * Decrement cache level or end caching of changes for this field module.
- * Call Cmiss_field_module_begin_change before making multiple changes
+ * Call cmzn_field_module_begin_change before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
  *
  * @param field_module  The field_module to end change cache on.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
+ZINC_API int cmzn_field_module_end_change(cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * Returns the field of the specified name from the field module.
@@ -118,14 +118,14 @@ ZINC_API int Cmiss_field_module_end_change(Cmiss_field_module_id field_module);
  * @param field_name  The name of the field to find.
  * @return  New reference to field of specified name, or NULL if not found.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_find_field_by_name(
-	Cmiss_field_module_id field_module, const char *field_name);
+ZINC_API cmzn_field_id cmzn_field_module_find_field_by_name(
+	cmzn_field_module_id field_module, const char *field_name);
 
 /***************************************************************************//**
  * Create a field iterator object for iterating through the fields in the field
  * module, in alphabetical order of name. The iterator initially points at the
  * position before the first field, so the first call to
- * Cmiss_field_iterator_next() returns the first field and advances the
+ * cmzn_field_iterator_next() returns the first field and advances the
  * iterator.
  * Iterator becomes invalid if fields are added, removed or renamed while in use.
  *
@@ -134,8 +134,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_find_field_by_name(
  * @return  Handle to field_iterator at position before first, or NULL if
  * error.
  */
-ZINC_API Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
-	Cmiss_field_module_id field_module);
+ZINC_API cmzn_field_iterator_id cmzn_field_module_create_field_iterator(
+	cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * Defines, for all elements of all meshes in field module, face elements of
@@ -146,7 +146,7 @@ ZINC_API Cmiss_field_iterator_id Cmiss_field_module_create_field_iterator(
  * faces for.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_module);
+ZINC_API int cmzn_field_module_define_all_faces(cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * Gets the region this field module can create fields for.
@@ -154,7 +154,7 @@ ZINC_API int Cmiss_field_module_define_all_faces(Cmiss_field_module_id field_mod
  * @param field_module  The field module to query.
  * @return  Accessed handle to owning region for field_module.
  */
-ZINC_API Cmiss_region_id Cmiss_field_module_get_region(Cmiss_field_module_id field_module);
+ZINC_API cmzn_region_id cmzn_field_module_get_region(cmzn_field_module_id field_module);
 
 #ifdef __cplusplus
 }

@@ -48,12 +48,12 @@ This provides an object which supplies a concept of time to Cmgui
 #include "general/object.h"
 #include "time/time_keeper.hpp"
 
-#define Time_object Cmiss_time_notifier
-#define Time_object_add_callback Cmiss_time_notifier_add_callback
-#define Time_object_remove_callback Cmiss_time_notifier_remove_callback
-#define Time_object_get_current_time Cmiss_time_notifier_get_current_time
-#define Time_object_regular_set_frequency Cmiss_time_notifier_regular_set_frequency
-#define Time_object_regular_set_offset Cmiss_time_notifier_regular_set_offset
+#define Time_object cmzn_time_notifier
+#define Time_object_add_callback cmzn_time_notifier_add_callback
+#define Time_object_remove_callback cmzn_time_notifier_remove_callback
+#define Time_object_get_current_time cmzn_time_notifier_get_current_time
+#define Time_object_regular_set_frequency cmzn_time_notifier_regular_set_frequency
+#define Time_object_regular_set_offset cmzn_time_notifier_regular_set_offset
 
 struct Time_object;
 
@@ -167,7 +167,7 @@ not used.  Instead the next_time_function is called to evaluate the next valid
 time.
 ==============================================================================*/
 
-struct Cmiss_time_keeper *Time_object_get_time_keeper(struct Time_object *time);
+struct cmzn_time_keeper *Time_object_get_time_keeper(struct Time_object *time);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 

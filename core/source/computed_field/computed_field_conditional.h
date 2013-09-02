@@ -48,7 +48,7 @@ Implements computed fields which conditionally calculate their inputs.
 #include "zinc/field.h"
 #include "zinc/fieldconditional.h"
 
-#define Computed_field_create_if Cmiss_field_module_create_if
+#define Computed_field_create_if cmzn_field_module_create_if
 
 /*****************************************************************************//**
  * Creates a conditional field with the same number of components as each of the
@@ -63,7 +63,7 @@ Implements computed fields which conditionally calculate their inputs.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_if(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three);

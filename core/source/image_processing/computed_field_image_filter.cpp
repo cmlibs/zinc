@@ -50,7 +50,7 @@ Class used for wrapping itk filters
 #include "general/message.h"
 
 namespace CMISS {
-int computed_field_image_filter::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int computed_field_image_filter::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	return functor->update_and_evaluate_filter(cache, valueCache);

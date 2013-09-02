@@ -48,7 +48,7 @@ class GeometricShape
 		std::vector<Point*> m_points;
 		std::vector<Curve*> m_curves;
 		std::vector<Surface*> m_surfaces;
-		std::vector<Cmiss_cad_surface_identifier> m_surfaceIndexes;
+		std::vector<cmzn_cad_surface_identifier> m_surfaceIndexes;
 
 		Quantity_Color m_surfaceColour;
 		Quantity_Color m_curveColour;

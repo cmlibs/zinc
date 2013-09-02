@@ -186,7 +186,7 @@ public:
 	{
 	}
 
-	int set_filter(Cmiss_field_cache& cache)
+	int set_filter(cmzn_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2007
 
@@ -279,13 +279,13 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 };
 
@@ -335,7 +335,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_derivative::compare */
 
-bool Computed_field_derivative::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_derivative::is_defined_at_location(cmzn_field_cache& cache)
 {
 	// derivative values are only defined for element_xi locations, and only up to element dimension...
 	Field_element_xi_location* element_xi_location;
@@ -368,7 +368,7 @@ bool Computed_field_derivative::is_defined_at_location(Cmiss_field_cache& cache)
 	return false;
 }
 
-int Computed_field_derivative::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_derivative::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	/* Only works for element_xi locations, or field locations for image-based fields */
@@ -497,7 +497,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_derivative(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, int xi_index)
 {
 	Computed_field *field = NULL;
@@ -586,7 +586,7 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -600,13 +600,13 @@ private:
  * returned as 0 with a warning - as may happen at certain locations of the mesh.
  * Note currently requires vector_field to be RC.
  */
-int Computed_field_curl::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_curl::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	Field_element_xi_location* element_xi_location;
 	//Field_node_location* node_location;
-	Cmiss_field_id source_field = getSourceField(0);
-	Cmiss_field_id coordinate_field = getSourceField(1);
+	cmzn_field_id source_field = getSourceField(0);
+	cmzn_field_id coordinate_field = getSourceField(1);
 	/* cannot calculate derivatives for curl yet */
 	valueCache.derivatives_valid = 0;
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
@@ -620,7 +620,7 @@ int Computed_field_curl::evaluate(Cmiss_field_cache& cache, FieldValueCache& inV
 			element_xi_location->get_xi(), element_dimension,
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		// use the normal cache if already on a top level element, otherwise use extra cache
-		Cmiss_field_cache *workingCache = &cache;
+		cmzn_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
 			workingCache = valueCache.getOrCreateExtraCache(cache);
@@ -639,7 +639,7 @@ int Computed_field_curl::evaluate(Cmiss_field_cache& cache, FieldValueCache& inV
 			/* only support RC vector fields */
 			if (RECTANGULAR_CARTESIAN == source_field->coordinate_system.type)
 			{
-				Cmiss_field_id coordinate_field = getSourceField(1);
+				cmzn_field_id coordinate_field = getSourceField(1);
 				if (convert_coordinates_and_derivatives_to_rc(&(coordinate_field->coordinate_system),
 					coordinate_field->number_of_components, coordinateValueCache->values, coordinateValueCache->derivatives,
 					top_level_element_dimension, x, dx_dxi))
@@ -769,7 +769,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_curl(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
 	struct Computed_field *field = NULL;
@@ -862,7 +862,7 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -876,13 +876,13 @@ private:
  * returned as 0 with a warning - as may happen at certain locations of the mesh.
  * Note currently requires vector_field to be RC.
  */
-int Computed_field_divergence::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_divergence::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	Field_element_xi_location* element_xi_location;
 	//Field_node_location* node_location;
-	Cmiss_field_id source_field = getSourceField(0);
-	Cmiss_field_id coordinate_field = getSourceField(1);
+	cmzn_field_id source_field = getSourceField(0);
+	cmzn_field_id coordinate_field = getSourceField(1);
 	/* cannot calculate derivatives for curl yet */
 	valueCache.derivatives_valid = 0;
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
@@ -896,7 +896,7 @@ int Computed_field_divergence::evaluate(Cmiss_field_cache& cache, FieldValueCach
 			element_xi_location->get_xi(), element_dimension,
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		// use the normal cache if already on a top level element, otherwise use extra cache
-		Cmiss_field_cache *workingCache = &cache;
+		cmzn_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
 			workingCache = valueCache.getOrCreateExtraCache(cache);
@@ -1051,7 +1051,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_divergence(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
 	struct Computed_field *field = NULL;
@@ -1150,9 +1150,9 @@ private:
 		}
 	}
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -1162,21 +1162,21 @@ private:
 /***************************************************************************//**
  * Implemented for element_xi and node locations
  */
-bool Computed_field_gradient::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_gradient::is_defined_at_location(cmzn_field_cache& cache)
 {
 	return ((0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation())) ||
 		(0 != dynamic_cast<Field_node_location*>(cache.getLocation()))) &&
 		Computed_field_core::is_defined_at_location(cache);
 }
 
-int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_gradient::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	Field_element_xi_location* element_xi_location;
 	//Field_node_location* node_location;
-	Cmiss_field_id source_field = getSourceField(0);
-	Cmiss_field_id coordinate_field = getSourceField(1);
+	cmzn_field_id source_field = getSourceField(0);
+	cmzn_field_id coordinate_field = getSourceField(1);
 	int source_number_of_components = source_field->number_of_components;
 	int coordinate_number_of_components = coordinate_field->number_of_components;
 	/* cannot calculate derivatives for gradient yet */
@@ -1192,7 +1192,7 @@ int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache&
 			element_xi_location->get_xi(), element_dimension,
 			&top_level_element, top_level_xi, &top_level_element_dimension);
 		// use the normal cache if already on a top level element, otherwise use extra cache
-		Cmiss_field_cache *workingCache = &cache;
+		cmzn_field_cache *workingCache = &cache;
 		if (top_level_element != element)
 		{
 			workingCache = valueCache.getOrCreateExtraCache(cache);
@@ -1276,7 +1276,7 @@ int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache&
 		FE_value *down_values = new FE_value[source_number_of_components];
 		FE_value *coordinate_values = new FE_value[coordinate_number_of_components];
 
-		Cmiss_field_cache& extraCache = *valueCache.getOrCreateExtraCache(cache);
+		cmzn_field_cache& extraCache = *valueCache.getOrCreateExtraCache(cache);
 		Field_location *location = cache.cloneLocation();
 		extraCache.setLocation(location);
 
@@ -1322,7 +1322,7 @@ int Computed_field_gradient::evaluate(Cmiss_field_cache& cache, FieldValueCache&
 					}
 					/* Set the coordinate field values in cache only and evaluate the source field */
 					extraCache.setAssignInCacheOnly(true);
-					if (Cmiss_field_assign_real(coordinate_field, &extraCache,
+					if (cmzn_field_assign_real(coordinate_field, &extraCache,
 						coordinate_number_of_components, coordinate_values))
 					{
 						RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(extraCache));
@@ -1438,7 +1438,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_gradient(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, struct Computed_field *coordinate_field)
 {
 	struct Computed_field *field = NULL;

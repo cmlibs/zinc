@@ -23,9 +23,9 @@ Added Features (some incomplete):
 Bugs fixed:
 Fixed several bugs causing occasional crashes.
 3115 Key presses now get sent to scene viewer callbacks
-3160 Fixed crashes caused when passing a null field to Cmiss_field_module_create_abs
+3160 Fixed crashes caused when passing a null field to cmzn_field_module_create_abs
 3167 Fixed setting linear filter for image field has no effect
-3181 Fixed crashes when passing null context to Cmiss_context_get_default_region
+3181 Fixed crashes when passing null context to cmzn_context_get_default_region
 3207 Fixed streamlines not showing on 2D models
 
 Improvements:
@@ -91,8 +91,8 @@ This is an official release of cmgui.
 
 API Changes:
 (Break) Context API replaces command data. User interface must be enabled explicitly before using graphics, time and execute_command.
-(Break) Region API. New methods for creating regions and finding subregions. New method to get field module. Removed obsolete Cmiss_region_add_field.
-(Break) Field API. New Field_module API has factory methods for creating fields owned by a region; no need to call Cmiss_region_add_field. New get_name function.
+(Break) Region API. New methods for creating regions and finding subregions. New method to get field module. Removed obsolete cmzn_region_add_field.
+(Break) Field API. New Field_module API has factory methods for creating fields owned by a region; no need to call cmzn_region_add_field. New get_name function.
 (Break) Object persistence API. New ~set_persistent methods for field, material must be called for objects to persist in owning module when no external references held.
 (New) Graphical material API.
 (New) Time API. 
@@ -201,8 +201,8 @@ Bugs fixed (selected list)
 25 June 2008
 API changes:
 cmiss_scene_viewer.h
-Cmiss_scene_viewer_get_frame_pixels now takes a 
-   enum Cmiss_field_image_storage_pixel_format storage
+cmzn_scene_viewer_get_frame_pixels now takes a 
+   enum cmzn_field_image_storage_pixel_format storage
    rather than a Texture_format enumerator.
 cmiss_field_image.h New interface.
 
@@ -266,8 +266,8 @@ Node viewer now allows user to show variables from all fields at the same time.
 v2.3.3
 18 December 2006
 Shifted to externally visible subversion server.
-Added Cmiss_scene_viewer_set_depth_of_field and Cmiss_scene_viewer_get_depth_of_field.
-Add Cmiss_scene_viewer_set_background_texture_info.
+Added cmzn_scene_viewer_set_depth_of_field and cmzn_scene_viewer_get_depth_of_field.
+Add cmzn_scene_viewer_set_background_texture_info.
 Fix bug calling get_FE_element_dimension when there is no element.
 Fix bug in derivative computed field.
 Stop segfault if source field not specified for derivative computed field.

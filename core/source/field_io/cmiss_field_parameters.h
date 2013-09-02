@@ -55,26 +55,26 @@
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
-Cmiss_field *Cmiss_field_module_create_real_parameters(Cmiss_field_module_id field_module,
-	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
+cmzn_field *cmzn_field_module_create_real_parameters(cmzn_field_module_id field_module,
+	int number_of_index_ensembles, cmzn_field_ensemble_id *index_ensemble_fields);
 
-Cmiss_field_real_parameters_id Cmiss_field_cast_real_parameters(Cmiss_field_id field);
+cmzn_field_real_parameters_id cmzn_field_cast_real_parameters(cmzn_field_id field);
 
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_real_parameters_base_cast(
-	Cmiss_field_real_parameters_id real_parameters_field)
+ZINC_C_INLINE cmzn_field_id cmzn_field_real_parameters_base_cast(
+	cmzn_field_real_parameters_id real_parameters_field)
 {
-	return (Cmiss_field_id)(real_parameters_field);
+	return (cmzn_field_id)(real_parameters_field);
 }
 
-int Cmiss_field_real_parameters_destroy(
-	Cmiss_field_real_parameters_id *real_parameters_field_address);
+int cmzn_field_real_parameters_destroy(
+	cmzn_field_real_parameters_id *real_parameters_field_address);
 
-Cmiss_ensemble_index_id Cmiss_field_real_parameters_create_index(
-	Cmiss_field_real_parameters_id real_parameters_field);
+cmzn_ensemble_index_id cmzn_field_real_parameters_create_index(
+	cmzn_field_real_parameters_id real_parameters_field);
 
-int Cmiss_field_real_parameters_get_values(
-	Cmiss_field_real_parameters_id real_parameters_field,
-	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values);
+int cmzn_field_real_parameters_get_values(
+	cmzn_field_real_parameters_id real_parameters_field,
+	cmzn_ensemble_index_id index, unsigned int number_of_values, double *values);
 
 /***************************************************************************//**
  * @param number_of_values  The size of the values and value_exists arrays. This
@@ -86,21 +86,21 @@ int Cmiss_field_real_parameters_get_values(
  * @return  1 on success, 0 on error. Success includes when the index and
  * number of values expected are matching, but no values are stored.
  */
-int Cmiss_field_real_parameters_get_values_sparse(
-	Cmiss_field_real_parameters_id real_parameters_field,
-	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values,
+int cmzn_field_real_parameters_get_values_sparse(
+	cmzn_field_real_parameters_id real_parameters_field,
+	cmzn_ensemble_index_id index, unsigned int number_of_values, double *values,
 	int *value_exists, int *number_of_values_read);
 
-int Cmiss_field_real_parameters_set_values(
-	Cmiss_field_real_parameters_id real_parameters_field,
-	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values);
+int cmzn_field_real_parameters_set_values(
+	cmzn_field_real_parameters_id real_parameters_field,
+	cmzn_ensemble_index_id index, unsigned int number_of_values, double *values);
 
 
 /***************************************************************************//**
- * The ensemble type specific handle to an integer parameters Cmiss_field.
+ * The ensemble type specific handle to an integer parameters cmzn_field.
  */
-struct Cmiss_field_integer_parameters;
-typedef struct Cmiss_field_integer_parameters *Cmiss_field_integer_parameters_id;
+struct cmzn_field_integer_parameters;
+typedef struct cmzn_field_integer_parameters *cmzn_field_integer_parameters_id;
 
 /***************************************************************************//**
  * Create an integer-valued parameter set indexed by N ensembles.
@@ -110,29 +110,29 @@ typedef struct Cmiss_field_integer_parameters *Cmiss_field_integer_parameters_id
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
-Cmiss_field *Cmiss_field_module_create_integer_parameters(Cmiss_field_module_id field_module,
-	int number_of_index_ensembles, Cmiss_field_ensemble_id *index_ensemble_fields);
+cmzn_field *cmzn_field_module_create_integer_parameters(cmzn_field_module_id field_module,
+	int number_of_index_ensembles, cmzn_field_ensemble_id *index_ensemble_fields);
 
-Cmiss_field_integer_parameters_id Cmiss_field_cast_integer_parameters(Cmiss_field_id field);
+cmzn_field_integer_parameters_id cmzn_field_cast_integer_parameters(cmzn_field_id field);
 
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_integer_parameters_base_cast(
-	Cmiss_field_integer_parameters_id integer_parameters_field)
+ZINC_C_INLINE cmzn_field_id cmzn_field_integer_parameters_base_cast(
+	cmzn_field_integer_parameters_id integer_parameters_field)
 {
-	return (Cmiss_field_id)(integer_parameters_field);
+	return (cmzn_field_id)(integer_parameters_field);
 }
 
-int Cmiss_field_integer_parameters_destroy(
-	Cmiss_field_integer_parameters_id *integer_parameters_field_address);
+int cmzn_field_integer_parameters_destroy(
+	cmzn_field_integer_parameters_id *integer_parameters_field_address);
 
-Cmiss_ensemble_index_id Cmiss_field_integer_parameters_create_index(
-	Cmiss_field_integer_parameters_id integer_parameters_field);
+cmzn_ensemble_index_id cmzn_field_integer_parameters_create_index(
+	cmzn_field_integer_parameters_id integer_parameters_field);
 
-int Cmiss_field_integer_parameters_get_values(
-	Cmiss_field_integer_parameters_id integer_parameters_field,
-	Cmiss_ensemble_index_id index, unsigned int number_of_values, int *values);
+int cmzn_field_integer_parameters_get_values(
+	cmzn_field_integer_parameters_id integer_parameters_field,
+	cmzn_ensemble_index_id index, unsigned int number_of_values, int *values);
 
-int Cmiss_field_integer_parameters_set_values(
-	Cmiss_field_integer_parameters_id integer_parameters_field,
-	Cmiss_ensemble_index_id index, unsigned int number_of_values, int *values);
+int cmzn_field_integer_parameters_set_values(
+	cmzn_field_integer_parameters_id integer_parameters_field,
+	cmzn_ensemble_index_id index, unsigned int number_of_values, int *values);
 
 #endif /* !defined (CMISS_FIELD_PARAMETERS_H) */

@@ -69,7 +69,7 @@ Module functions
 */
 
 static int read_element_xi_value(struct IO_stream *input_file,
-	struct Cmiss_region *root_region, struct Cmiss_region *current_region,
+	struct cmzn_region *root_region, struct cmzn_region *current_region,
 	struct FE_element **element_address, FE_value *xi)
 /*******************************************************************************
 LAST MODIFIED : 27 May 2003
@@ -88,7 +88,7 @@ is in the root_region itself. The REGION_PATH must end in
 	char *location;
 	int dimension, k, return_code;
 	struct CM_element_information cm;
-	struct Cmiss_region *region;
+	struct cmzn_region *region;
 	struct FE_element *element;
 	struct FE_region *fe_region;
 
@@ -99,7 +99,7 @@ is in the root_region itself. The REGION_PATH must end in
 		/* determine the region path, element type and element number. First read
 			 two strings and determine if the second is a number, in which case the
 			 region path is omitted */
-		region = (struct Cmiss_region *)NULL;
+		region = (struct cmzn_region *)NULL;
 		char *whitespace_string = 0;
 		char *first_string = 0;
 		char *separator_string = 0;
@@ -120,7 +120,7 @@ is in the root_region itself. The REGION_PATH must end in
 			}
 			else if (1 == IO_stream_scan(input_file, " %d", &(cm.number)))
 			{
-				if (Cmiss_region_get_region_from_path_deprecated(root_region, first_string,
+				if (cmzn_region_get_region_from_path_deprecated(root_region, first_string,
 					&region) && region)
 				{
 					element_type_string = second_string;
@@ -185,7 +185,7 @@ is in the root_region itself. The REGION_PATH must end in
 		DEALLOCATE(whitespace_string);
 		if (return_code)
 		{
-			if (NULL != (fe_region = Cmiss_region_get_FE_region(region)))
+			if (NULL != (fe_region = cmzn_region_get_FE_region(region)))
 			{
 				element = (struct FE_element *)NULL;
 				if ((1 == IO_stream_scan(input_file, " %d", &dimension)) && (0 < dimension))
@@ -245,7 +245,7 @@ is in the root_region itself. The REGION_PATH must end in
 			{
 				location = IO_stream_get_location_string(input_file);
 				display_message(ERROR_MESSAGE,
-					"Cmiss region does not contain a finite element region.  %s", location);
+					"cmzn region does not contain a finite element region.  %s", location);
 				DEALLOCATE(location);
 				return_code = 0;
 			}
@@ -812,8 +812,8 @@ for node and element fields.
 } /* read_FE_field */
 
 static int read_FE_field_values(struct IO_stream *input_file,
-	struct FE_region *fe_region, struct Cmiss_region *root_region,
-	struct Cmiss_region *current_region,
+	struct FE_region *fe_region, struct cmzn_region *root_region,
+	struct cmzn_region *current_region,
 	struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 29 October 2002
@@ -1372,7 +1372,7 @@ from a previous call to this function.
  */
 static struct FE_node *read_FE_node(struct IO_stream *input_file,
 	struct FE_node *template_node, struct FE_region *fe_region,
-	Cmiss_region_id root_region, Cmiss_region_id region,
+	cmzn_region_id root_region, cmzn_region_id region,
 	struct FE_field_order_info *field_order_info,
 	struct FE_import_time_index *time_index)
 {
@@ -3300,7 +3300,7 @@ in a grid field.
  *   data regions, otherwise nodes and elements are read normally.
  * @return  1 on success, 0 on failure.
  */
-static int read_exregion_file_private(struct Cmiss_region *root_region,
+static int read_exregion_file_private(struct cmzn_region *root_region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index,
 	int use_data)
 {
@@ -3318,13 +3318,13 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 	if (root_region && input_file)
 	{
 		int use_data_meta_flag = use_data;
-		Cmiss_region_begin_hierarchical_change(root_region);
+		cmzn_region_begin_hierarchical_change(root_region);
 		/* region is the same as read_region if reading into a true region,
 		 * otherwise it is the parent region of read_region group */
-		Cmiss_region_id region = Cmiss_region_access(root_region);
-		Cmiss_field_group_id group = 0;
-		Cmiss_nodeset_group_id nodeset_group = 0;
-		Cmiss_mesh_group_id mesh_group = 0;
+		cmzn_region_id region = cmzn_region_access(root_region);
+		cmzn_field_group_id group = 0;
+		cmzn_nodeset_group_id nodeset_group = 0;
+		cmzn_mesh_group_id mesh_group = 0;
 		struct FE_region *fe_region = 0;
 		field_order_info = (struct FE_field_order_info *)NULL;
 		template_node = (struct FE_node *)NULL;
@@ -3349,7 +3349,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						use_data_meta_flag = use_data;
 						if (group)
 						{
-							Cmiss_field_group_destroy(&group);
+							cmzn_field_group_destroy(&group);
 						}
 						fe_region = (struct FE_region *)NULL;
 						/* Use a %1[:] so that a successful read will return 1 */
@@ -3405,13 +3405,13 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						{
 							if ('R' == first_character_in_token)
 							{
-								Cmiss_region_destroy(&region);
+								cmzn_region_destroy(&region);
 								if (region_path && (CMISS_REGION_PATH_SEPARATOR_CHAR == region_path[0]))
 								{
-									region = Cmiss_region_find_subregion_at_path(root_region, region_path);
+									region = cmzn_region_find_subregion_at_path(root_region, region_path);
 									if (!region)
 									{
-										region = Cmiss_region_create_subregion(root_region, region_path);
+										region = cmzn_region_create_subregion(root_region, region_path);
 									}
 									if (!region)
 									{
@@ -3434,11 +3434,11 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							}
 							else
 							{
-								Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-								Cmiss_field_id group_field = Cmiss_field_module_find_field_by_name(field_module, region_path);
+								cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+								cmzn_field_id group_field = cmzn_field_module_find_field_by_name(field_module, region_path);
 								if (group_field)
 								{
-									group = Cmiss_field_cast_group(group_field);
+									group = cmzn_field_cast_group(group_field);
 									if (!group)
 									{
 										location = IO_stream_get_location_string(input_file);
@@ -3450,11 +3450,11 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 								}
 								else
 								{
-									group_field = Cmiss_field_module_create_group(field_module);
-									Cmiss_field_set_managed(group_field, true);
-									if (Cmiss_field_set_name(group_field, region_path))
+									group_field = cmzn_field_module_create_group(field_module);
+									cmzn_field_set_managed(group_field, true);
+									if (cmzn_field_set_name(group_field, region_path))
 									{
-										group = Cmiss_field_cast_group(group_field);
+										group = cmzn_field_cast_group(group_field);
 									}
 									else
 									{
@@ -3465,8 +3465,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 										return_code = 0;
 									}
 								}
-								Cmiss_field_destroy(&group_field);
-								Cmiss_field_module_destroy(&field_module);
+								cmzn_field_destroy(&group_field);
+								cmzn_field_module_destroy(&field_module);
 							}
 						}
 						region_path = (char *)NULL;
@@ -3491,7 +3491,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 						}
 						if (region)
 						{
-							fe_region = Cmiss_region_get_FE_region(region);
+							fe_region = cmzn_region_get_FE_region(region);
 							if (use_data_meta_flag)
 							{
 								fe_region = FE_region_get_data_FE_region(fe_region);
@@ -3499,7 +3499,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
 							field_order_info = CREATE(FE_field_order_info)();
 						}
-						Cmiss_nodeset_group_destroy(&nodeset_group);
+						cmzn_nodeset_group_destroy(&nodeset_group);
 					} break;
 					case 'S': /* Shape */
 					{
@@ -3565,7 +3565,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							DEALLOCATE(location);
 							return_code = 0;
 						}
-						Cmiss_mesh_group_destroy(&mesh_group);
+						cmzn_mesh_group_destroy(&mesh_group);
 					} break;
 					case '!': /* ! Comment ignored to end of line */
 					{
@@ -3587,7 +3587,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 							}
 							if (region)
 							{
-								fe_region = Cmiss_region_get_FE_region(region);
+								fe_region = cmzn_region_get_FE_region(region);
 								if (use_data_meta_flag)
 								{
 									fe_region = FE_region_get_data_FE_region(fe_region);
@@ -3602,7 +3602,7 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 									DESTROY(FE_field_order_info)(&field_order_info);
 								}
 								field_order_info = CREATE(FE_field_order_info)();
-								Cmiss_nodeset_group_destroy(&nodeset_group);
+								cmzn_nodeset_group_destroy(&nodeset_group);
 							}
 						}
 						else
@@ -3686,22 +3686,22 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 									{
 										if (group && (!nodeset_group))
 										{
-											Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-											Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+											cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+											cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
 												use_data_meta_flag ? CMISS_FIELD_DOMAIN_DATA : CMISS_FIELD_DOMAIN_NODES);
-											Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
+											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
 											if (!node_group)
 											{
-												node_group = Cmiss_field_group_create_node_group(group, nodeset);
+												node_group = cmzn_field_group_create_node_group(group, nodeset);
 											}
-											nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
-											Cmiss_field_node_group_destroy(&node_group);
-											Cmiss_nodeset_destroy(&nodeset);
-											Cmiss_field_module_destroy(&field_module);
+											nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
+											cmzn_field_node_group_destroy(&node_group);
+											cmzn_nodeset_destroy(&nodeset);
+											cmzn_field_module_destroy(&field_module);
 										}
 										if (nodeset_group)
 										{
-											Cmiss_nodeset_group_add_node(nodeset_group, node);
+											cmzn_nodeset_group_add_node(nodeset_group, node);
 										}
 									}
 									else
@@ -3753,22 +3753,22 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 									{
 										if (group && (!mesh_group))
 										{
-											Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-											Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module,
+											cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+											cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module,
 												get_FE_element_dimension(template_element));
-											Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
+											cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, mesh);
 											if (!element_group)
 											{
-												element_group = Cmiss_field_group_create_element_group(group, mesh);
+												element_group = cmzn_field_group_create_element_group(group, mesh);
 											}
-											mesh_group = Cmiss_field_element_group_get_mesh(element_group);
-											Cmiss_field_element_group_destroy(&element_group);
-											Cmiss_mesh_destroy(&mesh);
-											Cmiss_field_module_destroy(&field_module);
+											mesh_group = cmzn_field_element_group_get_mesh(element_group);
+											cmzn_field_element_group_destroy(&element_group);
+											cmzn_mesh_destroy(&mesh);
+											cmzn_field_module_destroy(&field_module);
 										}
 										if (mesh_group)
 										{
-											Cmiss_mesh_group_add_element(mesh_group, element);
+											cmzn_mesh_group_add_element(mesh_group, element);
 										}
 									}
 									else
@@ -3850,9 +3850,9 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 				} /* switch (first_character_in_token) */
 			} /* if (1 == input_result) */
 		} /* while (return_code && (1 == input_result)) */
-		Cmiss_nodeset_group_destroy(&nodeset_group);
-		Cmiss_mesh_group_destroy(&mesh_group);
-		Cmiss_field_group_destroy(&group);
+		cmzn_nodeset_group_destroy(&nodeset_group);
+		cmzn_mesh_group_destroy(&mesh_group);
+		cmzn_field_group_destroy(&group);
 		if (template_node)
 		{
 			DEACCESS(FE_node)(&template_node);
@@ -3869,8 +3869,8 @@ static int read_exregion_file_private(struct Cmiss_region *root_region,
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
-		DEACCESS(Cmiss_region)(&region);
-		Cmiss_region_end_hierarchical_change(root_region);
+		DEACCESS(cmzn_region)(&region);
+		cmzn_region_end_hierarchical_change(root_region);
 	}
 	else
 	{
@@ -3889,21 +3889,21 @@ Global functions
 ----------------
 */
 
-int read_exregion_file(struct Cmiss_region *region,
+int read_exregion_file(struct cmzn_region *region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index)
 {
 	return read_exregion_file_private(region, input_file, time_index,
 		/*use_data*/0);
 }
 
-int read_exdata_file(struct Cmiss_region *region,
+int read_exdata_file(struct cmzn_region *region,
 	struct IO_stream *input_file, struct FE_import_time_index *time_index)
 {
 	return read_exregion_file_private(region, input_file, time_index,
 		/*use_data*/1);
 }
 
-int read_exregion_file_of_name(struct Cmiss_region *region, const char *file_name,
+int read_exregion_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct FE_import_time_index *time_index, int useData)
 /*******************************************************************************

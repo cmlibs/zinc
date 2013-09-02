@@ -47,7 +47,7 @@ namespace zinc
 class SceneViewerInput
 {
 protected:
-	Cmiss_scene_viewer_input_id id;
+	cmzn_scene_viewer_input_id id;
 
 public:
 	enum InputEventType
@@ -74,20 +74,20 @@ public:
 	{  }
 
 	// takes ownership of C-style region reference
-	explicit SceneViewerInput(Cmiss_scene_viewer_input_id in_scene_viewer_input_id) :
+	explicit SceneViewerInput(cmzn_scene_viewer_input_id in_scene_viewer_input_id) :
 		id(in_scene_viewer_input_id)
 	{  }
 
 	SceneViewerInput(const SceneViewerInput& scene_viewer_input) :
-		id(Cmiss_scene_viewer_input_access(scene_viewer_input.id))
+		id(cmzn_scene_viewer_input_access(scene_viewer_input.id))
 	{  }
 
 	SceneViewerInput& operator=(const SceneViewerInput& scene_viewer_input)
 	{
-		Cmiss_scene_viewer_input_id temp_id = Cmiss_scene_viewer_input_access(scene_viewer_input.id);
+		cmzn_scene_viewer_input_id temp_id = cmzn_scene_viewer_input_access(scene_viewer_input.id);
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_input_destroy(&id);
+			cmzn_scene_viewer_input_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -97,7 +97,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_input_destroy(&id);
+			cmzn_scene_viewer_input_destroy(&id);
 		}
 	}
 
@@ -106,29 +106,29 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_scene_viewer_input_id getId()
+	cmzn_scene_viewer_input_id getId()
 	{
 		return id;
 	}
 
 	int setPosition(int x, int y)
 	{
-		return Cmiss_scene_viewer_input_set_position(id, x, y);
+		return cmzn_scene_viewer_input_set_position(id, x, y);
 	}
 
 	int setButtonNumber(int number)
 	{
-		return Cmiss_scene_viewer_input_set_button_number(id, number);
+		return cmzn_scene_viewer_input_set_button_number(id, number);
 	}
 
 	int setButton(InputButtonType button)
 	{
-		return Cmiss_scene_viewer_input_set_button(id, static_cast<Cmiss_scene_viewer_input_button_type>(button));
+		return cmzn_scene_viewer_input_set_button(id, static_cast<cmzn_scene_viewer_input_button_type>(button));
 	}
 
 	int setType(InputEventType type)
 	{
-		return Cmiss_scene_viewer_input_set_type(id, static_cast<Cmiss_scene_viewer_input_event_type>(type));
+		return cmzn_scene_viewer_input_set_type(id, static_cast<cmzn_scene_viewer_input_event_type>(type));
 	}
 
 };
@@ -136,7 +136,7 @@ public:
 class SceneViewer
 {
 protected:
-	Cmiss_scene_viewer_id id;
+	cmzn_scene_viewer_id id;
 
 public:
 
@@ -168,20 +168,20 @@ public:
 	{  }
 
 	// takes ownership of C-style region reference
-	explicit SceneViewer(Cmiss_scene_viewer_id in_scene_viewer_id) :
+	explicit SceneViewer(cmzn_scene_viewer_id in_scene_viewer_id) :
 		id(in_scene_viewer_id)
 	{  }
 
 	SceneViewer(const SceneViewer& scene_viewer_module) :
-		id(Cmiss_scene_viewer_access(scene_viewer_module.id))
+		id(cmzn_scene_viewer_access(scene_viewer_module.id))
 	{  }
 
 	SceneViewer& operator=(const SceneViewer& scene_viewer)
 	{
-		Cmiss_scene_viewer_id temp_id = Cmiss_scene_viewer_access(scene_viewer.id);
+		cmzn_scene_viewer_id temp_id = cmzn_scene_viewer_access(scene_viewer.id);
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_destroy(&id);
+			cmzn_scene_viewer_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -191,7 +191,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_destroy(&id);
+			cmzn_scene_viewer_destroy(&id);
 		}
 	}
 
@@ -200,101 +200,101 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_scene_viewer_id getId()
+	cmzn_scene_viewer_id getId()
 	{
 		return id;
 	}
 
 	int renderScene()
 	{
-		return Cmiss_scene_viewer_render_scene(id);
+		return cmzn_scene_viewer_render_scene(id);
 	}
 
 	int setScene(Scene scene)
 	{
-		return Cmiss_scene_viewer_set_scene(id, scene.getId());
+		return cmzn_scene_viewer_set_scene(id, scene.getId());
 	}
 
 	Scene getScene()
 	{
-		return Scene(Cmiss_scene_viewer_get_scene(id));
+		return Scene(cmzn_scene_viewer_get_scene(id));
 	}
 
 	int setFilter(GraphicsFilter graphicsFilter)
 	{
-		return Cmiss_scene_viewer_set_filter(id, graphicsFilter.getId());
+		return cmzn_scene_viewer_set_filter(id, graphicsFilter.getId());
 	}
 
 	GraphicsFilter getFilter()
 	{
-		return GraphicsFilter(Cmiss_scene_viewer_get_filter(id));
+		return GraphicsFilter(cmzn_scene_viewer_get_filter(id));
 	}
 
 	int setGraphicsBufferWidth(int width)
 	{
-		return Cmiss_scene_viewer_set_graphics_buffer_width(id, width);
+		return cmzn_scene_viewer_set_graphics_buffer_width(id, width);
 	}
 
 	int setGraphicsBufferHeight(int height)
 	{
-		return Cmiss_scene_viewer_set_graphics_buffer_height(id, height);
+		return cmzn_scene_viewer_set_graphics_buffer_height(id, height);
 	}
 
 	int setViewportSize(int width, int height)
 	{
-		return Cmiss_scene_viewer_set_viewport_size(id, width, height);
+		return cmzn_scene_viewer_set_viewport_size(id, width, height);
 	}
 
 	SceneViewerInput getInput()
 	{
-		return SceneViewerInput(Cmiss_scene_viewer_get_input(id));
+		return SceneViewerInput(cmzn_scene_viewer_get_input(id));
 	}
 
 	int processInput(SceneViewerInput input)
 	{
-		return Cmiss_scene_viewer_process_input(id, input.getId());
+		return cmzn_scene_viewer_process_input(id, input.getId());
 	}
 
 	int getEyePosition(double *eyeValuesOut3)
 	{
-		return Cmiss_scene_viewer_get_eye_position(id, eyeValuesOut3);
+		return cmzn_scene_viewer_get_eye_position(id, eyeValuesOut3);
 	}
 
 	int setEyePosition(double const *eyeValuesIn3)
 	{
-		return Cmiss_scene_viewer_set_eye_position(id, eyeValuesIn3);
+		return cmzn_scene_viewer_set_eye_position(id, eyeValuesIn3);
 	}
 
 	int getLookatPosition(double *lookatValuesOut3)
 	{
-		return Cmiss_scene_viewer_get_lookat_position(id, lookatValuesOut3);
+		return cmzn_scene_viewer_get_lookat_position(id, lookatValuesOut3);
 	}
 
 	int setLookatPosition(double const *lookatValuesIn3)
 	{
-		return Cmiss_scene_viewer_set_lookat_position(id, lookatValuesIn3);
+		return cmzn_scene_viewer_set_lookat_position(id, lookatValuesIn3);
 	}
 
 	int getUpVector(double *upVectorValuesOut3)
 	{
-		return Cmiss_scene_viewer_get_up_vector(id, upVectorValuesOut3);
+		return cmzn_scene_viewer_get_up_vector(id, upVectorValuesOut3);
 	}
 
 	int setUpVector(double const *upVectorValuesIn3)
 	{
-		return Cmiss_scene_viewer_set_up_vector(id, upVectorValuesIn3);
+		return cmzn_scene_viewer_set_up_vector(id, upVectorValuesIn3);
 	}
 
 	int getLookatParameters(double *eyeValuesOut3,double *lookatValuesOut3,double *upVectorValuesOut3)
 	{
-		return Cmiss_scene_viewer_get_lookat_parameters(id, &eyeValuesOut3[0], &eyeValuesOut3[1], &eyeValuesOut3[2],
+		return cmzn_scene_viewer_get_lookat_parameters(id, &eyeValuesOut3[0], &eyeValuesOut3[1], &eyeValuesOut3[2],
 			&lookatValuesOut3[0], &lookatValuesOut3[1], &lookatValuesOut3[2],
 			&upVectorValuesOut3[0], &upVectorValuesOut3[1], &upVectorValuesOut3[2]);
 	}
 
 	int setLookatParametersNonSkew(double const *eyeValuesIn3, double const *lookatValuesIn3, double const *upVectorValuesIn3)
 	{
-		return Cmiss_scene_viewer_set_lookat_parameters_non_skew(id, eyeValuesIn3[0], eyeValuesIn3[1], eyeValuesIn3[2],
+		return cmzn_scene_viewer_set_lookat_parameters_non_skew(id, eyeValuesIn3[0], eyeValuesIn3[1], eyeValuesIn3[2],
 			lookatValuesIn3[0], lookatValuesIn3[1], lookatValuesIn3[2],
 			upVectorValuesIn3[0], upVectorValuesIn3[1], upVectorValuesIn3[2]);
 	}
@@ -302,56 +302,56 @@ public:
 	int getViewingVolume(double *left,double *right,double *bottom,double *top,
 		double *near_plane, double *far_plane)
 	{
-		return Cmiss_scene_viewer_get_viewing_volume(id, left, right, bottom, top,
+		return cmzn_scene_viewer_get_viewing_volume(id, left, right, bottom, top,
 			near_plane, far_plane);
 	}
 
 	int setViewingVolume(double left, double right, double bottom, double top,
 		double near_plane, double far_plane)
 	{
-		return Cmiss_scene_viewer_set_viewing_volume(id, left, right, bottom, top,
+		return cmzn_scene_viewer_set_viewing_volume(id, left, right, bottom, top,
 			near_plane, far_plane);
 	}
 
 	int setBackgroundColourComponentRGB(double red, double green, double blue)
 	{
-		return Cmiss_scene_viewer_set_background_colour_component_rgb(id, red, green, blue);
+		return cmzn_scene_viewer_set_background_colour_component_rgb(id, red, green, blue);
 	}
 
 	int setBackgroundColourRGB(const double *valuesIn3)
 	{
-		return Cmiss_scene_viewer_set_background_colour_rgb(id, valuesIn3);
+		return cmzn_scene_viewer_set_background_colour_rgb(id, valuesIn3);
 	}
 
 	int getBackgroundColourRGB(double *valuesOut3)
 	{
-		return Cmiss_scene_viewer_get_background_colour_rgb(id, valuesOut3);
+		return cmzn_scene_viewer_get_background_colour_rgb(id, valuesOut3);
 	}
 
 	int viewAll()
 	{
-		return Cmiss_scene_viewer_view_all(id);
+		return cmzn_scene_viewer_view_all(id);
 	}
 
 	enum TransparencyMode getTransparencyMode()
 	{
-		return static_cast<TransparencyMode>(Cmiss_scene_viewer_get_transparency_mode(id));
+		return static_cast<TransparencyMode>(cmzn_scene_viewer_get_transparency_mode(id));
 	}
 
 	int setTransparencyMode(TransparencyMode transparencyMode)
 	{
-		return Cmiss_scene_viewer_set_transparency_mode(id,
-			static_cast<Cmiss_scene_viewer_transparency_mode>(transparencyMode));
+		return cmzn_scene_viewer_set_transparency_mode(id,
+			static_cast<cmzn_scene_viewer_transparency_mode>(transparencyMode));
 	}
 
 	int getTransparencyLayers()
 	{
-		return Cmiss_scene_viewer_get_transparency_layers(id);
+		return cmzn_scene_viewer_get_transparency_layers(id);
 	}
 
 	int setTransparencyLayers(int layers)
 	{
-		return Cmiss_scene_viewer_set_transparency_layers(id, layers);
+		return cmzn_scene_viewer_set_transparency_layers(id, layers);
 	}
 
 };
@@ -359,7 +359,7 @@ public:
 class SceneViewerModule
 {
 protected:
-	Cmiss_scene_viewer_module_id id;
+	cmzn_scene_viewer_module_id id;
 
 public:
 
@@ -367,20 +367,20 @@ public:
 	{  }
 
 	// takes ownership of C-style region reference
-	SceneViewerModule(Cmiss_scene_viewer_module_id in_scene_viewer_module_id) :
+	SceneViewerModule(cmzn_scene_viewer_module_id in_scene_viewer_module_id) :
 		id(in_scene_viewer_module_id)
 	{  }
 
 	SceneViewerModule(const SceneViewerModule& scene_viewer_module) :
-		id(Cmiss_scene_viewer_module_access(scene_viewer_module.id))
+		id(cmzn_scene_viewer_module_access(scene_viewer_module.id))
 	{  }
 
 	SceneViewerModule& operator=(const SceneViewerModule& scene_viewer_module)
 	{
-		Cmiss_scene_viewer_module_id temp_id = Cmiss_scene_viewer_module_access(scene_viewer_module.id);
+		cmzn_scene_viewer_module_id temp_id = cmzn_scene_viewer_module_access(scene_viewer_module.id);
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_module_destroy(&id);
+			cmzn_scene_viewer_module_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -390,7 +390,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_scene_viewer_module_destroy(&id);
+			cmzn_scene_viewer_module_destroy(&id);
 		}
 	}
 
@@ -399,16 +399,16 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_scene_viewer_module_id getId()
+	cmzn_scene_viewer_module_id getId()
 	{
 		return id;
 	}
 
 	SceneViewer createSceneViewer(SceneViewer::BufferingMode buffering_mode, SceneViewer::StereoMode stereo_mode)
 	{
-		return SceneViewer(Cmiss_scene_viewer_module_create_scene_viewer(id,
-			static_cast<Cmiss_scene_viewer_buffering_mode>(buffering_mode),
-			static_cast<Cmiss_scene_viewer_stereo_mode>(stereo_mode)));
+		return SceneViewer(cmzn_scene_viewer_module_create_scene_viewer(id,
+			static_cast<cmzn_scene_viewer_buffering_mode>(buffering_mode),
+			static_cast<cmzn_scene_viewer_stereo_mode>(stereo_mode)));
 	}
 
 };

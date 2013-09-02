@@ -1,7 +1,7 @@
 /**
  * FILE : cmiss_field_vector_operators.h
  *
- * The public interface to the Cmiss_fields that perform vector operations.
+ * The public interface to the cmzn_fields that perform vector operations.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -69,9 +69,9 @@ extern "C" {
  * dimension i.e. one more than the number_of_source_fields.
  * @return  Newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product(
-	Cmiss_field_module_id field_module, int number_of_source_fields,
-	Cmiss_field_id *source_fields);
+ZINC_API cmzn_field_id cmzn_field_module_create_cross_product(
+	cmzn_field_module_id field_module, int number_of_source_fields,
+	cmzn_field_id *source_fields);
 
 /**
  * Convenience function creating a field giving the 3-D cross product of two
@@ -82,9 +82,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product(
  * @param source_field_two  Second source field.  Must have 3 components.
  * @return  Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_cross_product_3d(
+	cmzn_field_module_id field_module, cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a scalar field whose value is the dot product of the two supplied
@@ -95,9 +95,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_cross_product_3d(
  * @param source_field_two  Second source field.
  * @return  Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_dot_product(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_dot_product(
+	cmzn_field_module_id field_module, cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a scalar field returning the magnitude of the vector source field.
@@ -106,8 +106,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_dot_product(
  * @param source_field  Source field to normalise.
  * @return  Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_magnitude(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_magnitude(
+	cmzn_field_module_id field_module, cmzn_field_id source_field);
 
 /**
  * Creates a field returning the values of source vector field normalised to
@@ -117,21 +117,21 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_magnitude(
  * @param source_field  Source field to normalise.
  * @return  Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_normalise(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_normalise(
+	cmzn_field_module_id field_module, cmzn_field_id source_field);
 
 /**
  * Creates a field which has one component equal to the sum of all components of
  * the source field. Also called the L1, taxicab or manhattan norm.
  * For weighted sum of components use a dot_product with a constant weights field.
- * @see Cmiss_field_module_create_dot_product
+ * @see cmzn_field_module_create_dot_product
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field whose components are to be summed.
  * @return  Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_sum_components(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_sum_components(
+	cmzn_field_module_id field_module, cmzn_field_id source_field);
 
 #ifdef __cplusplus
 }

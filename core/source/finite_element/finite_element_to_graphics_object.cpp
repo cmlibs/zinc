@@ -96,7 +96,7 @@ Used with iterators for building glyph sets from nodes.
 		*label_bounds_field, *label_density_field, *orientation_scale_field, *variable_scale_field,
 		*subgroup_field, *group_field;
 	Triple *label_density, *point, *axis1, *axis2, *axis3, *scale;
-	enum Cmiss_graphic_select_mode select_mode;
+	enum cmzn_graphic_select_mode select_mode;
 };
 
 /*
@@ -108,7 +108,7 @@ Module functions
  * Adds the coordinates, orientation, data etc. of the fields at the field cache
  * location to the glyph_set_data.
  */
-static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
+static int field_cache_location_to_glyph_point(cmzn_field_cache_id field_cache,
 	Glyph_set_data *glyph_set_data)
 {
 	ENTER(field_cache_location_to_glyph_point);
@@ -124,7 +124,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 		glyph_set_data->select_mode == CMISS_GRAPHIC_DRAW_UNSELECTED)
 	{
 		if (glyph_set_data->group_field &&
-			Cmiss_field_evaluate_boolean(glyph_set_data->group_field, field_cache))
+			cmzn_field_evaluate_boolean(glyph_set_data->group_field, field_cache))
 		{
 			if (glyph_set_data->select_mode == CMISS_GRAPHIC_DRAW_UNSELECTED)
 			{
@@ -138,7 +138,7 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 	}
 	if (show_point && glyph_set_data->subgroup_field)
 	{
-		show_point = Cmiss_field_evaluate_boolean(glyph_set_data->subgroup_field, field_cache);
+		show_point = cmzn_field_evaluate_boolean(glyph_set_data->subgroup_field, field_cache);
 	}
 	if (show_point)
 	{
@@ -184,31 +184,31 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 			FE_value_triple fe_value_label_density;
 
 			/* evaluate the fields at the cache location */
-			int all_fields_defined = Cmiss_field_evaluate_real(coordinate_field,
+			int all_fields_defined = cmzn_field_evaluate_real(coordinate_field,
 				field_cache, /*number_of_values*/3, coordinates);
 			if (all_fields_defined && orientation_scale_field)
 			{
-				all_fields_defined = Cmiss_field_evaluate_real(orientation_scale_field,
+				all_fields_defined = cmzn_field_evaluate_real(orientation_scale_field,
 					field_cache, /*number_of_values*/9, orientation_scale);
 			}
 			if (all_fields_defined && variable_scale_field)
 			{
-				all_fields_defined = Cmiss_field_evaluate_real(variable_scale_field,
+				all_fields_defined = cmzn_field_evaluate_real(variable_scale_field,
 					field_cache, /*number_of_values*/3, variable_scale);
 			}
 			if (all_fields_defined && data_field)
 			{
-				all_fields_defined = Cmiss_field_evaluate_real(data_field,
+				all_fields_defined = cmzn_field_evaluate_real(data_field,
 					field_cache, glyph_set_data->n_data_components,
 					glyph_set_data->data_values);
 			}
 			if (all_fields_defined && label_field)
 			{
-				*(glyph_set_data->label) = Cmiss_field_evaluate_string(label_field,
+				*(glyph_set_data->label) = cmzn_field_evaluate_string(label_field,
 					field_cache);
 				if (label_density_field)
 				{
-					all_fields_defined = Cmiss_field_evaluate_real(label_density_field,
+					all_fields_defined = cmzn_field_evaluate_real(label_density_field,
 						field_cache, /*number_of_values*/3, fe_value_label_density);
 				}
 			}
@@ -322,18 +322,18 @@ static int field_cache_location_to_glyph_point(Cmiss_field_cache_id field_cache,
 								}
 							}
 							/* Set the offset coordinates in the field cache field and evaluate the label field there */
-							Cmiss_field_cache_set_assign_in_cache(field_cache, 1);
-							if (!Cmiss_field_assign_real(coordinate_field, field_cache,
+							cmzn_field_cache_set_assign_in_cache(field_cache, 1);
+							if (!cmzn_field_assign_real(coordinate_field, field_cache,
 								/*number_of_values*/glyph_set_data->label_bounds_dimension, vector))
 							{
 								return_code = 0;
 							}
-							if (!Cmiss_field_evaluate_real(glyph_set_data->label_bounds_field,
+							if (!cmzn_field_evaluate_real(glyph_set_data->label_bounds_field,
 								field_cache, nComponents, fieldValues))
 							{
 								return_code = 0;
 							}
-							Cmiss_field_cache_set_assign_in_cache(field_cache, 0);
+							cmzn_field_cache_set_assign_in_cache(field_cache, 0);
 							if (return_code)
 							{
 								CAST_TO_OTHER(glyph_set_data->label_bounds,
@@ -724,17 +724,17 @@ these are simply returned, since no valid direction can be produced.
 } /* make_glyph_orientation_scale_axes */
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
-	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
+	cmzn_nodeset_id nodeset, cmzn_field_cache_id field_cache,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
-	struct Cmiss_font *font, struct Computed_field *label_field,
+	struct cmzn_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum Cmiss_graphic_select_mode select_mode,
+	struct Computed_field *subgroup_field, enum cmzn_graphic_select_mode select_mode,
 	struct Computed_field *group_field)
 {
 	char *glyph_name, **labels;
@@ -790,7 +790,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 		if (return_code && ((CMISS_GRAPHIC_DRAW_SELECTED!=select_mode) || group_field))
 		{
 			// allocate for all nodes, trim arrays for fields not defined
-			int number_of_points = Cmiss_nodeset_get_size(nodeset);
+			int number_of_points = cmzn_nodeset_get_size(nodeset);
 			if (0 < number_of_points)
 			{
 				int final_number_of_points = 0; // will include only points with all mandatory fields defined
@@ -901,16 +901,16 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					glyph_set_data.select_mode = select_mode;
 
 					// all fields evaluated at same time so set once
-					Cmiss_field_cache_set_time(field_cache, time);
-					Cmiss_node_iterator_id iterator = Cmiss_nodeset_create_node_iterator(nodeset);
-					Cmiss_node_id node = 0;
-					while (return_code && (0 != (node = Cmiss_node_iterator_next_non_access(iterator))))
+					cmzn_field_cache_set_time(field_cache, time);
+					cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+					cmzn_node_id node = 0;
+					while (return_code && (0 != (node = cmzn_node_iterator_next_non_access(iterator))))
 					{
-						Cmiss_field_cache_set_node(field_cache, node);
+						cmzn_field_cache_set_node(field_cache, node);
 						glyph_set_data.graphics_name = get_FE_node_identifier(node);
 						return_code = field_cache_location_to_glyph_point(field_cache, &glyph_set_data);
 					}
-					Cmiss_node_iterator_destroy(&iterator);
+					cmzn_node_iterator_destroy(&iterator);
 					final_number_of_points = glyph_set_data.number_of_points;
 				}
 				else
@@ -986,7 +986,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 } /* create_GT_glyph_set_from_nodeset */
 
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
-	Cmiss_field_cache_id field_cache, struct Graphics_vertex_array *array,
+	cmzn_field_cache_id field_cache, struct Graphics_vertex_array *array,
 	Computed_field *coordinate_field, Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	Computed_field *texture_coordinate_field,
@@ -1033,18 +1033,18 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 
 		distance=(FE_value)number_of_segments;
-		Cmiss_field_cache_set_time(field_cache, time);
+		cmzn_field_cache_set_time(field_cache, time);
 		for (i = 0; (i <= number_of_segments); i++)
 		{
 			xi=((FE_value)i)/distance;
 			/* evaluate the fields */
-			return_code = Cmiss_field_cache_set_mesh_location_with_parent(
+			return_code = cmzn_field_cache_set_mesh_location_with_parent(
 				field_cache, element, /*dimension*/1, &xi, top_level_element);
-			if (return_code && Cmiss_field_evaluate_real(coordinate_field,
+			if (return_code && cmzn_field_evaluate_real(coordinate_field,
 					field_cache, coordinate_dimension, coordinates) &&
-				((!data_field) || Cmiss_field_evaluate_real(data_field,
+				((!data_field) || cmzn_field_evaluate_real(data_field,
 					field_cache, number_of_data_values, data_buffer)) &&
-				((!texture_coordinate_field) || Cmiss_field_evaluate_real(texture_coordinate_field,
+				((!texture_coordinate_field) || cmzn_field_evaluate_real(texture_coordinate_field,
 					field_cache, texture_coordinate_dimension, texture_coordinates)))
 			{
 				GLfloat floatField[3];
@@ -1101,13 +1101,13 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 } /* FE_element_add_line_to_vertex_buffer_set */
 
 struct GT_surface *create_cylinder_from_FE_element(
-	struct FE_element *element, Cmiss_field_cache_id field_cache,
-	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
+	struct FE_element *element, cmzn_field_cache_id field_cache,
+	cmzn_mesh_id line_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field, const FE_value *base_size,
-	const FE_value *scale_factors, Cmiss_field_id orientation_scale_field,
+	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum Cmiss_graphic_render_polygon_mode render_polygon_mode,
+	struct FE_element *top_level_element, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
 	FE_value time)
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
@@ -1134,7 +1134,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			(1 == Computed_field_get_number_of_components(orientation_scale_field))) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
-		Cmiss_differential_operator_id d_dxi = Cmiss_mesh_get_chart_differential_operator(line_mesh, /*order*/1, 1);
+		cmzn_differential_operator_id d_dxi = cmzn_mesh_get_chart_differential_operator(line_mesh, /*order*/1, 1);
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
 		coordinates[1]=0.0;
@@ -1176,24 +1176,24 @@ struct GT_surface *create_cylinder_from_FE_element(
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
-			Cmiss_field_cache_set_time(field_cache, time);
+			cmzn_field_cache_set_time(field_cache, time);
 			FE_value *feData = new FE_value[n_data_components];
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
 				xi=(ZnReal)i/(ZnReal)number_of_segments_along;
 				/* evaluate the fields */
-				if (Cmiss_field_cache_set_mesh_location_with_parent(
+				if (cmzn_field_cache_set_mesh_location_with_parent(
 						field_cache, element, /*dimension*/1, &xi, top_level_element) &&
-					Cmiss_field_evaluate_derivative(coordinate_field,
+					cmzn_field_evaluate_derivative(coordinate_field,
 						d_dxi, field_cache, coordinate_dimension, derivative_xi) &&
-					Cmiss_field_evaluate_real(coordinate_field, field_cache,
+					cmzn_field_evaluate_real(coordinate_field, field_cache,
 						coordinate_dimension, coordinates) &&
-					((!data_field) || Cmiss_field_evaluate_real(data_field,
+					((!data_field) || cmzn_field_evaluate_real(data_field,
 						field_cache, n_data_components, feData)) &&
 					((!orientation_scale_field) || (
-						Cmiss_field_evaluate_derivative(orientation_scale_field, d_dxi, field_cache, 1, &diameter_derivative) &&
-						Cmiss_field_evaluate_real(orientation_scale_field, field_cache, 1, &diameter_value))) &&
-					((!texture_coordinate_field) || Cmiss_field_evaluate_real(texture_coordinate_field, field_cache,
+						cmzn_field_evaluate_derivative(orientation_scale_field, d_dxi, field_cache, 1, &diameter_derivative) &&
+						cmzn_field_evaluate_real(orientation_scale_field, field_cache, 1, &diameter_value))) &&
+					((!texture_coordinate_field) || cmzn_field_evaluate_real(texture_coordinate_field, field_cache,
 						texture_coordinate_dimension, tex_coordinates)))
 				{
 					/* store the coordinates in the point */
@@ -1586,7 +1586,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			display_message(ERROR_MESSAGE,
 				"create_cylinder_from_FE_element.  Failed");
 		}
-		Cmiss_differential_operator_destroy(&d_dxi);
+		cmzn_differential_operator_destroy(&d_dxi);
 	}
 	else
 	{
@@ -1739,14 +1739,14 @@ int get_surface_element_segmentation(struct FE_element *element,
 } /* get_surface_element_segmentation */
 
 struct GT_surface *create_GT_surface_from_FE_element(
-	struct FE_element *element, Cmiss_field_cache_id field_cache,
-	Cmiss_mesh_id surface_mesh, struct Computed_field *coordinate_field,
+	struct FE_element *element, cmzn_field_cache_id field_cache,
+	cmzn_mesh_id surface_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode, FE_value time)
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode, FE_value time)
 {
 	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
@@ -1775,8 +1775,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 		(0 < coordinate_dimension) && (3 >= coordinate_dimension) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
-		Cmiss_differential_operator_id d_dxi1 = Cmiss_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 1);
-		Cmiss_differential_operator_id d_dxi2 = Cmiss_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 2);
+		cmzn_differential_operator_id d_dxi1 = cmzn_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 1);
+		cmzn_differential_operator_id d_dxi2 = cmzn_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 2);
 		modified_reverse_normals = reverse_normals;
 		const int reverse_winding = FE_element_is_exterior_face_with_inward_normal(element);
 		if (reverse_winding)
@@ -1950,24 +1950,24 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			i=0;
 			return_code = 1;
 			FE_value *xi = xi_points;
-			Cmiss_field_cache_set_time(field_cache, time);
+			cmzn_field_cache_set_time(field_cache, time);
 			while ((i<number_of_points)&&surface)
 			{
-				return_code = Cmiss_field_cache_set_mesh_location_with_parent(
+				return_code = cmzn_field_cache_set_mesh_location_with_parent(
 					field_cache, element, /*dimension*/2, xi, top_level_element);
 				/* evaluate the fields */
-				if (!(Cmiss_field_evaluate_derivative(coordinate_field,
+				if (!(cmzn_field_evaluate_derivative(coordinate_field,
 						d_dxi1, field_cache, coordinate_dimension, derivative_xi1) &&
-					Cmiss_field_evaluate_derivative(coordinate_field,
+					cmzn_field_evaluate_derivative(coordinate_field,
 						d_dxi2, field_cache, coordinate_dimension, derivative_xi2) &&
-					Cmiss_field_evaluate_real(coordinate_field, field_cache,
+					cmzn_field_evaluate_real(coordinate_field, field_cache,
 						coordinate_dimension, coordinates)))
 				{
 					return_code = 0;
 				}
 				if (data_field)
 				{
-					if (!Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, feData))
+					if (!cmzn_field_evaluate_real(data_field, field_cache, n_data_components, feData))
 					{
 						return_code = 0;
 					}
@@ -1976,11 +1976,11 @@ struct GT_surface *create_GT_surface_from_FE_element(
 				{
 					if (calculate_tangent_points)
 					{
-						if (!(Cmiss_field_evaluate_derivative(texture_coordinate_field,
+						if (!(cmzn_field_evaluate_derivative(texture_coordinate_field,
 								d_dxi1, field_cache, texture_coordinate_dimension, texture_derivative_xi1) &&
-							Cmiss_field_evaluate_derivative(texture_coordinate_field,
+							cmzn_field_evaluate_derivative(texture_coordinate_field,
 								d_dxi2, field_cache, texture_coordinate_dimension, texture_derivative_xi2) &&
-							Cmiss_field_evaluate_real(texture_coordinate_field, field_cache,
+							cmzn_field_evaluate_real(texture_coordinate_field, field_cache,
 								texture_coordinate_dimension, texture_values)))
 						{
 							calculate_tangent_points = 0;
@@ -1991,7 +1991,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 					}
 					if (!calculate_tangent_points)  /* Do this if just unset above as well as else */
 					{
-						return_code = Cmiss_field_evaluate_real(texture_coordinate_field,
+						return_code = cmzn_field_evaluate_real(texture_coordinate_field,
 							field_cache, texture_coordinate_dimension, texture_values);
 					}
 				}
@@ -2312,8 +2312,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			}
 		}
 		delete[] xi_points;
-		Cmiss_differential_operator_destroy(&d_dxi1);
-		Cmiss_differential_operator_destroy(&d_dxi2);
+		cmzn_differential_operator_destroy(&d_dxi1);
+		cmzn_differential_operator_destroy(&d_dxi2);
 	}
 	else
 	{
@@ -2390,18 +2390,18 @@ The <xi> are set to their local values within the returned <element>.
 }
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
-	Cmiss_field_cache_id field_cache,
+	cmzn_field_cache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points,
-	struct GT_object *glyph, enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
-	struct Cmiss_font *font, struct Computed_field *label_field,
+	struct cmzn_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
-	enum Cmiss_graphic_select_mode select_mode, int element_selected,
+	enum cmzn_graphic_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers)
 {
 	char **label, **labels;
@@ -2432,7 +2432,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 			Computed_field_get_number_of_components(variable_scale_field))))) ||
 			!glyph))
 	{
-		int element_dimension = Cmiss_element_get_dimension(element);
+		int element_dimension = cmzn_element_get_dimension(element);
 		/* clear coordinates in case coordinate field is not 3 component */
 		coordinates[0] = 0.0;
 		coordinates[1] = 0.0;
@@ -2573,17 +2573,17 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						if (Cmiss_field_cache_set_mesh_location_with_parent(
+						if (cmzn_field_cache_set_mesh_location_with_parent(
 							field_cache, element, element_dimension, xi, top_level_element) &&
 							((!orientation_scale_field) ||
-								Cmiss_field_evaluate_real(orientation_scale_field, field_cache, number_of_orientation_scale_components, orientation_scale)) &&
+								cmzn_field_evaluate_real(orientation_scale_field, field_cache, number_of_orientation_scale_components, orientation_scale)) &&
 							((!variable_scale_field) ||
-								Cmiss_field_evaluate_real(variable_scale_field, field_cache, number_of_variable_scale_components, variable_scale)) &&
-							Cmiss_field_evaluate_real(coordinate_field, field_cache, /*number_of_components*/3, coordinates) &&
+								cmzn_field_evaluate_real(variable_scale_field, field_cache, number_of_variable_scale_components, variable_scale)) &&
+							cmzn_field_evaluate_real(coordinate_field, field_cache, /*number_of_components*/3, coordinates) &&
 							((!data_field) ||
-								Cmiss_field_evaluate_real(data_field, field_cache, n_data_components, feData)) &&
+								cmzn_field_evaluate_real(data_field, field_cache, n_data_components, feData)) &&
 							((!label_field) ||
-								(0 != (*label = Cmiss_field_evaluate_string(label_field, field_cache)))) &&
+								(0 != (*label = cmzn_field_evaluate_string(label_field, field_cache)))) &&
 							make_glyph_orientation_scale_axes(
 								number_of_orientation_scale_components, orientation_scale,
 								a, b, c, size))

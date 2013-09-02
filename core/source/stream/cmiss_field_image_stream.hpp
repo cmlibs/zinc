@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : Cmiss_field_image_stream.hpp
+ * FILE : cmzn_field_image_stream.hpp
  *
- * The private interface to Cmiss_field_image_stream.
+ * The private interface to cmzn_field_image_stream.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -48,20 +48,20 @@
 #include "general/image_utilities.h"
 #include "stream/cmiss_stream_private.hpp"
 
-struct Cmiss_stream_information_image : Cmiss_stream_information
+struct cmzn_stream_information_image : cmzn_stream_information
 {
 public:
 
-	Cmiss_stream_information_image(Cmiss_field_image_id image_field_in) :
+	cmzn_stream_information_image(cmzn_field_image_id image_field_in) :
 		image_field(image_field_in)
 	{
-		Cmiss_field_access(Cmiss_field_image_base_cast(image_field_in));
+		cmzn_field_access(cmzn_field_image_base_cast(image_field_in));
 		image_information = CREATE(Cmgui_image_information)();
 	}
 
-	virtual ~Cmiss_stream_information_image()
+	virtual ~cmzn_stream_information_image()
 	{
-		Cmiss_field_image_destroy(&image_field);
+		cmzn_field_image_destroy(&image_field);
 		DESTROY(Cmgui_image_information)(&image_information);
 	}
 
@@ -71,7 +71,7 @@ public:
 	}
 
 private:
-	Cmiss_field_image_id image_field;
+	cmzn_field_image_id image_field;
 	struct Cmgui_image_information *image_information;
 };
 

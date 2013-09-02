@@ -55,7 +55,7 @@ class Field
 {
 protected:
 
-	Cmiss_field_id id;
+	cmzn_field_id id;
 
 public:
 
@@ -63,18 +63,18 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Field(Cmiss_field_id field_id) : id(field_id)
+	explicit Field(cmzn_field_id field_id) : id(field_id)
 	{ }
 
-	Field(const Field& field) : id(Cmiss_field_access(field.id))
+	Field(const Field& field) : id(cmzn_field_access(field.id))
 	{ }
 
 	Field& operator=(const Field& field)
 	{
-		Cmiss_field_id temp_id = Cmiss_field_access(field.id);
+		cmzn_field_id temp_id = cmzn_field_access(field.id);
 		if (0 != id)
 		{
-			Cmiss_field_destroy(&id);
+			cmzn_field_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -84,7 +84,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_field_destroy(&id);
+			cmzn_field_destroy(&id);
 		}
 	}
 
@@ -93,12 +93,12 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_field_id getId()
+	cmzn_field_id getId()
 	{
 		return id;
 	}
 
-	/** @see Cmiss_field_attribute */
+	/** @see cmzn_field_attribute */
 	enum Attribute
 	{
 		ATTRIBUTE_INVALID = CMISS_FIELD_ATTRIBUTE_INVALID,
@@ -146,71 +146,71 @@ public:
 
 	bool isManaged()
 	{
-		return Cmiss_field_is_managed(id);
+		return cmzn_field_is_managed(id);
 	}
 
 	int setManaged(bool value)
 	{
-		return Cmiss_field_set_managed(id, value);
+		return cmzn_field_set_managed(id, value);
 	}
 
 	int getAttributeInteger(Attribute attribute)
 	{
-		return Cmiss_field_get_attribute_integer(id, static_cast<Cmiss_field_attribute>(attribute));
+		return cmzn_field_get_attribute_integer(id, static_cast<cmzn_field_attribute>(attribute));
 	}
 
 	int setAttributeInteger(Attribute attribute, int value)
 	{
-		return Cmiss_field_set_attribute_integer(id, static_cast<Cmiss_field_attribute>(attribute), value);
+		return cmzn_field_set_attribute_integer(id, static_cast<cmzn_field_attribute>(attribute), value);
 	}
 
 	double getAttributeReal(Attribute attribute)
 	{
-		return Cmiss_field_get_attribute_real(id,
-			static_cast<Cmiss_field_attribute>(attribute));
+		return cmzn_field_get_attribute_real(id,
+			static_cast<cmzn_field_attribute>(attribute));
 	}
 
 	double setAttributeReal(Attribute attribute, double value)
 	{
-		return Cmiss_field_set_attribute_real(id,
-			static_cast<Cmiss_field_attribute>(attribute), value);
+		return cmzn_field_set_attribute_real(id,
+			static_cast<cmzn_field_attribute>(attribute), value);
 	}
 
 	CoordinateSystemType getCoordinateSystemType()
 	{
 		return static_cast<CoordinateSystemType>(
-			Cmiss_field_get_coordinate_system_type(id));
+			cmzn_field_get_coordinate_system_type(id));
 	}
 
 	int setCoordinateSystemType(CoordinateSystemType coordinateSystemType)
 	{
-		 return Cmiss_field_set_coordinate_system_type(id,
-			 static_cast<Cmiss_field_coordinate_system_type>(coordinateSystemType));
+		 return cmzn_field_set_coordinate_system_type(id,
+			 static_cast<cmzn_field_coordinate_system_type>(coordinateSystemType));
 	}
 
 	int getNumberOfComponents()
 	{
-		return Cmiss_field_get_number_of_components(id);
+		return cmzn_field_get_number_of_components(id);
 	}
 
 	char *getName()
 	{
-		return Cmiss_field_get_name(id);
+		return cmzn_field_get_name(id);
 	}
 
 	int setName(const char *name)
 	{
-		return Cmiss_field_set_name(id, name);
+		return cmzn_field_set_name(id, name);
 	}
 
 	Field getSourceField(int index)
 	{
-		return Field(Cmiss_field_get_source_field(id, index));
+		return Field(cmzn_field_get_source_field(id, index));
 	}
 
 	ValueType getValueType()
 	{
-		return static_cast<ValueType>(Cmiss_field_get_value_type(id));
+		return static_cast<ValueType>(cmzn_field_get_value_type(id));
 	}
 
 	FieldModule getFieldModule();

@@ -41,10 +41,10 @@
 #ifndef CMZN_TESSELLATIONID_H__
 #define CMZN_TESSELLATIONID_H__
 
-	struct Cmiss_tessellation_module;
-	typedef struct Cmiss_tessellation_module * Cmiss_tessellation_module_id;
+	struct cmzn_tessellation_module;
+	typedef struct cmzn_tessellation_module * cmzn_tessellation_module_id;
 
-	struct Cmiss_tessellation;
-	typedef struct Cmiss_tessellation * Cmiss_tessellation_id;
+	struct cmzn_tessellation;
+	typedef struct cmzn_tessellation * cmzn_tessellation_id;
 
 #endif

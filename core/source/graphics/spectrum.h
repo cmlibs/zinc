@@ -57,14 +57,14 @@ Spectrum structures and support code.
 #include "general/object.h"
 #include "general/manager_private.h"
 
-struct Cmiss_graphics_material;
-struct Cmiss_spectrum_component;
+struct cmzn_graphics_material;
+struct cmzn_spectrum_component;
 /*
 Global types
 ------------
 */
 
-#define Spectrum Cmiss_spectrum
+#define Spectrum cmzn_spectrum
 struct Spectrum
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
@@ -76,7 +76,7 @@ Spectrum type is private.
 	ZnReal maximum,minimum;
 	char *name;
 	bool overwrite_colour;
-	struct LIST(Cmiss_spectrum_component) *list_of_components;
+	struct LIST(cmzn_spectrum_component) *list_of_components;
 
 	struct Texture *colour_lookup_texture;
 	int cache, changed;
@@ -93,7 +93,7 @@ DECLARE_LIST_TYPES(Spectrum);
 
 DECLARE_MANAGER_TYPES(Spectrum);
 
-PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct Cmiss_spectrum_module);
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct cmzn_spectrum_module);
 
 enum Spectrum_colour_components
 /*******************************************************************************
@@ -139,7 +139,7 @@ PROTOTYPE_MANAGER_FUNCTIONS(Spectrum);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *);
 
-struct Cmiss_spectrum_component *Cmiss_spectrum_get_component_at_position(
+struct cmzn_spectrum_component *cmzn_spectrum_get_component_at_position(
 	 struct Spectrum *spectrum,int position);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2007
@@ -169,7 +169,7 @@ it returns UNKNOWN_SPECTRUM
 ==============================================================================*/
 
 int Spectrum_add_component(struct Spectrum *spectrum,
-	struct Cmiss_spectrum_component *component,int position);
+	struct cmzn_spectrum_component *component,int position);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -180,8 +180,8 @@ last position in the list cause the component to be added at its end, with a
 position one greater than the last.
 ==============================================================================*/
 
-int Cmiss_spectrum_get_component_position(struct Spectrum *spectrum,
-	struct Cmiss_spectrum_component *component);
+int cmzn_spectrum_get_component_position(struct Spectrum *spectrum,
+	struct cmzn_spectrum_component *component);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -250,7 +250,7 @@ Returns the string of the spectrum.
 ==============================================================================*/
 
 int Spectrum_render_value_on_material(struct Spectrum *spectrum,
-	struct Cmiss_graphics_material *material, int number_of_data_components,
+	struct cmzn_graphics_material *material, int number_of_data_components,
 	GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
@@ -279,7 +279,7 @@ DESCRIPTION :
 Resets the caches and graphics state after rendering values.
 ==============================================================================*/
 
-struct LIST(Cmiss_spectrum_component) *get_Cmiss_spectrum_component_list(
+struct LIST(cmzn_spectrum_component) *get_cmzn_spectrum_component_list(
 	struct Spectrum *spectrum );
 /*******************************************************************************
 LAST MODIFIED : 12 March 1998
@@ -290,7 +290,7 @@ is the pointer to the object inside the spectrum so do not
 destroy it, any changes to it change that spectrum
 ==============================================================================*/
 
-Cmiss_spectrum *Cmiss_spectrum_create_private();
+cmzn_spectrum *cmzn_spectrum_create_private();
 /*******************************************************************************
 LAST MODIFIED : 13 August 1997
 
@@ -298,10 +298,10 @@ DESCRIPTION :
 Allocates memory and assigns fields for a Spectrum object.
 ==============================================================================*/
 
-struct MANAGER(Cmiss_spectrum) *Cmiss_spectrum_module_get_manager(
-	Cmiss_spectrum_module_id spectrum_module);
+struct MANAGER(cmzn_spectrum) *cmzn_spectrum_module_get_manager(
+	cmzn_spectrum_module_id spectrum_module);
 
-struct Cmiss_spectrum_module *Cmiss_spectrum_module_create();
+struct cmzn_spectrum_module *cmzn_spectrum_module_create();
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Spectrum);
 
@@ -315,9 +315,9 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 ==============================================================================*/
 
 int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
-	struct Cmiss_graphics_module *graphics_module);
+	struct cmzn_graphics_module *graphics_module);
 
-int Cmiss_spectrum_changed(Cmiss_spectrum_id spectrum);
+int cmzn_spectrum_changed(cmzn_spectrum_id spectrum);
 
 /**
  * Set spectrum maximum and minimum.
@@ -328,7 +328,7 @@ int Cmiss_spectrum_changed(Cmiss_spectrum_id spectrum);
  * @param maximum  Maximum value of the spectrum.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double minimum, double maximum);
+int cmzn_spectrum_set_minimum_and_maximum(cmzn_spectrum_id spectrum, double minimum, double maximum);
 
 /**
  * Get the minimum value from the given spectrum.
@@ -336,7 +336,7 @@ int Cmiss_spectrum_set_minimum_and_maximum(Cmiss_spectrum_id spectrum, double mi
  * @param spectrum  Handle to a cmiss_spectrum object.
  * @return  the minimum value, 0.0 on failure.
  */
-double Cmiss_spectrum_get_minimum(Cmiss_spectrum_id spectrum);
+double cmzn_spectrum_get_minimum(cmzn_spectrum_id spectrum);
 
 /**
  * Get the maximum value from the given spectrum.
@@ -344,6 +344,6 @@ double Cmiss_spectrum_get_minimum(Cmiss_spectrum_id spectrum);
  * @param spectrum  Handle to a cmiss_spectrum object.
  * @return  the maximum value, 0.0 on failure.
  */
-double Cmiss_spectrum_get_maximum(Cmiss_spectrum_id spectrum);
+double cmzn_spectrum_get_maximum(cmzn_spectrum_id spectrum);
 
 #endif /* !defined(SPECTRUM_H) */

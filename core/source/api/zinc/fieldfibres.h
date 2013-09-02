@@ -73,9 +73,9 @@ extern "C" {
  * @param coordinate_field  The (numerical) coordinate system with at most 3 components
  * @return  Fibre field with 9 components.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_fibre_axes(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id fibre_field, Cmiss_field_id coordinate_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_fibre_axes(
+	cmzn_field_module_id field_module,
+	cmzn_field_id fibre_field, cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus
 }

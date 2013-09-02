@@ -61,8 +61,8 @@ Global types
 */
 
 struct Graphical_material;
-struct Cmiss_font;
-struct Cmiss_scene;
+struct cmzn_font;
+struct cmzn_scene;
 
 typedef enum
 /*******************************************************************************
@@ -535,9 +535,9 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_object);
 struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
 	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
 	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	Triple base_size, Triple scale_factors, Triple offset,
-	struct Cmiss_font *font, char **labels, Triple label_offset,
+	struct cmzn_font *font, char **labels, Triple label_offset,
 	char *static_label_text[3], int n_data_components, GLfloat *data,
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density_list,	int object_name, int *names);
@@ -674,7 +674,7 @@ texture coordinates.
 
 struct GT_point *CREATE(GT_point)(Triple *position,char *text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
-	int object_name, GLfloat *data, struct Cmiss_font *font);
+	int object_name, GLfloat *data, struct cmzn_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -705,7 +705,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 
 struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
 	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
-	int *names, struct Cmiss_font *font);
+	int *names, struct cmzn_font *font);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
 
@@ -792,7 +792,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GLfloat *data);
@@ -1205,7 +1205,7 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
  * Gets the mode controlling how graphics are drawn depending on whether the
  * primitive is selected.
  */
-enum Cmiss_graphic_select_mode GT_object_get_select_mode(
+enum cmzn_graphic_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);
 
 /**
@@ -1217,7 +1217,7 @@ enum Cmiss_graphic_select_mode GT_object_get_select_mode(
  * @return  On success CMISS_OK, otherwise CMISS_ERROR_ARGUMENT.
  */
 int GT_object_set_select_mode(struct GT_object *graphics_object,
-	enum Cmiss_graphic_select_mode select_mode);
+	enum cmzn_graphic_select_mode select_mode);
 
 /**
  * Gets the width of lines rendered with GL, in pixels.
@@ -1332,18 +1332,18 @@ int set_GT_object_Spectrum(struct GT_object *graphics_object,
  */
 struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object);
 
-struct Cmiss_font;
+struct cmzn_font;
 
 /**
  * Gets the font used by the first GT_glyph_set in the graphics object, if any.
  */
-struct Cmiss_font *get_GT_object_font(struct GT_object *graphics_object);
+struct cmzn_font *get_GT_object_font(struct GT_object *graphics_object);
 
 /**
  * Sets the font of all GT_glyph_set primitives in a GT_object.
  */
 int set_GT_object_font(struct GT_object *graphics_object,
-	struct Cmiss_font *font);
+	struct cmzn_font *font);
 
 /**
  * Gets the glyph used by the first GT_glyph_set in the graphics object, if any.
@@ -1361,7 +1361,7 @@ int set_GT_object_glyph(struct GT_object *graphics_object,
  * Sets the glyph repeat mode for all glyph_sets in the GT_object.
  */
 int set_GT_object_glyph_repeat_mode(struct GT_object *graphics_object,
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode);
 
 /**
  * Sets the glyph base size for all glyph_sets in the GT_object.
@@ -1398,7 +1398,7 @@ int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
  * GT_object.
  */
 int set_GT_object_render_polygon_mode(struct GT_object *graphics_object,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode);
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************
@@ -1444,7 +1444,7 @@ Frees the memory for <**context> and sets <*context> to NULL.
  * Internal function for getting type enum for quickly matching standard glyphs for
  * point, line, cross, for fast alternative rendering
  */
-enum Cmiss_glyph_type GT_object_get_glyph_type(
+enum cmzn_glyph_type GT_object_get_glyph_type(
 	struct GT_object *gt_object);
 
 /**
@@ -1452,6 +1452,6 @@ enum Cmiss_glyph_type GT_object_get_glyph_type(
  * point, line, cross, for fast alternative rendering
  */
 int GT_object_set_glyph_type(struct GT_object *gt_object,
-	enum Cmiss_glyph_type glyph_type);
+	enum cmzn_glyph_type glyph_type);
 
 #endif /* !defined (GRAPHICS_OBJECT_H) */

@@ -72,7 +72,7 @@ struct Time_object
 	double time_offset;
 	enum Time_object_type type;
 	struct Time_object_callback_data *callback_list;
-	struct Cmiss_time_keeper *time_keeper;
+	struct cmzn_time_keeper *time_keeper;
 	Time_object_next_time_function next_time_function;
 	void *next_time_user_data;
 
@@ -142,7 +142,7 @@ DESCRIPTION :
 	{
 		time->name = (char *)NULL;
 		time->current_time = 0.0;
-		time->time_keeper = (struct Cmiss_time_keeper *)NULL;
+		time->time_keeper = (struct cmzn_time_keeper *)NULL;
 		time->callback_list = (struct Time_object_callback_data *)NULL;
 		time->update_frequency = 10.0;
 		time->time_offset = 0.0;
@@ -555,14 +555,14 @@ time.
 	return (return_code);
 } /* Time_object_set_next_time_function */
 
-struct Cmiss_time_keeper *Time_object_get_time_keeper(struct Time_object *time)
+struct cmzn_time_keeper *Time_object_get_time_keeper(struct Time_object *time)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Cmiss_time_keeper *return_code;
+	struct cmzn_time_keeper *return_code;
 
 	ENTER(Time_object_get_time_keeper);
 
@@ -574,7 +574,7 @@ DESCRIPTION :
 	{
 		display_message(ERROR_MESSAGE,
 			"Time_object_get_time_keeper. Invalid time object");
-		return_code=(struct Cmiss_time_keeper *)NULL;
+		return_code=(struct cmzn_time_keeper *)NULL;
 	}
 	LEAVE;
 
@@ -582,7 +582,7 @@ DESCRIPTION :
 } /* Time_object_get_time_keeper */
 
 int Time_object_set_time_keeper(struct Time_object *time,
-	struct Cmiss_time_keeper *time_keeper)
+	struct cmzn_time_keeper *time_keeper)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
@@ -595,7 +595,7 @@ DESCRIPTION :
 
 	if (time)
 	{
-		return_code = REACCESS(Cmiss_time_keeper)(&(time->time_keeper), time_keeper);
+		return_code = REACCESS(cmzn_time_keeper)(&(time->time_keeper), time_keeper);
 	}
 	else
 	{
@@ -718,9 +718,9 @@ Removes a callback which was added previously
 	return (return_code);
 } /* Time_object_remove_callback */
 
-Cmiss_time_notifier_id Cmiss_time_notifier_access(Cmiss_time_notifier_id time_notifier)
+cmzn_time_notifier_id cmzn_time_notifier_access(cmzn_time_notifier_id time_notifier)
 {
-	Cmiss_time_notifier_id local_time_notifier;
+	cmzn_time_notifier_id local_time_notifier;
 
 	if (time_notifier)
 	{
@@ -734,11 +734,11 @@ Cmiss_time_notifier_id Cmiss_time_notifier_access(Cmiss_time_notifier_id time_no
 	return local_time_notifier;
 }
 
-int Cmiss_time_notifier_destroy(Cmiss_time_notifier_id *time_notifier_address)
+int cmzn_time_notifier_destroy(cmzn_time_notifier_id *time_notifier_address)
 {
 	int return_code;
 
-	ENTER(Cmiss_time_notifier_destroy);
+	ENTER(cmzn_time_notifier_destroy);
 	if (time_notifier_address && *time_notifier_address)
 	{
 		return_code = DEACCESS(Time_object)(time_notifier_address);

@@ -66,7 +66,7 @@ extern "C" {
  * @param graphic  The graphic to obtain a new reference to.
  * @return  New graphic reference with incremented reference count.
  */
-ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_id cmzn_graphic_access(cmzn_graphic_id graphic);
 
 /**
  * Destroys the graphic and sets the pointer to NULL.
@@ -74,7 +74,7 @@ ZINC_API Cmiss_graphic_id Cmiss_graphic_access(Cmiss_graphic_id graphic);
  * @param graphic_address  The pointer to the handle of the graphic.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic_address);
+ZINC_API int cmzn_graphic_destroy(cmzn_graphic_id *graphic_address);
 
 /**
  * Gets the field supplying coordinates for the graphic.
@@ -83,8 +83,8 @@ ZINC_API int Cmiss_graphic_destroy(Cmiss_graphic_id *graphic_address);
  * @return  Handle to coordinate field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_get_coordinate_field(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_field_id cmzn_graphic_get_coordinate_field(
+	cmzn_graphic_id graphic);
 
 /**
  * Sets the field supplying coordinates for the graphic.
@@ -94,8 +94,8 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_coordinate_field(
  * from 1 to 3 components.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id coordinate_field);
+ZINC_API int cmzn_graphic_set_coordinate_field(cmzn_graphic_id graphic,
+	cmzn_field_id coordinate_field);
 
 /**
  * Gets the data field used with the spectrum to colour the graphic.
@@ -104,7 +104,7 @@ ZINC_API int Cmiss_graphic_set_coordinate_field(Cmiss_graphic_id graphic,
  * @return  Handle to data field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_get_data_field(Cmiss_graphic_id graphic);
+ZINC_API cmzn_field_id cmzn_graphic_get_data_field(cmzn_graphic_id graphic);
 
 /**
  * Sets the data field used with the spectrum to colour the graphic.
@@ -113,8 +113,8 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_data_field(Cmiss_graphic_id graphic);
  * @param data_field  The field to use as the data field.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id data_field);
+ZINC_API int cmzn_graphic_set_data_field(cmzn_graphic_id graphic,
+	cmzn_field_id data_field);
 
 /**
  * Gets the material giving the colour/shading of the graphic when unselected.
@@ -123,8 +123,8 @@ ZINC_API int Cmiss_graphic_set_data_field(Cmiss_graphic_id graphic,
  * @return  Handle to material, or 0 if error. Up to caller to destroy returned
  * handle.
  */
-ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_material(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphics_material_id cmzn_graphic_get_material(
+	cmzn_graphic_id graphic);
 
 /**
  * Sets the material giving the colour/shading of the graphic when unselected.
@@ -133,8 +133,8 @@ ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_material(
  * @param material  The standard/unselected material.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic,
-	Cmiss_graphics_material_id material);
+ZINC_API int cmzn_graphic_set_material(cmzn_graphic_id graphic,
+	cmzn_graphics_material_id material);
 
 /**
  * Get the width used for rendering line primitives in GL in renderer 'point
@@ -143,7 +143,7 @@ ZINC_API int Cmiss_graphic_set_material(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to query.
  * @return  The line render width in pixels, or 0.0 if bad argument.
  */
-ZINC_API double Cmiss_graphic_get_render_line_width(Cmiss_graphic_id graphic);
+ZINC_API double cmzn_graphic_get_render_line_width(cmzn_graphic_id graphic);
 
 /**
  * Set the width used for rendering line primitives in GL in renderer 'point
@@ -157,7 +157,7 @@ ZINC_API double Cmiss_graphic_get_render_line_width(Cmiss_graphic_id graphic);
  * @param width  The line render width in pixels. Value > 0.0.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_render_line_width(Cmiss_graphic_id graphic,
+ZINC_API int cmzn_graphic_set_render_line_width(cmzn_graphic_id graphic,
 	double width);
 
 /**
@@ -167,7 +167,7 @@ ZINC_API int Cmiss_graphic_set_render_line_width(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to query.
  * @return  The point render size in pixels, or 0.0 if bad argument.
  */
-ZINC_API double Cmiss_graphic_get_render_point_size(Cmiss_graphic_id graphic);
+ZINC_API double cmzn_graphic_get_render_point_size(cmzn_graphic_id graphic);
 
 /**
  * Set the size used for rendering point primitives in GL in renderer 'point
@@ -181,7 +181,7 @@ ZINC_API double Cmiss_graphic_get_render_point_size(Cmiss_graphic_id graphic);
  * @param size  The point render size in pixels. Value > 0.0.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_render_point_size(Cmiss_graphic_id graphic,
+ZINC_API int cmzn_graphic_set_render_point_size(cmzn_graphic_id graphic,
 	double size);
 
 /**
@@ -191,18 +191,18 @@ ZINC_API int Cmiss_graphic_set_render_point_size(Cmiss_graphic_id graphic,
  * @param string  string of the short enumerator name.
  * @return  The enumeration matching the string, or MODE_INVALID if not found.
  */
-ZINC_API enum Cmiss_graphic_render_polygon_mode
-	Cmiss_graphic_render_polygon_mode_enum_from_string(const char *string);
+ZINC_API enum cmzn_graphic_render_polygon_mode
+	cmzn_graphic_render_polygon_mode_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_graphic_render_polygon_mode_enum_to_string(
-	enum Cmiss_graphic_render_polygon_mode mode);
+ZINC_API char *cmzn_graphic_render_polygon_mode_enum_to_string(
+	enum cmzn_graphic_render_polygon_mode mode);
 
 /**
  * Get mode controlling how polygons in the graphic are rendered in GL.
@@ -210,20 +210,20 @@ ZINC_API char *Cmiss_graphic_render_polygon_mode_enum_to_string(
  * @param graphic  The graphic to query.
  * @return  The render mode, or MODE_INVALID if bad arguments.
  */
-ZINC_API enum Cmiss_graphic_render_polygon_mode Cmiss_graphic_get_render_polygon_mode(
-	Cmiss_graphic_id graphic);
+ZINC_API enum cmzn_graphic_render_polygon_mode cmzn_graphic_get_render_polygon_mode(
+	cmzn_graphic_id graphic);
 
 /**
  * Set mode controlling how polygons in the graphic are rendered in GL:
  * shaded/filled, wireframe etc.
- * @see Cmiss_graphic_render_polygon_mode
+ * @see cmzn_graphic_render_polygon_mode
  *
  * @param graphic  The graphic to modify.
  * @param render_polygon_mode  Mode of polygon rendering: shaded, wireframe.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_render_polygon_mode(Cmiss_graphic_id graphic,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode);
+ZINC_API int cmzn_graphic_set_render_polygon_mode(cmzn_graphic_id graphic,
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode);
 
 /**
  * Gets the mode controlling how graphics are drawn depending on whether the
@@ -232,8 +232,8 @@ ZINC_API int Cmiss_graphic_set_render_polygon_mode(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to query.
  * @return  The select mode, or MODE_INVALID if bad argument.
  */
-ZINC_API enum Cmiss_graphic_select_mode Cmiss_graphic_get_select_mode(
-	Cmiss_graphic_id graphic);
+ZINC_API enum cmzn_graphic_select_mode cmzn_graphic_get_select_mode(
+	cmzn_graphic_id graphic);
 
 /**
  * Sets the mode controlling how graphics are drawn depending on whether the
@@ -246,8 +246,8 @@ ZINC_API enum Cmiss_graphic_select_mode Cmiss_graphic_get_select_mode(
  * @param select_mode  A valid select mode for the graphic.
  * @return  On success CMISS_OK, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_select_mode(Cmiss_graphic_id graphic,
-	enum Cmiss_graphic_select_mode select_mode);
+ZINC_API int cmzn_graphic_set_select_mode(cmzn_graphic_id graphic,
+	enum cmzn_graphic_select_mode select_mode);
 
 /**
  * Gets the material giving the colour/shading of the graphic when selected.
@@ -256,8 +256,8 @@ ZINC_API int Cmiss_graphic_set_select_mode(Cmiss_graphic_id graphic,
  * @return  Handle to material, or 0 if error. Up to caller to destroy returned
  * handle.
  */
-ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_selected_material(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphics_material_id cmzn_graphic_get_selected_material(
+	cmzn_graphic_id graphic);
 
 /**
  * Set the material giving the colour/shading of the graphic when selected.
@@ -266,8 +266,8 @@ ZINC_API Cmiss_graphics_material_id Cmiss_graphic_get_selected_material(
  * @param selected_material  The selected/highlight material.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_selected_material(Cmiss_graphic_id graphic,
-	Cmiss_graphics_material_id selected_material);
+ZINC_API int cmzn_graphic_set_selected_material(cmzn_graphic_id graphic,
+	cmzn_graphics_material_id selected_material);
 
 /**
  * Gets the spectrum used with the data field to colour the graphic.
@@ -276,7 +276,7 @@ ZINC_API int Cmiss_graphic_set_selected_material(Cmiss_graphic_id graphic,
  * @return  Handle to spectrum, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_spectrum_id Cmiss_graphic_get_spectrum(Cmiss_graphic_id graphic);
+ZINC_API cmzn_spectrum_id cmzn_graphic_get_spectrum(cmzn_graphic_id graphic);
 
 /**
  * Sets the spectrum used with the data field to colour the graphic.
@@ -285,8 +285,8 @@ ZINC_API Cmiss_spectrum_id Cmiss_graphic_get_spectrum(Cmiss_graphic_id graphic);
  * @param spectrum  The spectrum to use to map colours.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
-	Cmiss_spectrum_id spectrum);
+ZINC_API int cmzn_graphic_set_spectrum(cmzn_graphic_id graphic,
+	cmzn_spectrum_id spectrum);
 
 /**
  * Gets the field which returns true/non-zero for primitive to be created.
@@ -295,7 +295,7 @@ ZINC_API int Cmiss_graphic_set_spectrum(Cmiss_graphic_id graphic,
  * @return  Handle to subgroup field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphic);
+ZINC_API cmzn_field_id cmzn_graphic_get_subgroup_field(cmzn_graphic_id graphic);
 
 /**
  * Sets optional field which causes graphics to be generated only for parts of
@@ -307,8 +307,8 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_subgroup_field(Cmiss_graphic_id graphi
  * @param subgroup_field  Scalar subgroup field.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_subgroup_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id subgroup_field);
+ZINC_API int cmzn_graphic_set_subgroup_field(cmzn_graphic_id graphic,
+	cmzn_field_id subgroup_field);
 
 /**
  * Returns the tessellation object of the graphic.
@@ -317,7 +317,7 @@ ZINC_API int Cmiss_graphic_set_subgroup_field(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to query.
  * @return  Handle to tessellation, or 0 if none or error.
  */
-ZINC_API Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id graphic);
+ZINC_API cmzn_tessellation_id cmzn_graphic_get_tessellation(cmzn_graphic_id graphic);
 
 /**
  * Sets the tessellation object of the graphics.
@@ -327,8 +327,8 @@ ZINC_API Cmiss_tessellation_id Cmiss_graphic_get_tessellation(Cmiss_graphic_id g
  *
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_tessellation(
-	Cmiss_graphic_id graphic, Cmiss_tessellation_id tessellation);
+ZINC_API int cmzn_graphic_set_tessellation(
+	cmzn_graphic_id graphic, cmzn_tessellation_id tessellation);
 
 /**
  * Gets the field controlling tessellation quality.
@@ -336,8 +336,8 @@ ZINC_API int Cmiss_graphic_set_tessellation(
  * @param graphic  The graphic to query.
  * @return  Handle to field, or 0 if error. Up to caller to destroy handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_get_tessellation_field(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_field_id cmzn_graphic_get_tessellation_field(
+	cmzn_graphic_id graphic);
 
 /**
  * Sets a field which sets tessellation quality to match its native refinement
@@ -350,8 +350,8 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_tessellation_field(
  * @param tessellation_field  The field which sets tessellation quality.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_tessellation_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id tessellation_field);
+ZINC_API int cmzn_graphic_set_tessellation_field(cmzn_graphic_id graphic,
+	cmzn_field_id tessellation_field);
 
 /**
  * Get the texture coordinate field of the graphic.
@@ -360,8 +360,8 @@ ZINC_API int Cmiss_graphic_set_tessellation_field(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to query.
  * @return  Handle to field, or 0 if none or error.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_field_id cmzn_graphic_get_texture_coordinate_field(
+	cmzn_graphic_id graphic);
 
 /**
  * Set the texture coordinate field of the graphic. Values of this field specify
@@ -373,8 +373,8 @@ ZINC_API Cmiss_field_id Cmiss_graphic_get_texture_coordinate_field(
  * coordinate field, or 0 for none. Field must have from 1 to 3 components.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic,
-	Cmiss_field_id texture_coordinate_field);
+ZINC_API int cmzn_graphic_set_texture_coordinate_field(cmzn_graphic_id graphic,
+	cmzn_field_id texture_coordinate_field);
 
 /**
  * Return status of graphic visibility flag attribute.
@@ -382,7 +382,7 @@ ZINC_API int Cmiss_graphic_set_texture_coordinate_field(Cmiss_graphic_id graphic
  * @param graphic  The graphic to query.
  * @return  Boolean value true if visibility flag is set, false if not.
  */
-ZINC_API bool Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
+ZINC_API bool cmzn_graphic_get_visibility_flag(cmzn_graphic_id graphic);
 
 /**
  * Sets status of graphic visibility flag attribute. Note this only affects
@@ -392,7 +392,7 @@ ZINC_API bool Cmiss_graphic_get_visibility_flag(Cmiss_graphic_id graphic);
  * @param visibility_flag  Boolean true to set, false to clear.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
+ZINC_API int cmzn_graphic_set_visibility_flag(cmzn_graphic_id graphic,
 	bool visibility_flag);
 
 /**
@@ -401,7 +401,7 @@ ZINC_API int Cmiss_graphic_set_visibility_flag(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to query.
  * @return  Boolean true if the exterior flag is set, otherwise false.
  */
-ZINC_API bool Cmiss_graphic_is_exterior(Cmiss_graphic_id graphic);
+ZINC_API bool cmzn_graphic_is_exterior(cmzn_graphic_id graphic);
 
 /**
  * Sets flag to generate graphics for exterior faces or lines only.
@@ -410,7 +410,7 @@ ZINC_API bool Cmiss_graphic_is_exterior(Cmiss_graphic_id graphic);
  * @param exterior  New boolean value: true to set, false to clear.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, bool exterior);
+ZINC_API int cmzn_graphic_set_exterior(cmzn_graphic_id graphic, bool exterior);
 
 /**
  * Gets the face the graphic is limited to generate graphics for.
@@ -419,7 +419,7 @@ ZINC_API int Cmiss_graphic_set_exterior(Cmiss_graphic_id graphic, bool exterior)
  * @return  The face type of the graphic, or CMISS_ELEMENT_FACE_INVALID if the
  * graphic is invalid.
  */
-ZINC_API enum Cmiss_element_face_type Cmiss_graphic_get_face(Cmiss_graphic_id graphic);
+ZINC_API enum cmzn_element_face_type cmzn_graphic_get_face(cmzn_graphic_id graphic);
 
 /**
  * Sets the face the graphic is limited to generate graphics for.
@@ -430,8 +430,8 @@ ZINC_API enum Cmiss_element_face_type Cmiss_graphic_get_face(Cmiss_graphic_id gr
  * @param face  A valid face type.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic,
-	enum Cmiss_element_face_type face);
+ZINC_API int cmzn_graphic_set_face(cmzn_graphic_id graphic,
+	enum cmzn_element_face_type face);
 
 /**
  * Specifying the coordinate system in which to render the coordinates of graphics.
@@ -441,8 +441,8 @@ ZINC_API int Cmiss_graphic_set_face(Cmiss_graphic_id graphic,
  * 		for graphic.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
-	enum Cmiss_scene_coordinate_system coordinate_system);
+ZINC_API int cmzn_graphic_set_coordinate_system(cmzn_graphic_id graphic,
+	enum cmzn_scene_coordinate_system coordinate_system);
 
 /**
  * Get the coordinate system in which to render the coordinates of graphics.
@@ -450,8 +450,8 @@ ZINC_API int Cmiss_graphic_set_coordinate_system(Cmiss_graphic_id graphic,
  * @param graphic  The graphic to modify.
  * @return  coordinate system used in graphic.
  */
-ZINC_API enum Cmiss_scene_coordinate_system Cmiss_graphic_get_coordinate_system(
-	Cmiss_graphic_id graphic);
+ZINC_API enum cmzn_scene_coordinate_system cmzn_graphic_get_coordinate_system(
+	cmzn_graphic_id graphic);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
@@ -460,16 +460,16 @@ ZINC_API enum Cmiss_scene_coordinate_system Cmiss_graphic_get_coordinate_system(
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_graphic_type Cmiss_graphic_type_enum_from_string(const char *string);
+ZINC_API enum cmzn_graphic_type cmzn_graphic_type_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
+ZINC_API char *cmzn_graphic_type_enum_to_string(enum cmzn_graphic_type type);
 
 /**
  * Return the name of the graphic. Graphic does not have a name until user has
@@ -477,21 +477,21 @@ ZINC_API char *Cmiss_graphic_type_enum_to_string(enum Cmiss_graphic_type type);
  *
  * @param graphic  The graphic to query.
  * @return  On success: allocated string containing name, or NULL if none.
- * Up to caller to free using Cmiss_deallocate().
+ * Up to caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_graphic_get_name(Cmiss_graphic_id graphic);
+ZINC_API char *cmzn_graphic_get_name(cmzn_graphic_id graphic);
 
 /**
  * Sets the name of the graphic. Unlike other containers, scene can contain
  * multiple graphics with the same name. New graphics default to having no name.
  * A common use of the name is to mark the graphic for filtering, like metadata.
- * @see Cmiss_graphics_filter_module_create_filter_graphic_name
+ * @see cmzn_graphics_filter_module_create_filter_graphic_name
  *
  * @param graphic  The graphic to modify.
  * @param name  The new name for the graphic, OR NULL to clear.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
+ZINC_API int cmzn_graphic_set_name(cmzn_graphic_id graphic, const char *name);
 
 /**
  * Get the field domain type graphics are created from with the graphic.
@@ -500,8 +500,8 @@ ZINC_API int Cmiss_graphic_set_name(Cmiss_graphic_id graphic, const char *name);
  * @return  The domain type of the graphic or CMISS_FIELD_DOMAIN_TYPE_INVALID
  * on error.
  */
-ZINC_API enum Cmiss_field_domain_type Cmiss_graphic_get_domain_type(
-	Cmiss_graphic_id graphic);
+ZINC_API enum cmzn_field_domain_type cmzn_graphic_get_domain_type(
+	cmzn_graphic_id graphic);
 
 /**
  * Set the field domain type to create graphics from with the graphic.
@@ -513,8 +513,8 @@ ZINC_API enum Cmiss_field_domain_type Cmiss_graphic_get_domain_type(
  * @param domain_type  Enumerated value of the field domain type to use.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
-	enum Cmiss_field_domain_type domain_type);
+ZINC_API int cmzn_graphic_set_domain_type(cmzn_graphic_id graphic,
+	enum cmzn_field_domain_type domain_type);
 
 /**
  * If the graphic is of type contours then this function returns
@@ -525,20 +525,20 @@ ZINC_API int Cmiss_graphic_set_domain_type(Cmiss_graphic_id graphic,
  * @return  Contours graphic specific representation if the input is the correct
  * graphic type, otherwise returns NULL.
  */
-ZINC_API Cmiss_graphic_contours_id Cmiss_graphic_cast_contours(Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_contours_id cmzn_graphic_cast_contours(cmzn_graphic_id graphic);
 
 /**
  * Cast contours graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
- * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * must not be destroyed. Use cmzn_graphic_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the contours graphic argument.
  *
  * @param contours_graphic  Handle to the contours graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_contours_base_cast(Cmiss_graphic_contours_id contours_graphic)
+ZINC_C_INLINE cmzn_graphic_id cmzn_graphic_contours_base_cast(cmzn_graphic_contours_id contours_graphic)
 {
-	return (Cmiss_graphic_id)(contours_graphic);
+	return (cmzn_graphic_id)(contours_graphic);
 }
 
 /**
@@ -549,7 +549,7 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_contours_base_cast(Cmiss_graphic_co
  * @return  Status CMISS_OK if successfully destroyed the contours graphic handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_graphic_contours_destroy(Cmiss_graphic_contours_id *contours_address);
+ZINC_API int cmzn_graphic_contours_destroy(cmzn_graphic_contours_id *contours_address);
 
 /**
  * Gets the isoscalar field for the contours graphic.
@@ -558,8 +558,8 @@ ZINC_API int Cmiss_graphic_contours_destroy(Cmiss_graphic_contours_id *contours_
  * @return  Handle to isoscalar field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_contours_get_isoscalar_field(
-	Cmiss_graphic_contours_id contours_graphic);
+ZINC_API cmzn_field_id cmzn_graphic_contours_get_isoscalar_field(
+	cmzn_graphic_contours_id contours_graphic);
 
 /**
  * Set the isoscalar field for the contours graphic.
@@ -569,25 +569,25 @@ ZINC_API Cmiss_field_id Cmiss_graphic_contours_get_isoscalar_field(
  * only one component.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_contours_set_isoscalar_field(
-	Cmiss_graphic_contours_id contours_graphic,
-	Cmiss_field_id isoscalar_field);
+ZINC_API int cmzn_graphic_contours_set_isoscalar_field(
+	cmzn_graphic_contours_id contours_graphic,
+	cmzn_field_id isoscalar_field);
 
 /**
  * Get the iso values for the contours graphic when it has been set as an
  * explicit list.
- * @see Cmiss_graphic_contours_set_list_isovalues.
+ * @see cmzn_graphic_contours_set_list_isovalues.
  *
  * @param contours_graphic  The contours graphic to query.
  * @param number_of_isovalues  The size of the isovalues array.
  * @param isovalues  Array to receive number_of_isovalues iso values.
  * @return  The actual number of iso values that have been explicitly set using
- * Cmiss_graphic_contours_set_list_isovalues. This can be more than the number
+ * cmzn_graphic_contours_set_list_isovalues. This can be more than the number
  * requested, so a second call may be needed with a larger array. A zero return
  * value can indicate isovalues were set as a range, not as an explicit list.
  */
-ZINC_API int Cmiss_graphic_contours_get_list_isovalues(
-	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+ZINC_API int cmzn_graphic_contours_get_list_isovalues(
+	cmzn_graphic_contours_id contours_graphic, int number_of_isovalues,
 	double *isovalues);
 
 /**
@@ -598,42 +598,42 @@ ZINC_API int Cmiss_graphic_contours_get_list_isovalues(
  * @param isovalues  The array of number_of_isovalues double values.
  * @return  Status CMISS_OK on success, otherwise any error code.
  */
-ZINC_API int Cmiss_graphic_contours_set_list_isovalues(
-	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+ZINC_API int cmzn_graphic_contours_set_list_isovalues(
+	cmzn_graphic_contours_id contours_graphic, int number_of_isovalues,
 	const double *isovalues);
 
 /**
  * Get the first isovalue for the contours graphic when set as a range.
- * @see Cmiss_graphic_contours_set_range_isovalues
+ * @see cmzn_graphic_contours_set_range_isovalues
  *
  * @param contours_graphic  The contours graphic to query.
  * @return  First iso values in the range, or 0.0 if not set as a range or
  * other error.
  */
-ZINC_API double Cmiss_graphic_contours_get_range_first_isovalue(
-	Cmiss_graphic_contours_id contours_graphic);
+ZINC_API double cmzn_graphic_contours_get_range_first_isovalue(
+	cmzn_graphic_contours_id contours_graphic);
 
 /**
  * Get the last isovalue for the contours graphic when set as a range.
- * @see Cmiss_graphic_contours_set_range_isovalues
+ * @see cmzn_graphic_contours_set_range_isovalues
  *
  * @param contours_graphic  The contours graphic to query.
  * @return  Last iso values in the range, or 0.0 if not set as a range or
  * other error.
  */
-ZINC_API double Cmiss_graphic_contours_get_range_last_isovalue(
-	Cmiss_graphic_contours_id contours_graphic);
+ZINC_API double cmzn_graphic_contours_get_range_last_isovalue(
+	cmzn_graphic_contours_id contours_graphic);
 
 /**
  * Get the number of isovalues for the contours graphic when set as a range.
- * @see Cmiss_graphic_contours_set_range_isovalues
+ * @see cmzn_graphic_contours_set_range_isovalues
  *
  * @param contours_graphic  The contours graphic to query.
  * @return  Number of iso values in the range, or 0 if not set as a range or
  * other error.
  */
-ZINC_API int Cmiss_graphic_contours_get_range_number_of_isovalues(
-	Cmiss_graphic_contours_id contours_graphic);
+ZINC_API int cmzn_graphic_contours_get_range_number_of_isovalues(
+	cmzn_graphic_contours_id contours_graphic);
 
 /**
  * Set the isovalues for the contours graphic as a number in a range from
@@ -647,8 +647,8 @@ ZINC_API int Cmiss_graphic_contours_get_range_number_of_isovalues(
  * @param last_isovalue  The last iso value.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_contours_set_range_isovalues(
-	Cmiss_graphic_contours_id contours_graphic, int number_of_isovalues,
+ZINC_API int cmzn_graphic_contours_set_range_isovalues(
+	cmzn_graphic_contours_id contours_graphic, int number_of_isovalues,
 	double first_isovalue, double last_isovalue);
 
 /**
@@ -660,20 +660,20 @@ ZINC_API int Cmiss_graphic_contours_set_range_isovalues(
  * @return  Lines graphic specific representation if the input is the correct
  * graphic type, otherwise returns NULL.
  */
-ZINC_API Cmiss_graphic_lines_id Cmiss_graphic_cast_lines(Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_lines_id cmzn_graphic_cast_lines(cmzn_graphic_id graphic);
 
 /**
  * Cast lines graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
- * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * must not be destroyed. Use cmzn_graphic_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the lines graphic argument.
  *
  * @param lines_graphic  Handle to the lines graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_lines_base_cast(Cmiss_graphic_lines_id lines_graphic)
+ZINC_C_INLINE cmzn_graphic_id cmzn_graphic_lines_base_cast(cmzn_graphic_lines_id lines_graphic)
 {
-	return (Cmiss_graphic_id)(lines_graphic);
+	return (cmzn_graphic_id)(lines_graphic);
 }
 
 /**
@@ -684,7 +684,7 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_lines_base_cast(Cmiss_graphic_lines
  * @return  Status CMISS_OK if successfully destroyed the lines graphic handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_graphic_lines_destroy(Cmiss_graphic_lines_id *lines_address);
+ZINC_API int cmzn_graphic_lines_destroy(cmzn_graphic_lines_id *lines_address);
 
 /**
  * If the graphic is of type points then this function returns
@@ -695,20 +695,20 @@ ZINC_API int Cmiss_graphic_lines_destroy(Cmiss_graphic_lines_id *lines_address);
  * @return  Points graphic specific representation if the input is the correct
  * graphic type, otherwise returns NULL.
  */
-ZINC_API Cmiss_graphic_points_id Cmiss_graphic_cast_points(Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_points_id cmzn_graphic_cast_points(cmzn_graphic_id graphic);
 
 /**
  * Cast points graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
- * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * must not be destroyed. Use cmzn_graphic_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the points graphic argument.
  *
  * @param points_graphic  Handle to the points graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_points_base_cast(Cmiss_graphic_points_id points_graphic)
+ZINC_C_INLINE cmzn_graphic_id cmzn_graphic_points_base_cast(cmzn_graphic_points_id points_graphic)
 {
-	return (Cmiss_graphic_id)(points_graphic);
+	return (cmzn_graphic_id)(points_graphic);
 }
 
 /**
@@ -719,7 +719,7 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_points_base_cast(Cmiss_graphic_poin
  * @return  Status CMISS_OK if successfully destroyed the points graphic handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_graphic_points_destroy(Cmiss_graphic_points_id *points_address);
+ZINC_API int cmzn_graphic_points_destroy(cmzn_graphic_points_id *points_address);
 
 /**
  * If the graphic is of type streamlines then this function returns
@@ -730,20 +730,20 @@ ZINC_API int Cmiss_graphic_points_destroy(Cmiss_graphic_points_id *points_addres
  * @return  Streamlines graphic specific representation if the input is the correct
  * graphic type, otherwise returns NULL.
  */
-ZINC_API Cmiss_graphic_streamlines_id Cmiss_graphic_cast_streamlines(Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_streamlines_id cmzn_graphic_cast_streamlines(cmzn_graphic_id graphic);
 
 /**
  * Cast streamlines graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
- * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * must not be destroyed. Use cmzn_graphic_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the streamlines graphic argument.
  *
  * @param streamlines_graphic  Handle to the streamlines graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_streamlines_base_cast(Cmiss_graphic_streamlines_id streamlines_graphic)
+ZINC_C_INLINE cmzn_graphic_id cmzn_graphic_streamlines_base_cast(cmzn_graphic_streamlines_id streamlines_graphic)
 {
-	return (Cmiss_graphic_id)(streamlines_graphic);
+	return (cmzn_graphic_id)(streamlines_graphic);
 }
 
 /**
@@ -754,7 +754,7 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_streamlines_base_cast(Cmiss_graphic
  * @return  Status CMISS_OK if successfully destroyed the streamlines graphic handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_graphic_streamlines_destroy(Cmiss_graphic_streamlines_id *streamlines_address);
+ZINC_API int cmzn_graphic_streamlines_destroy(cmzn_graphic_streamlines_id *streamlines_address);
 
 /**
  * Gets the vector field the streamline is tracking along.
@@ -763,8 +763,8 @@ ZINC_API int Cmiss_graphic_streamlines_destroy(Cmiss_graphic_streamlines_id *str
  * @return  Handle to stream vector field, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_streamlines_get_stream_vector_field(
-	Cmiss_graphic_streamlines_id streamlines_graphic);
+ZINC_API cmzn_field_id cmzn_graphic_streamlines_get_stream_vector_field(
+	cmzn_graphic_streamlines_id streamlines_graphic);
 
 /**
  * Sets the vector field to track the streamline along.
@@ -776,9 +776,9 @@ ZINC_API Cmiss_field_id Cmiss_graphic_streamlines_get_stream_vector_field(
  * @param stream_vector_field  The field to track the streamline along.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_streamlines_set_stream_vector_field(
-	Cmiss_graphic_streamlines_id streamlines_graphic,
-	Cmiss_field_id stream_vector_field);
+ZINC_API int cmzn_graphic_streamlines_set_stream_vector_field(
+	cmzn_graphic_streamlines_id streamlines_graphic,
+	cmzn_field_id stream_vector_field);
 
 /**
  * Gets the direction in which streamlines are tracked.
@@ -787,22 +787,22 @@ ZINC_API int Cmiss_graphic_streamlines_set_stream_vector_field(
  * @return  The current tracking direction, or
  * CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID on error.
  */
-ZINC_API enum Cmiss_graphic_streamlines_track_direction
-	Cmiss_graphic_streamlines_get_track_direction(
-		Cmiss_graphic_streamlines_id streamlines_graphic);
+ZINC_API enum cmzn_graphic_streamlines_track_direction
+	cmzn_graphic_streamlines_get_track_direction(
+		cmzn_graphic_streamlines_id streamlines_graphic);
 
 /**
  * Sets the direction in which streamlines are tracked relative to the stream
  * vector field.
- * @see Cmiss_graphic_streamlines_track_direction
+ * @see cmzn_graphic_streamlines_track_direction
  *
  * @param streamlines_graphic  The streamlines graphic to modify.
  * @param track_direction  The new tracking direction.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_streamlines_set_track_direction(
-	Cmiss_graphic_streamlines_id streamlines_graphic,
-	enum Cmiss_graphic_streamlines_track_direction track_direction);
+ZINC_API int cmzn_graphic_streamlines_set_track_direction(
+	cmzn_graphic_streamlines_id streamlines_graphic,
+	enum cmzn_graphic_streamlines_track_direction track_direction);
 
 /**
  * Gets the maximum length streamlines are tracked along.
@@ -810,8 +810,8 @@ ZINC_API int Cmiss_graphic_streamlines_set_track_direction(
  * @param streamlines_graphic  The streamlines graphic to query.
  * @return  The track length, or 0.0 if invalid streamlines graphic.
  */
-ZINC_API double Cmiss_graphic_streamlines_get_track_length(
-	Cmiss_graphic_streamlines_id streamlines_graphic);
+ZINC_API double cmzn_graphic_streamlines_get_track_length(
+	cmzn_graphic_streamlines_id streamlines_graphic);
 
 /**
  * Sets the maximum length to track streamlines along.
@@ -822,8 +822,8 @@ ZINC_API double Cmiss_graphic_streamlines_get_track_length(
  * @param length  The maximum length to track streamlines along >= 0.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_streamlines_set_track_length(
-	Cmiss_graphic_streamlines_id streamlines_graphic, double length);
+ZINC_API int cmzn_graphic_streamlines_set_track_length(
+	cmzn_graphic_streamlines_id streamlines_graphic, double length);
 
 /**
  * If the graphic is of type surfaces then this function returns
@@ -834,20 +834,20 @@ ZINC_API int Cmiss_graphic_streamlines_set_track_length(
  * @return  Surfaces graphic specific representation if the input is the correct
  * graphic type, otherwise returns NULL.
  */
-ZINC_API Cmiss_graphic_surfaces_id Cmiss_graphic_cast_surfaces(Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_surfaces_id cmzn_graphic_cast_surfaces(cmzn_graphic_id graphic);
 
 /**
  * Cast surfaces graphic back to its base graphic and return the graphic.
  * IMPORTANT NOTE: Returned graphic does not have incremented reference count and
- * must not be destroyed. Use Cmiss_graphic_access() to add a reference if
+ * must not be destroyed. Use cmzn_graphic_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the surfaces graphic argument.
  *
  * @param surfaces_graphic  Handle to the surfaces graphic to cast.
  * @return  Non-accessed handle to the base graphic or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_surfaces_base_cast(Cmiss_graphic_surfaces_id surfaces_graphic)
+ZINC_C_INLINE cmzn_graphic_id cmzn_graphic_surfaces_base_cast(cmzn_graphic_surfaces_id surfaces_graphic)
 {
-	return (Cmiss_graphic_id)(surfaces_graphic);
+	return (cmzn_graphic_id)(surfaces_graphic);
 }
 
 /**
@@ -858,7 +858,7 @@ ZINC_C_INLINE Cmiss_graphic_id Cmiss_graphic_surfaces_base_cast(Cmiss_graphic_su
  * @return  Status CMISS_OK if successfully destroyed the surfaces graphic handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_graphic_surfaces_destroy(Cmiss_graphic_surfaces_id *surfaces_address);
+ZINC_API int cmzn_graphic_surfaces_destroy(cmzn_graphic_surfaces_id *surfaces_address);
 
 /**
  * If the graphic produces lines or extrusions then returns a handle to the
@@ -868,8 +868,8 @@ ZINC_API int Cmiss_graphic_surfaces_destroy(Cmiss_graphic_surfaces_id *surfaces_
  * @return  Handle to line attributes object, or 0 if not supported for
  * graphic type or error. Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_line_attributes_id cmzn_graphic_get_line_attributes(
+	cmzn_graphic_id graphic);
 
 /**
  * Returns a new reference to the line attributes with reference count
@@ -878,8 +878,8 @@ ZINC_API Cmiss_graphic_line_attributes_id Cmiss_graphic_get_line_attributes(
  * @param line_attributes  The line_attributes to obtain a new reference to.
  * @return  New line attributes reference with incremented reference count.
  */
-ZINC_API Cmiss_graphic_line_attributes_id Cmiss_graphic_line_attributes_access(
-	Cmiss_graphic_line_attributes_id line_attributes);
+ZINC_API cmzn_graphic_line_attributes_id cmzn_graphic_line_attributes_access(
+	cmzn_graphic_line_attributes_id line_attributes);
 
 /**
  * Destroys this reference to the line attributes, and sets it to 0.
@@ -889,12 +889,12 @@ ZINC_API Cmiss_graphic_line_attributes_id Cmiss_graphic_line_attributes_access(
  * @return  Status CMISS_OK if successfully destroyed the handle, any other
  * value on failure.
  */
-ZINC_API int Cmiss_graphic_line_attributes_destroy(
-	Cmiss_graphic_line_attributes_id *line_attributes_address);
+ZINC_API int cmzn_graphic_line_attributes_destroy(
+	cmzn_graphic_line_attributes_id *line_attributes_address);
 
 /**
  * Gets the base size of the extrusion section, one value for each lateral axis.
- * @see Cmiss_graphic_line_attributes_set_base_size.
+ * @see cmzn_graphic_line_attributes_set_base_size.
  *
  * @param line_attributes  The line_attributes to query.
  * @param number  The number of base size values to request, starting with the
@@ -904,8 +904,8 @@ ZINC_API int Cmiss_graphic_line_attributes_destroy(
  * the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_line_attributes_get_base_size(
-	Cmiss_graphic_line_attributes_id line_attributes, int number,
+ZINC_API int cmzn_graphic_line_attributes_get_base_size(
+	cmzn_graphic_line_attributes_id line_attributes, int number,
 	double *base_size);
 
 /**
@@ -914,7 +914,7 @@ ZINC_API int Cmiss_graphic_line_attributes_get_base_size(
  * For a unit section profile, the final size in each lateral direction is:
  * base_size + scale_factor * field_scalar
  * where field_scalar is determined from the orientation_scale_field.
- * @see Cmiss_graphic_line_attributes_set_orientation_scale_field.
+ * @see cmzn_graphic_line_attributes_set_orientation_scale_field.
  * The default base size is zero.
  * Note: for lines (circle_extrusion shape) only one value is currently used;
  * the second value is constrained to equal the first value.
@@ -927,21 +927,21 @@ ZINC_API int Cmiss_graphic_line_attributes_get_base_size(
  * @param base_size  Array of base sizes with the number of values specified.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_line_attributes_set_base_size(
-	Cmiss_graphic_line_attributes_id line_attributes, int number,
+ZINC_API int cmzn_graphic_line_attributes_set_base_size(
+	cmzn_graphic_line_attributes_id line_attributes, int number,
 	const double *base_size);
 
 /**
  * Gets the orientation scale field from the graphic line attributes. This
  * controls lateral scaling and orientation of line extrusions.
- * @see Cmiss_graphic_line_attributes_set_orientation_scale_field
+ * @see cmzn_graphic_line_attributes_set_orientation_scale_field
  *
  * @param line_attributes  The line attributes to query.
  * @return Handle to orientation scale field, or 0 if none or error. Up to
  * caller to destroy the returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_line_attributes_get_orientation_scale_field(
-	Cmiss_graphic_line_attributes_id line_attributes);
+ZINC_API cmzn_field_id cmzn_graphic_line_attributes_get_orientation_scale_field(
+	cmzn_graphic_line_attributes_id line_attributes);
 
 /**
  * Sets the orientation scale field in the graphic line attributes. This
@@ -954,14 +954,14 @@ ZINC_API Cmiss_field_id Cmiss_graphic_line_attributes_get_orientation_scale_fiel
  * @param orientation_scale_field  The orientation scale field to set.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_line_attributes_set_orientation_scale_field(
-	Cmiss_graphic_line_attributes_id line_attributes,
-	Cmiss_field_id orientation_scale_field);
+ZINC_API int cmzn_graphic_line_attributes_set_orientation_scale_field(
+	cmzn_graphic_line_attributes_id line_attributes,
+	cmzn_field_id orientation_scale_field);
 
 /**
  * Gets the scale factors used in sizing the extrusion section, one value for
  * each lateral axis.
- * @see Cmiss_graphic_line_attributes_set_scale_factors.
+ * @see cmzn_graphic_line_attributes_set_scale_factors.
  *
  * @param line_attributes  The line_attributes to query.
  * @param number  The number of scale_factors to request, starting with the
@@ -971,8 +971,8 @@ ZINC_API int Cmiss_graphic_line_attributes_set_orientation_scale_field(
  * contain the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_line_attributes_get_scale_factors(
-	Cmiss_graphic_line_attributes_id line_attributes, int number,
+ZINC_API int cmzn_graphic_line_attributes_get_scale_factors(
+	cmzn_graphic_line_attributes_id line_attributes, int number,
 	double *scale_factors);
 
 /**
@@ -981,7 +981,7 @@ ZINC_API int Cmiss_graphic_line_attributes_get_scale_factors(
  * For a unit section profile, the final size in each lateral direction is:
  * base_size + scale_factor * field_scalar
  * where field_scalar is determined from the orientation_scale_field.
- * @see Cmiss_graphic_line_attributes_set_orientation_scale_field.
+ * @see cmzn_graphic_line_attributes_set_orientation_scale_field.
  * Scale factor values default to 1.
  * Note: for lines (circle_extrusion shape) only one value is currently used;
  * the second value is constrained to equal the first value.
@@ -995,35 +995,35 @@ ZINC_API int Cmiss_graphic_line_attributes_get_scale_factors(
  * specified.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_line_attributes_set_scale_factors(
-	Cmiss_graphic_line_attributes_id line_attributes, int number,
+ZINC_API int cmzn_graphic_line_attributes_set_scale_factors(
+	cmzn_graphic_line_attributes_id line_attributes, int number,
 	const double *scale_factors);
 
 /**
  * Gets the shape or profile of graphics generated for lines.
- * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ * @see cmzn_graphic_point_attributes_set_glyph_repeat_mode
  *
  * @param line_attributes  The line_attributes to query.
  * @return  The current shape.
  */
-ZINC_API enum Cmiss_graphic_line_attributes_shape
-	Cmiss_graphic_line_attributes_get_shape(
-		Cmiss_graphic_line_attributes_id line_attributes);
+ZINC_API enum cmzn_graphic_line_attributes_shape
+	cmzn_graphic_line_attributes_get_shape(
+		cmzn_graphic_line_attributes_id line_attributes);
 
 /**
  * Sets the shape or profile of graphics generated for lines:
  * LINE, RIBBON, CIRCLE_EXTRUSION or SQUARE_EXTRUSION.
  * Note: only LINE and CIRCLE_EXTRUSION are supported for graphic_lines type;
  * all shapes are supported for graphic_streamlines.
- * @see Cmiss_graphic_line_attributes_shape
+ * @see cmzn_graphic_line_attributes_shape
  *
  * @param line_attributes  The line_attributes to modify.
  * @param shape  The new shape.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_line_attributes_set_shape(
-	Cmiss_graphic_line_attributes_id line_attributes,
-	enum Cmiss_graphic_line_attributes_shape shape);
+ZINC_API int cmzn_graphic_line_attributes_set_shape(
+	cmzn_graphic_line_attributes_id line_attributes,
+	enum cmzn_graphic_line_attributes_shape shape);
 
 /**
  * If the graphic produces points then returns a handle to point attribute
@@ -1033,8 +1033,8 @@ ZINC_API int Cmiss_graphic_line_attributes_set_shape(
  * @return  Handle to point attributes object, or 0 if not supported for
  * graphic type or error. Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_point_attributes_id cmzn_graphic_get_point_attributes(
+	cmzn_graphic_id graphic);
 
 /**
  * Returns a new reference to the point attributes with reference count
@@ -1043,8 +1043,8 @@ ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_get_point_attributes(
  * @param point_attributes  The point_attributes to obtain a new reference to.
  * @return  New point attributes reference with incremented reference count.
  */
-ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_point_attributes_access(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API cmzn_graphic_point_attributes_id cmzn_graphic_point_attributes_access(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Destroys this reference to the point attributes, and sets it to 0.
@@ -1054,12 +1054,12 @@ ZINC_API Cmiss_graphic_point_attributes_id Cmiss_graphic_point_attributes_access
  * @return  Status CMISS_OK if successfully destroyed the handle, any other
  * value on failure.
  */
-ZINC_API int Cmiss_graphic_point_attributes_destroy(
-	Cmiss_graphic_point_attributes_id *point_attributes_address);
+ZINC_API int cmzn_graphic_point_attributes_destroy(
+	cmzn_graphic_point_attributes_id *point_attributes_address);
 
 /**
  * Gets the base size of the point glyph, up to 3 values, one for each axis.
- * @see Cmiss_graphic_point_attributes_set_base_size.
+ * @see cmzn_graphic_point_attributes_set_base_size.
  *
  * @param point_attributes  The point_attributes to query.
  * @param number  The number of base size values to request, starting with the
@@ -1069,8 +1069,8 @@ ZINC_API int Cmiss_graphic_point_attributes_destroy(
  * the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_get_base_size(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_get_base_size(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	double *base_size);
 
 /**
@@ -1078,7 +1078,7 @@ ZINC_API int Cmiss_graphic_point_attributes_get_base_size(
  * For a unit sized glyph, the final size in each direction is:
  * base_size + scale_factor * field_scalar
  * where field_scalar is determined from the orientation_scale_field.
- * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * @see cmzn_graphic_point_attributes_set_orientation_scale_field.
  * The default base size is zero.
  * Tip: to visualise a 2- or 3-component vector orientation_scale_field, use a
  * base size of 0,D,D with scale factors 1,0,0. This ensures the length equals
@@ -1092,8 +1092,8 @@ ZINC_API int Cmiss_graphic_point_attributes_get_base_size(
  * @param base_size  Array of base sizes with the number of values specified.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_base_size(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_set_base_size(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	const double *base_size);
 
 /**
@@ -1103,8 +1103,8 @@ ZINC_API int Cmiss_graphic_point_attributes_set_base_size(
  * @return  Handle to font, or 0 if none or error. Up to caller to destroy
  * returned handle.
  */
-ZINC_API Cmiss_font_id Cmiss_graphic_point_attributes_get_font(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API cmzn_font_id cmzn_graphic_point_attributes_get_font(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the font in the graphic point attributes used to draw the label field.
@@ -1113,9 +1113,9 @@ ZINC_API Cmiss_font_id Cmiss_graphic_point_attributes_get_font(
  * @param font  The font to set.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_font(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	Cmiss_font_id font);
+ZINC_API int cmzn_graphic_point_attributes_set_font(
+	cmzn_graphic_point_attributes_id point_attributes,
+	cmzn_font_id font);
 
 /**
  * Gets the glyph in the graphic point attributes used to visualise points.
@@ -1124,8 +1124,8 @@ ZINC_API int Cmiss_graphic_point_attributes_set_font(
  * @return  Handle to glyph, or 0 if none or error. Up to caller to destroy
  * returned handle.
  */
-ZINC_API Cmiss_glyph_id Cmiss_graphic_point_attributes_get_glyph(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API cmzn_glyph_id cmzn_graphic_point_attributes_get_glyph(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the glyph in the graphic point attributes used to visualise points.
@@ -1134,13 +1134,13 @@ ZINC_API Cmiss_glyph_id Cmiss_graphic_point_attributes_get_glyph(
  * @param glyph  The glyph to set.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_glyph(
-	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_glyph_id glyph);
+ZINC_API int cmzn_graphic_point_attributes_set_glyph(
+	cmzn_graphic_point_attributes_id point_attributes, cmzn_glyph_id glyph);
 
 /**
  * Gets the offset from the point coordinates to where the glyph origin is
  * drawn, in glyph units along the glyph local axes.
- * @see Cmiss_graphic_point_attributes_set_glyph_offset.
+ * @see cmzn_graphic_point_attributes_set_glyph_offset.
  *
  * @param point_attributes  The point_attributes to query.
  * @param number  The number of offset values to request, up to 3.
@@ -1148,14 +1148,14 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph(
  * Must be big enough to contain the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_get_glyph_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_get_glyph_offset(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	double *offset);
 
 /**
  * Sets the offset from the point coordinates to where the glyph origin is
  * drawn, in glyph units along the glyph local axes.
- * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * @see cmzn_graphic_point_attributes_set_orientation_scale_field.
  * Tip: offset values can give the effect of moving the centre point / origin
  * of the glyph: just pass in negative coordinates for the new origin.
  *
@@ -1165,33 +1165,33 @@ ZINC_API int Cmiss_graphic_point_attributes_get_glyph_offset(
  * fewer than 3 then zero is assumed for all other offset values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_glyph_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_set_glyph_offset(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	const double *offset);
 
 /**
  * Return the current glyph repeat mode.
- * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ * @see cmzn_graphic_point_attributes_set_glyph_repeat_mode
  *
  * @param point_attributes  The point attributes to query.
  * @return  The current glyph repeat mode.
  */
-ZINC_API enum Cmiss_glyph_repeat_mode
-	Cmiss_graphic_point_attributes_get_glyph_repeat_mode(
-		Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API enum cmzn_glyph_repeat_mode
+	cmzn_graphic_point_attributes_get_glyph_repeat_mode(
+		cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the glyph repeat mode which controls whether multiple glyphs are drawn
  * at each point and how.
- * @see Cmiss_glyph_repeat_mode
+ * @see cmzn_glyph_repeat_mode
  *
  * @param point_attributes  The point attributes to modify.
  * @param glyph_repeat_mode  The new repeat mode.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	enum Cmiss_glyph_repeat_mode glyph_repeat_mode);
+ZINC_API int cmzn_graphic_point_attributes_set_glyph_repeat_mode(
+	cmzn_graphic_point_attributes_id point_attributes,
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode);
 
 /**
  * Gets the enumerated value identifying the current glyph used in the point
@@ -1201,22 +1201,22 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph_repeat_mode(
  * @return  The glyph type identifier, or CMISS_GLYPH_TYPE_INVALID if
  * invalid arguments or glyph does not have a valid type.
  */
-ZINC_API enum Cmiss_glyph_type Cmiss_graphic_point_attributes_get_glyph_type(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API enum cmzn_glyph_type cmzn_graphic_point_attributes_get_glyph_type(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the glyph used for visualising a graphics point from a set of
  * enumerations. Requires standard glyphs to first be created.
- * @see Cmiss_glyph_module_define_standard_glyphs
+ * @see cmzn_glyph_module_define_standard_glyphs
  * If no glyph exists with the type identifier, the glyph is unchanged.
  *
  * @param point_attributes  The point attributes to modify.
  * @param glyph_type  The glyph type identifier.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_glyph_type(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	enum Cmiss_glyph_type glyph_type);
+ZINC_API int cmzn_graphic_point_attributes_set_glyph_type(
+	cmzn_graphic_point_attributes_id point_attributes,
+	enum cmzn_glyph_type glyph_type);
 
 /**
  * Gets the label field from the graphic point attributes.
@@ -1225,8 +1225,8 @@ ZINC_API int Cmiss_graphic_point_attributes_set_glyph_type(
  * @return Handle to label field, or 0 if none or error. Up to caller to destroy
  * returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API cmzn_field_id cmzn_graphic_point_attributes_get_label_field(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the label field in the graphic point attributes. A string representation
@@ -1237,12 +1237,12 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_label_field(
  * @param label_field  The label field to set.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_label_field(
-	Cmiss_graphic_point_attributes_id point_attributes, Cmiss_field_id label_field);
+ZINC_API int cmzn_graphic_point_attributes_set_label_field(
+	cmzn_graphic_point_attributes_id point_attributes, cmzn_field_id label_field);
 
 /**
  * Gets the label offset relative to the glyph axes from its origin.
- * @see Cmiss_graphic_point_attributes_set_label_offset
+ * @see cmzn_graphic_point_attributes_set_label_offset
  *
  * @param point_attributes  The point_attributes to query.
  * @param number  The number of offset values to request, up to 3.
@@ -1250,14 +1250,14 @@ ZINC_API int Cmiss_graphic_point_attributes_set_label_field(
  * axis. Must be big enough to contain the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_get_label_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_get_label_offset(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	double *label_offset);
 
 /**
  * Sets the label offset relative to the glyph axes from its origin set by the
  * glyph offset. A unit offset moves the label the length of the axis vector.
- * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * @see cmzn_graphic_point_attributes_set_orientation_scale_field.
  *
  * @param point_attributes  The point_attributes to modify.
  * @param number  The number of offset values to set, up to 3.
@@ -1265,49 +1265,49 @@ ZINC_API int Cmiss_graphic_point_attributes_get_label_offset(
  * fewer than 3 then zero is assumed for all other offset values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_label_offset(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_set_label_offset(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	const double *label_offset);
 
 /**
  * Get static label text to be shown near each glyph.
- * @see Cmiss_graphic_point_attributes_set_label_text
+ * @see cmzn_graphic_point_attributes_set_label_text
  *
  * @param point_attributes  The point_attributes to query.
  * @param label_number  The label_number to get, from 1 to 3.
  * @return  Allocated string containing label text, or NULL if none or error.
- * Up to caller to free using Cmiss_deallocate().
+ * Up to caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_graphic_point_attributes_get_label_text(
-	Cmiss_graphic_point_attributes_id point_attributes, int label_number);
+ZINC_API char *cmzn_graphic_point_attributes_get_label_text(
+	cmzn_graphic_point_attributes_id point_attributes, int label_number);
 
 /**
  * Set static label text to be shown near each glyph. The number of labels
  * depends on the glyph repeat mode, one label per glyph for REPEAT_AXES,
  * one label for REPEAT_NONE and REPEAT_MIRROR. Note the label field value is
  * written for the first label only, prefixed by the first static label text.
- * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ * @see cmzn_graphic_point_attributes_set_glyph_repeat_mode
  *
  * @param point_attributes  The point_attributes to modify.
  * @param label_number  The label_number to set, from 1 to 3.
  * @param label_text  The string to set as static label text.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_label_text(
-	Cmiss_graphic_point_attributes_id point_attributes, int label_number,
+ZINC_API int cmzn_graphic_point_attributes_set_label_text(
+	cmzn_graphic_point_attributes_id point_attributes, int label_number,
 	const char *label_text);
 
 /**
  * Gets the orientation scale field from the graphic point attributes. This
  * controls scaling and orientation of point glyphs.
- * @see Cmiss_graphic_point_attributes_set_orientation_scale_field
+ * @see cmzn_graphic_point_attributes_set_orientation_scale_field
  *
  * @param point_attributes  The point attributes to query.
  * @return Handle to orientation scale field, or 0 if none or error. Up to
  * caller to destroy the returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_orientation_scale_field(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API cmzn_field_id cmzn_graphic_point_attributes_get_orientation_scale_field(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the orientation scale field in the graphic point attributes. This
@@ -1331,20 +1331,20 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_orientation_scale_fie
  *     axes, in a right-handed sense.
  * Note the signed scale field provides additional scaling and orientation
  * reversal for negative values.
- * @see Cmiss_graphic_point_attributes_set_signed_scale_field
+ * @see cmzn_graphic_point_attributes_set_signed_scale_field
  *
  * @param point_attributes  The point attributes to modify.
  * @param orientation_scale_field  The orientation scale field to set.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_orientation_scale_field(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	Cmiss_field_id orientation_scale_field);
+ZINC_API int cmzn_graphic_point_attributes_set_orientation_scale_field(
+	cmzn_graphic_point_attributes_id point_attributes,
+	cmzn_field_id orientation_scale_field);
 
 /**
  * Sets the scale factors used in sizing the point glyph, up to 3 values,
  * one for each axis.
- * @see Cmiss_graphic_point_attributes_set_scale_factors.
+ * @see cmzn_graphic_point_attributes_set_scale_factors.
  *
  * @param point_attributes  The point_attributes to query.
  * @param number  The number of scale_factors to request, starting with the
@@ -1354,8 +1354,8 @@ ZINC_API int Cmiss_graphic_point_attributes_set_orientation_scale_field(
  * contain the specified number of values.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_get_scale_factors(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_get_scale_factors(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	double *scale_factors);
 
 /**
@@ -1364,7 +1364,7 @@ ZINC_API int Cmiss_graphic_point_attributes_get_scale_factors(
  * For a unit sized glyph, the final size in each direction is:
  * base_size + scale_factor * field_scalar
  * where field_scalar is determined from the orientation_scale_field.
- * @see Cmiss_graphic_point_attributes_set_orientation_scale_field.
+ * @see cmzn_graphic_point_attributes_set_orientation_scale_field.
  * Scale factor values default to 1.
  * Tip: to visualise a 2- or 3-component vector orientation_scale_field, use a
  * base size of 0,D,D with scale factors 1,0,0. This ensures the length equals
@@ -1378,20 +1378,20 @@ ZINC_API int Cmiss_graphic_point_attributes_get_scale_factors(
  * specified.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_scale_factors(
-	Cmiss_graphic_point_attributes_id point_attributes, int number,
+ZINC_API int cmzn_graphic_point_attributes_set_scale_factors(
+	cmzn_graphic_point_attributes_id point_attributes, int number,
 	const double *scale_factors);
 
 /**
  * Gets the signed scale field from the graphic point attributes.
- * @see Cmiss_graphic_point_attributes_set_signed_scale_field
+ * @see cmzn_graphic_point_attributes_set_signed_scale_field
  *
  * @param point_attributes  The point attributes to query.
  * @return Handle to signed scale field, or 0 if none or error. Up to
  * caller to destroy the returned handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_signed_scale_field(
-	Cmiss_graphic_point_attributes_id point_attributes);
+ZINC_API cmzn_field_id cmzn_graphic_point_attributes_get_signed_scale_field(
+	cmzn_graphic_point_attributes_id point_attributes);
 
 /**
  * Sets the signed scale field in the graphic point attributes. Can have from 1
@@ -1405,15 +1405,15 @@ ZINC_API Cmiss_field_id Cmiss_graphic_point_attributes_get_signed_scale_field(
  * eigenvalue (of stress or strain tensor) as the signed_scale and the
  * corresponding eigenvector as the orientation_scale field, with repeat mirror.
  * Use a separate points graphic for each eigenvalue.
- * @see Cmiss_graphic_point_attributes_set_glyph_repeat_mode
+ * @see cmzn_graphic_point_attributes_set_glyph_repeat_mode
  *
  * @param point_attributes  The point attributes to modify.
  * @param signed_scale_field  The signed scale field to set.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_point_attributes_set_signed_scale_field(
-	Cmiss_graphic_point_attributes_id point_attributes,
-	Cmiss_field_id signed_scale_field);
+ZINC_API int cmzn_graphic_point_attributes_set_signed_scale_field(
+	cmzn_graphic_point_attributes_id point_attributes,
+	cmzn_field_id signed_scale_field);
 
 /**
  * If the graphic samples points from elements then returns a handle to sampling
@@ -1423,8 +1423,8 @@ ZINC_API int Cmiss_graphic_point_attributes_set_signed_scale_field(
  * @return  Handle to sampling attributes object, or 0 if not supported for
  * graphic type or error. Up to caller to destroy returned handle.
  */
-ZINC_API Cmiss_graphic_sampling_attributes_id Cmiss_graphic_get_sampling_attributes(
-	Cmiss_graphic_id graphic);
+ZINC_API cmzn_graphic_sampling_attributes_id cmzn_graphic_get_sampling_attributes(
+	cmzn_graphic_id graphic);
 
 /**
  * Returns a new reference to the sampling attributes with reference count
@@ -1434,8 +1434,8 @@ ZINC_API Cmiss_graphic_sampling_attributes_id Cmiss_graphic_get_sampling_attribu
  * reference to.
  * @return  New sampling attributes reference with incremented reference count.
  */
-ZINC_API Cmiss_graphic_sampling_attributes_id Cmiss_graphic_sampling_attributes_access(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes);
+ZINC_API cmzn_graphic_sampling_attributes_id cmzn_graphic_sampling_attributes_access(
+	cmzn_graphic_sampling_attributes_id sampling_attributes);
 
 /**
  * Destroys this reference to the sampling attributes, and sets it to 0.
@@ -1445,8 +1445,8 @@ ZINC_API Cmiss_graphic_sampling_attributes_id Cmiss_graphic_sampling_attributes_
  * attributes.
  * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_sampling_attributes_destroy(
-	Cmiss_graphic_sampling_attributes_id *sampling_attributes_address);
+ZINC_API int cmzn_graphic_sampling_attributes_destroy(
+	cmzn_graphic_sampling_attributes_id *sampling_attributes_address);
 
 /**
  * Gets the scalar field specifying the density of points sampled from elements
@@ -1456,22 +1456,22 @@ ZINC_API int Cmiss_graphic_sampling_attributes_destroy(
  * @return  Handle to sample density field, or 0 if none. Up to caller to
  * destroy handle.
  */
-ZINC_API Cmiss_field_id Cmiss_graphic_sampling_attributes_get_density_field(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes);
+ZINC_API cmzn_field_id cmzn_graphic_sampling_attributes_get_density_field(
+	cmzn_graphic_sampling_attributes_id sampling_attributes);
 
 /**
  * Sets the scalar field specifying the density of points sampled from elements
  * when used with CELL_POISSON sample mode. The density is applied per unit
  * volume/area/length, depending on dimension, evaluated at cell centres.
- * @see Cmiss_graphic_sampling_attributes_set_mode
+ * @see cmzn_graphic_sampling_attributes_set_mode
  *
  * @param sampling_attributes  The graphic sampling attributes to modify.
  * @param sample_density_field  Scalar density field to set.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_sampling_attributes_set_density_field(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes,
-	Cmiss_field_id sample_density_field);
+ZINC_API int cmzn_graphic_sampling_attributes_set_density_field(
+	cmzn_graphic_sampling_attributes_id sampling_attributes,
+	cmzn_field_id sample_density_field);
 
 /**
  * Gets the location in the element chart where a point is sampled in mode
@@ -1482,23 +1482,23 @@ ZINC_API int Cmiss_graphic_sampling_attributes_set_density_field(
  * @param valuesOut  Array to receive location.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_sampling_attributes_get_location(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+ZINC_API int cmzn_graphic_sampling_attributes_get_location(
+	cmzn_graphic_sampling_attributes_id sampling_attributes,
 	int valuesCount, double *valuesOut);
 
 /**
  * Sets the location in the element chart where a point is sampled in mode
  * CMISS_ELEMENT_POINT_SAMPLE_SET_LOCATION.
  * Up to 3 values can be set, with 0 assumed for additional chart coordinates.
- * @see Cmiss_graphic_sampling_attributes_set_mode
+ * @see cmzn_graphic_sampling_attributes_set_mode
  *
  * @param sampling_attributes  The graphic sampling attributes to modify.
  * @param valuesCount  The size of the valuesIn array.
  * @param valuesIn  Array containing element location to set.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_sampling_attributes_set_location(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes,
+ZINC_API int cmzn_graphic_sampling_attributes_set_location(
+	cmzn_graphic_sampling_attributes_id sampling_attributes,
 	int valuesCount, const double *valuesIn);
 
 /**
@@ -1507,8 +1507,8 @@ ZINC_API int Cmiss_graphic_sampling_attributes_set_location(
  * @param sampling_attributes  The graphic sampling attributes to query.
  * @return  The point sampling mode, or MODE_INVALID on error.
  */
-ZINC_API enum Cmiss_element_point_sample_mode Cmiss_graphic_sampling_attributes_get_mode(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes);
+ZINC_API enum cmzn_element_point_sample_mode cmzn_graphic_sampling_attributes_get_mode(
+	cmzn_graphic_sampling_attributes_id sampling_attributes);
 
 /**
  * Set the mode for sampling points in elements.
@@ -1518,9 +1518,9 @@ ZINC_API enum Cmiss_element_point_sample_mode Cmiss_graphic_sampling_attributes_
  * @param sample_mode  The element point sample mode to set.
  * @return  CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
  */
-ZINC_API int Cmiss_graphic_sampling_attributes_set_mode(
-	Cmiss_graphic_sampling_attributes_id sampling_attributes,
-	enum Cmiss_element_point_sample_mode sample_mode);
+ZINC_API int cmzn_graphic_sampling_attributes_set_mode(
+	cmzn_graphic_sampling_attributes_id sampling_attributes,
+	enum cmzn_element_point_sample_mode sample_mode);
 
 #ifdef __cplusplus
 }

@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_time_sequence.h
  *
- * The public interface to Cmiss_time_sequence.
+ * The public interface to cmzn_time_sequence.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -51,7 +51,7 @@ extern "C" {
 #endif
 
 /***************************************************************************//**
- * Finds or creates a Cmiss_time_sequence in the field module which matches the
+ * Finds or creates a cmzn_time_sequence in the field module which matches the
  * sequence of times provided.
  * @param field_module  The field module to search or create in.
  * @param number_of_times  The size of the times array.
@@ -59,8 +59,8 @@ extern "C" {
  * times.
  * @return  The time sequence matching the times array, or NULL if failed.
  */
-ZINC_API Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
-	Cmiss_field_module_id field_module, int number_of_times, const double *times);
+ZINC_API cmzn_time_sequence_id cmzn_field_module_get_matching_time_sequence(
+	cmzn_field_module_id field_module, int number_of_times, const double *times);
 
 /***************************************************************************//**
  * Returns a new reference to the time sequence with reference count
@@ -69,8 +69,8 @@ ZINC_API Cmiss_time_sequence_id Cmiss_field_module_get_matching_time_sequence(
  * @param time_sequence  The time sequence to obtain a new reference to.
  * @return  New time sequence reference with incremented reference count.
  */
-ZINC_API Cmiss_time_sequence_id Cmiss_time_sequence_access(
-	Cmiss_time_sequence_id time_sequence);
+ZINC_API cmzn_time_sequence_id cmzn_time_sequence_access(
+	cmzn_time_sequence_id time_sequence);
 
 /***************************************************************************//**
  * Destroys reference to the time sequence and sets pointer/handle to NULL.
@@ -79,7 +79,7 @@ ZINC_API Cmiss_time_sequence_id Cmiss_time_sequence_access(
  * @param time_sequence_address  Address of time sequence reference.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_address);
+ZINC_API int cmzn_time_sequence_destroy(cmzn_time_sequence_id *time_sequence_address);
 
 /***************************************************************************//**
  * Sets the time for the given time_index in the time sequence.
@@ -91,7 +91,7 @@ ZINC_API int Cmiss_time_sequence_destroy(Cmiss_time_sequence_id *time_sequence_a
  * @param time  The time to set.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_time_sequence_set_value(Cmiss_time_sequence_id time_sequence,
+ZINC_API int cmzn_time_sequence_set_value(cmzn_time_sequence_id time_sequence,
 	int time_index, double time);
 
 #ifdef __cplusplus

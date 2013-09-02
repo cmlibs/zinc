@@ -50,7 +50,7 @@ class FieldIf : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldIf(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldIf(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
 	friend FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
@@ -64,7 +64,7 @@ public:
 
 inline FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3)
 {
-	return FieldIf(Cmiss_field_module_create_if(id,
+	return FieldIf(cmzn_field_module_create_if(id,
 		sourceField1.getId(), sourceField2.getId(), sourceField3.getId()));
 }
 

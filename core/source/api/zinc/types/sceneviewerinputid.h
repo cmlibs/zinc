@@ -40,7 +40,7 @@
 /**
  * The type of scene viewer input button.
  */
-enum Cmiss_scene_viewer_input_button_type
+enum cmzn_scene_viewer_input_button_type
 {
 	CMISS_SCENE_VIEWER_INPUT_BUTTON_INVALID = -1,
 	CMISS_SCENE_VIEWER_INPUT_BUTTON_LEFT,
@@ -50,9 +50,9 @@ enum Cmiss_scene_viewer_input_button_type
 	CMISS_SCENE_VIEWER_INPUT_BUTTON_SCROLL_UP
 };
 
-struct Cmiss_scene_viewer_input;
-typedef struct Cmiss_scene_viewer_input *Cmiss_scene_viewer_input_id;
+struct cmzn_scene_viewer_input;
+typedef struct cmzn_scene_viewer_input *cmzn_scene_viewer_input_id;
 
-typedef int Cmiss_scene_viewer_input_modifier;
+typedef int cmzn_scene_viewer_input_modifier;
 
 #endif

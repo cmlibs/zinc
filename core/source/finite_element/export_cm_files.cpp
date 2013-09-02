@@ -1193,7 +1193,7 @@ Global functions
 
 int write_cm_files(FILE *ipcoor_file, FILE *ipbase_file,
 	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
-	struct Cmiss_region *root_region, char *write_path,
+	struct cmzn_region *root_region, char *write_path,
 	struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2006
@@ -1205,16 +1205,16 @@ optional, all the others are required.
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_region *write_region;
+	struct cmzn_region *write_region;
 	struct FE_region *fe_region;
 
 	ENTER(write_exregion_file);
-	write_region = (struct Cmiss_region *)NULL;
+	write_region = (struct cmzn_region *)NULL;
 	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && root_region &&
-		(NULL != (write_region = Cmiss_region_find_subregion_at_path(root_region, write_path))))
+		(NULL != (write_region = cmzn_region_find_subregion_at_path(root_region, write_path))))
 	{
 		return_code = 1;
-		if (NULL != (fe_region = Cmiss_region_get_FE_region(write_region)))
+		if (NULL != (fe_region = cmzn_region_get_FE_region(write_region)))
 		{
 			return_code = write_cm_FE_region(ipcoor_file, ipbase_file,
 				ipnode_file, ipelem_file, ipmap_file, fe_region, field);
@@ -1236,7 +1236,7 @@ optional, all the others are required.
 			"write_cm_files.  Invalid argument(s)");
 		return_code = 0;
 	}
-	Cmiss_region_destroy(&write_region);
+	cmzn_region_destroy(&write_region);
 	LEAVE;
 
 	return (return_code);

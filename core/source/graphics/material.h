@@ -61,7 +61,7 @@ The data structures used for representing graphical materials.
 Global constants
 ----------------
 */
-#define Graphical_material Cmiss_graphics_material
+#define Graphical_material cmzn_graphics_material
 
 /*
 Global types
@@ -232,7 +232,7 @@ struct Material_image_texture
 {
 	struct Texture *texture;
 	struct MANAGER(Computed_field) *manager;
-	Cmiss_field_image_id field;
+	cmzn_field_image_id field;
 	void *callback_id;
 	struct Graphical_material *material;
 };
@@ -283,7 +283,7 @@ The properties of a material.
 	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
 	   Material_programs */
-	struct Cmiss_graphics_material_module *module;
+	struct cmzn_graphics_material_module *module;
 	/* The normal calculated from the volume texture needs to be
 		scaled similarly to how it is scaled into coordinate space,
 		we do not take account of rotations or any other distortions.
@@ -312,16 +312,16 @@ Global functions
 ----------------
 */
 
-Cmiss_graphics_material *Cmiss_graphics_material_create_private();
+cmzn_graphics_material *cmzn_graphics_material_create_private();
 
-struct Cmiss_graphics_material_module *Cmiss_graphics_material_module_create(
+struct cmzn_graphics_material_module *cmzn_graphics_material_module_create(
 	struct MANAGER(Spectrum) *spectrum_manager);
 
-struct MANAGER(Graphical_material) *Cmiss_graphics_material_module_get_manager(
-	struct Cmiss_graphics_material_module *material_module);
+struct MANAGER(Graphical_material) *cmzn_graphics_material_module_get_manager(
+	struct cmzn_graphics_material_module *material_module);
 
-struct MANAGER(Spectrum) *Cmiss_graphics_material_module_get_spectrum_manager(
-	struct Cmiss_graphics_material_module *material_module);
+struct MANAGER(Spectrum) *cmzn_graphics_material_module_get_spectrum_manager(
+	struct cmzn_graphics_material_module *material_module);
 
 int DESTROY(Graphical_material)(struct Graphical_material **material_address);
 /*******************************************************************************
@@ -625,7 +625,7 @@ int Material_set_program_uniform_qualifier_variable_value(
  * @return  The owning Graphics_module object.
  */
 int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
-	struct Cmiss_material_module *material_module);
+	struct cmzn_material_module *material_module);
 
 int material_deaccess_material_program(struct Graphical_material *material_to_be_modified);
 
@@ -634,7 +634,7 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 
 struct Material_program_uniform *CREATE(Material_program_uniform)(char *name);
 
-struct Cmiss_material_module *manager_get_owner_Cmiss_graphics_material(manager_Cmiss_graphics_material *manager);
+struct cmzn_material_module *manager_get_owner_cmzn_graphics_material(manager_cmzn_graphics_material *manager);
 
 //struct Material_program_uniform *list_find_by_identifier_Material_program_uniformname(const char *name, list_Material_program_uniform *list);
 #endif

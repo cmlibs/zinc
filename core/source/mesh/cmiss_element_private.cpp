@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_element_private.cpp
  *
- * Implementation of public interface to Cmiss_element, finite element meshes.
+ * Implementation of public interface to cmzn_element, finite element meshes.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -58,8 +58,8 @@
 
 namespace {
 
-inline int Cmiss_element_shape_type_get_dimension(
-	Cmiss_element_shape_type shape_type)
+inline int cmzn_element_shape_type_get_dimension(
+	cmzn_element_shape_type shape_type)
 {
 	switch (shape_type)
 	{
@@ -93,20 +93,20 @@ Global types
 
 /*============================================================================*/
 
-struct Cmiss_element_basis
+struct cmzn_element_basis
 {
 private:
 	FE_region *fe_region; // needed to get basis manager
 	int dimension;
-	Cmiss_basis_function_type *function_types;
+	cmzn_basis_function_type *function_types;
 	int access_count;
 
 public:
-	Cmiss_element_basis(FE_region *fe_region, int mesh_dimension,
-			Cmiss_basis_function_type function_type) :
+	cmzn_element_basis(FE_region *fe_region, int mesh_dimension,
+			cmzn_basis_function_type function_type) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		dimension(mesh_dimension),
-		function_types(new Cmiss_basis_function_type[mesh_dimension]),
+		function_types(new cmzn_basis_function_type[mesh_dimension]),
 		access_count(1)
 	{
 		for (int i = 0; i < dimension; i++)
@@ -115,13 +115,13 @@ public:
 		}
 	}
 
-	Cmiss_element_basis_id access()
+	cmzn_element_basis_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_element_basis_id &basis)
+	static int deaccess(cmzn_element_basis_id &basis)
 	{
 		if (!basis)
 			return 0;
@@ -135,7 +135,7 @@ public:
 	int getDimension() const { return dimension; }
 
 	/** @return  number of dimension using supplied function_type */
-	int getDimensionsUsingFunction(Cmiss_basis_function_type function_type) const
+	int getDimensionsUsingFunction(cmzn_basis_function_type function_type) const
 	{
 		int count = 0;
 		for (int i = 0; i < dimension; i++)
@@ -155,13 +155,13 @@ public:
 		if (0 < getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_TYPE_INVALID))
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_basis::isValid.  Function type not set");
+				"cmzn_element_basis::isValid.  Function type not set");
 			return_code = 0;
 		}
 		if ((1 == getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_LINEAR_SIMPLEX)) ||
 			(1 == getDimensionsUsingFunction(CMISS_BASIS_FUNCTION_QUADRATIC_SIMPLEX)))
 		{
-			display_message(ERROR_MESSAGE, "Cmiss_element_basis::isValid.  "
+			display_message(ERROR_MESSAGE, "cmzn_element_basis::isValid.  "
 				"Must be at least 2 linked dimension for simplex basis");
 			return_code = 0;
 		}
@@ -229,14 +229,14 @@ public:
 		return ACCESS(FE_basis)(fe_basis);
 	}
 
-	enum Cmiss_basis_function_type getFunctionType(int chart_component) const
+	enum cmzn_basis_function_type getFunctionType(int chart_component) const
 	{
 		if ((chart_component < 1) || (chart_component > dimension))
 			return CMISS_BASIS_FUNCTION_TYPE_INVALID;
 		return function_types[chart_component - 1];
 	}
 
-	int setFunctionType(int chart_component, Cmiss_basis_function_type function_type)
+	int setFunctionType(int chart_component, cmzn_basis_function_type function_type)
 	{
 		if ((chart_component < 1) || (chart_component > dimension))
 			return 0;
@@ -285,7 +285,7 @@ public:
 		if (0 == number_of_nodes)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_basis::getNumberOfNodes.  "
+				"cmzn_element_basis::getNumberOfNodes.  "
 				"Invalid number of chart components linked in simplex");
 			return 0;
 		}
@@ -310,7 +310,7 @@ public:
 					break;
 				default:
 					display_message(ERROR_MESSAGE,
-						"Cmiss_element_basis::getNumberOfNodes.  "
+						"cmzn_element_basis::getNumberOfNodes.  "
 						"Invalid or unsupported basis type: %d", function_types[i]);
 					number_of_nodes = 0;
 					break;
@@ -320,7 +320,7 @@ public:
 	}
 
 private:
-	~Cmiss_element_basis()
+	~cmzn_element_basis()
 	{
 		DEACCESS(FE_region)(&fe_region);
 		delete[] function_types;
@@ -331,7 +331,7 @@ private:
 
 namespace {
 
-class Cmiss_element_field
+class cmzn_element_field
 {
 	FE_field *fe_field;
 	const int number_of_components;
@@ -339,7 +339,7 @@ class Cmiss_element_field
 
 public:
 
-	Cmiss_element_field(FE_field *fe_field) :
+	cmzn_element_field(FE_field *fe_field) :
 		fe_field(ACCESS(FE_field)(fe_field)),
 		number_of_components(get_FE_field_number_of_components(fe_field)),
 		components(new FE_element_field_component*[number_of_components])
@@ -348,7 +348,7 @@ public:
 			components[i] = 0;
 	}
 
-	~Cmiss_element_field()
+	~cmzn_element_field()
 	{
 		DEACCESS(FE_field)(&fe_field);
 		for (int i = 0; i < number_of_components; i++)
@@ -443,21 +443,21 @@ private:
 
 /*============================================================================*/
 
-struct Cmiss_element_template
+struct cmzn_element_template
 {
-	friend struct Cmiss_mesh; // to obtain template_element
+	friend struct cmzn_mesh; // to obtain template_element
 private:
 	FE_region *fe_region;
 	int element_dimension;
-	Cmiss_element_shape_type shape_type;
+	cmzn_element_shape_type shape_type;
 	bool shape_is_set;
 	int element_number_of_nodes;
 	FE_element *template_element;
-	std::vector<Cmiss_element_field*> fields;
+	std::vector<cmzn_element_field*> fields;
 	int access_count;
 
 public:
-	Cmiss_element_template(FE_region *fe_region, int element_dimension) :
+	cmzn_element_template(FE_region *fe_region, int element_dimension) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		element_dimension(element_dimension),
 		shape_type(CMISS_ELEMENT_SHAPE_TYPE_INVALID),
@@ -468,13 +468,13 @@ public:
 	{
 	}
 
-	Cmiss_element_template_id access()
+	cmzn_element_template_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_element_template_id &element_template)
+	static int deaccess(cmzn_element_template_id &element_template)
 	{
 		if (!element_template)
 			return 0;
@@ -485,17 +485,17 @@ public:
 		return 1;
 	}
 
-	Cmiss_element_shape_type getShapeType() const { return shape_type; }
+	cmzn_element_shape_type getShapeType() const { return shape_type; }
 
-	int setShapeType(Cmiss_element_shape_type in_shape_type)
+	int setShapeType(cmzn_element_shape_type in_shape_type)
 	{
 		if (in_shape_type != CMISS_ELEMENT_SHAPE_TYPE_INVALID)
 		{
-			int shape_dimension = Cmiss_element_shape_type_get_dimension(in_shape_type);
+			int shape_dimension = cmzn_element_shape_type_get_dimension(in_shape_type);
 			if (shape_dimension != element_dimension)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_element_template::setShapeType.  Shape dimension is different from mesh");
+					"cmzn_element_template::setShapeType.  Shape dimension is different from mesh");
 				return 0;
 			}
 		}
@@ -514,22 +514,22 @@ public:
 		if (in_element_number_of_nodes < element_number_of_nodes)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_set_number_of_nodes.  Cannot reduce number of nodes");
+				"cmzn_element_template_set_number_of_nodes.  Cannot reduce number of nodes");
 			return 0;
 		}
 		element_number_of_nodes = in_element_number_of_nodes;
 		return 1;
 	}
 
-	int defineFieldSimpleNodal(Cmiss_field_id field,
-		int component_number, Cmiss_element_basis_id basis, int basis_number_of_nodes,
+	int defineFieldSimpleNodal(cmzn_field_id field,
+		int component_number, cmzn_element_basis_id basis, int basis_number_of_nodes,
 		const int *local_node_indexes)
 	{
 		int return_code = 1;
 		if (basis->getDimension() != element_dimension)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_define_field_simple_nodal.  "
+				"cmzn_element_template_define_field_simple_nodal.  "
 				"Basis has different dimension to mesh");
 			return_code = 0;
 		}
@@ -537,7 +537,7 @@ public:
 		if (!fe_basis)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_define_field_simple_nodal.  "
+				"cmzn_element_template_define_field_simple_nodal.  "
 				"Basis is invalid or incomplete");
 			return_code = 0;
 		}
@@ -547,7 +547,7 @@ public:
 			if (basis_number_of_nodes != expected_basis_number_of_nodes)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_element_template_define_field_simple_nodal.  "
+					"cmzn_element_template_define_field_simple_nodal.  "
 					"%d nodes supplied but %d expected for basis",
 					basis_number_of_nodes, expected_basis_number_of_nodes);
 				return_code = 0;
@@ -558,7 +558,7 @@ public:
 			if ((local_node_indexes[i] < 1) || (local_node_indexes[i] > element_number_of_nodes))
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_element_template_define_field_simple_nodal.  "
+					"cmzn_element_template_define_field_simple_nodal.  "
 					"Local node index out of range 1 to number in element(%d)", element_number_of_nodes);
 				return_code = 0;
 				break;
@@ -566,7 +566,7 @@ public:
 		}
 		FE_region *master_FE_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_FE_region);
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		FE_field *fe_field = NULL;
 		if (finite_element_field)
 		{
@@ -574,22 +574,22 @@ public:
 			if (FE_field_get_FE_region(fe_field) != master_FE_region)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_element_template_define_field_simple_nodal.  "
+					"cmzn_element_template_define_field_simple_nodal.  "
 					"Field is from another region");
 				return_code = 0;
 			}
-			Cmiss_field_finite_element_destroy(&finite_element_field);
+			cmzn_field_finite_element_destroy(&finite_element_field);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_define_field_simple_nodal.  "
+				"cmzn_element_template_define_field_simple_nodal.  "
 				"Can only define real finite_element field type on elements");
 			return_code = 0;
 		}
 		if (return_code)
 		{
-			Cmiss_element_field& element_field = getElementField(fe_field);
+			cmzn_element_field& element_field = getElementField(fe_field);
 			if (element_field.buildComponent(component_number, fe_basis, basis_number_of_nodes, local_node_indexes))
 			{
 				clearTemplateElement();
@@ -611,7 +611,7 @@ public:
 		if (!shape_is_set)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_element_template_validate.  Element shape has not been set");
+				"cmzn_element_template_validate.  Element shape has not been set");
 			return_code = 0;
 		}
 		for (unsigned int i = 0; i < fields.size(); i++)
@@ -620,7 +620,7 @@ public:
 			{
 				char *field_name = NULL;
 				GET_NAME(FE_field)(fields[i]->getFeField(), &field_name);
-				display_message(ERROR_MESSAGE, "Cmiss_element_template_validate.  "
+				display_message(ERROR_MESSAGE, "cmzn_element_template_validate.  "
 					"Field %s definition is invalid or incomplete", field_name);
 				DEALLOCATE(field_name);
 				return_code = 0;
@@ -656,25 +656,25 @@ public:
 			if (!template_element)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_element_template_validate.  Failed to create template element");
+					"cmzn_element_template_validate.  Failed to create template element");
 				return_code = 0;
 			}
 		}
 		return return_code;
 	}
 
-	Cmiss_node_id getNode(int local_node_index)
+	cmzn_node_id getNode(int local_node_index)
 	{
 		if (validate())
 		{
-			Cmiss_node_id node = NULL;
+			cmzn_node_id node = NULL;
 			if (get_FE_element_node(getTemplateElement(), local_node_index - 1, &node))
 				return ACCESS(FE_node)(node);
 		}
 		return NULL;
 	}
 
-	int setNode(int local_node_index, Cmiss_node_id node)
+	int setNode(int local_node_index, cmzn_node_id node)
 	{
 		if (validate())
 		{
@@ -683,7 +683,7 @@ public:
 		return 0;
 	}
 
-	int mergeIntoElement(Cmiss_element_id element)
+	int mergeIntoElement(cmzn_element_id element)
 	{
 		int return_code = 0;
 		if (validate())
@@ -702,7 +702,7 @@ public:
 	}
 
 private:
-	~Cmiss_element_template()
+	~cmzn_element_template()
 	{
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
@@ -714,9 +714,9 @@ private:
 
 	FE_element *getTemplateElement() { return template_element; }
 
-	Cmiss_element_field& getElementField(FE_field *fe_field)
+	cmzn_element_field& getElementField(FE_field *fe_field)
 	{
-		Cmiss_element_field *element_field = NULL;
+		cmzn_element_field *element_field = NULL;
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
 			if (fields[i]->getFeField() == fe_field)
@@ -727,7 +727,7 @@ private:
 		}
 		if (!element_field)
 		{
-			element_field = new Cmiss_element_field(fe_field);
+			element_field = new cmzn_element_field(fe_field);
 			fields.push_back(element_field);
 		}
 		return *element_field;
@@ -743,41 +743,41 @@ private:
 
 /*============================================================================*/
 
-struct Cmiss_mesh
+struct cmzn_mesh
 {
 protected:
 	FE_region *fe_region;
 	const int dimension;
-	Cmiss_field_element_group_id group;
+	cmzn_field_element_group_id group;
 	int access_count;
 
-	Cmiss_mesh(Cmiss_field_element_group_id group) :
-		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(
-			Computed_field_get_region(Cmiss_field_element_group_base_cast(group))))),
+	cmzn_mesh(cmzn_field_element_group_id group) :
+		fe_region(ACCESS(FE_region)(cmzn_region_get_FE_region(
+			Computed_field_get_region(cmzn_field_element_group_base_cast(group))))),
 		dimension(Computed_field_element_group_core_cast(group)->getDimension()),
 		group(group),
 		access_count(1)
 	{
-		// GRC Cmiss_field_element_group_access missing:
-		Cmiss_field_access(Cmiss_field_element_group_base_cast(group));
+		// GRC cmzn_field_element_group_access missing:
+		cmzn_field_access(cmzn_field_element_group_base_cast(group));
 	}
 
 public:
-	Cmiss_mesh(Cmiss_region_id region, int mesh_dimension) :
-		fe_region(ACCESS(FE_region)(Cmiss_region_get_FE_region(region))),
+	cmzn_mesh(cmzn_region_id region, int mesh_dimension) :
+		fe_region(ACCESS(FE_region)(cmzn_region_get_FE_region(region))),
 		dimension(mesh_dimension),
 		group(0),
 		access_count(1)
 	{
 	}
 
-	Cmiss_mesh_id access()
+	cmzn_mesh_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_mesh_id &mesh)
+	static int deaccess(cmzn_mesh_id &mesh)
 	{
 		if (!mesh)
 			return 0;
@@ -788,7 +788,7 @@ public:
 		return 1;
 	}
 
-	int containsElement(Cmiss_element_id element)
+	int containsElement(cmzn_element_id element)
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->containsObject(element);
@@ -806,8 +806,8 @@ public:
 		return 0;
 	}
 
-	Cmiss_element_id createElement(int identifier,
-		Cmiss_element_template_id element_template)
+	cmzn_element_id createElement(int identifier,
+		cmzn_element_template_id element_template)
 	{
 		FE_element *element = NULL;
 		if (element_template->validate())
@@ -821,19 +821,19 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_mesh_create_element.  Element template is not valid");
+				"cmzn_mesh_create_element.  Element template is not valid");
 		}
 		return element;
 	}
 
-	Cmiss_element_template_id createElementTemplate()
+	cmzn_element_template_id createElementTemplate()
 	{
 		FE_region *master_fe_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return new Cmiss_element_template(master_fe_region, dimension);
+		return new cmzn_element_template(master_fe_region, dimension);
 	}
 
-	Cmiss_element_iterator_id createIterator()
+	cmzn_element_iterator_id createIterator()
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->createIterator();
@@ -845,7 +845,7 @@ public:
 		return destroyElementsConditional(/*conditional_field*/0);
 	}
 
-	int destroyElement(Cmiss_element_id element)
+	int destroyElement(cmzn_element_id element)
 	{
 		if (containsElement(element))
 		{
@@ -856,7 +856,7 @@ public:
 		return 0;
 	}
 
-	int destroyElementsConditional(Cmiss_field_id conditional_field)
+	int destroyElementsConditional(cmzn_field_id conditional_field)
 	{
 		struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
 		FE_region *master_fe_region = fe_region;
@@ -866,9 +866,9 @@ public:
 		return return_code;
 	}
 
-	Cmiss_element_id findElementByIdentifier(int identifier) const
+	cmzn_element_id findElementByIdentifier(int identifier) const
 	{
-		Cmiss_element_id element = 0;
+		cmzn_element_id element = 0;
 		if (group)
 		{
 			element = Computed_field_element_group_core_cast(group)->findElementByIdentifier(identifier);
@@ -898,7 +898,7 @@ public:
 		char *name = 0;
 		if (group)
 		{
-			name = Cmiss_field_get_name(Cmiss_field_element_group_base_cast(group));
+			name = cmzn_field_get_name(cmzn_field_element_group_base_cast(group));
 		}
 		else
 		{
@@ -920,13 +920,13 @@ public:
 		return name;
 	}
 
-	Cmiss_mesh_id getMaster()
+	cmzn_mesh_id getMaster()
 	{
 		if (!isGroup())
 			return access();
-		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
+		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
 		if (region)
-			return new Cmiss_mesh(region, dimension);
+			return new cmzn_mesh(region, dimension);
 		return 0;
 	}
 
@@ -942,7 +942,7 @@ public:
 		return (0 != group);
 	}
 
-	int match(Cmiss_mesh& other_mesh)
+	int match(cmzn_mesh& other_mesh)
 	{
 		return ((fe_region == other_mesh.fe_region) &&
 			(dimension == other_mesh.dimension) &&
@@ -950,46 +950,46 @@ public:
 	}
 
 protected:
-	~Cmiss_mesh()
+	~cmzn_mesh()
 	{
 		if (group)
-			Cmiss_field_element_group_destroy(&group);
+			cmzn_field_element_group_destroy(&group);
 		DEACCESS(FE_region)(&fe_region);
 	}
 
-	struct LIST(FE_element) *createElementListWithCondition(Cmiss_field_id conditional_field)
+	struct LIST(FE_element) *createElementListWithCondition(cmzn_field_id conditional_field)
 	{
-		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
-		Cmiss_element_iterator_id iterator = createIterator();
-		Cmiss_element_id element = 0;
+		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
+		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+		cmzn_field_cache_id cache = cmzn_field_module_create_cache(field_module);
+		cmzn_element_iterator_id iterator = createIterator();
+		cmzn_element_id element = 0;
 		struct LIST(FE_element) *element_list =
 			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
-		while (0 != (element = Cmiss_element_iterator_next_non_access(iterator)))
+		while (0 != (element = cmzn_element_iterator_next_non_access(iterator)))
 		{
-			Cmiss_field_cache_set_element(cache, element);
-			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
+			cmzn_field_cache_set_element(cache, element);
+			if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, cache))
 				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
 		}
-		Cmiss_element_iterator_destroy(&iterator);
-		Cmiss_field_cache_destroy(&cache);
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_element_iterator_destroy(&iterator);
+		cmzn_field_cache_destroy(&cache);
+		cmzn_field_module_destroy(&field_module);
 		return element_list;
 	}
 
 };
 
-struct Cmiss_mesh_group : public Cmiss_mesh
+struct cmzn_mesh_group : public cmzn_mesh
 {
 public:
 
-	Cmiss_mesh_group(Cmiss_field_element_group_id group) :
-		Cmiss_mesh(group)
+	cmzn_mesh_group(cmzn_field_element_group_id group) :
+		cmzn_mesh(group)
 	{
 	}
 
-	int addElement(Cmiss_element_id element)
+	int addElement(cmzn_element_id element)
 	{
 		return Computed_field_element_group_core_cast(group)->addObject(element);
 	}
@@ -999,22 +999,22 @@ public:
 		return Computed_field_element_group_core_cast(group)->clear();
 	}
 
-	int removeElement(Cmiss_element_id element)
+	int removeElement(cmzn_element_id element)
 	{
 		return Computed_field_element_group_core_cast(group)->removeObject(element);
 	}
 
-	int removeElementsConditional(Cmiss_field_id conditional_field)
+	int removeElementsConditional(cmzn_field_id conditional_field)
 	{
 		return Computed_field_element_group_core_cast(group)->removeElementsConditional(conditional_field);
 	}
 
-	int addElementFaces(Cmiss_element_id element)
+	int addElementFaces(cmzn_element_id element)
 	{
 		return Computed_field_element_group_core_cast(group)->addElementFaces(element);
 	}
 
-	int removeElementFaces(Cmiss_element_id element)
+	int removeElementFaces(cmzn_element_id element)
 	{
 		return Computed_field_element_group_core_cast(group)->removeElementFaces(element);
 	}
@@ -1026,53 +1026,53 @@ Global functions
 ----------------
 */
 
-Cmiss_element_basis_id Cmiss_field_module_create_element_basis(
-	Cmiss_field_module_id field_module, int dimension,
-	enum Cmiss_basis_function_type function_type)
+cmzn_element_basis_id cmzn_field_module_create_element_basis(
+	cmzn_field_module_id field_module, int dimension,
+	enum cmzn_basis_function_type function_type)
 {
 	if (field_module && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		Cmiss_region *region = Cmiss_field_module_get_master_region_internal(field_module);
-		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		cmzn_region *region = cmzn_field_module_get_master_region_internal(field_module);
+		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (fe_region)
 		{
-			return new Cmiss_element_basis(fe_region, dimension, function_type);
+			return new cmzn_element_basis(fe_region, dimension, function_type);
 		}
 	}
 	return 0;
 }
 
-Cmiss_mesh_id Cmiss_field_module_find_mesh_by_dimension(
-	Cmiss_field_module_id field_module, int dimension)
+cmzn_mesh_id cmzn_field_module_find_mesh_by_dimension(
+	cmzn_field_module_id field_module, int dimension)
 {
-	Cmiss_mesh_id mesh = NULL;
+	cmzn_mesh_id mesh = NULL;
 	if (field_module && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		mesh = new Cmiss_mesh(Cmiss_field_module_get_region_internal(field_module), dimension);
+		mesh = new cmzn_mesh(cmzn_field_module_get_region_internal(field_module), dimension);
 	}
 	return mesh;
 }
 
-Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
-	Cmiss_field_module_id field_module, const char *mesh_name)
+cmzn_mesh_id cmzn_field_module_find_mesh_by_name(
+	cmzn_field_module_id field_module, const char *mesh_name)
 {
-	Cmiss_mesh_id mesh = 0;
+	cmzn_mesh_id mesh = 0;
 	if (field_module && mesh_name)
 	{
-		Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, mesh_name);
+		cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, mesh_name);
 		if (field)
 		{
-			Cmiss_field_element_group_id element_group_field = Cmiss_field_cast_element_group(field);
+			cmzn_field_element_group_id element_group_field = cmzn_field_cast_element_group(field);
 			if (element_group_field)
 			{
-				mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group_field));
-				Cmiss_field_element_group_destroy(&element_group_field);
+				mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group_field));
+				cmzn_field_element_group_destroy(&element_group_field);
 			}
-			Cmiss_field_destroy(&field);
+			cmzn_field_destroy(&field);
 		}
 		else
 		{
-			Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+			cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
 			int mesh_dimension = 0;
 			if      (0 == strcmp(mesh_name, "mesh3d"))
 				mesh_dimension = 3;
@@ -1082,92 +1082,92 @@ Cmiss_mesh_id Cmiss_field_module_find_mesh_by_name(
 				mesh_dimension = 1;
 			if (0 < mesh_dimension)
 			{
-				mesh = new Cmiss_mesh(region, mesh_dimension);
+				mesh = new cmzn_mesh(region, mesh_dimension);
 			}
 		}
 	}
 	return (mesh);
 }
 
-Cmiss_mesh_id Cmiss_mesh_access(Cmiss_mesh_id mesh)
+cmzn_mesh_id cmzn_mesh_access(cmzn_mesh_id mesh)
 {
 	return mesh->access();
 }
 
-int Cmiss_mesh_destroy(Cmiss_mesh_id *mesh_address)
+int cmzn_mesh_destroy(cmzn_mesh_id *mesh_address)
 {
 	if (mesh_address)
-		return Cmiss_mesh::deaccess(*mesh_address);
+		return cmzn_mesh::deaccess(*mesh_address);
 	return 0;
 }
 
-int Cmiss_mesh_contains_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
+int cmzn_mesh_contains_element(cmzn_mesh_id mesh, cmzn_element_id element)
 {
 	if (mesh)
 		return mesh->containsElement(element);
 	return 0;
 }
 
-Cmiss_element_template_id Cmiss_mesh_create_element_template(
-	Cmiss_mesh_id mesh)
+cmzn_element_template_id cmzn_mesh_create_element_template(
+	cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->createElementTemplate();
 	return 0;
 }
 
-Cmiss_element_id Cmiss_mesh_create_element(Cmiss_mesh_id mesh,
-	int identifier, Cmiss_element_template_id element_template)
+cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
+	int identifier, cmzn_element_template_id element_template)
 {
 	if (mesh && element_template)
 		return mesh->createElement(identifier, element_template);
 	return 0;
 }
 
-Cmiss_element_iterator_id Cmiss_mesh_create_element_iterator(
-	Cmiss_mesh_id mesh)
+cmzn_element_iterator_id cmzn_mesh_create_element_iterator(
+	cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->createIterator();
 	return 0;
 }
 
-int Cmiss_mesh_define_element(Cmiss_mesh_id mesh, int identifier,
-	Cmiss_element_template_id element_template)
+int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
+	cmzn_element_template_id element_template)
 {
-	Cmiss_element_id element =
-		Cmiss_mesh_create_element(mesh, identifier, element_template);
+	cmzn_element_id element =
+		cmzn_mesh_create_element(mesh, identifier, element_template);
 	if (element)
 	{
-		Cmiss_element_destroy(&element);
+		cmzn_element_destroy(&element);
 		return 1;
 	}
 	return 0;
 }
 
-int Cmiss_mesh_destroy_all_elements(Cmiss_mesh_id mesh)
+int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->destroyAllElements();
 	return 0;
 }
 
-int Cmiss_mesh_destroy_element(Cmiss_mesh_id mesh, Cmiss_element_id element)
+int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id element)
 {
 	if (mesh && element)
 		return mesh->destroyElement(element);
 	return 0;
 }
 
-int Cmiss_mesh_destroy_elements_conditional(Cmiss_mesh_id mesh,
-	Cmiss_field_id conditional_field)
+int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
+	cmzn_field_id conditional_field)
 {
 	if (mesh && conditional_field)
 		return mesh->destroyElementsConditional(conditional_field);
 	return 0;
 }
 
-Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
+cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 	int identifier)
 {
 	if (mesh)
@@ -1175,142 +1175,142 @@ Cmiss_element_id Cmiss_mesh_find_element_by_identifier(Cmiss_mesh_id mesh,
 	return 0;
 }
 
-Cmiss_differential_operator_id Cmiss_mesh_get_chart_differential_operator(
-	Cmiss_mesh_id mesh, int order, int term)
+cmzn_differential_operator_id cmzn_mesh_get_chart_differential_operator(
+	cmzn_mesh_id mesh, int order, int term)
 {
 	if (mesh && (1 == order) && (1 <= term) && (term <= mesh->getDimension()))
-		return new Cmiss_differential_operator(mesh->getMasterFeRegion(), mesh->getDimension(), term);
+		return new cmzn_differential_operator(mesh->getMasterFeRegion(), mesh->getDimension(), term);
 	return 0;
 }
 
-int Cmiss_mesh_get_dimension(Cmiss_mesh_id mesh)
+int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->getDimension();
 	return 0;
 }
 
-Cmiss_mesh_id Cmiss_mesh_get_master(Cmiss_mesh_id mesh)
+cmzn_mesh_id cmzn_mesh_get_master(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->getMaster();
 	return 0;
 }
 
-char *Cmiss_mesh_get_name(Cmiss_mesh_id mesh)
+char *cmzn_mesh_get_name(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->getName();
 	return 0;
 }
 
-int Cmiss_mesh_get_size(Cmiss_mesh_id mesh)
+int cmzn_mesh_get_size(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->getSize();
 	return 0;
 }
 
-int Cmiss_mesh_match(Cmiss_mesh_id mesh1, Cmiss_mesh_id mesh2)
+int cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2)
 {
 	return (mesh1 && mesh2 && mesh1->match(*mesh2));
 }
 
-Cmiss_mesh_group_id Cmiss_mesh_cast_group(Cmiss_mesh_id mesh)
+cmzn_mesh_group_id cmzn_mesh_cast_group(cmzn_mesh_id mesh)
 {
 	if (mesh && mesh->isGroup())
-		return static_cast<Cmiss_mesh_group_id>(mesh->access());
+		return static_cast<cmzn_mesh_group_id>(mesh->access());
 	return 0;
 }
 
-int Cmiss_mesh_group_destroy(Cmiss_mesh_group_id *mesh_group_address)
+int cmzn_mesh_group_destroy(cmzn_mesh_group_id *mesh_group_address)
 {
 	if (mesh_group_address)
-		return Cmiss_mesh::deaccess(*(reinterpret_cast<Cmiss_mesh_id*>(mesh_group_address)));
+		return cmzn_mesh::deaccess(*(reinterpret_cast<cmzn_mesh_id*>(mesh_group_address)));
 	return 0;
 }
 
-int Cmiss_mesh_group_add_element(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->addElement(element);
 	return 0;
 }
 
-int Cmiss_mesh_group_remove_all_elements(Cmiss_mesh_group_id mesh_group)
+int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group)
 {
 	if (mesh_group)
 		return mesh_group->removeAllElements();
 	return 0;
 }
 
-int Cmiss_mesh_group_remove_element(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->removeElement(element);
 	return 0;
 }
 
-int Cmiss_mesh_group_remove_elements_conditional(Cmiss_mesh_group_id mesh_group,
-	Cmiss_field_id conditional_field)
+int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
+	cmzn_field_id conditional_field)
 {
 	if (mesh_group && conditional_field)
 		return mesh_group->removeElementsConditional(conditional_field);
 	return 0;
 }
 
-int Cmiss_mesh_group_add_element_faces(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->addElementFaces(element);
 	return 0;
 }
 
-int Cmiss_mesh_group_remove_element_faces(Cmiss_mesh_group_id mesh_group, Cmiss_element_id element)
+int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->removeElementFaces(element);
 	return 0;
 }
 
-Cmiss_mesh_group_id Cmiss_field_element_group_get_mesh(
-	Cmiss_field_element_group_id element_group)
+cmzn_mesh_group_id cmzn_field_element_group_get_mesh(
+	cmzn_field_element_group_id element_group)
 {
 	if (element_group)
-		return new Cmiss_mesh_group(element_group);
+		return new cmzn_mesh_group(element_group);
 	return 0;
 }
 
-struct LIST(FE_element) *Cmiss_mesh_create_element_list_internal(Cmiss_mesh_id mesh)
+struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return FE_region_create_related_element_list_for_dimension(mesh->getFeRegion(), mesh->getDimension());
 	return 0;
 }
 
-FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh)
+FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->getFeRegion();
 	return 0;
 }
 
-Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh)
+cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh)
 {
 	if (!mesh)
 		return 0;
-	return FE_region_get_Cmiss_region(mesh->getFeRegion());
+	return FE_region_get_cmzn_region(mesh->getFeRegion());
 }
 
-Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh)
+cmzn_region_id cmzn_mesh_get_master_region_internal(cmzn_mesh_id mesh)
 {
 	if (!mesh)
 		return 0;
-	return FE_region_get_master_Cmiss_region(mesh->getFeRegion());
+	return FE_region_get_master_cmzn_region(mesh->getFeRegion());
 }
 
-Cmiss_element_basis_id Cmiss_element_basis_access(
-	Cmiss_element_basis_id element_basis)
+cmzn_element_basis_id cmzn_element_basis_access(
+	cmzn_element_basis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->access();
@@ -1318,96 +1318,96 @@ Cmiss_element_basis_id Cmiss_element_basis_access(
 	return 0;
 }
 
-int Cmiss_element_basis_destroy(Cmiss_element_basis_id *element_basis_address)
+int cmzn_element_basis_destroy(cmzn_element_basis_id *element_basis_address)
 {
 	if (element_basis_address)
-		return Cmiss_element_basis::deaccess(*element_basis_address);
+		return cmzn_element_basis::deaccess(*element_basis_address);
 	return 0;
 }
 
-int Cmiss_element_basis_get_dimension(Cmiss_element_basis_id element_basis)
+int cmzn_element_basis_get_dimension(cmzn_element_basis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->getDimension();
 	return 0;
 }
 
-enum Cmiss_basis_function_type Cmiss_element_basis_get_function_type(
-	Cmiss_element_basis_id element_basis, int chart_component)
+enum cmzn_basis_function_type cmzn_element_basis_get_function_type(
+	cmzn_element_basis_id element_basis, int chart_component)
 {
 	if (element_basis)
 		return element_basis->getFunctionType(chart_component);
 	return CMISS_BASIS_FUNCTION_TYPE_INVALID;
 }
 
-int Cmiss_element_basis_set_function_type(Cmiss_element_basis_id element_basis,
-	int chart_component, enum Cmiss_basis_function_type function_type)
+int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_basis,
+	int chart_component, enum cmzn_basis_function_type function_type)
 {
 	if (element_basis)
 		return element_basis->setFunctionType(chart_component, function_type);
 	return 0;
 }
 
-int Cmiss_element_basis_get_number_of_nodes(
-	Cmiss_element_basis_id element_basis)
+int cmzn_element_basis_get_number_of_nodes(
+	cmzn_element_basis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->getNumberOfNodes();
 	return 0;
 }
 
-Cmiss_element_template_id Cmiss_element_template_access(
-	Cmiss_element_template_id element_template)
+cmzn_element_template_id cmzn_element_template_access(
+	cmzn_element_template_id element_template)
 {
 	if (element_template)
 		return element_template->access();
 	return 0;
 }
 
-int Cmiss_element_template_destroy(
-	Cmiss_element_template_id *element_template_address)
+int cmzn_element_template_destroy(
+	cmzn_element_template_id *element_template_address)
 {
 	if (element_template_address)
-		return Cmiss_element_template::deaccess(*element_template_address);
+		return cmzn_element_template::deaccess(*element_template_address);
 	return 0;
 }
 
-enum Cmiss_element_shape_type Cmiss_element_template_get_shape_type(
-	Cmiss_element_template_id element_template)
+enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
+	cmzn_element_template_id element_template)
 {
 	if (element_template)
 		return element_template->getShapeType();
 	return CMISS_ELEMENT_SHAPE_TYPE_INVALID;
 }
 
-int Cmiss_element_template_set_shape_type(Cmiss_element_template_id element_template,
-	enum Cmiss_element_shape_type shape_type)
+int cmzn_element_template_set_shape_type(cmzn_element_template_id element_template,
+	enum cmzn_element_shape_type shape_type)
 {
 	if (element_template)
 		return element_template->setShapeType(shape_type);
 	return 0;
 }
 
-int Cmiss_element_template_get_number_of_nodes(
-	Cmiss_element_template_id element_template)
+int cmzn_element_template_get_number_of_nodes(
+	cmzn_element_template_id element_template)
 {
 	if (element_template)
 		return element_template->getNumberOfNodes();
 	return 0;
 }
 
-int Cmiss_element_template_set_number_of_nodes(
-	Cmiss_element_template_id element_template, int number_of_nodes)
+int cmzn_element_template_set_number_of_nodes(
+	cmzn_element_template_id element_template, int number_of_nodes)
 {
 	if (element_template)
 		return element_template->setNumberOfNodes(number_of_nodes);
 	return 0;
 }
 
-int Cmiss_element_template_define_field_simple_nodal(
-	Cmiss_element_template_id element_template,
-	Cmiss_field_id field,  int component_number,
-	Cmiss_element_basis_id basis, int number_of_nodes,
+int cmzn_element_template_define_field_simple_nodal(
+	cmzn_element_template_id element_template,
+	cmzn_field_id field,  int component_number,
+	cmzn_element_basis_id basis, int number_of_nodes,
 	const int *local_node_indexes)
 {
 	if (element_template && field && basis &&
@@ -1419,38 +1419,38 @@ int Cmiss_element_template_define_field_simple_nodal(
 	return 0;
 }
 
-Cmiss_node_id Cmiss_element_template_get_node(
-	Cmiss_element_template_id element_template, int local_node_index)
+cmzn_node_id cmzn_element_template_get_node(
+	cmzn_element_template_id element_template, int local_node_index)
 {
 	if (element_template)
 		return element_template->getNode(local_node_index);
 	return NULL;
 }
 
-int Cmiss_element_template_set_node(Cmiss_element_template_id element_template,
-	int local_node_index, Cmiss_node_id node)
+int cmzn_element_template_set_node(cmzn_element_template_id element_template,
+	int local_node_index, cmzn_node_id node)
 {
 	if (element_template)
 		return element_template->setNode(local_node_index, node);
 	return 0;
 }
 
-Cmiss_element_id Cmiss_element_access(Cmiss_element_id element)
+cmzn_element_id cmzn_element_access(cmzn_element_id element)
 {
 	return ACCESS(FE_element)(element);
 }
 
-int Cmiss_element_destroy(Cmiss_element_id *element_address)
+int cmzn_element_destroy(cmzn_element_id *element_address)
 {
 	return DEACCESS(FE_element)(element_address);
 }
 
-int Cmiss_element_get_dimension(Cmiss_element_id element)
+int cmzn_element_get_dimension(cmzn_element_id element)
 {
 	return get_FE_element_dimension(element);
 }
 
-int Cmiss_element_get_identifier(struct Cmiss_element *element)
+int cmzn_element_get_identifier(struct cmzn_element *element)
 {
 	int return_code = -1;
 	struct CM_element_information cm;
@@ -1462,10 +1462,10 @@ int Cmiss_element_get_identifier(struct Cmiss_element *element)
 	return (return_code);
 }
 
-enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
-	Cmiss_element_id element)
+enum cmzn_element_shape_type cmzn_element_get_shape_type(
+	cmzn_element_id element)
 {
-	Cmiss_element_shape_type shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
+	cmzn_element_shape_type shape_type = CMISS_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element)
 	{
 		struct FE_element_shape *fe_element_shape = NULL;
@@ -1475,18 +1475,18 @@ enum Cmiss_element_shape_type Cmiss_element_get_shape_type(
 	return shape_type;
 }
 
-int Cmiss_element_merge(Cmiss_element_id element,
-	Cmiss_element_template_id element_template)
+int cmzn_element_merge(cmzn_element_id element,
+	cmzn_element_template_id element_template)
 {
 	if (element && element_template)
 		return element_template->mergeIntoElement(element);
 	return 0;
 }
 
-class Cmiss_element_shape_type_conversion
+class cmzn_element_shape_type_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_element_shape_type type)
+	static const char *to_string(enum cmzn_element_shape_type type)
 	{
 		const char *enum_string = 0;
 		switch (type)
@@ -1522,22 +1522,22 @@ public:
 	}
 };
 
-enum Cmiss_element_shape_type Cmiss_element_shape_type_enum_from_string(
+enum cmzn_element_shape_type cmzn_element_shape_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_element_shape_type,	Cmiss_element_shape_type_conversion>(string);
+	return string_to_enum<enum cmzn_element_shape_type,	cmzn_element_shape_type_conversion>(string);
 }
 
-char *Cmiss_element_shape_type_enum_to_string(enum Cmiss_element_shape_type type)
+char *cmzn_element_shape_type_enum_to_string(enum cmzn_element_shape_type type)
 {
-	const char *type_string = Cmiss_element_shape_type_conversion::to_string(type);
+	const char *type_string = cmzn_element_shape_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
-class Cmiss_basis_function_type_conversion
+class cmzn_basis_function_type_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_basis_function_type type)
+	static const char *to_string(enum cmzn_basis_function_type type)
 	{
 		const char *enum_string = 0;
 		switch (type)
@@ -1567,15 +1567,15 @@ public:
 	}
 };
 
-enum Cmiss_basis_function_type Cmiss_basis_function_type_enum_from_string(
+enum cmzn_basis_function_type cmzn_basis_function_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_basis_function_type,	Cmiss_basis_function_type_conversion>(string);
+	return string_to_enum<enum cmzn_basis_function_type,	cmzn_basis_function_type_conversion>(string);
 }
 
-char *Cmiss_basis_function_type_enum_to_string(enum Cmiss_basis_function_type type)
+char *cmzn_basis_function_type_enum_to_string(enum cmzn_basis_function_type type)
 {
-	const char *type_string = Cmiss_basis_function_type_conversion::to_string(type);
+	const char *type_string = cmzn_basis_function_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 

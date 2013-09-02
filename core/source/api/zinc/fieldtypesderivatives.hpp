@@ -50,7 +50,7 @@ class FieldDerivative : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDerivative(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldDerivative(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldDerivative FieldModule::createDerivative(Field& sourceField, int xi_index);
@@ -66,7 +66,7 @@ class FieldCurl : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCurl(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldCurl(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldCurl FieldModule::createCurl(Field& vectorField, Field& coordinateField);
@@ -82,7 +82,7 @@ class FieldDivergence : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDivergence(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldDivergence(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldDivergence FieldModule::createDivergence(Field& vectorField, Field& coordinateField);
@@ -98,7 +98,7 @@ class FieldGradient : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGradient(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldGradient(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldGradient FieldModule::createGradient(Field& sourceField, Field& coordinateField);
@@ -112,22 +112,22 @@ public:
 
 inline FieldDerivative FieldModule::createDerivative(Field& sourceField, int xi_index)
 {
-	return FieldDerivative(Cmiss_field_module_create_derivative(id, sourceField.getId(), xi_index));
+	return FieldDerivative(cmzn_field_module_create_derivative(id, sourceField.getId(), xi_index));
 }
 
 inline FieldCurl FieldModule::createCurl(Field& vectorField, Field& coordinateField)
 {
-	return FieldCurl(Cmiss_field_module_create_curl(id, vectorField.getId(), coordinateField.getId()));
+	return FieldCurl(cmzn_field_module_create_curl(id, vectorField.getId(), coordinateField.getId()));
 }
 
 inline FieldDivergence FieldModule::createDivergence(Field& vectorField, Field& coordinateField)
 {
-	return FieldDivergence(Cmiss_field_module_create_divergence(id, vectorField.getId(), coordinateField.getId()));
+	return FieldDivergence(cmzn_field_module_create_divergence(id, vectorField.getId(), coordinateField.getId()));
 }
 
 inline FieldGradient FieldModule::createGradient(Field& sourceField, Field& coordinateField)
 {
-	return FieldGradient(Cmiss_field_module_create_gradient(id, sourceField.getId(),
+	return FieldGradient(cmzn_field_module_create_gradient(id, sourceField.getId(),
 		coordinateField.getId()));
 }
 

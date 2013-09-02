@@ -76,7 +76,7 @@ public:
 	 * Uses the tried and tested method of suffix testing to determine file format
 	 * @return true if at least one shape was imported, false otherwise
 	 */
-  virtual bool import( struct Cmiss_region *region ) = 0;
+  virtual bool import( struct cmzn_region *region ) = 0;
   
 protected:
   std::string m_fileName;

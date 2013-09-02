@@ -60,7 +60,7 @@ char computed_field_if_type_string[] = "if";
 
 class Computed_field_if : public Computed_field_core
 {
-	Cmiss_field_value_type value_type;
+	cmzn_field_value_type value_type;
 
 public:
 	Computed_field_if() : Computed_field_core()
@@ -72,10 +72,10 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (Cmiss_field_get_value_type(parent->source_fields[1]) ==
-				Cmiss_field_get_value_type(parent->source_fields[2]))
+			if (cmzn_field_get_value_type(parent->source_fields[1]) ==
+				cmzn_field_get_value_type(parent->source_fields[2]))
 			{
-				value_type = Cmiss_field_get_value_type(parent->source_fields[1]);
+				value_type = cmzn_field_get_value_type(parent->source_fields[1]);
 				return true;
 			}
 		}
@@ -93,7 +93,7 @@ private:
 		return(computed_field_if_type_string);
 	}
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /* parentCache */)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /* parentCache */)
 	{
 		if (value_type == CMISS_FIELD_VALUE_TYPE_REAL)
 			return new RealFieldValueCache(field->number_of_components);
@@ -117,14 +117,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_if::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_if::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	Computed_field *switch_field = getSourceField(0);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(switch_field->evaluate(cache));
@@ -297,7 +297,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_if(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two,
 	struct Computed_field *source_field_three)

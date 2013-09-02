@@ -41,19 +41,19 @@
 #ifndef CMZN_FIELDID_H__
 #define CMZN_FIELDID_H__
 
-	struct Cmiss_field;
-	typedef struct Cmiss_field *Cmiss_field_id;
+	struct cmzn_field;
+	typedef struct cmzn_field *cmzn_field_id;
 
-	struct Cmiss_field_iterator;
-	typedef struct Cmiss_field_iterator * Cmiss_field_iterator_id;
+	struct cmzn_field_iterator;
+	typedef struct cmzn_field_iterator * cmzn_field_iterator_id;
 
-	struct Cmiss_field_cache;
-	typedef struct Cmiss_field_cache *Cmiss_field_cache_id;
+	struct cmzn_field_cache;
+	typedef struct cmzn_field_cache *cmzn_field_cache_id;
 
 /**
  * An enum specifying the field domain (without domain objects)
  */
-enum Cmiss_field_domain_type
+enum cmzn_field_domain_type
 {
 	CMISS_FIELD_DOMAIN_TYPE_INVALID = 0,
 	CMISS_FIELD_DOMAIN_POINT = 1,

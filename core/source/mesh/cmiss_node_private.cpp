@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_node_private.cpp
  *
- * Implementation of public interface to Cmiss_node.
+ * Implementation of public interface to cmzn_node.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -67,7 +67,7 @@ Global types
 
 namespace {
 
-class Cmiss_node_field
+class cmzn_node_field
 {
 	FE_field *fe_field;
 	FE_node_field_creator *node_field_creator;
@@ -75,7 +75,7 @@ class Cmiss_node_field
 
 public:
 
-	Cmiss_node_field(FE_field *fe_field) :
+	cmzn_node_field(FE_field *fe_field) :
 		fe_field(ACCESS(FE_field)(fe_field)),
 		node_field_creator(
 			CREATE(FE_node_field_creator)(get_FE_field_number_of_components(fe_field))),
@@ -83,7 +83,7 @@ public:
 	{
 	}
 
-	~Cmiss_node_field()
+	~cmzn_node_field()
 	{
 		if (time_sequence)
 			DEACCESS(FE_time_sequence)(&time_sequence);
@@ -117,9 +117,9 @@ public:
 	}
 
 	/** note: does not ACCESS */
-	Cmiss_time_sequence_id getTimeSequence()
+	cmzn_time_sequence_id getTimeSequence()
 	{
-		return reinterpret_cast<Cmiss_time_sequence_id>(time_sequence);
+		return reinterpret_cast<cmzn_time_sequence_id>(time_sequence);
 	}
 
 	int defineVersions(int component_number, int number_of_versions)
@@ -171,30 +171,30 @@ public:
 
 /*============================================================================*/
 
-struct Cmiss_node_template
+struct cmzn_node_template
 {
 private:
 	FE_region *fe_region;
 	FE_node *template_node;
-	std::vector<Cmiss_node_field*> fields;
+	std::vector<cmzn_node_field*> fields;
 	std::vector<FE_field*> undefine_fields; // ACCESSed
 	int access_count;
 
 public:
-	Cmiss_node_template(FE_region *fe_region) :
+	cmzn_node_template(FE_region *fe_region) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		template_node(NULL),
 		access_count(1)
 	{
 	}
 
-	Cmiss_node_template_id access()
+	cmzn_node_template_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_node_template_id &node_template)
+	static int deaccess(cmzn_node_template_id &node_template)
 	{
 		if (!node_template)
 			return 0;
@@ -205,7 +205,7 @@ public:
 		return 1;
 	}
 
-	int defineField(Cmiss_field_id field)
+	int defineField(cmzn_field_id field)
 	{
 		if (!checkValidFieldForDefine(field))
 			return 0;
@@ -220,11 +220,11 @@ public:
 			return 0;
 		}
 		clearTemplateNode();
-		Cmiss_node_field *node_field = createNodeField(fe_field);
+		cmzn_node_field *node_field = createNodeField(fe_field);
 		return (node_field != NULL);
 	}
 
-	int defineFieldFromNode(Cmiss_field_id field, Cmiss_node_id node)
+	int defineFieldFromNode(cmzn_field_id field, cmzn_node_id node)
 	{
 		if (!checkValidFieldForDefine(field))
 			return 0;
@@ -254,8 +254,8 @@ public:
 		};
 		const int number_of_fe_value_types = sizeof(all_fe_nodal_value_types) / sizeof(enum FE_nodal_value_type);
 		clearTemplateNode();
-		Cmiss_node_field *node_field = createNodeField(fe_field);
-		int number_of_components = Cmiss_field_get_number_of_components(field);
+		cmzn_node_field *node_field = createNodeField(fe_field);
+		int number_of_components = cmzn_field_get_number_of_components(field);
 		for (int component_number = 1; component_number <= number_of_components; ++component_number)
 		{
 			for (int i = 1; i < number_of_fe_value_types; ++i)
@@ -282,143 +282,143 @@ public:
 		return (node_field != NULL);
 	}
 
-	int defineDerivative(Cmiss_field_id field, int component_number,
-		enum Cmiss_nodal_value_type derivative_type)
+	int defineDerivative(cmzn_field_id field, int component_number,
+		enum cmzn_nodal_value_type derivative_type)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_derivative.  Field must be real finite_element type");
+				"cmzn_node_template_define_derivative.  Field must be real finite_element type");
 			return 0;
 		}
-		Cmiss_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		Cmiss_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_derivative.  Field is not defined yet");
+				"cmzn_node_template_define_derivative.  Field is not defined yet");
 			return 0;
 		}
 		enum FE_nodal_value_type fe_nodal_value_type =
-			Cmiss_nodal_value_type_to_FE_nodal_value_type(derivative_type);
+			cmzn_nodal_value_type_to_FE_nodal_value_type(derivative_type);
 		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
 			return 0;
 		clearTemplateNode();
 		return node_field->defineDerivative(component_number, fe_nodal_value_type);
 	}
 
-	int defineTimeSequence(Cmiss_field_id field,
-		Cmiss_time_sequence_id time_sequence)
+	int defineTimeSequence(cmzn_field_id field,
+		cmzn_time_sequence_id time_sequence)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_time_sequence.  Field must be real finite_element type");
+				"cmzn_node_template_define_time_sequence.  Field must be real finite_element type");
 			return 0;
 		}
-		Cmiss_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		Cmiss_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_time_sequence.  Field is not defined yet");
+				"cmzn_node_template_define_time_sequence.  Field is not defined yet");
 			return 0;
 		}
 		clearTemplateNode();
 		return node_field->defineTimeSequence(reinterpret_cast<struct FE_time_sequence *>(time_sequence));
 	}
 
-	int defineVersions(Cmiss_field_id field, int component_number,
+	int defineVersions(cmzn_field_id field, int component_number,
 		int number_of_versions)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_versions.  Field must be real finite_element type");
+				"cmzn_node_template_define_versions.  Field must be real finite_element type");
 			return 0;
 		}
-		Cmiss_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		Cmiss_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_versions.  Field is not defined yet");
+				"cmzn_node_template_define_versions.  Field is not defined yet");
 			return 0;
 		}
 		clearTemplateNode();
 		return node_field->defineVersions(component_number, number_of_versions);
 	}
 
-	int getNumberOfVersions(Cmiss_field_id field, int component_number)
+	int getNumberOfVersions(cmzn_field_id field, int component_number)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 			return 0;
-		Cmiss_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		Cmiss_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 			return 0;
 		return node_field->getNumberOfVersions(component_number);
 	}
 
-	Cmiss_time_sequence_id getTimeSequence(Cmiss_field_id field)
+	cmzn_time_sequence_id getTimeSequence(cmzn_field_id field)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 			return 0;
-		Cmiss_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		Cmiss_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 			return 0;
-		Cmiss_time_sequence_id timeSequence = node_field->getTimeSequence();
+		cmzn_time_sequence_id timeSequence = node_field->getTimeSequence();
 		if (timeSequence)
 		{
-			Cmiss_time_sequence_access(timeSequence);
+			cmzn_time_sequence_access(timeSequence);
 		}
 		return timeSequence;
 	}
 
-	int hasDerivative(Cmiss_field_id field, int component_number,
-		enum Cmiss_nodal_value_type derivative_type)
+	int hasDerivative(cmzn_field_id field, int component_number,
+		enum cmzn_nodal_value_type derivative_type)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 			return 0;
-		Cmiss_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		Cmiss_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 			return 0;
 		enum FE_nodal_value_type fe_nodal_value_type =
-			Cmiss_nodal_value_type_to_FE_nodal_value_type(derivative_type);
+			cmzn_nodal_value_type_to_FE_nodal_value_type(derivative_type);
 		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
 			return 0;
 		return node_field->hasDerivative(component_number, fe_nodal_value_type);
 	}
 
-	int undefineField(Cmiss_field_id field)
+	int undefineField(cmzn_field_id field)
 	{
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
-		Cmiss_field_stored_mesh_location_id stored_mesh_location_field = Cmiss_field_cast_stored_mesh_location(field);
-		Cmiss_field_stored_string_id stored_string_field = Cmiss_field_cast_stored_string(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
+		cmzn_field_stored_mesh_location_id stored_mesh_location_field = cmzn_field_cast_stored_mesh_location(field);
+		cmzn_field_stored_string_id stored_string_field = cmzn_field_cast_stored_string(field);
 		if (!(finite_element_field || stored_mesh_location_field || stored_string_field))
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_undefine_field.  "
+				"cmzn_node_template_undefine_field.  "
 				"Field must be finite_element, stored_mesh_location or stored_string type");
 			return 0;
 		}
@@ -433,24 +433,24 @@ public:
 		if (FE_field_get_FE_region(fe_field) != compare_fe_region)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_undefine_field.  Field is from another region");
+				"cmzn_node_template_undefine_field.  Field is from another region");
 			return_code = 0;
 		}
 		if (getNodeField(fe_field))
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_undefine_field.  Field is already being defined");
+				"cmzn_node_template_undefine_field.  Field is already being defined");
 			return_code = 0;
 		}
 		if (getUndefineNodeField(fe_field))
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_undefine_field.  Field is already being undefined");
+				"cmzn_node_template_undefine_field.  Field is already being undefined");
 			return_code = 0;
 		}
-		Cmiss_field_finite_element_destroy(&finite_element_field);
-		Cmiss_field_stored_mesh_location_destroy(&stored_mesh_location_field);
-		Cmiss_field_stored_string_destroy(&stored_string_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_stored_mesh_location_destroy(&stored_mesh_location_field);
+		cmzn_field_stored_string_destroy(&stored_string_field);
 		if (!return_code)
 			return 0;
 		clearTemplateNode();
@@ -475,14 +475,14 @@ public:
 		if (!template_node)
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_validate.  Failed to create template node");
+				"cmzn_node_template_validate.  Failed to create template node");
 			return 0;
 		}
 		return 1;
 	}
 
 	// can be made more efficient
-	int mergeIntoNode(Cmiss_node_id node)
+	int mergeIntoNode(cmzn_node_id node)
 	{
 		int return_code = 1;
 		if (validate())
@@ -508,7 +508,7 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_merge.  Node template is not valid");
+				"cmzn_node_merge.  Node template is not valid");
 			return_code = 0;
 		}
 		return return_code;
@@ -517,7 +517,7 @@ public:
 	FE_node *getTemplateNode() { return template_node; }
 
 private:
-	~Cmiss_node_template()
+	~cmzn_node_template()
 	{
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
@@ -531,7 +531,7 @@ private:
 		DEACCESS(FE_region)(&fe_region);
 	}
 
-	Cmiss_node_field *getNodeField(FE_field *fe_field)
+	cmzn_node_field *getNodeField(FE_field *fe_field)
 	{
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
@@ -544,9 +544,9 @@ private:
 	}
 
 	/** Must call getNodeField first to confirm not already being defined */
-	Cmiss_node_field *createNodeField(FE_field *fe_field)
+	cmzn_node_field *createNodeField(FE_field *fe_field)
 	{
-		Cmiss_node_field *node_field = new Cmiss_node_field(fe_field);
+		cmzn_node_field *node_field = new cmzn_node_field(fe_field);
 		fields.push_back(node_field);
 		return node_field;
 	}
@@ -575,12 +575,12 @@ private:
 		REACCESS(FE_node)(&template_node, NULL);
 	}
 
-	bool checkValidFieldForDefine(Cmiss_field_id field)
+	bool checkValidFieldForDefine(cmzn_field_id field)
 	{
 		bool result = true;
-		Cmiss_field_finite_element_id finite_element_field = Cmiss_field_cast_finite_element(field);
-		Cmiss_field_stored_mesh_location_id stored_mesh_location_field = Cmiss_field_cast_stored_mesh_location(field);
-		Cmiss_field_stored_string_id stored_string_field = Cmiss_field_cast_stored_string(field);
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
+		cmzn_field_stored_mesh_location_id stored_mesh_location_field = cmzn_field_cast_stored_mesh_location(field);
+		cmzn_field_stored_string_id stored_string_field = cmzn_field_cast_stored_string(field);
 		if (finite_element_field || stored_mesh_location_field || stored_string_field)
 		{
 			FE_field *fe_field = 0;
@@ -593,7 +593,7 @@ private:
 			if (FE_field_get_FE_region(fe_field) != compare_fe_region)
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_node_template_define_field.  "
+					"cmzn_node_template_define_field.  "
 					"Field is from another region");
 				result = false;
 			}
@@ -601,18 +601,18 @@ private:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_node_template_define_field.  "
+				"cmzn_node_template_define_field.  "
 				"Field must be finite_element, stored_mesh_location or stored_string type");
 			result = false;
 		}
-		Cmiss_field_finite_element_destroy(&finite_element_field);
-		Cmiss_field_stored_mesh_location_destroy(&stored_mesh_location_field);
-		Cmiss_field_stored_string_destroy(&stored_string_field);
+		cmzn_field_finite_element_destroy(&finite_element_field);
+		cmzn_field_stored_mesh_location_destroy(&stored_mesh_location_field);
+		cmzn_field_stored_string_destroy(&stored_string_field);
 		return result;
 	}
 
-	FE_nodal_value_type Cmiss_nodal_value_type_to_FE_nodal_value_type(
-		enum Cmiss_nodal_value_type nodal_value_type)
+	FE_nodal_value_type cmzn_nodal_value_type_to_FE_nodal_value_type(
+		enum cmzn_nodal_value_type nodal_value_type)
 	{
 		FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
 		switch (nodal_value_type)
@@ -651,38 +651,38 @@ private:
 
 /*============================================================================*/
 
-struct Cmiss_nodeset
+struct cmzn_nodeset
 {
 protected:
 	FE_region *fe_region;
-	Cmiss_field_node_group_id group;
+	cmzn_field_node_group_id group;
 	int access_count;
 
-	Cmiss_nodeset(Cmiss_field_node_group_id group) :
+	cmzn_nodeset(cmzn_field_node_group_id group) :
 		fe_region(ACCESS(FE_region)(
 			Computed_field_node_group_core_cast(group)->getMasterNodeset()->fe_region)),
 		group(group),
 		access_count(1)
 	{
-		// GRC Cmiss_field_node_group_access missing:
-		Cmiss_field_access(Cmiss_field_node_group_base_cast(group));
+		// GRC cmzn_field_node_group_access missing:
+		cmzn_field_access(cmzn_field_node_group_base_cast(group));
 	}
 
 public:
-	Cmiss_nodeset(FE_region *fe_region_in) :
+	cmzn_nodeset(FE_region *fe_region_in) :
 		fe_region(ACCESS(FE_region)(fe_region_in)),
 		group(0),
 		access_count(1)
 	{
 	}
 
-	Cmiss_nodeset_id access()
+	cmzn_nodeset_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_nodeset_id &nodeset)
+	static int deaccess(cmzn_nodeset_id &nodeset)
 	{
 		if (!nodeset)
 			return 0;
@@ -693,20 +693,20 @@ public:
 		return 1;
 	}
 
-	int containsNode(Cmiss_node_id node)
+	int containsNode(cmzn_node_id node)
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->containsObject(node);
 		return FE_region_contains_FE_node(fe_region, node);
 	}
 
-	Cmiss_node_id createNode(int identifier,
-		Cmiss_node_template_id node_template)
+	cmzn_node_id createNode(int identifier,
+		cmzn_node_template_id node_template)
 	{
-		Cmiss_node_id node = 0;
+		cmzn_node_id node = 0;
 		if (node_template->validate())
 		{
-			Cmiss_node_id template_node = node_template->getTemplateNode();
+			cmzn_node_id template_node = node_template->getTemplateNode();
 			node = ACCESS(FE_node)(FE_region_create_FE_node_copy(
 				fe_region, identifier, template_node));
 			if (group)
@@ -715,19 +715,19 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_nodeset_create_node.  Node template is not valid");
+				"cmzn_nodeset_create_node.  Node template is not valid");
 		}
 		return node;
 	}
 
-	Cmiss_node_template_id createNodeTemplate()
+	cmzn_node_template_id createNodeTemplate()
 	{
 		FE_region *master_fe_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return new Cmiss_node_template(master_fe_region);
+		return new cmzn_node_template(master_fe_region);
 	}
 
-	Cmiss_node_iterator_id createIterator()
+	cmzn_node_iterator_id createIterator()
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->createIterator();
@@ -739,7 +739,7 @@ public:
 		return destroyNodesConditional(/*conditional_field*/0);
 	}
 
-	int destroyNode(Cmiss_node_id node)
+	int destroyNode(cmzn_node_id node)
 	{
 		if (containsNode(node))
 		{
@@ -750,7 +750,7 @@ public:
 		return 0;
 	}
 
-	int destroyNodesConditional(Cmiss_field_id conditional_field)
+	int destroyNodesConditional(cmzn_field_id conditional_field)
 	{
 		struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
 		FE_region *master_fe_region = fe_region;
@@ -760,9 +760,9 @@ public:
 		return return_code;
 	}
 
-	Cmiss_node_id findNodeByIdentifier(int identifier) const
+	cmzn_node_id findNodeByIdentifier(int identifier) const
 	{
-		Cmiss_node_id node = 0;
+		cmzn_node_id node = 0;
 		if (group)
 		{
 			node = Computed_field_node_group_core_cast(group)->findNodeByIdentifier(identifier);
@@ -783,7 +783,7 @@ public:
 		char *name = 0;
 		if (group)
 		{
-			name = Cmiss_field_get_name(Cmiss_field_node_group_base_cast(group));
+			name = cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
 		}
 		else if (FE_region_is_data_FE_region(fe_region))
 		{
@@ -796,13 +796,13 @@ public:
 		return name;
 	}
 
-	Cmiss_nodeset_id getMaster()
+	cmzn_nodeset_id getMaster()
 	{
 		if (!isGroup())
 			return access();
 		FE_region *master_fe_region = fe_region;
 		if (FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region) && master_fe_region)
-			return new Cmiss_nodeset(master_fe_region);
+			return new cmzn_nodeset(master_fe_region);
 		return 0;
 	}
 
@@ -818,52 +818,52 @@ public:
 		return (0 != group);
 	}
 
-	int match(Cmiss_nodeset& other_nodeset)
+	int match(cmzn_nodeset& other_nodeset)
 	{
 		return ((fe_region == other_nodeset.fe_region) &&
 			(group == other_nodeset.group));
 	}
 
 protected:
-	~Cmiss_nodeset()
+	~cmzn_nodeset()
 	{
 		if (group)
-			Cmiss_field_node_group_destroy(&group);
+			cmzn_field_node_group_destroy(&group);
 		DEACCESS(FE_region)(&fe_region);
 	}
 
-	struct LIST(FE_node) *createNodeListWithCondition(Cmiss_field_id conditional_field)
+	struct LIST(FE_node) *createNodeListWithCondition(cmzn_field_id conditional_field)
 	{
-		Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
-		Cmiss_node_iterator_id iterator = createIterator();
-		Cmiss_node_id node = 0;
+		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
+		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+		cmzn_field_cache_id cache = cmzn_field_module_create_cache(field_module);
+		cmzn_node_iterator_id iterator = createIterator();
+		cmzn_node_id node = 0;
 		struct LIST(FE_node) *node_list = FE_region_create_related_node_list(fe_region);
-		while (0 != (node = Cmiss_node_iterator_next_non_access(iterator)))
+		while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
 		{
-			Cmiss_field_cache_set_node(cache, node);
-			if ((!conditional_field) || Cmiss_field_evaluate_boolean(conditional_field, cache))
+			cmzn_field_cache_set_node(cache, node);
+			if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, cache))
 				ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
 		}
-		Cmiss_node_iterator_destroy(&iterator);
-		Cmiss_field_cache_destroy(&cache);
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_node_iterator_destroy(&iterator);
+		cmzn_field_cache_destroy(&cache);
+		cmzn_field_module_destroy(&field_module);
 		return node_list;
 	}
 
 };
 
-struct Cmiss_nodeset_group : public Cmiss_nodeset
+struct cmzn_nodeset_group : public cmzn_nodeset
 {
 public:
 
-	Cmiss_nodeset_group(Cmiss_field_node_group_id group) :
-		Cmiss_nodeset(group)
+	cmzn_nodeset_group(cmzn_field_node_group_id group) :
+		cmzn_nodeset(group)
 	{
 	}
 
-	int addNode(Cmiss_node_id node)
+	int addNode(cmzn_node_id node)
 	{
 		return Computed_field_node_group_core_cast(group)->addObject(node);
 	}
@@ -873,22 +873,22 @@ public:
 		return Computed_field_node_group_core_cast(group)->clear();
 	}
 
-	int removeNode(Cmiss_node_id node)
+	int removeNode(cmzn_node_id node)
 	{
 		return Computed_field_node_group_core_cast(group)->removeObject(node);
 	}
 
-	int removeNodesConditional(Cmiss_field_id conditional_field)
+	int removeNodesConditional(cmzn_field_id conditional_field)
 	{
 		return Computed_field_node_group_core_cast(group)->removeNodesConditional(conditional_field);
 	}
 
-	int addElementNodes(Cmiss_element_id element)
+	int addElementNodes(cmzn_element_id element)
 	{
 		return Computed_field_node_group_core_cast(group)->addElementNodes(element);
 	}
 
-	int removeElementNodes(Cmiss_element_id element)
+	int removeElementNodes(cmzn_element_id element)
 	{
 		return Computed_field_node_group_core_cast(group)->removeElementNodes(element);
 	}
@@ -900,108 +900,108 @@ Global functions
 ----------------
 */
 
-Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_domain_type(
-	Cmiss_field_module_id field_module, enum Cmiss_field_domain_type domain_type)
+cmzn_nodeset_id cmzn_field_module_find_nodeset_by_domain_type(
+	cmzn_field_module_id field_module, enum cmzn_field_domain_type domain_type)
 {
-	Cmiss_nodeset_id nodeset = 0;
+	cmzn_nodeset_id nodeset = 0;
 	if (field_module)
 	{
-		Cmiss_region_id region = Cmiss_field_module_get_region_internal(field_module);
+		cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
 		FE_region *fe_region = 0;
 		if (CMISS_FIELD_DOMAIN_NODES == domain_type)
 		{
-			fe_region = Cmiss_region_get_FE_region(region);
+			fe_region = cmzn_region_get_FE_region(region);
 		}
 		else if (CMISS_FIELD_DOMAIN_DATA == domain_type)
 		{
-			fe_region = FE_region_get_data_FE_region(Cmiss_region_get_FE_region(region));
+			fe_region = FE_region_get_data_FE_region(cmzn_region_get_FE_region(region));
 		}
 		if (fe_region)
 		{
-			nodeset = new Cmiss_nodeset(fe_region);
+			nodeset = new cmzn_nodeset(fe_region);
 		}
 	}
 	return nodeset;
 }
 
-Cmiss_nodeset_id Cmiss_field_module_find_nodeset_by_name(
-	Cmiss_field_module_id field_module, const char *nodeset_name)
+cmzn_nodeset_id cmzn_field_module_find_nodeset_by_name(
+	cmzn_field_module_id field_module, const char *nodeset_name)
 {
-	Cmiss_nodeset_id nodeset = 0;
+	cmzn_nodeset_id nodeset = 0;
 	if (field_module && nodeset_name)
 	{
-		Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, nodeset_name);
+		cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, nodeset_name);
 		if (field)
 		{
-			Cmiss_field_node_group_id node_group_field = Cmiss_field_cast_node_group(field);
+			cmzn_field_node_group_id node_group_field = cmzn_field_cast_node_group(field);
 			if (node_group_field)
 			{
-				nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group_field));
-				Cmiss_field_node_group_destroy(&node_group_field);
+				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group_field));
+				cmzn_field_node_group_destroy(&node_group_field);
 			}
-			Cmiss_field_destroy(&field);
+			cmzn_field_destroy(&field);
 		}
 		else
 		{
 			if (0 == strcmp(nodeset_name, "nodes"))
 			{
-				nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
+				nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
 			}
 			else if (0 == strcmp(nodeset_name, "datapoints"))
 			{
-				nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_DATA);
+				nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_DATA);
 			}
 		}
 	}
 	return nodeset;
 }
 
-Cmiss_nodeset_id Cmiss_nodeset_access(Cmiss_nodeset_id nodeset)
+cmzn_nodeset_id cmzn_nodeset_access(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->access();
 	return 0;
 }
 
-int Cmiss_nodeset_destroy(Cmiss_nodeset_id *nodeset_address)
+int cmzn_nodeset_destroy(cmzn_nodeset_id *nodeset_address)
 {
 	if (nodeset_address)
-		return Cmiss_nodeset::deaccess(*nodeset_address);
+		return cmzn_nodeset::deaccess(*nodeset_address);
 	return 0;
 }
 
-int Cmiss_nodeset_contains_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
+int cmzn_nodeset_contains_node(cmzn_nodeset_id nodeset, cmzn_node_id node)
 {
 	if (nodeset && node)
 		return nodeset->containsNode(node);
 	return 0;
 }
 
-Cmiss_node_template_id Cmiss_nodeset_create_node_template(
-	Cmiss_nodeset_id nodeset)
+cmzn_node_template_id cmzn_nodeset_create_node_template(
+	cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->createNodeTemplate();
 	return 0;
 }
 
-Cmiss_node_id Cmiss_nodeset_create_node(Cmiss_nodeset_id nodeset,
-	int identifier, Cmiss_node_template_id node_template)
+cmzn_node_id cmzn_nodeset_create_node(cmzn_nodeset_id nodeset,
+	int identifier, cmzn_node_template_id node_template)
 {
 	if (nodeset && node_template)
 		return nodeset->createNode(identifier, node_template);
 	return 0;
 }
 
-Cmiss_node_iterator_id Cmiss_nodeset_create_node_iterator(
-	Cmiss_nodeset_id nodeset)
+cmzn_node_iterator_id cmzn_nodeset_create_node_iterator(
+	cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->createIterator();
 	return 0;
 }
 
-Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
+cmzn_node_id cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_id nodeset,
 	int identifier)
 {
 	if (nodeset)
@@ -1009,166 +1009,166 @@ Cmiss_node_id Cmiss_nodeset_find_node_by_identifier(Cmiss_nodeset_id nodeset,
 	return 0;
 }
 
-char *Cmiss_nodeset_get_name(Cmiss_nodeset_id nodeset)
+char *cmzn_nodeset_get_name(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->getName();
 	return 0;
 }
 
-int Cmiss_nodeset_get_size(Cmiss_nodeset_id nodeset)
+int cmzn_nodeset_get_size(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->getSize();
 	return 0;
 }
 
-int Cmiss_nodeset_destroy_all_nodes(Cmiss_nodeset_id nodeset)
+int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		nodeset->destroyAllNodes();
 	return 0;
 }
 
-int Cmiss_nodeset_destroy_node(Cmiss_nodeset_id nodeset, Cmiss_node_id node)
+int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id node)
 {
 	if (nodeset && node)
 		nodeset->destroyNode(node);
 	return 0;
 }
 
-int Cmiss_nodeset_destroy_nodes_conditional(Cmiss_nodeset_id nodeset,
-	Cmiss_field_id conditional_field)
+int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
+	cmzn_field_id conditional_field)
 {
 	if (nodeset && conditional_field)
 		return nodeset->destroyNodesConditional(conditional_field);
 	return 0;
 }
 
-Cmiss_nodeset_id Cmiss_nodeset_get_master(Cmiss_nodeset_id nodeset)
+cmzn_nodeset_id cmzn_nodeset_get_master(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->getMaster();
 	return 0;
 }
 
-int Cmiss_nodeset_match(Cmiss_nodeset_id nodeset1, Cmiss_nodeset_id nodeset2)
+int cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodeset2)
 {
 	return (nodeset1 && nodeset2 && nodeset1->match(*nodeset2));
 }
 
-Cmiss_nodeset_group_id Cmiss_nodeset_cast_group(Cmiss_nodeset_id nodeset)
+cmzn_nodeset_group_id cmzn_nodeset_cast_group(cmzn_nodeset_id nodeset)
 {
 	if (nodeset && nodeset->isGroup())
-		return static_cast<Cmiss_nodeset_group_id>(nodeset->access());
+		return static_cast<cmzn_nodeset_group_id>(nodeset->access());
 	return 0;
 }
 
-int Cmiss_nodeset_group_destroy(Cmiss_nodeset_group_id *nodeset_group_address)
+int cmzn_nodeset_group_destroy(cmzn_nodeset_group_id *nodeset_group_address)
 {
 	if (nodeset_group_address)
-		return Cmiss_nodeset::deaccess(*(reinterpret_cast<Cmiss_nodeset_id*>(nodeset_group_address)));
+		return cmzn_nodeset::deaccess(*(reinterpret_cast<cmzn_nodeset_id*>(nodeset_group_address)));
 	return 0;
 }
 
-int Cmiss_nodeset_group_add_node(Cmiss_nodeset_group_id nodeset_group, Cmiss_node_id node)
+int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group, cmzn_node_id node)
 {
 	if (nodeset_group && node)
 		return nodeset_group->addNode(node);
 	return 0;
 }
 
-int Cmiss_nodeset_group_remove_all_nodes(Cmiss_nodeset_group_id nodeset_group)
+int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_group)
 {
 	if (nodeset_group)
 		return nodeset_group->removeAllNodes();
 	return 0;
 }
 
-int Cmiss_nodeset_group_remove_node(Cmiss_nodeset_group_id nodeset_group, Cmiss_node_id node)
+int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group, cmzn_node_id node)
 {
 	if (nodeset_group && node)
 		return nodeset_group->removeNode(node);
 	return 0;
 }
 
-int Cmiss_nodeset_group_remove_nodes_conditional(Cmiss_nodeset_group_id nodeset_group,
-	Cmiss_field_id conditional_field)
+int cmzn_nodeset_group_remove_nodes_conditional(cmzn_nodeset_group_id nodeset_group,
+	cmzn_field_id conditional_field)
 {
 	if (nodeset_group && conditional_field)
 		return nodeset_group->removeNodesConditional(conditional_field);
 	return 0;
 }
 
-int Cmiss_nodeset_group_add_element_nodes(
-	Cmiss_nodeset_group_id nodeset_group, Cmiss_element_id element)
+int cmzn_nodeset_group_add_element_nodes(
+	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element)
 {
 	if (nodeset_group && element)
 		return nodeset_group->addElementNodes(element);
 	return 0;
 }
 
-int Cmiss_nodeset_group_remove_element_nodes(
-	Cmiss_nodeset_group_id nodeset_group, Cmiss_element_id element)
+int cmzn_nodeset_group_remove_element_nodes(
+	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element)
 {
 	if (nodeset_group && element)
 		return nodeset_group->removeElementNodes(element);
 	return 0;
 }
 
-Cmiss_nodeset_group_id Cmiss_field_node_group_get_nodeset(
-	Cmiss_field_node_group_id node_group)
+cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset(
+	cmzn_field_node_group_id node_group)
 {
 	if (node_group)
-		return new Cmiss_nodeset_group(node_group);
+		return new cmzn_nodeset_group(node_group);
 	return 0;
 }
 
-struct LIST(FE_node) *Cmiss_nodeset_create_node_list_internal(Cmiss_nodeset_id nodeset)
+struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return FE_region_create_related_node_list(nodeset->getFeRegion());
 	return 0;
 }
 
-FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset)
+FE_region *cmzn_nodeset_get_FE_region_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->getFeRegion();
 	return 0;
 }
 
-Cmiss_region_id Cmiss_nodeset_get_region_internal(Cmiss_nodeset_id nodeset)
+cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		return FE_region_get_Cmiss_region(nodeset->getFeRegion());
+		return FE_region_get_cmzn_region(nodeset->getFeRegion());
 	return 0;
 }
 
-Cmiss_region_id Cmiss_nodeset_get_master_region_internal(Cmiss_nodeset_id nodeset)
+cmzn_region_id cmzn_nodeset_get_master_region_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		return FE_region_get_master_Cmiss_region(nodeset->getFeRegion());
+		return FE_region_get_master_cmzn_region(nodeset->getFeRegion());
 	return 0;
 }
 
-int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset)
+int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return FE_region_is_data_FE_region(nodeset->getFeRegion());
 	return 0;
 }
 
-Cmiss_nodeset_group_id Cmiss_field_module_create_nodeset_group_from_name_internal(
-	Cmiss_field_module_id field_module, const char *nodeset_group_name)
+cmzn_nodeset_group_id cmzn_field_module_create_nodeset_group_from_name_internal(
+	cmzn_field_module_id field_module, const char *nodeset_group_name)
 {
-	Cmiss_nodeset_group_id nodeset_group = 0;
+	cmzn_nodeset_group_id nodeset_group = 0;
 	if (field_module && nodeset_group_name)
 	{
-		Cmiss_field_id existing_field = Cmiss_field_module_find_field_by_name(field_module, nodeset_group_name);
+		cmzn_field_id existing_field = cmzn_field_module_find_field_by_name(field_module, nodeset_group_name);
 		if (existing_field)
 		{
-			Cmiss_field_destroy(&existing_field);
+			cmzn_field_destroy(&existing_field);
 		}
 		else
 		{
@@ -1178,15 +1178,15 @@ Cmiss_nodeset_group_id Cmiss_field_module_create_nodeset_group_from_name_interna
 			{
 				*nodeset_name = '\0';
 				++nodeset_name;
-				Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_name(field_module, nodeset_name);
-				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, group_name);
-				Cmiss_field_group_id group = Cmiss_field_cast_group(field);
-				Cmiss_field_node_group_id node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
-				nodeset_group = Cmiss_field_node_group_get_nodeset(node_group);
-				Cmiss_field_node_group_destroy(&node_group);
-				Cmiss_field_group_destroy(&group);
-				Cmiss_field_destroy(&field);
-				Cmiss_nodeset_destroy(&master_nodeset);
+				cmzn_nodeset_id master_nodeset = cmzn_field_module_find_nodeset_by_name(field_module, nodeset_name);
+				cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, group_name);
+				cmzn_field_group_id group = cmzn_field_cast_group(field);
+				cmzn_field_node_group_id node_group = cmzn_field_group_create_node_group(group, master_nodeset);
+				nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
+				cmzn_field_node_group_destroy(&node_group);
+				cmzn_field_group_destroy(&group);
+				cmzn_field_destroy(&field);
+				cmzn_nodeset_destroy(&master_nodeset);
 			}
 			DEALLOCATE(group_name);
 		}
@@ -1194,7 +1194,7 @@ Cmiss_nodeset_group_id Cmiss_field_module_create_nodeset_group_from_name_interna
 	return nodeset_group;
 }
 
-Cmiss_node_template_id Cmiss_node_template_access(Cmiss_node_template_id node_template)
+cmzn_node_template_id cmzn_node_template_access(cmzn_node_template_id node_template)
 {
 	if (node_template)
 		return node_template->access();
@@ -1202,15 +1202,15 @@ Cmiss_node_template_id Cmiss_node_template_access(Cmiss_node_template_id node_te
 }
 
 
-int Cmiss_node_template_destroy(Cmiss_node_template_id *node_template_address)
+int cmzn_node_template_destroy(cmzn_node_template_id *node_template_address)
 {
 	if (node_template_address)
-		return Cmiss_node_template::deaccess(*node_template_address);
+		return cmzn_node_template::deaccess(*node_template_address);
 	return 0;
 }
 
-int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
-	Cmiss_field_id field)
+int cmzn_node_template_define_field(cmzn_node_template_id node_template,
+	cmzn_field_id field)
 {
 	if (node_template && field)
 	{
@@ -1219,9 +1219,9 @@ int Cmiss_node_template_define_field(Cmiss_node_template_id node_template,
 	return 0;
 }
 
-int Cmiss_node_template_define_field_from_node(
-	Cmiss_node_template_id node_template, Cmiss_field_id field,
-	Cmiss_node_id node)
+int cmzn_node_template_define_field_from_node(
+	cmzn_node_template_id node_template, cmzn_field_id field,
+	cmzn_node_id node)
 {
 	if (node_template && field && node)
 	{
@@ -1230,9 +1230,9 @@ int Cmiss_node_template_define_field_from_node(
 	return 0;
 }
 
-int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
-	Cmiss_field_id field, int component_number,
-	enum Cmiss_nodal_value_type derivative_type)
+int cmzn_node_template_define_derivative(cmzn_node_template_id node_template,
+	cmzn_field_id field, int component_number,
+	enum cmzn_nodal_value_type derivative_type)
 {
 	if (node_template && field)
 	{
@@ -1241,9 +1241,9 @@ int Cmiss_node_template_define_derivative(Cmiss_node_template_id node_template,
 	return 0;
 }
 
-int Cmiss_node_template_define_time_sequence(
-	Cmiss_node_template_id node_template, Cmiss_field_id field,
-	Cmiss_time_sequence_id time_sequence)
+int cmzn_node_template_define_time_sequence(
+	cmzn_node_template_id node_template, cmzn_field_id field,
+	cmzn_time_sequence_id time_sequence)
 {
 	if (node_template && field && time_sequence)
 	{
@@ -1252,8 +1252,8 @@ int Cmiss_node_template_define_time_sequence(
 	return 0;
 }
 
-int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
-	Cmiss_field_id field, int component_number,
+int cmzn_node_template_define_versions(cmzn_node_template_id node_template,
+	cmzn_field_id field, int component_number,
 	int number_of_versions)
 {
 	if (node_template && field)
@@ -1263,8 +1263,8 @@ int Cmiss_node_template_define_versions(Cmiss_node_template_id node_template,
 	return 0;
 }
 
-int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id node_template,
-	Cmiss_field_id field, int component_number)
+int cmzn_node_template_get_number_of_versions(cmzn_node_template_id node_template,
+	cmzn_field_id field, int component_number)
 {
 	if (node_template && field)
 	{
@@ -1273,8 +1273,8 @@ int Cmiss_node_template_get_number_of_versions(Cmiss_node_template_id node_templ
 	return 0;
 }
 
-Cmiss_time_sequence_id Cmiss_node_template_get_time_sequence(
-	Cmiss_node_template_id node_template, Cmiss_field_id field)
+cmzn_time_sequence_id cmzn_node_template_get_time_sequence(
+	cmzn_node_template_id node_template, cmzn_field_id field)
 {
 	if (node_template && field)
 	{
@@ -1283,9 +1283,9 @@ Cmiss_time_sequence_id Cmiss_node_template_get_time_sequence(
 	return 0;
 }
 
-int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_template,
-	Cmiss_field_id field, int component_number,
-	enum Cmiss_nodal_value_type derivative_type)
+int cmzn_node_template_has_derivative(cmzn_node_template_id node_template,
+	cmzn_field_id field, int component_number,
+	enum cmzn_nodal_value_type derivative_type)
 {
 	if (node_template && field)
 	{
@@ -1294,8 +1294,8 @@ int Cmiss_node_template_has_derivative(Cmiss_node_template_id node_template,
 	return 0;
 }
 
-int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
-	Cmiss_field_id field)
+int cmzn_node_template_undefine_field(cmzn_node_template_id node_template,
+	cmzn_field_id field)
 {
 	if (node_template && field)
 	{
@@ -1304,34 +1304,34 @@ int Cmiss_node_template_undefine_field(Cmiss_node_template_id node_template,
 	return 0;
 }
 
-Cmiss_node_id Cmiss_node_access(Cmiss_node_id node)
+cmzn_node_id cmzn_node_access(cmzn_node_id node)
 {
 	if (node)
 		return ACCESS(FE_node)(node);
 	return 0;
 }
 
-int Cmiss_node_destroy(Cmiss_node_id *node_address)
+int cmzn_node_destroy(cmzn_node_id *node_address)
 {
 	return DEACCESS(FE_node)(node_address);
 }
 
-int Cmiss_node_get_identifier(Cmiss_node_id node)
+int cmzn_node_get_identifier(cmzn_node_id node)
 {
 	return get_FE_node_identifier(node);
 }
 
-int Cmiss_node_merge(Cmiss_node_id node, Cmiss_node_template_id node_template)
+int cmzn_node_merge(cmzn_node_id node, cmzn_node_template_id node_template)
 {
 	if (node && node_template)
 		return node_template->mergeIntoNode(node);
 	return 0;
 }
 
-class Cmiss_nodal_value_type_conversion
+class cmzn_nodal_value_type_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_nodal_value_type type)
+	static const char *to_string(enum cmzn_nodal_value_type type)
 	{
 		const char *enum_string = 0;
 		switch (type)
@@ -1367,14 +1367,14 @@ public:
 	}
 };
 
-enum Cmiss_nodal_value_type Cmiss_nodal_value_type_enum_from_string(
+enum cmzn_nodal_value_type cmzn_nodal_value_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_nodal_value_type,	Cmiss_nodal_value_type_conversion>(string);
+	return string_to_enum<enum cmzn_nodal_value_type,	cmzn_nodal_value_type_conversion>(string);
 }
 
-char *Cmiss_nodal_value_type_enum_to_string(enum Cmiss_nodal_value_type type)
+char *cmzn_nodal_value_type_enum_to_string(enum cmzn_nodal_value_type type)
 {
-	const char *type_string = Cmiss_nodal_value_type_conversion::to_string(type);
+	const char *type_string = cmzn_nodal_value_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
 }

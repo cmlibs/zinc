@@ -648,7 +648,7 @@ For each FE_node in <fe_region> satisfying <conditional_function> with
  * @param fe_region  The region whose nodes are to be iterated over.
  * @return  Handle to node_iterator at position before first, or NULL if error.
  */
-Cmiss_node_iterator_id FE_region_create_node_iterator(
+cmzn_node_iterator_id FE_region_create_node_iterator(
 	struct FE_region *fe_region);
 
 int FE_region_remove_FE_node(struct FE_region *fe_region,
@@ -1081,7 +1081,7 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
  * @param dimension  The dimension of elements to iterate over.
  * @return  Handle to element_iterator at position before first, or NULL if error.
  */
-Cmiss_element_iterator_id FE_region_create_element_iterator(
+cmzn_element_iterator_id FE_region_create_element_iterator(
 	struct FE_region *fe_region, int dimension);
 
 /***************************************************************************//**
@@ -1140,20 +1140,20 @@ Recursive if fe_region has a master_fe_region.
 
 /***************************************************************************//**
  * Sets the owning cmiss_region for this fe_region. Can also clear it.
- * Private - only for use by Cmiss_region on construction and destruction!
+ * Private - only for use by cmzn_region on construction and destruction!
  */
-void FE_region_set_Cmiss_region_private(struct FE_region *fe_region,
-	struct Cmiss_region *cmiss_region);
+void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
+	struct cmzn_region *cmiss_region);
 
 /***************************************************************************//**
- * @return  The Cmiss_region containing this fe_region.
+ * @return  The cmzn_region containing this fe_region.
  */
-struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region);
+struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region);
 
 /***************************************************************************//**
- * @return  The master Cmiss_region containing this fe_region.
+ * @return  The master cmzn_region containing this fe_region.
  */
-struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region);
+struct cmzn_region *FE_region_get_master_cmzn_region(struct FE_region *fe_region);
 
 struct FE_region *FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region);
 

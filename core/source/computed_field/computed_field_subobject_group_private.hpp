@@ -61,13 +61,13 @@
  * Change details for simple object groups where a single change status is
  * sufficient.
  */
-struct Cmiss_field_subobject_group_change_detail : public Cmiss_field_group_base_change_detail
+struct cmzn_field_subobject_group_change_detail : public cmzn_field_group_base_change_detail
 {
 private:
-	Cmiss_field_group_change_type change;
+	cmzn_field_group_change_type change;
 
 public:
-	Cmiss_field_subobject_group_change_detail() :
+	cmzn_field_subobject_group_change_detail() :
 		change(CMISS_FIELD_GROUP_NO_CHANGE)
 	{
 	}
@@ -77,12 +77,12 @@ public:
 		change = CMISS_FIELD_GROUP_NO_CHANGE;
 	}
 
-	Cmiss_field_group_change_type getChange() const
+	cmzn_field_group_change_type getChange() const
 	{
 		return change;
 	}
 
-	Cmiss_field_group_change_type getLocalChange() const
+	cmzn_field_group_change_type getLocalChange() const
 	{
 		return change;
 	}
@@ -154,9 +154,9 @@ public:
 		}
 		else if (field->manager_change_status & MANAGER_CHANGE_ADD(Computed_field))
 		{
-			const Cmiss_field_subobject_group_change_detail *change_detail =
-				dynamic_cast<const Cmiss_field_subobject_group_change_detail *>(get_change_detail());
-			const Cmiss_field_group_change_type change = change_detail->getChange();
+			const cmzn_field_subobject_group_change_detail *change_detail =
+				dynamic_cast<const cmzn_field_subobject_group_change_detail *>(get_change_detail());
+			const cmzn_field_group_change_type change = change_detail->getChange();
 			if ((change == CMISS_FIELD_GROUP_ADD) || (change == CMISS_FIELD_GROUP_REPLACE))
 			{
 				dependency_changed = 1;
@@ -285,18 +285,18 @@ public:
 			return return_object;
 		}
 
-		virtual Cmiss_field_change_detail *extract_change_detail()
+		virtual cmzn_field_change_detail *extract_change_detail()
 		{
 			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
 				return NULL;
-			Cmiss_field_subobject_group_change_detail *prior_change_detail =
-				new Cmiss_field_subobject_group_change_detail();
+			cmzn_field_subobject_group_change_detail *prior_change_detail =
+				new cmzn_field_subobject_group_change_detail();
 			*prior_change_detail = change_detail;
 			change_detail.clear();
 			return prior_change_detail;
 		}
 
-		virtual const Cmiss_field_change_detail *get_change_detail() const
+		virtual const cmzn_field_change_detail *get_change_detail() const
 		{
 			return &change_detail;
 		}
@@ -304,7 +304,7 @@ public:
 	private:
 
 		std::map<int, T> object_map;
-		Cmiss_field_subobject_group_change_detail change_detail;
+		cmzn_field_subobject_group_change_detail change_detail;
 		typename std::map<int, T>::iterator object_pos;
 
 		Computed_field_core* copy()
@@ -348,30 +348,30 @@ public:
 	{
 	private:
 
-		Cmiss_mesh_id master_mesh;
+		cmzn_mesh_id master_mesh;
 		const int dimension;
 		struct LIST(FE_element) *object_list;
-		Cmiss_field_subobject_group_change_detail change_detail;
+		cmzn_field_subobject_group_change_detail change_detail;
 
 	public:
 
-		Computed_field_element_group(Cmiss_mesh_id mesh) :
+		Computed_field_element_group(cmzn_mesh_id mesh) :
 			Computed_field_subobject_group(),
 			// don't want element_groups based on group region FE_region so get master:
-			master_mesh(Cmiss_mesh_get_master(mesh)),
-			dimension(Cmiss_mesh_get_dimension(master_mesh)),
-			object_list(Cmiss_mesh_create_element_list_internal(master_mesh))
+			master_mesh(cmzn_mesh_get_master(mesh)),
+			dimension(cmzn_mesh_get_dimension(master_mesh)),
+			object_list(cmzn_mesh_create_element_list_internal(master_mesh))
 		{
-			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
 			FE_region_add_callback(fe_region, Computed_field_element_group::fe_region_change, (void *)this);
 		}
 
 		~Computed_field_element_group()
 		{
-			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
 			FE_region_remove_callback(fe_region, Computed_field_element_group::fe_region_change, (void *)this);
 			DESTROY(LIST(FE_element))(&object_list);
-			Cmiss_mesh_destroy(&master_mesh);
+			cmzn_mesh_destroy(&master_mesh);
 		}
 
 		int getDimension()
@@ -379,7 +379,7 @@ public:
 			return dimension;
 		}
 
-		Cmiss_mesh_id getMasterMesh()
+		cmzn_mesh_id getMasterMesh()
 		{
 			return master_mesh;
 		}
@@ -417,7 +417,7 @@ public:
 		};
 
 		/** remove all elements for which conditional_field is true */
-		int removeElementsConditional(Cmiss_field_id conditional_field);
+		int removeElementsConditional(cmzn_field_id conditional_field);
 
 		virtual int clear()
 		{
@@ -445,13 +445,13 @@ public:
 			return (return_code);
 		};
 
-		Cmiss_element_iterator_id createIterator()
+		cmzn_element_iterator_id createIterator()
 		{
 			return CREATE_LIST_ITERATOR(FE_element)(object_list);
 		}
 
 		/** @return  non-accessed element with that identifier, or 0 if none */
-		inline Cmiss_element_id findElementByIdentifier(int identifier)
+		inline cmzn_element_id findElementByIdentifier(int identifier)
 		{
 			struct CM_element_information cm;
 			cm.type = ((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE));
@@ -477,18 +477,18 @@ public:
 			return (0 != findElementByIdentifier(identifier));
 		}
 
-		virtual Cmiss_field_change_detail *extract_change_detail()
+		virtual cmzn_field_change_detail *extract_change_detail()
 		{
 			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
 				return NULL;
-			Cmiss_field_subobject_group_change_detail *prior_change_detail =
-				new Cmiss_field_subobject_group_change_detail();
+			cmzn_field_subobject_group_change_detail *prior_change_detail =
+				new cmzn_field_subobject_group_change_detail();
 			*prior_change_detail = change_detail;
 			change_detail.clear();
 			return prior_change_detail;
 		}
 
-		virtual const Cmiss_field_change_detail *get_change_detail() const
+		virtual const cmzn_field_change_detail *get_change_detail() const
 		{
 			return &change_detail;
 		}
@@ -499,10 +499,10 @@ public:
 		}
 
 		/** ensure parent element's faces are in element group */
-		int addElementFaces(Cmiss_element_id parent);
+		int addElementFaces(cmzn_element_id parent);
 
 		/** ensure parent element's faces are not in element group */
-		int removeElementFaces(Cmiss_element_id parent);
+		int removeElementFaces(cmzn_element_id parent);
 
 	private:
 
@@ -529,14 +529,14 @@ public:
 			return (return_code);
 		}
 
-		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+		int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 		{
 			Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
 			if (element_xi_location)
 			{
 				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-				Cmiss_element_id element = element_xi_location->get_element();
-				if (Cmiss_element_get_dimension(element) == dimension)
+				cmzn_element_id element = element_xi_location->get_element();
+				if (cmzn_element_get_dimension(element) == dimension)
 				{
 					valueCache.values[0] = containsObject(element);
 				}
@@ -600,20 +600,20 @@ public:
 			}
 		}
 
-		bool isElementCompatible(Cmiss_element_id element)
+		bool isElementCompatible(cmzn_element_id element)
 		{
 			if (get_FE_element_dimension(element) != dimension)
 				return false;
-			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
 			FE_region *element_fe_region = FE_element_get_FE_region(element);
 			return (element_fe_region == fe_region);
 		}
 
-		bool isParentElementCompatible(Cmiss_element_id element)
+		bool isParentElementCompatible(cmzn_element_id element)
 		{
 			if (get_FE_element_dimension(element) != dimension + 1)
 				return false;
-			FE_region *fe_region = Cmiss_mesh_get_FE_region_internal(master_mesh);
+			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
 			FE_region *element_fe_region = FE_element_get_FE_region(element);
 			return (element_fe_region == fe_region);
 		}
@@ -624,31 +624,31 @@ public:
 	{
 	private:
 
-		Cmiss_nodeset_id master_nodeset;
+		cmzn_nodeset_id master_nodeset;
 		struct LIST(FE_node) *object_list;
-		Cmiss_field_subobject_group_change_detail change_detail;
+		cmzn_field_subobject_group_change_detail change_detail;
 
 	public:
 
-		Computed_field_node_group(Cmiss_nodeset_id nodeset) :
+		Computed_field_node_group(cmzn_nodeset_id nodeset) :
 			Computed_field_subobject_group(),
 			// don't want node_groups based on group region FE_region so get master:
-			master_nodeset(Cmiss_nodeset_get_master(nodeset)),
-			object_list(Cmiss_nodeset_create_node_list_internal(master_nodeset))
+			master_nodeset(cmzn_nodeset_get_master(nodeset)),
+			object_list(cmzn_nodeset_create_node_list_internal(master_nodeset))
 		{
-			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
 			FE_region_add_callback(fe_region, Computed_field_node_group::fe_region_change, (void *)this);
 		}
 
 		~Computed_field_node_group()
 		{
-			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
 			FE_region_remove_callback(fe_region, Computed_field_node_group::fe_region_change, (void *)this);
 			DESTROY(LIST(FE_node))(&object_list);
-			Cmiss_nodeset_destroy(&master_nodeset);
+			cmzn_nodeset_destroy(&master_nodeset);
 		}
 
-		Cmiss_nodeset_id getMasterNodeset()
+		cmzn_nodeset_id getMasterNodeset()
 		{
 			return master_nodeset;
 		}
@@ -686,7 +686,7 @@ public:
 		};
 
 		/** remove all nodes for which conditional_field is true */
-		int removeNodesConditional(Cmiss_field_id conditional_field);
+		int removeNodesConditional(cmzn_field_id conditional_field);
 
 		virtual int clear()
 		{
@@ -704,13 +704,13 @@ public:
 			return IS_OBJECT_IN_LIST(FE_node)(object, object_list);
 		};
 
-		Cmiss_node_iterator_id createIterator()
+		cmzn_node_iterator_id createIterator()
 		{
 			return CREATE_LIST_ITERATOR(FE_node)(object_list);
 		}
 
 		/** @return  non-accessed node with that identifier, or 0 if none */
-		inline Cmiss_node_id findNodeByIdentifier(int identifier)
+		inline cmzn_node_id findNodeByIdentifier(int identifier)
 		{
 			return FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier, object_list);
 		}
@@ -733,18 +733,18 @@ public:
 			return (0 != findNodeByIdentifier(identifier));
 		}
 
-		virtual Cmiss_field_change_detail *extract_change_detail()
+		virtual cmzn_field_change_detail *extract_change_detail()
 		{
 			if (change_detail.getChange() == CMISS_FIELD_GROUP_NO_CHANGE)
 				return NULL;
-			Cmiss_field_subobject_group_change_detail *prior_change_detail =
-				new Cmiss_field_subobject_group_change_detail();
+			cmzn_field_subobject_group_change_detail *prior_change_detail =
+				new cmzn_field_subobject_group_change_detail();
 			*prior_change_detail = change_detail;
 			change_detail.clear();
 			return prior_change_detail;
 		}
 
-		virtual const Cmiss_field_change_detail *get_change_detail() const
+		virtual const cmzn_field_change_detail *get_change_detail() const
 		{
 			return &change_detail;
 		}
@@ -755,10 +755,10 @@ public:
 		}
 
 		/** ensure element's nodes are in node group */
-		int addElementNodes(Cmiss_element_id element);
+		int addElementNodes(cmzn_element_id element);
 
 		/** ensure element's nodes are not in node group */
-		int removeElementNodes(Cmiss_element_id element);
+		int removeElementNodes(cmzn_element_id element);
 
 	private:
 
@@ -785,13 +785,13 @@ public:
 			return (return_code);
 		}
 
-		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+		int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 		{
 			Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 			if (node_location)
 			{
 				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-				Cmiss_node_id node = node_location->get_node();
+				cmzn_node_id node = node_location->get_node();
 				valueCache.values[0] = containsObject(node);
 				return 1;
 			}
@@ -848,18 +848,18 @@ public:
 			}
 		}
 
-		bool isNodeCompatible(Cmiss_node_id node)
+		bool isNodeCompatible(cmzn_node_id node)
 		{
-			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
 			FE_region *node_fe_region = FE_node_get_FE_region(node);
 			if (FE_region_is_data_FE_region(fe_region))
 				node_fe_region = FE_region_get_data_FE_region(node_fe_region);
 			return (node_fe_region == fe_region);
 		}
 
-		bool isParentElementCompatible(Cmiss_element_id element)
+		bool isParentElementCompatible(cmzn_element_id element)
 		{
-			FE_region *fe_region = Cmiss_nodeset_get_FE_region_internal(master_nodeset);
+			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
 			FE_region *element_fe_region = FE_element_get_FE_region(element);
 			return (element_fe_region == fe_region);
 		}
@@ -875,14 +875,14 @@ Computed_field_sub_group_object<ObjectType> *Computed_field_sub_group_object_cor
  }
 
 inline Computed_field_element_group *Computed_field_element_group_core_cast(
-	Cmiss_field_element_group_id object_group_field)
+	cmzn_field_element_group_id object_group_field)
 {
 	return (static_cast<Computed_field_element_group *>(
 		reinterpret_cast<Computed_field*>(object_group_field)->core));
 }
 
 inline Computed_field_node_group *Computed_field_node_group_core_cast(
-	Cmiss_field_node_group_id object_group_field)
+	cmzn_field_node_group_id object_group_field)
 {
 	return (static_cast<Computed_field_node_group *>(
 		reinterpret_cast<Computed_field*>(object_group_field)->core));

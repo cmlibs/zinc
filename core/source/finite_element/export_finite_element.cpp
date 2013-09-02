@@ -2422,8 +2422,8 @@ has been selected for output) then the header is written out.
 	return (return_code);
 }
 
-static int write_Cmiss_region_content(ostream *output_file,
-	struct Cmiss_region *region, Cmiss_field_group_id group,
+static int write_cmzn_region_content(ostream *output_file,
+	struct cmzn_region *region, cmzn_field_group_id group,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
@@ -2448,11 +2448,11 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 {
 	int return_code;
 
-	ENTER(write_Cmiss_region_content);
+	ENTER(write_cmzn_region_content);
 	if (output_file && region)
 	{
-		Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		return_code = 1;
 		FE_field_order_info *field_order_info = CREATE(FE_field_order_info)();
 		if (write_fields_mode == FE_WRITE_ALL_FIELDS)
@@ -2477,14 +2477,14 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE, "write_Cmiss_region_content.  NULL field name");
+					display_message(ERROR_MESSAGE, "write_cmzn_region_content.  NULL field name");
 					return_code = 0;
 				}
 			}
 		}
 		else if (0 < number_of_field_names)
 		{
-			display_message(ERROR_MESSAGE, "write_Cmiss_region_content.  Missing field names array");
+			display_message(ERROR_MESSAGE, "write_cmzn_region_content.  Missing field names array");
 			return_code = 0;
 		}
 
@@ -2500,21 +2500,21 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_nodes_data.time = time;
 				if (write_data)
 				{
-					Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+					cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
 						CMISS_FIELD_DOMAIN_DATA);
 					if (group)
 					{
-						Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
-						Cmiss_nodeset_destroy(&nodeset);
-						nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-						Cmiss_field_node_group_destroy(&node_group);
+						cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
+						cmzn_nodeset_destroy(&nodeset);
+						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
+						cmzn_field_node_group_destroy(&node_group);
 					}
 					if (nodeset)
 					{
 						(*output_file) << " !#nodeset datapoints\n";
-						Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(nodeset);
-						Cmiss_node_id node = 0;
-						while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+						cmzn_node_iterator_id iter = cmzn_nodeset_create_node_iterator(nodeset);
+						cmzn_node_id node = 0;
+						while (0 != (node = cmzn_node_iterator_next_non_access(iter)))
 						{
 							if (!write_FE_region_node(node, &write_nodes_data))
 							{
@@ -2522,28 +2522,28 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 								break;
 							}
 						}
-						Cmiss_node_iterator_destroy(&iter);
-						Cmiss_nodeset_destroy(&nodeset);
+						cmzn_node_iterator_destroy(&iter);
+						cmzn_nodeset_destroy(&nodeset);
 					}
 				}
 				if (write_nodes)
 				{
 					write_nodes_data.last_node = (struct FE_node *)NULL;
-					Cmiss_nodeset_id nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module,
+					cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
 						CMISS_FIELD_DOMAIN_NODES);
 					if (group)
 					{
-						Cmiss_field_node_group_id node_group = Cmiss_field_group_get_node_group(group, nodeset);
-						Cmiss_nodeset_destroy(&nodeset);
-						nodeset = Cmiss_nodeset_group_base_cast(Cmiss_field_node_group_get_nodeset(node_group));
-						Cmiss_field_node_group_destroy(&node_group);
+						cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
+						cmzn_nodeset_destroy(&nodeset);
+						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
+						cmzn_field_node_group_destroy(&node_group);
 					}
 					if (nodeset)
 					{
 						(*output_file) << " !#nodeset nodes\n";
-						Cmiss_node_iterator_id iter = Cmiss_nodeset_create_node_iterator(nodeset);
-						Cmiss_node_id node = 0;
-						while (0 != (node = Cmiss_node_iterator_next_non_access(iter)))
+						cmzn_node_iterator_id iter = cmzn_nodeset_create_node_iterator(nodeset);
+						cmzn_node_id node = 0;
+						while (0 != (node = cmzn_node_iterator_next_non_access(iter)))
 						{
 							if (!write_FE_region_node(node, &write_nodes_data))
 							{
@@ -2551,8 +2551,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 								break;
 							}
 						}
-						Cmiss_node_iterator_destroy(&iter);
-						Cmiss_nodeset_destroy(&nodeset);
+						cmzn_node_iterator_destroy(&iter);
+						cmzn_nodeset_destroy(&nodeset);
 					}
 				}
 			}
@@ -2581,19 +2581,19 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						(dimension == highest_dimension &&
 							(write_elements & CMISS_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)))
 					{
-						Cmiss_mesh_id mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+						cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
 						if (group)
 						{
-							Cmiss_field_element_group_id element_group = Cmiss_field_group_get_element_group(group, mesh);
-							Cmiss_mesh_destroy(&mesh);
-							mesh = Cmiss_mesh_group_base_cast(Cmiss_field_element_group_get_mesh(element_group));
-							Cmiss_field_element_group_destroy(&element_group);
+							cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, mesh);
+							cmzn_mesh_destroy(&mesh);
+							mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group));
+							cmzn_field_element_group_destroy(&element_group);
 						}
 						if (mesh)
 						{
-							Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(mesh);
-							Cmiss_element_id element = 0;
-							while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+							cmzn_element_iterator_id iter = cmzn_mesh_create_element_iterator(mesh);
+							cmzn_element_id element = 0;
+							while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
 							{
 								if (!write_FE_region_element(element, &write_elements_data))
 								{
@@ -2601,8 +2601,8 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 									break;
 								}
 							}
-							Cmiss_element_iterator_destroy(&iter);
-							Cmiss_mesh_destroy(&mesh);
+							cmzn_element_iterator_destroy(&iter);
+							cmzn_mesh_destroy(&mesh);
 						}
 					}
 				}
@@ -2612,19 +2612,19 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 		}
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE, "write_Cmiss_region_content.  Failed");
+			display_message(ERROR_MESSAGE, "write_cmzn_region_content.  Failed");
 			return_code = 0;
 		}
 		if (field_order_info)
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
-		Cmiss_field_module_destroy(&field_module);
+		cmzn_field_module_destroy(&field_module);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"write_Cmiss_region_content.  Invalid argument(s)");
+			"write_cmzn_region_content.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -2663,9 +2663,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
  * @param write_recursion  Controls whether sub-regions and sub-groups are
  *   recursively written.
  */
-static int write_Cmiss_region(ostream *output_file,
-	struct Cmiss_region *region, Cmiss_field_group_id group,
-	struct Cmiss_region *root_region,
+static int write_cmzn_region(ostream *output_file,
+	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
@@ -2675,7 +2675,7 @@ static int write_Cmiss_region(ostream *output_file,
 {
 	int return_code;
 
-	ENTER(write_Cmiss_region);
+	ENTER(write_cmzn_region);
 	if (output_file && region && root_region)
 	{
 		return_code = 1;
@@ -2683,7 +2683,7 @@ static int write_Cmiss_region(ostream *output_file,
 		// write region path and/or group name */
 		if (!group || (region != root_region))
 		{
-			char *region_path = Cmiss_region_get_relative_path(region, root_region);
+			char *region_path = cmzn_region_get_relative_path(region, root_region);
 			int len = strlen(region_path);
 			if ((1 < len) && (region_path[len - 1] == CMISS_REGION_PATH_SEPARATOR_CHAR))
 			{
@@ -2694,7 +2694,7 @@ static int write_Cmiss_region(ostream *output_file,
 		}
 		if (group)
 		{
-			char *group_name = Cmiss_field_get_name(Cmiss_field_group_base_cast(group));
+			char *group_name = cmzn_field_get_name(cmzn_field_group_base_cast(group));
 			(*output_file) << " Group name: " << group_name << "\n";
 			DEALLOCATE(group_name);
 		}
@@ -2702,7 +2702,7 @@ static int write_Cmiss_region(ostream *output_file,
 		// write finite element fields for this region
 		if (return_code)
 		{
-			return_code = write_Cmiss_region_content(output_file, region, group,
+			return_code = write_cmzn_region_content(output_file, region, group,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names,
 				field_names_counter, time, write_criterion);
@@ -2712,64 +2712,64 @@ static int write_Cmiss_region(ostream *output_file,
 			(write_recursion == FE_WRITE_RECURSE_SUBGROUPS)))
 		{
 			// write group members
-			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-			Cmiss_field_iterator_id field_iter = Cmiss_field_module_create_field_iterator(field_module);
-			Cmiss_field_id field = 0;
-			while ((0 != (field = Cmiss_field_iterator_next_non_access(field_iter))) && return_code)
+			cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+			cmzn_field_iterator_id field_iter = cmzn_field_module_create_field_iterator(field_module);
+			cmzn_field_id field = 0;
+			while ((0 != (field = cmzn_field_iterator_next_non_access(field_iter))) && return_code)
 			{
-				Cmiss_field_group_id output_group = Cmiss_field_cast_group(field);
+				cmzn_field_group_id output_group = cmzn_field_cast_group(field);
 				if (output_group)
 				{
-					char *group_name = Cmiss_field_get_name(field);
+					char *group_name = cmzn_field_get_name(field);
 					(*output_file) << " Group name: " << group_name << "\n";
 					DEALLOCATE(group_name);
-					return_code = write_Cmiss_region_content(output_file, region, output_group,
+					return_code = write_cmzn_region_content(output_file, region, output_group,
 						write_elements, write_nodes, write_data,
 						FE_WRITE_NO_FIELDS, number_of_field_names, field_names,
 						field_names_counter, time, write_criterion);
-					Cmiss_field_group_destroy(&output_group);
+					cmzn_field_group_destroy(&output_group);
 				}
 			}
-			Cmiss_field_iterator_destroy(&field_iter);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_iterator_destroy(&field_iter);
+			cmzn_field_module_destroy(&field_module);
 		}
 
 		if (write_recursion == FE_WRITE_RECURSIVE)
 		{
 			// write child regions
-			Cmiss_region *child_region = Cmiss_region_get_first_child(region);
+			cmzn_region *child_region = cmzn_region_get_first_child(region);
 			while (child_region)
 			{
-				Cmiss_field_group_id child_group = 0;
+				cmzn_field_group_id child_group = 0;
 				if ((!group) ||
-					(0 != (child_group = Cmiss_field_group_get_subregion_group(group, child_region))))
+					(0 != (child_group = cmzn_field_group_get_subregion_group(group, child_region))))
 				{
-					return_code = write_Cmiss_region(output_file,
+					return_code = write_cmzn_region(output_file,
 						child_region, child_group, root_region,
 						write_elements, write_nodes, write_data,
 						write_fields_mode, number_of_field_names, field_names,
 						field_names_counter, time, write_criterion, write_recursion);
 					if (child_group)
-						Cmiss_field_group_destroy(&child_group);
+						cmzn_field_group_destroy(&child_group);
 				}
 				if (!return_code)
 				{
-					Cmiss_region_destroy(&child_region);
+					cmzn_region_destroy(&child_region);
 					break;
 				}
-				Cmiss_region_reaccess_next_sibling(&child_region);
+				cmzn_region_reaccess_next_sibling(&child_region);
 			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "write_Cmiss_region.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "write_cmzn_region.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* write_Cmiss_region */
+} /* write_cmzn_region */
 
 /*
 Global functions
@@ -2868,8 +2868,8 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
  *   recursively written.
  */
 int write_exregion_to_stream(ostream *output_file,
-	struct Cmiss_region *region, Cmiss_field_group_id group,
-	struct Cmiss_region *root_region,
+	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
@@ -2884,7 +2884,7 @@ int write_exregion_to_stream(ostream *output_file,
 		((write_fields_mode != FE_WRITE_LISTED_FIELDS) ||
 			((0 < number_of_field_names) && field_names)))
 	{
-		if (Cmiss_region_contains_subregion(root_region, region))
+		if (cmzn_region_contains_subregion(root_region, region))
 		{
 			int *field_names_counter = NULL;
 			if (0 < number_of_field_names)
@@ -2898,7 +2898,7 @@ int write_exregion_to_stream(ostream *output_file,
 					}
 				}
 			}
-			return_code = write_Cmiss_region(output_file,
+			return_code = write_cmzn_region(output_file,
 				region, group, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, field_names_counter,
@@ -2944,8 +2944,8 @@ int write_exregion_to_stream(ostream *output_file,
 } /* write_exregion_to_stream */
 
 int write_exregion_file_of_name(const char *file_name,
-	struct Cmiss_region *region, Cmiss_field_group_id group,
-	struct Cmiss_region *root_region,
+	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
@@ -2984,8 +2984,8 @@ int write_exregion_file_of_name(const char *file_name,
 } /* write_exregion_file_of_name */
 
 int write_exregion_file_to_memory_block(
-	struct Cmiss_region *region, Cmiss_field_group_id group,
-	struct Cmiss_region *root_region, int write_elements,
+	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *root_region, int write_elements,
 	int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,

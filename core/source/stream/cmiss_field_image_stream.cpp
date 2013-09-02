@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_field_image_stream.cpp
  *
- * The definition to Cmiss_field_image_stream.
+ * The definition to cmzn_field_image_stream.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -50,34 +50,34 @@
 #include "general/enumerator_conversion.hpp"
 #include "stream/cmiss_field_image_stream.hpp"
 
-int Cmiss_field_image_read(Cmiss_field_image_id image_field,
-	Cmiss_stream_information_id stream_information)
+int cmzn_field_image_read(cmzn_field_image_id image_field,
+	cmzn_stream_information_id stream_information)
 {
 	int return_code = 1;
 	struct Cmgui_image_information *image_information = NULL;
-	Cmiss_stream_information_image_id image_stream_information = NULL;
+	cmzn_stream_information_image_id image_stream_information = NULL;
 	if (stream_information)
 	{
-		image_stream_information = dynamic_cast<Cmiss_stream_information_image *>(stream_information);
+		image_stream_information = dynamic_cast<cmzn_stream_information_image *>(stream_information);
 	}
 	if (image_field && image_stream_information &&
 		(NULL != (image_information = image_stream_information->getImageInformation())))
 	{
-		char *field_name = Cmiss_field_get_name(Cmiss_field_image_base_cast(image_field));
-		const Cmiss_stream_properties_list streams_list = image_stream_information->getResourcesList();
+		char *field_name = cmzn_field_get_name(cmzn_field_image_base_cast(image_field));
+		const cmzn_stream_properties_list streams_list = image_stream_information->getResourcesList();
 		if (!(streams_list.empty()))
 		{
-			Cmiss_stream_properties_list_const_iterator iter;
-			Cmiss_resource_properties *stream_properties = NULL;
-			Cmiss_stream_resource_id stream = NULL;
+			cmzn_stream_properties_list_const_iterator iter;
+			cmzn_resource_properties *stream_properties = NULL;
+			cmzn_stream_resource_id stream = NULL;
 			int fileStream = 0;
 			int memoryStream = 0;
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
-				Cmiss_stream_resource_file_id file_resource = Cmiss_stream_resource_cast_file(stream);
-				Cmiss_stream_resource_memory_id memory_resource = NULL;
+				cmzn_stream_resource_file_id file_resource = cmzn_stream_resource_cast_file(stream);
+				cmzn_stream_resource_memory_id memory_resource = NULL;
 				if (file_resource)
 				{
 					char *file_name = file_resource->getFileName();
@@ -90,15 +90,15 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "Cmiss_field_image_read. Cannot read both file and memory in "
+							display_message(ERROR_MESSAGE, "cmzn_field_image_read. Cannot read both file and memory in "
 								"one stream information");
 							return_code = 0;
 						}
 						DEALLOCATE(file_name);
 					}
-					Cmiss_stream_resource_file_destroy(&file_resource);
+					cmzn_stream_resource_file_destroy(&file_resource);
 				}
-				else if (NULL != (memory_resource = Cmiss_stream_resource_cast_memory(stream)))
+				else if (NULL != (memory_resource = cmzn_stream_resource_cast_memory(stream)))
 				{
 					void *memory_block = NULL;
 					unsigned int buffer_size = 0;
@@ -113,17 +113,17 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "Cmiss_field_image_read. Cannot read both file and memory in "
+							display_message(ERROR_MESSAGE, "cmzn_field_image_read. Cannot read both file and memory in "
 								"one stream information");
 							return_code = 0;
 						}
 					}
-					Cmiss_stream_resource_memory_destroy(&memory_resource);
+					cmzn_stream_resource_memory_destroy(&memory_resource);
 				}
 				else
 				{
 					return_code = 0;
-					display_message(ERROR_MESSAGE, "Cmiss_field_image_read. Stream error");
+					display_message(ERROR_MESSAGE, "cmzn_field_image_read. Stream error");
 					break;
 				}
 				if (!return_code)
@@ -165,19 +165,19 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"Cmiss_field_image_read.  Could not create image for field");
+							"cmzn_field_image_read.  Could not create image for field");
 						return_code = 0;
 					}
 					if (return_code)
 					{
-						return_code = Cmiss_field_image_set_texture(image_field, texture);
+						return_code = cmzn_field_image_set_texture(image_field, texture);
 						DESTROY(Texture)(&texture);
 					}
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmiss_field_image_read.  Could not read image file");
+						"cmzn_field_image_read.  Could not read image file");
 					return_code = 0;
 				}
 			}
@@ -185,7 +185,7 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_image_read.  stream_information does not contain any stream");
+				"cmzn_field_image_read.  stream_information does not contain any stream");
 			return_code = 0;
 		}
 		if (field_name)
@@ -194,61 +194,61 @@ int Cmiss_field_image_read(Cmiss_field_image_id image_field,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_image_read.  Invalid argument(s)");
+			"cmzn_field_image_read.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_field_image_read */
+} /* cmzn_field_image_read */
 
-int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *file_name)
+int cmzn_field_image_read_file(cmzn_field_image_id image_field, const char *file_name)
 {
 	int return_code = 0;
 	if (image_field && file_name)
 	{
-		Cmiss_stream_information_id stream_information =
-			Cmiss_field_image_create_stream_information(image_field);
-		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
+		cmzn_stream_information_id stream_information =
+			cmzn_field_image_create_stream_information(image_field);
+		cmzn_stream_resource_id resource = cmzn_stream_information_create_resource_file(
 			stream_information, file_name);
-	  return_code = Cmiss_field_image_read(image_field, stream_information);
-  	Cmiss_stream_resource_destroy(&resource);
-  	Cmiss_stream_information_destroy(&stream_information);
+	  return_code = cmzn_field_image_read(image_field, stream_information);
+  	cmzn_stream_resource_destroy(&resource);
+  	cmzn_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
 
-int Cmiss_field_image_write(Cmiss_field_image_id image_field,
-	Cmiss_stream_information_id stream_information)
+int cmzn_field_image_write(cmzn_field_image_id image_field,
+	cmzn_stream_information_id stream_information)
 {
 	int return_code = 1;
 	struct Cmgui_image_information *image_information = NULL;
-	Cmiss_stream_information_image_id image_stream_information = NULL;
+	cmzn_stream_information_image_id image_stream_information = NULL;
 	if (stream_information)
 	{
-		image_stream_information = dynamic_cast<Cmiss_stream_information_image *>(stream_information);
+		image_stream_information = dynamic_cast<cmzn_stream_information_image *>(stream_information);
 	}
 	return_code = 1;
 	if (image_field && image_stream_information &&
 		(NULL != (image_information = image_stream_information->getImageInformation())))
 	{
-		struct Cmgui_image *cmgui_image = Texture_get_image(Cmiss_field_image_get_texture(image_field));
-		const Cmiss_stream_properties_list streams_list = image_stream_information->getResourcesList();
+		struct Cmgui_image *cmgui_image = Texture_get_image(cmzn_field_image_get_texture(image_field));
+		const cmzn_stream_properties_list streams_list = image_stream_information->getResourcesList();
 		int number_of_streams = streams_list.size();
 		if ((number_of_streams > 0 ) && cmgui_image &&
 			(Cmgui_image_get_number_of_images(cmgui_image) == number_of_streams))
 		{
-			Cmiss_stream_properties_list_const_iterator iter;
-			Cmiss_resource_properties *stream_properties = NULL;
-			Cmiss_stream_resource_id stream = NULL;
+			cmzn_stream_properties_list_const_iterator iter;
+			cmzn_resource_properties *stream_properties = NULL;
+			cmzn_stream_resource_id stream = NULL;
 			int set_write_to_memory = 0;
 			int fileStream = 0, memoryStream = 0;
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
-				Cmiss_stream_resource_file_id file_resource = Cmiss_stream_resource_cast_file(stream);
-				Cmiss_stream_resource_memory_id memory_resource = NULL;
+				cmzn_stream_resource_file_id file_resource = cmzn_stream_resource_cast_file(stream);
+				cmzn_stream_resource_memory_id memory_resource = NULL;
 				if (file_resource)
 				{
 					char *file_name = file_resource->getFileName();
@@ -261,19 +261,19 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "Cmiss_field_image_write. Cannot write to both file and memory in "
+							display_message(ERROR_MESSAGE, "cmzn_field_image_write. Cannot write to both file and memory in "
 								"one stream information");
 							return_code = 0;
 						}
 						DEALLOCATE(file_name);
 					}
-					Cmiss_stream_resource_file_destroy(&file_resource);
+					cmzn_stream_resource_file_destroy(&file_resource);
 				}
-				else if (NULL != (memory_resource = Cmiss_stream_resource_cast_memory(stream)))
+				else if (NULL != (memory_resource = cmzn_stream_resource_cast_memory(stream)))
 				{
 					if (fileStream)
 					{
-						display_message(ERROR_MESSAGE, "Cmiss_field_image_write. Stream information "
+						display_message(ERROR_MESSAGE, "cmzn_field_image_write. Stream information "
 							"contains incorrect stream");
 						return_code = 0;
 					}
@@ -282,12 +282,12 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 						memoryStream = 1;
 						set_write_to_memory = 1;
 					}
-					Cmiss_stream_resource_memory_destroy(&memory_resource);
+					cmzn_stream_resource_memory_destroy(&memory_resource);
 				}
 				else
 				{
 					return_code = 0;
-					display_message(ERROR_MESSAGE, "Cmiss_field_image_write. Stream error");
+					display_message(ERROR_MESSAGE, "cmzn_field_image_write. Stream error");
 					break;
 				}
 				if (!return_code)
@@ -301,7 +301,7 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 				}
 				if (!Cmgui_image_write(cmgui_image, image_information))
 				{
-					display_message(ERROR_MESSAGE, "Cmiss_field_image_write.  "
+					display_message(ERROR_MESSAGE, "cmzn_field_image_write.  "
 						"Error writing image");
 					return_code = 0;
 				}
@@ -321,12 +321,12 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 							{
 								stream_properties = *iter;
 								stream = stream_properties->getResource();
-								Cmiss_stream_resource_memory_id memory_resource =
-									Cmiss_stream_resource_cast_memory(stream);
+								cmzn_stream_resource_memory_id memory_resource =
+									cmzn_stream_resource_cast_memory(stream);
 								if (memory_resource)
 								{
 									memory_resource->setBuffer(memory_blocks[k], memory_block_lengths[k]);
-									Cmiss_stream_resource_memory_destroy(&memory_resource);
+									cmzn_stream_resource_memory_destroy(&memory_resource);
 								}
 								k++;
 							}
@@ -341,7 +341,7 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_image_write.  Stream information does not contain the correct"
+				"cmzn_field_image_write.  Stream information does not contain the correct"
 				"numerb of streams or field does not contain images");
 			return_code = 0;
 		}
@@ -349,42 +349,42 @@ int Cmiss_field_image_write(Cmiss_field_image_id image_field,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_image_write.  Invalid argument(s)");
+			"cmzn_field_image_write.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_field_image_write */
+} /* cmzn_field_image_write */
 
-int Cmiss_field_image_write_file(Cmiss_field_image_id image_field, const char *file_name)
+int cmzn_field_image_write_file(cmzn_field_image_id image_field, const char *file_name)
 {
 	int return_code = 0;
 	if (image_field && file_name)
 	{
-		Cmiss_stream_information_id stream_information =
-			Cmiss_field_image_create_stream_information(image_field);
-		Cmiss_stream_resource_id resource = Cmiss_stream_information_create_resource_file(
+		cmzn_stream_information_id stream_information =
+			cmzn_field_image_create_stream_information(image_field);
+		cmzn_stream_resource_id resource = cmzn_stream_information_create_resource_file(
 			stream_information, file_name);
-	  return_code = Cmiss_field_image_write(image_field, stream_information);
-  	Cmiss_stream_resource_destroy(&resource);
-  	Cmiss_stream_information_destroy(&stream_information);
+	  return_code = cmzn_field_image_write(image_field, stream_information);
+  	cmzn_stream_resource_destroy(&resource);
+  	cmzn_stream_information_destroy(&stream_information);
 	}
 	return return_code;
 }
 
-Cmiss_stream_information_id Cmiss_field_image_create_stream_information(
-	Cmiss_field_image_id image_field)
+cmzn_stream_information_id cmzn_field_image_create_stream_information(
+	cmzn_field_image_id image_field)
 {
 	if (image_field)
 	{
-		return new Cmiss_stream_information_image(image_field);
+		return new cmzn_stream_information_image(image_field);
 	}
 	return NULL;
 }
 
-int Cmiss_stream_information_image_destroy(
-	Cmiss_stream_information_image_id *stream_information_address)
+int cmzn_stream_information_image_destroy(
+	cmzn_stream_information_image_id *stream_information_address)
 {
 	if (stream_information_address && *stream_information_address)
 	{
@@ -395,14 +395,14 @@ int Cmiss_stream_information_image_destroy(
 	return 0;
 }
 
-Cmiss_stream_information_image_id Cmiss_stream_information_cast_image(
-	Cmiss_stream_information_id stream_information)
+cmzn_stream_information_image_id cmzn_stream_information_cast_image(
+	cmzn_stream_information_id stream_information)
 {
 	if (stream_information &&
-		(dynamic_cast<Cmiss_stream_information_image *>(stream_information)))
+		(dynamic_cast<cmzn_stream_information_image *>(stream_information)))
 	{
 		stream_information->access();
-		return (reinterpret_cast<Cmiss_stream_information_image *>(stream_information));
+		return (reinterpret_cast<cmzn_stream_information_image *>(stream_information));
 	}
 	else
 	{
@@ -410,9 +410,9 @@ Cmiss_stream_information_image_id Cmiss_stream_information_cast_image(
 	}
 }
 
-int Cmiss_stream_information_image_set_attribute_integer(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute attribute, int value)
+int cmzn_stream_information_image_set_attribute_integer(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_attribute attribute, int value)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	if (stream_information &&
@@ -441,7 +441,7 @@ int Cmiss_stream_information_image_set_attribute_integer(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_image_set_attribue_int.  "
+					"cmzn_stream_information_image_set_attribue_int.  "
 					"Invalid attribute");
 			} break;
 		}
@@ -449,9 +449,9 @@ int Cmiss_stream_information_image_set_attribute_integer(
 	return 0;
 }
 
-int Cmiss_stream_information_image_set_attribute_real(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute attribute, double value)
+int cmzn_stream_information_image_set_attribute_real(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_attribute attribute, double value)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	if (stream_information &&
@@ -466,7 +466,7 @@ int Cmiss_stream_information_image_set_attribute_real(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_image_set_attribute_double.  "
+					"cmzn_stream_information_image_set_attribute_double.  "
 					"Invalid attribute");
 			} break;
 		}
@@ -474,10 +474,10 @@ int Cmiss_stream_information_image_set_attribute_real(
 	return 0;
 }
 
-class Cmiss_stream_information_image_attribute_conversion
+class cmzn_stream_information_image_attribute_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_stream_information_image_attribute attribute)
+    static const char *to_string(enum cmzn_stream_information_image_attribute attribute)
     {
     	const char *enum_string = 0;
     	switch (attribute)
@@ -501,23 +501,23 @@ public:
     }
 };
 
-enum Cmiss_stream_information_image_attribute
-	Cmiss_stream_information_image_attribute_enum_from_string(const char *string)
+enum cmzn_stream_information_image_attribute
+	cmzn_stream_information_image_attribute_enum_from_string(const char *string)
 {
-	return string_to_enum<enum Cmiss_stream_information_image_attribute,
-		Cmiss_stream_information_image_attribute_conversion>(string);
+	return string_to_enum<enum cmzn_stream_information_image_attribute,
+		cmzn_stream_information_image_attribute_conversion>(string);
 }
 
-char *Cmiss_stream_information_image_attribute_enum_to_string(
-	enum Cmiss_stream_information_image_attribute attribute)
+char *cmzn_stream_information_image_attribute_enum_to_string(
+	enum cmzn_stream_information_image_attribute attribute)
 {
-	const char *attribute_string = Cmiss_stream_information_image_attribute_conversion::to_string(attribute);
+	const char *attribute_string = cmzn_stream_information_image_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
 
-int Cmiss_stream_information_image_set_file_format(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_file_format format)
+int cmzn_stream_information_image_set_file_format(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_file_format format)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	enum Image_file_format cmgui_file_format = JPG_FILE_FORMAT;
@@ -560,7 +560,7 @@ int Cmiss_stream_information_image_set_file_format(
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_stream_information_image_set_format.  "
+					"cmzn_stream_information_image_set_format.  "
 					"File format not implemented yet.");
 			} break;
 		}
@@ -573,10 +573,10 @@ int Cmiss_stream_information_image_set_file_format(
 	return (return_code);
 }
 
-class Cmiss_stream_information_image_file_format_conversion
+class cmzn_stream_information_image_file_format_conversion
 {
 public:
-    static const char *to_string(enum Cmiss_stream_information_image_file_format format)
+    static const char *to_string(enum cmzn_stream_information_image_file_format format)
     {
     	const char *enum_string = 0;
     	switch (format)
@@ -609,23 +609,23 @@ public:
     }
 };
 
-enum Cmiss_stream_information_image_file_format
-	Cmiss_stream_information_image_file_format_enum_from_string(const char *string)
+enum cmzn_stream_information_image_file_format
+	cmzn_stream_information_image_file_format_enum_from_string(const char *string)
 {
-	return string_to_enum<enum Cmiss_stream_information_image_file_format,
-	Cmiss_stream_information_image_file_format_conversion>(string);
+	return string_to_enum<enum cmzn_stream_information_image_file_format,
+	cmzn_stream_information_image_file_format_conversion>(string);
 }
 
-char *Cmiss_stream_information_image_file_format_enum_to_string(
-	enum Cmiss_stream_information_image_file_format format)
+char *cmzn_stream_information_image_file_format_enum_to_string(
+	enum cmzn_stream_information_image_file_format format)
 {
-	const char *format_string = Cmiss_stream_information_image_file_format_conversion::to_string(format);
+	const char *format_string = cmzn_stream_information_image_file_format_conversion::to_string(format);
 	return (format_string ? duplicate_string(format_string) : 0);
 }
 
-int Cmiss_stream_information_image_set_pixel_format(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_pixel_format pixel_format)
+int cmzn_stream_information_image_set_pixel_format(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_pixel_format pixel_format)
 {
 	struct Cmgui_image_information *image_information = NULL;
 	int return_code = 0;
@@ -667,10 +667,10 @@ int Cmiss_stream_information_image_set_pixel_format(
 	return (return_code);
 }
 
-class Cmiss_stream_information_image_pixel_format_conversion
+class cmzn_stream_information_image_pixel_format_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_stream_information_image_pixel_format format)
+	static const char *to_string(enum cmzn_stream_information_image_pixel_format format)
 	{
 		const char *enum_string = 0;
 		switch (format)
@@ -700,17 +700,17 @@ public:
 	}
 };
 
-enum Cmiss_stream_information_image_pixel_format
-	Cmiss_stream_information_image_pixel_format_enum_from_string(
+enum cmzn_stream_information_image_pixel_format
+	cmzn_stream_information_image_pixel_format_enum_from_string(
 		const char *string)
 {
-	return string_to_enum<enum Cmiss_stream_information_image_pixel_format,
-		Cmiss_stream_information_image_pixel_format_conversion>(string);
+	return string_to_enum<enum cmzn_stream_information_image_pixel_format,
+		cmzn_stream_information_image_pixel_format_conversion>(string);
 }
 
-char *Cmiss_stream_information_image_pixel_format_enum_to_string(
-	enum Cmiss_stream_information_image_pixel_format format)
+char *cmzn_stream_information_image_pixel_format_enum_to_string(
+	enum cmzn_stream_information_image_pixel_format format)
 {
-	const char *format_string = Cmiss_stream_information_image_pixel_format_conversion::to_string(format);
+	const char *format_string = cmzn_stream_information_image_pixel_format_conversion::to_string(format);
 	return (format_string ? duplicate_string(format_string) : 0);
 }

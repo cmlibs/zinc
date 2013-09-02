@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_node_private.hpp
  *
- * Private header file of Cmiss_node, Cmiss_nodeset.
+ * Private header file of cmzn_node, cmzn_nodeset.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -56,8 +56,8 @@ struct FE_region;
  * inherit nodes from parent elements via field mappings.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_group_add_element_nodes(
-	Cmiss_nodeset_group_id nodeset_group, Cmiss_element_id element);
+int cmzn_nodeset_group_add_element_nodes(
+	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element);
 
 /***************************************************************************//**
  * Ensures all nodes of the supplied element are not in this nodeset_group.
@@ -69,34 +69,34 @@ int Cmiss_nodeset_group_add_element_nodes(
  * inherit nodes from parent elements via field mappings.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_nodeset_group_remove_element_nodes(
-	Cmiss_nodeset_group_id nodeset_group, Cmiss_element_id element);
+int cmzn_nodeset_group_remove_element_nodes(
+	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element);
 
 /** Internal use only.
  * Create a related node list to that in nodeset.
  * @return  New node list.
  */
-struct LIST(FE_node) *Cmiss_nodeset_create_node_list_internal(Cmiss_nodeset_id nodeset);
+struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
  * @return non-accessed fe_region for this nodeset. Different for datapoints.
  */
-FE_region *Cmiss_nodeset_get_FE_region_internal(Cmiss_nodeset_id nodeset);
+FE_region *cmzn_nodeset_get_FE_region_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
  * @return non-accessed region for this nodeset.
  */
-Cmiss_region_id Cmiss_nodeset_get_region_internal(Cmiss_nodeset_id nodeset);
+cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
  * @return non-accessed master region for this nodeset.
  */
-Cmiss_region_id Cmiss_nodeset_get_master_region_internal(Cmiss_nodeset_id nodeset);
+cmzn_region_id cmzn_nodeset_get_master_region_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
  * @return  1 if nodeset represents data points.
  */
-int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset);
+int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
 
 /***************************************************************************//**
  * If the name is of the form GROUP_NAME.NODESET_NAME. Create a nodeset group.
@@ -107,7 +107,7 @@ int Cmiss_nodeset_is_data_internal(Cmiss_nodeset_id nodeset);
  * @return  Handle to the nodeset, or NULL if error, name already in use or no
  * such nodeset name.
  */
-Cmiss_nodeset_group_id Cmiss_field_module_create_nodeset_group_from_name_internal(
-	Cmiss_field_module_id field_module, const char *nodeset_group_name);
+cmzn_nodeset_group_id cmzn_field_module_create_nodeset_group_from_name_internal(
+	cmzn_field_module_id field_module, const char *nodeset_group_name);
 
 #endif /* !defined (CMISS_NODE_PRIVATE_HPP) */

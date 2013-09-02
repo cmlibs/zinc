@@ -47,36 +47,36 @@
 #include "computed_field/computed_field_group_base.hpp"
 #include "general/message.h"
 
-static void  Cmiss_selection_handler_callback(
+static void  cmzn_selection_handler_callback(
 	struct MANAGER_MESSAGE(Computed_field) *message,void *selection_handler_void);
 
-struct Cmiss_selection_event
+struct cmzn_selection_event
 {
-	enum Cmiss_selection_change_type change_type;
+	enum cmzn_selection_change_type change_type;
 	int owning_scene_destroyed, access_count;
 
-	Cmiss_selection_event() :
+	cmzn_selection_event() :
 		change_type(CMISS_SELECTION_NO_CHANGE),
 		owning_scene_destroyed(0),
 		access_count(1)
 	{
 	}
 
-	~Cmiss_selection_event()
+	~cmzn_selection_event()
 	{
 	}
 };
 
-struct Cmiss_selection_handler
+struct cmzn_selection_handler
 {
 	int hierarchical_flag;
-	Cmiss_scene_id scene;
-	Cmiss_selection_handler_callback_function function;
+	cmzn_scene_id scene;
+	cmzn_selection_handler_callback_function function;
 	void *user_data;
 	void *callback_id;
 	int owning_scene_destroyed, access_count;
 
-	Cmiss_selection_handler() :
+	cmzn_selection_handler() :
 		hierarchical_flag(0),
 		scene(NULL),
 		function(NULL),
@@ -87,31 +87,31 @@ struct Cmiss_selection_handler
 	{
 	}
 
-	~Cmiss_selection_handler()
+	~cmzn_selection_handler()
 	{
 		clear();
 	}
 
-	void set_scene(struct Cmiss_scene *scene_in)
+	void set_scene(struct cmzn_scene *scene_in)
 	{
 		scene = scene_in;
 	}
 
-	int set_callback(Cmiss_selection_handler_callback_function function_in,
+	int set_callback(cmzn_selection_handler_callback_function function_in,
 		void *user_data_in)
 	{
 		remove_manager_callback();
 		function = function_in;
 		user_data = user_data_in;
 		int return_code = 0;
-		Cmiss_region_id region = Cmiss_scene_get_region(scene);
+		cmzn_region_id region = cmzn_scene_get_region(scene);
 		if (region)
 		{
-			struct MANAGER(Computed_field) *field_manager = Cmiss_region_get_Computed_field_manager(region);
+			struct MANAGER(Computed_field) *field_manager = cmzn_region_get_Computed_field_manager(region);
 			if (field_manager)
 			{
 				callback_id = MANAGER_REGISTER(Computed_field)(
-					Cmiss_selection_handler_callback, (void *)this,	field_manager);
+					cmzn_selection_handler_callback, (void *)this,	field_manager);
 				return_code = (callback_id != NULL);
 			}
 		}
@@ -132,10 +132,10 @@ struct Cmiss_selection_handler
 	{
 		if (callback_id && scene)
 		{
-			Cmiss_region_id region = Cmiss_scene_get_region(scene);
+			cmzn_region_id region = cmzn_scene_get_region(scene);
 			if (region)
 			{
-				struct MANAGER(Computed_field) *field_manager = Cmiss_region_get_Computed_field_manager(region);
+				struct MANAGER(Computed_field) *field_manager = cmzn_region_get_Computed_field_manager(region);
 				if (field_manager && callback_id)
 				{
 					MANAGER_DEREGISTER(Computed_field)(callback_id, field_manager);
@@ -161,11 +161,11 @@ namespace {
  * Frees the memory for the selection_handlers of <*selection_handler_address>.
  * Sets *selection_handler_address to NULL.
  */
-int DESTROY(Cmiss_selection_handler)(struct Cmiss_selection_handler **selection_handler_address)
+int DESTROY(cmzn_selection_handler)(struct cmzn_selection_handler **selection_handler_address)
 {
 	int return_code;
 
-	ENTER(DESTROY(Cmiss_selection_handler));
+	ENTER(DESTROY(cmzn_selection_handler));
 	if (selection_handler_address && (*selection_handler_address))
 	{
 		delete *selection_handler_address;
@@ -174,7 +174,7 @@ int DESTROY(Cmiss_selection_handler)(struct Cmiss_selection_handler **selection_
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_selection_handler).  Invalid argument");
+		display_message(ERROR_MESSAGE,"DESTROY(cmzn_selection_handler).  Invalid argument");
 		return_code = 0;
 	}
 	LEAVE;
@@ -182,7 +182,7 @@ int DESTROY(Cmiss_selection_handler)(struct Cmiss_selection_handler **selection_
 	return (return_code);
 }
 
-int DESTROY(Cmiss_selection_event)(struct Cmiss_selection_event **selection_event_address)
+int DESTROY(cmzn_selection_event)(struct cmzn_selection_event **selection_event_address)
 {
 	int return_code;
 
@@ -203,22 +203,22 @@ int DESTROY(Cmiss_selection_event)(struct Cmiss_selection_event **selection_even
 
 } /* anonymous namespace */
 
-static void Cmiss_selection_handler_callback(
+static void cmzn_selection_handler_callback(
 	struct MANAGER_MESSAGE(Computed_field) *message,void *selection_handler_void)
 {
 	if (message)
 	{
 		int selection_changed = 0;
-		struct Cmiss_selection_handler *selection_handler = (struct Cmiss_selection_handler *)selection_handler_void;
-		const Cmiss_field_change_detail *source_change_detail = NULL;
+		struct cmzn_selection_handler *selection_handler = (struct cmzn_selection_handler *)selection_handler_void;
+		const cmzn_field_change_detail *source_change_detail = NULL;
 		if (selection_handler && selection_handler->scene)
 		{
-			Cmiss_field_group_id group_field = Cmiss_scene_get_selection_group(selection_handler->scene);
+			cmzn_field_group_id group_field = cmzn_scene_get_selection_group(selection_handler->scene);
 			if (group_field)
 			{
 				int change = Computed_field_manager_message_get_object_change_and_detail(
-					message, Cmiss_field_group_base_cast(group_field), &source_change_detail);
-				Cmiss_selection_event_id event = new Cmiss_selection_event();
+					message, cmzn_field_group_base_cast(group_field), &source_change_detail);
+				cmzn_selection_event_id event = new cmzn_selection_event();
 				event->change_type = CMISS_SELECTION_NO_CHANGE;
 				if (change & MANAGER_CHANGE_RESULT(Computed_field))
 				{
@@ -238,9 +238,9 @@ static void Cmiss_selection_handler_callback(
 				{
 					if (source_change_detail)
 					{
-						const Cmiss_field_group_base_change_detail *group_change_detail =
-							dynamic_cast<const Cmiss_field_group_base_change_detail *>(source_change_detail);
-						Cmiss_field_group_change_type group_change = CMISS_FIELD_GROUP_NO_CHANGE;
+						const cmzn_field_group_base_change_detail *group_change_detail =
+							dynamic_cast<const cmzn_field_group_base_change_detail *>(source_change_detail);
+						cmzn_field_group_change_type group_change = CMISS_FIELD_GROUP_NO_CHANGE;
 						if (selection_handler->hierarchical_flag)
 							group_change = group_change_detail->getChange();
 						else
@@ -273,15 +273,15 @@ static void Cmiss_selection_handler_callback(
 					if (event->change_type != CMISS_SELECTION_NO_CHANGE)
 						(selection_handler->function)(event, selection_handler->user_data);
 				}
-				Cmiss_selection_event_destroy(&event);
-				Cmiss_field_group_destroy(&group_field);
+				cmzn_selection_event_destroy(&event);
+				cmzn_field_group_destroy(&group_field);
 			}
 		}
 	}
 }
 
-int Cmiss_selection_handler_set_scene(Cmiss_selection_handler_id selection_handler,
-	struct Cmiss_scene *scene_in)
+int cmzn_selection_handler_set_scene(cmzn_selection_handler_id selection_handler,
+	struct cmzn_scene *scene_in)
 {
 	if (selection_handler && scene_in)
 	{
@@ -292,7 +292,7 @@ int Cmiss_selection_handler_set_scene(Cmiss_selection_handler_id selection_handl
 	return 0;
 }
 
-int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id selection_handler)
+int cmzn_selection_handler_get_hierarchical(cmzn_selection_handler_id selection_handler)
 {
 	if (selection_handler)
 	{
@@ -304,7 +304,7 @@ int Cmiss_selection_handler_get_hierarchical(Cmiss_selection_handler_id selectio
 	}
 }
 
-int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id selection_handler,
+int cmzn_selection_handler_set_hierarchical(cmzn_selection_handler_id selection_handler,
 	int hierarchical_flag)
 {
 	if (selection_handler)
@@ -316,8 +316,8 @@ int Cmiss_selection_handler_set_hierarchical(Cmiss_selection_handler_id selectio
 	return 0;
 }
 
-int Cmiss_selection_handler_set_callback(Cmiss_selection_handler_id selection_handler,
-	Cmiss_selection_handler_callback_function function_in, void *user_data_in)
+int cmzn_selection_handler_set_callback(cmzn_selection_handler_id selection_handler,
+	cmzn_selection_handler_callback_function function_in, void *user_data_in)
 {
 	if (selection_handler && function_in)
 	{
@@ -330,7 +330,7 @@ int Cmiss_selection_handler_set_callback(Cmiss_selection_handler_id selection_ha
 /***************************************************************************//**
  * Clear callback.
  */
-int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_handler)
+int cmzn_selection_handler_clear_callback(cmzn_selection_handler_id selection_handler)
 {
 	if (selection_handler)
 	{
@@ -339,51 +339,51 @@ int Cmiss_selection_handler_clear_callback(Cmiss_selection_handler_id selection_
 	return 0;
 }
 
-DECLARE_OBJECT_FUNCTIONS(Cmiss_selection_handler);
+DECLARE_OBJECT_FUNCTIONS(cmzn_selection_handler);
 
-Cmiss_selection_handler_id Cmiss_selection_handler_access(
-	Cmiss_selection_handler_id selection_handler)
+cmzn_selection_handler_id cmzn_selection_handler_access(
+	cmzn_selection_handler_id selection_handler)
 {
-	return ACCESS(Cmiss_selection_handler)(selection_handler);
+	return ACCESS(cmzn_selection_handler)(selection_handler);
 }
 
-int Cmiss_selection_handler_destroy(Cmiss_selection_handler_id *selection_handler_address)
+int cmzn_selection_handler_destroy(cmzn_selection_handler_id *selection_handler_address)
 {
-	return DEACCESS(Cmiss_selection_handler)(selection_handler_address);
+	return DEACCESS(cmzn_selection_handler)(selection_handler_address);
 }
 
-DECLARE_OBJECT_FUNCTIONS(Cmiss_selection_event);
+DECLARE_OBJECT_FUNCTIONS(cmzn_selection_event);
 
-Cmiss_selection_event_id Cmiss_selection_event_access(
-	Cmiss_selection_event_id selection_event)
+cmzn_selection_event_id cmzn_selection_event_access(
+	cmzn_selection_event_id selection_event)
 {
-	return ACCESS(Cmiss_selection_event)(selection_event);
+	return ACCESS(cmzn_selection_event)(selection_event);
 }
 
-int Cmiss_selection_event_destroy(Cmiss_selection_event_id *selection_event_address)
+int cmzn_selection_event_destroy(cmzn_selection_event_id *selection_event_address)
 {
-	return DEACCESS(Cmiss_selection_event)(selection_event_address);
+	return DEACCESS(cmzn_selection_event)(selection_event_address);
 }
 
-enum Cmiss_selection_change_type Cmiss_selection_event_get_change_type(
-	Cmiss_selection_event_id selection_event)
+enum cmzn_selection_change_type cmzn_selection_event_get_change_type(
+	cmzn_selection_event_id selection_event)
 {
 	return selection_event->change_type;
 }
 
-int Cmiss_selection_event_owning_scene_is_destroyed(
-		Cmiss_selection_event_id selection_event)
+int cmzn_selection_event_owning_scene_is_destroyed(
+		cmzn_selection_event_id selection_event)
 	{
 		return selection_event->owning_scene_destroyed;
 	}
 
-Cmiss_selection_handler_id Cmiss_selection_handler_create_private()
+cmzn_selection_handler_id cmzn_selection_handler_create_private()
 {
-	Cmiss_selection_handler_id handler = new Cmiss_selection_handler();
+	cmzn_selection_handler_id handler = new cmzn_selection_handler();
 	return handler;
 }
 
-int Cmiss_selection_handler_scene_destroyed(Cmiss_selection_handler_id selection_handler)
+int cmzn_selection_handler_scene_destroyed(cmzn_selection_handler_id selection_handler)
 {
 	if (selection_handler && selection_handler->function)
 	{
@@ -391,11 +391,11 @@ int Cmiss_selection_handler_scene_destroyed(Cmiss_selection_handler_id selection
 		selection_handler->scene = NULL;
 		if (selection_handler->function)
 		{
-			Cmiss_selection_event_id event = new Cmiss_selection_event();
+			cmzn_selection_event_id event = new cmzn_selection_event();
 			event->change_type = CMISS_SELECTION_NO_CHANGE;
 			event->owning_scene_destroyed = 1;
 			(selection_handler->function)(event, selection_handler->user_data);
-			Cmiss_selection_event_destroy(&event);
+			cmzn_selection_event_destroy(&event);
 		}
 		selection_handler->remove_manager_callback();
 	}
@@ -403,7 +403,7 @@ int Cmiss_selection_handler_scene_destroyed(Cmiss_selection_handler_id selection
 	return 0;
 }
 
-char *Cmiss_selection_event_type_enum_to_string(enum Cmiss_selection_change_type type)
+char *cmzn_selection_event_type_enum_to_string(enum cmzn_selection_change_type type)
 {
 	char *string = NULL;
 	if (0 < type && type <= 4)

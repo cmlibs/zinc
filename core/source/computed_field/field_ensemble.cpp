@@ -41,12 +41,12 @@
 #include "general/message.h"
 #include "computed_field/field_ensemble.hpp"
 
-namespace Cmiss
+namespace cmzn
 {
 
 Field_ensemble::~Field_ensemble()
 {
-	Cmiss_ensemble_iterator *iterator;
+	cmzn_ensemble_iterator *iterator;
 	while (availableIterators)
 	{
 		iterator = availableIterators->next;
@@ -70,7 +70,7 @@ const char *Field_ensemble::get_type_string()
 	return (field_ensemble_type_string);
 }
 
-int Field_ensemble::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Field_ensemble::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	USE_PARAMETER(cache);
 	USE_PARAMETER(inValueCache);
@@ -79,7 +79,7 @@ int Field_ensemble::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueC
 	EnsembleEntryRef ref;
 	if (location.getEnsembleEntry(this, ref))
 	{
-		Cmiss_ensemble_identifier identifier = getIdentifier(ref);
+		cmzn_ensemble_identifier identifier = getIdentifier(ref);
 		if (0 < identifier)
 		{
 			valueCache.values[0] = static_cast<FE_value>(identifier);
@@ -114,7 +114,7 @@ void Field_ensemble::setNotContiguous()
 	{
 		contiguous = false;
 		// this can be optimised:
-		Cmiss_ensemble_identifier identifier = firstIdentifier;
+		cmzn_ensemble_identifier identifier = firstIdentifier;
 		for (EnsembleEntryRef ref = 0; ref < refCount; ++ref)
 		{
 			entries.setValue(ref, identifier);
@@ -125,7 +125,7 @@ void Field_ensemble::setNotContiguous()
 }
 
 /** private: caller must have checked identifier is not in use! */
-EnsembleEntryRef Field_ensemble::createEntryPrivate(Cmiss_ensemble_identifier identifier)
+EnsembleEntryRef Field_ensemble::createEntryPrivate(cmzn_ensemble_identifier identifier)
 {
 	if (identifier < 0)
 		return 0;
@@ -179,7 +179,7 @@ EnsembleEntryRef Field_ensemble::createEntry()
 }
 
 /** fails if identifier already in use */
-EnsembleEntryRef Field_ensemble::createEntry(Cmiss_ensemble_identifier identifier)
+EnsembleEntryRef Field_ensemble::createEntry(cmzn_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
 	if (ref >= 0)
@@ -188,7 +188,7 @@ EnsembleEntryRef Field_ensemble::createEntry(Cmiss_ensemble_identifier identifie
 }
 
 /** finds existing entry with identifier, or creates new one if none */
-EnsembleEntryRef Field_ensemble::findOrCreateEntry(Cmiss_ensemble_identifier identifier)
+EnsembleEntryRef Field_ensemble::findOrCreateEntry(cmzn_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
 	if (ref >= 0)
@@ -196,7 +196,7 @@ EnsembleEntryRef Field_ensemble::findOrCreateEntry(Cmiss_ensemble_identifier ide
 	return createEntryPrivate(identifier);
 }
 
-EnsembleEntryRef Field_ensemble::findEntryByIdentifier(Cmiss_ensemble_identifier identifier)
+EnsembleEntryRef Field_ensemble::findEntryByIdentifier(cmzn_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = CMISS_INVALID_ENSEMBLE_ENTRY_REF;
 	if (identifier >= 0)
@@ -228,7 +228,7 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 	if (contiguous)
 	{
 #if defined (FUTURE_CODE)
-		if (static_cast<Cmiss_ensemble_identifier>(ref) == lastIdentifier)
+		if (static_cast<cmzn_ensemble_identifier>(ref) == lastIdentifier)
 		{
 			lastIdentifier--;
 			firstFreeIdentifier--;
@@ -245,7 +245,7 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 		setNotContiguous();
 #endif
 	}
-	Cmiss_ensemble_identifier identifier;
+	cmzn_ensemble_identifier identifier;
 	if (entries.getValue(ref, identifier))
 	{
 		if (identifier >= 0)
@@ -276,7 +276,7 @@ int Field_ensemble::removeEntry(EnsembleEntryRef ref)
 	return 0;
 }
 
-int Field_ensemble::removeEntryWithIdentifier(Cmiss_ensemble_identifier identifier)
+int Field_ensemble::removeEntryWithIdentifier(cmzn_ensemble_identifier identifier)
 {
 	EnsembleEntryRef ref = findEntryByIdentifier(identifier);
 	if (ref >= 0)
@@ -284,13 +284,13 @@ int Field_ensemble::removeEntryWithIdentifier(Cmiss_ensemble_identifier identifi
 	return 0;
 }
 
-Cmiss_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef ref)
+cmzn_ensemble_identifier Field_ensemble::getEntryIdentifier(EnsembleEntryRef ref)
 {
-	Cmiss_ensemble_identifier identifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
+	cmzn_ensemble_identifier identifier = CMISS_INVALID_ENSEMBLE_IDENTIFIER;
 	if ((0 <= ref) && (ref < refCount))
 	{
 		if (contiguous)
-			identifier = firstIdentifier + static_cast<Cmiss_ensemble_identifier>(ref);
+			identifier = firstIdentifier + static_cast<cmzn_ensemble_identifier>(ref);
 		else
 			entries.getValue(ref, identifier);
 	}
@@ -317,14 +317,14 @@ EnsembleEntryRef Field_ensemble::getNextEntryRef(EnsembleEntryRef ref)
 		}
 		else
 		{
-			Cmiss_ensemble_identifier identifier = getEntryIdentifier(ref);
+			cmzn_ensemble_identifier identifier = getEntryIdentifier(ref);
 			if (0 <= identifier)
 			{
 				// optimisation: check if ref+1 -> identifier+1 so it is next
 				if (getEntryIdentifier(ref + 1) == (identifier + 1))
 					return (ref + 1);
 				// O(logN) slow:
-				// can be made more efficient by passing Cmiss_ensemble_iterator
+				// can be made more efficient by passing cmzn_ensemble_iterator
 				// to this function & keeping iterator in it
 				EnsembleEntryMapIterator iter = identifierMap.find(identifier);
 				iter++;
@@ -358,9 +358,9 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 	}
 	else
 	{
-		// can be made more efficient by passing Cmiss_ensemble_iterator
+		// can be made more efficient by passing cmzn_ensemble_iterator
 		// to this function & keeping iterator in it
-		Cmiss_ensemble_identifier identifier = getEntryIdentifier(newRef);
+		cmzn_ensemble_identifier identifier = getEntryIdentifier(newRef);
 		EnsembleEntryMapIterator iter = identifierMap.find(identifier);
 		do
 		{
@@ -376,11 +376,11 @@ EnsembleEntryRef Field_ensemble::getNextEntryRefBoolTrue(EnsembleEntryRef ref,
 	return newRef;
 }
 
-Cmiss_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef ref)
+cmzn_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef ref)
 {
 	if (CMISS_INVALID_ENSEMBLE_IDENTIFIER == getEntryIdentifier(ref))
 		return NULL;
-	Cmiss_ensemble_iterator *iterator = NULL;
+	cmzn_ensemble_iterator *iterator = NULL;
 	if (availableIterators)
 	{
 		iterator = availableIterators;
@@ -390,7 +390,7 @@ Cmiss_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef
 	}
 	else
 	{
-		ALLOCATE(iterator, Cmiss_ensemble_iterator, 1);
+		ALLOCATE(iterator, cmzn_ensemble_iterator, 1);
 	}
 	if (iterator)
 	{
@@ -406,7 +406,7 @@ Cmiss_ensemble_iterator *Field_ensemble::createEnsembleIterator(EnsembleEntryRef
 }
 
 /* static */
-void Field_ensemble::freeEnsembleIterator(Cmiss_ensemble_iterator *&iterator)
+void Field_ensemble::freeEnsembleIterator(cmzn_ensemble_iterator *&iterator)
 {
 	if (iterator && iterator->ensemble)
 	{
@@ -437,7 +437,7 @@ const char *Field_ensemble_group::get_type_string()
 	return (field_ensemble_group_type_string);
 }
 
-int Field_ensemble_group::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Field_ensemble_group::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	USE_PARAMETER(cache);
 	USE_PARAMETER(inValueCache);
@@ -467,27 +467,27 @@ int Field_ensemble_group::list()
 	return (1);
 }
 
-} // namespace Cmiss
+} // namespace cmzn
 
-Cmiss_field *Cmiss_field_module_create_ensemble(
-	Cmiss_field_module *field_module)
+cmzn_field *cmzn_field_module_create_ensemble(
+	cmzn_field_module *field_module)
 {
-	Cmiss_field *field = Computed_field_create_generic(field_module,
+	cmzn_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/false,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/0, NULL,
 		/*number_of_source_values*/0, NULL,
-		new Cmiss::Field_ensemble());
+		new cmzn::Field_ensemble());
 
 	return (field);
 }
 
-Cmiss_field_ensemble *Cmiss_field_cast_ensemble(Cmiss_field_id field)
+cmzn_field_ensemble *cmzn_field_cast_ensemble(cmzn_field_id field)
 {
-	if (field && (dynamic_cast<Cmiss::Field_ensemble*>(field->core)))
+	if (field && (dynamic_cast<cmzn::Field_ensemble*>(field->core)))
 	{
-		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_ensemble *>(field));
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_ensemble *>(field));
 	}
 	else
 	{
@@ -495,59 +495,59 @@ Cmiss_field_ensemble *Cmiss_field_cast_ensemble(Cmiss_field_id field)
 	}
 }
 
-int Cmiss_field_ensemble_destroy(Cmiss_field_ensemble_id *ensemble_address)
+int cmzn_field_ensemble_destroy(cmzn_field_ensemble_id *ensemble_address)
 {
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(ensemble_address));
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(ensemble_address));
 }
 
-Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry(
-	Cmiss_field_ensemble *ensemble_field)
+cmzn_ensemble_iterator *cmzn_field_ensemble_create_entry(
+	cmzn_field_ensemble *ensemble_field)
 {
-	Cmiss_ensemble_iterator *iterator = NULL;
+	cmzn_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
-		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
-		Cmiss::EnsembleEntryRef ref = ensemble->createEntry();
+		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
+		cmzn::EnsembleEntryRef ref = ensemble->createEntry();
 		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
 
-Cmiss_ensemble_iterator *Cmiss_field_ensemble_create_entry_with_identifier(
-	Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
+cmzn_ensemble_iterator *cmzn_field_ensemble_create_entry_with_identifier(
+	cmzn_field_ensemble *ensemble_field, cmzn_ensemble_identifier identifier)
 {
-	Cmiss_ensemble_iterator *iterator = NULL;
+	cmzn_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
-		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
-		Cmiss::EnsembleEntryRef ref = ensemble->createEntry(identifier);
+		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
+		cmzn::EnsembleEntryRef ref = ensemble->createEntry(identifier);
 		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
 
-Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_entry_by_identifier(
-	Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
+cmzn_ensemble_iterator *cmzn_field_ensemble_find_entry_by_identifier(
+	cmzn_field_ensemble *ensemble_field, cmzn_ensemble_identifier identifier)
 {
-	Cmiss_ensemble_iterator *iterator = NULL;
+	cmzn_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
-		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
-		Cmiss::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
+		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
+		cmzn::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
 		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
 
-Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
-	Cmiss_field_ensemble *ensemble_field, Cmiss_ensemble_identifier identifier)
+cmzn_ensemble_iterator *cmzn_field_ensemble_find_or_create_entry(
+	cmzn_field_ensemble *ensemble_field, cmzn_ensemble_identifier identifier)
 {
-	Cmiss_ensemble_iterator *iterator = NULL;
+	cmzn_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
-		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
-		Cmiss::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
-		if (Cmiss::CMISS_INVALID_ENSEMBLE_ENTRY_REF == ref)
+		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
+		cmzn::EnsembleEntryRef ref = ensemble->findEntryByIdentifier(identifier);
+		if (cmzn::CMISS_INVALID_ENSEMBLE_ENTRY_REF == ref)
 		{
 			ref = ensemble->createEntry(identifier);
 		}
@@ -556,42 +556,42 @@ Cmiss_ensemble_iterator *Cmiss_field_ensemble_find_or_create_entry(
 	return (iterator);
 }
 
-Cmiss_ensemble_iterator *Cmiss_field_ensemble_get_first_entry(
-	Cmiss_field_ensemble *ensemble_field)
+cmzn_ensemble_iterator *cmzn_field_ensemble_get_first_entry(
+	cmzn_field_ensemble *ensemble_field)
 {
-	Cmiss_ensemble_iterator *iterator = NULL;
+	cmzn_ensemble_iterator *iterator = NULL;
 	if (ensemble_field)
 	{
-		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
-		Cmiss::EnsembleEntryRef ref = ensemble->getFirstEntryRef();
+		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
+		cmzn::EnsembleEntryRef ref = ensemble->getFirstEntryRef();
 		iterator = ensemble->createEnsembleIterator(ref);
 	}
 	return (iterator);
 }
 
-unsigned int Cmiss_field_ensemble_get_size(Cmiss_field_ensemble *ensemble_field)
+unsigned int cmzn_field_ensemble_get_size(cmzn_field_ensemble *ensemble_field)
 {
 	if (ensemble_field)
 	{
-		Cmiss::Field_ensemble *ensemble = Cmiss_field_ensemble_core_cast(ensemble_field);
+		cmzn::Field_ensemble *ensemble = cmzn_field_ensemble_core_cast(ensemble_field);
 		return ensemble->size();
 	}
 	return (0);
 }
 
-int Cmiss_ensemble_iterator_destroy(Cmiss_ensemble_iterator **iterator_address)
+int cmzn_ensemble_iterator_destroy(cmzn_ensemble_iterator **iterator_address)
 {
 	if ((iterator_address) && (*iterator_address))
 	{
-		Cmiss::Field_ensemble::freeEnsembleIterator(*iterator_address);
+		cmzn::Field_ensemble::freeEnsembleIterator(*iterator_address);
 		return 1;
 	}
 	return 0;
 }
 
-Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(Cmiss_ensemble_iterator *iterator)
+cmzn_ensemble_identifier cmzn_ensemble_iterator_get_identifier(cmzn_ensemble_iterator *iterator)
 {
-	Cmiss_ensemble_identifier identifier = -1;
+	cmzn_ensemble_identifier identifier = -1;
 	if (iterator && (iterator->getEnsemble()))
 	{
 		identifier = iterator->getEnsemble()->getEntryIdentifier(iterator->getRef());
@@ -599,33 +599,33 @@ Cmiss_ensemble_identifier Cmiss_ensemble_iterator_get_identifier(Cmiss_ensemble_
 	return identifier;
 }
 
-int Cmiss_ensemble_iterator_increment(Cmiss_ensemble_iterator *iterator)
+int cmzn_ensemble_iterator_increment(cmzn_ensemble_iterator *iterator)
 {
-	return Cmiss::Field_ensemble::incrementEnsembleEntry(iterator);
+	return cmzn::Field_ensemble::incrementEnsembleEntry(iterator);
 }
 
-Cmiss_field *Cmiss_field_module_create_ensemble_group(
-	Cmiss_field_module *field_module, Cmiss_field_ensemble *ensemble_field)
+cmzn_field *cmzn_field_module_create_ensemble_group(
+	cmzn_field_module *field_module, cmzn_field_ensemble *ensemble_field)
 {
-	Cmiss_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (ensemble_field)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
-			/*number_of_source_fields*/1, reinterpret_cast<Cmiss_field **>(&ensemble_field),
+			/*number_of_source_fields*/1, reinterpret_cast<cmzn_field **>(&ensemble_field),
 			/*number_of_source_values*/0, NULL,
-			new Cmiss::Field_ensemble_group(Cmiss_field_ensemble_core_cast(ensemble_field)));
+			new cmzn::Field_ensemble_group(cmzn_field_ensemble_core_cast(ensemble_field)));
 	}
 	return (field);
 }
 
-Cmiss_field_ensemble_group *Cmiss_field_cast_ensemble_group(Cmiss_field_id field)
+cmzn_field_ensemble_group *cmzn_field_cast_ensemble_group(cmzn_field_id field)
 {
-	if (field && (dynamic_cast<Cmiss::Field_ensemble_group*>(field->core)))
+	if (field && (dynamic_cast<cmzn::Field_ensemble_group*>(field->core)))
 	{
-		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_ensemble_group *>(field));
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_ensemble_group *>(field));
 	}
 	else
 	{
@@ -633,58 +633,58 @@ Cmiss_field_ensemble_group *Cmiss_field_cast_ensemble_group(Cmiss_field_id field
 	}
 }
 
-int Cmiss_field_ensemble_group_clear(
-	Cmiss_field_ensemble_group *ensemble_group_field)
+int cmzn_field_ensemble_group_clear(
+	cmzn_field_ensemble_group *ensemble_group_field)
 {
 	if (NULL == ensemble_group_field)
 		return 0;
-	Cmiss::Field_ensemble_group *ensemble_group =
-		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	cmzn::Field_ensemble_group *ensemble_group =
+		cmzn_field_ensemble_group_core_cast(ensemble_group_field);
 	ensemble_group->clear();
 	return 1;
 }
 
-int Cmiss_field_ensemble_group_has_entry(
-	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
+int cmzn_field_ensemble_group_has_entry(
+	cmzn_field_ensemble_group *ensemble_group_field, cmzn_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
-	Cmiss::Field_ensemble_group *ensemble_group =
-		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	cmzn::Field_ensemble_group *ensemble_group =
+		cmzn_field_ensemble_group_core_cast(ensemble_group_field);
 	return ensemble_group->hasEntry(iterator);
 }
 
-int Cmiss_field_ensemble_group_add_entry(
-	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
+int cmzn_field_ensemble_group_add_entry(
+	cmzn_field_ensemble_group *ensemble_group_field, cmzn_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
-	Cmiss::Field_ensemble_group *ensemble_group =
-		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	cmzn::Field_ensemble_group *ensemble_group =
+		cmzn_field_ensemble_group_core_cast(ensemble_group_field);
 	return ensemble_group->setEntry(iterator, true);
 }
 
-int Cmiss_field_ensemble_group_remove_entry(
-	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
+int cmzn_field_ensemble_group_remove_entry(
+	cmzn_field_ensemble_group *ensemble_group_field, cmzn_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
-	Cmiss::Field_ensemble_group *ensemble_group =
-		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	cmzn::Field_ensemble_group *ensemble_group =
+		cmzn_field_ensemble_group_core_cast(ensemble_group_field);
 	return ensemble_group->setEntry(iterator, false);
 }
 
-int Cmiss_field_ensemble_group_increment_entry(
-	Cmiss_field_ensemble_group *ensemble_group_field, Cmiss_ensemble_iterator *iterator)
+int cmzn_field_ensemble_group_increment_entry(
+	cmzn_field_ensemble_group *ensemble_group_field, cmzn_ensemble_iterator *iterator)
 {
 	if ((NULL == ensemble_group_field) || (NULL == iterator))
 		return 0;
-	Cmiss::Field_ensemble_group *ensemble_group =
-		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	cmzn::Field_ensemble_group *ensemble_group =
+		cmzn_field_ensemble_group_core_cast(ensemble_group_field);
 	return ensemble_group->incrementEnsembleEntry(iterator);
 }
 
-int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index **index_address)
+int cmzn_ensemble_index_destroy(cmzn_ensemble_index **index_address)
 {
 	if ((index_address) && (*index_address))
 	{
@@ -695,8 +695,8 @@ int Cmiss_ensemble_index_destroy(Cmiss_ensemble_index **index_address)
 	return 0;
 }
 
-int Cmiss_ensemble_index_has_index_ensembles(Cmiss_ensemble_index *index,
-	int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+int cmzn_ensemble_index_has_index_ensembles(cmzn_ensemble_index *index,
+	int number_of_index_ensembles, cmzn_field_ensemble **index_ensemble_fields)
 {
 	if ((!index) || (number_of_index_ensembles < 0) ||
 		((0 < number_of_index_ensembles) && (!index_ensemble_fields)))
@@ -704,30 +704,30 @@ int Cmiss_ensemble_index_has_index_ensembles(Cmiss_ensemble_index *index,
 	return index->hasIndexEnsembles(number_of_index_ensembles, index_ensemble_fields);
 }
 
-int Cmiss_ensemble_index_set_all_ensemble(Cmiss_ensemble_index *index,
-	Cmiss_field_ensemble *ensemble_field)
+int cmzn_ensemble_index_set_all_ensemble(cmzn_ensemble_index *index,
+	cmzn_field_ensemble *ensemble_field)
 {
 	if ((!index) || (!ensemble_field))
 		return 0;
-	Cmiss::Field_ensemble *ensemble =
-		Cmiss_field_ensemble_core_cast(ensemble_field);
+	cmzn::Field_ensemble *ensemble =
+		cmzn_field_ensemble_core_cast(ensemble_field);
 	return index->setAllEnsemble(ensemble);
 }
 
-int Cmiss_ensemble_index_set_entry(Cmiss_ensemble_index *index,
-	Cmiss_ensemble_iterator *iterator)
+int cmzn_ensemble_index_set_entry(cmzn_ensemble_index *index,
+	cmzn_ensemble_iterator *iterator)
 {
 	if ((!index) || (!iterator))
 		return 0;
 	return index->setEntry(iterator);
 }
 
-int Cmiss_ensemble_index_set_group(Cmiss_ensemble_index *index,
-	Cmiss_field_ensemble_group *ensemble_group_field)
+int cmzn_ensemble_index_set_group(cmzn_ensemble_index *index,
+	cmzn_field_ensemble_group *ensemble_group_field)
 {
 	if ((!index) || (!ensemble_group_field))
 		return 0;
-	Cmiss::Field_ensemble_group *ensemble_group =
-		Cmiss_field_ensemble_group_core_cast(ensemble_group_field);
+	cmzn::Field_ensemble_group *ensemble_group =
+		cmzn_field_ensemble_group_core_cast(ensemble_group_field);
 	return index->setGroup(ensemble_group);
 }

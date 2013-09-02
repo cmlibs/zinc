@@ -50,10 +50,10 @@ and real values in any order into a single vector field.
 #include "zinc/fieldconstant.h"
 #include "zinc/fieldcomposite.h"
 
-#define Computed_field_create_constant Cmiss_field_module_create_constant
-#define Computed_field_create_identity Cmiss_field_module_create_identity
-#define Computed_field_create_component Cmiss_field_module_create_component
-#define Computed_field_create_concatenate Cmiss_field_module_create_concatenate
+#define Computed_field_create_constant cmzn_field_module_create_constant
+#define Computed_field_create_identity cmzn_field_module_create_identity
+#define Computed_field_create_component cmzn_field_module_create_component
+#define Computed_field_create_concatenate cmzn_field_module_create_concatenate
 
 struct Computed_field_composite_source_data
 /*******************************************************************************
@@ -110,7 +110,7 @@ struct Computed_field *Computed_field_manager_get_component_wrapper(
 	struct Computed_field *field, int component_number);
 
 struct Computed_field *Computed_field_create_constant(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	int number_of_values, const double *values);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -125,7 +125,7 @@ convenience function for building a composite field which has <number_of_values>
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_identity(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 13 May 2008
@@ -134,8 +134,8 @@ DESCRIPTION :
 Creates a constructor for COMPOSITE with one input field, the <source_field>.
 ==============================================================================*/
 
-struct Computed_field *Cmiss_field_module_create_component(
-	struct Cmiss_field_module *field_module,
+struct Computed_field *cmzn_field_module_create_component(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, int component_number);
 
 /**
@@ -160,7 +160,7 @@ struct Computed_field *Cmiss_field_module_create_component(
  * the same source data.
  */
 struct Computed_field *Computed_field_create_composite(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	int number_of_components,
 	int number_of_source_fields, struct Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
@@ -176,7 +176,7 @@ struct Computed_field *Computed_field_create_composite(
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_concatenate(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	int number_of_source_fields, struct Computed_field **source_fields);
 
 #endif /* !defined (COMPUTED_FIELD_COMPOSITE_H) */

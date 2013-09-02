@@ -65,7 +65,7 @@ int adjacent_FE_element_from_nodes(struct FE_element *element,
 	int node_index, int *number_of_adjacent_elements, 
 	struct FE_element ***adjacent_elements, 
 	struct LIST(Index_multi_range) *node_element_list,
-	Cmiss_mesh_id mesh);
+	cmzn_mesh_id mesh);
 /*******************************************************************************
 LAST MODIFIED : 13 March 2003
 
@@ -81,6 +81,6 @@ Note elements in adjacent_elements array are not accessed.
  * Creates a list indexed by node identifying elements which refer to each node.
  * @param mesh  Mesh to which elements must belong.
  */
-struct LIST(Index_multi_range) *create_node_element_list(Cmiss_mesh_id mesh);
+struct LIST(Index_multi_range) *create_node_element_list(cmzn_mesh_id mesh);
 
 #endif /* !defined (FINITE_ELEMENT_ADJACENT_ELEMENTS_H) */

@@ -53,10 +53,10 @@ DESCRIPTION :
  *
  * @return Return code indicating success (1) or failure (0)
 */
-int Cmiss_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
+int cmzn_field_get_type_binary_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *lower_threshold,
 	double *upper_threshold);
 
-Cmiss_field_binary_threshold_image_filter_id Cmiss_field_cast_binary_threshold_image_filter(Cmiss_field_id field);
+cmzn_field_binary_threshold_image_filter_id cmzn_field_cast_binary_threshold_image_filter(cmzn_field_id field);
 
 #endif /* !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H) */

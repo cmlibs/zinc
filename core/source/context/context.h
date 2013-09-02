@@ -45,23 +45,23 @@
 #include "zinc/context.h"
 #include "general/manager.h"
 
-#define Context Cmiss_context
+#define Context cmzn_context
 
 struct Context
 {
 	int access_count;
 	const char *id;
-	struct Cmiss_region *root_region;
+	struct cmzn_region *root_region;
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
-	struct Cmiss_graphics_module *graphics_module;
+	struct cmzn_graphics_module *graphics_module;
 	//-- struct User_interface_module *UI_module;
-	struct Cmiss_scene_viewer_module *scene_viewer_module;
+	struct cmzn_scene_viewer_module *scene_viewer_module;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
-	struct Cmiss_time_keeper *time_keeper;
+	struct cmzn_time_keeper *time_keeper;
 	struct MANAGER(Curve) *curve_manager;
 };
 
@@ -72,7 +72,7 @@ struct Context
  * @param context  Pointer to a cmiss_context object.
  * @return  the any_object_selection if successfully, otherwise NULL.
  */
-struct Any_object_selection *Cmiss_context_get_any_object_selection(
+struct Any_object_selection *cmzn_context_get_any_object_selection(
 	struct Context *context);
 
 /***************************************************************************//**
@@ -81,7 +81,7 @@ struct Any_object_selection *Cmiss_context_get_any_object_selection(
  * @param context  Pointer to a cmiss_context object.
  * @return  the Element_point_ranges_selection if successfully, otherwise NULL.
  */
-struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_selection(
+struct Element_point_ranges_selection *cmzn_context_get_element_point_ranges_selection(
 	struct Context *context);
 
 /***************************************************************************//**
@@ -90,7 +90,7 @@ struct Element_point_ranges_selection *Cmiss_context_get_element_point_ranges_se
  * @param context  Pointer to a cmiss_context object.
  * @return  the default IO_stream_package if successfully, otherwise NULL.
  */
-struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
+struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
 	struct Context *context);
 
 /***************************************************************************//**
@@ -99,7 +99,7 @@ struct IO_stream_package *Cmiss_context_get_default_IO_stream_package(
  * @param context  Pointer to a cmiss_context object.
  * @return  the default curve_manager if successfully, otherwise NULL.
  */
-struct MANAGER(Curve) *Cmiss_context_get_default_curve_manager(
-	Cmiss_context_id context);
+struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(
+	cmzn_context_id context);
 
 #endif /* !defined (CONTEXT_H) */

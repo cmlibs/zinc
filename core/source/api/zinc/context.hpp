@@ -53,31 +53,31 @@ class Context
 {
 private:
 
-	Cmiss_context_id id;
+	cmzn_context_id id;
 
 public:
 
 	Context() : id(0)
 	{ }
-	// Creates a new Cmiss Context instance
+	// Creates a new cmzn Context instance
 	Context(const char *contextName) :
-		id(Cmiss_context_create(contextName))
+		id(cmzn_context_create(contextName))
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Context(Cmiss_context_id context_id) :
+	explicit Context(cmzn_context_id context_id) :
 		id(context_id)
 	{ }
 
 	Context(const Context& context) :
-		id(Cmiss_context_access(context.id))
+		id(cmzn_context_access(context.id))
 	{ }
 
 	~Context()
 	{
 		if (0 != id)
 		{
-			Cmiss_context_destroy(&id);
+			cmzn_context_destroy(&id);
 		}
 	}
 
@@ -88,38 +88,38 @@ public:
 
 	Context& operator=(const Context& context)
 	{
-		Cmiss_context_id temp_id = Cmiss_context_access(context.id);
+		cmzn_context_id temp_id = cmzn_context_access(context.id);
 		if (0 != id)
 		{
-			Cmiss_context_destroy(&id);
+			cmzn_context_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	Cmiss_context_id getId()
+	cmzn_context_id getId()
 	{
 		return id;
 	}
 
 	Region getDefaultRegion()
 	{
-		return Region(Cmiss_context_get_default_region(id));
+		return Region(cmzn_context_get_default_region(id));
 	}
 
 	Region createRegion()
 	{
-		return Region(Cmiss_context_create_region(id));
+		return Region(cmzn_context_create_region(id));
 	}
 
 	GraphicsModule getGraphicsModule()
 	{
-		return GraphicsModule(Cmiss_context_get_graphics_module(id));
+		return GraphicsModule(cmzn_context_get_graphics_module(id));
 	}
 
 	TimeKeeper getDefaultTimeKeeper()
 	{
-		return TimeKeeper(Cmiss_context_get_default_time_keeper(id));
+		return TimeKeeper(cmzn_context_get_default_time_keeper(id));
 	}
 
 };

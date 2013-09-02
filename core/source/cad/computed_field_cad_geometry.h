@@ -47,18 +47,18 @@ extern "C" {
 }
 #include "cad/geometricshape.h"
 
-#define Computed_field_create_cad_geometry Cmiss_field_create_cad_geometry
+#define Computed_field_create_cad_geometry cmzn_field_create_cad_geometry
 
-struct Cmiss_field_cad_geometry;
+struct cmzn_field_cad_geometry;
 
-typedef struct Cmiss_field_cad_geometry *Cmiss_field_cad_geometry_id;
+typedef struct cmzn_field_cad_geometry *cmzn_field_cad_geometry_id;
 
-//Cmiss_field_id Computed_field_create_cad_geometry( Cmiss_field_id field, GeometricShape *shape );
-Cmiss_field_id Computed_field_module_create_cad_geometry(Cmiss_field_module_id field_module, Cmiss_field_id cad_topology_field);
+//cmzn_field_id Computed_field_create_cad_geometry( cmzn_field_id field, GeometricShape *shape );
+cmzn_field_id Computed_field_module_create_cad_geometry(cmzn_field_module_id field_module, cmzn_field_id cad_topology_field);
 
-Cmiss_field_cad_geometry_id Cmiss_field_cad_geometry_cast(Cmiss_field_id cad_geometry_field);
+cmzn_field_cad_geometry_id cmzn_field_cad_geometry_cast(cmzn_field_id cad_geometry_field);
 
-int Cmiss_field_is_cad_geometry(Cmiss_field_id field, void *not_in_use);
+int cmzn_field_is_cad_geometry(cmzn_field_id field, void *not_in_use);
 
 #endif /* !defined (COMPUTED_FIELD_CAD_GEOMETRY_H) */
 

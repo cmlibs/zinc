@@ -59,12 +59,12 @@ extern "C" {
  * Describes the format for storage.
  * Whether a particular format is actually available depends on whether
  * it is compatible with a particular format type when used with
- * #Cmiss_field_image_get_formatted_image_data and whether support for that combination
+ * #cmzn_field_image_get_formatted_image_data and whether support for that combination
  * has been included when the program was built.
  * This is a small subset of formats available, more can be selected by specifying
- * the appropriate format_string for a Cmiss_stream_information_image.
+ * the appropriate format_string for a cmzn_stream_information_image.
  */
-enum Cmiss_stream_information_image_file_format
+enum cmzn_stream_information_image_file_format
 {
 	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID = 0,
 	CMISS_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP = 1,
@@ -83,24 +83,24 @@ enum Cmiss_stream_information_image_file_format
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_stream_information_image_file_format
-	Cmiss_stream_information_image_file_format_enum_from_string(const char *string);
+ZINC_API enum cmzn_stream_information_image_file_format
+	cmzn_stream_information_image_file_format_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param format  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_stream_information_image_file_format_enum_to_string(
-	enum Cmiss_stream_information_image_file_format format);
+ZINC_API char *cmzn_stream_information_image_file_format_enum_to_string(
+	enum cmzn_stream_information_image_file_format format);
 
 /***************************************************************************//**
  * Describes the blending of the texture with the texture constant colour and
  * the underlying fragment colour
  */
-enum Cmiss_field_image_combine_mode
+enum cmzn_field_image_combine_mode
 {
 	CMISS_FIELD_IMAGE_COMBINE_INVALID = 0,
 	CMISS_FIELD_IMAGE_COMBINE_BLEND = 1,
@@ -126,24 +126,24 @@ enum Cmiss_field_image_combine_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_field_image_combine_mode
-	Cmiss_field_image_combine_mode_enum_from_string(const char *string);
+ZINC_API enum cmzn_field_image_combine_mode
+	cmzn_field_image_combine_mode_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_field_image_combine_mode_enum_to_string(
-	enum Cmiss_field_image_combine_mode mode);
+ZINC_API char *cmzn_field_image_combine_mode_enum_to_string(
+	enum cmzn_field_image_combine_mode mode);
 
 /***************************************************************************//**
  * Whether the texture is compressed.  Could add specific compression formats that
  * are explictly requested from the hardware.
  */
-enum Cmiss_field_image_hardware_compression_mode
+enum cmzn_field_image_hardware_compression_mode
 {
 	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID = 0,
 	CMISS_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = 1,
@@ -158,23 +158,23 @@ enum Cmiss_field_image_hardware_compression_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_field_image_hardware_compression_mode
-	Cmiss_field_image_hardware_compression_mode_enum_from_string(const char *string);
+ZINC_API enum cmzn_field_image_hardware_compression_mode
+	cmzn_field_image_hardware_compression_mode_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_field_image_hardware_compression_mode_enum_to_string(
-	enum Cmiss_field_image_hardware_compression_mode mode);
+ZINC_API char *cmzn_field_image_hardware_compression_mode_enum_to_string(
+	enum cmzn_field_image_hardware_compression_mode mode);
 
 /***************************************************************************//**
  * Specfiy how the graphics hardware rasterises the texture onto the screen.
  */
-enum Cmiss_field_image_filter_mode
+enum cmzn_field_image_filter_mode
 {
 	CMISS_FIELD_IMAGE_FILTER_INVALID = 0,
 	CMISS_FIELD_IMAGE_FILTER_NEAREST = 1,
@@ -191,24 +191,24 @@ enum Cmiss_field_image_filter_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_field_image_filter_mode Cmiss_field_image_filter_mode_enum_from_string(
+ZINC_API enum cmzn_field_image_filter_mode cmzn_field_image_filter_mode_enum_from_string(
 		const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_field_image_filter_mode_enum_to_string(
-	enum Cmiss_field_image_filter_mode mode);
+ZINC_API char *cmzn_field_image_filter_mode_enum_to_string(
+	enum cmzn_field_image_filter_mode mode);
 
 /**
  * Describes how the image is to be wrapped when texture coordinate is assigned
  * outside the range [0,1], you can choose to have them clamp or repeat.
  */
-enum Cmiss_field_image_wrap_mode
+enum cmzn_field_image_wrap_mode
 {
 	CMISS_FIELD_IMAGE_WRAP_INVALID = 0,
 	CMISS_FIELD_IMAGE_WRAP_CLAMP = 1,/*!< With repeating textures and when texture
@@ -231,20 +231,20 @@ enum Cmiss_field_image_wrap_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_field_image_wrap_mode
-	Cmiss_field_image_wrap_mode_enum_from_string(const char *string);
+ZINC_API enum cmzn_field_image_wrap_mode
+	cmzn_field_image_wrap_mode_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param mode  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_field_image_wrap_mode_enum_to_string(
-	enum Cmiss_field_image_wrap_mode mode);
+ZINC_API char *cmzn_field_image_wrap_mode_enum_to_string(
+	enum cmzn_field_image_wrap_mode mode);
 
-enum Cmiss_field_image_attribute
+enum cmzn_field_image_attribute
 {
 	CMISS_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
 	CMISS_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
@@ -262,18 +262,18 @@ enum Cmiss_field_image_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_field_image_attribute Cmiss_field_image_attribute_enum_from_string(
+ZINC_API enum cmzn_field_image_attribute cmzn_field_image_attribute_enum_from_string(
 	const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_field_image_attribute_enum_to_string(
-	enum Cmiss_field_image_attribute attribute);
+ZINC_API char *cmzn_field_image_attribute_enum_to_string(
+	enum cmzn_field_image_attribute attribute);
 
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
@@ -282,24 +282,24 @@ ZINC_API char *Cmiss_field_image_attribute_enum_to_string(
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_stream_information_image_pixel_format
-	Cmiss_stream_information_image_pixel_format_enum_from_string(
+ZINC_API enum cmzn_stream_information_image_pixel_format
+	cmzn_stream_information_image_pixel_format_enum_from_string(
 		const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param format  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_stream_information_image_pixel_format_enum_to_string(
-	enum Cmiss_stream_information_image_pixel_format format);
+ZINC_API char *cmzn_stream_information_image_pixel_format_enum_to_string(
+	enum cmzn_stream_information_image_pixel_format format);
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
  * actual image data if no source_field is provided, which should then be set using
- * a Cmiss_field_image_set_* function.
+ * a cmzn_field_image_set_* function.
  * If a source_field is provided, an internal texture will be evaluated if it has
  * sizes and dimension defined. If domain field is not provided by the user,
  * this function will try to take the texture coordinates field from the source
@@ -318,8 +318,8 @@ ZINC_API char *Cmiss_stream_information_image_pixel_format_enum_to_string(
  * values to the image.
  * @return Newly created field
 */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_image(Cmiss_field_module_id field_module,
-	Cmiss_field_id domain_field, Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_image(cmzn_field_module_id field_module,
+	cmzn_field_id domain_field, cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns
@@ -330,22 +330,22 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_image(Cmiss_field_module_id fi
  * @return  Image field specific representation if the input is the correct
  * field type, otherwise returns NULL.
  */
-ZINC_API Cmiss_field_image_id Cmiss_field_cast_image(Cmiss_field_id image_field);
+ZINC_API cmzn_field_image_id cmzn_field_cast_image(cmzn_field_id image_field);
 
 /***************************************************************************//**
  * Cast image field back to its base field and return the field.
  * IMPORTANT NOTE: Returned field does not have incremented reference count and
- * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the image argument.
  * Use this function to call base-class API, e.g.:
- * Cmiss_field_set_name(Cmiss_field_iamge_base_cast(image_field), "bob");
+ * cmzn_field_set_name(cmzn_field_iamge_base_cast(image_field), "bob");
  *
  * @param image  Handle to the image field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_image_base_cast(Cmiss_field_image_id image)
+ZINC_C_INLINE cmzn_field_id cmzn_field_image_base_cast(cmzn_field_image_id image)
 {
-	return (Cmiss_field_id)(image);
+	return (cmzn_field_id)(image);
 }
 
 /***************************************************************************//**
@@ -356,7 +356,7 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_image_base_cast(Cmiss_field_image_id im
  * @return  Status CMISS_OK if successfully destroyed the image handle,
  * any other value on failure.
  */
-ZINC_API int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
+ZINC_API int cmzn_field_image_destroy(cmzn_field_image_id *image_address);
 
 /***************************************************************************//**
  * Get an integer or Boolean attribute of the field image.
@@ -365,8 +365,8 @@ ZINC_API int Cmiss_field_image_destroy(Cmiss_field_image_id *image_address);
  * @param attribute  The identifier of the integer attribute to get.
  * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
  */
-ZINC_API int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
-	enum Cmiss_field_image_attribute attribute);
+ZINC_API int cmzn_field_image_get_attribute_integer(cmzn_field_image_id image,
+	enum cmzn_field_image_attribute attribute);
 
 /***************************************************************************//**
  * Get a real attribute of the field image.
@@ -375,8 +375,8 @@ ZINC_API int Cmiss_field_image_get_attribute_integer(Cmiss_field_image_id image,
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-ZINC_API double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_field_image_attribute attribute);
+ZINC_API double cmzn_field_image_get_attribute_real(cmzn_field_image_id image,
+	enum cmzn_field_image_attribute attribute);
 
 /***************************************************************************//**
  * Set an double attribute of the image.
@@ -387,8 +387,8 @@ ZINC_API double Cmiss_field_image_get_attribute_real(Cmiss_field_image_id image,
  * @return  Status CMISS_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this image.
  */
-ZINC_API int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
-	enum Cmiss_field_image_attribute attribute, double value);
+ZINC_API int cmzn_field_image_set_attribute_real(cmzn_field_image_id image,
+	enum cmzn_field_image_attribute attribute, double value);
 
 /*****************************************************************************//**
  * Reads image data into the field.
@@ -406,8 +406,8 @@ ZINC_API int Cmiss_field_image_set_attribute_real(Cmiss_field_image_id image,
  * @return  Status CMISS_OK if the operation is successful, any other value on
  * failure.
  */
-ZINC_API int Cmiss_field_image_read(Cmiss_field_image_id image_field,
-	Cmiss_stream_information_id stream_information);
+ZINC_API int cmzn_field_image_read(cmzn_field_image_id image_field,
+	cmzn_stream_information_id stream_information);
 
 /***************************************************************************//**
  * Convenient function to read a file with the provided name into a field image
@@ -419,7 +419,7 @@ ZINC_API int Cmiss_field_image_read(Cmiss_field_image_id image_field,
  * @return  Status CMISS_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
-ZINC_API int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const char *file_name);
+ZINC_API int cmzn_field_image_read_file(cmzn_field_image_id image_field, const char *file_name);
 
 /*****************************************************************************//**
  * Writes a formatted representation of the image data.
@@ -441,8 +441,8 @@ ZINC_API int Cmiss_field_image_read_file(Cmiss_field_image_id image_field, const
  * @return  Status CMISS_OK if the operation is successful, any other value
  * on failure.
  */
-ZINC_API int Cmiss_field_image_write(Cmiss_field_image_id image_field,
-	Cmiss_stream_information_id stream_information);
+ZINC_API int cmzn_field_image_write(cmzn_field_image_id image_field,
+	cmzn_stream_information_id stream_information);
 
 /***************************************************************************//**
  * Convenient function to write the image into a file with the provided name.
@@ -453,7 +453,7 @@ ZINC_API int Cmiss_field_image_write(Cmiss_field_image_id image_field,
  * @return  Status CMISS_OK if data is successfully written out, any other value
  * on failure.
  */
-ZINC_API int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
+ZINC_API int cmzn_field_image_write_file(cmzn_field_image_id image_field,
 	const char *file_name);
 
 /*****************************************************************************//**
@@ -462,8 +462,8 @@ ZINC_API int Cmiss_field_image_write_file(Cmiss_field_image_id image_field,
  * @param  image_field  The image field.
  * @return  Returns enum describing how the image is combined with the material.
  */
-ZINC_API enum Cmiss_field_image_combine_mode Cmiss_field_image_get_combine_mode(
-   Cmiss_field_image_id image_field);
+ZINC_API enum cmzn_field_image_combine_mode cmzn_field_image_get_combine_mode(
+   cmzn_field_image_id image_field);
 
 /*****************************************************************************//**
  * Sets how the image is combined with the material: blend, decal or modulate.
@@ -473,8 +473,8 @@ ZINC_API enum Cmiss_field_image_combine_mode Cmiss_field_image_get_combine_mode(
  * 		material.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field,
-   enum Cmiss_field_image_combine_mode combine_mode);
+ZINC_API int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
+   enum cmzn_field_image_combine_mode combine_mode);
 
 /*****************************************************************************//**
  * Returns how the image is stored in graphics memory.
@@ -482,8 +482,8 @@ ZINC_API int Cmiss_field_image_set_combine_mode(Cmiss_field_image_id image_field
  * @param image_field  The image field.
  * @return  Returns enum describing how the image is stored in graphics memory.
  */
-ZINC_API enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_hardware_compression_mode(
-   Cmiss_field_image_id image_field);
+ZINC_API enum cmzn_field_image_hardware_compression_mode cmzn_field_image_get_hardware_compression_mode(
+   cmzn_field_image_id image_field);
 
 /*****************************************************************************//**
  * Indicate to the graphics hardware how you would like the texture stored in
@@ -494,8 +494,8 @@ ZINC_API enum Cmiss_field_image_hardware_compression_mode Cmiss_field_image_get_
  * 		material.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_id image_field,
-   enum Cmiss_field_image_hardware_compression_mode compression_mode);
+ZINC_API int cmzn_field_image_set_hardware_compression_mode(cmzn_field_image_id image_field,
+   enum cmzn_field_image_hardware_compression_mode compression_mode);
 
 /*****************************************************************************//**
  * Returns how the image is rasterised onto the screen.
@@ -503,8 +503,8 @@ ZINC_API int Cmiss_field_image_set_hardware_compression_mode(Cmiss_field_image_i
  * @param image_field  The image field.
  * @return  Returns enum describing how the image is rasterised onto the screen.
  */
-ZINC_API enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
-   Cmiss_field_image_id image_field);
+ZINC_API enum cmzn_field_image_filter_mode cmzn_field_image_get_filter_mode(
+   cmzn_field_image_id image_field);
 
 /*****************************************************************************//**
  * Indicate to the graphics hardware how you would like the image rasterised
@@ -515,8 +515,8 @@ ZINC_API enum Cmiss_field_image_filter_mode Cmiss_field_image_get_filter_mode(
  *   the texture onto the screen.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
-   enum Cmiss_field_image_filter_mode filter_mode);
+ZINC_API int cmzn_field_image_set_filter_mode(cmzn_field_image_id image_field,
+   enum cmzn_field_image_filter_mode filter_mode);
 
 /**
  * Returns the mode describing how the image is wrapped outside the range [0,1].
@@ -524,8 +524,8 @@ ZINC_API int Cmiss_field_image_set_filter_mode(Cmiss_field_image_id image_field,
  * @param image_field  The image field.
  * @return  Returns enum describing how the image is wrapped.
  */
-ZINC_API enum Cmiss_field_image_wrap_mode Cmiss_field_image_get_wrap_mode(
-   Cmiss_field_image_id image_field);
+ZINC_API enum cmzn_field_image_wrap_mode cmzn_field_image_get_wrap_mode(
+   cmzn_field_image_id image_field);
 
 /**
  * Set the mode describing how the image is wrapped outside the range [0,1].
@@ -535,8 +535,8 @@ ZINC_API enum Cmiss_field_image_wrap_mode Cmiss_field_image_get_wrap_mode(
  * 	the range [0,1].
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_image_set_wrap_mode(Cmiss_field_image_id image_field,
-   enum Cmiss_field_image_wrap_mode filter_mode);
+ZINC_API int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
+   enum cmzn_field_image_wrap_mode filter_mode);
 
 /**
  * Gets the property named in the given property string from the given field image.
@@ -547,10 +547,10 @@ ZINC_API int Cmiss_field_image_set_wrap_mode(Cmiss_field_image_id image_field,
  *
  * @return	null if it fails, else an allocated string containing the properties value.
  */
-ZINC_API char *Cmiss_field_image_get_property(Cmiss_field_image_id image,
+ZINC_API char *cmzn_field_image_get_property(cmzn_field_image_id image,
 	const char* property);
 
-enum Cmiss_stream_information_image_attribute
+enum cmzn_stream_information_image_attribute
 {
 	CMISS_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
 	/*!< Integer specifies the pixel width for binary data reading in using this
@@ -579,35 +579,35 @@ enum Cmiss_stream_information_image_attribute
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_stream_information_image_attribute
-	Cmiss_stream_information_image_attribute_enum_from_string(const char *string);
+ZINC_API enum cmzn_stream_information_image_attribute
+	cmzn_stream_information_image_attribute_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_stream_information_image_attribute_enum_to_string(
-	enum Cmiss_stream_information_image_attribute attribute);
+ZINC_API char *cmzn_stream_information_image_attribute_enum_to_string(
+	enum cmzn_stream_information_image_attribute attribute);
 
 /*****************************************************************************//**
- * Creates a Cmiss_stream_information_image object.
+ * Creates a cmzn_stream_information_image object.
  * @return The created object.
  */
-ZINC_API Cmiss_stream_information_id Cmiss_field_image_create_stream_information(
-	Cmiss_field_image_id image_field);
+ZINC_API cmzn_stream_information_id cmzn_field_image_create_stream_information(
+	cmzn_field_image_id image_field);
 
 /*****************************************************************************//**
- * Destroys a Cmiss_stream_information_image object.
+ * Destroys a cmzn_stream_information_image object.
  *
  * @param stream_information_address  Pointer to a stream_information object, which
  * is destroyed and the pointer is set to NULL.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_stream_information_image_destroy(
-	Cmiss_stream_information_image_id *stream_information_address);
+ZINC_API int cmzn_stream_information_image_destroy(
+	cmzn_stream_information_image_id *stream_information_address);
 
 /***************************************************************************//**
  * If the stream_information is of field_image type, then this function returns
@@ -618,25 +618,25 @@ ZINC_API int Cmiss_stream_information_image_destroy(
  * @return  field_image specific representation if the input stream_information is
  * of this type, otherwise NULL.
  */
-ZINC_API Cmiss_stream_information_image_id Cmiss_stream_information_cast_image(
-	Cmiss_stream_information_id stream_information);
+ZINC_API cmzn_stream_information_image_id cmzn_stream_information_cast_image(
+	cmzn_stream_information_id stream_information);
 
 /***************************************************************************//**
  * Cast stream_information_image back to its base stream_information and
  * return the stream_information.
  * IMPORTANT NOTE: Returned stream_information does not have incremented
- * reference count and must not be destroyed. Use Cmiss_stream_information_access()
+ * reference count and must not be destroyed. Use cmzn_stream_information_access()
  * to add a reference if maintaining returned handle beyond the lifetime of the
  * stream_information_image argument.
  *
  * @param stream_information  Handle to the stream_information_image_ to cast.
  * @return  Non-accessed handle to the base stream information or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_stream_information_id
-	Cmiss_stream_information_image_base_cast(
-		Cmiss_stream_information_image_id stream_information)
+ZINC_C_INLINE cmzn_stream_information_id
+	cmzn_stream_information_image_base_cast(
+		cmzn_stream_information_image_id stream_information)
 {
-	return (Cmiss_stream_information_id)(stream_information);
+	return (cmzn_stream_information_id)(stream_information);
 }
 
 /***************************************************************************//**
@@ -651,9 +651,9 @@ ZINC_C_INLINE Cmiss_stream_information_id
  *	failed or attribute not valid or unable to be set for this
  * 	stream_information_image.
  */
-ZINC_API int Cmiss_stream_information_image_set_attribute_integer(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute attribute, int value);
+ZINC_API int cmzn_stream_information_image_set_attribute_integer(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_attribute attribute, int value);
 
 /***************************************************************************//**
  * Set an double attribute of the stream_information_image.
@@ -665,9 +665,9 @@ ZINC_API int Cmiss_stream_information_image_set_attribute_integer(
  * failed or attribute not valid or unable to be set for this
  * stream_information_image.
  */
-ZINC_API int Cmiss_stream_information_image_set_attribute_real(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_attribute attribute,
+ZINC_API int cmzn_stream_information_image_set_attribute_real(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_attribute attribute,
 	double value);
 
 /*****************************************************************************//**
@@ -678,9 +678,9 @@ ZINC_API int Cmiss_stream_information_image_set_attribute_real(
  * @param file_format  The image file format.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_stream_information_image_set_file_format(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_file_format file_format);
+ZINC_API int cmzn_stream_information_image_set_file_format(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_file_format file_format);
 
 /*****************************************************************************//**
  * Specifies the pixel format for binary data of the images  to be read/written
@@ -690,9 +690,9 @@ ZINC_API int Cmiss_stream_information_image_set_file_format(
  * @param pixel_format  The pixel_format of the formatted data.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_stream_information_image_set_pixel_format(
-	Cmiss_stream_information_image_id stream_information,
-	enum Cmiss_stream_information_image_pixel_format pixel_format);
+ZINC_API int cmzn_stream_information_image_set_pixel_format(
+	cmzn_stream_information_image_id stream_information,
+	enum cmzn_stream_information_image_pixel_format pixel_format);
 
 #ifdef __cplusplus
 }

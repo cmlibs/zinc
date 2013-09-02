@@ -90,7 +90,7 @@ namespace {
 			return new Computed_field_image_resample(dimension, sizes);
 		}
 
-		int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+		int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 		const char *get_type_string()
 		{
@@ -144,7 +144,7 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_image_resample::compare */
 
-int Computed_field_image_resample::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_image_resample::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -284,8 +284,8 @@ Returns allocated command string for reproducing field.
 
 } //namespace
 
-Computed_field *Cmiss_field_module_create_image_resample(
-	struct Cmiss_field_module *field_module,
+Computed_field *cmzn_field_module_create_image_resample(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, int dimension, int *sizes)
 {
 	Computed_field *field = NULL;
@@ -310,20 +310,20 @@ Computed_field *Cmiss_field_module_create_image_resample(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_module_create_image_resample.  "
+				"cmzn_field_module_create_image_resample.  "
 				"Specified dimension and source field dimension do not match.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_image_resample.  Invalid argument(s)");
+			"cmzn_field_module_create_image_resample.  Invalid argument(s)");
 	}
 
 	return (field);
 }
 
-int Cmiss_field_get_type_image_resample(struct Computed_field *field,
+int cmzn_field_get_type_image_resample(struct Computed_field *field,
 	struct Computed_field **source_field, int *dimension, int **sizes)
 /*******************************************************************************
 LAST MODIFIED : 7 March 2007
@@ -336,7 +336,7 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 	Computed_field_image_resample* core;
 	int i, return_code = 0;
 
-	ENTER(Cmiss_field_get_type_image_resample);
+	ENTER(cmzn_field_get_type_image_resample);
 	if (field && (core = dynamic_cast<Computed_field_image_resample*>(field->core)))
 	{
 		if (ALLOCATE(*sizes, int, core->dimension))
@@ -352,18 +352,18 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_field_get_type_image_resample.  Unable to allocate array.");
+				"cmzn_field_get_type_image_resample.  Unable to allocate array.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_get_type_image_resample.  Invalid argument(s)");
+			"cmzn_field_get_type_image_resample.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_field_get_type_image_resample */
+} /* cmzn_field_get_type_image_resample */
 

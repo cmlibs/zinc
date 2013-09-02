@@ -129,7 +129,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_cmiss_number(
-	struct Cmiss_field_module *field_module);
+	struct cmzn_field_module *field_module);
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
 	void *dummy);
@@ -188,7 +188,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_xi_coordinates(
-	struct Cmiss_field_module *field_module);
+	struct cmzn_field_module *field_module);
 
 int Computed_field_is_type_node_value(struct Computed_field *field);
 /*******************************************************************************
@@ -214,7 +214,7 @@ struct FE_region_changes;
  * Also ensures region has cmiss_number and xi fields, at the appropriate time.
  * @private  Should only be called from cmiss_region.cpp!
  */
-void Cmiss_region_FE_region_change(struct FE_region *fe_region,
+void cmzn_region_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *cmiss_region_void);
 
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

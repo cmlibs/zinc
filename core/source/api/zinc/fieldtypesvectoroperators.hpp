@@ -50,7 +50,7 @@ class FieldCrossProduct : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCrossProduct(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldCrossProduct(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount,
@@ -70,7 +70,7 @@ class FieldDotProduct : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDotProduct(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldDotProduct(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldDotProduct FieldModule::createDotProduct(Field& sourceField1,
@@ -87,7 +87,7 @@ class FieldMagnitude : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldMagnitude(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldMagnitude(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldMagnitude FieldModule::createMagnitude(Field& sourceField);
@@ -103,7 +103,7 @@ class FieldNormalise : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldNormalise(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldNormalise(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldNormalise FieldModule::createNormalise(Field& sourceField);
@@ -119,7 +119,7 @@ class FieldSumComponents : public Field
 {
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSumComponents(Cmiss_field_id field_id) : Field(field_id)
+	explicit FieldSumComponents(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
 	friend FieldSumComponents FieldModule::createSumComponents(Field& sourceField);
@@ -133,15 +133,15 @@ public:
 
 inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field *sourceFields)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (fieldsCount > 0)
 	{
-		Cmiss_field_id *source_fields = new Cmiss_field_id[fieldsCount];
+		cmzn_field_id *source_fields = new cmzn_field_id[fieldsCount];
 		for (int i = 0; i < fieldsCount; i++)
 		{
 			source_fields[i] = sourceFields[i].getId();
 		}
-		field = Cmiss_field_module_create_cross_product(id, fieldsCount, source_fields);
+		field = cmzn_field_module_create_cross_product(id, fieldsCount, source_fields);
 		delete[] source_fields;
 	}
 	return FieldCrossProduct(field);
@@ -149,29 +149,29 @@ inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field 
 
 inline FieldCrossProduct FieldModule::createCrossProduct(Field& sourceField1, Field& sourceField2)
 {
-	return FieldCrossProduct(Cmiss_field_module_create_cross_product_3d(id, sourceField1.getId(),
+	return FieldCrossProduct(cmzn_field_module_create_cross_product_3d(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
 inline FieldDotProduct FieldModule::createDotProduct(Field& sourceField1, Field& sourceField2)
 {
-	return FieldDotProduct(Cmiss_field_module_create_dot_product(id, sourceField1.getId(),
+	return FieldDotProduct(cmzn_field_module_create_dot_product(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
 inline FieldMagnitude FieldModule::createMagnitude(Field& sourceField)
 {
-	return FieldMagnitude(Cmiss_field_module_create_magnitude(id, sourceField.getId()));
+	return FieldMagnitude(cmzn_field_module_create_magnitude(id, sourceField.getId()));
 }
 
 inline FieldNormalise FieldModule::createNormalise(Field& sourceField)
 {
-	return FieldNormalise(Cmiss_field_module_create_normalise(id, sourceField.getId()));
+	return FieldNormalise(cmzn_field_module_create_normalise(id, sourceField.getId()));
 }
 
 inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField)
 {
-	return FieldSumComponents(Cmiss_field_module_create_sum_components(id,
+	return FieldSumComponents(cmzn_field_module_create_sum_components(id,
 		sourceField.getId()));
 }
 

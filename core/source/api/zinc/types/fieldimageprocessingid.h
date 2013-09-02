@@ -42,21 +42,21 @@
 #define CMZN_FIELDIMAGEPROCESSINGID_H__
 
 /*****************************************************************************//**
- * The image field specific handle to a Cmiss binary threshold field.
+ * The image field specific handle to a cmzn binary threshold field.
  */
-struct Cmiss_field_binary_threshold_image_filter;
-typedef struct Cmiss_field_binary_threshold_image_filter * Cmiss_field_binary_threshold_image_filter_id;
+struct cmzn_field_binary_threshold_image_filter;
+typedef struct cmzn_field_binary_threshold_image_filter * cmzn_field_binary_threshold_image_filter_id;
 
 /*****************************************************************************//**
- * The image field specific handle to a Cmiss discrete gaussian field.
+ * The image field specific handle to a cmzn discrete gaussian field.
  */
-struct Cmiss_field_discrete_gaussian_image_filter;
-typedef struct Cmiss_field_discrete_gaussian_image_filter * Cmiss_field_discrete_gaussian_image_filter_id;
+struct cmzn_field_discrete_gaussian_image_filter;
+typedef struct cmzn_field_discrete_gaussian_image_filter * cmzn_field_discrete_gaussian_image_filter_id;
 
 /*****************************************************************************//**
- * The image field specific handle to a Cmiss threshold field.
+ * The image field specific handle to a cmzn threshold field.
  */
-struct Cmiss_field_threshold_image_filter;
-typedef struct Cmiss_field_threshold_image_filter * Cmiss_field_threshold_image_filter_id;
+struct cmzn_field_threshold_image_filter;
+typedef struct cmzn_field_threshold_image_filter * cmzn_field_threshold_image_filter_id;
 
 #endif

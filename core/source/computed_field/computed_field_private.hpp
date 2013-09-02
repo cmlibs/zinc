@@ -64,11 +64,11 @@ Types used only internally to computed fields.
 class Computed_field_modify_data
 {
 private:
-	Cmiss_field_module *field_module;
+	cmzn_field_module *field_module;
 
 public:
 	Computed_field_modify_data(
-		struct Cmiss_field_module *field_module) :
+		struct cmzn_field_module *field_module) :
 		field_module(field_module)
 	{
 	}
@@ -77,7 +77,7 @@ public:
 	{
 	}
 
-	Cmiss_field_module *get_field_module()
+	cmzn_field_module *get_field_module()
 	{
 		return field_module;
 	}
@@ -94,7 +94,7 @@ public:
 	{
 		if (new_field)
 		{
-			Cmiss_field_set_managed(new_field, true);
+			cmzn_field_set_managed(new_field, true);
 			DEACCESS(Computed_field)(&new_field);
 			return 1;
 		}
@@ -106,7 +106,7 @@ public:
 	 */
 	Computed_field *get_field();
 
-	Cmiss_region *get_region();
+	cmzn_region *get_region();
 
 	MANAGER(Computed_field) *get_field_manager();
 };
@@ -165,9 +165,9 @@ passed around as part of Computed_field_modify_data in to_be_modified argument.
 /***************************************************************************//**
  * Base class of type-specific field change details.
  */
-struct Cmiss_field_change_detail
+struct cmzn_field_change_detail
 {
-	virtual ~Cmiss_field_change_detail()
+	virtual ~cmzn_field_change_detail()
 	{
 	}
 };
@@ -234,7 +234,7 @@ public:
 		return field;
 	}
 
-	inline Cmiss_field_id getSourceField(int index);
+	inline cmzn_field_id getSourceField(int index);
 
 	/**
 	 * Override to inherit attributes such as coordinate system from source fields.
@@ -248,7 +248,7 @@ public:
 	virtual const char *get_type_string() = 0;
 
 	// override for fields requiring specialised value caches
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/);
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/);
 
 	virtual int clear_cache() // GRC remove
 	{
@@ -259,7 +259,7 @@ public:
 
 	/** default implementation returns true if all source fields are defined at location.
 	 * override if different logic is needed. */
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 	virtual int has_numerical_components()
 	{
@@ -271,7 +271,7 @@ public:
 		return 1;
 	};
 
-	virtual int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache) = 0;
+	virtual int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache) = 0;
 
 	/** Override & return 1 for field types supporting the sum_square_terms API */
 	virtual int supports_sum_square_terms() const
@@ -282,30 +282,30 @@ public:
 	/** Override for field types whose value is a sum of squares to get the
 	 * number of terms summed. Multiply by number of components to get number of values.
 	 * Can be expensive. */
-	virtual int get_number_of_sum_square_terms(Cmiss_field_cache&) const
+	virtual int get_number_of_sum_square_terms(cmzn_field_cache&) const
 	{
 		return 0;
 	}
 
 	/** Override for field types whose value is a sum of squares to get the array of
 	 * individual terms PRIOR to being squared*/
-	virtual int evaluate_sum_square_terms(Cmiss_field_cache&, RealFieldValueCache&,
+	virtual int evaluate_sum_square_terms(cmzn_field_cache&, RealFieldValueCache&,
 		int /*number_of_values*/, FE_value* /* *values*/)
 	{
 		return 0;
 	}
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/)
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/)
 	{
 		return FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/)
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/)
 	{
 		return FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/)
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/)
 	{
 		return FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
@@ -313,10 +313,10 @@ public:
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int propagate_find_element_xi(Cmiss_field_cache&,
+	virtual int propagate_find_element_xi(cmzn_field_cache&,
 		const FE_value * /*values*/, int /*number_of_values*/,
 		struct FE_element ** /*element_address*/, FE_value * /*xi*/,
-		Cmiss_mesh_id /*mesh*/)
+		cmzn_mesh_id /*mesh*/)
 	{
 		return 0;
 	};
@@ -348,7 +348,7 @@ public:
 	// and there are source fields.
 	virtual bool is_non_linear() const;
 
-	/** called by Cmiss_field_set_name. Override to rename wrapped objects e.g. FE_field */
+	/** called by cmzn_field_set_name. Override to rename wrapped objects e.g. FE_field */
 	virtual int set_name(const char *name)
 	{
 		USE_PARAMETER(name);
@@ -357,7 +357,7 @@ public:
 
 	// override if attribute supported by field type
 	// used only for attributes not stored in the generic field object
-	virtual int get_attribute_integer(enum Cmiss_field_attribute attribute) const
+	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
 	{
 		USE_PARAMETER(attribute);
 		return 0;
@@ -365,7 +365,7 @@ public:
 
 	// override if attribute can be set for field type
 	// used only for attributes not stored in the generic field object
-	virtual int set_attribute_integer(enum Cmiss_field_attribute attribute, int value)
+	virtual int set_attribute_integer(enum cmzn_field_attribute attribute, int value)
 	{
 		USE_PARAMETER(attribute);
 		USE_PARAMETER(value);
@@ -376,12 +376,12 @@ public:
 	 * override for classes with type-specific change detail e.g. group fields
 	 * @return  change detail prior to clearing, or NULL if none.
 	 */
-	virtual Cmiss_field_change_detail *extract_change_detail()
+	virtual cmzn_field_change_detail *extract_change_detail()
 	{
 		return NULL;
 	}
 
-	virtual const Cmiss_field_change_detail *get_change_detail() const
+	virtual const cmzn_field_change_detail *get_change_detail() const
 	{
 		return NULL;
 	}
@@ -398,7 +398,7 @@ public:
 	}
 
 	/** Override if field is not real valued */
-	virtual Cmiss_field_value_type get_value_type() const
+	virtual cmzn_field_value_type get_value_type() const
 	{
 		return CMISS_FIELD_VALUE_TYPE_REAL;
 	}
@@ -474,7 +474,7 @@ DESCRIPTION :
 	 */
 	void clearCaches();
 
-	inline FieldValueCache *getValueCache(Cmiss_field_cache& cache)
+	inline FieldValueCache *getValueCache(cmzn_field_cache& cache)
 	{
 		FieldValueCache *valueCache = cache.getValueCache(cache_index);
 		if (!valueCache)
@@ -486,7 +486,7 @@ DESCRIPTION :
 	}
 
 	template <class FieldValueCacheClass>
-	inline FieldAssignmentResult assign(Cmiss_field_cache& cache, FieldValueCacheClass& valueCache)
+	inline FieldAssignmentResult assign(cmzn_field_cache& cache, FieldValueCacheClass& valueCache)
 	{
 		FieldAssignmentResult result = core->assign(cache, valueCache);
 		if ((result == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET) &&
@@ -503,7 +503,7 @@ DESCRIPTION :
 		return result;
 	}
 
-	inline FieldValueCache *evaluate(Cmiss_field_cache& cache)
+	inline FieldValueCache *evaluate(cmzn_field_cache& cache)
 	{
 		FieldValueCache *valueCache = getValueCache(cache);
 		// GRC: move derivatives to a separate value cache in future
@@ -519,7 +519,7 @@ DESCRIPTION :
 	}
 
 	/** @param numberOfDerivatives  positive number of xi dimension of element location */
-	inline RealFieldValueCache *evaluateWithDerivatives(Cmiss_field_cache& cache, int numberOfDerivatives)
+	inline RealFieldValueCache *evaluateWithDerivatives(cmzn_field_cache& cache, int numberOfDerivatives)
 	{
 		int requestedDerivatives = cache.getRequestedDerivatives();
 		cache.setRequestedDerivatives(numberOfDerivatives);
@@ -530,7 +530,7 @@ DESCRIPTION :
 		return 0;
 	}
 
-	inline FieldValueCache *evaluateNoDerivatives(Cmiss_field_cache& cache)
+	inline FieldValueCache *evaluateNoDerivatives(cmzn_field_cache& cache)
 	{
 		int requestedDerivatives = cache.getRequestedDerivatives();
 		cache.setRequestedDerivatives(0);
@@ -542,7 +542,7 @@ DESCRIPTION :
 	/** @return  true if this field equals otherField or otherField is a source
 	 * field directly or indirectly, otherwise false.
 	 */
-	bool dependsOnField(Cmiss_field *otherField)
+	bool dependsOnField(cmzn_field *otherField)
 	{
 		if (this == otherField)
 			return true;
@@ -559,12 +559,12 @@ DESCRIPTION :
 		return core->has_numerical_components();
 	}
 
-	int get_number_of_sum_square_terms(Cmiss_field_cache& cache)
+	int get_number_of_sum_square_terms(cmzn_field_cache& cache)
 	{
 		return core->get_number_of_sum_square_terms(cache);
 	}
 
-	int evaluate_sum_square_terms(Cmiss_field_cache& cache, int number_of_values, FE_value *values)
+	int evaluate_sum_square_terms(cmzn_field_cache& cache, int number_of_values, FE_value *values)
 	{
 		if ((0 <= number_of_values) && values)
 		{
@@ -577,14 +577,14 @@ DESCRIPTION :
 
 }; /* struct Computed_field */
 
-inline Cmiss_field_id Computed_field_core::getSourceField(int index)
+inline cmzn_field_id Computed_field_core::getSourceField(int index)
 {
 	return field->source_fields[index];
 }
 
 /* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
  * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with Cmiss_set.
+ * objects by identifier with cmzn_set.
  */
 class Computed_field_identifier : private Computed_field
 {
@@ -605,7 +605,7 @@ public:
 	}
 };
 
-/** functor for ordering Cmiss_set<Computed_field> by field name */
+/** functor for ordering cmzn_set<Computed_field> by field name */
 struct Computed_field_compare_name
 {
 	bool operator() (const Computed_field* field1, const Computed_field* field2) const
@@ -614,12 +614,12 @@ struct Computed_field_compare_name
 	}
 };
 
-typedef Cmiss_set<Computed_field *,Computed_field_compare_name> Cmiss_set_Cmiss_field;
+typedef cmzn_set<Computed_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
 
-struct Cmiss_field_iterator : public Cmiss_set_Cmiss_field::ext_iterator
+struct cmzn_field_iterator : public cmzn_set_cmzn_field::ext_iterator
 {
-	Cmiss_field_iterator(Cmiss_set_Cmiss_field *container) :
-		Cmiss_set_Cmiss_field::ext_iterator(container)
+	cmzn_field_iterator(cmzn_set_cmzn_field *container) :
+		cmzn_set_cmzn_field::ext_iterator(container)
 	{
 	}
 };
@@ -646,21 +646,21 @@ char *Computed_field_manager_get_unique_field_name(
 /***************************************************************************//**
  * Create an iterator for the objects in the manager.
  */
-Cmiss_field_iterator_id Computed_field_manager_create_iterator(
+cmzn_field_iterator_id Computed_field_manager_create_iterator(
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
  * Return index of field in field cache.
  */
-int Cmiss_field_get_cache_index_private(Cmiss_field_id field);
+int cmzn_field_get_cache_index_private(cmzn_field_id field);
 
 /***************************************************************************//**
- * Set index of field in field cache. Private; use only from Cmiss_region.
+ * Set index of field in field cache. Private; use only from cmzn_region.
  */
-int Cmiss_field_set_cache_index_private(Cmiss_field_id field, int cache_index);
+int cmzn_field_set_cache_index_private(cmzn_field_id field, int cache_index);
 
 /***************************************************************************//**
- * Private function for adding field to manager; use only from Cmiss_region.
+ * Private function for adding field to manager; use only from cmzn_region.
  * Ensures field name is unique and informs field core that field is managed.
  */
 int Computed_field_add_to_manager_private(struct Computed_field *field,
@@ -683,29 +683,29 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
  * @return  Newly created field, or NULL on failure.
  */
 Computed_field *Computed_field_create_generic(
-	Cmiss_field_module *field_module, bool check_source_field_regions,
+	cmzn_field_module *field_module, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core);
 
 /***************************************************************************//**
- * Sets the Cmiss_region object which will own this manager.
- * Private! Only to be called only from Cmiss_region.
+ * Sets the cmzn_region object which will own this manager.
+ * Private! Only to be called only from cmzn_region.
  *
  * @param manager  Computed field manager.
- * @return  The owning Cmiss_region object.
+ * @return  The owning cmzn_region object.
  */
 int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
-	struct Cmiss_region *region);
+	struct cmzn_region *region);
 
 /***************************************************************************//**
- * Gets the Cmiss_region owning this field manager.
+ * Gets the cmzn_region owning this field manager.
  *
  * @param manager  Computed field manager.
- * @return  The owning Cmiss_region object.
+ * @return  The owning cmzn_region object.
  */
-struct Cmiss_region *Computed_field_manager_get_region(
+struct cmzn_region *Computed_field_manager_get_region(
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
@@ -715,7 +715,7 @@ struct Cmiss_region *Computed_field_manager_get_region(
  * @param manager  Computed field manager.
  * @return  The set of fields in the manager.
  */
-const Cmiss_set_Cmiss_field &Computed_field_manager_get_fields(
+const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
@@ -781,7 +781,7 @@ int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 
 int Computed_field_broadcast_field_components(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field **field_one, struct Computed_field **field_two);
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -806,16 +806,16 @@ for matrix operations.
  * @param region  The owning region.
  * @return  Field module for the supplied region.
  */
-struct Cmiss_field_module *Cmiss_field_module_create(struct Cmiss_region *region);
+struct cmzn_field_module *cmzn_field_module_create(struct cmzn_region *region);
 
 /***************************************************************************//**
- * Internal, non-accessing version of Cmiss_field_module_get_region.
+ * Internal, non-accessing version of cmzn_field_module_get_region.
  *
  * @param field_module  The field module to query.
  * @return  Non-accessed handle to owning region for field_module.
  */
-struct Cmiss_region *Cmiss_field_module_get_region_internal(
-	struct Cmiss_field_module *field_module);
+struct cmzn_region *cmzn_field_module_get_region_internal(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Sets the name (or name stem if non-unique) of the next field to be created
@@ -825,7 +825,7 @@ struct Cmiss_region *Cmiss_field_module_get_region_internal(
  * @param field_name  Field name or name stem.
  * @return  Non-zero on success, 0 on failure.
  */
-int Cmiss_field_module_set_field_name(struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_field_name(struct cmzn_field_module *field_module,
 	const char *field_name);
 
 /***************************************************************************//**
@@ -835,8 +835,8 @@ int Cmiss_field_module_set_field_name(struct Cmiss_field_module *field_module,
  * @param field_module  The field module to create fields in.
  * @return  Allocated copy of the name, or NULL if none.
  */
-char *Cmiss_field_module_get_field_name(
-	struct Cmiss_field_module *field_module);
+char *cmzn_field_module_get_field_name(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Sets the coordinate system to be used for subsequent fields created with
@@ -846,8 +846,8 @@ char *Cmiss_field_module_get_field_name(
  * @param coordinate_system  The coordinate system to set.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_module_set_coordinate_system(
-	struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_coordinate_system(
+	struct cmzn_field_module *field_module,
 	struct Coordinate_system coordinate_system);
 
 /***************************************************************************//**
@@ -856,8 +856,8 @@ int Cmiss_field_module_set_coordinate_system(
  * @param field_module  The field module to create fields in.
  * @return  Copy of default coordinate system.
  */
-struct Coordinate_system Cmiss_field_module_get_coordinate_system(
-	struct Cmiss_field_module *field_module);
+struct Coordinate_system cmzn_field_module_get_coordinate_system(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Returns true if the default coordinate system has been explicitly set.
@@ -865,8 +865,8 @@ struct Coordinate_system Cmiss_field_module_get_coordinate_system(
  * @param field_module  The field module to create fields in.
  * @return  1 if coordinate system set, 0 if never set.
  */
-int Cmiss_field_module_coordinate_system_is_set(
-	struct Cmiss_field_module *field_module);
+int cmzn_field_module_coordinate_system_is_set(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * Sets the replace_field that will be redefined by the next field
@@ -878,8 +878,8 @@ int Cmiss_field_module_coordinate_system_is_set(
  * be NULL to clear.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_field_module_set_replace_field(
-	struct Cmiss_field_module *field_module,
+int cmzn_field_module_set_replace_field(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *replace_field);
 
 /***************************************************************************//**
@@ -890,8 +890,8 @@ int Cmiss_field_module_set_replace_field(
  * @return  Existing field to be replaced which caller must deaccess, or NULL
  * if none.
  */
-struct Computed_field *Cmiss_field_module_get_replace_field(
-	struct Cmiss_field_module *field_module);
+struct Computed_field *cmzn_field_module_get_replace_field(
+	struct cmzn_field_module *field_module);
 
 /***************************************************************************//**
  * For each hierarchical field in manager, propagates changes from sub-region
@@ -914,6 +914,6 @@ void Computed_field_manager_propagate_hierarchical_field_changes(
  */
 int Computed_field_manager_message_get_object_change_and_detail(
 	struct MANAGER_MESSAGE(Computed_field) *message, struct Computed_field *field,
-	const struct Cmiss_field_change_detail **change_detail_address);
+	const struct cmzn_field_change_detail **change_detail_address);
 
 #endif /* !defined (COMPUTED_FIELD_PRIVATE_H) */

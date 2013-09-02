@@ -1,7 +1,7 @@
 /**
  * FILE : cmiss_field_arithmetic_operators.h
  *
- * The public interface to the Cmiss_fields that perform arithmetic operators.
+ * The public interface to the cmzn_fields that perform arithmetic operators.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -61,9 +61,9 @@ extern "C" {
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_power(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a field where the which multiplies the components of source_field_one and
@@ -75,9 +75,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_power(Cmiss_field_module_id fi
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_multiply(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a field where the which divides the components of source_field_one
@@ -89,9 +89,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_multiply(Cmiss_field_module_id
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_divide(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a field where the which adds the components of source_field_one and
@@ -103,9 +103,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_divide(Cmiss_field_module_id f
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_add(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a field where the which subtracts the components of source_field_two
@@ -117,9 +117,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_add(Cmiss_field_module_id fiel
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field_one,
-	Cmiss_field_id source_field_two);
+ZINC_API cmzn_field_id cmzn_field_module_create_subtract(cmzn_field_module_id field_module,
+	cmzn_field_id source_field_one,
+	cmzn_field_id source_field_two);
 
 /**
  * Creates a field where the field components are the natural logarithm
@@ -129,8 +129,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_subtract(Cmiss_field_module_id
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_log(cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /**
  * Creates a field where the field components are the square root
@@ -140,8 +140,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_log(Cmiss_field_module_id fiel
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_sqrt(cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /**
  * Creates a field where the field components are the natural exponent
@@ -151,8 +151,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_sqrt(Cmiss_field_module_id fie
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_exp(cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /**
  * Creates a field where the field components are the absolute value of each
@@ -162,8 +162,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_exp(Cmiss_field_module_id fiel
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_abs(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_abs(cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 #ifdef __cplusplus
 }

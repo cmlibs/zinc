@@ -42,44 +42,44 @@
 #define CMZN_GRAPHICID_H__
 
 /**
- * A handle to cmiss graphic. Cmiss graphic is individual graphic representation
+ * A handle to cmiss graphic. cmzn graphic is individual graphic representation
  * such as lines, surfaces, node points and etc of a scene. These graphics
  * can be customised through a number of set functions.
  */
-struct Cmiss_graphic;
-typedef struct Cmiss_graphic * Cmiss_graphic_id;
+struct cmzn_graphic;
+typedef struct cmzn_graphic * cmzn_graphic_id;
 
 /**
- * The contours derived type specific handle to a Cmiss_graphic.
+ * The contours derived type specific handle to a cmzn_graphic.
  */
-struct Cmiss_graphic_contours;
-typedef struct Cmiss_graphic_contours *Cmiss_graphic_contours_id;
+struct cmzn_graphic_contours;
+typedef struct cmzn_graphic_contours *cmzn_graphic_contours_id;
 
 /**
- * The lines derived type specific handle to a Cmiss_graphic.
+ * The lines derived type specific handle to a cmzn_graphic.
  * Used to visualise 1-D elements and lines/faces of elements.
  */
-struct Cmiss_graphic_lines;
-typedef struct Cmiss_graphic_points *Cmiss_graphic_lines_id;
+struct cmzn_graphic_lines;
+typedef struct cmzn_graphic_points *cmzn_graphic_lines_id;
 
 /**
- * The points derived type specific handle to a Cmiss_graphic.
+ * The points derived type specific handle to a cmzn_graphic.
  * Used to visualise single points, nodes, data and element points.
  */
-struct Cmiss_graphic_points;
-typedef struct Cmiss_graphic_points *Cmiss_graphic_points_id;
+struct cmzn_graphic_points;
+typedef struct cmzn_graphic_points *cmzn_graphic_points_id;
 
 /**
- * The streamlines derived type specific handle to a Cmiss_graphic.
+ * The streamlines derived type specific handle to a cmzn_graphic.
  */
-struct Cmiss_graphic_streamlines;
-typedef struct Cmiss_graphic_streamlines *Cmiss_graphic_streamlines_id;
+struct cmzn_graphic_streamlines;
+typedef struct cmzn_graphic_streamlines *cmzn_graphic_streamlines_id;
 
 /**
  * Enumeration giving the direction streamlines are tracked relative to
  * the stream vector field.
  */
-enum Cmiss_graphic_streamlines_track_direction
+enum cmzn_graphic_streamlines_track_direction
 {
 	CMISS_GRAPHIC_STREAMLINES_TRACK_DIRECTION_INVALID = 0,
 	CMISS_GRAPHIC_STREAMLINES_FORWARD_TRACK = 1,
@@ -87,16 +87,16 @@ enum Cmiss_graphic_streamlines_track_direction
 };
 
 /**
- * The surfaces derived type specific handle to a Cmiss_graphic.
+ * The surfaces derived type specific handle to a cmzn_graphic.
  * Used to visualise 2-D elements and faces.
  */
-struct Cmiss_graphic_surfaces;
-typedef struct Cmiss_graphic_surfaces *Cmiss_graphic_surfaces_id;
+struct cmzn_graphic_surfaces;
+typedef struct cmzn_graphic_surfaces *cmzn_graphic_surfaces_id;
 
 /**
  * Enumeration giving the algorithm used to create graphics.
  */
-enum Cmiss_graphic_type
+enum cmzn_graphic_type
 {
 	CMISS_GRAPHIC_TYPE_INVALID = 0,
 	CMISS_GRAPHIC_POINTS = 1,
@@ -111,7 +111,7 @@ enum Cmiss_graphic_type
  * objects can be picked, the selection highlighted or only the selected
  * or unselected primitives are drawn.
  */
-enum Cmiss_graphic_select_mode
+enum cmzn_graphic_select_mode
 {
 	CMISS_GRAPHIC_SELECT_MODE_INVALID = 0,
 	CMISS_GRAPHIC_SELECT_ON = 1,
@@ -130,22 +130,22 @@ enum Cmiss_graphic_select_mode
 
 /**
  * A handle to attributes specifying how points are visualised in a
- * Cmiss_graphic including glyph, scaling, labels and font.
+ * cmzn_graphic including glyph, scaling, labels and font.
  */
-struct Cmiss_graphic_point_attributes;
-typedef struct Cmiss_graphic_point_attributes * Cmiss_graphic_point_attributes_id;
+struct cmzn_graphic_point_attributes;
+typedef struct cmzn_graphic_point_attributes * cmzn_graphic_point_attributes_id;
 
 /**
  * A handle to attributes specifying how lines are visualised in a
- * Cmiss_graphic including section profile and scaling.
+ * cmzn_graphic including section profile and scaling.
  */
-struct Cmiss_graphic_line_attributes;
-typedef struct Cmiss_graphic_line_attributes * Cmiss_graphic_line_attributes_id;
+struct cmzn_graphic_line_attributes;
+typedef struct cmzn_graphic_line_attributes * cmzn_graphic_line_attributes_id;
 
 /**
  * The shape or profile of graphics generated for lines.
  */
-enum Cmiss_graphic_line_attributes_shape
+enum cmzn_graphic_line_attributes_shape
 {
 	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_INVALID = 0,
 	CMISS_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE = 1,
@@ -158,13 +158,13 @@ enum Cmiss_graphic_line_attributes_shape
  * A handle to graphic attributes specifying how points are sampled in elements,
  * including sample mode, density, etc.
  */
-struct Cmiss_graphic_sampling_attributes;
-typedef struct Cmiss_graphic_sampling_attributes * Cmiss_graphic_sampling_attributes_id;
+struct cmzn_graphic_sampling_attributes;
+typedef struct cmzn_graphic_sampling_attributes * cmzn_graphic_sampling_attributes_id;
 
 /**
  * Enumeration controlling how polygons are rendered in GL.
  */
-enum Cmiss_graphic_render_polygon_mode
+enum cmzn_graphic_render_polygon_mode
 {
 	CMISS_GRAPHIC_RENDER_POLYGON_MODE_INVALID = 0,
 	CMISS_GRAPHIC_RENDER_POLYGON_SHADED = 1,   /*!< Draw filled polygons */

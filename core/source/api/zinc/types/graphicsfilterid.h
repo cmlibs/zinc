@@ -41,13 +41,13 @@
 #ifndef CMZN_GRAPHICSFILTERID_H__
 	#define CMZN_GRAPHICSFILTERID_H__
 
-	struct Cmiss_graphics_filter_module;
-	typedef struct Cmiss_graphics_filter_module *Cmiss_graphics_filter_module_id;
+	struct cmzn_graphics_filter_module;
+	typedef struct cmzn_graphics_filter_module *cmzn_graphics_filter_module_id;
 
-	struct Cmiss_graphics_filter;
-	typedef struct Cmiss_graphics_filter *Cmiss_graphics_filter_id;
+	struct cmzn_graphics_filter;
+	typedef struct cmzn_graphics_filter *cmzn_graphics_filter_id;
 
-	struct Cmiss_graphics_filter_operator;
-	typedef struct Cmiss_graphics_filter_operator *Cmiss_graphics_filter_operator_id;
+	struct cmzn_graphics_filter_operator;
+	typedef struct cmzn_graphics_filter_operator *cmzn_graphics_filter_operator_id;
 
 #endif

@@ -91,14 +91,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_power::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_power::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -221,7 +221,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_power(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_power(cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -327,14 +327,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_multiply_components::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_multiply_components::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -448,7 +448,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_multiply(
-	Cmiss_field_module *field_module,
+	cmzn_field_module *field_module,
 	Computed_field *source_field_one, Computed_field *source_field_two)
 {
 	Computed_field *field, *source_fields[2];
@@ -553,14 +553,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_divide_components::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_divide_components::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -676,7 +676,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_divide(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_divide(cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -782,14 +782,14 @@ private:
 		}
 	}
 
-	virtual int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_add::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_add::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -905,7 +905,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_weighted_add(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_weighted_add(cmzn_field_module *field_module,
 	struct Computed_field *source_field_one, double scale_factor1,
 	struct Computed_field *source_field_two, double scale_factor2)
 {
@@ -949,7 +949,7 @@ Computed_field *Computed_field_create_weighted_add(Cmiss_field_module *field_mod
 	return (field);
 } /* Computed_field_create_weighted_add */
 
-Computed_field *Computed_field_create_add(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_add(cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -957,7 +957,7 @@ Computed_field *Computed_field_create_add(Cmiss_field_module *field_module,
 		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_create_add */
 
-Computed_field *Computed_field_create_subtract(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_subtract(cmzn_field_module *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -1040,21 +1040,21 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 
-	virtual int propagate_find_element_xi(Cmiss_field_cache& field_cache,
+	virtual int propagate_find_element_xi(cmzn_field_cache& field_cache,
 		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
-		Cmiss_mesh_id mesh);
+		cmzn_mesh_id mesh);
 };
 
-int Computed_field_scale::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_scale::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1091,7 +1091,7 @@ int Computed_field_scale::evaluate(Cmiss_field_cache& cache, FieldValueCache& in
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_scale::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_scale::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	for (int i = 0; i < field->number_of_components; i++)
@@ -1105,9 +1105,9 @@ enum FieldAssignmentResult Computed_field_scale::assign(Cmiss_field_cache& cache
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
 
-int Computed_field_scale::propagate_find_element_xi(Cmiss_field_cache& field_cache,
+int Computed_field_scale::propagate_find_element_xi(cmzn_field_cache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, Cmiss_mesh_id mesh)
+	FE_value *xi, cmzn_mesh_id mesh)
 {
 	FE_value *source_values;
 	int i,return_code;
@@ -1236,7 +1236,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_scale(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_scale(cmzn_field_module *field_module,
 	struct Computed_field *source_field, double *scale_factors)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1248,7 +1248,7 @@ Sets the number of components equal to that of <source_field>.
 Not exposed in the API as this is really just a multiply with constant
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -1338,17 +1338,17 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 
 };
 
-int Computed_field_clamp_maximum::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_clamp_maximum::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1402,7 +1402,7 @@ int Computed_field_clamp_maximum::evaluate(Cmiss_field_cache& cache, FieldValueC
 }
 
 /** clamps to limits of maximums when setting values too */
-enum FieldAssignmentResult Computed_field_clamp_maximum::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_clamp_maximum::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	enum FieldAssignmentResult result1 = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
@@ -1503,7 +1503,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_maximum(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_clamp_maximum(cmzn_field_module *field_module,
 	struct Computed_field *source_field, double *maximums)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1518,7 +1518,7 @@ SAB.  I think this should be changed so that the maximums come from a source
 field rather than constant maximums before it is exposed in the API.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -1608,16 +1608,16 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_clamp_minimum::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_clamp_minimum::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1671,7 +1671,7 @@ int Computed_field_clamp_minimum::evaluate(Cmiss_field_cache& cache, FieldValueC
 }
 
 /** clamps to limits of minimums when setting values too */
-enum FieldAssignmentResult Computed_field_clamp_minimum::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_clamp_minimum::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	enum FieldAssignmentResult result1 = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
@@ -1771,7 +1771,7 @@ DESCRIPTION :
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_minimum(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_clamp_minimum(cmzn_field_module *field_module,
 	struct Computed_field *source_field, double *minimums)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1786,7 +1786,7 @@ SAB.  I think this should be changed so that the minimums come from a source
 field rather than constant minimums before it is exposed in the API.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -1884,21 +1884,21 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 
-	virtual int propagate_find_element_xi(Cmiss_field_cache& field_cache,
+	virtual int propagate_find_element_xi(cmzn_field_cache& field_cache,
 		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
-		Cmiss_mesh_id mesh);
+		cmzn_mesh_id mesh);
 };
 
-int Computed_field_offset::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_offset::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1935,7 +1935,7 @@ int Computed_field_offset::evaluate(Cmiss_field_cache& cache, FieldValueCache& i
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_offset::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_offset::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	for (int i = 0; i < field->number_of_components; i++)
@@ -1946,9 +1946,9 @@ enum FieldAssignmentResult Computed_field_offset::assign(Cmiss_field_cache& cach
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
 
-int Computed_field_offset::propagate_find_element_xi(Cmiss_field_cache& field_cache,
+int Computed_field_offset::propagate_find_element_xi(cmzn_field_cache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
-	FE_value *xi, Cmiss_mesh_id mesh)
+	FE_value *xi, cmzn_mesh_id mesh)
 {
 	FE_value *source_values;
 	int i,return_code;
@@ -2063,7 +2063,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_offset(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_offset(cmzn_field_module *field_module,
 	struct Computed_field *source_field, double *offsets)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2076,7 +2076,7 @@ components in <source_field>; this is the number of components in the field.
 Not exposed in the API is this is just an add with constant field.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -2178,16 +2178,16 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_edit_mask::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_edit_mask::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2201,7 +2201,7 @@ int Computed_field_edit_mask::evaluate(Cmiss_field_cache& cache, FieldValueCache
 }
 
 /* assigns only components for which edit mask value is non-zero */
-enum FieldAssignmentResult Computed_field_edit_mask::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_edit_mask::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
@@ -2298,7 +2298,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_edit_mask(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_edit_mask(cmzn_field_module *field_module,
 	struct Computed_field *source_field, double *edit_mask)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2314,7 +2314,7 @@ If function fails, field is guaranteed to be unchanged from its original state,
 although its cache may be lost.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -2407,14 +2407,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_log::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_log::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2516,7 +2516,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_log(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_log(cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2526,7 +2526,7 @@ Converts <field> to type COMPUTED_FIELD_LOG with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -2602,14 +2602,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_sqrt::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_sqrt::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2712,7 +2712,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sqrt(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_sqrt(cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2722,7 +2722,7 @@ Converts <field> to type COMPUTED_FIELD_SQRT with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -2798,14 +2798,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_exp::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_exp::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2908,7 +2908,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_exp(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_exp(cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2918,7 +2918,7 @@ Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,
@@ -2994,14 +2994,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_abs::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_abs::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -3123,7 +3123,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_abs(Cmiss_field_module *field_module,
+Computed_field *Computed_field_create_abs(cmzn_field_module *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 DESCRIPTION :
@@ -3131,7 +3131,7 @@ Converts <field> to type COMPUTED_FIELD_EXP with the supplied
 field, <source_field_one>.  Sets the number of components equal to the source_fields.
 ==============================================================================*/
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical())
 	{
 		field = Computed_field_create_generic(field_module,

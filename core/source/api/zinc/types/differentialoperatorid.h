@@ -41,7 +41,7 @@
 #ifndef CMZN_DIFFERENTIALOPERATORID_H__
 #define CMZN_DIFFERENTIALOPERATORID_H__
 
-	struct Cmiss_differential_operator;
-	typedef struct Cmiss_differential_operator *Cmiss_differential_operator_id;
+	struct cmzn_differential_operator;
+	typedef struct cmzn_differential_operator *cmzn_differential_operator_id;
 
 #endif

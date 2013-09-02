@@ -135,18 +135,18 @@ these are simply returned, since no valid direction can be produced.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
-	Cmiss_field_cache_id field_cache,
+	cmzn_field_cache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points,
-	struct GT_object *glyph, enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field, 
-	struct Cmiss_font *font, struct Computed_field *label_field,
+	struct cmzn_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
-	enum Cmiss_graphic_select_mode select_mode, int element_selected,
+	enum cmzn_graphic_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -178,22 +178,22 @@ from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 - the coordinate system of the variable_scale_field is ignored/not used.
-@param field_cache  Cmiss_field_cache for evaluating fields. Time is expected
+@param field_cache  cmzn_field_cache for evaluating fields. Time is expected
 to be set in the field_cache if needed.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
-	Cmiss_nodeset_id nodeset, Cmiss_field_cache_id field_cache,
+	cmzn_nodeset_id nodeset, cmzn_field_cache_id field_cache,
 	struct Computed_field *coordinate_field,
-	struct GT_object *glyph, enum Cmiss_glyph_repeat_mode glyph_repeat_mode,
+	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
 	FE_value time, struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
-	struct Cmiss_font *font, struct Computed_field *label_field,
+	struct cmzn_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum Cmiss_graphic_select_mode select_mode,
+	struct Computed_field *subgroup_field, enum cmzn_graphic_select_mode select_mode,
 	struct Computed_field *group_field);
 /*******************************************************************************
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
@@ -239,7 +239,7 @@ Notes:
  * @param time The time used for evaluating the various fields.
  */
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
-	Cmiss_field_cache_id field_cache, struct Graphics_vertex_array *vertex_array,
+	cmzn_field_cache_id field_cache, struct Graphics_vertex_array *vertex_array,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	struct Computed_field *texture_coordinate_field,
@@ -262,13 +262,13 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
  * - the coordinate field is assumed to be rectangular cartesian.
  */
 struct GT_surface *create_cylinder_from_FE_element(
-	struct FE_element *element, Cmiss_field_cache_id field_cache,
-	Cmiss_mesh_id line_mesh, struct Computed_field *coordinate_field,
+	struct FE_element *element, cmzn_field_cache_id field_cache,
+	cmzn_mesh_id line_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field, const FE_value *base_size,
-	const FE_value *scale_factors, Cmiss_field_id orientation_scale_field,
+	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum Cmiss_graphic_render_polygon_mode render_polygon_mode,
+	struct FE_element *top_level_element, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
 	FE_value time);
 
 /****************************************************************************//**
@@ -299,13 +299,13 @@ int get_surface_element_segmentation(struct FE_element *element,
  * @param surface_mesh  2-D surface mesh being converted to surface graphics.
 */
 struct GT_surface *create_GT_surface_from_FE_element(
-	struct FE_element *element, Cmiss_field_cache_id field_cache,
-	Cmiss_mesh_id surface_mesh, struct Computed_field *coordinate_field,
+	struct FE_element *element, cmzn_field_cache_id field_cache,
+	cmzn_mesh_id surface_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum Cmiss_graphic_render_polygon_mode render_polygon_mode, FE_value time);
+	enum cmzn_graphic_render_polygon_mode render_polygon_mode, FE_value time);
 
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */

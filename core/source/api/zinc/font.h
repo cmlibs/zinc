@@ -1,8 +1,8 @@
 /*******************************************************************************
  * cmiss_font.h
  *
- * Public interface to Cmiss_graphics_filter objects for filtering graphics
- * displayed in a Cmiss_scene.
+ * Public interface to cmzn_graphics_filter objects for filtering graphics
+ * displayed in a cmzn_scene.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -58,8 +58,8 @@ extern "C" {
 * @param font_module  The font module to obtain a new reference to.
 * @return  font module with incremented reference count.
 */
-ZINC_API Cmiss_font_module_id Cmiss_font_module_access(
-	Cmiss_font_module_id font_module);
+ZINC_API cmzn_font_module_id cmzn_font_module_access(
+	cmzn_font_module_id font_module);
 
 /**
 * Destroys this reference to the font module (and sets it to NULL).
@@ -69,8 +69,8 @@ ZINC_API Cmiss_font_module_id Cmiss_font_module_access(
 *   to destroy.
 * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
 */
-ZINC_API int Cmiss_font_module_destroy(
-	Cmiss_font_module_id *font_module_address);
+ZINC_API int cmzn_font_module_destroy(
+	cmzn_font_module_id *font_module_address);
 
 /**
  * Create and return a handle to a new font.
@@ -79,30 +79,30 @@ ZINC_API int Cmiss_font_module_destroy(
  * font will belong to.
  * @return  Handle to the newly created font if successful, otherwise NULL.
  */
-ZINC_API Cmiss_font_id Cmiss_font_module_create_font(
-	Cmiss_font_module_id font_module);
+ZINC_API cmzn_font_id cmzn_font_module_create_font(
+	cmzn_font_module_id font_module);
 
 /**
 * Begin caching or increment cache level for this font module. Call this
 * function before making multiple changes to minimise number of change messages
 * sent to clients. Must remember to end_change after completing changes.
-* @see Cmiss_font_module_end_change
+* @see cmzn_font_module_end_change
 *
 * @param font_module  The font_module to begin change cache on.
 * @return  Status CMISS_OK on success, otherwise CMISS_ERROR_ARGUMENT.
 */
-ZINC_API int Cmiss_font_module_begin_change(Cmiss_font_module_id font_module);
+ZINC_API int cmzn_font_module_begin_change(cmzn_font_module_id font_module);
 
 /***************************************************************************//**
 * Decrement cache level or end caching of changes for the font module.
-* Call Cmiss_font_module_begin_change before making multiple changes
+* Call cmzn_font_module_begin_change before making multiple changes
 * and call this afterwards. When change level is restored to zero,
 * cached change messages are sent out to clients.
 *
 * @param font_module  The glyph_module to end change cache on.
 * @return  Status CMISS_OK on success, any other value on failure.
 */
-ZINC_API int Cmiss_font_module_end_change(Cmiss_font_module_id font_module);
+ZINC_API int cmzn_font_module_end_change(cmzn_font_module_id font_module);
 
 /**
 * Find the font with the specified name, if any.
@@ -112,8 +112,8 @@ ZINC_API int Cmiss_font_module_end_change(Cmiss_font_module_id font_module);
 * @return  Handle to the font of that name, or 0 if not found.
 * 	Up to caller to destroy returned handle.
 */
-ZINC_API Cmiss_font_id Cmiss_font_module_find_font_by_name(
-	Cmiss_font_module_id font_module, const char *name);
+ZINC_API cmzn_font_id cmzn_font_module_find_font_by_name(
+	cmzn_font_module_id font_module, const char *name);
 
 /**
 * Get the default font, if any.
@@ -122,8 +122,8 @@ ZINC_API Cmiss_font_id Cmiss_font_module_find_font_by_name(
 * @return  Handle to the default font, or 0 if none.
 * 	Up to caller to destroy returned handle.
 */
-ZINC_API Cmiss_font_id Cmiss_font_module_get_default_font(
-	Cmiss_font_module_id font_module);
+ZINC_API cmzn_font_id cmzn_font_module_get_default_font(
+	cmzn_font_module_id font_module);
 
 /**
 * Set the default font.
@@ -132,9 +132,9 @@ ZINC_API Cmiss_font_id Cmiss_font_module_get_default_font(
 * @param font  The font to set as default.
 * @return  CMISS_OK on success otherwise CMISS_ERROR_ARGUMENT.
 */
-ZINC_API int Cmiss_font_module_set_default_font(
-	Cmiss_font_module_id font_module,
-	Cmiss_font_id font);
+ZINC_API int cmzn_font_module_set_default_font(
+	cmzn_font_module_id font_module,
+	cmzn_font_id font);
 
 /**
  * Access the font, increase the access count of the font by one.
@@ -142,7 +142,7 @@ ZINC_API int Cmiss_font_module_set_default_font(
  * @param font  handle to the "to be access" cmiss font.
  * @return  handle to font if successfully access font.
  */
-ZINC_API Cmiss_font_id Cmiss_font_access(Cmiss_font_id font);
+ZINC_API cmzn_font_id cmzn_font_access(cmzn_font_id font);
 
 /**
  * Destroy the graphics font.
@@ -152,16 +152,16 @@ ZINC_API Cmiss_font_id Cmiss_font_access(Cmiss_font_id font);
  * @return  status CMISS_OK if successfully destroy graphics font, any other value
  * on failure.
  */
-ZINC_API int Cmiss_font_destroy(Cmiss_font_id *font_address);
+ZINC_API int cmzn_font_destroy(cmzn_font_id *font_address);
 
 /**
  * Return an allocated string containing font name.
  *
  * @param spectrum  handle to the cmiss graphics font.
  * @return  allocated string containing font name, otherwise NULL. Up to
- * caller to free using Cmiss_deallocate().
+ * caller to free using cmzn_deallocate().
  */
-ZINC_API char *Cmiss_font_get_name(Cmiss_font_id font);
+ZINC_API char *cmzn_font_get_name(cmzn_font_id font);
 
 /**
  * Set/change name for <font>.
@@ -171,7 +171,7 @@ ZINC_API char *Cmiss_font_get_name(Cmiss_font_id font);
  * @return  status CMISS_OK if successfully set/change name for font,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_name(Cmiss_font_id font,
+ZINC_API int cmzn_font_set_name(cmzn_font_id font,
 	const char *name);
 
 /**
@@ -180,8 +180,8 @@ ZINC_API int Cmiss_font_set_name(Cmiss_font_id font,
  * @param font  The handle to cmiss graphics font.
  * @return The true type of font, otherwise returns INVALID_TYPE;
  */
-ZINC_API Cmiss_font_type Cmiss_font_get_font_type(
-	Cmiss_font_id font);
+ZINC_API cmzn_font_type cmzn_font_get_font_type(
+	cmzn_font_id font);
 
 /**
  * Set the true type font of the given font.
@@ -191,8 +191,8 @@ ZINC_API Cmiss_font_type Cmiss_font_get_font_type(
  * @return  status CMISS_OK if successfully set the true type for font,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_font_type(Cmiss_font_id font,
-	Cmiss_font_type font_type);
+ZINC_API int cmzn_font_set_font_type(cmzn_font_id font,
+	cmzn_font_type font_type);
 
 /**
  * Get the rendering type of the given font.
@@ -200,8 +200,8 @@ ZINC_API int Cmiss_font_set_font_type(Cmiss_font_id font,
  * @param font  The handle to cmiss graphics font.
  * @return The render type of font, otherwise returns INVALID_TYPE;
  */
-ZINC_API Cmiss_font_render_type Cmiss_font_get_render_type(
-	Cmiss_font_id font);
+ZINC_API cmzn_font_render_type cmzn_font_get_render_type(
+	cmzn_font_id font);
 
 /**
  * Set the rendering type of the given font.
@@ -211,8 +211,8 @@ ZINC_API Cmiss_font_render_type Cmiss_font_get_render_type(
  * @return  status CMISS_OK if successfully set the font type,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_render_type(Cmiss_font_id font,
-	Cmiss_font_render_type render_type);
+ZINC_API int cmzn_font_set_render_type(cmzn_font_id font,
+	cmzn_font_render_type render_type);
 
 /**
  * Get whether bold text is enabled.
@@ -220,7 +220,7 @@ ZINC_API int Cmiss_font_set_render_type(Cmiss_font_id font,
  * @param font  The handle to cmiss graphics font.
  * @return  1 if bold text is enabled otherwise 0.
  */
-ZINC_API int Cmiss_font_get_bold(Cmiss_font_id font);
+ZINC_API int cmzn_font_get_bold(cmzn_font_id font);
 
 /**
  * Set whether font should be bold or not.
@@ -230,7 +230,7 @@ ZINC_API int Cmiss_font_get_bold(Cmiss_font_id font);
  * @return  status CMISS_OK if successfully enable/disable bold text,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_bold(Cmiss_font_id font, int bold);
+ZINC_API int cmzn_font_set_bold(cmzn_font_id font, int bold);
 
 /**
  * Get the depth for extrude font type.
@@ -238,7 +238,7 @@ ZINC_API int Cmiss_font_set_bold(Cmiss_font_id font, int bold);
  * @param font  The handle to cmiss graphics font.
  * @return  depth of the font.
  */
-ZINC_API double Cmiss_font_get_depth(Cmiss_font_id font);
+ZINC_API double cmzn_font_get_depth(cmzn_font_id font);
 
 /**
  * Set the depth for extrude font type.
@@ -248,7 +248,7 @@ ZINC_API double Cmiss_font_get_depth(Cmiss_font_id font);
  * @return  status CMISS_OK if successfully set depth for font,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_depth(Cmiss_font_id font, double depth);
+ZINC_API int cmzn_font_set_depth(cmzn_font_id font, double depth);
 
 /**
  * Get whether italic text is enabled.
@@ -256,7 +256,7 @@ ZINC_API int Cmiss_font_set_depth(Cmiss_font_id font, double depth);
  * @param font  The handle to cmiss graphics font.
  * @return  1 if italic text is enabled otherwise 0.
  */
-ZINC_API int Cmiss_font_get_italic(Cmiss_font_id font);
+ZINC_API int cmzn_font_get_italic(cmzn_font_id font);
 
 /**
  * Set whether font should be italic or not.
@@ -266,7 +266,7 @@ ZINC_API int Cmiss_font_get_italic(Cmiss_font_id font);
  * @return  status CMISS_OK if successfully enable/disable italic text,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_italic(Cmiss_font_id font, int italic);
+ZINC_API int cmzn_font_set_italic(cmzn_font_id font, int italic);
 
 /**
  * Get the size for extrude font type.
@@ -274,7 +274,7 @@ ZINC_API int Cmiss_font_set_italic(Cmiss_font_id font, int italic);
  * @param font  The handle to cmiss graphics font.
  * @return  size of the font.
  */
-ZINC_API int Cmiss_font_get_size(Cmiss_font_id font);
+ZINC_API int cmzn_font_get_size(cmzn_font_id font);
 
 /**
  * Set the size for font type.
@@ -284,7 +284,7 @@ ZINC_API int Cmiss_font_get_size(Cmiss_font_id font);
  * @return  status CMISS_OK if successfully set size for font,
  * any other value on failure.
  */
-ZINC_API int Cmiss_font_set_size(Cmiss_font_id font, int size);
+ZINC_API int cmzn_font_set_size(cmzn_font_id font, int size);
 
 
 #ifdef __cplusplus

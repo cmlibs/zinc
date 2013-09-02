@@ -48,7 +48,7 @@ namespace zinc
 class Optimisation
 {
 protected:
-	Cmiss_optimisation_id id;
+	cmzn_optimisation_id id;
 
 public:
 
@@ -56,21 +56,21 @@ public:
 	{   }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Optimisation(Cmiss_optimisation_id in_optimisation_id) :
+	explicit Optimisation(cmzn_optimisation_id in_optimisation_id) :
 		id(in_optimisation_id)
 	{  }
 
 	Optimisation(const Optimisation& optimisation) :
-		id(Cmiss_optimisation_access(optimisation.id))
+		id(cmzn_optimisation_access(optimisation.id))
 	{ }
 
 	Optimisation& operator=(const Optimisation& optimisation)
 	{
 
-		Cmiss_optimisation_id temp_id = Cmiss_optimisation_access(optimisation.id);
+		cmzn_optimisation_id temp_id = cmzn_optimisation_access(optimisation.id);
 		if (0 != id)
 		{
-			Cmiss_optimisation_destroy(&id);
+			cmzn_optimisation_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -80,7 +80,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_optimisation_destroy(&id);
+			cmzn_optimisation_destroy(&id);
 		}
 	}
 
@@ -114,94 +114,94 @@ public:
 		ATTRIBUTE_TRUST_REGION_SIZE = CMISS_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE
 	};
 
-	Cmiss_optimisation_id getId()
+	cmzn_optimisation_id getId()
 	{
 		return id;
 	}
 
 	Method getMethod()
 	{
-		return static_cast<Method>(Cmiss_optimisation_get_method(id));
+		return static_cast<Method>(cmzn_optimisation_get_method(id));
 	}
 
 	int setMethod(Method method)
 	{
-		return Cmiss_optimisation_set_method(id,
-			static_cast<Cmiss_optimisation_method>(method));
+		return cmzn_optimisation_set_method(id,
+			static_cast<cmzn_optimisation_method>(method));
 	}
 
 	int getAttributeInteger(Attribute attribute)
 	{
-		return Cmiss_optimisation_get_attribute_integer(id,
-			static_cast<Cmiss_optimisation_attribute>(attribute));
+		return cmzn_optimisation_get_attribute_integer(id,
+			static_cast<cmzn_optimisation_attribute>(attribute));
 	}
 
 	int setAttributeInteger(Attribute attribute, int value)
 	{
-		return Cmiss_optimisation_set_attribute_integer(id,
-			static_cast<Cmiss_optimisation_attribute>(attribute), value);
+		return cmzn_optimisation_set_attribute_integer(id,
+			static_cast<cmzn_optimisation_attribute>(attribute), value);
 	}
 
 	double getAttributeReal(Attribute attribute)
 	{
-		return Cmiss_optimisation_get_attribute_real(id,
-					static_cast<Cmiss_optimisation_attribute>(attribute));
+		return cmzn_optimisation_get_attribute_real(id,
+					static_cast<cmzn_optimisation_attribute>(attribute));
 	}
 
 	int setAttributeReal(Attribute attribute, double value)
 	{
-		return Cmiss_optimisation_set_attribute_real(id,
-			static_cast<Cmiss_optimisation_attribute>(attribute), value);
+		return cmzn_optimisation_set_attribute_real(id,
+			static_cast<cmzn_optimisation_attribute>(attribute), value);
 	}
 
 	Field getFirstIndependentField()
 	{
-		return Field(Cmiss_optimisation_get_first_independent_field(id));
+		return Field(cmzn_optimisation_get_first_independent_field(id));
 	}
 
 	Field getNextIndependentField(Field& refField)
 	{
-		return Field(Cmiss_optimisation_get_next_independent_field(id, refField.getId()));
+		return Field(cmzn_optimisation_get_next_independent_field(id, refField.getId()));
 	}
 
 	int addIndependentField(Field& field)
 	{
-		return (Cmiss_optimisation_add_independent_field(id, field.getId()));
+		return (cmzn_optimisation_add_independent_field(id, field.getId()));
 	}
 
 	int removeIndepdentField(Field& field)
 	{
-		return (Cmiss_optimisation_remove_independent_field(id, field.getId()));
+		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
 	}
 
 	Field getFirstObjectiveField()
 	{
-		return Field(Cmiss_optimisation_get_first_objective_field(id));
+		return Field(cmzn_optimisation_get_first_objective_field(id));
 	}
 
 	Field getNextObjectiveField(Field& refField)
 	{
-		return Field(Cmiss_optimisation_get_next_objective_field(id, refField.getId()));
+		return Field(cmzn_optimisation_get_next_objective_field(id, refField.getId()));
 	}
 
 	int addObjectiveField(Field& field)
 	{
-		return (Cmiss_optimisation_add_objective_field(id, field.getId()));
+		return (cmzn_optimisation_add_objective_field(id, field.getId()));
 	}
 
 	int removeObjectiveField(Field& field)
 	{
-		return (Cmiss_optimisation_remove_independent_field(id, field.getId()));
+		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
 	}
 
 	char *getSolutionReport()
 	{
-		return Cmiss_optimisation_get_solution_report(id);
+		return cmzn_optimisation_get_solution_report(id);
 	}
 
 	int optimise()
 	{
-		return Cmiss_optimisation_optimise(id);
+		return cmzn_optimisation_optimise(id);
 	}
 
 };

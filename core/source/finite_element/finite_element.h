@@ -170,7 +170,7 @@ Used to specify a component of a field.  If the component <number> is < 0 or
 	int number;
 }; /* struct FE_field_component */
 
-/* API uses external type enum Cmiss_nodal_value_type */
+/* API uses external type enum cmzn_nodal_value_type */
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -197,8 +197,8 @@ starts at 0.
 
 struct FE_node_field_creator;
 
-struct Cmiss_node;
-#define FE_node Cmiss_node
+struct cmzn_node;
+#define FE_node cmzn_node
 
 DECLARE_LIST_TYPES(FE_node);
 
@@ -336,7 +336,7 @@ coordinates from face coordinates.
 
 DECLARE_LIST_TYPES(FE_element_shape);
 
-#define FE_element Cmiss_element
+#define FE_element cmzn_element
 /*******************************************************************************
 LAST MODIFIED : 9 October 2002
 
@@ -350,7 +350,7 @@ DECLARE_LIST_TYPES(FE_element);
 
 DECLARE_CHANGE_LOG_TYPES(FE_element);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_element_point_sample_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_point_sample_mode);
 
 typedef int (*FE_element_field_component_modify)(
 	struct FE_element_field_component *,struct FE_element *,struct FE_field *,
@@ -452,7 +452,7 @@ or conditional function, eg. add_FE_element_using_node_list_to_list.
 	struct LIST(FE_node) *node_list;
 };
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Cmiss_field_domain_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_domain_type);
 
 /*
 Global functions
@@ -1300,17 +1300,17 @@ PROTOTYPE_LIST_FUNCTIONS(FE_node);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node,cm_node_identifier,int);
 
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,Cmiss_node_iterator);
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,cmzn_node_iterator);
 
 /***************************************************************************//**
- * Internal variant of public Cmiss_node_iterator_next() which does not access
+ * Internal variant of public cmzn_node_iterator_next() which does not access
  * the returned node, for more efficient if less safe usage.
  *
  * @param node_iterator  Node iterator to query and advance.
  * @return  Non-accessed pointer to the next node, or NULL if none remaining.
  */
-Cmiss_node_id Cmiss_node_iterator_next_non_access(
-	Cmiss_node_iterator_id node_iterator);
+cmzn_node_id cmzn_node_iterator_next_non_access(
+	cmzn_node_iterator_id node_iterator);
 
 /***************************************************************************//**
  * List statistics about btree efficiency for node list.
@@ -1899,20 +1899,20 @@ PROTOTYPE_OBJECT_FUNCTIONS(FE_element_shape);
 PROTOTYPE_LIST_FUNCTIONS(FE_element_shape);
 
 /***************************************************************************//**
- * Creates an element shape object given just a Cmiss_element_shape_type.
+ * Creates an element shape object given just a cmzn_element_shape_type.
  *
  * @return  Accessed shape object or NULL on error.
  */
 struct FE_element_shape *FE_element_shape_create_simple_type(
-	struct FE_region *fe_region, enum Cmiss_element_shape_type shape_type);
+	struct FE_region *fe_region, enum cmzn_element_shape_type shape_type);
 
 /***************************************************************************//**
- * Returns a Cmiss_element_shape_type describing the shape if possible.
+ * Returns a cmzn_element_shape_type describing the shape if possible.
  *
  * @param element_shape   The shape object to query.
  * @return  The shape type, or unknown if not able to be described by enum.
  */
-enum Cmiss_element_shape_type FE_element_shape_get_simple_type(
+enum cmzn_element_shape_type FE_element_shape_get_simple_type(
 	struct FE_element_shape *element_shape);
 
 /***************************************************************************//**
@@ -2111,7 +2111,7 @@ correct size and should be DEALLOCATED when finished with.
  * @param conditional_data  User data to pass to optional conditional function.
  */
 int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, Cmiss_element_face_type face,
+	int dimension, int exterior, cmzn_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
 
 int equivalent_FE_field_in_elements(struct FE_field *field,
@@ -2643,17 +2643,17 @@ PROTOTYPE_LIST_FUNCTIONS(FE_element);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier, \
 	const struct CM_element_information *);
 
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,Cmiss_element_iterator);
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_element_iterator);
 
 /***************************************************************************//**
- * Internal variant of public Cmiss_element_iterator_next() which does not
+ * Internal variant of public cmzn_element_iterator_next() which does not
  * access the returned element, for more efficient if less safe usage.
  *
  * @param element_iterator  Element iterator to query and advance.
  * @return  Non-accessed pointer to the next element, or NULL if none remaining.
  */
-Cmiss_element_id Cmiss_element_iterator_next_non_access(
-	Cmiss_element_iterator_id element_iterator);
+cmzn_element_id cmzn_element_iterator_next_non_access(
+	cmzn_element_iterator_id element_iterator);
 
 /***************************************************************************//**
  * List statistics about btree efficiency for element list.
@@ -3374,7 +3374,7 @@ Returns true if <top_level_element> is a top_level parent of <element>.
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_element_face_type specified_face, FE_value *element_to_top_level);
+	cmzn_element_face_type specified_face, FE_value *element_to_top_level);
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element,
 	const FE_value *xi, int element_dimension,
@@ -3418,7 +3418,7 @@ as remaining values up to this size are cleared to zero.
  */
 int get_FE_element_discretization(struct FE_element *element,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
-	Cmiss_element_face_type face, struct FE_field *native_discretization_field,
+	cmzn_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi);
 

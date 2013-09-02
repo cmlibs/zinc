@@ -64,48 +64,48 @@ This provides a Cmgui interface to the font contexts of many types.
 Module types
 ------------
 */
-struct Cmiss_font *Cmiss_font_create_private();
+struct cmzn_font *cmzn_font_create_private();
 
-struct Cmiss_font_module
+struct cmzn_font_module
 {
 
 private:
 
-	struct MANAGER(Cmiss_font) *fontManager;
-	Cmiss_font *defaultFont;
+	struct MANAGER(cmzn_font) *fontManager;
+	cmzn_font *defaultFont;
 	int access_count;
 
-	Cmiss_font_module() :
-		fontManager(CREATE(MANAGER(Cmiss_font))()),
+	cmzn_font_module() :
+		fontManager(CREATE(MANAGER(cmzn_font))()),
 		defaultFont(0),
 		access_count(1)
 	{
 	}
 
-	~Cmiss_font_module()
+	~cmzn_font_module()
 	{
 		if (defaultFont)
 		{
-			DEACCESS(Cmiss_font)(&(this->defaultFont));
+			DEACCESS(cmzn_font)(&(this->defaultFont));
 		}
-		DESTROY(MANAGER(Cmiss_font))(&(this->fontManager));
+		DESTROY(MANAGER(cmzn_font))(&(this->fontManager));
 	}
 
 public:
 
-	static Cmiss_font_module *create()
+	static cmzn_font_module *create()
 	{
-		return new Cmiss_font_module();
+		return new cmzn_font_module();
 	}
 
-	Cmiss_font_module *access()
+	cmzn_font_module *access()
 
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Cmiss_font_module* &font_module)
+	static int deaccess(cmzn_font_module* &font_module)
 	{
 		if (font_module)
 		{
@@ -120,68 +120,68 @@ public:
 		return CMISS_ERROR_ARGUMENT;
 	}
 
-	struct MANAGER(Cmiss_font) *getManager()
+	struct MANAGER(cmzn_font) *getManager()
 	{
 		return this->fontManager;
 	}
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(Cmiss_font)(this->fontManager);
+		return MANAGER_BEGIN_CACHE(cmzn_font)(this->fontManager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(Cmiss_font)(this->fontManager);
+		return MANAGER_END_CACHE(cmzn_font)(this->fontManager);
 	}
 
-	Cmiss_font_id createFont()
+	cmzn_font_id createFont()
 	{
-		Cmiss_font_id font = NULL;
+		cmzn_font_id font = NULL;
 		char temp_name[20];
-		int i = NUMBER_IN_MANAGER(Cmiss_font)(this->fontManager);
+		int i = NUMBER_IN_MANAGER(cmzn_font)(this->fontManager);
 		do
 		{
 			i++;
 			sprintf(temp_name, "temp%d",i);
 		}
-		while (FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_font,name)(temp_name,
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_font,name)(temp_name,
 			this->fontManager));
-		font = Cmiss_font_create_private();
-		Cmiss_font_set_name(font, temp_name);
-		if (!ADD_OBJECT_TO_MANAGER(Cmiss_font)(font, this->fontManager))
+		font = cmzn_font_create_private();
+		cmzn_font_set_name(font, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(cmzn_font)(font, this->fontManager))
 		{
-			DEACCESS(Cmiss_font)(&font);
+			DEACCESS(cmzn_font)(&font);
 		}
 		return font;
 	}
 
-	Cmiss_font *findFontByName(const char *name)
+	cmzn_font *findFontByName(const char *name)
 	{
-		Cmiss_font *font = FIND_BY_IDENTIFIER_IN_MANAGER(Cmiss_font,name)(name,
+		cmzn_font *font = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_font,name)(name,
 			this->fontManager);
 		if (font)
 		{
-			return ACCESS(Cmiss_font)(font);
+			return ACCESS(cmzn_font)(font);
 		}
 		return 0;
 	}
 
-	Cmiss_font *getDefaultFont()
+	cmzn_font *getDefaultFont()
 	{
 		if (this->defaultFont)
 		{
-			ACCESS(Cmiss_font)(this->defaultFont);
+			ACCESS(cmzn_font)(this->defaultFont);
 			return this->defaultFont;
 		}
 		else
 		{
 			const char *default_font_name = "default";
-			struct Cmiss_font *font = findFontByName(default_font_name);
+			struct cmzn_font *font = findFontByName(default_font_name);
 			if (NULL == font)
 			{
 				font = createFont();
-				Cmiss_font_set_name(font, "default");
+				cmzn_font_set_name(font, "default");
 			}
 			if (font)
 				setDefaultFont(font);
@@ -190,90 +190,90 @@ public:
 		return 0;
 	}
 
-	int setDefaultFont(Cmiss_font *font)
+	int setDefaultFont(cmzn_font *font)
 	{
-		REACCESS(Cmiss_font)(&this->defaultFont, font);
+		REACCESS(cmzn_font)(&this->defaultFont, font);
 		return CMISS_OK;
 	}
 
 };
 
-Cmiss_font_module_id Cmiss_font_module_create()
+cmzn_font_module_id cmzn_font_module_create()
 {
-	return Cmiss_font_module::create();
+	return cmzn_font_module::create();
 }
 
-Cmiss_font_module_id Cmiss_font_module_access(
-	Cmiss_font_module_id font_module)
+cmzn_font_module_id cmzn_font_module_access(
+	cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->access();
 	return 0;
 }
 
-int Cmiss_font_module_destroy(Cmiss_font_module_id *font_module_address)
+int cmzn_font_module_destroy(cmzn_font_module_id *font_module_address)
 {
 	if (font_module_address)
-		return Cmiss_font_module::deaccess(*font_module_address);
+		return cmzn_font_module::deaccess(*font_module_address);
 	return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_font_id Cmiss_font_module_create_font(
-	Cmiss_font_module_id font_module)
+cmzn_font_id cmzn_font_module_create_font(
+	cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->createFont();
 	return 0;
 }
 
-struct MANAGER(Cmiss_font) *Cmiss_font_module_get_manager(
-	Cmiss_font_module_id font_module)
+struct MANAGER(cmzn_font) *cmzn_font_module_get_manager(
+	cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->getManager();
 	return 0;
 }
 
-int Cmiss_font_module_begin_change(Cmiss_font_module_id font_module)
+int cmzn_font_module_begin_change(cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->beginChange();
    return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_font_module_end_change(Cmiss_font_module_id font_module)
+int cmzn_font_module_end_change(cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->endChange();
    return CMISS_ERROR_ARGUMENT;
 }
 
-Cmiss_font_id Cmiss_font_module_find_font_by_name(
-	Cmiss_font_module_id font_module, const char *name)
+cmzn_font_id cmzn_font_module_find_font_by_name(
+	cmzn_font_module_id font_module, const char *name)
 {
 	if (font_module)
 		return font_module->findFontByName(name);
    return 0;
 }
 
-Cmiss_font_id Cmiss_font_module_get_default_font(
-	Cmiss_font_module_id font_module)
+cmzn_font_id cmzn_font_module_get_default_font(
+	cmzn_font_module_id font_module)
 {
 	if (font_module)
 		return font_module->getDefaultFont();
 	return 0;
 }
 
-int Cmiss_font_module_set_default_font(
-	Cmiss_font_module_id font_module,
-	Cmiss_font_id font)
+int cmzn_font_module_set_default_font(
+	cmzn_font_module_id font_module,
+	cmzn_font_id font)
 {
 	if (font_module)
 		return font_module->setDefaultFont(font);
 	return 0;
 }
 
-struct Cmiss_font
+struct cmzn_font
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
@@ -285,37 +285,37 @@ DESCRIPTION :
 	int offset_x, offset_y;
 	int size, italic, bold, changed;
 	double depth;
-	Cmiss_font_type font_type;
-	Cmiss_font_render_type render_type;
+	cmzn_font_type font_type;
+	cmzn_font_render_type render_type;
 	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Cmiss_font) *manager;
+	struct MANAGER(cmzn_font) *manager;
 	int manager_change_status;
 	int access_count;
 
 	FTFont *ftFont;
 };
 
-FULL_DECLARE_LIST_TYPE(Cmiss_font);
+FULL_DECLARE_LIST_TYPE(cmzn_font);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Cmiss_font, Cmiss_font_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_font, cmzn_font_module, void *);
 
 /*
 Module functions
 ----------------
 */
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Cmiss_font)
+DECLARE_LOCAL_MANAGER_FUNCTIONS(cmzn_font)
 
-DECLARE_LIST_FUNCTIONS(Cmiss_font)
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Cmiss_font,name,const char *,strcmp)
-DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Cmiss_font,name)
+DECLARE_LIST_FUNCTIONS(cmzn_font)
+DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_font,name,const char *,strcmp)
+DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_font,name)
 
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Cmiss_font,name)
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(cmzn_font,name)
 {
 	char *name;
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Cmiss_font,name));
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(cmzn_font,name));
 	/* check arguments */
 	if (source&&destination)
 	{
@@ -329,7 +329,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Cmiss_font,name)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Cmiss_font,name).  Insufficient memory");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_font,name).  Insufficient memory");
 				return_code=0;
 			}
 		}
@@ -340,7 +340,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Cmiss_font,name)
 		}
 		if (return_code)
 		{
-			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Cmiss_font,name)(
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_font,name)(
 				destination,source);
 			if (return_code)
 			{
@@ -352,26 +352,26 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Cmiss_font,name)
 			{
 				DEALLOCATE(name);
 				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Cmiss_font,name).  Could not copy without identifier");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_font,name).  Could not copy without identifier");
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Cmiss_font,name).  Invalid argument(s)");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_font,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Cmiss_font,name) */
+} /* MANAGER_COPY_WITH_IDENTIFIER(cmzn_font,name) */
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Cmiss_font,name)
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_font,name)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Cmiss_font,name));
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_font,name));
 	if (source && destination)
 	{
 		destination->offset_x = 0;
@@ -387,20 +387,20 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Cmiss_font,name)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(Cmiss_font,name).  Invalid argument(s)");
+			"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_font,name).  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Cmiss_font,name) */
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_font,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Cmiss_font,name,const char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(cmzn_font,name,const char *)
 {
 	char *destination_name;
 	int return_code;
 
-	ENTER(MANAGER_COPY_IDENTIFIER(Cmiss_font,name));
+	ENTER(MANAGER_COPY_IDENTIFIER(cmzn_font,name));
 	if (name&&destination)
 	{
 		if (ALLOCATE(destination_name,char,strlen(name)+1))
@@ -416,48 +416,48 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Cmiss_font,name,const char *)
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_IDENTIFIER(Cmiss_font,name).  Insufficient memory");
+				"MANAGER_COPY_IDENTIFIER(cmzn_font,name).  Insufficient memory");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Cmiss_font,name).  Invalid argument(s)");
+			"MANAGER_COPY_IDENTIFIER(cmzn_font,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Cmiss_font,name) */
+} /* MANAGER_COPY_IDENTIFIER(cmzn_font,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Cmiss_font,manager)
+DECLARE_MANAGER_FUNCTIONS(cmzn_font,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Cmiss_font,manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_font,manager)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Cmiss_font,name,const char *,manager)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_font,name,const char *,manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Cmiss_font, struct Cmiss_font_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_font, struct cmzn_font_module)
 
-int Cmiss_font_manager_set_owner(struct MANAGER(Cmiss_font) *manager,
-	struct Cmiss_font_module *font_module)
+int cmzn_font_manager_set_owner(struct MANAGER(cmzn_font) *manager,
+	struct cmzn_font_module *font_module)
 {
-	return MANAGER_SET_OWNER(Cmiss_font)(manager, font_module);
+	return MANAGER_SET_OWNER(cmzn_font)(manager, font_module);
 }
 
-DECLARE_OBJECT_FUNCTIONS(Cmiss_font)
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Cmiss_font)
+DECLARE_OBJECT_FUNCTIONS(cmzn_font)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_font)
 
-struct Cmiss_font *Cmiss_font_create_private()
+struct cmzn_font *cmzn_font_create_private()
 /*******************************************************************************
 LAST MODIFIED : 11 April 2007
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	Cmiss_font *font;
+	cmzn_font *font;
 
-	if (ALLOCATE(font, struct Cmiss_font, 1))
+	if (ALLOCATE(font, struct cmzn_font, 1))
 	{
 		font->name = 0;
 		font->offset_x = 0;
@@ -468,22 +468,22 @@ DESCRIPTION :
 		font->depth = 0.1;
 		font->font_type = CMISS_FONT_TYPE_OpenSans;
 		font->render_type = CMISS_FONT_RENDER_TYPE_BITMAP;
-		font->manager = (struct MANAGER(Cmiss_font) *)NULL;
-		font->manager_change_status = MANAGER_CHANGE_NONE(Cmiss_font);
+		font->manager = (struct MANAGER(cmzn_font) *)NULL;
+		font->manager_change_status = MANAGER_CHANGE_NONE(cmzn_font);
 		font->ftFont = 0;
 		font->changed = 1;
 		font->access_count = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"CREATE(Cmiss_font). Unable to allocate font structure");
-		font = (struct Cmiss_font *)NULL;
+		display_message(ERROR_MESSAGE,"CREATE(cmzn_font). Unable to allocate font structure");
+		font = (struct cmzn_font *)NULL;
 	}
 
 	return (font);
-} /* CREATE(Cmiss_font) */
+} /* CREATE(cmzn_font) */
 
-int DESTROY(Cmiss_font)(struct Cmiss_font **font_address)
+int DESTROY(cmzn_font)(struct cmzn_font **font_address)
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
 
@@ -491,9 +491,9 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_font *font;
+	struct cmzn_font *font;
 
-	ENTER(DESTROY(Cmiss_font));
+	ENTER(DESTROY(cmzn_font));
 	if (font_address && (font = *font_address))
 	{
 		if (font->name)
@@ -506,22 +506,22 @@ DESCRIPTION :
 		}
 
 		DEALLOCATE(*font_address);
-		*font_address = (struct Cmiss_font *)NULL;
+		*font_address = (struct cmzn_font *)NULL;
 
 		return_code=1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Cmiss_font).  Missing package");
+			"DESTROY(cmzn_font).  Missing package");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Cmiss_font) */
+} /* DESTROY(cmzn_font) */
 
-unsigned int Cmiss_font_get_font_buffer(struct Cmiss_font *font,
+unsigned int cmzn_font_get_font_buffer(struct cmzn_font *font,
 	unsigned char **font_type_buffer_out)
 {
 	unsigned char *font_type_buffer = 0;
@@ -562,7 +562,7 @@ unsigned int Cmiss_font_get_font_buffer(struct Cmiss_font *font,
 	return font_type_length;
 }
 
-int Cmiss_font_compile(struct Cmiss_font *font)
+int cmzn_font_compile(struct cmzn_font *font)
 /*******************************************************************************
 LAST MODIFIED : 12 March 2008
 
@@ -587,7 +587,7 @@ Compiles the specified <font> so it can be used by the graphics.  The
 		{
 			unsigned char *font_type_buffer = 0;
 			unsigned int font_type_length = 0;
-			font_type_length = Cmiss_font_get_font_buffer(font,
+			font_type_length = cmzn_font_get_font_buffer(font,
 				&font_type_buffer);
 			if ((font_type_buffer != 0) && (font_type_length > 0))
 			{
@@ -645,15 +645,15 @@ Compiles the specified <font> so it can be used by the graphics.  The
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_font_compile.  "
+		display_message(ERROR_MESSAGE,"cmzn_font_compile.  "
 			"Invalid argument");
 		return_code = 0;
 	}
 
 	return (return_code);
-} /* Cmiss_font_compile */
+} /* cmzn_font_compile */
 
-int Cmiss_font_rendergl_text(struct Cmiss_font *font, char *text,
+int cmzn_font_rendergl_text(struct cmzn_font *font, char *text,
 	float x, float y, float z)
 /*******************************************************************************
 LAST MODIFIED : 17 November 2005
@@ -663,7 +663,7 @@ DESCRIPTION :
 {
 	int return_code = 0;
 
-	ENTER(Cmiss_font_rendergl_text);
+	ENTER(cmzn_font_rendergl_text);
 
 	if (font && text)
 	{
@@ -695,23 +695,23 @@ DESCRIPTION :
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_font_rendergl_text.  "
+				"cmzn_font_rendergl_text.  "
 				"Font is being used to render text before being compiled.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_font_rendergl_text.  "
+			"cmzn_font_rendergl_text.  "
 			"Invalid arguments");
 	}
 
 	LEAVE;
 	return (return_code);
-} /* Cmiss_font_rendergl_text */
+} /* cmzn_font_rendergl_text */
 
-int Cmiss_font_set_name(
-	Cmiss_font_id font, const char *name)
+int cmzn_font_set_name(
+	cmzn_font_id font, const char *name)
 {
 	int return_code = 0;
 
@@ -720,7 +720,7 @@ int Cmiss_font_set_name(
 		return_code = 1;
 		if (font->manager)
 		{
-			return_code = MANAGER_MODIFY_IDENTIFIER(Cmiss_font, name)(
+			return_code = MANAGER_MODIFY_IDENTIFIER(cmzn_font, name)(
 				font, name, font->manager);
 		}
 		else
@@ -741,7 +741,7 @@ int Cmiss_font_set_name(
 	return return_code;
 }
 
-char *Cmiss_font_get_name(Cmiss_font_id font)
+char *cmzn_font_get_name(cmzn_font_id font)
 {
 	char *name = NULL;
 	if (font)
@@ -756,16 +756,16 @@ char *Cmiss_font_get_name(Cmiss_font_id font)
  * Broadcast changes in the graphis font to be propagated to objects that
  * uses it through manager that owns it.
  *
- * @param font  Modified Cmiss_font to be broadcast.
+ * @param font  Modified cmzn_font to be broadcast.
  * @return 1 on success, 0 on failure
  */
-int Cmiss_font_changed(Cmiss_font_id font)
+int cmzn_font_changed(cmzn_font_id font)
 {
 	if (font)
 	{
 		font->changed = 1;
-		return MANAGED_OBJECT_CHANGE(Cmiss_font)(font,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Cmiss_font));
+		return MANAGED_OBJECT_CHANGE(cmzn_font)(font,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_font));
 	}
 	else
 	{
@@ -774,8 +774,8 @@ int Cmiss_font_changed(Cmiss_font_id font)
 }
 
 
-Cmiss_font_type Cmiss_font_get_font_type(
-	Cmiss_font_id font)
+cmzn_font_type cmzn_font_get_font_type(
+	cmzn_font_id font)
 {
 	if (font)
 	{
@@ -787,15 +787,15 @@ Cmiss_font_type Cmiss_font_get_font_type(
 	}
 }
 
-int Cmiss_font_set_font_type(Cmiss_font_id font,
-	Cmiss_font_type font_type)
+int cmzn_font_set_font_type(cmzn_font_id font,
+	cmzn_font_type font_type)
 {
 	if (font)
 	{
 		if (font->font_type != font_type)
 		{
 			font->font_type = font_type;
-			Cmiss_font_changed(font);
+			cmzn_font_changed(font);
 		}
 		return 1;
 	}
@@ -805,8 +805,8 @@ int Cmiss_font_set_font_type(Cmiss_font_id font,
 	}
 }
 
-Cmiss_font_render_type Cmiss_font_get_render_type(
-	Cmiss_font_id font)
+cmzn_font_render_type cmzn_font_get_render_type(
+	cmzn_font_id font)
 {
 	if (font)
 	{
@@ -818,15 +818,15 @@ Cmiss_font_render_type Cmiss_font_get_render_type(
 	}
 }
 
-int Cmiss_font_set_render_type(Cmiss_font_id font,
-	Cmiss_font_render_type render_type)
+int cmzn_font_set_render_type(cmzn_font_id font,
+	cmzn_font_render_type render_type)
 {
 	if (font)
 	{
 		if (font->render_type != render_type)
 		{
 			font->render_type = render_type;
-			Cmiss_font_changed(font);
+			cmzn_font_changed(font);
 		}
 		return 1;
 	}
@@ -836,7 +836,7 @@ int Cmiss_font_set_render_type(Cmiss_font_id font,
 	}
 }
 
-int Cmiss_font_get_bold(Cmiss_font_id font)
+int cmzn_font_get_bold(cmzn_font_id font)
 {
 	if (font)
 	{
@@ -848,14 +848,14 @@ int Cmiss_font_get_bold(Cmiss_font_id font)
 	}
 }
 
-int Cmiss_font_set_bold(Cmiss_font_id font, int bold)
+int cmzn_font_set_bold(cmzn_font_id font, int bold)
 {
 	if (font)
 	{
 		if (font->bold != bold)
 		{
 			font->bold = bold;
-			Cmiss_font_changed(font);
+			cmzn_font_changed(font);
 		}
 		return 1;
 	}
@@ -865,7 +865,7 @@ int Cmiss_font_set_bold(Cmiss_font_id font, int bold)
 	}
 }
 
-double Cmiss_font_get_depth(Cmiss_font_id font)
+double cmzn_font_get_depth(cmzn_font_id font)
 {
 	if (font)
 	{
@@ -877,7 +877,7 @@ double Cmiss_font_get_depth(Cmiss_font_id font)
 	}
 }
 
-int Cmiss_font_set_depth(Cmiss_font_id font, double depth)
+int cmzn_font_set_depth(cmzn_font_id font, double depth)
 {
 	if (font)
 	{
@@ -885,7 +885,7 @@ int Cmiss_font_set_depth(Cmiss_font_id font, double depth)
 		{
 			font->depth = depth;
 			if (font->render_type == CMISS_FONT_RENDER_TYPE_EXTRUDE)
-				Cmiss_font_changed(font);
+				cmzn_font_changed(font);
 		}
 		return 1;
 	}
@@ -895,7 +895,7 @@ int Cmiss_font_set_depth(Cmiss_font_id font, double depth)
 	}
 }
 
-int Cmiss_font_get_italic(Cmiss_font_id font)
+int cmzn_font_get_italic(cmzn_font_id font)
 {
 	if (font)
 	{
@@ -907,14 +907,14 @@ int Cmiss_font_get_italic(Cmiss_font_id font)
 	}
 }
 
-int Cmiss_font_set_italic(Cmiss_font_id font, int italic)
+int cmzn_font_set_italic(cmzn_font_id font, int italic)
 {
 	if (font)
 	{
 		if (font->italic != italic)
 		{
 			font->italic = italic;
-			Cmiss_font_changed(font);
+			cmzn_font_changed(font);
 		}
 		return 1;
 	}
@@ -924,7 +924,7 @@ int Cmiss_font_set_italic(Cmiss_font_id font, int italic)
 	}
 }
 
-int Cmiss_font_get_size(Cmiss_font_id font)
+int cmzn_font_get_size(cmzn_font_id font)
 {
 	if (font)
 	{
@@ -936,14 +936,14 @@ int Cmiss_font_get_size(Cmiss_font_id font)
 	}
 }
 
-int Cmiss_font_set_size(Cmiss_font_id font, int size)
+int cmzn_font_set_size(cmzn_font_id font, int size)
 {
 	if (font)
 	{
 		if (font->size != size)
 		{
 			font->size = size;
-			Cmiss_font_changed(font);
+			cmzn_font_changed(font);
 		}
 		return 1;
 	}
@@ -953,7 +953,7 @@ int Cmiss_font_set_size(Cmiss_font_id font, int size)
 	}
 }
 
-Cmiss_font_id Cmiss_font_access(Cmiss_font_id font)
+cmzn_font_id cmzn_font_access(cmzn_font_id font)
 {
 	if (font)
 	{
@@ -963,17 +963,17 @@ Cmiss_font_id Cmiss_font_access(Cmiss_font_id font)
 	return font;
 }
 
-int Cmiss_font_destroy(Cmiss_font_id *font_address)
+int cmzn_font_destroy(cmzn_font_id *font_address)
 {
 	int return_code = 0;
-	Cmiss_font_id font;
+	cmzn_font_id font;
 
 	if (font_address && (font = *font_address))
 	{
 		(font->access_count)--;
 		if (font->access_count <= 0)
 		{
-			return_code = DESTROY(Cmiss_font)(font_address);
+			return_code = DESTROY(cmzn_font)(font_address);
 		}
 		else
 		{
@@ -985,10 +985,10 @@ int Cmiss_font_destroy(Cmiss_font_id *font_address)
 	return return_code;
 }
 
-class Cmiss_font_render_type_conversion
+class cmzn_font_render_type_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_font_render_type render_type)
+	static const char *to_string(enum cmzn_font_render_type render_type)
 	{
 		const char *enum_string = 0;
 		switch (render_type)
@@ -1015,31 +1015,31 @@ public:
 	}
 };
 
-enum Cmiss_font_render_type Cmiss_font_render_type_enum_from_string(
+enum cmzn_font_render_type cmzn_font_render_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_font_render_type,
-		Cmiss_font_render_type_conversion>(string);
+	return string_to_enum<enum cmzn_font_render_type,
+		cmzn_font_render_type_conversion>(string);
 }
 
-char *Cmiss_font_render_type_enum_to_string(
-	enum Cmiss_font_render_type render_type)
+char *cmzn_font_render_type_enum_to_string(
+	enum cmzn_font_render_type render_type)
 {
-	const char *render_type_string =Cmiss_font_render_type_conversion::to_string(render_type);
+	const char *render_type_string =cmzn_font_render_type_conversion::to_string(render_type);
 	return (render_type_string ? duplicate_string(render_type_string) : 0);
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_font_render_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_font_render_type)
 {
-	return Cmiss_font_render_type_conversion::to_string(enumerator_value);
+	return cmzn_font_render_type_conversion::to_string(enumerator_value);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_font_render_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_font_render_type)
 
-class Cmiss_font_type_conversion
+class cmzn_font_type_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_font_type font_type)
+	static const char *to_string(enum cmzn_font_type font_type)
 	{
 		const char *enum_string = 0;
 		switch (font_type)
@@ -1054,23 +1054,23 @@ public:
 	}
 };
 
-enum Cmiss_font_type Cmiss_font_type_enum_from_string(
+enum cmzn_font_type cmzn_font_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum Cmiss_font_type,
-		Cmiss_font_type_conversion>(string);
+	return string_to_enum<enum cmzn_font_type,
+		cmzn_font_type_conversion>(string);
 }
 
-char *Cmiss_font_type_enum_to_string(
-	enum Cmiss_font_type font_type)
+char *cmzn_font_type_enum_to_string(
+	enum cmzn_font_type font_type)
 {
-	const char *font_type_string =Cmiss_font_type_conversion::to_string(font_type);
+	const char *font_type_string =cmzn_font_type_conversion::to_string(font_type);
 	return (font_type_string ? duplicate_string(font_type_string) : 0);
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Cmiss_font_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_font_type)
 {
-	return Cmiss_font_type_conversion::to_string(enumerator_value);
+	return cmzn_font_type_conversion::to_string(enumerator_value);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Cmiss_font_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_font_type)

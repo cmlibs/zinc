@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_stream_private.hpp
  *
- * The private interface to Cmiss_stream.
+ * The private interface to cmzn_stream.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -50,27 +50,27 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 
-struct Cmiss_stream_memory_block
+struct cmzn_stream_memory_block
 {
 	const void *memory_buffer;
 	unsigned int memory_buffer_size;
 	int to_be_deallocated;
 };
 
-struct Cmiss_stream_resource
+struct cmzn_stream_resource
 {
 public:
 
-	Cmiss_stream_resource() :
+	cmzn_stream_resource() :
 		access_count(1)
 	{
 	}
 
-	virtual ~Cmiss_stream_resource()
+	virtual ~cmzn_stream_resource()
 	{
 	}
 
-	inline Cmiss_stream_resource *access()
+	inline cmzn_stream_resource *access()
 	{
 		++access_count;
 		return this;
@@ -88,17 +88,17 @@ public:
 
 protected:
 	int access_count;
-}; /* struct Cmiss_io_stream */
+}; /* struct cmzn_io_stream */
 
-struct Cmiss_stream_resource_file : public Cmiss_stream_resource
+struct cmzn_stream_resource_file : public cmzn_stream_resource
 {
 public:
 
-	Cmiss_stream_resource_file(const char *file_name_in) : file_name(duplicate_string(file_name_in))
+	cmzn_stream_resource_file(const char *file_name_in) : file_name(duplicate_string(file_name_in))
 	{
 	}
 
-	virtual ~Cmiss_stream_resource_file()
+	virtual ~cmzn_stream_resource_file()
 	{
 		if (file_name)
 			DEALLOCATE(file_name);
@@ -111,28 +111,28 @@ public:
 
 protected:
 	char *file_name;
-}; /* struct Cmiss_input_stream */
+}; /* struct cmzn_input_stream */
 
-struct Cmiss_stream_resource_memory : public Cmiss_stream_resource
+struct cmzn_stream_resource_memory : public cmzn_stream_resource
 {
 public:
 
-	Cmiss_stream_resource_memory() : memory_block(new Cmiss_stream_memory_block)
+	cmzn_stream_resource_memory() : memory_block(new cmzn_stream_memory_block)
 	{
 		memory_block->to_be_deallocated = 0;
 		memory_block->memory_buffer = NULL;
 		memory_block->memory_buffer_size = 0;
 	}
 
-	Cmiss_stream_resource_memory(const void *buffer, int buffer_size) :
-		memory_block(new Cmiss_stream_memory_block)
+	cmzn_stream_resource_memory(const void *buffer, int buffer_size) :
+		memory_block(new cmzn_stream_memory_block)
 	{
 		memory_block->to_be_deallocated = 0;
 		memory_block->memory_buffer = buffer;
 		memory_block->memory_buffer_size = buffer_size;
 	}
 
-	~Cmiss_stream_resource_memory()
+	~cmzn_stream_resource_memory()
 	{
 		if (memory_block)
 		{
@@ -183,24 +183,24 @@ public:
 
 protected:
 
-	Cmiss_stream_memory_block *memory_block;
+	cmzn_stream_memory_block *memory_block;
 };
 
-struct Cmiss_resource_properties
+struct cmzn_resource_properties
 {
 public:
 
-	Cmiss_resource_properties(Cmiss_stream_resource_id resource_in) : resource(
-		Cmiss_stream_resource_access(resource_in))
+	cmzn_resource_properties(cmzn_stream_resource_id resource_in) : resource(
+		cmzn_stream_resource_access(resource_in))
 	{
 	}
 
-	~Cmiss_resource_properties()
+	~cmzn_resource_properties()
 	{
-		Cmiss_stream_resource_destroy(&resource);
+		cmzn_stream_resource_destroy(&resource);
 	}
 
-	Cmiss_stream_resource_id getResource()
+	cmzn_stream_resource_id getResource()
 	{
 		if (resource)
 			return resource;
@@ -208,27 +208,27 @@ public:
 	}
 
 protected:
-	Cmiss_stream_resource_id resource;
+	cmzn_stream_resource_id resource;
 };
 
-typedef std::list<Cmiss_resource_properties *> Cmiss_stream_properties_list;
-typedef std::list<Cmiss_resource_properties *>::const_iterator Cmiss_stream_properties_list_const_iterator;
+typedef std::list<cmzn_resource_properties *> cmzn_stream_properties_list;
+typedef std::list<cmzn_resource_properties *>::const_iterator cmzn_stream_properties_list_const_iterator;
 
-struct Cmiss_stream_information
+struct cmzn_stream_information
 {
 public:
 
-	Cmiss_stream_information() :
+	cmzn_stream_information() :
 		access_count(1)
 	{
 	}
 
-	virtual ~Cmiss_stream_information()
+	virtual ~cmzn_stream_information()
 	{
 		clearResources();
 	}
 
-	inline Cmiss_stream_information *access()
+	inline cmzn_stream_information *access()
 	{
 		++access_count;
 		return this;
@@ -244,7 +244,7 @@ public:
 		return 1;
 	}
 
-	int appendResourceProperties(Cmiss_resource_properties *stream_properties)
+	int appendResourceProperties(cmzn_resource_properties *stream_properties)
 	{
 		if (stream_properties)
 		{
@@ -256,28 +256,28 @@ public:
 
 	int clearResources()
 	{
-		std::list<Cmiss_resource_properties *>::iterator pos;
+		std::list<cmzn_resource_properties *>::iterator pos;
 		for (pos = resources_list.begin(); pos != resources_list.end(); ++pos)
 		{
-			Cmiss_resource_properties *temp = *pos;
+			cmzn_resource_properties *temp = *pos;
 			delete temp;
 		}
 		resources_list.clear();
 		return 1;
 	}
 
-	virtual Cmiss_resource_properties *createResourceProperties(Cmiss_stream_resource_id stream)
+	virtual cmzn_resource_properties *createResourceProperties(cmzn_stream_resource_id stream)
 	{
 		if (stream)
-			return new Cmiss_resource_properties(stream);
+			return new cmzn_resource_properties(stream);
 		return NULL;
 	}
 
-	Cmiss_stream_resource_id createStreamResourceFile(const char *file_name)
+	cmzn_stream_resource_id createStreamResourceFile(const char *file_name)
 	{
 		if (file_name)
 		{
-			Cmiss_stream_resource_id stream = new Cmiss_stream_resource_file(
+			cmzn_stream_resource_id stream = new cmzn_stream_resource_file(
 				file_name);
 			appendResourceProperties(createResourceProperties(stream));
 			return stream;
@@ -285,19 +285,19 @@ public:
 		return NULL;
 	}
 
-	Cmiss_stream_resource_id createStreamResourceMemory()
+	cmzn_stream_resource_id createStreamResourceMemory()
 	{
-		Cmiss_stream_resource_id stream = new Cmiss_stream_resource_memory();
+		cmzn_stream_resource_id stream = new cmzn_stream_resource_memory();
 		appendResourceProperties(createResourceProperties(stream));
 		return stream;
 	}
 
-	Cmiss_stream_resource_id createStreamResourceMemoryBuffer(const void *memory_block,
+	cmzn_stream_resource_id createStreamResourceMemoryBuffer(const void *memory_block,
 		unsigned int block_length)
 	{
 		if (memory_block && block_length)
 		{
-			Cmiss_stream_resource_id stream = new Cmiss_stream_resource_memory(
+			cmzn_stream_resource_id stream = new cmzn_stream_resource_memory(
 				memory_block, block_length);
 			appendResourceProperties(createResourceProperties(stream));
 			return stream;
@@ -305,9 +305,9 @@ public:
 		return NULL;
 	}
 
-	inline Cmiss_resource_properties *findResourceInList(Cmiss_stream_resource_id resource_in)
+	inline cmzn_resource_properties *findResourceInList(cmzn_stream_resource_id resource_in)
 	{
-		std::list<Cmiss_resource_properties *>::iterator pos;
+		std::list<cmzn_resource_properties *>::iterator pos;
 		for (pos = resources_list.begin(); pos != resources_list.end(); ++pos)
 		{
 			if ((*pos)->getResource() == resource_in)
@@ -318,19 +318,19 @@ public:
 		return NULL;
 	}
 
-	const Cmiss_stream_properties_list& getResourcesList() const
+	const cmzn_stream_properties_list& getResourcesList() const
 	{
 		return resources_list;
 	}
 
-	int removeResource(Cmiss_stream_resource_id resource_in)
+	int removeResource(cmzn_stream_resource_id resource_in)
 	{
-		std::list<Cmiss_resource_properties *>::iterator pos;
+		std::list<cmzn_resource_properties *>::iterator pos;
 		for (pos = resources_list.begin(); pos != resources_list.end(); ++pos)
 		{
 			if ((*pos)->getResource() == resource_in)
 			{
-				Cmiss_resource_properties *properties = *pos;
+				cmzn_resource_properties *properties = *pos;
 				resources_list.erase(pos);
 				delete properties;
 				return 1;
@@ -341,7 +341,7 @@ public:
 
 protected:
 	int access_count;
-	Cmiss_stream_properties_list resources_list;
-}; /* struct Cmiss_stream_information */
+	cmzn_stream_properties_list resources_list;
+}; /* struct cmzn_stream_information */
 
 #endif /* CMISS_STREAM_PRIVATE_HPP */

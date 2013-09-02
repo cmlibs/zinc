@@ -198,44 +198,44 @@ Module functions
  * @param manage_faces  Set if faces are added/removed with parent elements.
  * Faces are only removed if not in use by any other elements in group.
  */
-int process_modify_element_group(Cmiss_field_group_id group,
-	Cmiss_region_id region, int dimension, char add_flag,
-	Cmiss_field_id conditional_field, Cmiss_field_group_id from_group,
+int process_modify_element_group(cmzn_field_group_id group,
+	cmzn_region_id region, int dimension, char add_flag,
+	cmzn_field_id conditional_field, cmzn_field_group_id from_group,
 	Multi_range *element_ranges, char selected_flag, FE_value time,
 	int manage_nodes, int manage_faces)
 {
 	if (!group || !region)
 		return 0;
 	int return_code = 1;
-	Cmiss_field_module_id field_module = Cmiss_region_get_field_module(region);
-	Cmiss_mesh_id master_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension);
+	cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+	cmzn_mesh_id master_mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
 	char remove_flag = !add_flag;
-	Cmiss_mesh_group_id selection_mesh_group = 0;
+	cmzn_mesh_group_id selection_mesh_group = 0;
 	if (selected_flag)
 	{
-		Cmiss_scene *scene = Cmiss_region_get_scene_private(region);
-		Cmiss_field_group_id selection_group = Cmiss_scene_get_selection_group(scene);
+		cmzn_scene *scene = cmzn_region_get_scene_private(region);
+		cmzn_field_group_id selection_group = cmzn_scene_get_selection_group(scene);
 		if (selection_group)
 		{
-			Cmiss_field_element_group_id selection_element_group =
-				Cmiss_field_group_get_element_group(selection_group, master_mesh);
+			cmzn_field_element_group_id selection_element_group =
+				cmzn_field_group_get_element_group(selection_group, master_mesh);
 			if (selection_element_group)
 			{
-				selection_mesh_group = Cmiss_field_element_group_get_mesh(selection_element_group);
-				Cmiss_field_element_group_destroy(&selection_element_group);
+				selection_mesh_group = cmzn_field_element_group_get_mesh(selection_element_group);
+				cmzn_field_element_group_destroy(&selection_element_group);
 			}
-			Cmiss_field_group_destroy(&selection_group);
+			cmzn_field_group_destroy(&selection_group);
 		}
 	}
-	Cmiss_mesh_group_id from_mesh_group = 0;
+	cmzn_mesh_group_id from_mesh_group = 0;
 	if (from_group)
 	{
-		Cmiss_field_element_group_id from_element_group =
-			Cmiss_field_group_get_element_group(from_group, master_mesh);
+		cmzn_field_element_group_id from_element_group =
+			cmzn_field_group_get_element_group(from_group, master_mesh);
 		if (from_element_group)
 		{
-			from_mesh_group = Cmiss_field_element_group_get_mesh(from_element_group);
-			Cmiss_field_element_group_destroy(&from_element_group);
+			from_mesh_group = cmzn_field_element_group_get_mesh(from_element_group);
+			cmzn_field_element_group_destroy(&from_element_group);
 		}
 
 	}
@@ -243,100 +243,100 @@ int process_modify_element_group(Cmiss_field_group_id group,
 	int elements_not_processed = 0;
 	if (((!selected_flag) || selection_mesh_group) && ((!from_group) || from_mesh_group))
 	{
-		Cmiss_field_module_begin_change(field_module);
-		Cmiss_field_element_group_id modify_element_group = Cmiss_field_group_get_element_group(group, master_mesh);
+		cmzn_field_module_begin_change(field_module);
+		cmzn_field_element_group_id modify_element_group = cmzn_field_group_get_element_group(group, master_mesh);
 		if (!modify_element_group)
-			modify_element_group = Cmiss_field_group_create_element_group(group, master_mesh);
-		Cmiss_mesh_group_id modify_mesh_group = Cmiss_field_element_group_get_mesh(modify_element_group);
-		objects_processed += Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_mesh_group));
-		Cmiss_field_element_group_destroy(&modify_element_group);
-		Cmiss_field_cache_id cache = Cmiss_field_module_create_cache(field_module);
-		Cmiss_field_cache_set_time(cache, time);
+			modify_element_group = cmzn_field_group_create_element_group(group, master_mesh);
+		cmzn_mesh_group_id modify_mesh_group = cmzn_field_element_group_get_mesh(modify_element_group);
+		objects_processed += cmzn_mesh_get_size(cmzn_mesh_group_base_cast(modify_mesh_group));
+		cmzn_field_element_group_destroy(&modify_element_group);
+		cmzn_field_cache_id cache = cmzn_field_module_create_cache(field_module);
+		cmzn_field_cache_set_time(cache, time);
 
-		Cmiss_nodeset_group_id modify_nodeset_group = 0;
-		Cmiss_field_node_group_id remove_node_group = 0;
-		Cmiss_nodeset_group_id remove_nodeset_group = 0;
+		cmzn_nodeset_group_id modify_nodeset_group = 0;
+		cmzn_field_node_group_id remove_node_group = 0;
+		cmzn_nodeset_group_id remove_nodeset_group = 0;
 		if (manage_nodes)
 		{
-			Cmiss_nodeset_id master_nodeset = Cmiss_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
-			Cmiss_field_node_group_id modify_node_group = Cmiss_field_group_get_node_group(group, master_nodeset);
+			cmzn_nodeset_id master_nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMISS_FIELD_DOMAIN_NODES);
+			cmzn_field_node_group_id modify_node_group = cmzn_field_group_get_node_group(group, master_nodeset);
 			if ((!modify_node_group) && add_flag)
-				modify_node_group = Cmiss_field_group_create_node_group(group, master_nodeset);
+				modify_node_group = cmzn_field_group_create_node_group(group, master_nodeset);
 			if (modify_node_group)
 			{
-				modify_nodeset_group = Cmiss_field_node_group_get_nodeset(modify_node_group);
-				objects_processed += Cmiss_nodeset_get_size(Cmiss_nodeset_group_base_cast(modify_nodeset_group));
+				modify_nodeset_group = cmzn_field_node_group_get_nodeset(modify_node_group);
+				objects_processed += cmzn_nodeset_get_size(cmzn_nodeset_group_base_cast(modify_nodeset_group));
 				if (remove_flag)
 				{
-					Cmiss_field_id remove_node_group_field = Cmiss_field_module_create_node_group(field_module, master_nodeset);
-					remove_node_group = Cmiss_field_cast_node_group(remove_node_group_field);
-					remove_nodeset_group = Cmiss_field_node_group_get_nodeset(remove_node_group);
-					Cmiss_field_destroy(&remove_node_group_field);
+					cmzn_field_id remove_node_group_field = cmzn_field_module_create_node_group(field_module, master_nodeset);
+					remove_node_group = cmzn_field_cast_node_group(remove_node_group_field);
+					remove_nodeset_group = cmzn_field_node_group_get_nodeset(remove_node_group);
+					cmzn_field_destroy(&remove_node_group_field);
 				}
-				Cmiss_field_node_group_destroy(&modify_node_group);
+				cmzn_field_node_group_destroy(&modify_node_group);
 			}
-			Cmiss_nodeset_destroy(&master_nodeset);
+			cmzn_nodeset_destroy(&master_nodeset);
 		}
-		Cmiss_nodeset_group_id working_nodeset_group = add_flag ? modify_nodeset_group : remove_nodeset_group;
+		cmzn_nodeset_group_id working_nodeset_group = add_flag ? modify_nodeset_group : remove_nodeset_group;
 
-		Cmiss_mesh_id master_face_mesh = 0;
-		Cmiss_mesh_group_id modify_face_mesh_group = 0;
-		Cmiss_field_element_group_id working_face_element_group = 0;
-		Cmiss_mesh_group_id working_face_mesh_group = 0;
+		cmzn_mesh_id master_face_mesh = 0;
+		cmzn_mesh_group_id modify_face_mesh_group = 0;
+		cmzn_field_element_group_id working_face_element_group = 0;
+		cmzn_mesh_group_id working_face_mesh_group = 0;
 		if (manage_faces && (1 < dimension))
 		{
-			master_face_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension - 1);
-			Cmiss_field_element_group_id modify_face_element_group = Cmiss_field_group_get_element_group(group, master_face_mesh);
+			master_face_mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension - 1);
+			cmzn_field_element_group_id modify_face_element_group = cmzn_field_group_get_element_group(group, master_face_mesh);
 			if ((!modify_face_element_group) && add_flag)
-				modify_face_element_group = Cmiss_field_group_create_element_group(group, master_face_mesh);
+				modify_face_element_group = cmzn_field_group_create_element_group(group, master_face_mesh);
 			if (modify_face_element_group)
 			{
-				modify_face_mesh_group = Cmiss_field_element_group_get_mesh(modify_face_element_group);
-				objects_processed += Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_face_mesh_group));
-				Cmiss_field_id working_face_element_group_field = Cmiss_field_module_create_element_group(field_module, master_face_mesh);
-				working_face_element_group = Cmiss_field_cast_element_group(working_face_element_group_field);
-				working_face_mesh_group = Cmiss_field_element_group_get_mesh(working_face_element_group);
-				Cmiss_field_destroy(&working_face_element_group_field);
-				Cmiss_field_element_group_destroy(&modify_face_element_group);
+				modify_face_mesh_group = cmzn_field_element_group_get_mesh(modify_face_element_group);
+				objects_processed += cmzn_mesh_get_size(cmzn_mesh_group_base_cast(modify_face_mesh_group));
+				cmzn_field_id working_face_element_group_field = cmzn_field_module_create_element_group(field_module, master_face_mesh);
+				working_face_element_group = cmzn_field_cast_element_group(working_face_element_group_field);
+				working_face_mesh_group = cmzn_field_element_group_get_mesh(working_face_element_group);
+				cmzn_field_destroy(&working_face_element_group_field);
+				cmzn_field_element_group_destroy(&modify_face_element_group);
 			}
 		}
 
-		Cmiss_mesh_id iteration_mesh = master_mesh;
-		Cmiss_mesh_id selection_mesh = Cmiss_mesh_group_base_cast(selection_mesh_group);
-		Cmiss_mesh_id from_mesh = Cmiss_mesh_group_base_cast(from_mesh_group);
-		if (selected_flag && selection_mesh && !Cmiss_mesh_match(selection_mesh, Cmiss_mesh_group_base_cast(modify_mesh_group)))
+		cmzn_mesh_id iteration_mesh = master_mesh;
+		cmzn_mesh_id selection_mesh = cmzn_mesh_group_base_cast(selection_mesh_group);
+		cmzn_mesh_id from_mesh = cmzn_mesh_group_base_cast(from_mesh_group);
+		if (selected_flag && selection_mesh && !cmzn_mesh_match(selection_mesh, cmzn_mesh_group_base_cast(modify_mesh_group)))
 		{
 			iteration_mesh = selection_mesh;
 		}
-		if (from_mesh && (!Cmiss_mesh_match(from_mesh, Cmiss_mesh_group_base_cast(modify_mesh_group))) &&
-			(Cmiss_mesh_get_size(from_mesh) < Cmiss_mesh_get_size(iteration_mesh)))
+		if (from_mesh && (!cmzn_mesh_match(from_mesh, cmzn_mesh_group_base_cast(modify_mesh_group))) &&
+			(cmzn_mesh_get_size(from_mesh) < cmzn_mesh_get_size(iteration_mesh)))
 		{
 			iteration_mesh = from_mesh;
 		}
-		Cmiss_element_iterator_id iter = Cmiss_mesh_create_element_iterator(iteration_mesh);
-		Cmiss_element_id element = 0;
-		while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
+		cmzn_element_iterator_id iter = cmzn_mesh_create_element_iterator(iteration_mesh);
+		cmzn_element_id element = 0;
+		while (NULL != (element = cmzn_element_iterator_next_non_access(iter)))
 		{
-			if (element_ranges && !Multi_range_is_value_in_range(element_ranges, Cmiss_element_get_identifier(element)))
+			if (element_ranges && !Multi_range_is_value_in_range(element_ranges, cmzn_element_get_identifier(element)))
 				continue;
-			if (selection_mesh && (selection_mesh != iteration_mesh) && !Cmiss_mesh_contains_element(selection_mesh, element))
+			if (selection_mesh && (selection_mesh != iteration_mesh) && !cmzn_mesh_contains_element(selection_mesh, element))
 				continue;
-			if (from_mesh && (from_mesh != iteration_mesh) && !Cmiss_mesh_contains_element(from_mesh, element))
+			if (from_mesh && (from_mesh != iteration_mesh) && !cmzn_mesh_contains_element(from_mesh, element))
 				continue;
 			if (conditional_field)
 			{
-				Cmiss_field_cache_set_element(cache, element);
-				if (!Cmiss_field_evaluate_boolean(conditional_field, cache))
+				cmzn_field_cache_set_element(cache, element);
+				if (!cmzn_field_evaluate_boolean(conditional_field, cache))
 					continue;
 			}
 			if (add_flag)
 			{
-				if (!Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
+				if (!cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(modify_mesh_group), element))
 				{
-					if (!Cmiss_mesh_group_add_element(modify_mesh_group, element))
+					if (!cmzn_mesh_group_add_element(modify_mesh_group, element))
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx modify egroup:  Could not add element %d", Cmiss_element_get_identifier(element));
+							"gfx modify egroup:  Could not add element %d", cmzn_element_get_identifier(element));
 						return_code = 0;
 						break;
 					}
@@ -344,12 +344,12 @@ int process_modify_element_group(Cmiss_field_group_id group,
 			}
 			else
 			{
-				if (Cmiss_mesh_contains_element(Cmiss_mesh_group_base_cast(modify_mesh_group), element))
+				if (cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(modify_mesh_group), element))
 				{
-					if (!Cmiss_mesh_group_remove_element(modify_mesh_group, element))
+					if (!cmzn_mesh_group_remove_element(modify_mesh_group, element))
 					{
 						display_message(ERROR_MESSAGE,
-							"gfx modify egroup:  Could not remove element %d", Cmiss_element_get_identifier(element));
+							"gfx modify egroup:  Could not remove element %d", cmzn_element_get_identifier(element));
 						return_code = 0;
 						break;
 					}
@@ -357,115 +357,115 @@ int process_modify_element_group(Cmiss_field_group_id group,
 			}
 			if (working_nodeset_group)
 			{
-				Cmiss_nodeset_group_add_element_nodes(working_nodeset_group, element);
+				cmzn_nodeset_group_add_element_nodes(working_nodeset_group, element);
 			}
 			if (working_face_mesh_group)
 			{
-				Cmiss_mesh_group_add_element_faces(working_face_mesh_group, element);
+				cmzn_mesh_group_add_element_faces(working_face_mesh_group, element);
 			}
 		}
-		Cmiss_element_iterator_destroy(&iter);
+		cmzn_element_iterator_destroy(&iter);
 
 		if (remove_flag && (remove_nodeset_group || working_face_mesh_group))
 		{
 			// don't include faces and nodes still used by elements remaining in modify_mesh_group
 			// Note: ignores nodes for other dimensions
-			iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(modify_mesh_group));
-				while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
+			iter = cmzn_mesh_create_element_iterator(cmzn_mesh_group_base_cast(modify_mesh_group));
+				while (NULL != (element = cmzn_element_iterator_next_non_access(iter)))
 				{
 				if (remove_nodeset_group)
 				{
-					Cmiss_nodeset_group_remove_element_nodes(remove_nodeset_group, element);
+					cmzn_nodeset_group_remove_element_nodes(remove_nodeset_group, element);
 				}
 				if (working_face_mesh_group)
 				{
-					Cmiss_mesh_group_remove_element_faces(working_face_mesh_group, element);
+					cmzn_mesh_group_remove_element_faces(working_face_mesh_group, element);
 				}
 				}
-				Cmiss_element_iterator_destroy(&iter);
+				cmzn_element_iterator_destroy(&iter);
 				if (remove_nodeset_group)
 				{
-				Cmiss_nodeset_group_remove_nodes_conditional(modify_nodeset_group,
-					Cmiss_field_node_group_base_cast(remove_node_group));
+				cmzn_nodeset_group_remove_nodes_conditional(modify_nodeset_group,
+					cmzn_field_node_group_base_cast(remove_node_group));
 				}
 		}
 		if (working_face_mesh_group)
 		{
-			Cmiss_mesh_group_id modify_line_mesh_group = 0;
-			Cmiss_field_element_group_id remove_line_element_group = 0;
-			Cmiss_mesh_group_id remove_line_mesh_group = 0;
+			cmzn_mesh_group_id modify_line_mesh_group = 0;
+			cmzn_field_element_group_id remove_line_element_group = 0;
+			cmzn_mesh_group_id remove_line_mesh_group = 0;
 			if (2 < dimension)
 			{
-				Cmiss_mesh_id master_line_mesh = Cmiss_field_module_find_mesh_by_dimension(field_module, dimension - 2);
-				Cmiss_field_element_group_id modify_line_element_group = Cmiss_field_group_get_element_group(group, master_line_mesh);
+				cmzn_mesh_id master_line_mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension - 2);
+				cmzn_field_element_group_id modify_line_element_group = cmzn_field_group_get_element_group(group, master_line_mesh);
 				if (add_flag && !modify_line_element_group)
-					modify_line_element_group = Cmiss_field_group_create_element_group(group, master_line_mesh);
+					modify_line_element_group = cmzn_field_group_create_element_group(group, master_line_mesh);
 				if (modify_line_element_group)
 				{
-					modify_line_mesh_group = Cmiss_field_element_group_get_mesh(modify_line_element_group);
-					objects_processed += Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_line_mesh_group));
+					modify_line_mesh_group = cmzn_field_element_group_get_mesh(modify_line_element_group);
+					objects_processed += cmzn_mesh_get_size(cmzn_mesh_group_base_cast(modify_line_mesh_group));
 					if (remove_flag)
 					{
-						Cmiss_field_id remove_line_element_group_field = Cmiss_field_module_create_element_group(field_module, master_line_mesh);
-						remove_line_element_group = Cmiss_field_cast_element_group(remove_line_element_group_field);
-						remove_line_mesh_group = Cmiss_field_element_group_get_mesh(remove_line_element_group);
-						Cmiss_field_destroy(&remove_line_element_group_field);
+						cmzn_field_id remove_line_element_group_field = cmzn_field_module_create_element_group(field_module, master_line_mesh);
+						remove_line_element_group = cmzn_field_cast_element_group(remove_line_element_group_field);
+						remove_line_mesh_group = cmzn_field_element_group_get_mesh(remove_line_element_group);
+						cmzn_field_destroy(&remove_line_element_group_field);
 					}
-					Cmiss_field_element_group_destroy(&modify_line_element_group);
+					cmzn_field_element_group_destroy(&modify_line_element_group);
 				}
-				Cmiss_mesh_destroy(&master_line_mesh);
+				cmzn_mesh_destroy(&master_line_mesh);
 			}
-			Cmiss_mesh_group_id working_line_mesh_group = add_flag ? modify_line_mesh_group : remove_line_mesh_group;
-			iter = Cmiss_mesh_create_element_iterator(Cmiss_mesh_group_base_cast(working_face_mesh_group));
-			while (NULL != (element = Cmiss_element_iterator_next_non_access(iter)))
+			cmzn_mesh_group_id working_line_mesh_group = add_flag ? modify_line_mesh_group : remove_line_mesh_group;
+			iter = cmzn_mesh_create_element_iterator(cmzn_mesh_group_base_cast(working_face_mesh_group));
+			while (NULL != (element = cmzn_element_iterator_next_non_access(iter)))
 			{
 				if (add_flag)
 				{
-					Cmiss_mesh_group_add_element(modify_face_mesh_group, element);
+					cmzn_mesh_group_add_element(modify_face_mesh_group, element);
 				}
 				else
 				{
-					Cmiss_mesh_group_remove_element(modify_face_mesh_group, element);
+					cmzn_mesh_group_remove_element(modify_face_mesh_group, element);
 				}
 				if (working_line_mesh_group)
 				{
-					Cmiss_mesh_group_add_element_faces(working_line_mesh_group, element);
+					cmzn_mesh_group_add_element_faces(working_line_mesh_group, element);
 				}
 			}
-			Cmiss_element_iterator_destroy(&iter);
+			cmzn_element_iterator_destroy(&iter);
 			if (remove_line_element_group)
 			{
-				Cmiss_mesh_group_remove_elements_conditional(modify_line_mesh_group,
-					Cmiss_field_element_group_base_cast(remove_line_element_group));
+				cmzn_mesh_group_remove_elements_conditional(modify_line_mesh_group,
+					cmzn_field_element_group_base_cast(remove_line_element_group));
 			}
-			Cmiss_mesh_group_destroy(&remove_line_mesh_group);
-			Cmiss_field_element_group_destroy(&remove_line_element_group);
+			cmzn_mesh_group_destroy(&remove_line_mesh_group);
+			cmzn_field_element_group_destroy(&remove_line_element_group);
 			if (modify_line_mesh_group)
 			{
-				objects_processed -= Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_line_mesh_group));
-				Cmiss_mesh_group_destroy(&modify_line_mesh_group);
+				objects_processed -= cmzn_mesh_get_size(cmzn_mesh_group_base_cast(modify_line_mesh_group));
+				cmzn_mesh_group_destroy(&modify_line_mesh_group);
 			}
 		}
 
-		Cmiss_mesh_group_destroy(&working_face_mesh_group);
-		Cmiss_field_element_group_destroy(&working_face_element_group);
+		cmzn_mesh_group_destroy(&working_face_mesh_group);
+		cmzn_field_element_group_destroy(&working_face_element_group);
 		if (modify_face_mesh_group)
 		{
-			objects_processed -= Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_face_mesh_group));
-			Cmiss_mesh_group_destroy(&modify_face_mesh_group);
+			objects_processed -= cmzn_mesh_get_size(cmzn_mesh_group_base_cast(modify_face_mesh_group));
+			cmzn_mesh_group_destroy(&modify_face_mesh_group);
 		}
-		Cmiss_mesh_destroy(&master_face_mesh);
-		Cmiss_nodeset_group_destroy(&remove_nodeset_group);
-		Cmiss_field_node_group_destroy(&remove_node_group);
+		cmzn_mesh_destroy(&master_face_mesh);
+		cmzn_nodeset_group_destroy(&remove_nodeset_group);
+		cmzn_field_node_group_destroy(&remove_node_group);
 		if (modify_nodeset_group)
 		{
-			objects_processed -= Cmiss_nodeset_get_size(Cmiss_nodeset_group_base_cast(modify_nodeset_group));
-			Cmiss_nodeset_group_destroy(&modify_nodeset_group);
+			objects_processed -= cmzn_nodeset_get_size(cmzn_nodeset_group_base_cast(modify_nodeset_group));
+			cmzn_nodeset_group_destroy(&modify_nodeset_group);
 		}
-		Cmiss_field_cache_destroy(&cache);
-		objects_processed -= Cmiss_mesh_get_size(Cmiss_mesh_group_base_cast(modify_mesh_group));
-		Cmiss_mesh_group_destroy(&modify_mesh_group);
-		Cmiss_field_module_end_change(field_module);
+		cmzn_field_cache_destroy(&cache);
+		objects_processed -= cmzn_mesh_get_size(cmzn_mesh_group_base_cast(modify_mesh_group));
+		cmzn_mesh_group_destroy(&modify_mesh_group);
+		cmzn_field_module_end_change(field_module);
 	}
 	if (0 < elements_not_processed)
 	{
@@ -476,10 +476,10 @@ int process_modify_element_group(Cmiss_field_group_id group,
 	{
 		display_message(WARNING_MESSAGE, "gfx modify egroup:  group unchanged");
 	}
-	Cmiss_mesh_group_destroy(&from_mesh_group);
-	Cmiss_mesh_group_destroy(&selection_mesh_group);
-	Cmiss_mesh_destroy(&master_mesh);
-	Cmiss_field_module_destroy(&field_module);
+	cmzn_mesh_group_destroy(&from_mesh_group);
+	cmzn_mesh_group_destroy(&selection_mesh_group);
+	cmzn_mesh_destroy(&master_mesh);
+	cmzn_field_module_destroy(&field_module);
 
 	return return_code;
 }
@@ -489,7 +489,7 @@ int set_Texture_image_from_field(struct Texture *texture,
 	struct Computed_field *texture_coordinate_field,
 	int propagate_field,
 	struct Spectrum *spectrum,
-	Cmiss_mesh_id search_mesh,
+	cmzn_mesh_id search_mesh,
 	enum Texture_storage_type storage,
 	int image_width, int image_height, int image_depth,
 	int number_of_bytes_per_component,
@@ -615,8 +615,8 @@ Currently limited to 1 byte per component.
 
 struct Texture_evaluate_image_data
 {
-	Cmiss_region_id region;
-	Cmiss_field_group_id group;
+	cmzn_region_id region;
+	cmzn_field_group_id group;
 	char *field_name, *texture_coordinates_field_name;
 	int element_dimension; /* where 0 is any dimension */
 	int propagate_field;
@@ -718,15 +718,15 @@ Should enclose multiple calls in FE_region_begin_change/end_change wrappers.
 } /* apply_transformation_to_node */
 
 #if defined (USE_OPENCASCADE)
-static struct Cmiss_spectrum_component *create_spectrum_component( Cmiss_spectrum_component_colour_mapping colour )
+static struct cmzn_spectrum_component *create_spectrum_component( cmzn_spectrum_component_colour_mapping colour )
 {
 	int component = 1;
-	struct Cmiss_spectrum_component *settings = CREATE(Cmiss_spectrum_component)();
-	Cmiss_spectrum_component_set_scale_type(settings, CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR);
-	Cmiss_spectrum_component_set_colour_mapping(settings, colour);
-	Cmiss_spectrum_component_set_extend_above(settings, true);
-	Cmiss_spectrum_component_set_extend_below_flag(settings, true);
-	Cmiss_spectrum_component_set_colour_reverse(settings, 0);
+	struct cmzn_spectrum_component *settings = CREATE(cmzn_spectrum_component)();
+	cmzn_spectrum_component_set_scale_type(settings, CMISS_SPECTRUM_COMPONENT_SCALE_LINEAR);
+	cmzn_spectrum_component_set_colour_mapping(settings, colour);
+	cmzn_spectrum_component_set_extend_above(settings, true);
+	cmzn_spectrum_component_set_extend_below_flag(settings, true);
+	cmzn_spectrum_component_set_colour_reverse(settings, 0);
 
 	if ( colour == CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED )
 		component = 1;
@@ -735,7 +735,7 @@ static struct Cmiss_spectrum_component *create_spectrum_component( Cmiss_spectru
 	else
 		component = 3;
 
-	Cmiss_spectrum_component_set_field_component( settings, component );
+	cmzn_spectrum_component_set_field_component( settings, component );
 
 	return settings;
 }
@@ -743,36 +743,36 @@ static struct Cmiss_spectrum_component *create_spectrum_component( Cmiss_spectru
 static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_void )
 {
 	int return_code = 0, number_in_list = 0;
-	struct LIST(Cmiss_spectrum_component) *spectrum_settings_list;
-	struct Cmiss_spectrum_component *red_settings;
-	struct Cmiss_spectrum_component *green_settings;
-	struct Cmiss_spectrum_component *blue_settings;
-	struct Cmiss_command_data *command_data = (struct Cmiss_command_data *)command_data_void;
+	struct LIST(cmzn_spectrum_component) *spectrum_settings_list;
+	struct cmzn_spectrum_component *red_settings;
+	struct cmzn_spectrum_component *green_settings;
+	struct cmzn_spectrum_component *blue_settings;
+	struct cmzn_command_data *command_data = (struct cmzn_command_data *)command_data_void;
 
-	if ( command_data && (NULL != ((*spectrum) = Cmiss_spectrum_create_private())) &&
-		Cmiss_spectrum_set_name(spectrum, "RGB"))
-		spectrum_settings_list = get_Cmiss_spectrum_component_list( (*spectrum) );
-		number_in_list = NUMBER_IN_LIST(Cmiss_spectrum_component)(spectrum_settings_list);
+	if ( command_data && (NULL != ((*spectrum) = cmzn_spectrum_create_private())) &&
+		cmzn_spectrum_set_name(spectrum, "RGB"))
+		spectrum_settings_list = get_cmzn_spectrum_component_list( (*spectrum) );
+		number_in_list = NUMBER_IN_LIST(cmzn_spectrum_component)(spectrum_settings_list);
 		if ( number_in_list > 0 )
 		{
-			REMOVE_ALL_OBJECTS_FROM_LIST(Cmiss_spectrum_component)(spectrum_settings_list);
+			REMOVE_ALL_OBJECTS_FROM_LIST(cmzn_spectrum_component)(spectrum_settings_list);
 		}
 		red_settings = create_spectrum_component( CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_RED );
-		Cmiss_spectrum_component_add( red_settings, /* end of list = 0 */0,
+		cmzn_spectrum_component_add( red_settings, /* end of list = 0 */0,
 			spectrum_settings_list );
 
 		green_settings = create_spectrum_component( CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_GREEN );
-		Cmiss_spectrum_component_add( green_settings, /* end of list = 0 */0,
+		cmzn_spectrum_component_add( green_settings, /* end of list = 0 */0,
 			spectrum_settings_list );
 
 		blue_settings = create_spectrum_component( CMISS_SPECTRUM_COMPONENT_COLOUR_MAPPING_BLUE );
-		Cmiss_spectrum_component_add( blue_settings, /* end of list = 0 */0,
+		cmzn_spectrum_component_add( blue_settings, /* end of list = 0 */0,
 			spectrum_settings_list );
 
 		Spectrum_calculate_range( (*spectrum) );
 		Spectrum_calculate_range( (*spectrum) );
 		Spectrum_set_minimum_and_maximum( (*spectrum), 0, 1);
-		Cmiss_spectrum_set_material_overwrite( (*spectrum), 0 );
+		cmzn_spectrum_set_material_overwrite( (*spectrum), 0 );
 		if (!ADD_OBJECT_TO_MANAGER(Spectrum)( (*spectrum),
 				command_data->spectrum_manager))
 		{
@@ -789,9 +789,9 @@ static int create_RGB_spectrum( struct Spectrum **spectrum, void *command_data_v
 
 #endif /* USE_OPENCASCADE */
 
-void create_triangle_mesh(struct Cmiss_region *region, Triangle_mesh *trimesh)
+void create_triangle_mesh(struct cmzn_region *region, Triangle_mesh *trimesh)
 {
-	struct FE_region *fe_region = Cmiss_region_get_FE_region(region);
+	struct FE_region *fe_region = cmzn_region_get_FE_region(region);
 	// for efficiency cache changes until all finished
 	FE_region_begin_change(fe_region);
 

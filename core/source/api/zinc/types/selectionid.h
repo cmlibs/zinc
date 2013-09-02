@@ -41,10 +41,10 @@
 #ifndef CMZN_SELECTIONID_H__
 #define CMZN_SELECTIONID_H__
 
-	struct Cmiss_selection_handler;
-	typedef struct Cmiss_selection_handler * Cmiss_selection_handler_id;
+	struct cmzn_selection_handler;
+	typedef struct cmzn_selection_handler * cmzn_selection_handler_id;
 
-	struct Cmiss_selection_event;
-	typedef struct Cmiss_selection_event * Cmiss_selection_event_id;
+	struct cmzn_selection_event;
+	typedef struct cmzn_selection_event * cmzn_selection_event_id;
 
 #endif /* CMISS_SELECTION_ID_H */

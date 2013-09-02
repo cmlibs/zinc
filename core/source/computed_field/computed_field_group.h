@@ -56,7 +56,7 @@
 int Computed_field_register_type_group(
 	struct Computed_field_package *computed_field_package);
 
-typedef int (*Cmiss_field_group_iterator_function)(Cmiss_field_group_id,void *);
+typedef int (*cmzn_field_group_iterator_function)(cmzn_field_group_id,void *);
 
 /*****************************************************************************//**
  * A convenience function which calls the supplied function for this group and
@@ -67,15 +67,15 @@ typedef int (*Cmiss_field_group_iterator_function)(Cmiss_field_group_id,void *);
  * @param user_data  Void pointer to user data to pass to each function.
  * @return 1 on success, 0 on failure.
  */
-int Cmiss_field_group_for_each_group_hierarchical(Cmiss_field_group_id group,
-	Cmiss_field_group_iterator_function function, void *user_data);
+int cmzn_field_group_for_each_group_hierarchical(cmzn_field_group_id group,
+	cmzn_field_group_iterator_function function, void *user_data);
 
-int Cmiss_field_group_clear_region_tree_node(Cmiss_field_group_id group);
+int cmzn_field_group_clear_region_tree_node(cmzn_field_group_id group);
 
-int Cmiss_field_group_clear_region_tree_data(Cmiss_field_group_id group);
+int cmzn_field_group_clear_region_tree_data(cmzn_field_group_id group);
 
-int Cmiss_field_group_clear_region_tree_element(Cmiss_field_group_id group);
+int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group);
 
-int Cmiss_field_is_type_group(Cmiss_field_id field, void *dummy_void);
+int cmzn_field_is_type_group(cmzn_field_id field, void *dummy_void);
 
 #endif /* !defined (COMPUTED_FIELD_GROUP_H) */

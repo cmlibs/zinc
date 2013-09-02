@@ -592,9 +592,9 @@ struct GT_object *create_GT_object_sphere(const char *name,int number_of_segment
 	return (glyph);
 }
 
-GT_object *Cmiss_glyph_circular::getGraphicsObject(Cmiss_tessellation *tessellation, Cmiss_graphics_material *, Cmiss_font *)
+GT_object *cmzn_glyph_circular::getGraphicsObject(cmzn_tessellation *tessellation, cmzn_graphics_material *, cmzn_font *)
 {
-	const int circleDivisions = Cmiss_tessellation_get_circle_divisions(tessellation);
+	const int circleDivisions = cmzn_tessellation_get_circle_divisions(tessellation);
 	const size_t size = this->objects.size();
 	for (size_t i = 0; i < size; ++i)
 	{
@@ -620,33 +620,33 @@ GT_object *Cmiss_glyph_circular::getGraphicsObject(Cmiss_tessellation *tessellat
 	return graphicsObject;
 }
 
-GT_object *Cmiss_glyph_arrow_solid::createGraphicsObject(int circleDivisions)
+GT_object *cmzn_glyph_arrow_solid::createGraphicsObject(int circleDivisions)
 {
 	return create_GT_object_arrow_solid("arrow_solid", /*primary_axis*/1, circleDivisions,
 		/*shaft_length*/1.0 - this->headLength, /*shaft_radius*/this->shaftThickness*0.5, /*cone_radius*/0.5);
 }
 
-GT_object *Cmiss_glyph_cone::createGraphicsObject(int circleDivisions)
+GT_object *cmzn_glyph_cone::createGraphicsObject(int circleDivisions)
 {
 	return create_GT_object_cone("cone", circleDivisions);
 }
 
-GT_object *Cmiss_glyph_cone_solid::createGraphicsObject(int circleDivisions)
+GT_object *cmzn_glyph_cone_solid::createGraphicsObject(int circleDivisions)
 {
 	return create_GT_object_cone_solid("cone_solid", circleDivisions);
 }
 
-GT_object *Cmiss_glyph_cylinder::createGraphicsObject(int circleDivisions)
+GT_object *cmzn_glyph_cylinder::createGraphicsObject(int circleDivisions)
 {
 	return create_GT_object_cylinder("cylinder", circleDivisions);
 }
 
-GT_object *Cmiss_glyph_cylinder_solid::createGraphicsObject(int circleDivisions)
+GT_object *cmzn_glyph_cylinder_solid::createGraphicsObject(int circleDivisions)
 {
 	return create_GT_object_cylinder_solid("cylinder_solid", circleDivisions);
 }
 
-GT_object *Cmiss_glyph_sphere::createGraphicsObject(int circleDivisions)
+GT_object *cmzn_glyph_sphere::createGraphicsObject(int circleDivisions)
 {
 	return create_GT_object_sphere("sphere", circleDivisions, (circleDivisions + 1)/2);
 }

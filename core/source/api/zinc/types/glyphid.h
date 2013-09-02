@@ -41,22 +41,22 @@
 #ifndef CMZN_GLYPHID_H__
 #define CMZN_GLYPHID_H__
 
-struct Cmiss_glyph_module;
-typedef struct Cmiss_glyph_module *Cmiss_glyph_module_id;
+struct cmzn_glyph_module;
+typedef struct cmzn_glyph_module *cmzn_glyph_module_id;
 
-struct Cmiss_glyph;
-typedef struct Cmiss_glyph *Cmiss_glyph_id;
+struct cmzn_glyph;
+typedef struct cmzn_glyph *cmzn_glyph_id;
 
-struct Cmiss_glyph_axes;
-typedef struct Cmiss_glyph_axes *Cmiss_glyph_axes_id;
+struct cmzn_glyph_axes;
+typedef struct cmzn_glyph_axes *cmzn_glyph_axes_id;
 
-struct Cmiss_glyph_colour_bar;
-typedef struct Cmiss_glyph_colour_bar *Cmiss_glyph_colour_bar_id;
+struct cmzn_glyph_colour_bar;
+typedef struct cmzn_glyph_colour_bar *cmzn_glyph_colour_bar_id;
 
 /**
  * An enum defining how glyphs are repeatedly display at points.
  */
-enum Cmiss_glyph_repeat_mode
+enum cmzn_glyph_repeat_mode
 {
 	CMISS_GLYPH_REPEAT_MODE_INVALID = 0,
 	CMISS_GLYPH_REPEAT_NONE = 1,
@@ -77,14 +77,14 @@ enum Cmiss_glyph_repeat_mode
 		 * axis. Not suitable for sphere, cube etc. which are symmetric about 0.0 on
 		 * axis 1. In this mode the label is only shown for the first glyph and the
 		 * label offset is not reversed with the glyph.
-		 * @see Cmiss_graphic_point_attributes_set_signed_scale_field
+		 * @see cmzn_graphic_point_attributes_set_signed_scale_field
 		 */
 };
 
 /**
  * An enum defining the type of graphic glyph.
  */
-enum Cmiss_glyph_type
+enum cmzn_glyph_type
 {
 	CMISS_GLYPH_TYPE_INVALID = 0,
 	CMISS_GLYPH_NONE,             /*!< no glyph */

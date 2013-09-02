@@ -47,11 +47,11 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 
-#define Computed_field_create_image Cmiss_field_module_create_image
+#define Computed_field_create_image cmzn_field_module_create_image
 
 /*****************************************************************************//**
  * Creates a new image based field.  This constructor does not define the
- * actual image data, which should then be set using a Cmiss_field_image_set_*
+ * actual image data, which should then be set using a cmzn_field_image_set_*
  * function.
  *
  * @param field_module  Region field module which will own new field.
@@ -61,7 +61,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_image(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *domain_field,
 	struct Computed_field *source_field);
 
@@ -73,7 +73,7 @@ struct Computed_field *Computed_field_create_image(
  * @return  Returns texture if successfully get a texture from the provided
  *   field, otherwise NULL.
  */
-struct Texture *Cmiss_field_image_get_texture(Cmiss_field_image_id image_field);
+struct Texture *cmzn_field_image_get_texture(cmzn_field_image_id image_field);
 
 int Computed_field_depends_on_texture(struct Computed_field *field,
 	struct Texture *texture);
@@ -94,7 +94,7 @@ texture fields which reference <texture>.
 int Computed_field_is_image_type(struct Computed_field *field,
 	void *dummy_void);
 
-int Cmiss_field_image_set_texture(Cmiss_field_image_id image_field,
+int cmzn_field_image_set_texture(cmzn_field_image_id image_field,
 		struct Texture *texture);
 
 /*****************************************************************************//**
@@ -104,7 +104,7 @@ int Cmiss_field_image_set_texture(Cmiss_field_image_id image_field,
  * @param image_field  The image field to get the texture from.
  * @return Returns the handle to cmiss texture.
  */
-Cmiss_texture_id Cmiss_field_image_get_texture(Cmiss_field_image_id image_field);
+cmzn_texture_id cmzn_field_image_get_texture(cmzn_field_image_id image_field);
 
 /***************************************************************************//**
  * A function to list information of the texture in an image field.
@@ -120,13 +120,13 @@ int list_image_field_commands(struct Computed_field *field,void *command_prefix_
  * A function to evaluate a field into a texture, the texture must allocate the
  * image before passing into this function.
  */
-int Set_cmiss_field_value_to_texture(struct Cmiss_field *field,
-	struct Cmiss_field *texture_coordinate_field, struct Texture *texture,
-	struct Cmiss_spectrum *spectrum,	struct Cmiss_graphics_material *fail_material,
+int Set_cmiss_field_value_to_texture(struct cmzn_field *field,
+	struct cmzn_field *texture_coordinate_field, struct Texture *texture,
+	struct cmzn_spectrum *spectrum,	struct cmzn_graphics_material *fail_material,
 	int image_height, int image_width, int image_depth, int bytes_per_pixel,
 	int number_of_bytes_per_component, int use_pixel_location,
 	enum Texture_storage_type specify_format, int propagate_field,
 	struct Graphics_buffer_package *graphics_buffer_package,
-	Cmiss_mesh_id search_mesh);
+	cmzn_mesh_id search_mesh);
 
 #endif /* !defined (COMPUTED_FIELD_IMAGE_H) */

@@ -106,8 +106,8 @@ Module types
 ------------
 */
 
-FULL_DECLARE_CMISS_CALLBACK_TYPES(Cmiss_scene_viewer_module_callback, \
-	struct Cmiss_scene_viewer_module *, void *);
+FULL_DECLARE_CMISS_CALLBACK_TYPES(cmzn_scene_viewer_module_callback, \
+	struct cmzn_scene_viewer_module *, void *);
 
 FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *);
@@ -119,12 +119,12 @@ FULL_DECLARE_CMISS_CALLBACK_TYPES(Scene_viewer_callback, \
 Module functions
 ----------------
 */
-Cmiss_scene_viewer_input_id Cmiss_scene_viewer_get_input(struct Scene_viewer *scene_viewer)
+cmzn_scene_viewer_input_id cmzn_scene_viewer_get_input(struct Scene_viewer *scene_viewer)
 {
-	Cmiss_scene_viewer_input_id input = 0;
+	cmzn_scene_viewer_input_id input = 0;
 	if (scene_viewer)
 	{
-		if(ALLOCATE(input, struct Cmiss_scene_viewer_input, 1))
+		if(ALLOCATE(input, struct cmzn_scene_viewer_input, 1))
 		{
 			input->access_count = 1;
 			input->button_number = 0;
@@ -138,13 +138,13 @@ Cmiss_scene_viewer_input_id Cmiss_scene_viewer_get_input(struct Scene_viewer *sc
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_get_input.  Invalid argument(s)");
+			"cmzn_scene_viewer_get_input.  Invalid argument(s)");
 	}
 
 	return (input);
 }
 
-Cmiss_scene_viewer_input_id Cmiss_scene_viewer_input_access(Cmiss_scene_viewer_input_id input)
+cmzn_scene_viewer_input_id cmzn_scene_viewer_input_access(cmzn_scene_viewer_input_id input)
 {
 	if (input)
 	{
@@ -153,13 +153,13 @@ Cmiss_scene_viewer_input_id Cmiss_scene_viewer_input_access(Cmiss_scene_viewer_i
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_access.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_access.  Invalid argument(s)");
 	}
 
 	return (input);
 }
 
-int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input)
+int cmzn_scene_viewer_input_destroy(cmzn_scene_viewer_input_id *address_input)
 {
 	int return_code = 0;
 	if (address_input)
@@ -174,13 +174,13 @@ int Cmiss_scene_viewer_input_destroy(Cmiss_scene_viewer_input_id *address_input)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_destroy.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_destroy.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, int x, int y)
+int cmzn_scene_viewer_input_set_position(cmzn_scene_viewer_input_id input, int x, int y)
 {
 	int return_code = 0;
 	if (input)
@@ -192,13 +192,13 @@ int Cmiss_scene_viewer_input_set_position(Cmiss_scene_viewer_input_id input, int
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_set_position.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_set_position.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_modifier modifier)
+int cmzn_scene_viewer_input_set_modifier(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_modifier modifier)
 {
 	int return_code = 0;
 	if (input)
@@ -209,15 +209,15 @@ int Cmiss_scene_viewer_input_set_modifier(Cmiss_scene_viewer_input_id input, Cmi
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_set_modifier.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_set_modifier.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
 
-Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_scene_viewer_input_id input)
+cmzn_scene_viewer_input_modifier cmzn_scene_viewer_input_get_modifier(cmzn_scene_viewer_input_id input)
 {
-	Cmiss_scene_viewer_input_modifier modifier = CMISS_SCENE_VIEWER_INPUT_INVALID;
+	cmzn_scene_viewer_input_modifier modifier = CMISS_SCENE_VIEWER_INPUT_INVALID;
 	if (input)
 	{
 		modifier = input->input_modifier;
@@ -225,13 +225,13 @@ Cmiss_scene_viewer_input_modifier Cmiss_scene_viewer_input_get_modifier(Cmiss_sc
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_get_modifier.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_get_modifier.  Invalid argument(s)");
 	}
 
 	return (modifier);
 }
 
-int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input, int number)
+int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_id input, int number)
 {
 	int return_code = 0;
 	if (input)
@@ -242,13 +242,13 @@ int Cmiss_scene_viewer_input_set_button_number(Cmiss_scene_viewer_input_id input
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_set_button_number.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_set_button_number.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_button_type button)
+int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_button_type button)
 {
 	int return_code = 0;
 	if (input)
@@ -259,13 +259,13 @@ int Cmiss_scene_viewer_input_set_button(Cmiss_scene_viewer_input_id input, Cmiss
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_set_button.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_set_button.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_scene_viewer_input_event_type type)
+int cmzn_scene_viewer_input_set_type(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_event_type type)
 {
 	int return_code = 0;
 	if (input)
@@ -276,7 +276,7 @@ int Cmiss_scene_viewer_input_set_type(Cmiss_scene_viewer_input_id input, Cmiss_s
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_set_type.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_set_type.  Invalid argument(s)");
 	}
 
 	return (return_code);
@@ -465,10 +465,10 @@ Frees the memory for the render_object and sets <*render_object_address> to NULL
 DECLARE_OBJECT_FUNCTIONS(Scene_viewer_render_object)
 DECLARE_LIST_FUNCTIONS(Scene_viewer_render_object)
 
-DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Cmiss_scene_viewer_module_callback, void)
+DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(cmzn_scene_viewer_module_callback, void)
 
-DEFINE_CMISS_CALLBACK_FUNCTIONS(Cmiss_scene_viewer_module_callback, \
-	struct Cmiss_scene_viewer_module *,void *)
+DEFINE_CMISS_CALLBACK_FUNCTIONS(cmzn_scene_viewer_module_callback, \
+	struct cmzn_scene_viewer_module *,void *)
 
 DEFINE_CMISS_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback, void)
 
@@ -2465,11 +2465,11 @@ static void Scene_viewer_image_field_change(
 	if (message && image_texture)
 	{
 		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(
-				message, Cmiss_field_image_base_cast(image_texture->field));
+				message, cmzn_field_image_base_cast(image_texture->field));
 		if (change & MANAGER_CHANGE_RESULT(Computed_field))
 		{
 			REACCESS(Texture)(&(image_texture->texture),
-			Cmiss_field_image_get_texture(image_texture->field));
+			cmzn_field_image_get_texture(image_texture->field));
 			CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 				image_texture->scene_viewer->repaint_required_callback_list, image_texture->scene_viewer, NULL);
 		}
@@ -2486,7 +2486,7 @@ static void Scene_viewer_image_field_change(
  * This will also create a callback for computed field.
  */
 int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *image_texture,
-	Cmiss_field_image_id field)
+	cmzn_field_image_id field)
 {
 	int return_code = 0;
 	if (image_texture)
@@ -2494,7 +2494,7 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 		return_code = 1;
 		if (image_texture->field)
 		{
-			Cmiss_field_image_destroy(&(image_texture->field));
+			cmzn_field_image_destroy(&(image_texture->field));
 			image_texture->field=NULL;
 			if (image_texture->manager &&	image_texture->callback_id)
 			{
@@ -2507,9 +2507,9 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 		}
 		if (field)
 		{
-			struct Cmiss_region *temp_region = Computed_field_get_region(Cmiss_field_image_base_cast(field));
+			struct cmzn_region *temp_region = Computed_field_get_region(cmzn_field_image_base_cast(field));
 			MANAGER(Computed_field) *field_manager =
-				Cmiss_region_get_Computed_field_manager(temp_region);
+				cmzn_region_get_Computed_field_manager(temp_region);
 			if (field_manager)
 			{
 				image_texture->callback_id=
@@ -2517,9 +2517,9 @@ int Scene_viewer_image_texture_set_field(struct Scene_viewer_image_texture *imag
 						(void *)image_texture, field_manager);
 				image_texture->manager = field_manager;
 				image_texture->field = field;
-				Cmiss_field_access(Cmiss_field_image_base_cast(field));
+				cmzn_field_access(cmzn_field_image_base_cast(field));
 				image_texture->texture = ACCESS(Texture)(
-					Cmiss_field_image_get_texture(image_texture->field));
+					cmzn_field_image_get_texture(image_texture->field));
 				return_code = 1;
 			}
 		}
@@ -2539,34 +2539,34 @@ Global functions
 ----------------
 */
 
-void Cmiss_scene_viewer_module_graphics_filter_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *scene_viewer_module_void);
+void cmzn_scene_viewer_module_graphics_filter_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_graphics_filter) *message, void *scene_viewer_module_void);
 
-void Cmiss_scene_viewer_module_light_manager_callback(
+void cmzn_scene_viewer_module_light_manager_callback(
 	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_module_void);
 
-void Cmiss_scene_viewer_module_light_model_manager_callback(
+void cmzn_scene_viewer_module_light_model_manager_callback(
 	struct MANAGER_MESSAGE(Light_model) *message, void *scene_viewer_module_void);
 
-struct Cmiss_scene_viewer_module *CREATE(Cmiss_scene_viewer_module)(
+struct cmzn_scene_viewer_module *CREATE(cmzn_scene_viewer_module)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	Light_module *lightModule ,struct Light *default_light,
 	Light_model_module *lightModelModule, struct Light_model *default_light_model,
-	Cmiss_graphics_filter_module_id filterModule)
+	cmzn_graphics_filter_module_id filterModule)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-Creates a Cmiss_scene_viewer_module.
+Creates a cmzn_scene_viewer_module.
 ==============================================================================*/
 {
-	struct Cmiss_scene_viewer_module *scene_viewer_module;
+	struct cmzn_scene_viewer_module *scene_viewer_module;
 
 	if (background_colour && default_light_model)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
-		if (ALLOCATE(scene_viewer_module,struct Cmiss_scene_viewer_module,1))
+		if (ALLOCATE(scene_viewer_module,struct cmzn_scene_viewer_module,1))
 		{
 			scene_viewer_module->access_count = 1;
 			scene_viewer_module->graphics_buffer_package = CREATE(Graphics_buffer_package)();
@@ -2576,23 +2576,23 @@ Creates a Cmiss_scene_viewer_module.
 			scene_viewer_module->default_light_model = ACCESS(Light_model)(default_light_model);
 			scene_viewer_module->lightModule = Light_module_access(lightModule);
 			scene_viewer_module->lightModelModule = Light_model_module_access(lightModelModule);
-			scene_viewer_module->filterModule = Cmiss_graphics_filter_module_access(filterModule);
+			scene_viewer_module->filterModule = cmzn_graphics_filter_module_access(filterModule);
 			//-- scene_viewer_module->user_interface = user_interface;
 			scene_viewer_module->scene_viewer_list = CREATE(LIST(Scene_viewer))();
 			scene_viewer_module->graphics_filter_manager_callback_id =
-				MANAGER_REGISTER(Cmiss_graphics_filter)(Cmiss_scene_viewer_module_graphics_filter_manager_callback,
+				MANAGER_REGISTER(cmzn_graphics_filter)(cmzn_scene_viewer_module_graphics_filter_manager_callback,
 					(void *)scene_viewer_module,
-					Cmiss_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
+					cmzn_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
 			scene_viewer_module->light_manager_callback_id =
-				MANAGER_REGISTER(Light)(Cmiss_scene_viewer_module_light_manager_callback,
+				MANAGER_REGISTER(Light)(cmzn_scene_viewer_module_light_manager_callback,
 					(void *)scene_viewer_module,
 					Light_module_get_manager(scene_viewer_module->lightModule));
 			scene_viewer_module->light_model_manager_callback_id =
-				MANAGER_REGISTER(Light_model)(Cmiss_scene_viewer_module_light_model_manager_callback,
+				MANAGER_REGISTER(Light_model)(cmzn_scene_viewer_module_light_model_manager_callback,
 					(void *)scene_viewer_module,
 					Light_model_module_get_manager(scene_viewer_module->lightModelModule));
 			scene_viewer_module->destroy_callback_list=
-					CREATE(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback)))();
+					CREATE(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_viewer_module_callback)))();
 		}
 		else
 		{
@@ -2603,11 +2603,11 @@ Creates a Cmiss_scene_viewer_module.
 	else
 	{
 		display_message(ERROR_MESSAGE,"CREATE(Scene_viewer_module).  Invalid argument(s)");
-		scene_viewer_module=(struct Cmiss_scene_viewer_module *)NULL;
+		scene_viewer_module=(struct cmzn_scene_viewer_module *)NULL;
 	}
 
 	return (scene_viewer_module);
-} /* CREATE(Cmiss_scene_viewer_module) */
+} /* CREATE(cmzn_scene_viewer_module) */
 
 static void Scene_viewer_destroy_remove_from_package(
 	struct Scene_viewer *scene_viewer,
@@ -2618,14 +2618,14 @@ LAST MODIFIED : 19 April 2007
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct Cmiss_scene_viewer_module *package;
+	struct cmzn_scene_viewer_module *package;
 
 	USE_PARAMETER(dummy_void);
-	if (scene_viewer && (package = (struct Cmiss_scene_viewer_module *)package_void))
+	if (scene_viewer && (package = (struct cmzn_scene_viewer_module *)package_void))
 	{
 		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
 			package->scene_viewer_list);
-		Cmiss_scene_viewer_destroy(&scene_viewer);
+		cmzn_scene_viewer_destroy(&scene_viewer);
 	}
 }
 
@@ -2638,21 +2638,21 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct Cmiss_scene_viewer_module *package;
+	struct cmzn_scene_viewer_module *package;
 
 	ENTER(Scene_viewer_destroy_from_package);
-	if (scene_viewer && (package = (struct Cmiss_scene_viewer_module *)package_void))
+	if (scene_viewer && (package = (struct cmzn_scene_viewer_module *)package_void))
 	{
 		Scene_viewer_remove_destroy_callback(scene_viewer,
 			Scene_viewer_destroy_remove_from_package, package);
-		Cmiss_scene_viewer_destroy(&scene_viewer);
+		cmzn_scene_viewer_destroy(&scene_viewer);
 	}
 	return_code = 1;
 
 	return (return_code);
 }
 
-struct Cmiss_scene_viewer_module *ACCESS(Cmiss_scene_viewer_module)(struct Cmiss_scene_viewer_module *scene_viewer_module)
+struct cmzn_scene_viewer_module *ACCESS(cmzn_scene_viewer_module)(struct cmzn_scene_viewer_module *scene_viewer_module)
 {
 	if (scene_viewer_module)
 	{
@@ -2667,8 +2667,8 @@ struct Cmiss_scene_viewer_module *ACCESS(Cmiss_scene_viewer_module)(struct Cmiss
 	return scene_viewer_module;
 }
 
-int DESTROY(Cmiss_scene_viewer_module)(
-	struct Cmiss_scene_viewer_module **scene_viewer_module_address)
+int DESTROY(cmzn_scene_viewer_module)(
+	struct cmzn_scene_viewer_module **scene_viewer_module_address)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -2677,15 +2677,15 @@ Destroys the scene_viewer_module.
 ==============================================================================*/
 {
 	int return_code = 0;
-	struct Cmiss_scene_viewer_module *scene_viewer_module = *scene_viewer_module_address;
+	struct cmzn_scene_viewer_module *scene_viewer_module = *scene_viewer_module_address;
 
-	ENTER(DESTROY(Cmiss_scene_viewer_module));
+	ENTER(DESTROY(cmzn_scene_viewer_module));
 	if (scene_viewer_module != 0)
 	{
 		/* Call the destroy callbacks */
-		CMISS_CALLBACK_LIST_CALL(Cmiss_scene_viewer_module_callback)(
+		CMISS_CALLBACK_LIST_CALL(cmzn_scene_viewer_module_callback)(
 			scene_viewer_module->destroy_callback_list,scene_viewer_module,NULL);
-		DESTROY(LIST(CMISS_CALLBACK_ITEM(Cmiss_scene_viewer_module_callback)))
+		DESTROY(LIST(CMISS_CALLBACK_ITEM(cmzn_scene_viewer_module_callback)))
 			(&scene_viewer_module->destroy_callback_list);
 
 		/* Destroy the scene viewers in the list as they are not accessed
@@ -2699,10 +2699,10 @@ Destroys the scene_viewer_module.
 		DESTROY(LIST(Scene_viewer))(&scene_viewer_module->scene_viewer_list);
 		DESTROY(Graphics_buffer_package)(&scene_viewer_module->graphics_buffer_package);
 
-		MANAGER_DEREGISTER(Cmiss_graphics_filter)(
+		MANAGER_DEREGISTER(cmzn_graphics_filter)(
 			scene_viewer_module->graphics_filter_manager_callback_id,
-			Cmiss_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
-		Cmiss_graphics_filter_module_destroy(&scene_viewer_module->filterModule);
+			cmzn_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
+		cmzn_graphics_filter_module_destroy(&scene_viewer_module->filterModule);
 		MANAGER_DEREGISTER(Light)(
 			scene_viewer_module->light_manager_callback_id,
 			Light_module_get_manager(scene_viewer_module->lightModule));
@@ -2718,15 +2718,15 @@ Destroys the scene_viewer_module.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Cmiss_scene_viewer_module).  "
+		display_message(ERROR_MESSAGE,"DESTROY(cmzn_scene_viewer_module).  "
 			"Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Cmiss_scene_viewer_module) */
+} /* DESTROY(cmzn_scene_viewer_module) */
 
-Cmiss_scene_viewer_module_id Cmiss_scene_viewer_module_access(Cmiss_scene_viewer_module_id scene_viewer_module)
+cmzn_scene_viewer_module_id cmzn_scene_viewer_module_access(cmzn_scene_viewer_module_id scene_viewer_module)
 {
 	if (scene_viewer_module)
 	{
@@ -2736,17 +2736,17 @@ Cmiss_scene_viewer_module_id Cmiss_scene_viewer_module_access(Cmiss_scene_viewer
 	return scene_viewer_module;
 }
 
-int Cmiss_scene_viewer_module_destroy(Cmiss_scene_viewer_module_id *scene_viewer_module_address)
+int cmzn_scene_viewer_module_destroy(cmzn_scene_viewer_module_id *scene_viewer_module_address)
 {
 	int return_code = 0;
-	Cmiss_scene_viewer_module_id object = 0;
+	cmzn_scene_viewer_module_id object = 0;
 
 	if (scene_viewer_module_address && (object = *scene_viewer_module_address))
 	{
 		(object->access_count)--;
 		if (object->access_count <= 0)
 		{
-			return_code = DESTROY(Cmiss_scene_viewer_module)(scene_viewer_module_address);
+			return_code = DESTROY(cmzn_scene_viewer_module)(scene_viewer_module_address);
 		}
 		else
 		{
@@ -2758,9 +2758,9 @@ int Cmiss_scene_viewer_module_destroy(Cmiss_scene_viewer_module_id *scene_viewer
 	return (return_code);
 } /* DEACCESS(object_type) */
 
-int Cmiss_scene_viewer_module_add_destroy_callback(
-	struct Cmiss_scene_viewer_module *scene_viewer_module,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,
+int cmzn_scene_viewer_module_add_destroy_callback(
+	struct cmzn_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
@@ -2772,10 +2772,10 @@ viewer is destroyed.
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_module_add_destroy_callback);
+	ENTER(cmzn_scene_viewer_module_add_destroy_callback);
 	if (scene_viewer_module&&function)
 	{
-		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(Cmiss_scene_viewer_module_callback)(
+		if (CMISS_CALLBACK_LIST_ADD_CALLBACK(cmzn_scene_viewer_module_callback)(
 			scene_viewer_module->destroy_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -2783,24 +2783,24 @@ viewer is destroyed.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_viewer_module_add_destroy_callback.  Could not add callback");
+				"cmzn_scene_viewer_module_add_destroy_callback.  Could not add callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_module_add_destroy_callback.  Invalid argument(s)");
+			"cmzn_scene_viewer_module_add_destroy_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_module_add_destroy_callback */
+} /* cmzn_scene_viewer_module_add_destroy_callback */
 
-int Cmiss_scene_viewer_module_remove_destroy_callback(
-	struct Cmiss_scene_viewer_module *scene_viewer_module,
-	CMISS_CALLBACK_FUNCTION(Cmiss_scene_viewer_module_callback) *function,
+int cmzn_scene_viewer_module_remove_destroy_callback(
+	struct cmzn_scene_viewer_module *scene_viewer_module,
+	CMISS_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,
 	void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
@@ -2812,10 +2812,10 @@ Removes the callback calling <function> with <user_data> from
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_module_remove_destroy_callback);
+	ENTER(cmzn_scene_viewer_module_remove_destroy_callback);
 	if (scene_viewer_module&&function)
 	{
-		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(Cmiss_scene_viewer_module_callback)(
+		if (CMISS_CALLBACK_LIST_REMOVE_CALLBACK(cmzn_scene_viewer_module_callback)(
 			scene_viewer_module->destroy_callback_list,function,user_data))
 		{
 			return_code=1;
@@ -2823,23 +2823,23 @@ Removes the callback calling <function> with <user_data> from
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_viewer_module_remove_destroy_callback.  Could not remove callback");
+				"cmzn_scene_viewer_module_remove_destroy_callback.  Could not remove callback");
 			return_code=0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_module_remove_destroy_callback.  Invalid argument(s)");
+			"cmzn_scene_viewer_module_remove_destroy_callback.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_module_remove_destroy_callback */
+} /* cmzn_scene_viewer_module_remove_destroy_callback */
 
-struct Graphics_buffer_package *Cmiss_scene_viewer_module_get_graphics_buffer_package(
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module)
+struct Graphics_buffer_package *cmzn_scene_viewer_module_get_graphics_buffer_package(
+	struct cmzn_scene_viewer_module *cmiss_scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -2869,7 +2869,7 @@ DESCRIPTION :
 int Scene_viewer_remove_light_in_list_iterator(struct Light *light,void *scene_viewer_void)
 {
 	int return_code;
-	Cmiss_scene_viewer *scene_viewer = (Cmiss_scene_viewer *)scene_viewer_void;
+	cmzn_scene_viewer *scene_viewer = (cmzn_scene_viewer *)scene_viewer_void;
 
 	if (light && scene_viewer)
 	{
@@ -2888,7 +2888,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct Colour *background_colour,
 	struct Light *default_light,
 	struct Light_model *default_light_model,
-	Cmiss_graphics_filter_id filter)
+	cmzn_graphics_filter_id filter)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -2957,7 +2957,7 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
 				scene_viewer->access_count = 1;
-				scene_viewer->filter = Cmiss_graphics_filter_access(filter);
+				scene_viewer->filter = cmzn_graphics_filter_access(filter);
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
@@ -3016,7 +3016,7 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->image_texture).callback_id = NULL;
 				(scene_viewer->image_texture).scene_viewer = scene_viewer;
 				scene_viewer->order_independent_transparency_data =
-					(struct Cmiss_scene_viewer_transparency_order_independent_data *)NULL;
+					(struct cmzn_scene_viewer_transparency_order_independent_data *)NULL;
 
 				/* set projection matrices to identity */
 				for (i=0;i<16;i++)
@@ -3182,12 +3182,12 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		}
 		if (scene_viewer->scene)
 		{
-			Cmiss_scene_triggers_top_region_change_callback(scene_viewer->scene);
-			Cmiss_scene_destroy(&scene_viewer->scene);
+			cmzn_scene_triggers_top_region_change_callback(scene_viewer->scene);
+			cmzn_scene_destroy(&scene_viewer->scene);
 		}
 		if (scene_viewer->filter)
 		{
-			Cmiss_graphics_filter_destroy(&scene_viewer->filter);
+			cmzn_graphics_filter_destroy(&scene_viewer->filter);
 		}
 		DEALLOCATE(scene_viewer);
 		*scene_viewer_address = 0;
@@ -3213,7 +3213,7 @@ DESCRIPTION :
 	return(scene_viewer);
 }
 
-Cmiss_scene_viewer_id Cmiss_scene_viewer_access(Cmiss_scene_viewer_id scene_viewer)
+cmzn_scene_viewer_id cmzn_scene_viewer_access(cmzn_scene_viewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{
@@ -3239,7 +3239,7 @@ DECLARE_LIST_FUNCTIONS(Scene_viewer)
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
-	struct Cmiss_scene_viewer_module *cmiss_scene_viewer_module)
+	struct cmzn_scene_viewer_module *cmiss_scene_viewer_module)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -3251,18 +3251,18 @@ DESCRIPTION :
 	ENTER(create_Scene_viewer_from_package);
 	if (graphics_buffer && cmiss_scene_viewer_module)
 	{
-		Cmiss_graphics_filter_id filter = Cmiss_graphics_filter_module_get_default_filter(
+		cmzn_graphics_filter_id filter = cmzn_graphics_filter_module_get_default_filter(
 			cmiss_scene_viewer_module->filterModule);
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			cmiss_scene_viewer_module->background_colour,
 			cmiss_scene_viewer_module->default_light,
 			cmiss_scene_viewer_module->default_light_model,
 			filter);
-		Cmiss_graphics_filter_destroy(&filter);
+		cmzn_graphics_filter_destroy(&filter);
 		if (scene_viewer)
 		{
 			/* Add this scene_viewer to the package list */
-			ADD_OBJECT_TO_LIST(Scene_viewer)(Cmiss_scene_viewer_access(scene_viewer),
+			ADD_OBJECT_TO_LIST(Scene_viewer)(cmzn_scene_viewer_access(scene_viewer),
 				cmiss_scene_viewer_module->scene_viewer_list);
 
 			/* Register a callback so that if the scene_viewer is destroyed
@@ -3282,15 +3282,15 @@ DESCRIPTION :
 	return (scene_viewer);
 } /* create_Scene_viewer_from_package */
 
-Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
-	Cmiss_scene_viewer_module_id cmiss_scene_viewer_module,
-	enum Cmiss_scene_viewer_buffering_mode buffer_mode,
-	enum Cmiss_scene_viewer_stereo_mode stereo_mode)
+cmzn_scene_viewer_id cmzn_scene_viewer_module_create_scene_viewer(
+	cmzn_scene_viewer_module_id cmiss_scene_viewer_module,
+	enum cmzn_scene_viewer_buffering_mode buffer_mode,
+	enum cmzn_scene_viewer_stereo_mode stereo_mode)
 {
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
 	struct Graphics_buffer *graphics_buffer;
-	struct Cmiss_scene_viewer *scene_viewer;
+	struct cmzn_scene_viewer *scene_viewer;
 
 	if (cmiss_scene_viewer_module)
 	{
@@ -3327,7 +3327,7 @@ Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 		}
 		graphics_buffer = CREATE(Graphics_buffer)(
-			Cmiss_scene_viewer_module_get_graphics_buffer_package(cmiss_scene_viewer_module),
+			cmzn_scene_viewer_module_get_graphics_buffer_package(cmiss_scene_viewer_module),
 			GRAPHICS_BUFFER_ONSCREEN_TYPE,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode);
 		scene_viewer = CREATE(Scene_viewer_from_package)(graphics_buffer,
@@ -3336,14 +3336,14 @@ Cmiss_scene_viewer_id Cmiss_scene_viewer_module_create_scene_viewer(
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_module_create_scene_viewer.  "
-			"The Cmiss_scene_viewer data must be initialised before any scene "
+		display_message(ERROR_MESSAGE,"cmzn_scene_viewer_module_create_scene_viewer.  "
+			"The cmzn_scene_viewer data must be initialised before any scene "
 			"viewers can be created.");
-		scene_viewer=(struct Cmiss_scene_viewer *)NULL;
+		scene_viewer=(struct cmzn_scene_viewer *)NULL;
 	}
 
 	return (scene_viewer);
-} /* create_Cmiss_scene_viewer_wx */
+} /* create_cmzn_scene_viewer_wx */
 
 int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	struct Graphics_buffer_input *input)
@@ -3625,7 +3625,7 @@ Converts mouse button-press and motion events into viewing transformations in
 							{
 								/* a = vector towards viewer */
 								double angle;
-								Cmiss_scene_viewer_get_view_angle(scene_viewer, &angle);
+								cmzn_scene_viewer_get_view_angle(scene_viewer, &angle);
 								a[0] = scene_viewer->eyex-scene_viewer->lookatx;
 								a[1] = scene_viewer->eyey-scene_viewer->lookaty;
 								a[2] = scene_viewer->eyez-scene_viewer->lookatz;
@@ -3664,7 +3664,7 @@ Converts mouse button-press and motion events into viewing transformations in
 										scene_viewer->near_plane_fly_debt += dy*dist;
 									}
 
-									Cmiss_scene_viewer_set_view_angle(scene_viewer, angle);
+									cmzn_scene_viewer_set_view_angle(scene_viewer, angle);
 									view_changed = 1;
 								}
 							}
@@ -3738,7 +3738,7 @@ Converts mouse button-press and motion events into viewing transformations in
 	return (return_code);
 } /* Scene_viewer_input_transform */
 
-int Cmiss_scene_viewer_process_input(
+int cmzn_scene_viewer_process_input(
 	struct Scene_viewer *scene_viewer, struct Graphics_buffer_input *input)
 {
 	return Scene_viewer_input_transform(scene_viewer, input);
@@ -3762,8 +3762,8 @@ Scene_viewer_sleep to restore normal activity.
 			scene_viewer->awaken = 1;
 			if (scene_viewer->scene)
 			{
-				Cmiss_scene_add_callback(scene_viewer->scene,
-					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+				cmzn_scene_add_callback(scene_viewer->scene,
+					cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
 			}
 			/* register for any texture changes */
 			if (scene_viewer->image_texture.manager &&
@@ -3921,8 +3921,8 @@ Must call this in DESTROY function.
 		scene_viewer->tumble_angle = 0.0;
 		if (scene_viewer->scene)
 		{
-			Cmiss_scene_remove_callback(scene_viewer->scene,
-				Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+			cmzn_scene_remove_callback(scene_viewer->scene,
+				cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
 		}
 		if (scene_viewer->image_texture.callback_id)
 		{
@@ -4568,7 +4568,7 @@ Sets the Scene_viewer light_model.
 	return (return_code);
 } /* Scene_viewer_set_light_model */
 
-int Cmiss_scene_viewer_set_eye_position(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_eye_position(cmzn_scene_viewer_id scene_viewer,
 	double const *eye)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
@@ -4583,7 +4583,7 @@ int Cmiss_scene_viewer_set_eye_position(Cmiss_scene_viewer_id scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_get_eye_position(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_get_eye_position(cmzn_scene_viewer_id scene_viewer,
 	double *eye)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
@@ -4598,7 +4598,7 @@ int Cmiss_scene_viewer_get_eye_position(Cmiss_scene_viewer_id scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_set_lookat_position(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_lookat_position(cmzn_scene_viewer_id scene_viewer,
 	double const *lookat)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
@@ -4613,7 +4613,7 @@ int Cmiss_scene_viewer_set_lookat_position(Cmiss_scene_viewer_id scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_get_lookat_position(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_get_lookat_position(cmzn_scene_viewer_id scene_viewer,
 	double *lookat)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
@@ -4628,7 +4628,7 @@ int Cmiss_scene_viewer_get_lookat_position(Cmiss_scene_viewer_id scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_set_up_vector(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_up_vector(cmzn_scene_viewer_id scene_viewer,
 	double const *upVector)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
@@ -4645,7 +4645,7 @@ int Cmiss_scene_viewer_set_up_vector(Cmiss_scene_viewer_id scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_get_up_vector(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_get_up_vector(cmzn_scene_viewer_id scene_viewer,
 	double *upVector)
 {
 	int return_code = CMISS_ERROR_ARGUMENT;
@@ -4660,7 +4660,7 @@ int Cmiss_scene_viewer_get_up_vector(Cmiss_scene_viewer_id scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_get_lookat_parameters(struct Scene_viewer *scene_viewer,
+int cmzn_scene_viewer_get_lookat_parameters(struct Scene_viewer *scene_viewer,
 	double *eyex,double *eyey,double *eyez,
 	double *lookatx,double *lookaty,double *lookatz,
 	double *upx,double *upy,double *upz)
@@ -4689,12 +4689,12 @@ Gets the view direction and orientation of the Scene_viewer.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_get_lookat_parameters.  Invalid argument(s)");
+			"cmzn_scene_viewer_get_lookat_parameters.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Cmiss_scene_viewer_get_lookat_parameters */
+} /* cmzn_scene_viewer_get_lookat_parameters */
 
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 	double eyex,double eyey,double eyez,
@@ -4756,7 +4756,7 @@ Sets the view direction and orientation of the Scene_viewer.
 	return (return_code);
 } /* Scene_viewer_set_lookat_parameters */
 
-int Cmiss_scene_viewer_set_lookat_parameters_non_skew(
+int cmzn_scene_viewer_set_lookat_parameters_non_skew(
 	struct Scene_viewer *scene_viewer,double eyex,double eyey,double eyez,
 	double lookatx,double lookaty,double lookatz,
 	double upx,double upy,double upz)
@@ -4804,7 +4804,7 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_viewer_set_lookat_parameters_non_skew.  "
+				"cmzn_scene_viewer_set_lookat_parameters_non_skew.  "
 				"Up and view directions zero or colinear");
 			return_code=0;
 		}
@@ -4812,12 +4812,12 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_set_lookat_parameters_non_skew.  Missing scene_viewer");
+			"cmzn_scene_viewer_set_lookat_parameters_non_skew.  Missing scene_viewer");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* Cmiss_scene_viewer_set_lookat_parameters_non_skew */
+} /* cmzn_scene_viewer_set_lookat_parameters_non_skew */
 
 double Scene_viewer_get_stereo_eye_spacing(struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -5358,8 +5358,8 @@ Sets the scene viewer zoom rate.
 	return (return_code);
 } /* Scene_viewer_set_tumble_rate */
 
-enum Cmiss_scene_viewer_transparency_mode Cmiss_scene_viewer_get_transparency_mode(
-	Cmiss_scene_viewer_id scene_viewer)
+enum cmzn_scene_viewer_transparency_mode cmzn_scene_viewer_get_transparency_mode(
+	cmzn_scene_viewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{
@@ -5369,8 +5369,8 @@ enum Cmiss_scene_viewer_transparency_mode Cmiss_scene_viewer_get_transparency_mo
 	return CMISS_SCENE_VIEWER_TRANSPARENCY_INVALID;
 }
 
-int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_transparency_mode transparency_mode)
+int cmzn_scene_viewer_set_transparency_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_transparency_mode transparency_mode)
 
 {
 	int return_code = 0;
@@ -5402,7 +5402,7 @@ int Cmiss_scene_viewer_set_transparency_mode(Cmiss_scene_viewer_id scene_viewer,
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewer)
+int cmzn_scene_viewer_get_transparency_layers(cmzn_scene_viewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{
@@ -5412,7 +5412,7 @@ int Cmiss_scene_viewer_get_transparency_layers(Cmiss_scene_viewer_id scene_viewe
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Cmiss_scene_viewer_set_transparency_layers(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_transparency_layers(cmzn_scene_viewer_id scene_viewer,
 	int transparency_layers)
 {
 	if (scene_viewer)
@@ -5547,7 +5547,7 @@ For PARALLEL and PERSPECTIVE projection modes only.
 	return (return_code);
 } /* Scene_viewer_get_vertical_view_angle */
 
-int Cmiss_scene_viewer_set_graphics_buffer_width(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_graphics_buffer_width(cmzn_scene_viewer_id scene_viewer,
 	unsigned int width)
 {
 	int return_code = 0;
@@ -5559,12 +5559,12 @@ int Cmiss_scene_viewer_set_graphics_buffer_width(Cmiss_scene_viewer_id scene_vie
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_set_graphics_buffer_width.  Invalid argument(s)");
+			"cmzn_scene_viewer_set_graphics_buffer_width.  Invalid argument(s)");
 	}
 	return return_code;
 }
 
-int Cmiss_scene_viewer_set_graphics_buffer_height(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_graphics_buffer_height(cmzn_scene_viewer_id scene_viewer,
 	unsigned int height)
 {
 	int return_code = 0;
@@ -5576,7 +5576,7 @@ int Cmiss_scene_viewer_set_graphics_buffer_height(Cmiss_scene_viewer_id scene_vi
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_set_graphics_buffer_height.  Invalid argument(s)");
+			"cmzn_scene_viewer_set_graphics_buffer_height.  Invalid argument(s)");
 	}
 	return return_code;
 }
@@ -6352,7 +6352,7 @@ Returns the width and height of the Scene_viewers drawing area.
 	return (return_code);
 } /* Scene_viewer_get_viewport_size */
 
-int Cmiss_scene_viewer_set_viewport_size(struct Scene_viewer *scene_viewer,
+int cmzn_scene_viewer_set_viewport_size(struct Scene_viewer *scene_viewer,
 	int width, int height)
 /*******************************************************************************
 LAST MODIFIED : 21 January 1998
@@ -6373,11 +6373,11 @@ Sets the width and height of the Scene_viewers drawing area.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_set_viewport_size.  Invalid argument(s)");
+			"cmzn_scene_viewer_set_viewport_size.  Invalid argument(s)");
 	}
 
 	return (return_code);
-} /* Cmiss_scene_viewer_set_viewport_size */
+} /* cmzn_scene_viewer_set_viewport_size */
 
 int Scene_viewer_get_window_projection_matrix(struct Scene_viewer *scene_viewer,
 	double window_projection_matrix[16])
@@ -6819,7 +6819,7 @@ with commands for setting these.
 
 	if (scene_viewer)
 	{
-		Cmiss_scene_get_global_graphics_range(scene_viewer->scene,
+		cmzn_scene_get_global_graphics_range(scene_viewer->scene,
 			scene_viewer->filter,
 			&centre_x,&centre_y,&centre_z,&size_x,&size_y,&size_z);
 		radius = 0.5*sqrt(size_x*size_x + size_y*size_y + size_z*size_z);
@@ -7180,8 +7180,8 @@ NOTE: Calling function must not deallocate returned string.
 	return (return_string);
 } /* Scene_viewer_projection_mode_string */
 
-const char *Cmiss_scene_viewer_transparency_mode_string(
-	enum Cmiss_scene_viewer_transparency_mode transparency_mode)
+const char *cmzn_scene_viewer_transparency_mode_string(
+	enum cmzn_scene_viewer_transparency_mode transparency_mode)
 /*******************************************************************************
 LAST MODIFIED : 26 June 2003
 
@@ -7307,16 +7307,16 @@ Returns a count of the number of scene viewer redraws.
 	return (frame_count);
 } /* Scene_viewer_get_frame_count */
 
-Cmiss_field_image_id Scene_viewer_get_background_image_field(struct Scene_viewer *scene_viewer)
+cmzn_field_image_id Scene_viewer_get_background_image_field(struct Scene_viewer *scene_viewer)
 {
-	Cmiss_field_image_id image_field = NULL;
+	cmzn_field_image_id image_field = NULL;
 
 	if (scene_viewer)
 	{
 			image_field = scene_viewer->image_texture.field;
 			if (image_field)
 			{
-				Cmiss_field_access(Cmiss_field_image_base_cast(image_field));
+				cmzn_field_access(cmzn_field_image_base_cast(image_field));
 			}
 	}
 	else
@@ -7329,7 +7329,7 @@ Cmiss_field_image_id Scene_viewer_get_background_image_field(struct Scene_viewer
 }
 
 int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
-	Cmiss_field_image_id image_field)
+	cmzn_field_image_id image_field)
 {
 	int return_code = 0;
 	if (scene_viewer)
@@ -7348,7 +7348,7 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_destroy(Cmiss_scene_viewer_id *scene_viewer_id_address)
+int cmzn_scene_viewer_destroy(cmzn_scene_viewer_id *scene_viewer_id_address)
 /*******************************************************************************
 LAST MODIFIED : 4 September 2007
 
@@ -7375,13 +7375,13 @@ Closes the scene_viewer.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_input_destroy.  Invalid argument(s)");
+			"cmzn_scene_viewer_input_destroy.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
 
-int Cmiss_scene_viewer_get_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_get_near_and_far_plane(cmzn_scene_viewer_id scene_viewer,
 	double *near_plane, double *far_plane)
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -7394,7 +7394,7 @@ clip plane in the <scene_viewer>.
 	double left, right, bottom, top;
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_get_near_and_far_plane);
+	ENTER(cmzn_scene_viewer_get_near_and_far_plane);
 	if (scene_viewer)
 	{
 		return_code = Scene_viewer_get_viewing_volume(scene_viewer,
@@ -7402,16 +7402,16 @@ clip plane in the <scene_viewer>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_near_and_far_plane.  "
+		display_message(ERROR_MESSAGE,"cmzn_scene_viewer_get_near_and_far_plane.  "
 			"Missing scene_viewer parameter.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_get_near_and_far_plane */
+} /* cmzn_scene_viewer_get_near_and_far_plane */
 
-int Cmiss_scene_viewer_set_near_and_far_plane(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_near_and_far_plane(cmzn_scene_viewer_id scene_viewer,
 	double near_plane, double far_plane)
 /*******************************************************************************
 LAST MODIFIED : 13 September 2002
@@ -7424,7 +7424,7 @@ clip plane in the <scene_viewer>.
 	double left, right, bottom, top, old_near, old_far;
 	int return_code = 0;
 
-	ENTER(Cmiss_scene_viewer_set_near_and_far_plane);
+	ENTER(cmzn_scene_viewer_set_near_and_far_plane);
 	if (scene_viewer)
 	{
 		if (Scene_viewer_get_viewing_volume(scene_viewer,
@@ -7436,16 +7436,16 @@ clip plane in the <scene_viewer>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_get_near_and_far_plane.  "
+		display_message(ERROR_MESSAGE,"cmzn_scene_viewer_get_near_and_far_plane.  "
 			"Missing scene_viewer parameter.");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_get_near_and_far_plane */
+} /* cmzn_scene_viewer_get_near_and_far_plane */
 
-int Cmiss_scene_viewer_get_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_viewport_mode *viewport_mode)
+int cmzn_scene_viewer_get_viewport_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_viewport_mode *viewport_mode)
 /*******************************************************************************
 LAST MODIFIED : 04 February 2005
 
@@ -7457,7 +7457,7 @@ Gets the viewport mode(absolute/relative/distorting relative) for the
 	enum Scene_viewer_viewport_mode scene_viewer_viewport_mode;
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_get_viewport_mode);
+	ENTER(cmzn_scene_viewer_get_viewport_mode);
 	if (scene_viewer)
 	{
 		scene_viewer_viewport_mode = Scene_viewer_get_viewport_mode(scene_viewer);
@@ -7481,7 +7481,7 @@ Gets the viewport mode(absolute/relative/distorting relative) for the
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_scene_viewer_get_viewport_mode.  "
+					"cmzn_scene_viewer_get_viewport_mode.  "
 					"Viewport mode not supported in public interface.");
 				return_code = 0;
 			} break;
@@ -7490,16 +7490,16 @@ Gets the viewport mode(absolute/relative/distorting relative) for the
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_get_viewport_mode.  Invalid argument(s)");
+			"cmzn_scene_viewer_get_viewport_mode.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_get_viewport_mode */
+} /* cmzn_scene_viewer_get_viewport_mode */
 
-int Cmiss_scene_viewer_set_viewport_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_viewport_mode viewport_mode)
+int cmzn_scene_viewer_set_viewport_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_viewport_mode viewport_mode)
 /*******************************************************************************
 LAST MODIFIED : 04 February 2005
 
@@ -7510,7 +7510,7 @@ Sets the viewport mode(absolute/relative/distorting relative) for the
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_set_viewport_mode);
+	ENTER(cmzn_scene_viewer_set_viewport_mode);
 	if (scene_viewer)
 	{
 		switch(viewport_mode)
@@ -7533,7 +7533,7 @@ Sets the viewport mode(absolute/relative/distorting relative) for the
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_scene_viewer_set_viewport_mode.  "
+					"cmzn_scene_viewer_set_viewport_mode.  "
 					"Unknown viewport mode.");
 				return_code = 0;
 			} break;
@@ -7542,27 +7542,27 @@ Sets the viewport mode(absolute/relative/distorting relative) for the
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_set_viewport_mode.  Invalid argument(s)");
+			"cmzn_scene_viewer_set_viewport_mode.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_set_viewport_mode */
+} /* cmzn_scene_viewer_set_viewport_mode */
 
-int Cmiss_scene_viewer_get_projection_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_projection_mode *projection_mode)
+int cmzn_scene_viewer_get_projection_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_projection_mode *projection_mode)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
-Returns the projection mode - parallel/perspective - of the Cmiss_scene_viewer.
+Returns the projection mode - parallel/perspective - of the cmzn_scene_viewer.
 ==============================================================================*/
 {
 	int return_code;
 	enum Scene_viewer_projection_mode scene_viewer_projection_mode;
 
-	ENTER(Cmiss_scene_viewer_get_projection_mode);
+	ENTER(cmzn_scene_viewer_get_projection_mode);
 	if (scene_viewer)
 	{
 		return_code = Scene_viewer_get_projection_mode(scene_viewer,
@@ -7584,7 +7584,7 @@ Returns the projection mode - parallel/perspective - of the Cmiss_scene_viewer.
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmiss_scene_viewer_set_projection_mode.  "
+						"cmzn_scene_viewer_set_projection_mode.  "
 						"Projection mode not supported in public interface.");
 					return_code = 0;
 				} break;
@@ -7594,26 +7594,26 @@ Returns the projection mode - parallel/perspective - of the Cmiss_scene_viewer.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_get_projection_mode.  Invalid argument(s)");
+			"cmzn_scene_viewer_get_projection_mode.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_get_projection_mode */
+} /* cmzn_scene_viewer_get_projection_mode */
 
-int Cmiss_scene_viewer_set_projection_mode(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_viewer_projection_mode projection_mode)
+int cmzn_scene_viewer_set_projection_mode(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_viewer_projection_mode projection_mode)
 /*******************************************************************************
 LAST MODIFIED : 17 September 2002
 
 DESCRIPTION :
-Sets the projection mode - parallel/perspective/custom - of the Cmiss_scene_viewer.
+Sets the projection mode - parallel/perspective/custom - of the cmzn_scene_viewer.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(Cmiss_scene_viewer_set_projection_mode);
+	ENTER(cmzn_scene_viewer_set_projection_mode);
 	if (scene_viewer)
 	{
 		switch(projection_mode)
@@ -7631,7 +7631,7 @@ Sets the projection mode - parallel/perspective/custom - of the Cmiss_scene_view
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"Cmiss_scene_viewer_set_projection_mode.  "
+					"cmzn_scene_viewer_set_projection_mode.  "
 					"Unknown projection mode.");
 				return_code = 0;
 			} break;
@@ -7640,21 +7640,21 @@ Sets the projection mode - parallel/perspective/custom - of the Cmiss_scene_view
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_scene_viewer_set_projection_mode.  Invalid argument(s)");
+			"cmzn_scene_viewer_set_projection_mode.  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_set_projection_mode */
+} /* cmzn_scene_viewer_set_projection_mode */
 
-struct Graphics_buffer *Cmiss_scene_viewer_get_graphics_buffer(Cmiss_scene_viewer_id scene_viewer)
+struct Graphics_buffer *cmzn_scene_viewer_get_graphics_buffer(cmzn_scene_viewer_id scene_viewer)
 {
 	return scene_viewer->graphics_buffer;
 }
 
-int Cmiss_scene_viewer_get_background_colour_rgb(
-	Cmiss_scene_viewer_id scene_viewer, double *valuesOut3)
+int cmzn_scene_viewer_get_background_colour_rgb(
+	cmzn_scene_viewer_id scene_viewer, double *valuesOut3)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2007
 
@@ -7677,10 +7677,10 @@ Returns the background_colour of the scene_viewer.
 	}
 
 	return (return_code);
-} /* Cmiss_scene_viewer_get_background_colour_rgb */
+} /* cmzn_scene_viewer_get_background_colour_rgb */
 
-int Cmiss_scene_viewer_set_background_colour_component_rgb(
-	Cmiss_scene_viewer_id scene_viewer, double red, double green, double blue)
+int cmzn_scene_viewer_set_background_colour_component_rgb(
+	cmzn_scene_viewer_id scene_viewer, double red, double green, double blue)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2007
 
@@ -7693,14 +7693,14 @@ Sets the background_colour of the scene_viewer.
 
 	if (scene_viewer)
 	{
-		return_code = Cmiss_scene_viewer_set_background_colour_rgb(scene_viewer, rgb);
+		return_code = cmzn_scene_viewer_set_background_colour_rgb(scene_viewer, rgb);
 	}
 
 	return (return_code);
-} /* Cmiss_scene_viewer_set_background_colour_component_rgb */
+} /* cmzn_scene_viewer_set_background_colour_component_rgb */
 
-int Cmiss_scene_viewer_set_background_colour_rgb(
-	Cmiss_scene_viewer_id scene_viewer, const double *valuesIn3)
+int cmzn_scene_viewer_set_background_colour_rgb(
+	cmzn_scene_viewer_id scene_viewer, const double *valuesIn3)
 /*******************************************************************************
 LAST MODIFIED : 15 January 2007
 
@@ -7720,9 +7720,9 @@ Sets the background_colour of the scene_viewer.
 	}
 
 	return (return_code);
-} /* Cmiss_scene_viewer_set_background_colour_rgb */
+} /* cmzn_scene_viewer_set_background_colour_rgb */
 
-int Cmiss_scene_viewer_write_image_to_file(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_write_image_to_file(cmzn_scene_viewer_id scene_viewer,
 	const char *file_name, int force_onscreen, int preferred_width, int preferred_height,
 	int preferred_antialias, int preferred_transparency_layers)
 /*******************************************************************************
@@ -7737,7 +7737,7 @@ Writes the view in the scene_viewer to the specified filename.
 	struct Cmgui_image *cmgui_image;
 	struct Cmgui_image_information *cmgui_image_information;
 
-	ENTER(Cmiss_scene_viewer_write_image_to_file);
+	ENTER(cmzn_scene_viewer_write_image_to_file);
 	if (scene_viewer && file_name)
 	{
 		storage = TEXTURE_RGBA;
@@ -7761,16 +7761,16 @@ Writes the view in the scene_viewer to the specified filename.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"Cmiss_scene_viewer_write_image_to_file.  "
+		display_message(ERROR_MESSAGE,"cmzn_scene_viewer_write_image_to_file.  "
 			"Invalid scene_viewer or file name.");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_scene_viewer_write_image_to_file */
+} /* cmzn_scene_viewer_write_image_to_file */
 
-int Cmiss_scene_viewer_get_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_get_NDC_info(cmzn_scene_viewer_id scene_viewer,
 	double *NDC_left,double *NDC_top,double *NDC_width,double *NDC_height)
 /*******************************************************************************
 LAST MODIFIED : 15 November 2005
@@ -7783,7 +7783,7 @@ Gets the NDC information.
 		NDC_width, NDC_height);
 }
 
-int Cmiss_scene_viewer_set_NDC_info(Cmiss_scene_viewer_id scene_viewer,
+int cmzn_scene_viewer_set_NDC_info(cmzn_scene_viewer_id scene_viewer,
 	double NDC_left,double NDC_top,double NDC_width,double NDC_height)
 /*******************************************************************************
 LAST MODIFIED : 15 November 2005
@@ -7796,8 +7796,8 @@ Gets the NDC information.
 		NDC_width, NDC_height);
 }
 
-int Cmiss_scene_viewer_get_frame_pixels(Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_stream_information_image_pixel_format storage, int *width, int *height,
+int cmzn_scene_viewer_get_frame_pixels(cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_stream_information_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen)
 /*******************************************************************************
@@ -7844,7 +7844,7 @@ scene viewer on screen.
 		default:
 		{
 			display_message(ERROR_MESSAGE,
-				"Cmiss_scene_viewer_get_frame_pixels.  "
+				"cmzn_scene_viewer_get_frame_pixels.  "
 				"Unknown storage mode.");
 			return_code = 0;
 		} break;
@@ -7860,7 +7860,7 @@ scene viewer on screen.
 }
 
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
-	enum Cmiss_scene_coordinate_system coordinate_system,
+	enum cmzn_scene_coordinate_system coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection)
 {
 	int return_code = 1;
@@ -7923,7 +7923,7 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 				if (coordinate_system != CMISS_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL)
 				{
 					double left, right, bottom, top;
-					if (Cmiss_scene_coordinate_system_get_viewport(
+					if (cmzn_scene_coordinate_system_get_viewport(
 						coordinate_system, viewport_width, viewport_height,
 						&left, &right, &bottom, &top))
 					{
@@ -8022,27 +8022,27 @@ Removes the callback calling <function> with <user_data> from
 } /* Scene_viewer_remove_transform_callback */
 
 /// new APIs
-Cmiss_graphics_filter_id Cmiss_scene_viewer_get_filter(Cmiss_scene_viewer_id scene_viewer)
+cmzn_graphics_filter_id cmzn_scene_viewer_get_filter(cmzn_scene_viewer_id scene_viewer)
 {
-	Cmiss_graphics_filter_id filter = NULL;
+	cmzn_graphics_filter_id filter = NULL;
 	if (scene_viewer && scene_viewer->filter)
 	{
-		filter = Cmiss_graphics_filter_access(scene_viewer->filter);
+		filter = cmzn_graphics_filter_access(scene_viewer->filter);
 	}
 	return filter;
 }
 
-int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_graphics_filter_id filter)
+int cmzn_scene_viewer_set_filter(cmzn_scene_viewer_id scene_viewer,
+	cmzn_graphics_filter_id filter)
 {
 	if (scene_viewer)
 	{
 		if (filter != scene_viewer->filter)
 		{
-			REACCESS(Cmiss_graphics_filter)(&scene_viewer->filter, filter);
+			REACCESS(cmzn_graphics_filter)(&scene_viewer->filter, filter);
 			if (scene_viewer->scene)
 			{
-				Cmiss_scene_changed(scene_viewer->scene);
+				cmzn_scene_changed(scene_viewer->scene);
 			}
 		}
 		return CMISS_OK;
@@ -8053,21 +8053,21 @@ int Cmiss_scene_viewer_set_filter(Cmiss_scene_viewer_id scene_viewer,
 	}
 }
 
-int Cmiss_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,	void *message_void)
+int cmzn_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,	void *message_void)
 {
 	int return_code = 1;
-	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message =
-		(struct MANAGER_MESSAGE(Cmiss_graphics_filter) *)message_void;
+	struct MANAGER_MESSAGE(cmzn_graphics_filter) *message =
+		(struct MANAGER_MESSAGE(cmzn_graphics_filter) *)message_void;
 	if (scene_viewer && message)
 	{
-		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Cmiss_graphics_filter)(
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_graphics_filter)(
 			message, scene_viewer->filter);
-		if (change_flags & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		if (change_flags & MANAGER_CHANGE_RESULT(cmzn_graphics_filter))
 		{
 			/* calling scene changed as changing filter may require new graphics to be rebuild*/
 			if (scene_viewer->scene)
 			{
-				Cmiss_scene_changed(scene_viewer->scene);
+				cmzn_scene_changed(scene_viewer->scene);
 			}
 		}
 	}
@@ -8078,7 +8078,7 @@ int Cmiss_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,
 	return return_code;
 }
 
-int Cmiss_scene_viewer_light_change(struct Scene_viewer *scene_viewer,	void *message_void)
+int cmzn_scene_viewer_light_change(struct Scene_viewer *scene_viewer,	void *message_void)
 {
 	int return_code = 1;
 	struct MANAGER_MESSAGE(Light) *message = (struct MANAGER_MESSAGE(Light) *)message_void;
@@ -8106,7 +8106,7 @@ int Cmiss_scene_viewer_light_change(struct Scene_viewer *scene_viewer,	void *mes
 	return return_code;
 }
 
-int Cmiss_scene_viewer_light_model_change(struct Scene_viewer *scene_viewer,	void *message_void)
+int cmzn_scene_viewer_light_model_change(struct Scene_viewer *scene_viewer,	void *message_void)
 {
 	int return_code = 1;
 	struct MANAGER_MESSAGE(Light_model) *message = (struct MANAGER_MESSAGE(Light_model) *)message_void;
@@ -8130,74 +8130,74 @@ int Cmiss_scene_viewer_light_model_change(struct Scene_viewer *scene_viewer,	voi
 	return return_code;
 }
 
-void Cmiss_scene_viewer_module_graphics_filter_manager_callback(
-	struct MANAGER_MESSAGE(Cmiss_graphics_filter) *message, void *scene_viewer_module_void)
+void cmzn_scene_viewer_module_graphics_filter_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_graphics_filter) *message, void *scene_viewer_module_void)
 {
-	Cmiss_scene_viewer_module *scene_viewer_module = (Cmiss_scene_viewer_module *)scene_viewer_module_void;
+	cmzn_scene_viewer_module *scene_viewer_module = (cmzn_scene_viewer_module *)scene_viewer_module_void;
 	if (message && scene_viewer_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Cmiss_graphics_filter)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Cmiss_graphics_filter))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_graphics_filter)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_graphics_filter))
 		{
 			// minimise scene messages while updating
-			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-				Cmiss_scene_viewer_graphics_filter_change,(void *)message,
+				cmzn_scene_viewer_graphics_filter_change,(void *)message,
 				scene_viewer_module->scene_viewer_list);
-			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
 		}
 	}
 }
 
-void Cmiss_scene_viewer_module_light_manager_callback(
+void cmzn_scene_viewer_module_light_manager_callback(
 	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_module_void)
 {
-	Cmiss_scene_viewer_module *scene_viewer_module = (Cmiss_scene_viewer_module *)scene_viewer_module_void;
+	cmzn_scene_viewer_module *scene_viewer_module = (cmzn_scene_viewer_module *)scene_viewer_module_void;
 	if (message && scene_viewer_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Light))
 		{
 			// minimise scene messages while updating
-			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-				Cmiss_scene_viewer_light_change,(void *)message,
+				cmzn_scene_viewer_light_change,(void *)message,
 				scene_viewer_module->scene_viewer_list);
-			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
 		}
 	}
 }
 
-void Cmiss_scene_viewer_module_light_model_manager_callback(
+void cmzn_scene_viewer_module_light_model_manager_callback(
 	struct MANAGER_MESSAGE(Light_model) *message, void *scene_viewer_module_void)
 {
-	Cmiss_scene_viewer_module *scene_viewer_module = (Cmiss_scene_viewer_module *)scene_viewer_module_void;
+	cmzn_scene_viewer_module *scene_viewer_module = (cmzn_scene_viewer_module *)scene_viewer_module_void;
 	if (message && scene_viewer_module)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light_model)(message);
 		if (change_summary & MANAGER_CHANGE_RESULT(Light_model))
 		{
 			// minimise scene messages while updating
-			//MANAGER_BEGIN_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-				Cmiss_scene_viewer_light_model_change,(void *)message,
+				cmzn_scene_viewer_light_model_change,(void *)message,
 				scene_viewer_module->scene_viewer_list);
-			//MANAGER_END_CACHE(Cmiss_scene)(graphics_module->scene_manager);
+			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
 		}
 	}
 }
 
-Cmiss_scene_id Cmiss_scene_viewer_get_scene(Cmiss_scene_viewer_id scene_viewer)
+cmzn_scene_id cmzn_scene_viewer_get_scene(cmzn_scene_viewer_id scene_viewer)
 {
 	if (scene_viewer && scene_viewer->scene)
 	{
-		return Cmiss_scene_access(scene_viewer->scene);
+		return cmzn_scene_access(scene_viewer->scene);
 	}
 	return 0;
 }
 
-int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
-	Cmiss_scene_id scene)
+int cmzn_scene_viewer_set_scene(cmzn_scene_viewer_id scene_viewer,
+	cmzn_scene_id scene)
 {
 	if (scene_viewer&&scene)
 	{
@@ -8205,16 +8205,16 @@ int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 		{
 			if (scene_viewer->scene)
 			{
-				Cmiss_scene_triggers_top_region_change_callback(scene_viewer->scene);
-				Cmiss_scene_remove_callback(scene_viewer->scene,
-					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+				cmzn_scene_triggers_top_region_change_callback(scene_viewer->scene);
+				cmzn_scene_remove_callback(scene_viewer->scene,
+					cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
 			}
-			Cmiss_scene_destroy(&(scene_viewer->scene));
-			scene_viewer->scene = Cmiss_scene_access(scene);
+			cmzn_scene_destroy(&(scene_viewer->scene));
+			scene_viewer->scene = cmzn_scene_access(scene);
 			if (scene_viewer->awaken)
 			{
-				Cmiss_scene_add_callback(scene_viewer->scene,
-					Cmiss_scene_notify_scene_viewer_callback, (void *)scene_viewer);
+				cmzn_scene_add_callback(scene_viewer->scene,
+					cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
 				CMISS_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
 			}
@@ -8224,7 +8224,7 @@ int Cmiss_scene_viewer_set_scene(Cmiss_scene_viewer_id scene_viewer,
 	return CMISS_ERROR_ARGUMENT;
 }
 
-int Scene_viewer_scene_change(Cmiss_scene_viewer_id scene_viewer)
+int Scene_viewer_scene_change(cmzn_scene_viewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{

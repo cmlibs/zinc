@@ -229,7 +229,7 @@ public:
 	{
 	}
 
-	int set_filter(Cmiss_field_cache& cache)
+	int set_filter(cmzn_field_cache& cache)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -284,8 +284,8 @@ void Computed_field_curvature_anisotropic_diffusion_image_filter::create_functor
 
 } //namespace
 
-struct Computed_field *Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter(
-	struct Cmiss_field_module *field_module,
+struct Computed_field *cmzn_field_module_create_curvature_anisotropic_diffusion_image_filter(
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, double timeStep, double conductance, int numIterations)
 {
 	Computed_field *field = NULL;
@@ -302,13 +302,13 @@ struct Computed_field *Cmiss_field_module_create_curvature_anisotropic_diffusion
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
+			"cmzn_field_module_create_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);
 }
 
-int Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
+int cmzn_field_get_type_curvature_anisotropic_diffusion_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field, double *timeStep, double *conductance, int *numIterations)
 /*******************************************************************************
 LAST MODIFIED : 18 October 2006
@@ -321,7 +321,7 @@ used by it are returned - otherwise an error is reported.
 	Computed_field_curvature_anisotropic_diffusion_image_filter* core;
 	int return_code;
 
-	ENTER(Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter);
+	ENTER(cmzn_field_get_type_curvature_anisotropic_diffusion_image_filter);
 	if (field && (core = dynamic_cast<Computed_field_curvature_anisotropic_diffusion_image_filter*>(field->core))
 		&& source_field)
 	{
@@ -334,11 +334,11 @@ used by it are returned - otherwise an error is reported.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
+			"cmzn_field_get_type_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Cmiss_field_get_type_curvature_anisotropic_diffusion_image_filter */
+} /* cmzn_field_get_type_curvature_anisotropic_diffusion_image_filter */
 

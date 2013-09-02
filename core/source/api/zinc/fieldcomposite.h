@@ -4,7 +4,7 @@ FILE : cmiss_field_composite.h
 LAST MODIFIED : 13 May 2008
 
 DESCRIPTION :
-The public interface to the Cmiss_fields that perform arithmetic operations.
+The public interface to the cmzn_fields that perform arithmetic operations.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -64,8 +64,8 @@ extern "C" {
  * @param source_field The field the values are copied from.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_identity(cmzn_field_module_id field_module,
+	cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * Creates a field returning the component of the source field with the given
@@ -76,8 +76,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_identity(Cmiss_field_module_id
  * @param component_index  The component index from 1 to number of components.
  * @return  Newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field, int component_index);
+ZINC_API cmzn_field_id cmzn_field_module_create_component(cmzn_field_module_id field_module,
+	cmzn_field_id source_field, int component_index);
 
 /*****************************************************************************//**
  * Creates a field which concatenates the components of all source fields, in
@@ -88,8 +88,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_component(Cmiss_field_module_i
  * @param source_fields  The array of fields to be concatenating together.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_concatenate(Cmiss_field_module_id field_module,
-	int number_of_source_fields, Cmiss_field_id *source_fields);
+ZINC_API cmzn_field_id cmzn_field_module_create_concatenate(cmzn_field_module_id field_module,
+	int number_of_source_fields, cmzn_field_id *source_fields);
 
 #ifdef __cplusplus
 }

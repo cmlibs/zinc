@@ -49,7 +49,7 @@
 #include "computed_field/computed_field.h"
 #include "general/value.h"
 
-struct Cmiss_field;
+struct cmzn_field;
 
 class Field_location
 {
@@ -90,7 +90,7 @@ public:
 		number_of_derivatives = number_of_derivatives_in;
 	}
 
-	virtual int set_values_for_location(Cmiss_field * /*field*/,
+	virtual int set_values_for_location(cmzn_field * /*field*/,
 		const FE_value * /*values*/)
 	{
 		/* Default is that the location can't set the values */
@@ -232,13 +232,13 @@ public:
 class Field_coordinate_location : public Field_location
 {
 private:
-	Cmiss_field *reference_field;
+	cmzn_field *reference_field;
 	int number_of_values;
 	FE_value *values;
 	FE_value *derivatives;
 
 public:
-	Field_coordinate_location(Cmiss_field *reference_field_in,
+	Field_coordinate_location(cmzn_field *reference_field_in,
 		int number_of_values_in, const FE_value* values_in, FE_value time = 0,
 		int number_of_derivatives_in = 0, const FE_value* derivatives_in = NULL);
 
@@ -259,7 +259,7 @@ public:
 		return new Field_coordinate_location(reference_field, number_of_values, values, time, number_of_derivatives, derivatives);
 	}
 
-	Cmiss_field *get_reference_field()
+	cmzn_field *get_reference_field()
 	{
 		return reference_field;
 	}
@@ -274,10 +274,10 @@ public:
 		return values;
 	}
 
-	int set_field_values(Cmiss_field_id reference_field_in,
+	int set_field_values(cmzn_field_id reference_field_in,
 		int number_of_values_in, const FE_value *values_in);
 
-	int set_values_for_location(Cmiss_field *field,
+	int set_values_for_location(cmzn_field *field,
 		const FE_value *values);
 
 };

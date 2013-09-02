@@ -60,7 +60,7 @@ Global functions
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int dimension,	int element_offset,
 	struct Computed_field *sort_by_field, FE_value time,
-	Cmiss_field_element_group_id element_group);
+	cmzn_field_element_group_id element_group);
 /*******************************************************************************
 LAST MODIFIED : 16 January 2003
 
@@ -89,7 +89,7 @@ allowed during identifier changes.
  * @param time  Time to evaluate the conditional_field at.
  * @return  The element list, or NULL on failure.
  */
-struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh,
+struct LIST(FE_element) *cmzn_mesh_get_selected_element_list(cmzn_mesh_id mesh,
 	struct Multi_range *element_ranges, struct Computed_field *conditional_field,
 	FE_value time);
 
@@ -110,7 +110,7 @@ struct LIST(FE_element) *Cmiss_mesh_get_selected_element_list(Cmiss_mesh_id mesh
  * @return  The element list, or NULL on failure.
  */
 struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
-	struct Cmiss_region *region, int dimension,
+	struct cmzn_region *region, int dimension,
 	struct Multi_range *element_ranges, struct Computed_field *group_field,
 	struct Computed_field *conditional_field, FE_value time);
 
@@ -130,9 +130,9 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
  * real Gauss point weight.
  * @return  1 on success, 0 on failure.
  */
-int Cmiss_mesh_create_gauss_points(Cmiss_mesh_id mesh, int order,
-	Cmiss_nodeset_id gauss_points_nodeset, int first_identifier,
-	Cmiss_field_stored_mesh_location_id gauss_location_field,
-	Cmiss_field_finite_element_id gauss_weight_field);
+int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
+	cmzn_nodeset_id gauss_points_nodeset, int first_identifier,
+	cmzn_field_stored_mesh_location_id gauss_location_field,
+	cmzn_field_finite_element_id gauss_weight_field);
 
 #endif /* !defined (ELEMENT_OPERATIONS_H) */

@@ -90,7 +90,7 @@ Global functions
 
 struct Interactive_event *CREATE(Interactive_event)(
 	enum Interactive_event_type type,int button_number,int input_modifier,
-	struct Interaction_volume *interaction_volume, Cmiss_scene *scene);
+	struct Interaction_volume *interaction_volume, cmzn_scene *scene);
 /*******************************************************************************
 LAST MODIFIED : 6 May 2005
 
@@ -143,7 +143,7 @@ that the returned volume may be accessed and kept beyond the lifespan of the
 event itself since it is not modifiable.
 ==============================================================================*/
 
-Cmiss_scene *Interactive_event_get_scene(
+cmzn_scene *Interactive_event_get_scene(
 	struct Interactive_event *interactive_event);
 /*******************************************************************************
 LAST MODIFIED : 10 April 2000

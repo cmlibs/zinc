@@ -67,14 +67,14 @@ struct Graphics_buffer_package;
  * value searches just elements of that dimension.
  * The return code indicates if the algorithm should be relied on or whether a
  * sequential element_xi lookup should now be performed.
- * @param field_cache  Cmiss_field_cache for evaluating fields with. Time is
+ * @param field_cache  cmzn_field_cache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
  */
 int Computed_field_find_element_xi_special(struct Computed_field *field,
-	Cmiss_field_cache_id field_cache,
+	cmzn_field_cache_id field_cache,
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, Cmiss_mesh_id search_mesh,
+	FE_value *xi, cmzn_mesh_id search_mesh,
 	Graphics_buffer_package *graphics_buffer_package,
 	ZnReal *hint_minimums, ZnReal *hint_maximums, ZnReal *hint_resolution);
 

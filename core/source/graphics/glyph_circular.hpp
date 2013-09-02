@@ -45,7 +45,7 @@
 #include <vector>
 #include "graphics/glyph.hpp"
 
-struct Cmiss_glyph_circular : public Cmiss_glyph
+struct cmzn_glyph_circular : public cmzn_glyph
 {
 private:
 
@@ -92,11 +92,11 @@ private:
 
 protected:
 
-	Cmiss_glyph_circular()
+	cmzn_glyph_circular()
 	{
 	}
 
-	virtual ~Cmiss_glyph_circular()
+	virtual ~cmzn_glyph_circular()
 	{
 	}
 
@@ -107,17 +107,17 @@ public:
 		return true;
 	}
 
-	virtual GT_object *getGraphicsObject(Cmiss_tessellation *, Cmiss_graphics_material *, Cmiss_font *);
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *);
 
 };
 
-struct Cmiss_glyph_arrow_solid : public Cmiss_glyph_circular
+struct cmzn_glyph_arrow_solid : public cmzn_glyph_circular
 {
 private:
 	double headLength;
 	double shaftThickness;
 
-	Cmiss_glyph_arrow_solid(double headLengthIn, double shaftThicknessIn) :
+	cmzn_glyph_arrow_solid(double headLengthIn, double shaftThicknessIn) :
 		headLength(headLengthIn),
 		shaftThickness(shaftThicknessIn)
 	{
@@ -126,69 +126,69 @@ private:
 	virtual GT_object *createGraphicsObject(int circleDivisions);
 
 public:
-	static Cmiss_glyph_arrow_solid* create(double headLengthIn, double shaftThicknessIn)
+	static cmzn_glyph_arrow_solid* create(double headLengthIn, double shaftThicknessIn)
 	{
-		return new Cmiss_glyph_arrow_solid(headLengthIn, shaftThicknessIn);
+		return new cmzn_glyph_arrow_solid(headLengthIn, shaftThicknessIn);
 	}
 };
 
-struct Cmiss_glyph_cone : public Cmiss_glyph_circular
+struct cmzn_glyph_cone : public cmzn_glyph_circular
 {
 private:
 	virtual GT_object *createGraphicsObject(int circleDivisions);
 
 public:
-	static Cmiss_glyph_cone* create()
+	static cmzn_glyph_cone* create()
 	{
-		return new Cmiss_glyph_cone();
+		return new cmzn_glyph_cone();
 	}
 };
 
-struct Cmiss_glyph_cone_solid : public Cmiss_glyph_circular
+struct cmzn_glyph_cone_solid : public cmzn_glyph_circular
 {
 private:
 	virtual GT_object *createGraphicsObject(int circleDivisions);
 
 public:
-	static Cmiss_glyph_cone_solid* create()
+	static cmzn_glyph_cone_solid* create()
 	{
-		return new Cmiss_glyph_cone_solid();
+		return new cmzn_glyph_cone_solid();
 	}
 };
 
-struct Cmiss_glyph_cylinder : public Cmiss_glyph_circular
+struct cmzn_glyph_cylinder : public cmzn_glyph_circular
 {
 private:
 	virtual GT_object *createGraphicsObject(int circleDivisions);
 
 public:
-	static Cmiss_glyph_cylinder* create()
+	static cmzn_glyph_cylinder* create()
 	{
-		return new Cmiss_glyph_cylinder();
+		return new cmzn_glyph_cylinder();
 	}
 };
 
-struct Cmiss_glyph_cylinder_solid : public Cmiss_glyph_circular
+struct cmzn_glyph_cylinder_solid : public cmzn_glyph_circular
 {
 private:
 	virtual GT_object *createGraphicsObject(int circleDivisions);
 
 public:
-	static Cmiss_glyph_cylinder_solid* create()
+	static cmzn_glyph_cylinder_solid* create()
 	{
-		return new Cmiss_glyph_cylinder_solid();
+		return new cmzn_glyph_cylinder_solid();
 	}
 };
 
-struct Cmiss_glyph_sphere : public Cmiss_glyph_circular
+struct cmzn_glyph_sphere : public cmzn_glyph_circular
 {
 private:
 	virtual GT_object *createGraphicsObject(int circleDivisions);
 
 public:
-	static Cmiss_glyph_sphere* create()
+	static cmzn_glyph_sphere* create()
 	{
-		return new Cmiss_glyph_sphere();
+		return new cmzn_glyph_sphere();
 	}
 };
 

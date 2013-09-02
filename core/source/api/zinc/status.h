@@ -1,7 +1,7 @@
 /**
  * FILE : cmiss_status.h
  *
- * The public interface to Cmiss_status.
+ * The public interface to cmzn_status.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -60,7 +60,7 @@ extern "C" {
  * against enum CMISS_OK, NOT its current literal value
  *
  */
-enum Cmiss_status
+enum cmzn_status
 {
 	CMISS_ERROR_MEMORY = -2,
 		/*!< failed to allocate memory. */

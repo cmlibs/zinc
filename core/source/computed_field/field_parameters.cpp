@@ -51,7 +51,7 @@
 	typedef unsigned int ParameterIndexType;
 #endif
 
-namespace Cmiss
+namespace cmzn
 {
 
 template <typename ValueType>
@@ -121,7 +121,7 @@ private:
 		return (NULL != dynamic_cast<Field_parameters<ValueType> *>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -137,27 +137,27 @@ private:
 		EnsembleEntryRef *copySize, block_array<ParameterIndexType, ValueType>& dest_values,
 		bool_array<ParameterIndexType>& dest_value_exists) const;
 	bool resize(EnsembleEntryRef *newRefSize);
-	int validIndexCount(const Cmiss_ensemble_index *index, unsigned int number_of_values,
+	int validIndexCount(const cmzn_ensemble_index *index, unsigned int number_of_values,
 		const char *methodName) const;
 
 public:
 
-	Cmiss_ensemble_index *createIndex()
+	cmzn_ensemble_index *createIndex()
 	{
-		return Cmiss_ensemble_index::create(field, number_of_ensembles, ensembles);
+		return cmzn_ensemble_index::create(field, number_of_ensembles, ensembles);
 	}
 
-	int getValues(Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *outValues) const;
+	int getValues(cmzn_ensemble_index *index, unsigned int number_of_values, ValueType *outValues) const;
 
-	int getValuesSparse(Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *outValues,
+	int getValuesSparse(cmzn_ensemble_index *index, unsigned int number_of_values, ValueType *outValues,
 		int *valueExists, int *valuesRead) const;
 
-	int setValues(Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *inValues);
+	int setValues(cmzn_ensemble_index *index, unsigned int number_of_values, ValueType *inValues);
 
 };
 
 template <typename ValueType>
-int Field_parameters<ValueType>::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Field_parameters<ValueType>::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	USE_PARAMETER(cache);
 	USE_PARAMETER(inValueCache);
@@ -324,7 +324,7 @@ bool Field_parameters<ValueType>::resize(EnsembleEntryRef *newRefSize)
 }
 
 template <typename ValueType>
-inline int Field_parameters<ValueType>::validIndexCount(const Cmiss_ensemble_index *index, unsigned int number_of_values,
+inline int Field_parameters<ValueType>::validIndexCount(const cmzn_ensemble_index *index, unsigned int number_of_values,
 	const char *methodName) const
 {
 	if (!index->indexesField(field))
@@ -352,7 +352,7 @@ inline int Field_parameters<ValueType>::validIndexCount(const Cmiss_ensemble_ind
 
 template <typename ValueType>
 int Field_parameters<ValueType>::getValues(
-	Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *outValues) const
+	cmzn_ensemble_index *index, unsigned int number_of_values, ValueType *outValues) const
 {
 	if (!validIndexCount(index, number_of_values, "Field_parameters::getValues"))
 		return 0;
@@ -442,7 +442,7 @@ int Field_parameters<ValueType>::getValues(
 }
 
 template <typename ValueType>
-int Field_parameters<ValueType>::getValuesSparse(Cmiss_ensemble_index *index,
+int Field_parameters<ValueType>::getValuesSparse(cmzn_ensemble_index *index,
 	unsigned int number_of_values, ValueType *outValues, int *valueExists, int *valuesRead) const
 {
 	if (!validIndexCount(index, number_of_values, "Field_parameters::getValuesSparse"))
@@ -515,7 +515,7 @@ int Field_parameters<ValueType>::getValuesSparse(Cmiss_ensemble_index *index,
 
 template <typename ValueType>
 int Field_parameters<ValueType>::setValues(
-	Cmiss_ensemble_index *index, unsigned int number_of_values, ValueType *inValues)
+	cmzn_ensemble_index *index, unsigned int number_of_values, ValueType *inValues)
 {
 	if (!validIndexCount(index, number_of_values, "Field_parameters::setValues"))
 		return 0;
@@ -698,14 +698,14 @@ public:
 
 };
 
-} // namespace Cmiss
+} // namespace cmzn
 
 /* GRC note defaults to 1 component */
-Cmiss_field *Cmiss_field_module_create_real_parameters(
-	Cmiss_field_module *field_module, 
-	int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+cmzn_field *cmzn_field_module_create_real_parameters(
+	cmzn_field_module *field_module, 
+	int number_of_index_ensembles, cmzn_field_ensemble **index_ensemble_fields)
 {
-	Cmiss_field *field = NULL;
+	cmzn_field *field = NULL;
 	if ((0 == number_of_index_ensembles) || (index_ensemble_fields))
 	{
 		// check all ensembles are present and none are repeated
@@ -713,7 +713,7 @@ Cmiss_field *Cmiss_field_module_create_real_parameters(
 		{
 			if (NULL == index_ensemble_fields[i])
 			{
-				display_message(ERROR_MESSAGE, "Cmiss_field_module_create_real_parameters.  Missing ensemble");
+				display_message(ERROR_MESSAGE, "cmzn_field_module_create_real_parameters.  Missing ensemble");
 				return NULL;
 			}
 			for (int j = i + 1; j < number_of_index_ensembles; j++)
@@ -721,43 +721,43 @@ Cmiss_field *Cmiss_field_module_create_real_parameters(
 				if (index_ensemble_fields[j] == index_ensemble_fields[i])
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmiss_field_module_create_real_parameters.  Repeated ensemble '%s'",
-						reinterpret_cast<Cmiss_field*>(index_ensemble_fields[i])->name);
+						"cmzn_field_module_create_real_parameters.  Repeated ensemble '%s'",
+						reinterpret_cast<cmzn_field*>(index_ensemble_fields[i])->name);
 					return NULL;
 				}
 			}
 		}
-		Cmiss::Field_ensemble **index_ensembles =
-			new Cmiss::Field_ensemble *[number_of_index_ensembles];
+		cmzn::Field_ensemble **index_ensembles =
+			new cmzn::Field_ensemble *[number_of_index_ensembles];
 		for (int i = 0; i < number_of_index_ensembles; i++)
 		{
-			index_ensembles[i] = Cmiss_field_ensemble_core_cast(index_ensemble_fields[i]);
+			index_ensembles[i] = cmzn_field_ensemble_core_cast(index_ensemble_fields[i]);
 		}
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/number_of_index_ensembles,
-				reinterpret_cast<Cmiss_field **>(index_ensemble_fields),
+				reinterpret_cast<cmzn_field **>(index_ensemble_fields),
 			/*number_of_source_values*/0, NULL,
-			new Cmiss::Field_real_parameters(number_of_index_ensembles, index_ensembles));
+			new cmzn::Field_real_parameters(number_of_index_ensembles, index_ensembles));
 		delete[] index_ensembles;
 	}
 	return (field);
 }
 
-inline Cmiss::Field_real_parameters *Cmiss_field_real_parameters_core_cast(
-	Cmiss_field_real_parameters *real_parameters_field)
+inline cmzn::Field_real_parameters *cmzn_field_real_parameters_core_cast(
+	cmzn_field_real_parameters *real_parameters_field)
 {
-	return (static_cast<Cmiss::Field_real_parameters*>(
-		reinterpret_cast<Cmiss_field*>(real_parameters_field)->core));
+	return (static_cast<cmzn::Field_real_parameters*>(
+		reinterpret_cast<cmzn_field*>(real_parameters_field)->core));
 }
 
-Cmiss_field_real_parameters *Cmiss_field_cast_real_parameters(Cmiss_field* field)
+cmzn_field_real_parameters *cmzn_field_cast_real_parameters(cmzn_field* field)
 {
-	if (field && (dynamic_cast<Cmiss::Field_real_parameters*>(field->core)))
+	if (field && (dynamic_cast<cmzn::Field_real_parameters*>(field->core)))
 	{
-		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_real_parameters *>(field));
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_real_parameters *>(field));
 	}
 	else
 	{
@@ -765,41 +765,41 @@ Cmiss_field_real_parameters *Cmiss_field_cast_real_parameters(Cmiss_field* field
 	}
 }
 
-int Cmiss_field_real_parameters_destroy(
-	Cmiss_field_real_parameters_id *real_parameters_field_address)
+int cmzn_field_real_parameters_destroy(
+	cmzn_field_real_parameters_id *real_parameters_field_address)
 {
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(real_parameters_field_address));
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(real_parameters_field_address));
 }
 
-Cmiss_ensemble_index *Cmiss_field_real_parameters_create_index(
-	Cmiss_field_real_parameters *real_parameters_field)
+cmzn_ensemble_index *cmzn_field_real_parameters_create_index(
+	cmzn_field_real_parameters *real_parameters_field)
 {
 	if (NULL == real_parameters_field)
 		return NULL;
-	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->createIndex();
+	return cmzn_field_real_parameters_core_cast(real_parameters_field)->createIndex();
 }
 
-int Cmiss_field_real_parameters_get_values(
-	Cmiss_field_real_parameters *real_parameters_field,
-	Cmiss_ensemble_index *index, unsigned int number_of_values, double *values)
+int cmzn_field_real_parameters_get_values(
+	cmzn_field_real_parameters *real_parameters_field,
+	cmzn_ensemble_index *index, unsigned int number_of_values, double *values)
 {
 	if ((NULL == real_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values))
 		return 0;
-	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
+	return cmzn_field_real_parameters_core_cast(real_parameters_field)->
 		getValues(index, number_of_values, values);
 }
 
-int Cmiss_field_real_parameters_get_values_sparse(
-	Cmiss_field_real_parameters_id real_parameters_field,
-	Cmiss_ensemble_index_id index, unsigned int number_of_values, double *values,
+int cmzn_field_real_parameters_get_values_sparse(
+	cmzn_field_real_parameters_id real_parameters_field,
+	cmzn_ensemble_index_id index, unsigned int number_of_values, double *values,
 	int *value_exists, int *number_of_values_read)
 {
 	if ((NULL == real_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values) || (NULL == value_exists) ||
 			(NULL == number_of_values_read))
 		return 0;
-	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
+	return cmzn_field_real_parameters_core_cast(real_parameters_field)->
 		getValuesSparse(index, number_of_values, values, value_exists, number_of_values_read);
 }
 
@@ -807,24 +807,24 @@ int Cmiss_field_real_parameters_get_values_sparse(
  * Workaround: Clients with big data can always set in blocks
  * Note: npruntime only handles 32-bit integers so an issue for API
  * Could pass in two integers */
-int Cmiss_field_real_parameters_set_values(
-	Cmiss_field_real_parameters *real_parameters_field,
-	Cmiss_ensemble_index *index, unsigned int number_of_values, double *values)
+int cmzn_field_real_parameters_set_values(
+	cmzn_field_real_parameters *real_parameters_field,
+	cmzn_ensemble_index *index, unsigned int number_of_values, double *values)
 {
 	if ((NULL == real_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values))
 		return 0;
-	return Cmiss_field_real_parameters_core_cast(real_parameters_field)->
+	return cmzn_field_real_parameters_core_cast(real_parameters_field)->
 		setValues(index, number_of_values, values);
 }
 
 
 /* GRC note defaults to 1 component */
-Cmiss_field *Cmiss_field_module_create_integer_parameters(
-	Cmiss_field_module *field_module,
-	int number_of_index_ensembles, Cmiss_field_ensemble **index_ensemble_fields)
+cmzn_field *cmzn_field_module_create_integer_parameters(
+	cmzn_field_module *field_module,
+	int number_of_index_ensembles, cmzn_field_ensemble **index_ensemble_fields)
 {
-	Cmiss_field *field = NULL;
+	cmzn_field *field = NULL;
 	if ((0 == number_of_index_ensembles) || (index_ensemble_fields))
 	{
 		// check all ensembles are present and none are repeated
@@ -832,7 +832,7 @@ Cmiss_field *Cmiss_field_module_create_integer_parameters(
 		{
 			if (NULL == index_ensemble_fields[i])
 			{
-				display_message(ERROR_MESSAGE, "Cmiss_field_module_create_integer_parameters.  Missing ensemble");
+				display_message(ERROR_MESSAGE, "cmzn_field_module_create_integer_parameters.  Missing ensemble");
 				return NULL;
 			}
 			for (int j = i + 1; j < number_of_index_ensembles; j++)
@@ -840,43 +840,43 @@ Cmiss_field *Cmiss_field_module_create_integer_parameters(
 				if (index_ensemble_fields[j] == index_ensemble_fields[i])
 				{
 					display_message(ERROR_MESSAGE,
-						"Cmiss_field_module_create_integer_parameters.  Repeated ensemble '%s'",
-						reinterpret_cast<Cmiss_field*>(index_ensemble_fields[i])->name);
+						"cmzn_field_module_create_integer_parameters.  Repeated ensemble '%s'",
+						reinterpret_cast<cmzn_field*>(index_ensemble_fields[i])->name);
 					return NULL;
 				}
 			}
 		}
-		Cmiss::Field_ensemble **index_ensembles =
-			new Cmiss::Field_ensemble *[number_of_index_ensembles];
+		cmzn::Field_ensemble **index_ensembles =
+			new cmzn::Field_ensemble *[number_of_index_ensembles];
 		for (int i = 0; i < number_of_index_ensembles; i++)
 		{
-			index_ensembles[i] = Cmiss_field_ensemble_core_cast(index_ensemble_fields[i]);
+			index_ensembles[i] = cmzn_field_ensemble_core_cast(index_ensemble_fields[i]);
 		}
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/number_of_index_ensembles,
-				reinterpret_cast<Cmiss_field **>(index_ensemble_fields),
+				reinterpret_cast<cmzn_field **>(index_ensemble_fields),
 			/*number_of_source_values*/0, NULL,
-			new Cmiss::Field_integer_parameters(number_of_index_ensembles, index_ensembles));
+			new cmzn::Field_integer_parameters(number_of_index_ensembles, index_ensembles));
 		delete[] index_ensembles;
 	}
 	return (field);
 }
 
-inline Cmiss::Field_integer_parameters *Cmiss_field_integer_parameters_core_cast(
-	Cmiss_field_integer_parameters *integer_parameters_field)
+inline cmzn::Field_integer_parameters *cmzn_field_integer_parameters_core_cast(
+	cmzn_field_integer_parameters *integer_parameters_field)
 {
-	return (static_cast<Cmiss::Field_integer_parameters*>(
-		reinterpret_cast<Cmiss_field*>(integer_parameters_field)->core));
+	return (static_cast<cmzn::Field_integer_parameters*>(
+		reinterpret_cast<cmzn_field*>(integer_parameters_field)->core));
 }
 
-Cmiss_field_integer_parameters *Cmiss_field_cast_integer_parameters(Cmiss_field* field)
+cmzn_field_integer_parameters *cmzn_field_cast_integer_parameters(cmzn_field* field)
 {
-	if (field && (dynamic_cast<Cmiss::Field_integer_parameters*>(field->core)))
+	if (field && (dynamic_cast<cmzn::Field_integer_parameters*>(field->core)))
 	{
-		Cmiss_field_access(field);
-		return (reinterpret_cast<Cmiss_field_integer_parameters *>(field));
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_integer_parameters *>(field));
 	}
 	else
 	{
@@ -884,28 +884,28 @@ Cmiss_field_integer_parameters *Cmiss_field_cast_integer_parameters(Cmiss_field*
 	}
 }
 
-int Cmiss_field_integer_parameters_destroy(
-	Cmiss_field_integer_parameters_id *integer_parameters_field_address)
+int cmzn_field_integer_parameters_destroy(
+	cmzn_field_integer_parameters_id *integer_parameters_field_address)
 {
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(integer_parameters_field_address));
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(integer_parameters_field_address));
 }
 
-Cmiss_ensemble_index *Cmiss_field_integer_parameters_create_index(
-	Cmiss_field_integer_parameters *integer_parameters_field)
+cmzn_ensemble_index *cmzn_field_integer_parameters_create_index(
+	cmzn_field_integer_parameters *integer_parameters_field)
 {
 	if (NULL == integer_parameters_field)
 		return NULL;
-	return Cmiss_field_integer_parameters_core_cast(integer_parameters_field)->createIndex();
+	return cmzn_field_integer_parameters_core_cast(integer_parameters_field)->createIndex();
 }
 
-int Cmiss_field_integer_parameters_get_values(
-	Cmiss_field_integer_parameters *integer_parameters_field,
-	Cmiss_ensemble_index *index, unsigned int number_of_values, int *values)
+int cmzn_field_integer_parameters_get_values(
+	cmzn_field_integer_parameters *integer_parameters_field,
+	cmzn_ensemble_index *index, unsigned int number_of_values, int *values)
 {
 	if ((NULL == integer_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values))
 		return 0;
-	return Cmiss_field_integer_parameters_core_cast(integer_parameters_field)->
+	return cmzn_field_integer_parameters_core_cast(integer_parameters_field)->
 		getValues(index, number_of_values, values);
 }
 
@@ -913,13 +913,13 @@ int Cmiss_field_integer_parameters_get_values(
  * Workaround: Clients with big data can always set in blocks
  * Note: npruntime only handles 32-bit integers so an issue for API
  * Could pass in two integers */
-int Cmiss_field_integer_parameters_set_values(
-	Cmiss_field_integer_parameters *integer_parameters_field,
-	Cmiss_ensemble_index *index, unsigned int number_of_values, int *values)
+int cmzn_field_integer_parameters_set_values(
+	cmzn_field_integer_parameters *integer_parameters_field,
+	cmzn_ensemble_index *index, unsigned int number_of_values, int *values)
 {
 	if ((NULL == integer_parameters_field) || (NULL == index) ||
 			(number_of_values == 0) || (NULL == values))
 		return 0;
-	return Cmiss_field_integer_parameters_core_cast(integer_parameters_field)->
+	return cmzn_field_integer_parameters_core_cast(integer_parameters_field)->
 		setValues(index, number_of_values, values);
 }

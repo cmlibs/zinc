@@ -51,7 +51,7 @@ class Node
 {
 private:
 
-	Cmiss_node_id id;
+	cmzn_node_id id;
 
 public:
 
@@ -59,11 +59,11 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Node(Cmiss_node_id node_id) : id(node_id)
+	explicit Node(cmzn_node_id node_id) : id(node_id)
 	{ }
 
 	Node(const Node& node) :
-		id(Cmiss_node_access(node.id))
+		id(cmzn_node_access(node.id))
 	{ }
 
 	enum ValueType
@@ -81,10 +81,10 @@ public:
 
 	Node& operator=(const Node& node)
 	{
-		Cmiss_node_id temp_id = Cmiss_node_access(node.id);
+		cmzn_node_id temp_id = cmzn_node_access(node.id);
 		if (0 != id)
 		{
-			Cmiss_node_destroy(&id);
+			cmzn_node_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -94,7 +94,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_node_destroy(&id);
+			cmzn_node_destroy(&id);
 		}
 	}
 
@@ -103,19 +103,19 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_node_id getId()
+	cmzn_node_id getId()
 	{
 		return id;
 	}
 
 	int getIdentifier()
 	{
-		return Cmiss_node_get_identifier(id);
+		return cmzn_node_get_identifier(id);
 	}
 
 	int setIdentifier(int identifier)
 	{
-		return Cmiss_node_set_identifier(id, identifier);
+		return cmzn_node_set_identifier(id, identifier);
 	}
 
 	int merge(NodeTemplate nodeTemplate);
@@ -127,7 +127,7 @@ class NodeTemplate
 {
 private:
 
-	Cmiss_node_template_id id;
+	cmzn_node_template_id id;
 
 public:
 
@@ -135,20 +135,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit NodeTemplate(Cmiss_node_template_id node_template_id) :
+	explicit NodeTemplate(cmzn_node_template_id node_template_id) :
 		id(node_template_id)
 	{ }
 
 	NodeTemplate(const NodeTemplate& nodeTemplate) :
-		id(Cmiss_node_template_access(nodeTemplate.id))
+		id(cmzn_node_template_access(nodeTemplate.id))
 	{ }
 
 	NodeTemplate& operator=(const NodeTemplate& nodeTemplate)
 	{
-		Cmiss_node_template_id temp_id = Cmiss_node_template_access(nodeTemplate.id);
+		cmzn_node_template_id temp_id = cmzn_node_template_access(nodeTemplate.id);
 		if (0 != id)
 		{
-			Cmiss_node_template_destroy(&id);
+			cmzn_node_template_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -158,7 +158,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_node_template_destroy(&id);
+			cmzn_node_template_destroy(&id);
 		}
 	}
 
@@ -180,31 +180,31 @@ public:
 		NODAL_D3_DS1DS2DS3 = CMISS_NODAL_D3_DS1DS2DS3   /* triple cross derivative w.r.t. arc lengths S1,S2,S3 */
 	};
 
-	Cmiss_node_template_id getId()
+	cmzn_node_template_id getId()
 	{
 		return id;
 	}
 
 	int defineDerivative(Field& field, int componentNumber, ValueType derivativeType)
 	{
-		return Cmiss_node_template_define_derivative(id, field.getId(),
-			componentNumber, static_cast<Cmiss_nodal_value_type>(derivativeType));
+		return cmzn_node_template_define_derivative(id, field.getId(),
+			componentNumber, static_cast<cmzn_nodal_value_type>(derivativeType));
 	}
 
 	int defineField(Field& field)
 	{
-		return Cmiss_node_template_define_field(id, field.getId());
+		return cmzn_node_template_define_field(id, field.getId());
 	}
 
 	int defineVersions(Field& field, int componentNumber, int numberOfVersions)
 	{
-		return Cmiss_node_template_define_versions(id,
+		return cmzn_node_template_define_versions(id,
 			field.getId(), componentNumber, numberOfVersions);
 	}
 
 	int undefineField(Field& field)
 	{
-		return Cmiss_node_template_undefine_field(id, field.getId());
+		return cmzn_node_template_undefine_field(id, field.getId());
 	}
 };
 
@@ -212,7 +212,7 @@ class NodeIterator
 {
 private:
 
-	Cmiss_node_iterator_id id;
+	cmzn_node_iterator_id id;
 
 public:
 
@@ -220,20 +220,20 @@ public:
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit NodeIterator(Cmiss_node_iterator_id node_iterator_id) :
+	explicit NodeIterator(cmzn_node_iterator_id node_iterator_id) :
 		id(node_iterator_id)
 	{ }
 
 	NodeIterator(const NodeIterator& nodeIterator) :
-		id(Cmiss_node_iterator_access(nodeIterator.id))
+		id(cmzn_node_iterator_access(nodeIterator.id))
 	{ }
 
 	NodeIterator& operator=(const NodeIterator& nodeIterator)
 	{
-		Cmiss_node_iterator_id temp_id = Cmiss_node_iterator_access(nodeIterator.id);
+		cmzn_node_iterator_id temp_id = cmzn_node_iterator_access(nodeIterator.id);
 		if (0 != id)
 		{
-			Cmiss_node_iterator_destroy(&id);
+			cmzn_node_iterator_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -243,7 +243,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_node_iterator_destroy(&id);
+			cmzn_node_iterator_destroy(&id);
 		}
 	}
 
@@ -254,7 +254,7 @@ public:
 
 	Node next()
 	{
-		return Node(Cmiss_node_iterator_next(id));
+		return Node(cmzn_node_iterator_next(id));
 	}
 };
 
@@ -262,7 +262,7 @@ class Nodeset
 {
 protected:
 
-	Cmiss_nodeset_id id;
+	cmzn_nodeset_id id;
 
 public:
 
@@ -270,19 +270,19 @@ public:
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Nodeset(Cmiss_nodeset_id nodeset_id) : id(nodeset_id)
+	explicit Nodeset(cmzn_nodeset_id nodeset_id) : id(nodeset_id)
 	{  }
 
 	Nodeset(const Nodeset& nodeset) :
-		id(Cmiss_nodeset_access(nodeset.id))
+		id(cmzn_nodeset_access(nodeset.id))
 	{  }
 
 	Nodeset& operator=(const Nodeset& nodeset)
 	{
-		Cmiss_nodeset_id temp_id = Cmiss_nodeset_access(nodeset.id);
+		cmzn_nodeset_id temp_id = cmzn_nodeset_access(nodeset.id);
 		if (0 != id)
 		{
-			Cmiss_nodeset_destroy(&id);
+			cmzn_nodeset_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
@@ -292,7 +292,7 @@ public:
 	{
 		if (0 != id)
 		{
-			Cmiss_nodeset_destroy(&id);
+			cmzn_nodeset_destroy(&id);
 		}
 	}
 
@@ -301,69 +301,69 @@ public:
 		return (0 != id);
 	}
 
-	Cmiss_nodeset_id getId()
+	cmzn_nodeset_id getId()
 	{
 		return id;
 	}
 
 	int containsNode(Node& node)
 	{
-		return Cmiss_nodeset_contains_node(id, node.getId());
+		return cmzn_nodeset_contains_node(id, node.getId());
 	}
 
 	NodeTemplate createNodeTemplate()
 	{
-		return NodeTemplate(Cmiss_nodeset_create_node_template(id));
+		return NodeTemplate(cmzn_nodeset_create_node_template(id));
 	}
 
 	Node createNode(int identifier, NodeTemplate& nodeTemplate)
 	{
-		return Node(Cmiss_nodeset_create_node(id, identifier, nodeTemplate.getId()));
+		return Node(cmzn_nodeset_create_node(id, identifier, nodeTemplate.getId()));
 	}
 
 	NodeIterator createNodeIterator()
 	{
-		return NodeIterator(Cmiss_nodeset_create_node_iterator(id));
+		return NodeIterator(cmzn_nodeset_create_node_iterator(id));
 	}
 
 	int destroyAllNodes()
 	{
-		return Cmiss_nodeset_destroy_all_nodes(id);
+		return cmzn_nodeset_destroy_all_nodes(id);
 	}
 
 	int destroyNode(Node& node)
 	{
-		return Cmiss_nodeset_destroy_node(id, node.getId());
+		return cmzn_nodeset_destroy_node(id, node.getId());
 	}
 
 	int destroyNodesConditional(Field& conditionalField)
 	{
-		return Cmiss_nodeset_destroy_nodes_conditional(id, conditionalField.getId());
+		return cmzn_nodeset_destroy_nodes_conditional(id, conditionalField.getId());
 	}
 
 	Node findNodeByIdentifier(int identifier)
 	{
-		return Node(Cmiss_nodeset_find_node_by_identifier(id, identifier));
+		return Node(cmzn_nodeset_find_node_by_identifier(id, identifier));
 	}
 
 	Nodeset getMaster()
 	{
-		return Nodeset(Cmiss_nodeset_get_master(id));
+		return Nodeset(cmzn_nodeset_get_master(id));
 	}
 
 	char *getName()
 	{
-		return Cmiss_nodeset_get_name(id);
+		return cmzn_nodeset_get_name(id);
 	}
 
 	int getSize()
 	{
-		return Cmiss_nodeset_get_size(id);
+		return cmzn_nodeset_get_size(id);
 	}
 
 	int match(Nodeset& nodeset)
 	{
-		return Cmiss_nodeset_match(id, nodeset.id);
+		return cmzn_nodeset_match(id, nodeset.id);
 	}
 
 };
@@ -374,43 +374,43 @@ class NodesetGroup  : public Nodeset
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit NodesetGroup(Cmiss_nodeset_group_id nodeset_id) : Nodeset(reinterpret_cast<Cmiss_nodeset_id>(nodeset_id))
+	explicit NodesetGroup(cmzn_nodeset_group_id nodeset_id) : Nodeset(reinterpret_cast<cmzn_nodeset_id>(nodeset_id))
 	{ }
 
-	Cmiss_nodeset_group_id getId()
+	cmzn_nodeset_group_id getId()
 	{
-		return (Cmiss_nodeset_group_id)(id);
+		return (cmzn_nodeset_group_id)(id);
 	}
 
 	int addNode(Node& node)
 	{
-		return Cmiss_nodeset_group_add_node(
-			reinterpret_cast<Cmiss_nodeset_group_id>(id), node.getId());
+		return cmzn_nodeset_group_add_node(
+			reinterpret_cast<cmzn_nodeset_group_id>(id), node.getId());
 	}
 
 	int removeAllNodes()
 	{
-		return Cmiss_nodeset_group_remove_all_nodes(
-			reinterpret_cast<Cmiss_nodeset_group_id>(id));
+		return cmzn_nodeset_group_remove_all_nodes(
+			reinterpret_cast<cmzn_nodeset_group_id>(id));
 	}
 
 	int removeNode(Node& node)
 	{
-		return Cmiss_nodeset_group_remove_node(reinterpret_cast<Cmiss_nodeset_group_id>(id),
+		return cmzn_nodeset_group_remove_node(reinterpret_cast<cmzn_nodeset_group_id>(id),
 			node.getId());
 	}
 
 	int removeNodesConditional(Field& conditionalField)
 	{
-		return Cmiss_nodeset_group_remove_nodes_conditional(
-			reinterpret_cast<Cmiss_nodeset_group_id>(id), conditionalField.getId());
+		return cmzn_nodeset_group_remove_nodes_conditional(
+			reinterpret_cast<cmzn_nodeset_group_id>(id), conditionalField.getId());
 	}
 
 };
 
 inline int Node::merge(NodeTemplate nodeTemplate)
 {
-	return Cmiss_node_merge(id, nodeTemplate.getId());
+	return cmzn_node_merge(id, nodeTemplate.getId());
 }
 
 }  // namespace zinc

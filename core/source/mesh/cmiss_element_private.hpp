@@ -1,7 +1,7 @@
 /***************************************************************************//**
  * FILE : cmiss_element_private.hpp
  *
- * Private header file of Cmiss_element, finite element meshes.
+ * Private header file of cmzn_element, finite element meshes.
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -58,8 +58,8 @@ struct FE_region;
  * @param element  The element whose faces are to be added.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_group_add_element_faces(Cmiss_mesh_group_id mesh_group,
-	Cmiss_element_id element);
+int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group,
+	cmzn_element_id element);
 
 /***************************************************************************//**
  * Ensures all faces of the supplied element are not in this mesh_group.
@@ -71,28 +71,28 @@ int Cmiss_mesh_group_add_element_faces(Cmiss_mesh_group_id mesh_group,
  * @param element  The element whose faces are to be removed.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-int Cmiss_mesh_group_remove_element_faces(Cmiss_mesh_group_id mesh_group,
-	Cmiss_element_id element);
+int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group,
+	cmzn_element_id element);
 
 /** Internal use only.
  * Create a related element list to that in mesh.
  * @return  New element list.
  */
-struct LIST(FE_element) *Cmiss_mesh_create_element_list_internal(Cmiss_mesh_id mesh);
+struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mesh);
 
 /** Internal use only
  * @return non-accessed fe_region for this mesh.
  */
-FE_region *Cmiss_mesh_get_FE_region_internal(Cmiss_mesh_id mesh);
+FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh);
 
 /** Internal use only.
  * @return non-accessed region for this mesh.
  */
-Cmiss_region_id Cmiss_mesh_get_region_internal(Cmiss_mesh_id mesh);
+cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh);
 
 /** Internal use only.
  * @return non-accessed master region for this mesh.
  */
-Cmiss_region_id Cmiss_mesh_get_master_region_internal(Cmiss_mesh_id mesh);
+cmzn_region_id cmzn_mesh_get_master_region_internal(cmzn_mesh_id mesh);
 
 #endif /* !defined (CMISS_ELEMENT_PRIVATE_HPP) */

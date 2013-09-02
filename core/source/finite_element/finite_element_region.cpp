@@ -79,8 +79,8 @@ LAST MODIFIED : 5 June 2003
 DESCRIPTION :
 ==============================================================================*/
 {
-	/* pointer to the Cmiss_region this FE_region is in: NOT ACCESSED */
-	struct Cmiss_region *cmiss_region;
+	/* pointer to the cmzn_region this FE_region is in: NOT ACCESSED */
+	struct cmzn_region *cmiss_region;
 	/* if set, the master_fe_region owns all nodes, elements and fields, including
 		 field information, and this FE_region is merely a list of nodes and
 		 elements taken from the master_fe_region.
@@ -1151,7 +1151,7 @@ them to be specified allows sharing across regions).
 		fe_region->top_data_hack = 0;
 		fe_region->data_fe_region = (struct FE_region *)NULL;
 		fe_region->base_fe_region = (struct FE_region *)NULL;
-		fe_region->cmiss_region = (struct Cmiss_region *)NULL;
+		fe_region->cmiss_region = (struct cmzn_region *)NULL;
 		fe_region->fe_field_info = (struct FE_field_info *)NULL;
 
 		/* change log information */
@@ -3411,7 +3411,7 @@ For each FE_node in <fe_region> satisfying <conditional_function> with
 	return (return_code);
 } /* FE_region_for_each_FE_node_conditional */
 
-Cmiss_node_iterator_id FE_region_create_node_iterator(
+cmzn_node_iterator_id FE_region_create_node_iterator(
 	struct FE_region *fe_region)
 {
 	if (fe_region)
@@ -5112,9 +5112,9 @@ int FE_region_define_faces(struct FE_region *fe_region)
 		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (2 <= dimension) && return_code; --dimension)
 		{
 			LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
-			Cmiss_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(element_list);
-			Cmiss_element_id element = 0;
-			while (0 != (element = Cmiss_element_iterator_next_non_access(iter)))
+			cmzn_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(element_list);
+			cmzn_element_id element = 0;
+			while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
 			{
 				if (!FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element))
 				{
@@ -5122,7 +5122,7 @@ int FE_region_define_faces(struct FE_region *fe_region)
 					break;
 				}
 			}
-			Cmiss_element_iterator_destroy(&iter);
+			cmzn_element_iterator_destroy(&iter);
 		}
 		FE_region_end_define_faces(fe_region);
 		FE_region_end_change(fe_region);
@@ -5487,7 +5487,7 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
 	return (return_code);
 }
 
-Cmiss_element_iterator_id FE_region_create_element_iterator(
+cmzn_element_iterator_id FE_region_create_element_iterator(
 	struct FE_region *fe_region, int dimension)
 {
 	if (fe_region)
@@ -5498,7 +5498,7 @@ Cmiss_element_iterator_id FE_region_create_element_iterator(
 struct FE_element *FE_region_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name)
 {
-	Cmiss_element_id element = 0;
+	cmzn_element_id element = 0;
 	if (fe_region && name)
 	{
 		int highest_dimension = FE_region_get_highest_dimension(fe_region);
@@ -5916,20 +5916,20 @@ Recursive if fe_region has a master_fe_region.
 	return (fe_basis);
 } /* FE_region_get_FE_basis_matching_basis_type */
 
-void FE_region_set_Cmiss_region_private(struct FE_region *fe_region,
-	struct Cmiss_region *cmiss_region)
+void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
+	struct cmzn_region *cmiss_region)
 {
 	if (fe_region)
 		fe_region->cmiss_region = cmiss_region;
 }
 
-struct Cmiss_region *FE_region_get_Cmiss_region(struct FE_region *fe_region)
+struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region)
 {
-	Cmiss_region_id region = FE_region_get_master_Cmiss_region(fe_region);
+	cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
 	return region;
 }
 
-struct Cmiss_region *FE_region_get_master_Cmiss_region(struct FE_region *fe_region)
+struct cmzn_region *FE_region_get_master_cmzn_region(struct FE_region *fe_region)
 {
 	if (!fe_region)
 		return 0;
@@ -6067,8 +6067,8 @@ static struct FE_element *FE_regions_merge_embedding_data_get_global_element(
 		{
 			global_fe_region = embedding_data->target_fe_region;
 		}
-		int dimension = Cmiss_element_get_dimension(element);
-		int identifier = Cmiss_element_get_identifier(element);
+		int dimension = cmzn_element_get_dimension(element);
+		int identifier = cmzn_element_get_identifier(element);
 		struct FE_element_shape *element_shape = 0;
 		get_FE_element_shape(element, &element_shape);
 		global_element = FE_region_get_or_create_FE_element_with_identifier(

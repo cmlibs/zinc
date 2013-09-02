@@ -63,8 +63,8 @@ extern "C" {
  * @param number_of_components  The number of components for the new field.
  * @return  Handle to the newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_finite_element(
-	Cmiss_field_module_id field_module, int number_of_components);
+ZINC_API cmzn_field_id cmzn_field_module_create_finite_element(
+	cmzn_field_module_id field_module, int number_of_components);
 
 /***************************************************************************//**
  * If the field is real-valued interpolated finite element then this function
@@ -75,23 +75,23 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_finite_element(
  * @return  Finite_element specific representation if the input field is of this
  * type, otherwise returns NULL.
  */
-ZINC_API Cmiss_field_finite_element_id Cmiss_field_cast_finite_element(Cmiss_field_id field);
+ZINC_API cmzn_field_finite_element_id cmzn_field_cast_finite_element(cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast finite element field back to its base field and return the field.
  * IMPORTANT NOTE: Returned field does not have incremented reference count and
- * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the derived field.
  * Use this function to call base-class API, e.g.:
- * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
  *
  * @param finite_element_field  Handle to the finite element field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_finite_element_base_cast(
-	Cmiss_field_finite_element_id finite_element_field)
+ZINC_C_INLINE cmzn_field_id cmzn_field_finite_element_base_cast(
+	cmzn_field_finite_element_id finite_element_field)
 {
-	return (Cmiss_field_id)(finite_element_field);
+	return (cmzn_field_id)(finite_element_field);
 }
 
 /*******************************************************************************
@@ -102,8 +102,8 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_finite_element_base_cast(
  * 		destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_finite_element_destroy(
-	Cmiss_field_finite_element_id *finite_element_field_address);
+ZINC_API int cmzn_field_finite_element_destroy(
+	cmzn_field_finite_element_id *finite_element_field_address);
 
 /***************************************************************************//**
  * Creates a field returning a value of a source field at an embedded location.
@@ -116,9 +116,9 @@ ZINC_API int Cmiss_field_finite_element_destroy(
  * find_mesh_location or stored mesh location fields.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_embedded(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id embedded_location_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_embedded(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_field_id embedded_location_field);
 
 /***************************************************************************//**
  * Creates a field returning the location in a mesh at which the calculated
@@ -135,9 +135,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_embedded(
  * @param mesh  The mesh to find locations in.
  * @return  Newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id mesh_field, Cmiss_mesh_id mesh);
+ZINC_API cmzn_field_id cmzn_field_module_create_find_mesh_location(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_field_id mesh_field, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
  * If the field is of type find_mesh_location then this function returns the
@@ -148,24 +148,24 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
  * @return  Find_mesh_location specific representation if the input field is of
  * this type, otherwise returns NULL.
  */
-ZINC_API Cmiss_field_find_mesh_location_id Cmiss_field_cast_find_mesh_location(
-	Cmiss_field_id field);
+ZINC_API cmzn_field_find_mesh_location_id cmzn_field_cast_find_mesh_location(
+	cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast find_mesh_location field back to its base field and return the field.
  * IMPORTANT NOTE: Returned field does not have incremented reference count and
- * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the derived field.
  * Use this function to call base-class API, e.g.:
- * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
  *
  * @param find_mesh_location_field  Handle to the find_mesh_location field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_find_mesh_location_base_cast(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field)
+ZINC_C_INLINE cmzn_field_id cmzn_field_find_mesh_location_base_cast(
+	cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
-	return (Cmiss_field_id)(find_mesh_location_field);
+	return (cmzn_field_id)(find_mesh_location_field);
 }
 
 /*******************************************************************************
@@ -176,8 +176,8 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_find_mesh_location_base_cast(
  * 		destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_find_mesh_location_destroy(
-	Cmiss_field_find_mesh_location_id *find_mesh_location_field_address);
+ZINC_API int cmzn_field_find_mesh_location_destroy(
+	cmzn_field_find_mesh_location_id *find_mesh_location_field_address);
 
 /***************************************************************************//**
  * Returns the mesh the find_mesh_location field is to find locations in.
@@ -185,14 +185,14 @@ ZINC_API int Cmiss_field_find_mesh_location_destroy(
  * @param find_mesh_location_field  The field to query.
  * @return  The mesh to find locations in. Caller must destroy returned handle.
  */
-ZINC_API Cmiss_mesh_id Cmiss_field_find_mesh_location_get_mesh(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field);
+ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field);
 
 /***************************************************************************//**
  * Enumeration controlling whether find_mesh_location returns location of exact
  * field value match, or nearest value.
  */
-enum Cmiss_field_find_mesh_location_search_mode
+enum cmzn_field_find_mesh_location_search_mode
 {
 	CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT = 1,
 	/*!< Only location where mesh field value is exactly equal to source field is
@@ -210,18 +210,18 @@ enum Cmiss_field_find_mesh_location_search_mode
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum Cmiss_field_find_mesh_location_search_mode
-	Cmiss_field_find_mesh_location_search_mode_enum_from_string(const char *string);
+ZINC_API enum cmzn_field_find_mesh_location_search_mode
+	cmzn_field_find_mesh_location_search_mode_enum_from_string(const char *string);
 
 /***************************************************************************//**
  * Return an allocated short name of the enum type from the provided enum.
- * User must call Cmiss_deallocate to destroy the successfully returned string.
+ * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param format  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *Cmiss_field_find_mesh_location_search_mode_enum_to_string(
-	enum Cmiss_field_find_mesh_location_search_mode mode);
+ZINC_API char *cmzn_field_find_mesh_location_search_mode_enum_to_string(
+	enum cmzn_field_find_mesh_location_search_mode mode);
 
 /***************************************************************************//**
  * Gets the search mode for the find_mesh_location field: whether finding
@@ -230,9 +230,9 @@ ZINC_API char *Cmiss_field_find_mesh_location_search_mode_enum_to_string(
  * @param find_mesh_location_field  The field to query.
  * @return  The search mode.
  */
-ZINC_API enum Cmiss_field_find_mesh_location_search_mode
-	Cmiss_field_find_mesh_location_get_search_mode(
-		Cmiss_field_find_mesh_location_id find_mesh_location_field);
+ZINC_API enum cmzn_field_find_mesh_location_search_mode
+	cmzn_field_find_mesh_location_get_search_mode(
+		cmzn_field_find_mesh_location_id find_mesh_location_field);
 
 /***************************************************************************//**
  * Sets the search mode for the find_mesh_location field: whether finding
@@ -242,9 +242,9 @@ ZINC_API enum Cmiss_field_find_mesh_location_search_mode
  * @param search_mode  The search mode to set.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_find_mesh_location_set_search_mode(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field,
-	enum Cmiss_field_find_mesh_location_search_mode search_mode);
+ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
+	cmzn_field_find_mesh_location_id find_mesh_location_field,
+	enum cmzn_field_find_mesh_location_search_mode search_mode);
 
 /***************************************************************************//**
  * Creates a field which represents and returns node values/derivatives.
@@ -257,9 +257,9 @@ ZINC_API int Cmiss_field_find_mesh_location_set_search_mode(
  * return, starting from 1.
  * @return  Handle to the newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_node_value(
-	Cmiss_field_module_id field_module, Cmiss_field_id field,
-	enum Cmiss_nodal_value_type nodal_value_type, int version_number);
+ZINC_API cmzn_field_id cmzn_field_module_create_node_value(
+	cmzn_field_module_id field_module, cmzn_field_id field,
+	enum cmzn_nodal_value_type nodal_value_type, int version_number);
 
 /***************************************************************************//**
  * Creates a field which stores and returns mesh location values at nodes.
@@ -268,8 +268,8 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_node_value(
  * @param mesh  The mesh for which locations are stored.
  * @return  Handle to the newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
-	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh);
+ZINC_API cmzn_field_id cmzn_field_module_create_stored_mesh_location(
+	cmzn_field_module_id field_module, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
  * If the field is stored_mesh_location type, return type-specific handle to it.
@@ -279,23 +279,23 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
  * @return  Stored_mesh_location specific representation if the input field is of
  * this type, otherwise returns NULL.
  */
-ZINC_API Cmiss_field_stored_mesh_location_id Cmiss_field_cast_stored_mesh_location(Cmiss_field_id field);
+ZINC_API cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast stored_mesh_location field back to its base field and return the field.
  * IMPORTANT NOTE: Returned field does not have incremented reference count and
- * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the derived field.
  * Use this function to call base-class API, e.g.:
- * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
  *
  * @param stored_mesh_location_field  Handle to the field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_stored_mesh_location_base_cast(
-	Cmiss_field_stored_mesh_location_id stored_mesh_location_field)
+ZINC_C_INLINE cmzn_field_id cmzn_field_stored_mesh_location_base_cast(
+	cmzn_field_stored_mesh_location_id stored_mesh_location_field)
 {
-	return (Cmiss_field_id)(stored_mesh_location_field);
+	return (cmzn_field_id)(stored_mesh_location_field);
 }
 
 /*******************************************************************************
@@ -306,8 +306,8 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_stored_mesh_location_base_cast(
  * 		destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_stored_mesh_location_destroy(
-	Cmiss_field_stored_mesh_location_id *stored_mesh_location_field_address);
+ZINC_API int cmzn_field_stored_mesh_location_destroy(
+	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address);
 
 /***************************************************************************//**
  * Creates a field which stores and returns string values at nodes.
@@ -315,8 +315,8 @@ ZINC_API int Cmiss_field_stored_mesh_location_destroy(
  * @param field_module  Region field module which will own new field.
  * @return  Handle to the newly created field.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_stored_string(
-	Cmiss_field_module_id field_module);
+ZINC_API cmzn_field_id cmzn_field_module_create_stored_string(
+	cmzn_field_module_id field_module);
 
 /***************************************************************************//**
  * If the field is stored_string type, return type-specific handle to it.
@@ -326,23 +326,23 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_stored_string(
  * @return  stored_string specific representation if the input field is of
  * this type, otherwise returns NULL.
  */
-ZINC_API Cmiss_field_stored_string_id Cmiss_field_cast_stored_string(Cmiss_field_id field);
+ZINC_API cmzn_field_stored_string_id cmzn_field_cast_stored_string(cmzn_field_id field);
 
 /***************************************************************************//**
  * Cast stored_string field back to its base field and return the field.
  * IMPORTANT NOTE: Returned field does not have incremented reference count and
- * must not be destroyed. Use Cmiss_field_access() to add a reference if
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the derived field.
  * Use this function to call base-class API, e.g.:
- * Cmiss_field_set_name(Cmiss_field_derived_base_cast(derived_field), "bob");
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
  *
  * @param stored_string_field  Handle to the field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.
  */
-ZINC_C_INLINE Cmiss_field_id Cmiss_field_stored_string_base_cast(
-	Cmiss_field_stored_string_id stored_string_field)
+ZINC_C_INLINE cmzn_field_id cmzn_field_stored_string_base_cast(
+	cmzn_field_stored_string_id stored_string_field)
 {
-	return (Cmiss_field_id)(stored_string_field);
+	return (cmzn_field_id)(stored_string_field);
 }
 
 /*******************************************************************************
@@ -353,8 +353,8 @@ ZINC_C_INLINE Cmiss_field_id Cmiss_field_stored_string_base_cast(
  * 		destroy.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_field_stored_string_destroy(
-	Cmiss_field_stored_string_id *stored_string_field_address);
+ZINC_API int cmzn_field_stored_string_destroy(
+	cmzn_field_stored_string_id *stored_string_field_address);
 
 #ifdef __cplusplus
 }

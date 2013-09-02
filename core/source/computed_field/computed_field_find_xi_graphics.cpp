@@ -99,7 +99,7 @@ struct Render_element_data
 	int bit_shift;
 	int minimum_element_number;
 	int maximum_element_number;
-	Cmiss_field_cache_id field_cache;
+	cmzn_field_cache_id field_cache;
 	struct Computed_field *field;
 	FE_value values[3];
 };
@@ -147,13 +147,13 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 
 			xi[0] = 0.0;
 			xi[1] = 0.0;
-			Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
-			Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
+			cmzn_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+			cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 			glVertex2dv(data->values);
 			xi[0] = 1.0;
 			xi[1] = 0.0;
-			Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
-			Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
+			cmzn_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+			cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 			glVertex2dv(data->values);
 
 			/* Only need to check the first dimension as this is only working for 2D */
@@ -164,8 +164,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			{
 				xi[0] = 0.0;
 				xi[1] = 1.0;
-				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
-				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
+				cmzn_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 				glVertex2dv(data->values);
 			}
@@ -173,14 +173,14 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			{
 				xi[0] = 1.0;
 				xi[1] = 1.0;
-				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
-				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
+				cmzn_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 
 				xi[0] = 0.0;
 				xi[1] = 1.0;
-				Cmiss_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
-				Cmiss_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
+				cmzn_field_cache_set_mesh_location(data->field_cache, element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi);
+				cmzn_field_evaluate_real(data->field, data->field_cache, /*number_of_values*/3, data->values);
 				glVertex2dv(data->values);
 			}
 		}
@@ -199,10 +199,10 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 #endif /* defined (GRAPHICS_BUFFER_USE_OFFSCREEN_BUFFERS) */
 
 int Computed_field_find_element_xi_special(struct Computed_field *field,
-	Cmiss_field_cache_id field_cache,
+	cmzn_field_cache_id field_cache,
 	struct Computed_field_find_element_xi_cache **cache_ptr,
 	const FE_value *values, int number_of_values, struct FE_element **element,
-	FE_value *xi, Cmiss_mesh_id search_mesh,
+	FE_value *xi, cmzn_mesh_id search_mesh,
 	Graphics_buffer_package *graphics_buffer_package,
 	ZnReal *hint_minimums, ZnReal *hint_maximums, ZnReal *hint_resolution)
 {
@@ -249,8 +249,8 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 		((3 == Computed_field_get_number_of_components(field)) &&
 		(hint_resolution[2] == 1.0f))) && graphics_buffer_package && search_mesh
 		/* This special case actually only works for 2D elements */
-		&& (Cmiss_mesh_get_dimension(search_mesh) == 2)
-		&& ((Cmiss_mesh_get_size(search_mesh) > 5))
+		&& (cmzn_mesh_get_dimension(search_mesh) == 2)
+		&& ((cmzn_mesh_get_size(search_mesh) > 5))
 		/*&& (Computed_field_is_find_element_xi_capable(field,NULL))*/)
 	{
 		find_element_xi_data.field_cache = field_cache;
@@ -283,16 +283,16 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 					as widely as possible */
 				cache = new Computed_field_find_element_xi_graphics_cache;
 				*cache_ptr = CREATE(Computed_field_find_element_xi_cache)(cache);
-				Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(search_mesh);
-				Cmiss_element_id element = 0;
-				element = Cmiss_element_iterator_next(iterator);
-				int identifier = Cmiss_element_get_identifier(element);
+				cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(search_mesh);
+				cmzn_element_id element = 0;
+				element = cmzn_element_iterator_next(iterator);
+				int identifier = cmzn_element_get_identifier(element);
 				cache->maximum_element_number = identifier;
 				cache->minimum_element_number = identifier;
-				Cmiss_element_destroy(&element);
-				while (0 != (element = Cmiss_element_iterator_next(iterator)))
+				cmzn_element_destroy(&element);
+				while (0 != (element = cmzn_element_iterator_next(iterator)))
 				{
-					identifier = Cmiss_element_get_identifier(element);
+					identifier = cmzn_element_get_identifier(element);
 					if (identifier > cache->maximum_element_number)
 					{
 						cache->maximum_element_number = identifier;
@@ -301,9 +301,9 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 					{
 						cache->minimum_element_number = identifier;
 					}
-					Cmiss_element_destroy(&element);
+					cmzn_element_destroy(&element);
 				}
-				Cmiss_element_iterator_destroy(&iterator);
+				cmzn_element_iterator_destroy(&iterator);
 
 				cache->bit_shift = (int)ceil(log((double)(cache->maximum_element_number -
 					cache->minimum_element_number + 2)) / log (2.0));
@@ -344,14 +344,14 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 					if (gl_list)
 					{
 						glBegin(GL_QUADS);
-						Cmiss_element_iterator_id iterator = Cmiss_mesh_create_element_iterator(search_mesh);
-						Cmiss_element_id element = 0;
-						while (0 != (element = Cmiss_element_iterator_next(iterator)))
+						cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(search_mesh);
+						cmzn_element_id element = 0;
+						while (0 != (element = cmzn_element_iterator_next(iterator)))
 						{
 							Render_element_as_texture(element, &data);
-							Cmiss_element_destroy(&element);
+							cmzn_element_destroy(&element);
 						}
-						Cmiss_element_iterator_destroy(&iterator);
+						cmzn_element_iterator_destroy(&iterator);
 						glEnd();
 
 						glEndList();
@@ -426,7 +426,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 				if (scaled_number)
 				{
 					int identifier = scaled_number + cache->minimum_element_number - 1;
-					if (0 != (*element = Cmiss_mesh_find_element_by_identifier(search_mesh, identifier)))
+					if (0 != (*element = cmzn_mesh_find_element_by_identifier(search_mesh, identifier)))
 					{
 						first_element = *element;
 #if defined (DEBUG_CODE)
@@ -521,7 +521,7 @@ int Computed_field_find_element_xi_special(struct Computed_field *field,
 								if (scaled_number)
 								{
 									identifier = scaled_number + cache->minimum_element_number - 1;
-									if (0 != (*element = Cmiss_mesh_find_element_by_identifier(search_mesh, identifier)))
+									if (0 != (*element = cmzn_mesh_find_element_by_identifier(search_mesh, identifier)))
 									{
 										if (Computed_field_iterative_element_conditional(
 											*element, &find_element_xi_data))

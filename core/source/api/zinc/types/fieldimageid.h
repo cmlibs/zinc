@@ -41,31 +41,31 @@
 #ifndef CMZN_FIELDIMAGEID_H__
 
 /*****************************************************************************//**
- * The image field specific handle to a image Cmiss_field.
+ * The image field specific handle to a image cmzn_field.
  */
-	struct Cmiss_field_image;
-	typedef struct Cmiss_field_image *Cmiss_field_image_id;
+	struct cmzn_field_image;
+	typedef struct cmzn_field_image *cmzn_field_image_id;
 
 /***************************************************************************//**
  * A handle to cmiss stream information image. Stream information image is a
- * derived type of Cmiss_stream_information_id.
+ * derived type of cmzn_stream_information_id.
  * User can create and get a handle to stream information image with functions
- * provided with Cmiss_field_image.
+ * provided with cmzn_field_image.
  * User can use this derived type to set number of informations associate with
  * images inputs and outputs. See cmiss_field_image.h for more information.
  *
- * #see Cmiss_stream_information_id
- * #see Cmiss_field_image_create_stream_information
- * #see Cmiss_stream_information_cast_image
- * #see Cmiss_stream_information_image_base_cast
+ * #see cmzn_stream_information_id
+ * #see cmzn_field_image_create_stream_information
+ * #see cmzn_stream_information_cast_image
+ * #see cmzn_stream_information_image_base_cast
  */
-	struct Cmiss_stream_information_image;
-	typedef struct Cmiss_stream_information_image *Cmiss_stream_information_image_id;
+	struct cmzn_stream_information_image;
+	typedef struct cmzn_stream_information_image *cmzn_stream_information_image_id;
 
 	/*****************************************************************************//**
 	 * Optional information used to describe the binary data supplied to the images.
 	 */
-	enum Cmiss_stream_information_image_pixel_format
+	enum cmzn_stream_information_image_pixel_format
 	{
 		CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_INVALID = 0,
 		CMISS_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE = 1,

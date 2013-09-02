@@ -59,8 +59,8 @@ extern "C" {
  * @return  New differential operator reference with incremented reference
  * count.
  */
-ZINC_API Cmiss_differential_operator_id Cmiss_differential_operator_access(
-	Cmiss_differential_operator_id differential_operator);
+ZINC_API cmzn_differential_operator_id cmzn_differential_operator_access(
+	cmzn_differential_operator_id differential_operator);
 
 /***************************************************************************//**
  * Destroys reference to the differential operator and sets pointer/handle to
@@ -70,8 +70,8 @@ ZINC_API Cmiss_differential_operator_id Cmiss_differential_operator_access(
  * reference.
  * @return  Status CMISS_OK on success, any other value on failure.
  */
-ZINC_API int Cmiss_differential_operator_destroy(
-	Cmiss_differential_operator_id *differential_operator_address);
+ZINC_API int cmzn_differential_operator_destroy(
+	cmzn_differential_operator_id *differential_operator_address);
 
 #ifdef __cplusplus
 }

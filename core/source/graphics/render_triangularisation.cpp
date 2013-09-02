@@ -515,8 +515,8 @@ static int graphics_object_export_to_triangularisation(struct GT_object *gt_obje
 	return return_code;
 }
 
-int render_scene_triangularisation(Cmiss_scene_id scene,
-	Cmiss_graphics_filter_id filter, Triangle_mesh *trimesh)
+int render_scene_triangularisation(cmzn_scene_id scene,
+	cmzn_graphics_filter_id filter, Triangle_mesh *trimesh)
 {
 	int return_code = 0;
 
@@ -531,7 +531,7 @@ Render_graphics_triangularisation::~Render_graphics_triangularisation()
 	delete trimesh;
 }
 
-int Render_graphics_triangularisation::Scene_tree_execute(Cmiss_scene_id scene)
+int Render_graphics_triangularisation::Scene_tree_execute(cmzn_scene_id scene)
 {
 	set_Scene(scene);
 	return render_scene_triangularisation(scene, this->getGraphicsFilter(), trimesh);

@@ -94,18 +94,18 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/)
 	{
 		return new StringFieldValueCache();
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache&)
+	virtual bool is_defined_at_location(cmzn_field_cache&)
 	{
 		return true;
 	}
@@ -115,9 +115,9 @@ private:
 		return 0;
 	}
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/);
 
-	virtual Cmiss_field_value_type get_value_type() const
+	virtual cmzn_field_value_type get_value_type() const
 	{
 		return CMISS_FIELD_VALUE_TYPE_STRING;
 	}
@@ -144,7 +144,7 @@ int Computed_field_string_constant::compare(Computed_field_core* other_field)
 	return (return_code);
 }
 
-int Computed_field_string_constant::evaluate(Cmiss_field_cache&, FieldValueCache& inValueCache)
+int Computed_field_string_constant::evaluate(cmzn_field_cache&, FieldValueCache& inValueCache)
 {
 	StringFieldValueCache& stringValueCache = StringFieldValueCache::cast(inValueCache);
 	if (stringValueCache.stringValue)
@@ -180,7 +180,7 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 }
 
-enum FieldAssignmentResult Computed_field_string_constant::assign(Cmiss_field_cache& cache, StringFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_string_constant::assign(cmzn_field_cache& cache, StringFieldValueCache& valueCache)
 {
 	// avoid setting values in field if only assigning to cache
 	if (cache.assignInCacheOnly())
@@ -198,8 +198,8 @@ enum FieldAssignmentResult Computed_field_string_constant::assign(Cmiss_field_ca
 
 } //namespace
 
-struct Computed_field *Cmiss_field_module_create_string_constant(
-	struct Cmiss_field_module *field_module, const char *string_value_in)
+struct Computed_field *cmzn_field_module_create_string_constant(
+	struct cmzn_field_module *field_module, const char *string_value_in)
 {
 	Computed_field *field = NULL;
 	if (string_value_in)

@@ -57,7 +57,7 @@ Defines fields for looking up values at given locations.
 class Computed_field_lookup_package : public Computed_field_type_package
 {
 public:
-	struct Cmiss_region *root_region;
+	struct cmzn_region *root_region;
 };
 
 namespace {
@@ -88,7 +88,7 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (Cmiss_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) ==
+			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) ==
 				FE_node_get_FE_region(lookup_node))
 			{
 				FE_region *fe_region = FE_node_get_FE_region(lookup_node);
@@ -121,9 +121,9 @@ private:
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
@@ -132,7 +132,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int has_multiple_times();
 };
@@ -211,18 +211,18 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_nodal_lookup::compare */
 
-bool Computed_field_nodal_lookup::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_nodal_lookup::is_defined_at_location(cmzn_field_cache& cache)
 {
 	FieldValueCache &inValueCache = *(field->getValueCache(cache));
-	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	return getSourceField(0)->core->is_defined_at_location(extraCache);
 }
 
-int Computed_field_nodal_lookup::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodal_lookup::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	Cmiss_field_cache& extraCache = *(valueCache.getExtraCache());
+	cmzn_field_cache& extraCache = *(valueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
 	if (sourceValueCache)
@@ -385,12 +385,12 @@ If the node we are looking at changes generate a computed field change message.
 } //namespace
 
 struct Computed_field *Computed_field_create_nodal_lookup(
-	struct Cmiss_field_module *field_module,
+	struct cmzn_field_module *field_module,
 	struct Computed_field *source_field, struct FE_node *lookup_node)
 {
 	Computed_field *field = NULL;
 	if (source_field && source_field->isNumerical() && lookup_node &&
-		(FE_node_get_FE_region(lookup_node) == Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module))))
+		(FE_node_get_FE_region(lookup_node) == cmzn_region_get_FE_region(cmzn_field_module_get_region_internal(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -489,9 +489,9 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
@@ -500,7 +500,7 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -586,18 +586,18 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_quaternion_SLERP::compare */
 
-bool Computed_field_quaternion_SLERP::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_quaternion_SLERP::is_defined_at_location(cmzn_field_cache& cache)
 {
 	FieldValueCache &inValueCache = *(field->getValueCache(cache));
-	Cmiss_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	return getSourceField(0)->core->is_defined_at_location(extraCache);
 }
 
-int Computed_field_quaternion_SLERP::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_quaternion_SLERP::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-	Cmiss_field_cache& extraCache = *(valueCache.getExtraCache());
+	cmzn_field_cache& extraCache = *(valueCache.getExtraCache());
 	FE_value time = cache.getTime();
 	//t is the normalised time scaled from 0 to 1
 	FE_time_sequence *time_sequence = Computed_field_get_FE_node_field_FE_time_sequence(
@@ -813,13 +813,13 @@ If the node we are looking at changes generate a computed field change message.
  * <source_field> must have 4 components.
  */
 struct Computed_field *Computed_field_create_quaternion_SLERP(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_node_id quaternion_SLERP_node)
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_node_id quaternion_SLERP_node)
 {
 	Computed_field *field = NULL;
 	if (source_field && (4 == source_field->number_of_components) &&
 		quaternion_SLERP_node && (FE_node_get_FE_region(quaternion_SLERP_node) ==
-			Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module))))
+			cmzn_region_get_FE_region(cmzn_field_module_get_region_internal(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,

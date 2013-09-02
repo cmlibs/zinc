@@ -2,7 +2,7 @@
 FILE : cmiss_field_derivatives.h
 
 DESCRIPTION :
-The public interface to the Cmiss_fields that perform derivation.
+The public interface to the cmzn_fields that perform derivation.
 ==============================================================================*/
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -63,9 +63,9 @@ extern "C" {
  * element dimension.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_derivative(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field, int xi_index);
+ZINC_API cmzn_field_id cmzn_field_module_create_derivative(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field, int xi_index);
 
 /**
  * Creates a field returning the curl of vector_field at location given by
@@ -77,9 +77,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_derivative(
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_curl(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id vector_field, Cmiss_field_id coordinate_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_curl(
+	cmzn_field_module_id field_module,
+	cmzn_field_id vector_field, cmzn_field_id coordinate_field);
 
 /**
  * Creates a scalar field returning the divergence of vector field within
@@ -93,9 +93,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_curl(
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_divergence(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id vector_field, Cmiss_field_id coordinate_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_divergence(
+	cmzn_field_module_id field_module,
+	cmzn_field_id vector_field, cmzn_field_id coordinate_field);
 
 /**
  * Creates a field returning the curl of vector_field at location given by
@@ -117,9 +117,9 @@ ZINC_API Cmiss_field_id Cmiss_field_module_create_divergence(
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_gradient(
-	Cmiss_field_module_id field_module,
-	Cmiss_field_id source_field, Cmiss_field_id coordinate_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_gradient(
+	cmzn_field_module_id field_module,
+	cmzn_field_id source_field, cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus
 }

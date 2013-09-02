@@ -45,22 +45,22 @@
 #include "zinc/graphicsmaterial.h"
 #include "graphics/glyph.hpp"
 
-struct Cmiss_spectrum;
+struct cmzn_spectrum;
 
-struct Cmiss_glyph_colour_bar : public Cmiss_glyph
+struct cmzn_glyph_colour_bar : public cmzn_glyph
 {
 private:
-	Cmiss_spectrum *spectrum;
+	cmzn_spectrum *spectrum;
 	GT_object *graphicsObject;
 	double axis[3], centre[3], sideAxis[3];
 	double extendLength;
-	Cmiss_graphics_material *labelMaterial;
+	cmzn_graphics_material *labelMaterial;
 	char *numberFormat;
 	int labelDivisions;
 	double tickLength;
 
-	Cmiss_glyph_colour_bar(Cmiss_spectrum *spectrumIn);
-	virtual ~Cmiss_glyph_colour_bar();
+	cmzn_glyph_colour_bar(cmzn_spectrum *spectrumIn);
+	virtual ~cmzn_glyph_colour_bar();
 
 	void invalidate()
 	{
@@ -72,15 +72,15 @@ private:
 	}
 
 public:
-	static Cmiss_glyph_colour_bar *create(Cmiss_spectrum *spectrumIn)
+	static cmzn_glyph_colour_bar *create(cmzn_spectrum *spectrumIn)
 	{
 		if (spectrumIn)
-			return new Cmiss_glyph_colour_bar(spectrumIn);
+			return new cmzn_glyph_colour_bar(spectrumIn);
 		return 0;
 	}
 
-	virtual GT_object *getGraphicsObject(Cmiss_tessellation *tessellation,
-		Cmiss_graphics_material *material, Cmiss_font *font);
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *tessellation,
+		cmzn_graphics_material *material, cmzn_font *font);
 
 	virtual bool usesFont()
 	{
@@ -109,12 +109,12 @@ public:
 
 	int setLabelDivisions(int labelDivisionsIn);
 
-	Cmiss_graphics_material_id getLabelMaterial() const
+	cmzn_graphics_material_id getLabelMaterial() const
 	{
-		return labelMaterial ? Cmiss_graphics_material_access(labelMaterial) : 0;
+		return labelMaterial ? cmzn_graphics_material_access(labelMaterial) : 0;
 	}
 
-	int setLabelMaterial(Cmiss_graphics_material_id material);
+	int setLabelMaterial(cmzn_graphics_material_id material);
 
 	char *getNumberFormat() const;
 

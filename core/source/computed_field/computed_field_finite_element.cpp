@@ -291,7 +291,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/)
 	{
 		enum Value_type value_type = get_FE_field_value_type(fe_field);
 		switch (value_type)
@@ -305,19 +305,19 @@ private:
 				break;
 		}
 		// Note it will be more efficient in some cases to allow finite element field value caches
-		// in related Cmiss_field_cache objects to have a common FE_element_field_values list,
+		// in related cmzn_field_cache objects to have a common FE_element_field_values list,
 		// however they must not be shared with time lookup fields as only a single time is cached
 		// and performance will be poor. Leaving implementation to a later date.
 		return new FiniteElementRealFieldValueCache(field->number_of_components);
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 	int has_multiple_times();
 
@@ -325,11 +325,11 @@ private:
 
 	int not_in_use();
 
-	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/);
 
-	virtual enum FieldAssignmentResult assign(Cmiss_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/);
 
 	virtual void propagate_coordinate_system()
 	{
@@ -349,14 +349,14 @@ private:
 		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
 	};
 
-	virtual int get_attribute_integer(enum Cmiss_field_attribute attribute) const
+	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
 	{
 		if (attribute == CMISS_FIELD_ATTRIBUTE_IS_COORDINATE)
 			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
 		return 0;
 	}
 
-	virtual int set_attribute_integer(enum Cmiss_field_attribute attribute, int value)
+	virtual int set_attribute_integer(enum cmzn_field_attribute attribute, int value)
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
@@ -378,10 +378,10 @@ private:
 		return 0;
 	}
 
-	virtual Cmiss_field_value_type get_value_type() const
+	virtual cmzn_field_value_type get_value_type() const
 	{
 		enum Value_type fe_value_type = get_FE_field_value_type(fe_field);
-		Cmiss_field_value_type value_type = CMISS_FIELD_VALUE_TYPE_INVALID;
+		cmzn_field_value_type value_type = CMISS_FIELD_VALUE_TYPE_INVALID;
 		switch (fe_value_type)
 		{
 			case ELEMENT_XI_VALUE:
@@ -497,7 +497,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_finite_element::compare */
 
-bool Computed_field_finite_element::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_finite_element::is_defined_at_location(cmzn_field_cache& cache)
 {
 	Field_element_xi_location *element_xi_location;
 	Field_node_location *node_location;
@@ -609,7 +609,7 @@ The FE_field must also not be in use.
 	return (return_code);
 } /* Computed_field_finite_element::not_in_use */
 
-int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_finite_element::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
 	enum Value_type value_type = get_FE_field_value_type(fe_field);
@@ -622,7 +622,7 @@ int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValue
 			{
 				MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
 				// can only have 1 component; can only be evaluated at node so assume node location
-				Cmiss_element_id element = 0;
+				cmzn_element_id element = 0;
 				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 				return_code = get_FE_nodal_element_xi_value(node_location->get_node(), fe_field, /*component_number*/0,
 					/*version_number*/0, FE_NODAL_VALUE, &element, xi) && element;
@@ -651,8 +651,8 @@ int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValue
 			}
 			else if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 			{
-				Cmiss_element_id element = element_xi_location->get_element();
-				Cmiss_element_id top_level_element = element_xi_location->get_top_level_element();
+				cmzn_element_id element = element_xi_location->get_element();
+				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
 				FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
 
@@ -673,8 +673,8 @@ int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValue
 			Field_node_location *node_location;
 			if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 			{
-				Cmiss_element_id element = element_xi_location->get_element();
-				Cmiss_element_id top_level_element = element_xi_location->get_top_level_element();
+				cmzn_element_id element = element_xi_location->get_element();
+				cmzn_element_id top_level_element = element_xi_location->get_top_level_element();
 				FE_value time = element_xi_location->get_time();
 				const FE_value* xi = element_xi_location->get_xi();
 				int number_of_derivatives = cache.getRequestedDerivatives();
@@ -817,7 +817,7 @@ int Computed_field_finite_element::evaluate(Cmiss_field_cache& cache, FieldValue
 	return return_code;
 }
 
-enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	if (cache.assignInCacheOnly())
 	{
@@ -1002,7 +1002,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cac
 	return result;
 }
 
-enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, MeshLocationFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_field_cache& cache, MeshLocationFieldValueCache& valueCache)
 {
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (node_location &&
@@ -1019,7 +1019,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cac
 	return FIELD_ASSIGNMENT_RESULT_FAIL;
 };
 
-enum FieldAssignmentResult Computed_field_finite_element::assign(Cmiss_field_cache& cache, StringFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_field_cache& cache, StringFieldValueCache& valueCache)
 {
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (node_location &&
@@ -1179,20 +1179,20 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 inline Computed_field *Computed_field_cast(
-	Cmiss_field_finite_element *finite_element_field)
+	cmzn_field_finite_element *finite_element_field)
 {
 	return (reinterpret_cast<Computed_field*>(finite_element_field));
 }
 
 inline Computed_field_finite_element *Computed_field_finite_element_core_cast(
-	Cmiss_field_finite_element *finite_element_field)
+	cmzn_field_finite_element *finite_element_field)
 {
 	return (static_cast<Computed_field_finite_element*>(
 		reinterpret_cast<Computed_field*>(finite_element_field)->core));
 }
 
 struct Computed_field *Computed_field_create_finite_element_internal(
-	struct Cmiss_field_module *field_module, struct FE_field *fe_field)
+	struct cmzn_field_module *field_module, struct FE_field *fe_field)
 {
 	char **component_names;
 	int i, number_of_components, return_code;
@@ -1202,8 +1202,8 @@ struct Computed_field *Computed_field_create_finite_element_internal(
 	if (field_module && fe_field)
 	{
 		return_code = 1;
-		Cmiss_region *region = Cmiss_field_module_get_region_internal(field_module);
-		FE_region *fe_region = Cmiss_region_get_FE_region(region);
+		cmzn_region *region = cmzn_field_module_get_region_internal(field_module);
+		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
@@ -1263,26 +1263,26 @@ struct Computed_field *Computed_field_create_finite_element_internal(
 	return (field);
 }
 
-Cmiss_field_id Cmiss_field_module_create_finite_element_internal(
-	Cmiss_field_module_id field_module, enum Value_type value_type, int number_of_components)
+cmzn_field_id cmzn_field_module_create_finite_element_internal(
+	cmzn_field_module_id field_module, enum Value_type value_type, int number_of_components)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	// cache changes to ensure FE_field not automatically wrapped already
-	Cmiss_field_module_begin_change(field_module);
-	FE_region *fe_region = Cmiss_region_get_FE_region(Cmiss_field_module_get_region_internal(field_module));
+	cmzn_field_module_begin_change(field_module);
+	FE_region *fe_region = cmzn_region_get_FE_region(cmzn_field_module_get_region_internal(field_module));
 	// ensure FE_field and Computed_field have same name
-	char *field_name = Cmiss_field_module_get_field_name(field_module);
+	char *field_name = cmzn_field_module_get_field_name(field_module);
 	bool no_default_name = (0 == field_name);
 	if (no_default_name)
 	{
-		field_name = Cmiss_field_module_get_unique_field_name(field_module);
-		Cmiss_field_module_set_field_name(field_module, field_name);
+		field_name = cmzn_field_module_get_unique_field_name(field_module);
+		cmzn_field_module_set_field_name(field_module, field_name);
 	}
 	FE_field *fe_field = FE_region_get_FE_field_with_general_properties(
 		fe_region, field_name, value_type, number_of_components);
 	if (fe_field)
 	{
-		Coordinate_system coordinate_system = Cmiss_field_module_get_coordinate_system(field_module);
+		Coordinate_system coordinate_system = cmzn_field_module_get_coordinate_system(field_module);
 		set_FE_field_coordinate_system(fe_field, &coordinate_system);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, number_of_components,
@@ -1293,30 +1293,30 @@ Cmiss_field_id Cmiss_field_module_create_finite_element_internal(
 	DEALLOCATE(field_name);
 	if (no_default_name)
 	{
-		Cmiss_field_module_set_field_name(field_module, /*field_name*/0);
+		cmzn_field_module_set_field_name(field_module, /*field_name*/0);
 	}
-	Cmiss_field_module_end_change(field_module);
+	cmzn_field_module_end_change(field_module);
 	return (field);
 }
 
-Cmiss_field_id Cmiss_field_module_create_finite_element(
-	Cmiss_field_module_id field_module, int number_of_components)
+cmzn_field_id cmzn_field_module_create_finite_element(
+	cmzn_field_module_id field_module, int number_of_components)
 {
 	Computed_field *field = NULL;
 	if (field_module && (0 < number_of_components))
 	{
-		field = Cmiss_field_module_create_finite_element_internal(
+		field = cmzn_field_module_create_finite_element_internal(
 			field_module, FE_VALUE_VALUE, number_of_components);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_finite_element.  Invalid argument(s)");
+			"cmzn_field_module_create_finite_element.  Invalid argument(s)");
 	}
 	return (field);
 }
 
-Cmiss_field_finite_element_id Cmiss_field_cast_finite_element(Cmiss_field_id field)
+cmzn_field_finite_element_id cmzn_field_cast_finite_element(cmzn_field_id field)
 {
 	if (field)
 	{
@@ -1326,41 +1326,41 @@ Cmiss_field_finite_element_id Cmiss_field_cast_finite_element(Cmiss_field_id fie
 			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
 			(get_FE_field_value_type(core->fe_field) == FE_VALUE_VALUE))
 		{
-			Cmiss_field_access(field);
-			return (reinterpret_cast<Cmiss_field_finite_element_id>(field));
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_finite_element_id>(field));
 		}
 	}
 	return 0;
 }
 
-int Cmiss_field_finite_element_destroy(
-	Cmiss_field_finite_element_id *finite_element_field_address)
+int cmzn_field_finite_element_destroy(
+	cmzn_field_finite_element_id *finite_element_field_address)
 {
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(finite_element_field_address));
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(finite_element_field_address));
 }
 
-Cmiss_field_id Cmiss_field_module_create_stored_mesh_location(
-	Cmiss_field_module_id field_module, Cmiss_mesh_id mesh)
+cmzn_field_id cmzn_field_module_create_stored_mesh_location(
+	cmzn_field_module_id field_module, cmzn_mesh_id mesh)
 {
 	Computed_field *field = NULL;
-	if (field_module && mesh && (Cmiss_mesh_get_master_region_internal(mesh) ==
-		Cmiss_field_module_get_master_region_internal(field_module)))
+	if (field_module && mesh && (cmzn_mesh_get_master_region_internal(mesh) ==
+		cmzn_field_module_get_master_region_internal(field_module)))
 	{
-		field = Cmiss_field_module_create_finite_element_internal(
+		field = cmzn_field_module_create_finite_element_internal(
 			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
 		struct FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		FE_field_set_element_xi_mesh_dimension(fe_field, Cmiss_mesh_get_dimension(mesh));
+		FE_field_set_element_xi_mesh_dimension(fe_field, cmzn_mesh_get_dimension(mesh));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_finite_element.  Invalid argument(s)");
+			"cmzn_field_module_create_finite_element.  Invalid argument(s)");
 	}
 	return (field);
 }
 
-Cmiss_field_stored_mesh_location_id Cmiss_field_cast_stored_mesh_location(Cmiss_field_id field)
+cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_field_id field)
 {
 	if (field)
 	{
@@ -1370,28 +1370,28 @@ Cmiss_field_stored_mesh_location_id Cmiss_field_cast_stored_mesh_location(Cmiss_
 			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
 			(get_FE_field_value_type(core->fe_field) == ELEMENT_XI_VALUE))
 		{
-			Cmiss_field_access(field);
-			return (reinterpret_cast<Cmiss_field_stored_mesh_location_id>(field));
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_stored_mesh_location_id>(field));
 		}
 	}
 	return 0;
 }
 
-int Cmiss_field_stored_mesh_location_destroy(
-	Cmiss_field_stored_mesh_location_id *stored_mesh_location_field_address)
+int cmzn_field_stored_mesh_location_destroy(
+	cmzn_field_stored_mesh_location_id *stored_mesh_location_field_address)
 {
-	return Cmiss_field_destroy(
-		reinterpret_cast<Cmiss_field_id *>(stored_mesh_location_field_address));
+	return cmzn_field_destroy(
+		reinterpret_cast<cmzn_field_id *>(stored_mesh_location_field_address));
 }
 
-Cmiss_field_id Cmiss_field_module_create_stored_string(
-	Cmiss_field_module_id field_module)
+cmzn_field_id cmzn_field_module_create_stored_string(
+	cmzn_field_module_id field_module)
 {
-	return Cmiss_field_module_create_finite_element_internal(
+	return cmzn_field_module_create_finite_element_internal(
 		field_module, STRING_VALUE, /*number_of_components*/1);
 }
 
-Cmiss_field_stored_string_id Cmiss_field_cast_stored_string(Cmiss_field_id field)
+cmzn_field_stored_string_id cmzn_field_cast_stored_string(cmzn_field_id field)
 {
 	if (field)
 	{
@@ -1401,18 +1401,18 @@ Cmiss_field_stored_string_id Cmiss_field_cast_stored_string(Cmiss_field_id field
 			(get_FE_field_FE_field_type(core->fe_field) == GENERAL_FE_FIELD) &&
 			(get_FE_field_value_type(core->fe_field) == STRING_VALUE))
 		{
-			Cmiss_field_access(field);
-			return (reinterpret_cast<Cmiss_field_stored_string_id>(field));
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_stored_string_id>(field));
 		}
 	}
 	return 0;
 }
 
-int Cmiss_field_stored_string_destroy(
-	Cmiss_field_stored_string_id *stored_string_field_address)
+int cmzn_field_stored_string_destroy(
+	cmzn_field_stored_string_id *stored_string_field_address)
 {
-	return Cmiss_field_destroy(
-		reinterpret_cast<Cmiss_field_id *>(stored_string_field_address));
+	return cmzn_field_destroy(
+		reinterpret_cast<cmzn_field_id *>(stored_string_field_address));
 }
 
 int Computed_field_is_type_finite_element(struct Computed_field *field)
@@ -1494,14 +1494,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_cmiss_number::evaluate(Cmiss_field_cache& cache,
+int Computed_field_cmiss_number::evaluate(cmzn_field_cache& cache,
 	FieldValueCache& inValueCache)
 {
 	int return_code = 1;
@@ -1625,7 +1625,7 @@ Returns true if <field> has the appropriate static type string.
 } /* Computed_field_is_type_cmiss_number */
 
 struct Computed_field *Computed_field_create_cmiss_number(
-	struct Cmiss_field_module *field_module)
+	struct cmzn_field_module *field_module)
 {
 	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
@@ -1672,14 +1672,14 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_access_count::evaluate(Cmiss_field_cache& cache,
+int Computed_field_access_count::evaluate(cmzn_field_cache& cache,
 	FieldValueCache& inValueCache)
 {
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
@@ -1766,7 +1766,7 @@ Returns allocated command string for reproducing field. Includes type.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_access_count(
-	struct Cmiss_field_module *field_module)
+	struct cmzn_field_module *field_module)
 {
 	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
@@ -1787,15 +1787,15 @@ const char computed_field_node_value_type_string[] = "node_value";
 class Computed_field_node_value : public Computed_field_core
 {
 public:
-	Cmiss_field_id finite_element_field;
+	cmzn_field_id finite_element_field;
 	struct FE_field *fe_field;
 	enum FE_nodal_value_type nodal_value_type;
 	int version_number;
 
-	Computed_field_node_value(Cmiss_field_id finite_element_field,
+	Computed_field_node_value(cmzn_field_id finite_element_field,
 			enum FE_nodal_value_type nodal_value_type, int version_number) :
 		Computed_field_core(),
-		finite_element_field(Cmiss_field_access(finite_element_field)),
+		finite_element_field(cmzn_field_access(finite_element_field)),
 		fe_field(0),
 		nodal_value_type(nodal_value_type),
 		version_number(version_number)
@@ -1825,17 +1825,17 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 	int has_numerical_components();
 
-	enum FieldAssignmentResult assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
 
 	int has_multiple_times();
 };
@@ -1853,7 +1853,7 @@ Clear the type specific data used by this type.
 	if (field)
 	{
 		DEACCESS(FE_field)(&(fe_field));
-		Cmiss_field_destroy(&finite_element_field);
+		cmzn_field_destroy(&finite_element_field);
 	}
 	else
 	{
@@ -1906,7 +1906,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_node_value::compare */
 
-bool Computed_field_node_value::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_node_value::is_defined_at_location(cmzn_field_cache& cache)
 {
 	Field_node_location *node_location;
 	if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
@@ -1954,7 +1954,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_node_value::has_numerical_components */
 
-int Computed_field_node_value::evaluate(Cmiss_field_cache& cache,
+int Computed_field_node_value::evaluate(cmzn_field_cache& cache,
 	FieldValueCache& inValueCache)
 {
 	int return_code = 1;
@@ -2034,7 +2034,7 @@ int Computed_field_node_value::evaluate(Cmiss_field_cache& cache,
 	return (return_code);
 }
 
-enum FieldAssignmentResult Computed_field_node_value::assign(Cmiss_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
 {
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (node_location)
@@ -2215,8 +2215,8 @@ Check the fe_field
  */
 
 struct Computed_field *Computed_field_create_node_value(
-	struct Cmiss_field_module *field_module,
-	Cmiss_field_id finite_element_field, enum FE_nodal_value_type nodal_value_type,
+	struct cmzn_field_module *field_module,
+	cmzn_field_id finite_element_field, enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 {
 	char **component_names;
@@ -2283,7 +2283,7 @@ struct Computed_field *Computed_field_create_node_value(
 } /* Computed_field_create_node_value */
 
 int Computed_field_get_type_node_value(struct Computed_field *field,
-	Cmiss_field_id *finite_element_field_address, enum FE_nodal_value_type *nodal_value_type,
+	cmzn_field_id *finite_element_field_address, enum FE_nodal_value_type *nodal_value_type,
 	int *version_number)
 /*******************************************************************************
 LAST MODIFIED : 24 August 2006
@@ -2345,20 +2345,20 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 	int has_numerical_components();
 };
@@ -2373,7 +2373,7 @@ int Computed_field_embedded::compare(Computed_field_core *other_core)
 	return (field && (0 != dynamic_cast<Computed_field_embedded*>(other_core)));
 }
 
-bool Computed_field_embedded::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_embedded::is_defined_at_location(cmzn_field_cache& cache)
 {
 	return (0 != field->evaluate(cache));
 }
@@ -2384,14 +2384,14 @@ int Computed_field_embedded::has_numerical_components()
 		field->source_fields[0],(void *)NULL));
 }
 
-int Computed_field_embedded::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_embedded::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	// assumes mesh-location valued fields all create MeshLocationFieldValueCache
 	MeshLocationFieldValueCache *meshLocationValueCache = MeshLocationFieldValueCache::cast(getSourceField(1)->evaluate(cache));
 	if (meshLocationValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		Cmiss_field_cache& extraCache = *valueCache.getExtraCache();
+		cmzn_field_cache& extraCache = *valueCache.getExtraCache();
 		extraCache.setMeshLocation(meshLocationValueCache->element, meshLocationValueCache->xi);
 		extraCache.setTime(cache.getTime());
 		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(extraCache));
@@ -2462,17 +2462,17 @@ char *Computed_field_embedded::get_command_string()
 
 } //namespace
 
-Cmiss_field_id Cmiss_field_module_create_embedded(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id embedded_location_field)
+cmzn_field_id cmzn_field_module_create_embedded(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_field_id embedded_location_field)
 {
 	struct Computed_field *field = 0;
 	if (field_module && embedded_location_field && source_field &&
 		(CMISS_FIELD_VALUE_TYPE_MESH_LOCATION ==
-			Cmiss_field_get_value_type(embedded_location_field)) &&
+			cmzn_field_get_value_type(embedded_location_field)) &&
 		Computed_field_has_numerical_components(source_field, NULL))
 	{
-		Cmiss_field_id source_fields[2];
+		cmzn_field_id source_fields[2];
 		source_fields[0] = source_field;
 		source_fields[1] = embedded_location_field;
 		field = Computed_field_create_generic(field_module,
@@ -2512,41 +2512,41 @@ const char computed_field_find_mesh_location_type_string[] = "find_mesh_location
 class Computed_field_find_mesh_location : public Computed_field_core
 {
 private:
-	Cmiss_mesh_id mesh;
-	enum Cmiss_field_find_mesh_location_search_mode search_mode;
+	cmzn_mesh_id mesh;
+	enum cmzn_field_find_mesh_location_search_mode search_mode;
 
 public:
 
-	Computed_field_find_mesh_location(Cmiss_mesh_id mesh) :
+	Computed_field_find_mesh_location(cmzn_mesh_id mesh) :
 		Computed_field_core(),
-		mesh(Cmiss_mesh_access(mesh)),
+		mesh(cmzn_mesh_access(mesh)),
 		search_mode(CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT)
 	{
 	};
 
 	virtual ~Computed_field_find_mesh_location();
 
-	Cmiss_field_id get_source_field()
+	cmzn_field_id get_source_field()
 	{
 		return field->source_fields[0];
 	}
 
-	Cmiss_field_id get_mesh_field()
+	cmzn_field_id get_mesh_field()
 	{
 		return field->source_fields[1];
 	}
 
-	Cmiss_mesh_id get_mesh()
+	cmzn_mesh_id get_mesh()
 	{
 		return mesh;
 	}
 
-	enum Cmiss_field_find_mesh_location_search_mode get_search_mode() const
+	enum cmzn_field_find_mesh_location_search_mode get_search_mode() const
 	{
 		return search_mode;
 	}
 
-	int set_search_mode(enum Cmiss_field_find_mesh_location_search_mode search_mode_in)
+	int set_search_mode(enum cmzn_field_find_mesh_location_search_mode search_mode_in)
 	{
 		if (search_mode_in != search_mode)
 		{
@@ -2566,27 +2566,27 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
 	{
 		MeshLocationFieldValueCache *valueCache = new MeshLocationFieldValueCache();
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 	int has_numerical_components()
 	{
 		return 0;
 	}
 
-	virtual Cmiss_field_value_type get_value_type() const
+	virtual cmzn_field_value_type get_value_type() const
 	{
 		return CMISS_FIELD_VALUE_TYPE_MESH_LOCATION;
 	}
@@ -2595,7 +2595,7 @@ private:
 
 Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
 {
-	Cmiss_mesh_destroy(&mesh);
+	cmzn_mesh_destroy(&mesh);
 }
 
 Computed_field_core* Computed_field_find_mesh_location::copy()
@@ -2614,12 +2614,12 @@ int Computed_field_find_mesh_location::compare(Computed_field_core *other_core)
 	return (return_code);
 }
 
-bool Computed_field_find_mesh_location::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_find_mesh_location::is_defined_at_location(cmzn_field_cache& cache)
 {
 	return (0 != field->evaluate(cache));
 }
 
-int Computed_field_find_mesh_location::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_find_mesh_location::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
 	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(get_source_field()->evaluateNoDerivatives(cache));
@@ -2628,9 +2628,9 @@ int Computed_field_find_mesh_location::evaluate(Cmiss_field_cache& cache, FieldV
 		MeshLocationFieldValueCache& meshLocationValueCache = MeshLocationFieldValueCache::cast(inValueCache);
 		if (meshLocationValueCache.element)
 		{
-			Cmiss_element_destroy(&meshLocationValueCache.element);
+			cmzn_element_destroy(&meshLocationValueCache.element);
 		}
-		Cmiss_field_cache& extraCache = *meshLocationValueCache.getExtraCache();
+		cmzn_field_cache& extraCache = *meshLocationValueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
 		if (Computed_field_find_element_xi(get_mesh_field(), &extraCache,
 			sourceValueCache->values, sourceValueCache->componentCount, &meshLocationValueCache.element,
@@ -2638,7 +2638,7 @@ int Computed_field_find_mesh_location::evaluate(Cmiss_field_cache& cache, FieldV
 			/*find_nearest*/(search_mode != CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
 			&& meshLocationValueCache.element)
 		{
-			Cmiss_element_access(meshLocationValueCache.element);
+			cmzn_element_access(meshLocationValueCache.element);
 			return_code = 1;
 		}
 	}
@@ -2660,7 +2660,7 @@ int Computed_field_find_mesh_location::list()
 			display_message(INFORMATION_MESSAGE, " find_exact\n");
 		}
 		display_message(INFORMATION_MESSAGE, "    mesh : ");
-		char *mesh_name = Cmiss_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(mesh);
 		display_message(INFORMATION_MESSAGE, "%s\n", mesh_name);
 		DEALLOCATE(mesh_name);
 		display_message(INFORMATION_MESSAGE,
@@ -2691,17 +2691,17 @@ char *Computed_field_find_mesh_location::get_command_string()
 		}
 
 		append_string(&command_string, " mesh ", &error);
-		char *mesh_name = Cmiss_mesh_get_name(mesh);
+		char *mesh_name = cmzn_mesh_get_name(mesh);
 		append_string(&command_string, mesh_name, &error);
 		DEALLOCATE(mesh_name);
 
-		char *mesh_field_name = Cmiss_field_get_name(get_mesh_field());
+		char *mesh_field_name = cmzn_field_get_name(get_mesh_field());
 		make_valid_token(&mesh_field_name);
 		append_string(&command_string, " mesh_field ", &error);
 		append_string(&command_string, mesh_field_name, &error);
 		DEALLOCATE(mesh_field_name);
 
-		char *source_field_name = Cmiss_field_get_name(get_source_field());
+		char *source_field_name = cmzn_field_get_name(get_source_field());
 		make_valid_token(&source_field_name);
 		append_string(&command_string, " source_field ", &error);
 		append_string(&command_string, source_field_name, &error);
@@ -2712,9 +2712,9 @@ char *Computed_field_find_mesh_location::get_command_string()
 
 } // namespace
 
-Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
-	Cmiss_field_module_id field_module, Cmiss_field_id source_field,
-	Cmiss_field_id mesh_field, Cmiss_mesh_id mesh)
+cmzn_field_id cmzn_field_module_create_find_mesh_location(
+	cmzn_field_module_id field_module, cmzn_field_id source_field,
+	cmzn_field_id mesh_field, cmzn_mesh_id mesh)
 {
 	struct Computed_field *field = NULL;
 	int number_of_source_field_components = Computed_field_get_number_of_components(source_field);
@@ -2723,11 +2723,11 @@ Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 		(number_of_source_field_components == number_of_mesh_field_components) &&
 		Computed_field_has_numerical_components(source_field, NULL) &&
 		Computed_field_has_numerical_components(mesh_field, NULL) &&
-		(number_of_mesh_field_components >= Cmiss_mesh_get_dimension(mesh)) &&
-		(Cmiss_field_module_get_master_region_internal(field_module) ==
-			Cmiss_mesh_get_master_region_internal(mesh)))
+		(number_of_mesh_field_components >= cmzn_mesh_get_dimension(mesh)) &&
+		(cmzn_field_module_get_master_region_internal(field_module) ==
+			cmzn_mesh_get_master_region_internal(mesh)))
 	{
-		Cmiss_field_id source_fields[2];
+		cmzn_field_id source_fields[2];
 		source_fields[0] = source_field;
 		source_fields[1] = mesh_field;
 		field = Computed_field_create_generic(field_module,
@@ -2740,12 +2740,12 @@ Cmiss_field_id Cmiss_field_module_create_find_mesh_location(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_find_mesh_location.  Invalid argument(s)");
+			"cmzn_field_module_create_find_mesh_location.  Invalid argument(s)");
 	}
 	return (field);
 }
 
-struct Cmiss_field_find_mesh_location : private Computed_field
+struct cmzn_field_find_mesh_location : private Computed_field
 {
 	inline Computed_field_find_mesh_location *get_core()
 	{
@@ -2753,42 +2753,42 @@ struct Cmiss_field_find_mesh_location : private Computed_field
 	}
 };
 
-Cmiss_field_find_mesh_location_id Cmiss_field_cast_find_mesh_location(
-	Cmiss_field_id field)
+cmzn_field_find_mesh_location_id cmzn_field_cast_find_mesh_location(
+	cmzn_field_id field)
 {
 	if (field)
 	{
 		if (dynamic_cast<Computed_field_find_mesh_location*>(field->core))
 		{
-			Cmiss_field_access(field);
-			return (reinterpret_cast<Cmiss_field_find_mesh_location_id>(field));
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_find_mesh_location_id>(field));
 		}
 	}
 	return 0;
 }
 
-int Cmiss_field_find_mesh_location_destroy(
-	Cmiss_field_find_mesh_location_id *find_mesh_location_field_address)
+int cmzn_field_find_mesh_location_destroy(
+	cmzn_field_find_mesh_location_id *find_mesh_location_field_address)
 {
-	return Cmiss_field_destroy(reinterpret_cast<Cmiss_field_id *>(find_mesh_location_field_address));
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(find_mesh_location_field_address));
 }
 
-Cmiss_mesh_id Cmiss_field_find_mesh_location_get_mesh(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field)
+cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
+	cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
-	Cmiss_mesh_id mesh = 0;
+	cmzn_mesh_id mesh = 0;
 	if (find_mesh_location_field)
 	{
 		mesh = find_mesh_location_field->get_core()->get_mesh();
-		Cmiss_mesh_access(mesh);
+		cmzn_mesh_access(mesh);
 	}
 	return mesh;
 }
 
-class Cmiss_field_find_mesh_location_search_mode_conversion
+class cmzn_field_find_mesh_location_search_mode_conversion
 {
 public:
-	static const char *to_string(enum Cmiss_field_find_mesh_location_search_mode mode)
+	static const char *to_string(enum cmzn_field_find_mesh_location_search_mode mode)
 	{
 		const char *enum_string = 0;
 		switch (mode)
@@ -2806,25 +2806,25 @@ public:
 	}
 };
 
-enum Cmiss_field_find_mesh_location_search_mode
-	Cmiss_field_find_mesh_location_search_mode_enum_from_string(const char *string)
+enum cmzn_field_find_mesh_location_search_mode
+	cmzn_field_find_mesh_location_search_mode_enum_from_string(const char *string)
 {
-	return string_to_enum<enum Cmiss_field_find_mesh_location_search_mode,
-		Cmiss_field_find_mesh_location_search_mode_conversion>(string);
+	return string_to_enum<enum cmzn_field_find_mesh_location_search_mode,
+		cmzn_field_find_mesh_location_search_mode_conversion>(string);
 }
 
-char *Cmiss_field_find_mesh_location_search_mode_enum_to_string(
-	enum Cmiss_field_find_mesh_location_search_mode mode)
+char *cmzn_field_find_mesh_location_search_mode_enum_to_string(
+	enum cmzn_field_find_mesh_location_search_mode mode)
 {
-	const char *mode_string = Cmiss_field_find_mesh_location_search_mode_conversion::to_string(mode);
+	const char *mode_string = cmzn_field_find_mesh_location_search_mode_conversion::to_string(mode);
 	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
-enum Cmiss_field_find_mesh_location_search_mode
-	Cmiss_field_find_mesh_location_get_search_mode(
-		Cmiss_field_find_mesh_location_id find_mesh_location_field)
+enum cmzn_field_find_mesh_location_search_mode
+	cmzn_field_find_mesh_location_get_search_mode(
+		cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
-	Cmiss_field_find_mesh_location_search_mode search_mode =
+	cmzn_field_find_mesh_location_search_mode search_mode =
 		CMISS_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT;
 	if (find_mesh_location_field)
 	{
@@ -2833,9 +2833,9 @@ enum Cmiss_field_find_mesh_location_search_mode
 	return search_mode;
 }
 
-int Cmiss_field_find_mesh_location_set_search_mode(
-	Cmiss_field_find_mesh_location_id find_mesh_location_field,
-	enum Cmiss_field_find_mesh_location_search_mode search_mode)
+int cmzn_field_find_mesh_location_set_search_mode(
+	cmzn_field_find_mesh_location_id find_mesh_location_field,
+	enum cmzn_field_find_mesh_location_search_mode search_mode)
 {
 	int return_code = 0;
 	if (find_mesh_location_field)
@@ -2879,21 +2879,21 @@ private:
 		}
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 };
 
-bool Computed_field_xi_coordinates::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_xi_coordinates::is_defined_at_location(cmzn_field_cache& cache)
 {
 	return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
 }
 
-int Computed_field_xi_coordinates::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_xi_coordinates::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
 	if (element_xi_location)
@@ -3029,7 +3029,7 @@ Returns true if <field> has the appropriate static type string.
 } /* Computed_field_is_type_xi_coordinates */
 
 struct Computed_field *Computed_field_create_xi_coordinates(
-	struct Cmiss_field_module *field_module)
+	struct cmzn_field_module *field_module)
 {
 	Computed_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
@@ -3078,18 +3078,18 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(Cmiss_field_cache& /*parentCache*/)
+	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/)
 	{
 		return new FiniteElementRealFieldValueCache(field->number_of_components);
 	}
 
-	int evaluate(Cmiss_field_cache& cache, FieldValueCache& valueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual bool is_defined_at_location(Cmiss_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_field_cache& cache);
 
 	int has_multiple_times();
 
@@ -3168,7 +3168,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_basis_derivative::compare */
 
-bool Computed_field_basis_derivative::is_defined_at_location(Cmiss_field_cache& cache)
+bool Computed_field_basis_derivative::is_defined_at_location(cmzn_field_cache& cache)
 {
 	Field_element_xi_location *element_xi_location;
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
@@ -3230,7 +3230,7 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_basis_derivative::has_numerical_components */
 
-int Computed_field_basis_derivative::evaluate(Cmiss_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_basis_derivative::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	FiniteElementRealFieldValueCache& feValueCache = FiniteElementRealFieldValueCache::cast(inValueCache);
 	Field_element_xi_location* element_xi_location;
@@ -3422,11 +3422,11 @@ Returns true if <field> has the appropriate static type string.
  * is calculated with respect to.
  * @return Newly created field
  */
-Cmiss_field_id Cmiss_field_module_create_basis_derivative(
-	Cmiss_field_module_id field_module, Cmiss_field_id finite_element_field,
+cmzn_field_id cmzn_field_module_create_basis_derivative(
+	cmzn_field_module_id field_module, cmzn_field_id finite_element_field,
 	int order, int *xi_indices)
 {
-	Cmiss_field_id field = 0;
+	cmzn_field_id field = 0;
 	struct FE_field *fe_field = 0;
 	if (finite_element_field && finite_element_field->isNumerical() &&
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field) && fe_field &&
@@ -3479,7 +3479,7 @@ Cmiss_field_id Cmiss_field_module_create_basis_derivative(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_field_module_create_basis_derivative.  Invalid argument(s)");
+			"cmzn_field_module_create_basis_derivative.  Invalid argument(s)");
 	}
 	return (field);
 }
@@ -3493,7 +3493,7 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	int change, void *region_void)
 {
 	int return_code = 1;
-	Cmiss_region_id region = reinterpret_cast<Cmiss_region_id>(region_void);
+	cmzn_region_id region = reinterpret_cast<cmzn_region_id>(region_void);
 	if (fe_field && region)
 	{
 		if (change &
@@ -3504,35 +3504,35 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 			char *field_name = NULL;
 			GET_NAME(FE_field)(fe_field, &field_name);
 			int update_wrapper = (change != CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field));
-			Cmiss_field_id existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				field_name, Cmiss_region_get_Computed_field_manager(region));
+			cmzn_field_id existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
+				field_name, cmzn_region_get_Computed_field_manager(region));
 			if (existing_wrapper && !Computed_field_wraps_fe_field(existing_wrapper, (void *)fe_field))
 			{
 				existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
 					Computed_field_wraps_fe_field, (void *)fe_field,
-					Cmiss_region_get_Computed_field_manager(region));
+					cmzn_region_get_Computed_field_manager(region));
 				update_wrapper = 1;
 			}
 			if (update_wrapper)
 			{
-				Cmiss_field_module *field_module = Cmiss_field_module_create(region);
+				cmzn_field_module *field_module = cmzn_field_module_create(region);
 				if (existing_wrapper)
 				{
-					Cmiss_field_module_set_replace_field(field_module, existing_wrapper);
+					cmzn_field_module_set_replace_field(field_module, existing_wrapper);
 				}
 				else
 				{
-					Cmiss_field_module_set_field_name(field_module, field_name);
+					cmzn_field_module_set_field_name(field_module, field_name);
 					struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(fe_field);
 					if (coordinate_system)
 					{
-						Cmiss_field_module_set_coordinate_system(field_module, *coordinate_system);
+						cmzn_field_module_set_coordinate_system(field_module, *coordinate_system);
 					}
 				}
-				Cmiss_field_id field = Computed_field_create_finite_element_internal(field_module, fe_field);
-				Cmiss_field_set_managed(field, true);
-				Cmiss_field_destroy(&field);
-				Cmiss_field_module_destroy(&field_module);
+				cmzn_field_id field = Computed_field_create_finite_element_internal(field_module, fe_field);
+				cmzn_field_set_managed(field, true);
+				cmzn_field_destroy(&field);
+				cmzn_field_module_destroy(&field_module);
 				char *new_field_name = NULL;
 				GET_NAME(FE_field)(fe_field, &new_field_name);
 				if (strcmp(new_field_name, field_name))
@@ -3554,11 +3554,11 @@ int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	return (return_code);
 }
 
-void Cmiss_region_FE_region_change(struct FE_region *fe_region,
+void cmzn_region_FE_region_change(struct FE_region *fe_region,
 	struct FE_region_changes *changes, void *cmiss_region_void)
 {
-	ENTER(Cmiss_region_FE_region_change);
-	Cmiss_region *cmiss_region = reinterpret_cast<Cmiss_region *>(cmiss_region_void);
+	ENTER(cmzn_region_FE_region_change);
+	cmzn_region *cmiss_region = reinterpret_cast<cmzn_region *>(cmiss_region_void);
 	if (fe_region && changes && cmiss_region)
 	{
 		int field_change_summary;
@@ -3572,8 +3572,8 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 		int add_xi_field = FE_region_need_add_xi_field(fe_region);
 		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
 		{
-			Cmiss_field_module_id field_module = Cmiss_region_get_field_module(cmiss_region);
-			Cmiss_field_module_begin_change(field_module);
+			cmzn_field_module_id field_module = cmzn_region_get_field_module(cmiss_region);
+			cmzn_field_module_begin_change(field_module);
 
 			if (check_field_wrappers)
 			{
@@ -3583,29 +3583,29 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 			if (add_cmiss_number_field)
 			{
 				const char *cmiss_number_field_name = "cmiss_number";
-				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, cmiss_number_field_name);
+				cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, cmiss_number_field_name);
 				if (!field)
 				{
 					field = Computed_field_create_cmiss_number(field_module);
-					Cmiss_field_set_name(field, cmiss_number_field_name);
-					Cmiss_field_set_managed(field, true);
+					cmzn_field_set_name(field, cmiss_number_field_name);
+					cmzn_field_set_managed(field, true);
 				}
-				Cmiss_field_destroy(&field);
+				cmzn_field_destroy(&field);
 			}
 			if (add_xi_field)
 			{
 				const char *xi_field_name = "xi";
-				Cmiss_field_id field = Cmiss_field_module_find_field_by_name(field_module, xi_field_name);
+				cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, xi_field_name);
 				if (!field)
 				{
 					field = Computed_field_create_xi_coordinates(field_module);
-					Cmiss_field_set_name(field, xi_field_name);
-					Cmiss_field_set_managed(field, true);
+					cmzn_field_set_name(field, xi_field_name);
+					cmzn_field_set_managed(field, true);
 				}
-				Cmiss_field_destroy(&field);
+				cmzn_field_destroy(&field);
 			}
-			Cmiss_field_module_end_change(field_module);
-			Cmiss_field_module_destroy(&field_module);
+			cmzn_field_module_end_change(field_module);
+			cmzn_field_module_destroy(&field_module);
 		}
 		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{
@@ -3617,10 +3617,10 @@ void Cmiss_region_FE_region_change(struct FE_region *fe_region,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Cmiss_region_FE_region_change.  Invalid argument(s)");
+			"cmzn_region_FE_region_change.  Invalid argument(s)");
 	}
 	LEAVE;
-} /* Cmiss_region_FE_region_change */
+} /* cmzn_region_FE_region_change */
 
 int Computed_field_contains_changed_FE_field(
 	struct Computed_field *field, void *fe_field_change_log_void)
@@ -3649,7 +3649,7 @@ changed, added or removed in <fe_field_change_log>.
 		}
 		else if (dynamic_cast<Computed_field_node_value*>(field->core))
 		{
-			Cmiss_field_id finite_element_field = 0;
+			cmzn_field_id finite_element_field = 0;
 			return_code = Computed_field_get_type_node_value(field, &finite_element_field,
 					&nodal_value_type, &version_number) &&
 				Computed_field_get_type_finite_element(field, &fe_field);
@@ -3700,7 +3700,7 @@ If <field> has a source FE_field, ensures it is in <fe_field_list>.
 		}
 		else if (dynamic_cast<Computed_field_node_value*>(field->core))
 		{
-			Cmiss_field_id finite_element_field = 0;
+			cmzn_field_id finite_element_field = 0;
 			return_code = Computed_field_get_type_node_value(field, &finite_element_field,
 					&nodal_value_type, &version_number) &&
 				Computed_field_get_type_finite_element(field, &fe_field);
@@ -4064,9 +4064,9 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 	return (time_sequence);
 } /* Computed_field_get_FE_node_field_FE_time_sequence */
 
-Cmiss_field_id Cmiss_field_module_create_node_value(
-	Cmiss_field_module_id field_module, Cmiss_field_id field,
-	enum Cmiss_nodal_value_type type, int version)
+cmzn_field_id cmzn_field_module_create_node_value(
+	cmzn_field_module_id field_module, cmzn_field_id field,
+	enum cmzn_nodal_value_type type, int version)
 {
 	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
 	{

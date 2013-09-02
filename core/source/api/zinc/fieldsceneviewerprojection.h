@@ -64,21 +64,21 @@ extern "C" {
  * of the scene for the owning region of field, which is transformed from
  * world coordinates by the cumulative transformation matrices of all scenes
  * down from the root region of the scene viewer's scene.
- * @see Cmiss_field_module_create_projection.
+ * @see cmzn_field_module_create_projection.
  *
  * @param field_module  Region field module which will own new field.
- * @param scene_viewer  Handle to Cmiss_scene_viewer object.
+ * @param scene_viewer  Handle to cmzn_scene_viewer object.
  * @param from_coordinate_system  The input coordinate system for the
  * transformation.
  * @param to_coordinate_system  The output coordinate system for the
  * transformation.
  * @return  Newly created field with 16 components.
  */
-ZINC_API Cmiss_field_id Cmiss_field_module_create_scene_viewer_projection(
-	Cmiss_field_module_id field_module,
-	Cmiss_scene_viewer_id scene_viewer,
-	enum Cmiss_scene_coordinate_system from_coordinate_system,
-	enum Cmiss_scene_coordinate_system to_coordinate_system);
+ZINC_API cmzn_field_id cmzn_field_module_create_scene_viewer_projection(
+	cmzn_field_module_id field_module,
+	cmzn_scene_viewer_id scene_viewer,
+	enum cmzn_scene_coordinate_system from_coordinate_system,
+	enum cmzn_scene_coordinate_system to_coordinate_system);
 
 #ifdef __cplusplus
 }

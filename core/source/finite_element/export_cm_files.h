@@ -57,7 +57,7 @@ Global/Public functions
 
 int write_cm_files(FILE *ipcoor_file, FILE *ipbase_file,
 	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
-	struct Cmiss_region *root_region, char *write_path,
+	struct cmzn_region *root_region, char *write_path,
 	struct FE_field *field);
 /*******************************************************************************
 LAST MODIFIED : 21 April 2006

@@ -52,15 +52,15 @@
  *        cad topology
  * @returns a GT surface for display, or NULL if the surface cannot be created
  */
-struct GT_surface *create_surface_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *data_field, Cmiss_graphics_render_type render_type, Cmiss_cad_surface_identifier surface_index);
+struct GT_surface *create_surface_from_cad_shape(cmzn_field_cad_topology_id cad_topology,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	struct Computed_field *data_field, cmzn_graphics_render_type render_type, cmzn_cad_surface_identifier surface_index);
 
 /**
  * Carete a curve from the given cad topology
  */
-struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(Cmiss_field_cad_topology_id cad_topology,
-	Cmiss_field_cache_id field_cache, struct Computed_field *coordinate_field,
+struct GT_polyline_vertex_buffers *create_curves_from_cad_shape(cmzn_field_cad_topology_id cad_topology,
+	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field, struct GT_object *graphics_object);
 
 #endif /* !defined(CAD_CAD_GEOMETRY_TO_GRAPHICS_OBJECT_H) */

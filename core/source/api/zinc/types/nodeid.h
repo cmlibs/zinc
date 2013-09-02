@@ -42,27 +42,27 @@
 #ifndef CMZN_NODESETID_H__
 #define CMZN_NODESETID_H__
 
-	struct Cmiss_nodeset;
-	typedef struct Cmiss_nodeset *Cmiss_nodeset_id;
+	struct cmzn_nodeset;
+	typedef struct cmzn_nodeset *cmzn_nodeset_id;
 
-	struct Cmiss_nodeset_group;
-	typedef struct Cmiss_nodeset_group *Cmiss_nodeset_group_id;
+	struct cmzn_nodeset_group;
+	typedef struct cmzn_nodeset_group *cmzn_nodeset_group_id;
 
 	/** Handle to a template for creating or defining fields at a node. */
-	struct Cmiss_node_template;
-	typedef struct Cmiss_node_template *Cmiss_node_template_id;
+	struct cmzn_node_template;
+	typedef struct cmzn_node_template *cmzn_node_template_id;
 
-	struct Cmiss_node;
+	struct cmzn_node;
 	/** Handle to a single node object */
-	typedef struct Cmiss_node *Cmiss_node_id;
+	typedef struct cmzn_node *cmzn_node_id;
 
-	struct Cmiss_node_iterator;
-	typedef struct Cmiss_node_iterator * Cmiss_node_iterator_id;
+	struct cmzn_node_iterator;
+	typedef struct cmzn_node_iterator * cmzn_node_iterator_id;
 
 	/***************************************************************************//**
 	 * The type of a nodal parameter value.
 	 */
-	enum Cmiss_nodal_value_type
+	enum cmzn_nodal_value_type
 	{
 		CMISS_NODAL_VALUE_TYPE_INVALID = 0,
 		CMISS_NODAL_VALUE = 1,         /* literal field value */
