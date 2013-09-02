@@ -39,12 +39,12 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%typemap(in) (int fieldsCount, zinc::Field *sourceFields)
+%typemap(in) (int fieldsCount, OpenCMISS::Zinc::Field *sourceFields)
 {
 	if (PyList_Check($input))
 	{
 		$1 = PyList_Size($input);
-		$2 = new zinc::Field[$1];
+		$2 = new OpenCMISS::Zinc::Field[$1];
 		$2_ltype field = 0;
 		for (int i = 0; i < $1; i++)
 		{
@@ -55,7 +55,7 @@
 			}
 			else
 			{
-				PyErr_SetString(PyExc_TypeError,"list must contain zinc::Field");
+				PyErr_SetString(PyExc_TypeError,"list must contain OpenCMISS::Zinc::Field");
 				delete[] $2;
 				return NULL;
 			}
@@ -68,12 +68,12 @@
 	}
 }
 
-%typemap(freearg) (int fieldsCount, zinc::Field *sourceFields)
+%typemap(freearg) (int fieldsCount, OpenCMISS::Zinc::Field *sourceFields)
 {
 	delete[] $2;
 }
 
-%typemap(typecheck) (int fieldsCount, zinc::Field *sourceFields)
+%typemap(typecheck) (int fieldsCount, OpenCMISS::Zinc::Field *sourceFields)
 {
 	$1 = PyList_Check($input) ? 1 : 0;
 }
