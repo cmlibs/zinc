@@ -75,7 +75,7 @@ Writes text for an <ipcoor_file> to support <field>.
 	if (ipcoor_file && field)
 	{
 		return_code = 1;
-		fprintf(ipcoor_file, " CMZN Version 1.21 ipcoor File Version 1\n");
+		fprintf(ipcoor_file, " CMISS Version 1.21 ipcoor File Version 1\n");
 		fprintf(ipcoor_file, " Heading: cmgui generated file\n\n");
 		fprintf(ipcoor_file, " The global coordinates for region 1 are [1]:\n");
 		fprintf(ipcoor_file, "   (1) rectangular cartesian (x,y,z)\n");
@@ -233,7 +233,7 @@ Writes text for an <ipbase_file> to support <field>.
 		/* Need an array so that we have an integer index for each basis */
 		ALLOCATE(data->basis_array, struct FE_basis *, data->number_of_bases);
 
-		fprintf(ipbase_file, " CMZN Version 1.21 ipbase File Version 2\n");
+		fprintf(ipbase_file, " CMISS Version 1.21 ipbase File Version 2\n");
 		fprintf(ipbase_file, " Heading: cmgui generated file\n\n");
 		fprintf(ipbase_file, " Enter the number of types of basis function [1]: %d\n\n",
 			data->number_of_bases);
@@ -800,7 +800,7 @@ Writes text for an <ipbase_file> to support <field>.
 	{
 		return_code = 1;
 
-		fprintf(ipnode_file, " CMZN Version 1.21 ipnode File Version 2\n");
+		fprintf(ipnode_file, " CMISS Version 1.21 ipnode File Version 2\n");
 		fprintf(ipnode_file, " Heading: cmgui generated file\n\n");
 
 		cm_node_data.number_of_nodes = 0;
@@ -856,7 +856,7 @@ Writes text for an <ipbase_file> to support <field>.
 
 			if (ipmap_file)
 			{
-				fprintf(ipmap_file, " CMZN Version 2.0  ipmap File Version 1\n");
+				fprintf(ipmap_file, " CMISS Version 2.0  ipmap File Version 1\n");
 				fprintf(ipmap_file, " Heading: cmgui generated file\n\n");
 
 				fprintf(ipmap_file, " Define node position mapping [N]? y\n");
@@ -1094,7 +1094,7 @@ Writes text for an <ipbase_file> to support <field>.
 	ENTER(write_ipelem_file);
 	if (ipelem_file && region && field)
 	{
-		fprintf(ipelem_file, " CMZN Version 1.21 ipelem File Version 2\n");
+		fprintf(ipelem_file, " CMISS Version 1.21 ipelem File Version 2\n");
 		fprintf(ipelem_file, " Heading: cmgui generated file\n\n");
 
 		cm_element_data.number_of_elements = 0;

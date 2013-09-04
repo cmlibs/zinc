@@ -1,12 +1,8 @@
-/*******************************************************************************
-FILE : finite_element.h
-
-LAST MODIFIED : 11 March 2005
-
-DESCRIPTION :
-The data structures used for representing finite elements in the graphical
-interface to CMZN.
-==============================================================================*/
+/**
+ * FILE : finite_element.h
+ *
+ * Internal header for finite element data structures and functions.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *
@@ -261,12 +257,12 @@ factors).  There are two types - <NODE_BASED_MAP> and <GENERAL_LINEAR_MAP>.  For
 a node based map, the global values are associated with nodes.  For a general
 linear map, the global values do not have to be associated with nodes.  The node
 based maps could be specified as general linear maps, but the node based
-specification (required by CMZN) cannot be recovered from the general linear
+specification (required by CMISS) cannot be recovered from the general linear
 map specification (important when the front end is being used to create meshs).
 The <modify> function is called after the element values have been calculated
 with respect to the <basis> and before the element values are blended to be with
 respect to the standard basis.  The <modify> function is to allow for special
-cases, such as CMZN nodes that have multiple theta values in cylindrical polar,
+cases, such as nodes that have multiple theta values in cylindrical polar,
 spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
 either lying on the z-axis or being the first and last node in a circle.
 ==============================================================================*/

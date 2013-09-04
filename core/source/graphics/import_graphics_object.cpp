@@ -250,7 +250,7 @@ DESCRIPTION :
 				printf("\nReading object: %s\n",objname);
 				display_message(INFORMATION_MESSAGE,"Reading object: %s\n",objname);
 #endif /* defined (DEBUG_CODE) */
-				if (fuzzy_string_compare(objname,"CMZN"))
+				if (fuzzy_string_compare(objname,"CMISS"))
 				{
 					/* version information */
 					if (EOF==(IO_stream_scan(stream,"%s",objname))||
@@ -258,21 +258,21 @@ DESCRIPTION :
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have exobj "
-							"keyword\nValid header is 'CMZN exobj File Version 3'\n");
+							"keyword\nValid header is 'CMISS exobj File Version 3'\n");
 					}
 					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"file")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have file keyword\n"
-							"Valid header is 'CMZN exobj File Version 3'\n");
+							"Valid header is 'CMISS exobj File Version 3'\n");
 					}
 					if ((EOF==IO_stream_scan(stream,"%s",objname))||
 						(!fuzzy_string_compare(objname,"version")))
 					{
 						display_message(WARNING_MESSAGE,
 							"file_read_graphics_objects.  Header does not have version "
-							"keyword\nValid header is 'CMZN exobj File Version 2'\n");
+							"keyword\nValid header is 'CMISS exobj File Version 2'\n");
 					}
 					if (EOF==IO_stream_scan(stream,"%d",&version))
 					{
