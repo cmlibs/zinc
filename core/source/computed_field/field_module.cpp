@@ -380,3 +380,36 @@ cmzn_time_sequence_id cmzn_field_module_get_matching_time_sequence(
 	return (cmzn_time_sequence_id)FE_region_get_FE_time_sequence_matching_series(
 		cmzn_region_get_FE_region(field_module->region), number_of_times, times);
 }
+
+cmzn_field_id cmzn_field_module_get_or_create_xi_field(cmzn_field_module_id field_module)
+{
+	cmzn_field_id xi_field = 0;
+	if (field_module)
+	{
+		const char *default_xi_field_name = "xi";
+		char xi_field_name[10];
+		strcpy(xi_field_name, default_xi_field_name);
+		int i = 2;
+		while (true)
+		{
+			xi_field = cmzn_field_module_find_field_by_name(field_module, xi_field_name);
+			if (xi_field)
+			{
+				if (Computed_field_is_type_xi_coordinates(xi_field, (void *)NULL))
+				{
+					break;
+				}
+				cmzn_field_destroy(&xi_field);
+			}
+			else
+			{
+				xi_field = Computed_field_create_xi_coordinates(field_module);
+				cmzn_field_set_name(xi_field, xi_field_name);
+				cmzn_field_set_managed(xi_field, true);
+				break;
+			}
+			sprintf(xi_field_name, "%s%d", default_xi_field_name, i++);
+		}
+	}
+	return xi_field;
+}

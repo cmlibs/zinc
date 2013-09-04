@@ -535,8 +535,8 @@ ZINC_API int cmzn_field_cache_set_mesh_location(cmzn_field_cache_id cache,
  *
  * @param cache  The field cache to set the location in.
  * @param reference_field  The field whose values are to be prescribed.
- * @param number_of_values  The size of the values array: number of field
- * components.
+ * @param number_of_values  The size of the values array. Can be less than the
+ * number of field components, and if so it is padded with zeroes.
  * @param values  The field values to set.
  * @return  Status CMZN_OK on success, any other value on failure.
  */

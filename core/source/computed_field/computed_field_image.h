@@ -47,24 +47,6 @@ DESCRIPTION :
 #include "computed_field/computed_field.h"
 #include "graphics/texture.h"
 
-#define Computed_field_create_image cmzn_field_module_create_image
-
-/*****************************************************************************//**
- * Creates a new image based field.  This constructor does not define the
- * actual image data, which should then be set using a cmzn_field_image_set_*
- * function.
- *
- * @param field_module  Region field module which will own new field.
- * @param domain_field  The field in which the image data will be embedded.
- * @param source_field  Optional source field to automatically provides pixel
- * values to the image.
- * @return Newly created field
- */
-struct Computed_field *Computed_field_create_image(
-	struct cmzn_field_module *field_module,
-	struct Computed_field *domain_field,
-	struct Computed_field *source_field);
-
 /***************************************************************************//**
  * A convenient function to get texture out from a computed_field if it is of
  * type image. This function should not be made available to the external API.

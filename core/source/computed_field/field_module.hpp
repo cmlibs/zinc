@@ -153,4 +153,11 @@ int cmzn_field_module_set_replace_field(
 struct Computed_field *cmzn_field_module_get_replace_field(
 	struct cmzn_field_module *field_module);
 
+/**
+ * Internal use only.
+ * @return  ACCESSed xi field with name "xi", existing or new.
+ */
+cmzn_field_id cmzn_field_module_get_or_create_xi_field(
+	cmzn_field_module_id field_module);
+
 #endif /* !defined (FIELD_MODULE_H) */
