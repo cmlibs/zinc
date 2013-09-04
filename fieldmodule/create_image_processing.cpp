@@ -35,7 +35,7 @@ TEST(cmzn_field_module_create_curvature_anisotropic_diffusion_image_filter, vali
 	ZincTestSetup zinc;
 
 	// Create empty image field
-	cmzn_field_id f1 = cmzn_field_module_create_image(zinc.fm, 0, 0);
+	cmzn_field_id f1 = cmzn_field_module_create_image(zinc.fm);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
@@ -52,7 +52,7 @@ TEST(cmzn_field_module_create_curvature_anisotropic_diffusion_image_filter, vali
 //	cmzn_field_id f2 = cmzn_field_module_create_connected_threshold_image_filter(zinc.fm, f1, 0.2, 1.0, 1.0, 1, 3, values);
 //	EXPECT_NE((cmzn_field_id)0, f2);
 
-	cmzn_field_id xi = cmzn_field_module_find_field_by_name(zinc.fm, "cmzn_temp_image_domain");
+	cmzn_field_id xi = cmzn_field_image_get_domain_field(im);
 	EXPECT_NE((cmzn_field_id)0, xi);
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
@@ -82,7 +82,7 @@ TEST(cmzn_field_module_create_connected_threshold_image_filter, valid_args)
 	double location[] = { 0.7, 0.2};
 
 	// Create empty image field
-	cmzn_field_id f1 = cmzn_field_module_create_image(zinc.fm, 0, 0);
+	cmzn_field_id f1 = cmzn_field_module_create_image(zinc.fm);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
@@ -96,7 +96,7 @@ TEST(cmzn_field_module_create_connected_threshold_image_filter, valid_args)
 	cmzn_field_id f2 = cmzn_field_module_create_connected_threshold_image_filter(zinc.fm, cmzn_field_image_base_cast(im), 0.2, 0.22, 0.33, 1, 2, location);
 	EXPECT_NE((cmzn_field_id)0, f2);
 
-	cmzn_field_id xi = cmzn_field_module_find_field_by_name(zinc.fm, "cmzn_temp_image_domain");
+	cmzn_field_id xi = cmzn_field_image_get_domain_field(im);
 	EXPECT_NE((cmzn_field_id)0, xi);
 
 	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
@@ -115,7 +115,4 @@ TEST(cmzn_field_module_create_connected_threshold_image_filter, valid_args)
 	cmzn_stream_resource_destroy(&sr);
 	cmzn_stream_information_destroy(&si);
 	cmzn_field_image_destroy(&im);
-
 }
-
-

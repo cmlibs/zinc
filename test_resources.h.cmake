@@ -18,6 +18,7 @@ public:
 		FIELDMODULE_REGION_INPUT_RESOURCE = 7,
 		FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE = 8,
 		TESTIMAGE_GRAY_JPG_RESOURCE = 9,
+		FIELDIMAGE_BLOCKCOLOURS_RESOURCE = 10
 	};
 
 	TestResources()
@@ -63,6 +64,10 @@ public:
 		if (resourceName == TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)
 		{
 			return "@TESTIMAGE_GRAY_JPG_RESOURCE@";
+		}
+		if (resourceName == TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)
+		{
+			return "@FIELDIMAGE_BLOCKCOLOURS_RESOURCE@";
 		}
 		return 0;
 	}
