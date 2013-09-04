@@ -3594,15 +3594,8 @@ void cmzn_region_FE_region_change(struct FE_region *fe_region,
 			}
 			if (add_xi_field)
 			{
-				const char *xi_field_name = "xi";
-				cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, xi_field_name);
-				if (!field)
-				{
-					field = Computed_field_create_xi_coordinates(field_module);
-					cmzn_field_set_name(field, xi_field_name);
-					cmzn_field_set_managed(field, true);
-				}
-				cmzn_field_destroy(&field);
+				cmzn_field_id xi_field = cmzn_field_module_get_or_create_xi_field(field_module);
+				cmzn_field_destroy(&xi_field);
 			}
 			cmzn_field_module_end_change(field_module);
 			cmzn_field_module_destroy(&field_module);

@@ -250,9 +250,12 @@ enum cmzn_field_image_attribute
 	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
 	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
 	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = 3,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS = 4,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS = 5,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS = 6
+	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH = 4,
+		/*!< span of texture coordinates in width, real-valued */
+	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT = 5,
+		/*!< span of texture coordinates in height, real-valued */
+	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH = 6
+		/*!< span of texture coordinates in depth, real-valued */
 };
 
 /***************************************************************************//**
@@ -296,30 +299,37 @@ ZINC_API enum cmzn_stream_information_image_pixel_format
 ZINC_API char *cmzn_stream_information_image_pixel_format_enum_to_string(
 	enum cmzn_stream_information_image_pixel_format format);
 
-/*****************************************************************************//**
- * Creates a new image based field.  This constructor does not define the
- * actual image data if no source_field is provided, which should then be set using
- * a cmzn_field_image_set_* function.
- * If a source_field is provided, an internal texture will be evaluated if it has
- * sizes and dimension defined. If domain field is not provided by the user,
- * this function will try to take the texture coordinates field from the source
- * field and if it is not available, this field will automatically
- * create a xi field or get the xi field from the source field region as its domain
- * field.
- * It is not mandatory to provide domain_field, source_field or both.
- * Texture format will depend on the number of components of the source field.
- * i.e "1 component field creates a LUMINANCE texture, "
- *		 "2 component field creates a LUMINANCE_ALPHA texture, "
- *		 "3 component field creates a RGB texture, "
- *		 "4 component field creates a RGBA texture. "
- * @param field_module  Region field module which will own new field.
- * @param domain_field  The field in which the image data will be embedded.
- * @param source_field  Optional source field to automatically provides pixel
- * values to the image.
- * @return Newly created field
+/**
+ * Creates a new image field. The new field has no image data; this must be set
+ * by calling cmzn_field_image_* functions, e.g. cmzn_field_image_read().
+ * The new field is given a default domain field which one can get (or set) with
+ * image field functions. To evaluate the image field you will need to set
+ * values of the domain field to texture coordinate locations.
+ *
+ * @param field_module  Region field module which will own the image field.
+ * @return  Newly created image field. Up to caller to destroy handle.
 */
-ZINC_API cmzn_field_id cmzn_field_module_create_image(cmzn_field_module_id field_module,
-	cmzn_field_id domain_field, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_field_module_create_image(
+	cmzn_field_module_id field_module);
+
+/**
+ * Creates a new image field whose image data is sampled from the source
+ * field. The source field is typically an image or image-processing field, and
+ * its dimension, native resolution and domain field are used as defaults for
+ * the new field, or may be changed via image field functions.
+ * Texture format will depend on the number of components of the source field:
+ * 1 component field creates a LUMINANCE image
+ * 2 component field creates a LUMINANCE_ALPHA image
+ * 3 component field creates an RGB image
+ * 4 component field creates an RGBA image
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Source field providing image pixel values. Must be
+ * image-based with up to 4 components.
+ * @return  Newly created image field. Up to caller to destroy handle.
+*/
+ZINC_API cmzn_field_id cmzn_field_module_create_image_from_source(
+	cmzn_field_module_id field_module, cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns
@@ -475,6 +485,30 @@ ZINC_API enum cmzn_field_image_combine_mode cmzn_field_image_get_combine_mode(
  */
 ZINC_API int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
    enum cmzn_field_image_combine_mode combine_mode);
+
+/**
+ * Gets the domain field on which texture coordinates must be specified to
+ * evaluate the image.
+ * @see cmzn_field_cache_set_field_real
+ *
+ * @param image_field  The image field to query.
+ * @return  The domain field, or 0 if error. Up to caller to destroy handle.
+ */
+ZINC_API cmzn_field_id cmzn_field_image_get_domain_field(
+	cmzn_field_image_id image_field);
+
+/**
+ * Sets the domain field on which texture coordinates must be specified to
+ * evaluate the image.
+ * @see cmzn_field_cache_set_field_real
+ *
+ * @param image_field  The image field to modify.
+ * @param domain_field  The new domain field. Must be real-valued with at least
+ * as many components as the image dimension.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_image_set_domain_field(
+	cmzn_field_image_id image_field, cmzn_field_id domain_field);
 
 /*****************************************************************************//**
  * Returns how the image is stored in graphics memory.

@@ -309,9 +309,7 @@ public:
 
 	FieldImage createImage();
 
-	FieldImage createImageWithDomain(Field& domain_field);
-
-	FieldImage createImageFromSource(Field& domain_field, Field& source_field);
+	FieldImage createImageFromSource(Field& sourceField);
 
 	FieldAnd createAnd(Field& sourceField1, Field& sourceField2);
 

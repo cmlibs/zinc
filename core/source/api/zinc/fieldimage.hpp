@@ -59,8 +59,12 @@ private:
 	{	}
 
 	friend FieldImage FieldModule::createImage();
-	friend FieldImage FieldModule::createImageWithDomain(Field& domain_field);
-	friend FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field);
+	friend FieldImage FieldModule::createImageFromSource(Field& sourceField);
+
+	inline cmzn_field_image_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_field_image_id>(id);
+	}
 
 public:
 
@@ -129,101 +133,102 @@ public:
 		IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS,
 		IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS,
 		IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS,
-		IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH_PIXELS,
-		IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT_PIXELS,
-		IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH_PIXELS
+		IMAGE_ATTRIBUTE_PHYSICAL_WIDTH = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH,
+		IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT,
+		IMAGE_ATTRIBUTE_PHYSICAL_DEPTH = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH
 	};
 
 	int getAttributeInteger(ImageAttribute imageAttribute)
 	{
-		return cmzn_field_image_get_attribute_integer(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_get_attribute_integer(getDerivedId(),
 			static_cast<cmzn_field_image_attribute>(imageAttribute));
 	}
 
 	double getAttributeReal(ImageAttribute imageAttribute)
 	{
-		return cmzn_field_image_get_attribute_real(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_get_attribute_real(getDerivedId(),
 			static_cast<cmzn_field_image_attribute>(imageAttribute));
 	}
 
 	int setAttributeReal(ImageAttribute imageAttribute, double value)
 	{
-		return cmzn_field_image_set_attribute_real(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_set_attribute_real(getDerivedId(),
 			static_cast<cmzn_field_image_attribute>(imageAttribute), value);
 	}
 
 	int read(StreamInformation& streamInformation)
 	{
-		return cmzn_field_image_read(reinterpret_cast<cmzn_field_image_id>(id),
-			streamInformation.getId());
+		return cmzn_field_image_read(getDerivedId(), streamInformation.getId());
+	}
+
+	int readFile(const char *fileName)
+	{
+		return cmzn_field_image_read_file(getDerivedId(), fileName);
 	}
 
 	int write(StreamInformation& streamInformation)
 	{
-		return cmzn_field_image_write(reinterpret_cast<cmzn_field_image_id>(id),
-			streamInformation.getId());
+		return cmzn_field_image_write(getDerivedId(), streamInformation.getId());
 	}
 
 	CombineMode getCombineMode()
 	{
-		return static_cast<CombineMode>(cmzn_field_image_get_combine_mode(
-			reinterpret_cast<cmzn_field_image_id>(id)));
+		return static_cast<CombineMode>(cmzn_field_image_get_combine_mode(getDerivedId()));
 	}
 
 	int setCombineMode(CombineMode combineMode)
 	{
-		return cmzn_field_image_set_combine_mode(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_set_combine_mode(getDerivedId(),
 			static_cast<cmzn_field_image_combine_mode>(combineMode));
+	}
+
+	Field getDomainField()
+	{
+		return Field(cmzn_field_image_get_domain_field(getDerivedId()));
+	}
+
+	int setDomainField(Field& domainField)
+	{
+		return cmzn_field_image_set_domain_field(getDerivedId(), domainField.getId());
 	}
 
 	HardwareCompressionMode getHardwareCompressionMode()
 	{
 		return static_cast<HardwareCompressionMode>(
-			cmzn_field_image_get_hardware_compression_mode(
-				reinterpret_cast<cmzn_field_image_id>(id)));
+			cmzn_field_image_get_hardware_compression_mode(getDerivedId()));
 	}
 
 	int setHardwareCompressionMode(HardwareCompressionMode hardwareCompressionMode)
 	{
-		return cmzn_field_image_set_hardware_compression_mode(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_set_hardware_compression_mode(getDerivedId(),
 			static_cast<cmzn_field_image_hardware_compression_mode>(hardwareCompressionMode));
 	}
 
 	FilterMode getFilterMode()
 	{
-		return static_cast<FilterMode>(cmzn_field_image_get_filter_mode(
-			reinterpret_cast<cmzn_field_image_id>(id)));
+		return static_cast<FilterMode>(cmzn_field_image_get_filter_mode(getDerivedId()));
 	}
 
 	int setFilterMode(FilterMode filterMode)
 	{
-		return cmzn_field_image_set_filter_mode(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_set_filter_mode(getDerivedId(),
 			static_cast<cmzn_field_image_filter_mode>(filterMode));
 	}
 
 	WrapMode getWrapMode()
 	{
-		return static_cast<WrapMode>(cmzn_field_image_get_wrap_mode(
-			reinterpret_cast<cmzn_field_image_id>(id)));
+		return static_cast<WrapMode>(cmzn_field_image_get_wrap_mode(getDerivedId()));
 	}
 
 	int setWrapMode(WrapMode wrapMode)
 	{
-		return cmzn_field_image_set_wrap_mode(
-			reinterpret_cast<cmzn_field_image_id>(id),
+		return cmzn_field_image_set_wrap_mode(getDerivedId(),
 			static_cast<cmzn_field_image_wrap_mode>(wrapMode));
 	}
 
 	char *getProperty(const char* property)
 	{
-		return cmzn_field_image_get_property(
-			reinterpret_cast<cmzn_field_image_id>(id), property);
+		return cmzn_field_image_get_property(getDerivedId(), property);
 	}
 
 	StreamInformationImage createStreamInformation();
@@ -311,26 +316,17 @@ inline StreamInformationImage FieldImage::createStreamInformation()
 {
 	return StreamInformationImage(
 		reinterpret_cast<cmzn_stream_information_image_id>(
-			cmzn_field_image_create_stream_information(
-				reinterpret_cast<cmzn_field_image_id>(id))));
+			cmzn_field_image_create_stream_information(getDerivedId())));
 }
 
 inline FieldImage FieldModule::createImage()
 {
-	return FieldImage(cmzn_field_module_create_image(id,
-		0, 0));
+	return FieldImage(cmzn_field_module_create_image(id));
 }
 
-inline FieldImage FieldModule::createImageWithDomain(Field& domain_field)
+inline FieldImage FieldModule::createImageFromSource(Field& sourceField)
 {
-	return FieldImage(cmzn_field_module_create_image(id,
-		domain_field.getId(), 0));
-}
-
-inline FieldImage FieldModule::createImageFromSource(Field& domain_field, Field& source_field)
-{
-	return FieldImage(cmzn_field_module_create_image(id,
-		domain_field.getId(), source_field.getId()));
+	return FieldImage(cmzn_field_module_create_image_from_source(id, sourceField.getId()));
 }
 
 } // namespace Zinc
