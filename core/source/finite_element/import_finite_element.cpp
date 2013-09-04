@@ -1,12 +1,8 @@
-/*******************************************************************************
-FILE : import_finite_element.c
-
-LAST MODIFIED : 10 November 2004
-
-DESCRIPTION :
-Functions for importing finite element data from a file into the graphical
-interface to CMZN.
-==============================================================================*/
+/**
+ * FILE : import_finite_element.cpp
+ *
+ * Functions for importing finite element data from a EX file format.
+ */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
  *

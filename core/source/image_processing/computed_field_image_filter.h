@@ -1312,7 +1312,7 @@ Evaluate the templated version of this filter
 	return 0;
 }
 
-} //CMZN namespace
+} // namespace CMZN
 
 
 #endif /* computed_field_image_filter_H */

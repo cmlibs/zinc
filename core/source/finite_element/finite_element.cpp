@@ -125,7 +125,7 @@ the point and the Xi coordinates of the point within the element.
 	const char *name;
 	/* shared info for this FE_field including the FE_region it belongs to */
 	struct FE_field_info *info;
-	/* CMZN field type and number */
+	/* CMISS field type */
 	enum CM_field_type cm_field_type;
 	struct FE_field_external_information *external;
 	enum FE_field_type fe_field_type;
@@ -306,7 +306,7 @@ LAST MODIFIED : 11 February 2003
 DESCRIPTION :
 ==============================================================================*/
 {
-	/* the unique number that identifies the node in CMZN */
+	/* the unique number that identifies the node */
 	int cm_node_identifier;
 
 	/* the number of structures that point to this node.  The node cannot be
@@ -511,12 +511,12 @@ factors).  There are two types - <NODE_BASED_MAP> and <GENERAL_LINEAR_MAP>.  For
 a node based map, the global values are associated with nodes.  For a general
 linear map, the global values do not have to be associated with nodes.  The node
 based maps could be specified as general linear maps, but the node based
-specification (required by CMZN) cannot be recovered from the general linear
+specification (required by CMISS) cannot be recovered from the general linear
 map specification (important when the front end is being used to create meshs).
 The <modify> function is called after the element values have been calculated
 with respect to the <basis> and before the element values are blended to be with
 respect to the standard basis.  The <modify> function is to allow for special
-cases, such as CMZN nodes that have multiple theta values in cylindrical polar,
+cases, such as nodes that have multiple theta values in cylindrical polar,
 spherical polar, prolate spheroidal or oblate spheroidal coordinate systems -
 either lying on the z-axis or being the first and last node in a circle.
 ==============================================================================*/
@@ -703,7 +703,7 @@ if fields are defined and need this supplemental information.
 	/* nodes.  Node to element maps have indices into this array */
 	int number_of_nodes;
 	struct FE_node **nodes;
-	/* there may be a number of sets of scale factors (CMZN has one for each
+	/* there may be a number of sets of scale factors (Zinc has one for each
 		basis) */
 	int number_of_scale_factor_sets;
 	/*???RC following void * pointers generally point at FE_basis. However, if it
