@@ -189,9 +189,9 @@ public:
 				GLfloat default_light_direction[3]={0.0,-0.5,-1.0};
 				struct Colour default_colour;
 				set_Light_type(light,INFINITE_LIGHT);
-				default_colour.red=1.0;
-				default_colour.green=1.0;
-				default_colour.blue=1.0;
+				default_colour.red=0.9;
+				default_colour.green=0.9;
+				default_colour.blue=0.9;
 				set_Light_colour(light,&default_colour);
 				set_Light_direction(light,default_light_direction);
 				/*???DB.  Include default as part of manager ? */
@@ -437,9 +437,9 @@ Allocates memory and assigns fields for a light model.
 			light->manager = (struct MANAGER(Light) *)NULL;
 			light->manager_change_status = MANAGER_CHANGE_NONE(Light);
 			light->type=INFINITE_LIGHT;
-			(light->colour).red = 1.;
-			(light->colour).green = 1.;
-			(light->colour).blue = 1.;
+			(light->colour).red = 0.9;
+			(light->colour).green = 0.9;
+			(light->colour).blue = 0.9;
 			light->position[0] = 0;
 			light->position[1] = 0;
 			light->position[2] = 0;
