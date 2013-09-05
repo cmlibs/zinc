@@ -188,9 +188,9 @@ public:
 			if (lightModel)
 			{
 				struct Colour ambient_colour;
-				ambient_colour.red=0.2f;
-				ambient_colour.green=0.2f;
-				ambient_colour.blue=0.2f;
+				ambient_colour.red=0.1f;
+				ambient_colour.green=0.1f;
+				ambient_colour.blue=0.1f;
 				Light_model_set_ambient(lightModel,&ambient_colour);
 				Light_model_set_side_mode(lightModel,
 					LIGHT_MODEL_TWO_SIDED);
