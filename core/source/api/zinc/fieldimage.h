@@ -244,40 +244,6 @@ ZINC_API enum cmzn_field_image_wrap_mode
 ZINC_API char *cmzn_field_image_wrap_mode_enum_to_string(
 	enum cmzn_field_image_wrap_mode mode);
 
-enum cmzn_field_image_attribute
-{
-	CMZN_FIELD_IMAGE_ATTRIBUTE_INVALID = 0,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = 3,
-	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH = 4,
-		/*!< span of texture coordinates in width, real-valued */
-	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT = 5,
-		/*!< span of texture coordinates in height, real-valued */
-	CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH = 6
-		/*!< span of texture coordinates in depth, real-valued */
-};
-
-/***************************************************************************//**
- * Convert a short attribute name into an enum if the attribute name matches
- * any of the members in the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum cmzn_field_image_attribute cmzn_field_image_attribute_enum_from_string(
-	const char *string);
-
-/***************************************************************************//**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call cmzn_deallocate to destroy the successfully returned string.
- *
- * @param attribute  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *cmzn_field_image_attribute_enum_to_string(
-	enum cmzn_field_image_attribute attribute);
-
 /***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
@@ -369,36 +335,82 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_image_base_cast(cmzn_field_image_id image
 ZINC_API int cmzn_field_image_destroy(cmzn_field_image_id *image_address);
 
 /***************************************************************************//**
- * Get an integer or Boolean attribute of the field image.
+ * Get the width of the image.
  *
- * @param image  Handle to the zinc field image.
- * @param attribute  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ * @param image   handle to the image field.
+ * @return  width of the image
  */
-ZINC_API int cmzn_field_image_get_attribute_integer(cmzn_field_image_id image,
-	enum cmzn_field_image_attribute attribute);
+ZINC_API int cmzn_field_image_get_raw_width(cmzn_field_image_id image);
 
 /***************************************************************************//**
- * Get a real attribute of the field image.
+ * Get the height of the image.
  *
- * @param image  Handle to the zinc field image.
- * @param attribute  The identifier of the real attribute to get.
- * @return  Value of the attribute.
+ * @param image   handle to the image field.
+ * @return  height of the image
  */
-ZINC_API double cmzn_field_image_get_attribute_real(cmzn_field_image_id image,
-	enum cmzn_field_image_attribute attribute);
+ZINC_API int cmzn_field_image_get_raw_height(cmzn_field_image_id image);
 
 /***************************************************************************//**
- * Set an double attribute of the image.
+ * Get the depth of the image.
  *
- * @param stream_information  Handle to the zinc stream_information_image.
- * @param attribute  The identifier of the double attribute to set.
- * @param value  The new value for the attribute.
- * @return  Status CMZN_OK if attribute successfully set, any other value if
- * failed or attribute not valid or unable to be set for this image.
+ * @param image   handle to the image field.
+ * @return  depth of the image
  */
-ZINC_API int cmzn_field_image_set_attribute_real(cmzn_field_image_id image,
-	enum cmzn_field_image_attribute attribute, double value);
+ZINC_API int cmzn_field_image_get_raw_depth(cmzn_field_image_id image);
+
+/***************************************************************************//**
+ * Get the physical width of the image.
+ *
+ * @param image   handle to the image field.
+ * @return physical width of the image
+ */
+ZINC_API double cmzn_field_image_get_physical_width(cmzn_field_image_id image);
+
+/***************************************************************************//**
+ * Get the physical height of the image.
+ *
+ * @param image   handle to the image field.
+ * @return physical height of the image
+ */
+ZINC_API double cmzn_field_image_get_physical_height(cmzn_field_image_id image);
+
+/***************************************************************************//**
+ * Get the physical depth of the image.
+ *
+ * @param image   handle to the image field.
+ * @return physical depth of the image
+ */
+ZINC_API double cmzn_field_image_get_physical_depth(cmzn_field_image_id image);
+
+/***************************************************************************//**
+ * Set the physical width of the image.
+ *
+ * @param image  handle to the image field.
+ * @param width  physical width to be set for the image
+ *
+ * @return CMISS_OK if set correctly, any other value otherwise.
+ */
+int cmzn_field_image_set_physical_width(cmzn_field_image_id image, double width);
+
+/***************************************************************************//**
+ * Set the physical height of the image.
+ *
+ * @param image  handle to the image field.
+ * @param height  physical height to be set for the image
+ *
+ * @return CMISS_OK if set correctly, any other value otherwise.
+ */
+int cmzn_field_image_set_physical_height(cmzn_field_image_id image, double height);
+
+/***************************************************************************//**
+ * Set the physical depth of the image.
+ *
+ * @param image   handle to the image field.
+ * @param depth  physical depth to be set for the image
+ *
+ * @return CMISS_OK if set correctly, any other value otherwise.
+ */
+int cmzn_field_image_set_physical_depth(cmzn_field_image_id image, double depth);
 
 /*****************************************************************************//**
  * Reads image data into the field.

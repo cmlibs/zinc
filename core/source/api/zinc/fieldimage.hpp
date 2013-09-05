@@ -127,33 +127,49 @@ public:
 		/*!< Allow the hardware to choose the wrap mode for texture */
 	};
 
-	enum ImageAttribute
+	int getRawWidth()
 	{
-		IMAGE_ATTRIBUTE_INVALID = CMZN_FIELD_IMAGE_ATTRIBUTE_INVALID,
-		IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS,
-		IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS,
-		IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS = CMZN_FIELD_IMAGE_ATTRIBUTE_RAW_DEPTH_PIXELS,
-		IMAGE_ATTRIBUTE_PHYSICAL_WIDTH = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_WIDTH,
-		IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_HEIGHT,
-		IMAGE_ATTRIBUTE_PHYSICAL_DEPTH = CMZN_FIELD_IMAGE_ATTRIBUTE_PHYSICAL_DEPTH
-	};
-
-	int getAttributeInteger(ImageAttribute imageAttribute)
-	{
-		return cmzn_field_image_get_attribute_integer(getDerivedId(),
-			static_cast<cmzn_field_image_attribute>(imageAttribute));
+		return cmzn_field_image_get_raw_width(getDerivedId());
 	}
 
-	double getAttributeReal(ImageAttribute imageAttribute)
+	int getRawHeight()
 	{
-		return cmzn_field_image_get_attribute_real(getDerivedId(),
-			static_cast<cmzn_field_image_attribute>(imageAttribute));
+		return cmzn_field_image_get_raw_height(getDerivedId());
 	}
 
-	int setAttributeReal(ImageAttribute imageAttribute, double value)
+	int getRawDepth()
 	{
-		return cmzn_field_image_set_attribute_real(getDerivedId(),
-			static_cast<cmzn_field_image_attribute>(imageAttribute), value);
+		return cmzn_field_image_get_raw_depth(getDerivedId());
+	}
+
+	double getPhysicalWidth()
+	{
+		return cmzn_field_image_get_physical_width(getDerivedId());
+	}
+
+	double getPhysicalHeight()
+	{
+		return cmzn_field_image_get_physical_height(getDerivedId());
+	}
+
+	double getPhysicalDepth()
+	{
+		return cmzn_field_image_get_physical_depth(getDerivedId());
+	}
+
+	int setPhysicalWidth(double width)
+	{
+		return cmzn_field_image_set_physical_height(getDerivedId(), width);
+	}
+
+	int setPhysicalHeight(double height)
+	{
+		return cmzn_field_image_set_physical_height(getDerivedId(), height);
+	}
+
+	int setPhysicalDepth(double depth)
+	{
+		return cmzn_field_image_set_physical_height(getDerivedId(), depth);
 	}
 
 	int read(StreamInformation& streamInformation)
