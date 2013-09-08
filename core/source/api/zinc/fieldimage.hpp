@@ -127,49 +127,66 @@ public:
 		/*!< Allow the hardware to choose the wrap mode for texture */
 	};
 
-	int getRawWidth()
+	int getPixelWidth()
 	{
-		return cmzn_field_image_get_raw_width(getDerivedId());
+		return cmzn_field_image_get_pixel_width(getDerivedId());
 	}
 
-	int getRawHeight()
+	int getPixelHeight()
 	{
-		return cmzn_field_image_get_raw_height(getDerivedId());
+		return cmzn_field_image_get_pixel_height(getDerivedId());
 	}
 
-	int getRawDepth()
+	int getPixelDepth()
 	{
-		return cmzn_field_image_get_raw_depth(getDerivedId());
+		return cmzn_field_image_get_pixel_depth(getDerivedId());
 	}
 
-	double getPhysicalWidth()
+	int getPixelSizes(int valuesCount, int *valuesOut)
 	{
-		return cmzn_field_image_get_physical_width(getDerivedId());
+		return cmzn_field_image_get_pixel_sizes(getDerivedId(), valuesCount, valuesOut);
 	}
 
-	double getPhysicalHeight()
+	double getTextureCoordinateWidth()
 	{
-		return cmzn_field_image_get_physical_height(getDerivedId());
+		return cmzn_field_image_get_texture_coordinate_width(getDerivedId());
 	}
 
-	double getPhysicalDepth()
+	double getTextureCoordinateHeight()
 	{
-		return cmzn_field_image_get_physical_depth(getDerivedId());
+		return cmzn_field_image_get_texture_coordinate_height(getDerivedId());
 	}
 
-	int setPhysicalWidth(double width)
+	double getTextureCoordinateDepth()
 	{
-		return cmzn_field_image_set_physical_height(getDerivedId(), width);
+		return cmzn_field_image_get_texture_coordinate_depth(getDerivedId());
 	}
 
-	int setPhysicalHeight(double height)
+	int getTextureCoordinateSizes(int valuesCount, double *valuesOut)
 	{
-		return cmzn_field_image_set_physical_height(getDerivedId(), height);
+		return cmzn_field_image_get_texture_coordinate_sizes(getDerivedId(), valuesCount,
+			valuesOut);
 	}
 
-	int setPhysicalDepth(double depth)
+	int setTextureCoordinateWidth(double width)
 	{
-		return cmzn_field_image_set_physical_height(getDerivedId(), depth);
+		return cmzn_field_image_set_texture_coordinate_width(getDerivedId(), width);
+	}
+
+	int setTextureCoordinateHeight(double height)
+	{
+		return cmzn_field_image_set_texture_coordinate_height(getDerivedId(), height);
+	}
+
+	int setTextureCoordinateDepth(double depth)
+	{
+		return cmzn_field_image_set_texture_coordinate_depth(getDerivedId(), depth);
+	}
+
+	int setTextureCoordinateSizes(int valuesCount, const double *valuesIn)
+	{
+		return cmzn_field_image_set_texture_coordinate_sizes(getDerivedId(),
+			valuesCount, valuesIn);
 	}
 
 	int read(StreamInformation& streamInformation)

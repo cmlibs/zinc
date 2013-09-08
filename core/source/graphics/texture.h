@@ -59,8 +59,6 @@ The data structures used for representing textures.
 
 #define Texture cmzn_texture
 
-#define Texture_get_original_texel_sizes \
-	cmzn_texture_get_original_texel_sizes
 #define Texture_get_number_of_components \
 	cmzn_texture_get_number_of_components
 #define Texture_get_number_of_bytes_per_component \
@@ -604,8 +602,8 @@ Returns the width, height and depth of the image from which the texture was
 read. May differ from the dimensions of the texture which is in powers of 2.
 ==============================================================================*/
 
-int Texture_get_original_texel_sizes(struct Texture *texture,
-	unsigned int *dimension, unsigned int **sizes);
+int cmzn_texture_get_pixel_sizes(struct Texture *texture,
+	int dimension, int *sizesOut);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 
@@ -645,8 +643,8 @@ default is 1.0, so that texture coordinates in the range from 0 to 1 represent
 real image data and not padding to make image sizes up to powers of 2.
 ==============================================================================*/
 
-int cmzn_texture_get_texture_coordinate_sizes(cmzn_texture_id texture, 
-   unsigned int *dimension, ZnReal **texture_coordinate_sizes);
+int cmzn_texture_get_texture_coordinate_sizes(cmzn_texture_id texture,
+	int dimension, double *sizesOut);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 
@@ -659,8 +657,8 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 
-int cmzn_texture_set_texture_coordinate_sizes(cmzn_texture_id texture, 
-   unsigned int dimension, ZnReal *texture_coordinate_sizes);
+int cmzn_texture_set_texture_coordinate_sizes(cmzn_texture_id texture,
+   int dimension, const double *sizes);
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 

@@ -324,7 +324,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_image_base_cast(cmzn_field_image_id image
 	return (cmzn_field_id)(image);
 }
 
-/***************************************************************************//**
+/**
  * Destroys this reference to the image field (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
@@ -334,29 +334,43 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_image_base_cast(cmzn_field_image_id image
  */
 ZINC_API int cmzn_field_image_destroy(cmzn_field_image_id *image_address);
 
-/***************************************************************************//**
+/**
  * Get the width of the image.
  *
  * @param image   handle to the image field.
  * @return  width of the image
  */
-ZINC_API int cmzn_field_image_get_raw_width(cmzn_field_image_id image);
+ZINC_API int cmzn_field_image_get_pixel_width(cmzn_field_image_id image);
 
-/***************************************************************************//**
+/**
  * Get the height of the image.
  *
  * @param image   handle to the image field.
  * @return  height of the image
  */
-ZINC_API int cmzn_field_image_get_raw_height(cmzn_field_image_id image);
+ZINC_API int cmzn_field_image_get_pixel_height(cmzn_field_image_id image);
 
-/***************************************************************************//**
+/**
  * Get the depth of the image.
  *
  * @param image   handle to the image field.
  * @return  depth of the image
  */
-ZINC_API int cmzn_field_image_get_raw_depth(cmzn_field_image_id image);
+ZINC_API int cmzn_field_image_get_pixel_depth(cmzn_field_image_id image);
+
+/**
+ * Get the pixel sizes of the image.
+ *
+ * @param image  The image to query.
+ * @param valuesCount  The size of the sizes array to fill. Values
+ * for dimensions beyond the size have the value of 1.
+ * @param sizesOut  Array to receive pixel sizes.
+ * @return  The actual dimension that have been read. This can be
+ * more than the number requested, so a second call may be needed with a
+ * larger array. Returns 0 on error.
+ */
+ZINC_API int cmzn_field_image_get_pixel_sizes(cmzn_field_image_id image,
+	int valuesCount, int *valuesOut);
 
 /***************************************************************************//**
  * Get the physical width of the image.
@@ -364,53 +378,82 @@ ZINC_API int cmzn_field_image_get_raw_depth(cmzn_field_image_id image);
  * @param image   handle to the image field.
  * @return physical width of the image
  */
-ZINC_API double cmzn_field_image_get_physical_width(cmzn_field_image_id image);
+ZINC_API double cmzn_field_image_get_texture_coordinate_width(cmzn_field_image_id image);
 
-/***************************************************************************//**
+/**
  * Get the physical height of the image.
  *
  * @param image   handle to the image field.
  * @return physical height of the image
  */
-ZINC_API double cmzn_field_image_get_physical_height(cmzn_field_image_id image);
+ZINC_API double cmzn_field_image_get_texture_coordinate_height(cmzn_field_image_id image);
 
-/***************************************************************************//**
+/**
  * Get the physical depth of the image.
  *
  * @param image   handle to the image field.
  * @return physical depth of the image
  */
-ZINC_API double cmzn_field_image_get_physical_depth(cmzn_field_image_id image);
+ZINC_API double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_id image);
 
-/***************************************************************************//**
- * Set the physical width of the image.
+/**
+ * Gets the texture coordinate size to be used for this image field.
+ *
+ * @see cmzn_field_iamge_set_texture coordinate_sizes
+ * @param image  The image to query.
+ * @param valuesCount  The size of the sizes array to fill. Values
+ * for dimensions beyond the size have the value of 1.
+ * @param sizesOut  Array to receive texture coordinate sizes.
+ * @return  The actual dimension of texture coordinates that have been
+ * explicitly set. This can be
+ * more than the number requested, so a second call may be needed with a
+ * larger array. Returns 0 on error.
+ */
+ZINC_API int cmzn_field_image_get_texture_coordinate_sizes(cmzn_field_image_id image,
+	int valuesCount, double *valuesOut);
+
+/**
+ * Set the texture coordinate width of the image.
  *
  * @param image  handle to the image field.
  * @param width  physical width to be set for the image
  *
  * @return CMISS_OK if set correctly, any other value otherwise.
  */
-int cmzn_field_image_set_physical_width(cmzn_field_image_id image, double width);
+ZINC_API int cmzn_field_image_set_texture_coordinate_width(cmzn_field_image_id image, double width);
 
-/***************************************************************************//**
- * Set the physical height of the image.
+/**
+ * Set the texture coordinate height of the image.
  *
  * @param image  handle to the image field.
  * @param height  physical height to be set for the image
  *
  * @return CMISS_OK if set correctly, any other value otherwise.
  */
-int cmzn_field_image_set_physical_height(cmzn_field_image_id image, double height);
+ZINC_API int cmzn_field_image_set_texture_coordinate_height(cmzn_field_image_id image, double height);
 
-/***************************************************************************//**
- * Set the physical depth of the image.
+/**
+ * Set the texture coordinate depth of the image.
  *
  * @param image   handle to the image field.
  * @param depth  physical depth to be set for the image
  *
  * @return CMISS_OK if set correctly, any other value otherwise.
  */
-int cmzn_field_image_set_physical_depth(cmzn_field_image_id image, double depth);
+ZINC_API int cmzn_field_image_set_texture_coordinate_depth(cmzn_field_image_id image, double depth);
+
+/**
+ * Sets the texture coordinate size to be used for this image field.
+ *
+ * @see cmzn_field_iamge_set_texture coordinate_sizes
+ * @param image  The image to query.
+ * @param valuesCount  The size of the sizes array to fill. Values
+ * for dimensions beyond the size have the value of 1.
+ * @param sizesOut  Array to receive texture coordinate sizes.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id image,
+	int valuesCount, const double *valuesIn);
 
 /*****************************************************************************//**
  * Reads image data into the field.
