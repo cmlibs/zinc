@@ -919,7 +919,7 @@ int cmzn_field_image_destroy(cmzn_field_image_id *image_address)
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(image_address));
 }
 
-int cmzn_field_image_get_raw_width(cmzn_field_image_id image)
+int cmzn_field_image_get_pixel_width(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -931,7 +931,7 @@ int cmzn_field_image_get_raw_width(cmzn_field_image_id image)
 	return 0;
 }
 
-int cmzn_field_image_get_raw_height(cmzn_field_image_id image)
+int cmzn_field_image_get_pixel_height(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -943,7 +943,7 @@ int cmzn_field_image_get_raw_height(cmzn_field_image_id image)
 	return 0;
 }
 
-int cmzn_field_image_get_raw_depth(cmzn_field_image_id image)
+int cmzn_field_image_get_pixel_depth(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -955,7 +955,19 @@ int cmzn_field_image_get_raw_depth(cmzn_field_image_id image)
 	return 0;
 }
 
-double cmzn_field_image_get_physical_depth(cmzn_field_image_id image)
+int cmzn_field_image_get_pixel_sizes(cmzn_field_image_id image,
+	int valuesCount, int *valuesOut)
+{
+	if (image)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image);
+		return cmzn_texture_get_pixel_sizes(texture,
+			valuesCount, valuesOut);
+	}
+	return 0;
+}
+
+double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -967,7 +979,7 @@ double cmzn_field_image_get_physical_depth(cmzn_field_image_id image)
 	return 0.0;
 }
 
-double cmzn_field_image_get_physical_height(cmzn_field_image_id image)
+double cmzn_field_image_get_texture_coordinate_height(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -979,7 +991,7 @@ double cmzn_field_image_get_physical_height(cmzn_field_image_id image)
 	return 0.0;
 }
 
-double cmzn_field_image_get_physical_width(cmzn_field_image_id image)
+double cmzn_field_image_get_texture_coordinate_width(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -991,7 +1003,19 @@ double cmzn_field_image_get_physical_width(cmzn_field_image_id image)
 	return 0.0;
 }
 
-int cmzn_field_image_set_physical_depth(cmzn_field_image_id image, double value)
+int cmzn_field_image_get_texture_coordinate_sizes(cmzn_field_image_id image,
+	int valuesCount, double *valuesOut)
+{
+	if (image)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image);
+		return cmzn_texture_get_texture_coordinate_sizes(texture,
+			valuesCount, valuesOut);
+	}
+	return 0;
+}
+
+int cmzn_field_image_set_texture_coordinate_depth(cmzn_field_image_id image, double value)
 {
 	if (image)
 	{
@@ -1004,7 +1028,7 @@ int cmzn_field_image_set_physical_depth(cmzn_field_image_id image, double value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_field_image_set_physical_width(cmzn_field_image_id image, double value)
+int cmzn_field_image_set_texture_coordinate_width(cmzn_field_image_id image, double value)
 {
 	if (image)
 	{
@@ -1017,7 +1041,7 @@ int cmzn_field_image_set_physical_width(cmzn_field_image_id image, double value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_field_image_set_physical_height(cmzn_field_image_id image, double value)
+int cmzn_field_image_set_texture_coordinate_height(cmzn_field_image_id image, double value)
 {
 	if (image)
 	{
@@ -1026,6 +1050,17 @@ int cmzn_field_image_set_physical_height(cmzn_field_image_id image, double value
 		Texture_get_physical_size(texture, &width, &height, &depth);
 		Texture_set_physical_size(texture, width, value, depth);
 		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id image,
+	int valuesCount, const double *valuesIn)
+{
+	if (image)
+	{
+		cmzn_texture *texture = cmzn_field_image_get_texture(image);
+		return cmzn_texture_set_texture_coordinate_sizes(texture,	valuesCount, valuesIn);
 	}
 	return CMZN_ERROR_ARGUMENT;
 }

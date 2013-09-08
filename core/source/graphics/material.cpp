@@ -3086,10 +3086,10 @@ material results.
 					size to the actually rendered texture size so that
 					we are independent of texture reduction. */
 				 GLfloat normal_scaling[4];
-				 unsigned int original_dimension, *original_sizes,
-						rendered_dimension, *rendered_sizes;
-				 if (cmzn_texture_get_original_texel_sizes(material->image_texture.texture,
-							 &original_dimension, &original_sizes) &&
+				 int original_dimension, original_sizes[3];
+				 unsigned int rendered_dimension, *rendered_sizes;
+				 if (original_dimension = cmzn_texture_get_pixel_sizes(material->image_texture.texture,
+							 3, &original_sizes[0]) &&
 						cmzn_texture_get_rendered_texel_sizes(material->image_texture.texture,
 							 &rendered_dimension, &rendered_sizes))
 				 {
@@ -3142,7 +3142,6 @@ material results.
 							glProgramEnvParameter4fvARB(GL_FRAGMENT_PROGRAM_ARB, 3,
 								normal_scaling);
 						}
-						DEALLOCATE(original_sizes);
 						DEALLOCATE(rendered_sizes);
 				 }
 #endif /* defined(GL_VERSION_2_0) || defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */

@@ -46,7 +46,7 @@ The functions for manipulating graphical textures.
 #include <string.h>
 
 #include "zinc/zincconfigure.h"
-
+#include "zinc/status.h"
 #if defined (WIN32_SYSTEM)
 #define _USE_MATH_DEFINES
 #endif // defined (WIN32_SYSTEM)
@@ -5953,7 +5953,7 @@ real image data and not padding to make image sizes up to powers of 2.
 } /* Texture_set_physical_size */
 
 int cmzn_texture_get_texture_coordinate_sizes(cmzn_texture_id texture,
-   unsigned int *dimension, ZnReal **sizes)
+	int dimension, double *sizesOut)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
 
@@ -5966,46 +5966,24 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Texture_get_texture_coordinate_sizes);
 	if (texture)
 	{
-		if (ALLOCATE(*sizes, double, texture->dimension))
+		for (int i = 0; i < dimension; i++)
 		{
-			*dimension = texture->dimension;
-			if (texture->dimension > 0)
-			{
-				(*sizes)[0] = texture->width;
-				if (texture->dimension > 1)
-				{
-					(*sizes)[1] = texture->height;
-					if (texture->dimension > 2)
-					{
-						(*sizes)[2] = texture->depth;
-					}
-				}
-			}
-			return_code = 1;
+			if (i ==0)
+				sizesOut[i] = texture->width;
+			else if (i == 1)
+				sizesOut[i] = texture->height;
+			else if (i == 2)
+				sizesOut[i] = texture->depth;
 		}
-		else
-		{
-			return_code = 0;
-		}
+		return texture->dimension;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Texture_get_texture_coordinate_sizes.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Texture_get_texture_coordinate_sizes */
+	return 0;
+}
 
 int cmzn_texture_set_texture_coordinate_sizes(cmzn_texture_id texture,
-   unsigned int dimension, ZnReal *sizes)
+   int dimension, const double *sizes)
 /*******************************************************************************
 LAST MODIFIED : 26 May 2007
 
@@ -6018,9 +5996,6 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Texture_set_texture_coordinate_sizes);
 	if (texture)
 	{
 		if (dimension > 0)
@@ -6047,17 +6022,10 @@ the top right of the texture.
 				}
 			}
 		}
-		return_code = 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Texture_set_texture_coordinate_sizes.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 } /* Texture_set_texture_coordinate_sizes */
 
 int Texture_get_distortion_info(struct Texture *texture,
@@ -6188,8 +6156,8 @@ Returns the dimension of the texture image.
 	return (return_code);
 }/* Texture_get_dimension */
 
-int Texture_get_original_texel_sizes(struct Texture *texture,
-	unsigned int *dimension, unsigned int **sizes)
+int cmzn_texture_get_pixel_sizes(struct Texture *texture,
+	int dimension, int *sizesOut)
 /*******************************************************************************
 LAST MODIFIED : 25 May 2007
 
@@ -6199,43 +6167,22 @@ subsequently modified by cmgui such as to support platforms which require
 each size to be a power of two.
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Texture_get_original_texel_sizes);
 	if (texture)
 	{
-		if (ALLOCATE(*sizes, unsigned int, texture->dimension))
+		for (int i = 0; i < dimension; i++)
 		{
-			*dimension = texture->dimension;
-			if (texture->dimension > 0)
-			{
-				(*sizes)[0] = texture->original_width_texels;
-				if (texture->dimension > 1)
-				{
-					(*sizes)[1] = texture->original_height_texels;
-					if (texture->dimension > 2)
-					{
-						(*sizes)[2] = texture->original_depth_texels;
-					}
-				}
-			}
-			return_code = 1;
+			if (i ==0)
+				sizesOut[i] = texture->original_width_texels;
+			else if (i == 1)
+				sizesOut[i] = texture->original_height_texels;
+			else if (i == 2)
+				sizesOut[i] = texture->original_depth_texels;
 		}
-		else
-		{
-			return_code = 0;
-		}
+		return texture->dimension;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Texture_get_original_texel_sizes.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+	return 0;
 
-	return (return_code);
-} /* Texture_get_original_texel_sizes */
+}
 
 int cmzn_texture_get_rendered_texel_sizes(struct Texture *texture,
 	unsigned int *dimension, unsigned int **sizes)
