@@ -55,12 +55,17 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_EQ(expectedRGB2[2], outRGB[2]);
 	cmzn_field_cache_destroy(&cache);
 
-	double width = cmzn_field_image_get_physical_width(im);
+	double width = cmzn_field_image_get_texture_coordinate_width(im);
 	ASSERT_DOUBLE_EQ(1.0, width);
-	double height = cmzn_field_image_get_physical_height(im);
+	double height = cmzn_field_image_get_texture_coordinate_height(im);
 	ASSERT_DOUBLE_EQ(1.0, height);
-	double depth = cmzn_field_image_get_physical_depth(im);
+	double depth = cmzn_field_image_get_texture_coordinate_depth(im);
 	ASSERT_DOUBLE_EQ(0.0, depth);
+	double double_sizes[3];
+	cmzn_field_image_get_texture_coordinate_sizes(im, 3, &double_sizes[0]);
+	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
+	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
+	ASSERT_DOUBLE_EQ(0.0, double_sizes[2]);
 
 	// test setting domain field and evaluation of image_from_source
 
@@ -73,12 +78,17 @@ TEST(cmzn_field_image, create_evaluate)
 
 	// check resolution is same as source field
 	cmzn_field_image_id im2 = cmzn_field_cast_image(f2);
-	int width_texels = cmzn_field_image_get_raw_width(im);
+	int width_texels = cmzn_field_image_get_pixel_width(im2);
 	EXPECT_EQ(32, width_texels);
-	int height_texels = cmzn_field_image_get_raw_height(im);
+	int height_texels = cmzn_field_image_get_pixel_height(im2);
 	EXPECT_EQ(32, height_texels);
-	int depth_texels = cmzn_field_image_get_raw_depth(im);
+	int depth_texels = cmzn_field_image_get_pixel_depth(im2);
 	EXPECT_EQ(1, depth_texels);
+	int int_sizes[3];
+	cmzn_field_image_get_pixel_sizes(im2, 3, &int_sizes[0]);
+	EXPECT_EQ(32, int_sizes[0]);
+	EXPECT_EQ(32, int_sizes[1]);
+	EXPECT_EQ(1, int_sizes[2]);
 	cmzn_field_image_destroy(&im2);
 
 	cache = cmzn_field_module_create_cache(zinc.fm);
@@ -133,12 +143,17 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_EQ(expectedRGB2[1], outRGB[1]);
 	EXPECT_EQ(expectedRGB2[2], outRGB[2]);
 
-	double width = im.getPhysicalWidth();
+	double width = im.getTextureCoordinateWidth();
 	ASSERT_DOUBLE_EQ(1.0, width);
-	double height = im.getPhysicalHeight();
+	double height = im.getTextureCoordinateHeight();
 	ASSERT_DOUBLE_EQ(1.0, height);
-	double depth = im.getPhysicalDepth();
+	double depth = im.getTextureCoordinateDepth();
 	ASSERT_DOUBLE_EQ(0.0, depth);
+	double double_sizes[3];
+	im.getTextureCoordinateSizes(3, &double_sizes[0]);
+	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
+	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
+	ASSERT_DOUBLE_EQ(0.0, double_sizes[2]);
 
 	// test setting domain field and evaluation of imageFromSource
 
@@ -150,12 +165,17 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_TRUE(im2.isValid());
 
 	// check resolution is same as source field
-	int width_texels = im2.getRawWidth();
+	int width_texels = im2.getPixelWidth();
 	EXPECT_EQ(32, width_texels);
-	int height_texels = im2.getRawHeight();
+	int height_texels = im2.getPixelHeight();
 	EXPECT_EQ(32, height_texels);
-	int depth_texels = im2.getRawDepth();
+	int depth_texels = im2.getPixelDepth();
 	EXPECT_EQ(1, depth_texels);
+	int int_sizes[3];
+	im2.getPixelSizes(3, &int_sizes[0]);
+	EXPECT_EQ(32, int_sizes[0]);
+	EXPECT_EQ(32, int_sizes[1]);
+	EXPECT_EQ(1, int_sizes[2]);
 
 	cache = zinc.fm.createCache();
 	EXPECT_TRUE(cache.isValid());
