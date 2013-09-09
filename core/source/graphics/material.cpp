@@ -3058,10 +3058,10 @@ material results.
 				 GLfloat normal_scaling[4];
 				 int original_dimension, original_sizes[3];
 				 unsigned int rendered_dimension, *rendered_sizes;
-				 if (original_dimension = cmzn_texture_get_pixel_sizes(material->image_texture.texture,
-							 3, &original_sizes[0]) &&
-						cmzn_texture_get_rendered_texel_sizes(material->image_texture.texture,
-							 &rendered_dimension, &rendered_sizes))
+				 if ((original_dimension = cmzn_texture_get_pixel_sizes(material->image_texture.texture,
+							 3, &original_sizes[0])) &&
+						(cmzn_texture_get_rendered_texel_sizes(material->image_texture.texture,
+							 &rendered_dimension, &rendered_sizes)))
 				 {
 						if ((original_dimension > 0) && (rendered_dimension > 0)
 							 && (original_sizes[0] > 0))
