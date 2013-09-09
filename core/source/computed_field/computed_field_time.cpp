@@ -319,7 +319,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_field_cache&, FieldValueCache& inValueCache);
+	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -360,11 +360,16 @@ DESCRIPTION :
 	return (return_code);
 } /* Computed_field_time_value::compare */
 
-int Computed_field_time_value::evaluate(cmzn_field_cache&, FieldValueCache& inValueCache)
+int Computed_field_time_value::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	valueCache.values[0] = Time_object_get_current_time(time_object);
-	valueCache.derivatives_valid = 0;
+	// spatial derivatives are zero
+	for (int j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
+	{
+		valueCache.derivatives[j] = 0.0;
+	}
+	valueCache.derivatives_valid = 1;
 	return 1;
 }
 
