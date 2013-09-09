@@ -3,6 +3,12 @@
 # FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS 
 # (group definition which includes the previous three)
 
+# OpenCMISS-Zinc Library
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 SET( FINITE_ELEMENT_CORE_SRCS
 	source/finite_element/export_finite_element.cpp
 	source/finite_element/finite_element.cpp

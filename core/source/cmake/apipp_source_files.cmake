@@ -1,5 +1,12 @@
 
 # Defines APIPP_SRCS
+
+# OpenCMISS-Zinc Library
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/context.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/differentialoperator.hpp
