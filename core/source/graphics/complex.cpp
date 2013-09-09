@@ -1,3 +1,8 @@
+/* OpenCMISS-Zinc Library
+*
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 /* CAUTION: This is the ANSI C (only) version of the Numerical Recipes
 	utility file complex.c.  Do not confuse this file with the same-named
 	file complex.c that is supplied in the same subdirectory or archive

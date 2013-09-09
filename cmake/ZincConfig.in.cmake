@@ -16,6 +16,12 @@
 # The static version of the library can be found by setting
 # ZINC_USE_STATIC true (if it is available).
 #
+
+# OpenCMISS-Zinc Library
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
 GET_FILENAME_COMPONENT( SELF_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH )
 IF(EXISTS "${SELF_DIR}/CMakeCache.txt")
     # In build tree

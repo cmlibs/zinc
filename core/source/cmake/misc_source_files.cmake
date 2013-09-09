@@ -3,6 +3,12 @@
 # FINITE_ELEMENT_SRCS (definition includes the previous two), INTERACTION_SRCS, IO_DEVICES_SRCS, NODE_SRCS,
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
 
+# OpenCMISS-Zinc Library
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 SET( CURVE_SRCS source/curve/curve.cpp )
 SET( CURVE_HDRS source/curve/curve.h )
 

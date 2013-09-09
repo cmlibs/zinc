@@ -1,6 +1,12 @@
 
 # Defines COMPUTED_FIELD_CORE_SRCS, COMPUTED_FIELD_GRAPHICS_SRCS, COMPUTED_FIELD_SRCS (contains previous two)
 
+# OpenCMISS-Zinc Library
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field.cpp
 	source/computed_field/computed_field_arithmetic_operators.cpp

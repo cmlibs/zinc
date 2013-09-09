@@ -1,6 +1,12 @@
 
 # Defines IMAGE_PROCESSING_SRCS
 
+# OpenCMISS-Zinc Library
+#
+# This Source Code Form is subject to the terms of the Mozilla Public
+# License, v. 2.0. If a copy of the MPL was not distributed with this
+# file, You can obtain one at http://mozilla.org/MPL/2.0/.
+
 SET( IMAGE_PROCESSING_SRCS
 	source/image_processing/computed_field_image_resample.cpp )
 SET( IMAGE_PROCESSING_HDRS
