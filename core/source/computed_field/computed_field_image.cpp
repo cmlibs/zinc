@@ -919,7 +919,7 @@ int cmzn_field_image_destroy(cmzn_field_image_id *image_address)
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(image_address));
 }
 
-int cmzn_field_image_get_pixel_width(cmzn_field_image_id image)
+int cmzn_field_image_get_width_in_pixels(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -931,7 +931,7 @@ int cmzn_field_image_get_pixel_width(cmzn_field_image_id image)
 	return 0;
 }
 
-int cmzn_field_image_get_pixel_height(cmzn_field_image_id image)
+int cmzn_field_image_get_height_in_pixels(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -943,7 +943,7 @@ int cmzn_field_image_get_pixel_height(cmzn_field_image_id image)
 	return 0;
 }
 
-int cmzn_field_image_get_pixel_depth(cmzn_field_image_id image)
+int cmzn_field_image_get_depth_in_pixels(cmzn_field_image_id image)
 {
 	if (image)
 	{
@@ -955,7 +955,7 @@ int cmzn_field_image_get_pixel_depth(cmzn_field_image_id image)
 	return 0;
 }
 
-int cmzn_field_image_get_pixel_sizes(cmzn_field_image_id image,
+int cmzn_field_image_get_size_in_pixels(cmzn_field_image_id image,
 	int valuesCount, int *valuesOut)
 {
 	if (image)

@@ -340,7 +340,7 @@ ZINC_API int cmzn_field_image_destroy(cmzn_field_image_id *image_address);
  * @param image   handle to the image field.
  * @return  width of the image
  */
-ZINC_API int cmzn_field_image_get_pixel_width(cmzn_field_image_id image);
+ZINC_API int cmzn_field_image_get_width_in_pixels(cmzn_field_image_id image);
 
 /**
  * Get the height of the image.
@@ -348,7 +348,7 @@ ZINC_API int cmzn_field_image_get_pixel_width(cmzn_field_image_id image);
  * @param image   handle to the image field.
  * @return  height of the image
  */
-ZINC_API int cmzn_field_image_get_pixel_height(cmzn_field_image_id image);
+ZINC_API int cmzn_field_image_get_height_in_pixels(cmzn_field_image_id image);
 
 /**
  * Get the depth of the image.
@@ -356,7 +356,7 @@ ZINC_API int cmzn_field_image_get_pixel_height(cmzn_field_image_id image);
  * @param image   handle to the image field.
  * @return  depth of the image
  */
-ZINC_API int cmzn_field_image_get_pixel_depth(cmzn_field_image_id image);
+ZINC_API int cmzn_field_image_get_depth_in_pixels(cmzn_field_image_id image);
 
 /**
  * Get the pixel sizes of the image.
@@ -364,12 +364,12 @@ ZINC_API int cmzn_field_image_get_pixel_depth(cmzn_field_image_id image);
  * @param image  The image to query.
  * @param valuesCount  The size of the sizes array to fill. Values
  * for dimensions beyond the size have the value of 1.
- * @param sizesOut  Array to receive pixel sizes.
+ * @param valuesOut  Array to receive pixel sizes.
  * @return  The actual dimension that have been read. This can be
  * more than the number requested, so a second call may be needed with a
  * larger array. Returns 0 on error.
  */
-ZINC_API int cmzn_field_image_get_pixel_sizes(cmzn_field_image_id image,
+ZINC_API int cmzn_field_image_get_size_in_pixels(cmzn_field_image_id image,
 	int valuesCount, int *valuesOut);
 
 /***************************************************************************//**
@@ -403,7 +403,7 @@ ZINC_API double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_i
  * @param image  The image to query.
  * @param valuesCount  The size of the sizes array to fill. Values
  * for dimensions beyond the size have the value of 1.
- * @param sizesOut  Array to receive texture coordinate sizes.
+ * @param valuesOut  Array to receive texture coordinate sizes.
  * @return  The actual dimension of texture coordinates that have been
  * explicitly set. This can be
  * more than the number requested, so a second call may be needed with a
