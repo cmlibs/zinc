@@ -127,24 +127,24 @@ public:
 		/*!< Allow the hardware to choose the wrap mode for texture */
 	};
 
-	int getPixelWidth()
+	int getWidthInPixels()
 	{
-		return cmzn_field_image_get_pixel_width(getDerivedId());
+		return cmzn_field_image_get_width_in_pixels(getDerivedId());
 	}
 
-	int getPixelHeight()
+	int getHeightInPixels()
 	{
-		return cmzn_field_image_get_pixel_height(getDerivedId());
+		return cmzn_field_image_get_height_in_pixels(getDerivedId());
 	}
 
-	int getPixelDepth()
+	int getDepthInPixels()
 	{
-		return cmzn_field_image_get_pixel_depth(getDerivedId());
+		return cmzn_field_image_get_depth_in_pixels(getDerivedId());
 	}
 
-	int getPixelSizes(int valuesCount, int *valuesOut)
+	int getSizeInPixels(int valuesCount, int *valuesOut)
 	{
-		return cmzn_field_image_get_pixel_sizes(getDerivedId(), valuesCount, valuesOut);
+		return cmzn_field_image_get_size_in_pixels(getDerivedId(), valuesCount, valuesOut);
 	}
 
 	double getTextureCoordinateWidth()
