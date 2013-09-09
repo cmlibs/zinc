@@ -78,14 +78,14 @@ TEST(cmzn_field_image, create_evaluate)
 
 	// check resolution is same as source field
 	cmzn_field_image_id im2 = cmzn_field_cast_image(f2);
-	int width_texels = cmzn_field_image_get_pixel_width(im2);
+	int width_texels = cmzn_field_image_get_width_in_pixels(im2);
 	EXPECT_EQ(32, width_texels);
-	int height_texels = cmzn_field_image_get_pixel_height(im2);
+	int height_texels = cmzn_field_image_get_height_in_pixels(im2);
 	EXPECT_EQ(32, height_texels);
-	int depth_texels = cmzn_field_image_get_pixel_depth(im2);
+	int depth_texels = cmzn_field_image_get_depth_in_pixels(im2);
 	EXPECT_EQ(1, depth_texels);
 	int int_sizes[3];
-	cmzn_field_image_get_pixel_sizes(im2, 3, &int_sizes[0]);
+	cmzn_field_image_get_size_in_pixels(im2, 3, &int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[1]);
 	EXPECT_EQ(1, int_sizes[2]);
@@ -165,14 +165,14 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_TRUE(im2.isValid());
 
 	// check resolution is same as source field
-	int width_texels = im2.getPixelWidth();
+	int width_texels = im2.getWidthInPixels();
 	EXPECT_EQ(32, width_texels);
-	int height_texels = im2.getPixelHeight();
+	int height_texels = im2.getHeightInPixels();
 	EXPECT_EQ(32, height_texels);
-	int depth_texels = im2.getPixelDepth();
+	int depth_texels = im2.getDepthInPixels();
 	EXPECT_EQ(1, depth_texels);
 	int int_sizes[3];
-	im2.getPixelSizes(3, &int_sizes[0]);
+	im2.getSizeInPixels(3, &int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[0]);
 	EXPECT_EQ(32, int_sizes[1]);
 	EXPECT_EQ(1, int_sizes[2]);
