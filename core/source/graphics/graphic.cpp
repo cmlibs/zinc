@@ -2898,7 +2898,7 @@ int cmzn_graphic_set_renderer_highlight_functor(struct cmzn_graphic *graphic, Re
 						default:
 						{
 							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  Unknown domain type");
+								"cmzn_graphic_set_renderer_highlight_functor.  Unknown domain type");
 						} break;
 					}
 					if (!(renderer->set_highlight_functor(functor)) && functor)
@@ -3055,7 +3055,7 @@ int cmzn_graphic_to_graphics_object(
 						if (!graphic_to_object_data->rc_coordinate_field)
 						{
 							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  Could not get rc_coordinate_field wrapper");
+								"cmzn_graphic_to_graphics_object.  Could not get rc_coordinate_field wrapper");
 							return_code = 0;
 						}
 					}
@@ -3067,7 +3067,7 @@ int cmzn_graphic_to_graphics_object(
 						if (!graphic_to_object_data->wrapper_orientation_scale_field)
 						{
 							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  Could not get orientation_scale_field wrapper");
+								"cmzn_graphic_to_graphics_object.  Could not get orientation_scale_field wrapper");
 							return_code = 0;
 						}
 					}
@@ -3079,7 +3079,7 @@ int cmzn_graphic_to_graphics_object(
 						if (!graphic_to_object_data->wrapper_stream_vector_field)
 						{
 							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  Could not get stream_vector_field wrapper");
+								"cmzn_graphic_to_graphics_object.  Could not get stream_vector_field wrapper");
 							return_code = 0;
 						}
 					}
@@ -3536,7 +3536,7 @@ int cmzn_graphic_to_graphics_object(
 								graphic_string = cmzn_graphic_string(graphic,
 									GRAPHIC_STRING_COMPLETE_PLUS);
 								display_message(ERROR_MESSAGE,
-									"cmiss_graphic_to_graphics_object.  "
+									"cmzn_graphic_to_graphics_object.  "
 									"Could not build '%s'",graphic_string);
 								DEALLOCATE(graphic_string);
 								/* set return_code to 1, so rest of graphic can be built */
@@ -3546,7 +3546,7 @@ int cmzn_graphic_to_graphics_object(
 						else
 						{
 							display_message(ERROR_MESSAGE,
-								"cmiss_graphic_to_graphics_object.  "
+								"cmzn_graphic_to_graphics_object.  "
 								"Could not create graphics object");
 							return_code = 0;
 						}
@@ -3589,7 +3589,7 @@ int cmzn_graphic_to_graphics_object(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmiss_graphic_to_graphics_object.  Invalid argument(s)");
+			"cmzn_graphic_to_graphics_object.  Invalid argument(s)");
 		return_code = 0;
 	}
 
