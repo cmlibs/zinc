@@ -1,5 +1,5 @@
 
-# Defines APIPP_SRCS
+# Defines APIPP_SRCS, APIPP_TYPES_HDRS
 
 # OpenCMISS-Zinc Library
 #
@@ -53,3 +53,8 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timekeeper.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timesequence.hpp
     )
+
+SET( APIPP_TYPES_HDRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenecoordinatesystem.hpp
+    )
+
