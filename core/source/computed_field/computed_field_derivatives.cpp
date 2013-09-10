@@ -287,7 +287,7 @@ Compare the type specific data
 	USE_PARAMETER(other_core);
 	if (field && (other = dynamic_cast<Computed_field_derivative*>(field->core)))
 	{
-		if ((xi_index == other->xi_index))
+		if (xi_index == other->xi_index)
 		{
 			return_code = 1;
 		}

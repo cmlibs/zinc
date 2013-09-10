@@ -114,7 +114,7 @@ int Computed_field_function::evaluate(cmzn_field_cache& cache, FieldValueCache& 
 		cmzn_field_cache& extraCache = *valueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
 		int number_of_xi = cache.getRequestedDerivatives();
-		if ((sourceField->number_of_components == referenceField->number_of_components))
+		if (sourceField->number_of_components == referenceField->number_of_components)
 		{
 			RealFieldValueCache *resultCache = 0;
 			if (number_of_xi && sourceCache->derivatives_valid)
@@ -274,8 +274,8 @@ struct Computed_field *Computed_field_create_function(
 			 (1 == result_field->number_of_components))))
 	{
 		int number_of_components = 0;
-		if ((source_field->number_of_components ==
-			reference_field->number_of_components))
+		if (source_field->number_of_components ==
+			reference_field->number_of_components)
 		{
 			number_of_components = result_field->number_of_components;
 		}
