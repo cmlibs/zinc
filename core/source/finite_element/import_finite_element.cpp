@@ -2345,6 +2345,18 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													return_code = 0;
 												}
 											}
+											else if (0 == strcmp("general map based",
+												global_to_element_map_string))
+											{
+												/* GENERAL_ELEMENT_MAP */
+												// GRC: implement
+												location = IO_stream_get_location_string(input_file);
+												display_message(ERROR_MESSAGE,
+													"Invalid global to element map type from file.  "
+													"%s", location);
+												DEALLOCATE(location);
+												return_code = 0;
+											}
 											else if (0 == strcmp("grid based",
 												global_to_element_map_string))
 											{
@@ -2401,30 +2413,6 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													DEALLOCATE(location);
 													return_code = 0;
 												}
-											}
-											else if (0 == strcmp("general node based",
-												global_to_element_map_string))
-											{
-												/* GENERAL_NODE_TO_ELEMENT_MAP */
-												/*???DB.  Not yet implemented */
-												location = IO_stream_get_location_string(input_file);
-												display_message(ERROR_MESSAGE,
-													"Invalid global to element map type from file.  "
-													"%s", location);
-												DEALLOCATE(location);
-												return_code = 0;
-											}
-											else if (0 == strcmp("field based",
-												global_to_element_map_string))
-											{
-												/* FIELD_TO_ELEMENT_MAP */
-												/*???DB.  Not yet implemented */
-												location = IO_stream_get_location_string(input_file);
-												display_message(ERROR_MESSAGE,
-													"Invalid global to element map type from file.  "
-													"%s", location);
-												DEALLOCATE(location);
-												return_code = 0;
 											}
 											else
 											{

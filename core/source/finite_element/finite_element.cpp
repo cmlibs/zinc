@@ -178,14 +178,11 @@ typedef cmzn_set<FE_field *,FE_field_compare_name> cmzn_set_FE_field;
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_field);
 
+/**
+ * Specifies how to find the value and derivatives for a field component at a
+ * node. This only appears as part of a FE_node_field.
+ */
 struct FE_node_field_component
-/*******************************************************************************
-LAST MODIFIED : 19 January 1998
-
-DESCRIPTION :
-Specifies how to find the value and derivatives for a field component at a node.
-This only appears as part of a FE_node_field.
-==============================================================================*/
 {
 	/* the offset for the global value within the list of all global values and
 		derivatives at the node */
@@ -202,16 +199,12 @@ This only appears as part of a FE_node_field.
 	int number_of_versions;
 	/* the types the nodal values */
 	enum FE_nodal_value_type *nodal_value_types;
-}; /* struct FE_node_field_component */
+};
 
+/**
+ * Describes storage of global values and derivatives for a field at a node.
+ */
 struct FE_node_field
-/*******************************************************************************
-LAST MODIFIED : 6 December 1993
-
-DESCRIPTION :
-How to access the the global values and derivatives for a field at a node.
-???DB.  More information needed ?  FE_node_basis ?
-==============================================================================*/
 {
 	/* the field which this accesses values and derivatives for */
 	struct FE_field *field;
@@ -224,17 +217,14 @@ How to access the the global values and derivatives for a field at a node.
 	/* the number of structures that point to this node field.  The node field
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
-}; /* struct FE_node_field */
+};
 
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_node_field);
 
+/**
+ * Describes how fields are defined for a node.
+ */
 struct FE_node_field_info
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-The fields defined for a node and how to access the values and derivatives.
-==============================================================================*/
 {
 	/* the total number of values and derivatives */
 	/*???RC not convinced number_of_values needs to be in this structure */
@@ -252,7 +242,7 @@ The fields defined for a node and how to access the values and derivatives.
 	/* the number of structures that point to this node field information.  The
 		node field information cannot be destroyed while this is greater than 0 */
 	int access_count;
-}; /* struct FE_node_field_info */
+};
 
 FULL_DECLARE_LIST_TYPE(FE_node_field_info);
 
@@ -397,31 +387,6 @@ struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_node);
 
-struct Linear_combination_of_global_values
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating an element value as a linear combination
-of global values.  The application of scale factors is one of the uses for this
-linear combination.
-==============================================================================*/
-{
-	/* the number of global values */
-	int number_of_global_values;
-	/* array of indices for the global values (stored with the field) */
-	/*???RC I think the above comment should say the following is an array of
-		indices into the nodal values, within the list of all values at the node.
-		In any case the index is an offset in whole FE_values relative to the
-		absolute value offset in the FE_node_field_component for the associated
-		node (which is a values storage/unsigned char).
-		See: global_to_element_map_values() */
-	int *global_value_indices;
-	/* array of indices for the coefficients multiplying the global values
-		(stored with the element as scale factors) */
-	int *coefficient_indices;
-}; /* struct Linear_combination_of_global_values */
-
 struct Standard_node_to_element_map
 /*******************************************************************************
 LAST MODIFIED : 12 March 2003
@@ -449,26 +414,68 @@ and elements can be reallocated.
 	int *scale_factor_indices;
 }; /* struct Standard_node_to_element_map */
 
-struct General_node_to_element_map
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
+struct FE_element_node_scale_field_info;
 
-DESCRIPTION :
-Stores the information for calculating element values by choosing nodal values
-and applying a general scale factor matrix.  The <nodal_values> and
-<scale_factors> are stored as offsets so that the arrays stored with the nodes
-and elements can be reallocated.
-==============================================================================*/
+namespace {
+
+class ElementDOFMapEvaluationCache;
+class ElementDOFMapMatchCache;
+
+class ElementDOFMap
 {
-	/* the index, within the list of nodes for the element, of the node at which
-		the values are stored */
-	int node_index;
-	/* the number of nodal values used (which is also the number of element values
-		calculated) */
-	int number_of_nodal_values;
-	/* how to calculate each element values from the nodal values */
-	struct Linear_combination_of_global_values **element_values;
-}; /* struct General_node_to_element_map */
+public:
+	virtual ~ElementDOFMap()
+	{
+	}
+
+	virtual ElementDOFMap *clone() = 0;
+
+	virtual ElementDOFMap *cloneWithNewNodeIndices(
+		FE_element_node_scale_field_info *mergeInfo,
+		FE_element_node_scale_field_info *sourceInfo) = 0;
+
+	/**
+	 * Must override to evaluate DOF.
+	 * @return  true if successfully evaluated, otherwise false
+	 */
+	virtual bool evaluate(ElementDOFMapEvaluationCache& cache, FE_value& value) = 0;
+
+	/**
+	 * Override to set node which DOF is mapped from, or set to zero if none.
+	 * Default implementation is for non-node-based map.
+	 * @return  true if successfully evaluated, otherwise false.
+	 */
+	virtual bool evaluateNode(ElementDOFMapEvaluationCache& cache, FE_node*& node)
+	{
+		node = 0;
+		return true;
+	}
+
+	/**
+	 * Override to return whether this map is defined identically to another map,
+	 * i.e. is the same class with equal members.
+	 * @param otherMap  Map to compare with, usually the one in global use.
+	 * @return  true if maps match, otherwise false.
+	 */
+	virtual bool matches(ElementDOFMap *otherMap) = 0;
+
+	/**
+	 * Override to return whether this map is defined identically to another map,
+	 * i.e. is the same class with equivalent definition with supporting node
+	 * scale info.
+	 * @param otherMap  Map to compare with, usually the one in global use.
+	 * @param cache  Supporting node scale info and cache for matching.
+	 * @return  true if maps match, otherwise false.
+	 */
+	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache) = 0;
+
+	/** override to set flag for each local node in use */
+	virtual void setLocalNodeInUse(int numberOfLocalNodes, int *localNodeInUse)
+	{
+	}
+};
+
+} // namespace { }
 
 struct FE_element_field_component
 /*******************************************************************************
@@ -503,22 +510,12 @@ either lying on the z-axis or being the first and last node in a circle.
 			/* how to get the element values from the nodal values */
 			struct Standard_node_to_element_map **node_to_element_maps;
 		} standard_node_based;
-		/* for a general node based map */
+		/* for a general map */
 		struct
 		{
-			/* the number of nodes */
-			int number_of_nodes;
-			/* how to get the element values from the nodal values */
-			struct General_node_to_element_map **node_to_element_maps;
-		} general_node_based;
-		/* for a field map */
-		struct
-		{
-			/* the number of element values */
-			int number_of_element_values;
-			/* how to calculate each element value from the global values */
-			struct Linear_combination_of_global_values **element_values;
-		} field_based;
+			int number_of_maps; // redundant; equals number of basis functions
+			ElementDOFMap **maps;
+		} general_map_based;
 		/* for an element grid */
 		struct
 		{
@@ -683,7 +680,8 @@ if fields are defined and need this supplemental information.
 	void **scale_factor_set_identifiers;
 	int *numbers_in_scale_factor_sets;
 	/* all scale factors are stored in this array.  Global to element maps have
-		indices into this array */
+		indices into this array. General element map has relative offset into its
+		scale factor set */
 	int number_of_scale_factors;
 	FE_value *scale_factors;
 }; /* struct FE_element_node_scale_field_info */
@@ -5666,67 +5664,590 @@ A NULL <type> means an unspecified shape of <dimension>.
 	return (shape);
 } /* find_FE_element_shape_in_list */
 
+namespace {
+
+/**
+ * Cache to make ElementDOFMap::evaluate more efficient.
+ */
+class ElementDOFMapEvaluationCache
+{
+public:
+	FE_element *element;
+	FE_field *field;
+	int componentNumber;
+	FE_basis *basis;
+	FE_value time;
+	// cache node_field_info/component as next node is likely to re-use
+	FE_node_field_info *nodeFieldInfo;
+	FE_node_field_component *nodeFieldComponent;
+	// cache time sequence and indexes as requires binary search to find
+	FE_time_sequence *timeSequence;
+	int timeIndex1, timeIndex2;
+	FE_value timeXi;
+	// cache element node scale information to save lookups
+	FE_node **nodes;
+	int numberOfElementNodes;
+	FE_value *scaleFactors;
+	int numberOfScaleFactors;
+
+	ElementDOFMapEvaluationCache(FE_element *element,
+			FE_field *field, FE_value componentNumber = 0, FE_basis *basis = 0, FE_value time = 0.0) :
+		element(element),
+		field(field),
+		componentNumber(componentNumber),
+		basis(basis),
+		time(time),
+		nodeFieldInfo(0),
+		nodeFieldComponent(0),
+		timeSequence(0),
+		scaleFactors(0),
+		numberOfScaleFactors(0)
+	{
+		FE_element_node_scale_field_info *info = element->information;
+		if (info)
+		{
+			this->nodes = info->nodes;
+			this->numberOfElementNodes = info->number_of_nodes;
+			// get scale factors for the current scale factor set (i.e. matching basis)
+			if (basis && info->scale_factors)
+			{
+				int scaleFactorSetOffset = 0;
+				for (int i = 0; i < info->number_of_scale_factor_sets; ++i)
+				{
+					if (info->scale_factor_set_identifiers[i] == static_cast<void *>(basis))
+					{
+						this->scaleFactors = info->scale_factors + scaleFactorSetOffset;
+						this->numberOfScaleFactors = info->numbers_in_scale_factor_sets[i];
+						break;
+					}
+					scaleFactorSetOffset += info->numbers_in_scale_factor_sets[i];
+				}
+			}
+		}
+		else
+		{
+			this->nodes = 0;
+			this->numberOfElementNodes = 0;
+		}
+	}
+
+	inline void setTimeSequence(FE_time_sequence *timeSequenceIn)
+	{
+		if (timeSequenceIn != this->timeSequence)
+		{
+			this->timeSequence = timeSequenceIn;
+			if (this->timeSequence)
+			{
+				FE_time_sequence_get_interpolation_for_time(this->timeSequence,
+					this->time, &this->timeIndex1, &this->timeIndex2, &this->timeXi);
+			}
+		}
+	}
+
+};
+
+/**
+ * Cache to make ElementDOFMap::matchesWithInfo more efficient.
+ */
+class ElementDOFMapMatchCache
+{
+public:
+	FE_basis *basis;
+	FE_element_node_scale_field_info *info1;
+	FE_element_node_scale_field_info *info2;
+	LIST(FE_node) *globalNodes1;
+	FE_node **nodes1;
+	int numberOfElementNodes1;
+	FE_node **nodes2;
+	int numberOfElementNodes2;
+	int numberOfScaleFactors1;
+	FE_value *scaleFactors1;
+	int numberOfScaleFactors2;
+	FE_value *scaleFactors2;
+
+	/**
+	 * @param basis  The basis, needed to find scale factor set.
+	 * @param thisInfo  Node scale information supplying nodes and scale factors
+	 * for map1 (this).
+	 * @param info2  Node scale information supplying nodes and scale factors
+	 * for map2 (other).
+	 * @param globalNodes1  Optional list of global nodes. If supplied then the
+	 * node in this list of the same identifier as the node referenced by this map
+	 * with info1 is used. Used in "can be merged" code when non-global nodes are
+	 * in the element.
+	 */
+	ElementDOFMapMatchCache(FE_basis *basis,
+			FE_element_node_scale_field_info *info1,
+			FE_element_node_scale_field_info *info2,
+			LIST(FE_node) *globalNodes1) :
+		basis(basis),
+		info1(info1),
+		info2(info2),
+		globalNodes1(globalNodes1),
+		numberOfScaleFactors1(0),
+		scaleFactors1(0),
+		numberOfScaleFactors2(0),
+		scaleFactors2(0)
+	{
+		if (this->info1)
+		{
+			this->nodes1 = this->info1->nodes;
+			this->numberOfElementNodes1 = this->info1->number_of_nodes;
+			// get scale factors for the current scale factor set (i.e. matching basis)
+			if (this->basis && this->info1->scale_factors)
+			{
+				int scaleFactorSetOffset = 0;
+				for (int i = 0; i < this->info1->number_of_scale_factor_sets; ++i)
+				{
+					if (this->info1->scale_factor_set_identifiers[i] == static_cast<void *>(basis))
+					{
+						this->scaleFactors1 = this->info1->scale_factors + scaleFactorSetOffset;
+						this->numberOfScaleFactors1 = this->info1->numbers_in_scale_factor_sets[i];
+						break;
+					}
+					scaleFactorSetOffset += this->info1->numbers_in_scale_factor_sets[i];
+				}
+			}
+		}
+		else
+		{
+			this->nodes1 = 0;
+			this->numberOfElementNodes1 = 0;
+		}
+		if (this->info2)
+		{
+			this->nodes2 = this->info2->nodes;
+			this->numberOfElementNodes2 = this->info2->number_of_nodes;
+			// get scale factors for the current scale factor set (i.e. matching basis)
+			if (this->basis && this->info2->scale_factors)
+			{
+				int scaleFactorSetOffset = 0;
+				for (int i = 0; i < this->info2->number_of_scale_factor_sets; ++i)
+				{
+					if (this->info2->scale_factor_set_identifiers[i] == static_cast<void *>(basis))
+					{
+						this->scaleFactors2 = this->info2->scale_factors + scaleFactorSetOffset;
+						this->numberOfScaleFactors2 = this->info2->numbers_in_scale_factor_sets[i];
+						break;
+					}
+					scaleFactorSetOffset += this->info2->numbers_in_scale_factor_sets[i];
+				}
+			}
+		}
+		else
+		{
+			this->nodes2 = 0;
+			this->numberOfElementNodes2 = 0;
+		}
+	}
+};
+
+/**
+ * DOF mapping taking a single node value by value type and version, and
+ * optionally multiplying it by a single scale factor.
+ */
+class NodeToElementDOFMap : public ElementDOFMap
+{
+	int nodeIndex;
+	FE_nodal_value_type valueType;
+	int version;
+	int scaleFactorIndex;
+
+public:
+	NodeToElementDOFMap(int nodeIndex) :
+		nodeIndex(nodeIndex),
+		valueType(FE_NODAL_VALUE),
+		version(0),
+		scaleFactorIndex(-1)
+	{
+	}
+
+	virtual ElementDOFMap *clone()
+	{
+		return new NodeToElementDOFMap(*this);
+	}
+
+	virtual ElementDOFMap *cloneWithNewNodeIndices(
+		FE_element_node_scale_field_info *mergeInfo,
+		FE_element_node_scale_field_info *sourceInfo)
+	{
+		NodeToElementDOFMap *newNodeMap = 0;
+		if (sourceInfo && sourceInfo->nodes && mergeInfo && mergeInfo->nodes)
+		{
+			if ((this->nodeIndex >= 0) && (this->nodeIndex < sourceInfo->number_of_nodes))
+			{
+				newNodeMap = new NodeToElementDOFMap(*this);
+				FE_node *node = sourceInfo->nodes[this->nodeIndex];
+				if (node)
+				{
+					FE_node **mergeNode = mergeInfo->nodes;
+					int mergeNodeIndex = 0;
+					for (int i = 0; i < mergeInfo->number_of_nodes; ++i)
+					{
+						if (node == mergeNode[i])
+						{
+							newNodeMap->nodeIndex = mergeNodeIndex;
+							break;
+						}
+						++mergeNodeIndex;
+					}
+				}
+				else
+				{
+					// Note sure if this is relevant here:
+					// [since using this function in define_FE_field_at_element,
+					// have to handle case of	NULL nodes by using existing node_index]
+					newNodeMap->nodeIndex = this->nodeIndex;
+				}
+			}
+		}
+		return newNodeMap;
+	}
+
+	virtual bool evaluate(ElementDOFMapEvaluationCache& cache, FE_value& value)
+	{
+		if ((!cache.nodes) || (this->nodeIndex >= cache.numberOfElementNodes))
+		{
+			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
+				"Element %d field %s component %d: local node index %d out of range %d",
+				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				this->nodeIndex + 1, cache.numberOfElementNodes);
+			return false;
+		}
+		FE_node *node = cache.nodes[this->nodeIndex];
+		if (node->fields != cache.nodeFieldInfo)
+		{
+			FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+				cache.field, node->fields->node_field_list);
+			if (!node_field)
+			{
+				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
+					"Element %d field %s component %d: Field not defined on global node %d at local node index %d",
+					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					node->cm_node_identifier, this->nodeIndex + 1);
+				return false;
+			}
+			cache.nodeFieldComponent = node_field->components + cache.componentNumber;
+			cache.nodeFieldInfo = node->fields;
+			cache.setTimeSequence(node_field->time_sequence);
+		}
+		FE_nodal_value_type *valueTypes = cache.nodeFieldComponent->nodal_value_types;
+		if (!valueTypes)
+		{
+			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
+				"Element %d field %s component %d: Global node %d has no value/derivative types",
+				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				node->cm_node_identifier);
+			return false;
+		}
+		int numberOfValueTypes = cache.nodeFieldComponent->number_of_derivatives + 1;
+		int i = 0;
+		while ((i < numberOfValueTypes) && (valueTypes[i] != this->valueType))
+		{
+			++i;
+		}
+		if ((i == numberOfValueTypes) || (this->version >= cache.nodeFieldComponent->number_of_versions))
+		{
+			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
+				"Element %d field %s component %d: Global node %d has no %s version %d",
+				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				node->cm_node_identifier, ENUMERATOR_STRING(FE_nodal_value_type)(this->valueType),
+				this->version + 1);
+			return false;
+		}
+		void *nodeValues = node->values_storage + cache.nodeFieldComponent->value;
+		int valueIndex = i;
+		if (this->version)
+		{
+			valueIndex += this->version * (cache.nodeFieldComponent->number_of_derivatives + 1);
+		}
+		FE_value scaleFactor = 1.0;
+		if (this->scaleFactorIndex >= 0)
+		{
+			if (this->scaleFactorIndex >= cache.numberOfScaleFactors)
+			{
+				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
+					"Element %d field %s component %d: Scale factor index %d is out of range %d",
+					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					this->scaleFactorIndex + 1, cache.numberOfScaleFactors);
+				return false;
+			}
+			scaleFactor *= cache.scaleFactors[this->scaleFactorIndex];
+		}
+		if (cache.timeSequence)
+		{
+			FE_value *array = *((static_cast<FE_value **>(nodeValues) + valueIndex));
+			value = scaleFactor*(
+				(1.0 - cache.timeXi)*array[cache.timeIndex1] +
+				(      cache.timeXi)*array[cache.timeIndex2]);
+		}
+		else
+		{
+			value = scaleFactor*(static_cast<FE_value *>(nodeValues)[valueIndex]);
+		}
+		return true;
+	}
+
+	virtual bool evaluateNode(ElementDOFMapEvaluationCache& cache, FE_node*& node)
+	{
+		if ((!cache.nodes) || (this->nodeIndex >= cache.numberOfElementNodes))
+		{
+			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluateNode.  "
+				"Element %d field %s component %d: local node index %d out of range %d",
+				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				this->nodeIndex + 1, cache.numberOfElementNodes);
+			return false;
+		}
+		node = cache.nodes[this->nodeIndex];
+		return true;
+	}
+
+	virtual bool matches(ElementDOFMap *otherMap)
+	{
+		NodeToElementDOFMap *nodeMap2 = dynamic_cast<NodeToElementDOFMap *>(otherMap);
+		if (nodeMap2)
+		{
+			if ((this->nodeIndex == nodeMap2->nodeIndex) &&
+				(this->valueType == nodeMap2->valueType) &&
+				(this->version == nodeMap2->version) &&
+				(this->scaleFactorIndex == nodeMap2->scaleFactorIndex))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache)
+	{
+		NodeToElementDOFMap *nodeMap2 = dynamic_cast<NodeToElementDOFMap *>(otherMap);
+		if (nodeMap2)
+		{
+			FE_node *node1 = (this->nodeIndex < cache.numberOfElementNodes1) ? cache.nodes1[this->nodeIndex] : 0;
+			FE_node *node2 = (this->nodeIndex < cache.numberOfElementNodes2) ? cache.nodes2[this->nodeIndex] : 0;
+			if (node1 && node2 && (
+				((!cache.globalNodes1) && (node1 == node2)) ||
+					(cache.globalNodes1 && (node2 ==
+						FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+							get_FE_node_identifier(node1), cache.globalNodes1)))) &&
+				(this->valueType == nodeMap2->valueType) &&
+				(this->version == nodeMap2->version) &&
+				(this->scaleFactorIndex == nodeMap2->scaleFactorIndex))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	virtual void setLocalNodeInUse(int numberOfLocalNodes, int *localNodeInUse)
+	{
+		if (this->nodeIndex < numberOfLocalNodes)
+		{
+			localNodeInUse[this->nodeIndex] = 1;
+		}
+	}
+};
+
+/**
+ * DOF mapping which sums values from 0 or more DOF maps.
+ * For building general linear maps, hanging nodes etc.
+ * Note: maps passed to this object belong to it and are destroyed with it.
+ */
+class SumElementDOFMap : public ElementDOFMap
+{
+	int numberOfMaps;
+	ElementDOFMap **maps;
+
+public:
+	SumElementDOFMap() :
+		numberOfMaps(0),
+		maps(0)
+	{
+	}
+
+	SumElementDOFMap(SumElementDOFMap& source) :
+		numberOfMaps(source.numberOfMaps),
+		maps(0)
+	{
+		ALLOCATE(this->maps, ElementDOFMap*, this->numberOfMaps);
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			this->maps[i] = source.maps[i]->clone();
+		}
+	}
+
+	virtual ~SumElementDOFMap()
+	{
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			delete this->maps[i];
+		}
+		DEALLOCATE(maps);
+	}
+
+	virtual ElementDOFMap *clone()
+	{
+		return new SumElementDOFMap(*this);
+	}
+
+	virtual ElementDOFMap *cloneWithNewNodeIndices(
+		FE_element_node_scale_field_info *mergeInfo,
+		FE_element_node_scale_field_info *sourceInfo)
+	{
+		SumElementDOFMap *newSum = new SumElementDOFMap();
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			newSum->addMap(this->maps[i]->cloneWithNewNodeIndices(mergeInfo, sourceInfo));
+		}
+	}
+
+	/**
+	 * Add map to the list of maps in the sum. This object assumes ownership of the
+	 * map and will be responsible for destroying it.
+	 * @return  true on success, false on failure
+	 */
+	bool addMap(ElementDOFMap *map)
+	{
+		if (map)
+		{
+			ElementDOFMap **temp;
+			if (REALLOCATE(temp, this->maps, ElementDOFMap*, this->numberOfMaps + 1))
+			{
+				this->maps = temp;
+				this->maps[this->numberOfMaps] = map;
+				++(this->numberOfMaps);
+				return true;
+			}
+		}
+		return false;
+	}
+
+	virtual bool evaluate(ElementDOFMapEvaluationCache& cache, FE_value& value)
+	{
+		value = 0.0;
+		FE_value term;
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			if (!this->maps[i]->evaluate(cache, term))
+			{
+				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluate.  "
+					"Element %d field %s component %d:  Could not evaluate map %d of sum",
+					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					i + 1);
+				return false;
+			}
+			value += term;
+		}
+		return true;
+	}
+
+	/** WARNING: returns only the first node from which DOFs are mapped, if any */
+	virtual bool evaluateNode(ElementDOFMapEvaluationCache& cache, FE_node*& node)
+	{
+		node = 0;
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			if (!this->maps[i]->evaluateNode(cache, node))
+			{
+				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluateNode.  "
+					"Element %d field %s component %d:  Could not evaluate map %d of sum",
+					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					i + 1);
+				return false;
+			}
+			if (node)
+			{
+				return true;
+			}
+		}
+		return true;
+	}
+
+	virtual bool matches(ElementDOFMap *otherMap)
+	{
+		SumElementDOFMap *otherSum = dynamic_cast<SumElementDOFMap *>(otherMap);
+		if (!otherSum || (this->numberOfMaps != otherSum->numberOfMaps))
+			return false;
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			if (!this->maps[i]->matches(otherSum->maps[i]))
+				return false;
+		}		
+		return true;
+	}
+
+	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache)
+	{
+		SumElementDOFMap *otherSum = dynamic_cast<SumElementDOFMap *>(otherMap);
+		if (!otherSum || (this->numberOfMaps != otherSum->numberOfMaps))
+			return false;
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			if (!this->maps[i]->matchesWithInfo(otherSum->maps[i], cache))
+				return false;
+		}		
+		return true;
+	}
+
+	virtual void setLocalNodeInUse(int numberOfLocalNodes, int *localNodeInUse)
+	{
+		for (int i = 0; i < this->numberOfMaps; ++i)
+		{
+			this->maps[i]->setLocalNodeInUse(numberOfLocalNodes, localNodeInUse);
+		}
+	}
+};
+
+} // namespace { }
+
+/**
+ * The standard function for calculating the <element> <values> for the given
+ * <component_number> of <element_field>. Calculates the <number_of_values> and
+ * the <values> for the component.  The storage for the <values> is allocated by
+ * the function.
+ * Uses relative offsets into nodal values array in standard and general node to
+ * element maps. Absolute offset for start of field component is obtained from
+ * the node_field_component for the field at the node.
+ */
 static int global_to_element_map_values(struct FE_element *element,
 	struct FE_element_field *element_field, FE_value time, int component_number,
 	int *number_of_values,FE_value **values)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-The standard function for calculating the <element> <values> for the given
-<component_number> of <element_field>. Calculates the <number_of_values> and
-the <values> for the component.  The storage for the <values> is allocated by
-the function.
-???RC Changed to use relative offsets into nodal values array in standard and
-general node to element maps. Absolute offset for start of field component is
-obtained from the node_field_component for the field at the node.
-==============================================================================*/
 {
-	char *basis_string;
-	FE_value *array, *blended_element_values, *element_value, *element_values,
-		*scale_factors = NULL,temp_value = 0.0,xi;
-	int *coefficient_index,*global_value_index,j,k,l,
-		number_of_blended_element_values,number_of_element_nodes,
-		number_of_element_values,number_of_global_values,number_of_map_values = 0,
-		number_of_scale_factors,return_code,*scale_factor_index,scale_index,
-		time_index_one, time_index_two, value_index;
-	short *short_array;
-	struct FE_basis *basis;
-	struct FE_element_field_component *component;
-	struct FE_field *field;
-	struct FE_node *node = NULL,**nodes;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	struct FE_node_field_info *node_field_info;
-	struct FE_time_sequence *time_sequence;
-	struct General_node_to_element_map *general_node_map,
-		**general_node_map_address;
-	struct Linear_combination_of_global_values *linear_combination,
-		**linear_combination_address;
-	struct Standard_node_to_element_map *standard_node_map,
-		**standard_node_map_address;
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-	double sum;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-	FE_value sum;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-	void *global_values;
+	FE_field *field;
+	FE_element_field_component *component;
+	FE_value *element_values = 0;
+	int number_of_element_values = 0;
+	int return_code = 1;
 
-	ENTER(global_to_element_map_values);
-/*???debug */
-/*printf("enter global_to_element_map_values\n");*/
-	/* check the arguments */
 	if (element&&element_field&&(field=element_field->field)&&number_of_values&&
 		values&&(0<=component_number)&&
 		(component_number<field->number_of_components)&&
 		(component=element_field->components[component_number]))
 	{
+		FE_basis *basis = component->basis;
 		/* retrieve the element values */
 		switch (component->type)
 		{
 			case STANDARD_NODE_TO_ELEMENT_MAP:
 				/* global values are associated with nodes */
 			{
+				FE_value *array, *element_value,
+					*scale_factors = NULL,temp_value = 0.0,xi;
+				int *global_value_index,j,k,
+					number_of_element_nodes,
+					number_of_global_values,number_of_map_values = 0,
+					number_of_scale_factors,*scale_factor_index,scale_index,
+					time_index_one, time_index_two, value_index;
+				short *short_array;
+				struct FE_node *node = NULL,**nodes;
+				struct FE_node_field *node_field;
+				struct FE_node_field_component *node_field_component;
+				struct FE_node_field_info *node_field_info;
+				struct FE_time_sequence *time_sequence;
+				struct Standard_node_to_element_map *standard_node_map,
+					**standard_node_map_address;
+				void *global_values;
 				/* check information */
 				/*???RC 18 Nov 1999 allowed having no scale factors */
 				if ((element->information)&&(nodes=element->information->nodes)&&
@@ -5997,261 +6518,33 @@ obtained from the node_field_component for the field at the node.
 					return_code=0;
 				}
 			} break;
-			case GENERAL_NODE_TO_ELEMENT_MAP:
-				/* global values are associated with nodes */
+			case GENERAL_ELEMENT_MAP:
 			{
-				/* check information */
-				if ((element->information)&&(nodes=element->information->nodes)&&
-					((number_of_element_nodes=element->information->number_of_nodes)>0)&&
-					(scale_factors=element->information->scale_factors)&&
-					((number_of_scale_factors=element->information->
-						number_of_scale_factors)>0))
+				ElementDOFMap **maps = component->map.general_map_based.maps;
+				number_of_element_values = component->map.general_map_based.number_of_maps;
+				ALLOCATE(element_values, FE_value, number_of_element_values);
+				if (element_values)
 				{
-					/* calculate the number of element values by summing the numbers of
-						values retrieved from each node */
-					number_of_element_values=0;
-					general_node_map_address=
-						component->map.general_node_based.node_to_element_maps;
-					j=component->map.general_node_based.number_of_nodes;
-					return_code=1;
-					while (return_code&&(j>0))
+					ElementDOFMapEvaluationCache cache(element, field, component_number, basis, time);
+					for (int j = 0; j < number_of_element_values; ++j)
 					{
-						if ((general_node_map= *general_node_map_address)&&
-							((number_of_map_values=
-								general_node_map->number_of_nodal_values)>0)&&
-							(0<=general_node_map->node_index)&&
-							(general_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[general_node_map->node_index])&&
-							(node->values_storage)&&(node->fields)&&
-							(general_node_map->element_values))
+						if (!maps[j]->evaluate(cache, element_values[j]))
 						{
-							number_of_element_values += number_of_map_values;
-							general_node_map_address++;
-							j--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-								"Invalid general node to element map");
-							return_code=0;
-						}
-					}
-					if (return_code)
-					{
-						/* allocate storage for storing the element values */
-						if ((number_of_element_values>0)&&
-							(ALLOCATE(element_values,FE_value,number_of_element_values)))
-						{
-							element_value=element_values;
-							/* for each node retrieve the scaled nodal values */
-							general_node_map_address=
-								component->map.general_node_based.node_to_element_maps;
-							j=component->map.general_node_based.number_of_nodes;
-							/* Need node_field_component to get absolute offset into nodal
-								values array. Also store node_field_info so we don't have to
-								get node_field_component each time if it is not changing */
-							node_field_info=(struct FE_node_field_info *)NULL;
-							node_field_component=(struct FE_node_field_component *)NULL;
-							while (return_code&&(j>0))
-							{
-								/* retrieve the scaled nodal values */
-								general_node_map= *general_node_map_address;
-								node=nodes[general_node_map->node_index];
-								number_of_global_values=node->fields->number_of_values;
-								linear_combination_address=general_node_map->element_values;
-								/* get node_field_component for absolute offsets into nodes */
-								if (node_field_info != node->fields)
-								{
-									if (node->fields&&(node_field=FIND_BY_IDENTIFIER_IN_LIST(
-																 FE_node_field,field)(field,node->fields->node_field_list))&&
-										node_field->components)
-									{
-										node_field_component=
-											node_field->components + component_number;
-									}
-									node_field_info=node->fields;
-								}
-								if (node_field_component)
-								{
-									/* add absolute value offset from node_field_component and
-										cast address into FE_value type */
-									global_values=(node->values_storage+
-										node_field_component->value);
-									k=general_node_map->number_of_nodal_values;
-									while (return_code&&(k>0))
-									{
-										sum=0;
-										if ((linear_combination= *linear_combination_address)&&
-											((l=linear_combination->number_of_global_values)>0)&&
-											(global_value_index=
-												linear_combination->global_value_indices)&&
-											(coefficient_index=
-												linear_combination->coefficient_indices))
-										{
-											while (return_code&&(l>0))
-											{
-												/* if there is not a global value use 0 */
-												if ((0<=(value_index= *global_value_index))&&
-													(value_index<number_of_global_values))
-												{
-													/* if there is not a coefficient use 1 as the
-														coefficient */
-													if ((0<=(scale_index= *coefficient_index))&&
-														(scale_index<number_of_scale_factors))
-													{
-														/* ???RC Change to relative. */
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-														sum += (double)(((FE_value *)global_values)[value_index])*
-															(double)(scale_factors[scale_index]);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														sum += ((FE_value *)global_values)[value_index]*
-															scale_factors[scale_index];
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-													}
-													else
-													{
-														/* ???RC Change to relative. */
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-														sum += (double)((FE_value *)global_values)[value_index];
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-														sum += ((FE_value *)global_values)[value_index];
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-													}
-												}
-												global_value_index++;
-												coefficient_index++;
-												l--;
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"global_to_element_map_values.  Missing linear combination");
-											DEALLOCATE(element_values);
-											return_code=0;
-										}
-										*element_value=(FE_value)sum;
-										element_value++;
-										k--;
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"global_to_element_map_values.  Invalid node field component");
-									return_code=0;
-								}
-								general_node_map_address++;
-								j--;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"global_to_element_map_values.  Could not allocate memory for values");
-							return_code=0;
+							return_code = 0;
+							break;
 						}
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"global_to_element_map_values.  Missing element information");
-					return_code=0;
+					return_code = 0;
 				}
 			} break;
-			case FIELD_TO_ELEMENT_MAP:
-				/* global values are associated with the field */
-			{
-				/* check information */
-				if ((element->information)&&
-					(scale_factors=element->information->scale_factors)&&
-					((number_of_scale_factors=element->information->
-						number_of_scale_factors)>0)&&
-					(field->value_type==FE_VALUE_VALUE)&&
-					((number_of_global_values=field->number_of_values)>0))
-				{
-					/* allocate storage for storing the element values */
-					if ((linear_combination_address=component->map.field_based.
-							 element_values)&&((number_of_element_values=
-														 component->map.field_based.number_of_element_values)>0)&&
-						(ALLOCATE(element_values,FE_value,number_of_element_values)))
-					{
-						element_value=element_values;
-						/* calculate each element value as a linear combination of global
-							values */
-						j=number_of_element_values;
-						return_code=1;
-						while (return_code&&(j>0))
-						{
-							sum=0;
-							if ((linear_combination= *linear_combination_address)&&
-								((k=linear_combination->number_of_global_values)>0)&&
-								(global_value_index=linear_combination->global_value_indices)&&
-								(coefficient_index=linear_combination->coefficient_indices))
-							{
-								while (return_code&&(k>0))
-								{
-									/* if there is not a global value use 0 */
-									if ((0<=(value_index= *global_value_index))&&
-										(value_index<number_of_global_values))
-									{
-										get_FE_field_FE_value_value(field,value_index,&temp_value);
-										/* if there is not a coefficient use 1 as the coefficient */
-										if ((0<=(scale_index= *coefficient_index))&&
-											(scale_index<number_of_scale_factors))
-										{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-											sum += (double)(temp_value)*
-												(double)(scale_factors[scale_index]);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-											sum += temp_value*scale_factors[scale_index];
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										}
-										else
-										{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-											sum += (double)temp_value;
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-											sum += temp_value;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										}
-									}
-									global_value_index++;
-									coefficient_index++;
-									k--;
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"global_to_element_map_values.  Missing linear combination");
-								DEALLOCATE(element_values);
-								return_code=0;
-							}
-							*element_value=(FE_value)sum;
-							element_value++;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"global_to_element_map_values.  Could not allocate memory for values");
-						return_code=0;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"global_to_element_map_values.  Missing element/field information");
-					return_code=0;
-				}
-			} break;
-			default:
+		case ELEMENT_GRID_MAP:
 			{
 				display_message(ERROR_MESSAGE,
-					"global_to_element_map_values.  Invalid map type");
-				return_code=0;
+					"global_to_element_map_values.  Not valid for grid");
+				return_code = 0;
 			} break;
 		}
 		if (return_code)
@@ -6259,34 +6552,17 @@ obtained from the node_field_component for the field at the node.
 			/* if necessary, modify the calculated element values */
 			if (component->modify)
 			{
-/*???debug */
-/*printf("Element %d %d %d\n",element->cmiss.element_number,
-	element->cmiss.face_number,element->cmiss.line_number);
-printf("unmodified values :");
-for (i=0;i<number_of_element_values;i++)
-{
-	printf(" %g",element_values[i]);
-}
-printf("\n");*/
 				return_code=(component->modify)(component,element,field,
 					time,number_of_element_values,element_values);
-/*???debug */
-/*printf("modified values :");
-for (i=0;i<number_of_element_values;i++)
-{
-	printf(" %g",element_values[i]);
-}
-printf("\n");*/
 			}
 			if (return_code)
 			{
-				basis = component->basis;
 				if (FE_basis_get_number_of_functions(basis) == number_of_element_values)
 				{
-					number_of_blended_element_values = FE_basis_get_number_of_blended_functions(basis);
+					int number_of_blended_element_values = FE_basis_get_number_of_blended_functions(basis);
 					if (number_of_blended_element_values > 0)
 					{
-						blended_element_values = FE_basis_get_blended_element_values(basis, element_values);
+						FE_value *blended_element_values = FE_basis_get_blended_element_values(basis, element_values);
 						*values=blended_element_values;
 						*number_of_values=number_of_blended_element_values;
 						DEALLOCATE(element_values);
@@ -6305,7 +6581,7 @@ printf("\n");*/
 				}
 				else
 				{
-					basis_string = FE_basis_get_description_string(basis);
+					char *basis_string = FE_basis_get_description_string(basis);
 					display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
 						"Incorrect number of element values (%d) for basis (%s)",
 						number_of_element_values, basis_string);
@@ -6328,39 +6604,25 @@ printf("\n");*/
 			"global_to_element_map_values.  Invalid argument(s)");
 		return_code=0;
 	}
-/*???debug */
-/*printf("leave global_to_element_map_values\n");*/
-	LEAVE;
-
 	return (return_code);
-} /* global_to_element_map_values */
+}
 
+/**
+ * The standard function for calculating the nodes used for a <component>.
+ * Calculates the <number_of_values> and the node used to calculate each element
+ * value for a <component>.  The storage for the nodes array
+ * (<*element_values_address>) is allocated by the function.
+ * Limitation: Only returns the first node contributing to the DOF for general
+ * maps from multiple nodes.
+ */
 static int global_to_element_map_nodes(
 	struct FE_element_field_component *component,struct FE_element *element,
 	struct FE_field *field,int *number_of_values,
 	struct FE_node ***element_values_address)
-/*******************************************************************************
-LAST MODIFIED : 9 February 1998
-
-DESCRIPTION :
-The standard function for calculating the nodes used for a <component>.
-Calculates the <number_of_values> and the node used to calculate each element
-value for a <component>.  The storage for the nodes array
-(<*element_values_address>) is allocated by the function.
-==============================================================================*/
 {
-	int j,k,number_of_element_nodes,number_of_element_values,number_of_map_values,
-	 return_code;
-	struct FE_node **element_value,**element_values,*node,**nodes;
-	struct General_node_to_element_map *general_node_map,
-		**general_node_map_address;
-	struct Standard_node_to_element_map *standard_node_map,
-		**standard_node_map_address;
-
-	ENTER(global_to_element_map_nodes);
-/*???debug */
-/*printf("enter global_to_element_map_nodes\n");*/
-	/* check the arguments */
+	int number_of_element_values = 0;
+	FE_node **element_values = 0;
+	int return_code = 1;
 	if (component&&element&&field&&number_of_values&&element_values_address)
 	{
 		/* retrieve the element values */
@@ -6368,6 +6630,8 @@ value for a <component>.  The storage for the nodes array
 		{
 			case STANDARD_NODE_TO_ELEMENT_MAP:
 			{
+				int j,k,number_of_element_nodes,number_of_map_values;
+				struct FE_node **element_value,*node,**nodes;
 				/* check information */
 				if ((element->information)&&(nodes=element->information->nodes)&&
 					((number_of_element_nodes=element->information->number_of_nodes)>0))
@@ -6375,10 +6639,11 @@ value for a <component>.  The storage for the nodes array
 					/* calculate the number of element values by summing the numbers
 						of values retrieved from each node */
 					number_of_element_values=0;
+					Standard_node_to_element_map *standard_node_map,
+						**standard_node_map_address;
 					standard_node_map_address=
 						component->map.standard_node_based.node_to_element_maps;
 					j=component->map.standard_node_based.number_of_nodes;
-					return_code=1;
 					while (return_code&&(j>0))
 					{
 						if ((standard_node_map= *standard_node_map_address)&&
@@ -6425,8 +6690,6 @@ value for a <component>.  The storage for the nodes array
 								}
 								standard_node_map_address++;
 							}
-							*element_values_address=element_values;
-							*number_of_values=number_of_element_values;
 						}
 						else
 						{
@@ -6443,96 +6706,41 @@ value for a <component>.  The storage for the nodes array
 					return_code=0;
 				}
 			} break;
-			case GENERAL_NODE_TO_ELEMENT_MAP:
-			/* global values are associated with nodes */
+			case GENERAL_ELEMENT_MAP:
 			{
-				/* check information */
-				if ((element->information)&&(nodes=element->information->nodes)&&
-					((number_of_element_nodes=element->information->
-					 number_of_nodes)>0))
+				// Warning: only returns first node contributing to DOF
+				// Not adequate for general maps from multiple nodes
+				ElementDOFMap **maps = component->map.general_map_based.maps;
+				number_of_element_values = component->map.general_map_based.number_of_maps;
+				ALLOCATE(element_values, struct FE_node *, number_of_element_values);
+				if (element_values)
 				{
-					/* calculate the number of element values by summing the numbers
-						of values retrieved from each node */
-					number_of_element_values=0;
-					general_node_map_address=
-						component->map.general_node_based.node_to_element_maps;
-					j=component->map.general_node_based.number_of_nodes;
-					return_code=1;
-					while (return_code&&(j>0))
+					ElementDOFMapEvaluationCache cache(element, field);
+					for (int j = 0; j < number_of_element_values; ++j)
 					{
-						if ((general_node_map= *general_node_map_address)&&
-							((number_of_map_values=
-							general_node_map->number_of_nodal_values)>0)&&
-							(0<=general_node_map->node_index)&&
-							(general_node_map->node_index<number_of_element_nodes)&&
-							(node=nodes[general_node_map->node_index])&&
-							(node->values_storage)&&(node->fields)&&
-							(general_node_map->element_values))
+						if (!maps[j]->evaluateNode(cache, element_values[j]))
 						{
-							number_of_element_values += number_of_map_values;
-							general_node_map_address++;
-							j--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"global_to_element_map_nodes.  "
-								"Invalid general node to element map");
-							return_code=0;
-						}
-					}
-					if (return_code)
-					{
-						/* allocate storage for storing the element values */
-						if ((number_of_element_values>0)&&(ALLOCATE(element_values,
-							struct FE_node *,number_of_element_values)))
-						{
-							element_value=element_values;
-							/* for each node retrieve the scaled nodal values */
-							general_node_map_address=
-								component->map.general_node_based.node_to_element_maps;
-							for (j=component->map.general_node_based.number_of_nodes;j>0;
-								j--)
-							{
-								/* retrieve the scaled nodal values */
-								general_node_map= *general_node_map_address;
-								node=nodes[general_node_map->node_index];
-								for (k=general_node_map->number_of_nodal_values;k>0;k--)
-								{
-									*element_value=node;
-									element_value++;
-								}
-								general_node_map_address++;
-							}
-							*element_values_address=element_values;
-							*number_of_values=number_of_element_values;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-					"global_to_element_map_nodes.  Could not allocate memory for values");
-							return_code=0;
+							return_code = 0;
+							break;
 						}
 					}
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"global_to_element_map_nodes.  Missing element information");
-					return_code=0;
+					return_code = 0;
 				}
 			} break;
-			case FIELD_TO_ELEMENT_MAP:
-			/* global values are associated with the field */
-			{
-				/*???DB.  What to do ? */
-				return_code=0;
-			} break;
-			default:
+			case ELEMENT_GRID_MAP:
 			{
 				display_message(ERROR_MESSAGE,
-					"global_to_element_map_nodes.  Invalid map type");
+					"global_to_element_map_nodes.  Not valid for grid");
 				return_code=0;
 			} break;
+		}
+		if (return_code)
+		{
+			*element_values_address=element_values;
+			*number_of_values=number_of_element_values;
 		}
 	}
 	else
@@ -6541,12 +6749,8 @@ value for a <component>.  The storage for the nodes array
 			"global_to_element_map_nodes.  Invalid argument(s)");
 		return_code=0;
 	}
-/*???debug */
-/*printf("leave global_to_element_map_nodes\n");*/
-	LEAVE;
-
 	return (return_code);
-} /* global_to_element_map_nodes */
+}
 
 struct Check_element_grid_map_values_storage_data
 {
@@ -15059,133 +15263,6 @@ void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
 
-struct Linear_combination_of_global_values
-	*CREATE(Linear_combination_of_global_values)(int number_of_global_values)
-/*******************************************************************************
-LAST MODIFIED : 24 September 1995
-
-DESCRIPTION :
-Allocates memory and assigns fields for a linear combination of global values.
-Allocates storage for the global and coefficient indices and sets to -1.
-==============================================================================*/
-{
-	int *coefficient_index,*global_index = NULL ,i;
-	struct Linear_combination_of_global_values *linear_combination;
-
-	ENTER(CREATE(Linear_combination_of_global_values));
-	/* check the arguments */
-	if (number_of_global_values>0)
-	{
-		if ((ALLOCATE(linear_combination,struct Linear_combination_of_global_values,
-			1))&&(ALLOCATE(global_index,int,number_of_global_values))&&
-			(ALLOCATE(coefficient_index,int,number_of_global_values)))
-		{
-			linear_combination->number_of_global_values=number_of_global_values;
-			linear_combination->global_value_indices=global_index;
-			linear_combination->coefficient_indices=coefficient_index;
-			for (i=number_of_global_values;i>0;i--)
-			{
-				*global_index= -1;
-				*coefficient_index= -1;
-				global_index++;
-				coefficient_index++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-		"CREATE(Linear_combination_of_global_values).  Could not allocate memory");
-			if (linear_combination)
-			{
-				DEALLOCATE(global_index);
-				DEALLOCATE(linear_combination);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(Linear_combination_of_global_values).  Invalid argument(s)");
-		linear_combination=(struct Linear_combination_of_global_values *)NULL;
-	}
-	LEAVE;
-
-	return (linear_combination);
-} /* CREATE(Linear_combination_of_global_values) */
-
-int DESTROY(Linear_combination_of_global_values)(
-	struct Linear_combination_of_global_values **linear_combination_address)
-/*******************************************************************************
-LAST MODIFIED : 24 September 1995
-
-DESCRIPTION :
-Frees the memory for the linear combination and sets
-<*linear_combination_address> to NULL.
-==============================================================================*/
-{
-	int return_code;
-	struct Linear_combination_of_global_values *linear_combination;
-
-	ENTER(DESTROY(Linear_combination_of_global_values));
-	if ((linear_combination_address)&&
-		(linear_combination= *linear_combination_address))
-	{
-		DEALLOCATE(linear_combination->global_value_indices);
-		DEALLOCATE(linear_combination->coefficient_indices);
-		DEALLOCATE(*linear_combination_address);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(Linear_combination_of_global_values) */
-
-static struct Linear_combination_of_global_values *copy_create_Linear_combination_of_global_values(
-	struct Linear_combination_of_global_values *source)
-/*******************************************************************************
-LAST MODIFIED : 15 February 2002
-
-DESCRIPTION :
-Creates and returns an exact copy of the struct Linear_combination_of_global_values
-<source>.
-==============================================================================*/
-{
-	int i,number_of_global_values;
-	struct Linear_combination_of_global_values *map;
-
-	ENTER(copy_create_Linear_combination_of_global_values);
-	map=(struct Linear_combination_of_global_values *)NULL;
-	if(source)
-	{
-		number_of_global_values=source->number_of_global_values;
-		map=CREATE(Linear_combination_of_global_values)(number_of_global_values);
-		if(map)
-		{
-			for(i=0;i<number_of_global_values;i++)
-			{
-				map->global_value_indices=source->global_value_indices;
-				map->coefficient_indices=source->coefficient_indices;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"copy_create_Linear_combination_of_global_values, failed to create map");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-				"copy_create_Linear_combination_of_global_values, Invalid argument");
-	}
-	LEAVE;
-	return(map);
-}/* copy_create_Linear_combination_of_global_values */
-
 struct Standard_node_to_element_map *CREATE(Standard_node_to_element_map)(
 	int node_index,int number_of_nodal_values)
 /*******************************************************************************
@@ -15537,176 +15614,6 @@ needing to get a value from the scale factor set.
 	return(return_code);
 } /* Standard_node_to_element_map_set_scale_factor_index */
 
-struct General_node_to_element_map *CREATE(General_node_to_element_map)(
-	int node_index,int number_of_nodal_values)
-/*******************************************************************************
-LAST MODIFIED : 24 September 1995
-
-DESCRIPTION :
-Allocates memory and assigns fields for a general node to element map.
-Allocates storage for the pointers to the linear combinations of field values
-and sets to NULL.
-==============================================================================*/
-{
-	int i;
-	struct General_node_to_element_map *map;
-	struct Linear_combination_of_global_values **element_value;
-
-	ENTER(CREATE(General_node_to_element_map));
-	if ((node_index>=0)&&(number_of_nodal_values>0))
-	{
-		if ((ALLOCATE(map,struct General_node_to_element_map,1))&&
-			(ALLOCATE(element_value,struct Linear_combination_of_global_values *,
-			number_of_nodal_values)))
-		{
-			map->node_index=node_index;
-			map->number_of_nodal_values=number_of_nodal_values;
-			map->element_values=element_value;
-			for (i=number_of_nodal_values;i>0;i--)
-			{
-				*element_value=(struct Linear_combination_of_global_values *)NULL;
-				element_value++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-		"CREATE(General_node_to_element_map).  Could not allocate memory for map");
-			DEALLOCATE(map);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(General_node_to_element_map).  Invalid argument(s)");
-		map=(struct General_node_to_element_map *)NULL;
-	}
-	LEAVE;
-
-	return (map);
-} /* CREATE(General_node_to_element_map) */
-
-int DESTROY(General_node_to_element_map)(
-	struct General_node_to_element_map **map_address)
-/*******************************************************************************
-LAST MODIFIED : 24 September 1995
-
-DESCRIPTION :
-Frees the memory for the map and sets <*map_address> to NULL.
-==============================================================================*/
-{
-	int i,return_code;
-	struct General_node_to_element_map *map;
-	struct Linear_combination_of_global_values **linear_combination;
-
-	ENTER(DESTROY(General_node_to_element_map));
-	if ((map_address)&&(map= *map_address))
-	{
-		linear_combination=map->element_values;
-		for (i=map->number_of_nodal_values;i>0;i--)
-		{
-			DESTROY(Linear_combination_of_global_values)(linear_combination);
-			linear_combination++;
-		}
-		DEALLOCATE(map->element_values);
-		DEALLOCATE(*map_address);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(General_node_to_element_map) */
-
-static struct General_node_to_element_map *copy_create_General_node_to_element_map(
-	struct General_node_to_element_map *source)
-/*******************************************************************************
-LAST MODIFIED : 15 February 2002
-
-DESCRIPTION :
-Creates and returns an exact copy of the struct General_node_to_element_map
-<source>.
-==============================================================================*/
-{
-	int i,node_index,number_of_nodal_values;
-	struct General_node_to_element_map *map;
-	struct Linear_combination_of_global_values **element_value,
-		**source_element_value;
-
-	ENTER(copy_create_General_node_to_element_map)
-	map=(struct General_node_to_element_map *)NULL;
-	element_value=(struct Linear_combination_of_global_values **)NULL;
-	source_element_value=(struct Linear_combination_of_global_values **)NULL;
-	if(source)
-	{
-		node_index=source->node_index;
-		number_of_nodal_values=source->number_of_nodal_values;
-		source_element_value=source->element_values;
-		map=CREATE(General_node_to_element_map)(node_index,number_of_nodal_values);
-		if(map)
-		{
-			element_value=map->element_values;
-			for (i=number_of_nodal_values;i>0;i--)
-			{
-
-				*element_value=copy_create_Linear_combination_of_global_values(
-					*source_element_value);
-				element_value++;
-				source_element_value++;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"copy_create_General_node_to_element_map, failed to create map");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-				"copy_create_General_node_to_element_map, Invalid argument");
-	}
-	LEAVE;
-	return(map);
-}/* copy_create_General_node_to_element_map */
-
-int General_node_to_element_map_get_node_index(
-	struct General_node_to_element_map *general_node_map,
-	int *node_index_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the node index from <general_node_map>.
-If fails, sets *<node_index_address> to zero.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(General_node_to_element_map_get_node_index)
-	if (general_node_map && node_index_address)
-	{
-		*node_index_address = general_node_map->node_index;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"General_node_to_element_map_get_node_index.  Invalid argument(s)");
-		if (node_index_address)
-		{
-			*node_index_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return(return_code);
-} /* General_node_to_element_map_get_node_index */
-
 struct FE_element_field_component *copy_create_FE_element_field_component(
 	struct FE_element_field_component *source_component)
 /*******************************************************************************
@@ -15730,13 +15637,9 @@ Creates and returns an exact copy of the struct FE_element_field_component
 			{
 				number_of_maps=source_component->map.standard_node_based.number_of_nodes;
 			}	break;
-			case GENERAL_NODE_TO_ELEMENT_MAP:
+			case GENERAL_ELEMENT_MAP:
 			{
-				number_of_maps=source_component->map.general_node_based.number_of_nodes;
-			}	break;
-			case FIELD_TO_ELEMENT_MAP:
-			{
-				number_of_maps=source_component->map.field_based.number_of_element_values;
+				number_of_maps = source_component->map.general_map_based.number_of_maps;
 			}	break;
 			case ELEMENT_GRID_MAP:
 			{
@@ -15760,24 +15663,14 @@ Creates and returns an exact copy of the struct FE_element_field_component
 								source_component->map.standard_node_based.node_to_element_maps[i]);
 					}
 				}	break;
-				case GENERAL_NODE_TO_ELEMENT_MAP:
+				case GENERAL_ELEMENT_MAP:
 				{
 					for(i=0;i<number_of_maps;i++)
 					{
-						component->map.general_node_based.node_to_element_maps[i]=
-							copy_create_General_node_to_element_map(
-								source_component->map.general_node_based.node_to_element_maps[i]);
+						component->map.general_map_based.maps[i] = 
+							source_component->map.general_map_based.maps[i]->clone();
 					}
-				}	break;
-				case FIELD_TO_ELEMENT_MAP:
-				{
-					for(i=0;i<number_of_maps;i++)
-					{
-						component->map.field_based.element_values[i]=
-							copy_create_Linear_combination_of_global_values(
-								source_component->map.field_based.element_values[i]);
-					}
-				}	break;
+				} break;
 				case ELEMENT_GRID_MAP:
 				{
 					int number_of_xi_coordinates = 0;
@@ -15807,24 +15700,15 @@ Creates and returns an exact copy of the struct FE_element_field_component
 	return(component);
 }/* copy_create_FE_element_field_component */
 
+/**
+ * Allocates memory and enters values for a component of a element field.
+ * Allocates storage for the global to element maps and sets to NULL.
+ */
 struct FE_element_field_component *CREATE(FE_element_field_component)(
 	enum Global_to_element_map_type type,int number_of_maps,
 	struct FE_basis *basis,FE_element_field_component_modify modify)
-/*******************************************************************************
-LAST MODIFIED : 28 September 1998
-
-DESCRIPTION :
-Allocates memory and enters values for a component of a element field.
-Allocates storage for the global to element maps and sets to NULL.
-==============================================================================*/
 {
-	int i,*number_in_xi;
-	struct FE_element_field_component *component;
-	struct General_node_to_element_map **general_node_to_element_map;
-	struct Linear_combination_of_global_values **element_value;
-	struct Standard_node_to_element_map **standard_node_to_element_map;
-
-	ENTER(CREATE(FE_element_field_component));
+	struct FE_element_field_component *component = 0;
 	if ((number_of_maps>0)&&basis)
 	{
 		if (ALLOCATE(component,struct FE_element_field_component,1))
@@ -15837,9 +15721,9 @@ Allocates storage for the global to element maps and sets to NULL.
 						struct Standard_node_to_element_map *,number_of_maps))
 					{
 						component->map.standard_node_based.number_of_nodes=number_of_maps;
-						standard_node_to_element_map=
+						Standard_node_to_element_map **standard_node_to_element_map =
 							component->map.standard_node_based.node_to_element_maps;
-						for (i=number_of_maps;i>0;i--)
+						for (int i=number_of_maps;i>0;i--)
 						{
 							*standard_node_to_element_map=
 								(struct Standard_node_to_element_map *)NULL;
@@ -15853,46 +15737,13 @@ Allocates storage for the global to element maps and sets to NULL.
 						DEALLOCATE(component);
 					}
 				} break;
-				case GENERAL_NODE_TO_ELEMENT_MAP:
+				case GENERAL_ELEMENT_MAP:
 				{
-					if (ALLOCATE(component->map.general_node_based.node_to_element_maps,
-						struct General_node_to_element_map *,number_of_maps))
+					component->map.general_map_based.number_of_maps = number_of_maps;
+					component->map.general_map_based.maps = new ElementDOFMap*[number_of_maps];
+					for (int i = 0; i < number_of_maps; ++i)
 					{
-						component->map.general_node_based.number_of_nodes=number_of_maps;
-						general_node_to_element_map=
-							component->map.general_node_based.node_to_element_maps;
-						for (i=number_of_maps;i>0;i--)
-						{
-							*general_node_to_element_map=
-								(struct General_node_to_element_map *)NULL;
-							general_node_to_element_map++;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-		"CREATE(FE_element_field_component).  Could not allocate memory for maps");
-						DEALLOCATE(component);
-					}
-				} break;
-				case FIELD_TO_ELEMENT_MAP:
-				{
-					if (ALLOCATE(component->map.field_based.element_values,
-						struct Linear_combination_of_global_values *,number_of_maps))
-					{
-						component->map.field_based.number_of_element_values=number_of_maps;
-						element_value=component->map.field_based.element_values;
-						for (i=number_of_maps;i>0;i--)
-						{
-							*element_value=(struct Linear_combination_of_global_values *)NULL;
-							element_value++;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-		"CREATE(FE_element_field_component).  Could not allocate memory for maps");
-						DEALLOCATE(component);
+						component->map.general_map_based.maps[i] = 0;
 					}
 				} break;
 				case ELEMENT_GRID_MAP:
@@ -15901,8 +15752,8 @@ Allocates storage for the global to element maps and sets to NULL.
 					FE_basis_get_dimension(basis, &basis_dimension);
 					if ((ALLOCATE(component->map.element_grid_based.number_in_xi,int,basis_dimension)))
 					{
-						number_in_xi=component->map.element_grid_based.number_in_xi;
-						for (i=basis_dimension;i>0;i--)
+						int *number_in_xi = component->map.element_grid_based.number_in_xi;
+						for (int i=basis_dimension;i>0;i--)
 						{
 							*number_in_xi=0;
 							number_in_xi++;
@@ -15942,27 +15793,17 @@ Allocates storage for the global to element maps and sets to NULL.
 			"CREATE(FE_element_field_component).  Invalid argument(s)");
 		component=(struct FE_element_field_component *)NULL;
 	}
-	LEAVE;
-
 	return (component);
-} /* CREATE(FE_element_field_component) */
+}
 
+/**
+ * Frees the memory for the component and sets <*component_address> to NULL.
+ */
 int DESTROY(FE_element_field_component)(
 	struct FE_element_field_component **component_address)
-/*******************************************************************************
-LAST MODIFIED : 28 September 1998
-
-DESCRIPTION :
-Frees the memory for the component and sets <*component_address> to NULL.
-==============================================================================*/
 {
-	int i,return_code;
+	int return_code = 1;
 	struct FE_element_field_component *component;
-	struct General_node_to_element_map **general_node_map;
-	struct Linear_combination_of_global_values **linear_combination;
-	struct Standard_node_to_element_map **standard_node_map;
-
-	ENTER(DESTROY(FE_element_field_component));
 	if ((component_address)&&(component= *component_address))
 	{
 		DEACCESS(FE_basis)(&(component->basis));
@@ -15970,36 +15811,22 @@ Frees the memory for the component and sets <*component_address> to NULL.
 		{
 			case STANDARD_NODE_TO_ELEMENT_MAP:
 			{
-				standard_node_map=
+				Standard_node_to_element_map **standard_node_map =
 					component->map.standard_node_based.node_to_element_maps;
-				for (i=component->map.standard_node_based.number_of_nodes;i>0;i--)
+				for (int i=component->map.standard_node_based.number_of_nodes;i>0;i--)
 				{
 					DESTROY(Standard_node_to_element_map)(standard_node_map);
 					standard_node_map++;
 				}
 				DEALLOCATE(component->map.standard_node_based.node_to_element_maps);
 			} break;
-			case GENERAL_NODE_TO_ELEMENT_MAP:
+			case GENERAL_ELEMENT_MAP:
 			{
-				general_node_map=
-					component->map.general_node_based.node_to_element_maps;
-				for (i=component->map.general_node_based.number_of_nodes;i>0;i--)
+				for (int i = 0; i < component->map.general_map_based.number_of_maps; ++i)
 				{
-					DESTROY(General_node_to_element_map)(general_node_map);
-					general_node_map++;
+					delete component->map.general_map_based.maps[i];
 				}
-				DEALLOCATE(component->map.general_node_based.node_to_element_maps);
-			} break;
-			case FIELD_TO_ELEMENT_MAP:
-			{
-				linear_combination=component->map.field_based.element_values;
-				for (i=component->map.field_based.number_of_element_values;i>0;i--)
-				{
-					DESTROY(Linear_combination_of_global_values)(
-						linear_combination);
-					linear_combination++;
-				}
-				DEALLOCATE(component->map.field_based.element_values);
+				delete[] component->map.general_map_based.maps;
 			} break;
 			case ELEMENT_GRID_MAP:
 			{
@@ -16007,16 +15834,13 @@ Frees the memory for the component and sets <*component_address> to NULL.
 			} break;
 		}
 		DEALLOCATE(*component_address);
-		return_code=1;
 	}
 	else
 	{
-		return_code=0;
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DESTROY(FE_element_field_component) */
+}
 
 int FE_element_field_component_get_basis(
 	struct FE_element_field_component *element_field_component,
@@ -16058,57 +15882,6 @@ If fails, puts NULL in *<basis_address> if supplied.
 
 	return (return_code);
 } /* FE_element_field_component_get_basis */
-
-int FE_element_field_component_get_general_node_map(
-	struct FE_element_field_component *element_field_component, int node_number,
-	struct General_node_to_element_map **general_node_map_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <general_node_map> relating global node values to those at local
-<node_number> for <element_field_component> of type
-GENERAL_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
-the number of nodes in the component.
-If fails, puts NULL in *<general_node_map_address> if supplied.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_component_get_general_node_map);
-	return_code = 0;
-	if (element_field_component &&
-		(GENERAL_NODE_TO_ELEMENT_MAP == element_field_component->type) &&
-		element_field_component->map.general_node_based.node_to_element_maps &&
-		(0 <= node_number) && (node_number <
-			element_field_component->map.general_node_based.number_of_nodes) &&
-		general_node_map_address)
-	{
-		if (NULL != (*general_node_map_address = element_field_component->map.
-			general_node_based.node_to_element_maps[node_number]))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_component_get_general_node_map.  "
-				"Missing general_node_to_element_map");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_component_get_general_node_map.  Invalid argument(s)");
-	}
-	if ((!return_code) && general_node_map_address)
-	{
-		*general_node_map_address = (struct General_node_to_element_map *)NULL;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_component_get_general_node_map */
 
 int FE_element_field_component_get_grid_map_number_in_xi(
 	struct FE_element_field_component *element_field_component,
@@ -16300,19 +16073,8 @@ Sets the <modify> function used by <element_field_component> -- can be NULL.
 int FE_element_field_component_get_number_of_nodes(
 	struct FE_element_field_component *element_field_component,
 	int *number_of_nodes_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the number of local nodes for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP or GENERAL_NODE_TO_ELEMENT_MAP.
-If fails, puts zero in *<number_of_nodes_address> if supplied.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_element_field_component_get_number_of_nodes);
-	return_code = 0;
+	int return_code = 0;
 	if (element_field_component && number_of_nodes_address)
 	{
 		switch (element_field_component->type)
@@ -16321,12 +16083,6 @@ If fails, puts zero in *<number_of_nodes_address> if supplied.
 			{
 				*number_of_nodes_address =
 					element_field_component->map.standard_node_based.number_of_nodes;
-				return_code = 1;
-			} break;
-			case GENERAL_NODE_TO_ELEMENT_MAP:
-			{
-				*number_of_nodes_address =
-					element_field_component->map.general_node_based.number_of_nodes;
 				return_code = 1;
 			} break;
 			default:
@@ -16346,10 +16102,49 @@ If fails, puts zero in *<number_of_nodes_address> if supplied.
 	{
 		*number_of_nodes_address = 0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* FE_element_field_component_get_number_of_nodes */
+}
+
+int FE_element_field_component_get_local_node_in_use(
+	FE_element_field_component *component, int numberOfLocalNodes, int *localNodeInUse)
+{
+	if (component && ((0 == numberOfLocalNodes) ||
+		((0 < numberOfLocalNodes) && localNodeInUse)))
+	{
+		switch (component->type)
+		{
+			case STANDARD_NODE_TO_ELEMENT_MAP:
+			{
+				int number_of_nodes_in_component = component->map.standard_node_based.number_of_nodes;
+				for (int j = 0; j < number_of_nodes_in_component; j++)
+				{
+					Standard_node_to_element_map *standard_node_map = component->map.standard_node_based.node_to_element_maps[j];
+					int node_index = standard_node_map->node_index;
+					if ((0 <= node_index) && (node_index < numberOfLocalNodes))
+					{
+						localNodeInUse[node_index] = 1;
+					}
+				}
+			} break;
+			case GENERAL_ELEMENT_MAP:
+			{
+				int numberOfMaps = component->map.general_map_based.number_of_maps;
+				ElementDOFMap **maps = component->map.general_map_based.maps;
+				for (int i = 0; i < numberOfMaps; ++i)
+				{
+					maps[i]->setLocalNodeInUse(numberOfLocalNodes, localNodeInUse);
+				}
+			} break;
+			case ELEMENT_GRID_MAP:
+			{
+				// nothing to do: these maps do not use nodes
+			} break;
+		}
+		return 1;
+	}
+	return 0;
+}
 
 int FE_element_field_component_get_standard_node_map(
 	struct FE_element_field_component *element_field_component, int node_number,
@@ -16472,6 +16267,16 @@ Returns the type of mapping used by <element_field_component>.
 	return (return_code);
 } /* FE_element_field_component_get_type */
 
+/**
+ * Returns true if <component_1> and <component_2> are equivalent for
+ * <info_1> and <info_2>, respectively.
+ * If the <global_node_list1> is supplied, instead of matching node pointers from
+ * <info_1>, the global node of the same identifier is compared. Used in
+ * "can be merged" code when non-global nodes are in the element.
+ * If <differences_are_errors> is set, differences are reported as errors. This
+ * will be the case for 'can be merged' code, but not for determining if field
+ * headers have to change in output files.
+ */
 static int FE_element_field_components_match(
 	struct FE_element_field_component *component_1,
 	struct FE_element_node_scale_field_info *info_1,
@@ -16479,46 +16284,28 @@ static int FE_element_field_components_match(
 	struct FE_element_field_component *component_2,
 	struct FE_element_node_scale_field_info *info_2,
 	int differences_are_errors)
-/*******************************************************************************
-LAST MODIFIED : 7 May 2003
-
-DESCRIPTION :
-Returns true if <component_1> and <component_2> are equivalent for
-<info_1> and <info_2>, respectively.
-If the <global_node_list1> is supplied, instead of matching node pointers from
-<info_1>, the global node of the same identifier is compared. Used in
-"can be merged" code when used non-global nodes are in the element.
-If <differences_are_errors> is set, differences are reported as errors. This
-will be the case for 'can be merged' code, but not for determining if field
-headers have to change in output files.
-==============================================================================*/
 {
-	int j, k, l, m, *number_in_xi_1, *number_in_xi_2,
-		*number_in_scale_factor_set_1, *number_in_scale_factor_set_2,
-		number_of_values, return_code, *scale_factor_index_1, *scale_factor_index_2,
-		start_scale_factor_set_1, start_scale_factor_set_2,
-		*value_index_1, *value_index_2;
-	struct FE_node *node1, *node2;
-	struct General_node_to_element_map **general_node_map_1, **general_node_map_2;
-	struct Linear_combination_of_global_values **element_value_1,
-		**element_value_2;
-	struct Standard_node_to_element_map **standard_node_map_1,
-		**standard_node_map_2;
-	void **scale_factor_set_identifier_1, **scale_factor_set_identifier_2;
-
-	ENTER(FE_element_field_components_match);
-	return_code = 0;
+	int return_code = 1;
 	if (component_1 && info_1 && component_2 && info_2)
 	{
 		if ((component_1->type == component_2->type) &&
 			(component_1->basis == component_2->basis) &&
 			(component_1->modify == component_2->modify))
 		{
-			return_code = 1;
 			switch (component_1->type)
 			{
 				case STANDARD_NODE_TO_ELEMENT_MAP:
 				{
+					int j, k, l,
+						*number_in_scale_factor_set_1, *number_in_scale_factor_set_2,
+						*scale_factor_index_1, *scale_factor_index_2,
+						start_scale_factor_set_1, start_scale_factor_set_2,
+						*value_index_1, *value_index_2;
+					struct FE_node *node1, *node2;
+					struct Standard_node_to_element_map **standard_node_map_1,
+						**standard_node_map_2;
+					void **scale_factor_set_identifier_1, **scale_factor_set_identifier_2;
+
 					if (((j = component_1->map.standard_node_based.number_of_nodes) ==
 						component_2->map.standard_node_based.number_of_nodes) &&
 						(standard_node_map_1 =
@@ -16667,233 +16454,51 @@ headers have to change in output files.
 						return_code = 0;
 					}
 				} break;
-				case GENERAL_NODE_TO_ELEMENT_MAP:
+				case GENERAL_ELEMENT_MAP:
 				{
-					if (((j = component_1->map.general_node_based.number_of_nodes) ==
-						component_2->map.general_node_based.number_of_nodes) &&
-						(general_node_map_1 =
-							component_1->map.general_node_based.node_to_element_maps) &&
-						(general_node_map_2 =
-							component_2->map.general_node_based.node_to_element_maps))
+					int numberOfMaps = component_1->map.general_map_based.number_of_maps;
+					if (numberOfMaps != component_2->map.general_map_based.number_of_maps)
 					{
-						/* check each general node to element map */
-						while (return_code && (j > 0))
+						if (differences_are_errors)
 						{
-							if ((*general_node_map_1) && (*general_node_map_2) &&
-								(node1 = (info_1->nodes)[(*general_node_map_1)->node_index]) &&
-								(node2 = (info_2->nodes)[(*general_node_map_1)->node_index]) &&
-								(((!global_node_list1) && (node1 == node2)) ||
-									(global_node_list1 && (node2 ==
-										FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-											get_FE_node_identifier(node1), global_node_list1)))) &&
-								((k = (*general_node_map_1)->number_of_nodal_values) ==
-									(*general_node_map_2)->number_of_nodal_values) &&
-								(element_value_1 = (*general_node_map_1)->element_values)
-								&& (element_value_2 =
-									(*general_node_map_2)->element_values))
-							{
-								while (return_code && (k > 0))
-								{
-									if ((*element_value_1) && (*element_value_2) &&
-										((l =
-											(*element_value_1)->number_of_global_values) ==
-											(*element_value_2)->number_of_global_values)
-										&& (value_index_1 =
-											(*element_value_1)->global_value_indices) &&
-										(value_index_2 =
-											(*element_value_2)->global_value_indices) &&
-										(scale_factor_index_1 =
-											(*element_value_1)->coefficient_indices) &&
-										(scale_factor_index_2 =
-											(*element_value_2)->coefficient_indices))
-									{
-										/* determine the element scale factor set */
-										start_scale_factor_set_1 = 0;
-										m = info_1->number_of_scale_factor_sets;
-										number_in_scale_factor_set_1 =
-											info_1->numbers_in_scale_factor_sets;
-										scale_factor_set_identifier_1 =
-											info_1->scale_factor_set_identifiers;
-										while ((m > 0) && (*scale_factor_index_1 >=
-											start_scale_factor_set_1 +
-											(*number_in_scale_factor_set_1)))
-										{
-											start_scale_factor_set_1 +=
-												*number_in_scale_factor_set_1;
-											scale_factor_set_identifier_1++;
-											number_in_scale_factor_set_1++;
-											m--;
-										}
-										/* determine the new scale factor set */
-										start_scale_factor_set_2 = 0;
-										m = info_2->number_of_scale_factor_sets;
-										number_in_scale_factor_set_2 =
-											info_2->numbers_in_scale_factor_sets;
-										scale_factor_set_identifier_2 =
-											info_2->scale_factor_set_identifiers;
-										while ((m > 0) && (*scale_factor_index_2 >=
-											start_scale_factor_set_2 +
-											(*number_in_scale_factor_set_2)))
-										{
-											start_scale_factor_set_2 +=
-												*number_in_scale_factor_set_2;
-											scale_factor_set_identifier_2++;
-											number_in_scale_factor_set_2++;
-											m--;
-										}
-										if ((*scale_factor_set_identifier_1 ==
-											*scale_factor_set_identifier_2) &&
-											(*number_in_scale_factor_set_1 ==
-												*number_in_scale_factor_set_2))
-										{
-											while (return_code && (l > 0) &&
-												(*value_index_1 == *value_index_2) &&
-												((*scale_factor_index_1) -
-													start_scale_factor_set_1 ==
-													(*scale_factor_index_2) -
-													start_scale_factor_set_2))
-											{
-												value_index_1++;
-												value_index_2++;
-												scale_factor_index_1++;
-												scale_factor_index_2++;
-												l--;
-											}
-											if (l <= 0)
-											{
-												element_value_1++;
-												element_value_2++;
-												k--;
-											}
-											else
-											{
-												display_message(ERROR_MESSAGE,
-													"FE_element_field_components_match.  "
-													"Invalid general node to element map");
-												return_code = 0;
-											}
-										}
-										else
-										{
-											if (differences_are_errors)
-											{
-												display_message(ERROR_MESSAGE,
-													"FE_element_field_components_match.  Inconsistent "
-													"scale factor sets in global to element map");
-											}
-											return_code = 0;
-										}
-									}
-									else
-									{
-										if (differences_are_errors)
-										{
-											display_message(ERROR_MESSAGE,
-												"FE_element_field_components_match.  "
-												"Minorly inconsistent global to element map");
-										}
-										return_code = 0;
-									}
-								}
-								general_node_map_1++;
-								general_node_map_2++;
-								j--;
-							}
-							else
-							{
-								if (differences_are_errors)
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_field_components_match.  "
-										"Majorly inconsistent global to element map");
-								}
-								return_code = 0;
-							}
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_components_match.  Different numbers of element DOF maps");
 						}
+						return 0;
 					}
-					else
+					ElementDOFMapMatchCache cache(component_1->basis, info_1, info_2, global_node_list1);
+					if (cache.numberOfScaleFactors1 != cache.numberOfScaleFactors2)
 					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  "
-							"Invalid global to element map");
-						return_code = 0;
-					}
-				} break;
-				case FIELD_TO_ELEMENT_MAP:
-				{
-					if (((j = component_1->map.field_based.number_of_element_values) ==
-						component_2->map.field_based.number_of_element_values) &&
-						(element_value_1 =
-							component_1->map.field_based.element_values) &&
-						(element_value_2 =
-							component_2->map.field_based.element_values))
-					{
-						/* check each field to element map */
-						while (return_code && (j > 0))
+						if (differences_are_errors)
 						{
-							if ((*element_value_1) && (*element_value_2) &&
-								((k = (*element_value_1)->number_of_global_values) ==
-									(*element_value_2)->number_of_global_values) &&
-								(value_index_1 =
-									(*element_value_1)->global_value_indices) &&
-								(value_index_2 =
-									(*element_value_2)->global_value_indices) &&
-								(scale_factor_index_1 =
-									(*element_value_1)->coefficient_indices) &&
-								(scale_factor_index_2 =
-									(*element_value_2)->coefficient_indices))
-							{
-								while (return_code && (k > 0) &&
-									(*value_index_1 == *value_index_2) &&
-									(*scale_factor_index_1 == *scale_factor_index_2))
-								{
-									value_index_1++;
-									value_index_2++;
-									scale_factor_index_1++;
-									scale_factor_index_2++;
-									k--;
-								}
-								if (k <= 0)
-								{
-									element_value_1++;
-									element_value_2++;
-									j--;
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_field_components_match.  "
-										"Invalid field to element map");
-									return_code = 0;
-								}
-							}
-							else
-							{
-								if (differences_are_errors)
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_field_components_match.  "
-										"Inconsistent global to element map");
-								}
-								return_code = 0;
-							}
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_components_match.  Different numbers of scale factors for basis");
 						}
+						return 0;
 					}
-					else
+					// could compare scale factors here, otherwise make them overwritable
+					ElementDOFMap **maps1 = component_1->map.general_map_based.maps;
+					ElementDOFMap **maps2 = component_2->map.general_map_based.maps;
+					for (int j = 0; j < numberOfMaps; ++j)
 					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  "
-							"Invalid global to element map");
-						return_code = 0;
+						if (!maps1[j]->matchesWithInfo(maps2[j], cache))
+						{
+							if (differences_are_errors)
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_element_field_components_match.  Element DOF map %d is different", j + 1);
+							}
+							return 0;
+						}
 					}
 				} break;
 				case ELEMENT_GRID_MAP:
 				{
-					number_in_xi_1 = component_1->map.element_grid_based.number_in_xi;
-					number_in_xi_2 = component_2->map.element_grid_based.number_in_xi;
-					j = 0;
+					int *number_in_xi_1 = component_1->map.element_grid_based.number_in_xi;
+					int *number_in_xi_2 = component_2->map.element_grid_based.number_in_xi;
+					int j = 0;
 					FE_basis_get_dimension(component_1->basis, &j);
-					number_of_values = 1;
+					int number_of_values = 1;
 					while (j && (*number_in_xi_1 == *number_in_xi_2))
 					{
 						number_of_values *= (*number_in_xi_1) + 1;
@@ -16911,13 +16516,6 @@ headers have to change in output files.
 						return_code = 0;
 					}
 				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_field_components_match.  "
-						"Invalid global to element map type");
-					return_code = 0;
-				} break;
 			}
 		}
 	}
@@ -16925,11 +16523,10 @@ headers have to change in output files.
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_field_components_match.  Invalid argument(s)");
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_field_components_match */
+}
 
 struct FE_element_field *CREATE(FE_element_field)(struct FE_field *field)
 /*******************************************************************************
@@ -17027,39 +16624,25 @@ Frees the memory for element field and sets <*element_field_address> to NULL.
 
 DECLARE_OBJECT_FUNCTIONS(FE_element_field)
 
+/**
+ * @return 1 if <element_field> is not in the <element_field_list>, otherwise 0.
+ */
 static int FE_element_field_not_in_list(struct FE_element_field *element_field,
 	void *element_field_list)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2003
-
-DESCRIPTION :
-Checks if the <element_field> is not in the <element_field_list>.
-???RC Should try to re-use FE_element_fields_match...
-==============================================================================*/
 {
-	int i,j,k,l,*number_in_xi_1,*number_in_xi_2,number_of_xi_coordinates,
-		return_code,*scale_factor_index_1,*scale_factor_index_2,*value_index_1,
-		*value_index_2;
-	struct FE_element_field *element_field_2;
-	struct LIST(FE_element_field) *list;
-	struct FE_element_field_component **component_1,**component_2;
-	struct General_node_to_element_map **general_node_map_1,**general_node_map_2;
-	struct Linear_combination_of_global_values **element_value_1,
-		**element_value_2;
-	struct Standard_node_to_element_map **standard_node_map_1,
-		**standard_node_map_2;
-
-	ENTER(FE_element_field_not_in_list);
-	if (element_field&&(element_field->field)&&
-		(list=(struct LIST(FE_element_field) *)element_field_list))
+	int return_code = 0;
+	struct LIST(FE_element_field) *list =
+		reinterpret_cast<struct LIST(FE_element_field) *>(element_field_list);
+	if (element_field && (element_field->field) && list)
 	{
+		FE_element_field *element_field_2;
+		FE_element_field_component **component_1,**component_2;
 		if ((element_field_2=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,
 			field)(element_field->field,list))&&
 			(component_1=element_field->components)&&
 			(component_2=element_field_2->components))
 		{
-			return_code=0;
-			i=element_field->field->number_of_components;
+			int i=element_field->field->number_of_components;
 			while (!return_code&&(i>0))
 			{
 				if ((*component_1)&&(*component_2)&&
@@ -17067,12 +16650,16 @@ Checks if the <element_field> is not in the <element_field_list>.
 					((*component_1)->basis==(*component_2)->basis)&&
 					((*component_1)->modify==(*component_2)->modify))
 				{
-					number_of_xi_coordinates = 0;
+					int number_of_xi_coordinates = 0;
 					FE_basis_get_dimension((*component_1)->basis, &number_of_xi_coordinates);
 					switch ((*component_1)->type)
 					{
 						case STANDARD_NODE_TO_ELEMENT_MAP:
 						{
+							int j,k,*scale_factor_index_1,*scale_factor_index_2,*value_index_1,
+								*value_index_2;
+							struct Standard_node_to_element_map **standard_node_map_1,
+								**standard_node_map_2;
 							if (((j=(*component_1)->map.standard_node_based.
 								number_of_nodes)==(*component_2)->map.standard_node_based.
 								number_of_nodes)&&(standard_node_map_1=(*component_1)->map.
@@ -17125,130 +16712,26 @@ Checks if the <element_field> is not in the <element_field_list>.
 								return_code=1;
 							}
 						} break;
-						case GENERAL_NODE_TO_ELEMENT_MAP:
+						case GENERAL_ELEMENT_MAP:
 						{
-							if (((j=(*component_1)->map.general_node_based.
-								number_of_nodes)==(*component_2)->map.general_node_based.
-								number_of_nodes)&&(general_node_map_1=(*component_1)->map.
-								general_node_based.node_to_element_maps)&&
-								(general_node_map_2=(*component_2)->map.general_node_based.
-								node_to_element_maps))
+							int numberOfMaps = (*component_1)->map.general_map_based.number_of_maps;
+							if (numberOfMaps != (*component_2)->map.general_map_based.number_of_maps)
 							{
-								while (!return_code&&(j>0))
+								return 1;
+							}
+							ElementDOFMap **maps1 = (*component_1)->map.general_map_based.maps;
+							ElementDOFMap **maps2 = (*component_2)->map.general_map_based.maps;
+							for (int j = 0; j < numberOfMaps; ++j)
+							{
+								if (!maps1[j]->matches(maps2[j]))
 								{
-									if ((*general_node_map_1)&&(*general_node_map_2)&&
-										((*general_node_map_1)->node_index==
-										(*general_node_map_2)->node_index)&&
-										((k=(*general_node_map_1)->number_of_nodal_values)==
-										(*general_node_map_2)->number_of_nodal_values)&&
-										(element_value_1=(*general_node_map_1)->element_values)&&
-										(element_value_2=(*general_node_map_2)->element_values))
-									{
-										while (!return_code&&(k>0))
-										{
-											if ((*element_value_1)&&(*element_value_2)&&
-												((l=(*element_value_1)->number_of_global_values)==
-												(*element_value_2)->number_of_global_values)&&
-												(value_index_1=(*element_value_1)->
-												global_value_indices)&&(value_index_2=
-												(*element_value_2)->global_value_indices)&&
-												(scale_factor_index_1=(*element_value_1)->
-												coefficient_indices)&&(scale_factor_index_2=
-												(*element_value_2)->coefficient_indices))
-											{
-												while (!return_code&&(l>0))
-												{
-													if ((*value_index_1== *value_index_2)&&
-														(*scale_factor_index_1== *scale_factor_index_2))
-													{
-														value_index_1++;
-														value_index_2++;
-														scale_factor_index_1++;
-														scale_factor_index_2++;
-														l--;
-													}
-													else
-													{
-														return_code=1;
-													}
-												}
-												element_value_1++;
-												element_value_2++;
-												k--;
-											}
-											else
-											{
-												return_code=1;
-											}
-										}
-										general_node_map_1++;
-										general_node_map_2++;
-										j--;
-									}
-									else
-									{
-										return_code=1;
-									}
+									return 1;
 								}
-							}
-							else
-							{
-								return_code=1;
-							}
-						} break;
-						case FIELD_TO_ELEMENT_MAP:
-						{
-							if (((j=(*component_1)->map.field_based.
-								number_of_element_values)==(*component_2)->map.field_based.
-								number_of_element_values)&&(element_value_1=(*component_1)->
-								map.field_based.element_values)&&(element_value_2=
-								(*component_2)->map.field_based.element_values))
-							{
-								while (!return_code&&(j>0))
-								{
-									if ((*element_value_1)&&(*element_value_2)&&
-										((k=(*element_value_1)->number_of_global_values)==
-										(*element_value_2)->number_of_global_values)&&
-										(value_index_1=(*element_value_1)->
-										global_value_indices)&&(value_index_2=
-										(*element_value_2)->global_value_indices)&&
-										(scale_factor_index_1=(*element_value_1)->
-										coefficient_indices)&&(scale_factor_index_2=
-										(*element_value_2)->coefficient_indices))
-									{
-										while (!return_code&&(k>0))
-										{
-											if ((*value_index_1== *value_index_2)&&
-												(*scale_factor_index_1== *scale_factor_index_2))
-											{
-												value_index_1++;
-												value_index_2++;
-												scale_factor_index_1++;
-												scale_factor_index_2++;
-												k--;
-											}
-											else
-											{
-												return_code=1;
-											}
-										}
-										element_value_1++;
-										element_value_2++;
-										j--;
-									}
-									else
-									{
-										return_code=1;
-									}
-								}
-							}
-							else
-							{
-								return_code=1;
 							}
 						} break;
 						case ELEMENT_GRID_MAP:
 						{
+							int *number_in_xi_1,*number_in_xi_2;
 							if (((*component_1)->map.element_grid_based.value_index==
 								(*component_2)->map.element_grid_based.value_index)&&
 								(number_in_xi_1=
@@ -17256,7 +16739,7 @@ Checks if the <element_field> is not in the <element_field_list>.
 								(number_in_xi_2=
 								(*component_2)->map.element_grid_based.number_in_xi))
 							{
-								j=number_of_xi_coordinates;
+								int j=number_of_xi_coordinates;
 								while (!return_code&&(j>0))
 								{
 									if (*number_in_xi_1== *number_in_xi_2)
@@ -17275,12 +16758,6 @@ Checks if the <element_field> is not in the <element_field_list>.
 							{
 								return_code=1;
 							}
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_not_in_list.  Invalid map type");
-							return_code=1;
 						} break;
 					}
 					component_1++;
@@ -17304,10 +16781,8 @@ Checks if the <element_field> is not in the <element_field_list>.
 			"FE_element_field_not_in_list.  Invalid argument(s)");
 		return_code=1;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_field_not_in_list */
+}
 
 static int FE_element_field_add_to_list_no_field_duplication(
 	struct FE_element_field *element_field, void *element_field_list_void)
@@ -17592,13 +17067,10 @@ static int list_FE_element_field(struct FE_element *element,
 									}
 								}
 							} break;
-							case GENERAL_NODE_TO_ELEMENT_MAP:
+							case GENERAL_ELEMENT_MAP:
 							{
-								display_message(INFORMATION_MESSAGE,", general node based\n");
-							} break;
-							case FIELD_TO_ELEMENT_MAP:
-							{
-								display_message(INFORMATION_MESSAGE,", field to element\n");
+								display_message(INFORMATION_MESSAGE,", general map based\n");
+								// GRC need to complete.
 							} break;
 							case ELEMENT_GRID_MAP:
 							{
@@ -17616,10 +17088,6 @@ static int list_FE_element_field(struct FE_element *element,
 									}
 									display_message(INFORMATION_MESSAGE,"#xi%d=%d",j+1,number_in_xi[j]);
 								}
-								display_message(INFORMATION_MESSAGE,"\n");
-							} break;
-							default:
-							{
 								display_message(INFORMATION_MESSAGE,"\n");
 							} break;
 						}
@@ -17822,14 +17290,11 @@ FE_element_field iterator for for_each_FE_field_at_element.
 	return (return_code);
 } /* for_FE_field_at_element_iterator */
 
+/**
+ * The data needed to merge an element_field into the list.  This structure is
+ * local to this module.
+ */
 struct FE_element_field_lists_merge_data
-/*******************************************************************************
-LAST MODIFIED : 31 October 2002
-
-DESCRIPTION :
-The data needed to merge an element_field into the list.  This structure is
-local to this module.
-==============================================================================*/
 {
 	struct LIST(FE_element_field) *list;
 	/* node_scale_field_info for merged elements in above <list> */
@@ -17842,27 +17307,24 @@ local to this module.
 	int values_storage_size;
 }; /* struct FE_element_field_lists_merge_data */
 
+/**
+ * Merges the <new_element_field> into the <list>. The <new_element_field>
+ * references nodes, scale factors and values relative to the <source_info>.
+ * If an element field already exists in <list> for that field, this function
+ * checks <new_element_field> refers to the same nodes and equivalent scale factor
+ * sets and values_storage in <merge_info>.
+ * If no such element field exists currently, a new one is constructed that refers
+ * to nodes, scale factors and values in the <merge_info> in a compatible way to
+ * <new_element_field>, and this is added to the <list>.
+ * For new grid-based fields this function increments the values_storage_size in
+ * the <data> to fit the new grid values and references them in the element field
+ * constructed for it.
+ * No values_storage arrays are allocated or copied by this function.
+ */
 static int merge_FE_element_field_into_list(
 	struct FE_element_field *new_element_field, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 6 June 2008
-
-DESCRIPTION :
-Merges the <new_element_field> into the <list>. The <new_element_field>
-references nodes, scale factors and values relative to the <source_info>.
-If an element field already exists in <list> for that field, this function
-checks <new_element_field> refers to the same nodes and equivalent scale factor
-sets and values_storage in <merge_info>.
-If no such element field exists currently, a new one is constructed that refers
-to nodes, scale factors and values in the <merge_info> in a compatible way to
-<new_element_field>, and this is added to the <list>.
-For new grid-based fields this function increments the values_storage_size in
-the <data> to fit the new grid values and references them in the element field
-constructed for it.
-No values_storage arrays are allocated or copied by this function.
-==============================================================================*/
 {
-	int i, j, k, l, lm, ls, m, *new_number_in_scale_factor_set, *new_number_in_xi,
+	int i, j, k, lm, ls, *new_number_in_scale_factor_set, *new_number_in_xi,
 		*new_scale_factor_index, *new_value_index,new_values_storage_size,
 		node_index, *number_in_scale_factor_set, *number_in_xi, number_of_values,
 		return_code, *scale_factor_index, start_diff, start_new_scale_factor_set,
@@ -17873,8 +17335,6 @@ No values_storage arrays are allocated or copied by this function.
 	struct FE_element_node_scale_field_info *merge_info, *source_info;
 	struct FE_field *field;
 	struct FE_node *new_node, **node;
-	struct Linear_combination_of_global_values **element_value,
-		**new_element_value;
 	struct Standard_node_to_element_map **new_standard_node_map,
 		**standard_node_map;
 	void **new_scale_factor_set_identifier, **scale_factor_set_identifier;
@@ -18118,260 +17578,17 @@ No values_storage arrays are allocated or copied by this function.
 											return_code = 0;
 										}
 									} break;
-									case GENERAL_NODE_TO_ELEMENT_MAP:
+									case GENERAL_ELEMENT_MAP:
 									{
-										struct General_node_to_element_map **new_general_node_map, **general_node_map;
-										if ((new_general_node_map=(*new_component)->map.
-											general_node_based.node_to_element_maps)&&
-											((j=(*new_component)->map.general_node_based.
-												number_of_nodes)>0)&&
-											(*component=CREATE(FE_element_field_component)(
-												GENERAL_NODE_TO_ELEMENT_MAP,j,(*new_component)->basis,
-												(*new_component)->modify)))
+										int numberOfMaps = (*new_component)->map.general_map_based.number_of_maps;
+										*component = CREATE(FE_element_field_component)(
+											GENERAL_ELEMENT_MAP, numberOfMaps, (*new_component)->basis,
+											(*new_component)->modify);
+										ElementDOFMap **sourceMaps = (*new_component)->map.general_map_based.maps;
+										ElementDOFMap **maps = (*component)->map.general_map_based.maps;
+										for (int i = 0; i < numberOfMaps; ++i)
 										{
-											general_node_map=(*component)->map.general_node_based.
-												node_to_element_maps;
-											while (return_code&&(j>0))
-											{
-												if ((*new_general_node_map)&&
-													((k=(*new_general_node_map)->
-														number_of_nodal_values)>0)&&(new_element_value=
-															(*new_general_node_map)->element_values))
-												{
-													/* determine the node index */
-													node = merge_info->nodes;
-													new_node = source_info->nodes
-														[(*new_general_node_map)->node_index];
-													node_index=0;
-													while ((node_index < merge_info->number_of_nodes) &&
-														(*node != new_node))
-													{
-														node_index++;
-														node++;
-													}
-													if ((*node==new_node)&&(*general_node_map=CREATE(
-														General_node_to_element_map)(node_index,k)))
-													{
-														element_value=(*general_node_map)->element_values;
-														while (return_code&&(k>0))
-														{
-															if ((*new_element_value)&&
-																((l=(*new_element_value)->
-																	number_of_global_values)>0)&&(new_value_index=
-																		(*new_element_value)->global_value_indices)&&
-																(new_scale_factor_index=(*new_element_value)->
-																	coefficient_indices)&&(*element_value=CREATE(
-																		Linear_combination_of_global_values)(l)))
-															{
-																value_index=(*element_value)->
-																	global_value_indices;
-																scale_factor_index=
-																	(*element_value)->coefficient_indices;
-																/* determine the new scale factor set */
-																start_new_scale_factor_set=0;
-																m=source_info->number_of_scale_factor_sets;
-																new_number_in_scale_factor_set=
-																	source_info->numbers_in_scale_factor_sets;
-																new_scale_factor_set_identifier=
-																	source_info->scale_factor_set_identifiers;
-																while ((m>0)&&(*new_scale_factor_index>=
-																	start_new_scale_factor_set+
-																	(*new_number_in_scale_factor_set)))
-																{
-																	start_new_scale_factor_set +=
-																		*new_number_in_scale_factor_set;
-																	new_scale_factor_set_identifier++;
-																	new_number_in_scale_factor_set++;
-																	m--;
-																}
-																/* determine the element scale factor set */
-																start_scale_factor_set=0;
-																m=merge_info->number_of_scale_factor_sets;
-																number_in_scale_factor_set=
-																	merge_info->numbers_in_scale_factor_sets;
-																scale_factor_set_identifier=
-																	merge_info->scale_factor_set_identifiers;
-																while ((m>0)&&(*scale_factor_set_identifier!=
-																	*new_scale_factor_set_identifier))
-																{
-																	start_scale_factor_set +=
-																		*number_in_scale_factor_set;
-																	scale_factor_set_identifier++;
-																	number_in_scale_factor_set++;
-																	m--;
-																}
-																if ((*scale_factor_set_identifier==
-																	*new_scale_factor_set_identifier)&&
-																	(*number_in_scale_factor_set==
-																		*new_number_in_scale_factor_set))
-																{
-																	m=start_scale_factor_set-
-																		start_new_scale_factor_set;
-																	while (l>0)
-																	{
-																		*value_index= *new_value_index;
-																		*scale_factor_index=
-																			(*new_scale_factor_index)+m;
-																		value_index++;
-																		new_value_index++;
-																		scale_factor_index++;
-																		new_scale_factor_index++;
-																		l--;
-																	}
-																	element_value++;
-																	new_element_value++;
-																	k--;
-																}
-																else
-																{
-																	display_message(ERROR_MESSAGE,
-																		"merge_FE_element_field_into_list.  "
-																		"Invalid scale factor set");
-																	return_code = 0;
-																}
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"merge_FE_element_field_into_list.  "
-																	"Could not create linear combination");
-																return_code = 0;
-															}
-														}
-														if (return_code)
-														{
-															general_node_map++;
-															new_general_node_map++;
-															j--;
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"merge_FE_element_field_into_list.  "
-															"Could not create general node to element map");
-														return_code = 0;
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"merge_FE_element_field_into_list.  "
-														"Invalid general node to element map");
-													return_code = 0;
-												}
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"merge_FE_element_field_into_list.  "
-												"Could not create element field component");
-											return_code = 0;
-										}
-									} break;
-									case FIELD_TO_ELEMENT_MAP:
-									{
-										if ((new_element_value=(*new_component)->map.field_based.
-											element_values)&&((j=(*new_component)->map.field_based.
-												number_of_element_values)>0)&&(*component=CREATE(
-													FE_element_field_component)(FIELD_TO_ELEMENT_MAP,j,
-														(*new_component)->basis,(*new_component)->modify)))
-										{
-											// GRC: this code has never run; the following 2 lines fix compiler
-											// warnings. m was used without initiallisation
-											m = 0; // GRC remove this line
-											element_value=(*component)->map.field_based.element_values;
-											while (return_code&&(j>0))
-											{
-												if ((*new_element_value)&&((k=(*new_element_value)->
-													number_of_global_values)>0)&&(new_value_index=
-														(*new_element_value)->global_value_indices)&&
-													(new_scale_factor_index=(*new_element_value)->
-														coefficient_indices)&&(*element_value=
-															CREATE(Linear_combination_of_global_values)(k)))
-												{
-													value_index=(*element_value)->global_value_indices;
-													scale_factor_index=(*element_value)->
-														coefficient_indices;
-													/* determine the new scale factor set */
-													start_new_scale_factor_set=0;
-													l=source_info->number_of_scale_factor_sets;
-													new_number_in_scale_factor_set=
-														source_info->numbers_in_scale_factor_sets;
-													new_scale_factor_set_identifier=
-														source_info->scale_factor_set_identifiers;
-													while ((l>0)&&(*new_scale_factor_index>=
-														start_new_scale_factor_set+
-														(*new_number_in_scale_factor_set)))
-													{
-														start_new_scale_factor_set +=
-															*new_number_in_scale_factor_set;
-														new_scale_factor_set_identifier++;
-														new_number_in_scale_factor_set++;
-														l--;
-													}
-													/* determine the element scale factor set */
-													start_scale_factor_set=0;
-													l=merge_info->number_of_scale_factor_sets;
-													number_in_scale_factor_set=
-														merge_info->numbers_in_scale_factor_sets;
-													scale_factor_set_identifier=
-														merge_info->scale_factor_set_identifiers;
-													while ((m>0)&&(*scale_factor_set_identifier!=
-														*new_scale_factor_set_identifier))
-													{
-														start_scale_factor_set +=
-															*number_in_scale_factor_set;
-														scale_factor_set_identifier++;
-														number_in_scale_factor_set++;
-														l--;
-													}
-													if ((*scale_factor_set_identifier==
-														*new_scale_factor_set_identifier)&&
-														(*number_in_scale_factor_set==
-															*new_number_in_scale_factor_set))
-													{
-														l=start_scale_factor_set-
-															start_new_scale_factor_set;
-														while (k>0)
-														{
-															*value_index= *new_value_index;
-															*scale_factor_index=
-																(*new_scale_factor_index)+m;
-															value_index++;
-															new_value_index++;
-															scale_factor_index++;
-															new_scale_factor_index++;
-															k--;
-														}
-														element_value++;
-														new_element_value++;
-														j--;
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"merge_FE_element_field_into_list.  "
-															"Invalid scale factor set");
-														return_code = 0;
-													}
-												}
-												else
-												{
-													display_message(ERROR_MESSAGE,
-														"merge_FE_element_field_into_list.  "
-														"Could not create field to element map");
-													return_code = 0;
-												}
-											}
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"merge_FE_element_field_into_list.  "
-												"Could not create element field component");
-											return_code = 0;
+											maps[i] = sourceMaps[i]->cloneWithNewNodeIndices(merge_info, source_info);
 										}
 									} break;
 									case ELEMENT_GRID_MAP:
@@ -18414,13 +17631,6 @@ No values_storage arrays are allocated or copied by this function.
 												"Could not create element field component");
 											return_code = 0;
 										}
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"merge_FE_element_field_into_list.  "
-											"Invalid global to element map type");
-										return_code = 0;
 									} break;
 								}
 								component++;
@@ -24522,7 +23732,7 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 			{
 				component= *component_address;
 				if ((STANDARD_NODE_TO_ELEMENT_MAP==component->type)||
-					(GENERAL_NODE_TO_ELEMENT_MAP==component->type))
+					(GENERAL_ELEMENT_MAP==component->type))
 				{
 					/* calculate the nodes used by the component in the field_element */
 					if (global_to_element_map_nodes(component,field_element,

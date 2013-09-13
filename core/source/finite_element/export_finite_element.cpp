@@ -738,17 +738,11 @@ Writes information describing how <field> is defined at <element>.
 										"Could not get number of nodes");
 								}
 							} break;
-							case GENERAL_NODE_TO_ELEMENT_MAP:
+							case GENERAL_ELEMENT_MAP:
 							{
-								(*output_file) << ", general node based.\n";
+								(*output_file) << ", general map based.\n";
 								display_message(ERROR_MESSAGE,"write_FE_element_field_sub.  "
-									"general node based map not supported");
-							} break;
-							case FIELD_TO_ELEMENT_MAP:
-							{
-								(*output_file) << ", field to element.\n";
-								display_message(ERROR_MESSAGE,
-									"write_FE_element_field.  field to element map not supported");
+									"general map not supported");
 							} break;
 							case ELEMENT_GRID_MAP:
 							{
@@ -765,12 +759,6 @@ Writes information describing how <field> is defined at <element>.
 										component, j, &number_in_xi);
 									(*output_file) << "#xi" << j + 1 << "=" << number_in_xi;
 								}
-								(*output_file) << "\n";
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"write_FE_element_field_sub.  Unknown field component type");
 								(*output_file) << "\n";
 							} break;
 						}
@@ -832,8 +820,8 @@ are passed to this function.
 {
 	enum FE_field_type fe_field_type;
 	enum Global_to_element_map_type component_type;
-	int field_no, i, j, node_index,number_of_components, number_of_fields = 0,
-		number_of_fields_in_header, number_of_nodes, number_of_nodes_in_component,
+	int field_no, i, j, number_of_components, number_of_fields = 0,
+		number_of_fields_in_header, number_of_nodes,
 		number_of_scale_factor_sets, number_of_scale_factors,
 		numbers_in_scale_factor_set,
 		output_number_of_scale_factor_sets, output_scale_factor_index, return_code,
@@ -842,8 +830,6 @@ are passed to this function.
 	struct FE_basis *basis;
 	struct FE_element_field_component *component;
 	struct FE_field *field;
-	struct General_node_to_element_map *general_node_map;
-	struct Standard_node_to_element_map *standard_node_map;
 	struct Write_FE_element_field_sub write_element_field_data;
 	void *scale_factor_set_identifier;
 
@@ -962,101 +948,8 @@ are passed to this function.
 													}
 												}
 											}
-											switch (component_type)
-											{
-												case STANDARD_NODE_TO_ELEMENT_MAP:
-												{
-													/* work out which nodes to output */
-													if (FE_element_field_component_get_number_of_nodes(
-														component, &number_of_nodes_in_component))
-													{
-														for (j = 0; j < number_of_nodes_in_component; j++)
-														{
-															if (FE_element_field_component_get_standard_node_map(
-																component, j, &standard_node_map) &&
-																Standard_node_to_element_map_get_node_index(
-																	standard_node_map, &node_index))
-															{
-																if ((0 <= node_index) &&
-																	(node_index < number_of_nodes))
-																{
-																	(*output_node_indices)[node_index] = 1;
-																}
-																else
-																{
-																	display_message(ERROR_MESSAGE,
-																		"write_FE_element_field_info.  "
-																		"Invalid node_index for "
-																		"standard node to element map");
-																	return_code=0;
-																}
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"write_FE_element_field_info.  "
-																	"Missing standard node to element map");
-																return_code=0;
-															}
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,"write_FE_element.  "
-															"Invalid standard node to element component");
-														return_code=0;
-													}
-												} break;
-												case GENERAL_NODE_TO_ELEMENT_MAP:
-												{
-													/* work out which nodes to output */
-													if (FE_element_field_component_get_number_of_nodes(
-														component, &number_of_nodes_in_component))
-													{
-														for (j = 0; j < number_of_nodes_in_component; j++)
-														{
-															if (FE_element_field_component_get_general_node_map(
-																component, j, &general_node_map) &&
-																General_node_to_element_map_get_node_index(
-																	general_node_map, &node_index))
-															{
-																if ((0 <= node_index) &&
-																	(node_index < number_of_nodes))
-																{
-																	(*output_node_indices)[node_index] = 1;
-																}
-																else
-																{
-																	display_message(ERROR_MESSAGE,
-																		"write_FE_element_field_info.  "
-																		"Invalid node_index for "
-																		"general node to element map");
-																	return_code=0;
-																}
-															}
-															else
-															{
-																display_message(ERROR_MESSAGE,
-																	"write_FE_element_field_info.  "
-																	"Missing general node to element map");
-																return_code=0;
-															}
-														}
-													}
-													else
-													{
-														display_message(ERROR_MESSAGE,
-															"write_FE_element_field_info.  "
-															"Invalid general node to element component");
-														return_code=0;
-													}
-												} break;
-												case ELEMENT_GRID_MAP:
-												case FIELD_TO_ELEMENT_MAP:
-												{
-													// nothing to do: these maps do not use nodes
-												} break;
-											}
+											FE_element_field_component_get_local_node_in_use(
+												component, number_of_nodes, *output_node_indices);
 										}
 										else
 										{

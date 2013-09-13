@@ -170,29 +170,16 @@ DECLARE_LIST_TYPES(FE_node);
 
 DECLARE_CHANGE_LOG_TYPES(FE_node);
 
+/**
+ * Specifies the type of mapping used to get element DOFs for interpolation
+ * from global DOFs in a variety of sources (nodes, field etc.)
+ */
 enum Global_to_element_map_type
-/*******************************************************************************
-LAST MODIFIED : 22 September 1998
-
-DESCRIPTION :
-Used for specifying the type of a global to element map.
-==============================================================================*/
 {
 	STANDARD_NODE_TO_ELEMENT_MAP,
-	GENERAL_NODE_TO_ELEMENT_MAP,
-	FIELD_TO_ELEMENT_MAP,
+	GENERAL_ELEMENT_MAP,
 	ELEMENT_GRID_MAP
-}; /* enum Global_to_element_map_type */
-
-struct Linear_combination_of_global_values;
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating an element value as a linear combination
-of global values.  The application of scale factors is one of the uses for this
-linear combination.
-==============================================================================*/
+};
 
 struct Standard_node_to_element_map;
 /*******************************************************************************
@@ -201,17 +188,6 @@ LAST MODIFIED : 9 October 2002
 DESCRIPTION :
 Stores the information for calculating element values by choosing nodal values
 and applying a diagonal scale factor matrix.  The <nodal_values> and
-<scale_factors> are stored as offsets so that the arrays stored with the nodes
-and elements can be reallocated.
-==============================================================================*/
-
-struct General_node_to_element_map;
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Stores the information for calculating element values by choosing nodal values
-and applying a general scale factor matrix.  The <nodal_values> and
 <scale_factors> are stored as offsets so that the arrays stored with the nodes
 and elements can be reallocated.
 ==============================================================================*/
@@ -1285,26 +1261,6 @@ void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list);
 
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_node);
 
-struct Linear_combination_of_global_values
-	*CREATE(Linear_combination_of_global_values)(int number_of_global_values);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Allocates memory and assigns fields for a linear combination of global values.
-Allocates storage for the global and coefficient indices and sets to -1.
-==============================================================================*/
-
-int DESTROY(Linear_combination_of_global_values)(
-	struct Linear_combination_of_global_values **linear_combination_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the linear combination and sets
-<*linear_combination_address> to NULL.
-==============================================================================*/
-
 struct Standard_node_to_element_map *CREATE(Standard_node_to_element_map)(
 	int node_index,int number_of_nodal_values);
 /*******************************************************************************
@@ -1394,37 +1350,6 @@ Note a negative <scale_factor_index> gives a unit scale factor without
 needing to get a value from the scale factor set.
 ==============================================================================*/
 
-struct General_node_to_element_map *CREATE(General_node_to_element_map)(
-	int node_index,int number_of_nodal_values);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Allocates memory and assigns fields for a general node to element map.
-Allocates storage for the pointers to the linear combinations of field values
-and sets to NULL.
-==============================================================================*/
-
-int DESTROY(General_node_to_element_map)(
-	struct General_node_to_element_map **map_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the map and sets <*map_address> to NULL.
-==============================================================================*/
-
-int General_node_to_element_map_get_node_index(
-	struct General_node_to_element_map *general_node_map,
-	int *node_index_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the node index from <general_node_map>.
-If fails, sets *<node_index_address> to zero.
-==============================================================================*/
-
 struct FE_element_field_component *CREATE(FE_element_field_component)(
 	enum Global_to_element_map_type type,int number_of_maps,
 	struct FE_basis *basis,FE_element_field_component_modify modify);
@@ -1454,20 +1379,6 @@ LAST MODIFIED : 5 November 2002
 DESCRIPTION :
 Gets the <basis> used by <element_field_component>.
 If fails, puts NULL in *<basis_address> if supplied.
-==============================================================================*/
-
-int FE_element_field_component_get_general_node_map(
-	struct FE_element_field_component *element_field_component, int node_number,
-	struct General_node_to_element_map **general_node_map_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Gets the <general_node_map> relating global node values to those at local
-<node_number> for <element_field_component> of type
-GENERAL_NODE_TO_ELEMENT_MAP. <node_number> starts at 0 and must be less than
-the number of nodes in the component.
-If fails, puts NULL in *<general_node_map_address> if supplied.
 ==============================================================================*/
 
 int FE_element_field_component_get_grid_map_number_in_xi(
@@ -1539,9 +1450,16 @@ LAST MODIFIED : 5 November 2002
 
 DESCRIPTION :
 Gets the number of local nodes for <element_field_component> of type
-STANDARD_NODE_TO_ELEMENT_MAP or GENERAL_NODE_TO_ELEMENT_MAP.
+STANDARD_NODE_TO_ELEMENT_MAP.
 If fails, puts zero in *<number_of_nodes_address> if supplied.
 ==============================================================================*/
+
+/**
+ * Fills array of flags (1=true, 0=false) indicating whether local node i is in
+ * use by the component map.
+ */
+int FE_element_field_component_get_local_node_in_use(
+	FE_element_field_component *component, int numberOfLocalNodes, int *localNodeInUse);
 
 int FE_element_field_component_get_standard_node_map(
 	struct FE_element_field_component *element_field_component, int node_number,
