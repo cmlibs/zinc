@@ -6100,6 +6100,7 @@ public:
 		{
 			newSum->addMap(this->maps[i]->cloneWithNewNodeIndices(mergeInfo, sourceInfo));
 		}
+		return newSum;
 	}
 
 	/**
@@ -6232,8 +6233,7 @@ static int global_to_element_map_values(struct FE_element *element,
 			case STANDARD_NODE_TO_ELEMENT_MAP:
 				/* global values are associated with nodes */
 			{
-				FE_value *array, *element_value,
-					*scale_factors = NULL,temp_value = 0.0,xi;
+				FE_value *array, *element_value, *scale_factors = 0, xi;
 				int *global_value_index,j,k,
 					number_of_element_nodes,
 					number_of_global_values,number_of_map_values = 0,
