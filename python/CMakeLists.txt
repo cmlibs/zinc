@@ -125,8 +125,9 @@ STRING(REGEX MATCH "([0-9].[0-9].[0-9])|(r[0-9]+[M]?)" ZINC_VERSION "${ZINC_LOCA
 
 # Create the Python package initialisation files.
 CONFIGURE_FILE(createpackagefiles.in.cmake createpackagefiles.cmake)
-ADD_CUSTOM_COMMAND(TARGET ${SWIG_MODULE_TARGETS} POST_BUILD
+ADD_CUSTOM_TARGET(CreateInitialisationFiles ALL
 	COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/createpackagefiles.cmake"
+	DEPENDS ${SWIG_MODULE_TARGETS}
 	COMMENT "Create Python package initialisation files")
 
 # Get a pretty system name.
@@ -153,5 +154,4 @@ ADD_CUSTOM_COMMAND(OUTPUT "${PYPI_SOURCE_TARGZ}"
 	#COMMAND ${CMAKE_COMMAND} -E chdir "${CMAKE_CURRENT_BINARY_DIR}" ${PYTHON_EXECUTABLE} setup.py bdist_egg
 	DEPENDS ${PYPI_GENERATED_SRCS})
 ADD_CUSTOM_TARGET(pypi-package DEPENDS "${PYPI_SOURCE_TARGZ}")
-
 
