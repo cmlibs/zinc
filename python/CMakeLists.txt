@@ -16,7 +16,7 @@ ENDIF()
 
 SET(PYZINC_MODULE_PATH "${PYZINC_MODULE_PATH}" CACHE PATH "Location to the PyZinc modules, specifically we need a modified FindSWIG.cmake module.")
 SET(CMAKE_MODULE_PATH ${PYZINC_MODULE_PATH})
-   
+
 SET(PYZINC_BUILD_TYPE "Release" CACHE STRING "The type of configuration to build: Debug, Release, MinSizeRel, RelWithDebugInfo, default: Release")
 SET(CMAKE_BUILD_TYPE ${PYZINC_BUILD_TYPE} CACHE INTERNAL "Internalise CMAKE_BUILD_TYPE, manipulate via ZINC_BUILD_TYPE" FORCE)
 
@@ -104,8 +104,7 @@ FOREACH(SWIG_INTERFACE ${INTERFACE_SRCS})
 	LIST(APPEND SWIG_MODULE_TARGETS ${SWIG_MODULE_${MODULE}_REAL_NAME})
 ENDFOREACH()
 
-
-set(PYPI_SRCS
+SET(PYPI_SRCS
 	MANIFEST.in
 	CHANGES.txt
 	LICENSE.txt
@@ -124,12 +123,11 @@ STRING(SUBSTRING ${PYTHONLIBS_VERSION_STRING} 0 3 PYTHONLIBS_MAJOR_MINOR_VERSION
 GET_TARGET_PROPERTY(ZINC_LOCATION ${ZINC_LIBRARIES} LOCATION)
 STRING(REGEX MATCH "([0-9].[0-9].[0-9])|(r[0-9]+[M]?)" ZINC_VERSION "${ZINC_LOCATION}")
 
-# Write the version of PyZinc into the package file __init__.py
-
-FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${OPENCMISS_PYTHON_MODULE}/__init__.py" "# OpenCMISS Python package initialisation file.\n")
-FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${ZINC_PYTHON_MODULE}/__init__.py" "# Zinc Python package initialisation file.\n\n__version__ = \"${ZINC_VERSION}\"\n\n")
-
-
+# Create the Python package initialisation files.
+CONFIGURE_FILE(createpackagefiles.in.cmake createpackagefiles.cmake)
+ADD_CUSTOM_COMMAND(TARGET ${SWIG_MODULE_TARGETS} POST_BUILD
+	COMMAND ${CMAKE_COMMAND} -P "${CMAKE_CURRENT_BINARY_DIR}/createpackagefiles.cmake"
+	COMMENT "Create Python package initialisation files")
 
 # Get a pretty system name.
 GET_SYSTEM_NAME(SYSTEM_NAME)
