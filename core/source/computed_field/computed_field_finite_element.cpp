@@ -4029,38 +4029,38 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 
 cmzn_field_id cmzn_field_module_create_node_value(
 	cmzn_field_module_id field_module, cmzn_field_id field,
-	enum cmzn_nodal_value_type type, int version)
+	enum cmzn_node_value_type type, int version)
 {
 	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
 	{
 		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
 		switch (type)
 		{
-			case CMZN_NODAL_VALUE_TYPE_INVALID:
+			case CMZN_NODE_VALUE_TYPE_INVALID:
 				fe_nodal_value_type = FE_NODAL_UNKNOWN;
 				break;
-			case CMZN_NODAL_VALUE:
+			case CMZN_NODE_VALUE:
 				fe_nodal_value_type = FE_NODAL_VALUE;
 				break;
-			case CMZN_NODAL_D_DS1:
+			case CMZN_NODE_D_DS1:
 				fe_nodal_value_type = FE_NODAL_D_DS1;
 				break;
-			case CMZN_NODAL_D_DS2:
+			case CMZN_NODE_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMZN_NODAL_D_DS3:
+			case CMZN_NODE_D_DS3:
 				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
-			case CMZN_NODAL_D2_DS1DS2:
+			case CMZN_NODE_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
 				break;
-			case CMZN_NODAL_D2_DS1DS3:
+			case CMZN_NODE_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
 				break;
-			case CMZN_NODAL_D2_DS2DS3:
+			case CMZN_NODE_D2_DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
 				break;
-			case CMZN_NODAL_D3_DS1DS2DS3:
+			case CMZN_NODE_D3_DS1DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
 				break;
 		}

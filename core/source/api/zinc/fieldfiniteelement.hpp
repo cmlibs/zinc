@@ -182,7 +182,7 @@ inline FieldNodeValue FieldModule::createNodeValue(Field& sourceField,
 	Node::ValueType valueType, int versionNumber)
 {
 	return FieldNodeValue(cmzn_field_module_create_node_value(id,
-		sourceField.getId(), static_cast<cmzn_nodal_value_type>(valueType),
+		sourceField.getId(), static_cast<cmzn_node_value_type>(valueType),
 		versionNumber));
 }
 

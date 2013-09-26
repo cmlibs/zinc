@@ -2236,6 +2236,8 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 															STANDARD_NODE_TO_ELEMENT_MAP,
 															number_of_nodes, basis, modify)))
 													{
+														// set scale factor set only if there are scale factors in use
+														bool noScaleFactors = true;
 														for (i = 0; (i < number_of_nodes) && return_code;
 															i++)
 														{
@@ -2281,10 +2283,28 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																	for (j = 0; (j < number_of_values) &&
 																		return_code; j++)
 																	{
-																		if (!((1 == IO_stream_scan(input_file, "%d",
-																			&index)) &&
+																		if ((1 == IO_stream_scan(input_file, "%d", &index)) &&
 																			Standard_node_to_element_map_set_scale_factor_index(
-																				standard_node_map, j, index - 1)))
+																				standard_node_map, j, index - 1))
+																		{
+																			if (noScaleFactors && (index > 0))
+																			{
+																				noScaleFactors = false;
+																				char *scale_factor_set_name = FE_basis_get_description_string(basis);
+																				cmzn_mesh_scale_factor_set *scale_factor_set =
+																					FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+																				if (!scale_factor_set)
+																				{
+																					scale_factor_set =
+																						FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+																				}
+																				FE_element_field_component_set_scale_factor_set(
+																					components[component_number], scale_factor_set);
+																				cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
+																				DEALLOCATE(scale_factor_set_name);
+																			}
+																		}
+																		else
 																		{
 																			location = IO_stream_get_location_string(input_file);
 																			display_message(ERROR_MESSAGE,
@@ -2598,11 +2618,10 @@ from a previous call to this function.
 {
 	char *location;
 	int dimension,i,number_of_fields,number_of_nodes,
-		number_of_scale_factor_sets, *numbers_in_scale_factor_sets, return_code;
+		number_of_scale_factor_sets, return_code;
 	struct CM_element_information element_identifier;
 	struct FE_element *element;
 	struct FE_field *field;
-	void **scale_factor_set_identifiers;
 
 	ENTER(read_FE_element_field_info);
 	element = (struct FE_element *)NULL;
@@ -2634,21 +2653,34 @@ from a previous call to this function.
 			}
 			if (return_code)
 			{
-				scale_factor_set_identifiers = (void **)NULL;
-				numbers_in_scale_factor_sets = (int *)NULL;
+				int *numbers_in_scale_factor_sets = (int *)0;
+				cmzn_mesh_scale_factor_set **scale_factor_set_identifiers = 0;
 				/* note can have no scale factor sets */
 				if ((0 == number_of_scale_factor_sets) || (
-					ALLOCATE(scale_factor_set_identifiers, void *,
-						number_of_scale_factor_sets) &&
 					ALLOCATE(numbers_in_scale_factor_sets, int,
+						number_of_scale_factor_sets) &&
+					ALLOCATE(scale_factor_set_identifiers, cmzn_mesh_scale_factor_set *,
 						number_of_scale_factor_sets)))
 				{
+					for (i = 0; i < number_of_scale_factor_sets; ++i)
+						scale_factor_set_identifiers[i] = 0;
 					/* read in the scale factor set information */
 					for (i = 0; (i < number_of_scale_factor_sets) && return_code; i++)
 					{
-						if (NULL != (scale_factor_set_identifiers[i] = (void *)read_FE_basis(
-							input_file,fe_region)))
+						char *scale_factor_set_text = 0;
+						if (IO_stream_read_string(input_file, "[^,]", &scale_factor_set_text))
 						{
+							char *scale_factor_set_name = remove_leading_trailing_blanks(scale_factor_set_text);
+							DEALLOCATE(scale_factor_set_text);
+							cmzn_mesh_scale_factor_set *scale_factor_set =
+								FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+							if (!scale_factor_set)
+							{
+								scale_factor_set =
+									FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+							}
+							DEALLOCATE(scale_factor_set_name);
+							scale_factor_set_identifiers[i] = scale_factor_set;
 							if (!((1 == IO_stream_scan(input_file, ", #Scale factors=%d ",
 								&(numbers_in_scale_factor_sets[i]))) &&
 								(0 < numbers_in_scale_factor_sets[i])))
@@ -2696,9 +2728,9 @@ from a previous call to this function.
 					if (return_code && (0 < number_of_fields))
 					{
 						if (!(set_FE_element_number_of_nodes(element, number_of_nodes) &&
-							set_FE_element_number_of_scale_factor_sets(element,
+							(CMZN_OK == set_FE_element_number_of_scale_factor_sets(element,
 								number_of_scale_factor_sets, scale_factor_set_identifiers,
-								numbers_in_scale_factor_sets)))
+								numbers_in_scale_factor_sets))))
 						{
 							location = IO_stream_get_location_string(input_file);
 							display_message(ERROR_MESSAGE, "read_FE_element_field_info.  "
@@ -2750,6 +2782,8 @@ from a previous call to this function.
 				}
 				if (scale_factor_set_identifiers)
 				{
+					for (int i = 0; i < number_of_scale_factor_sets; ++i)
+						cmzn_mesh_scale_factor_set::deaccess(scale_factor_set_identifiers[i]);
 					DEALLOCATE(scale_factor_set_identifiers);
 				}
 			}

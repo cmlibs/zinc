@@ -823,7 +823,7 @@ are passed to this function.
 	int field_no, i, j, number_of_components, number_of_fields = 0,
 		number_of_fields_in_header, number_of_nodes,
 		number_of_scale_factor_sets, number_of_scale_factors,
-		numbers_in_scale_factor_set,
+		number_in_scale_factor_set,
 		output_number_of_scale_factor_sets, output_scale_factor_index, return_code,
 		scale_factor_index, *scale_factor_set_in_use,
 		write_field_values;
@@ -831,7 +831,6 @@ are passed to this function.
 	struct FE_element_field_component *component;
 	struct FE_field *field;
 	struct Write_FE_element_field_sub write_element_field_data;
-	void *scale_factor_set_identifier;
 
 	ENTER(write_FE_element_field_info);
 	if (output_file && element && output_number_of_nodes && output_node_indices &&
@@ -931,19 +930,16 @@ are passed to this function.
 												 that grid-based comp'ts DO NOT use scale factors */
 											if (ELEMENT_GRID_MAP != component_type)
 											{
-												if (FE_element_field_component_get_basis(component,
-													&basis))
+												cmzn_mesh_scale_factor_set *scale_factor_set =
+													FE_element_field_component_get_scale_factor_set(component);
+												if (scale_factor_set)
 												{
 													for (j = 0; j < number_of_scale_factor_sets; j++)
 													{
-														if (get_FE_element_scale_factor_set_identifier(
-															element, j, &scale_factor_set_identifier))
+														if (get_FE_element_scale_factor_set_identifier_at_index(element, j) ==
+															scale_factor_set)
 														{
-															if ((struct FE_basis *)scale_factor_set_identifier
-																== basis)
-															{
-																scale_factor_set_in_use[j] = 1;
-															}
+															scale_factor_set_in_use[j] = 1;
 														}
 													}
 												}
@@ -1009,29 +1005,27 @@ are passed to this function.
 					output_scale_factor_index=scale_factor_index = 0;
 					for (j = 0; j < number_of_scale_factor_sets; j++)
 					{
-						get_FE_element_numbers_in_scale_factor_set(element, j,
-							&numbers_in_scale_factor_set);
+						number_in_scale_factor_set = get_FE_element_number_in_scale_factor_set_at_index(element, j);
 						if (scale_factor_set_in_use[j])
 						{
 							(*output_file) << " ";
-							get_FE_element_scale_factor_set_identifier(element, j,
-								&scale_factor_set_identifier);
-							write_FE_basis(output_file,
-								(struct FE_basis *)scale_factor_set_identifier);
-							(*output_file) << ", #Scale factors=" << numbers_in_scale_factor_set << "\n";
+							cmzn_mesh_scale_factor_set *scale_factor_set =
+								get_FE_element_scale_factor_set_identifier_at_index(element, j);
+							(*output_file) << scale_factor_set->getName();
+							(*output_file) << ", #Scale factors=" << number_in_scale_factor_set << "\n";
 							/* set output scale factor indices */
-							for (i = numbers_in_scale_factor_set; 0 < i; i--)
+							for (i = number_in_scale_factor_set; 0 < i; i--)
 							{
 								(*output_scale_factor_indices)[scale_factor_index]=
 									output_scale_factor_index;
 								scale_factor_index++;
 								output_scale_factor_index++;
 							}
-							*output_number_of_scale_factors += numbers_in_scale_factor_set;
+							*output_number_of_scale_factors += number_in_scale_factor_set;
 						}
 						else
 						{
-							scale_factor_index += numbers_in_scale_factor_set;
+							scale_factor_index += number_in_scale_factor_set;
 						}
 					}
 					/* output number of nodes */

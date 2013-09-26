@@ -253,7 +253,7 @@ public:
 	}
 
 	int defineDerivative(cmzn_field_id field, int component_number,
-		enum cmzn_nodal_value_type derivative_type)
+		enum cmzn_node_value_type derivative_type)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
@@ -273,7 +273,7 @@ public:
 			return 0;
 		}
 		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_nodal_value_type_to_FE_nodal_value_type(derivative_type);
+			cmzn_node_value_type_to_FE_nodal_value_type(derivative_type);
 		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
 			return 0;
 		clearTemplateNode();
@@ -362,7 +362,7 @@ public:
 	}
 
 	int hasDerivative(cmzn_field_id field, int component_number,
-		enum cmzn_nodal_value_type derivative_type)
+		enum cmzn_node_value_type derivative_type)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
@@ -374,7 +374,7 @@ public:
 		if (!node_field)
 			return 0;
 		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_nodal_value_type_to_FE_nodal_value_type(derivative_type);
+			cmzn_node_value_type_to_FE_nodal_value_type(derivative_type);
 		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
 			return 0;
 		return node_field->hasDerivative(component_number, fe_nodal_value_type);
@@ -581,37 +581,37 @@ private:
 		return result;
 	}
 
-	FE_nodal_value_type cmzn_nodal_value_type_to_FE_nodal_value_type(
-		enum cmzn_nodal_value_type nodal_value_type)
+	FE_nodal_value_type cmzn_node_value_type_to_FE_nodal_value_type(
+		enum cmzn_node_value_type nodal_value_type)
 	{
 		FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
 		switch (nodal_value_type)
 		{
-			case CMZN_NODAL_VALUE_TYPE_INVALID:
+			case CMZN_NODE_VALUE_TYPE_INVALID:
 				fe_nodal_value_type = FE_NODAL_UNKNOWN;
 				break;
-			case CMZN_NODAL_VALUE:
+			case CMZN_NODE_VALUE:
 				fe_nodal_value_type = FE_NODAL_VALUE;
 				break;
-			case CMZN_NODAL_D_DS1:
+			case CMZN_NODE_D_DS1:
 				fe_nodal_value_type = FE_NODAL_D_DS1;
 				break;
-			case CMZN_NODAL_D_DS2:
+			case CMZN_NODE_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMZN_NODAL_D_DS3:
+			case CMZN_NODE_D_DS3:
 				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
-			case CMZN_NODAL_D2_DS1DS2:
+			case CMZN_NODE_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
 				break;
-			case CMZN_NODAL_D2_DS1DS3:
+			case CMZN_NODE_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
 				break;
-			case CMZN_NODAL_D2_DS2DS3:
+			case CMZN_NODE_D2_DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
 				break;
-			case CMZN_NODAL_D3_DS1DS2DS3:
+			case CMZN_NODE_D3_DS1DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
 				break;
 		}
@@ -1202,7 +1202,7 @@ int cmzn_node_template_define_field_from_node(
 
 int cmzn_node_template_define_derivative(cmzn_node_template_id node_template,
 	cmzn_field_id field, int component_number,
-	enum cmzn_nodal_value_type derivative_type)
+	enum cmzn_node_value_type derivative_type)
 {
 	if (node_template && field)
 	{
@@ -1255,7 +1255,7 @@ cmzn_time_sequence_id cmzn_node_template_get_time_sequence(
 
 int cmzn_node_template_has_derivative(cmzn_node_template_id node_template,
 	cmzn_field_id field, int component_number,
-	enum cmzn_nodal_value_type derivative_type)
+	enum cmzn_node_value_type derivative_type)
 {
 	if (node_template && field)
 	{
@@ -1298,36 +1298,36 @@ int cmzn_node_merge(cmzn_node_id node, cmzn_node_template_id node_template)
 	return 0;
 }
 
-class cmzn_nodal_value_type_conversion
+class cmzn_node_value_type_conversion
 {
 public:
-	static const char *to_string(enum cmzn_nodal_value_type type)
+	static const char *to_string(enum cmzn_node_value_type type)
 	{
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMZN_NODAL_VALUE:
+			case CMZN_NODE_VALUE:
 				enum_string = "VALUE";
 				break;
-			case CMZN_NODAL_D_DS1:
+			case CMZN_NODE_D_DS1:
 				enum_string = "D_DS1";
 				break;
-			case CMZN_NODAL_D_DS2:
+			case CMZN_NODE_D_DS2:
 				enum_string = "D_DS2";
 				break;
-			case CMZN_NODAL_D_DS3:
+			case CMZN_NODE_D_DS3:
 				enum_string = "D_DS3";
 				break;
-			case CMZN_NODAL_D2_DS1DS2:
+			case CMZN_NODE_D2_DS1DS2:
 				enum_string = "D2_DS1DS2";
 				break;
-			case CMZN_NODAL_D2_DS1DS3:
+			case CMZN_NODE_D2_DS1DS3:
 				enum_string = "_D2_DS1DS3";
 				break;
-			case CMZN_NODAL_D2_DS2DS3:
+			case CMZN_NODE_D2_DS2DS3:
 				enum_string = "D2_DS2DS3";
 				break;
-			case CMZN_NODAL_D3_DS1DS2DS3:
+			case CMZN_NODE_D3_DS1DS2DS3:
 				enum_string = "D3_DS1DS2DS3";
 				break;
 			default:
@@ -1337,14 +1337,14 @@ public:
 	}
 };
 
-enum cmzn_nodal_value_type cmzn_nodal_value_type_enum_from_string(
+enum cmzn_node_value_type cmzn_node_value_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum cmzn_nodal_value_type,	cmzn_nodal_value_type_conversion>(string);
+	return string_to_enum<enum cmzn_node_value_type,	cmzn_node_value_type_conversion>(string);
 }
 
-char *cmzn_nodal_value_type_enum_to_string(enum cmzn_nodal_value_type type)
+char *cmzn_node_value_type_enum_to_string(enum cmzn_node_value_type type)
 {
-	const char *type_string = cmzn_nodal_value_type_conversion::to_string(type);
+	const char *type_string = cmzn_node_value_type_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
 }

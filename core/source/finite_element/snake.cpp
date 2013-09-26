@@ -342,6 +342,15 @@ Hermite basis over it.
 		element_shape = CREATE(FE_element_shape)(/*dimension*/1, shape_type, fe_region);
 		/* make 1-d cubic Hermite basis */
 		element_basis = make_FE_basis(basis_type, basis_manager);
+		char *scale_factor_set_name = FE_basis_get_description_string(element_basis);
+		cmzn_mesh_scale_factor_set *scale_factor_set =
+			FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+		if (!scale_factor_set)
+		{
+			scale_factor_set =
+				FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+		}
+		DEALLOCATE(scale_factor_set_name);
 
 		cm.type = CM_ELEMENT;
 		cm.number = 0;
@@ -351,10 +360,10 @@ Hermite basis over it.
 			number_of_scale_factors = 4;
 			number_of_nodes = 2;
 			if (set_FE_element_number_of_nodes(element, number_of_nodes) &&
-				set_FE_element_number_of_scale_factor_sets(element,
+				(CMZN_OK == set_FE_element_number_of_scale_factor_sets(element,
 					/*number_of_scale_factor_sets*/1,
-					/*scale_factor_set_identifiers*/reinterpret_cast<void **>(&element_basis),
-					/*numbers_in_scale_factor_sets*/&number_of_scale_factors))
+					/*scale_factor_set_identifiers*/&scale_factor_set,
+					/*numbers_in_scale_factor_sets*/&number_of_scale_factors)))
 			{
 				/* set scale factors to 1.0 */
 				for (i = 0; i < number_of_scale_factors; i++)
@@ -472,6 +481,7 @@ Hermite basis over it.
 			display_message(ERROR_MESSAGE,
 				"create_1d_hermite_element.  Could not create element");
 		}
+		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 		/* deaccess basis and shape so at most used by template element */
 		if (element_basis)
 		{

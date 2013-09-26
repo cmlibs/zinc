@@ -15,6 +15,7 @@ finite element fields defined on or interpolated over them.
 
 #include <cstdlib>
 #include <cstdio>
+#include <vector>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
@@ -128,8 +129,19 @@ DESCRIPTION :
 	int informed_make_cmiss_number_field;
 	int informed_make_xi_field;
 
+	// scale factor sets in use. Used as identifier for finding scale factor
+	// arrays stored with elements 
+	std::vector<cmzn_mesh_scale_factor_set*> *scale_factor_sets;
+
 	/* number of objects using this region */
 	int access_count;
+
+	std::vector<cmzn_mesh_scale_factor_set*>& get_scale_factor_sets()
+	{
+		if (this->scale_factor_sets)
+			return *scale_factor_sets;
+		return this->master_fe_region->get_scale_factor_sets();
+	}
 };
 
 /*
@@ -958,16 +970,13 @@ If <element_field_list> is omitted, an empty list is assumed.
 static struct FE_element_field_info *FE_region_clone_FE_element_field_info(
 	struct FE_region *fe_region,
 	struct FE_element_field_info *fe_element_field_info)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns a clone of <fe_element_field_info> that belongs to <fe_region> and
-uses equivalent FE_fields and FE_time_sequences from <fe_region>.
-<fe_region> is expected to be its own ultimate master FE_region.
-Used to merge elements from other FE_regions into.
-It is an error if an equivalent/same name FE_field is not found in <fe_region>.
-==============================================================================*/
+/**
+ * Returns a clone of <fe_element_field_info> that belongs to <fe_region> and
+ * uses equivalent FE_fields, FE_time_sequences and scale factor sets from
+ * <fe_region>. <fe_region> is expected to be its own ultimate master FE_region.
+ * Used to merge elements from other FE_regions into.
+ * It is an error if an equivalent/same name FE_field is not found in <fe_region>.
+ */
 {
 	struct FE_element_field_info *clone_fe_element_field_info;
 	struct LIST(FE_element_field) *fe_element_field_list;
@@ -976,9 +985,9 @@ It is an error if an equivalent/same name FE_field is not found in <fe_region>.
 	clone_fe_element_field_info = (struct FE_element_field_info *)NULL;
 	if (fe_region && fe_element_field_info)
 	{
-		fe_element_field_list = FE_element_field_list_clone_with_FE_field_list(
+		fe_element_field_list = FE_element_field_list_clone_for_FE_region(
 			FE_element_field_info_get_element_field_list(fe_element_field_info),
-			fe_region->fe_field_list);
+			fe_region);
 		if (fe_element_field_list)
 		{
 			clone_fe_element_field_info = FE_region_get_FE_element_field_info(
@@ -1083,6 +1092,7 @@ them to be specified allows sharing across regions).
 			{
 				fe_region->fe_element_list[dim] = CREATE_RELATED_LIST(FE_element)(master_fe_region->fe_element_list[dim]);
 			}
+			fe_region->scale_factor_sets = 0;
 		}
 		else
 		{
@@ -1117,6 +1127,7 @@ them to be specified allows sharing across regions).
 			{
 				fe_region->fe_element_list[dim] = CREATE_LIST(FE_element)();
 			}
+			fe_region->scale_factor_sets = new std::vector<cmzn_mesh_scale_factor_set*>();
 		}
 		fe_region->top_data_hack = 0;
 		fe_region->data_fe_region = (struct FE_region *)NULL;
@@ -1279,6 +1290,16 @@ Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
 			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 			{
 				DESTROY(CHANGE_LOG(FE_element))(&(fe_region->fe_element_changes[dim]));
+			}
+			if (fe_region->scale_factor_sets)
+			{
+				unsigned int size = fe_region->scale_factor_sets->size();
+				for (unsigned i = 0; i < size; ++i)
+				{
+					cmzn_mesh_scale_factor_set *scale_factor_set = (*fe_region->scale_factor_sets)[i];
+					cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
+				}
+				delete fe_region->scale_factor_sets;
 			}
 			DEALLOCATE(*fe_region_address);
 			return_code = 1;
@@ -4084,6 +4105,45 @@ struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
 	return (element);
 }
 
+cmzn_mesh_scale_factor_set *FE_region_find_mesh_scale_factor_set_by_name(
+	struct FE_region *fe_region, const char *name)
+{
+	if (fe_region && name)
+	{
+		std::vector<cmzn_mesh_scale_factor_set*>& scale_factor_sets = fe_region->get_scale_factor_sets();
+		const unsigned size = scale_factor_sets.size();
+		for (unsigned i = 0; i < size; ++i)
+		{
+			if (0 == strcmp(scale_factor_sets[i]->getName(), name))
+			{
+				return scale_factor_sets[i]->access();
+			}
+		}
+	}
+	return 0;
+}
+
+cmzn_mesh_scale_factor_set *FE_region_create_mesh_scale_factor_set_with_name(
+	struct FE_region *fe_region, const char *name)
+{
+	if (fe_region && name)
+	{
+		std::vector<cmzn_mesh_scale_factor_set*>& scale_factor_sets = fe_region->get_scale_factor_sets();
+		const unsigned size = scale_factor_sets.size();
+		for (unsigned i = 0; i < size; ++i)
+		{
+			if (0 == strcmp(scale_factor_sets[i]->getName(), name))
+			{
+				return 0;
+			}
+		}
+		cmzn_mesh_scale_factor_set *scale_factor_set = cmzn_mesh_scale_factor_set::create(name);
+		scale_factor_sets.push_back(scale_factor_set);
+		return scale_factor_set->access();
+	}
+	return 0;
+}
+
 int FE_region_get_next_FE_element_identifier(struct FE_region *fe_region,
 	int dimension, int start_identifier)
 {
@@ -6454,6 +6514,29 @@ plus nodes from <fe_region> of the same number as those currently used.
 						{
 							return_code = 0;
 						}
+					}
+				}
+				else
+				{
+					return_code = 0;
+				}
+				/* substitute global scale factor set identifiers */
+				int number_of_scale_factor_sets = 0;
+				if (get_FE_element_number_of_scale_factor_sets(element, &number_of_scale_factor_sets))
+				{
+					for (i = 0; (i < number_of_scale_factor_sets) && return_code; i++)
+					{
+						cmzn_mesh_scale_factor_set *source_scale_factor_set =
+							get_FE_element_scale_factor_set_identifier_at_index(element, i);
+						cmzn_mesh_scale_factor_set *global_scale_factor_set =
+							FE_region_find_mesh_scale_factor_set_by_name(fe_region, source_scale_factor_set->getName());
+						if (!global_scale_factor_set)
+						{
+							global_scale_factor_set =
+								FE_region_create_mesh_scale_factor_set_with_name(fe_region, source_scale_factor_set->getName());
+						}
+						set_FE_element_scale_factor_set_identifier_at_index(element, i, global_scale_factor_set);
+						cmzn_mesh_scale_factor_set::deaccess(global_scale_factor_set);
 					}
 				}
 				else

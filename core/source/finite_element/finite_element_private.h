@@ -370,17 +370,14 @@ PROTOTYPE_LIST_FUNCTIONS(FE_element_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field,field, \
 	struct FE_field *);
 
-struct LIST(FE_element_field) *FE_element_field_list_clone_with_FE_field_list(
-	struct LIST(FE_element_field) *element_field_list,
-	struct LIST(FE_field) *fe_field_list);
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns a new FE_element_field list that is identical to <element_field_list>
-except that it references equivalent same-name fields from <fe_field_list>.
-It is an error if an equivalent FE_field is not found.
-==============================================================================*/
+/**
+ * Returns a new FE_element_field list that is identical to <element_field_list>
+ * except that it references equivalent same-name fields and scale factor sets
+ * from <fe_region>.
+ * It is an error if an equivalent FE_field is not found.
+ */
+struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
+	struct LIST(FE_element_field) *element_field_list, struct FE_region *fe_region);
 
 struct FE_element_field_info *CREATE(FE_element_field_info)(
 	struct FE_region *fe_region, 

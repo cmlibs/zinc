@@ -229,7 +229,7 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
  */
 ZINC_API cmzn_field_id cmzn_field_module_create_node_value(
 	cmzn_field_module_id field_module, cmzn_field_id field,
-	enum cmzn_nodal_value_type nodal_value_type, int version_number);
+	enum cmzn_node_value_type nodal_value_type, int version_number);
 
 /***************************************************************************//**
  * Creates a field which stores and returns mesh location values at nodes.

@@ -35,7 +35,7 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_nodal_value_type cmzn_nodal_value_type_enum_from_string(
+ZINC_API enum cmzn_node_value_type cmzn_node_value_type_enum_from_string(
 	const char *string);
 
 /**
@@ -45,7 +45,7 @@ ZINC_API enum cmzn_nodal_value_type cmzn_nodal_value_type_enum_from_string(
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_nodal_value_type_enum_to_string(enum cmzn_nodal_value_type type);
+ZINC_API char *cmzn_node_value_type_enum_to_string(enum cmzn_node_value_type type);
 
 /**
  * Get a handle to a nodeset by its domain type, either
@@ -391,7 +391,7 @@ ZINC_API int cmzn_node_template_define_field_from_node(
  */
 ZINC_API int cmzn_node_template_define_derivative(cmzn_node_template_id node_template,
 	cmzn_field_id field, int component_number,
-	enum cmzn_nodal_value_type derivative_type);
+	enum cmzn_node_value_type derivative_type);
 
 /**
  * Defines variation of all nodal values/derivatives * versions with the
@@ -474,7 +474,7 @@ ZINC_API cmzn_time_sequence_id cmzn_node_template_get_time_sequence(
  */
 ZINC_API int cmzn_node_template_has_derivative(cmzn_node_template_id node_template,
 	cmzn_field_id field, int component_number,
-	enum cmzn_nodal_value_type derivative_type);
+	enum cmzn_node_value_type derivative_type);
 
 /**
  * Sets field to be undefined when next merged into an existing node. Has no
