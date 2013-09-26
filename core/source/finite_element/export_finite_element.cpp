@@ -827,7 +827,6 @@ are passed to this function.
 		output_number_of_scale_factor_sets, output_scale_factor_index, return_code,
 		scale_factor_index, *scale_factor_set_in_use,
 		write_field_values;
-	struct FE_basis *basis;
 	struct FE_element_field_component *component;
 	struct FE_field *field;
 	struct Write_FE_element_field_sub write_element_field_data;
