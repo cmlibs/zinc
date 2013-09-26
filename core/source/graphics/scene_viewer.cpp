@@ -170,35 +170,14 @@ int cmzn_scene_viewer_input_set_position(cmzn_scene_viewer_input_id input, int x
 
 int cmzn_scene_viewer_input_set_modifier(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_modifier modifier)
 {
-	int return_code = 0;
+	int return_code = CMZN_ERROR_ARGUMENT;
 	if (input)
 	{
-		return_code = 1;
+		return_code = CMZN_OK;
 		input->input_modifier = modifier;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_viewer_input_set_modifier.  Invalid argument(s)");
 	}
 
 	return (return_code);
-}
-
-cmzn_scene_viewer_input_modifier cmzn_scene_viewer_input_get_modifier(cmzn_scene_viewer_input_id input)
-{
-	cmzn_scene_viewer_input_modifier modifier = CMZN_SCENE_VIEWER_INPUT_INVALID;
-	if (input)
-	{
-		modifier = input->input_modifier;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_viewer_input_get_modifier.  Invalid argument(s)");
-	}
-
-	return (modifier);
 }
 
 int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_id input, int number)
@@ -220,16 +199,11 @@ int cmzn_scene_viewer_input_set_button_number(cmzn_scene_viewer_input_id input, 
 
 int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_button_type button)
 {
-	int return_code = 0;
+	int return_code = CMZN_ERROR_ARGUMENT;
 	if (input)
 	{
-		return_code = 1;
+		return_code = CMZN_OK;
 		input->button_number = static_cast<int>(button) + 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_viewer_input_set_button.  Invalid argument(s)");
 	}
 
 	return (return_code);
@@ -237,21 +211,15 @@ int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input, cmzn_sc
 
 int cmzn_scene_viewer_input_set_type(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_event_type type)
 {
-	int return_code = 0;
+	int return_code = CMZN_ERROR_ARGUMENT;
 	if (input)
 	{
-		return_code = 1;
+		return_code = CMZN_OK;
 		input->type = type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_viewer_input_set_type.  Invalid argument(s)");
 	}
 
 	return (return_code);
 }
-
 
 struct Scene_viewer_rendering_data
 /*******************************************************************************

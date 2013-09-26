@@ -58,18 +58,10 @@ ZINC_API int cmzn_scene_viewer_input_set_position(cmzn_scene_viewer_input_id inp
  * Set modifier for the input.
  *
  * @param input  Handle to cmzn_scene_viewer_input object.
- * @param modifier  Enumerator for the modifier to set.
- * @return  Handle to cmzn_scene_viewer_input on success, or 0 on failure.
+ * @param modifier  The input modifier to set, an orred value of cmzn_scene_viewer_input_modifier_flags.
+ * @return  CMZN_OK if successful, any other value on failure.
  */
 ZINC_API int cmzn_scene_viewer_input_set_modifier(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_modifier modifier);
-
-/**
- * Get the modifier set for the given input.
- *
- * @param input  Handle to cmzn_scene_viewer_input object.
- * @return  Enumerator for the input modifier.
- */
-ZINC_API cmzn_scene_viewer_input_modifier cmzn_scene_viewer_input_get_modifier(cmzn_scene_viewer_input_id input);
 
 /**
  * Set the button number for the input.

@@ -140,18 +140,6 @@ enum cmzn_scene_viewer_input_event_type
 	CMZN_SCENE_VIEWER_INPUT_KEY_RELEASE
 };
 
-/**
- * Specifies the scene viewer input modifier.
- */
-enum cmzn_scene_viewer_input_modifier_flags
-{
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_NONE = 0,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_CONTROL = 2,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
-};
-
 /*
 Global functions
 ----------------

@@ -45,6 +45,17 @@ public:
 		INPUT_BUTTON_SCROLL_UP = CMZN_SCENE_VIEWER_INPUT_BUTTON_SCROLL_UP
 	};
 
+	enum InputModifierFlags
+	{
+		INPUT_MODIFIER_NONE = CMZN_SCENE_VIEWER_INPUT_MODIFIER_NONE,
+		INPUT_MODIFIER_SHIFT = CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT,
+		INPUT_MODIFIER_CONTROL = CMZN_SCENE_VIEWER_INPUT_MODIFIER_CONTROL,
+		INPUT_MODIFIER_ALT = CMZN_SCENE_VIEWER_INPUT_MODIFIER_ALT,
+		INPUT_MODIFIER_BUTTON1 = CMZN_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1
+	};
+
+	typedef int InputModifier;
+
 	SceneViewerInput() : id(0)
 	{  }
 
@@ -104,6 +115,11 @@ public:
 	int setType(InputEventType type)
 	{
 		return cmzn_scene_viewer_input_set_type(id, static_cast<cmzn_scene_viewer_input_event_type>(type));
+	}
+
+	int setModifier(InputModifier modifier)
+	{
+		return cmzn_scene_viewer_input_set_modifier(id, static_cast<cmzn_scene_viewer_input_modifier>(modifier));
 	}
 
 };
