@@ -24,6 +24,18 @@ enum cmzn_scene_viewer_input_button_type
 	CMZN_SCENE_VIEWER_INPUT_BUTTON_SCROLL_UP
 };
 
+/**
+ * Specifies the scene viewer input modifier flags.
+ */
+enum cmzn_scene_viewer_input_modifier_flags
+{
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_NONE = 0,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_CONTROL = 2,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
+	CMZN_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
+};
+
 struct cmzn_scene_viewer_input;
 typedef struct cmzn_scene_viewer_input *cmzn_scene_viewer_input_id;
 
