@@ -15,6 +15,7 @@
 #include <cstddef>
 #include <cstdlib>
 #include <cstdio>
+#include <vector>
 
 #include "zinc/status.h"
 #include "general/cmiss_set.hpp"
@@ -63,6 +64,17 @@ if (new_values_storage_size % 8) \
 Module types
 ------------
 */
+
+cmzn_mesh_scale_factor_set::~cmzn_mesh_scale_factor_set()
+{
+	DEALLOCATE(name);
+}
+
+cmzn_mesh_scale_factor_set::cmzn_mesh_scale_factor_set(const char *nameIn) :
+	name(duplicate_string(nameIn)),
+	access_count(1)
+{
+}
 
 struct FE_field_info
 /*******************************************************************************
@@ -533,6 +545,49 @@ either lying on the z-axis or being the first and last node in a circle.
 	struct FE_basis *basis;
 	/* the function for modifying element values */
 	FE_element_field_component_modify modify;
+private:
+	// accessed pointer to scale factor set; not used for ELEMENT_GRID_MAP
+	cmzn_mesh_scale_factor_set *scale_factor_set;
+public:
+
+	/** Note: incomplete constructor
+	 * @see CREATE(FE_element_field_component)
+	 */
+	FE_element_field_component() :
+		basis(0),
+		modify(0),
+		scale_factor_set(0)
+	{
+	}
+
+	/** Note: incomplete destructor
+	 * @see DESTROY(FE_element_field_component)
+	 */
+	~FE_element_field_component()
+	{
+		DEACCESS(FE_basis)(&(this->basis));
+		cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set);
+	}
+
+	/** @return  Non-accessed pointer to scale factor set, if any */
+	cmzn_mesh_scale_factor_set *get_scale_factor_set()
+	{
+		return this->scale_factor_set;
+	}
+
+	int set_scale_factor_set(cmzn_mesh_scale_factor_set *scale_factor_set_in)
+	{
+		if (this->type != ELEMENT_GRID_MAP)
+		{
+			if (scale_factor_set_in)
+				scale_factor_set_in->access();
+			if (this->scale_factor_set)
+				cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set);
+			this->scale_factor_set = scale_factor_set_in;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
 }; /* struct FE_element_field_component */
 
 struct FE_element_field
@@ -653,38 +708,161 @@ The element fields defined on an element and how to calculate them.
 
 FULL_DECLARE_LIST_TYPE(FE_element_field_info);
 
+/**
+ * The field values, nodes and scale factors for an element.
+ * The element stores its FE_element_field_info, and optionally this structure
+ * if fields are defined and need this supplemental information.
+ */
 struct FE_element_node_scale_field_info
-/*******************************************************************************
-LAST MODIFIED : 10 October 2002
-
-DESCRIPTION :
-The field values, nodes and scale factors for an element.
-The element stores its FE_element_field_info, and optionally this structure
-if fields are defined and need this supplemental information.
-==============================================================================*/
 {
+public:
 	/* values_storage.  Element based maps have indices into this array */
 	int values_storage_size;
 	Value_storage *values_storage;
-
 	/* nodes.  Node to element maps have indices into this array */
 	int number_of_nodes;
 	struct FE_node **nodes;
-	/* there may be a number of sets of scale factors (Zinc has one for each
-		basis) */
+private:
+	/* there may be a number of sets of scale factors */
 	int number_of_scale_factor_sets;
-	/*???RC following void * pointers generally point at FE_basis. However, if it
-		were used for anything else it would stuff up export_finite_element, since
-		then we'd have no idea what to output. Move to more involved structure
-		instead? */
-	void **scale_factor_set_identifiers;
+	/* unique identifiers for scale factors stored here. All scale factor set
+	 * identifiers are listed with the mesh / FE_region. Accessed pointers */
+	cmzn_mesh_scale_factor_set **scale_factor_set_identifiers;
 	int *numbers_in_scale_factor_sets;
 	/* all scale factors are stored in this array.  Global to element maps have
 		indices into this array. General element map has relative offset into its
 		scale factor set */
+public:
 	int number_of_scale_factors;
 	FE_value *scale_factors;
-}; /* struct FE_element_node_scale_field_info */
+
+private:
+
+	FE_element_node_scale_field_info();
+
+	/**
+	 * Note that destructor does not clean up any dynamic values stored within
+	 * the values_storage; call destroyDynamic with FE_element_field_info if there are
+	 * dynamic arrays allocated in the values_storage, e.g. grid-based parameters.
+	 */
+	~FE_element_node_scale_field_info();
+
+public:
+
+	static FE_element_node_scale_field_info *create()
+	{
+		return new FE_element_node_scale_field_info();
+	}
+
+	static void destroy(FE_element_node_scale_field_info* &info)
+	{
+		delete info;
+		info = 0;
+	}
+
+	/**
+	 * Variant of destroy which cleans up dynamic arrays allocated in the
+	 * values_storage, e.g. grid-based parameters.
+	 */
+	static void destroyDynamic(FE_element_node_scale_field_info* &info,
+		FE_element_field_info *field_info);
+
+	/**
+	 * Creates a clone of this info without values storage array.
+	 * Used exclusively by merge_FE_element.
+	 */
+	FE_element_node_scale_field_info *cloneWithoutValuesStorage();
+
+	static FE_element_node_scale_field_info *createMergeWithoutValuesStorage(
+		FE_element_node_scale_field_info& targetInfo,
+		FE_element_node_scale_field_info& sourceInfo,
+		std::vector<cmzn_mesh_scale_factor_set*> &changedExistingScaleFactorSets);
+
+	/**
+	 * Must supply element field info to copy dynamic values storage arrays.
+	 */
+	FE_element_node_scale_field_info *clone(FE_element_field_info *field_info);
+
+	/**
+	 * @param numberOfNodes  Number of nodes >= current number.
+	 * @return  CMZN_OK on success, otherwise an error code.
+	 */
+	int setNumberOfNodes(int numberOfNodes);
+
+	int setNode(int nodeNumber, cmzn_node *node);
+
+	/**
+	 * Set all scale factor set identifiers and numbers and allocate storage for
+	 * scale factors.
+	 * @param  Array of scale factors to copy. If omitted values are initialised to 0.
+	 * @return CMZN_OK on success, otherwise any other error code.
+	 */
+	int setScaleFactorSets(int numberOfScaleFactorSetsIn,
+		cmzn_mesh_scale_factor_set **scaleFactorSetIdentifiersIn,
+		int *numbersInScaleFactorSetsIn, FE_value *scaleFactorsIn);
+
+	int getNumberOfScaleFactorSets() const
+	{
+		return number_of_scale_factor_sets;
+	}
+
+	int getNumberInScaleFactorSetAtIndex(int index)
+	{
+		if ((0 <= index) && (index < this->number_of_scale_factor_sets))
+		{
+			return this->numbers_in_scale_factor_sets[index];
+		}
+		return 0;
+	}
+
+	/** @return  Non-accessed pointer to set identifier, or 0 id none or error */
+	cmzn_mesh_scale_factor_set *getScaleFactorSetIdentifierAtIndex(int index)
+	{
+		if ((0 <= index) && (index < this->number_of_scale_factor_sets))
+		{
+			return this->scale_factor_set_identifiers[index];
+		}
+		return 0;
+	}
+
+	/** use with care only when merging from another region */
+	int setScaleFactorSetIdentifierAtIndex(int index, cmzn_mesh_scale_factor_set *scaleFactorSet)
+	{
+		if ((0 <= index) && (index < this->number_of_scale_factor_sets) && scaleFactorSet)
+		{
+			scaleFactorSet->access();
+			cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set_identifiers[index]);
+			this->scale_factor_set_identifiers[index] = scaleFactorSet;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int getScaleFactorSetOffset(cmzn_mesh_scale_factor_set *scaleFactorSet, int &numberOfScaleFactors)
+	{
+		int offset = 0;
+		for (int i = 0; i < this->number_of_scale_factor_sets; ++i)
+		{
+			if (this->scale_factor_set_identifiers[i] == scaleFactorSet)
+			{
+				numberOfScaleFactors = this->numbers_in_scale_factor_sets[i];
+				return offset;
+			}
+			offset += this->numbers_in_scale_factor_sets[i];
+		}
+		numberOfScaleFactors = 0;
+		return 0;
+	}
+
+	FE_value *getScaleFactorsForSet(cmzn_mesh_scale_factor_set *scaleFactorSet, int &numberOfScaleFactors)
+	{
+		int offset = this->getScaleFactorSetOffset(scaleFactorSet, numberOfScaleFactors);
+		if (numberOfScaleFactors)
+			return this->scale_factors + offset;
+		return 0;
+	}
+
+};
 
 struct FE_element_shape
 /*******************************************************************************
@@ -5675,7 +5853,7 @@ public:
 	FE_element *element;
 	FE_field *field;
 	int componentNumber;
-	FE_basis *basis;
+	cmzn_mesh_scale_factor_set *scaleFactorSet;
 	FE_value time;
 	// cache node_field_info/component as next node is likely to re-use
 	FE_node_field_info *nodeFieldInfo;
@@ -5691,11 +5869,11 @@ public:
 	int numberOfScaleFactors;
 
 	ElementDOFMapEvaluationCache(FE_element *element,
-			FE_field *field, FE_value componentNumber = 0, FE_basis *basis = 0, FE_value time = 0.0) :
+			FE_field *field, FE_value componentNumber = 0, cmzn_mesh_scale_factor_set *scaleFactorSet = 0, FE_value time = 0.0) :
 		element(element),
 		field(field),
 		componentNumber(componentNumber),
-		basis(basis),
+		scaleFactorSet(scaleFactorSet),
 		time(time),
 		nodeFieldInfo(0),
 		nodeFieldComponent(0),
@@ -5708,20 +5886,10 @@ public:
 		{
 			this->nodes = info->nodes;
 			this->numberOfElementNodes = info->number_of_nodes;
-			// get scale factors for the current scale factor set (i.e. matching basis)
-			if (basis && info->scale_factors)
+			// get scale factors for the current scale factor set
+			if (scaleFactorSet)
 			{
-				int scaleFactorSetOffset = 0;
-				for (int i = 0; i < info->number_of_scale_factor_sets; ++i)
-				{
-					if (info->scale_factor_set_identifiers[i] == static_cast<void *>(basis))
-					{
-						this->scaleFactors = info->scale_factors + scaleFactorSetOffset;
-						this->numberOfScaleFactors = info->numbers_in_scale_factor_sets[i];
-						break;
-					}
-					scaleFactorSetOffset += info->numbers_in_scale_factor_sets[i];
-				}
+				this->scaleFactors = info->getScaleFactorsForSet(scaleFactorSet, this->numberOfScaleFactors);
 			}
 		}
 		else
@@ -5752,7 +5920,7 @@ public:
 class ElementDOFMapMatchCache
 {
 public:
-	FE_basis *basis;
+	cmzn_mesh_scale_factor_set *scaleFactorSet;
 	FE_element_node_scale_field_info *info1;
 	FE_element_node_scale_field_info *info2;
 	LIST(FE_node) *globalNodes1;
@@ -5766,7 +5934,7 @@ public:
 	FE_value *scaleFactors2;
 
 	/**
-	 * @param basis  The basis, needed to find scale factor set.
+	 * @param scaleFactorSet  The mesh scale factor set.
 	 * @param thisInfo  Node scale information supplying nodes and scale factors
 	 * for map1 (this).
 	 * @param info2  Node scale information supplying nodes and scale factors
@@ -5776,11 +5944,11 @@ public:
 	 * with info1 is used. Used in "can be merged" code when non-global nodes are
 	 * in the element.
 	 */
-	ElementDOFMapMatchCache(FE_basis *basis,
+	ElementDOFMapMatchCache(cmzn_mesh_scale_factor_set *scaleFactorSet,
 			FE_element_node_scale_field_info *info1,
 			FE_element_node_scale_field_info *info2,
 			LIST(FE_node) *globalNodes1) :
-		basis(basis),
+		scaleFactorSet(scaleFactorSet),
 		info1(info1),
 		info2(info2),
 		globalNodes1(globalNodes1),
@@ -5793,20 +5961,9 @@ public:
 		{
 			this->nodes1 = this->info1->nodes;
 			this->numberOfElementNodes1 = this->info1->number_of_nodes;
-			// get scale factors for the current scale factor set (i.e. matching basis)
-			if (this->basis && this->info1->scale_factors)
+			if (this->scaleFactorSet)
 			{
-				int scaleFactorSetOffset = 0;
-				for (int i = 0; i < this->info1->number_of_scale_factor_sets; ++i)
-				{
-					if (this->info1->scale_factor_set_identifiers[i] == static_cast<void *>(basis))
-					{
-						this->scaleFactors1 = this->info1->scale_factors + scaleFactorSetOffset;
-						this->numberOfScaleFactors1 = this->info1->numbers_in_scale_factor_sets[i];
-						break;
-					}
-					scaleFactorSetOffset += this->info1->numbers_in_scale_factor_sets[i];
-				}
+				this->scaleFactors1 = this->info1->getScaleFactorsForSet(scaleFactorSet, this->numberOfScaleFactors1);
 			}
 		}
 		else
@@ -5818,20 +5975,9 @@ public:
 		{
 			this->nodes2 = this->info2->nodes;
 			this->numberOfElementNodes2 = this->info2->number_of_nodes;
-			// get scale factors for the current scale factor set (i.e. matching basis)
-			if (this->basis && this->info2->scale_factors)
+			if (this->scaleFactorSet)
 			{
-				int scaleFactorSetOffset = 0;
-				for (int i = 0; i < this->info2->number_of_scale_factor_sets; ++i)
-				{
-					if (this->info2->scale_factor_set_identifiers[i] == static_cast<void *>(basis))
-					{
-						this->scaleFactors2 = this->info2->scale_factors + scaleFactorSetOffset;
-						this->numberOfScaleFactors2 = this->info2->numbers_in_scale_factor_sets[i];
-						break;
-					}
-					scaleFactorSetOffset += this->info2->numbers_in_scale_factor_sets[i];
-				}
+				this->scaleFactors2 = this->info2->getScaleFactorsForSet(scaleFactorSet, this->numberOfScaleFactors2);
 			}
 		}
 		else
@@ -6525,7 +6671,8 @@ static int global_to_element_map_values(struct FE_element *element,
 				ALLOCATE(element_values, FE_value, number_of_element_values);
 				if (element_values)
 				{
-					ElementDOFMapEvaluationCache cache(element, field, component_number, basis, time);
+					ElementDOFMapEvaluationCache cache(element, field, component_number,
+						component->get_scale_factor_set(), time);
 					for (int j = 0; j < number_of_element_values; ++j)
 					{
 						if (!maps[j]->evaluate(cache, element_values[j]))
@@ -15614,23 +15761,18 @@ needing to get a value from the scale factor set.
 	return(return_code);
 } /* Standard_node_to_element_map_set_scale_factor_index */
 
-struct FE_element_field_component *copy_create_FE_element_field_component(
-	struct FE_element_field_component *source_component)
-/*******************************************************************************
-LAST MODIFIED : 15 February 2002
-
-DESCRIPTION :
-Creates and returns an exact copy of the struct FE_element_field_component
-<source_component>.
-==============================================================================*/
+/**
+ * Creates and returns a copy of the struct FE_element_field_component
+ * <source_component>, but with any scale factor sets or time sequences
+ * substituted with equivalents from fe_region.
+ */
+static struct FE_element_field_component *copy_create_FE_element_field_component(
+	struct FE_element_field_component *source_component, FE_region *fe_region)
 {
-	int  i,number_of_maps = 0;
-	struct FE_element_field_component *component;
-
-	ENTER(copy_create_FE_element_field_component);
-	component=(struct FE_element_field_component *)NULL;
-	if(source_component)
+	struct FE_element_field_component *component = 0;
+	if (source_component && fe_region)
 	{
+		int i, number_of_maps = 0;
 		switch(source_component->type)
 		{
 			case STANDARD_NODE_TO_ELEMENT_MAP:
@@ -15652,6 +15794,19 @@ Creates and returns an exact copy of the struct FE_element_field_component
 		/* fill in the interior of component */
 		if(component)
 		{
+			cmzn_mesh_scale_factor_set *sourceScaleFactorSet = source_component->get_scale_factor_set();
+			if (sourceScaleFactorSet)
+			{
+				cmzn_mesh_scale_factor_set *targetScaleFactorSet =
+					FE_region_find_mesh_scale_factor_set_by_name(fe_region, sourceScaleFactorSet->getName());
+				if (!targetScaleFactorSet)
+				{
+					targetScaleFactorSet =
+						FE_region_create_mesh_scale_factor_set_with_name(fe_region, sourceScaleFactorSet->getName());
+				}
+				component->set_scale_factor_set(targetScaleFactorSet);
+				cmzn_mesh_scale_factor_set::deaccess(targetScaleFactorSet);
+			}
 			switch(source_component->type)
 			{
 				case STANDARD_NODE_TO_ELEMENT_MAP:
@@ -15665,6 +15820,7 @@ Creates and returns an exact copy of the struct FE_element_field_component
 				}	break;
 				case GENERAL_ELEMENT_MAP:
 				{
+					component->map.general_map_based.number_of_maps = number_of_maps;
 					for(i=0;i<number_of_maps;i++)
 					{
 						component->map.general_map_based.maps[i] = 
@@ -15696,9 +15852,8 @@ Creates and returns an exact copy of the struct FE_element_field_component
 		display_message(ERROR_MESSAGE,
 				"copy_create_FE_element_field_component, Invalid argument");
 	}
-	LEAVE;
 	return(component);
-}/* copy_create_FE_element_field_component */
+}
 
 /**
  * Allocates memory and enters values for a component of a element field.
@@ -15711,7 +15866,8 @@ struct FE_element_field_component *CREATE(FE_element_field_component)(
 	struct FE_element_field_component *component = 0;
 	if ((number_of_maps>0)&&basis)
 	{
-		if (ALLOCATE(component,struct FE_element_field_component,1))
+		component = new FE_element_field_component();
+		if (component)
 		{
 			switch (type)
 			{
@@ -15791,7 +15947,6 @@ struct FE_element_field_component *CREATE(FE_element_field_component)(
 	{
 		display_message(ERROR_MESSAGE,
 			"CREATE(FE_element_field_component).  Invalid argument(s)");
-		component=(struct FE_element_field_component *)NULL;
 	}
 	return (component);
 }
@@ -15806,7 +15961,6 @@ int DESTROY(FE_element_field_component)(
 	struct FE_element_field_component *component;
 	if ((component_address)&&(component= *component_address))
 	{
-		DEACCESS(FE_basis)(&(component->basis));
 		switch (component->type)
 		{
 			case STANDARD_NODE_TO_ELEMENT_MAP:
@@ -15833,7 +15987,8 @@ int DESTROY(FE_element_field_component)(
 				DEALLOCATE(component->map.element_grid_based.number_in_xi);
 			} break;
 		}
-		DEALLOCATE(*component_address);
+		delete *component_address;
+		*component_address = 0;
 	}
 	else
 	{
@@ -16146,6 +16301,22 @@ int FE_element_field_component_get_local_node_in_use(
 	return 0;
 }
 
+cmzn_mesh_scale_factor_set *FE_element_field_component_get_scale_factor_set(
+	FE_element_field_component *component)
+{
+	if (component)
+		return component->get_scale_factor_set();
+	return 0;
+}
+
+int FE_element_field_component_set_scale_factor_set(
+	FE_element_field_component *component, cmzn_mesh_scale_factor_set *scale_factor_set)
+{
+	if (component)
+		return component->set_scale_factor_set(scale_factor_set);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int FE_element_field_component_get_standard_node_map(
 	struct FE_element_field_component *element_field_component, int node_number,
 	struct Standard_node_to_element_map **standard_node_map_address)
@@ -16290,21 +16461,56 @@ static int FE_element_field_components_match(
 	{
 		if ((component_1->type == component_2->type) &&
 			(component_1->basis == component_2->basis) &&
-			(component_1->modify == component_2->modify))
+			(component_1->modify == component_2->modify) &&
+			(component_1->get_scale_factor_set() == component_2->get_scale_factor_set()))
 		{
 			switch (component_1->type)
 			{
 				case STANDARD_NODE_TO_ELEMENT_MAP:
 				{
-					int j, k, l,
-						*number_in_scale_factor_set_1, *number_in_scale_factor_set_2,
-						*scale_factor_index_1, *scale_factor_index_2,
-						start_scale_factor_set_1, start_scale_factor_set_2,
+					int j, k, *scale_factor_index_1, *scale_factor_index_2,
 						*value_index_1, *value_index_2;
 					struct FE_node *node1, *node2;
 					struct Standard_node_to_element_map **standard_node_map_1,
 						**standard_node_map_2;
-					void **scale_factor_set_identifier_1, **scale_factor_set_identifier_2;
+
+					cmzn_mesh_scale_factor_set *scale_factor_set1 = component_1->get_scale_factor_set();
+					cmzn_mesh_scale_factor_set *scale_factor_set2 = component_2->get_scale_factor_set();
+					if (((scale_factor_set1) && (!scale_factor_set2)) ||
+						((!scale_factor_set1) && (scale_factor_set2)) ||
+						(scale_factor_set1 && (scale_factor_set1 != scale_factor_set2) &&
+							(0 != strcmp(scale_factor_set1->getName(), scale_factor_set2->getName()))))
+					{
+						if (differences_are_errors)
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_components_match.  Different scale factor sets");
+						}
+						return 0;
+					}
+					// since scale factor indices are absolute in the element
+					// need to find position of scale factor set in source
+					// and merged data. Future: make indices relative to set!
+					int scale_factor_offset = 0;
+					int number_of_scale_factors1 = 0;
+					int number_of_scale_factors2 = 0;
+					if (scale_factor_set1)
+					{
+						int scale_factor_set_offset1 = info_1->getScaleFactorSetOffset(
+							component_1->get_scale_factor_set(), number_of_scale_factors1);
+						int scale_factor_set_offset2 = info_2->getScaleFactorSetOffset(
+							component_2->get_scale_factor_set(), number_of_scale_factors2);
+						scale_factor_offset = scale_factor_set_offset2 - scale_factor_set_offset1;
+					}
+					if (number_of_scale_factors1 != number_of_scale_factors2)
+					{
+						if (differences_are_errors)
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_field_components_match.  Different numbers of scale factors in sets");
+						}
+						return 0;
+					}
 
 					if (((j = component_1->map.standard_node_based.number_of_nodes) ==
 						component_2->map.standard_node_based.number_of_nodes) &&
@@ -16334,91 +16540,21 @@ static int FE_element_field_components_match(
 								(scale_factor_index_2 =
 									(*standard_node_map_2)->scale_factor_indices))
 							{
-								/* determine the merged scale factor set */
-								start_scale_factor_set_1 = 0;
-								l = info_1->number_of_scale_factor_sets;
-								number_in_scale_factor_set_1 =
-									info_1->numbers_in_scale_factor_sets;
-								if (*scale_factor_index_1 < 0)
+								while (return_code && (k > 0) &&
+									(*value_index_1 == *value_index_2) &&
+									((*scale_factor_index_1) == ((*scale_factor_index_2) + scale_factor_offset)))
 								{
-									scale_factor_set_identifier_1 = NULL;
+									++value_index_1;
+									++value_index_2;
+									++scale_factor_index_1;
+									++scale_factor_index_2;
+									--k;
 								}
-								else
+								if (k <= 0)
 								{
-									scale_factor_set_identifier_1 =
-										info_1->scale_factor_set_identifiers;
-									while ((l > 0) && (*scale_factor_index_1 >=
-										start_scale_factor_set_1 +
-										(*number_in_scale_factor_set_1)))
-									{
-										start_scale_factor_set_1 +=
-											*number_in_scale_factor_set_1;
-										scale_factor_set_identifier_1++;
-										number_in_scale_factor_set_1++;
-										l--;
-									}
-								}
-								/* determine the new scale factor set */
-								start_scale_factor_set_2 = 0;
-								l = info_2->number_of_scale_factor_sets;
-								number_in_scale_factor_set_2 =
-									info_2->numbers_in_scale_factor_sets;
-								if (*scale_factor_index_2 < 0)
-								{
-									scale_factor_set_identifier_2 = NULL;
-								}
-								else
-								{
-									scale_factor_set_identifier_2 =
-										info_2->scale_factor_set_identifiers;
-									while ((l > 0) && (*scale_factor_index_2 >=
-										start_scale_factor_set_2 +
-										(*number_in_scale_factor_set_2)))
-									{
-										start_scale_factor_set_2 +=
-											*number_in_scale_factor_set_2;
-										scale_factor_set_identifier_2++;
-										number_in_scale_factor_set_2++;
-										l--;
-									}
-								}
-								if ((!scale_factor_set_identifier_1 &&
-									!scale_factor_set_identifier_2) ||
-									(scale_factor_set_identifier_1 &&
-										scale_factor_set_identifier_2 &&
-										(*scale_factor_set_identifier_1 ==
-										*scale_factor_set_identifier_2) &&
-										(*number_in_scale_factor_set_1 ==
-											*number_in_scale_factor_set_2)))
-								{
-									while (return_code && (k > 0) &&
-										(*value_index_1 == *value_index_2) &&
-										((*scale_factor_index_1) - start_scale_factor_set_1 ==
-											(*scale_factor_index_2) -
-											start_scale_factor_set_2))
-									{
-										value_index_1++;
-										value_index_2++;
-										scale_factor_index_1++;
-										scale_factor_index_2++;
-										k--;
-									}
-									if (k <= 0)
-									{
-										standard_node_map_1++;
-										standard_node_map_2++;
-										j--;
-									}
-									else
-									{
-										if (differences_are_errors)
-										{
-											display_message(ERROR_MESSAGE,
-												"FE_element_field_components_match.  "
-												"Inconsistent indexes in standard node to element map");
-										}
-										return_code = 0;
-									}
+									++standard_node_map_1;
+									++standard_node_map_2;
+									--j;
 								}
 								else
 								{
@@ -16426,7 +16562,7 @@ static int FE_element_field_components_match(
 									{
 										display_message(ERROR_MESSAGE,
 											"FE_element_field_components_match.  "
-											"Inconsistent scale factor sets");
+											"Inconsistent indexes in standard node to element map");
 									}
 									return_code = 0;
 								}
@@ -16466,7 +16602,7 @@ static int FE_element_field_components_match(
 						}
 						return 0;
 					}
-					ElementDOFMapMatchCache cache(component_1->basis, info_1, info_2, global_node_list1);
+					ElementDOFMapMatchCache cache(component_1->get_scale_factor_set(), info_1, info_2, global_node_list1);
 					if (cache.numberOfScaleFactors1 != cache.numberOfScaleFactors2)
 					{
 						if (differences_are_errors)
@@ -17324,11 +17460,9 @@ struct FE_element_field_lists_merge_data
 static int merge_FE_element_field_into_list(
 	struct FE_element_field *new_element_field, void *data_void)
 {
-	int i, j, k, lm, ls, *new_number_in_scale_factor_set, *new_number_in_xi,
-		*new_scale_factor_index, *new_value_index,new_values_storage_size,
-		node_index, *number_in_scale_factor_set, *number_in_xi, number_of_values,
-		return_code, *scale_factor_index, start_diff, start_new_scale_factor_set,
-		start_scale_factor_set, *value_index;
+	int i, j, k, *new_number_in_xi, *new_value_index, new_values_storage_size,
+		node_index, *number_in_xi, number_of_values,
+		return_code, *value_index;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component **component, **new_component;
 	struct FE_element_field_lists_merge_data *data;
@@ -17337,7 +17471,6 @@ static int merge_FE_element_field_into_list(
 	struct FE_node *new_node, **node;
 	struct Standard_node_to_element_map **new_standard_node_map,
 		**standard_node_map;
-	void **new_scale_factor_set_identifier, **scale_factor_set_identifier;
 
 	ENTER(merge_FE_element_field_into_list);
 	if (new_element_field && (field = new_element_field->field) &&
@@ -17421,7 +17554,27 @@ static int merge_FE_element_field_into_list(
 								{
 									case STANDARD_NODE_TO_ELEMENT_MAP:
 									{
-										scale_factor_set_identifier = (void **)NULL;
+										// since scale factor indices are absolute in the element
+										// need to find position of scale factor set in source
+										// and merged data. Future: make indices relative to set!
+										int scale_factor_offset = 0;
+										int source_number_of_scale_factors = 0;
+										int merge_number_of_scale_factors = 0;
+										if ((*new_component)->get_scale_factor_set())
+										{
+											int source_scale_factor_set_offset = source_info->getScaleFactorSetOffset(
+												(*new_component)->get_scale_factor_set(), source_number_of_scale_factors);
+											int merge_scale_factor_set_offset = merge_info->getScaleFactorSetOffset(
+												(*new_component)->get_scale_factor_set(), merge_number_of_scale_factors);
+											scale_factor_offset = merge_scale_factor_set_offset - source_scale_factor_set_offset;
+										}
+										if (source_number_of_scale_factors != merge_number_of_scale_factors)
+										{
+											display_message(ERROR_MESSAGE,
+												"merge_FE_element_field_into_list.  Different numbers of scale factors in sets");
+											return_code = 0;
+											break;
+										}
 										if ((new_standard_node_map = (*new_component)->map.
 											standard_node_based.node_to_element_maps) &&
 											((j = (*new_component)->map.standard_node_based.
@@ -17430,8 +17583,8 @@ static int merge_FE_element_field_into_list(
 												STANDARD_NODE_TO_ELEMENT_MAP, j,
 												(*new_component)->basis, (*new_component)->modify)))
 										{
-											standard_node_map = (*component)->map.standard_node_based.
-												node_to_element_maps;
+											standard_node_map = (*component)->map.standard_node_based.node_to_element_maps;
+											int *new_scale_factor_index;
 											while (return_code && (j > 0))
 											{
 												if ((*new_standard_node_map) &&
@@ -17465,74 +17618,18 @@ static int merge_FE_element_field_into_list(
 																node++;
 															}
 														}
-														/* determine the new scale factor set */
-														start_new_scale_factor_set = 0;
-														ls = source_info->number_of_scale_factor_sets;
-														new_number_in_scale_factor_set =
-															source_info->numbers_in_scale_factor_sets;
-														if (*new_scale_factor_index < 0)
-														{
-															new_scale_factor_set_identifier = NULL;
-														}
-														else
-														{
-															new_scale_factor_set_identifier =
-																source_info->scale_factor_set_identifiers;
-															while ((ls > 0) && (*new_scale_factor_index >=
-																start_new_scale_factor_set +
-																(*new_number_in_scale_factor_set)))
-															{
-																start_new_scale_factor_set +=
-																	*new_number_in_scale_factor_set;
-																new_scale_factor_set_identifier++;
-																new_number_in_scale_factor_set++;
-																ls--;
-															}
-														}
-														/* determine the merge scale factor set */
-														start_scale_factor_set = 0;
-														lm = merge_info->number_of_scale_factor_sets;
-														number_in_scale_factor_set =
-															merge_info->numbers_in_scale_factor_sets;
-														if (new_scale_factor_set_identifier)
-														{
-															scale_factor_set_identifier =
-																merge_info->scale_factor_set_identifiers;
-															while ((lm > 0) && (*scale_factor_set_identifier !=
-																*new_scale_factor_set_identifier))
-															{
-																start_scale_factor_set +=
-																	*number_in_scale_factor_set;
-																scale_factor_set_identifier++;
-																number_in_scale_factor_set++;
-																lm--;
-															}
-														}
 														if ((*node == new_node) &&
-															((NULL == new_scale_factor_set_identifier) || (
-																new_scale_factor_set_identifier &&
-																scale_factor_set_identifier &&
-																(*scale_factor_set_identifier ==
-																	*new_scale_factor_set_identifier) &&
-																(*number_in_scale_factor_set ==
-																	*new_number_in_scale_factor_set))) &&
 															(*standard_node_map =
-																CREATE(Standard_node_to_element_map)(node_index,
-																	k)))
+																CREATE(Standard_node_to_element_map)(node_index, k)))
 														{
-															value_index =
-																(*standard_node_map)->nodal_value_indices;
-															scale_factor_index =
-																(*standard_node_map)->scale_factor_indices;
-															start_diff = start_scale_factor_set -
-																start_new_scale_factor_set;
+															value_index = (*standard_node_map)->nodal_value_indices;
+															int *scale_factor_index = (*standard_node_map)->scale_factor_indices;
 															while (k > 0)
 															{
 																*value_index = *new_value_index;
-																if (NULL != new_scale_factor_set_identifier)
+																if (0 <= *new_scale_factor_index)
 																{
-																	*scale_factor_index =
-																		(*new_scale_factor_index) + start_diff;
+																	*scale_factor_index = *new_scale_factor_index + scale_factor_offset;
 																}
 																/* else default = -1 =  unit scale factor */
 																value_index++;
@@ -17633,6 +17730,7 @@ static int merge_FE_element_field_into_list(
 										}
 									} break;
 								}
+								(*component)->set_scale_factor_set((*new_component)->get_scale_factor_set());
 								component++;
 								new_component++;
 								i--;
@@ -17864,42 +17962,35 @@ DECLARE_INDEXED_LIST_FUNCTIONS(FE_element_field)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element_field, field, \
 	struct FE_field *, compare_FE_field)
 
-struct FE_element_field_copy_with_equivalent_field_data
-/*******************************************************************************
-LAST MODIFIED : 27 November 2002
-
-DESCRIPTION :
-Data for passing to FE_element_field_copy_with_equivalent_field.
-==============================================================================*/
+/** Data for passing to FE_element_field_copy_for_FE_region. */
+struct FE_element_field_copy_for_FE_region_data
 {
-	struct LIST(FE_field) *fe_field_list;
+	struct FE_region *fe_region;
 	struct LIST(FE_element_field) *element_field_list;
 };
 
-static int FE_element_field_copy_with_equivalent_field(
+/**
+ * Creates a copy of <element_field> using the same named fields, scale factor
+ * sets etc. from <fe_region> and adds it to <element_field_list>.
+ *Checks fields are equivalent.
+ * <data_void> points at a struct FE_element_field_copy_for_FE_region_data.
+ */
+static int FE_element_field_copy_for_FE_region(
 	struct FE_element_field *element_field, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Creates a copy of <element_field> using the same named field in <fe_field_list>
-and adds it to <element_field_list>. Checks fields are equivalent.
-<data_void> points at a struct FE_element_field_copy_with_equivalent_field_data.
-==============================================================================*/
 {
 	int i, return_code;
 	struct FE_field *equivalent_field;
 	struct FE_element_field *copy_element_field;
-	struct FE_element_field_copy_with_equivalent_field_data *data;
+	struct FE_element_field_copy_for_FE_region_data *data;
 	struct FE_element_field_component **component, **copy_component;
 
-	ENTER(FE_element_field_copy_with_equivalent_field);
+	ENTER(FE_element_field_copy_for_FE_region);
 	if (element_field && element_field->field && (data =
-		(struct FE_element_field_copy_with_equivalent_field_data *)data_void))
+		(struct FE_element_field_copy_for_FE_region_data *)data_void))
 	{
 		return_code = 1;
 		if (NULL != (equivalent_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
-			element_field->field->name, data->fe_field_list)))
+			element_field->field->name, FE_region_get_FE_field_list(data->fe_region))))
 		{
 			if (FE_fields_match_fundamental(element_field->field, equivalent_field))
 			{
@@ -17913,7 +18004,7 @@ and adds it to <element_field_list>. Checks fields are equivalent.
 						if (*component)
 						{
 							if (!(*copy_component =
-								copy_create_FE_element_field_component(*component)))
+								copy_create_FE_element_field_component(*component, data->fe_region)))
 							{
 								return_code = 0;
 							}
@@ -17932,7 +18023,7 @@ and adds it to <element_field_list>. Checks fields are equivalent.
 					if (!return_code)
 					{
 						display_message(ERROR_MESSAGE,
-							"FE_element_field_copy_with_equivalent_field.  "
+							"FE_element_field_copy_for_FE_region.  "
 							"Could not copy element field component");
 						DESTROY(FE_element_field)(&copy_element_field);
 					}
@@ -17940,7 +18031,7 @@ and adds it to <element_field_list>. Checks fields are equivalent.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_element_field_copy_with_equivalent_field.  "
+						"FE_element_field_copy_for_FE_region.  "
 						"Could not create element field");
 					return_code = 0;
 				}
@@ -17948,7 +18039,7 @@ and adds it to <element_field_list>. Checks fields are equivalent.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_element_field_copy_with_equivalent_field.  "
+					"FE_element_field_copy_for_FE_region.  "
 					"Fields not equivalent");
 				return_code = 0;
 			}
@@ -17956,45 +18047,32 @@ and adds it to <element_field_list>. Checks fields are equivalent.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_field_copy_with_equivalent_field.  No equivalent field");
+				"FE_element_field_copy_for_FE_region.  No equivalent field");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_field_copy_with_equivalent_field.  Invalid argument(s)");
+			"FE_element_field_copy_for_FE_region.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_field_copy_with_equivalent_field */
+} /* FE_element_field_copy_for_FE_region */
 
-struct LIST(FE_element_field) *
-	FE_element_field_list_clone_with_FE_field_list(
-		struct LIST(FE_element_field) *element_field_list,
-		struct LIST(FE_field) *fe_field_list)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns a new FE_element_field list that is identical to <element_field_list>
-except that it references equivalent same-name fields from <fe_field_list>.
-It is an error if an equivalent FE_field is not found.
-==============================================================================*/
+struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
+	struct LIST(FE_element_field) *element_field_list, struct FE_region *fe_region)
 {
-	struct LIST(FE_element_field) *return_element_field_list;
-	struct FE_element_field_copy_with_equivalent_field_data data;
-
-	ENTER(FE_element_field_list_clone_with_FE_field_list);
-	return_element_field_list = (struct LIST(FE_element_field) *)NULL;
-	if (element_field_list && fe_field_list)
+	struct LIST(FE_element_field) *return_element_field_list = 0;
+	if (element_field_list && fe_region)
 	{
-		data.fe_field_list = fe_field_list;
+		struct FE_element_field_copy_for_FE_region_data data;
+		data.fe_region = fe_region;
 		data.element_field_list = CREATE(LIST(FE_element_field))();
 		if (FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_copy_with_equivalent_field, (void *)&data,
+			FE_element_field_copy_for_FE_region, (void *)&data,
 			element_field_list))
 		{
 			return_element_field_list = data.element_field_list;
@@ -18002,19 +18080,17 @@ It is an error if an equivalent FE_field is not found.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_field_list_clone_with_FE_field_list.  Failed");
+				"FE_element_field_list_clone_for_FE_region.  Failed");
 			DESTROY(LIST(FE_element_field))(&data.element_field_list);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_field_list_clone_with_FE_field_list.  Invalid argument(s)");
+			"FE_element_field_list_clone_for_FE_region.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (return_element_field_list);
-} /* FE_element_field_list_clone_with_FE_field_list */
+}
 
 struct FE_element_field_info *CREATE(FE_element_field_info)(
 	struct FE_region *fe_region,
@@ -18711,193 +18787,6 @@ they are, should follow pattern of merge_FE_node_values_storage.
 	return (return_code);
 } /* copy_FE_element_values_storage */
 
-static struct FE_element_node_scale_field_info
-	*CREATE(FE_element_node_scale_field_info)(void)
-/*******************************************************************************
-LAST MODIFIED : 30 October 2002
-
-DESCRIPTION :
-Creates a blank FE_element_node_scale_field_info.
-Static constructor to be called by specialised constructors.
-==============================================================================*/
-{
-	struct FE_element_node_scale_field_info *node_scale_field_info;
-
-	ENTER(CREATE(FE_element_node_scale_field_info));
-	if (ALLOCATE(node_scale_field_info,
-		struct FE_element_node_scale_field_info, 1))
-	{
-		node_scale_field_info->values_storage_size = 0;
-		node_scale_field_info->values_storage = (Value_storage *)NULL;
-		node_scale_field_info->number_of_nodes = 0;
-		node_scale_field_info->nodes = (struct FE_node **)NULL;
-		node_scale_field_info->number_of_scale_factor_sets = 0;
-		node_scale_field_info->scale_factor_set_identifiers = (void **)NULL;
-		node_scale_field_info->numbers_in_scale_factor_sets = (int *)NULL;
-		node_scale_field_info->number_of_scale_factors = 0;
-		node_scale_field_info->scale_factors = (FE_value *)NULL;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"CREATE(FE_element_node_scale_field_info).  "
-			"Could not allocate structure");
-	}
-	LEAVE;
-
-	return (node_scale_field_info);
-} /* CREATE(FE_element_node_scale_field_info) */
-
-/***************************************************************************//**
- * The number of nodes can only increase.
- */
-static int FE_element_node_scale_field_info_set_number_of_nodes(
-	struct FE_element_node_scale_field_info *element_node_scale_field_info,
-	int number_of_nodes)
-{
-	int i, return_code;
-
-	ENTER(FE_element_node_scale_field_info_set_number_of_nodes);
-	if (element_node_scale_field_info && (0 <= number_of_nodes))
-	{
-		if (number_of_nodes < element_node_scale_field_info->number_of_nodes)
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_node_scale_field_info_set_number_of_nodes.  "
-				"Cannot reduce the number of nodes in element");
-			return_code = 0;
-		}
-		else
-		{
-			if (0 < number_of_nodes)
-			{
-				struct FE_node **temp_nodes;
-				if (REALLOCATE(temp_nodes, element_node_scale_field_info->nodes,
-					struct FE_node *, number_of_nodes))
-				{
-					element_node_scale_field_info->nodes = temp_nodes;
-					for (i = element_node_scale_field_info->number_of_nodes;
-						i < number_of_nodes; i++)
-					{
-						element_node_scale_field_info->nodes[i] = (struct FE_node *)NULL;
-					}
-					element_node_scale_field_info->number_of_nodes = number_of_nodes;
-					return_code = 1;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_node_scale_field_info_set_number_of_nodes.  "
-						"Could not allocate space for nodes");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code = 1;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_node_scale_field_info_set_number_of_nodes.  "
-			"Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_node_scale_field_info_set_number_of_nodes */
-
-static int FE_element_node_scale_field_info_set_node(
-	struct FE_element_node_scale_field_info *element_node_scale_field_info,
-	int node_number, struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_node_scale_field_info_set_node);
-	if (element_node_scale_field_info &&
-		element_node_scale_field_info->nodes && (0 <= node_number) &&
-		(node_number < element_node_scale_field_info->number_of_nodes))
-	{
-		return_code = REACCESS(FE_node)(
-			&(element_node_scale_field_info->nodes[node_number]), node);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_node_scale_field_info_set_node.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_node_scale_field_info_set_node */
-
-int DESTROY(FE_element_node_scale_field_info)(
-	struct FE_element_node_scale_field_info
-	**element_node_scale_field_info_address)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Frees the memory for the node, scale and field information and sets
-<*element_node_scale_field_info_address> to NULL.
-Note that this function is unable to clean up any dynamic values stored within
-the values_storage; call clean_up_FE_element_node_scale_field_info if there is
-values_storage allocated.
-==============================================================================*/
-{
-	int i, return_code;
-	struct FE_element_node_scale_field_info *node_scale_field_info;
-	struct FE_node **node;
-
-	ENTER(DESTROY(FE_element_node_scale_field_info));
-	if ((element_node_scale_field_info_address) &&
-		(node_scale_field_info = *element_node_scale_field_info_address))
-	{
-		/* free values_storage for grid-based fields, if any */
-		if (node_scale_field_info->values_storage)
-		{
-			DEALLOCATE(node_scale_field_info->values_storage);
-		}
-		i = node_scale_field_info->number_of_nodes;
-		node = node_scale_field_info->nodes;
-		while (i > 0)
-		{
-			if (*node)
-			{
-				DEACCESS(FE_node)(node);
-			}
-			node++;
-			i--;
-		}
-		DEALLOCATE(node_scale_field_info->nodes);
-		DEALLOCATE(node_scale_field_info->scale_factor_set_identifiers);
-		DEALLOCATE(node_scale_field_info->numbers_in_scale_factor_sets);
-		DEALLOCATE(node_scale_field_info->scale_factors);
-		DEALLOCATE(*element_node_scale_field_info_address);
-		*element_node_scale_field_info_address =
-			(struct FE_element_node_scale_field_info *)NULL;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"DESTROY(FE_element_node_scale_field_info).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* DESTROY(FE_element_node_scale_field_info) */
-
 static int free_element_grid_map_values_storage(
 	struct FE_element_field *element_field, void *values_storage_void)
 /*******************************************************************************
@@ -18957,464 +18846,278 @@ in them. Only certain value types, eg. arrays, strings, element_xi require this.
 	return (return_code);
 } /* free_element_grid_map_values_storage */
 
-int clean_up_FE_element_node_scale_field_info(
-	struct FE_element_node_scale_field_info
-	**element_node_scale_field_info_address,
-	struct FE_element_field_info *element_field_info)
-/*******************************************************************************
-LAST MODIFIED : 4 November 2002
-
-DESCRIPTION :
-Frees the memory for the node, scale and field information and sets
-<*element_node_scale_field_info_address> to NULL.
-Cleans up any dynamic allocations in the values_storage described in
-<element_field_info> then calls destroy_FE_element_node_scale_field_info.
-==============================================================================*/
+FE_element_node_scale_field_info::FE_element_node_scale_field_info() :
+	values_storage_size(0),
+	values_storage(0),
+	number_of_nodes(0),
+	nodes(0),
+	number_of_scale_factor_sets(0),
+	scale_factor_set_identifiers(0),
+	numbers_in_scale_factor_sets(0),
+	number_of_scale_factors(0),
+	scale_factors(0)
 {
-	int return_code;
-	struct FE_element_node_scale_field_info *node_scale_field_info;
+}
 
-	ENTER(clean_up_FE_element_node_scale_field_info);
-	if ((element_node_scale_field_info_address) &&
-		(node_scale_field_info= *element_node_scale_field_info_address) &&
-		element_field_info)
+FE_element_node_scale_field_info::~FE_element_node_scale_field_info()
+{
+	/* free values_storage for grid-based fields, if any */
+	if (this->values_storage)
 	{
-		/* free values_storage for grid-based fields, if any */
-		if (node_scale_field_info->values_storage)
+		DEALLOCATE(this->values_storage);
+	}
+	int i = this->number_of_nodes;
+	cmzn_node **node = this->nodes;
+	while (i > 0)
+	{
+		if (*node)
 		{
-			FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-				free_element_grid_map_values_storage,
-				(void *)node_scale_field_info->values_storage,
-				element_field_info->element_field_list);
+			DEACCESS(FE_node)(node);
 		}
-		return_code = DESTROY(FE_element_node_scale_field_info)(
-			element_node_scale_field_info_address);
+		node++;
+		i--;
 	}
-	else
+	DEALLOCATE(this->nodes);
+	for (i = 0; i < this->number_of_scale_factor_sets; ++i)
 	{
-		display_message(ERROR_MESSAGE,
-			"clean_up_FE_element_node_scale_field_info.  Invalid argument(s)");
-		return_code = 0;
+		cmzn_mesh_scale_factor_set::deaccess(this->scale_factor_set_identifiers[i]);
 	}
-	LEAVE;
+	DEALLOCATE(this->scale_factor_set_identifiers);
+	DEALLOCATE(this->numbers_in_scale_factor_sets);
+	DEALLOCATE(this->scale_factors);
+}
 
-	return (return_code);
-} /* clean_up_FE_element_node_scale_field_info */
-
-static struct FE_element_node_scale_field_info
-	*copy_create_FE_element_node_scale_field_info(
-		struct FE_element_node_scale_field_info *source_info)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Static function used exclusively in merge_FE_element.
-Creates a copy of <source_info> except that values_storage_size and
-values_storage are set to zero and NULL, respectively.
-==============================================================================*/
+void FE_element_node_scale_field_info::destroyDynamic(
+	FE_element_node_scale_field_info* &info, FE_element_field_info *field_info)
 {
-	int i, number_of_nodes, number_of_scale_factor_sets, number_of_scale_factors,
-		return_code;
-	struct FE_element_node_scale_field_info *node_scale_field_info;
-
-	ENTER(copy_create_FE_element_node_scale_field_info);
-	node_scale_field_info = (struct FE_element_node_scale_field_info *)NULL;
-	if (source_info)
+	if (info->values_storage)
 	{
-		if (NULL != (node_scale_field_info = CREATE(FE_element_node_scale_field_info)()))
+		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(free_element_grid_map_values_storage,
+			(void *)info->values_storage, field_info->element_field_list);
+	}
+	destroy(info);
+}
+
+FE_element_node_scale_field_info *FE_element_node_scale_field_info::cloneWithoutValuesStorage()
+{
+	FE_element_node_scale_field_info *cloneInfo = this->create();
+	if (0 < this->number_of_nodes)
+	{
+		ALLOCATE(cloneInfo->nodes, cmzn_node *, this->number_of_nodes);
+		if (0 == cloneInfo->nodes)
 		{
-			return_code = 1;
-			number_of_nodes = source_info->number_of_nodes;
-			if (FE_element_node_scale_field_info_set_number_of_nodes(
-				node_scale_field_info, number_of_nodes))
-			{
-				for (i = 0; i < number_of_nodes; i++)
-				{
-					FE_element_node_scale_field_info_set_node(
-						node_scale_field_info, i, source_info->nodes[i]);
-				}
-			}
-			else
+			FE_element_node_scale_field_info::destroy(cloneInfo);
+			return 0;
+		}
+		cloneInfo->number_of_nodes = this->number_of_nodes;
+		for (int i = 0; i < number_of_nodes; i++)
+		{
+			cloneInfo->nodes[i] = this->nodes[i] ? this->nodes[i]->access() : 0;
+		}
+	}
+	if (CMZN_OK != cloneInfo->setScaleFactorSets(this->number_of_scale_factor_sets,
+		this->scale_factor_set_identifiers, this->numbers_in_scale_factor_sets, this->scale_factors))
+	{
+		FE_element_node_scale_field_info::destroy(cloneInfo);
+		return 0;
+	}
+	return cloneInfo;
+}
+
+/**
+ * Function used exclusively in merge_FE_element.
+ * Creates a new FE_element_node_scale_field_info that contains all the nodes
+ * and scale factors from targetInfo and in the same sequence, plus any new
+ * ones added from sourceInfo. Checks that the same number of scale factors are
+ * used for any scale factor sets in common; returns 0 on any mismatch.
+ * values_storage_size and values_storage are zeroed, under the expectation
+ * that they will be constructed by merge_FE_element.
+ * On successful return the changedScaleFactorSets contains the list of sets
+ * whose values have been added or overwritten. It is up to the caller to
+ * propagate change messages for all fields using changed scale factors sets.
+ */
+FE_element_node_scale_field_info *FE_element_node_scale_field_info::createMergeWithoutValuesStorage(
+	FE_element_node_scale_field_info& targetInfo,
+	FE_element_node_scale_field_info& sourceInfo,
+	std::vector<cmzn_mesh_scale_factor_set*> &changedExistingScaleFactorSets)
+{
+	changedExistingScaleFactorSets.clear();
+	// get the total number of nodes, starting with those in targetInfo
+	int targetNumberOfNodes = targetInfo.number_of_nodes;
+	int sourceNumberOfNodes = sourceInfo.number_of_nodes;
+	int mergeNumberOfNodes = targetNumberOfNodes;
+	FE_node *sourceNode;
+	FE_node **targetNodeAddress;
+	for (int i = 0; i < sourceNumberOfNodes; i++)
+	{
+		sourceNode = sourceInfo.nodes[i];
+		targetNodeAddress = targetInfo.nodes;
+		int j = targetNumberOfNodes;
+		while (j && (sourceNode != *targetNodeAddress))
+		{
+			++targetNodeAddress;
+			--j;
+		}
+		if (!j)
+		{
+			mergeNumberOfNodes++;
+		}
+	}
+
+	// get the total number of scale factor sets and scale factors, starting
+	// with those in targetInfo. Check sizes of scale factor sets
+	int targetNumberOfScaleFactorSets = targetInfo.number_of_scale_factor_sets;
+	int sourceNumberOfScaleFactorSets = sourceInfo.number_of_scale_factor_sets;
+	int mergeNumberOfScaleFactorSets = targetNumberOfScaleFactorSets;
+	int targetNumberOfScaleFactors = targetInfo.number_of_scale_factors;
+	int mergeNumberOfScaleFactors = targetNumberOfScaleFactors;
+	cmzn_mesh_scale_factor_set *sourceScaleFactorSet;
+	cmzn_mesh_scale_factor_set **targetScaleFactorSetAddress;
+	for (int i = 0; i < sourceNumberOfScaleFactorSets; i++)
+	{
+		sourceScaleFactorSet = sourceInfo.scale_factor_set_identifiers[i];
+		targetScaleFactorSetAddress = targetInfo.scale_factor_set_identifiers;
+		int j = targetNumberOfScaleFactorSets;
+		while (j && (sourceScaleFactorSet != *targetScaleFactorSetAddress))
+		{
+			++targetScaleFactorSetAddress;
+			--j;
+		}
+		if (j)
+		{
+			if (targetInfo.numbers_in_scale_factor_sets[targetNumberOfScaleFactorSets - j]
+				!= sourceInfo.numbers_in_scale_factor_sets[i])
 			{
 				display_message(ERROR_MESSAGE,
-					"copy_create_FE_element_node_scale_field_info.  "
-					"Could not allocate nodes");
-				return_code = 0;
-			}
-			number_of_scale_factor_sets = source_info->number_of_scale_factor_sets;
-			number_of_scale_factors = source_info->number_of_scale_factors;
-			if (0 < number_of_scale_factor_sets)
-			{
-				if (ALLOCATE(node_scale_field_info->scale_factor_set_identifiers,
-					void *, number_of_scale_factor_sets) &&
-					ALLOCATE(node_scale_field_info->numbers_in_scale_factor_sets, int,
-						number_of_scale_factor_sets) &&
-					((0 == number_of_scale_factors) ||
-						ALLOCATE(node_scale_field_info->scale_factors, FE_value,
-							number_of_scale_factors)))
-				{
-					/* copy the scale factor sets */
-					for (i = 0; i < number_of_scale_factor_sets; i++)
-					{
-						node_scale_field_info->scale_factor_set_identifiers[i] =
-							source_info->scale_factor_set_identifiers[i];
-						node_scale_field_info->numbers_in_scale_factor_sets[i] =
-							source_info->numbers_in_scale_factor_sets[i];
-					}
-					/* copy the scale factors */
-					if (0 < number_of_scale_factors)
-					{
-						memcpy(node_scale_field_info->scale_factors,
-							source_info->scale_factors,
-							number_of_scale_factors*sizeof(FE_value));
-					}
-					node_scale_field_info->number_of_scale_factor_sets =
-						number_of_scale_factor_sets;
-					node_scale_field_info->number_of_scale_factors =
-						number_of_scale_factors;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"copy_create_FE_element_node_scale_field_info.  "
-						"Could not allocate scale factor sets");
-					return_code = 0;
-				}
-			}
-			if (!return_code)
-			{
-				DESTROY(FE_element_node_scale_field_info)(&node_scale_field_info);
-				node_scale_field_info =
-					(struct FE_element_node_scale_field_info *)NULL;
+					"FE_element_node_scale_field_info::createMergeWithoutValuesStorage.  "
+					"Different numbers of scale factors for scale factor set %s", sourceScaleFactorSet->getName());
+				return 0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"copy_create_FE_element_node_scale_field_info.  Could not create info");
+			++mergeNumberOfScaleFactorSets;
+			mergeNumberOfScaleFactors += sourceInfo.numbers_in_scale_factor_sets[i];
 		}
 	}
-	else
+
+	FE_element_node_scale_field_info *mergeInfo = FE_element_node_scale_field_info::create();
+	if (!mergeInfo)
+		return 0;
+
+	if (!mergeInfo->setNumberOfNodes(mergeNumberOfNodes))
 	{
-		display_message(ERROR_MESSAGE,
-			"copy_create_FE_element_node_scale_field_info.  Invalid argument(s)");
+		FE_element_node_scale_field_info::destroy(mergeInfo);
+		return 0;
 	}
-	LEAVE;
-
-	return (node_scale_field_info);
-} /* copy_create_FE_element_node_scale_field_info */
-
-static struct FE_element_node_scale_field_info
-	*merge_create_FE_element_node_scale_field_info(
-		struct FE_element_node_scale_field_info *destination_info,
-		struct FE_element_node_scale_field_info *source_info,
-		int *number_of_changed_existing_scale_factor_sets_address,
-		void ***changed_existing_scale_factor_set_identifiers_address)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Static function used exclusively in merge_FE_element.
-Creates a new FE_element_node_scale_field_info that contains all the nodes and
-scale factors from <destination_info> and in the same sequence, plus any new
-ones added from <source_info>. Checks that the same number of scale factors are
-used for any scale factor sets in common.
-values_storage_size and values_storage are set to zero and NULL, respectively,
-under the expectation that they will be constructed by merge_FE_element.
-On successful return there will be a non-negative number placed in
-<number_of_changed_existing_scale_factor_sets_address> and a correspondingly
-sized allocated array of void* identifiers placed at
-<changed_existing_scale_factor_set_identifiers_address>.
-It is up to the calling function to propagate appropriate change messages for
-all fields using these scale factors sets, and to DEALLOCATE the returned array.
-Note 0 and NULL are legal return values for the last two arguments.
-On a failed return no such array is allocated and returned.
-==============================================================================*/
-{
-	FE_value *scale_factor_position, *source_scale_factor_position;
-	int copy_scale_factors, destination_number_of_nodes,
-		destination_number_of_scale_factor_sets,
-		destination_number_of_scale_factors, i, j, number_of_nodes,
-		number_of_scale_factor_sets, number_of_scale_factors, return_code,
-		source_number_in_scale_factor_set, source_number_of_nodes,
-		source_number_of_scale_factor_sets, *tmp_numbers_in_scale_factors_sets;
-	struct FE_element_node_scale_field_info *node_scale_field_info;
-	struct FE_node *node, **tmp_node;
-	void *scale_factor_set_identifier, **tmp_scale_factor_set_identifier,
-		**changed_existing_scale_factor_set_identifiers = NULL;
-
-	ENTER(merge_create_FE_element_node_scale_field_info);
-	node_scale_field_info = (struct FE_element_node_scale_field_info *)NULL;
-	if (destination_info && source_info &&
-		number_of_changed_existing_scale_factor_sets_address &&
-		changed_existing_scale_factor_set_identifiers_address)
+	for (int j = 0; j < targetNumberOfNodes; j++)
 	{
-		*number_of_changed_existing_scale_factor_sets_address = 0;
-		*changed_existing_scale_factor_set_identifiers_address = (void **)NULL;
-		return_code = 1;
-		/* get the total number of nodes, starting with those in destination_info */
-		destination_number_of_nodes = destination_info->number_of_nodes;
-		source_number_of_nodes = source_info->number_of_nodes;
-		number_of_nodes = destination_number_of_nodes;
-		for (i = 0; i < source_number_of_nodes; i++)
+		mergeInfo->nodes[j] = targetInfo.nodes[j]->access();
+	}
+	if (targetNumberOfNodes < mergeNumberOfNodes)
+	{
+		/* extract the new nodes from the source */
+		mergeNumberOfNodes = targetNumberOfNodes;
+		for (int i = 0; i < sourceNumberOfNodes; i++)
 		{
-			node = source_info->nodes[i];
-			tmp_node = destination_info->nodes;
-			j = destination_number_of_nodes;
-			while (j && (node != *tmp_node))
+			sourceNode = sourceInfo.nodes[i];
+			targetNodeAddress = targetInfo.nodes;
+			int j = targetNumberOfNodes;
+			while (j && (sourceNode != *targetNodeAddress))
 			{
-				tmp_node++;
-				j--;
+				++targetNodeAddress;
+				--j;
 			}
 			if (!j)
 			{
-				number_of_nodes++;
+				mergeInfo->setNode(mergeNumberOfNodes, sourceNode);
+				++mergeNumberOfNodes;
 			}
 		}
-		/* get the total number of scale factor sets and scale factors, starting
-			 with those in destination_info. Checks numbers_in_scale_factor_sets */
-		destination_number_of_scale_factor_sets =
-			destination_info->number_of_scale_factor_sets;
-		source_number_of_scale_factor_sets =
-			source_info->number_of_scale_factor_sets;
-		number_of_scale_factor_sets = destination_number_of_scale_factor_sets;
-		destination_number_of_scale_factors =
-			destination_info->number_of_scale_factors;
-		number_of_scale_factors = destination_number_of_scale_factors;
-		for (i = 0; i < source_number_of_scale_factor_sets; i++)
+	}
+
+	if (0 < mergeNumberOfScaleFactorSets)
+	{
+		ALLOCATE(mergeInfo->scale_factor_set_identifiers, cmzn_mesh_scale_factor_set *, mergeNumberOfScaleFactorSets);
+		ALLOCATE(mergeInfo->numbers_in_scale_factor_sets, int, mergeNumberOfScaleFactorSets);
+		ALLOCATE(mergeInfo->scale_factors, FE_value, mergeNumberOfScaleFactors);
+		if (!(mergeInfo->scale_factor_set_identifiers &&
+			mergeInfo->numbers_in_scale_factor_sets &&
+			mergeInfo->scale_factors))
 		{
-			scale_factor_set_identifier =
-				source_info->scale_factor_set_identifiers[i];
-			tmp_scale_factor_set_identifier =
-				destination_info->scale_factor_set_identifiers;
-			j = destination_number_of_scale_factor_sets;
-			while (j && (scale_factor_set_identifier !=
-				*tmp_scale_factor_set_identifier))
+			DEALLOCATE(mergeInfo->scale_factor_set_identifiers);
+			FE_element_node_scale_field_info::destroy(mergeInfo);
+			return 0;
+		}
+		// copy the scale factor sets from targetInfo
+		for (int j = 0; j < targetNumberOfScaleFactorSets; ++j)
+		{
+			mergeInfo->scale_factor_set_identifiers[j] = targetInfo.scale_factor_set_identifiers[j]->access();
+			mergeInfo->numbers_in_scale_factor_sets[j] = targetInfo.numbers_in_scale_factor_sets[j];
+		}
+		// copy all scale factors from targetInfo, even though
+		// some may be overwritten by matching sets from sourceInfo
+		if (0 < targetNumberOfScaleFactors)
+		{
+			memcpy(mergeInfo->scale_factors, targetInfo.scale_factors,
+				targetNumberOfScaleFactors*sizeof(FE_value));
+		}
+		// incorporate new scale factor sets from sourceInfo. Compare old and new
+		// scale factors for existing sets and if changing, use values from the
+		// sourceInfo and remember the scale factor set identifier
+		mergeNumberOfScaleFactorSets = targetNumberOfScaleFactorSets;
+		mergeNumberOfScaleFactors = targetNumberOfScaleFactors;
+		FE_value *source_scale_factor_position = sourceInfo.scale_factors;
+		for (int i = 0; i < sourceNumberOfScaleFactorSets; i++)
+		{
+			sourceScaleFactorSet = sourceInfo.scale_factor_set_identifiers[i];
+			targetScaleFactorSetAddress = mergeInfo->scale_factor_set_identifiers;
+			int *tmp_numbers_in_scale_factors_sets = mergeInfo->numbers_in_scale_factor_sets;
+			int source_number_in_scale_factor_set = sourceInfo.numbers_in_scale_factor_sets[i];
+			FE_value *scale_factor_position = mergeInfo->scale_factors;
+			int j = targetNumberOfScaleFactorSets;
+			while (j && (sourceScaleFactorSet != *targetScaleFactorSetAddress))
 			{
-				tmp_scale_factor_set_identifier++;
-				j--;
+				scale_factor_position += *tmp_numbers_in_scale_factors_sets;
+				++tmp_numbers_in_scale_factors_sets;
+				++targetScaleFactorSetAddress;
+				--j;
 			}
+			bool copy_scale_factors = (0 < source_number_in_scale_factor_set);
 			if (j)
 			{
-				if (destination_info->numbers_in_scale_factor_sets
-					[destination_number_of_scale_factor_sets - j] !=
-					source_info->numbers_in_scale_factor_sets[i])
+				// scale factors only transferred if changing: compare array
+				if (memcmp(scale_factor_position, source_scale_factor_position,
+					source_number_in_scale_factor_set*sizeof(FE_value)))
 				{
-					display_message(ERROR_MESSAGE,
-						"merge_create_FE_element_node_scale_field_info.  "
-						"Incompatability in scale factor set");
-					return_code = 0;
-				}
-			}
-			else
-			{
-				number_of_scale_factor_sets++;
-				number_of_scale_factors += source_info->numbers_in_scale_factor_sets[i];
-			}
-		}
-		if (return_code)
-		{
-			if (NULL != (node_scale_field_info = CREATE(FE_element_node_scale_field_info)()))
-			{
-				if (FE_element_node_scale_field_info_set_number_of_nodes(
-					node_scale_field_info, number_of_nodes))
-				{
-					for (j = 0; j < destination_number_of_nodes; j++)
-					{
-						FE_element_node_scale_field_info_set_node(
-							node_scale_field_info, j, destination_info->nodes[j]);
-					}
-					if (destination_number_of_nodes < number_of_nodes)
-					{
-						/* extract the new nodes from the source */
-						number_of_nodes = destination_number_of_nodes;
-						for (i = 0; i < source_number_of_nodes; i++)
-						{
-							node = source_info->nodes[i];
-							tmp_node = destination_info->nodes;
-							j = destination_number_of_nodes;
-							while (j && (node != *tmp_node))
-							{
-								tmp_node++;
-								j--;
-							}
-							if (!j)
-							{
-								FE_element_node_scale_field_info_set_node(
-									node_scale_field_info, number_of_nodes, node);
-								number_of_nodes++;
-							}
-						}
-					}
+					changedExistingScaleFactorSets.push_back(sourceScaleFactorSet);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"merge_create_FE_element_node_scale_field_info.  "
-						"Could not set number of nodes");
-					return_code = 0;
-				}
-				if (0 < number_of_scale_factor_sets)
-				{
-					if (ALLOCATE(node_scale_field_info->scale_factor_set_identifiers,
-						void *, number_of_scale_factor_sets) &&
-						ALLOCATE(node_scale_field_info->numbers_in_scale_factor_sets, int,
-							number_of_scale_factor_sets) &&
-						((0 == number_of_scale_factors) ||
-							ALLOCATE(node_scale_field_info->scale_factors, FE_value,
-								number_of_scale_factors)))
-					{
-						/* copy the scale factor sets from destination_info */
-						for (j = 0; j < destination_number_of_scale_factor_sets; j++)
-						{
-							node_scale_field_info->scale_factor_set_identifiers[j] =
-								destination_info->scale_factor_set_identifiers[j];
-							node_scale_field_info->numbers_in_scale_factor_sets[j] =
-								destination_info->numbers_in_scale_factor_sets[j];
-						}
-						/* copy the scale factors from destination_info, even though many
-							 will be overwritten by matching sets from source_info */
-						if (0 < destination_number_of_scale_factors)
-						{
-							memcpy(node_scale_field_info->scale_factors,
-								destination_info->scale_factors,
-								destination_number_of_scale_factors*sizeof(FE_value));
-						}
-						/* incorporate new scale factor sets from source_info.
-							 Compare old and new scale factors for existing sets and if
-							 changing, use values from the source_info and remember the
-							 scale factor set identifier */
-						number_of_scale_factor_sets =
-							destination_number_of_scale_factor_sets;
-						number_of_scale_factors = destination_number_of_scale_factors;
-						source_scale_factor_position = source_info->scale_factors;
-						for (i = 0; i < source_number_of_scale_factor_sets; i++)
-						{
-							scale_factor_set_identifier =
-								source_info->scale_factor_set_identifiers[i];
-							tmp_scale_factor_set_identifier =
-								node_scale_field_info->scale_factor_set_identifiers;
-							tmp_numbers_in_scale_factors_sets =
-								node_scale_field_info->numbers_in_scale_factor_sets;
-							source_number_in_scale_factor_set =
-								source_info->numbers_in_scale_factor_sets[i];
-							scale_factor_position = node_scale_field_info->scale_factors;
-							j = destination_number_of_scale_factor_sets;
-							while (j && (scale_factor_set_identifier !=
-								*tmp_scale_factor_set_identifier))
-							{
-								scale_factor_position += *tmp_numbers_in_scale_factors_sets;
-								tmp_numbers_in_scale_factors_sets++;
-								tmp_scale_factor_set_identifier++;
-								j--;
-							}
-							copy_scale_factors = (0 < source_number_in_scale_factor_set);
-							if (j)
-							{
-								if (0 < source_number_in_scale_factor_set)
-								{
-									/* scale factors only transfered if different if changed */
-									if (memcmp(scale_factor_position,
-										source_scale_factor_position,
-										source_number_in_scale_factor_set*sizeof(FE_value)))
-									{
-										/* remember ID of changed scale factor set so all fields
-											 using it can be noted as changed -- not just those
-											 defined on the element using source_info */
-										if (REALLOCATE(changed_existing_scale_factor_set_identifiers,
-											*changed_existing_scale_factor_set_identifiers_address,
-											void *,
-											*number_of_changed_existing_scale_factor_sets_address + 1))
-										{
-											changed_existing_scale_factor_set_identifiers[
-												*number_of_changed_existing_scale_factor_sets_address]
-												= scale_factor_set_identifier;
-											*changed_existing_scale_factor_set_identifiers_address =
-												changed_existing_scale_factor_set_identifiers;
-											(*number_of_changed_existing_scale_factor_sets_address)++;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"merge_create_FE_element_node_scale_field_info.  Could not "
-												"reallocate changed existing scale factor set identifiers");
-											return_code = 0;
-										}
-									}
-									else
-									{
-										copy_scale_factors = 0;
-									}
-								}
-							}
-							else
-							{
-								/* position for new scale factors must be at the end of
-									 the currently set list */
-								scale_factor_position = node_scale_field_info->scale_factors +
-									number_of_scale_factors;
-								node_scale_field_info->scale_factor_set_identifiers
-									[number_of_scale_factor_sets] = scale_factor_set_identifier;
-								node_scale_field_info->numbers_in_scale_factor_sets
-									[number_of_scale_factor_sets] =
-									source_number_in_scale_factor_set;
-								number_of_scale_factor_sets++;
-								number_of_scale_factors +=
-									source_number_in_scale_factor_set;
-							}
-							/* copy scale factors from source_info */
-							if (copy_scale_factors)
-							{
-								memcpy(scale_factor_position, source_scale_factor_position,
-									source_number_in_scale_factor_set*sizeof(FE_value));
-							}
-							source_scale_factor_position +=
-								source_number_in_scale_factor_set;
-						}
-						node_scale_field_info->number_of_scale_factor_sets =
-							number_of_scale_factor_sets;
-						node_scale_field_info->number_of_scale_factors =
-							number_of_scale_factors;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"merge_create_FE_element_node_scale_field_info.  "
-							"Could not allocate scale factor sets");
-						return_code = 0;
-					}
-				}
-				if (!return_code)
-				{
-					DESTROY(FE_element_node_scale_field_info)(&node_scale_field_info);
-					node_scale_field_info =
-						(struct FE_element_node_scale_field_info *)NULL;
-					if (*changed_existing_scale_factor_set_identifiers)
-					{
-						/* on failure, caller does not need to deallocate identifiers */
-						DEALLOCATE(*changed_existing_scale_factor_set_identifiers);
-						*changed_existing_scale_factor_set_identifiers = (void **)NULL;
-						*number_of_changed_existing_scale_factor_sets_address = 0;
-					}
+					copy_scale_factors = false;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"merge_create_FE_element_node_scale_field_info.  "
-					"Could not create info");
+				// put new scale factors after end of currently used scale factors
+				scale_factor_position = mergeInfo->scale_factors + mergeNumberOfScaleFactors;
+				mergeInfo->scale_factor_set_identifiers[mergeNumberOfScaleFactorSets] = sourceScaleFactorSet->access();
+				mergeInfo->numbers_in_scale_factor_sets[mergeNumberOfScaleFactorSets] = source_number_in_scale_factor_set;
+				++mergeNumberOfScaleFactorSets;
+				mergeNumberOfScaleFactors += source_number_in_scale_factor_set;
 			}
+			if (copy_scale_factors)
+			{
+				memcpy(scale_factor_position, source_scale_factor_position,
+					source_number_in_scale_factor_set*sizeof(FE_value));
+			}
+			source_scale_factor_position += source_number_in_scale_factor_set;
 		}
+		mergeInfo->number_of_scale_factor_sets = mergeNumberOfScaleFactorSets;
+		mergeInfo->number_of_scale_factors = mergeNumberOfScaleFactors;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"merge_create_FE_element_node_scale_field_info.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (node_scale_field_info);
-} /* merge_create_FE_element_node_scale_field_info */
+	return (mergeInfo);
+}
 
 struct Copy_element_grid_map_data
 {
@@ -19494,147 +19197,165 @@ been allocated but is uninitialised.
 	return (return_code);
 } /* copy_element_grid_map_values_storage */
 
-struct FE_element_node_scale_field_info
-	*create_FE_element_node_scale_field_info_from_contents(
-		int values_storage_size,
-	Value_storage *values_storage,int number_of_nodes,struct FE_node **nodes,
-	int number_of_scale_factor_sets,void **scale_factor_set_identifiers,
-	int *numbers_in_scale_factor_sets,int number_of_scale_factors,
-	FE_value *scale_factors, struct FE_element_field_info *field_info)
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Allocates memory and assigns fields for an element's node, scale factor and
-field information structure.  Note that the arguments are duplicated.
-???RC Made it possible to have no scale factor sets.
-<field_info> is supplied to allow values_storage to be copied.
-==============================================================================*/
+FE_element_node_scale_field_info *FE_element_node_scale_field_info::clone(
+	FE_element_field_info *field_info)
 {
-	FE_value *scale_factor;
-	int i,j,*number_in_scale_factor_set;
-	struct Check_element_grid_map_values_storage_data check_grid_data;
-	struct Copy_element_grid_map_data copy_element_grid_map_data;
-	struct FE_element_node_scale_field_info *node_scale_field_info;
-	Value_storage *temp_values_storage;
-	void **scale_factor_set_identifier;
-
-	ENTER(create_FE_element_node_scale_field_info_from_contents);
-	if ((((0 == values_storage_size) && (!values_storage)) ||
-		((0 < values_storage_size) && values_storage)) &&
-		(((0 == number_of_nodes) && (!nodes)) ||
-			((0 < number_of_nodes) && nodes)) &&
-		((0 == number_of_scale_factor_sets) || ((0 < number_of_scale_factor_sets) &&
-		scale_factor_set_identifiers && numbers_in_scale_factor_sets &&
-		(0 < number_of_scale_factors) && scale_factors && field_info)))
+	if (0 < this->values_storage_size)
 	{
-		/* check the grid based fields */
-		check_grid_data.check_sum=0;
-		check_grid_data.values_storage_size=values_storage_size;
-		if (FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			check_element_grid_map_values_storage,(void *)&check_grid_data,
-			field_info->element_field_list)&&
-			(values_storage_size==check_grid_data.check_sum))
+		// not sure why this check is necessary
+		struct Check_element_grid_map_values_storage_data check_grid_data;
+		check_grid_data.check_sum = 0;
+		check_grid_data.values_storage_size = this->values_storage_size;
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+			check_element_grid_map_values_storage, (void *)&check_grid_data,
+			field_info->element_field_list) ||
+			(check_grid_data.check_sum != this->values_storage_size))
 		{
-			j=0;
-			for (i=0;i<number_of_scale_factor_sets;i++)
+			display_message(ERROR_MESSAGE,
+				"FE_element_node_scale_field_info::clone.  Inconsistent element values");
+			return 0;
+		}
+	}
+	FE_element_node_scale_field_info *cloneInfo = this->cloneWithoutValuesStorage();
+	if (!cloneInfo)
+		return 0;
+	if (0 < this->values_storage_size)
+	{
+		ALLOCATE(cloneInfo->values_storage, Value_storage, this->values_storage_size);
+		if (!cloneInfo->values_storage)
+		{
+			FE_element_node_scale_field_info::destroy(cloneInfo);
+			return 0;
+		}
+		cloneInfo->values_storage_size = this->values_storage_size;
+		// copy values storage including dynamic arrays
+		Copy_element_grid_map_data copy_element_grid_map_data;
+		copy_element_grid_map_data.destination_values_storage = cloneInfo->values_storage;
+		copy_element_grid_map_data.source_values_storage = this->values_storage;
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+			copy_element_grid_map_values_storage,
+			&copy_element_grid_map_data,field_info->element_field_list))
+		{
+			display_message(ERROR_MESSAGE,
+				"FE_element_node_scale_field_info::clone.  Failed to copy element values");
+			FE_element_node_scale_field_info::destroy(cloneInfo);
+			return 0;
+		}
+	}
+	return cloneInfo;
+}
+
+int FE_element_node_scale_field_info::setNumberOfNodes(int numberOfNodesIn)
+{
+	if (0 > number_of_nodes)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (numberOfNodesIn < this->number_of_nodes)
+	{
+		display_message(ERROR_MESSAGE,
+			"FE_element_node_scale_field::setNumberOfNodes.  "
+			"Cannot reduce the number of nodes");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	if (numberOfNodesIn != this->number_of_nodes)
+	{
+		struct FE_node **temp_nodes;
+		if (REALLOCATE(temp_nodes, this->nodes, struct FE_node *, numberOfNodesIn))
+		{
+			this->nodes = temp_nodes;
+			for (int i = this->number_of_nodes; i < numberOfNodesIn; i++)
 			{
-				j += numbers_in_scale_factor_sets[i];
+				this->nodes[i] = 0;
 			}
-			if (j==number_of_scale_factors)
+			this->number_of_nodes = numberOfNodesIn;
+		}
+		else
+		{
+			return CMZN_ERROR_MEMORY;
+		}
+	}
+	return CMZN_OK;
+}
+
+int FE_element_node_scale_field_info::setNode(int nodeNumber, cmzn_node *node)
+{
+	if ((0 <= nodeNumber) && (nodeNumber < this->number_of_nodes))
+	{
+		REACCESS(FE_node)(&(this->nodes[nodeNumber]), node);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int FE_element_node_scale_field_info::setScaleFactorSets(int numberOfScaleFactorSetsIn,
+	cmzn_mesh_scale_factor_set **scaleFactorSetIdentifiersIn,
+	int *numbersInScaleFactorSetsIn, FE_value *scaleFactorsIn)
+{
+	if ((0 == numberOfScaleFactorSetsIn) || ((0 < numberOfScaleFactorSetsIn) &&
+		scaleFactorSetIdentifiersIn && numbersInScaleFactorSetsIn))
+	{
+		/* check scale factor set identifiers and numbers and count number of scale factors */
+		int scaleFactorsCount = 0;
+		for (int i = 0; i < numberOfScaleFactorSetsIn; ++i)
+		{
+			if (scaleFactorSetIdentifiersIn[i] && (0 < numbersInScaleFactorSetsIn[i]))
 			{
-				node_scale_field_info=(struct FE_element_node_scale_field_info *)NULL;
-				temp_values_storage=(Value_storage *)NULL;
-				scale_factor_set_identifier=(void **)NULL;
-				number_in_scale_factor_set=(int *)NULL;
-				scale_factor=(FE_value *)NULL;
-				if ((node_scale_field_info =
-					CREATE(FE_element_node_scale_field_info)()) &&
-					(!values_storage||ALLOCATE(temp_values_storage,Value_storage,
-						values_storage_size))&&
-					FE_element_node_scale_field_info_set_number_of_nodes(
-						node_scale_field_info, number_of_nodes) &&
-					((0==number_of_scale_factor_sets)||
-						(ALLOCATE(scale_factor_set_identifier,void *,
-							number_of_scale_factor_sets)&&
-							ALLOCATE(number_in_scale_factor_set,int,
-								number_of_scale_factor_sets)&&
-							ALLOCATE(scale_factor,FE_value,number_of_scale_factors))))
-				{
-					node_scale_field_info->values_storage_size=values_storage_size;
-					node_scale_field_info->values_storage=temp_values_storage;
-					/* copy values_storage from field_info to node_scale_field_info */
-					copy_element_grid_map_data.destination_values_storage=
-						node_scale_field_info->values_storage;
-					copy_element_grid_map_data.source_values_storage=values_storage;
-					FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-						copy_element_grid_map_values_storage,
-						&copy_element_grid_map_data,field_info->element_field_list);
-					for (i = 0; i < number_of_nodes; i++)
-					{
-						FE_element_node_scale_field_info_set_node(
-							node_scale_field_info, i, nodes[i]);
-					}
-					node_scale_field_info->number_of_scale_factor_sets=
-						number_of_scale_factor_sets;
-					node_scale_field_info->scale_factor_set_identifiers=
-						scale_factor_set_identifier;
-					node_scale_field_info->numbers_in_scale_factor_sets=
-						number_in_scale_factor_set;
-					node_scale_field_info->number_of_scale_factors=
-						number_of_scale_factors;
-					for (i=0;i<number_of_scale_factor_sets;i++)
-					{
-						scale_factor_set_identifier[i]=scale_factor_set_identifiers[i];
-						number_in_scale_factor_set[i]=numbers_in_scale_factor_sets[i];
-					}
-					node_scale_field_info->number_of_scale_factors=
-						number_of_scale_factors;
-					node_scale_field_info->scale_factors=scale_factor;
-					for (i=0;i<number_of_scale_factors;i++)
-					{
-						scale_factor[i]=scale_factors[i];
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"create_FE_element_node_scale_field_info_from_contents.  "
-						"Insufficient memory");
-					DEALLOCATE(temp_values_storage);
-					DEALLOCATE(scale_factor_set_identifier);
-					DEALLOCATE(number_in_scale_factor_set);
-					DEALLOCATE(scale_factor);
-					DESTROY(FE_element_node_scale_field_info)(&node_scale_field_info);
-				}
+				scaleFactorsCount += numbersInScaleFactorSetsIn[i];
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_FE_element_node_scale_field_info_from_contents.  "
-					"Inconsistent scale factors");
-				node_scale_field_info=(struct FE_element_node_scale_field_info *)NULL;
+					"FE_element_node_scale_field_info::setScaleFactorSets.  "
+					"Invalid scale factor set identifier or number");
+				return CMZN_ERROR_ARGUMENT;
 			}
 		}
-		else
+		if (0 < this->getNumberOfScaleFactorSets())
 		{
 			display_message(ERROR_MESSAGE,
-				"create_FE_element_node_scale_field_info_from_contents.  "
-				"Inconsistent element values");
-			node_scale_field_info=(struct FE_element_node_scale_field_info *)NULL;
+				"FE_element_node_scale_field_info::setScaleFactorSets.  "
+				"Number of scale factor sets is already set");
+			return CMZN_ERROR_ARGUMENT;
 		}
+		if (0 < numberOfScaleFactorSetsIn)
+		{
+			cmzn_mesh_scale_factor_set **tempIdentifiers = 0;
+			int *tempNumbers = 0;
+			FE_value *tempValues = 0;
+			ALLOCATE(tempIdentifiers, cmzn_mesh_scale_factor_set *, numberOfScaleFactorSetsIn);
+			ALLOCATE(tempNumbers, int, numberOfScaleFactorSetsIn);
+			ALLOCATE(tempValues, FE_value, scaleFactorsCount);
+			if (!(tempIdentifiers && tempNumbers && tempValues))
+			{
+				return CMZN_ERROR_MEMORY;
+			}
+			this->number_of_scale_factor_sets = numberOfScaleFactorSetsIn;
+			this->scale_factor_set_identifiers = tempIdentifiers;
+			this->numbers_in_scale_factor_sets = tempNumbers;
+			for (int i = 0; i < numberOfScaleFactorSetsIn; i++)
+			{
+				this->scale_factor_set_identifiers[i] = scaleFactorSetIdentifiersIn[i]->access();
+				this->numbers_in_scale_factor_sets[i] = numbersInScaleFactorSetsIn[i];
+			}
+			this->number_of_scale_factors = scaleFactorsCount;
+			this->scale_factors = tempValues;
+			if (scaleFactorsIn)
+			{
+				memcpy(this->scale_factors, scaleFactorsIn, scaleFactorsCount*sizeof(FE_value));
+			}
+			else
+			{
+				for (int i = 0; i < scaleFactorsCount; i++)
+				{
+					this->scale_factors[i] = FE_VALUE_INITIALIZER;
+				}
+			}
+		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_FE_element_node_scale_field_info_from_contents.  "
-			"Invalid argument(s)");
-		node_scale_field_info=(struct FE_element_node_scale_field_info *)NULL;
-	}
-	LEAVE;
-
-	return (node_scale_field_info);
-} /* create_FE_element_node_scale_field_info_from_contents */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
 	const int *type, struct FE_region *fe_region)
@@ -21851,18 +21572,8 @@ Note that the element number in <cm> must be non-negative.
 				}
 				if (template_element->information)
 				{
-					if (!(element->information =
-						create_FE_element_node_scale_field_info_from_contents(
-							template_element->information->values_storage_size,
-							template_element->information->values_storage,
-							template_element->information->number_of_nodes,
-							template_element->information->nodes,
-							template_element->information->number_of_scale_factor_sets,
-							template_element->information->scale_factor_set_identifiers,
-							template_element->information->numbers_in_scale_factor_sets,
-							template_element->information->number_of_scale_factors,
-							template_element->information->scale_factors,
-							template_element->fields)))
+					element->information = template_element->information->clone(template_element->fields);
+					if (!element->information)
 					{
 						display_message(ERROR_MESSAGE,"CREATE(FE_element).  "
 							"Could not copy node scale field info from template element");
@@ -21935,8 +21646,7 @@ Frees the memory for the element, sets <*element_address> to NULL.
 			DEACCESS(FE_element_shape)(&(element->shape));
 			if (element->information)
 			{
-				clean_up_FE_element_node_scale_field_info(&(element->information),
-					element->fields);
+				FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
 			}
 			DEACCESS(FE_element_field_info)(&(element->fields));
 			/* parent elements are not ACCESSed */
@@ -25643,10 +25353,9 @@ May only be set once; should only be called for unmanaged elements.
 	if (element && (0 <= number_of_nodes))
 	{
 		if (element->information ||
-			(element->information = CREATE(FE_element_node_scale_field_info)()))
+			(element->information = FE_element_node_scale_field_info::create()))
 		{
-			return_code = FE_element_node_scale_field_info_set_number_of_nodes(
-				element->information, number_of_nodes);
+			return_code = (CMZN_OK == element->information->setNumberOfNodes(number_of_nodes));
 		}
 		else
 		{
@@ -25788,10 +25497,9 @@ Should only be called for unmanaged elements.
   int return_code;
 
   ENTER(set_FE_element_node);
-  if (element && node)
+  if (element && element->information && node)
   {
-	  return_code = FE_element_node_scale_field_info_set_node(
-		  element->information, node_number, node);
+	  return_code = (CMZN_OK == element->information->setNode(node_number, node));
   }
   else
   {
@@ -25803,120 +25511,47 @@ Should only be called for unmanaged elements.
   return (return_code);
 } /* set_FE_element_node */
 
-int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,
-	int number_of_scale_factor_sets, void **scale_factor_set_identifiers,
-	int *numbers_in_scale_factor_sets)
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Establishes storage for <number_of_scale_factor_sets> in <element>, each
-containing <numbers_in_scale_factor_sets> and identifier by
-<scale_factor_set_identifiers>.
-May only be set once; should only be called for unmanaged elements.
-==============================================================================*/
+int get_FE_element_scale_factors_address(struct FE_element *element,
+	cmzn_mesh_scale_factor_set *scale_factor_set, FE_value **scale_factors_address)
 {
-	int i, number_of_scale_factors, return_code;
-
-	ENTER(set_FE_element_number_of_scale_factor_sets);
-	if (element && (0 <= number_of_scale_factor_sets) &&
-		((0 == number_of_scale_factor_sets) || (scale_factor_set_identifiers &&
-			numbers_in_scale_factor_sets)))
+	int number_of_scale_factors = 0;
+	if (element && element->information && scale_factor_set && scale_factors_address)
 	{
-		return_code = 1;
-		/* check scale factor set identifiers and numbers and count number of
-			 scale factors */
-		number_of_scale_factors = 0;
-		for (i = 0; (i < number_of_scale_factor_sets) && return_code; i++)
+		*scale_factors_address = element->information->getScaleFactorsForSet(scale_factor_set, number_of_scale_factors);
+	}
+	else if (scale_factors_address)
+	{
+		*scale_factors_address = 0;
+	}
+	return number_of_scale_factors;
+}
+
+int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,
+	int number_of_scale_factor_sets, cmzn_mesh_scale_factor_set **scale_factor_set_identifiers,
+	int *numbers_in_scale_factor_sets)
+{
+	if (element)
+	{
+		if ((0 < number_of_scale_factor_sets) && !element->information)
 		{
-			if (scale_factor_set_identifiers[i] &&
-				(0 <= numbers_in_scale_factor_sets[i]))
+			element->information = FE_element_node_scale_field_info::create();
+			if (!element->information)
 			{
-				number_of_scale_factors += numbers_in_scale_factor_sets[i];
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_element_number_of_scale_factor_sets.  "
-					"Invalid scale factor set identifier or number");
-				return_code = 0;
+				return CMZN_ERROR_MEMORY;
 			}
 		}
 		if (element->information)
 		{
-			if (0 < element->information->number_of_scale_factor_sets)
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_element_number_of_scale_factor_sets.  "
-					"Number of scale factor sets is already set");
-				return_code = 0;
-			}
+			return element->information->setScaleFactorSets(number_of_scale_factor_sets,
+				scale_factor_set_identifiers, numbers_in_scale_factor_sets, static_cast<FE_value*>(0));
 		}
-		else
-		{
-			if (!(element->information = CREATE(FE_element_node_scale_field_info)()))
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_element_number_of_scale_factor_sets.  "
-					"Could not create node_scale_field_info");
-				return_code = 0;
-			}
-		}
-		if (return_code && (0 < number_of_scale_factor_sets))
-		{
-			if (ALLOCATE(element->information->scale_factor_set_identifiers, void *,
-				number_of_scale_factor_sets) &&
-				ALLOCATE(element->information->numbers_in_scale_factor_sets, int,
-					number_of_scale_factor_sets) &&
-				((0 == number_of_scale_factors) ||
-					ALLOCATE(element->information->scale_factors, FE_value,
-						number_of_scale_factors)))
-			{
-				for (i = 0; i < number_of_scale_factor_sets; i++)
-				{
-					element->information->scale_factor_set_identifiers[i] =
-						scale_factor_set_identifiers[i];
-					element->information->numbers_in_scale_factor_sets[i] =
-						numbers_in_scale_factor_sets[i];
-				}
-				for (i = 0; i < number_of_scale_factors; i++)
-				{
-					element->information->scale_factors[i] = FE_VALUE_INITIALIZER;
-				}
-				element->information->number_of_scale_factor_sets =
-					number_of_scale_factor_sets;
-				element->information->number_of_scale_factors = number_of_scale_factors;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "set_FE_element_number_of_nodes.  "
-					"Could not allocate space for scale factor sets");
-				DEALLOCATE(element->information->numbers_in_scale_factor_sets);
-				DEALLOCATE(element->information->scale_factor_set_identifiers);
-				return_code = 0;
-			}
-		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_number_of_scale_factor_sets.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_number_of_scale_factor_sets */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int get_FE_element_number_of_scale_factor_sets(struct FE_element *element,
 	int *number_of_scale_factor_sets_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of scale factor_sets in <element>.
-If fails, puts zero at <number_of_scale_factor_sets_address>.
-==============================================================================*/
 {
 	int return_code;
 
@@ -25926,7 +25561,7 @@ If fails, puts zero at <number_of_scale_factor_sets_address>.
 		if (element->information)
 		{
 			*number_of_scale_factor_sets_address =
-				element->information->number_of_scale_factor_sets;
+				element->information->getNumberOfScaleFactorSets();
 		}
 		else
 		{
@@ -25947,83 +25582,39 @@ If fails, puts zero at <number_of_scale_factor_sets_address>.
 	LEAVE;
 
 	return (return_code);
-} /* get_FE_element_number_of_scale_factor_sets */
+}
 
-int get_FE_element_numbers_in_scale_factor_set(struct FE_element *element,
-	int scale_factor_set_number, int *numbers_in_scale_factor_set_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of scale factors in <scale_factor_set_number> of <element>,
-where <scale_factor_set_number> is from 0 to one less than the number of sets.
-If fails, puts zero in *<numbers_in_scale_factor_set_address> if supplied.
-==============================================================================*/
+int get_FE_element_number_in_scale_factor_set_at_index(struct FE_element *element,
+	int scale_factor_set_number)
 {
-	int return_code;
-
-	ENTER(get_FE_element_numbers_in_scale_factor_set);
-	if (element && element->information && (0 <= scale_factor_set_number) &&
-		(scale_factor_set_number <
-			element->information->number_of_scale_factor_sets) &&
-		numbers_in_scale_factor_set_address)
+	if (element && element->information)
 	{
-		*numbers_in_scale_factor_set_address = element->information->
-			numbers_in_scale_factor_sets[scale_factor_set_number];
-		return_code = 1;
+		return element->information->getNumberInScaleFactorSetAtIndex(scale_factor_set_number);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_numbers_in_scale_factor_set.  Invalid argument(s)");
-		if (numbers_in_scale_factor_set_address)
-		{
-			*numbers_in_scale_factor_set_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* get_FE_element_numbers_in_scale_factor_set */
-
-int get_FE_element_scale_factor_set_identifier(struct FE_element *element,
-	int scale_factor_set_number, void **scale_factor_set_identifier_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the identifier of <scale_factor_set_number> of <element>,
-where <scale_factor_set_number> is from 0 to one less than the number of sets.
-If fails, puts NULL in *<scale_factor_set_identifier_address> if supplied.
-==============================================================================*/
+cmzn_mesh_scale_factor_set *get_FE_element_scale_factor_set_identifier_at_index(
+	struct FE_element *element, int scale_factor_set_number)
 {
-	int return_code;
-
-	ENTER(get_FE_element_scale_factor_set_identifier);
-	if (element && element->information && (0 <= scale_factor_set_number) &&
-		(scale_factor_set_number <
-			element->information->number_of_scale_factor_sets) &&
-		scale_factor_set_identifier_address)
+	if (element && element->information)
 	{
-		*scale_factor_set_identifier_address = element->information->
-			scale_factor_set_identifiers[scale_factor_set_number];
-		return_code = 1;
+		return element->information->getScaleFactorSetIdentifierAtIndex(scale_factor_set_number);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_scale_factor_set_identifier.  Invalid argument(s)");
-		if (scale_factor_set_identifier_address)
-		{
-			*scale_factor_set_identifier_address = (void *)NULL;
-		}
-		return_code = 0;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* get_FE_element_scale_factor_set_identifier */
+int set_FE_element_scale_factor_set_identifier_at_index(
+	struct FE_element *element, int scale_factor_set_number,
+	cmzn_mesh_scale_factor_set *scale_factor_set_identifier)
+{
+	if (element && element->information)
+	{
+		return element->information->setScaleFactorSetIdentifierAtIndex(
+			scale_factor_set_number, scale_factor_set_identifier);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int get_FE_element_number_of_scale_factors(struct FE_element *element,
 	int *number_of_scale_factors_address)
@@ -27210,91 +26801,51 @@ FE_element_field iterator which adds its FE_field to the LIST pointed to by
 	return (return_code);
 } /* FE_element_field_add_FE_field_to_list */
 
+/**
+ * Data for passing to function
+ * FE_element_field_FE_field_to_list_if_uses_scale_factor_set
+ */
 struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Data for passing to function
-FE_element_field_FE_field_to_list_if_uses_scale_factor_set
-==============================================================================*/
 {
 	struct LIST(FE_field) *fe_field_list;
-	void *scale_factor_set_identifier;
+	cmzn_mesh_scale_factor_set *scale_factor_set;
 };
 
+/**
+ * FE_element_field iterator which ensures its FE_field is in <fe_field_list> if
+ * it uses the <scale_factor_set_identifier>. In practise, the identifier has to
+ * point to an FE_basis. <scale_factor_set_data_void> points at a struct
+ * FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data.
+ */
 static int FE_element_field_FE_field_to_list_if_uses_scale_factor_set(
 	struct FE_element_field *element_field, void *scale_factor_set_data_void)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-FE_element_field iterator which ensures its FE_field is in <fe_field_list> if
-it uses the <scale_factor_set_identifier>. In practise, the identifier has to
-point to an FE_basis. <scale_factor_set_data_void> points at a struct
-FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data.
-==============================================================================*/
 {
-	int field_uses_set, i, number_of_components, return_code;
-	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *scale_factor_set_data;
-	struct FE_basis *fe_basis;
-
-	ENTER(FE_element_field_FE_field_to_list_if_uses_scale_factor_set);
-	/*???RC try to make this as inexpensive as possible */
-	if (element_field && element_field->field && (scale_factor_set_data = (struct
-		FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *)
-		scale_factor_set_data_void))
+	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *scale_factor_set_data =
+		reinterpret_cast<struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data *>(scale_factor_set_data_void);
+	if (element_field && element_field->field && scale_factor_set_data)
 	{
-		return_code = 1;
-		/* trivial rejection 1: must be a GENERAL_FE_FIELD to have a basis */
 		if (GENERAL_FE_FIELD == element_field->field->fe_field_type)
 		{
-			/* trivial rejection 2: proceed only if FE_field not already in list */
 			if (!IS_OBJECT_IN_LIST(FE_field)(element_field->field,
 				scale_factor_set_data->fe_field_list))
 			{
-				number_of_components = element_field->field->number_of_components;
-				field_uses_set = 0;
-				for (i = 0; (i < number_of_components) && (!field_uses_set) &&
-							 return_code; i++)
+				const int number_of_components = element_field->field->number_of_components;
+				for (int i = 0; i < number_of_components; ++i)
 				{
-					if (FE_element_field_private_get_component_FE_basis(
-						element_field, /*component_number*/i, &fe_basis))
+					if (element_field->components[i]->get_scale_factor_set() ==
+						scale_factor_set_data->scale_factor_set)
 					{
-						if ((void *)fe_basis ==
-							scale_factor_set_data->scale_factor_set_identifier)
-						{
-							if (!ADD_OBJECT_TO_LIST(FE_field)(element_field->field,
-								scale_factor_set_data->fe_field_list))
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_field_FE_field_to_list_if_uses_scale_factor_set.  Could not add field to list");
-								return_code = 1;
-							}
-							field_uses_set = 1;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_FE_field_to_list_if_uses_scale_factor_set.  Could not get basis");
-						return_code = 0;
+						ADD_OBJECT_TO_LIST(FE_field)(element_field->field,
+							scale_factor_set_data->fe_field_list);
+						break;
 					}
 				}
 			}
 		}
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_FE_field_to_list_if_uses_scale_factor_set.  "
-			"Missing element_field");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_FE_field_to_list_if_uses_scale_factor_set */
+	return 0;
+}
 
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list)
@@ -27316,8 +26867,7 @@ common scale factors affect different fields in <destination>; the
 Note <changed_fe_field_list> is emptied at the start of this function.
 ==============================================================================*/
 {
-	int i, number_of_changed_existing_scale_factor_sets, number_of_faces,
-		return_code, values_storage_size;
+	int number_of_faces, return_code, values_storage_size;
 	struct FE_element **source_face;
 	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data scale_factor_set_data;
 	struct FE_element_field_info *destination_fields, *element_field_info,
@@ -27328,7 +26878,6 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 	struct FE_region *fe_region;
 	struct LIST(FE_element_field) *element_field_list;
 	Value_storage *values_storage;
-	void **changed_existing_scale_factor_set_identifiers;
 
 	ENTER(merge_FE_element);
 	if (destination && (destination_fields = destination->fields) &&
@@ -27354,7 +26903,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 				if (source->faces)
 				{
 					int number_of_faces = source->shape->number_of_faces;
-					for (i = 0; i < number_of_faces; ++i)
+					for (int i = 0; i < number_of_faces; ++i)
 					{
 						set_FE_element_face(destination, i, source->faces[i]);
 					}
@@ -27385,45 +26934,40 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 			{
 				if (source_info)
 				{
-					if (NULL != (node_scale_field_info =
-						merge_create_FE_element_node_scale_field_info(
-							destination_info, source_info,
-							&number_of_changed_existing_scale_factor_sets,
-							&changed_existing_scale_factor_set_identifiers)))
+					std::vector<cmzn_mesh_scale_factor_set*> changedExistingScaleFactorSets;
+					node_scale_field_info = FE_element_node_scale_field_info::createMergeWithoutValuesStorage(
+						*destination_info, *source_info, changedExistingScaleFactorSets);
+					if (node_scale_field_info)
 					{
-						if (changed_existing_scale_factor_set_identifiers)
+						size_t number_of_changed_existing_scale_factor_sets = changedExistingScaleFactorSets.size();
+						if (number_of_changed_existing_scale_factor_sets)
 						{
-							/* determine which destination fields are affected by changed
-								 existing scale factor sets */
+							// determine which fields are affected by changed scale factor sets
 							scale_factor_set_data.fe_field_list = changed_fe_field_list;
-							for (i = 0; i < number_of_changed_existing_scale_factor_sets; i++)
+							for (size_t i = 0; i < number_of_changed_existing_scale_factor_sets; i++)
 							{
-								scale_factor_set_data.scale_factor_set_identifier =
-									changed_existing_scale_factor_set_identifiers[i];
+								scale_factor_set_data.scale_factor_set = changedExistingScaleFactorSets[i];
 								if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
 									FE_element_field_FE_field_to_list_if_uses_scale_factor_set,
 									(void *)&scale_factor_set_data,
 									destination_fields->element_field_list))
 								{
 									display_message(ERROR_MESSAGE, "merge_FE_element.  Could not "
-										"determine fields affected by changed scale factor");
+										"determine fields affected by changed scale factor set");
 									return_code = 0;
 								}
 							}
-							DEALLOCATE(changed_existing_scale_factor_set_identifiers);
 						}
 					}
 				}
 				else
 				{
-					node_scale_field_info =
-						copy_create_FE_element_node_scale_field_info(destination_info);
+					node_scale_field_info = destination_info->cloneWithoutValuesStorage();
 				}
 			}
 			else if (source_info)
 			{
-				node_scale_field_info =
-					copy_create_FE_element_node_scale_field_info(source_info);
+				node_scale_field_info = source_info->cloneWithoutValuesStorage();
 			}
 			if ((destination_info || source_info) && (!node_scale_field_info))
 			{
@@ -27447,8 +26991,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 				merge_data.source_info = source_info;
 				if (destination_info)
 				{
-					merge_data.values_storage_size =
-						destination_info->values_storage_size;
+					merge_data.values_storage_size = destination_info->values_storage_size;
 				}
 				else
 				{
@@ -27472,7 +27015,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 							/* merge the faces */
 							number_of_faces = source->shape->number_of_faces;
 							source_face = source->faces;
-							for (i = 0; i < number_of_faces; i++)
+							for (int i = 0; i < number_of_faces; i++)
 							{
 								if (*source_face)
 								{
@@ -27490,8 +27033,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 							/* clean up old destination information */
 							if (destination_info)
 							{
-								clean_up_FE_element_node_scale_field_info(&destination_info,
-									destination_fields);
+								FE_element_node_scale_field_info::destroyDynamic(destination_info, destination_fields);
 							}
 							/* insert new fields and information */
 							REACCESS(FE_element_field_info)(&(destination->fields),
@@ -27533,7 +27075,7 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 		}
 		if (!return_code && node_scale_field_info)
 		{
-			DESTROY(FE_element_node_scale_field_info)(&node_scale_field_info);
+			FE_element_node_scale_field_info::destroy(node_scale_field_info);
 		}
 	}
 	else
@@ -31020,91 +30562,6 @@ INSTANTIATE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum)
 INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( FE_value , FE_VALUE_VALUE )
 INSTANTIATE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( int , INT_VALUE )
 
-int FE_element_field_get_copy_components(struct FE_element *element,
-	struct FE_field *fe_field,
-	struct FE_element_field_component ***components_address)
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Constructs copies of the FE_element_field_components of <fe_field> at <element>
-and stores them at <components_address>.
-Up to the calling function to clean up the returned components.
-==============================================================================*/
-{
-	int i, number_of_components, return_code;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component **components;
-
-	ENTER(FE_element_field_get_copy_components);
-	if (element && element->fields && fe_field && components_address &&
-		(number_of_components = get_FE_field_number_of_components(fe_field)))
-	{
-		return_code = 1;
-		if (NULL != (element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-			fe_field, element->fields->element_field_list)))
-		{
-			if (ALLOCATE(components, struct FE_element_field_component *,
-				number_of_components))
-			{
-				for (i = 0; i < number_of_components; i++)
-				{
-					components[i] = (struct FE_element_field_component *)NULL;
-				}
-				for (i = 0; (i < number_of_components) && return_code; i++)
-				{
-					if (!(components[i] = copy_create_FE_element_field_component(
-						element_field->components[i])))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_get_copy_components.  "
-							"Could not copy_create component");
-						return_code = 0;
-					}
-				}
-				if (return_code)
-				{
-					*components_address = components;
-				}
-				else
-				{
-					for (i = 0; i < number_of_components; i++)
-					{
-						if (components[i])
-						{
-							DESTROY(FE_element_field_component)(&(components[i]));
-						}
-					}
-					DEALLOCATE(components);
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_get_copy_components.  "
-					"Out of memory for components");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_field_get_copy_components.  "
-				"FE_field not defined at element");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_get_copy_components.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_get_copy_components */
-
 int FE_element_field_get_component_FE_basis(struct FE_element *element,
 	struct FE_field *field, int component_number, struct FE_basis **fe_basis)
 /*******************************************************************************
@@ -33808,11 +33265,11 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 	struct FE_basis *element_basis;
 	struct FE_element_field_component *component,**components;
 	struct Standard_node_to_element_map *standard_node_map;
-	void *scale_factor_identifier;
 
 	ENTER(FE_element_define_tensor_product_basis);
 	return_code=1;
-	if (element && (dimension > 0) &&
+	FE_region *fe_region = FE_element_get_FE_region(element);
+	if (element && (dimension > 0) && fe_region &&
 		(dimension == element->shape->dimension) && field)
 	{
 		/* make basis */
@@ -33842,7 +33299,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 					}
 				}
 				if (NULL != (element_basis = make_FE_basis(basis_type_array,
-						FE_region_get_basis_manager(FE_element_get_FE_region(element)))))
+						FE_region_get_basis_manager(fe_region))))
 				{
 					ACCESS(FE_basis)(element_basis);
 				}
@@ -33898,15 +33355,23 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 				get_FE_element_number_of_scale_factor_sets(element,
 					&old_number_of_scale_factor_sets))
 			{
+				char *scale_factor_set_name = FE_basis_get_description_string(element_basis);
+				cmzn_mesh_scale_factor_set *scale_factor_set =
+					FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+				if (!scale_factor_set)
+				{
+					scale_factor_set =
+						FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+				}
+				DEALLOCATE(scale_factor_set_name);
+
 				number_of_nodes += old_number_of_nodes;
 				if (old_number_of_scale_factor_sets)
 				{
 					/* Currently this cannot be increased so we must find it */
 					i = 0;
 					while ((i < old_number_of_scale_factor_sets) &&
-						get_FE_element_scale_factor_set_identifier(element, i,
-							&scale_factor_identifier) &&
-						(element_basis != scale_factor_identifier))
+						(get_FE_element_scale_factor_set_identifier_at_index(element, i) != scale_factor_set))
 					{
 						i++;
 					}
@@ -33922,9 +33387,10 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 				{
 					set_FE_element_number_of_scale_factor_sets(
 						element, /*number_of_scale_factor_sets*/1,
-						/*scale_factor_set_identifiers*/(void **)&element_basis,
+						/*scale_factor_set_identifiers*/&scale_factor_set,
 						/*numbers_in_scale_factor_sets*/&number_of_scale_factors);
 				}
+				cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 				if (return_code)
 				{
 					if (set_FE_element_number_of_nodes(element,

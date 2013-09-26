@@ -13,6 +13,7 @@
 
 #include "zinc/node.h"
 #include "zinc/element.h"
+#include "zinc/status.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
 #include "general/change_log.h"
@@ -37,6 +38,54 @@ FE_field, FE_node and FE_element maintain pointers to the FE_region that "owns"
 them. Only the FE_field has a direct pointer; the other two include it via their
 field_info structure.
 ==============================================================================*/
+
+/**
+ * Identifier of set of scale factors, under which scale factors are stored,
+ * e.g. in elements.
+ */
+struct cmzn_mesh_scale_factor_set
+{
+private:
+	char *name;
+	int access_count;
+
+	cmzn_mesh_scale_factor_set();
+
+	~cmzn_mesh_scale_factor_set();
+
+	cmzn_mesh_scale_factor_set(const char *nameIn);
+
+public:
+
+	static cmzn_mesh_scale_factor_set *create(const char *nameIn)
+	{
+		return new cmzn_mesh_scale_factor_set(nameIn);
+	}
+
+	cmzn_mesh_scale_factor_set *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	static int deaccess(cmzn_mesh_scale_factor_set* &scale_factor_set)
+	{
+		if (!scale_factor_set)
+			return 0;
+		--(scale_factor_set->access_count);
+		if (scale_factor_set->access_count <= 0)
+			delete scale_factor_set;
+		scale_factor_set = 0;
+		return CMZN_OK;
+	}
+
+	/** @return  Internal name, not a copy */
+	const char *getName() const
+	{
+		return this->name;
+	}
+
+};
 
 enum CM_field_type
 /*******************************************************************************
@@ -136,7 +185,7 @@ Used to specify a component of a field.  If the component <number> is < 0 or
 	int number;
 }; /* struct FE_field_component */
 
-/* API uses external type enum cmzn_nodal_value_type */
+/* API uses external type enum cmzn_node_value_type */
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -1461,6 +1510,21 @@ If fails, puts zero in *<number_of_nodes_address> if supplied.
 int FE_element_field_component_get_local_node_in_use(
 	FE_element_field_component *component, int numberOfLocalNodes, int *localNodeInUse);
 
+/** @return  Non-accessed pointer to scale factor set, or 0 if none or error */
+cmzn_mesh_scale_factor_set *FE_element_field_component_get_scale_factor_set(
+	FE_element_field_component *component);
+
+/**
+ * Set the scale factor set to use with the element field component.
+ * Cannot be of type ELEMENT_GRID_MAP.
+ *
+ * @param component  The element field component to modify.
+ * @param scale_factor_set  The scale factor set identifier, or 0 for none.
+ * @return CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+int FE_element_field_component_set_scale_factor_set(
+	FE_element_field_component *component, cmzn_mesh_scale_factor_set *scale_factor_set);
+
 int FE_element_field_component_get_standard_node_map(
 	struct FE_element_field_component *element_field_component, int node_number,
 	struct Standard_node_to_element_map **standard_node_map_address);
@@ -2207,50 +2271,60 @@ Sets node <node_number>, from 0 to number_of_nodes-1 of <element> to <node>.
 Should only be called for unmanaged elements.
 ==============================================================================*/
 
+/**
+ * Get the number and address of the scale factors for the given set in element.
+ * @return  The number of scale factors for the set, or 0 if none or invalid
+ * arguments.
+ */
+int get_FE_element_scale_factors_address(struct FE_element *element,
+	cmzn_mesh_scale_factor_set *scale_factor_set, FE_value **scale_factors_address);
+
+/**
+ * Establishes storage for <number_of_scale_factor_sets> in <element>, each
+ * containing <numbers_in_scale_factor_sets> and identifier by
+ * <scale_factor_set_identifiers>.
+ * May only be set once; should only be called for unmanaged elements.
+ * @return CMZN_OK on success, otherwise any other error code.
+ */
 int set_FE_element_number_of_scale_factor_sets(struct FE_element *element,
-	int number_of_scale_factor_sets, void **scale_factor_set_identifiers,
+	int number_of_scale_factor_sets,
+	cmzn_mesh_scale_factor_set **scale_factor_set_identifiers,
 	int *numbers_in_scale_factor_sets);
-/*******************************************************************************
-LAST MODIFIED : 4 November 2002
 
-DESCRIPTION :
-Establishes storage for <number_of_scale_factor_sets> in <element>, each
-containing <numbers_in_scale_factor_sets> and identifier by
-<scale_factor_set_identifiers>.
-May only be set once; should only be called for unmanaged elements.
-==============================================================================*/
-
+/**
+ * Returns the number of scale factor_sets in <element>.
+ * If fails, puts zero at <number_of_scale_factor_sets_address>.
+ */
 int get_FE_element_number_of_scale_factor_sets(struct FE_element *element,
 	int *number_of_scale_factor_sets_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
 
-DESCRIPTION :
-Returns the number of scale factor_sets in <element>.
-If fails, puts zero at <number_of_scale_factor_sets_address>.
-==============================================================================*/
+/**
+ * Returns the number of scale factors in <scale_factor_set_number> of <element>,
+ * where <scale_factor_set_number> is from 0 to one less than the number of sets.
+ */
+int get_FE_element_number_in_scale_factor_set_at_index(struct FE_element *element,
+	int scale_factor_set_number);
 
-int get_FE_element_numbers_in_scale_factor_set(struct FE_element *element,
-	int scale_factor_set_number, int *numbers_in_scale_factor_set_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
+/**
+ * Returns the identifier of <scale_factor_set_number> of <element>,
+ * where <scale_factor_set_number> is from 0 to one less than the number of sets.
+ * @return  Non-accessed pointer to mesh scale factor set, or 0 if none or error.
+ */
+cmzn_mesh_scale_factor_set *get_FE_element_scale_factor_set_identifier_at_index(
+	struct FE_element *element, int scale_factor_set_number);
 
-DESCRIPTION :
-Returns the number of scale factors in <scale_factor_set_number> of <element>,
-where <scale_factor_set_number> is from 0 to one less than the number of sets.
-If fails, puts zero in *<numbers_in_scale_factor_set_address> if supplied.
-==============================================================================*/
-
-int get_FE_element_scale_factor_set_identifier(struct FE_element *element,
-	int scale_factor_set_number, void **scale_factor_set_identifier_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the identifier of <scale_factor_set_number> of <element>,
-where <scale_factor_set_number> is from 0 to one less than the number of sets.
-If fails, puts NULL in *<scale_factor_set_identifier_address> if supplied.
-==============================================================================*/
+/**
+ * Sets the identifier of <scale_factor_set_number> of <element>,
+ * where <scale_factor_set_number> is from 0 to one less than the number of sets.
+ * Be careful: only use when merging elements from another region.
+ *
+ * @param scale_factor_set_identifier  New scale factor set identifier from the
+ * owning region of the element.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+int set_FE_element_scale_factor_set_identifier_at_index(
+	struct FE_element *element, int scale_factor_set_number,
+	cmzn_mesh_scale_factor_set *scale_factor_set_identifier);
 
 int get_FE_element_number_of_scale_factors(struct FE_element *element,
 	int *number_of_scale_factors_address);
@@ -3723,18 +3797,6 @@ PROTOTYPE_SET_FE_ELEMENT_FIELD_COMPONENT_FUNCTION(macro_value_type,value_enum)
 
 PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( FE_value , FE_VALUE_VALUE )
 PROTOTYPE_FE_ELEMENT_FIELD_COMPONENT_FUNCTIONS( int , INT_VALUE )
-
-int FE_element_field_get_copy_components(struct FE_element *element,
-	struct FE_field *fe_field,
-	struct FE_element_field_component ***components_address);
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Constructs copies of the FE_element_field_components of <fe_field> at <element>
-and stores them at <components_address>.
-Up to the calling function to clean up the returned components.
-==============================================================================*/
 
 int FE_element_field_get_component_FE_basis(struct FE_element *element,
 	struct FE_field *field, int component_number, struct FE_basis **fe_basis);

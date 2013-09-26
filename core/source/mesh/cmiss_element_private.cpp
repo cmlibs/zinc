@@ -13,6 +13,7 @@
 #include "zinc/element.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/fieldmodule.h"
+#include "zinc/status.h"
 #include "element/element_operations.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -22,6 +23,7 @@
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
+#include <map>
 #include <vector>
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/differential_operator.hpp"
@@ -139,14 +141,14 @@ public:
 	}
 
 	/** @return  Accessed FE_basis, or NULL on error */
-	FE_basis *getFeBasis()
+	FE_basis *getFeBasis() const
 	{
 		if (!isValid())
-			return NULL;
+			return 0;
 		const int length = dimension*(dimension + 1)/2 + 1;
 		int *int_basis_type_array;
 		if (!ALLOCATE(int_basis_type_array, int, length))
-			return NULL;
+			return 0;
 		*int_basis_type_array = dimension;
 		int *temp = int_basis_type_array + 1;
 		for (int i = 0; i < dimension; i++)
@@ -171,6 +173,9 @@ public:
 				break;
 			case CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
 				fe_basis_type = QUADRATIC_SIMPLEX;
+				break;
+			case CMZN_BASIS_FUNCTION_CUBIC_HERMITE:
+				fe_basis_type = CUBIC_HERMITE;
 				break;
 			default:
 				fe_basis_type = FE_BASIS_TYPE_INVALID;
@@ -266,6 +271,7 @@ public:
 				case CMZN_BASIS_FUNCTION_CONSTANT:
 					break;
 				case CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE:
+				case CMZN_BASIS_FUNCTION_CUBIC_HERMITE:
 					number_of_nodes *= 2;
 					break;
 				case CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE:
@@ -287,6 +293,18 @@ public:
 			}
 		}
 		return number_of_nodes;
+	}
+
+	int getNumberOfFunctions() const
+	{
+		int numberOfFunctions = 0;
+		FE_basis *basis = this->getFeBasis();
+		if (basis)
+		{
+			FE_basis_get_number_of_basis_functions(basis, &numberOfFunctions);
+			DEACCESS(FE_basis)(&basis);
+		}
+		return numberOfFunctions;
 	}
 
 private:
@@ -425,6 +443,8 @@ private:
 	FE_element *template_element;
 	std::vector<cmzn_element_field*> fields;
 	int access_count;
+	typedef std::map<cmzn_mesh_scale_factor_set*,int> ScaleFactorSetIntMap;
+	ScaleFactorSetIntMap scale_factor_set_sizes;
 
 public:
 	cmzn_element_template(FE_region *fe_region, int element_dimension) :
@@ -477,6 +497,42 @@ public:
 		return 1;
 	}
 
+	int setNumberOfScaleFactors(cmzn_mesh_scale_factor_set_id scale_factor_set, int numberOfScaleFactors)
+	{
+		int return_code = CMZN_OK;
+		if (scale_factor_set && (0 <= numberOfScaleFactors))
+		{
+			ScaleFactorSetIntMap::iterator iter = this->scale_factor_set_sizes.find(scale_factor_set);
+			if (iter != scale_factor_set_sizes.end())
+			{
+				if (0 == numberOfScaleFactors)
+				{
+					cmzn_mesh_scale_factor_set *temp = scale_factor_set;
+					cmzn_mesh_scale_factor_set::deaccess(temp);
+					scale_factor_set_sizes.erase(iter);
+					clearTemplateElement();
+				}
+				else if (numberOfScaleFactors != iter->second)
+				{
+					display_message(ERROR_MESSAGE, "cmzn_element_template_set_number_of_scale_factors.  "
+						"Can't change number size of a scale factor set in element template");
+					return_code = CMZN_ERROR_ARGUMENT;
+				}
+			}
+			else if (0 < numberOfScaleFactors)
+			{
+				scale_factor_set->access();
+				scale_factor_set_sizes[scale_factor_set] = numberOfScaleFactors;
+				clearTemplateElement();
+			}
+		}
+		else
+		{
+			return_code = CMZN_ERROR_ARGUMENT;
+		}
+		return return_code;
+	}
+
 	int getNumberOfNodes() const { return element_number_of_nodes; }
 
 	int setNumberOfNodes(int in_element_number_of_nodes)
@@ -485,10 +541,11 @@ public:
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_element_template_set_number_of_nodes.  Cannot reduce number of nodes");
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		}
 		element_number_of_nodes = in_element_number_of_nodes;
-		return 1;
+		clearTemplateElement();
+		return CMZN_OK;
 	}
 
 	int defineFieldSimpleNodal(cmzn_field_id field,
@@ -613,6 +670,25 @@ public:
 				template_element = ACCESS(FE_element)(CREATE(FE_element)(&cm,
 					fe_element_shape, fe_region, /*template_element*/NULL));
 				set_FE_element_number_of_nodes(template_element, element_number_of_nodes);
+				const int number_of_scale_factor_sets = static_cast<int>(scale_factor_set_sizes.size());
+				if (0 < number_of_scale_factor_sets)
+				{
+					cmzn_mesh_scale_factor_set **scale_factor_set_identifiers =
+						new cmzn_mesh_scale_factor_set*[number_of_scale_factor_sets];
+					int *numbers_in_scale_factor_sets = new int[number_of_scale_factor_sets];
+					int i = 0;
+					for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
+						iter != scale_factor_set_sizes.end(); ++iter)
+					{
+						scale_factor_set_identifiers[i] = iter->first;
+						numbers_in_scale_factor_sets[i] = iter->second;
+						++i;
+					}
+					set_FE_element_number_of_scale_factor_sets(template_element, number_of_scale_factor_sets,
+						scale_factor_set_identifiers, numbers_in_scale_factor_sets);
+					delete[] scale_factor_set_identifiers;
+					delete[] numbers_in_scale_factor_sets;
+				}
 				for (unsigned int i = 0; i < fields.size(); i++)
 				{
 					if (!fields[i]->defineOnElement(template_element))
@@ -641,7 +717,7 @@ public:
 			if (get_FE_element_node(getTemplateElement(), local_node_index - 1, &node))
 				return ACCESS(FE_node)(node);
 		}
-		return NULL;
+		return 0;
 	}
 
 	int setNode(int local_node_index, cmzn_node_id node)
@@ -674,6 +750,12 @@ public:
 private:
 	~cmzn_element_template()
 	{
+		for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
+			iter != scale_factor_set_sizes.end(); ++iter)
+		{
+			cmzn_mesh_scale_factor_set *temp = iter->first;
+			cmzn_mesh_scale_factor_set::deaccess(temp);
+		}
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
 			delete fields[i];
@@ -861,6 +943,16 @@ public:
 		FE_region *master_fe_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 		return master_fe_region;
+	}
+
+	cmzn_mesh_scale_factor_set *findMeshScaleFactorSetByName(const char *name)
+	{
+		return FE_region_find_mesh_scale_factor_set_by_name(this->fe_region, name);
+	}
+
+	cmzn_mesh_scale_factor_set *createMeshScaleFactorSetWithName(const char *name)
+	{
+		return FE_region_create_mesh_scale_factor_set_with_name(this->fe_region, name);
 	}
 
 	char *getName()
@@ -1145,6 +1237,24 @@ cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 	return 0;
 }
 
+cmzn_mesh_scale_factor_set_id
+cmzn_mesh_find_mesh_scale_factor_set_by_name(cmzn_mesh_id mesh,
+	const char *name)
+{
+	if (mesh)
+		return mesh->findMeshScaleFactorSetByName(name);
+	return 0;
+}
+
+cmzn_mesh_scale_factor_set_id
+cmzn_mesh_create_mesh_scale_factor_set_with_name(cmzn_mesh_id mesh,
+	const char *name)
+{
+	if (mesh)
+		return mesh->createMeshScaleFactorSetWithName(name);
+	return 0;
+}
+
 cmzn_differential_operator_id cmzn_mesh_get_chart_differential_operator(
 	cmzn_mesh_id mesh, int order, int term)
 {
@@ -1326,6 +1436,13 @@ int cmzn_element_basis_get_number_of_nodes(
 	return 0;
 }
 
+int cmzn_element_basis_get_number_of_functions(
+	cmzn_element_basis_id element_basis)
+{
+	if (element_basis)
+		return element_basis->getNumberOfFunctions();
+	return 0;
+}
 cmzn_element_template_id cmzn_element_template_access(
 	cmzn_element_template_id element_template)
 {
@@ -1358,6 +1475,15 @@ int cmzn_element_template_set_shape_type(cmzn_element_template_id element_templa
 	return 0;
 }
 
+int cmzn_element_template_set_number_of_scale_factors(
+	cmzn_element_template_id element_template,
+	cmzn_mesh_scale_factor_set_id scale_factor_set, int number_of_scale_factors)
+{
+	if (element_template)
+		return element_template->setNumberOfScaleFactors(scale_factor_set, number_of_scale_factors);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_element_template_get_number_of_nodes(
 	cmzn_element_template_id element_template)
 {
@@ -1371,7 +1497,7 @@ int cmzn_element_template_set_number_of_nodes(
 {
 	if (element_template)
 		return element_template->setNumberOfNodes(number_of_nodes);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_element_template_define_field_simple_nodal(
@@ -1413,6 +1539,48 @@ cmzn_element_id cmzn_element_access(cmzn_element_id element)
 int cmzn_element_destroy(cmzn_element_id *element_address)
 {
 	return DEACCESS(FE_element)(element_address);
+}
+
+int cmzn_element_get_scale_factors(cmzn_element_id element,
+	cmzn_mesh_scale_factor_set_id scale_factor_set, int valuesCount,
+	double *values)
+{
+	if (element && scale_factor_set &&
+		((0 == valuesCount) || ((0 < valuesCount) && values)))
+	{
+		FE_value *scaleFactors = 0;
+		int numberOfScaleFactors = get_FE_element_scale_factors_address(element, scale_factor_set, &scaleFactors);
+		if (0 < numberOfScaleFactors)
+		{
+			for (int i = 0; i < numberOfScaleFactors; ++i)
+			{
+				values[i] = static_cast<double>(scaleFactors[i]);
+			}
+		}
+		return numberOfScaleFactors;
+	}
+	return 0;
+}
+
+int cmzn_element_set_scale_factors(cmzn_element_id element,
+	cmzn_mesh_scale_factor_set_id scale_factor_set, int valuesCount,
+	const double *values)
+{
+	if (element && scale_factor_set &&
+		((0 == valuesCount) || ((0 < valuesCount) && values)))
+	{
+		FE_value *scaleFactors = 0;
+		int numberOfScaleFactors = get_FE_element_scale_factors_address(element, scale_factor_set, &scaleFactors);
+		if (numberOfScaleFactors == valuesCount)
+		{
+			for (int i = 0; i < numberOfScaleFactors; ++i)
+			{
+				scaleFactors[i] = static_cast<FE_value>(values[i]);
+			}
+			return CMZN_OK;
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_element_get_dimension(cmzn_element_id element)
@@ -1530,6 +1698,9 @@ public:
 			case CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX:
 				enum_string = "QUADRATIC_SIMPLEX";
 				break;
+			case CMZN_BASIS_FUNCTION_CUBIC_HERMITE:
+				enum_string = "CUBIC_HERMITE";
+				break;
 			default:
 				break;
 		}
@@ -1549,3 +1720,29 @@ char *cmzn_basis_function_type_enum_to_string(enum cmzn_basis_function_type type
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
+cmzn_mesh_scale_factor_set_id cmzn_mesh_scale_factor_set_access(
+	cmzn_mesh_scale_factor_set_id scale_factor_set)
+{
+	if (scale_factor_set)
+		scale_factor_set->access();
+	return scale_factor_set;
+}
+
+int cmzn_mesh_scale_factor_set_destroy(
+	cmzn_mesh_scale_factor_set_id *scale_factor_set_address)
+{
+	if (scale_factor_set_address)
+	{
+		cmzn_mesh_scale_factor_set::deaccess(*scale_factor_set_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_mesh_scale_factor_set_get_name(
+	cmzn_mesh_scale_factor_set_id scale_factor_set)
+{
+	if (scale_factor_set)
+		return duplicate_string(scale_factor_set->getName());
+	return 0;
+}

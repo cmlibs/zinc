@@ -67,4 +67,10 @@ enum cmzn_element_point_sample_mode
 		/*!< One point at a specified location in the element chart. */
 };
 
+struct cmzn_mesh_scale_factor_set;
+/** Handle to a set of scale factors for a mesh.
+ * Scale factors are used to scale global field parameters before use.
+ * Actual values are stored under this handle in each element. */
+typedef struct cmzn_mesh_scale_factor_set *cmzn_mesh_scale_factor_set_id;
+
 #endif

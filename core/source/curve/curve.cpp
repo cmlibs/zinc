@@ -1195,7 +1195,7 @@ value will be zero in its initial state.
 	struct FE_node_field_creator *node_field_creator;
 	struct Standard_node_to_element_map *standard_node_map;
 	struct Curve *curve;
-	void *scale_factor_set_identifiers[1];
+	cmzn_mesh_scale_factor_set *scale_factor_set_identifiers[1];
 
 	ENTER(CREATE(Curve));
 	if (name)
@@ -1324,8 +1324,17 @@ value will be zero in its initial state.
 							/* only use scale factors with cubic Hermite derivatives */
 							if (CUBIC_HERMITE==curve->fe_basis_type)
 							{
+								char *scale_factor_set_name = FE_basis_get_description_string(value_basis);
+								cmzn_mesh_scale_factor_set *scale_factor_set =
+									FE_region_find_mesh_scale_factor_set_by_name(curve->fe_region, scale_factor_set_name);
+								if (!scale_factor_set)
+								{
+									scale_factor_set =
+										FE_region_create_mesh_scale_factor_set_with_name(curve->fe_region, scale_factor_set_name);
+								}
+								DEALLOCATE(scale_factor_set_name);
 								number_of_scale_factor_sets=1;
-								scale_factor_set_identifiers[0]=(void *)(value_basis);
+								scale_factor_set_identifiers[0] = scale_factor_set; // takes access count
 								/* one scale factor per node for 1 derivative per node */
 								numbers_in_scale_factor_sets[0]=curve->value_nodes_per_element*
 									curve->value_derivatives_per_node;
@@ -1340,9 +1349,9 @@ value will be zero in its initial state.
 							   curve->fe_region, (struct FE_element *)NULL))) &&
 								set_FE_element_number_of_nodes(curve->template_element,
 									curve->value_nodes_per_element) &&
-								set_FE_element_number_of_scale_factor_sets(
+								(CMZN_OK == set_FE_element_number_of_scale_factor_sets(
 									curve->template_element, number_of_scale_factor_sets,
-									scale_factor_set_identifiers, numbers_in_scale_factor_sets))
+									scale_factor_set_identifiers, numbers_in_scale_factor_sets)))
 							{
 								/* define parameter_field in template_element */
 								parameter_component = CREATE(FE_element_field_component)(
@@ -1500,6 +1509,10 @@ value will be zero in its initial state.
 								display_message(ERROR_MESSAGE,
 									"CREATE(Curve).  Could not create template_element");
 								return_code=0;
+							}
+							if (number_of_scale_factor_sets)
+							{
+								cmzn_mesh_scale_factor_set::deaccess(scale_factor_set_identifiers[0]);
 							}
 							DEACCESS(FE_basis)(&parameter_basis);
 							DEACCESS(FE_basis)(&value_basis);

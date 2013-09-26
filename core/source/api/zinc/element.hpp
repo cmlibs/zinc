@@ -20,7 +20,97 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class ElementBasis
+{
+private:
+
+	cmzn_element_basis_id id;
+
+public:
+
+	ElementBasis() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit ElementBasis(cmzn_element_basis_id element_basis_id) :
+		id(element_basis_id)
+	{ }
+
+	ElementBasis(const ElementBasis& elementBasis) :
+		id(cmzn_element_basis_access(elementBasis.id))
+	{ }
+
+	ElementBasis& operator=(const ElementBasis& elementBasis)
+	{
+		cmzn_element_basis_id temp_id = cmzn_element_basis_access(elementBasis.id);
+		if (0 != id)
+		{
+			cmzn_element_basis_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~ElementBasis()
+	{
+		if (0 != id)
+		{
+			cmzn_element_basis_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	enum FunctionType
+	{
+		FUNCTION_TYPE_INVALID = CMZN_BASIS_FUNCTION_TYPE_INVALID,
+		FUNCTION_CONSTANT = CMZN_BASIS_FUNCTION_CONSTANT,
+		FUNCTION_LINEAR_LAGRANGE = CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE,
+		FUNCTION_QUADRATIC_LAGRANGE = CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE,
+		FUNCTION_CUBIC_LAGRANGE = CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE,
+		FUNCTION_LINEAR_SIMPLEX = CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX,   /**< linked on 2 or more dimensions */
+		FUNCTION_QUADRATIC_SIMPLEX = CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX, /**< linked on 2 or more dimensions */
+		FUNCTION_CUBIC_HERMITE = CMZN_BASIS_FUNCTION_CUBIC_HERMITE
+	};
+
+	cmzn_element_basis_id getId()
+	{
+		return id;
+	}
+
+	int getDimension()
+	{
+		return cmzn_element_basis_get_dimension(id);
+	}
+
+	enum FunctionType getFunctionType(int chartComponent)
+	{
+		return static_cast<FunctionType>(cmzn_element_basis_get_function_type(id, chartComponent));
+	}
+
+	int setFunctionType(int chartComponent, FunctionType functionType)
+	{
+		return cmzn_element_basis_set_function_type(id, chartComponent,
+			static_cast<cmzn_basis_function_type>(functionType));
+	}
+
+	int getNumberOfNodes()
+	{
+		return cmzn_element_basis_get_number_of_nodes(id);
+	}
+
+	int getNumberOfFunctions()
+	{
+		return cmzn_element_basis_get_number_of_functions(id);
+	}
+
+};
+
 class ElementTemplate;
+class MeshScaleFactorSet;
 
 class Element
 {
@@ -105,6 +195,10 @@ public:
 		return id;
 	}
 
+	inline int getScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, double *values);
+
+	inline int setScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, const double *values);
+
 	int getDimension()
 	{
 		return cmzn_element_get_dimension(id);
@@ -126,89 +220,6 @@ public:
 	}
 
 	int merge(ElementTemplate& elementTemplate);
-
-};
-
-class ElementBasis
-{
-private:
-
-	cmzn_element_basis_id id;
-
-public:
-
-	ElementBasis() : id(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit ElementBasis(cmzn_element_basis_id element_basis_id) :
-		id(element_basis_id)
-	{ }
-
-	ElementBasis(const ElementBasis& elementBasis) :
-		id(cmzn_element_basis_access(elementBasis.id))
-	{ }
-
-	ElementBasis& operator=(const ElementBasis& elementBasis)
-	{
-		cmzn_element_basis_id temp_id = cmzn_element_basis_access(elementBasis.id);
-		if (0 != id)
-		{
-			cmzn_element_basis_destroy(&id);
-		}
-		id = temp_id;
-		return *this;
-	}
-
-	~ElementBasis()
-	{
-		if (0 != id)
-		{
-			cmzn_element_basis_destroy(&id);
-		}
-	}
-
-	bool isValid()
-	{
-		return (0 != id);
-	}
-
-	enum FunctionType
-	{
-		FUNCTION_TYPE_INVALID = CMZN_BASIS_FUNCTION_TYPE_INVALID,
-		FUNCTION_CONSTANT = CMZN_BASIS_FUNCTION_CONSTANT,
-		FUNCTION_LINEAR_LAGRANGE = CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE,
-		FUNCTION_QUADRATIC_LAGRANGE = CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE,
-		FUNCTION_CUBIC_LAGRANGE = CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE,
-		FUNCTION_LINEAR_SIMPLEX = CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX,   /**< linked on 2 or more dimensions */
-		FUNCTION_QUADRATIC_SIMPLEX = CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX /**< linked on 2 or more dimensions */
-	};
-
-	cmzn_element_basis_id getId()
-	{
-		return id;
-	}
-
-	int getDimension()
-	{
-		return cmzn_element_basis_get_dimension(id);
-	}
-
-	enum FunctionType getFunctionType(int chartComponent)
-	{
-		return static_cast<FunctionType>(cmzn_element_basis_get_function_type(id, chartComponent));
-	}
-
-	int setFunctionType(int chartComponent, FunctionType functionType)
-	{
-		return cmzn_element_basis_set_function_type(id, chartComponent,
-			static_cast<cmzn_basis_function_type>(functionType));
-	}
-
-	int getNumberOfNodes()
-	{
-		return cmzn_element_basis_get_number_of_nodes(id);
-	}
 
 };
 
@@ -271,6 +282,8 @@ public:
 		return cmzn_element_template_set_shape_type(id,
 			static_cast<cmzn_element_shape_type>(shapeType));
 	}
+
+	inline int setNumberOfScaleFactors(MeshScaleFactorSet &scaleFactorSet, int numberOfScaleFactors);
 
 	int getNumberOfNodes()
 	{
@@ -456,6 +469,10 @@ public:
 		return cmzn_mesh_get_dimension(id);
 	}
 
+	inline MeshScaleFactorSet findMeshScaleFactorSetByName(const char *name);
+
+	inline MeshScaleFactorSet createMeshScaleFactorSetWithName(const char *name);
+
 	Mesh getMaster()
 	{
 		return Mesh(cmzn_mesh_get_master(id));
@@ -517,9 +534,89 @@ public:
 
 };
 
+class MeshScaleFactorSet
+{
+protected:
+	cmzn_mesh_scale_factor_set_id id;
+
+public:
+
+	MeshScaleFactorSet() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit MeshScaleFactorSet(cmzn_mesh_scale_factor_set_id scale_factor_set_id) :
+		id(scale_factor_set_id)
+	{ }
+
+	MeshScaleFactorSet(const MeshScaleFactorSet& scaleFactorSet) :
+		id(cmzn_mesh_scale_factor_set_access(scaleFactorSet.id))
+	{	}
+
+	~MeshScaleFactorSet()
+	{
+		if (0 != id)
+		{
+			cmzn_mesh_scale_factor_set_destroy(&id);
+		}
+	}
+
+	MeshScaleFactorSet& operator=(const MeshScaleFactorSet& scaleFactorSet)
+	{
+		cmzn_mesh_scale_factor_set_id temp_id = cmzn_mesh_scale_factor_set_access(scaleFactorSet.id);
+		if (0 != id)
+		{
+			cmzn_mesh_scale_factor_set_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_mesh_scale_factor_set_id getId()
+	{
+		return id;
+	}
+
+	char *getName()
+	{
+		return cmzn_mesh_scale_factor_set_get_name(id);
+	}
+};
+
 inline int Element::merge(ElementTemplate& elementTemplate)
 {
 	return cmzn_element_merge(id, elementTemplate.getId());
+}
+
+MeshScaleFactorSet Mesh::findMeshScaleFactorSetByName(const char *name)
+{
+	return MeshScaleFactorSet(cmzn_mesh_find_mesh_scale_factor_set_by_name(id, name));
+}
+
+MeshScaleFactorSet Mesh::createMeshScaleFactorSetWithName(const char *name)
+{
+	return MeshScaleFactorSet(cmzn_mesh_create_mesh_scale_factor_set_with_name(id, name));
+}
+
+int ElementTemplate::setNumberOfScaleFactors(MeshScaleFactorSet &scaleFactorSet, int numberOfScaleFactors)
+{
+	return cmzn_element_template_set_number_of_scale_factors(id, scaleFactorSet.getId(),
+		numberOfScaleFactors);
+}
+
+int Element::getScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, double *values)
+{
+	return cmzn_element_get_scale_factors(id, scaleFactorSet.getId(), valuesCount, values);
+}
+
+int Element::setScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, const double *values)
+{
+	return cmzn_element_set_scale_factors(id, scaleFactorSet.getId(), valuesCount, values);
 }
 
 }  // namespace Zinc

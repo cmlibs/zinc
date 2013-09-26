@@ -757,6 +757,30 @@ struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
 	struct FE_region *fe_region, int dimension, int identifier,
 	struct FE_element_shape *element_shape);
 
+/**
+ * Find handle to the mesh scale factor set of the given name, if any.
+ * Scale factors are stored in elements under a scale factor set.
+ *
+ * @param fe_region  The FE_region to query.
+ * @param name  The name of the scale factor set. 
+ * @return  Handle to the scale factor set, or 0 if none.
+ * Up to caller to destroy handle.
+ */
+cmzn_mesh_scale_factor_set *FE_region_find_mesh_scale_factor_set_by_name(
+	struct FE_region *fe_region, const char *name);
+
+/**
+ * Create a mesh scale factor set with the given name.
+ * Scale factors are stored in elements under a scale factor set.
+ *
+ * @param fe_region  The FE_region to modify.
+ * @param name  The name of the scale factor set. Must not be in use.
+ * @return  Handle to the new scale factor set, or 0 on failure including
+ * if that name is already used by and existing scale factor set.
+ */
+cmzn_mesh_scale_factor_set *FE_region_create_mesh_scale_factor_set_with_name(
+	struct FE_region *fe_region, const char *name);
+
 /***************************************************************************//**
  * Returns the next unused element number for elements of <dimension> in
  * <fe_region> starting from <start_identifier>.
