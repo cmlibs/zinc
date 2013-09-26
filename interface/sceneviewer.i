@@ -51,28 +51,28 @@
 	int addRepaintRequiredCallback(PyObject *callbackObject)
 	{
 		PyObject *my_callback = NULL;
-        if (!PyCallable_Check(callbackObject))
-        {
-           	PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
-           	return 0;
-        }
-        Py_XINCREF(callbackObject);         /* Add a reference to new callback */
-        my_callback = callbackObject;       /* Remember new callback */
-    	return cmzn_scene_viewer_add_repaint_required_callback(($self)->getId(),callbackToPython, (void *)my_callback);
-    }
-    
-    int removeRepaintRequiredCallback(PyObject *callbackObject)
+		if (!PyCallable_Check(callbackObject))
+		{
+			PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
+			return 0;
+		}
+		Py_XINCREF(callbackObject);         /* Add a reference to new callback */
+		my_callback = callbackObject;       /* Remember new callback */
+		return cmzn_scene_viewer_add_repaint_required_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+	}
+
+	int removeRepaintRequiredCallback(PyObject *callbackObject)
 	{
-	    if (!PyCallable_Check(callbackObject))
-        {
-           	PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
-           	return 0;
-        }
-    	int return_code = cmzn_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
-    		(void *)callbackObject);
-    	Py_XDECREF(callbackObject);         /* Add a reference to new callback */
-    	return return_code;
-    }
+		if (!PyCallable_Check(callbackObject))
+		{
+			PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
+			return 0;
+		}
+		int return_code = cmzn_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
+			(void *)callbackObject);
+		Py_XDECREF(callbackObject);         /* Add a reference to new callback */
+		return return_code;
+	}
 }
 
 %ignore addRepaintRequiredCallback;
@@ -86,7 +86,7 @@ struct SceneViewerPyDataObject
 	PyObject *callbackObject;
 	PyObject *userObject;
 };
-	
+
 static void callbackToPython(cmzn_scene_viewer_id scene_viewer,
 	void *callback_data, void *user_data)
 {
