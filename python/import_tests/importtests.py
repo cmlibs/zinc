@@ -1,4 +1,4 @@
-import os, sys, unittest
+import unittest
 
 class ImportTestCase(unittest.TestCase):
 

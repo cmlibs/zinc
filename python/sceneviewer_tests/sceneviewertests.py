@@ -6,7 +6,7 @@ Created on Aug 31, 2013
 import unittest
 
 from opencmiss.zinc.context import Context
-from opencmiss.zinc.sceneviewer import SceneViewer
+from opencmiss.zinc.sceneviewer import SceneViewer, SceneViewerInput
 from opencmiss.zinc import status
 
 class SceneViewerTestCase(unittest.TestCase):
@@ -54,6 +54,14 @@ class SceneViewerTestCase(unittest.TestCase):
         self.assertEqual([3.0, 6.0, 1.0], scene_viewer.getLookatPosition()[1])
         self.assertEqual([0, 0, 1], scene_viewer.getUpVector()[1])
         
+    def testSceneViewerInput(self):
+        scene_viewer_module = self.graphics_module.getSceneViewerModule()
+        scene_viewer = scene_viewer_module.createSceneViewer(SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.STEREO_MODE_ANY)
+        scene_viewer_input = scene_viewer.getInput()
+        self.assertEqual(status.OK, scene_viewer_input.setPosition(3, 5))
+        self.assertEqual(status.OK, scene_viewer_input.setButton(SceneViewerInput.INPUT_BUTTON_LEFT))
+        self.assertEqual(status.OK, scene_viewer_input.setType(SceneViewerInput.INPUT_EVENT_TYPE_BUTTON_PRESS))
+        self.assertEqual(status.OK, scene_viewer_input.setModifier(SceneViewerInput.INPUT_MODIFIER_CONTROL | SceneViewerInput.INPUT_MODIFIER_SHIFT))
 
 def suite():
     #import ImportTestCase

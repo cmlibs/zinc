@@ -18,7 +18,7 @@ def suite():
     
     from sceneviewer_tests import sceneviewertests
     tests.addTests(sceneviewertests.suite())
-
+    
     return tests
 
 if __name__ == '__main__':
