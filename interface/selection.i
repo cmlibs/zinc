@@ -80,7 +80,9 @@ static void selectionCallbackToPython(cmzn_selection_event_id selection_event,	v
     result = PyObject_CallObject(my_callback, arglist);
     Py_DECREF(arglist);
     if (result)
+    {
         Py_DECREF(result);
+    }
 }
 %}
 
