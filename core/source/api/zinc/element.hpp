@@ -110,7 +110,6 @@ public:
 };
 
 class ElementTemplate;
-class MeshScaleFactorSet;
 
 class Element
 {
@@ -195,10 +194,6 @@ public:
 		return id;
 	}
 
-	inline int getScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, double *values);
-
-	inline int setScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, const double *values);
-
 	int getDimension()
 	{
 		return cmzn_element_get_dimension(id);
@@ -282,8 +277,6 @@ public:
 		return cmzn_element_template_set_shape_type(id,
 			static_cast<cmzn_element_shape_type>(shapeType));
 	}
-
-	inline int setNumberOfScaleFactors(MeshScaleFactorSet &scaleFactorSet, int numberOfScaleFactors);
 
 	int getNumberOfNodes()
 	{
@@ -469,10 +462,6 @@ public:
 		return cmzn_mesh_get_dimension(id);
 	}
 
-	inline MeshScaleFactorSet findMeshScaleFactorSetByName(const char *name);
-
-	inline MeshScaleFactorSet createMeshScaleFactorSet();
-
 	Mesh getMaster()
 	{
 		return Mesh(cmzn_mesh_get_master(id));
@@ -534,94 +523,9 @@ public:
 
 };
 
-class MeshScaleFactorSet
-{
-protected:
-	cmzn_mesh_scale_factor_set_id id;
-
-public:
-
-	MeshScaleFactorSet() : id(0)
-	{ }
-
-	// takes ownership of C handle, responsibility for destroying it
-	explicit MeshScaleFactorSet(cmzn_mesh_scale_factor_set_id scale_factor_set_id) :
-		id(scale_factor_set_id)
-	{ }
-
-	MeshScaleFactorSet(const MeshScaleFactorSet& scaleFactorSet) :
-		id(cmzn_mesh_scale_factor_set_access(scaleFactorSet.id))
-	{	}
-
-	~MeshScaleFactorSet()
-	{
-		if (0 != id)
-		{
-			cmzn_mesh_scale_factor_set_destroy(&id);
-		}
-	}
-
-	MeshScaleFactorSet& operator=(const MeshScaleFactorSet& scaleFactorSet)
-	{
-		cmzn_mesh_scale_factor_set_id temp_id = cmzn_mesh_scale_factor_set_access(scaleFactorSet.id);
-		if (0 != id)
-		{
-			cmzn_mesh_scale_factor_set_destroy(&id);
-		}
-		id = temp_id;
-		return *this;
-	}
-
-	bool isValid()
-	{
-		return (0 != id);
-	}
-
-	cmzn_mesh_scale_factor_set_id getId()
-	{
-		return id;
-	}
-
-	char *getName()
-	{
-		return cmzn_mesh_scale_factor_set_get_name(id);
-	}
-
-	int setName(const char *name)
-	{
-		return cmzn_mesh_scale_factor_set_set_name(id, name);
-	}
-};
-
 inline int Element::merge(ElementTemplate& elementTemplate)
 {
 	return cmzn_element_merge(id, elementTemplate.getId());
-}
-
-MeshScaleFactorSet Mesh::findMeshScaleFactorSetByName(const char *name)
-{
-	return MeshScaleFactorSet(cmzn_mesh_find_mesh_scale_factor_set_by_name(id, name));
-}
-
-MeshScaleFactorSet Mesh::createMeshScaleFactorSet()
-{
-	return MeshScaleFactorSet(cmzn_mesh_create_mesh_scale_factor_set(id));
-}
-
-int ElementTemplate::setNumberOfScaleFactors(MeshScaleFactorSet &scaleFactorSet, int numberOfScaleFactors)
-{
-	return cmzn_element_template_set_number_of_scale_factors(id, scaleFactorSet.getId(),
-		numberOfScaleFactors);
-}
-
-int Element::getScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, double *values)
-{
-	return cmzn_element_get_scale_factors(id, scaleFactorSet.getId(), valuesCount, values);
-}
-
-int Element::setScaleFactors(MeshScaleFactorSet& scaleFactorSet, int valuesCount, const double *values)
-{
-	return cmzn_element_set_scale_factors(id, scaleFactorSet.getId(), valuesCount, values);
 }
 
 }  // namespace Zinc

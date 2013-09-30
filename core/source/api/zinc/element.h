@@ -300,31 +300,6 @@ ZINC_API cmzn_differential_operator_id cmzn_mesh_get_chart_differential_operator
 ZINC_API int cmzn_mesh_get_dimension(cmzn_mesh_id mesh);
 
 /**
- * Find handle to the mesh scale factor set of the given name, if any.
- * Scale factors are stored in elements under a scale factor set.
- *
- * @param mesh  The mesh to query.
- * @param name  The name of the scale factor set. 
- * @return  Handle to the scale factor set, or 0 if none.
- * Up to caller to destroy handle.
- */
-ZINC_API cmzn_mesh_scale_factor_set_id
-cmzn_mesh_find_mesh_scale_factor_set_by_name(cmzn_mesh_id mesh,
-	const char *name);
-
-/**
- * Create a mesh scale factor set. The new set is given a unique name which
- * can be changed.
- * Scale factors are stored in elements under a scale factor set.
- *
- * @param mesh  The mesh to create the new set in.
- * @return  Handle to the new scale factor set, or 0 on failure. Up to caller
- * to destroy the returned handle.
- */
-ZINC_API cmzn_mesh_scale_factor_set_id cmzn_mesh_create_mesh_scale_factor_set(
-	cmzn_mesh_id mesh);
-
-/**
  * Get the master mesh which owns the elements for this mesh. Can be the
  * same as the supplied mesh if it is a master.
  *
@@ -439,49 +414,6 @@ ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
  */
 ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
    cmzn_field_id conditional_field);
-
-/**
- * Returns a new handle to the scale factor set with reference count
- * incremented. Caller is responsible for destroying the new handle.
- *
- * @param scale_factor_set  The mesh scale factor set to obtain a new
- * reference to.
- * @return  New handle to the scale factor set.
- */
-ZINC_API cmzn_mesh_scale_factor_set_id cmzn_mesh_scale_factor_set_access(
-	cmzn_mesh_scale_factor_set_id scale_factor_set);
-
-/**
- * Destroys this handle to the finite element mesh and sets it to NULL.
- * Internally this just decrements the reference count.
- *
- * @param mesh_address  Address of handle to the mesh to destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_mesh_scale_factor_set_destroy(
-	cmzn_mesh_scale_factor_set_id *scale_factor_set_address);
-
-/**
- * Get the name of the mesh scale factor set.
- * @see cmzn_deallocate()
- *
- * @param scale_factor_set  The mesh scale factor set to query.
- * @return  On success: allocated string containing mesh name. Up to caller to
- * free using cmzn_deallocate().
- */
-ZINC_API char *cmzn_mesh_scale_factor_set_get_name(
-	cmzn_mesh_scale_factor_set_id scale_factor_set);
-
-/**
- * Set the name of the mesh scale factor set.
- *
- * @param scale_factor_set  The mesh scale factor set to modify.
- * @param name  The new name of the scale factor set; must not be in use by any
- * other set in the mesh.
- * @return  CMZN_OK on success, otherwise any other error code.
- */
-ZINC_API int cmzn_mesh_scale_factor_set_set_name(
-	cmzn_mesh_scale_factor_set_id scale_factor_set, const char *name);
 
 /**
  * Returns a new handle to the element basis with reference count incremented.
@@ -637,24 +569,6 @@ ZINC_API int cmzn_element_template_set_shape_type(cmzn_element_template_id eleme
 	enum cmzn_element_shape_type shape_type);
 
 /**
- * Sets the number of scale factors to be used with a given scale factor set in
- * elements defined from this template.
- * Note: The number of scale factors is arbitrary for a scale factor set and
- * an element, but cannot be changed once set.
- * Scale factor indices in element parameter maps are relative to scale factor
- * set for the element field component, and start at 1.
- *
- * @param element_template  Element template to modify.
- * @param scale_factor_set  The mesh scale factor set to assign numbers of scale
- * factors for.
- * @param number_of_scale_factors  The number of scale factors to set.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_element_template_set_number_of_scale_factors(
-	cmzn_element_template_id element_template,
-	cmzn_mesh_scale_factor_set_id scale_factor_set, int number_of_scale_factors);
-
-/**
  * Gets the number of local nodes this element_template can address.
  *
  * @param element_template  Element template to query.
@@ -744,40 +658,6 @@ ZINC_API cmzn_element_id cmzn_element_access(cmzn_element_id element);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_destroy(cmzn_element_id *element_address);
-
-/**
- * Gets the scale factors for a scale factor set in an element.
- *
- * @param element  The element to query.
- * @param scale_factor_set  The mesh scale factor set to get values for.
- * @param valuesCount  The size of the values array to receive scale factors,
- * which is the maximum number requested.
- * @param values  The array to receive the scale factors.
- * @return  The number of scale factors stored for the scale factor set in
- * element. Can be more or less than the number requested. Returns 0 on any
- * other error including bad arguments.
- */
-ZINC_API int cmzn_element_get_scale_factors(cmzn_element_id element,
-	cmzn_mesh_scale_factor_set_id scale_factor_set, int valuesCount,
-	double *values);
-
-/**
- * Sets the scale factors for a scale factor set in an element. The number of
- * scale factors is arbitrary for a scale factor set in each element, but once
- * set it cannot be changed; it is settable only from the element template.
- * Each element field component has a single scale factor set from which it
- * gets scale factors.
- *
- * @param element  The element to modify.
- * @param scale_factor_set  The mesh scale factor set to set values for.
- * @param valuesCount  The number of scale factors to set. This must equal the
- * number of scale factors stored for the scale factor set in element.
- * @param values  The array of scale factors to set.
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_element_set_scale_factors(cmzn_element_id element,
-	cmzn_mesh_scale_factor_set_id scale_factor_set, int valuesCount,
-	const double *values);
 
 /**
  * Returns the number of dimensions of the element's chart.

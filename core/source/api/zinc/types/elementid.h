@@ -63,14 +63,8 @@ enum cmzn_element_point_sample_mode
 		     Poisson distribution with expected number given by:
 		     sample density field * cell volume, area or length, depending on dimension.
 		     The sample density field should be evaluated at the cell centre. */
-  CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION = 4
+	CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION = 4
 		/*!< One point at a specified location in the element chart. */
 };
-
-struct cmzn_mesh_scale_factor_set;
-/** Handle to a set of scale factors for a mesh.
- * Scale factors are used to scale global field parameters before use.
- * Actual values are stored under this handle in each element. */
-typedef struct cmzn_mesh_scale_factor_set *cmzn_mesh_scale_factor_set_id;
 
 #endif

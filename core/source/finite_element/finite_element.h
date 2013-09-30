@@ -39,6 +39,12 @@ them. Only the FE_field has a direct pointer; the other two include it via their
 field_info structure.
 ==============================================================================*/
 
+struct cmzn_mesh_scale_factor_set;
+/** Handle to a set of scale factors for a mesh.
+ * Scale factors are used to scale global field parameters before use.
+ * Actual values are stored under this handle in each element. */
+typedef struct cmzn_mesh_scale_factor_set *cmzn_mesh_scale_factor_set_id;
+
 /**
  * Identifier of set of scale factors, under which scale factors are stored,
  * e.g. in elements.
