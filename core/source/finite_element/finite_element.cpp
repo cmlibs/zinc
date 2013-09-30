@@ -70,10 +70,38 @@ cmzn_mesh_scale_factor_set::~cmzn_mesh_scale_factor_set()
 	DEALLOCATE(name);
 }
 
-cmzn_mesh_scale_factor_set::cmzn_mesh_scale_factor_set(const char *nameIn) :
+cmzn_mesh_scale_factor_set::cmzn_mesh_scale_factor_set(FE_region *fe_regionIn, const char *nameIn) :
+	fe_region(fe_regionIn),
 	name(duplicate_string(nameIn)),
 	access_count(1)
 {
+}
+
+int cmzn_mesh_scale_factor_set::setName(const char *nameIn)
+{
+	if (nameIn)
+	{
+		cmzn_mesh_scale_factor_set *existingSet =
+			FE_region_find_mesh_scale_factor_set_by_name(this->fe_region, nameIn);
+		if (existingSet)
+		{
+			bool noChange = (existingSet == this);
+			cmzn_mesh_scale_factor_set::deaccess(existingSet);
+			if (noChange)
+			{
+				return CMZN_OK;
+			}
+		}
+		else
+		{
+			// Note: assumes FE_region does not store sets in a map
+			// Hence can change name in object
+			DEALLOCATE(this->name);
+			this->name = duplicate_string(nameIn);
+			return CMZN_OK;
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 struct FE_field_info
@@ -15801,8 +15829,8 @@ static struct FE_element_field_component *copy_create_FE_element_field_component
 					FE_region_find_mesh_scale_factor_set_by_name(fe_region, sourceScaleFactorSet->getName());
 				if (!targetScaleFactorSet)
 				{
-					targetScaleFactorSet =
-						FE_region_create_mesh_scale_factor_set_with_name(fe_region, sourceScaleFactorSet->getName());
+					targetScaleFactorSet = FE_region_create_mesh_scale_factor_set(fe_region);
+					targetScaleFactorSet->setName(sourceScaleFactorSet->getName());
 				}
 				component->set_scale_factor_set(targetScaleFactorSet);
 				cmzn_mesh_scale_factor_set::deaccess(targetScaleFactorSet);
@@ -33360,8 +33388,8 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 					FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
 				if (!scale_factor_set)
 				{
-					scale_factor_set =
-						FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+					scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+					scale_factor_set->setName(scale_factor_set_name);
 				}
 				DEALLOCATE(scale_factor_set_name);
 

@@ -2295,8 +2295,8 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																					FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
 																				if (!scale_factor_set)
 																				{
-																					scale_factor_set =
-																						FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+																					scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+																					scale_factor_set->setName(scale_factor_set_name);
 																				}
 																				FE_element_field_component_set_scale_factor_set(
 																					components[component_number], scale_factor_set);
@@ -2676,8 +2676,8 @@ from a previous call to this function.
 								FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
 							if (!scale_factor_set)
 							{
-								scale_factor_set =
-									FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+								scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+								scale_factor_set->setName(scale_factor_set_name);
 							}
 							DEALLOCATE(scale_factor_set_name);
 							scale_factor_set_identifiers[i] = scale_factor_set;

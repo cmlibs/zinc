@@ -347,8 +347,8 @@ Hermite basis over it.
 			FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
 		if (!scale_factor_set)
 		{
-			scale_factor_set =
-				FE_region_create_mesh_scale_factor_set_with_name(fe_region, scale_factor_set_name);
+			scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+			scale_factor_set->setName(scale_factor_set_name);
 		}
 		DEALLOCATE(scale_factor_set_name);
 

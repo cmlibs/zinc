@@ -471,7 +471,7 @@ public:
 
 	inline MeshScaleFactorSet findMeshScaleFactorSetByName(const char *name);
 
-	inline MeshScaleFactorSet createMeshScaleFactorSetWithName(const char *name);
+	inline MeshScaleFactorSet createMeshScaleFactorSet();
 
 	Mesh getMaster()
 	{
@@ -586,6 +586,11 @@ public:
 	{
 		return cmzn_mesh_scale_factor_set_get_name(id);
 	}
+
+	int setName(const char *name)
+	{
+		return cmzn_mesh_scale_factor_set_set_name(id, name);
+	}
 };
 
 inline int Element::merge(ElementTemplate& elementTemplate)
@@ -598,9 +603,9 @@ MeshScaleFactorSet Mesh::findMeshScaleFactorSetByName(const char *name)
 	return MeshScaleFactorSet(cmzn_mesh_find_mesh_scale_factor_set_by_name(id, name));
 }
 
-MeshScaleFactorSet Mesh::createMeshScaleFactorSetWithName(const char *name)
+MeshScaleFactorSet Mesh::createMeshScaleFactorSet()
 {
-	return MeshScaleFactorSet(cmzn_mesh_create_mesh_scale_factor_set_with_name(id, name));
+	return MeshScaleFactorSet(cmzn_mesh_create_mesh_scale_factor_set(id));
 }
 
 int ElementTemplate::setNumberOfScaleFactors(MeshScaleFactorSet &scaleFactorSet, int numberOfScaleFactors)

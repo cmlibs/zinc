@@ -313,17 +313,16 @@ cmzn_mesh_find_mesh_scale_factor_set_by_name(cmzn_mesh_id mesh,
 	const char *name);
 
 /**
- * Create a mesh scale factor set with the given name.
+ * Create a mesh scale factor set. The new set is given a unique name which
+ * can be changed.
  * Scale factors are stored in elements under a scale factor set.
  *
- * @param mesh  The mesh to modify.
- * @param name  The name of the scale factor set. Must not be in use.
- * @return  Handle to the new scale factor set, or 0 on failure including
- * if that name is already used by and existing scale factor set.
+ * @param mesh  The mesh to create the new set in.
+ * @return  Handle to the new scale factor set, or 0 on failure. Up to caller
+ * to destroy the returned handle.
  */
-ZINC_API cmzn_mesh_scale_factor_set_id
-cmzn_mesh_create_mesh_scale_factor_set_with_name(cmzn_mesh_id mesh,
-	const char *name);
+ZINC_API cmzn_mesh_scale_factor_set_id cmzn_mesh_create_mesh_scale_factor_set(
+	cmzn_mesh_id mesh);
 
 /**
  * Get the master mesh which owns the elements for this mesh. Can be the
@@ -472,6 +471,17 @@ ZINC_API int cmzn_mesh_scale_factor_set_destroy(
  */
 ZINC_API char *cmzn_mesh_scale_factor_set_get_name(
 	cmzn_mesh_scale_factor_set_id scale_factor_set);
+
+/**
+ * Set the name of the mesh scale factor set.
+ *
+ * @param scale_factor_set  The mesh scale factor set to modify.
+ * @param name  The new name of the scale factor set; must not be in use by any
+ * other set in the mesh.
+ * @return  CMZN_OK on success, otherwise any other error code.
+ */
+ZINC_API int cmzn_mesh_scale_factor_set_set_name(
+	cmzn_mesh_scale_factor_set_id scale_factor_set, const char *name);
 
 /**
  * Returns a new handle to the element basis with reference count incremented.
