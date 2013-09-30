@@ -950,9 +950,9 @@ public:
 		return FE_region_find_mesh_scale_factor_set_by_name(this->fe_region, name);
 	}
 
-	cmzn_mesh_scale_factor_set *createMeshScaleFactorSetWithName(const char *name)
+	cmzn_mesh_scale_factor_set *createMeshScaleFactorSet()
 	{
-		return FE_region_create_mesh_scale_factor_set_with_name(this->fe_region, name);
+		return FE_region_create_mesh_scale_factor_set(this->fe_region);
 	}
 
 	char *getName()
@@ -1246,12 +1246,11 @@ cmzn_mesh_find_mesh_scale_factor_set_by_name(cmzn_mesh_id mesh,
 	return 0;
 }
 
-cmzn_mesh_scale_factor_set_id
-cmzn_mesh_create_mesh_scale_factor_set_with_name(cmzn_mesh_id mesh,
-	const char *name)
+cmzn_mesh_scale_factor_set_id cmzn_mesh_create_mesh_scale_factor_set(
+	cmzn_mesh_id mesh)
 {
 	if (mesh)
-		return mesh->createMeshScaleFactorSetWithName(name);
+		return mesh->createMeshScaleFactorSet();
 	return 0;
 }
 
@@ -1744,5 +1743,13 @@ char *cmzn_mesh_scale_factor_set_get_name(
 {
 	if (scale_factor_set)
 		return duplicate_string(scale_factor_set->getName());
+	return 0;
+}
+
+int cmzn_mesh_scale_factor_set_set_name(
+	cmzn_mesh_scale_factor_set_id scale_factor_set, const char *name)
+{
+	if (scale_factor_set && name)
+		return scale_factor_set->setName(name);
 	return 0;
 }

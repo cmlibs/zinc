@@ -46,6 +46,7 @@ field_info structure.
 struct cmzn_mesh_scale_factor_set
 {
 private:
+	FE_region *fe_region; // non-accessed pointer to owner
 	char *name;
 	int access_count;
 
@@ -53,13 +54,13 @@ private:
 
 	~cmzn_mesh_scale_factor_set();
 
-	cmzn_mesh_scale_factor_set(const char *nameIn);
+	cmzn_mesh_scale_factor_set(FE_region *fe_regionIn, const char *nameIn);
 
 public:
 
-	static cmzn_mesh_scale_factor_set *create(const char *nameIn)
+	static cmzn_mesh_scale_factor_set *create(FE_region *fe_regionIn, const char *nameIn)
 	{
-		return new cmzn_mesh_scale_factor_set(nameIn);
+		return new cmzn_mesh_scale_factor_set(fe_regionIn, nameIn);
 	}
 
 	cmzn_mesh_scale_factor_set *access()
@@ -85,6 +86,7 @@ public:
 		return this->name;
 	}
 
+	int setName(const char *nameIn);
 };
 
 enum CM_field_type

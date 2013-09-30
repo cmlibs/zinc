@@ -1329,8 +1329,8 @@ value will be zero in its initial state.
 									FE_region_find_mesh_scale_factor_set_by_name(curve->fe_region, scale_factor_set_name);
 								if (!scale_factor_set)
 								{
-									scale_factor_set =
-										FE_region_create_mesh_scale_factor_set_with_name(curve->fe_region, scale_factor_set_name);
+									scale_factor_set = FE_region_create_mesh_scale_factor_set(curve->fe_region);
+									scale_factor_set->setName(scale_factor_set_name);
 								}
 								DEALLOCATE(scale_factor_set_name);
 								number_of_scale_factor_sets=1;

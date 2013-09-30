@@ -4123,23 +4123,29 @@ cmzn_mesh_scale_factor_set *FE_region_find_mesh_scale_factor_set_by_name(
 	return 0;
 }
 
-cmzn_mesh_scale_factor_set *FE_region_create_mesh_scale_factor_set_with_name(
-	struct FE_region *fe_region, const char *name)
+cmzn_mesh_scale_factor_set *FE_region_create_mesh_scale_factor_set(
+	struct FE_region *fe_region)
 {
-	if (fe_region && name)
+	if (fe_region)
 	{
 		std::vector<cmzn_mesh_scale_factor_set*>& scale_factor_sets = fe_region->get_scale_factor_sets();
-		const unsigned size = scale_factor_sets.size();
-		for (unsigned i = 0; i < size; ++i)
+		char tempName[10];
+		for (int i = static_cast<int>(scale_factor_sets.size()) + 1; ; ++i)
 		{
-			if (0 == strcmp(scale_factor_sets[i]->getName(), name))
+			sprintf(tempName, "temp%d", i);
+			cmzn_mesh_scale_factor_set *existingSet =
+				FE_region_find_mesh_scale_factor_set_by_name(fe_region, tempName);
+			if (existingSet)
 			{
-				return 0;
+				cmzn_mesh_scale_factor_set::deaccess(existingSet);
+			}
+			else
+			{
+				cmzn_mesh_scale_factor_set *scale_factor_set = cmzn_mesh_scale_factor_set::create(fe_region, tempName);
+				scale_factor_sets.push_back(scale_factor_set);
+				return scale_factor_set->access();
 			}
 		}
-		cmzn_mesh_scale_factor_set *scale_factor_set = cmzn_mesh_scale_factor_set::create(name);
-		scale_factor_sets.push_back(scale_factor_set);
-		return scale_factor_set->access();
 	}
 	return 0;
 }
@@ -6532,8 +6538,8 @@ plus nodes from <fe_region> of the same number as those currently used.
 							FE_region_find_mesh_scale_factor_set_by_name(fe_region, source_scale_factor_set->getName());
 						if (!global_scale_factor_set)
 						{
-							global_scale_factor_set =
-								FE_region_create_mesh_scale_factor_set_with_name(fe_region, source_scale_factor_set->getName());
+							global_scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+							global_scale_factor_set->setName(source_scale_factor_set->getName());
 						}
 						set_FE_element_scale_factor_set_identifier_at_index(element, i, global_scale_factor_set);
 						cmzn_mesh_scale_factor_set::deaccess(global_scale_factor_set);
