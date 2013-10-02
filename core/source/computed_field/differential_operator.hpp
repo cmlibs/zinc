@@ -13,6 +13,7 @@
 #define DIFFERENTIAL_OPERATOR_HPP
 
 #include "zinc/differentialoperator.h"
+#include "zinc/status.h"
 #include "finite_element/finite_element_region.h"
 
 /**
@@ -45,12 +46,12 @@ public:
 	static int deaccess(cmzn_differentialoperator_id &differential_operator)
 	{
 		if (!differential_operator)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(differential_operator->access_count);
 		if (differential_operator->access_count <= 0)
 			delete differential_operator;
 		differential_operator = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	int getDimension() const { return dimension; }

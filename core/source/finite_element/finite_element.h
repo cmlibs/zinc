@@ -78,7 +78,7 @@ public:
 	static int deaccess(cmzn_mesh_scale_factor_set* &scale_factor_set)
 	{
 		if (!scale_factor_set)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(scale_factor_set->access_count);
 		if (scale_factor_set->access_count <= 0)
 			delete scale_factor_set;

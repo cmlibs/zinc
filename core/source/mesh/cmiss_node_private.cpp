@@ -14,6 +14,7 @@
 #include "zinc/fieldmodule.h"
 #include "zinc/node.h"
 #include "zinc/timesequence.h"
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
@@ -167,12 +168,12 @@ public:
 	static int deaccess(cmzn_nodetemplate_id &node_template)
 	{
 		if (!node_template)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(node_template->access_count);
 		if (node_template->access_count <= 0)
 			delete node_template;
 		node_template = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	int defineField(cmzn_field_id field)
@@ -655,12 +656,12 @@ public:
 	static int deaccess(cmzn_nodeset_id &nodeset)
 	{
 		if (!nodeset)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(nodeset->access_count);
 		if (nodeset->access_count <= 0)
 			delete nodeset;
 		nodeset = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	int containsNode(cmzn_node_id node)
@@ -937,7 +938,7 @@ int cmzn_nodeset_destroy(cmzn_nodeset_id *nodeset_address)
 {
 	if (nodeset_address)
 		return cmzn_nodeset::deaccess(*nodeset_address);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodeset_contains_node(cmzn_nodeset_id nodeset, cmzn_node_id node)
@@ -1038,7 +1039,7 @@ int cmzn_nodeset_group_destroy(cmzn_nodeset_group_id *nodeset_group_address)
 {
 	if (nodeset_group_address)
 		return cmzn_nodeset::deaccess(*(reinterpret_cast<cmzn_nodeset_id*>(nodeset_group_address)));
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group, cmzn_node_id node)
@@ -1176,7 +1177,7 @@ int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address)
 {
 	if (node_template_address)
 		return cmzn_nodetemplate::deaccess(*node_template_address);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodetemplate_define_field(cmzn_nodetemplate_id node_template,
