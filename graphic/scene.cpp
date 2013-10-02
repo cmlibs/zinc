@@ -73,19 +73,19 @@ TEST(cmzn_scene, get_spectrum_data_range)
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
 
-	cmzn_field_id coordinateField = cmzn_field_module_find_field_by_name(zinc.fm, "coordinates");
+	cmzn_field_id coordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), coordinateField);
-	cmzn_field_id magnitudeField = cmzn_field_module_create_magnitude(zinc.fm, coordinateField);
+	cmzn_field_id magnitudeField = cmzn_fieldmodule_create_field_magnitude(zinc.fm, coordinateField);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), magnitudeField);
 	const double offset = -0.5;
-	cmzn_field_id offsetField = cmzn_field_module_create_constant(zinc.fm, 1, &offset);
+	cmzn_field_id offsetField = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &offset);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), offsetField);
-	cmzn_field_id yField = cmzn_field_module_create_component(zinc.fm, coordinateField, 2);
+	cmzn_field_id yField = cmzn_fieldmodule_create_field_component(zinc.fm, coordinateField, 2);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), yField);
-	cmzn_field_id offsetYField = cmzn_field_module_create_add(zinc.fm, yField, offsetField);
+	cmzn_field_id offsetYField = cmzn_fieldmodule_create_field_add(zinc.fm, yField, offsetField);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), offsetYField);
 	cmzn_field_id sourceFields[] = { magnitudeField, offsetYField };
-	cmzn_field_id dataField = cmzn_field_module_create_concatenate(zinc.fm, 2, sourceFields);
+	cmzn_field_id dataField = cmzn_fieldmodule_create_field_concatenate(zinc.fm, 2, sourceFields);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), dataField);
 
 	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
@@ -129,17 +129,17 @@ TEST(ZincScene, getSpectrumDataRange)
 
 	Field coordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinateField.isValid());
-	Field magnitudeField = zinc.fm.createMagnitude(coordinateField);
+	Field magnitudeField = zinc.fm.createFieldMagnitude(coordinateField);
 	EXPECT_TRUE(magnitudeField.isValid());
 	const double offset = -0.5;
-	Field offsetField = zinc.fm.createConstant(1, &offset);
+	Field offsetField = zinc.fm.createFieldConstant(1, &offset);
 	EXPECT_TRUE(offsetField.isValid());
-	Field yField = zinc.fm.createComponent(coordinateField, 2);
+	Field yField = zinc.fm.createFieldComponent(coordinateField, 2);
 	EXPECT_TRUE(yField.isValid());
-	Field offsetYField = zinc.fm.createAdd(yField, offsetField);
+	Field offsetYField = zinc.fm.createFieldAdd(yField, offsetField);
 	EXPECT_TRUE(offsetYField.isValid());
 	Field sourceFields[] = { magnitudeField, offsetYField };
-	Field dataField = zinc.fm.createConcatenate(2, sourceFields);
+	Field dataField = zinc.fm.createFieldConcatenate(2, sourceFields);
 	EXPECT_TRUE(dataField.isValid());
 
 	Graphic gr = zinc.scene.createGraphicSurfaces();

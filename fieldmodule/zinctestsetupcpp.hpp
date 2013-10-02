@@ -15,12 +15,12 @@ class ZincTestSetupCpp
 public:
 	Context context;
 	Region root_region;
-	FieldModule fm;
+	Fieldmodule fm;
 
 	ZincTestSetupCpp() :
 		context("test"),
 		root_region(context.getDefaultRegion()),
-		fm(root_region.getFieldModule())
+		fm(root_region.getFieldmodule())
 	{
 		EXPECT_EQ(true, fm.isValid());
 	}

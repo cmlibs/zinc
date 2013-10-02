@@ -19,7 +19,7 @@ TEST(cmzn_field_image, create_evaluate)
 {
 	ZincTestSetup zinc;
 
-	cmzn_field_id f1 = cmzn_field_module_create_image(zinc.fm);
+	cmzn_field_id f1 = cmzn_fieldmodule_create_field_image(zinc.fm);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
@@ -36,24 +36,24 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_STREQ("xi", name);
 	cmzn_deallocate(name);
 
-	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
-	EXPECT_NE(static_cast<cmzn_field_cache_id>(0), cache);
+	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
+	EXPECT_NE(static_cast<cmzn_fieldcache_id>(0), cache);
 	double outRGB[3];
 	const double xi1[3] = { 0.2, 0.8, 0.0 };
 	const double expectedRGB1[3] = { 1.0, 128.0/255.0, 0.0 };
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_cache_set_field_real(cache, xi, 2, xi1));
+	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_field_real(cache, xi, 2, xi1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, cache, 3, outRGB));
 	EXPECT_EQ(expectedRGB1[0], outRGB[0]);
 	EXPECT_EQ(expectedRGB1[1], outRGB[1]);
 	EXPECT_EQ(expectedRGB1[2], outRGB[2]);
 	const double xi2[3] = { 0.75, 0.2, 0.0 };
 	const double expectedRGB2[3] = { 192.0/255.0, 192.0/255.0, 192.0/255.0 };
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_cache_set_field_real(cache, xi, 2, xi2));
+	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_field_real(cache, xi, 2, xi2));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, cache, 3, outRGB));
 	EXPECT_EQ(expectedRGB2[0], outRGB[0]);
 	EXPECT_EQ(expectedRGB2[1], outRGB[1]);
 	EXPECT_EQ(expectedRGB2[2], outRGB[2]);
-	cmzn_field_cache_destroy(&cache);
+	cmzn_fieldcache_destroy(&cache);
 
 	double width = cmzn_field_image_get_texture_coordinate_width(im);
 	ASSERT_DOUBLE_EQ(1.0, width);
@@ -70,10 +70,10 @@ TEST(cmzn_field_image, create_evaluate)
 	// test setting domain field and evaluation of image_from_source
 
 	const double tempValues3[3] = { 0.0, 1.0, 2.0 };
-	cmzn_field_id altDomainField = cmzn_field_module_create_constant(zinc.fm, 3, tempValues3);
+	cmzn_field_id altDomainField = cmzn_fieldmodule_create_field_constant(zinc.fm, 3, tempValues3);
 	cmzn_field_set_name(altDomainField, "altDomainField");
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_domain_field(im, altDomainField));
-	cmzn_field_id f2 = cmzn_field_module_create_image_from_source(zinc.fm, f1);
+	cmzn_field_id f2 = cmzn_fieldmodule_create_field_image_from_source(zinc.fm, f1);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f2);
 
 	// check resolution is same as source field
@@ -91,14 +91,14 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_EQ(1, int_sizes[2]);
 	cmzn_field_image_destroy(&im2);
 
-	cache = cmzn_field_module_create_cache(zinc.fm);
-	EXPECT_NE(static_cast<cmzn_field_cache_id>(0), cache);
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_cache_set_field_real(cache, altDomainField, 3, xi1));
+	cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
+	EXPECT_NE(static_cast<cmzn_fieldcache_id>(0), cache);
+	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_field_real(cache, altDomainField, 3, xi1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f2, cache, 3, outRGB));
 	EXPECT_EQ(expectedRGB1[0], outRGB[0]);
 	EXPECT_EQ(expectedRGB1[1], outRGB[1]);
 	EXPECT_EQ(expectedRGB1[2], outRGB[2]);
-	cmzn_field_cache_destroy(&cache);
+	cmzn_fieldcache_destroy(&cache);
 
 	cmzn_field_destroy(&f2);
 	cmzn_field_destroy(&altDomainField);
@@ -111,7 +111,7 @@ TEST(ZincFieldImage, create_evaluate)
 {
 	ZincTestSetupCpp zinc;
 
-	FieldImage im = zinc.fm.createImage();
+	FieldImage im = zinc.fm.createFieldImage();
 	EXPECT_TRUE(im.isValid());
 
 	int result;
@@ -125,7 +125,7 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_STREQ("xi", name);
 	cmzn_deallocate(name);
 
-	FieldCache cache = zinc.fm.createCache();
+	Fieldcache cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
 	double outRGB[3];
 	const double xi1[3] = { 0.2, 0.8, 0.0 };
@@ -158,10 +158,10 @@ TEST(ZincFieldImage, create_evaluate)
 	// test setting domain field and evaluation of imageFromSource
 
 	const double tempValues3[3] = { 0.0, 1.0, 2.0 };
-	FieldConstant altDomainField = zinc.fm.createConstant(3, tempValues3);
+	FieldConstant altDomainField = zinc.fm.createFieldConstant(3, tempValues3);
 	altDomainField.setName("altDomainField");
 	EXPECT_EQ(OK, result = im.setDomainField(altDomainField));
-	FieldImage im2 = zinc.fm.createImageFromSource(im);
+	FieldImage im2 = zinc.fm.createFieldImageFromSource(im);
 	EXPECT_TRUE(im2.isValid());
 
 	// check resolution is same as source field
@@ -177,7 +177,7 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_EQ(32, int_sizes[1]);
 	EXPECT_EQ(1, int_sizes[2]);
 
-	cache = zinc.fm.createCache();
+	cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
 	EXPECT_EQ(OK, result = cache.setFieldReal(altDomainField, 3, xi1));
 	EXPECT_EQ(OK, result = im2.evaluateReal(cache, 3, outRGB));

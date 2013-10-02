@@ -79,7 +79,7 @@ TEST(cmzn_graphic_api, coordinate_field)
 	ZincTestSetup zinc;
 
 	const double values[] = { 1.0, 2.0, 3.0 };
-	cmzn_field_id coordinate_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id coordinate_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinate_field);
 
@@ -92,7 +92,7 @@ TEST(cmzn_graphic_api, coordinate_field)
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
-	cmzn_field_id bad_coordinate_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id bad_coordinate_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values4)/sizeof(double), values4);
 	EXPECT_NE(static_cast<cmzn_field *>(0), bad_coordinate_field);
 	// previous coordinate field should be left unchanged
@@ -108,10 +108,10 @@ TEST(cmzn_graphic_api, coordinate_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_coordinate_field(gr));
 
 	// check coordinate_field removed as no longer used
-	cmzn_field_iterator_id iter = cmzn_field_module_create_field_iterator(zinc.fm);
-	EXPECT_NE(static_cast<cmzn_field_iterator *>(0), iter);
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_field_iterator_next(iter));
-	cmzn_field_iterator_destroy(&iter);
+	cmzn_fielditerator_id iter = cmzn_fieldmodule_create_fielditerator(zinc.fm);
+	EXPECT_NE(static_cast<cmzn_fielditerator *>(0), iter);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_fielditerator_next(iter));
+	cmzn_fielditerator_destroy(&iter);
 
 	cmzn_graphic_destroy(&gr);
 }
@@ -153,7 +153,7 @@ TEST(cmzn_graphic_api, data_field)
 	ZincTestSetup zinc;
 
 	double values[] = { 1.0, 2.0, 3.0 };
-	cmzn_field_id data_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id data_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), data_field);
 
@@ -171,10 +171,10 @@ TEST(cmzn_graphic_api, data_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_data_field(gr));
 
 	// check data_field removed as no longer used
-	cmzn_field_iterator_id iter = cmzn_field_module_create_field_iterator(zinc.fm);
-	EXPECT_NE(static_cast<cmzn_field_iterator *>(0), iter);
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_field_iterator_next(iter));
-	cmzn_field_iterator_destroy(&iter);
+	cmzn_fielditerator_id iter = cmzn_fieldmodule_create_fielditerator(zinc.fm);
+	EXPECT_NE(static_cast<cmzn_fielditerator *>(0), iter);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_fielditerator_next(iter));
+	cmzn_fielditerator_destroy(&iter);
 
 	cmzn_graphic_destroy(&gr);
 }
@@ -475,13 +475,13 @@ TEST(cmzn_graphic_api, subgroup_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_subgroup_field(gr));
 
 	const double value = 1.0;
-	cmzn_field_id subgroup_field = cmzn_field_module_create_constant(zinc.fm, 1, &value);
+	cmzn_field_id subgroup_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), subgroup_field);
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_subgroup_field(gr, subgroup_field));
 
 	// subgroup field must be scalar
 	double values2[] = { 1.0, 2.0 };
-	cmzn_field_id bad_subgroup_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id bad_subgroup_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values2)/sizeof(double), values2);
 	EXPECT_NE(static_cast<cmzn_field *>(0), bad_subgroup_field);
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_subgroup_field(gr, bad_subgroup_field));
@@ -511,13 +511,13 @@ TEST(cmzn_graphic_api, subgroup_field_cpp)
 	EXPECT_FALSE(tempSubgroupField.isValid());
 
 	const double value = 1.0;
-	Field subgroupField = zinc.fm.createConstant(1, &value);
+	Field subgroupField = zinc.fm.createFieldConstant(1, &value);
 	EXPECT_TRUE(subgroupField.isValid());
 	EXPECT_EQ(OK, gr.setSubgroupField(subgroupField));
 
 	// subgroup field must be scalar
 	double values2[] = { 1.0, 2.0 };
-	Field badSubgroupField = zinc.fm.createConstant(2, values2);
+	Field badSubgroupField = zinc.fm.createFieldConstant(2, values2);
 	EXPECT_TRUE(badSubgroupField.isValid());
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setSubgroupField(badSubgroupField));
 
@@ -594,7 +594,7 @@ TEST(cmzn_graphic_api, tessellation_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_tessellation_field(gr));
 
 	const double value = 1.0;
-	cmzn_field_id tessellation_field = cmzn_field_module_create_constant(zinc.fm, 1, &value);
+	cmzn_field_id tessellation_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), tessellation_field);
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_tessellation_field(gr, tessellation_field));
 
@@ -620,7 +620,7 @@ TEST(cmzn_graphic_api, tessellation_field_cpp)
 	EXPECT_FALSE(tempTessellationField.isValid());
 
 	const double value = 1.0;
-	Field tessellationField = zinc.fm.createConstant(1, &value);
+	Field tessellationField = zinc.fm.createFieldConstant(1, &value);
 	EXPECT_TRUE(tessellationField.isValid());
 	EXPECT_EQ(OK, gr.setTessellationField(tessellationField));
 
@@ -641,7 +641,7 @@ TEST(cmzn_graphic_api, texture_coordinate_field)
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
-	cmzn_field_id texture_coordinate_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id texture_coordinate_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), texture_coordinate_field);
 
@@ -650,7 +650,7 @@ TEST(cmzn_graphic_api, texture_coordinate_field)
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
-	cmzn_field_id bad_texture_coordinate_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id bad_texture_coordinate_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values4)/sizeof(double), values4);
 	EXPECT_NE(static_cast<cmzn_field *>(0), bad_texture_coordinate_field);
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_texture_coordinate_field(gr, bad_texture_coordinate_field));
@@ -679,13 +679,13 @@ TEST(cmzn_graphic_api, texture_coordinate_field_cpp)
 	EXPECT_FALSE(tempTextureCoordinateField.isValid());
 
 	const double values[] = { 1.0, 2.0, 3.0 };
-	Field textureCoordinateField = zinc.fm.createConstant(3, values);
+	Field textureCoordinateField = zinc.fm.createFieldConstant(3, values);
 	EXPECT_TRUE(textureCoordinateField.isValid());
 	EXPECT_EQ(OK, gr.setTextureCoordinateField(textureCoordinateField));
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
-	Field badTextureCoordinateField = zinc.fm.createConstant(4, values4);
+	Field badTextureCoordinateField = zinc.fm.createFieldConstant(4, values4);
 	EXPECT_TRUE(badTextureCoordinateField.isValid());
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setTextureCoordinateField(badTextureCoordinateField));
 
@@ -737,7 +737,7 @@ TEST(cmzn_graphic_api, point_attributes_glyph)
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MIRROR));
 	EXPECT_EQ(CMZN_GLYPH_REPEAT_MIRROR, cmzn_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
-	cmzn_field_id field = cmzn_field_module_create_constant(zinc.fm, 3, fieldValues);
+	cmzn_field_id field = cmzn_fieldmodule_create_field_constant(zinc.fm, 3, fieldValues);
 	EXPECT_NE(static_cast<cmzn_field *>(0), field);
 	cmzn_field_id temp_field = 0;
 
@@ -847,7 +847,7 @@ TEST(cmzn_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(Glyph::REPEAT_MIRROR, pointattr.getGlyphRepeatMode());
 
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
-	Field field = zinc.fm.createConstant(sizeof(fieldValues)/sizeof(double), fieldValues);
+	Field field = zinc.fm.createFieldConstant(sizeof(fieldValues)/sizeof(double), fieldValues);
 	EXPECT_TRUE(field.isValid());
 	Field tempField;
 
@@ -911,7 +911,7 @@ TEST(cmzn_graphic_api, point_attributes_label)
 	EXPECT_NE(static_cast<cmzn_graphic_point_attributes *>(0), pointattr);
 
 	double values[] = { 1.0, 2.0, 3.0 };
-	cmzn_field_id label_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id label_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), label_field);
 
@@ -980,7 +980,7 @@ TEST(cmzn_graphic_api, point_attributes_label_cpp)
 	EXPECT_TRUE(pointattr.isValid());
 
 	double values[] = { 1.0, 2.0, 3.0 };
-	Field labelField = zinc.fm.createConstant(sizeof(values)/sizeof(double), values);
+	Field labelField = zinc.fm.createFieldConstant(sizeof(values)/sizeof(double), values);
 	EXPECT_TRUE(labelField.isValid());
 
 	EXPECT_EQ(OK, pointattr.setLabelField(labelField));
@@ -1078,7 +1078,7 @@ TEST(cmzn_graphic_api, line_attributes)
 	EXPECT_EQ(CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION, cmzn_graphic_line_attributes_get_shape(lineattr));
 
 	double value = 1.0;
-	cmzn_field_id orientation_scale_field = cmzn_field_module_create_constant(zinc.fm, 1, &value);
+	cmzn_field_id orientation_scale_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), orientation_scale_field);
 
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_line_attributes_get_orientation_scale_field(lineattr));
@@ -1139,7 +1139,7 @@ TEST(cmzn_graphic_api, line_attributes_cpp)
 	EXPECT_EQ(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION, lineattr.getShape());
 
 	double value = 1.0;
-	Field orientationScaleField = zinc.fm.createConstant(1, &value);
+	Field orientationScaleField = zinc.fm.createFieldConstant(1, &value);
 	EXPECT_TRUE(orientationScaleField.isValid());
 
 	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
@@ -1215,7 +1215,7 @@ TEST(cmzn_graphic_api, sampling_attributes)
 	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON, cmzn_graphic_sampling_attributes_get_mode(sampling));
 
 	double value = 1.0;
-	cmzn_field_id density_field = cmzn_field_module_create_constant(zinc.fm, 1, &value);
+	cmzn_field_id density_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), density_field);
 
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_sampling_attributes_get_density_field(sampling));
@@ -1266,7 +1266,7 @@ TEST(cmzn_graphic_api, sampling_attributes_cpp)
 	EXPECT_EQ(Element::POINT_SAMPLE_CELL_POISSON, sampling.getMode());
 
 	double value = 1.0;
-	Field densityField = zinc.fm.createConstant(1, &value);
+	Field densityField = zinc.fm.createFieldConstant(1, &value);
 	EXPECT_TRUE(densityField.isValid());
 
 	Field tempField = sampling.getDensityField();

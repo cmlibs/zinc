@@ -18,7 +18,7 @@ class ZincTestSetupCpp
 public:
 	Context context;
 	Region root_region;
-	FieldModule fm;
+	Fieldmodule fm;
 	GraphicsModule gm;
 	GlyphModule glyphModule;
 	Scene scene;
@@ -26,7 +26,7 @@ public:
 	ZincTestSetupCpp() :
 		context("test"),
 		root_region(context.getDefaultRegion()),
-		fm(root_region.getFieldModule()),
+		fm(root_region.getFieldmodule()),
 		gm(context.getGraphicsModule()),
 		glyphModule(gm.getGlyphModule()),
 		scene(0)

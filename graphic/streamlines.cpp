@@ -78,7 +78,7 @@ TEST(cmzn_graphic_streamlines, stream_vector_field)
 	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
-	cmzn_field_id stream_vector_field = cmzn_field_module_create_constant(zinc.fm,
+	cmzn_field_id stream_vector_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), stream_vector_field);
 
@@ -107,7 +107,7 @@ TEST(cmzn_graphic_streamlines, stream_vector_field_cpp)
 	EXPECT_FALSE(tempStreamVectorField.isValid());
 
 	const double values[] = { 1.0, 2.0, 3.0 };
-	Field streamVectorField = zinc.fm.createConstant(sizeof(values)/sizeof(double), values);
+	Field streamVectorField = zinc.fm.createFieldConstant(sizeof(values)/sizeof(double), values);
 	EXPECT_TRUE(streamVectorField.isValid());
 
 	EXPECT_EQ(CMZN_OK, st.setStreamVectorField(streamVectorField));

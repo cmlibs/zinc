@@ -13,7 +13,11 @@
 #include <zinc/status.h>
 #include <zinc/stream.h>
 
+#include <zinc/element.hpp>
+#include <zinc/node.hpp>
+#include <zinc/status.hpp>
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
 
@@ -38,10 +42,10 @@ TEST(nodes_elements_identifier, set_identifier)
 	cmzn_stream_resource_destroy(&cube_sr);
 	cmzn_stream_information_destroy(&cube_si);
 
-	cmzn_field_module_id cubeFM = cmzn_region_get_field_module(cube_region);
-	EXPECT_NE(static_cast<cmzn_field_module *>(0), cubeFM);
+	cmzn_fieldmodule_id cubeFM = cmzn_region_get_fieldmodule(cube_region);
+	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), cubeFM);
 
-	cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_name(cubeFM, "nodes");
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_name(cubeFM, "nodes");
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), nodeset);
 
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
@@ -50,7 +54,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_node_set_identifier(node, 3));
 	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node, 9));
 
-	cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(cubeFM, 3);
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(cubeFM, 3);
 	EXPECT_NE(static_cast<cmzn_mesh *>(0), mesh);
 
 	cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, 1);
@@ -61,11 +65,73 @@ TEST(nodes_elements_identifier, set_identifier)
 
 	cmzn_element_destroy(&element);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_field_module_destroy(&cubeFM);
+	cmzn_fieldmodule_destroy(&cubeFM);
 	cmzn_nodeset_destroy(&nodeset);
 	cmzn_node_destroy(&node);
 
 	cmzn_region_destroy(&cube_region);
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
+}
+
+TEST(ZincElementiterator, iteration)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Elementtemplate elementTemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementTemplate.isValid());
+	EXPECT_EQ(OK, elementTemplate.setShapeType(Element::SHAPE_CUBE));
+
+	EXPECT_EQ(OK, mesh.defineElement(4, elementTemplate));
+	Element e4 = mesh.findElementByIdentifier(4);
+	EXPECT_TRUE(e4.isValid());
+	EXPECT_EQ(OK, mesh.defineElement(1, elementTemplate));
+	Element e1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(e1.isValid());
+	EXPECT_EQ(OK, mesh.defineElement(200, elementTemplate));
+	Element e200 = mesh.findElementByIdentifier(200);
+	EXPECT_TRUE(e200.isValid());
+
+	Elementiterator iter = mesh.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	Element e;
+	e = iter.next();
+	EXPECT_EQ(e1, e);
+	EXPECT_EQ(1, e.getIdentifier());
+	e = iter.next();
+	EXPECT_EQ(e4, e);
+	EXPECT_EQ(4, e.getIdentifier());
+	e = iter.next();
+	EXPECT_EQ(e200, e);
+	EXPECT_EQ(200, e.getIdentifier());
+}
+
+TEST(ZincNodeiterator, iteration)
+{
+	ZincTestSetupCpp zinc;
+
+	Nodeset nodeset = zinc.fm.findNodesetByDomainType(Field::DOMAIN_NODES);
+	Nodetemplate nodeTemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodeTemplate.isValid());
+
+	Node n4 = nodeset.createNode(4, nodeTemplate);
+	EXPECT_TRUE(n4.isValid());
+	Node n1 = nodeset.createNode(1, nodeTemplate);
+	EXPECT_TRUE(n1.isValid());
+	Node n200 = nodeset.createNode(200, nodeTemplate);
+	EXPECT_TRUE(n200.isValid());
+
+	Nodeiterator iter = nodeset.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	Node n;
+	n = iter.next();
+	EXPECT_EQ(n1, n);
+	EXPECT_EQ(1, n.getIdentifier());
+	n = iter.next();
+	EXPECT_EQ(n4, n);
+	EXPECT_EQ(4, n.getIdentifier());
+	n = iter.next();
+	EXPECT_EQ(n200, n);
+	EXPECT_EQ(200, n.getIdentifier());
 }

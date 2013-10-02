@@ -5,6 +5,7 @@
 #include <zinc/core.h>
 #include <zinc/context.h>
 #include <zinc/field.h>
+#include <zinc/fieldcache.h>
 #include <zinc/fieldmodule.h>
 #include <zinc/fieldfiniteelement.h>
 #include <zinc/node.h>
@@ -62,21 +63,21 @@ TEST(issue3614, read_embedded_nodes)
 		TestResources::getLocation(TestResources::FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE));
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_field_id coordinates = cmzn_field_module_find_field_by_name(zinc.fm, "coordinates");
+	cmzn_field_id coordinates = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), coordinates);
-	cmzn_field_id hostLocation = cmzn_field_module_find_field_by_name(zinc.fm, "host_location");
+	cmzn_field_id hostLocation = cmzn_fieldmodule_find_field_by_name(zinc.fm, "host_location");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), hostLocation);
 	EXPECT_EQ(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION, cmzn_field_get_value_type(hostLocation));
-	cmzn_field_id hostCoordinates = cmzn_field_module_create_embedded(zinc.fm, coordinates, hostLocation);
+	cmzn_field_id hostCoordinates = cmzn_fieldmodule_create_field_embedded(zinc.fm, coordinates, hostLocation);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), hostLocation);
 
-	cmzn_field_cache_id cache = cmzn_field_module_create_cache(zinc.fm);
+	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 
-	cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1003);
 	EXPECT_NE(static_cast<cmzn_node_id>(0), node);
-	cmzn_field_cache_set_node(cache, node);
+	cmzn_fieldcache_set_node(cache, node);
 	double x[3] = { 0.0, 0.0, 0.0 };
 	result = cmzn_field_evaluate_real(hostCoordinates, cache, 3, x);
 	EXPECT_EQ(CMZN_OK, result);
@@ -86,7 +87,7 @@ TEST(issue3614, read_embedded_nodes)
 
 	cmzn_node_destroy(&node);
 	cmzn_nodeset_destroy(&nodeset);
-	cmzn_field_cache_destroy(&cache);
+	cmzn_fieldcache_destroy(&cache);
 	cmzn_field_destroy(&hostCoordinates);
 	cmzn_field_destroy(&hostLocation);
 	cmzn_field_destroy(&coordinates);
@@ -112,17 +113,17 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_stream_resource_destroy(&node_sr);
 	cmzn_stream_information_destroy(&node_si);
 
-	cmzn_field_module_id node_fm = cmzn_region_get_field_module(node_region);
-	EXPECT_NE(static_cast<cmzn_field_module *>(0), node_fm);
+	cmzn_fieldmodule_id node_fm = cmzn_region_get_fieldmodule(node_region);
+	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), node_fm);
 
-	cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_name(node_fm, "nodes");
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_name(node_fm, "nodes");
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), nodeset);
 
 	int numberOfNodes = cmzn_nodeset_get_size(nodeset);
 	EXPECT_EQ(16, numberOfNodes);
 
 	cmzn_nodeset_destroy(&nodeset);
-	cmzn_field_module_destroy(&node_fm);
+	cmzn_fieldmodule_destroy(&node_fm);
 
 	cmzn_region_id data_region = cmzn_region_create_child(root_region, "data");
 	cmzn_stream_information_id data_si = cmzn_region_create_stream_information(
@@ -151,10 +152,10 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	data_si = cmzn_stream_information_region_base_cast(data_region_si);
 	cmzn_stream_information_destroy(&data_si);
 
-	cmzn_field_module_id data_fm = cmzn_region_get_field_module(data_region);
-	EXPECT_NE(static_cast<cmzn_field_module *>(0), data_fm);
+	cmzn_fieldmodule_id data_fm = cmzn_region_get_fieldmodule(data_region);
+	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), data_fm);
 
-	cmzn_nodeset_id dataset = cmzn_field_module_find_nodeset_by_name(data_fm, "datapoints");
+	cmzn_nodeset_id dataset = cmzn_fieldmodule_find_nodeset_by_name(data_fm, "datapoints");
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), dataset);
 
 	numberOfNodes = cmzn_nodeset_get_size(dataset);
@@ -179,7 +180,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	EXPECT_NE(static_cast<char *>(0), temp_char);
 
 	cmzn_nodeset_destroy(&dataset);
-	cmzn_field_module_destroy(&data_fm);
+	cmzn_fieldmodule_destroy(&data_fm);
 
 	cmzn_region_id new_data_region = cmzn_region_create_child(root_region, "new_data");
 	cmzn_stream_information_id new_data_si = cmzn_region_create_stream_information(
@@ -193,10 +194,10 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	result = cmzn_region_read(new_data_region, new_data_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_field_module_id new_data_fm = cmzn_region_get_field_module(new_data_region);
-	EXPECT_NE(static_cast<cmzn_field_module *>(0), new_data_fm);
+	cmzn_fieldmodule_id new_data_fm = cmzn_region_get_fieldmodule(new_data_region);
+	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), new_data_fm);
 
-	cmzn_nodeset_id new_dataset = cmzn_field_module_find_nodeset_by_name(new_data_fm, "datapoints");
+	cmzn_nodeset_id new_dataset = cmzn_fieldmodule_find_nodeset_by_name(new_data_fm, "datapoints");
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), new_dataset);
 
 	numberOfNodes = cmzn_nodeset_get_size(new_dataset);
@@ -206,7 +207,7 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_stream_information_destroy(&new_data_si);
 
 	cmzn_nodeset_destroy(&new_dataset);
-	cmzn_field_module_destroy(&new_data_fm);
+	cmzn_fieldmodule_destroy(&new_data_fm);
 
 	cmzn_stream_resource_destroy(&data_sr);
 	cmzn_stream_information_destroy(&data_si);

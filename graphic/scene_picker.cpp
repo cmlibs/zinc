@@ -27,7 +27,7 @@ TEST(cmzn_scene_picker_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_field_id field = cmzn_field_module_create_group(zinc.fm);
+	cmzn_field_id field = cmzn_fieldmodule_create_field_group(zinc.fm);
 
 	cmzn_field_group_id fieldGroup = cmzn_field_cast_group(field);
 
@@ -110,7 +110,7 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	FieldGroup fieldGroup = zinc.fm.createGroup();
+	FieldGroup fieldGroup = zinc.fm.createFieldGroup();
 
 	ScenePicker scenePicker = zinc.scene.createPicker();
 	EXPECT_TRUE(scenePicker.isValid());

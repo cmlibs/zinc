@@ -60,7 +60,7 @@ TEST(cmzn_graphic_contours, isoscalar_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_contours_get_isoscalar_field(is));
 
 	double values[] = {1.0};
-	cmzn_field_id c = cmzn_field_module_create_constant(zinc.fm, 1, values);
+	cmzn_field_id c = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, values);
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_contours_set_isoscalar_field(is, c));
 
 	cmzn_field_id temp_c = cmzn_graphic_contours_get_isoscalar_field(is);
