@@ -210,12 +210,12 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 							if (existing_scene != picked_scene)
 							{
 								existing_scene = picked_scene;
-								cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+								cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 								if (nodeset)
 									cmzn_nodeset_destroy(&nodeset);
-								nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
+								nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
 									(type == CMZN_SCENE_PICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
-								cmzn_field_module_destroy(&field_module);
+								cmzn_fieldmodule_destroy(&field_module);
 							}
 							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset,
 								(int)(select_buffer_ptr[6]));
@@ -277,11 +277,11 @@ Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
 							{
 								existing_scene = picked_scene;
 								current_element_type = element_type;
-								cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+								cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 								if (mesh)
 									cmzn_mesh_destroy(&mesh);
-								mesh = cmzn_field_module_find_mesh_by_dimension(field_module, current_element_type);
-								cmzn_field_module_destroy(&field_module);
+								mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, current_element_type);
+								cmzn_fieldmodule_destroy(&field_module);
 							}
 							cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh,
 								(int)(select_buffer_ptr[5]));
@@ -450,11 +450,11 @@ cmzn_element_id cmzn_scene_picker::getNearestElement()
 								{
 									existing_scene = picked_scene;
 									current_element_type = element_type;
-									cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+									cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 									if (mesh)
 										cmzn_mesh_destroy(&mesh);
-									mesh = cmzn_field_module_find_mesh_by_dimension(field_module, current_element_type);
-									cmzn_field_module_destroy(&field_module);
+									mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, current_element_type);
+									cmzn_fieldmodule_destroy(&field_module);
 								}
 
 								cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh,
@@ -526,12 +526,12 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 								{
 									existing_scene = picked_scene;
 									cmzn_region *region = cmzn_scene_get_region(picked_scene);
-									cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+									cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 									if (nodeset)
 										cmzn_nodeset_destroy(&nodeset);
-									nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
+									nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
 										(type == CMZN_SCENE_PICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
-									cmzn_field_module_destroy(&field_module);
+									cmzn_fieldmodule_destroy(&field_module);
 								}
 								cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset,
 									(int)(select_buffer_ptr[6]));
@@ -654,14 +654,14 @@ int cmzn_scene_picker::addPickedElementsToGroup(cmzn_field_group_id group)
 				}
 				if (sub_region && selection_group)
 				{
-					cmzn_field_module_id field_module = cmzn_region_get_field_module(sub_region);
+					cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(sub_region);
 					int dimension = cmzn_element_get_dimension(pos->second);
 					if (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 					{
 						if (!mesh_group[dimension - 1])
 						{
 							cmzn_mesh_id temp_mesh =
-								cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
+								cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 							cmzn_field_element_group_id element_group =
 								cmzn_field_group_get_element_group(selection_group, temp_mesh);
 							if (!element_group)
@@ -674,7 +674,7 @@ int cmzn_scene_picker::addPickedElementsToGroup(cmzn_field_group_id group)
 						}
 						cmzn_mesh_group_add_element(mesh_group[dimension - 1], pos->second);
 					}
-					cmzn_field_module_destroy(&field_module);
+					cmzn_fieldmodule_destroy(&field_module);
 				}
 			}
 			if (selection_group)
@@ -732,8 +732,8 @@ int cmzn_scene_picker::addPickedNodesToGroup(cmzn_field_group_id group,
 					}
 					if (selection_group)
 					{
-						cmzn_field_module_id field_module = cmzn_region_get_field_module(sub_region);
-						cmzn_nodeset_id master_nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
+						cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(sub_region);
+						cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
 							(type == CMZN_SCENE_PICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 						if (master_nodeset)
 						{
@@ -747,7 +747,7 @@ int cmzn_scene_picker::addPickedNodesToGroup(cmzn_field_group_id group,
 							cmzn_field_node_group_destroy(&node_group);
 							cmzn_nodeset_destroy(&master_nodeset);
 						}
-						cmzn_field_module_destroy(&field_module);
+						cmzn_fieldmodule_destroy(&field_module);
 					}
 				}
 				if (nodeset_group)

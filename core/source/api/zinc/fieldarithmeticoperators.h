@@ -30,7 +30,7 @@ extern "C" {
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_power(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_power(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
@@ -44,7 +44,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_power(cmzn_field_module_id field
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_multiply(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_multiply(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
@@ -58,7 +58,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_multiply(cmzn_field_module_id fi
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_divide(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
@@ -72,7 +72,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_divide(cmzn_field_module_id fiel
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_add(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_add(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
@@ -86,7 +86,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_add(cmzn_field_module_id field_m
  * @param source_field_two Second input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_subtract(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
@@ -98,7 +98,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_subtract(cmzn_field_module_id fi
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_log(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_log(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /**
@@ -109,7 +109,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_log(cmzn_field_module_id field_m
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_sqrt(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /**
@@ -120,7 +120,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_sqrt(cmzn_field_module_id field_
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_exp(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /**
@@ -131,7 +131,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_exp(cmzn_field_module_id field_m
  * @param source_field The input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_abs(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 #ifdef __cplusplus

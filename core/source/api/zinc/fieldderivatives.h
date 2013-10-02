@@ -32,8 +32,8 @@ extern "C" {
  * element dimension.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_derivative(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_derivative(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, int xi_index);
 
 /**
@@ -46,8 +46,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_derivative(
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_curl(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_curl(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field);
 
 /**
@@ -62,8 +62,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_curl(
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_divergence(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field);
 
 /**
@@ -86,8 +86,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_divergence(
  * @param coordinate_field  Field supplying location.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_gradient(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus

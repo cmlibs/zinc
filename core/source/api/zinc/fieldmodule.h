@@ -1,4 +1,4 @@
-/*****************************************************************************//**
+/**
  * FILE : fieldmodule.h
  *
  * Public interface to the field module including its generic functions.
@@ -12,6 +12,7 @@
 #define CMZN_FIELDMODULE_H__
 
 #include "types/regionid.h"
+#include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
 
@@ -21,10 +22,10 @@
 extern "C" {
 #endif
 
-/*******************************************************************************
+/*
  * Automatic scalar broadcast
  *
- * For field constructors (cmzn_field_module_create~ functions) which specify
+ * For field constructors (cmzn_fieldmodule_create~ functions) which specify
  * the they apply automatic scalar broadcast for their source fields arguments,
  * if the one of the source fields has multiple components and the
  * other is a scalar, then the scalar will be automatically replicated so that
@@ -38,29 +39,29 @@ Global functions
 ----------------
 */
 
-/***************************************************************************//**
+/**
  * Returns a new reference to the field module with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
  * @param field_module  The field module to obtain a new reference to.
  * @return  New field module reference with incremented reference count.
  */
-ZINC_API cmzn_field_module_id cmzn_field_module_access(cmzn_field_module_id field_module);
+ZINC_API cmzn_fieldmodule_id cmzn_fieldmodule_access(cmzn_fieldmodule_id field_module);
 
-/***************************************************************************//**
+/**
  * Destroys reference to the field module and sets pointer/handle to NULL.
  * Internally this just decrements the reference count.
  *
  * @param field_module_address  Address of field module reference.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_module_destroy(cmzn_field_module_id *field_module_address);
+ZINC_API int cmzn_fieldmodule_destroy(cmzn_fieldmodule_id *field_module_address);
 
-/***************************************************************************//**
+/**
  * Begin caching or increment cache level for this field module. Call this
  * function before making multiple changes to fields, nodes, elements etc. from
  * this field module to minimise number of change messages sent to clients.
- * Must call cmzn_field_module_end_change after making changes.
+ * Must call cmzn_fieldmodule_end_change after making changes.
  * Note that field module changes are always cached when the region changes are
  * being cached.
  *
@@ -68,34 +69,44 @@ ZINC_API int cmzn_field_module_destroy(cmzn_field_module_id *field_module_addres
  * @param field_module  The field_module to begin change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_module_begin_change(cmzn_field_module_id field_module);
+ZINC_API int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id field_module);
 
-/***************************************************************************//**
+/**
  * Decrement cache level or end caching of changes for this field module.
- * Call cmzn_field_module_begin_change before making multiple changes
+ * Call cmzn_fieldmodule_begin_change before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
  *
  * @param field_module  The field_module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_module_end_change(cmzn_field_module_id field_module);
+ZINC_API int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id field_module);
 
-/***************************************************************************//**
+/**
  * Returns the field of the specified name from the field module.
  *
  * @param field_module  Region field module in which to find the field.
  * @param field_name  The name of the field to find.
  * @return  New reference to field of specified name, or NULL if not found.
  */
-ZINC_API cmzn_field_id cmzn_field_module_find_field_by_name(
-	cmzn_field_module_id field_module, const char *field_name);
+ZINC_API cmzn_field_id cmzn_fieldmodule_find_field_by_name(
+	cmzn_fieldmodule_id field_module, const char *field_name);
 
-/***************************************************************************//**
+/**
+ * Creates a field cache for storing a known location and field values and
+ * derivatives at that location. Required to evaluate and assign field values.
+ *
+ * @param field_module  The field module to create a field cache for.
+ * @return  New field cache, or NULL if failed.
+ */
+ZINC_API cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(
+	cmzn_fieldmodule_id field_module);
+
+/**
  * Create a field iterator object for iterating through the fields in the field
  * module, in alphabetical order of name. The iterator initially points at the
  * position before the first field, so the first call to
- * cmzn_field_iterator_next() returns the first field and advances the
+ * cmzn_fielditerator_next() returns the first field and advances the
  * iterator.
  * Iterator becomes invalid if fields are added, removed or renamed while in use.
  *
@@ -104,10 +115,10 @@ ZINC_API cmzn_field_id cmzn_field_module_find_field_by_name(
  * @return  Handle to field_iterator at position before first, or NULL if
  * error.
  */
-ZINC_API cmzn_field_iterator_id cmzn_field_module_create_field_iterator(
-	cmzn_field_module_id field_module);
+ZINC_API cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
+	cmzn_fieldmodule_id field_module);
 
-/***************************************************************************//**
+/**
  * Defines, for all elements of all meshes in field module, face elements of
  * dimension one lower in the associated face mesh, and all their faces
  * recursively down to 1 dimensional lines.
@@ -116,15 +127,15 @@ ZINC_API cmzn_field_iterator_id cmzn_field_module_create_field_iterator(
  * faces for.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_module_define_all_faces(cmzn_field_module_id field_module);
+ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id field_module);
 
-/***************************************************************************//**
+/**
  * Gets the region this field module can create fields for.
  *
  * @param field_module  The field module to query.
  * @return  Accessed handle to owning region for field_module.
  */
-ZINC_API cmzn_region_id cmzn_field_module_get_region(cmzn_field_module_id field_module);
+ZINC_API cmzn_region_id cmzn_fieldmodule_get_region(cmzn_fieldmodule_id field_module);
 
 #ifdef __cplusplus
 }

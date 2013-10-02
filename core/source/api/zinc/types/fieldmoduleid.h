@@ -9,7 +9,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef CMZN_FIELDMODULEID_H__
-	struct cmzn_field_module;
-	typedef struct cmzn_field_module *cmzn_field_module_id;
+	struct cmzn_fieldmodule;
+	typedef struct cmzn_fieldmodule *cmzn_fieldmodule_id;
 	#define CMZN_FIELDMODULEID_H__
 #endif /* CMZN_FIELD_MODULE_ID_H */

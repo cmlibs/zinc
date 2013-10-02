@@ -18,7 +18,7 @@
 #include "field_io/cmiss_field_ensemble_id.h"
 #include "zinc/types/fieldmoduleid.h"
 
-cmzn_field_id cmzn_field_module_create_ensemble(cmzn_field_module_id field_module);
+cmzn_field_id cmzn_fieldmodule_create_field_ensemble(cmzn_fieldmodule_id field_module);
 
 cmzn_field_ensemble_id cmzn_field_cast_ensemble(cmzn_field_id field);
 
@@ -67,7 +67,7 @@ int cmzn_ensemble_iterator_increment(cmzn_ensemble_iterator_id iterator);
 
 
 
-cmzn_field_id cmzn_field_module_create_ensemble_group(cmzn_field_module_id field_module,
+cmzn_field_id cmzn_fieldmodule_create_field_ensemble_group(cmzn_fieldmodule_id field_module,
 	cmzn_field_ensemble_id ensemble_field);
 
 cmzn_field_ensemble_group_id cmzn_field_cast_ensemble_group(cmzn_field_id field);

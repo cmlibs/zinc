@@ -25,7 +25,7 @@ private:
 	explicit FieldNodesetSum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetSum FieldModule::createNodesetSum(Field& sourceField, Nodeset& nodeset);
+	friend FieldNodesetSum Fieldmodule::createFieldNodesetSum(Field& sourceField, Nodeset& nodeset);
 
 public:
 
@@ -41,7 +41,7 @@ private:
 	explicit FieldNodesetMean(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetMean FieldModule::createNodesetMean(Field& sourceField,
+	friend FieldNodesetMean Fieldmodule::createFieldNodesetMean(Field& sourceField,
 		Nodeset& nodeset);
 
 public:
@@ -58,7 +58,7 @@ private:
 	explicit FieldNodesetSumSquares(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetSumSquares FieldModule::createNodesetSumSquares(
+	friend FieldNodesetSumSquares Fieldmodule::createFieldNodesetSumSquares(
 		Field& sourceField, Nodeset& nodeset);
 
 public:
@@ -75,7 +75,7 @@ private:
 	explicit FieldNodesetMeanSquares(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetMeanSquares FieldModule::createNodesetMeanSquares(
+	friend FieldNodesetMeanSquares Fieldmodule::createFieldNodesetMeanSquares(
 		Field& sourceField, Nodeset& nodeset);
 
 public:
@@ -92,7 +92,7 @@ private:
 	explicit FieldNodesetMinimum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetMinimum FieldModule::createNodesetMinimum(
+	friend FieldNodesetMinimum Fieldmodule::createFieldNodesetMinimum(
 		Field& sourceField, Nodeset& nodeset);
 
 public:
@@ -109,7 +109,7 @@ private:
 	explicit FieldNodesetMaximum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetMaximum FieldModule::createNodesetMaximum(
+	friend FieldNodesetMaximum Fieldmodule::createFieldNodesetMaximum(
 		Field& sourceField, Nodeset& nodeset);
 
 public:
@@ -119,43 +119,43 @@ public:
 
 };
 
-inline FieldNodesetSum FieldModule::createNodesetSum(Field& sourceField, Nodeset& nodeset)
+inline FieldNodesetSum Fieldmodule::createFieldNodesetSum(Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetSum(cmzn_field_module_create_nodeset_sum(id,
+	return FieldNodesetSum(cmzn_fieldmodule_create_field_nodeset_sum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
-inline FieldNodesetMean FieldModule::createNodesetMean(Field& sourceField, Nodeset& nodeset)
+inline FieldNodesetMean Fieldmodule::createFieldNodesetMean(Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMean(cmzn_field_module_create_nodeset_mean(id,
+	return FieldNodesetMean(cmzn_fieldmodule_create_field_nodeset_mean(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
-inline FieldNodesetSumSquares FieldModule::createNodesetSumSquares(
+inline FieldNodesetSumSquares Fieldmodule::createFieldNodesetSumSquares(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetSumSquares(cmzn_field_module_create_nodeset_sum_squares(id,
+	return FieldNodesetSumSquares(cmzn_fieldmodule_create_field_nodeset_sum_squares(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
-inline FieldNodesetMeanSquares FieldModule::createNodesetMeanSquares(
+inline FieldNodesetMeanSquares Fieldmodule::createFieldNodesetMeanSquares(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMeanSquares(cmzn_field_module_create_nodeset_mean_squares(id,
+	return FieldNodesetMeanSquares(cmzn_fieldmodule_create_field_nodeset_mean_squares(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
-inline FieldNodesetMinimum FieldModule::createNodesetMinimum(
+inline FieldNodesetMinimum Fieldmodule::createFieldNodesetMinimum(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMinimum(cmzn_field_module_create_nodeset_minimum(id,
+	return FieldNodesetMinimum(cmzn_fieldmodule_create_field_nodeset_minimum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
-inline FieldNodesetMaximum FieldModule::createNodesetMaximum(
+inline FieldNodesetMaximum Fieldmodule::createFieldNodesetMaximum(
 	Field& sourceField, Nodeset& nodeset)
 {
-	return FieldNodesetMaximum(cmzn_field_module_create_nodeset_maximum(id,
+	return FieldNodesetMaximum(cmzn_fieldmodule_create_field_nodeset_maximum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 

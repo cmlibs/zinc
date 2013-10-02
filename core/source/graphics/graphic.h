@@ -192,7 +192,7 @@ struct cmzn_graphic_range
 
 struct cmzn_graphic_to_graphics_object_data
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	/* graphics object names are preceded by this */
 	const char *name_prefix;
 	/* default_rc_coordinate_field to use if NULL in any settings */
@@ -201,7 +201,7 @@ struct cmzn_graphic_to_graphics_object_data
 		*selection_group_field;
 	GT_object *glyph_gt_object;
 	struct cmzn_region *region;
-	cmzn_field_module_id field_module;
+	cmzn_fieldmodule_id field_module;
 	struct FE_region *fe_region;
 	struct FE_region *data_fe_region;
 	// master mesh being converted into graphics:

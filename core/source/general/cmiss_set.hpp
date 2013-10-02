@@ -262,15 +262,18 @@ public:
 	 * A specialised iterator class which wraps a reference to a container and an
 	 * iterator in it, suitable for use from external API because the container
 	 * cannot be destroyed before the iterator.
+	 * It is also reference counted.
 	 */
-	struct ext_iterator
+	class ext_iterator
 	{
 		cmzn_set *container;
 		iterator iter;
+		int access_count;
 
 		ext_iterator(cmzn_set *container) :
 			container(container->access()),
-			iter(container->begin())
+			iter(container->begin()),
+			access_count(1)
 		{
 		}
 
@@ -279,6 +282,32 @@ public:
 			// the container may be destroyed immediately before the iterator;
 			// hopefully not a problem
 			container->deaccess(&container);
+		}
+
+	public:
+
+		static ext_iterator *create(cmzn_set *container)
+		{
+			if (container)
+				return new ext_iterator(container);
+			return 0;
+		}
+
+		ext_iterator *access()
+		{
+			++access_count;
+			return this;
+		}
+
+		static int deaccess(ext_iterator* &iterator)
+		{
+			if (!iterator)
+				return 0;
+			--(iterator->access_count);
+			if (iterator->access_count <= 0)
+				delete iterator;
+			iterator = 0;
+			return CMZN_OK;
 		}
 
 		Key next()

@@ -97,7 +97,7 @@ struct Computed_field_conditional_data
  * Stores data and settings needed to create field, including the region to add
  * it to.
  */
-struct cmzn_field_module;
+struct cmzn_fieldmodule;
 
 /*
 Global functions
@@ -111,14 +111,14 @@ PROTOTYPE_LIST_FUNCTIONS(Computed_field);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Computed_field,name,const char *);
 
 /***************************************************************************//**
- * Internal variant of public cmzn_field_iterator_next() which does not access
+ * Internal variant of public cmzn_fielditerator_next() which does not access
  * the returned field, for more efficient if less safe usage.
  *
- * @param field_iterator  Field iterator to query and advance.
+ * @param iterator  Field iterator to query and advance.
  * @return  Non-accessed pointer to the next field, or NULL if none remaining.
  */
-cmzn_field_id cmzn_field_iterator_next_non_access(
-	cmzn_field_iterator_id field_iterator);
+cmzn_field_id cmzn_fielditerator_next_non_access(
+	cmzn_fielditerator_id iterator);
 
 PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
@@ -221,8 +221,8 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
  * inherit fields from.
  * @return  1 on success, 0 on failure.
  */
-int cmzn_field_cache_set_mesh_location_with_parent(
-	cmzn_field_cache_id cache, cmzn_element_id element,
+int cmzn_fieldcache_set_mesh_location_with_parent(
+	cmzn_fieldcache_id cache, cmzn_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	cmzn_element_id top_level_element);
 
@@ -238,7 +238,7 @@ int cmzn_field_cache_set_mesh_location_with_parent(
  * @param assign_to_cache  The new state of the assign-to-cache-only flag.
  * @return  1 on success, 0 on failure.
  */
-int cmzn_field_cache_set_assign_in_cache(cmzn_field_cache_id cache, int assign_in_cache);
+int cmzn_fieldcache_set_assign_in_cache(cmzn_fieldcache_id cache, int assign_in_cache);
 
 /***************************************************************************//**
  * Internal function.
@@ -248,7 +248,7 @@ int cmzn_field_cache_set_assign_in_cache(cmzn_field_cache_id cache, int assign_i
  * otherwise 0.
  */
 int cmzn_field_evaluate_boolean(cmzn_field_id field,
-	cmzn_field_cache_id cache);
+	cmzn_fieldcache_id cache);
 
 /***************************************************************************//**
  * Temporary function to allow derivatives to be evaluated with value.
@@ -258,7 +258,7 @@ int cmzn_field_evaluate_boolean(cmzn_field_id field,
  * IMPORTANT: Not approved for external API!
  */
 int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
-	cmzn_field_cache_id cache, int number_of_values, double *values,
+	cmzn_fieldcache_id cache, int number_of_values, double *values,
 	int number_of_derivatives, double *derivatives);
 
 int Computed_field_get_native_discretization_in_element(
@@ -517,7 +517,7 @@ The number of components controls how the field is interpreted:
  * found, or 0 if failed.
  */
 int Computed_field_find_element_xi(struct Computed_field *field,
-	cmzn_field_cache_id field_cache, const FE_value *values,
+	cmzn_fieldcache_id field_cache, const FE_value *values,
 	int number_of_values, struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest);
 
@@ -642,8 +642,8 @@ int Computed_field_is_non_linear(struct Computed_field *field);
 /***************************************************************************//**
  * @return  Allocated field name unused by any other field in field_module.
  */
-char *cmzn_field_module_get_unique_field_name(
-	struct cmzn_field_module *field_module);
+char *cmzn_fieldmodule_get_unique_field_name(
+	struct cmzn_fieldmodule *field_module);
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.

@@ -42,7 +42,7 @@ const char *Field_ensemble::get_type_string()
 	return (field_ensemble_type_string);
 }
 
-int Field_ensemble::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Field_ensemble::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	USE_PARAMETER(cache);
 	USE_PARAMETER(inValueCache);
@@ -409,7 +409,7 @@ const char *Field_ensemble_group::get_type_string()
 	return (field_ensemble_group_type_string);
 }
 
-int Field_ensemble_group::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Field_ensemble_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	USE_PARAMETER(cache);
 	USE_PARAMETER(inValueCache);
@@ -441,8 +441,8 @@ int Field_ensemble_group::list()
 
 } // namespace cmzn
 
-cmzn_field *cmzn_field_module_create_ensemble(
-	cmzn_field_module *field_module)
+cmzn_field *cmzn_fieldmodule_create_field_ensemble(
+	cmzn_fieldmodule *field_module)
 {
 	cmzn_field *field = Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/false,
@@ -576,8 +576,8 @@ int cmzn_ensemble_iterator_increment(cmzn_ensemble_iterator *iterator)
 	return cmzn::Field_ensemble::incrementEnsembleEntry(iterator);
 }
 
-cmzn_field *cmzn_field_module_create_ensemble_group(
-	cmzn_field_module *field_module, cmzn_field_ensemble *ensemble_field)
+cmzn_field *cmzn_fieldmodule_create_field_ensemble_group(
+	cmzn_fieldmodule *field_module, cmzn_field_ensemble *ensemble_field)
 {
 	cmzn_field *field = NULL;
 	if (ensemble_field)

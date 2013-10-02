@@ -867,7 +867,7 @@ data values for more efficient storage and smoother rendering.
 } /* Contour_lines_link_ends */
 
 int create_iso_lines_from_FE_element(struct FE_element *element,
-	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *isoscalar_field,FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
@@ -939,7 +939,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 				for (j=0;(j<adjusted_number_of_points_in_xi2)&&return_code;j++)
 				{
 					xi[1]=(FE_value)j / distance2;
-					if (cmzn_field_cache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element) &&
+					if (cmzn_fieldcache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element) &&
 						cmzn_field_evaluate_real(coordinate_field, field_cache, 3, coordinates) &&
 						cmzn_field_evaluate_real(isoscalar_field, field_cache, 1, scalar) &&
 						((!data_field) || cmzn_field_evaluate_real(data_field, field_cache, n_data_components, datum)))

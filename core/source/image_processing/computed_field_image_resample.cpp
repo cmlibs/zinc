@@ -60,7 +60,7 @@ namespace {
 			return new Computed_field_image_resample(dimension, sizes);
 		}
 
-		int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 		const char *get_type_string()
 		{
@@ -114,7 +114,7 @@ Compare the type specific data.
 	return (return_code);
 } /* Computed_field_image_resample::compare */
 
-int Computed_field_image_resample::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -254,8 +254,8 @@ Returns allocated command string for reproducing field.
 
 } //namespace
 
-Computed_field *cmzn_field_module_create_image_resample(
-	struct cmzn_field_module *field_module,
+Computed_field *cmzn_fieldmodule_create_field_image_resample(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, int dimension, int *sizes)
 {
 	Computed_field *field = NULL;
@@ -280,14 +280,14 @@ Computed_field *cmzn_field_module_create_image_resample(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_field_module_create_image_resample.  "
+				"cmzn_fieldmodule_create_field_image_resample.  "
 				"Specified dimension and source field dimension do not match.");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_image_resample.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_image_resample.  Invalid argument(s)");
 	}
 
 	return (field);

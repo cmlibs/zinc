@@ -168,8 +168,8 @@ enum cmzn_optimisation_attribute
  * @return  Handle to the newly created optimisation object, or NULL on failure.
  * cmzn_optimisation_destroy must be called to destroy the handle.
  */
-ZINC_API cmzn_optimisation_id cmzn_field_module_create_optimisation(
-	cmzn_field_module_id field_module);
+ZINC_API cmzn_optimisation_id cmzn_fieldmodule_create_optimisation(
+	cmzn_fieldmodule_id field_module);
 
 /*******************************************************************************
  * Returns a new handle to the optimisation with reference count incremented.

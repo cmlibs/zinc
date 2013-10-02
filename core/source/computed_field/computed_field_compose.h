@@ -73,16 +73,16 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual bool is_defined_at_location(cmzn_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
-	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 

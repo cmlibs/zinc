@@ -113,8 +113,8 @@ ZINC_API char *cmzn_basis_function_type_enum_to_string(
  * i.e. basis function is initially homogeneous.
  * @return  Handle to element_basis, or NULL if error.
  */
-ZINC_API cmzn_element_basis_id cmzn_field_module_create_element_basis(
-	cmzn_field_module_id field_module, int dimension,
+ZINC_API cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
+	cmzn_fieldmodule_id field_module, int dimension,
 	enum cmzn_basis_function_type function_type);
 
 /**
@@ -126,8 +126,8 @@ ZINC_API cmzn_element_basis_id cmzn_field_module_create_element_basis(
  * @param dimension  The dimension of the mesh from 1 to 3.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-ZINC_API cmzn_mesh_id cmzn_field_module_find_mesh_by_dimension(
-	cmzn_field_module_id field_module, int dimension);
+ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
+	cmzn_fieldmodule_id field_module, int dimension);
 
 /**
  * Get a handle to a finite element mesh from its name. A mesh is the container
@@ -143,8 +143,8 @@ ZINC_API cmzn_mesh_id cmzn_field_module_find_mesh_by_dimension(
  * @param name  The name of the finite element mesh.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
-ZINC_API cmzn_mesh_id cmzn_field_module_find_mesh_by_name(
-	cmzn_field_module_id field_module, const char *mesh_name);
+ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
+	cmzn_fieldmodule_id field_module, const char *mesh_name);
 
 /**
  * Returns a new handle to the mesh with reference count incremented.
@@ -181,7 +181,7 @@ ZINC_API int cmzn_mesh_contains_element(cmzn_mesh_id mesh,
  * @param mesh  Handle to the mesh the template works with.
  * @return  Handle to element_template, or NULL if error.
  */
-ZINC_API cmzn_element_template_id cmzn_mesh_create_element_template(
+ZINC_API cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
 	cmzn_mesh_id mesh);
 
 /**
@@ -197,13 +197,13 @@ ZINC_API cmzn_element_template_id cmzn_mesh_create_element_template(
  * @return  Handle to newly created element, or NULL if error.
  */
 ZINC_API cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
-	int identifier, cmzn_element_template_id element_template);
+	int identifier, cmzn_elementtemplate_id element_template);
 
 /**
  * Create an element iterator object for iterating through the elements in the
  * mesh which are ordered from lowest to highest identifier. The iterator
  * initially points at the position before the first element, so the first call
- * to cmzn_element_iterator_next() returns the first element and advances the
+ * to cmzn_elementiterator_next() returns the first element and advances the
  * iterator.
  * Iterator becomes invalid if mesh is modified or any of its elements are
  * given new identifiers.
@@ -212,7 +212,7 @@ ZINC_API cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
  * @return  Handle to element_iterator at position before first, or NULL if
  * error.
  */
-ZINC_API cmzn_element_iterator_id cmzn_mesh_create_element_iterator(
+ZINC_API cmzn_elementiterator_id cmzn_mesh_create_elementiterator(
 	cmzn_mesh_id mesh);
 
 /**
@@ -228,7 +228,7 @@ ZINC_API cmzn_element_iterator_id cmzn_mesh_create_element_iterator(
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
-	cmzn_element_template_id element_template);
+	cmzn_elementtemplate_id element_template);
 
 /**
  * Destroy all elements in mesh, also removing them from any related groups.
@@ -288,7 +288,7 @@ ZINC_API cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
  * @return  Handle to differential operator, or NULL if failed. Caller is
  * responsible for destroying the returned handle.
  */
-ZINC_API cmzn_differential_operator_id cmzn_mesh_get_chart_differential_operator(
+ZINC_API cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term);
 
 /**
@@ -332,9 +332,9 @@ ZINC_API int cmzn_mesh_get_size(cmzn_mesh_id mesh);
  *
  * @param mesh1  The first mesh to match.
  * @param mesh2  The second mesh to match.
- * @return  1 if the two meshes match, 0 if not.
+ * @return  Boolean true if the two meshes match, false if not.
  */
-ZINC_API int cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
+ZINC_API bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
 
 /**
  * If the mesh is a mesh group i.e. subset of elements from a master mesh,
@@ -422,8 +422,8 @@ ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh
  * @param mesh  The element basis to obtain a new reference to.
  * @return  New element basis handle with incremented reference count.
  */
-ZINC_API cmzn_element_basis_id cmzn_element_basis_access(
-	cmzn_element_basis_id element_basis);
+ZINC_API cmzn_elementbasis_id cmzn_elementbasis_access(
+	cmzn_elementbasis_id element_basis);
 
 /**
  * Destroys this handle to the element_basis and sets it to NULL.
@@ -432,7 +432,7 @@ ZINC_API cmzn_element_basis_id cmzn_element_basis_access(
  * @param element_basis_address  Address of handle to element_basis to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_basis_destroy(cmzn_element_basis_id *element_basis_address);
+ZINC_API int cmzn_elementbasis_destroy(cmzn_elementbasis_id *element_basis_address);
 
 /**
  * Gets the number of dimensions of the elements this basis works with.
@@ -440,7 +440,7 @@ ZINC_API int cmzn_element_basis_destroy(cmzn_element_basis_id *element_basis_add
  * @param element_basis  Element basis to query.
  * @return  The number of dimensions.
  */
-ZINC_API int cmzn_element_basis_get_dimension(cmzn_element_basis_id element_basis);
+ZINC_API int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis);
 
 /**
  * Gets the basis function type for a component of the basis.
@@ -450,8 +450,8 @@ ZINC_API int cmzn_element_basis_get_dimension(cmzn_element_basis_id element_basi
  * dimension.
  * @return  The basis function type.
  */
-ZINC_API enum cmzn_basis_function_type cmzn_element_basis_get_function_type(
-	cmzn_element_basis_id element_basis, int chart_component);
+ZINC_API enum cmzn_basis_function_type cmzn_elementbasis_get_function_type(
+	cmzn_elementbasis_id element_basis, int chart_component);
 
 /**
  * Sets a simple basis function type for a component of the basis.
@@ -462,7 +462,7 @@ ZINC_API enum cmzn_basis_function_type cmzn_element_basis_get_function_type(
  * @param basis_type  The basis type to use on the chosen chart component.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_basis,
+ZINC_API int cmzn_elementbasis_set_function_type(cmzn_elementbasis_id element_basis,
 	int chart_component, enum cmzn_basis_function_type function_type);
 
 /**
@@ -471,8 +471,8 @@ ZINC_API int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_
  * @param element_basis  Element basis to query.
  * @return  number of nodes expected, or 0 if basis is incomplete or invalid.
  */
-ZINC_API int cmzn_element_basis_get_number_of_nodes(
-	cmzn_element_basis_id element_basis);
+ZINC_API int cmzn_elementbasis_get_number_of_nodes(
+	cmzn_elementbasis_id element_basis);
 
 /**
  * If the basis is valid, gets the number of functions it has, which equals the
@@ -487,8 +487,8 @@ ZINC_API int cmzn_element_basis_get_number_of_nodes(
  * @return  Number of parameters expected, or 0 if basis is incomplete or
  * invalid.
  */
-ZINC_API int cmzn_element_basis_get_number_of_functions(
-	cmzn_element_basis_id element_basis);
+ZINC_API int cmzn_elementbasis_get_number_of_functions(
+	cmzn_elementbasis_id element_basis);
 
 /**
  * Returns a new handle to the element iterator with reference count incremented.
@@ -497,8 +497,8 @@ ZINC_API int cmzn_element_basis_get_number_of_functions(
  * @param mesh  The element iterator to obtain a new reference to.
  * @return  New element iterator handle with incremented reference count.
  */
-ZINC_API cmzn_element_iterator_id cmzn_element_iterator_access(
-	cmzn_element_iterator_id element_iterator);
+ZINC_API cmzn_elementiterator_id cmzn_elementiterator_access(
+	cmzn_elementiterator_id element_iterator);
 
 /**
  * Destroys this handle to the element_iterator and sets it to NULL.
@@ -507,8 +507,8 @@ ZINC_API cmzn_element_iterator_id cmzn_element_iterator_access(
  * destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_iterator_destroy(
-	cmzn_element_iterator_id *element_iterator_address);
+ZINC_API int cmzn_elementiterator_destroy(
+	cmzn_elementiterator_id *element_iterator_address);
 
 /**
  * Returns a handle to the next element in the container being iterated over
@@ -518,8 +518,8 @@ ZINC_API int cmzn_element_iterator_destroy(
  * @param element_iterator  Element iterator to query and advance.
  * @return  Handle to the next element, or NULL if none remaining.
  */
-ZINC_API cmzn_element_id cmzn_element_iterator_next(
-	cmzn_element_iterator_id element_iterator);
+ZINC_API cmzn_element_id cmzn_elementiterator_next(
+	cmzn_elementiterator_id element_iterator);
 
 /**
  * Returns a new handle to the element template with reference count incremented.
@@ -528,8 +528,8 @@ ZINC_API cmzn_element_id cmzn_element_iterator_next(
  * @param mesh  The element template to obtain a new reference to.
  * @return  New element template handle with incremented reference count.
  */
-ZINC_API cmzn_element_template_id cmzn_element_template_access(
-	cmzn_element_template_id element_template);
+ZINC_API cmzn_elementtemplate_id cmzn_elementtemplate_access(
+	cmzn_elementtemplate_id element_template);
 
 /**
  * Destroys this handle to the element_template and sets it to NULL.
@@ -539,8 +539,8 @@ ZINC_API cmzn_element_template_id cmzn_element_template_access(
  * to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_template_destroy(
-	cmzn_element_template_id *element_template_address);
+ZINC_API int cmzn_elementtemplate_destroy(
+	cmzn_elementtemplate_id *element_template_address);
 
 /**
  * Gets the current element shape type set in the element_template.
@@ -548,8 +548,8 @@ ZINC_API int cmzn_element_template_destroy(
  * @param element_template  Element template to query.
  * @return  The shape set in the element template.
  */
-ZINC_API enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
-	cmzn_element_template_id element_template);
+ZINC_API enum cmzn_element_shape_type cmzn_elementtemplate_get_shape_type(
+	cmzn_elementtemplate_id element_template);
 
 /**
  * Sets the element shape to a standard element shape type. The shape must have
@@ -565,7 +565,7 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
  * @param shape_type  Enumerator of standard element shapes.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_template_set_shape_type(cmzn_element_template_id element_template,
+ZINC_API int cmzn_elementtemplate_set_shape_type(cmzn_elementtemplate_id element_template,
 	enum cmzn_element_shape_type shape_type);
 
 /**
@@ -574,8 +574,8 @@ ZINC_API int cmzn_element_template_set_shape_type(cmzn_element_template_id eleme
  * @param element_template  Element template to query.
  * @return  The number of local nodes, or 0 on error.
  */
-ZINC_API int cmzn_element_template_get_number_of_nodes(
-	cmzn_element_template_id element_template);
+ZINC_API int cmzn_elementtemplate_get_number_of_nodes(
+	cmzn_elementtemplate_id element_template);
 
 /**
  * Sets the number of local nodes this element_template can address. This must
@@ -586,8 +586,8 @@ ZINC_API int cmzn_element_template_get_number_of_nodes(
  * @param number_of_nodes  The number of nodes.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_element_template_set_number_of_nodes(
-	cmzn_element_template_id element_template, int number_of_nodes);
+ZINC_API int cmzn_elementtemplate_set_number_of_nodes(
+	cmzn_elementtemplate_id element_template, int number_of_nodes);
 
 /**
  * Defines a nodally interpolated element field or field component in the
@@ -610,10 +610,10 @@ ZINC_API int cmzn_element_template_set_number_of_nodes(
  * xi = (0,0), (0.5,0), (1,0), (0,0.5), (0.5,0.5) ...
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_template_define_field_simple_nodal(
-	cmzn_element_template_id element_template,
+ZINC_API int cmzn_elementtemplate_define_field_simple_nodal(
+	cmzn_elementtemplate_id element_template,
 	cmzn_field_id field,  int component_number,
-	cmzn_element_basis_id basis, int basis_number_of_nodes,
+	cmzn_elementbasis_id basis, int basis_number_of_nodes,
 	const int *local_node_indexes);
 
 /**
@@ -625,8 +625,8 @@ ZINC_API int cmzn_element_template_define_field_simple_nodal(
  * @param local_node_index  The index from 1 to number of nodes in template.
  * @return  Handle to the global node, or NULL if none or error.
  */
-ZINC_API cmzn_node_id cmzn_element_template_get_node(
-	cmzn_element_template_id element_template, int local_node_index);
+ZINC_API cmzn_node_id cmzn_elementtemplate_get_node(
+	cmzn_elementtemplate_id element_template, int local_node_index);
 
 /**
  * Sets the global node at a given local node index in the element_template.
@@ -638,7 +638,7 @@ ZINC_API cmzn_node_id cmzn_element_template_get_node(
  * @param node  The global node to set at that index.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_element_template_set_node(cmzn_element_template_id element_template,
+ZINC_API int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
 	int local_node_index, cmzn_node_id node);
 
 /**
@@ -710,7 +710,7 @@ ZINC_API enum cmzn_element_shape_type cmzn_element_get_shape_type(
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_element_merge(cmzn_element_id element,
-	cmzn_element_template_id element_template);
+	cmzn_elementtemplate_id element_template);
 
 #ifdef __cplusplus
 }

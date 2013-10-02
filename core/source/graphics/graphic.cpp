@@ -471,7 +471,7 @@ int cmzn_graphic_get_domain_dimension(struct cmzn_graphic *graphic)
 
 struct cmzn_element_conditional_field_data
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	cmzn_field_id conditional_field;
 };
 
@@ -483,7 +483,7 @@ int cmzn_element_conditional_field_is_true(cmzn_element_id element,
 		reinterpret_cast<cmzn_element_conditional_field_data*>(conditional_field_data_void);
 	if (element && data)
 	{
-		cmzn_field_cache_set_element(data->field_cache, element);
+		cmzn_fieldcache_set_element(data->field_cache, element);
 		return cmzn_field_evaluate_boolean(data->conditional_field, data->field_cache);
 	}
 	return 0;
@@ -538,7 +538,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		if (draw_element)
 		{
 			// FE_element_meets_topological_criteria may have set element in cache, so must set afterwards
-			cmzn_field_cache_set_element(graphic_to_object_data->field_cache, element);
+			cmzn_fieldcache_set_element(graphic_to_object_data->field_cache, element);
 			if (graphic->subgroup_field && (graphic_to_object_data->iteration_mesh == graphic_to_object_data->master_mesh))
 			{
 				draw_element = cmzn_field_evaluate_boolean(graphic->subgroup_field, graphic_to_object_data->field_cache);
@@ -834,7 +834,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					} break;
 					case CMZN_GRAPHIC_POINTS:
 					{
-						cmzn_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
+						cmzn_fieldcache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 						glyph_set = (struct GT_glyph_set *)NULL;
 						if (graphic_to_object_data->existing_graphics)
 						{
@@ -1079,7 +1079,7 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 		(NULL != (graphic = graphic_to_object_data->graphic)) &&
 		graphic->graphics_object)
 	{
-		cmzn_field_cache_set_node(graphic_to_object_data->field_cache, node);
+		cmzn_fieldcache_set_node(graphic_to_object_data->field_cache, node);
 		FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 		cmzn_element_id element = cmzn_field_evaluate_mesh_location(
 			graphic->seed_node_mesh_location_field, graphic_to_object_data->field_cache,
@@ -2506,7 +2506,7 @@ int cmzn_graphic_to_point_object_at_time(
 	ENTER(cmzn_graphic_to_point_object_at_time);
 	if (graphic && graphic_to_object_data)
 	{
-		cmzn_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
+		cmzn_fieldcache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 		FE_value coordinates[3] = { 0.0, 0.0, 0.0 };
 		if (graphic->coordinate_field)
 		{
@@ -2831,9 +2831,9 @@ int cmzn_graphic_set_renderer_highlight_functor(struct cmzn_graphic *graphic, Re
 		{
 			cmzn_field_id group_field =
 				cmzn_scene_get_selection_group_private_for_highlighting(graphic->scene);
-			cmzn_field_module_id field_module = NULL;
+			cmzn_fieldmodule_id field_module = NULL;
 			if (group_field &&
-				(NULL != (field_module = cmzn_field_get_field_module(group_field))))
+				(NULL != (field_module = cmzn_field_get_fieldmodule(group_field))))
 			{
 				if ((CMZN_GRAPHIC_SELECT_ON == graphic->select_mode) ||
 					(CMZN_GRAPHIC_DRAW_SELECTED == graphic->select_mode))
@@ -2849,7 +2849,7 @@ int cmzn_graphic_set_renderer_highlight_functor(struct cmzn_graphic *graphic, Re
 						case CMZN_FIELD_DOMAIN_NODES:
 						{
 							cmzn_nodeset_id nodeset =
-								cmzn_field_module_find_nodeset_by_domain_type(field_module, graphic->domain_type);
+								cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, graphic->domain_type);
 							functor = create_highlight_functor_nodeset(group_field, nodeset);
 							cmzn_nodeset_destroy(&nodeset);
 						} break;
@@ -2887,7 +2887,7 @@ int cmzn_graphic_set_renderer_highlight_functor(struct cmzn_graphic *graphic, Re
 							if (graphic->graphic_type != CMZN_GRAPHIC_STREAMLINES)
 							{
 								int dimension = cmzn_graphic_get_domain_dimension(graphic);
-								cmzn_mesh_id temp_mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
+								cmzn_mesh_id temp_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 								functor = create_highlight_functor_element(group_field, temp_mesh);
 								cmzn_mesh_destroy(&temp_mesh);
 							}
@@ -2906,7 +2906,7 @@ int cmzn_graphic_set_renderer_highlight_functor(struct cmzn_graphic *graphic, Re
 						delete functor;
 					}
 				}
-				cmzn_field_module_destroy(&field_module);
+				cmzn_fieldmodule_destroy(&field_module);
 			}
 			return_code = 1;
 		}
@@ -2925,7 +2925,7 @@ int cmzn_graphic_get_iteration_domain(cmzn_graphic_id graphic,
 	if (dimension > 0)
 	{
 		graphic_to_object_data->master_mesh =
-			cmzn_field_module_find_mesh_by_dimension(graphic_to_object_data->field_module, dimension);
+			cmzn_fieldmodule_find_mesh_by_dimension(graphic_to_object_data->field_module, dimension);
 		if (graphic->subgroup_field)
 		{
 			cmzn_field_group_id group = cmzn_field_cast_group(graphic->subgroup_field);
@@ -2998,9 +2998,9 @@ static char *cmzn_graphic_get_graphics_object_name(cmzn_graphic *graphic, const 
 static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphic_to_graphics_object_data *graphic_to_object_data)
 {
 	int return_code = 1;
-	cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(mesh);
+	cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(mesh);
 	cmzn_element_id element = 0;
-	while (0 != (element = cmzn_element_iterator_next_non_access(iterator)))
+	while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 	{
 		if (!FE_element_to_graphics_object(element, graphic_to_object_data))
 		{
@@ -3008,7 +3008,7 @@ static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphic_to_graphics_obj
 			break;
 		}
 	}
-	cmzn_element_iterator_destroy(&iterator);
+	cmzn_elementiterator_destroy(&iterator);
 	return return_code;
 }
 
@@ -3260,7 +3260,7 @@ int cmzn_graphic_to_graphics_object(
 										graphic->graphics_object, time,
 										(GT_object_primitive_object_name_conditional_function *)NULL,
 										(void *)NULL);
-									cmzn_nodeset_id master_nodeset = cmzn_field_module_find_nodeset_by_domain_type(
+									cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(
 										graphic_to_object_data->field_module, graphic->domain_type);
 									cmzn_nodeset_id iteration_nodeset = 0;
 									if (graphic->subgroup_field)
@@ -3431,7 +3431,7 @@ int cmzn_graphic_to_graphics_object(
 							} break;
 							case CMZN_GRAPHIC_CONTOURS:
 							{
-								cmzn_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
+								cmzn_fieldcache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 								if (0 < graphic->number_of_isovalues)
 								{
 									if (g_SURFACE == GT_object_get_type(graphic->graphics_object))
@@ -3476,7 +3476,7 @@ int cmzn_graphic_to_graphics_object(
 							} break;
 							case CMZN_GRAPHIC_STREAMLINES:
 							{
-								cmzn_field_cache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
+								cmzn_fieldcache_set_time(graphic_to_object_data->field_cache, graphic_to_object_data->time);
 								// must always regenerate ALL streamlines since they can cross into other elements
 								if (graphic_to_object_data->existing_graphics)
 								{
@@ -3491,9 +3491,9 @@ int cmzn_graphic_to_graphics_object(
 								else if (graphic->seed_nodeset &&
 									graphic->seed_node_mesh_location_field)
 								{
-									cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(graphic->seed_nodeset);
+									cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(graphic->seed_nodeset);
 									cmzn_node_id node = 0;
-									while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+									while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 									{
 										if (!cmzn_node_to_streamline(node, graphic_to_object_data))
 										{
@@ -3501,7 +3501,7 @@ int cmzn_graphic_to_graphics_object(
 											break;
 										}
 									}
-									cmzn_node_iterator_destroy(&iterator);
+									cmzn_nodeiterator_destroy(&iterator);
 								}
 								else
 								{

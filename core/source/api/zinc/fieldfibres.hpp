@@ -25,7 +25,7 @@ private:
 	explicit FieldFibreAxes(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coordinateField);
+	friend FieldFibreAxes Fieldmodule::createFieldFibreAxes(Field& fibreField, Field& coordinateField);
 
 public:
 
@@ -34,9 +34,9 @@ public:
 
 };
 
-inline FieldFibreAxes FieldModule::createFibreAxes(Field& fibreField, Field& coordinateField)
+inline FieldFibreAxes Fieldmodule::createFieldFibreAxes(Field& fibreField, Field& coordinateField)
 {
-	return FieldFibreAxes(cmzn_field_module_create_fibre_axes(id,
+	return FieldFibreAxes(cmzn_fieldmodule_create_field_fibre_axes(id,
 		fibreField.getId(), coordinateField.getId()));
 }
 

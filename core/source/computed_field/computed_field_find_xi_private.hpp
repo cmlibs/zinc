@@ -105,7 +105,7 @@ matches the <field> in this structure or one of its source fields.
 ==============================================================================*/
 {
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	struct Computed_field *field;
 	int number_of_values;
 	FE_value *values;

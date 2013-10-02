@@ -27,7 +27,7 @@
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
-cmzn_field *cmzn_field_module_create_real_parameters(cmzn_field_module_id field_module,
+cmzn_field *cmzn_fieldmodule_create_field_real_parameters(cmzn_fieldmodule_id field_module,
 	int number_of_index_ensembles, cmzn_field_ensemble_id *index_ensemble_fields);
 
 cmzn_field_real_parameters_id cmzn_field_cast_real_parameters(cmzn_field_id field);
@@ -82,7 +82,7 @@ typedef struct cmzn_field_integer_parameters *cmzn_field_integer_parameters_id;
  * Note: Currently defaults to 1 component; Eventually need to specify component
  * ensemble, e.g. via FieldML valueDomain.
  */
-cmzn_field *cmzn_field_module_create_integer_parameters(cmzn_field_module_id field_module,
+cmzn_field *cmzn_fieldmodule_create_field_integer_parameters(cmzn_fieldmodule_id field_module,
 	int number_of_index_ensembles, cmzn_field_ensemble_id *index_ensemble_fields);
 
 cmzn_field_integer_parameters_id cmzn_field_cast_integer_parameters(cmzn_field_id field);

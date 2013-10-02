@@ -15,6 +15,7 @@ cannot reside in finite element modules.
 #include <stdlib.h>
 #include <math.h>
 
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "general/debug.h"
@@ -35,7 +36,7 @@ DESCRIPTION :
 {
 	struct FE_region *fe_region;
 	struct Multi_range *node_ranges;
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	struct Computed_field *group_field;
 	struct Computed_field *conditional_field;
 	struct LIST(FE_node) *node_list;
@@ -66,7 +67,7 @@ DESCRIPTION :
 		{
 			if (data->group_field || data->conditional_field)
 			{
-				cmzn_field_cache_set_node(data->field_cache, node);
+				cmzn_fieldcache_set_node(data->field_cache, node);
 				if ((data->group_field && !cmzn_field_evaluate_boolean(data->group_field, data->field_cache)) ||
 					(data->conditional_field && !cmzn_field_evaluate_boolean(data->conditional_field, data->field_cache)))
 				{
@@ -150,7 +151,7 @@ are identival. Used as a compare function for qsort.
 
 struct FE_node_and_values_to_array_data
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	struct FE_node_values_number *node_values;
 	struct Computed_field *sort_by_field;
 	int number_of_values;
@@ -168,7 +169,7 @@ static int FE_node_and_values_to_array(struct FE_node *node,
 		array_data->node_values)
 	{
 		return_code = 1;
-		cmzn_field_cache_set_node(array_data->field_cache, node);
+		cmzn_fieldcache_set_node(array_data->field_cache, node);
 		array_data->node_values->node = node;
 		if (array_data->sort_by_field)
 		{
@@ -226,8 +227,8 @@ allowed during identifier changes.
 		number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
 		if (0 < number_of_nodes)
 		{
-			cmzn_field_module_id field_module;
-			cmzn_field_cache_id field_cache;
+			cmzn_fieldmodule_id field_module;
+			cmzn_fieldcache_id field_cache;
 			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (sort_by_field)
 			{
@@ -261,9 +262,9 @@ allowed during identifier changes.
 				}
 				if (return_code)
 				{
-					field_module = cmzn_region_get_field_module(FE_region_get_cmzn_region(fe_region));
-					field_cache = cmzn_field_module_create_cache(field_module);
-					cmzn_field_cache_set_time(field_cache, time);
+					field_module = cmzn_region_get_fieldmodule(FE_region_get_cmzn_region(fe_region));
+					field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+					cmzn_fieldcache_set_time(field_cache, time);
 					/* make a linear array of the nodes in the group in current order */
 					array_data.field_cache = field_cache;
 					array_data.node_values = node_values;
@@ -277,8 +278,8 @@ allowed during identifier changes.
 							"Could not build node/field values array");
 						return_code = 0;
 					}
-					cmzn_field_cache_destroy(&field_cache);
-					cmzn_field_module_destroy(&field_module);
+					cmzn_fieldcache_destroy(&field_cache);
+					cmzn_fieldmodule_destroy(&field_module);
 				}
 				if (return_code)
 				{
@@ -440,9 +441,9 @@ struct LIST(FE_node) *
 		data.node_list = CREATE(LIST(FE_node))();
 		if (NULL != data.node_list)
 		{
-			cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-			data.field_cache = cmzn_field_module_create_cache(field_module);
-			cmzn_field_cache_set_time(data.field_cache, time);
+			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+			data.field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+			cmzn_fieldcache_set_time(data.field_cache, time);
 			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
 			if (node_ranges)
 			{
@@ -478,7 +479,7 @@ struct LIST(FE_node) *
 							int selected = 1;
 							if (group_field || conditional_field)
 							{
-								cmzn_field_cache_set_node(data.field_cache, node);
+								cmzn_fieldcache_set_node(data.field_cache, node);
 								if ((group_field && !cmzn_field_evaluate_boolean(group_field, data.field_cache)) ||
 									(conditional_field && !cmzn_field_evaluate_boolean(conditional_field, data.field_cache)))
 								{
@@ -505,8 +506,8 @@ struct LIST(FE_node) *
 					"Error building list");
 				DESTROY(LIST(FE_node))(&data.node_list);
 			}
-			cmzn_field_cache_destroy(&data.field_cache);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldcache_destroy(&data.field_cache);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{

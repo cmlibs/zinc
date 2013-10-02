@@ -889,8 +889,8 @@ static int cmzn_scene_build_graphics_objects(
 				= (struct Computed_field *) NULL;
 			graphic_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
 			graphic_to_object_data.region = scene->region;
-			graphic_to_object_data.field_module = cmzn_region_get_field_module(scene->region);
-			graphic_to_object_data.field_cache = cmzn_field_module_create_cache(graphic_to_object_data.field_module);
+			graphic_to_object_data.field_module = cmzn_region_get_fieldmodule(scene->region);
+			graphic_to_object_data.field_cache = cmzn_fieldmodule_create_fieldcache(graphic_to_object_data.field_module);
 			graphic_to_object_data.fe_region = scene->fe_region;
 			graphic_to_object_data.data_fe_region = scene->data_fe_region;
 			graphic_to_object_data.master_mesh = 0;
@@ -908,8 +908,8 @@ static int cmzn_scene_build_graphics_objects(
 			{
 				cmzn_field_destroy(&graphic_to_object_data.selection_group_field);
 			}
-			cmzn_field_cache_destroy(&graphic_to_object_data.field_cache);
-			cmzn_field_module_destroy(&graphic_to_object_data.field_module);
+			cmzn_fieldcache_destroy(&graphic_to_object_data.field_cache);
+			cmzn_fieldmodule_destroy(&graphic_to_object_data.field_module);
 		}
 	}
 	else
@@ -2381,9 +2381,9 @@ static int cmzn_scene_set_time_dependent_transformation(cmzn_time_notifier *time
 		{
 			if (ALLOCATE(values, FE_value, 16))
 			{
-				cmzn_field_module_id field_module = cmzn_region_get_field_module(scene->region);
-				cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
-				cmzn_field_cache_set_time(field_cache, current_time);
+				cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
+				cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+				cmzn_fieldcache_set_time(field_cache, current_time);
 				if (cmzn_field_evaluate_real(scene->transformation_field,
 					field_cache, /*number_of_values*/16, values))
 				{
@@ -2404,8 +2404,8 @@ static int cmzn_scene_set_time_dependent_transformation(cmzn_time_notifier *time
 				{
 					return_code = 0;
 				}
-				cmzn_field_cache_destroy(&field_cache);
-				cmzn_field_module_destroy(&field_module);
+				cmzn_fieldcache_destroy(&field_cache);
+				cmzn_fieldmodule_destroy(&field_module);
 				DEALLOCATE(values);
 			}
 			else
@@ -2859,8 +2859,8 @@ cmzn_field_group_id cmzn_scene_get_or_create_selection_group(cmzn_scene_id scene
 		{
 			// find by name or create
 			const char *default_selection_group_name = "cmiss_selection";
-			cmzn_field_module_id field_module = cmzn_region_get_field_module(scene->region);
-			cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, default_selection_group_name);
+			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
+			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(field_module, default_selection_group_name);
 			if (field)
 			{
 				selection_group = cmzn_field_cast_group(field);
@@ -2868,12 +2868,12 @@ cmzn_field_group_id cmzn_scene_get_or_create_selection_group(cmzn_scene_id scene
 			}
 			if (!selection_group)
 			{
-				field = cmzn_field_module_create_group(field_module);
+				field = cmzn_fieldmodule_create_field_group(field_module);
 				cmzn_field_set_name(field, default_selection_group_name);
 				selection_group = cmzn_field_cast_group(field);
 				cmzn_field_destroy(&field);
 			}
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		if (selection_group)
 		{
@@ -2891,10 +2891,10 @@ int cmzn_scene_change_selection_from_node_list(cmzn_scene_id scene,
 	ENTER(cmzn_scene_add_selection_from_node_list);
 	if (scene && node_list && (NUMBER_IN_LIST(FE_node)(node_list) > 0))
 	{
-		cmzn_field_module_id field_module = cmzn_region_get_field_module(scene->region);
-		cmzn_field_module_begin_change(field_module);
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
+		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_group_id selection_group = cmzn_scene_get_or_create_selection_group(scene);
-		cmzn_nodeset_id temp_nodeset = cmzn_field_module_find_nodeset_by_domain_type(
+		cmzn_nodeset_id temp_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(
 			field_module, use_data ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(selection_group, temp_nodeset);
 		if (!node_group)
@@ -2902,9 +2902,9 @@ int cmzn_scene_change_selection_from_node_list(cmzn_scene_id scene,
 		cmzn_nodeset_destroy(&temp_nodeset);
 		cmzn_nodeset_group_id nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
 		cmzn_field_node_group_destroy(&node_group);
-		cmzn_node_iterator_id iterator = CREATE_LIST_ITERATOR(FE_node)(node_list);
+		cmzn_nodeiterator_id iterator = CREATE_LIST_ITERATOR(FE_node)(node_list);
 		cmzn_node_id node = 0;
-		while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 		{
 			if (add_flag)
 			{
@@ -2915,11 +2915,11 @@ int cmzn_scene_change_selection_from_node_list(cmzn_scene_id scene,
 				cmzn_nodeset_group_remove_node(nodeset_group, node);
 			}
 		}
-		cmzn_node_iterator_destroy(&iterator);
+		cmzn_nodeiterator_destroy(&iterator);
 		cmzn_nodeset_group_destroy(&nodeset_group);
 		cmzn_field_group_destroy(&selection_group);
-		cmzn_field_module_end_change(field_module);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldmodule_end_change(field_module);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	LEAVE;
 
@@ -2974,19 +2974,19 @@ int cmzn_scene_change_selection_from_element_list_of_dimension(cmzn_scene_id sce
 	ENTER(cmzn_scene_change_selection_from_element_list_of_dimension);
 	if (scene && element_list && (NUMBER_IN_LIST(FE_element)(element_list) > 0))
 	{
-		cmzn_field_module_id field_module = cmzn_region_get_field_module(scene->region);
-		cmzn_field_module_begin_change(field_module);
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
+		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_group_id selection_group = cmzn_scene_get_or_create_selection_group(scene);
-		cmzn_mesh_id temp_mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
+		cmzn_mesh_id temp_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 		cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(selection_group, temp_mesh);
 		if (!element_group)
 			element_group = cmzn_field_group_create_element_group(selection_group, temp_mesh);
 		cmzn_mesh_destroy(&temp_mesh);
 		cmzn_mesh_group_id mesh_group = cmzn_field_element_group_get_mesh(element_group);
 		cmzn_field_element_group_destroy(&element_group);
-		cmzn_element_iterator_id iterator = CREATE_LIST_ITERATOR(FE_element)(element_list);
+		cmzn_elementiterator_id iterator = CREATE_LIST_ITERATOR(FE_element)(element_list);
 		cmzn_element_id element = 0;
-		while (0 != (element = cmzn_element_iterator_next_non_access(iterator)))
+		while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 		{
 			if (add_flag)
 			{
@@ -2997,11 +2997,11 @@ int cmzn_scene_change_selection_from_element_list_of_dimension(cmzn_scene_id sce
 				cmzn_mesh_group_remove_element(mesh_group, element);
 			}
 		}
-		cmzn_element_iterator_destroy(&iterator);
+		cmzn_elementiterator_destroy(&iterator);
 		cmzn_mesh_group_destroy(&mesh_group);
 		cmzn_field_group_destroy(&selection_group);
-		cmzn_field_module_end_change(field_module);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldmodule_end_change(field_module);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	LEAVE;
 

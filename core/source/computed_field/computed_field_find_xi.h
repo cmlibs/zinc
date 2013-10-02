@@ -35,7 +35,7 @@ struct Computed_field_find_element_xi_cache is private.
  * propagate_find_element_xi.
  *
  * @param field  The field whose values need to match.
- * @param field_cache  cmzn_field_cache for evaluating fields with. Time is
+ * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
  * @param values  Array of values to match or get nearest to. Implementation
  * promises to copy this, hence can pass a pointer to field cache values.
@@ -52,7 +52,7 @@ struct Computed_field_find_element_xi_cache is private.
  * found, or 0 if failed.
  */
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	cmzn_field_cache_id field_cache,
+	cmzn_fieldcache_id field_cache,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh_id search_mesh, int find_nearest);

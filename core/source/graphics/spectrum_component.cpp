@@ -18,7 +18,7 @@ appearance of spectrums.
 
 #include "zinc/zincconfigure.h"
 
-
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/status.h"
 #include "general/debug.h"
@@ -1439,11 +1439,11 @@ passed in render data.
 		{
 			if (component->active)
 			{
-				cmzn_field_module_id field_module;
-				cmzn_field_cache_id field_cache;
+				cmzn_fieldmodule_id field_module;
+				cmzn_fieldcache_id field_cache;
 				// GRC probably inefficient to create and destroy cache here; keep it through render pass?
-				field_module = cmzn_field_get_field_module(component->output_field);
-				field_cache = cmzn_field_module_create_cache(field_module);
+				field_module = cmzn_field_get_fieldmodule(component->output_field);
+				field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 				number_of_components = Computed_field_get_number_of_components
 					(component->output_field);
 				ALLOCATE(values, FE_value, number_of_components);
@@ -1453,7 +1453,7 @@ passed in render data.
 					GLfloat* tmpPointer;
 					tmpPointer = render_data->data + component->component_number;
 					CAST_TO_FE_VALUE_C(dataValue,tmpPointer,1);
-					cmzn_field_cache_set_field_real(field_cache, component->input_field, /*number_of_values*/1, dataValue);
+					cmzn_fieldcache_set_field_real(field_cache, component->input_field, /*number_of_values*/1, dataValue);
 				}
 				else
 				{
@@ -1461,12 +1461,12 @@ passed in render data.
 					ALLOCATE(feData, FE_value,render_data->number_of_data_components);
 					CAST_TO_FE_VALUE_C(feData,render_data->data,
 						render_data->number_of_data_components);
-					cmzn_field_cache_set_field_real(field_cache, component->input_field, render_data->number_of_data_components, feData);
+					cmzn_fieldcache_set_field_real(field_cache, component->input_field, render_data->number_of_data_components, feData);
 					DEALLOCATE(feData);
 				}
 				cmzn_field_evaluate_real(component->output_field, field_cache, number_of_components, values);
-				cmzn_field_cache_destroy(&field_cache);
-				cmzn_field_module_destroy(&field_module);
+				cmzn_fieldcache_destroy(&field_cache);
+				cmzn_fieldmodule_destroy(&field_module);
 				for (i = 0 ; i < number_of_components ; i++)
 				{
 					/* ensure 0 - 1 */

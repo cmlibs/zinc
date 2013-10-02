@@ -65,7 +65,7 @@ Otherwise the routine returns 0.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	cmzn_element_point_sample_mode sample_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_field_cache_id field_cache,
+	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
 /*******************************************************************************
@@ -80,7 +80,7 @@ points is allocated and put in this address. Xi positions are always returned as
 triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 <exact_xi> should be supplied for sample mode SET_LOCATION - although it
 is trivial, it is passed and used here to provide a consistent interface.]
-@param field_cache  cmzn_field_cache for evaluating coordinate and density
+@param field_cache  cmzn_fieldcache for evaluating coordinate and density
 fields, required for DENSITY and POISSON modes. Time is expected to have been
 set in the field_cache if needed.
 ==============================================================================*/
@@ -107,7 +107,7 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	cmzn_element_point_sample_mode sample_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_field_cache_id field_cache,
+	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi);
 /*******************************************************************************
@@ -120,7 +120,7 @@ Call the above function, extract the xi location and DEALLOCATE the xi_points.
 This is quite expensive; for this reason cell_centres and cell_corners in line,
 square and cube elements, as well as exact_xi, are handled separately since the
 calculation is trivial.
-@param field_cache  cmzn_field_cache for evaluating coordinate and density
+@param field_cache  cmzn_fieldcache for evaluating coordinate and density
 fields, required for DENSITY and POISSON modes. Time is expected to be set in
 the field_cache if needed.
 ==============================================================================*/

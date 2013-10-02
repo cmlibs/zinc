@@ -11,16 +11,16 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include "computed_field/differential_operator.hpp"
 
-cmzn_differential_operator_id cmzn_differential_operator_access(
-	cmzn_differential_operator_id differential_operator)
+cmzn_differentialoperator_id cmzn_differentialoperator_access(
+	cmzn_differentialoperator_id differential_operator)
 {
 	return differential_operator->access();
 }
 
-int cmzn_differential_operator_destroy(
-	cmzn_differential_operator_id *differential_operator_address)
+int cmzn_differentialoperator_destroy(
+	cmzn_differentialoperator_id *differential_operator_address)
 {
 	if (differential_operator_address)
-		return cmzn_differential_operator::deaccess(*differential_operator_address);
+		return cmzn_differentialoperator::deaccess(*differential_operator_address);
 	return 0;
 }

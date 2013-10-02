@@ -191,7 +191,7 @@ public:
 	{
 	}
 
-	int set_filter(cmzn_field_cache& cache)
+	int set_filter(cmzn_fieldcache& cache)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -259,8 +259,8 @@ cmzn_field_discrete_gaussian_image_filter_id cmzn_field_cast_discrete_gaussian_i
 	}
 }
 
-struct Computed_field *cmzn_field_module_create_discrete_gaussian_image_filter(
-	struct cmzn_field_module *field_module,
+struct Computed_field *cmzn_fieldmodule_create_field_discrete_gaussian_image_filter(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double variance, int maxKernelWidth)
 {
 	Computed_field *field = NULL;
@@ -277,7 +277,7 @@ struct Computed_field *cmzn_field_module_create_discrete_gaussian_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_discrete_gaussian_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_discrete_gaussian_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);

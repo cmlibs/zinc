@@ -110,13 +110,13 @@ int cmzn_region_get_field_cache_size(cmzn_region_id region);
  * Adds cache to the list of caches for this region. Region needs this list to
  * add new value caches for any fields created while the cache exists.
  */
-void cmzn_region_add_field_cache(cmzn_region_id region, cmzn_field_cache_id cache);
+void cmzn_region_add_field_cache(cmzn_region_id region, cmzn_fieldcache_id cache);
 
 /***************************************************************************//**
  * Removes cache from the list of caches for this region.
  */
 void cmzn_region_remove_field_cache(cmzn_region_id region,
-	cmzn_field_cache_id cache);
+	cmzn_fieldcache_id cache);
 
 int cmzn_region_begin_change(struct cmzn_region *region);
 /*******************************************************************************
@@ -336,7 +336,7 @@ struct cmzn_region *cmzn_region_find_subregion_at_path(
 	struct cmzn_region *region, const char *path);
 
 /*******************************************************************************
- * Internal only. External API is cmzn_field_module_find_field_by_name.
+ * Internal only. External API is cmzn_fieldmodule_find_field_by_name.
  * @return  Accessed handle to field of given name, or NULL if none.
  */
 cmzn_field_id cmzn_region_find_field_by_name(cmzn_region_id region,

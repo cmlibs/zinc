@@ -55,7 +55,7 @@ public:
 
 struct cmzn_element_field_is_true_iterator_data
 {
-	cmzn_field_cache_id cache;
+	cmzn_fieldcache_id cache;
 	cmzn_field_id field;
 };
 
@@ -63,13 +63,13 @@ int cmzn_element_field_is_true_iterator(cmzn_element_id element, void *data_void
 {
 	cmzn_element_field_is_true_iterator_data *data =
 		reinterpret_cast<cmzn_element_field_is_true_iterator_data *>(data_void);
-	cmzn_field_cache_set_element(data->cache, element);
+	cmzn_fieldcache_set_element(data->cache, element);
 	return cmzn_field_evaluate_boolean(data->field, data->cache);
 }
 
 struct cmzn_node_field_is_true_iterator_data
 {
-	cmzn_field_cache_id cache;
+	cmzn_fieldcache_id cache;
 	cmzn_field_id field;
 };
 
@@ -77,7 +77,7 @@ int cmzn_node_field_is_true_iterator(cmzn_node_id node, void *data_void)
 {
 	cmzn_node_field_is_true_iterator_data *data =
 		reinterpret_cast<cmzn_node_field_is_true_iterator_data *>(data_void);
-	cmzn_field_cache_set_node(data->cache, node);
+	cmzn_fieldcache_set_node(data->cache, node);
 	return cmzn_field_evaluate_boolean(data->field, data->cache);
 }
 
@@ -111,14 +111,14 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 			return clear();
 		if (other_element_group->getSize() < getSize())
 		{
-			cmzn_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(other_element_group->object_list);
+			cmzn_elementiterator_id iter = CREATE_LIST_ITERATOR(FE_element)(other_element_group->object_list);
 			cmzn_element_id element = 0;
-			while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
 				if (IS_OBJECT_IN_LIST(FE_element)(element, object_list))
 					REMOVE_OBJECT_FROM_LIST(FE_element)(element, object_list);
 			}
-			cmzn_element_iterator_destroy(&iter);
+			cmzn_elementiterator_destroy(&iter);
 		}
 		else
 		{
@@ -129,13 +129,13 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	else
 	{
 		cmzn_region_id region = cmzn_mesh_get_master_region_internal(master_mesh);
-		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-		cmzn_field_cache_id cache = cmzn_field_module_create_cache(field_module);
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_element_field_is_true_iterator_data data = { cache, conditional_field };
 		return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
 			cmzn_element_field_is_true_iterator, (void *)&data, object_list);
-		cmzn_field_cache_destroy(&cache);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldcache_destroy(&cache);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
 	if (new_size != old_size)
@@ -241,14 +241,14 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 			return clear();
 		if (other_node_group->getSize() < getSize())
 		{
-			cmzn_node_iterator_id iter = CREATE_LIST_ITERATOR(FE_node)(other_node_group->object_list);
+			cmzn_nodeiterator_id iter = CREATE_LIST_ITERATOR(FE_node)(other_node_group->object_list);
 			cmzn_node_id node = 0;
-			while (0 != (node = cmzn_node_iterator_next_non_access(iter)))
+			while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 			{
 				if (IS_OBJECT_IN_LIST(FE_node)(node, object_list))
 					REMOVE_OBJECT_FROM_LIST(FE_node)(node, object_list);
 			}
-			cmzn_node_iterator_destroy(&iter);
+			cmzn_nodeiterator_destroy(&iter);
 		}
 		else
 		{
@@ -259,13 +259,13 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	else
 	{
 		cmzn_region_id region = cmzn_nodeset_get_master_region_internal(master_nodeset);
-		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-		cmzn_field_cache_id cache = cmzn_field_module_create_cache(field_module);
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_node_field_is_true_iterator_data data = { cache, conditional_field };
 		return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
 			cmzn_node_field_is_true_iterator, (void *)&data, object_list);
-		cmzn_field_cache_destroy(&cache);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldcache_destroy(&cache);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
 	if (new_size != old_size)
@@ -434,14 +434,14 @@ int cmzn_field_node_group_destroy(cmzn_field_node_group_id *node_group_address)
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(node_group_address));
 }
 
-Computed_field *cmzn_field_module_create_node_group(cmzn_field_module_id field_module, cmzn_nodeset_id nodeset)
+Computed_field *cmzn_fieldmodule_create_field_node_group(cmzn_fieldmodule_id field_module, cmzn_nodeset_id nodeset)
 {
 	Computed_field *field;
 
-	ENTER(cmzn_field_module_create_node_group);
+	ENTER(cmzn_fieldmodule_create_field_node_group);
 	field = (Computed_field *)NULL;
 	if (field_module && nodeset && (cmzn_nodeset_get_master_region_internal(nodeset) ==
-		cmzn_field_module_get_master_region_internal(field_module)))
+		cmzn_fieldmodule_get_master_region_internal(field_module)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
@@ -453,12 +453,12 @@ Computed_field *cmzn_field_module_create_node_group(cmzn_field_module_id field_m
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_group.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* cmzn_field_module_create_group */
+} /* cmzn_fieldmodule_create_field_group */
 
 cmzn_field_element_group *cmzn_field_cast_element_group(cmzn_field_id field)
 {
@@ -479,15 +479,15 @@ inline Computed_field *Computed_field_cast(
 	return (reinterpret_cast<Computed_field*>(element_group_field));
 }
 
-Computed_field *cmzn_field_module_create_element_group(cmzn_field_module_id field_module,
+Computed_field *cmzn_fieldmodule_create_field_element_group(cmzn_fieldmodule_id field_module,
 		cmzn_mesh_id mesh)
 {
 	Computed_field *field;
 
-	ENTER(cmzn_field_module_create_element_group);
+	ENTER(cmzn_fieldmodule_create_field_element_group);
 	field = (Computed_field *)NULL;
 	if (field_module && mesh && (cmzn_mesh_get_master_region_internal(mesh) ==
-		cmzn_field_module_get_master_region_internal(field_module)))
+		cmzn_fieldmodule_get_master_region_internal(field_module)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
@@ -498,12 +498,12 @@ Computed_field *cmzn_field_module_create_element_group(cmzn_field_module_id fiel
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_group.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (field);
-} /* cmzn_field_module_create_group */
+} /* cmzn_fieldmodule_create_field_group */
 
 int cmzn_field_element_group_destroy(cmzn_field_element_group_id *element_group_address)
 {
@@ -532,7 +532,7 @@ void cmzn_field_element_group_list_btree_statistics(
 
 #if defined (USE_OPENCASCADE)
 
-cmzn_field_id cmzn_field_module_create_cad_primitive_group_template(cmzn_field_module_id field_module)
+cmzn_field_id cmzn_fieldmodule_create_field_cad_primitive_group_template(cmzn_fieldmodule_id field_module)
 {
 	Computed_field *field = (struct Computed_field *)NULL;
 
@@ -547,7 +547,7 @@ cmzn_field_id cmzn_field_module_create_cad_primitive_group_template(cmzn_field_m
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_group.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_group.  Invalid argument(s)");
 	}
 
 	return (field);

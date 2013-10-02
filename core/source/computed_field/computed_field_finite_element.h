@@ -99,7 +99,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_cmiss_number(
-	struct cmzn_field_module *field_module);
+	struct cmzn_fieldmodule *field_module);
 
 int Computed_field_has_coordinate_fe_field(struct Computed_field *field,
 	void *dummy);
@@ -158,7 +158,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_xi_coordinates(
-	struct cmzn_field_module *field_module);
+	struct cmzn_fieldmodule *field_module);
 
 int Computed_field_is_type_node_value(struct Computed_field *field);
 /*******************************************************************************

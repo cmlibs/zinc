@@ -618,7 +618,7 @@ For each FE_node in <fe_region> satisfying <conditional_function> with
  * @param fe_region  The region whose nodes are to be iterated over.
  * @return  Handle to node_iterator at position before first, or NULL if error.
  */
-cmzn_node_iterator_id FE_region_create_node_iterator(
+cmzn_nodeiterator_id FE_region_create_nodeiterator(
 	struct FE_region *fe_region);
 
 int FE_region_remove_FE_node(struct FE_region *fe_region,
@@ -1075,7 +1075,7 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
  * @param dimension  The dimension of elements to iterate over.
  * @return  Handle to element_iterator at position before first, or NULL if error.
  */
-cmzn_element_iterator_id FE_region_create_element_iterator(
+cmzn_elementiterator_id FE_region_create_elementiterator(
 	struct FE_region *fe_region, int dimension);
 
 /***************************************************************************//**

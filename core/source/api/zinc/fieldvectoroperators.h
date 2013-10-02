@@ -39,8 +39,8 @@ extern "C" {
  * dimension i.e. one more than the number_of_source_fields.
  * @return  Newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_cross_product(
-	cmzn_field_module_id field_module, int number_of_source_fields,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cross_product(
+	cmzn_fieldmodule_id field_module, int number_of_source_fields,
 	cmzn_field_id *source_fields);
 
 /**
@@ -52,8 +52,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_cross_product(
  * @param source_field_two  Second source field.  Must have 3 components.
  * @return  Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_cross_product_3d(
-	cmzn_field_module_id field_module, cmzn_field_id source_field_one,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cross_product_3d(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
 /**
@@ -65,8 +65,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_cross_product_3d(
  * @param source_field_two  Second source field.
  * @return  Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_dot_product(
-	cmzn_field_module_id field_module, cmzn_field_id source_field_one,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_dot_product(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 
 /**
@@ -76,8 +76,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_dot_product(
  * @param source_field  Source field to normalise.
  * @return  Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_magnitude(
-	cmzn_field_module_id field_module, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_magnitude(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
  * Creates a field returning the values of source vector field normalised to
@@ -87,21 +87,21 @@ ZINC_API cmzn_field_id cmzn_field_module_create_magnitude(
  * @param source_field  Source field to normalise.
  * @return  Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_normalise(
-	cmzn_field_module_id field_module, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_normalise(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
  * Creates a field which has one component equal to the sum of all components of
  * the source field. Also called the L1, taxicab or manhattan norm.
  * For weighted sum of components use a dot_product with a constant weights field.
- * @see cmzn_field_module_create_dot_product
+ * @see cmzn_fieldmodule_create_field_dot_product
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field whose components are to be summed.
  * @return  Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_sum_components(
-	cmzn_field_module_id field_module, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sum_components(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 #ifdef __cplusplus
 }

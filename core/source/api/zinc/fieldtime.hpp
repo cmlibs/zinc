@@ -25,7 +25,7 @@ private:
 	explicit FieldTimeLookup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField,
+	friend FieldTimeLookup Fieldmodule::createFieldTimeLookup(Field& sourceField,
 		Field& timeField);
 
 public:
@@ -42,7 +42,7 @@ private:
 	explicit FieldTimeValue(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper);
+	friend FieldTimeValue Fieldmodule::createFieldTimeValue(TimeKeeper& timeKeeper);
 
 public:
 
@@ -51,15 +51,15 @@ public:
 
 };
 
-inline FieldTimeLookup FieldModule::createTimeLookup(Field& sourceField, Field& timeField)
+inline FieldTimeLookup Fieldmodule::createFieldTimeLookup(Field& sourceField, Field& timeField)
 {
-	return FieldTimeLookup(cmzn_field_module_create_time_lookup(id,
+	return FieldTimeLookup(cmzn_fieldmodule_create_field_time_lookup(id,
 		sourceField.getId(), timeField.getId()));
 }
 
-inline FieldTimeValue FieldModule::createTimeValue(TimeKeeper& timeKeeper)
+inline FieldTimeValue Fieldmodule::createFieldTimeValue(TimeKeeper& timeKeeper)
 {
-	return FieldTimeValue(cmzn_field_module_create_time_value(id, timeKeeper.getId()));
+	return FieldTimeValue(cmzn_fieldmodule_create_field_time_value(id, timeKeeper.getId()));
 }
 
 }  // namespace Zinc

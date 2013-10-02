@@ -25,7 +25,7 @@ private:
 	explicit FieldSin(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldSin FieldModule::createSin(Field& sourceField);
+	friend FieldSin Fieldmodule::createFieldSin(Field& sourceField);
 
 public:
 
@@ -41,7 +41,7 @@ private:
 	explicit FieldCos(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldCos FieldModule::createCos(Field& sourceField);
+	friend FieldCos Fieldmodule::createFieldCos(Field& sourceField);
 
 public:
 
@@ -57,7 +57,7 @@ private:
 	explicit FieldTan(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldTan FieldModule::createTan(Field& sourceField);
+	friend FieldTan Fieldmodule::createFieldTan(Field& sourceField);
 
 public:
 
@@ -73,7 +73,7 @@ private:
 	explicit FieldAsin(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldAsin FieldModule::createAsin(Field& sourceField);
+	friend FieldAsin Fieldmodule::createFieldAsin(Field& sourceField);
 
 public:
 
@@ -89,7 +89,7 @@ private:
 	explicit FieldAcos(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldAcos FieldModule::createAcos(Field& sourceField);
+	friend FieldAcos Fieldmodule::createFieldAcos(Field& sourceField);
 
 public:
 
@@ -105,7 +105,7 @@ private:
 	explicit FieldAtan(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldAtan FieldModule::createAtan(Field& sourceField);
+	friend FieldAtan Fieldmodule::createFieldAtan(Field& sourceField);
 
 public:
 
@@ -126,44 +126,44 @@ public:
 	FieldAtan2() : Field(0)
 	{	}
 
-	friend FieldAtan2 FieldModule::createAtan2(Field& sourceField1,
+	friend FieldAtan2 Fieldmodule::createFieldAtan2(Field& sourceField1,
 		Field& sourceField2);
 
 };
 
-inline FieldSin FieldModule::createSin(Field& sourceField)
+inline FieldSin Fieldmodule::createFieldSin(Field& sourceField)
 {
-	return FieldSin(cmzn_field_module_create_sin(id, sourceField.getId()));
+	return FieldSin(cmzn_fieldmodule_create_field_sin(id, sourceField.getId()));
 }
 
-inline FieldCos FieldModule::createCos(Field& sourceField)
+inline FieldCos Fieldmodule::createFieldCos(Field& sourceField)
 {
-	return FieldCos(cmzn_field_module_create_cos(id, sourceField.getId()));
+	return FieldCos(cmzn_fieldmodule_create_field_cos(id, sourceField.getId()));
 }
 
-inline FieldTan FieldModule::createTan(Field& sourceField)
+inline FieldTan Fieldmodule::createFieldTan(Field& sourceField)
 {
-	return FieldTan(cmzn_field_module_create_tan(id, sourceField.getId()));
+	return FieldTan(cmzn_fieldmodule_create_field_tan(id, sourceField.getId()));
 }
 
-inline FieldAsin FieldModule::createAsin(Field& sourceField)
+inline FieldAsin Fieldmodule::createFieldAsin(Field& sourceField)
 {
-	return FieldAsin(cmzn_field_module_create_asin(id, sourceField.getId()));
+	return FieldAsin(cmzn_fieldmodule_create_field_asin(id, sourceField.getId()));
 }
 
-inline FieldAcos FieldModule::createAcos(Field& sourceField)
+inline FieldAcos Fieldmodule::createFieldAcos(Field& sourceField)
 {
-	return FieldAcos(cmzn_field_module_create_acos(id, sourceField.getId()));
+	return FieldAcos(cmzn_fieldmodule_create_field_acos(id, sourceField.getId()));
 }
 
-inline FieldAtan FieldModule::createAtan(Field& sourceField)
+inline FieldAtan Fieldmodule::createFieldAtan(Field& sourceField)
 {
-	return FieldAtan(cmzn_field_module_create_atan(id, sourceField.getId()));
+	return FieldAtan(cmzn_fieldmodule_create_field_atan(id, sourceField.getId()));
 }
 
-inline FieldAtan2 FieldModule::createAtan2(Field& sourceField1, Field& sourceField2)
+inline FieldAtan2 Fieldmodule::createFieldAtan2(Field& sourceField1, Field& sourceField2)
 {
-	return FieldAtan2(cmzn_field_module_create_atan2(id, sourceField1.getId(),
+	return FieldAtan2(cmzn_fieldmodule_create_field_atan2(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 

@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : field.h
  *
  * The public interface to the zinc field base object.
@@ -13,6 +13,7 @@
 
 #include "types/differentialoperatorid.h"
 #include "types/elementid.h"
+#include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
 #include "types/nodeid.h"
@@ -23,7 +24,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Labels of field attributes which may be set or obtained using generic
  * get/set_attribute functions.
  */
@@ -56,7 +57,7 @@ enum cmzn_field_attribute
 	 */
 };
 
-/***************************************************************************//**
+/**
  * Field attribute describing the type of space that its values are to be
  * interpreted in. Although it is usually set for all fields (default is
  * rectangular cartesian, RC), the attribute is only relevant when field is
@@ -83,7 +84,7 @@ Global functions
 ----------------
 */
 
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -93,7 +94,7 @@ Global functions
 ZINC_API enum cmzn_field_attribute cmzn_field_attribute_enum_from_string(
 	const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
@@ -102,7 +103,7 @@ ZINC_API enum cmzn_field_attribute cmzn_field_attribute_enum_from_string(
  */
 ZINC_API char *cmzn_field_attribute_enum_to_string(enum cmzn_field_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -112,7 +113,7 @@ ZINC_API char *cmzn_field_attribute_enum_to_string(enum cmzn_field_attribute att
 ZINC_API enum cmzn_field_coordinate_system_type
 	cmzn_field_coordinate_system_type_enum_from_string(const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
@@ -122,7 +123,7 @@ ZINC_API enum cmzn_field_coordinate_system_type
 ZINC_API char *cmzn_field_coordinate_system_type_enum_to_string(
 	enum cmzn_field_coordinate_system_type coordinate_system_type);
 
-/***************************************************************************//**
+/**
  * Get the number of components of the field.
  *
  * @param field  The field to query.
@@ -130,7 +131,7 @@ ZINC_API char *cmzn_field_coordinate_system_type_enum_to_string(
  */
 ZINC_API int cmzn_field_get_number_of_components(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Returns a new reference to the field with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
@@ -139,7 +140,7 @@ ZINC_API int cmzn_field_get_number_of_components(cmzn_field_id field);
  */
 ZINC_API cmzn_field_id cmzn_field_access(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Destroys this reference to the field (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
@@ -172,7 +173,7 @@ ZINC_API bool cmzn_field_is_managed(cmzn_field_id field);
  */
 ZINC_API int cmzn_field_set_managed(cmzn_field_id field, bool value);
 
-/***************************************************************************//**
+/**
  * Assign mesh_location field values at location specified in cache. Only
  * supported by stored_mesh_location field type.
  *
@@ -185,10 +186,10 @@ ZINC_API int cmzn_field_set_managed(cmzn_field_id field, bool value);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_assign_mesh_location(cmzn_field_id field,
-	cmzn_field_cache_id cache, cmzn_element_id element,
+	cmzn_fieldcache_id cache, cmzn_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates);
 
-/***************************************************************************//**
+/**
  * Assign real values to field at location specified in cache.
  * Only supported for some field types, notably finite_element, node_value, and
  * field operators where only one operand is assignable: these back-calculate
@@ -204,10 +205,10 @@ ZINC_API int cmzn_field_assign_mesh_location(cmzn_field_id field,
  * @param values  Array of real values to assign to field.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_assign_real(cmzn_field_id field, cmzn_field_cache_id cache,
+ZINC_API int cmzn_field_assign_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	int number_of_values, const double *values);
 
-/***************************************************************************//**
+/**
  * Assign a string value to a field at location specified in cache.
  * Only supported for legacy stored 'finite element' string at node locations,
  * and string_constant at any cache location.
@@ -217,10 +218,10 @@ ZINC_API int cmzn_field_assign_real(cmzn_field_id field, cmzn_field_cache_id cac
  * @param string_value  The string value to assign to field.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_field_cache_id cache,
+ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id cache,
 	const char *string_value);
 
-/***************************************************************************//**
+/**
  * Evaluate mesh_location field values at location specified in cache.
  *
  * @param field  The field to evaluate.
@@ -232,10 +233,10 @@ ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_field_cache_id c
  * not defined at cache location. Caller is responsible for destroying handle.
  */
 ZINC_API cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
-	cmzn_field_cache_id cache, int number_of_chart_coordinates,
+	cmzn_fieldcache_id cache, int number_of_chart_coordinates,
 	double *chart_coordinates);
 
-/***************************************************************************//**
+/**
  * Evaluate real field values at location specified in cache.
  *
  * @param field  The field to evaluate.
@@ -246,10 +247,10 @@ ZINC_API cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
  * @return  Status CMZN_OK on success, any other value on failure including if
  * field is not defined at cache location.
  */
-ZINC_API int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_field_cache_id cache,
+ZINC_API int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	int number_of_values, double *values);
 
-/***************************************************************************//**
+/**
  * Evaluate field as string at location specified in cache. Numerical valued
  * fields are written to a string with comma separated components.
  * Caller must free returned string with cmzn_deallocate().
@@ -260,9 +261,9 @@ ZINC_API int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_field_cache_id c
  * not defined at cache location.
  */
 ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
-	cmzn_field_cache_id cache);
+	cmzn_fieldcache_id cache);
 
-/***************************************************************************//**
+/**
  * Evaluate derivatives of a real-valued field.
  * CURRENT LIMITATIONS:
  * 1. Can only evaluate at an element location.
@@ -285,10 +286,10 @@ ZINC_API char *cmzn_field_evaluate_string(cmzn_field_id field,
  * if field is not defined at cache location.
  */
 ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
-	cmzn_differential_operator_id differential_operator,
-	cmzn_field_cache_id cache, int number_of_values, double *values);
+	cmzn_differentialoperator_id differential_operator,
+	cmzn_fieldcache_id cache, int number_of_values, double *values);
 
-/***************************************************************************//**
+/**
  * Get an integer or Boolean attribute of the field.
  *
  * @param field  The field to query.
@@ -298,7 +299,7 @@ ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 ZINC_API int cmzn_field_get_attribute_integer(cmzn_field_id field,
 	enum cmzn_field_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Set an integer or Boolean attribute of the field.
  *
  * @param field  The field to set the attribute for.
@@ -311,7 +312,7 @@ ZINC_API int cmzn_field_get_attribute_integer(cmzn_field_id field,
 ZINC_API int cmzn_field_set_attribute_integer(cmzn_field_id field,
 	enum cmzn_field_attribute attribute, int value);
 
-/***************************************************************************//**
+/**
  * Get a scalar real attribute of the field.
  *
  * @param field  The field to query.
@@ -321,7 +322,7 @@ ZINC_API int cmzn_field_set_attribute_integer(cmzn_field_id field,
 ZINC_API double cmzn_field_get_attribute_real(cmzn_field_id field,
 	enum cmzn_field_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Set a scalar real attribute of the field.
  *
  * @param field  The field to set the attribute for.
@@ -333,7 +334,7 @@ ZINC_API double cmzn_field_get_attribute_real(cmzn_field_id field,
 ZINC_API int cmzn_field_set_attribute_real(cmzn_field_id field,
 	enum cmzn_field_attribute attribute, double value);
 
-/***************************************************************************//**
+/**
  * Return the name of a component of the field.
  *
  * @param field  The field whose component name is requested.
@@ -343,7 +344,7 @@ ZINC_API int cmzn_field_set_attribute_real(cmzn_field_id field,
  */
 ZINC_API char *cmzn_field_get_component_name(cmzn_field_id field, int component_number);
 
-/***************************************************************************//**
+/**
  * Get the coordinate system type to interpret field values in.
  *
  * @param field  The field to query.
@@ -352,7 +353,7 @@ ZINC_API char *cmzn_field_get_component_name(cmzn_field_id field, int component_
 ZINC_API enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system_type(
 	cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Set the coordinate system type to interpret field values in.
  * Note PROLATE_SPHEROIDAL and OBLATE_SPHEROIDAL coordinate system types also
  * require the real CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS to be set to a
@@ -365,7 +366,7 @@ ZINC_API enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system
 ZINC_API int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
 	enum cmzn_field_coordinate_system_type coordinate_system_type);
 
-/***************************************************************************//**
+/**
  * Return the name of the field.
  *
  * @param field  The field whose name is requested.
@@ -374,7 +375,7 @@ ZINC_API int cmzn_field_set_coordinate_system_type(cmzn_field_id field,
  */
 ZINC_API char *cmzn_field_get_name(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Set the name of the field.
  * Fails if the new name is in use by any other field in the same field module.
  *
@@ -384,7 +385,7 @@ ZINC_API char *cmzn_field_get_name(cmzn_field_id field);
  */
 ZINC_API int cmzn_field_set_name(cmzn_field_id field, const char *name);
 
-/***************************************************************************//**
+/**
  * Return a source field of this field at a given index. Source fields are in
  * the order presented in the field constructor followed by any optional source
  * fields set by type-specific API.
@@ -396,15 +397,15 @@ ZINC_API int cmzn_field_set_name(cmzn_field_id field, const char *name);
  */
 ZINC_API cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int index);
 
-/***************************************************************************//**
+/**
  * Returns a reference to the field module which owns this field.
  *
  * @param field  The field to obtain field module for.
  * @return  Field module which this field belongs to.
  */
-ZINC_API cmzn_field_module_id cmzn_field_get_field_module(cmzn_field_id field);
+ZINC_API cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * The types of values fields may produce.
  * @see cmzn_field_get_value_type
  */
@@ -416,7 +417,7 @@ enum cmzn_field_value_type
 	CMZN_FIELD_VALUE_TYPE_MESH_LOCATION = 3
 };
 
-/***************************************************************************//**
+/**
  * Gets the type of values produced by the field.
  *
  * @param field  The field to query.
@@ -424,7 +425,7 @@ enum cmzn_field_value_type
  */
 ZINC_API enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Determines if the field is defined at the location specified in the field
  * cache.
  *
@@ -433,123 +434,35 @@ ZINC_API enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id fiel
  * @return  1 if defined, 0 if not or failed.
  */
 ZINC_API int cmzn_field_is_defined_at_location(cmzn_field_id field,
-	cmzn_field_cache_id cache);
+	cmzn_fieldcache_id cache);
 
-/***************************************************************************//**
- * Creates a field cache for storing a known location and field values and
- * derivatives at that location. Required to evaluate and assign field values.
- *
- * @param field_module  The field module to create a field cache for.
- * @return  New field cache, or NULL if failed.
- */
-ZINC_API cmzn_field_cache_id cmzn_field_module_create_cache(
-	cmzn_field_module_id field_module);
-
-/***************************************************************************//**
- * Returns a new reference to the field cache with reference count incremented.
+/**
+ * Returns a new reference to the iterator with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
- * @param cache  The field cache to obtain a new reference to.
- * @return  New field cache reference with incremented reference count.
+ * @param iterator  The iterator to obtain a new reference to.
+ * @return  New field iterator reference with incremented reference count.
  */
-ZINC_API cmzn_field_cache_id cmzn_field_cache_access(cmzn_field_cache_id cache);
+ZINC_API cmzn_fielditerator_id cmzn_fielditerator_access(
+	cmzn_fielditerator_id iterator);
 
-/*******************************************************************************
- * Destroys this reference to the field cache, and sets it to NULL.
- * Internally this just decrements the reference count.
+/**
+ * Destroys this handle to the field iterator and sets it to NULL.
  *
- * @param cache_address  Address of handle to field cache to destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param iterator_address  Address of handle to field_iterator to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_field_cache_destroy(cmzn_field_cache_id *cache_address);
+ZINC_API int cmzn_fielditerator_destroy(cmzn_fielditerator_id *iterator_address);
 
-/***************************************************************************//**
- * Prescribes an element location without specifying chart coordinates. Suitable
- * only for evaluating fields that are constant across the element.
- * Note: replaces any other spatial location in cache (e.g. node.) but time
- * is unchanged.
- *
- * @param cache  The field cache to set the location in.
- * @param element  The element to set. Must belong to same region as cache.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_field_cache_set_element(cmzn_field_cache_id cache,
-	cmzn_element_id element);
-
-/***************************************************************************//**
- * Prescribes a location in an element for field evaluation or assignment with
- * the cache.
- * Note: replaces any other spatial location in cache (e.g. node.) but time
- * is unchanged.
- *
- * @param cache  The field cache to set the location in.
- * @param element  The element the location is in. Must belong to same region
- * as cache.
- * @param number_of_chart_coordinates  The size of the chart_coordinates array,
- * checked to be not less than the element dimension.
- * @param chart_coordinates  Location in element chart. Value is not checked;
- * caller is responsible for supplying locations within the bounds of the
- * element shape.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_field_cache_set_mesh_location(cmzn_field_cache_id cache,
-	cmzn_element_id element, int number_of_chart_coordinates,
-	const double *chart_coordinates);
-
-/***************************************************************************//**
- * Prescribes a value of a field for subsequent evaluation and assignment with
- * the cache.
- * Note: currently treated as a spatial location, replacing any other spatial
- * location in cache (e.g. element, node) but time is unchanged.
- *
- * @param cache  The field cache to set the location in.
- * @param reference_field  The field whose values are to be prescribed.
- * @param number_of_values  The size of the values array. Can be less than the
- * number of field components, and if so it is padded with zeroes.
- * @param values  The field values to set.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_field_cache_set_field_real(cmzn_field_cache_id cache,
-	cmzn_field_id reference_field, int number_of_values, const double *values);
-
-/***************************************************************************//**
- * Prescribes a node location for field evaluation or assignment with the cache.
- * Note: replaces any other spatial location in cache (e.g. element) but time
- * is unchanged.
- *
- * @param cache  The field cache to set the location in.
- * @param node  The node to set as spatial location. Must belong to same region
- * as cache.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_field_cache_set_node(cmzn_field_cache_id cache, cmzn_node_id node);
-
-/***************************************************************************//**
- * Prescribes the time for field evaluation or assignment with the cache.
- *
- * @param cache  The field cache to set the location in.
- * @param time  The time value to be set.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_field_cache_set_time(cmzn_field_cache_id cache, double time);
-
-/***************************************************************************//**
- * Destroys this handle to the field_iterator and sets it to NULL.
- *
- * @param field_iterator_address  Address of handle to field_iterator to destroy.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_field_iterator_destroy(cmzn_field_iterator_id *field_iterator_address);
-
-/***************************************************************************//**
+/**
  * Returns a handle to the next field in the container being iterated over then
  * advances the iterator position. The caller is required to destroy the
  * returned field handle.
  *
- * @param field_iterator  Field iterator to query and advance.
+ * @param iterator  Field iterator to query and advance.
  * @return  Handle to the next field, or NULL if none remaining.
  */
-ZINC_API cmzn_field_id cmzn_field_iterator_next(cmzn_field_iterator_id field_iterator);
+ZINC_API cmzn_field_id cmzn_fielditerator_next(cmzn_fielditerator_id iterator);
 
 #ifdef __cplusplus
 }

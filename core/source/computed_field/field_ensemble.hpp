@@ -83,7 +83,7 @@ private:
 		return (NULL != dynamic_cast<Field_ensemble*>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -189,7 +189,7 @@ private:
 		return (NULL != dynamic_cast<Field_ensemble_group*>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 

@@ -26,7 +26,7 @@ private:
 	explicit FieldFiniteElement(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldFiniteElement FieldModule::createFiniteElement(
+	friend FieldFiniteElement Fieldmodule::createFieldFiniteElement(
 		int numberOfComponents);
 
 public:
@@ -47,7 +47,7 @@ private:
 	explicit FieldEmbedded(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldEmbedded FieldModule::createEmbedded(Field& sourceField,
+	friend FieldEmbedded Fieldmodule::createFieldEmbedded(Field& sourceField,
 		Field& embeddedLocationField);
 
 public:
@@ -64,7 +64,7 @@ private:
 	explicit FieldFindMeshLocation(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldFindMeshLocation FieldModule::createFindMeshLocation(
+	friend FieldFindMeshLocation Fieldmodule::createFieldFindMeshLocation(
 		Field& sourceField, Field& meshField, Mesh& mesh);
 
 public:
@@ -109,7 +109,7 @@ private:
 	explicit FieldNodeValue(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodeValue FieldModule::createNodeValue(Field& sourceField,
+	friend FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
 		Node::ValueType valueType, int versionNumber);
 
 public:
@@ -126,7 +126,7 @@ private:
 	explicit FieldStoredMeshLocation(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldStoredMeshLocation FieldModule::createStoredMeshLocation(Mesh& mesh);
+	friend FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(Mesh& mesh);
 
 public:
 
@@ -146,7 +146,7 @@ private:
 	explicit FieldStoredString(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldStoredString FieldModule::createStoredString();
+	friend FieldStoredString Fieldmodule::createFieldStoredString();
 
 public:
 
@@ -159,42 +159,42 @@ public:
 	{	}
 };
 
-inline FieldFiniteElement FieldModule::createFiniteElement(int numberOfComponents)
+inline FieldFiniteElement Fieldmodule::createFieldFiniteElement(int numberOfComponents)
 {
-	return FieldFiniteElement(cmzn_field_module_create_finite_element(id,
+	return FieldFiniteElement(cmzn_fieldmodule_create_field_finite_element(id,
 		numberOfComponents));
 }
 
-inline FieldEmbedded FieldModule::createEmbedded(Field& sourceField, Field& embeddedLocationField)
+inline FieldEmbedded Fieldmodule::createFieldEmbedded(Field& sourceField, Field& embeddedLocationField)
 {
-	return FieldEmbedded(cmzn_field_module_create_embedded(id,
+	return FieldEmbedded(cmzn_fieldmodule_create_field_embedded(id,
 		sourceField.getId(), embeddedLocationField.getId()));
 }
 
-inline FieldFindMeshLocation FieldModule::createFindMeshLocation(
+inline FieldFindMeshLocation Fieldmodule::createFieldFindMeshLocation(
 	Field& sourceField, Field& meshField, Mesh& mesh)
 {
-	return FieldFindMeshLocation(cmzn_field_module_create_find_mesh_location(id,
+	return FieldFindMeshLocation(cmzn_fieldmodule_create_field_find_mesh_location(id,
 		sourceField.getId(), meshField.getId(), mesh.getId()));
 }
 
-inline FieldNodeValue FieldModule::createNodeValue(Field& sourceField,
+inline FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
 	Node::ValueType valueType, int versionNumber)
 {
-	return FieldNodeValue(cmzn_field_module_create_node_value(id,
+	return FieldNodeValue(cmzn_fieldmodule_create_field_node_value(id,
 		sourceField.getId(), static_cast<cmzn_node_value_type>(valueType),
 		versionNumber));
 }
 
-inline FieldStoredMeshLocation FieldModule::createStoredMeshLocation(Mesh& mesh)
+inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(Mesh& mesh)
 {
-	return FieldStoredMeshLocation(cmzn_field_module_create_stored_mesh_location(id,
+	return FieldStoredMeshLocation(cmzn_fieldmodule_create_field_stored_mesh_location(id,
 		mesh.getId()));
 }
 
-inline FieldStoredString FieldModule::createStoredString()
+inline FieldStoredString Fieldmodule::createFieldStoredString()
 {
-	return FieldStoredString(cmzn_field_module_create_stored_string(id));
+	return FieldStoredString(cmzn_fieldmodule_create_field_stored_string(id));
 }
 
 }  // namespace Zinc

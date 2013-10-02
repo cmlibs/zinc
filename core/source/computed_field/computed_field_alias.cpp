@@ -87,7 +87,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		cmzn_region_id otherRegion = Computed_field_get_region(getSourceField(0));
@@ -99,13 +99,13 @@ private:
 		return valueCache;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, RealFieldValueCache& /*valueCache*/);
 
 	void field_is_managed(void)
 	{
@@ -192,10 +192,10 @@ int Computed_field_alias::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_alias::compare */
 
-int Computed_field_alias::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_alias::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_field_cache *extraCache = valueCache.getExtraCache();
+	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
@@ -218,9 +218,9 @@ int Computed_field_alias::evaluate(cmzn_field_cache& cache, FieldValueCache& inV
 /***************************************************************************//**
  * Sets values of the original field at the supplied location.
  */
-enum FieldAssignmentResult Computed_field_alias::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_alias::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
-	cmzn_field_cache *extraCache = valueCache.getExtraCache();
+	cmzn_fieldcache *extraCache = valueCache.getExtraCache();
 	RealFieldValueCache *sourceCache = 0;
 	if (extraCache)
 	{
@@ -312,7 +312,7 @@ char *Computed_field_alias::get_command_string()
 
 } //namespace
 
-Computed_field *cmzn_field_module_create_alias(cmzn_field_module_id field_module,
+Computed_field *cmzn_fieldmodule_create_field_alias(cmzn_fieldmodule_id field_module,
 	Computed_field *original_field)
 {
 	cmzn_field_id field = 0;

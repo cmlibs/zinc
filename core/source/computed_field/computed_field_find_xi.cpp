@@ -107,7 +107,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 				iterations = 0;
 				while ((!converged) && return_code)
 				{
-					if (cmzn_field_cache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi) &&
+					if (cmzn_fieldcache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi) &&
 						cmzn_field_evaluate_real_with_derivatives(data->field, data->field_cache,
 							data->number_of_values, values, number_of_xi, derivatives))
 					{
@@ -263,7 +263,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 #undef MAX_FIND_XI_ITERATIONS
 
 int Computed_field_perform_find_element_xi(struct Computed_field *field,
-	cmzn_field_cache_id field_cache,
+	cmzn_fieldcache_id field_cache,
 	const FE_value *values, int number_of_values,
 	struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh_id search_mesh, int find_nearest)
@@ -430,9 +430,9 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 					/* Now try every element */
 					if (!*element_address)
 					{
-						cmzn_element_iterator_id iterator = cmzn_mesh_create_element_iterator(search_mesh);
+						cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(search_mesh);
 						cmzn_element_id element = 0;
-						while (0 != (element = cmzn_element_iterator_next(iterator)))
+						while (0 != (element = cmzn_elementiterator_next(iterator)))
 						{
 							if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
 							{
@@ -442,7 +442,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 							}
 							cmzn_element_destroy(&element);
 						}
-						cmzn_element_iterator_destroy(&iterator);
+						cmzn_elementiterator_destroy(&iterator);
 					}
 				}
 				else

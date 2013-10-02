@@ -16,6 +16,7 @@ data points.
 #include <stdio.h>
 
 #include "zinc/element.h"
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -52,7 +53,7 @@ number_of_coordinate_components per node.
 Set node_number to zero before passing.
 ==============================================================================*/
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	FE_value *fitting_field_values;
 	FE_value *weights;
 	/* Space to evaluate the coordinate field and keep the previous value */
@@ -142,7 +143,7 @@ Calculates the coordinates and length from the first node.
 			FE_field_evaluate_snake_position, accumulate_data_void,
 			accumulate_data->fe_field_list);
 
-		cmzn_field_cache_set_node(accumulate_data->field_cache, node);
+		cmzn_fieldcache_set_node(accumulate_data->field_cache, node);
 		if (return_code)
 		{
 			if (cmzn_field_evaluate_real(coordinate_field, accumulate_data->field_cache, number_of_components, coordinates))
@@ -570,8 +571,8 @@ int create_FE_element_snake_from_data_points(
  	struct FE_field_initialise_array_data initialise_array_data;
 	struct FE_field **fe_field_array;
 	struct LIST(FE_field) *fe_field_list;
-	cmzn_field_module_id field_module;
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldmodule_id field_module;
+	cmzn_fieldcache_id field_cache;
 
 	ENTER(create_FE_element_snake_from_data_points);
 	if (fe_region && coordinate_field && 
@@ -581,8 +582,8 @@ int create_FE_element_snake_from_data_points(
 		(0.0 <= (double_stiffness = (double)stiffness)))
 	{
 		return_code = 1;
-		field_module = cmzn_field_get_field_module(coordinate_field);
-		field_cache = cmzn_field_module_create_cache(field_module);
+		field_module = cmzn_field_get_fieldmodule(coordinate_field);
+		field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 
 		fe_field_list = Computed_field_array_get_defining_FE_field_list(
 			number_of_fitting_fields, fitting_fields);
@@ -1064,8 +1065,8 @@ int create_FE_element_snake_from_data_points(
 		{
 			DEALLOCATE(fe_field_array);
 		}
-		cmzn_field_cache_destroy(&field_cache);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldcache_destroy(&field_cache);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	else
 	{

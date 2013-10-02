@@ -56,14 +56,14 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -102,7 +102,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_function::compare */
 
-int Computed_field_function::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_function::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	cmzn_field_id sourceField = getSourceField(0);
 	cmzn_field_id resultField = getSourceField(1);
@@ -111,7 +111,7 @@ int Computed_field_function::evaluate(cmzn_field_cache& cache, FieldValueCache& 
 	if (sourceCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		cmzn_field_cache& extraCache = *valueCache.getExtraCache();
+		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
 		int number_of_xi = cache.getRequestedDerivatives();
 		if (sourceField->number_of_components == referenceField->number_of_components)
@@ -262,7 +262,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_function(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, struct Computed_field *result_field,
 	struct Computed_field *reference_field)
 {

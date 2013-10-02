@@ -32,8 +32,8 @@ extern "C" {
  * 1, 4 or 9 components.
  * @return  Newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_determinant(
-	cmzn_field_module_id field_module, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_determinant(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /***************************************************************************//**
  * Creates a field returning the N eigenvalues of symmetric N*N component source
@@ -43,8 +43,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_determinant(
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_eigenvalues(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_eigenvalues(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /***************************************************************************//**
@@ -56,8 +56,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_eigenvalues(
  * @param eigenvalues_field  Eigenvalues type field.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_eigenvectors(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_eigenvectors(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id eigenvalues_field);
 
 /***************************************************************************//**
@@ -68,8 +68,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_eigenvectors(
  * @param source_field  N*N component square symmetric matrix field.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_matrix_invert(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_invert(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /***************************************************************************//**
@@ -85,8 +85,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_matrix_invert(
  * @param source_field2  M rows * P columns component matrix field 2.
  * @return Newly created matrix with N*P components.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_matrix_multiply(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
+	cmzn_fieldmodule_id field_module,
 	int number_of_rows, cmzn_field_id source_field1,
 	cmzn_field_id source_field2);
 
@@ -114,8 +114,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_matrix_multiply(
  * @param projection_matrix_field  Field supplying projection matrix.
  * @return  Newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_projection(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_projection(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, cmzn_field_id projection_matrix_field);
 
 /***************************************************************************//**
@@ -129,8 +129,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_projection(
  * @param source_field  N rows * M columns component matrix field.
  * @return Newly created M*N component transposed matrix field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_transpose(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_transpose(
+	cmzn_fieldmodule_id field_module,
 	int source_number_of_rows, cmzn_field_id source_field);
 
 #ifdef __cplusplus

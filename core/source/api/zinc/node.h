@@ -55,8 +55,8 @@ ZINC_API char *cmzn_node_value_type_enum_to_string(enum cmzn_node_value_type typ
  * @param domain_type  CMZN_FIELD_DOMAIN_NODES or CMZN_FIELD_DOMAIN_DATA.
  * @return  Handle to the nodeset, or 0 if error.
  */
-ZINC_API cmzn_nodeset_id cmzn_field_module_find_nodeset_by_domain_type(
-	cmzn_field_module_id field_module, enum cmzn_field_domain_type domain_type);
+ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_domain_type(
+	cmzn_fieldmodule_id field_module, enum cmzn_field_domain_type domain_type);
 
 /**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
@@ -73,8 +73,8 @@ ZINC_API cmzn_nodeset_id cmzn_field_module_find_nodeset_by_domain_type(
  * @param name  The name of the nodeset.
  * @return  Handle to the nodeset, or 0 if error.
  */
-ZINC_API cmzn_nodeset_id cmzn_field_module_find_nodeset_by_name(
-	cmzn_field_module_id field_module, const char *nodeset_name);
+ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
+	cmzn_fieldmodule_id field_module, const char *nodeset_name);
 
 /**
  * Returns a new handle to the nodeset with reference count incremented.
@@ -111,7 +111,7 @@ ZINC_API int cmzn_nodeset_contains_node(cmzn_nodeset_id nodeset, cmzn_node_id no
  * @param nodeset  Handle to the nodeset the template works with.
  * @return  Handle to node_template, or NULL if error.
  */
-ZINC_API cmzn_node_template_id cmzn_nodeset_create_node_template(
+ZINC_API cmzn_nodetemplate_id cmzn_nodeset_create_nodetemplate(
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -126,20 +126,20 @@ ZINC_API cmzn_node_template_id cmzn_nodeset_create_node_template(
  * @return  Handle to newly created node, or NULL if error.
  */
 ZINC_API cmzn_node_id cmzn_nodeset_create_node(cmzn_nodeset_id nodeset,
-	int identifier, cmzn_node_template_id node_template);
+	int identifier, cmzn_nodetemplate_id node_template);
 
 /**
  * Create a node iterator object for iterating through the nodes in the nodeset
  * which are ordered from lowest to highest identifier. The iterator initially
  * points at the position before the first node, so the first call to
- * cmzn_node_iterator_next() returns the first node and advances the iterator.
+ * cmzn_nodeiterator_next() returns the first node and advances the iterator.
  * Iterator becomes invalid if nodeset is modified or any of its nodes are
  * given new identifiers.
  *
  * @param nodeset  Handle to the nodeset to iterate over.
  * @return  Handle to node_iterator at position before first, or NULL if error.
  */
-ZINC_API cmzn_node_iterator_id cmzn_nodeset_create_node_iterator(
+ZINC_API cmzn_nodeiterator_id cmzn_nodeset_create_nodeiterator(
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -219,9 +219,9 @@ ZINC_API int cmzn_nodeset_get_size(cmzn_nodeset_id nodeset);
  *
  * @param nodeset1  The first nodeset to match.
  * @param nodeset2  The second nodeset to match.
- * @return  1 if the two nodesets match, 0 if not.
+ * @return  Boolean true if the two nodesets match, false if not.
  */
-ZINC_API int cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodeset2);
+ZINC_API bool cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodeset2);
 
 /**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
@@ -308,8 +308,8 @@ ZINC_API int cmzn_nodeset_group_remove_nodes_conditional(
  * @param mesh  The node iterator to obtain a new reference to.
  * @return  New node iterator handle with incremented reference count.
  */
-ZINC_API cmzn_node_iterator_id cmzn_node_iterator_access(
-	cmzn_node_iterator_id node_iterator);
+ZINC_API cmzn_nodeiterator_id cmzn_nodeiterator_access(
+	cmzn_nodeiterator_id node_iterator);
 
 /**
  * Destroys this handle to the node_iterator and sets it to NULL.
@@ -317,7 +317,7 @@ ZINC_API cmzn_node_iterator_id cmzn_node_iterator_access(
  * @param node_iterator_address  Address of handle to node_iterator to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_iterator_destroy(cmzn_node_iterator_id *node_iterator_address);
+ZINC_API int cmzn_nodeiterator_destroy(cmzn_nodeiterator_id *node_iterator_address);
 
 /**
  * Returns a handle to the next node in the container being iterated over then
@@ -327,7 +327,7 @@ ZINC_API int cmzn_node_iterator_destroy(cmzn_node_iterator_id *node_iterator_add
  * @param node_iterator  Node iterator to query and advance.
  * @return  Handle to the next node, or NULL if none remaining.
  */
-ZINC_API cmzn_node_id cmzn_node_iterator_next(cmzn_node_iterator_id node_iterator);
+ZINC_API cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator);
 
 /**
  * Returns a new handle to the node template with reference count incremented.
@@ -336,8 +336,8 @@ ZINC_API cmzn_node_id cmzn_node_iterator_next(cmzn_node_iterator_id node_iterato
  * @param mesh  The node template to obtain a new reference to.
  * @return  New node template handle with incremented reference count.
  */
-ZINC_API cmzn_node_template_id cmzn_node_template_access(
-	cmzn_node_template_id node_template);
+ZINC_API cmzn_nodetemplate_id cmzn_nodetemplate_access(
+	cmzn_nodetemplate_id node_template);
 
 /**
  * Destroys this handle to the node_template and sets it to NULL.
@@ -347,7 +347,7 @@ ZINC_API cmzn_node_template_id cmzn_node_template_access(
  * to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_destroy(cmzn_node_template_id *node_template_address);
+ZINC_API int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address);
 
 /**
  * Defines the field on the node_template with just a single node value per
@@ -359,7 +359,7 @@ ZINC_API int cmzn_node_template_destroy(cmzn_node_template_id *node_template_add
  * stored_mesh_location type only.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_define_field(cmzn_node_template_id node_template,
+ZINC_API int cmzn_nodetemplate_define_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field);
 
 /**
@@ -372,14 +372,14 @@ ZINC_API int cmzn_node_template_define_field(cmzn_node_template_id node_template
  * @param node  The node to obtain the field definition from.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_define_field_from_node(
-	cmzn_node_template_id node_template, cmzn_field_id field,
+ZINC_API int cmzn_nodetemplate_define_field_from_node(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field,
 	cmzn_node_id node);
 
 /**
  * Adds storage for the supplied derivative type for the component/s of the
  * field in the node template.
- * Must have first called cmzn_node_template_define_field for field.
+ * Must have first called cmzn_nodetemplate_define_field for field.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to define derivatives for. May be finite_element
@@ -389,7 +389,7 @@ ZINC_API int cmzn_node_template_define_field_from_node(
  * @param derivative_type  The type of nodal derivative to define.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_define_derivative(cmzn_node_template_id node_template,
+ZINC_API int cmzn_nodetemplate_define_derivative(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field, int component_number,
 	enum cmzn_node_value_type derivative_type);
 
@@ -408,8 +408,8 @@ ZINC_API int cmzn_node_template_define_derivative(cmzn_node_template_id node_tem
  * will be defined.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_define_time_sequence(
-	cmzn_node_template_id node_template, cmzn_field_id field,
+ZINC_API int cmzn_nodetemplate_define_time_sequence(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field,
 	struct cmzn_time_sequence *time_sequence);
 
 /**
@@ -417,7 +417,7 @@ ZINC_API int cmzn_node_template_define_time_sequence(
  * component/s of the field in the node template.
  * Note: currently limited to having the same number of versions for all values
  * and derivatives in a given component.
- * Must have first called cmzn_node_template_define_field for field.
+ * Must have first called cmzn_nodetemplate_define_field for field.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to define versions for. May be finite_element type
@@ -428,7 +428,7 @@ ZINC_API int cmzn_node_template_define_time_sequence(
  * stored for the component/s, at least 1 (the default).
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_define_versions(cmzn_node_template_id node_template,
+ZINC_API int cmzn_nodetemplate_define_versions(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field, int component_number, int number_of_versions);
 
 /**
@@ -444,7 +444,7 @@ ZINC_API int cmzn_node_template_define_versions(cmzn_node_template_id node_templ
  * component if component_number is -1). Returns 0 if field not defined or
  * invalid arguments are supplied.
  */
-ZINC_API int cmzn_node_template_get_number_of_versions(cmzn_node_template_id node_template,
+ZINC_API int cmzn_nodetemplate_get_number_of_versions(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field, int component_number);
 
 /**
@@ -456,8 +456,8 @@ ZINC_API int cmzn_node_template_get_number_of_versions(cmzn_node_template_id nod
  * @return  Handle to time sequence object if defined for field, or NULL if none
  * or error. Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_time_sequence_id cmzn_node_template_get_time_sequence(
-	cmzn_node_template_id node_template, cmzn_field_id field);
+ZINC_API cmzn_time_sequence_id cmzn_nodetemplate_get_time_sequence(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field);
 
 /**
  * Returns whether a nodal derivative is defined for a component of the field
@@ -472,7 +472,7 @@ ZINC_API cmzn_time_sequence_id cmzn_node_template_get_time_sequence(
  * @return  1 if derivative_type is defined for component_number of field (or
  * for any component if component_number is -1), 0 if not.
  */
-ZINC_API int cmzn_node_template_has_derivative(cmzn_node_template_id node_template,
+ZINC_API int cmzn_nodetemplate_has_derivative(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field, int component_number,
 	enum cmzn_node_value_type derivative_type);
 
@@ -486,7 +486,7 @@ ZINC_API int cmzn_node_template_has_derivative(cmzn_node_template_id node_templa
  * stored_mesh_location type only.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_template_undefine_field(cmzn_node_template_id node_template,
+ZINC_API int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field);
 
 /**
@@ -535,7 +535,7 @@ ZINC_API int cmzn_node_set_identifier(cmzn_node_id node, int identifier);
  * @param node_template  Template containing node field descriptions.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_node_template_id node_template);
+ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_template);
 
 #ifdef __cplusplus
 }

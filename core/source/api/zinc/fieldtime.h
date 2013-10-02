@@ -32,8 +32,8 @@ extern "C" {
  * @param time_field  Field providing time value to evaluate at.
  * @return  Handle to a new time lookup field on success, NULL on failure.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_time_lookup(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_time_lookup(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_field_id time_field);
 
 /***************************************************************************//**
@@ -43,8 +43,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_time_lookup(
  * @param time_keeper  cmzn_time_keeper object.
  * @return  Handle to a new time value field on success, NULL on failure.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_time_value(
-	cmzn_field_module_id field_module, cmzn_time_keeper_id time_keeper);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_time_value(
+	cmzn_fieldmodule_id field_module, cmzn_time_keeper_id time_keeper);
 
 #ifdef __cplusplus
 }

@@ -194,7 +194,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -406,15 +406,15 @@ int Computed_field_image::evaluate_texture_from_source_field()
 			// optimise, e.g. by searching through a subgroup of the mesh
 			const int number_of_texture_coordinate_components =
 				Computed_field_get_number_of_components(texture_coordinate_field);
-			cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
-			cmzn_mesh_id search_mesh = cmzn_field_module_find_mesh_by_dimension(field_module,
+			cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+			cmzn_mesh_id search_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
 				number_of_texture_coordinate_components);
 			Set_cmiss_field_value_to_texture(source_field, texture_coordinate_field,
 				texture, NULL,	NULL, image_height, image_width, image_depth, bytes_per_pixel,
 				number_of_bytes_per_component, use_pixel_location, specify_format, 0, NULL,
 				search_mesh);
 			cmzn_mesh_destroy(&search_mesh);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 			need_evaluate_texture = false;
 		}
 		else
@@ -429,7 +429,7 @@ int Computed_field_image::evaluate_texture_from_source_field()
 	return (return_code);
 } /* Computed_field_image::evaluate_texture_from_source_field */
 
-int Computed_field_image::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_image::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	check_evaluate_texture();
 	if (texture)
@@ -694,12 +694,12 @@ cmzn_field_image_id cmzn_field_cast_image(cmzn_field_id field)
 	}
 }
 
-cmzn_field_id cmzn_field_module_create_image(cmzn_field_module_id field_module)
+cmzn_field_id cmzn_fieldmodule_create_field_image(cmzn_fieldmodule_id field_module)
 {
 	cmzn_field_id field = 0;
 	if (field_module)
 	{
-		cmzn_field_id domainField = cmzn_field_module_get_or_create_xi_field(field_module);
+		cmzn_field_id domainField = cmzn_fieldmodule_get_or_create_xi_field(field_module);
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field*/false,
 			/*number_of_components*/1,
@@ -711,8 +711,8 @@ cmzn_field_id cmzn_field_module_create_image(cmzn_field_module_id field_module)
 	return field;
 }
 
-cmzn_field_id cmzn_field_module_create_image_from_source(
-	cmzn_field_module_id field_module, cmzn_field_id source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
 {
 	cmzn_field_id field = 0;
 	if (field_module && source_field &&
@@ -738,7 +738,7 @@ cmzn_field_id cmzn_field_module_create_image_from_source(
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_field_module_create_image_from_source.  "
+					"cmzn_fieldmodule_create_field_image_from_source.  "
 					"Source field does not contain any information about sizes."
 					"You may consider using image_resample field as the source field");
 			}
@@ -1175,8 +1175,8 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	struct FE_element *element = NULL;
 
 	int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
-	cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
-	cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 	if (image_depth > 1)
 	{
 		dimension = 3;
@@ -1271,7 +1271,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 					if (use_pixel_location)
 					{
 						/* Try to use a pixel coordinate first */
-						cmzn_field_cache_set_field_real(field_cache, texture_coordinate_field, number_of_texture_coordinate_components, values);
+						cmzn_fieldcache_set_field_real(field_cache, texture_coordinate_field, number_of_texture_coordinate_components, values);
 						if (cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
 						{
 							if (!spectrum)
@@ -1330,7 +1330,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 									printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
 								}
 #endif /* defined (DEBUG_CODE) */
-								if (cmzn_field_cache_set_mesh_location(field_cache, element, mesh_dimension, xi) &&
+								if (cmzn_fieldcache_set_mesh_location(field_cache, element, mesh_dimension, xi) &&
 									cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
 								{
 									if (!spectrum)
@@ -1574,8 +1574,8 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	{
 		DESTROY(Computed_field_find_element_xi_cache)(&cache);
 	}
-	cmzn_field_cache_destroy(&field_cache);
-	cmzn_field_module_destroy(&field_module);
+	cmzn_fieldcache_destroy(&field_cache);
+	cmzn_fieldmodule_destroy(&field_module);
 
 	return return_code;
 }

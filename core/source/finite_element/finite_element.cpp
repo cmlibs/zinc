@@ -365,22 +365,22 @@ struct FE_node_compare_number
 
 typedef cmzn_set<cmzn_node *,FE_node_compare_number> cmzn_set_cmzn_node;
 
-struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
+struct cmzn_nodeiterator : public cmzn_set_cmzn_node::ext_iterator
 {
 	int access_count;
-	cmzn_node_iterator(cmzn_set_cmzn_node *container) :
+	cmzn_nodeiterator(cmzn_set_cmzn_node *container) :
 		cmzn_set_cmzn_node::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	cmzn_node_iterator access()
+	cmzn_nodeiterator access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_node_iterator_id &iterator)
+	static int deaccess(cmzn_nodeiterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -398,22 +398,22 @@ const int CMZN_NODE_BTREE_ORDER = 10;
 
 typedef cmzn_btree<cmzn_node,int,CMZN_NODE_BTREE_ORDER> cmzn_set_cmzn_node;
 
-struct cmzn_node_iterator : public cmzn_set_cmzn_node::ext_iterator
+struct cmzn_nodeiterator : public cmzn_set_cmzn_node::ext_iterator
 {
 	int access_count;
-	cmzn_node_iterator(cmzn_set_cmzn_node *container) :
+	cmzn_nodeiterator(cmzn_set_cmzn_node *container) :
 		cmzn_set_cmzn_node::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	cmzn_node_iterator_id access()
+	cmzn_nodeiterator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_node_iterator_id &iterator)
+	static int deaccess(cmzn_nodeiterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -1086,23 +1086,23 @@ struct FE_element_compare_identifier
 
 typedef cmzn_set<FE_element *,FE_element_compare_identifier> cmzn_set_cmzn_element;
 
-struct cmzn_element_iterator : public cmzn_set_cmzn_element::ext_iterator
+struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
 {
 	int access_count;
 
-	cmzn_element_iterator(cmzn_set_cmzn_element *container) :
+	cmzn_elementiterator(cmzn_set_cmzn_element *container) :
 		cmzn_set_cmzn_element::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	cmzn_element_iterator_id access()
+	cmzn_elementiterator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_element_iterator_id &iterator)
+	static int deaccess(cmzn_elementiterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -1131,23 +1131,23 @@ const int CMZN_ELEMENT_BTREE_ORDER = 10;
 
 typedef cmzn_btree<cmzn_element,const CM_element_information *,CMZN_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
 
-struct cmzn_element_iterator : public cmzn_set_cmzn_element::ext_iterator
+struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
 {
 	int access_count;
 
-	cmzn_element_iterator(cmzn_set_cmzn_element *container) :
+	cmzn_elementiterator(cmzn_set_cmzn_element *container) :
 		cmzn_set_cmzn_element::ext_iterator(container),
 		access_count(1)
 	{
 	}
 
-	cmzn_element_iterator_id access()
+	cmzn_elementiterator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_element_iterator_id &iterator)
+	static int deaccess(cmzn_elementiterator_id &iterator)
 	{
 		if (!iterator)
 			return 0;
@@ -13555,7 +13555,7 @@ int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
 		if ((ELEMENT_XI_VALUE == field->value_type) &&
 			(GENERAL_FE_FIELD == field->fe_field_type))
 		{
-			cmzn_node_iterator node_iter(nodes);
+			cmzn_nodeiterator node_iter(nodes);
 			cmzn_node_id node = 0;
 			while (0 != (node = node_iter.next_non_access()))
 			{
@@ -15403,28 +15403,28 @@ int list_FE_node(struct FE_node *node)
 DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_node)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_node,cm_node_identifier,int)
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_node,cm_node_identifier)
-DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,cmzn_node_iterator)
+DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,cmzn_nodeiterator)
 
-cmzn_node_iterator_id cmzn_node_iterator_access(cmzn_node_iterator_id node_iterator)
+cmzn_nodeiterator_id cmzn_nodeiterator_access(cmzn_nodeiterator_id node_iterator)
 {
 	return node_iterator->access();
 }
 
-int cmzn_node_iterator_destroy(cmzn_node_iterator_id *node_iterator_address)
+int cmzn_nodeiterator_destroy(cmzn_nodeiterator_id *node_iterator_address)
 {
 	if (node_iterator_address)
-		return cmzn_node_iterator::deaccess(*node_iterator_address);
+		return cmzn_nodeiterator::deaccess(*node_iterator_address);
 	return 0;
 }
 
-cmzn_node_id cmzn_node_iterator_next(cmzn_node_iterator_id node_iterator)
+cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator)
 {
 	if (node_iterator)
 		return node_iterator->next();
 	return 0;
 }
 
-cmzn_node_id cmzn_node_iterator_next_non_access(cmzn_node_iterator_id node_iterator)
+cmzn_node_id cmzn_nodeiterator_next_non_access(cmzn_nodeiterator_id node_iterator)
 {
 	if (node_iterator)
 		return node_iterator->next_non_access();
@@ -21709,28 +21709,28 @@ DECLARE_OBJECT_FUNCTIONS(FE_element)
 DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_element)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,const CM_element_information *)
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
-DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,cmzn_element_iterator)
+DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator)
 
-cmzn_element_iterator_id cmzn_element_iterator_access(cmzn_element_iterator_id element_iterator)
+cmzn_elementiterator_id cmzn_elementiterator_access(cmzn_elementiterator_id element_iterator)
 {
 	return element_iterator->access();
 }
 
-int cmzn_element_iterator_destroy(cmzn_element_iterator_id *element_iterator_address)
+int cmzn_elementiterator_destroy(cmzn_elementiterator_id *element_iterator_address)
 {
 	if (element_iterator_address)
-		return cmzn_element_iterator::deaccess(*element_iterator_address);
+		return cmzn_elementiterator::deaccess(*element_iterator_address);
 	return 0;
 }
 
-cmzn_element_id cmzn_element_iterator_next(cmzn_element_iterator_id element_iterator)
+cmzn_element_id cmzn_elementiterator_next(cmzn_elementiterator_id element_iterator)
 {
 	if (element_iterator)
 		return element_iterator->next();
 	return 0;
 }
 
-cmzn_element_id cmzn_element_iterator_next_non_access(cmzn_element_iterator_id element_iterator)
+cmzn_element_id cmzn_elementiterator_next_non_access(cmzn_elementiterator_id element_iterator)
 {
 	if (element_iterator)
 		return element_iterator->next_non_access();

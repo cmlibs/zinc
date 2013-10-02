@@ -38,7 +38,7 @@ DESCRIPTION :
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_integration(
-	struct cmzn_field_module *field_module, cmzn_mesh_id mesh,
+	struct cmzn_fieldmodule *field_module, cmzn_mesh_id mesh,
 	cmzn_element_id seed_element, Computed_field *integrand,
 	int magnitude_coordinates, Computed_field *coordinate_field);
 

@@ -17,12 +17,12 @@ Implements a number of basic trigonometry operations on computed fields.
 #include "zinc/fieldtrigonometry.h"
 
 /* API functions are prefixed with cmzn */
-#define Computed_field_create_sin cmzn_field_module_create_sin
-#define Computed_field_create_cos cmzn_field_module_create_cos
-#define Computed_field_create_tan cmzn_field_module_create_tan
-#define Computed_field_create_asin cmzn_field_module_create_asin
-#define Computed_field_create_acos cmzn_field_module_create_acos
-#define Computed_field_create_atan cmzn_field_module_create_atan
-#define Computed_field_create_atan2 cmzn_field_module_create_atan2
+#define Computed_field_create_sin cmzn_fieldmodule_create_field_sin
+#define Computed_field_create_cos cmzn_fieldmodule_create_field_cos
+#define Computed_field_create_tan cmzn_fieldmodule_create_field_tan
+#define Computed_field_create_asin cmzn_fieldmodule_create_field_asin
+#define Computed_field_create_acos cmzn_fieldmodule_create_field_acos
+#define Computed_field_create_atan cmzn_fieldmodule_create_field_atan
+#define Computed_field_create_atan2 cmzn_fieldmodule_create_field_atan2
 
 #endif /* !defined (COMPUTED_FIELD_TRIGONOMETRY_H) */

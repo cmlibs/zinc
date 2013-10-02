@@ -165,7 +165,7 @@ public:
 	{
 	}
 
-	int set_filter(cmzn_field_cache& cache)
+	int set_filter(cmzn_fieldcache& cache)
 /*******************************************************************************
 LAST MODIFIED : 12 September 2006
 
@@ -445,8 +445,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_field_module_create_fast_marching_image_filter(
-	struct cmzn_field_module *field_module,
+struct Computed_field *cmzn_fieldmodule_create_field_fast_marching_image_filter(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double stopping_value,
   int num_seed_points, int dimension, const double *seed_points, const double *seed_values,
   const int *output_size)
@@ -466,7 +466,7 @@ struct Computed_field *cmzn_field_module_create_fast_marching_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_fast_marching_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_fast_marching_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);

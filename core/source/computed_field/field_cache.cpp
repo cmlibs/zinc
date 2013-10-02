@@ -21,7 +21,7 @@
 FieldValueCache::~FieldValueCache()
 {
 	if (extraCache)
-		cmzn_field_cache::deaccess(extraCache);
+		cmzn_fieldcache::deaccess(extraCache);
 }
 
 void FieldValueCache::clear()
@@ -100,7 +100,7 @@ char *MeshLocationFieldValueCache::getAsString()
 	return valueAsString;
 }
 
-cmzn_field_cache::~cmzn_field_cache()
+cmzn_fieldcache::~cmzn_fieldcache()
 {
 	for (ValueCacheVector::iterator iter = valueCaches.begin(); iter < valueCaches.end(); ++iter)
 	{
@@ -112,7 +112,7 @@ cmzn_field_cache::~cmzn_field_cache()
 	cmzn_region_destroy(&region);
 }
 
-int cmzn_field_cache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
+int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const double *values)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
 	// check (numberOfValues >= field->number_of_components), just pad with zeros
@@ -133,7 +133,7 @@ int cmzn_field_cache::setFieldReal(cmzn_field_id field, int numberOfValues, cons
 	return 1;
 }
 
-int cmzn_field_cache::setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
+int cmzn_fieldcache::setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
 	int numberOfDerivatives, const double *derivatives)
 {
 	// to support the xi field which has 3 components regardless of dimensions, do not
@@ -166,26 +166,26 @@ Global functions
 ----------------
 */
 
-cmzn_field_cache_id cmzn_field_module_create_cache(cmzn_field_module_id field_module)
+cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(cmzn_fieldmodule_id field_module)
 {
 	if (field_module)
-		return new cmzn_field_cache(cmzn_field_module_get_region_internal(field_module));
+		return new cmzn_fieldcache(cmzn_fieldmodule_get_region_internal(field_module));
 	return 0;
 }
 
-cmzn_field_cache_id cmzn_field_cache_access(cmzn_field_cache_id cache)
+cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache)
 {
 	return cache->access();
 }
 
-int cmzn_field_cache_destroy(cmzn_field_cache_id *cache_address)
+int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address)
 {
 	if (!cache_address)
 		return 0;
-	return cmzn_field_cache::deaccess(*cache_address);
+	return cmzn_fieldcache::deaccess(*cache_address);
 }
 
-int cmzn_field_cache_set_time(cmzn_field_cache_id cache, double time)
+int cmzn_fieldcache_set_time(cmzn_fieldcache_id cache, double time)
 {
 	if (!cache)
 		return 0;
@@ -193,16 +193,16 @@ int cmzn_field_cache_set_time(cmzn_field_cache_id cache, double time)
 	return 1;
 }
 
-int cmzn_field_cache_set_element(cmzn_field_cache_id cache,
+int cmzn_fieldcache_set_element(cmzn_fieldcache_id cache,
 	cmzn_element_id element)
 {
 	const double chart_coordinates[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
-	return cmzn_field_cache_set_mesh_location_with_parent(cache, element,
+	return cmzn_fieldcache_set_mesh_location_with_parent(cache, element,
 		MAXIMUM_ELEMENT_XI_DIMENSIONS, chart_coordinates, /*top_level_element*/0);
 }
 
-int cmzn_field_cache_set_mesh_location_with_parent(
-	cmzn_field_cache_id cache, cmzn_element_id element,
+int cmzn_fieldcache_set_mesh_location_with_parent(
+	cmzn_fieldcache_id cache, cmzn_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates,
 	cmzn_element_id top_level_element)
 {
@@ -212,15 +212,15 @@ int cmzn_field_cache_set_mesh_location_with_parent(
 	return 1;
 }
 
-int cmzn_field_cache_set_mesh_location(cmzn_field_cache_id cache,
+int cmzn_fieldcache_set_mesh_location(cmzn_fieldcache_id cache,
 	cmzn_element_id element, int number_of_chart_coordinates,
 	const double *chart_coordinates)
 {
-	return cmzn_field_cache_set_mesh_location_with_parent(cache, element,
+	return cmzn_fieldcache_set_mesh_location_with_parent(cache, element,
 		number_of_chart_coordinates, chart_coordinates, /*top_level_element*/0);
 }
 
-int cmzn_field_cache_set_node(cmzn_field_cache_id cache, cmzn_node_id node)
+int cmzn_fieldcache_set_node(cmzn_fieldcache_id cache, cmzn_node_id node)
 {
 	if (!(cache && node))
 		return 0;
@@ -228,7 +228,7 @@ int cmzn_field_cache_set_node(cmzn_field_cache_id cache, cmzn_node_id node)
 	return 1;
 }
 
-int cmzn_field_cache_set_field_real(cmzn_field_cache_id cache,
+int cmzn_fieldcache_set_field_real(cmzn_fieldcache_id cache,
 	cmzn_field_id reference_field, int number_of_values, const double *values)
 {
 	if (!cache)
@@ -237,7 +237,7 @@ int cmzn_field_cache_set_field_real(cmzn_field_cache_id cache,
 }
 
 // Internal function
-int cmzn_field_cache_set_assign_in_cache(cmzn_field_cache_id cache, int assign_in_cache)
+int cmzn_fieldcache_set_assign_in_cache(cmzn_fieldcache_id cache, int assign_in_cache)
 {
 	if (!cache)
 		return 0;

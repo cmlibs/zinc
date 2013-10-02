@@ -256,7 +256,7 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(object_type,iterator_type) \
 { \
 	CMZN_SET(object_type) *cmiss_set = reinterpret_cast<CMZN_SET(object_type) *>(list); \
 	if (cmiss_set) \
-		return new iterator_type(cmiss_set); \
+		return iterator_type::create(cmiss_set); \
 	return 0; \
 }
 

@@ -19,17 +19,17 @@
 	/** Handle to a nodeset group, a subset of a nodeset */
 	typedef struct cmzn_nodeset_group *cmzn_nodeset_group_id;
 
-	struct cmzn_node_template;
+	struct cmzn_nodetemplate;
 	/** Handle to a template for creating or defining fields at a node. */
-	typedef struct cmzn_node_template *cmzn_node_template_id;
+	typedef struct cmzn_nodetemplate *cmzn_nodetemplate_id;
 
 	struct cmzn_node;
 	/** Handle to a single node object */
 	typedef struct cmzn_node *cmzn_node_id;
 
-	struct cmzn_node_iterator;
+	struct cmzn_nodeiterator;
 	/** Handle to an iterator for iterating over a nodeset */
-	typedef struct cmzn_node_iterator * cmzn_node_iterator_id;
+	typedef struct cmzn_nodeiterator * cmzn_nodeiterator_id;
 
 	/**
 	 * The value/derivative type of a node parameter value.

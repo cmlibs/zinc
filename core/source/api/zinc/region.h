@@ -58,7 +58,7 @@ ZINC_API int cmzn_region_destroy(cmzn_region_id *region_address);
  * clients. Must call cmzn_region_end_change after making changes.
  * Important: Do not pair with cmzn_region_end_hierarchical_change.
  * Note: region change caching encompasses field_module change caching so there
- * is no need to call cmzn_field_module_begin_change/end_change as well.
+ * is no need to call cmzn_fieldmodule_begin_change/end_change as well.
  *
  * @param region  The region to begin change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -247,7 +247,7 @@ ZINC_API cmzn_region_id cmzn_region_find_subregion_at_path(cmzn_region_id region
  * @param region  The region from which to obtain the field module.
  * @return  Field module object.
  */
-ZINC_API cmzn_field_module_id cmzn_region_get_field_module(cmzn_region_id region);
+ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
 
 /***************************************************************************//**
  * Creates and returns a reference to a region compatible with base_region,

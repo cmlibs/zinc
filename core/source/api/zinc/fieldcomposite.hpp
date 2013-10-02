@@ -27,7 +27,7 @@ private:
 	explicit FieldIdentity(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldIdentity FieldModule::createIdentity(Field& sourceField);
+	friend FieldIdentity Fieldmodule::createFieldIdentity(Field& sourceField);
 
 public:
 
@@ -44,7 +44,7 @@ private:
 	explicit FieldComponent(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex);
+	friend FieldComponent Fieldmodule::createFieldComponent(Field& sourceField, int componentIndex);
 
 public:
 
@@ -63,7 +63,7 @@ private:
 	explicit FieldConcatenate(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields);
+	friend FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, Field *sourceFields);
 
 public:
 
@@ -72,18 +72,18 @@ public:
 
 };
 
-inline FieldIdentity FieldModule::createIdentity(Field& sourceField)
+inline FieldIdentity Fieldmodule::createFieldIdentity(Field& sourceField)
 {
-	return FieldIdentity(cmzn_field_module_create_identity(id, sourceField.getId()));
+	return FieldIdentity(cmzn_fieldmodule_create_field_identity(id, sourceField.getId()));
 }
 
-inline FieldComponent FieldModule::createComponent(Field& sourceField, int componentIndex)
+inline FieldComponent Fieldmodule::createFieldComponent(Field& sourceField, int componentIndex)
 {
-	return FieldComponent(cmzn_field_module_create_component(id,
+	return FieldComponent(cmzn_fieldmodule_create_field_component(id,
 		sourceField.getId(), componentIndex));
 }
 
-inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *sourceFields)
+inline FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, Field *sourceFields)
 {
 	cmzn_field_id concatenateField = 0;
 	if (fieldsCount > 0)
@@ -93,7 +93,7 @@ inline FieldConcatenate FieldModule::createConcatenate(int fieldsCount, Field *s
 		{
 			source_fields[i] = sourceFields[i].getId();
 		}
-		concatenateField = cmzn_field_module_create_concatenate(id, fieldsCount, source_fields);
+		concatenateField = cmzn_fieldmodule_create_field_concatenate(id, fieldsCount, source_fields);
 		delete[] source_fields;
 	}
 	return FieldConcatenate(concatenateField);

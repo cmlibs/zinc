@@ -15,6 +15,7 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include <math.h>
 #include <stdlib.h>
 
+#include "zinc/fieldcache.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -1078,7 +1079,7 @@ Otherwise the routine returns 0.
 static int FE_element_add_xi_points_1d_line_cell_random(
 	struct FE_element	*element,
 	cmzn_element_point_sample_mode sample_mode, FE_value xi_centre,
-	FE_value delta_xi, cmzn_field_cache_id field_cache,
+	FE_value delta_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
 	FE_value_triple **xi_points, int *number_of_xi_points_allocated)
@@ -1117,7 +1118,7 @@ array is enlarged if necessary and the new points added at random locations.
 					Computed_field_get_number_of_components(coordinate_field))) ||
 					(2 == number_of_coordinate_components) ||
 					(3 == number_of_coordinate_components)) &&
-				cmzn_field_cache_set_mesh_location(field_cache, element, 1, &xi_centre) &&
+				cmzn_fieldcache_set_mesh_location(field_cache, element, 1, &xi_centre) &&
 				cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/1, jacobian) &&
 				cmzn_field_evaluate_real(density_field, field_cache, 1, &density))
@@ -1240,7 +1241,7 @@ array is enlarged if necessary and the new points added at random locations.
 static int FE_element_add_xi_points_2d_square_cell_random(
 	struct FE_element	*element, cmzn_element_point_sample_mode sample_mode,
 	enum FE_element_shape_category element_shape_category,
-	FE_value *centre_xi, FE_value *dxi, cmzn_field_cache_id field_cache,
+	FE_value *centre_xi, FE_value *dxi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
 	FE_value_triple **xi_points, int *number_of_xi_points_allocated,
@@ -1281,7 +1282,7 @@ array is enlarged if necessary and the new points added at random locations.
 				((2 == (number_of_coordinate_components =
 					Computed_field_get_number_of_components(coordinate_field))) ||
 					(3 == number_of_coordinate_components)) &&
-				cmzn_field_cache_set_mesh_location(field_cache, element, 2, centre_xi) &&
+				cmzn_fieldcache_set_mesh_location(field_cache, element, 2, centre_xi) &&
 				cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/2, jacobian) &&
 				cmzn_field_evaluate_real(density_field, field_cache, 1, &density))
@@ -1439,7 +1440,7 @@ static int FE_element_add_xi_points_3d_cube_cell_random(
 	struct FE_element	*element,
 	cmzn_element_point_sample_mode sample_mode,
 	enum FE_element_shape_category element_shape_category,
-	FE_value *centre_xi, FE_value *dxi, cmzn_field_cache_id field_cache,
+	FE_value *centre_xi, FE_value *dxi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
 	FE_value_triple **xi_points, int *number_of_xi_points_allocated,
@@ -1479,7 +1480,7 @@ array is enlarged if necessary and the new points added at random locations.
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 				(3 == Computed_field_get_number_of_components(coordinate_field)) &&
-				cmzn_field_cache_set_mesh_location(field_cache, element, 3, centre_xi) &&
+				cmzn_fieldcache_set_mesh_location(field_cache, element, 3, centre_xi) &&
 				cmzn_field_evaluate_real_with_derivatives(coordinate_field,
 					field_cache, 3, coordinates, /*number_of_derivatives*/3, jacobian) &&
 				cmzn_field_evaluate_real(density_field, field_cache, 1, &density))
@@ -1672,7 +1673,7 @@ array is enlarged if necessary and the new points added at random locations.
 
 static int FE_element_get_xi_points_cell_random(struct FE_element *element,
 	cmzn_element_point_sample_mode sample_mode, int *number_in_xi,
-	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points_address,
 	FE_value_triple **xi_points_address)
 /*******************************************************************************
@@ -1695,7 +1696,7 @@ points is allocated and put in this address. Xi positions are always returned as
 triples with remaining xi coordinates 0 for 1-D and 2-D cases.
 Note the actual number and layout is dependent on the <element_shape>; see
 comments for simplex and polygons shapes for more details.
-@param field_cache  cmzn_field_cache for evaluating coordinate and density
+@param field_cache  cmzn_fieldcache for evaluating coordinate and density
 fields, required for DENSITY and POISSON modes.
 ==============================================================================*/
 {
@@ -2004,7 +2005,7 @@ fields, required for DENSITY and POISSON modes.
 
 int FE_element_get_xi_points(struct FE_element *element,
 	cmzn_element_point_sample_mode sample_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_field_cache_id field_cache,
+	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 {
@@ -2214,7 +2215,7 @@ a return value here indicates that the xi_points have been converted.
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
 	cmzn_element_point_sample_mode sample_mode,
-	int *number_in_xi, FE_value_triple exact_xi, cmzn_field_cache_id field_cache,
+	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi)
 {

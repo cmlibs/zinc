@@ -17,10 +17,12 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class NodeTemplate;
+class Nodetemplate;
 
 class Node
 {
+friend bool operator==(const Node& a, const Node& b);
+
 private:
 
 	cmzn_node_id id;
@@ -90,47 +92,51 @@ public:
 		return cmzn_node_set_identifier(id, identifier);
 	}
 
-	int merge(NodeTemplate nodeTemplate);
+	int merge(Nodetemplate nodeTemplate);
 
 };
 
+inline bool operator==(const Node& a, const Node& b)
+{
+	return a.id == b.id;
+}
 
-class NodeTemplate
+class Nodetemplate
 {
 private:
 
-	cmzn_node_template_id id;
+	cmzn_nodetemplate_id id;
 
 public:
 
-	NodeTemplate() : id(0)
+	Nodetemplate() : id(0)
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit NodeTemplate(cmzn_node_template_id node_template_id) :
+	explicit Nodetemplate(cmzn_nodetemplate_id node_template_id) :
 		id(node_template_id)
 	{ }
 
-	NodeTemplate(const NodeTemplate& nodeTemplate) :
-		id(cmzn_node_template_access(nodeTemplate.id))
+	Nodetemplate(const Nodetemplate& nodeTemplate) :
+		id(cmzn_nodetemplate_access(nodeTemplate.id))
 	{ }
 
-	NodeTemplate& operator=(const NodeTemplate& nodeTemplate)
+	Nodetemplate& operator=(const Nodetemplate& nodeTemplate)
 	{
-		cmzn_node_template_id temp_id = cmzn_node_template_access(nodeTemplate.id);
+		cmzn_nodetemplate_id temp_id = cmzn_nodetemplate_access(nodeTemplate.id);
 		if (0 != id)
 		{
-			cmzn_node_template_destroy(&id);
+			cmzn_nodetemplate_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~NodeTemplate()
+	~Nodetemplate()
 	{
 		if (0 != id)
 		{
-			cmzn_node_template_destroy(&id);
+			cmzn_nodetemplate_destroy(&id);
 		}
 	}
 
@@ -139,70 +145,70 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_node_template_id getId()
+	cmzn_nodetemplate_id getId()
 	{
 		return id;
 	}
 
 	int defineDerivative(Field& field, int componentNumber, Node::ValueType derivativeType)
 	{
-		return cmzn_node_template_define_derivative(id, field.getId(),
+		return cmzn_nodetemplate_define_derivative(id, field.getId(),
 			componentNumber, static_cast<cmzn_node_value_type>(derivativeType));
 	}
 
 	int defineField(Field& field)
 	{
-		return cmzn_node_template_define_field(id, field.getId());
+		return cmzn_nodetemplate_define_field(id, field.getId());
 	}
 
 	int defineVersions(Field& field, int componentNumber, int numberOfVersions)
 	{
-		return cmzn_node_template_define_versions(id,
+		return cmzn_nodetemplate_define_versions(id,
 			field.getId(), componentNumber, numberOfVersions);
 	}
 
 	int undefineField(Field& field)
 	{
-		return cmzn_node_template_undefine_field(id, field.getId());
+		return cmzn_nodetemplate_undefine_field(id, field.getId());
 	}
 };
 
-class NodeIterator
+class Nodeiterator
 {
 private:
 
-	cmzn_node_iterator_id id;
+	cmzn_nodeiterator_id id;
 
 public:
 
-	NodeIterator() : id(0)
+	Nodeiterator() : id(0)
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit NodeIterator(cmzn_node_iterator_id node_iterator_id) :
+	explicit Nodeiterator(cmzn_nodeiterator_id node_iterator_id) :
 		id(node_iterator_id)
 	{ }
 
-	NodeIterator(const NodeIterator& nodeIterator) :
-		id(cmzn_node_iterator_access(nodeIterator.id))
+	Nodeiterator(const Nodeiterator& nodeIterator) :
+		id(cmzn_nodeiterator_access(nodeIterator.id))
 	{ }
 
-	NodeIterator& operator=(const NodeIterator& nodeIterator)
+	Nodeiterator& operator=(const Nodeiterator& nodeIterator)
 	{
-		cmzn_node_iterator_id temp_id = cmzn_node_iterator_access(nodeIterator.id);
+		cmzn_nodeiterator_id temp_id = cmzn_nodeiterator_access(nodeIterator.id);
 		if (0 != id)
 		{
-			cmzn_node_iterator_destroy(&id);
+			cmzn_nodeiterator_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~NodeIterator()
+	~Nodeiterator()
 	{
 		if (0 != id)
 		{
-			cmzn_node_iterator_destroy(&id);
+			cmzn_nodeiterator_destroy(&id);
 		}
 	}
 
@@ -213,7 +219,7 @@ public:
 
 	Node next()
 	{
-		return Node(cmzn_node_iterator_next(id));
+		return Node(cmzn_nodeiterator_next(id));
 	}
 };
 
@@ -270,19 +276,19 @@ public:
 		return cmzn_nodeset_contains_node(id, node.getId());
 	}
 
-	NodeTemplate createNodeTemplate()
+	Nodetemplate createNodetemplate()
 	{
-		return NodeTemplate(cmzn_nodeset_create_node_template(id));
+		return Nodetemplate(cmzn_nodeset_create_nodetemplate(id));
 	}
 
-	Node createNode(int identifier, NodeTemplate& nodeTemplate)
+	Node createNode(int identifier, Nodetemplate& nodeTemplate)
 	{
 		return Node(cmzn_nodeset_create_node(id, identifier, nodeTemplate.getId()));
 	}
 
-	NodeIterator createNodeIterator()
+	Nodeiterator createNodeiterator()
 	{
-		return NodeIterator(cmzn_nodeset_create_node_iterator(id));
+		return Nodeiterator(cmzn_nodeset_create_nodeiterator(id));
 	}
 
 	int destroyAllNodes()
@@ -320,7 +326,7 @@ public:
 		return cmzn_nodeset_get_size(id);
 	}
 
-	int match(Nodeset& nodeset)
+	bool match(Nodeset& nodeset)
 	{
 		return cmzn_nodeset_match(id, nodeset.id);
 	}
@@ -367,7 +373,7 @@ public:
 
 };
 
-inline int Node::merge(NodeTemplate nodeTemplate)
+inline int Node::merge(Nodetemplate nodeTemplate)
 {
 	return cmzn_node_merge(id, nodeTemplate.getId());
 }

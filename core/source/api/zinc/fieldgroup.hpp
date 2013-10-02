@@ -29,7 +29,7 @@ private:
 	explicit FieldGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldGroup FieldModule::createGroup();
+	friend FieldGroup Fieldmodule::createFieldGroup();
 
 public:
 
@@ -101,7 +101,7 @@ public:
 			region.getId());
 	}
 
-	FieldGroup createSubregionGroup(Region& region)
+	FieldGroup createFieldSubregionGroup(Region& region)
 	{
 		return FieldGroup(cmzn_field_group_create_subregion_group(
 			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
@@ -113,7 +113,7 @@ public:
 			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
-	FieldNodeGroup createNodeGroup(Nodeset& nodeset)
+	FieldNodeGroup createFieldNodeGroup(Nodeset& nodeset)
 	{
 		return FieldNodeGroup(cmzn_field_group_create_node_group(
 			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
@@ -125,7 +125,7 @@ public:
 			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
-	FieldElementGroup createElementGroup(Mesh& mesh)
+	FieldElementGroup createFieldElementGroup(Mesh& mesh)
 	{
 		return FieldElementGroup(cmzn_field_group_create_element_group(
 			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
@@ -151,9 +151,9 @@ public:
 
 };
 
-inline FieldGroup FieldModule::createGroup()
+inline FieldGroup Fieldmodule::createFieldGroup()
 {
-	return FieldGroup(cmzn_field_module_create_group(id));
+	return FieldGroup(cmzn_fieldmodule_create_field_group(id));
 }
 
 }  // namespace Zinc

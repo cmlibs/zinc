@@ -25,7 +25,7 @@ private:
 	explicit FieldConstant(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn);
+	friend FieldConstant Fieldmodule::createFieldConstant(int valuesCount, const double *valuesIn);
 
 public:
 
@@ -41,7 +41,7 @@ private:
 	explicit FieldStringConstant(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldStringConstant FieldModule::createStringConstant(const char *stringConstant);
+	friend FieldStringConstant Fieldmodule::createFieldStringConstant(const char *stringConstant);
 
 public:
 
@@ -50,15 +50,15 @@ public:
 
 };
 
-inline FieldConstant FieldModule::createConstant(int valuesCount, const double *valuesIn)
+inline FieldConstant Fieldmodule::createFieldConstant(int valuesCount, const double *valuesIn)
 {
-	return FieldConstant(cmzn_field_module_create_constant(id,
+	return FieldConstant(cmzn_fieldmodule_create_field_constant(id,
 		valuesCount, valuesIn));
 }
 
-inline FieldStringConstant FieldModule::createStringConstant(const char *stringConstant)
+inline FieldStringConstant Fieldmodule::createFieldStringConstant(const char *stringConstant)
 {
-	return FieldStringConstant(cmzn_field_module_create_string_constant(id,
+	return FieldStringConstant(cmzn_fieldmodule_create_field_string_constant(id,
 		stringConstant));
 }
 

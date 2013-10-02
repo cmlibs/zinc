@@ -13,6 +13,7 @@ DESCRIPTION :
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "zinc/fieldcache.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
@@ -322,7 +323,7 @@ Element_point_ranges_identifier_is_valid.
 			FE_element_get_xi_points(identifier->element,
 				identifier->sample_mode,
 				identifier->number_in_xi, identifier->exact_xi,
-				(cmzn_field_cache_id)0,
+				(cmzn_fieldcache_id)0,
 				/*coordinate_field*/(struct Computed_field *)NULL,
 				/*density_field*/(struct Computed_field *)NULL,
 				&number_of_xi_points, /*xi_points_address*/(FE_value_triple **)NULL) &&
@@ -407,7 +408,7 @@ top_level. Assumes <identifier> has been validated.
 				FE_element_get_numbered_xi_point(identifier->element,
 					identifier->sample_mode,
 					identifier->number_in_xi, identifier->exact_xi,
-					(cmzn_field_cache_id)0,
+					(cmzn_fieldcache_id)0,
 					/*coordinate_field*/(struct Computed_field *)NULL,
 					/*density_field*/(struct Computed_field *)NULL,
 					*element_point_number, face_xi) &&
@@ -602,7 +603,7 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 			element_point_ranges->id.sample_mode,
 			element_point_ranges->id.number_in_xi,
 			element_point_ranges->id.exact_xi,
-			(cmzn_field_cache_id)0,
+			(cmzn_fieldcache_id)0,
 			/*coordinate_field*/(struct Computed_field *)NULL,
 			/*density_field*/(struct Computed_field *)NULL,
 			&maximum_element_point_number, /*xi_points_address*/(FE_value_triple **)NULL);
@@ -1377,12 +1378,12 @@ If field and element_point_ranges not identically grid-based, clear
 		if (FE_element_get_numbered_xi_point(
 				 source_element, source_identifier->sample_mode,
 				 source_identifier->number_in_xi, source_identifier->exact_xi,
-				 (cmzn_field_cache_id)0,
+				 (cmzn_fieldcache_id)0,
 				 /*coordinate_field*/(struct Computed_field *)NULL,
 				 /*density_field*/(struct Computed_field *)NULL,
 				 set_grid_values_data->source_element_point_number, xi)
 			&& ALLOCATE(values, FE_value, number_of_components)
-			&& cmzn_field_cache_set_mesh_location(set_grid_values_data->field_cache,
+			&& cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
 				source_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)
 			&& cmzn_field_evaluate_real(field, set_grid_values_data->field_cache,
 				number_of_components, values))
@@ -1400,11 +1401,11 @@ If field and element_point_ranges not identically grid-based, clear
 					if (FE_element_get_numbered_xi_point(
 							 destination_element, destination_identifier->sample_mode,
 							 destination_identifier->number_in_xi, destination_identifier->exact_xi,
-							 (cmzn_field_cache_id)0,
+							 (cmzn_fieldcache_id)0,
 							 /*coordinate_field*/(struct Computed_field *)NULL,
 							 /*density_field*/(struct Computed_field *)NULL,
 							 grid_point_number, xi) &&
-						cmzn_field_cache_set_mesh_location(set_grid_values_data->field_cache,
+						cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
 							destination_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
 						cmzn_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values))
 					{

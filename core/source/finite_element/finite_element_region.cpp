@@ -3402,7 +3402,7 @@ For each FE_node in <fe_region> satisfying <conditional_function> with
 	return (return_code);
 } /* FE_region_for_each_FE_node_conditional */
 
-cmzn_node_iterator_id FE_region_create_node_iterator(
+cmzn_nodeiterator_id FE_region_create_nodeiterator(
 	struct FE_region *fe_region)
 {
 	if (fe_region)
@@ -5148,9 +5148,9 @@ int FE_region_define_faces(struct FE_region *fe_region)
 		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (2 <= dimension) && return_code; --dimension)
 		{
 			LIST(FE_element) *element_list = FE_region_get_element_list(fe_region, dimension);
-			cmzn_element_iterator_id iter = CREATE_LIST_ITERATOR(FE_element)(element_list);
+			cmzn_elementiterator_id iter = CREATE_LIST_ITERATOR(FE_element)(element_list);
 			cmzn_element_id element = 0;
-			while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
 				if (!FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element))
 				{
@@ -5158,7 +5158,7 @@ int FE_region_define_faces(struct FE_region *fe_region)
 					break;
 				}
 			}
-			cmzn_element_iterator_destroy(&iter);
+			cmzn_elementiterator_destroy(&iter);
 		}
 		FE_region_end_define_faces(fe_region);
 		FE_region_end_change(fe_region);
@@ -5523,7 +5523,7 @@ int FE_region_for_each_FE_element_of_dimension_conditional(
 	return (return_code);
 }
 
-cmzn_element_iterator_id FE_region_create_element_iterator(
+cmzn_elementiterator_id FE_region_create_elementiterator(
 	struct FE_region *fe_region, int dimension)
 {
 	if (fe_region)

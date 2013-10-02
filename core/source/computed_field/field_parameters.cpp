@@ -93,7 +93,7 @@ private:
 		return (NULL != dynamic_cast<Field_parameters<ValueType> *>(other_field)) ? 1 : 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -129,7 +129,7 @@ public:
 };
 
 template <typename ValueType>
-int Field_parameters<ValueType>::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Field_parameters<ValueType>::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	USE_PARAMETER(cache);
 	USE_PARAMETER(inValueCache);
@@ -673,8 +673,8 @@ public:
 } // namespace cmzn
 
 /* GRC note defaults to 1 component */
-cmzn_field *cmzn_field_module_create_real_parameters(
-	cmzn_field_module *field_module, 
+cmzn_field *cmzn_fieldmodule_create_field_real_parameters(
+	cmzn_fieldmodule *field_module, 
 	int number_of_index_ensembles, cmzn_field_ensemble **index_ensemble_fields)
 {
 	cmzn_field *field = NULL;
@@ -685,7 +685,7 @@ cmzn_field *cmzn_field_module_create_real_parameters(
 		{
 			if (NULL == index_ensemble_fields[i])
 			{
-				display_message(ERROR_MESSAGE, "cmzn_field_module_create_real_parameters.  Missing ensemble");
+				display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_real_parameters.  Missing ensemble");
 				return NULL;
 			}
 			for (int j = i + 1; j < number_of_index_ensembles; j++)
@@ -693,7 +693,7 @@ cmzn_field *cmzn_field_module_create_real_parameters(
 				if (index_ensemble_fields[j] == index_ensemble_fields[i])
 				{
 					display_message(ERROR_MESSAGE,
-						"cmzn_field_module_create_real_parameters.  Repeated ensemble '%s'",
+						"cmzn_fieldmodule_create_field_real_parameters.  Repeated ensemble '%s'",
 						reinterpret_cast<cmzn_field*>(index_ensemble_fields[i])->name);
 					return NULL;
 				}
@@ -792,8 +792,8 @@ int cmzn_field_real_parameters_set_values(
 
 
 /* GRC note defaults to 1 component */
-cmzn_field *cmzn_field_module_create_integer_parameters(
-	cmzn_field_module *field_module,
+cmzn_field *cmzn_fieldmodule_create_field_integer_parameters(
+	cmzn_fieldmodule *field_module,
 	int number_of_index_ensembles, cmzn_field_ensemble **index_ensemble_fields)
 {
 	cmzn_field *field = NULL;
@@ -804,7 +804,7 @@ cmzn_field *cmzn_field_module_create_integer_parameters(
 		{
 			if (NULL == index_ensemble_fields[i])
 			{
-				display_message(ERROR_MESSAGE, "cmzn_field_module_create_integer_parameters.  Missing ensemble");
+				display_message(ERROR_MESSAGE, "cmzn_fieldmodule_create_field_integer_parameters.  Missing ensemble");
 				return NULL;
 			}
 			for (int j = i + 1; j < number_of_index_ensembles; j++)
@@ -812,7 +812,7 @@ cmzn_field *cmzn_field_module_create_integer_parameters(
 				if (index_ensemble_fields[j] == index_ensemble_fields[i])
 				{
 					display_message(ERROR_MESSAGE,
-						"cmzn_field_module_create_integer_parameters.  Repeated ensemble '%s'",
+						"cmzn_fieldmodule_create_field_integer_parameters.  Repeated ensemble '%s'",
 						reinterpret_cast<cmzn_field*>(index_ensemble_fields[i])->name);
 					return NULL;
 				}

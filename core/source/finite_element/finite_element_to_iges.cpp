@@ -19,6 +19,7 @@ to file.
 #include <string.h>
 #include <time.h>
 
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
@@ -106,7 +107,7 @@ LAST MODIFIED : 6 June 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	struct IGES_entity_info *head,*tail;
 	struct Computed_field *field;
 	struct FE_element *element;
@@ -823,7 +824,7 @@ basis type, however every element type will be converted to a cubic.
 				{
 					xi[0] = (ZnReal)j / 3.0;
 					xi[1] = (ZnReal)i / 3.0;
-					if (cmzn_field_cache_set_mesh_location(get_data->field_cache,
+					if (cmzn_fieldcache_set_mesh_location(get_data->field_cache,
 							element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
 						cmzn_field_evaluate_real(get_data->field,
 							get_data->field_cache, number_of_components, values))
@@ -904,8 +905,8 @@ Write bicubic elements to an IGES file.
 	struct IGES_entity_info *entity;
 	time_t coded_time;
 	struct tm *time_struct;
-	cmzn_field_module_id field_module;
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldmodule_id field_module;
+	cmzn_fieldcache_id field_cache;
 
 	ENTER(export_to_iges);
 	return_code=0;
@@ -1067,8 +1068,8 @@ Write bicubic elements to an IGES file.
 			out_string[strlen(out_string)-1]=';';
 			fprintf(iges,"%-72sG%7d\n",out_string,global_count);
 			/* get entity information */
-			field_module = cmzn_field_get_field_module(field);
-			field_cache = cmzn_field_module_create_cache(field_module);
+			field_module = cmzn_field_get_fieldmodule(field);
+			field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 			iges_entity_info_data.field_cache = field_cache;
 			iges_entity_info_data.head=(struct IGES_entity_info *)NULL;
 			iges_entity_info_data.tail=(struct IGES_entity_info *)NULL;
@@ -1351,8 +1352,8 @@ Write bicubic elements to an IGES file.
 				DEALLOCATE(entity);
 			}
 			fclose(iges);
-			cmzn_field_cache_destroy(&field_cache);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldcache_destroy(&field_cache);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{
