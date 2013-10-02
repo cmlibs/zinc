@@ -67,30 +67,30 @@ public:
 		return nodeset;
 	}
 
-	virtual FieldValueCache *createValueCache(cmzn_field_cache& parentCache)
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
 	{
 		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
 
-	virtual bool is_defined_at_location(cmzn_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-bool Computed_field_nodeset_operator::is_defined_at_location(cmzn_field_cache& cache)
+bool Computed_field_nodeset_operator::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	// Checks if source field is defined at a node in nodeset
 	FieldValueCache &inValueCache = *(field->getValueCache(cache));
-	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	int return_code = 0;
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
 		if (getSourceField(0)->core->is_defined_at_location(extraCache))
@@ -99,7 +99,7 @@ bool Computed_field_nodeset_operator::is_defined_at_location(cmzn_field_cache& c
 			break;
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 	return return_code == 1;
 }
 
@@ -167,7 +167,7 @@ public:
 		return 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 	{
 		evaluate_sum(cache, inValueCache);
 		return 1;
@@ -175,13 +175,13 @@ public:
 
 protected:
 	/** @return  number_of_terms summed. 0 is not an error for nodeset_sum, but is for nodeset_mean */
-	int evaluate_sum(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate_sum(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
-int Computed_field_nodeset_sum::evaluate_sum(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodeset_sum::evaluate_sum(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	int number_of_terms = 0;
 	const int number_of_components = field->number_of_components;
@@ -192,9 +192,9 @@ int Computed_field_nodeset_sum::evaluate_sum(cmzn_field_cache& cache, FieldValue
 	{
 		values[i] = 0;
 	}
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
 		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
@@ -207,7 +207,7 @@ int Computed_field_nodeset_sum::evaluate_sum(cmzn_field_cache& cache, FieldValue
 			++number_of_terms;
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 	valueCache.derivatives_valid = 0;
 	return number_of_terms;
 }
@@ -241,11 +241,11 @@ public:
 		return 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_nodeset_mean::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodeset_mean::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int number_of_terms = evaluate_sum(cache, inValueCache);
 	if (number_of_terms > 0)
@@ -295,12 +295,12 @@ public:
 		return 1;
 	}
 
-	virtual int get_number_of_sum_square_terms(cmzn_field_cache& cache) const;
+	virtual int get_number_of_sum_square_terms(cmzn_fieldcache& cache) const;
 
-	int evaluate_sum_square_terms(cmzn_field_cache& cache, RealFieldValueCache& valueCache,
+	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 	{
 		evaluate_sum_squares(cache, inValueCache);
 		return 1;
@@ -308,17 +308,17 @@ public:
 
 protected:
 	/** @return  number_of_terms summed. 0 is not an error for nodeset_sum_squares, but is for nodeset_mean_squares */
-	int evaluate_sum_squares(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate_sum_squares(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 };
 
 int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
-	cmzn_field_cache& cache) const
+	cmzn_fieldcache& cache) const
 {
 	int number_of_terms = 0;
 	cmzn_field_id sourceField = field->source_fields[0];
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		cache.setNode(node);
 		if (sourceField->core->is_defined_at_location(cache))
@@ -326,14 +326,14 @@ int Computed_field_nodeset_sum_squares::get_number_of_sum_square_terms(
 			++number_of_terms;
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 	return number_of_terms;
 }
 
 int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
-	cmzn_field_cache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
+	cmzn_fieldcache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
 {
-	cmzn_field_cache& extraCache = *(valueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *(valueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	int return_code = 1;
 	int number_of_terms = 0;
@@ -342,9 +342,9 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 	FE_value *value = values;
 	cmzn_field_id sourceField = getSourceField(0);
 	int i;
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
 		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
@@ -363,7 +363,7 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 			++number_of_terms;
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 	if (number_of_terms*number_of_components != number_of_values)
 	{
 		return_code = 0;
@@ -371,10 +371,10 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_square_terms(
 	return return_code;
 }
 
-int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	int number_of_terms = 0;
 	const int number_of_components = field->number_of_components;
@@ -385,9 +385,9 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_field_cache& c
 	{
 		values[i] = 0;
 	}
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		extraCache.setNode(node);
 		RealFieldValueCache* sourceValueCache = static_cast<RealFieldValueCache*>(sourceField->evaluate(extraCache));
@@ -400,7 +400,7 @@ int Computed_field_nodeset_sum_squares::evaluate_sum_squares(cmzn_field_cache& c
 			++number_of_terms;
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 	valueCache.derivatives_valid = 0;
 	return number_of_terms;
 }
@@ -434,15 +434,15 @@ public:
 		return 0;
 	}
 
-	int evaluate_sum_square_terms(cmzn_field_cache& cache, RealFieldValueCache& valueCache,
+	int evaluate_sum_square_terms(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		int number_of_values, FE_value *values);
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
 int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms(
-	cmzn_field_cache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
+	cmzn_fieldcache& cache, RealFieldValueCache& valueCache, int number_of_values, FE_value *values)
 {
 	int return_code = evaluate_sum_square_terms(cache, valueCache, number_of_values, values);
 	if (return_code)
@@ -464,7 +464,7 @@ int Computed_field_nodeset_mean_squares::evaluate_sum_square_terms(
 	return (return_code);
 }
 
-int Computed_field_nodeset_mean_squares::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodeset_mean_squares::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int number_of_terms = evaluate_sum_squares(cache, inValueCache);
 	if (number_of_terms > 0)
@@ -509,22 +509,22 @@ public:
 		return 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_nodeset_minimum::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodeset_minimum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	cmzn_field_id sourceField = getSourceField(0);
 
 	bool initialise = true;
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	int node_count = 0;
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		node_count++;
 		extraCache.setNode(node);
@@ -548,7 +548,7 @@ int Computed_field_nodeset_minimum::evaluate(cmzn_field_cache& cache, FieldValue
 			}
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 
 	if (node_count > 0)
 	{
@@ -587,22 +587,22 @@ public:
 		return 0;
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 };
 
-int Computed_field_nodeset_maximum::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_nodeset_maximum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	cmzn_field_cache& extraCache = *(inValueCache.getExtraCache());
+	cmzn_fieldcache& extraCache = *(inValueCache.getExtraCache());
 	extraCache.setTime(cache.getTime());
 	cmzn_field_id sourceField = getSourceField(0);
 
 	bool initialise = true;
-	cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+	cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 	int node_count = 0;
 	cmzn_node_id node = 0;
-	while (0 != (node = cmzn_node_iterator_next_non_access(iterator)))
+	while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 	{
 		node_count++;
 		extraCache.setNode(node);
@@ -626,7 +626,7 @@ int Computed_field_nodeset_maximum::evaluate(cmzn_field_cache& cache, FieldValue
 			}
 		}
 	}
-	cmzn_node_iterator_destroy(&iterator);
+	cmzn_nodeiterator_destroy(&iterator);
 
 	if (node_count > 0)
 	{
@@ -638,13 +638,13 @@ int Computed_field_nodeset_maximum::evaluate(cmzn_field_cache& cache, FieldValue
 
 } //namespace
 
-cmzn_field_id cmzn_field_module_create_nodeset_sum(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_field_module_get_master_region_internal(field_module) ==
+		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
 			cmzn_nodeset_get_master_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -657,13 +657,13 @@ cmzn_field_id cmzn_field_module_create_nodeset_sum(
 	return field;
 }
 
-cmzn_field_id cmzn_field_module_create_nodeset_mean(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_field_module_get_master_region_internal(field_module) ==
+		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
 			cmzn_nodeset_get_master_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -676,13 +676,13 @@ cmzn_field_id cmzn_field_module_create_nodeset_mean(
 	return field;
 }
 
-cmzn_field_id cmzn_field_module_create_nodeset_sum_squares(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_field_module_get_master_region_internal(field_module) ==
+		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
 			cmzn_nodeset_get_master_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -695,13 +695,13 @@ cmzn_field_id cmzn_field_module_create_nodeset_sum_squares(
 	return field;
 }
 
-cmzn_field_id cmzn_field_module_create_nodeset_mean_squares(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_field_module_get_master_region_internal(field_module) ==
+		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
 			cmzn_nodeset_get_master_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -714,13 +714,13 @@ cmzn_field_id cmzn_field_module_create_nodeset_mean_squares(
 	return field;
 }
 
-cmzn_field_id cmzn_field_module_create_nodeset_minimum(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_field_module_get_master_region_internal(field_module) ==
+		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
 			cmzn_nodeset_get_master_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -733,13 +733,13 @@ cmzn_field_id cmzn_field_module_create_nodeset_minimum(
 	return field;
 }
 
-cmzn_field_id cmzn_field_module_create_nodeset_maximum(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset)
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_field_module_get_master_region_internal(field_module) ==
+		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
 			cmzn_nodeset_get_master_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,

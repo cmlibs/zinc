@@ -102,7 +102,7 @@ Data for passing to Element_point_ranges_set_grid_values and for it to pass to
 Field_value_index_ranges_set_grid_values.
 ==============================================================================*/
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	/* the source element points for setting grid values from */
 	struct Element_point_ranges_identifier *source_identifier;
 	int source_element_point_number;

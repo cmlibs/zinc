@@ -18,14 +18,15 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class FieldCache;
+class Fieldcache;
 
 class Element;
 
-class FieldModule;
+class Fieldmodule;
 
 class Field
 {
+friend bool operator==(const Field& field1, const Field& field2);
 protected:
 
 	cmzn_field_id id;
@@ -186,27 +187,82 @@ public:
 		return static_cast<ValueType>(cmzn_field_get_value_type(id));
 	}
 
-	FieldModule getFieldModule();
+	Fieldmodule getFieldmodule();
 
-	int assignMeshLocation(FieldCache& cache, Element element,
+	int assignMeshLocation(Fieldcache& cache, Element element,
 		int coordinatesCount, const double *coordinatesIn);
 
-	int assignReal(FieldCache& cache, int valuesCount, const double *valuesIn);
+	int assignReal(Fieldcache& cache, int valuesCount, const double *valuesIn);
 
-	int assignString(FieldCache& cache, const char *stringValue);
+	int assignString(Fieldcache& cache, const char *stringValue);
 
-	Element evaluateMeshLocation(FieldCache& cache, int coordinatesCount,
+	Element evaluateMeshLocation(Fieldcache& cache, int coordinatesCount,
 		double *coordinatesOut);
 
-	int evaluateReal(FieldCache& cache, int valuesCount, double *valuesOut);
+	int evaluateReal(Fieldcache& cache, int valuesCount, double *valuesOut);
 
-	char *evaluateString(FieldCache& cache);
+	char *evaluateString(Fieldcache& cache);
 
-	int evaluateDerivative(DifferentialOperator& differentialOperator,
-		FieldCache& cache, int valuesCount, double *valuesOut);
+	int evaluateDerivative(Differentialoperator& differentialOperator,
+		Fieldcache& cache, int valuesCount, double *valuesOut);
 
-	bool isDefinedAtLocation(FieldCache& cache);
+	bool isDefinedAtLocation(Fieldcache& cache);
 
+};
+
+inline bool operator==(const Field& a, const Field& b)
+{
+	return a.id == b.id;
+}
+
+class Fielditerator
+{
+private:
+
+	cmzn_fielditerator_id id;
+
+public:
+
+	Fielditerator() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Fielditerator(cmzn_fielditerator_id iterator_id) :
+		id(iterator_id)
+	{ }
+
+	Fielditerator(const Fielditerator& fielditerator) :
+		id(cmzn_fielditerator_access(fielditerator.id))
+	{ }
+
+	Fielditerator& operator=(const Fielditerator& fielditerator)
+	{
+		cmzn_fielditerator_id temp_id = cmzn_fielditerator_access(fielditerator.id);
+		if (0 != id)
+		{
+			cmzn_fielditerator_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Fielditerator()
+	{
+		if (0 != id)
+		{
+			cmzn_fielditerator_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Field next()
+	{
+		return Field(cmzn_fielditerator_next(id));
+	}
 };
 
 }  // namespace Zinc

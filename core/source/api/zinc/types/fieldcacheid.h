@@ -1,5 +1,5 @@
 /**
- * FILE : differentialoperatorid.h
+ * FILE : fieldcacheid.h
  *
  */
 /* OpenCMISS-Zinc Library
@@ -8,10 +8,11 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef CMZN_DIFFERENTIALOPERATORID_H__
-#define CMZN_DIFFERENTIALOPERATORID_H__
+#ifndef CMZN_FIELDCACHEID_H__
+#define CMZN_FIELDCACHEID_H__
 
-	struct cmzn_differentialoperator;
-	typedef struct cmzn_differentialoperator *cmzn_differentialoperator_id;
+struct cmzn_fieldcache;
+/** Handle to field evaluation and assignment cache */
+typedef struct cmzn_fieldcache *cmzn_fieldcache_id;
 
 #endif

@@ -56,21 +56,21 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 
-	virtual int propagate_find_element_xi(cmzn_field_cache& field_cache,
+	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
 		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
 		cmzn_mesh_id mesh);
 };
 
-int Computed_field_coordinate_transformation::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_coordinate_transformation::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	cmzn_field_id sourceField = getSourceField(0);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
@@ -118,7 +118,7 @@ int Computed_field_coordinate_transformation::evaluate(cmzn_field_cache& cache, 
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_coordinate_transformation::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_coordinate_transformation::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	cmzn_field_id sourceField = getSourceField(0);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(sourceField->getValueCache(cache));
@@ -131,7 +131,7 @@ enum FieldAssignmentResult Computed_field_coordinate_transformation::assign(cmzn
 	return FIELD_ASSIGNMENT_RESULT_FAIL;
 }
 
-int Computed_field_coordinate_transformation::propagate_find_element_xi(cmzn_field_cache& field_cache,
+int Computed_field_coordinate_transformation::propagate_find_element_xi(cmzn_fieldcache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
 	FE_value *xi, cmzn_mesh_id mesh)
 {
@@ -237,8 +237,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_field_module_create_coordinate_transformation(
-	struct cmzn_field_module *field_module,
+struct Computed_field *cmzn_fieldmodule_create_field_coordinate_transformation(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 {
 	cmzn_field_id field = 0;
@@ -317,13 +317,13 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 };
 
 /***************************************************************************//**
@@ -334,7 +334,7 @@ private:
  * the converted vectors are not available.
  */
 int Computed_field_vector_coordinate_transformation::evaluate(
-	cmzn_field_cache& cache, FieldValueCache& inValueCache)
+	cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	cmzn_field_id vectorField = getSourceField(0);
 	cmzn_field_id coordinateField = getSourceField(1);
@@ -374,7 +374,7 @@ int Computed_field_vector_coordinate_transformation::evaluate(
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_vector_coordinate_transformation::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_vector_coordinate_transformation::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	cmzn_field_id vectorField = getSourceField(0);
 	cmzn_field_id coordinateField = getSourceField(1);
@@ -491,8 +491,8 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_field_module_create_vector_coordinate_transformation(
-	struct cmzn_field_module *field_module,
+struct Computed_field *cmzn_fieldmodule_create_field_vector_coordinate_transformation(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
 {
 	Computed_field *field = NULL;
@@ -528,7 +528,7 @@ struct Computed_field *cmzn_field_module_create_vector_coordinate_transformation
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_vector_coordinate_transformation.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_vector_coordinate_transformation.  Invalid argument(s)");
 	}
 
 	return (field);

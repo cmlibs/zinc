@@ -28,8 +28,8 @@ private:
 	explicit FieldImage(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldImage FieldModule::createImage();
-	friend FieldImage FieldModule::createImageFromSource(Field& sourceField);
+	friend FieldImage Fieldmodule::createFieldImage();
+	friend FieldImage Fieldmodule::createFieldImageFromSource(Field& sourceField);
 
 	inline cmzn_field_image_id getDerivedId()
 	{
@@ -322,14 +322,14 @@ inline StreamInformationImage FieldImage::createStreamInformation()
 			cmzn_field_image_create_stream_information(getDerivedId())));
 }
 
-inline FieldImage FieldModule::createImage()
+inline FieldImage Fieldmodule::createFieldImage()
 {
-	return FieldImage(cmzn_field_module_create_image(id));
+	return FieldImage(cmzn_fieldmodule_create_field_image(id));
 }
 
-inline FieldImage FieldModule::createImageFromSource(Field& sourceField)
+inline FieldImage Fieldmodule::createFieldImageFromSource(Field& sourceField)
 {
-	return FieldImage(cmzn_field_module_create_image_from_source(id, sourceField.getId()));
+	return FieldImage(cmzn_fieldmodule_create_field_image_from_source(id, sourceField.getId()));
 }
 
 } // namespace Zinc

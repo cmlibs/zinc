@@ -19,18 +19,18 @@ Implements a number of basic component wise operators on computed fields.
 #include "zinc/fieldarithmeticoperators.h"
 
 /* API functions are prefixed with cmzn */
-#define Computed_field_create_add cmzn_field_module_create_add
-#define Computed_field_create_subtract cmzn_field_module_create_subtract
-#define Computed_field_create_multiply cmzn_field_module_create_multiply
-#define Computed_field_create_divide cmzn_field_module_create_divide
-#define Computed_field_create_exp cmzn_field_module_create_exp
-#define Computed_field_create_log cmzn_field_module_create_log
-#define Computed_field_create_power cmzn_field_module_create_power
-#define Computed_field_create_sqrt cmzn_field_module_create_sqrt
-#define Computed_field_create_abs cmzn_field_module_create_abs
+#define Computed_field_create_add cmzn_fieldmodule_create_field_add
+#define Computed_field_create_subtract cmzn_fieldmodule_create_field_subtract
+#define Computed_field_create_multiply cmzn_fieldmodule_create_field_multiply
+#define Computed_field_create_divide cmzn_fieldmodule_create_field_divide
+#define Computed_field_create_exp cmzn_fieldmodule_create_field_exp
+#define Computed_field_create_log cmzn_fieldmodule_create_field_log
+#define Computed_field_create_power cmzn_fieldmodule_create_field_power
+#define Computed_field_create_sqrt cmzn_fieldmodule_create_field_sqrt
+#define Computed_field_create_abs cmzn_fieldmodule_create_field_abs
 
 struct Computed_field *Computed_field_create_power(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -44,7 +44,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_multiply(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -58,7 +58,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_divide(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -72,7 +72,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_weighted_add(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one, double scale_factor1,
 	struct Computed_field *source_field_two, double scale_factor2);
 /*******************************************************************************
@@ -86,7 +86,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_add(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -100,7 +100,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_subtract(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two);
 /*******************************************************************************
@@ -114,7 +114,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_log(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -126,7 +126,7 @@ Automatic scalar broadcast will apply, see cmiss_field.h.
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_sqrt(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -137,7 +137,7 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_exp(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -148,7 +148,7 @@ field, <source_field_one>.  Sets the number of components equal to the source_fi
 ==============================================================================*/
 
 struct Computed_field *Computed_field_create_abs(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field);
 /*******************************************************************************
 LAST MODIFIED : 1 December 2008

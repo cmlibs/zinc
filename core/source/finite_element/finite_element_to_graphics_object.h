@@ -105,7 +105,7 @@ these are simply returned, since no valid direction can be produced.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
-	cmzn_field_cache_id field_cache,
+	cmzn_fieldcache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points,
@@ -148,12 +148,12 @@ from this array, otherwise they are sequential, starting at 0.
 Note:
 - the coordinate and orientation fields are assumed to be rectangular cartesian.
 - the coordinate system of the variable_scale_field is ignored/not used.
-@param field_cache  cmzn_field_cache for evaluating fields. Time is expected
+@param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
 to be set in the field_cache if needed.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
-	cmzn_nodeset_id nodeset, cmzn_field_cache_id field_cache,
+	cmzn_nodeset_id nodeset, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
@@ -209,7 +209,7 @@ Notes:
  * @param time The time used for evaluating the various fields.
  */
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
-	cmzn_field_cache_id field_cache, struct Graphics_vertex_array *vertex_array,
+	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *vertex_array,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	struct Computed_field *texture_coordinate_field,
@@ -232,7 +232,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
  * - the coordinate field is assumed to be rectangular cartesian.
  */
 struct GT_surface *create_cylinder_from_FE_element(
-	struct FE_element *element, cmzn_field_cache_id field_cache,
+	struct FE_element *element, cmzn_fieldcache_id field_cache,
 	cmzn_mesh_id line_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field, const FE_value *base_size,
 	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
@@ -269,7 +269,7 @@ int get_surface_element_segmentation(struct FE_element *element,
  * @param surface_mesh  2-D surface mesh being converted to surface graphics.
 */
 struct GT_surface *create_GT_surface_from_FE_element(
-	struct FE_element *element, cmzn_field_cache_id field_cache,
+	struct FE_element *element, cmzn_fieldcache_id field_cache,
 	cmzn_mesh_id surface_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,

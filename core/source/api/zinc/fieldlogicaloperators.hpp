@@ -25,7 +25,7 @@ private:
 	explicit FieldAnd(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldAnd FieldModule::createAnd(Field& sourceField1,
+	friend FieldAnd Fieldmodule::createFieldAnd(Field& sourceField1,
 		Field& sourceField2);
 
 public:
@@ -37,8 +37,8 @@ public:
 
 inline FieldAnd operator&&(Field& operand1, Field& operand2)
 {
-    FieldModule fieldModule(operand1);
-    return fieldModule.createAnd(operand1, operand2);
+    Fieldmodule fieldModule(operand1);
+    return fieldModule.createFieldAnd(operand1, operand2);
 }
 
 class FieldEqualTo : public Field
@@ -48,7 +48,7 @@ private:
 	explicit FieldEqualTo(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldEqualTo FieldModule::createEqualTo(Field& sourceField1,
+	friend FieldEqualTo Fieldmodule::createFieldEqualTo(Field& sourceField1,
 		Field& sourceField2);
 
 public:
@@ -65,7 +65,7 @@ private:
 	explicit FieldGreaterThan(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldGreaterThan FieldModule::createGreaterThan(Field& sourceField1,
+	friend FieldGreaterThan Fieldmodule::createFieldGreaterThan(Field& sourceField1,
 		Field& sourceField2);
 
 public:
@@ -77,8 +77,8 @@ public:
 
 inline FieldGreaterThan operator>(Field& operand1, Field& operand2)
 {
-    FieldModule fieldModule(operand1);
-    return fieldModule.createGreaterThan(operand1, operand2);
+    Fieldmodule fieldModule(operand1);
+    return fieldModule.createFieldGreaterThan(operand1, operand2);
 }
 
 class FieldLessThan : public Field
@@ -88,7 +88,7 @@ private:
 	explicit FieldLessThan(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldLessThan FieldModule::createLessThan(Field& sourceField1, Field& sourceField2);
+	friend FieldLessThan Fieldmodule::createFieldLessThan(Field& sourceField1, Field& sourceField2);
 
 public:
 
@@ -99,8 +99,8 @@ public:
 
 inline FieldLessThan operator<(Field& operand1, Field& operand2)
 {
-    FieldModule fieldModule(operand1);
-    return fieldModule.createLessThan(operand1, operand2);
+    Fieldmodule fieldModule(operand1);
+    return fieldModule.createFieldLessThan(operand1, operand2);
 }
 
 class FieldOr : public Field
@@ -110,7 +110,7 @@ private:
 	explicit FieldOr(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldOr FieldModule::createOr(Field& sourceField1,
+	friend FieldOr Fieldmodule::createFieldOr(Field& sourceField1,
 		Field& sourceField2);
 
 public:
@@ -122,8 +122,8 @@ public:
 
 inline FieldOr operator||(Field& operand1, Field& operand2)
 {
-    FieldModule fieldModule(operand1);
-    return fieldModule.createOr(operand1, operand2);
+    Fieldmodule fieldModule(operand1);
+    return fieldModule.createFieldOr(operand1, operand2);
 }
 
 class FieldNot : public Field
@@ -133,7 +133,7 @@ private:
 	explicit FieldNot(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNot FieldModule::createNot(Field& sourceField);
+	friend FieldNot Fieldmodule::createFieldNot(Field& sourceField);
 
 public:
 
@@ -144,8 +144,8 @@ public:
 
 inline FieldNot operator!(Field& operand)
 {
-    FieldModule fieldModule(operand);
-    return fieldModule.createNot(operand);
+    Fieldmodule fieldModule(operand);
+    return fieldModule.createFieldNot(operand);
 }
 
 class FieldXor : public Field
@@ -155,7 +155,7 @@ private:
 	explicit FieldXor(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldXor FieldModule::createXor(Field& sourceField1,
+	friend FieldXor Fieldmodule::createFieldXor(Field& sourceField1,
 		Field& sourceField2);
 
 public:
@@ -165,44 +165,44 @@ public:
 
 };
 
-inline FieldAnd FieldModule::createAnd(Field& sourceField1, Field& sourceField2)
+inline FieldAnd Fieldmodule::createFieldAnd(Field& sourceField1, Field& sourceField2)
 {
-	return FieldAnd(cmzn_field_module_create_and(id,
+	return FieldAnd(cmzn_fieldmodule_create_field_and(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldEqualTo FieldModule::createEqualTo(Field& sourceField1, Field& sourceField2)
+inline FieldEqualTo Fieldmodule::createFieldEqualTo(Field& sourceField1, Field& sourceField2)
 {
-	return FieldEqualTo(cmzn_field_module_create_equal_to(id,
+	return FieldEqualTo(cmzn_fieldmodule_create_field_equal_to(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldGreaterThan FieldModule::createGreaterThan(Field& sourceField1, Field& sourceField2)
+inline FieldGreaterThan Fieldmodule::createFieldGreaterThan(Field& sourceField1, Field& sourceField2)
 {
-	return FieldGreaterThan(cmzn_field_module_create_greater_than(id,
+	return FieldGreaterThan(cmzn_fieldmodule_create_field_greater_than(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldLessThan FieldModule::createLessThan(Field& sourceField1, Field& sourceField2)
+inline FieldLessThan Fieldmodule::createFieldLessThan(Field& sourceField1, Field& sourceField2)
 {
-	return FieldLessThan(cmzn_field_module_create_less_than(id,
+	return FieldLessThan(cmzn_fieldmodule_create_field_less_than(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldOr FieldModule::createOr(Field& sourceField1, Field& sourceField2)
+inline FieldOr Fieldmodule::createFieldOr(Field& sourceField1, Field& sourceField2)
 {
-	return FieldOr(cmzn_field_module_create_or(id,
+	return FieldOr(cmzn_fieldmodule_create_field_or(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldNot FieldModule::createNot(Field& sourceField)
+inline FieldNot Fieldmodule::createFieldNot(Field& sourceField)
 {
-	return FieldNot(cmzn_field_module_create_not(id, sourceField.getId()));
+	return FieldNot(cmzn_fieldmodule_create_field_not(id, sourceField.getId()));
 }
 
-inline FieldXor FieldModule::createXor(Field& sourceField1, Field& sourceField2)
+inline FieldXor Fieldmodule::createFieldXor(Field& sourceField1, Field& sourceField2)
 {
-	return FieldXor(cmzn_field_module_create_xor(id,
+	return FieldXor(cmzn_fieldmodule_create_field_xor(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 

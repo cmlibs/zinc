@@ -17,6 +17,7 @@ Functions for converting one finite_element representation to another.
 #include <stdio.h>
 #include <string.h>
 #include <time.h>
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -39,8 +40,8 @@ Module types
 
 struct Convert_finite_elements_data
 {
-	cmzn_field_module_id source_field_module;
-	cmzn_field_cache_id source_field_cache;
+	cmzn_fieldmodule_id source_field_module;
+	cmzn_fieldcache_id source_field_cache;
 	enum Convert_finite_elements_mode mode;
 	Element_refinement refinement;
 	FE_value tolerance;
@@ -64,8 +65,8 @@ struct Convert_finite_elements_data
 	Convert_finite_elements_data(cmzn_region_id source_region,
 			Convert_finite_elements_mode mode,
 			Element_refinement refinement, FE_value tolerance) :
-		source_field_module(cmzn_region_get_field_module(source_region)),
-		source_field_cache(cmzn_field_module_create_cache(source_field_module)),
+		source_field_module(cmzn_region_get_fieldmodule(source_region)),
+		source_field_cache(cmzn_fieldmodule_create_fieldcache(source_field_module)),
 		mode(mode),
 		refinement(refinement),
 		tolerance(tolerance),
@@ -120,8 +121,8 @@ struct Convert_finite_elements_data
 			}
 			DEALLOCATE(destination_fe_fields);
 		}
-		cmzn_field_cache_destroy(&source_field_cache);
-		cmzn_field_module_destroy(&source_field_module);
+		cmzn_fieldcache_destroy(&source_field_cache);
+		cmzn_fieldmodule_destroy(&source_field_module);
 	}
 
 	FE_node *getNearestNode(FE_value *coordinates)
@@ -216,7 +217,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[i][d]*delta_xi[d];
 					}
-					if (cmzn_field_cache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
+					if (cmzn_fieldcache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
 						cmzn_field_evaluate_real_with_derivatives(cfield, source_field_cache, number_of_components, values,
 							mode_dimension, derivatives))
 					{
@@ -322,7 +323,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[i][d]*delta_xi[d];
 					}
-					if (cmzn_field_cache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
+					if (cmzn_fieldcache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
 						cmzn_field_evaluate_real(cfield, source_field_cache, number_of_components, values))
 					{
 						if (j==0)

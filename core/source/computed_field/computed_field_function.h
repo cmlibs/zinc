@@ -35,7 +35,7 @@ and real values in any order into a single vector field.
  * components as the <source_field>.
  */
 struct Computed_field *Computed_field_create_function(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, struct Computed_field *result_field,
 	struct Computed_field *reference_field);
 

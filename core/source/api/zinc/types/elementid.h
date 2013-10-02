@@ -19,8 +19,8 @@
 	typedef struct cmzn_mesh_group *cmzn_mesh_group_id;
 
 /** Handle to a template for creating or defining fields over an element. */
-	struct cmzn_element_template;
-	typedef struct cmzn_element_template *cmzn_element_template_id;
+	struct cmzn_elementtemplate;
+	typedef struct cmzn_elementtemplate *cmzn_elementtemplate_id;
 
 	struct cmzn_element;
 	/** Handle to a single finite element object from a mesh */
@@ -41,12 +41,12 @@ enum cmzn_element_face_type
 	CMZN_ELEMENT_FACE_XI3_1  /*!< only faces where top-level xi3 == 1 */
 };
 
-	struct cmzn_element_iterator;
-	typedef struct cmzn_element_iterator * cmzn_element_iterator_id;
+	struct cmzn_elementiterator;
+	typedef struct cmzn_elementiterator * cmzn_elementiterator_id;
 
-	struct cmzn_element_basis;
+	struct cmzn_elementbasis;
 	/** Handle to an element basis function definition */
-	typedef struct cmzn_element_basis *cmzn_element_basis_id;
+	typedef struct cmzn_elementbasis *cmzn_elementbasis_id;
 
 /**
  * Mode controlling how points are sampled from elements.

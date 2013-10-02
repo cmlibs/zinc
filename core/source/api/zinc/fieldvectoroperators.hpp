@@ -25,10 +25,10 @@ private:
 	explicit FieldCrossProduct(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount,
+	friend FieldCrossProduct Fieldmodule::createFieldCrossProduct(int fieldsCount,
 		Field *sourceFields);
 
-	friend FieldCrossProduct FieldModule::createCrossProduct(
+	friend FieldCrossProduct Fieldmodule::createFieldCrossProduct(
 		Field& sourceField1, Field& sourceField2);
 
 public:
@@ -45,7 +45,7 @@ private:
 	explicit FieldDotProduct(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldDotProduct FieldModule::createDotProduct(Field& sourceField1,
+	friend FieldDotProduct Fieldmodule::createFieldDotProduct(Field& sourceField1,
 		Field& sourceField2);
 
 public:
@@ -62,7 +62,7 @@ private:
 	explicit FieldMagnitude(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldMagnitude FieldModule::createMagnitude(Field& sourceField);
+	friend FieldMagnitude Fieldmodule::createFieldMagnitude(Field& sourceField);
 
 public:
 
@@ -78,7 +78,7 @@ private:
 	explicit FieldNormalise(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNormalise FieldModule::createNormalise(Field& sourceField);
+	friend FieldNormalise Fieldmodule::createFieldNormalise(Field& sourceField);
 
 public:
 
@@ -94,7 +94,7 @@ private:
 	explicit FieldSumComponents(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldSumComponents FieldModule::createSumComponents(Field& sourceField);
+	friend FieldSumComponents Fieldmodule::createFieldSumComponents(Field& sourceField);
 
 public:
 
@@ -103,7 +103,7 @@ public:
 
 };
 
-inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field *sourceFields)
+inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(int fieldsCount, Field *sourceFields)
 {
 	cmzn_field_id field = 0;
 	if (fieldsCount > 0)
@@ -113,37 +113,37 @@ inline FieldCrossProduct FieldModule::createCrossProduct(int fieldsCount, Field 
 		{
 			source_fields[i] = sourceFields[i].getId();
 		}
-		field = cmzn_field_module_create_cross_product(id, fieldsCount, source_fields);
+		field = cmzn_fieldmodule_create_field_cross_product(id, fieldsCount, source_fields);
 		delete[] source_fields;
 	}
 	return FieldCrossProduct(field);
 }
 
-inline FieldCrossProduct FieldModule::createCrossProduct(Field& sourceField1, Field& sourceField2)
+inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(Field& sourceField1, Field& sourceField2)
 {
-	return FieldCrossProduct(cmzn_field_module_create_cross_product_3d(id, sourceField1.getId(),
+	return FieldCrossProduct(cmzn_fieldmodule_create_field_cross_product_3d(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
-inline FieldDotProduct FieldModule::createDotProduct(Field& sourceField1, Field& sourceField2)
+inline FieldDotProduct Fieldmodule::createFieldDotProduct(Field& sourceField1, Field& sourceField2)
 {
-	return FieldDotProduct(cmzn_field_module_create_dot_product(id, sourceField1.getId(),
+	return FieldDotProduct(cmzn_fieldmodule_create_field_dot_product(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
-inline FieldMagnitude FieldModule::createMagnitude(Field& sourceField)
+inline FieldMagnitude Fieldmodule::createFieldMagnitude(Field& sourceField)
 {
-	return FieldMagnitude(cmzn_field_module_create_magnitude(id, sourceField.getId()));
+	return FieldMagnitude(cmzn_fieldmodule_create_field_magnitude(id, sourceField.getId()));
 }
 
-inline FieldNormalise FieldModule::createNormalise(Field& sourceField)
+inline FieldNormalise Fieldmodule::createFieldNormalise(Field& sourceField)
 {
-	return FieldNormalise(cmzn_field_module_create_normalise(id, sourceField.getId()));
+	return FieldNormalise(cmzn_fieldmodule_create_field_normalise(id, sourceField.getId()));
 }
 
-inline FieldSumComponents FieldModule::createSumComponents(Field& sourceField)
+inline FieldSumComponents Fieldmodule::createFieldSumComponents(Field& sourceField)
 {
-	return FieldSumComponents(cmzn_field_module_create_sum_components(id,
+	return FieldSumComponents(cmzn_fieldmodule_create_field_sum_components(id,
 		sourceField.getId()));
 }
 

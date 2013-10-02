@@ -37,7 +37,7 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_group(cmzn_field_module_id field_module);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_module);
 
 /***************************************************************************//**
  * If the field is of group type, then this function returns the group specific

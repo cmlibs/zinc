@@ -39,8 +39,8 @@ extern "C" {
  * Nodeset must be from the same region as field_module.
  * @return  Newly created field, or NULL if failed.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_node_group(
-	cmzn_field_module_id field_module, cmzn_nodeset_id nodeset);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_group(
+	cmzn_fieldmodule_id field_module, cmzn_nodeset_id nodeset);
 
 /***************************************************************************//**
  * If field can be cast to a cmzn_field_node_group_id do so
@@ -96,8 +96,8 @@ ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset(
  * Mesh must be from the same region as field_module.
  * @return  Newly created field, or NULL if failed.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_element_group(
-	cmzn_field_module_id field_module, cmzn_mesh_id mesh);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_element_group(
+	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
  * If field can be cast to a cmzn_field_element_group_id do so

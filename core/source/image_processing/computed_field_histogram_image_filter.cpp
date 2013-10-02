@@ -57,13 +57,13 @@ public:
 	};
 
 	template <class ImageType, class HistogramGeneratorType >
-	int update_histogram(cmzn_field_cache& cache,
+	int update_histogram(cmzn_fieldcache& cache,
 		typename HistogramGeneratorType::Pointer filter, 
 		const typename HistogramGeneratorType::HistogramType *&outputHistogram,
 		ImageType *dummytemplarg1, HistogramGeneratorType *dummytemplarg2);
 
 	template <class ImageType, class HistogramGeneratorType >
-	int evaluate_histogram(cmzn_field_cache& cache, RealFieldValueCache& valueCache,
+	int evaluate_histogram(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		const typename HistogramGeneratorType::HistogramType *outputHistogram,
 		ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2);
 
@@ -126,7 +126,7 @@ private:
 
 template <class ImageType, class HistogramGeneratorType >
 int Computed_field_histogram_image_filter::update_histogram(
-	cmzn_field_cache& cache,
+	cmzn_fieldcache& cache,
 	typename HistogramGeneratorType::Pointer filter, 
 	const typename HistogramGeneratorType::HistogramType *&outputHistogram,
 	ImageType *dummytemplarg1, HistogramGeneratorType *dummytemplarg2)
@@ -173,7 +173,7 @@ Evaluate the templated version of this filter
 	
 template <class ImageType, class HistogramGeneratorType >
 int Computed_field_histogram_image_filter::evaluate_histogram(
-	cmzn_field_cache& cache, RealFieldValueCache& valueCache,
+	cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 	const typename HistogramGeneratorType::HistogramType *outputHistogram,
 	ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2)
 {
@@ -450,7 +450,7 @@ public:
 	{
 	}
 
-	int update_and_evaluate_filter(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+	int update_and_evaluate_filter(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -510,7 +510,7 @@ public:
 	{
 	}
 
-	int set_filter(cmzn_field_cache& cache)
+	int set_filter(cmzn_fieldcache& cache)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -590,7 +590,7 @@ public:
 	{
 	}
 
-	int set_filter(cmzn_field_cache& cache)
+	int set_filter(cmzn_fieldcache& cache)
 /*******************************************************************************
 LAST MODIFIED : 26 March 2008
 
@@ -841,8 +841,8 @@ void Computed_field_histogram_image_filter::create_functor()
 
 } //namespace
 
-struct Computed_field *cmzn_field_module_create_histogram_image_filter(
-	struct cmzn_field_module *field_module,
+struct Computed_field *cmzn_fieldmodule_create_field_histogram_image_filter(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, const int *numberOfBins, double marginalScale,
 	const double *histogramMinimum, const double *histogramMaximum)
 {
@@ -860,7 +860,7 @@ struct Computed_field *cmzn_field_module_create_histogram_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_field_module_create_histogram_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_histogram_image_filter.  Invalid argument(s)");
 	}
 
 	return (field);

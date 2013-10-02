@@ -16,6 +16,7 @@
 #include <vector>
 #include "zinc/element.h"
 #include "zinc/field.h"
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldfiniteelement.h"
 #include "zinc/node.h"
@@ -111,7 +112,7 @@ struct ConnectivityData
 
 struct ElementFieldComponent
 {
-	cmzn_element_basis_id element_basis;
+	cmzn_elementbasis_id element_basis;
 	cmzn_field_integer_parameters_id local_point_to_node;
 	cmzn_ensemble_index_id index;
 	int local_point_count;
@@ -120,7 +121,7 @@ struct ElementFieldComponent
 	int *swizzled_local_point_indexes;
 	int *node_identifiers;
 
-	ElementFieldComponent(cmzn_element_basis_id element_basis,
+	ElementFieldComponent(cmzn_elementbasis_id element_basis,
 			cmzn_field_integer_parameters_id local_point_to_node,
 			cmzn_ensemble_index_id index, int local_point_count,
 			const int *swizzle) :
@@ -137,7 +138,7 @@ struct ElementFieldComponent
 
 	~ElementFieldComponent()
 	{
-		cmzn_element_basis_destroy(&element_basis);
+		cmzn_elementbasis_destroy(&element_basis);
 		cmzn_field_integer_parameters_destroy(&local_point_to_node);
 		cmzn_ensemble_index_destroy(&index);
 		delete[] local_point_indexes;
@@ -151,7 +152,7 @@ typedef std::map<FmlObjectHandle,ElementFieldComponent*> EvaluatorElementFieldCo
 class FieldMLReader
 {
 	cmzn_region *region;
-	cmzn_field_module_id field_module;
+	cmzn_fieldmodule_id field_module;
 	const char *filename;
 	FmlSessionHandle fmlSession;
 	int meshDimension;
@@ -166,7 +167,7 @@ class FieldMLReader
 public:
 	FieldMLReader(struct cmzn_region *region, const char *filename) :
 		region(cmzn_region_access(region)),
-		field_module(cmzn_region_get_field_module(region)),
+		field_module(cmzn_region_get_fieldmodule(region)),
 		filename(filename),
 		fmlSession(Fieldml_CreateFromFile(filename)),
 		meshDimension(0),
@@ -186,7 +187,7 @@ public:
 			delete (iter->second);
 		}
 		Fieldml_Destroy(fmlSession);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldmodule_destroy(&field_module);
 		cmzn_region_destroy(&region);
 		delete[] nameBuffer;
 	}
@@ -324,7 +325,7 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 		display_message(ERROR_MESSAGE, "Read FieldML:  Argument %s is not ensemble type", name.c_str());
 		return 0;
 	}
-	cmzn_field_id ensemble_field = cmzn_field_module_find_field_by_name(field_module, name.c_str());
+	cmzn_field_id ensemble_field = cmzn_fieldmodule_find_field_by_name(field_module, name.c_str());
 	if (isProcessed(fmlEnsembleType))
 	{
 		cmzn_field_ensemble_id ensemble = cmzn_field_cast_ensemble(ensemble_field);
@@ -366,7 +367,7 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 	{
 		display_message(INFORMATION_MESSAGE, "Reading ensemble type %s\n", name.c_str());
 	}
-	ensemble_field = cmzn_field_module_create_ensemble(field_module);
+	ensemble_field = cmzn_fieldmodule_create_field_ensemble(field_module);
 	cmzn_field_set_name(ensemble_field, name.c_str());
 	cmzn_field_set_managed(ensemble_field, true);
 	cmzn_field_ensemble_id ensemble = cmzn_field_cast_ensemble(ensemble_field);
@@ -841,7 +842,7 @@ cmzn_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		}
 	}
 
-	cmzn_field_id parameters = cmzn_field_module_find_field_by_name(field_module, name.c_str());
+	cmzn_field_id parameters = cmzn_fieldmodule_find_field_by_name(field_module, name.c_str());
 	if (isProcessed(fmlParameters))
 	{
 		return parameters;
@@ -906,8 +907,8 @@ cmzn_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
 		if (!parameters)
 		{
 			parameters = isReal ?
-				cmzn_field_module_create_real_parameters(field_module, indexEnsembleCount, indexEnsembles) :
-				cmzn_field_module_create_integer_parameters(field_module, indexEnsembleCount, indexEnsembles);
+				cmzn_fieldmodule_create_field_real_parameters(field_module, indexEnsembleCount, indexEnsembles) :
+				cmzn_fieldmodule_create_field_integer_parameters(field_module, indexEnsembleCount, indexEnsembles);
 			cmzn_field_set_name(parameters, name.c_str());
 			cmzn_field_set_managed(parameters, true);
 		}
@@ -1094,8 +1095,8 @@ int FieldMLReader::readMeshes()
 
 		// create elements in the mesh of given dimension
 
-		cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module, meshDimension);
-		cmzn_element_template_id element_template = cmzn_mesh_create_element_template(mesh);
+		cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
+		cmzn_elementtemplate_id element_template = cmzn_mesh_create_elementtemplate(mesh);
 
 		cmzn_ensemble_iterator *elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
 		if (!elementsIterator)
@@ -1146,7 +1147,7 @@ int FieldMLReader::readMeshes()
 			}
 			if (shape_type != last_shape_type)
 			{
-				if (!(cmzn_element_template_set_shape_type(element_template, shape_type)))
+				if (!(cmzn_elementtemplate_set_shape_type(element_template, shape_type)))
 				{
 					return_code = 0;
 					break;
@@ -1168,7 +1169,7 @@ int FieldMLReader::readMeshes()
 		cmzn_ensemble_iterator_destroy(&elementsIterator);
 		cmzn_field_ensemble_destroy(&elementsEnsemble);
 
-		cmzn_element_template_destroy(&element_template);
+		cmzn_elementtemplate_destroy(&element_template);
 		cmzn_mesh_destroy(&mesh);
 	}
 	return return_code;
@@ -1375,16 +1376,16 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
 	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
 
-	cmzn_element_basis_id element_basis = cmzn_field_module_create_element_basis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
+	cmzn_elementbasis_id element_basis = cmzn_fieldmodule_create_elementbasis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
 	if (!libraryBases[basis_index].homogeneous)
 	{
 		for (int dimension = 2; dimension <= meshDimension; dimension++)
 		{
-			cmzn_element_basis_set_function_type(element_basis, dimension,
+			cmzn_elementbasis_set_function_type(element_basis, dimension,
 				libraryBases[basis_index].functionType[dimension - 1]);
 		}
 	}
-	int basis_number_of_nodes = cmzn_element_basis_get_number_of_nodes(element_basis);
+	int basis_number_of_nodes = cmzn_elementbasis_get_number_of_nodes(element_basis);
 	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, index, local_point_count, libraryBases[basis_index].swizzle);
 	if (local_point_to_node && index && local_point_count && (local_point_count == basis_number_of_nodes))
 	{
@@ -1420,7 +1421,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			fieldName.c_str(), componentCount);
 	}
 
-	cmzn_field_id field = cmzn_field_module_create_finite_element(field_module, componentCount);
+	cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element(field_module, componentCount);
 	cmzn_field_set_name(field, fieldName.c_str());
 	cmzn_field_set_managed(field, true);
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
@@ -1431,13 +1432,13 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// create nodes and set node parameters
 
-	cmzn_nodeset_id nodes = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
 	cmzn_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
 	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
 		fmlNodesType = fmlNodeEnsembleType;
 		// create the nodes
-		cmzn_node_template_id node_template = cmzn_nodeset_create_node_template(nodes);
+		cmzn_nodetemplate_id node_template = cmzn_nodeset_create_nodetemplate(nodes);
 		cmzn_ensemble_iterator_id nodesIterator = cmzn_field_ensemble_get_first_entry(nodesEnsemble);
 		while (return_code)
 		{
@@ -1448,7 +1449,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				break;
 		}
 		cmzn_ensemble_iterator_destroy(&nodesIterator);
-		cmzn_node_template_destroy(&node_template);
+		cmzn_nodetemplate_destroy(&node_template);
 	}
 
 	cmzn_field_id node_parameters_field = getParameters(fmlNodeParameters);
@@ -1463,15 +1464,15 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	}
 	else
 	{
-		cmzn_node_template_id node_template = cmzn_nodeset_create_node_template(nodes);
-		cmzn_node_template_define_field(node_template, field);
+		cmzn_nodetemplate_id node_template = cmzn_nodeset_create_nodetemplate(nodes);
+		cmzn_nodetemplate_define_field(node_template, field);
 		return_code = 1;
 		cmzn_ensemble_index_id index = cmzn_field_real_parameters_create_index(node_parameters);
 		// GRC inefficient to iterate over sparse parameters this way
 		cmzn_ensemble_iterator_id nodesIterator = cmzn_field_ensemble_get_first_entry(nodesEnsemble);
 		double *values = new double[componentCount];
 		int *valueExists = new int[componentCount];
-		cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		while (return_code)
 		{
 			cmzn_ensemble_identifier nodeIdentifier = cmzn_ensemble_iterator_get_identifier(nodesIterator);
@@ -1494,7 +1495,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						}
 					}
 					cmzn_node_merge(node, node_template);
-					cmzn_field_cache_set_node(field_cache, node);
+					cmzn_fieldcache_set_node(field_cache, node);
 					cmzn_field_assign_real(field, field_cache, componentCount, values);
 				}
 			}
@@ -1506,20 +1507,20 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			if (!cmzn_ensemble_iterator_increment(nodesIterator))
 				break;
 		}
-		cmzn_field_cache_destroy(&field_cache);
+		cmzn_fieldcache_destroy(&field_cache);
 		delete[] valueExists;
 		delete[] values;
 		cmzn_ensemble_iterator_destroy(&nodesIterator);
 		cmzn_field_real_parameters_destroy(&node_parameters);
 		cmzn_ensemble_index_destroy(&index);
-		cmzn_node_template_destroy(&node_template);
+		cmzn_nodetemplate_destroy(&node_template);
 	}
 
 	// define element fields
 
 	cmzn_mesh_id mesh =
-		cmzn_field_module_find_mesh_by_dimension(field_module, meshDimension);
-	cmzn_element_template_id element_template = 0;
+		cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
+	cmzn_elementtemplate_id element_template = 0;
 	cmzn_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 	cmzn_ensemble_iterator_id elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
 	if (!elementsIterator)
@@ -1531,7 +1532,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	while (return_code)
 	{
 		int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
-		bool newElementTemplate = (element_template != 0);
+		bool newElementtemplate = (element_template != 0);
 		bool definedOnAllComponents = true;
 		for (int ic = 0; ic < componentCount; ic++)
 		{
@@ -1540,7 +1541,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			if (fmlElementEvaluator != fmlElementEvaluators[ic])
 			{
 				fmlElementEvaluators[ic] = fmlElementEvaluator;
-				newElementTemplate = true;
+				newElementtemplate = true;
 			}
 			if (fmlElementEvaluator == FML_INVALID_OBJECT_HANDLE)
 			{
@@ -1554,13 +1555,13 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				break;
 			continue;
 		}
-		if (newElementTemplate)
+		if (newElementtemplate)
 		{
 			if (element_template)
-				cmzn_element_template_destroy(&element_template);
-			element_template = cmzn_mesh_create_element_template(mesh);
+				cmzn_elementtemplate_destroy(&element_template);
+			element_template = cmzn_mesh_create_elementtemplate(mesh);
 			// do not want to override shape of existing elements:
-			cmzn_element_template_set_shape_type(element_template, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
+			cmzn_elementtemplate_set_shape_type(element_template, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
 			int total_local_point_count = 0;
 			for (int ic = 0; ic < componentCount; ic++)
 			{
@@ -1598,9 +1599,9 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						}
 					}
 					total_local_point_count += components[ic]->local_point_count;
-					cmzn_element_template_set_number_of_nodes(element_template, total_local_point_count);
+					cmzn_elementtemplate_set_number_of_nodes(element_template, total_local_point_count);
 				}
-				if (!cmzn_element_template_define_field_simple_nodal(element_template, field,
+				if (!cmzn_elementtemplate_define_field_simple_nodal(element_template, field,
 					/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
 					components[ic]->local_point_indexes))
 				{
@@ -1640,7 +1641,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						return_code = 0;
 						break;
 					}
-					cmzn_element_template_set_node(element_template, component->swizzled_local_point_indexes[i], node);
+					cmzn_elementtemplate_set_node(element_template, component->swizzled_local_point_indexes[i], node);
 					cmzn_node_destroy(&node);
 				}
 			}
@@ -1662,7 +1663,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	cmzn_field_ensemble_destroy(&elementsEnsemble);
 	cmzn_field_ensemble_destroy(&nodesEnsemble);
 	if (element_template)
-		cmzn_element_template_destroy(&element_template);
+		cmzn_elementtemplate_destroy(&element_template);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_nodeset_destroy(&nodes);
 	cmzn_field_destroy(&field);

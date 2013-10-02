@@ -245,8 +245,8 @@ ZINC_API char *cmzn_stream_information_image_pixel_format_enum_to_string(
  * @param field_module  Region field module which will own the image field.
  * @return  Newly created image field. Up to caller to destroy handle.
 */
-ZINC_API cmzn_field_id cmzn_field_module_create_image(
-	cmzn_field_module_id field_module);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image(
+	cmzn_fieldmodule_id field_module);
 
 /**
  * Creates a new image field whose image data is sampled from the source
@@ -264,8 +264,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_image(
  * image-based with up to 4 components.
  * @return  Newly created image field. Up to caller to destroy handle.
 */
-ZINC_API cmzn_field_id cmzn_field_module_create_image_from_source(
-	cmzn_field_module_id field_module, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /*****************************************************************************//**
  * If the image_field is of type image field then this function returns
@@ -514,7 +514,7 @@ ZINC_API int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
 /**
  * Gets the domain field on which texture coordinates must be specified to
  * evaluate the image.
- * @see cmzn_field_cache_set_field_real
+ * @see cmzn_fieldcache_set_field_real
  *
  * @param image_field  The image field to query.
  * @return  The domain field, or 0 if error. Up to caller to destroy handle.
@@ -525,7 +525,7 @@ ZINC_API cmzn_field_id cmzn_field_image_get_domain_field(
 /**
  * Sets the domain field on which texture coordinates must be specified to
  * evaluate the image.
- * @see cmzn_field_cache_set_field_real
+ * @see cmzn_fieldcache_set_field_real
  *
  * @param image_field  The image field to modify.
  * @param domain_field  The new domain field. Must be real-valued with at least

@@ -29,8 +29,8 @@ extern "C" {
  * @param source_field Input field
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_sin(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sin(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -41,8 +41,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_sin(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_cos(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cos(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -53,8 +53,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_cos(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_tan(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_tan(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -65,8 +65,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_tan(
  * @param source_field Input field (components in radians)
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_asin(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_asin(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -77,8 +77,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_asin(
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_acos(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_acos(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -89,8 +89,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_acos(
  * @param source_field Input field
  * @return Newly created field (components in radians)
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_atan(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_atan(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -104,8 +104,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_atan(
  * @param source_field_two Second input field
  * @return Newly created field (components in radians)
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_atan2(
-	cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_atan2(
+	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two);
 

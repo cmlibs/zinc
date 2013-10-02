@@ -94,15 +94,15 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, RealFieldValueCache& /*valueCache*/);
 
-	virtual int propagate_find_element_xi(cmzn_field_cache& field_cache,
+	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
 		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
 		cmzn_mesh_id mesh);
@@ -172,7 +172,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_composite::compare */
 
-int Computed_field_composite::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_composite::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	// try to avoid allocating cache array
 	const int CacheStackSize = 10;
@@ -235,7 +235,7 @@ int Computed_field_composite::evaluate(cmzn_field_cache& cache, FieldValueCache&
 	return (return_code);
 }
 
-enum FieldAssignmentResult Computed_field_composite::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	/* go through each source field, getting current values, changing values
 		for components that are used in the composite field, then setting the
@@ -285,7 +285,7 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_field_cache& ca
 	return result;
 }
 
-int Computed_field_composite::propagate_find_element_xi(cmzn_field_cache& field_cache,
+int Computed_field_composite::propagate_find_element_xi(cmzn_fieldcache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
 	FE_value *xi, cmzn_mesh_id mesh)
 /*******************************************************************************
@@ -523,7 +523,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 struct Computed_field *Computed_field_create_composite(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	int number_of_components,
 	int number_of_source_fields,struct Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
@@ -736,7 +736,7 @@ Note returned fields are not allocated in arrays.
 } /* Computed_field_get_type_composite */
 
 struct Computed_field *Computed_field_create_constant(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	int number_of_values, const double *values)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -936,10 +936,10 @@ Returned field is ACCESSed once.
 				{
 					sprintf(component_field_name, "%s.%s", field->name, component_name);
 					cmzn_region* region = Computed_field_get_region(field);
-					cmzn_field_module *field_module = cmzn_field_module_create(region);
-					cmzn_field_module_set_field_name(field_module, component_field_name);
+					cmzn_fieldmodule *field_module = cmzn_fieldmodule_create(region);
+					cmzn_fieldmodule_set_field_name(field_module, component_field_name);
 					component_field = Computed_field_create_component(field_module, field, component_number + 1);
-					cmzn_field_module_destroy(&field_module);
+					cmzn_fieldmodule_destroy(&field_module);
 					DEALLOCATE(component_field_name);
 				}
 				DEALLOCATE(component_name);
@@ -961,8 +961,8 @@ Returned field is ACCESSed once.
 	return (component_field);
 } /* Computed_field_manager_get_component_wrapper */
 
-Computed_field *cmzn_field_module_create_identity(
-	struct cmzn_field_module *field_module,
+Computed_field *cmzn_fieldmodule_create_field_identity(
+	struct cmzn_fieldmodule *field_module,
 	Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 21 April 2008
@@ -1013,8 +1013,8 @@ Changes <field> into type composite with one input field, the <source_field>.
 	return (field);
 } /* Computed_field_create_identity */
 
-cmzn_field_id cmzn_field_module_create_component(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+cmzn_field_id cmzn_fieldmodule_create_field_component(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	int component_number)
 {
 	cmzn_field_id field = 0;
@@ -1034,7 +1034,7 @@ cmzn_field_id cmzn_field_module_create_component(
 }
 
 struct Computed_field *Computed_field_create_concatenate(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	int number_of_source_fields, struct Computed_field **source_fields)
 {
 	Computed_field *field = NULL;

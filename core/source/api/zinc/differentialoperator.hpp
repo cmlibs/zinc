@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : differentialoperator.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -16,45 +16,45 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class DifferentialOperator
+class Differentialoperator
 {
 private:
-	cmzn_differential_operator_id id;
+	cmzn_differentialoperator_id id;
 
 public:
 
-	DifferentialOperator() : id(0)
+	Differentialoperator() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit DifferentialOperator(cmzn_differential_operator_id in_differential_operator_id) :
+	explicit Differentialoperator(cmzn_differentialoperator_id in_differential_operator_id) :
 		id(in_differential_operator_id)
 	{  }
 
-	DifferentialOperator(const DifferentialOperator& differentialOperator) :
-		id(cmzn_differential_operator_access(differentialOperator.id))
+	Differentialoperator(const Differentialoperator& differentialOperator) :
+		id(cmzn_differentialoperator_access(differentialOperator.id))
 	{	}
 
-	DifferentialOperator& operator=(const DifferentialOperator& differentialOperator)
+	Differentialoperator& operator=(const Differentialoperator& differentialOperator)
 	{
-		cmzn_differential_operator_id temp_id = cmzn_differential_operator_access(differentialOperator.id);
+		cmzn_differentialoperator_id temp_id = cmzn_differentialoperator_access(differentialOperator.id);
 		if (0 != id)
 		{
-			cmzn_differential_operator_destroy(&id);
+			cmzn_differentialoperator_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~DifferentialOperator()
+	~Differentialoperator()
 	{
 		if (0 != id)
 		{
-			cmzn_differential_operator_destroy(&id);
+			cmzn_differentialoperator_destroy(&id);
 		}
 	}
 
-	cmzn_differential_operator_id getId()
+	cmzn_differentialoperator_id getId()
 	{
 		return id;
 	}

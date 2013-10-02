@@ -22,6 +22,8 @@ class StreamInformationRegion;
 
 class Region
 {
+friend bool operator==(const Region& a, const Region& b);
+
 protected:
 	cmzn_region_id id;
 
@@ -101,9 +103,9 @@ public:
 		return Region(cmzn_region_create_region(id));
 	}
 
-	FieldModule getFieldModule()
+	Fieldmodule getFieldmodule()
 	{
-		return FieldModule(cmzn_region_get_field_module(id));
+		return Fieldmodule(cmzn_region_get_fieldmodule(id));
 	}
 
 	int readFile(const char *fileName)
@@ -189,6 +191,11 @@ public:
 	StreamInformationRegion createStreamInformation();
 
 };
+
+inline bool operator==(const Region& a, const Region& b)
+{
+	return a.id == b.id;
+}
 
 class StreamInformationRegion : public StreamInformation
 {

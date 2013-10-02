@@ -37,7 +37,7 @@ public:
 	};
 
 private:
-	virtual bool is_defined_at_location(cmzn_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	Computed_field_core *copy()
 	{
@@ -61,14 +61,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-bool Computed_field_2d_strain::is_defined_at_location(cmzn_field_cache& cache)
+bool Computed_field_2d_strain::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	Field_element_xi_location* element_xi_location;
 	// only works for element_xi locations & at least 2-D
@@ -81,7 +81,7 @@ bool Computed_field_2d_strain::is_defined_at_location(cmzn_field_cache& cache)
 	return false;
 }
 
-int Computed_field_2d_strain::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_2d_strain::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	Field_element_xi_location* element_xi_location;
 	/* Only works for element_xi locations */
@@ -307,7 +307,7 @@ Returns allocated command string for reproducing field. Includes type.
  * The <coordinate_field>s must have no more than 3 components.
  */
 struct Computed_field *Computed_field_create_2d_strain(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *deformed_coordinate_field,
 	struct Computed_field *undeformed_coordinate_field,
 	struct Computed_field *fibre_angle_field)

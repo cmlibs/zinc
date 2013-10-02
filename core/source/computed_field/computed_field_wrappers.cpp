@@ -51,15 +51,14 @@ wrapped.
 		type = get_coordinate_system_type(Computed_field_get_coordinate_system(coordinate_field));
 		if (Coordinate_system_type_is_non_linear(type))
 		{
-			cmzn_field_module *field_module =
-				cmzn_field_module_create(Computed_field_get_region(coordinate_field));
+			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
 			struct Coordinate_system rc_coordinate_system;
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			cmzn_field_module_set_coordinate_system(field_module,
+			cmzn_fieldmodule_set_coordinate_system(field_module,
 				rc_coordinate_system);
-			wrapper_field = cmzn_field_module_create_coordinate_transformation(field_module,
+			wrapper_field = cmzn_fieldmodule_create_field_coordinate_transformation(field_module,
 				coordinate_field);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{
@@ -117,24 +116,22 @@ Must call Computed_field_end_wrap to clean up the returned field after use.
 			(3>=Computed_field_get_number_of_components(orientation_scale_field)))
 		{
 			/* make fibre_axes wrapper from fibre field */
-			cmzn_field_module *field_module =
-				cmzn_field_module_create(Computed_field_get_region(coordinate_field));
-			wrapper_field = cmzn_field_module_create_fibre_axes(field_module,
+			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
+			wrapper_field = cmzn_fieldmodule_create_field_fibre_axes(field_module,
 					orientation_scale_field, coordinate_field);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{
 			/* make vector_coordinate_transformation wrapper of non-RC vector field */
-			cmzn_field_module *field_module =
-				cmzn_field_module_create(Computed_field_get_region(coordinate_field));
+			cmzn_fieldmodule *field_module = cmzn_field_get_fieldmodule(coordinate_field);
 			struct Coordinate_system rc_coordinate_system;
 			rc_coordinate_system.type = RECTANGULAR_CARTESIAN;
-			cmzn_field_module_set_coordinate_system(field_module,
+			cmzn_fieldmodule_set_coordinate_system(field_module,
 				rc_coordinate_system);
-			wrapper_field = cmzn_field_module_create_vector_coordinate_transformation(
+			wrapper_field = cmzn_fieldmodule_create_field_vector_coordinate_transformation(
 				field_module, orientation_scale_field, coordinate_field);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 	}
 	else

@@ -11,9 +11,10 @@ Functions for updating values of one computed field from those of another.
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
-#include "computed_field/computed_field.h"
 #include "zinc/status.h"
+#include "computed_field/computed_field.h"
 #include "computed_field/computed_field_update.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
@@ -39,19 +40,19 @@ int cmzn_nodeset_assign_field_from_source(
 			((Computed_field_get_number_of_components(source_field) == number_of_components) &&
 				(cmzn_field_get_value_type(source_field) == value_type)))
 		{
-			cmzn_field_module_id field_module = cmzn_field_get_field_module(destination_field);
-			cmzn_field_module_begin_change(field_module);
-			cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+			cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(destination_field);
+			cmzn_fieldmodule_begin_change(field_module);
+			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 			FE_value *values = new FE_value[number_of_components];
 			// all fields evaluated at same time so set once
-			cmzn_field_cache_set_time(field_cache, time);
-			cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+			cmzn_fieldcache_set_time(field_cache, time);
+			cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 			cmzn_node_id node = 0;
 			int selected_count = 0;
 			int success_count = 0;
-			while (return_code && (0 != (node = cmzn_node_iterator_next(iterator))))
+			while (return_code && (0 != (node = cmzn_nodeiterator_next(iterator))))
 			{
-				cmzn_field_cache_set_node(field_cache, node);
+				cmzn_fieldcache_set_node(field_cache, node);
 				if ((!conditional_field) || (CMZN_OK == cmzn_field_evaluate_boolean(conditional_field, field_cache)))
 				{
 					if ((CMZN_OK == cmzn_field_is_defined_at_location(destination_field, field_cache)))
@@ -105,7 +106,7 @@ int cmzn_nodeset_assign_field_from_source(
 				}
 				cmzn_node_destroy(&node);
 			}
-			cmzn_node_iterator_destroy(&iterator);
+			cmzn_nodeiterator_destroy(&iterator);
 			if (success_count != selected_count)
 			{
 				display_message(WARNING_MESSAGE,
@@ -116,9 +117,9 @@ int cmzn_nodeset_assign_field_from_source(
 					success_count, selected_count);
 			}
 			delete[] values;
-			cmzn_field_cache_destroy(&field_cache);
-			cmzn_field_module_end_change(field_module);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldcache_destroy(&field_cache);
+			cmzn_fieldmodule_end_change(field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{
@@ -139,7 +140,7 @@ int cmzn_nodeset_assign_field_from_source(
 
 struct cmzn_element_assign_grid_field_from_source_data
 {
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	int selected_count, success_count, xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct Computed_field *source_field;
 	struct Computed_field *destination_field;
@@ -180,7 +181,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 			}
 			if (data->group_field)
 			{
-				if (cmzn_field_cache_set_element(data->field_cache, element) &&
+				if (cmzn_fieldcache_set_element(data->field_cache, element) &&
 					cmzn_field_evaluate_boolean(data->group_field, data->field_cache))
 				{
 					element_selected = 1;
@@ -232,7 +233,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 						element_point_ranges_identifier.sample_mode,
 						element_point_ranges_identifier.number_in_xi,
 						element_point_ranges_identifier.exact_xi,
-						(cmzn_field_cache_id)0,
+						(cmzn_fieldcache_id)0,
 						/*coordinate_field*/(struct Computed_field *)NULL,
 						/*density_field*/(struct Computed_field *)NULL,
 						&maximum_element_point_number,
@@ -245,7 +246,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 			{
 				data->selected_count++;
 				if (destination_field_is_grid_based &&
-					cmzn_field_cache_set_element(data->field_cache, element) &&
+					cmzn_fieldcache_set_element(data->field_cache, element) &&
 					cmzn_field_is_defined_at_location(data->source_field, data->field_cache) &&
 					ALLOCATE(values, FE_value, number_of_components))
 				{
@@ -265,12 +266,12 @@ int cmzn_element_assign_grid_field_from_source_sub(
 									if (FE_element_get_numbered_xi_point(
 											 element, element_point_ranges_identifier.sample_mode,
 											 element_point_ranges_identifier.number_in_xi, element_point_ranges_identifier.exact_xi,
-											 (cmzn_field_cache_id)0,
+											 (cmzn_fieldcache_id)0,
 											 /*coordinate_field*/(struct Computed_field *)NULL,
 											 /*density_field*/(struct Computed_field *)NULL,
 											 grid_point_number, xi))
 									{
-										if (cmzn_field_cache_set_mesh_location(data->field_cache,
+										if (cmzn_fieldcache_set_mesh_location(data->field_cache,
 												element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
 											cmzn_field_evaluate_real(data->source_field,
 												data->field_cache, number_of_components, values))
@@ -318,10 +319,10 @@ int cmzn_mesh_assign_grid_field_from_source(
 			 Computed_field_get_number_of_components(destination_field))
 		{
 			cmzn_region_id region = cmzn_mesh_get_region_internal(mesh);
-			cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-			cmzn_field_module_begin_change(field_module);
-			cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
-			cmzn_field_cache_set_time(field_cache, time);
+			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+			cmzn_fieldmodule_begin_change(field_module);
+			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+			cmzn_fieldcache_set_time(field_cache, time);
 			cmzn_element_assign_grid_field_from_source_data data;
 			data.field_cache = field_cache;
 			data.source_field = source_field;
@@ -330,9 +331,9 @@ int cmzn_mesh_assign_grid_field_from_source(
 			data.group_field = conditional_field;
 			data.selected_count = 0;
 			data.success_count = 0;
-			cmzn_element_iterator_id iter = cmzn_mesh_create_element_iterator(mesh);
+			cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
 			cmzn_element_id element = 0;
-			while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
 				if (!cmzn_element_assign_grid_field_from_source_sub(element, &data))
 				{
@@ -340,7 +341,7 @@ int cmzn_mesh_assign_grid_field_from_source(
 					break;
 				}
 			}
-			cmzn_element_iterator_destroy(&iter);
+			cmzn_elementiterator_destroy(&iter);
 			if (data.success_count != data.selected_count)
 			{
 				display_message(ERROR_MESSAGE,
@@ -351,9 +352,9 @@ int cmzn_mesh_assign_grid_field_from_source(
 					data.success_count, data.selected_count);
 				return_code = 0;
 			}
-			cmzn_field_cache_destroy(&field_cache);
-			cmzn_field_module_end_change(field_module);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldcache_destroy(&field_cache);
+			cmzn_fieldmodule_end_change(field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 		else
 		{

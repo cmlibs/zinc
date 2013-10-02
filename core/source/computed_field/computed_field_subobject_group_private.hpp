@@ -415,7 +415,7 @@ public:
 			return (return_code);
 		};
 
-		cmzn_element_iterator_id createIterator()
+		cmzn_elementiterator_id createIterator()
 		{
 			return CREATE_LIST_ITERATOR(FE_element)(object_list);
 		}
@@ -499,7 +499,7 @@ public:
 			return (return_code);
 		}
 
-		int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 		{
 			Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
 			if (element_xi_location)
@@ -674,7 +674,7 @@ public:
 			return IS_OBJECT_IN_LIST(FE_node)(object, object_list);
 		};
 
-		cmzn_node_iterator_id createIterator()
+		cmzn_nodeiterator_id createIterator()
 		{
 			return CREATE_LIST_ITERATOR(FE_node)(object_list);
 		}
@@ -755,7 +755,7 @@ public:
 			return (return_code);
 		}
 
-		int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+		int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 		{
 			Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 			if (node_location)

@@ -11,6 +11,7 @@
 #include <list>
 #include <map>
 #include "zinc/differentialoperator.h"
+#include "zinc/fieldcache.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
@@ -568,7 +569,7 @@ class Isosurface_builder
 {
 private:
 	FE_element *element;
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	cmzn_mesh_id mesh;
 	FE_value time;
 	int number_in_xi1, number_in_xi2, number_in_xi3, number_of_polygon_vertices;
@@ -589,7 +590,7 @@ private:
 	Iso_mesh *last_mesh;
 
 public:
-	Isosurface_builder(FE_element *element, cmzn_field_cache_id field_cache,
+	Isosurface_builder(FE_element *element, cmzn_fieldcache_id field_cache,
 		cmzn_mesh_id mesh, FE_value time,
 		int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
 		const Iso_surface_specification& specification);
@@ -667,7 +668,7 @@ private:
 		xi[0] = 0.25*(xi1[0] + xi2[0] + xi3[0] + xi4[0]);
 		xi[1] = 0.25*(xi1[1] + xi2[1] + xi3[1] + xi4[1]);
 		xi[2] = 0.25*(xi1[2] + xi2[2] + xi3[2] + xi4[2]);
-		cmzn_field_cache_set_mesh_location(field_cache, element, 3, xi);
+		cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi);
 		cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value);
 		return ((double)scalar_FE_value > current_iso_value);
 	}
@@ -712,7 +713,7 @@ private:
 
 };
 
-Isosurface_builder::Isosurface_builder(FE_element *element, cmzn_field_cache_id field_cache,
+Isosurface_builder::Isosurface_builder(FE_element *element, cmzn_fieldcache_id field_cache,
 	cmzn_mesh_id mesh, FE_value time,
 	int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
 	const Iso_surface_specification& specification) :
@@ -733,7 +734,7 @@ Isosurface_builder::Isosurface_builder(FE_element *element, cmzn_field_cache_id 
 		number_of_data_components(specification.number_of_data_components),
 		last_mesh_number(-1)
 {
-	cmzn_field_cache_set_time(field_cache, time);
+	cmzn_fieldcache_set_time(field_cache, time);
 	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
 	FE_element_shape *element_shape = NULL;
 	get_FE_element_shape(element, &element_shape);
@@ -819,7 +820,7 @@ const Iso_vertex *Isosurface_builder::compute_line_crossing(
 	vertex->xi[1] = xi_a[1]*inverse_r + xi_b[1]*r;
 	vertex->xi[2] = xi_a[2]*inverse_r + xi_b[2]*r;
 	// future: option to iterate to get exact xi crossing for non-linear fields
-	cmzn_field_cache_set_mesh_location(field_cache, element, 3, vertex->xi);
+	cmzn_fieldcache_set_mesh_location(field_cache, element, 3, vertex->xi);
 	cmzn_field_evaluate_real(coordinate_field, field_cache, 3, vertex->coordinates);
 	if (NULL != texture_coordinate_field)
 	{
@@ -1079,7 +1080,7 @@ inline int Isosurface_builder::cross_cube(int i, int j, int k)
 			// divide into 6 pyramids with new centre point sample
 			FE_value xi_c[3], scalar_FE_value;
 			get_cell_centre_xi(i, j, k, xi_c);
-			cmzn_field_cache_set_mesh_location(field_cache, element, 3, xi_c);
+			cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi_c);
 			cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value);
 			Point_index pc(xi_c,  static_cast<double>(scalar_FE_value));
 			cross_pyramid(p[0], p[2], p[4], p[6], pc);
@@ -1623,7 +1624,7 @@ int Isosurface_builder::cross_triangle_wedge(
 			xi_c[0] /= 6.0;
 			xi_c[1] /= 6.0;
 			xi_c[2] /= 6.0;
-			cmzn_field_cache_set_mesh_location(field_cache, element, 3, xi_c);
+			cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi_c);
 			cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value);
 			Point_index pc(xi_c,  static_cast<double>(scalar_FE_value));
 			cross_tetrahedron(p0, p1, p2, pc);
@@ -1677,7 +1678,7 @@ int Isosurface_builder::sweep()
 			for (int i = mod_number_in_xi1; i >= 0; i--)
 			{
 				xi[0] = i*delta_xi1;
-				if (cmzn_field_cache_set_mesh_location(field_cache, element, 3, xi) &&
+				if (cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi) &&
 					cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value))
 				{
 					scalar_value = static_cast<double>(scalar_FE_value);
@@ -1784,10 +1785,10 @@ bool Isosurface_builder::reverse_winding()
 	if (FE_element_shape_get_xi_points_cell_centres(shape,
 			number_in_xi, number_of_xi_points_created, &xi_points))
 	{
-		cmzn_differential_operator_id d_dxi1 = cmzn_mesh_get_chart_differential_operator(mesh, /*order*/1, 1);
-		cmzn_differential_operator_id d_dxi2 = cmzn_mesh_get_chart_differential_operator(mesh, /*order*/1, 2);
-		cmzn_differential_operator_id d_dxi3 = cmzn_mesh_get_chart_differential_operator(mesh, /*order*/1, 3);
-		if (cmzn_field_cache_set_mesh_location(field_cache, element, /*dimension*/3, xi_points[0]) &&
+		cmzn_differentialoperator_id d_dxi1 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 1);
+		cmzn_differentialoperator_id d_dxi2 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 2);
+		cmzn_differentialoperator_id d_dxi3 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 3);
+		if (cmzn_fieldcache_set_mesh_location(field_cache, element, /*dimension*/3, xi_points[0]) &&
 			cmzn_field_evaluate_derivative(coordinate_field, d_dxi1, field_cache, 3, winding_coordinate_derivative1) &&
 			cmzn_field_evaluate_derivative(coordinate_field, d_dxi2, field_cache, 3, winding_coordinate_derivative2) &&
 			cmzn_field_evaluate_derivative(coordinate_field, d_dxi3, field_cache, 3, winding_coordinate_derivative3))
@@ -1801,9 +1802,9 @@ bool Isosurface_builder::reverse_winding()
 			}
 		}
 		DEALLOCATE(xi_points);
-		cmzn_differential_operator_destroy(&d_dxi1);
-		cmzn_differential_operator_destroy(&d_dxi2);
-		cmzn_differential_operator_destroy(&d_dxi3);
+		cmzn_differentialoperator_destroy(&d_dxi1);
+		cmzn_differentialoperator_destroy(&d_dxi2);
+		cmzn_differentialoperator_destroy(&d_dxi3);
 	}
 	return (reverse_winding);
 }
@@ -2035,7 +2036,7 @@ int Iso_surface_specification_destroy(
 }
 
 int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
-	cmzn_field_cache_id field_cache, cmzn_mesh_id mesh,
+	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh,
 	FE_value time, int *number_in_xi,
 	struct Iso_surface_specification *specification,
 	struct GT_object *graphics_object, enum cmzn_graphic_render_polygon_mode render_polygon_mode)

@@ -31,8 +31,8 @@ extern "C" {
  * Must have 1 to 3 components.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_coordinate_transformation(
-	cmzn_field_module_id field_module, cmzn_field_id source_field);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_coordinate_transformation(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /***************************************************************************//**
  * Create a field which performs a coordinate transformation of vectors from
@@ -47,8 +47,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_coordinate_transformation(
  * @param coordinate_field  Field giving location where vector value is from.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_vector_coordinate_transformation(
-	cmzn_field_module_id field_module, cmzn_field_id vector_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_vector_coordinate_transformation(
+	cmzn_fieldmodule_id field_module, cmzn_field_id vector_field,
 	cmzn_field_id coordinate_field);
 
 #ifdef __cplusplus

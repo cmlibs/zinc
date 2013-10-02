@@ -59,7 +59,7 @@ int cmzn_optimisation::runOptimisation()
 	return return_code;
 }
 
-cmzn_optimisation_id cmzn_field_module_create_optimisation(cmzn_field_module_id field_module)
+cmzn_optimisation_id cmzn_fieldmodule_create_optimisation(cmzn_fieldmodule_id field_module)
 {
 	if (field_module)
 		return new cmzn_optimisation(field_module);

@@ -33,8 +33,8 @@ extern "C" {
  * @param number_of_components  The number of components for the new field.
  * @return  Handle to the newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_finite_element(
-	cmzn_field_module_id field_module, int number_of_components);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
+	cmzn_fieldmodule_id field_module, int number_of_components);
 
 /***************************************************************************//**
  * If the field is real-valued interpolated finite element then this function
@@ -86,8 +86,8 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * find_mesh_location or stored mesh location fields.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_embedded(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_field_id embedded_location_field);
 
 /***************************************************************************//**
@@ -105,8 +105,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_embedded(
  * @param mesh  The mesh to find locations in.
  * @return  Newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_find_mesh_location(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_field_id mesh_field, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
@@ -227,8 +227,8 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
  * return, starting from 1.
  * @return  Handle to the newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_node_value(
-	cmzn_field_module_id field_module, cmzn_field_id field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
+	cmzn_fieldmodule_id field_module, cmzn_field_id field,
 	enum cmzn_node_value_type nodal_value_type, int version_number);
 
 /***************************************************************************//**
@@ -238,8 +238,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_node_value(
  * @param mesh  The mesh for which locations are stored.
  * @return  Handle to the newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_stored_mesh_location(
-	cmzn_field_module_id field_module, cmzn_mesh_id mesh);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
+	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh);
 
 /***************************************************************************//**
  * If the field is stored_mesh_location type, return type-specific handle to it.
@@ -285,8 +285,8 @@ ZINC_API int cmzn_field_stored_mesh_location_destroy(
  * @param field_module  Region field module which will own new field.
  * @return  Handle to the newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_stored_string(
-	cmzn_field_module_id field_module);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
+	cmzn_fieldmodule_id field_module);
 
 /***************************************************************************//**
  * If the field is stored_string type, return type-specific handle to it.

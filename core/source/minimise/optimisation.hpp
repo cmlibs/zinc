@@ -55,8 +55,8 @@ private:
 	cmzn_optimisation& optimisation;
 
 public:
-	cmzn_field_module_id field_module;
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldmodule_id field_module;
+	cmzn_fieldcache_id field_cache;
 	FE_value current_time;
 	int total_dof;
 	ObjectiveFieldDataVector objectiveFields;
@@ -73,8 +73,8 @@ private:
 public:
 	Minimisation(cmzn_optimisation& optimisation) :
 		optimisation(optimisation),
-		field_module(cmzn_field_module_access(optimisation.fieldModule)),
-		field_cache(cmzn_field_module_create_cache(field_module)),
+		field_module(cmzn_fieldmodule_access(optimisation.fieldModule)),
+		field_cache(cmzn_fieldmodule_create_fieldcache(field_module)),
 		current_time(0.0),
 		total_dof(0),
 		dof_storage_array(0),

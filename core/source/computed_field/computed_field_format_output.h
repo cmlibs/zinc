@@ -26,7 +26,7 @@ Implements computed fields that control the format_output behaviour.
  * @return Newly created field
  */
 struct Computed_field *Computed_field_create_format_output(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, char *format_string);
 
 #endif /* !defined (COMPUTED_FIELD_FORMAT_OUTPUT_H) */

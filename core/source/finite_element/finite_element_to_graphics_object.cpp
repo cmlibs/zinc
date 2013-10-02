@@ -14,6 +14,7 @@ The functions for creating graphical objects from finite elements.
 #include <cstdlib>
 #include "zinc/differentialoperator.h"
 #include "zinc/element.h"
+#include "zinc/fieldcache.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/computed_field_wrappers.h"
@@ -78,7 +79,7 @@ Module functions
  * Adds the coordinates, orientation, data etc. of the fields at the field cache
  * location to the glyph_set_data.
  */
-static int field_cache_location_to_glyph_point(cmzn_field_cache_id field_cache,
+static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 	Glyph_set_data *glyph_set_data)
 {
 	ENTER(field_cache_location_to_glyph_point);
@@ -292,7 +293,7 @@ static int field_cache_location_to_glyph_point(cmzn_field_cache_id field_cache,
 								}
 							}
 							/* Set the offset coordinates in the field cache field and evaluate the label field there */
-							cmzn_field_cache_set_assign_in_cache(field_cache, 1);
+							cmzn_fieldcache_set_assign_in_cache(field_cache, 1);
 							if (!cmzn_field_assign_real(coordinate_field, field_cache,
 								/*number_of_values*/glyph_set_data->label_bounds_dimension, vector))
 							{
@@ -303,7 +304,7 @@ static int field_cache_location_to_glyph_point(cmzn_field_cache_id field_cache,
 							{
 								return_code = 0;
 							}
-							cmzn_field_cache_set_assign_in_cache(field_cache, 0);
+							cmzn_fieldcache_set_assign_in_cache(field_cache, 0);
 							if (return_code)
 							{
 								CAST_TO_OTHER(glyph_set_data->label_bounds,
@@ -694,7 +695,7 @@ these are simply returned, since no valid direction can be produced.
 } /* make_glyph_orientation_scale_axes */
 
 struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
-	cmzn_nodeset_id nodeset, cmzn_field_cache_id field_cache,
+	cmzn_nodeset_id nodeset, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
@@ -871,16 +872,16 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					glyph_set_data.select_mode = select_mode;
 
 					// all fields evaluated at same time so set once
-					cmzn_field_cache_set_time(field_cache, time);
-					cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+					cmzn_fieldcache_set_time(field_cache, time);
+					cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 					cmzn_node_id node = 0;
-					while (return_code && (0 != (node = cmzn_node_iterator_next_non_access(iterator))))
+					while (return_code && (0 != (node = cmzn_nodeiterator_next_non_access(iterator))))
 					{
-						cmzn_field_cache_set_node(field_cache, node);
+						cmzn_fieldcache_set_node(field_cache, node);
 						glyph_set_data.graphics_name = get_FE_node_identifier(node);
 						return_code = field_cache_location_to_glyph_point(field_cache, &glyph_set_data);
 					}
-					cmzn_node_iterator_destroy(&iterator);
+					cmzn_nodeiterator_destroy(&iterator);
 					final_number_of_points = glyph_set_data.number_of_points;
 				}
 				else
@@ -956,7 +957,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 } /* create_GT_glyph_set_from_nodeset */
 
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
-	cmzn_field_cache_id field_cache, struct Graphics_vertex_array *array,
+	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *array,
 	Computed_field *coordinate_field, Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	Computed_field *texture_coordinate_field,
@@ -1003,12 +1004,12 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 
 		distance=(FE_value)number_of_segments;
-		cmzn_field_cache_set_time(field_cache, time);
+		cmzn_fieldcache_set_time(field_cache, time);
 		for (i = 0; (i <= number_of_segments); i++)
 		{
 			xi=((FE_value)i)/distance;
 			/* evaluate the fields */
-			return_code = cmzn_field_cache_set_mesh_location_with_parent(
+			return_code = cmzn_fieldcache_set_mesh_location_with_parent(
 				field_cache, element, /*dimension*/1, &xi, top_level_element);
 			if (return_code && cmzn_field_evaluate_real(coordinate_field,
 					field_cache, coordinate_dimension, coordinates) &&
@@ -1071,7 +1072,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 } /* FE_element_add_line_to_vertex_buffer_set */
 
 struct GT_surface *create_cylinder_from_FE_element(
-	struct FE_element *element, cmzn_field_cache_id field_cache,
+	struct FE_element *element, cmzn_fieldcache_id field_cache,
 	cmzn_mesh_id line_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *data_field, const FE_value *base_size,
 	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
@@ -1104,7 +1105,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			(1 == Computed_field_get_number_of_components(orientation_scale_field))) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
-		cmzn_differential_operator_id d_dxi = cmzn_mesh_get_chart_differential_operator(line_mesh, /*order*/1, 1);
+		cmzn_differentialoperator_id d_dxi = cmzn_mesh_get_chart_differentialoperator(line_mesh, /*order*/1, 1);
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
 		coordinates[1]=0.0;
@@ -1146,13 +1147,13 @@ struct GT_surface *create_cylinder_from_FE_element(
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
-			cmzn_field_cache_set_time(field_cache, time);
+			cmzn_fieldcache_set_time(field_cache, time);
 			FE_value *feData = new FE_value[n_data_components];
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
 				xi=(ZnReal)i/(ZnReal)number_of_segments_along;
 				/* evaluate the fields */
-				if (cmzn_field_cache_set_mesh_location_with_parent(
+				if (cmzn_fieldcache_set_mesh_location_with_parent(
 						field_cache, element, /*dimension*/1, &xi, top_level_element) &&
 					cmzn_field_evaluate_derivative(coordinate_field,
 						d_dxi, field_cache, coordinate_dimension, derivative_xi) &&
@@ -1556,7 +1557,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			display_message(ERROR_MESSAGE,
 				"create_cylinder_from_FE_element.  Failed");
 		}
-		cmzn_differential_operator_destroy(&d_dxi);
+		cmzn_differentialoperator_destroy(&d_dxi);
 	}
 	else
 	{
@@ -1709,7 +1710,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 } /* get_surface_element_segmentation */
 
 struct GT_surface *create_GT_surface_from_FE_element(
-	struct FE_element *element, cmzn_field_cache_id field_cache,
+	struct FE_element *element, cmzn_fieldcache_id field_cache,
 	cmzn_mesh_id surface_mesh, struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,
@@ -1745,8 +1746,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 		(0 < coordinate_dimension) && (3 >= coordinate_dimension) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
-		cmzn_differential_operator_id d_dxi1 = cmzn_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 1);
-		cmzn_differential_operator_id d_dxi2 = cmzn_mesh_get_chart_differential_operator(surface_mesh, /*order*/1, 2);
+		cmzn_differentialoperator_id d_dxi1 = cmzn_mesh_get_chart_differentialoperator(surface_mesh, /*order*/1, 1);
+		cmzn_differentialoperator_id d_dxi2 = cmzn_mesh_get_chart_differentialoperator(surface_mesh, /*order*/1, 2);
 		modified_reverse_normals = reverse_normals;
 		const int reverse_winding = FE_element_is_exterior_face_with_inward_normal(element);
 		if (reverse_winding)
@@ -1920,10 +1921,10 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			i=0;
 			return_code = 1;
 			FE_value *xi = xi_points;
-			cmzn_field_cache_set_time(field_cache, time);
+			cmzn_fieldcache_set_time(field_cache, time);
 			while ((i<number_of_points)&&surface)
 			{
-				return_code = cmzn_field_cache_set_mesh_location_with_parent(
+				return_code = cmzn_fieldcache_set_mesh_location_with_parent(
 					field_cache, element, /*dimension*/2, xi, top_level_element);
 				/* evaluate the fields */
 				if (!(cmzn_field_evaluate_derivative(coordinate_field,
@@ -2282,8 +2283,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			}
 		}
 		delete[] xi_points;
-		cmzn_differential_operator_destroy(&d_dxi1);
-		cmzn_differential_operator_destroy(&d_dxi2);
+		cmzn_differentialoperator_destroy(&d_dxi1);
+		cmzn_differentialoperator_destroy(&d_dxi2);
 	}
 	else
 	{
@@ -2360,7 +2361,7 @@ The <xi> are set to their local values within the returned <element>.
 }
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
-	cmzn_field_cache_id field_cache,
+	cmzn_fieldcache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
 	int number_of_xi_points, FE_value_triple *xi_points,
@@ -2543,7 +2544,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						if (cmzn_field_cache_set_mesh_location_with_parent(
+						if (cmzn_fieldcache_set_mesh_location_with_parent(
 							field_cache, element, element_dimension, xi, top_level_element) &&
 							((!orientation_scale_field) ||
 								cmzn_field_evaluate_real(orientation_scale_field, field_cache, number_of_orientation_scale_components, orientation_scale)) &&

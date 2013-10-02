@@ -123,7 +123,7 @@ private:
 
 	int compare(Computed_field_core* other_field);
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
@@ -504,7 +504,7 @@ Compare the type specific data
 	return (return_code);
 } /* Computed_field_scene_viewer_projection::compare */
 
-int Computed_field_scene_viewer_projection::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_scene_viewer_projection::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	if (scene_viewer)
@@ -557,12 +557,12 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 		(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
 	{
 		cmzn_field_id field = getField();
-		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 		if (!field_module)
 		{
 			return 0;
 		}
-		cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+		cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 		cmzn_scene_id scene = cmzn_region_get_scene_private(region);
 		cmzn_scene_id top_scene = cmzn_scene_viewer_get_scene(scene_viewer);
 		gtMatrix *local_transformation_matrix = cmzn_scene_get_total_transformation(
@@ -595,7 +595,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 				return_code = 1;
 			}
 		}
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldmodule_destroy(&field_module);
 		if (current_local_transformation)
 			DEALLOCATE(current_local_transformation);
 		current_local_transformation = local_transformation_matrix;
@@ -711,16 +711,16 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 			cmzn_scene_destroy(&current_scene);
 		current_scene = cmzn_scene_viewer_get_scene(scene_viewer);
 		cmzn_field_id field = getField();
-		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 		if (field_module)
 		{
-			cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
 			transformation_callback_flag = cmzn_scene_add_total_transformation_callback(
 				scene, current_scene,
 				Computed_field_scene_viewer_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 	}
 }
@@ -730,15 +730,15 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 	if (transformation_callback_flag)
 	{
 		cmzn_field_id field = getField();
-		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 		if (field_module)
 		{
-			cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
 			cmzn_scene_remove_total_transformation_callback(scene,
 				current_scene,	Computed_field_scene_viewer_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fieldmodule_destroy(&field_module);
 			transformation_callback_flag = 0;
 		}
 	}
@@ -910,8 +910,8 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 
 } //namespace
 
-cmzn_field_id cmzn_field_module_create_scene_viewer_projection(
-	cmzn_field_module_id field_module,
+cmzn_field_id cmzn_fieldmodule_create_field_scene_viewer_projection(
+	cmzn_fieldmodule_id field_module,
 	struct Scene_viewer *scene_viewer,
 	enum cmzn_scene_coordinate_system from_coordinate_system,
 	enum cmzn_scene_coordinate_system to_coordinate_system)

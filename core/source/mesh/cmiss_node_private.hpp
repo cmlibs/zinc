@@ -77,7 +77,7 @@ int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
  * @return  Handle to the nodeset, or NULL if error, name already in use or no
  * such nodeset name.
  */
-cmzn_nodeset_group_id cmzn_field_module_create_nodeset_group_from_name_internal(
-	cmzn_field_module_id field_module, const char *nodeset_group_name);
+cmzn_nodeset_group_id cmzn_fieldmodule_create_field_nodeset_group_from_name_internal(
+	cmzn_fieldmodule_id field_module, const char *nodeset_group_name);
 
 #endif /* !defined (CMZN_NODE_PRIVATE_HPP) */

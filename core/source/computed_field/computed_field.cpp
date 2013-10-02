@@ -468,10 +468,10 @@ int cmzn_field_destroy(cmzn_field_id *field_address)
 	return (DEACCESS(Computed_field)(field_address));
 }
 
-cmzn_field_module_id cmzn_field_get_field_module(cmzn_field_id field)
+cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field)
 {
 	struct cmzn_region *region = Computed_field_get_region(field);
-	return cmzn_region_get_field_module(region);
+	return cmzn_region_get_fieldmodule(region);
 }
 
 enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id field)
@@ -534,26 +534,29 @@ DECLARE_INDEXED_LIST_STL_FUNCTIONS(Computed_field)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Computed_field,name,const char *)
 
-int cmzn_field_iterator_destroy(cmzn_field_iterator_id *field_iterator_address)
+cmzn_fielditerator_id cmzn_fielditerator_access(cmzn_fielditerator_id iterator)
 {
-	if (!field_iterator_address)
-		return 0;
-	delete *field_iterator_address;
-	*field_iterator_address = 0;
-	return 1;
+	return iterator->access();
 }
 
-cmzn_field_id cmzn_field_iterator_next(cmzn_field_iterator_id field_iterator)
+int cmzn_fielditerator_destroy(cmzn_fielditerator_id *iterator_address)
 {
-	if (field_iterator)
-		return field_iterator->next();
+	if (!iterator_address)
+		return 0;
+	return cmzn_fielditerator::deaccess(*iterator_address);
+}
+
+cmzn_field_id cmzn_fielditerator_next(cmzn_fielditerator_id iterator)
+{
+	if (iterator)
+		return iterator->next();
 	return 0;
 }
 
-cmzn_field_id cmzn_field_iterator_next_non_access(cmzn_field_iterator_id field_iterator)
+cmzn_field_id cmzn_fielditerator_next_non_access(cmzn_fielditerator_id iterator)
 {
-	if (field_iterator)
-		return field_iterator->next_non_access();
+	if (iterator)
+		return iterator->next_non_access();
 	return 0;
 }
 
@@ -872,7 +875,7 @@ since changes to number_of_components are not permitted unless it is NOT_IN_USE.
 } /* MANAGER_MODIFY_NOT_IDENTIFIER(Computed_field,name) */
 
 DECLARE_FIND_BY_IDENTIFIER_IN_MANAGER_FUNCTION(Computed_field, name, const char *)
-DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(Computed_field,cmzn_field_iterator)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(Computed_field,cmzn_fielditerator)
 
 DECLARE_MANAGER_OWNER_FUNCTIONS(Computed_field, struct cmzn_region)
 
@@ -896,7 +899,7 @@ char *Computed_field_manager_get_unique_field_name(
 	return field_name;
 }
 
-cmzn_field_iterator_id Computed_field_manager_create_iterator(
+cmzn_fielditerator_id Computed_field_manager_create_iterator(
 	struct MANAGER(Computed_field) *manager)
 {
 	if (manager)
@@ -961,7 +964,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 }
 
 Computed_field *Computed_field_create_generic(
-	cmzn_field_module *field_module, bool check_source_field_regions,
+	cmzn_fieldmodule *field_module, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
@@ -978,7 +981,7 @@ Computed_field *Computed_field_create_generic(
 		(NULL != field_core))
 	{
 		int return_code = 1;
-		cmzn_region *region = cmzn_field_module_get_region_internal(field_module);
+		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
 		for (int i = 0; i < number_of_source_fields; i++)
 		{
 			if (NULL != source_fields[i])
@@ -1000,7 +1003,7 @@ Computed_field *Computed_field_create_generic(
 		}
 		if (return_code)
 		{
-			char *field_name = cmzn_field_module_get_field_name(field_module);
+			char *field_name = cmzn_fieldmodule_get_field_name(field_module);
 			field = CREATE(Computed_field)(field_name ? field_name : "");
 			if (field_name)
 			{
@@ -1057,15 +1060,15 @@ Computed_field *Computed_field_create_generic(
 					// coordinate system of new field to that of a source field:
 					field_core->inherit_source_field_attributes();
 					// default coordinate system can also be overridden:
-					if (cmzn_field_module_coordinate_system_is_set(field_module))
+					if (cmzn_fieldmodule_coordinate_system_is_set(field_module))
 					{
 						struct Coordinate_system coordinate_system =
-							cmzn_field_module_get_coordinate_system(field_module);
+							cmzn_fieldmodule_get_coordinate_system(field_module);
 						Computed_field_set_coordinate_system(field, &coordinate_system);
 					}
 
 					Computed_field *replace_field =
-						cmzn_field_module_get_replace_field(field_module);
+						cmzn_fieldmodule_get_replace_field(field_module);
 					if (replace_field)
 					{
 						if (replace_field->core->not_in_use() ||
@@ -1110,7 +1113,7 @@ Computed_field *Computed_field_create_generic(
 	if (field_module)
 	{
 		// replace_field must not be used for further field creates, so clear
-		cmzn_field_module_set_replace_field(field_module, NULL);
+		cmzn_fieldmodule_set_replace_field(field_module, NULL);
 	}
 	LEAVE;
 
@@ -1187,7 +1190,7 @@ int Computed_field_dependency_change_private(struct Computed_field *field)
 /** @return  True if field can be evaluated with supplied cache.
  * Must be called to check field evaluate/assign functions from external API.
  */
-inline bool cmzn_field_cache_check(cmzn_field_id field, cmzn_field_cache_id cache)
+inline bool cmzn_fieldcache_check(cmzn_field_id field, cmzn_fieldcache_id cache)
 {
 	return (field && cache && (field->manager->owner == cache->getRegion()));
 }
@@ -1214,12 +1217,12 @@ int Computed_field_is_defined_in_element(struct Computed_field *field,
 	int return_code = 0;
 	if (field && element)
 	{
-		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
-		cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
-		cmzn_field_cache_set_element(field_cache, element);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_fieldcache_set_element(field_cache, element);
 		return_code = cmzn_field_is_defined_at_location(field, field_cache);
-		cmzn_field_cache_destroy(&field_cache);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldcache_destroy(&field_cache);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	return return_code;
 }
@@ -1236,12 +1239,12 @@ int Computed_field_is_defined_at_node(struct Computed_field *field,
 	int return_code = 0;
 	if (field && node)
 	{
-		cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
-		cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
-		cmzn_field_cache_set_node(field_cache, node);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_fieldcache_set_node(field_cache, node);
 		return_code = cmzn_field_is_defined_at_location(field, field_cache);
-		cmzn_field_cache_destroy(&field_cache);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldcache_destroy(&field_cache);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	return return_code;
 }
@@ -1252,13 +1255,13 @@ int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	return Computed_field_is_defined_at_node(field, static_cast<FE_node*>(node_void));
 }
 
-FieldValueCache *Computed_field_core::createValueCache(cmzn_field_cache& /*parentCache*/)
+FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*parentCache*/)
 {
 	return new RealFieldValueCache(field->number_of_components);
 }
 
 /** @return  true if all source fields are defined at cache location */
-bool Computed_field_core::is_defined_at_location(cmzn_field_cache& cache)
+bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	for (int i = 0; i < field->number_of_source_fields; ++i)
 	{
@@ -1406,10 +1409,10 @@ with <user_data>. Iteration stops if a single iterator_function call returns 0.
 
 // External API
 int cmzn_field_assign_mesh_location(cmzn_field_id field,
-	cmzn_field_cache_id cache, cmzn_element_id element,
+	cmzn_fieldcache_id cache, cmzn_element_id element,
 	int number_of_chart_coordinates, const double *chart_coordinates)
 {
-	if (cmzn_field_cache_check(field, cache) && element && chart_coordinates &&
+	if (cmzn_fieldcache_check(field, cache) && element && chart_coordinates &&
 		(number_of_chart_coordinates >= get_FE_element_dimension(element)) &&
 		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
@@ -1422,10 +1425,10 @@ int cmzn_field_assign_mesh_location(cmzn_field_id field,
 }
 
 // External API
-int cmzn_field_assign_real(cmzn_field_id field, cmzn_field_cache_id cache,
+int cmzn_field_assign_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	int number_of_values, const double *values)
 {
-	if (cmzn_field_cache_check(field, cache) && field->isNumerical() &&
+	if (cmzn_fieldcache_check(field, cache) && field->isNumerical() &&
 		(number_of_values >= field->number_of_components) && values)
 	{
 		RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*cache));
@@ -1437,10 +1440,10 @@ int cmzn_field_assign_real(cmzn_field_id field, cmzn_field_cache_id cache,
 }
 
 // External API
-int cmzn_field_assign_string(cmzn_field_id field, cmzn_field_cache_id cache,
+int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id cache,
 	const char *string_value)
 {
-	if (cmzn_field_cache_check(field, cache) && string_value &&
+	if (cmzn_fieldcache_check(field, cache) && string_value &&
 		(CMZN_FIELD_VALUE_TYPE_STRING == cmzn_field_get_value_type(field)))
 	{
 		StringFieldValueCache *valueCache = StringFieldValueCache::cast(field->getValueCache(*cache));
@@ -1455,10 +1458,10 @@ int cmzn_field_assign_string(cmzn_field_id field, cmzn_field_cache_id cache,
 // Note this returns 0 for undefined as well as false. Not ready to expose in
 // external API until this is deemed reasonable.
 // Follow older functions and change name to 'evaluates_as_true'?
-int cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_field_cache_id cache)
+int cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_fieldcache_id cache)
 {
 	const FE_value zero_tolerance = 1e-6;
-	if (cmzn_field_cache_check(field, cache) && field->isNumerical())
+	if (cmzn_fieldcache_check(field, cache) && field->isNumerical())
 	{
 		FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
@@ -1479,11 +1482,11 @@ int cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_field_cache_id cache)
 
 // External API
 cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
-	cmzn_field_cache_id cache, int number_of_chart_coordinates,
+	cmzn_fieldcache_id cache, int number_of_chart_coordinates,
 	double *chart_coordinates)
 {
 	cmzn_element_id element = 0;
-	if (cmzn_field_cache_check(field, cache) && chart_coordinates &&
+	if (cmzn_fieldcache_check(field, cache) && chart_coordinates &&
 		(CMZN_FIELD_VALUE_TYPE_MESH_LOCATION == cmzn_field_get_value_type(field)))
 	{
 		FieldValueCache *valueCache = field->evaluate(*cache);
@@ -1512,10 +1515,10 @@ cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
 
 // External API
 // Note: no warnings if not evaluated so can be used for is_defined
-int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_field_cache_id cache,
+int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 	int number_of_values, double *values)
 {
-	if (cmzn_field_cache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
+	if (cmzn_fieldcache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
 		FieldValueCache *valueCache = field->evaluate(*cache);
@@ -1535,10 +1538,10 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_field_cache_id cache,
 // Internal API
 // IMPORTANT: Not yet approved for external API!
 int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
-	cmzn_field_cache_id cache, int number_of_values, double *values,
+	cmzn_fieldcache_id cache, int number_of_values, double *values,
 	int number_of_derivatives, double *derivatives)
 {
-	if (cmzn_field_cache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
+	if (cmzn_fieldcache_check(field, cache) && (number_of_values >= field->number_of_components) && values &&
 		(number_of_derivatives > 0) && (number_of_derivatives <= MAXIMUM_ELEMENT_XI_DIMENSIONS) && derivatives &&
 		field->core->has_numerical_components())
 	{
@@ -1568,9 +1571,9 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 // External API
 // Note: no warnings if not evaluated so can be used for is_defined
 char *cmzn_field_evaluate_string(cmzn_field_id field,
-	cmzn_field_cache_id cache)
+	cmzn_fieldcache_id cache)
 {
-	if (cmzn_field_cache_check(field, cache))
+	if (cmzn_fieldcache_check(field, cache))
 	{
 		FieldValueCache *valueCache = field->evaluate(*cache);
 		if (valueCache)
@@ -1581,10 +1584,10 @@ char *cmzn_field_evaluate_string(cmzn_field_id field,
 
 // External API
 int cmzn_field_evaluate_derivative(cmzn_field_id field,
-	cmzn_differential_operator_id differential_operator,
-	cmzn_field_cache_id cache, int number_of_values, double *values)
+	cmzn_differentialoperator_id differential_operator,
+	cmzn_fieldcache_id cache, int number_of_values, double *values)
 {
-	if (cmzn_field_cache_check(field, cache) && differential_operator &&
+	if (cmzn_fieldcache_check(field, cache) && differential_operator &&
 		(number_of_values >= field->number_of_components) && values &&
 		field->core->has_numerical_components())
 	{
@@ -1617,9 +1620,9 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 }
 
 int cmzn_field_is_defined_at_location(cmzn_field_id field,
-	cmzn_field_cache_id cache)
+	cmzn_fieldcache_id cache)
 {
-	if (cmzn_field_cache_check(field, cache))
+	if (cmzn_fieldcache_check(field, cache))
 		return field->core->is_defined_at_location(*cache);
 	return 0;
 }
@@ -2406,7 +2409,7 @@ The number of components controls how the field is interpreted:
 } /* Computed_field_is_stream_vector_capable */
 
 int Computed_field_find_element_xi(struct Computed_field *field,
-	cmzn_field_cache_id field_cache, const FE_value *values,
+	cmzn_fieldcache_id field_cache, const FE_value *values,
 	int number_of_values, struct FE_element **element_address, FE_value *xi,
 	cmzn_mesh_id mesh, int propagate_to_source, int find_nearest)
 {
@@ -2831,7 +2834,7 @@ bool Computed_field_core::is_non_linear() const
 }
 
 int Computed_field_broadcast_field_components(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field **field_one, struct Computed_field **field_two)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -2893,16 +2896,16 @@ for matrix operations.
 					source_value_numbers[i] = 0;
 				}
 				// use temporary field module for broadcast wrapper since needs different defaults
-				cmzn_field_module *temp_field_module =
-					cmzn_field_module_create(cmzn_field_module_get_region_internal(field_module));
+				cmzn_fieldmodule *temp_field_module =
+					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(field_module));
 				// wrapper field has same name stem as wrapped field
-				cmzn_field_module_set_field_name(temp_field_module, (**field_to_wrap)->name);
+				cmzn_fieldmodule_set_field_name(temp_field_module, (**field_to_wrap)->name);
 				broadcast_wrapper = Computed_field_create_composite(temp_field_module,
 					number_of_components,
 					/*number_of_source_fields*/1, *field_to_wrap,
 					0, (double *)NULL,
 					source_field_numbers, source_value_numbers);
-				cmzn_field_module_destroy(&temp_field_module);
+				cmzn_fieldmodule_destroy(&temp_field_module);
 
 				DEALLOCATE(source_field_numbers);
 				DEALLOCATE(source_value_numbers);
@@ -3296,12 +3299,12 @@ struct cmzn_region *Computed_field_get_region(struct Computed_field *field)
 
 Computed_field *Computed_field_modify_data::get_field()
 {
-	return cmzn_field_module_get_replace_field(field_module);
+	return cmzn_fieldmodule_get_replace_field(field_module);
 };
 
 cmzn_region *Computed_field_modify_data::get_region()
 {
-	return cmzn_field_module_get_region_internal(field_module);
+	return cmzn_fieldmodule_get_region_internal(field_module);
 };
 
 MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()

@@ -46,7 +46,7 @@ Data for converting a 3-D element into an array of particles.
 	int number_of_particles;
 	struct GT_object *graphics_object;
 	struct Streampoint **list;
-	cmzn_field_cache_id field_cache;
+	cmzn_fieldcache_id field_cache;
 	struct Computed_field *coordinate_field,*stream_vector_field;
 	int index;
 	Triple **pointlist;
@@ -59,7 +59,7 @@ Global functions
 
 struct GT_polyline *create_GT_polyline_streamline_FE_element(
 	struct FE_element *element,FE_value *start_xi,
-	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length,enum Streamline_data_type data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region);
@@ -73,7 +73,7 @@ the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
 If <fe_region> is not NULL then the function will restrict itself to elements
 in that region.
-@param field_cache  cmzn_field_cache for evaluating fields with. Time is
+@param field_cache  cmzn_fieldcache for evaluating fields with. Time is
 expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
@@ -84,7 +84,7 @@ expected to have been set in the field_cache if needed.
  * stream vector is tracked, and the travel_scalar is made negative.
  * If <fe_region> is not NULL then the function will restrict itself to elements
  * in that region.
- * @param field_cache  cmzn_field_cache for evaluating fields with. Time is
+ * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
  * @param line_shape  LINE, RIBBON, CIRCLE_EXTRUSION or SQUARE_EXTRUSION.
  * @param line_base_size  width and thickness of line, use depends on shape.
@@ -93,7 +93,7 @@ expected to have been set in the field_cache if needed.
  */
 struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
-	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
 	enum cmzn_graphic_line_attributes_shape line_shape, int circleDivisions,
 	FE_value *line_base_size, FE_value *line_scale_factors,
@@ -103,7 +103,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
-	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	gtObject *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
@@ -113,7 +113,7 @@ Adds a new flow particle structure to the start of the Streampoint list
 ==============================================================================*/
 
 int update_flow_particle_list(struct Streampoint *point,
-	cmzn_field_cache_id field_cache, struct Computed_field *coordinate_field,
+	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,FE_value step,FE_value time);
 /*******************************************************************************
 LAST MODIFIED : 17 March 1999
@@ -123,7 +123,7 @@ Uses RungeKutta integration to update the position of the given streampoints
 using the vector/gradient field and stepsize.  If time is 0 then the previous
 point positions are updated adding no new objects.  Otherwise a new pointset is
 created with the given timestamp.
-@param field_cache  cmzn_field_cache for evaluating fields with. Time is
+@param field_cache  cmzn_fieldcache for evaluating fields with. Time is
 expected to have been set in the field_cache if needed.
 ==============================================================================*/
 

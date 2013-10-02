@@ -1299,17 +1299,17 @@ PROTOTYPE_LIST_FUNCTIONS(FE_node);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_node,cm_node_identifier,int);
 
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,cmzn_node_iterator);
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_node,cmzn_nodeiterator);
 
 /***************************************************************************//**
- * Internal variant of public cmzn_node_iterator_next() which does not access
+ * Internal variant of public cmzn_nodeiterator_next() which does not access
  * the returned node, for more efficient if less safe usage.
  *
  * @param node_iterator  Node iterator to query and advance.
  * @return  Non-accessed pointer to the next node, or NULL if none remaining.
  */
-cmzn_node_id cmzn_node_iterator_next_non_access(
-	cmzn_node_iterator_id node_iterator);
+cmzn_node_id cmzn_nodeiterator_next_non_access(
+	cmzn_nodeiterator_id node_iterator);
 
 /***************************************************************************//**
  * List statistics about btree efficiency for node list.
@@ -2609,17 +2609,17 @@ PROTOTYPE_LIST_FUNCTIONS(FE_element);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier, \
 	const struct CM_element_information *);
 
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_element_iterator);
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator);
 
 /***************************************************************************//**
- * Internal variant of public cmzn_element_iterator_next() which does not
+ * Internal variant of public cmzn_elementiterator_next() which does not
  * access the returned element, for more efficient if less safe usage.
  *
  * @param element_iterator  Element iterator to query and advance.
  * @return  Non-accessed pointer to the next element, or NULL if none remaining.
  */
-cmzn_element_id cmzn_element_iterator_next_non_access(
-	cmzn_element_iterator_id element_iterator);
+cmzn_element_id cmzn_elementiterator_next_non_access(
+	cmzn_elementiterator_id element_iterator);
 
 /***************************************************************************//**
  * List statistics about btree efficiency for element list.

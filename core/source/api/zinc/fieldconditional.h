@@ -35,7 +35,7 @@ extern "C" {
  * @param source_field_three  FALSE = zero conditional component results.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_if(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_if(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
 	cmzn_field_id source_field_two,
 	cmzn_field_id source_field_three);

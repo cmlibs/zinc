@@ -65,7 +65,7 @@ Global types
 
 /*============================================================================*/
 
-struct cmzn_element_basis
+struct cmzn_elementbasis
 {
 private:
 	FE_region *fe_region; // needed to get basis manager
@@ -74,7 +74,7 @@ private:
 	int access_count;
 
 public:
-	cmzn_element_basis(FE_region *fe_region, int mesh_dimension,
+	cmzn_elementbasis(FE_region *fe_region, int mesh_dimension,
 			cmzn_basis_function_type function_type) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		dimension(mesh_dimension),
@@ -87,13 +87,13 @@ public:
 		}
 	}
 
-	cmzn_element_basis_id access()
+	cmzn_elementbasis_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_element_basis_id &basis)
+	static int deaccess(cmzn_elementbasis_id &basis)
 	{
 		if (!basis)
 			return 0;
@@ -127,13 +127,13 @@ public:
 		if (0 < getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_TYPE_INVALID))
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_basis::isValid.  Function type not set");
+				"cmzn_elementbasis::isValid.  Function type not set");
 			return_code = 0;
 		}
 		if ((1 == getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX)) ||
 			(1 == getDimensionsUsingFunction(CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX)))
 		{
-			display_message(ERROR_MESSAGE, "cmzn_element_basis::isValid.  "
+			display_message(ERROR_MESSAGE, "cmzn_elementbasis::isValid.  "
 				"Must be at least 2 linked dimension for simplex basis");
 			return_code = 0;
 		}
@@ -260,7 +260,7 @@ public:
 		if (0 == number_of_nodes)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_basis::getNumberOfNodes.  "
+				"cmzn_elementbasis::getNumberOfNodes.  "
 				"Invalid number of chart components linked in simplex");
 			return 0;
 		}
@@ -286,7 +286,7 @@ public:
 					break;
 				default:
 					display_message(ERROR_MESSAGE,
-						"cmzn_element_basis::getNumberOfNodes.  "
+						"cmzn_elementbasis::getNumberOfNodes.  "
 						"Invalid or unsupported basis type: %d", function_types[i]);
 					number_of_nodes = 0;
 					break;
@@ -308,7 +308,7 @@ public:
 	}
 
 private:
-	~cmzn_element_basis()
+	~cmzn_elementbasis()
 	{
 		DEACCESS(FE_region)(&fe_region);
 		delete[] function_types;
@@ -431,7 +431,7 @@ private:
 
 /*============================================================================*/
 
-struct cmzn_element_template
+struct cmzn_elementtemplate
 {
 	friend struct cmzn_mesh; // to obtain template_element
 private:
@@ -447,7 +447,7 @@ private:
 	ScaleFactorSetIntMap scale_factor_set_sizes;
 
 public:
-	cmzn_element_template(FE_region *fe_region, int element_dimension) :
+	cmzn_elementtemplate(FE_region *fe_region, int element_dimension) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		element_dimension(element_dimension),
 		shape_type(CMZN_ELEMENT_SHAPE_TYPE_INVALID),
@@ -458,13 +458,13 @@ public:
 	{
 	}
 
-	cmzn_element_template_id access()
+	cmzn_elementtemplate_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_element_template_id &element_template)
+	static int deaccess(cmzn_elementtemplate_id &element_template)
 	{
 		if (!element_template)
 			return 0;
@@ -485,7 +485,7 @@ public:
 			if (shape_dimension != element_dimension)
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_element_template::setShapeType.  Shape dimension is different from mesh");
+					"cmzn_elementtemplate::setShapeType.  Shape dimension is different from mesh");
 				return 0;
 			}
 		}
@@ -514,7 +514,7 @@ public:
 				}
 				else if (numberOfScaleFactors != iter->second)
 				{
-					display_message(ERROR_MESSAGE, "cmzn_element_template_set_number_of_scale_factors.  "
+					display_message(ERROR_MESSAGE, "cmzn_elementtemplate_set_number_of_scale_factors.  "
 						"Can't change number size of a scale factor set in element template");
 					return_code = CMZN_ERROR_ARGUMENT;
 				}
@@ -540,7 +540,7 @@ public:
 		if (in_element_number_of_nodes < element_number_of_nodes)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_template_set_number_of_nodes.  Cannot reduce number of nodes");
+				"cmzn_elementtemplate_set_number_of_nodes.  Cannot reduce number of nodes");
 			return CMZN_ERROR_ARGUMENT;
 		}
 		element_number_of_nodes = in_element_number_of_nodes;
@@ -549,14 +549,14 @@ public:
 	}
 
 	int defineFieldSimpleNodal(cmzn_field_id field,
-		int component_number, cmzn_element_basis_id basis, int basis_number_of_nodes,
+		int component_number, cmzn_elementbasis_id basis, int basis_number_of_nodes,
 		const int *local_node_indexes)
 	{
 		int return_code = 1;
 		if (basis->getDimension() != element_dimension)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_template_define_field_simple_nodal.  "
+				"cmzn_elementtemplate_define_field_simple_nodal.  "
 				"Basis has different dimension to mesh");
 			return_code = 0;
 		}
@@ -564,7 +564,7 @@ public:
 		if (!fe_basis)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_template_define_field_simple_nodal.  "
+				"cmzn_elementtemplate_define_field_simple_nodal.  "
 				"Basis is invalid or incomplete");
 			return_code = 0;
 		}
@@ -574,7 +574,7 @@ public:
 			if (basis_number_of_nodes != expected_basis_number_of_nodes)
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_element_template_define_field_simple_nodal.  "
+					"cmzn_elementtemplate_define_field_simple_nodal.  "
 					"%d nodes supplied but %d expected for basis",
 					basis_number_of_nodes, expected_basis_number_of_nodes);
 				return_code = 0;
@@ -585,7 +585,7 @@ public:
 			if ((local_node_indexes[i] < 1) || (local_node_indexes[i] > element_number_of_nodes))
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_element_template_define_field_simple_nodal.  "
+					"cmzn_elementtemplate_define_field_simple_nodal.  "
 					"Local node index out of range 1 to number in element(%d)", element_number_of_nodes);
 				return_code = 0;
 				break;
@@ -601,7 +601,7 @@ public:
 			if (FE_field_get_FE_region(fe_field) != master_FE_region)
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_element_template_define_field_simple_nodal.  "
+					"cmzn_elementtemplate_define_field_simple_nodal.  "
 					"Field is from another region");
 				return_code = 0;
 			}
@@ -610,7 +610,7 @@ public:
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_template_define_field_simple_nodal.  "
+				"cmzn_elementtemplate_define_field_simple_nodal.  "
 				"Can only define real finite_element field type on elements");
 			return_code = 0;
 		}
@@ -638,7 +638,7 @@ public:
 		if (!shape_is_set)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_template_validate.  Element shape has not been set");
+				"cmzn_elementtemplate_validate.  Element shape has not been set");
 			return_code = 0;
 		}
 		for (unsigned int i = 0; i < fields.size(); i++)
@@ -647,7 +647,7 @@ public:
 			{
 				char *field_name = NULL;
 				GET_NAME(FE_field)(fields[i]->getFeField(), &field_name);
-				display_message(ERROR_MESSAGE, "cmzn_element_template_validate.  "
+				display_message(ERROR_MESSAGE, "cmzn_elementtemplate_validate.  "
 					"Field %s definition is invalid or incomplete", field_name);
 				DEALLOCATE(field_name);
 				return_code = 0;
@@ -702,7 +702,7 @@ public:
 			if (!template_element)
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_element_template_validate.  Failed to create template element");
+					"cmzn_elementtemplate_validate.  Failed to create template element");
 				return_code = 0;
 			}
 		}
@@ -748,7 +748,7 @@ public:
 	}
 
 private:
-	~cmzn_element_template()
+	~cmzn_elementtemplate()
 	{
 		for (ScaleFactorSetIntMap::iterator iter = scale_factor_set_sizes.begin();
 			iter != scale_factor_set_sizes.end(); ++iter)
@@ -785,7 +785,7 @@ private:
 		return *element_field;
 	}
 
-	int hasFields() { return fields.size(); }
+	bool hasFields() { return (0 < fields.size()); }
 
 	void clearTemplateElement()
 	{
@@ -859,7 +859,7 @@ public:
 	}
 
 	cmzn_element_id createElement(int identifier,
-		cmzn_element_template_id element_template)
+		cmzn_elementtemplate_id element_template)
 	{
 		FE_element *element = NULL;
 		if (element_template->validate())
@@ -878,18 +878,18 @@ public:
 		return element;
 	}
 
-	cmzn_element_template_id createElementTemplate()
+	cmzn_elementtemplate_id createElementtemplate()
 	{
 		FE_region *master_fe_region = fe_region;
 		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return new cmzn_element_template(master_fe_region, dimension);
+		return new cmzn_elementtemplate(master_fe_region, dimension);
 	}
 
-	cmzn_element_iterator_id createIterator()
+	cmzn_elementiterator_id createIterator()
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->createIterator();
-		return FE_region_create_element_iterator(fe_region, dimension);
+		return FE_region_create_elementiterator(fe_region, dimension);
 	}
 
 	int destroyAllElements()
@@ -1004,7 +1004,7 @@ public:
 		return (0 != group);
 	}
 
-	int match(cmzn_mesh& other_mesh)
+	bool match(cmzn_mesh& other_mesh)
 	{
 		return ((fe_region == other_mesh.fe_region) &&
 			(dimension == other_mesh.dimension) &&
@@ -1022,21 +1022,21 @@ protected:
 	struct LIST(FE_element) *createElementListWithCondition(cmzn_field_id conditional_field)
 	{
 		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
-		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-		cmzn_field_cache_id cache = cmzn_field_module_create_cache(field_module);
-		cmzn_element_iterator_id iterator = createIterator();
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_elementiterator_id iterator = createIterator();
 		cmzn_element_id element = 0;
 		struct LIST(FE_element) *element_list =
 			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
-		while (0 != (element = cmzn_element_iterator_next_non_access(iterator)))
+		while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 		{
-			cmzn_field_cache_set_element(cache, element);
+			cmzn_fieldcache_set_element(cache, element);
 			if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, cache))
 				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
 		}
-		cmzn_element_iterator_destroy(&iterator);
-		cmzn_field_cache_destroy(&cache);
-		cmzn_field_module_destroy(&field_module);
+		cmzn_elementiterator_destroy(&iterator);
+		cmzn_fieldcache_destroy(&cache);
+		cmzn_fieldmodule_destroy(&field_module);
 		return element_list;
 	}
 
@@ -1088,40 +1088,40 @@ Global functions
 ----------------
 */
 
-cmzn_element_basis_id cmzn_field_module_create_element_basis(
-	cmzn_field_module_id field_module, int dimension,
+cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
+	cmzn_fieldmodule_id field_module, int dimension,
 	enum cmzn_basis_function_type function_type)
 {
 	if (field_module && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		cmzn_region *region = cmzn_field_module_get_master_region_internal(field_module);
+		cmzn_region *region = cmzn_fieldmodule_get_master_region_internal(field_module);
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (fe_region)
 		{
-			return new cmzn_element_basis(fe_region, dimension, function_type);
+			return new cmzn_elementbasis(fe_region, dimension, function_type);
 		}
 	}
 	return 0;
 }
 
-cmzn_mesh_id cmzn_field_module_find_mesh_by_dimension(
-	cmzn_field_module_id field_module, int dimension)
+cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
+	cmzn_fieldmodule_id field_module, int dimension)
 {
 	cmzn_mesh_id mesh = NULL;
 	if (field_module && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		mesh = new cmzn_mesh(cmzn_field_module_get_region_internal(field_module), dimension);
+		mesh = new cmzn_mesh(cmzn_fieldmodule_get_region_internal(field_module), dimension);
 	}
 	return mesh;
 }
 
-cmzn_mesh_id cmzn_field_module_find_mesh_by_name(
-	cmzn_field_module_id field_module, const char *mesh_name)
+cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
+	cmzn_fieldmodule_id field_module, const char *mesh_name)
 {
 	cmzn_mesh_id mesh = 0;
 	if (field_module && mesh_name)
 	{
-		cmzn_field_id field = cmzn_field_module_find_field_by_name(field_module, mesh_name);
+		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(field_module, mesh_name);
 		if (field)
 		{
 			cmzn_field_element_group_id element_group_field = cmzn_field_cast_element_group(field);
@@ -1134,7 +1134,7 @@ cmzn_mesh_id cmzn_field_module_find_mesh_by_name(
 		}
 		else
 		{
-			cmzn_region_id region = cmzn_field_module_get_region_internal(field_module);
+			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 			int mesh_dimension = 0;
 			if      (0 == strcmp(mesh_name, "mesh3d"))
 				mesh_dimension = 3;
@@ -1170,23 +1170,23 @@ int cmzn_mesh_contains_element(cmzn_mesh_id mesh, cmzn_element_id element)
 	return 0;
 }
 
-cmzn_element_template_id cmzn_mesh_create_element_template(
+cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
 	cmzn_mesh_id mesh)
 {
 	if (mesh)
-		return mesh->createElementTemplate();
+		return mesh->createElementtemplate();
 	return 0;
 }
 
 cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
-	int identifier, cmzn_element_template_id element_template)
+	int identifier, cmzn_elementtemplate_id element_template)
 {
 	if (mesh && element_template)
 		return mesh->createElement(identifier, element_template);
 	return 0;
 }
 
-cmzn_element_iterator_id cmzn_mesh_create_element_iterator(
+cmzn_elementiterator_id cmzn_mesh_create_elementiterator(
 	cmzn_mesh_id mesh)
 {
 	if (mesh)
@@ -1195,16 +1195,16 @@ cmzn_element_iterator_id cmzn_mesh_create_element_iterator(
 }
 
 int cmzn_mesh_define_element(cmzn_mesh_id mesh, int identifier,
-	cmzn_element_template_id element_template)
+	cmzn_elementtemplate_id element_template)
 {
 	cmzn_element_id element =
 		cmzn_mesh_create_element(mesh, identifier, element_template);
 	if (element)
 	{
 		cmzn_element_destroy(&element);
-		return 1;
+		return CMZN_OK;
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_destroy_all_elements(cmzn_mesh_id mesh)
@@ -1272,11 +1272,11 @@ cmzn_mesh_scale_factor_set_id cmzn_mesh_create_mesh_scale_factor_set(
 	return 0;
 }
 
-cmzn_differential_operator_id cmzn_mesh_get_chart_differential_operator(
+cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
 	if (mesh && (1 == order) && (1 <= term) && (term <= mesh->getDimension()))
-		return new cmzn_differential_operator(mesh->getMasterFeRegion(), mesh->getDimension(), term);
+		return new cmzn_differentialoperator(mesh->getMasterFeRegion(), mesh->getDimension(), term);
 	return 0;
 }
 
@@ -1308,7 +1308,7 @@ int cmzn_mesh_get_size(cmzn_mesh_id mesh)
 	return 0;
 }
 
-int cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2)
+bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2)
 {
 	return (mesh1 && mesh2 && mesh1->match(*mesh2));
 }
@@ -1406,8 +1406,8 @@ cmzn_region_id cmzn_mesh_get_master_region_internal(cmzn_mesh_id mesh)
 	return FE_region_get_master_cmzn_region(mesh->getFeRegion());
 }
 
-cmzn_element_basis_id cmzn_element_basis_access(
-	cmzn_element_basis_id element_basis)
+cmzn_elementbasis_id cmzn_elementbasis_access(
+	cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->access();
@@ -1415,29 +1415,29 @@ cmzn_element_basis_id cmzn_element_basis_access(
 	return 0;
 }
 
-int cmzn_element_basis_destroy(cmzn_element_basis_id *element_basis_address)
+int cmzn_elementbasis_destroy(cmzn_elementbasis_id *element_basis_address)
 {
 	if (element_basis_address)
-		return cmzn_element_basis::deaccess(*element_basis_address);
+		return cmzn_elementbasis::deaccess(*element_basis_address);
 	return 0;
 }
 
-int cmzn_element_basis_get_dimension(cmzn_element_basis_id element_basis)
+int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->getDimension();
 	return 0;
 }
 
-enum cmzn_basis_function_type cmzn_element_basis_get_function_type(
-	cmzn_element_basis_id element_basis, int chart_component)
+enum cmzn_basis_function_type cmzn_elementbasis_get_function_type(
+	cmzn_elementbasis_id element_basis, int chart_component)
 {
 	if (element_basis)
 		return element_basis->getFunctionType(chart_component);
 	return CMZN_BASIS_FUNCTION_TYPE_INVALID;
 }
 
-int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_basis,
+int cmzn_elementbasis_set_function_type(cmzn_elementbasis_id element_basis,
 	int chart_component, enum cmzn_basis_function_type function_type)
 {
 	if (element_basis)
@@ -1445,46 +1445,46 @@ int cmzn_element_basis_set_function_type(cmzn_element_basis_id element_basis,
 	return 0;
 }
 
-int cmzn_element_basis_get_number_of_nodes(
-	cmzn_element_basis_id element_basis)
+int cmzn_elementbasis_get_number_of_nodes(
+	cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->getNumberOfNodes();
 	return 0;
 }
 
-int cmzn_element_basis_get_number_of_functions(
-	cmzn_element_basis_id element_basis)
+int cmzn_elementbasis_get_number_of_functions(
+	cmzn_elementbasis_id element_basis)
 {
 	if (element_basis)
 		return element_basis->getNumberOfFunctions();
 	return 0;
 }
-cmzn_element_template_id cmzn_element_template_access(
-	cmzn_element_template_id element_template)
+cmzn_elementtemplate_id cmzn_elementtemplate_access(
+	cmzn_elementtemplate_id element_template)
 {
 	if (element_template)
 		return element_template->access();
 	return 0;
 }
 
-int cmzn_element_template_destroy(
-	cmzn_element_template_id *element_template_address)
+int cmzn_elementtemplate_destroy(
+	cmzn_elementtemplate_id *element_template_address)
 {
 	if (element_template_address)
-		return cmzn_element_template::deaccess(*element_template_address);
+		return cmzn_elementtemplate::deaccess(*element_template_address);
 	return 0;
 }
 
-enum cmzn_element_shape_type cmzn_element_template_get_shape_type(
-	cmzn_element_template_id element_template)
+enum cmzn_element_shape_type cmzn_elementtemplate_get_shape_type(
+	cmzn_elementtemplate_id element_template)
 {
 	if (element_template)
 		return element_template->getShapeType();
 	return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 }
 
-int cmzn_element_template_set_shape_type(cmzn_element_template_id element_template,
+int cmzn_elementtemplate_set_shape_type(cmzn_elementtemplate_id element_template,
 	enum cmzn_element_shape_type shape_type)
 {
 	if (element_template)
@@ -1506,8 +1506,8 @@ int cmzn_element_template_set_shape_type(cmzn_element_template_id element_templa
  * @param number_of_scale_factors  The number of scale factors to set.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-int cmzn_element_template_set_number_of_scale_factors(
-	cmzn_element_template_id element_template,
+int cmzn_elementtemplate_set_number_of_scale_factors(
+	cmzn_elementtemplate_id element_template,
 	cmzn_mesh_scale_factor_set_id scale_factor_set, int number_of_scale_factors)
 {
 	if (element_template)
@@ -1515,26 +1515,26 @@ int cmzn_element_template_set_number_of_scale_factors(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_element_template_get_number_of_nodes(
-	cmzn_element_template_id element_template)
+int cmzn_elementtemplate_get_number_of_nodes(
+	cmzn_elementtemplate_id element_template)
 {
 	if (element_template)
 		return element_template->getNumberOfNodes();
 	return 0;
 }
 
-int cmzn_element_template_set_number_of_nodes(
-	cmzn_element_template_id element_template, int number_of_nodes)
+int cmzn_elementtemplate_set_number_of_nodes(
+	cmzn_elementtemplate_id element_template, int number_of_nodes)
 {
 	if (element_template)
 		return element_template->setNumberOfNodes(number_of_nodes);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_element_template_define_field_simple_nodal(
-	cmzn_element_template_id element_template,
+int cmzn_elementtemplate_define_field_simple_nodal(
+	cmzn_elementtemplate_id element_template,
 	cmzn_field_id field,  int component_number,
-	cmzn_element_basis_id basis, int number_of_nodes,
+	cmzn_elementbasis_id basis, int number_of_nodes,
 	const int *local_node_indexes)
 {
 	if (element_template && field && basis &&
@@ -1546,15 +1546,15 @@ int cmzn_element_template_define_field_simple_nodal(
 	return 0;
 }
 
-cmzn_node_id cmzn_element_template_get_node(
-	cmzn_element_template_id element_template, int local_node_index)
+cmzn_node_id cmzn_elementtemplate_get_node(
+	cmzn_elementtemplate_id element_template, int local_node_index)
 {
 	if (element_template)
 		return element_template->getNode(local_node_index);
 	return NULL;
 }
 
-int cmzn_element_template_set_node(cmzn_element_template_id element_template,
+int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
 	int local_node_index, cmzn_node_id node)
 {
 	if (element_template)
@@ -1671,7 +1671,7 @@ enum cmzn_element_shape_type cmzn_element_get_shape_type(
 }
 
 int cmzn_element_merge(cmzn_element_id element,
-	cmzn_element_template_id element_template)
+	cmzn_elementtemplate_id element_template)
 {
 	if (element && element_template)
 		return element_template->mergeIntoElement(element);

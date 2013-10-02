@@ -33,7 +33,7 @@ extern "C" {
  * @param source_field The field the values are copied from.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_identity(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_identity(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
 /*****************************************************************************//**
@@ -45,7 +45,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_identity(cmzn_field_module_id fi
  * @param component_index  The component index from 1 to number of components.
  * @return  Newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_component(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_component(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, int component_index);
 
 /*****************************************************************************//**
@@ -57,7 +57,7 @@ ZINC_API cmzn_field_id cmzn_field_module_create_component(cmzn_field_module_id f
  * @param source_fields  The array of fields to be concatenating together.
  * @return Newly created field
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_concatenate(cmzn_field_module_id field_module,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodule_id field_module,
 	int number_of_source_fields, cmzn_field_id *source_fields);
 
 #ifdef __cplusplus

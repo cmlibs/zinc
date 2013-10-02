@@ -26,7 +26,7 @@ private:
 	explicit FieldAlias(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldAlias FieldModule::createAlias(Field &sourceField);
+	friend FieldAlias Fieldmodule::createFieldAlias(Field &sourceField);
 
 public:
 
@@ -35,9 +35,9 @@ public:
 
 };
 
-inline FieldAlias FieldModule::createAlias(Field &sourceField)
+inline FieldAlias Fieldmodule::createFieldAlias(Field &sourceField)
 {
-	return FieldAlias(cmzn_field_module_create_alias(id, sourceField.getId()));
+	return FieldAlias(cmzn_fieldmodule_create_field_alias(id, sourceField.getId()));
 }
 
 }  // namespace Zinc

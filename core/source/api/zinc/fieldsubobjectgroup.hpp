@@ -27,7 +27,7 @@ private:
 	explicit FieldElementGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldElementGroup FieldModule::createElementGroup(Mesh& mesh);
+	friend FieldElementGroup Fieldmodule::createFieldElementGroup(Mesh& mesh);
 
 public:
 
@@ -57,7 +57,7 @@ private:
 	explicit FieldNodeGroup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset);
+	friend FieldNodeGroup Fieldmodule::createFieldNodeGroup(Nodeset& nodeset);
 
 public:
 
@@ -80,14 +80,14 @@ public:
 	}
 };
 
-inline FieldElementGroup FieldModule::createElementGroup(Mesh& mesh)
+inline FieldElementGroup Fieldmodule::createFieldElementGroup(Mesh& mesh)
 {
-	return FieldElementGroup(cmzn_field_module_create_element_group(id, mesh.getId()));
+	return FieldElementGroup(cmzn_fieldmodule_create_field_element_group(id, mesh.getId()));
 }
 
-inline FieldNodeGroup FieldModule::createNodeGroup(Nodeset& nodeset)
+inline FieldNodeGroup Fieldmodule::createFieldNodeGroup(Nodeset& nodeset)
 {
-	return FieldNodeGroup(cmzn_field_module_create_node_group(id, nodeset.getId()));
+	return FieldNodeGroup(cmzn_fieldmodule_create_field_node_group(id, nodeset.getId()));
 }
 
 }  // namespace Zinc

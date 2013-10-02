@@ -34,11 +34,11 @@ Types used only internally to computed fields.
 class Computed_field_modify_data
 {
 private:
-	cmzn_field_module *field_module;
+	cmzn_fieldmodule *field_module;
 
 public:
 	Computed_field_modify_data(
-		struct cmzn_field_module *field_module) :
+		struct cmzn_fieldmodule *field_module) :
 		field_module(field_module)
 	{
 	}
@@ -47,7 +47,7 @@ public:
 	{
 	}
 
-	cmzn_field_module *get_field_module()
+	cmzn_fieldmodule *get_field_module()
 	{
 		return field_module;
 	}
@@ -218,7 +218,7 @@ public:
 	virtual const char *get_type_string() = 0;
 
 	// override for fields requiring specialised value caches
-	virtual FieldValueCache *createValueCache(cmzn_field_cache& /*parentCache*/);
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& /*parentCache*/);
 
 	virtual int clear_cache() // GRC remove
 	{
@@ -229,7 +229,7 @@ public:
 
 	/** default implementation returns true if all source fields are defined at location.
 	 * override if different logic is needed. */
-	virtual bool is_defined_at_location(cmzn_field_cache& cache);
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	virtual int has_numerical_components()
 	{
@@ -241,7 +241,7 @@ public:
 		return 1;
 	};
 
-	virtual int evaluate(cmzn_field_cache& cache, FieldValueCache& valueCache) = 0;
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
 	/** Override & return 1 for field types supporting the sum_square_terms API */
 	virtual int supports_sum_square_terms() const
@@ -252,30 +252,30 @@ public:
 	/** Override for field types whose value is a sum of squares to get the
 	 * number of terms summed. Multiply by number of components to get number of values.
 	 * Can be expensive. */
-	virtual int get_number_of_sum_square_terms(cmzn_field_cache&) const
+	virtual int get_number_of_sum_square_terms(cmzn_fieldcache&) const
 	{
 		return 0;
 	}
 
 	/** Override for field types whose value is a sum of squares to get the array of
 	 * individual terms PRIOR to being squared*/
-	virtual int evaluate_sum_square_terms(cmzn_field_cache&, RealFieldValueCache&,
+	virtual int evaluate_sum_square_terms(cmzn_fieldcache&, RealFieldValueCache&,
 		int /*number_of_values*/, FE_value* /* *values*/)
 	{
 		return 0;
 	}
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/)
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, MeshLocationFieldValueCache& /*valueCache*/)
 	{
 		return FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, RealFieldValueCache& /*valueCache*/)
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, RealFieldValueCache& /*valueCache*/)
 	{
 		return FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& /*cache*/, StringFieldValueCache& /*valueCache*/)
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& /*cache*/, StringFieldValueCache& /*valueCache*/)
 	{
 		return FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
@@ -283,7 +283,7 @@ public:
 	virtual int get_native_discretization_in_element(struct FE_element *element,
 		int *number_in_xi);
 
-	virtual int propagate_find_element_xi(cmzn_field_cache&,
+	virtual int propagate_find_element_xi(cmzn_fieldcache&,
 		const FE_value * /*values*/, int /*number_of_values*/,
 		struct FE_element ** /*element_address*/, FE_value * /*xi*/,
 		cmzn_mesh_id /*mesh*/)
@@ -444,7 +444,7 @@ DESCRIPTION :
 	 */
 	void clearCaches();
 
-	inline FieldValueCache *getValueCache(cmzn_field_cache& cache)
+	inline FieldValueCache *getValueCache(cmzn_fieldcache& cache)
 	{
 		FieldValueCache *valueCache = cache.getValueCache(cache_index);
 		if (!valueCache)
@@ -456,7 +456,7 @@ DESCRIPTION :
 	}
 
 	template <class FieldValueCacheClass>
-	inline FieldAssignmentResult assign(cmzn_field_cache& cache, FieldValueCacheClass& valueCache)
+	inline FieldAssignmentResult assign(cmzn_fieldcache& cache, FieldValueCacheClass& valueCache)
 	{
 		FieldAssignmentResult result = core->assign(cache, valueCache);
 		if ((result == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET) &&
@@ -473,7 +473,7 @@ DESCRIPTION :
 		return result;
 	}
 
-	inline FieldValueCache *evaluate(cmzn_field_cache& cache)
+	inline FieldValueCache *evaluate(cmzn_fieldcache& cache)
 	{
 		FieldValueCache *valueCache = getValueCache(cache);
 		// GRC: move derivatives to a separate value cache in future
@@ -489,7 +489,7 @@ DESCRIPTION :
 	}
 
 	/** @param numberOfDerivatives  positive number of xi dimension of element location */
-	inline RealFieldValueCache *evaluateWithDerivatives(cmzn_field_cache& cache, int numberOfDerivatives)
+	inline RealFieldValueCache *evaluateWithDerivatives(cmzn_fieldcache& cache, int numberOfDerivatives)
 	{
 		int requestedDerivatives = cache.getRequestedDerivatives();
 		cache.setRequestedDerivatives(numberOfDerivatives);
@@ -500,7 +500,7 @@ DESCRIPTION :
 		return 0;
 	}
 
-	inline FieldValueCache *evaluateNoDerivatives(cmzn_field_cache& cache)
+	inline FieldValueCache *evaluateNoDerivatives(cmzn_fieldcache& cache)
 	{
 		int requestedDerivatives = cache.getRequestedDerivatives();
 		cache.setRequestedDerivatives(0);
@@ -529,12 +529,12 @@ DESCRIPTION :
 		return core->has_numerical_components();
 	}
 
-	int get_number_of_sum_square_terms(cmzn_field_cache& cache)
+	int get_number_of_sum_square_terms(cmzn_fieldcache& cache)
 	{
 		return core->get_number_of_sum_square_terms(cache);
 	}
 
-	int evaluate_sum_square_terms(cmzn_field_cache& cache, int number_of_values, FE_value *values)
+	int evaluate_sum_square_terms(cmzn_fieldcache& cache, int number_of_values, FE_value *values)
 	{
 		if ((0 <= number_of_values) && values)
 		{
@@ -586,12 +586,32 @@ struct Computed_field_compare_name
 
 typedef cmzn_set<Computed_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
 
-struct cmzn_field_iterator : public cmzn_set_cmzn_field::ext_iterator
+struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
 {
-	cmzn_field_iterator(cmzn_set_cmzn_field *container) :
-		cmzn_set_cmzn_field::ext_iterator(container)
-	{
-	}
+private:
+	cmzn_fielditerator(cmzn_set_cmzn_field *container);
+	cmzn_fielditerator(const cmzn_fielditerator&);
+	~cmzn_fielditerator();
+
+public:
+
+		static cmzn_fielditerator *create(cmzn_set_cmzn_field *container)
+		{
+			return static_cast<cmzn_fielditerator *>(cmzn_set_cmzn_field::ext_iterator::create(container));
+		}
+
+		cmzn_fielditerator *access()
+		{
+			return static_cast<cmzn_fielditerator *>(this->cmzn_set_cmzn_field::ext_iterator::access());
+		}
+
+		static int deaccess(cmzn_fielditerator* &iterator)
+		{
+			cmzn_set_cmzn_field::ext_iterator* baseIterator = static_cast<cmzn_set_cmzn_field::ext_iterator*>(iterator);
+			iterator = 0;
+			return cmzn_set_cmzn_field::ext_iterator::deaccess(baseIterator);
+		}
+
 };
 
 /*
@@ -616,7 +636,7 @@ char *Computed_field_manager_get_unique_field_name(
 /***************************************************************************//**
  * Create an iterator for the objects in the manager.
  */
-cmzn_field_iterator_id Computed_field_manager_create_iterator(
+cmzn_fielditerator_id Computed_field_manager_create_iterator(
 	struct MANAGER(Computed_field) *manager);
 
 /***************************************************************************//**
@@ -653,7 +673,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
  * @return  Newly created field, or NULL on failure.
  */
 Computed_field *Computed_field_create_generic(
-	cmzn_field_module *field_module, bool check_source_field_regions,
+	cmzn_fieldmodule *field_module, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
@@ -751,7 +771,7 @@ int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 
 int Computed_field_broadcast_field_components(
-	struct cmzn_field_module *field_module,
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field **field_one, struct Computed_field **field_two);
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -776,16 +796,16 @@ for matrix operations.
  * @param region  The owning region.
  * @return  Field module for the supplied region.
  */
-struct cmzn_field_module *cmzn_field_module_create(struct cmzn_region *region);
+struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region);
 
 /***************************************************************************//**
- * Internal, non-accessing version of cmzn_field_module_get_region.
+ * Internal, non-accessing version of cmzn_fieldmodule_get_region.
  *
  * @param field_module  The field module to query.
  * @return  Non-accessed handle to owning region for field_module.
  */
-struct cmzn_region *cmzn_field_module_get_region_internal(
-	struct cmzn_field_module *field_module);
+struct cmzn_region *cmzn_fieldmodule_get_region_internal(
+	struct cmzn_fieldmodule *field_module);
 
 /***************************************************************************//**
  * Sets the name (or name stem if non-unique) of the next field to be created
@@ -795,7 +815,7 @@ struct cmzn_region *cmzn_field_module_get_region_internal(
  * @param field_name  Field name or name stem.
  * @return  Non-zero on success, 0 on failure.
  */
-int cmzn_field_module_set_field_name(struct cmzn_field_module *field_module,
+int cmzn_fieldmodule_set_field_name(struct cmzn_fieldmodule *field_module,
 	const char *field_name);
 
 /***************************************************************************//**
@@ -805,8 +825,8 @@ int cmzn_field_module_set_field_name(struct cmzn_field_module *field_module,
  * @param field_module  The field module to create fields in.
  * @return  Allocated copy of the name, or NULL if none.
  */
-char *cmzn_field_module_get_field_name(
-	struct cmzn_field_module *field_module);
+char *cmzn_fieldmodule_get_field_name(
+	struct cmzn_fieldmodule *field_module);
 
 /***************************************************************************//**
  * Sets the coordinate system to be used for subsequent fields created with
@@ -816,8 +836,8 @@ char *cmzn_field_module_get_field_name(
  * @param coordinate_system  The coordinate system to set.
  * @return  1 on success, 0 on failure.
  */
-int cmzn_field_module_set_coordinate_system(
-	struct cmzn_field_module *field_module,
+int cmzn_fieldmodule_set_coordinate_system(
+	struct cmzn_fieldmodule *field_module,
 	struct Coordinate_system coordinate_system);
 
 /***************************************************************************//**
@@ -826,8 +846,8 @@ int cmzn_field_module_set_coordinate_system(
  * @param field_module  The field module to create fields in.
  * @return  Copy of default coordinate system.
  */
-struct Coordinate_system cmzn_field_module_get_coordinate_system(
-	struct cmzn_field_module *field_module);
+struct Coordinate_system cmzn_fieldmodule_get_coordinate_system(
+	struct cmzn_fieldmodule *field_module);
 
 /***************************************************************************//**
  * Returns true if the default coordinate system has been explicitly set.
@@ -835,8 +855,8 @@ struct Coordinate_system cmzn_field_module_get_coordinate_system(
  * @param field_module  The field module to create fields in.
  * @return  1 if coordinate system set, 0 if never set.
  */
-int cmzn_field_module_coordinate_system_is_set(
-	struct cmzn_field_module *field_module);
+int cmzn_fieldmodule_coordinate_system_is_set(
+	struct cmzn_fieldmodule *field_module);
 
 /***************************************************************************//**
  * Sets the replace_field that will be redefined by the next field
@@ -848,8 +868,8 @@ int cmzn_field_module_coordinate_system_is_set(
  * be NULL to clear.
  * @return  1 on success, 0 on failure.
  */
-int cmzn_field_module_set_replace_field(
-	struct cmzn_field_module *field_module,
+int cmzn_fieldmodule_set_replace_field(
+	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *replace_field);
 
 /***************************************************************************//**
@@ -860,8 +880,8 @@ int cmzn_field_module_set_replace_field(
  * @return  Existing field to be replaced which caller must deaccess, or NULL
  * if none.
  */
-struct Computed_field *cmzn_field_module_get_replace_field(
-	struct cmzn_field_module *field_module);
+struct Computed_field *cmzn_fieldmodule_get_replace_field(
+	struct cmzn_fieldmodule *field_module);
 
 /***************************************************************************//**
  * For each hierarchical field in manager, propagates changes from sub-region

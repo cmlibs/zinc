@@ -103,46 +103,46 @@ class FieldSigmoidImageFilter;
 class TimeKeeper;
 class Optimisation;
 
-class FieldModule
+class Fieldmodule
 {
 private:
 
-	cmzn_field_module_id id;
+	cmzn_fieldmodule_id id;
 
 public:
 
-	FieldModule() : id(0)
+	Fieldmodule() : id(0)
 	{	}
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldModule(cmzn_field_module_id field_module_id) :
+	explicit Fieldmodule(cmzn_fieldmodule_id field_module_id) :
 		id(field_module_id)
 	{ }
 
-	FieldModule(const FieldModule& fieldModule) :
-		id(cmzn_field_module_access(fieldModule.id))
+	Fieldmodule(const Fieldmodule& fieldModule) :
+		id(cmzn_fieldmodule_access(fieldModule.id))
 	{ }
 
-	FieldModule(Field& field) :
-		id(cmzn_field_get_field_module(field.getId()))
+	Fieldmodule(Field& field) :
+		id(cmzn_field_get_fieldmodule(field.getId()))
 	{ }
 
-	FieldModule& operator=(const FieldModule& fieldModule)
+	Fieldmodule& operator=(const Fieldmodule& fieldModule)
 	{
-		cmzn_field_module_id temp_id = cmzn_field_module_access(fieldModule.id);
+		cmzn_fieldmodule_id temp_id = cmzn_fieldmodule_access(fieldModule.id);
 		if (0 != id)
 		{
-			cmzn_field_module_destroy(&id);
+			cmzn_fieldmodule_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~FieldModule()
+	~Fieldmodule()
 	{
 		if (0 != id)
 		{
-			cmzn_field_module_destroy(&id);
+			cmzn_fieldmodule_destroy(&id);
 		}
 	}
 
@@ -151,253 +151,258 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_field_module_id getId()
+	cmzn_fieldmodule_id getId()
 	{
 		return id;
 	}
 
 	int beginChange()
 	{
-		return cmzn_field_module_begin_change(id);
+		return cmzn_fieldmodule_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return cmzn_field_module_end_change(id);
+		return cmzn_fieldmodule_end_change(id);
 	}
 
 	int defineAllFaces()
 	{
-		return cmzn_field_module_define_all_faces(id);
+		return cmzn_fieldmodule_define_all_faces(id);
 	}
 
 	Field findFieldByName(const char *fieldName)
 	{
-		return Field(cmzn_field_module_find_field_by_name(id, fieldName));
+		return Field(cmzn_fieldmodule_find_field_by_name(id, fieldName));
 	}
 
-	FieldCache createCache()
+	Fieldcache createFieldcache()
 	{
-		return FieldCache(cmzn_field_module_create_cache(id));
+		return Fieldcache(cmzn_fieldmodule_create_fieldcache(id));
 	}
 
-	ElementBasis createElementBasis(int dimension, enum ElementBasis::FunctionType functionType)
+	Fielditerator createFielditerator()
 	{
-		return ElementBasis(cmzn_field_module_create_element_basis(
+		return Fielditerator(cmzn_fieldmodule_create_fielditerator(id));
+	}
+
+	Elementbasis createElementbasis(int dimension, enum Elementbasis::FunctionType functionType)
+	{
+		return Elementbasis(cmzn_fieldmodule_create_elementbasis(
 			id, dimension, static_cast<cmzn_basis_function_type>(functionType)));
 	}
 
 	Nodeset findNodesetByDomainType(Field::DomainType domainType)
 	{
-		return Nodeset(cmzn_field_module_find_nodeset_by_domain_type(id,
+		return Nodeset(cmzn_fieldmodule_find_nodeset_by_domain_type(id,
 			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 
 	Nodeset findNodesetByName(const char *nodeset_name)
 	{
-		return Nodeset(cmzn_field_module_find_nodeset_by_name(id,
+		return Nodeset(cmzn_fieldmodule_find_nodeset_by_name(id,
 			nodeset_name));
 	}
 
 	Mesh findMeshByDimension(int dimension)
 	{
-		return Mesh(cmzn_field_module_find_mesh_by_dimension(id, dimension));
+		return Mesh(cmzn_fieldmodule_find_mesh_by_dimension(id, dimension));
 	}
 
 	Mesh findMeshByName(const char *meshName)
 	{
-		return Mesh(cmzn_field_module_find_mesh_by_name(id, meshName));
+		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}
 
 	TimeSequence getMatchingTimeSequence(int timesCount, const double *timesIn)
 	{
-		return TimeSequence(cmzn_field_module_get_matching_time_sequence(
+		return TimeSequence(cmzn_fieldmodule_get_matching_time_sequence(
 			id, timesCount, timesIn));
 	}
 
 	Optimisation createOptimisation()
 	{
-		return Optimisation(cmzn_field_module_create_optimisation(id));
+		return Optimisation(cmzn_fieldmodule_create_optimisation(id));
 	}
 
-	FieldAlias createAlias(Field& sourceField);
+	FieldAlias createFieldAlias(Field& sourceField);
 
-	FieldAdd createAdd(Field& sourceField1, Field& sourceField2);
+	FieldAdd createFieldAdd(Field& sourceField1, Field& sourceField2);
 
-	FieldPower createPower(Field& sourceField1, Field& sourceField2);
+	FieldPower createFieldPower(Field& sourceField1, Field& sourceField2);
 
-	FieldMultiply createMultiply(Field& sourceField1, Field& sourceField2);
+	FieldMultiply createFieldMultiply(Field& sourceField1, Field& sourceField2);
 
-	FieldDivide createDivide(Field& sourceField1, Field& sourceField2);
+	FieldDivide createFieldDivide(Field& sourceField1, Field& sourceField2);
 
-	FieldSubtract createSubtract(Field& sourceField1, Field& sourceField2);
+	FieldSubtract createFieldSubtract(Field& sourceField1, Field& sourceField2);
 
-	FieldSumComponents createSumComponents(Field& sourceField);
+	FieldSumComponents createFieldSumComponents(Field& sourceField);
 
-	FieldLog createLog(Field& sourceField);
+	FieldLog createFieldLog(Field& sourceField);
 
-	FieldSqrt createSqrt(Field& sourceField);
+	FieldSqrt createFieldSqrt(Field& sourceField);
 
-	FieldExp createExp(Field& sourceField);
+	FieldExp createFieldExp(Field& sourceField);
 
-	FieldAbs createAbs(Field& sourceField);
+	FieldAbs createFieldAbs(Field& sourceField);
 
-	FieldIdentity createIdentity(Field& sourceField);
+	FieldIdentity createFieldIdentity(Field& sourceField);
 
-	FieldComponent createComponent(Field& sourceField, int componentIndex);
+	FieldComponent createFieldComponent(Field& sourceField, int componentIndex);
 
-	FieldConcatenate createConcatenate(int fieldsCount, Field *sourceFields);
+	FieldConcatenate createFieldConcatenate(int fieldsCount, Field *sourceFields);
 
-	FieldIf createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
+	FieldIf createFieldIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
 
-	FieldConstant createConstant(int valuesCount, const double *valuesIn);
+	FieldConstant createFieldConstant(int valuesCount, const double *valuesIn);
 
-	FieldStringConstant createStringConstant(const char *stringConstant);
+	FieldStringConstant createFieldStringConstant(const char *stringConstant);
 
-	FieldCoordinateTransformation createCoordinateTransformation(Field& sourceField);
+	FieldCoordinateTransformation createFieldCoordinateTransformation(Field& sourceField);
 
-	FieldVectorCoordinateTransformation createVectorCoordinateTransformation(
+	FieldVectorCoordinateTransformation createFieldVectorCoordinateTransformation(
 		Field& vectorField, Field& coordinateField);
 
-	FieldFibreAxes createFibreAxes(Field& fibreField, Field& coordinateField);
+	FieldFibreAxes createFieldFibreAxes(Field& fibreField, Field& coordinateField);
 
-	FieldFiniteElement createFiniteElement(int numberOfComponents);
+	FieldFiniteElement createFieldFiniteElement(int numberOfComponents);
 
-	FieldEmbedded createEmbedded(Field& sourceField, Field& embeddedLocationField);
+	FieldEmbedded createFieldEmbedded(Field& sourceField, Field& embeddedLocationField);
 
-	FieldFindMeshLocation createFindMeshLocation(
+	FieldFindMeshLocation createFieldFindMeshLocation(
 		Field& sourceField, Field& meshField, Mesh& mesh);
 
-	FieldNodeValue createNodeValue(Field& sourceField,
+	FieldNodeValue createFieldNodeValue(Field& sourceField,
 		Node::ValueType valueType, int versionNumber);
 
-	FieldStoredMeshLocation createStoredMeshLocation(Mesh& mesh);
+	FieldStoredMeshLocation createFieldStoredMeshLocation(Mesh& mesh);
 
-	FieldStoredString createStoredString();
+	FieldStoredString createFieldStoredString();
 
-	FieldGroup createGroup();
+	FieldGroup createFieldGroup();
 
-	FieldImage createImage();
+	FieldImage createFieldImage();
 
-	FieldImage createImageFromSource(Field& sourceField);
+	FieldImage createFieldImageFromSource(Field& sourceField);
 
-	FieldAnd createAnd(Field& sourceField1, Field& sourceField2);
+	FieldAnd createFieldAnd(Field& sourceField1, Field& sourceField2);
 
-	FieldEqualTo createEqualTo(Field& sourceField1, Field& sourceField2);
+	FieldEqualTo createFieldEqualTo(Field& sourceField1, Field& sourceField2);
 
-	FieldGreaterThan createGreaterThan(Field& sourceField1, Field& sourceField2);
+	FieldGreaterThan createFieldGreaterThan(Field& sourceField1, Field& sourceField2);
 
-	FieldLessThan createLessThan(Field& sourceField1, Field& sourceField2);
+	FieldLessThan createFieldLessThan(Field& sourceField1, Field& sourceField2);
 
-	FieldOr createOr(Field& sourceField1, Field& sourceField2);
+	FieldOr createFieldOr(Field& sourceField1, Field& sourceField2);
 
-	FieldNot createNot(Field& sourceField);
+	FieldNot createFieldNot(Field& sourceField);
 
-	FieldXor createXor(Field& sourceField1, Field& sourceField2);
+	FieldXor createFieldXor(Field& sourceField1, Field& sourceField2);
 
-	FieldDeterminant createDeterminant(Field& sourceField);
+	FieldDeterminant createFieldDeterminant(Field& sourceField);
 
-	FieldEigenvalues createEigenvalues(Field& sourceField);
+	FieldEigenvalues createFieldEigenvalues(Field& sourceField);
 
-	FieldEigenvectors createEigenvectors(FieldEigenvalues& eigenValuesField);
+	FieldEigenvectors createFieldEigenvectors(FieldEigenvalues& eigenValuesField);
 
-	FieldMatrixInvert createMatrixInvert(Field& sourceField);
+	FieldMatrixInvert createFieldMatrixInvert(Field& sourceField);
 
-	FieldMatrixMultiply createMatrixMultiply(int numberOfRows,
+	FieldMatrixMultiply createFieldMatrixMultiply(int numberOfRows,
 		Field sourceField1, Field& sourceField2);
 
-	FieldProjection createProjection(Field& sourceField,	Field& projectionMatrixField);
+	FieldProjection createFieldProjection(Field& sourceField,	Field& projectionMatrixField);
 
-	FieldTranspose createTranspose(int sourceNumberOfRows, Field& sourceField);
+	FieldTranspose createFieldTranspose(int sourceNumberOfRows, Field& sourceField);
 
-	FieldNodesetSum createNodesetSum(Field& sourceField, Nodeset& nodeset);
+	FieldNodesetSum createFieldNodesetSum(Field& sourceField, Nodeset& nodeset);
 
-	FieldNodesetMean createNodesetMean(Field& sourceField, Nodeset& nodeset);
+	FieldNodesetMean createFieldNodesetMean(Field& sourceField, Nodeset& nodeset);
 
-	FieldNodesetSumSquares createNodesetSumSquares(Field& sourceField, Nodeset& nodeset);
+	FieldNodesetSumSquares createFieldNodesetSumSquares(Field& sourceField, Nodeset& nodeset);
 
-	FieldNodesetMeanSquares createNodesetMeanSquares(Field& sourceField, Nodeset& nodeset);
+	FieldNodesetMeanSquares createFieldNodesetMeanSquares(Field& sourceField, Nodeset& nodeset);
 
-	FieldNodesetMinimum createNodesetMinimum(Field& sourceField, Nodeset& nodeset);
+	FieldNodesetMinimum createFieldNodesetMinimum(Field& sourceField, Nodeset& nodeset);
 
-	FieldNodesetMaximum createNodesetMaximum(Field& sourceField, Nodeset& nodeset);
+	FieldNodesetMaximum createFieldNodesetMaximum(Field& sourceField, Nodeset& nodeset);
 
-	FieldNodeGroup createNodeGroup(Nodeset& nodeset);
+	FieldNodeGroup createFieldNodeGroup(Nodeset& nodeset);
 
-	FieldElementGroup createElementGroup(Mesh& mesh);
+	FieldElementGroup createFieldElementGroup(Mesh& mesh);
 
-	FieldTimeLookup createTimeLookup(Field& sourceField, Field& timeField);
+	FieldTimeLookup createFieldTimeLookup(Field& sourceField, Field& timeField);
 
-	FieldTimeValue createTimeValue(TimeKeeper& timeKeeper);
+	FieldTimeValue createFieldTimeValue(TimeKeeper& timeKeeper);
 
-	FieldDerivative createDerivative(Field& sourceField, int xi_index);
+	FieldDerivative createFieldDerivative(Field& sourceField, int xi_index);
 
-	FieldCurl createCurl(Field& vectorField, Field& coordinateField);
+	FieldCurl createFieldCurl(Field& vectorField, Field& coordinateField);
 
-	FieldDivergence createDivergence(Field& vectorField, Field& coordinateField);
+	FieldDivergence createFieldDivergence(Field& vectorField, Field& coordinateField);
 
-	FieldGradient createGradient(Field& sourceField, Field& coordinateField);
+	FieldGradient createFieldGradient(Field& sourceField, Field& coordinateField);
 
-	FieldSin createSin(Field& sourceField);
+	FieldSin createFieldSin(Field& sourceField);
 
-	FieldCos createCos(Field& sourceField);
+	FieldCos createFieldCos(Field& sourceField);
 
-	FieldTan createTan(Field& sourceField);
+	FieldTan createFieldTan(Field& sourceField);
 
-	FieldAsin createAsin(Field& sourceField);
+	FieldAsin createFieldAsin(Field& sourceField);
 
-	FieldAcos createAcos(Field& sourceField);
+	FieldAcos createFieldAcos(Field& sourceField);
 
-	FieldAtan createAtan(Field& sourceField);
+	FieldAtan createFieldAtan(Field& sourceField);
 
-	FieldAtan2 createAtan2(Field& sourceField1, Field& sourceField2);
+	FieldAtan2 createFieldAtan2(Field& sourceField1, Field& sourceField2);
 
-	FieldCrossProduct createCrossProduct(int fieldsCount, Field *sourceFields);
+	FieldCrossProduct createFieldCrossProduct(int fieldsCount, Field *sourceFields);
 
-	FieldCrossProduct createCrossProduct(Field& sourceField1, Field& sourceField2);
+	FieldCrossProduct createFieldCrossProduct(Field& sourceField1, Field& sourceField2);
 
-	FieldDotProduct createDotProduct(Field& sourceField1, Field& sourceField2);
+	FieldDotProduct createFieldDotProduct(Field& sourceField1, Field& sourceField2);
 
-	FieldMagnitude createMagnitude(Field& sourceField);
+	FieldMagnitude createFieldMagnitude(Field& sourceField);
 
-	FieldNormalise createNormalise(Field& sourceField);
+	FieldNormalise createFieldNormalise(Field& sourceField);
 
-	FieldBinaryDilateImageFilter createBinaryDilateImageFilter(Field& sourceField,
+	FieldBinaryDilateImageFilter createFieldBinaryDilateImageFilter(Field& sourceField,
 		int radius, double erode_value);
 
-	FieldBinaryErodeImageFilter createBinaryErodeImageFilter(Field& sourceField,
+	FieldBinaryErodeImageFilter createFieldBinaryErodeImageFilter(Field& sourceField,
 		int radius, double dilate_value);
 
-	FieldBinaryThresholdImageFilter createBinaryThresholdImageFilter(Field& sourceField,
+	FieldBinaryThresholdImageFilter createFieldBinaryThresholdImageFilter(Field& sourceField,
 			double lower_threshold, double upper_threshold);
 
-	FieldCannyEdgeDetectionImageFilter createCannyEdgeDetectionImageFilter(Field& sourceField,
+	FieldCannyEdgeDetectionImageFilter createFieldCannyEdgeDetectionImageFilter(Field& sourceField,
 			double variance, double maximumError, double upperThreshold, double lowerThreshold);
 
-	FieldConnectedThresholdImageFilter createConnectedThresholdImageFilter(Field& sourceField,
+	FieldConnectedThresholdImageFilter createFieldConnectedThresholdImageFilter(Field& sourceField,
 		double lowerThreshold, double upperThreshold, double replaceValue,
 		int dimension, int seedPointsCount, const double *seedPoints);
 
-	FieldCurvatureAnisotropicDiffusionImageFilter createCurvatureAnisotropicDiffusionImageFilter(
+	FieldCurvatureAnisotropicDiffusionImageFilter createFieldCurvatureAnisotropicDiffusionImageFilter(
 		Field& sourceField, double timeStep, double conductance, int numIterations);
 
-	FieldDiscreteGaussianImageFilter createDiscreteGaussianImageFilter(Field& sourceField,
+	FieldDiscreteGaussianImageFilter createFieldDiscreteGaussianImageFilter(Field& sourceField,
 		double variance, int maxKernelWidth);
 
 	FieldGradientMagnitudeRecursiveGaussianImageFilter
-		createGradientMagnitudeRecursiveGaussianImageFilter(Field& sourceField,
+		createFieldGradientMagnitudeRecursiveGaussianImageFilter(Field& sourceField,
 			double sigma);
 
-	FieldRescaleIntensityImageFilter createRescaleIntensityImageFilter(Field& sourceField,
+	FieldRescaleIntensityImageFilter createFieldRescaleIntensityImageFilter(Field& sourceField,
 		double outputMin, double outputMax);
 
-	FieldSigmoidImageFilter createSigmoidImageFilter(Field& sourceField,
+	FieldSigmoidImageFilter createFieldSigmoidImageFilter(Field& sourceField,
 		double min, double max,	double alpha, double beta);
 };
 
-inline FieldModule Field::getFieldModule()
+inline Fieldmodule Field::getFieldmodule()
 {
-	return FieldModule(*this);
+	return Fieldmodule(*this);
 }
 
 }  // namespace Zinc

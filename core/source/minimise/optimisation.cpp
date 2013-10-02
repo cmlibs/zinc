@@ -58,11 +58,11 @@ static void* GlobalVariableMinimisation = NULL;
 
 int ObjectiveFieldData::prepareTerms()
 {
-	cmzn_field_module_id field_module = cmzn_field_get_field_module(field);
-	cmzn_field_cache_id field_cache = cmzn_field_module_create_cache(field_module);
+	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 	numTerms = field->get_number_of_sum_square_terms(*field_cache);
-	cmzn_field_cache_destroy(&field_cache);
-	cmzn_field_module_destroy(&field_module);
+	cmzn_fieldcache_destroy(&field_cache);
+	cmzn_fieldmodule_destroy(&field_module);
 	bufferSize = numComponents;
 	if (numTerms > 0)
 		bufferSize *= numTerms;
@@ -75,8 +75,8 @@ Minimisation::~Minimisation()
 	delete[] objectiveValues;
 	if (dof_storage_array) DEALLOCATE(dof_storage_array);
 	if (dof_initial_values) DEALLOCATE(dof_initial_values);
-	cmzn_field_cache_destroy(&field_cache);
-	cmzn_field_module_destroy(&field_module);
+	cmzn_fieldcache_destroy(&field_cache);
+	cmzn_fieldmodule_destroy(&field_module);
 	for (FieldVector::iterator iter = independentFields.begin();
 		iter != independentFields.end(); ++iter)
 	{
@@ -92,7 +92,7 @@ Minimisation::~Minimisation()
 int Minimisation::prepareOptimisation()
 {
 	int return_code = 1;
-	cmzn_field_module_begin_change(field_module);
+	cmzn_fieldmodule_begin_change(field_module);
 	if (optimisation.independentFields.size() != independentFields.size())
 		return_code = 0;
 	if (optimisation.objectiveFields.size() != objectiveFields.size())
@@ -117,7 +117,7 @@ int Minimisation::prepareOptimisation()
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::prepareOptimisation() Failed");
 	}
-	cmzn_field_module_end_change(field_module);
+	cmzn_fieldmodule_end_change(field_module);
 	return return_code;
 }
 
@@ -135,7 +135,7 @@ void Minimisation::touch_independent_fields()
 
 int Minimisation::runOptimisation()
 {
-	cmzn_field_module_begin_change(field_module);
+	cmzn_fieldmodule_begin_change(field_module);
 	// Minimise the objective function
 	int return_code = 0;
 	switch (optimisation.method)
@@ -152,7 +152,7 @@ int Minimisation::runOptimisation()
 		break;
 	}
 	touch_independent_fields();
-	cmzn_field_module_end_change(field_module);
+	cmzn_fieldmodule_end_change(field_module);
 	if (!return_code)
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::runOptimisation() Failed");
@@ -190,10 +190,10 @@ int Minimisation::construct_dof_arrays()
 			// should only have one independent field
 			FE_field *fe_field;
 			Computed_field_get_type_finite_element(independentField, &fe_field);
-			cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
-			cmzn_node_iterator_id iterator = cmzn_nodeset_create_node_iterator(nodeset);
+			cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
+			cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 			cmzn_node_id node = 0;
-			while ((0 != (node = cmzn_node_iterator_next_non_access(iterator))) && return_code)
+			while ((0 != (node = cmzn_nodeiterator_next_non_access(iterator))) && return_code)
 			{
 				if (FE_field_is_defined_at_node(fe_field, node))
 				{
@@ -258,7 +258,7 @@ int Minimisation::construct_dof_arrays()
 					}
 				}
 			}
-			cmzn_node_iterator_destroy(&iterator);
+			cmzn_nodeiterator_destroy(&iterator);
 			cmzn_nodeset_destroy(&nodeset);
 		}
 		else if (Computed_field_is_constant(independentField))

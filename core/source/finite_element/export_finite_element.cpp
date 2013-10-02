@@ -2307,7 +2307,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 	ENTER(write_cmzn_region_content);
 	if (output_file && region)
 	{
-		cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
+		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		return_code = 1;
 		FE_field_order_info *field_order_info = CREATE(FE_field_order_info)();
@@ -2356,7 +2356,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_nodes_data.time = time;
 				if (write_data)
 				{
-					cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
+					cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
 						CMZN_FIELD_DOMAIN_DATA);
 					if (group)
 					{
@@ -2368,9 +2368,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 					if (nodeset)
 					{
 						(*output_file) << " !#nodeset datapoints\n";
-						cmzn_node_iterator_id iter = cmzn_nodeset_create_node_iterator(nodeset);
+						cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 						cmzn_node_id node = 0;
-						while (0 != (node = cmzn_node_iterator_next_non_access(iter)))
+						while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 						{
 							if (!write_FE_region_node(node, &write_nodes_data))
 							{
@@ -2378,14 +2378,14 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 								break;
 							}
 						}
-						cmzn_node_iterator_destroy(&iter);
+						cmzn_nodeiterator_destroy(&iter);
 						cmzn_nodeset_destroy(&nodeset);
 					}
 				}
 				if (write_nodes)
 				{
 					write_nodes_data.last_node = (struct FE_node *)NULL;
-					cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
+					cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
 						CMZN_FIELD_DOMAIN_NODES);
 					if (group)
 					{
@@ -2397,9 +2397,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 					if (nodeset)
 					{
 						(*output_file) << " !#nodeset nodes\n";
-						cmzn_node_iterator_id iter = cmzn_nodeset_create_node_iterator(nodeset);
+						cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 						cmzn_node_id node = 0;
-						while (0 != (node = cmzn_node_iterator_next_non_access(iter)))
+						while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 						{
 							if (!write_FE_region_node(node, &write_nodes_data))
 							{
@@ -2407,7 +2407,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 								break;
 							}
 						}
-						cmzn_node_iterator_destroy(&iter);
+						cmzn_nodeiterator_destroy(&iter);
 						cmzn_nodeset_destroy(&nodeset);
 					}
 				}
@@ -2437,7 +2437,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						(dimension == highest_dimension &&
 							(write_elements & CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)))
 					{
-						cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module, dimension);
+						cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 						if (group)
 						{
 							cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, mesh);
@@ -2447,9 +2447,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						}
 						if (mesh)
 						{
-							cmzn_element_iterator_id iter = cmzn_mesh_create_element_iterator(mesh);
+							cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(mesh);
 							cmzn_element_id element = 0;
-							while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
+							while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 							{
 								if (!write_FE_region_element(element, &write_elements_data))
 								{
@@ -2457,7 +2457,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 									break;
 								}
 							}
-							cmzn_element_iterator_destroy(&iter);
+							cmzn_elementiterator_destroy(&iter);
 							cmzn_mesh_destroy(&mesh);
 						}
 					}
@@ -2475,7 +2475,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 		{
 			DESTROY(FE_field_order_info)(&field_order_info);
 		}
-		cmzn_field_module_destroy(&field_module);
+		cmzn_fieldmodule_destroy(&field_module);
 	}
 	else
 	{
@@ -2568,10 +2568,10 @@ static int write_cmzn_region(ostream *output_file,
 			(write_recursion == FE_WRITE_RECURSE_SUBGROUPS)))
 		{
 			// write group members
-			cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-			cmzn_field_iterator_id field_iter = cmzn_field_module_create_field_iterator(field_module);
+			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+			cmzn_fielditerator_id field_iter = cmzn_fieldmodule_create_fielditerator(field_module);
 			cmzn_field_id field = 0;
-			while ((0 != (field = cmzn_field_iterator_next_non_access(field_iter))) && return_code)
+			while ((0 != (field = cmzn_fielditerator_next_non_access(field_iter))) && return_code)
 			{
 				cmzn_field_group_id output_group = cmzn_field_cast_group(field);
 				if (output_group)
@@ -2586,8 +2586,8 @@ static int write_cmzn_region(ostream *output_file,
 					cmzn_field_group_destroy(&output_group);
 				}
 			}
-			cmzn_field_iterator_destroy(&field_iter);
-			cmzn_field_module_destroy(&field_module);
+			cmzn_fielditerator_destroy(&field_iter);
+			cmzn_fieldmodule_destroy(&field_module);
 		}
 
 		if (write_recursion == FE_WRITE_RECURSIVE)

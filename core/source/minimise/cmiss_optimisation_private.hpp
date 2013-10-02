@@ -37,11 +37,11 @@ private:
 		{
 			cmzn_field_destroy(&(*iter));
 		}
-		cmzn_field_module_destroy(&fieldModule);
+		cmzn_fieldmodule_destroy(&fieldModule);
 	}
 
 public:
-	cmzn_field_module_id fieldModule;
+	cmzn_fieldmodule_id fieldModule;
 	enum cmzn_optimisation_method method;
 	FieldList independentFields;
 	FieldList objectiveFields;
@@ -61,8 +61,8 @@ public:
 	std::stringbuf solution_report; // solution details output by Opt++ during and after solution
 	int access_count;
 
-	cmzn_optimisation(cmzn_field_module_id field_module) :
-		fieldModule(cmzn_region_get_field_module(cmzn_field_module_get_master_region_internal(field_module))),
+	cmzn_optimisation(cmzn_fieldmodule_id field_module) :
+		fieldModule(cmzn_region_get_fieldmodule(cmzn_fieldmodule_get_master_region_internal(field_module))),
 		access_count(1)
 	{
 		// initialise to default values
@@ -129,7 +129,7 @@ public:
 
 	int addIndependentField(cmzn_field_id field)
 	{
-		if (!cmzn_field_module_contains_field(fieldModule, field))
+		if (!cmzn_fieldmodule_contains_field(fieldModule, field))
 			return 0;
 		if (!(Computed_field_is_constant(field) || Computed_field_is_type_finite_element(field)))
 			return 0;
@@ -193,7 +193,7 @@ public:
 
 	int addObjectiveField(cmzn_field_id field)
 	{
-		if (!cmzn_field_module_contains_field(fieldModule, field))
+		if (!cmzn_fieldmodule_contains_field(fieldModule, field))
 			return 0;
 		if (cmzn_field_get_value_type(field) != CMZN_FIELD_VALUE_TYPE_REAL)
 			return 0;

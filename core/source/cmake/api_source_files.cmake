@@ -15,6 +15,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/field.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldalias.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldarithmeticoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcache.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldcomposite.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconditional.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldconstant.h
@@ -60,6 +61,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/differentialoperatorid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/elementid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldaliasid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldcacheid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldfiniteelementid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldid.h

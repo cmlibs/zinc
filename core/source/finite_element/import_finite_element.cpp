@@ -3422,8 +3422,8 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							}
 							else
 							{
-								cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-								cmzn_field_id group_field = cmzn_field_module_find_field_by_name(field_module, region_path);
+								cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+								cmzn_field_id group_field = cmzn_fieldmodule_find_field_by_name(field_module, region_path);
 								if (group_field)
 								{
 									group = cmzn_field_cast_group(group_field);
@@ -3438,7 +3438,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 								}
 								else
 								{
-									group_field = cmzn_field_module_create_group(field_module);
+									group_field = cmzn_fieldmodule_create_field_group(field_module);
 									cmzn_field_set_managed(group_field, true);
 									if (cmzn_field_set_name(group_field, region_path))
 									{
@@ -3454,7 +3454,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 									}
 								}
 								cmzn_field_destroy(&group_field);
-								cmzn_field_module_destroy(&field_module);
+								cmzn_fieldmodule_destroy(&field_module);
 							}
 						}
 						region_path = (char *)NULL;
@@ -3674,8 +3674,8 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 									{
 										if (group && (!nodeset_group))
 										{
-											cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-											cmzn_nodeset_id nodeset = cmzn_field_module_find_nodeset_by_domain_type(field_module,
+											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+											cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
 												use_data_meta_flag ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
 											if (!node_group)
@@ -3685,7 +3685,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 											nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
 											cmzn_field_node_group_destroy(&node_group);
 											cmzn_nodeset_destroy(&nodeset);
-											cmzn_field_module_destroy(&field_module);
+											cmzn_fieldmodule_destroy(&field_module);
 										}
 										if (nodeset_group)
 										{
@@ -3741,8 +3741,8 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 									{
 										if (group && (!mesh_group))
 										{
-											cmzn_field_module_id field_module = cmzn_region_get_field_module(region);
-											cmzn_mesh_id mesh = cmzn_field_module_find_mesh_by_dimension(field_module,
+											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
+											cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
 												get_FE_element_dimension(template_element));
 											cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, mesh);
 											if (!element_group)
@@ -3752,7 +3752,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 											mesh_group = cmzn_field_element_group_get_mesh(element_group);
 											cmzn_field_element_group_destroy(&element_group);
 											cmzn_mesh_destroy(&mesh);
-											cmzn_field_module_destroy(&field_module);
+											cmzn_fieldmodule_destroy(&field_module);
 										}
 										if (mesh_group)
 										{

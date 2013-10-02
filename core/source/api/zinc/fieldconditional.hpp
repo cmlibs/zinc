@@ -25,7 +25,7 @@ private:
 	explicit FieldIf(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
+	friend FieldIf Fieldmodule::createFieldIf(Field& sourceField1, Field& sourceField2, Field& sourceField3);
 
 public:
 
@@ -34,9 +34,9 @@ public:
 
 };
 
-inline FieldIf FieldModule::createIf(Field& sourceField1, Field& sourceField2, Field& sourceField3)
+inline FieldIf Fieldmodule::createFieldIf(Field& sourceField1, Field& sourceField2, Field& sourceField3)
 {
-	return FieldIf(cmzn_field_module_create_if(id,
+	return FieldIf(cmzn_fieldmodule_create_field_if(id,
 		sourceField1.getId(), sourceField2.getId(), sourceField3.getId()));
 }
 

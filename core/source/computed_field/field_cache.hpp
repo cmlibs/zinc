@@ -13,7 +13,7 @@
 #define FIELD_CACHE_HPP
 
 #include "zinc/element.h"
-#include "zinc/field.h"
+#include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/region.h"
 #include "general/debug.h"
@@ -38,12 +38,12 @@ struct Computed_field_find_element_xi_cache;
 class FieldValueCache
 {
 private:
-	cmzn_field_cache *extraCache; // optional extra cache for working evaluations at different locations
+	cmzn_fieldcache *extraCache; // optional extra cache for working evaluations at different locations
 
 	void operator=(const FieldValueCache&); // private to prohibit
 
 public:
-	int evaluationCounter; // set to cmzn_field_cache::locationCounter when field evaluated
+	int evaluationCounter; // set to cmzn_fieldcache::locationCounter when field evaluated
 	int derivatives_valid; // only relevant to real caches, but having here saves a virtual function call
 
 	FieldValueCache() :
@@ -63,14 +63,14 @@ public:
 	/** override to clear type-specific buffer information & call this */
 	virtual void clear();
 
-	void createExtraCache(cmzn_field_cache& parentCache, cmzn_region *region);
+	void createExtraCache(cmzn_fieldcache& parentCache, cmzn_region *region);
 
-	cmzn_field_cache *getExtraCache()
+	cmzn_fieldcache *getExtraCache()
 	{
 		return extraCache;
 	}
 
-	cmzn_field_cache *getOrCreateExtraCache(cmzn_field_cache& parentCache);
+	cmzn_fieldcache *getOrCreateExtraCache(cmzn_fieldcache& parentCache);
 
 	/** all derived classed must implement function to return values as string
 	 * @return  allocated string.
@@ -86,7 +86,7 @@ public:
 
 typedef std::vector<FieldValueCache*> ValueCacheVector;
 
-struct cmzn_field_cache
+struct cmzn_fieldcache
 {
 private:
 	cmzn_region_id region;
@@ -116,7 +116,7 @@ private:
 
 public:
 
-	cmzn_field_cache(cmzn_region_id region) :
+	cmzn_fieldcache(cmzn_region_id region) :
 		region(cmzn_region_access(region)),
 		locationCounter(0),
 		location(new Field_time_location()),
@@ -128,15 +128,15 @@ public:
 		cmzn_region_add_field_cache(region, this);
 	}
 
-	~cmzn_field_cache();
+	~cmzn_fieldcache();
 
-	cmzn_field_cache_id access()
+	cmzn_fieldcache_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_field_cache_id &cache)
+	static int deaccess(cmzn_fieldcache_id &cache)
 	{
 		if (!cache)
 			return 0;
@@ -267,18 +267,18 @@ public:
 };
 
 /** use this function with getExtraCache() when creating FieldValueCache for fields that must use an extraCache */
-inline void FieldValueCache::createExtraCache(cmzn_field_cache& /*parentCache*/, cmzn_region *region)
+inline void FieldValueCache::createExtraCache(cmzn_fieldcache& /*parentCache*/, cmzn_region *region)
 {
 	if (extraCache)
-		cmzn_field_cache::deaccess(extraCache);
-	extraCache = new cmzn_field_cache(region);
+		cmzn_fieldcache::deaccess(extraCache);
+	extraCache = new cmzn_fieldcache(region);
 }
 
 /** use this function for fields that may use an extraCache, e.g. derivatives propagating to top-level-element */
-inline cmzn_field_cache *FieldValueCache::getOrCreateExtraCache(cmzn_field_cache& parentCache)
+inline cmzn_fieldcache *FieldValueCache::getOrCreateExtraCache(cmzn_fieldcache& parentCache)
 {
 	if (!extraCache)
-		extraCache = new cmzn_field_cache(parentCache.getRegion());
+		extraCache = new cmzn_fieldcache(parentCache.getRegion());
 	return extraCache;
 }
 

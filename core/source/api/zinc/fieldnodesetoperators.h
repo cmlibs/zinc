@@ -31,8 +31,8 @@ extern "C" {
  * @param nodeset  The set of nodes to sum field over.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_sum(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -45,8 +45,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_sum(
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_mean(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -62,8 +62,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_mean(
  * @param nodeset  The set of nodes to sum field over.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_sum_squares(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -80,8 +80,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_sum_squares(
  * @param nodeset  The set of nodes to obtain mean over.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_mean_squares(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -94,8 +94,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_mean_squares(
  * @param nodeset  The set of nodes to obtain minimum over.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_minimum(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset);
 
 /**
@@ -108,8 +108,8 @@ ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_minimum(
  * @param nodeset  The set of nodes to obtain maximum over.
  * @return  Handle to newly created field.
  */
-ZINC_API cmzn_field_id cmzn_field_module_create_nodeset_maximum(
-	cmzn_field_module_id field_module, cmzn_field_id source_field,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_nodeset_id nodeset);
 
 #ifdef __cplusplus

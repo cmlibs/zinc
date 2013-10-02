@@ -60,14 +60,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_power::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_power::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -190,7 +190,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_power(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_power(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -296,14 +296,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_multiply_components::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_multiply_components::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -417,7 +417,7 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 Computed_field *Computed_field_create_multiply(
-	cmzn_field_module *field_module,
+	cmzn_fieldmodule *field_module,
 	Computed_field *source_field_one, Computed_field *source_field_two)
 {
 	Computed_field *field, *source_fields[2];
@@ -522,14 +522,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_divide_components::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_divide_components::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -645,7 +645,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_divide(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_divide(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -751,14 +751,14 @@ private:
 		}
 	}
 
-	virtual int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_add::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_add::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *source1Cache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -874,7 +874,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_weighted_add(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_weighted_add(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one, double scale_factor1,
 	struct Computed_field *source_field_two, double scale_factor2)
 {
@@ -918,7 +918,7 @@ Computed_field *Computed_field_create_weighted_add(cmzn_field_module *field_modu
 	return (field);
 } /* Computed_field_create_weighted_add */
 
-Computed_field *Computed_field_create_add(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_add(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -926,7 +926,7 @@ Computed_field *Computed_field_create_add(cmzn_field_module *field_module,
 		source_field_one, 1.0, source_field_two, 1.0));
 } /* Computed_field_create_add */
 
-Computed_field *Computed_field_create_subtract(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_subtract(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field_one,
 	struct Computed_field *source_field_two)
 {
@@ -1009,21 +1009,21 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	virtual enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	virtual enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 
-	virtual int propagate_find_element_xi(cmzn_field_cache& field_cache,
+	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
 		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
 		cmzn_mesh_id mesh);
 };
 
-int Computed_field_scale::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_scale::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1060,7 +1060,7 @@ int Computed_field_scale::evaluate(cmzn_field_cache& cache, FieldValueCache& inV
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_scale::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_scale::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	for (int i = 0; i < field->number_of_components; i++)
@@ -1074,7 +1074,7 @@ enum FieldAssignmentResult Computed_field_scale::assign(cmzn_field_cache& cache,
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
 
-int Computed_field_scale::propagate_find_element_xi(cmzn_field_cache& field_cache,
+int Computed_field_scale::propagate_find_element_xi(cmzn_fieldcache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
 	FE_value *xi, cmzn_mesh_id mesh)
 {
@@ -1205,7 +1205,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_scale(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_scale(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double *scale_factors)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1307,17 +1307,17 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 
 };
 
-int Computed_field_clamp_maximum::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_clamp_maximum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1371,7 +1371,7 @@ int Computed_field_clamp_maximum::evaluate(cmzn_field_cache& cache, FieldValueCa
 }
 
 /** clamps to limits of maximums when setting values too */
-enum FieldAssignmentResult Computed_field_clamp_maximum::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_clamp_maximum::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	enum FieldAssignmentResult result1 = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
@@ -1472,7 +1472,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_maximum(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_clamp_maximum(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double *maximums)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1577,16 +1577,16 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_clamp_minimum::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_clamp_minimum::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1640,7 +1640,7 @@ int Computed_field_clamp_minimum::evaluate(cmzn_field_cache& cache, FieldValueCa
 }
 
 /** clamps to limits of minimums when setting values too */
-enum FieldAssignmentResult Computed_field_clamp_minimum::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_clamp_minimum::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	enum FieldAssignmentResult result1 = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
@@ -1740,7 +1740,7 @@ DESCRIPTION :
 
 } //namespace
 
-Computed_field *Computed_field_create_clamp_minimum(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_clamp_minimum(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double *minimums)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -1853,21 +1853,21 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 
-	virtual int propagate_find_element_xi(cmzn_field_cache& field_cache,
+	virtual int propagate_find_element_xi(cmzn_fieldcache& field_cache,
 		const FE_value *values, int number_of_values,
 		struct FE_element **element_address, FE_value *xi,
 		cmzn_mesh_id mesh);
 };
 
-int Computed_field_offset::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_offset::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -1904,7 +1904,7 @@ int Computed_field_offset::evaluate(cmzn_field_cache& cache, FieldValueCache& in
 	return 0;
 }
 
-enum FieldAssignmentResult Computed_field_offset::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_offset::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->getValueCache(cache));
 	for (int i = 0; i < field->number_of_components; i++)
@@ -1915,7 +1915,7 @@ enum FieldAssignmentResult Computed_field_offset::assign(cmzn_field_cache& cache
 	return getSourceField(0)->assign(cache, *sourceCache);
 }
 
-int Computed_field_offset::propagate_find_element_xi(cmzn_field_cache& field_cache,
+int Computed_field_offset::propagate_find_element_xi(cmzn_fieldcache& field_cache,
 	const FE_value *values, int number_of_values, struct FE_element **element_address,
 	FE_value *xi, cmzn_mesh_id mesh)
 {
@@ -2032,7 +2032,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_offset(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_offset(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double *offsets)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2147,16 +2147,16 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 
-	enum FieldAssignmentResult assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache);
+	enum FieldAssignmentResult assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache);
 };
 
-int Computed_field_edit_mask::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_edit_mask::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2170,7 +2170,7 @@ int Computed_field_edit_mask::evaluate(cmzn_field_cache& cache, FieldValueCache&
 }
 
 /* assigns only components for which edit mask value is non-zero */
-enum FieldAssignmentResult Computed_field_edit_mask::assign(cmzn_field_cache& cache, RealFieldValueCache& valueCache)
+enum FieldAssignmentResult Computed_field_edit_mask::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (sourceCache)
@@ -2267,7 +2267,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_edit_mask(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_edit_mask(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double *edit_mask)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2376,14 +2376,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_log::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_log::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2485,7 +2485,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_log(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_log(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2571,14 +2571,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_sqrt::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_sqrt::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2681,7 +2681,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_sqrt(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_sqrt(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2767,14 +2767,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_exp::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_exp::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -2877,7 +2877,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_exp(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_exp(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 LAST MODIFIED : 15 May 2008
@@ -2963,14 +2963,14 @@ private:
 		}
 	}
 
-	int evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache);
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
 	int list();
 
 	char* get_command_string();
 };
 
-int Computed_field_abs::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_abs::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
@@ -3092,7 +3092,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-Computed_field *Computed_field_create_abs(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_abs(cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field)
 /*******************************************************************************
 DESCRIPTION :

@@ -19,7 +19,7 @@
  * For now can only represent a differential differential_operator give first derivatives
  * with respect to differential_operator elements of given dimension from fe_region.
  */
-struct cmzn_differential_operator
+struct cmzn_differentialoperator
 {
 private:
 	FE_region *fe_region;
@@ -28,7 +28,7 @@ private:
 	int access_count;
 
 public:
-	cmzn_differential_operator(FE_region *fe_region, int dimension, int term) :
+	cmzn_differentialoperator(FE_region *fe_region, int dimension, int term) :
 		fe_region(ACCESS(FE_region)(fe_region)),
 		dimension(dimension),
 		term(term),
@@ -36,13 +36,13 @@ public:
 	{
 	}
 
-	cmzn_differential_operator_id access()
+	cmzn_differentialoperator_id access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_differential_operator_id &differential_operator)
+	static int deaccess(cmzn_differentialoperator_id &differential_operator)
 	{
 		if (!differential_operator)
 			return 0;
@@ -59,7 +59,7 @@ public:
 
 private:
 
-	~cmzn_differential_operator()
+	~cmzn_differentialoperator()
 	{
 		DEACCESS(FE_region)(&fe_region);
 	}

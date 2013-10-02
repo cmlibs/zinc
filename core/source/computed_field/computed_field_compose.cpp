@@ -65,19 +65,19 @@ int Computed_field_compose::compare(Computed_field_core *other_core)
 	return (return_code);
 } /* Computed_field_compose::compare */
 
-bool Computed_field_compose::is_defined_at_location(cmzn_field_cache& cache)
+bool Computed_field_compose::is_defined_at_location(cmzn_fieldcache& cache)
 {
 	return (0 != field->evaluate(cache));
 }
 
-int Computed_field_compose::evaluate(cmzn_field_cache& cache, FieldValueCache& inValueCache)
+int Computed_field_compose::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	int return_code = 0;
 	RealFieldValueCache *coordinateValueCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
 	if (coordinateValueCache)
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
-		cmzn_field_cache& extraCache = *valueCache.getExtraCache();
+		cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 		extraCache.setTime(cache.getTime());
 		/* The values from the first source field are inverted in the
 			second source field to get element_xi which is evaluated with
@@ -253,7 +253,7 @@ Returns allocated command string for reproducing field. Includes type.
  * NOTE: this field type has been superceded by find_mesh_location combined with
  * embedded field. DO NOT add to external API.
  */
-Computed_field *Computed_field_create_compose(cmzn_field_module *field_module,
+Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *find_element_xi_field,
 	struct Computed_field *calculate_values_field,
@@ -268,7 +268,7 @@ Computed_field *Computed_field_create_compose(cmzn_field_module *field_module,
 		calculate_values_field && calculate_values_field->isNumerical() &&
 		search_mesh &&
 		(cmzn_mesh_get_master_region_internal(search_mesh) ==
-			cmzn_field_module_get_master_region_internal(field_module)))
+			cmzn_fieldmodule_get_master_region_internal(field_module)))
 	{
 		if (texture_coordinate_field->number_of_components ==
 			find_element_xi_field->number_of_components)

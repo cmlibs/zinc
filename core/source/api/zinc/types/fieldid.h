@@ -14,11 +14,8 @@
 	struct cmzn_field;
 	typedef struct cmzn_field *cmzn_field_id;
 
-	struct cmzn_field_iterator;
-	typedef struct cmzn_field_iterator * cmzn_field_iterator_id;
-
-	struct cmzn_field_cache;
-	typedef struct cmzn_field_cache *cmzn_field_cache_id;
+	struct cmzn_fielditerator;
+	typedef struct cmzn_fielditerator * cmzn_fielditerator_id;
 
 /**
  * An enum specifying the field domain (without domain objects)

@@ -217,11 +217,11 @@ struct LIST(Index_multi_range) *create_node_element_list(cmzn_mesh_id mesh)
 	ENTER(create_node_element_list);
 	if (mesh)
 	{
-		cmzn_element_iterator_id iter;
+		cmzn_elementiterator_id iter;
 		cmzn_element_id element;
 		list = CREATE(LIST(Index_multi_range))();
-		iter = cmzn_mesh_create_element_iterator(mesh);
-		while (0 != (element = cmzn_element_iterator_next_non_access(iter)))
+		iter = cmzn_mesh_create_elementiterator(mesh);
+		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 		{
 			if (!FE_element_add_nodes_to_node_element_list(element, list))
 			{
@@ -230,7 +230,7 @@ struct LIST(Index_multi_range) *create_node_element_list(cmzn_mesh_id mesh)
 				break;
 			}
 		}
-		cmzn_element_iterator_destroy(&iter);
+		cmzn_elementiterator_destroy(&iter);
 	}
 	else
 	{
