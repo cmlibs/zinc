@@ -14,6 +14,7 @@
 #define CMZN_SET_HPP
 
 #include <set>
+#include "zinc/status.h"
 
 /*
 Local types
@@ -302,7 +303,7 @@ public:
 		static int deaccess(ext_iterator* &iterator)
 		{
 			if (!iterator)
-				return 0;
+				return CMZN_ERROR_ARGUMENT;
 			--(iterator->access_count);
 			if (iterator->access_count <= 0)
 				delete iterator;

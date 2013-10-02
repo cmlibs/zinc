@@ -96,12 +96,12 @@ public:
 	static int deaccess(cmzn_elementbasis_id &basis)
 	{
 		if (!basis)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(basis->access_count);
 		if (basis->access_count <= 0)
 			delete basis;
 		basis = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	int getDimension() const { return dimension; }
@@ -467,12 +467,12 @@ public:
 	static int deaccess(cmzn_elementtemplate_id &element_template)
 	{
 		if (!element_template)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(element_template->access_count);
 		if (element_template->access_count <= 0)
 			delete element_template;
 		element_template = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	cmzn_element_shape_type getShapeType() const { return shape_type; }
@@ -832,12 +832,12 @@ public:
 	static int deaccess(cmzn_mesh_id &mesh)
 	{
 		if (!mesh)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(mesh->access_count);
 		if (mesh->access_count <= 0)
 			delete mesh;
 		mesh = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	int containsElement(cmzn_element_id element)
@@ -1160,7 +1160,7 @@ int cmzn_mesh_destroy(cmzn_mesh_id *mesh_address)
 {
 	if (mesh_address)
 		return cmzn_mesh::deaccess(*mesh_address);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_contains_element(cmzn_mesh_id mesh, cmzn_element_id element)
@@ -1324,7 +1324,7 @@ int cmzn_mesh_group_destroy(cmzn_mesh_group_id *mesh_group_address)
 {
 	if (mesh_group_address)
 		return cmzn_mesh::deaccess(*(reinterpret_cast<cmzn_mesh_id*>(mesh_group_address)));
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
@@ -1419,7 +1419,7 @@ int cmzn_elementbasis_destroy(cmzn_elementbasis_id *element_basis_address)
 {
 	if (element_basis_address)
 		return cmzn_elementbasis::deaccess(*element_basis_address);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis)
@@ -1473,7 +1473,7 @@ int cmzn_elementtemplate_destroy(
 {
 	if (element_template_address)
 		return cmzn_elementtemplate::deaccess(*element_template_address);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_element_shape_type cmzn_elementtemplate_get_shape_type(
@@ -1805,8 +1805,7 @@ int cmzn_mesh_scale_factor_set_destroy(
 {
 	if (scale_factor_set_address)
 	{
-		cmzn_mesh_scale_factor_set::deaccess(*scale_factor_set_address);
-		return CMZN_OK;
+		return cmzn_mesh_scale_factor_set::deaccess(*scale_factor_set_address);
 	}
 	return CMZN_ERROR_ARGUMENT;
 }

@@ -16,6 +16,7 @@
 #include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/region.h"
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "region/cmiss_region.h"
 #include "computed_field/field_location.hpp"
@@ -139,12 +140,12 @@ public:
 	static int deaccess(cmzn_fieldcache_id &cache)
 	{
 		if (!cache)
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		--(cache->access_count);
 		if (cache->access_count <= 0)
 			delete cache;
 		cache = 0;
-		return 1;
+		return CMZN_OK;
 	}
 
 	/** caller is allowed to modify location with care */
