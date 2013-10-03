@@ -40,11 +40,11 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_time_lookup(
  * Creates a field which returns the current time from the supplied time keeper.
  *
  * @param field_module  Region field module which will own new field.
- * @param time_keeper  cmzn_time_keeper object.
+ * @param timekeeper  cmzn_timekeeper object.
  * @return  Handle to a new time value field on success, NULL on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_time_value(
-	cmzn_fieldmodule_id field_module, cmzn_time_keeper_id time_keeper);
+	cmzn_fieldmodule_id field_module, cmzn_timekeeper_id timekeeper);
 
 #ifdef __cplusplus
 }

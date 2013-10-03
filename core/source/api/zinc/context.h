@@ -86,7 +86,7 @@ ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
  * @param context  Handle to a context object.
  * @return  The time keeper if successfully called otherwise NULL.
  */
-ZINC_API cmzn_time_keeper_id cmzn_context_get_default_time_keeper(
+ZINC_API cmzn_timekeeper_id cmzn_context_get_default_timekeeper(
 	cmzn_context_id context);
 
 /***************************************************************************//**

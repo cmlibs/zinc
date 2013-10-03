@@ -89,9 +89,9 @@ public:
 		return GraphicsModule(cmzn_context_get_graphics_module(id));
 	}
 
-	TimeKeeper getDefaultTimeKeeper()
+	Timekeeper getDefaultTimekeeper()
 	{
-		return TimeKeeper(cmzn_context_get_default_time_keeper(id));
+		return Timekeeper(cmzn_context_get_default_timekeeper(id));
 	}
 
 };

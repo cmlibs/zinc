@@ -416,7 +416,7 @@ static void cmzn_scene_data_FE_region_change(struct FE_region *fe_region,
 		/*???RC Is there a better way of getting time to here? */
 		if (scene->time_notifier)
 		{
-			data.time = Time_object_get_current_time(scene->time_notifier);
+			data.time = cmzn_timenotifier_get_time(scene->time_notifier);
 		}
 		else
 		{
@@ -1345,7 +1345,7 @@ int cmzn_scene_compile_scene(cmzn_scene *cmiss_scene,
 	{
 		if (cmiss_scene->time_notifier)
 		{
-			renderer->time = Time_object_get_current_time(cmiss_scene->time_notifier);
+			renderer->time = cmzn_timenotifier_get_time(cmiss_scene->time_notifier);
 		}
 		else
 		{
@@ -1456,7 +1456,7 @@ int execute_cmzn_scene(struct cmzn_scene *scene,
 		}
 		if (scene->time_notifier)
 		{
-			renderer->time = Time_object_get_current_time(scene->time_notifier);
+			renderer->time = cmzn_timenotifier_get_time(scene->time_notifier);
 		}
 		else
 		{
@@ -2364,7 +2364,7 @@ int cmzn_scene_set_transformation(struct cmzn_scene *scene,
 	return (return_code);
 } /* cmzn_scene_set_transformation */
 
-static int cmzn_scene_set_time_dependent_transformation(cmzn_time_notifier *time_notifier,
+static int cmzn_scene_set_time_dependent_transformation(cmzn_timenotifier *time_notifier,
 	double current_time, void *scene_void)
 {
 	int return_code;
@@ -2442,7 +2442,7 @@ void cmzn_scene_remove_time_dependent_transformation(struct cmzn_scene *scene)
 
 	if (scene->transformation_time_callback_flag)
 	{
-		 Time_object_remove_callback(scene->time_notifier,
+		 cmzn_timenotifier_remove_callback(scene->time_notifier,
 			 cmzn_scene_set_time_dependent_transformation, scene);
 		 DEACCESS(Computed_field)(&(scene->transformation_field));
 		 scene->transformation_time_callback_flag = 0;
@@ -2467,8 +2467,8 @@ int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 				 scene->transformation_field=
 						ACCESS(Computed_field)(transformation_field);
 				 cmzn_scene_set_time_dependent_transformation(scene->time_notifier,
-					 Time_object_get_current_time(scene->time_notifier), (void *)scene);
-				 Time_object_add_callback(scene->time_notifier,
+					 cmzn_timenotifier_get_time(scene->time_notifier), (void *)scene);
+				 cmzn_timenotifier_add_callback(scene->time_notifier,
 						cmzn_scene_set_time_dependent_transformation, scene);
 				 scene->transformation_time_callback_flag = 1;
 				 return_code = 1;
@@ -2495,7 +2495,7 @@ int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 	 return (return_code);
 }
 
-static int cmzn_scene_time_update_callback(cmzn_time_notifier *time_notifier,
+static int cmzn_scene_time_update_callback(cmzn_timenotifier *time_notifier,
 	double current_time, void *scene_void)
 {
 	int return_code;
@@ -2550,9 +2550,9 @@ int cmzn_scene_has_multiple_times(
 	return (return_code);
 } /* cmzn_scene_has_multiple_times */
 
-cmzn_time_notifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
+cmzn_timenotifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
 {
-	cmzn_time_notifier *return_time;
+	cmzn_timenotifier *return_time;
 
 	ENTER(cmzn_scene_get_time_notifier);
 	if (scene)
@@ -2563,7 +2563,7 @@ cmzn_time_notifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
 	{
 		display_message(ERROR_MESSAGE,
 			"cmzn_scene_get_time_notifier.  Missing scene");
-		return_time=(cmzn_time_notifier *)NULL;
+		return_time=(cmzn_timenotifier *)NULL;
 	}
 	LEAVE;
 
@@ -2571,7 +2571,7 @@ cmzn_time_notifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
 } /* cmzn_scene_get_time_notifier */
 
 int cmzn_scene_set_time_notifier(struct cmzn_scene *scene,
-	cmzn_time_notifier *time)
+	cmzn_timenotifier *time)
 {
 	int return_code;
 	ENTER(cmzn_scene_set_time_notifier);
@@ -2581,13 +2581,13 @@ int cmzn_scene_set_time_notifier(struct cmzn_scene *scene,
 		{
 			if (scene->time_notifier)
 			{
-				Time_object_remove_callback(scene->time_notifier,
+				cmzn_timenotifier_remove_callback(scene->time_notifier,
 					cmzn_scene_time_update_callback, scene);
 			}
 			REACCESS(Time_object)(&(scene->time_notifier),time);
 			if (time)
 			{
-				Time_object_add_callback(scene->time_notifier,
+				cmzn_timenotifier_add_callback(scene->time_notifier,
 					cmzn_scene_time_update_callback, scene);
 			}
 		}
@@ -2607,7 +2607,7 @@ int cmzn_scene_set_time_notifier(struct cmzn_scene *scene,
 static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 {
 	int return_code;
-	cmzn_time_notifier *time;
+	cmzn_timenotifier *time;
 
 	if (scene)
 	{
@@ -2622,12 +2622,12 @@ static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 				time = Time_object_create_regular(/*update_frequency*/10.0,
 					/*time_offset*/0.0);
 				cmzn_scene_set_time_notifier(scene, time);
-				struct cmzn_time_keeper *time_keeper = cmzn_graphics_module_get_time_keeper_internal(
+				struct cmzn_timekeeper *time_keeper = cmzn_graphics_module_get_timekeeper_internal(
 					scene->graphics_module);
 				if(time_keeper)
 				{
 					time_keeper->addTimeObject(time);
-					DEACCESS(cmzn_time_keeper)(&time_keeper);
+					DEACCESS(cmzn_timekeeper)(&time_keeper);
 				}
 				else
 				{
@@ -2636,7 +2636,7 @@ static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 						"Missing time keeper ");
 					return_code =0;
 				}
-				cmzn_time_notifier_destroy(&time);
+				cmzn_timenotifier_destroy(&time);
 			}
 		}
 		else
@@ -2645,7 +2645,7 @@ static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 			if(time == NULL)
 			{
 				cmzn_scene_set_time_notifier(scene,
-					(cmzn_time_notifier *)NULL);
+					(cmzn_timenotifier *)NULL);
 			}
 		}
 	}
@@ -2718,7 +2718,7 @@ int DESTROY(cmzn_scene)(
 		}
 		if (cmiss_scene->time_notifier)
 		{
-			cmzn_time_notifier_destroy(&cmiss_scene->time_notifier);
+			cmzn_timenotifier_destroy(&cmiss_scene->time_notifier);
 		}
 		if (cmiss_scene->default_coordinate_field)
 		{
@@ -3438,7 +3438,7 @@ int cmzn_scene_compile_tree(cmzn_scene *scene,
 		}
 		if (scene->time_notifier)
 		{
-			renderer->time = Time_object_get_current_time(scene->time_notifier);
+			renderer->time = cmzn_timenotifier_get_time(scene->time_notifier);
 		}
 		else
 		{

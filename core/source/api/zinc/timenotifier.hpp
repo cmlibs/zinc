@@ -15,46 +15,42 @@ namespace OpenCMISS
 {
 namespace Zinc
 {
-class TimeNotifier;
-/*
-typedef int (*Time_notifier_callback)(cmzn_time_notifier_id time_notifier,
-	double current_time, void *user_data);
-*/
-class TimeNotifier
+
+class Timenotifier
 {
 protected:
-	cmzn_time_notifier_id id;
+	cmzn_timenotifier_id id;
 
 public:
 
-	TimeNotifier() : id(0)
+	Timenotifier() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeNotifier(cmzn_time_notifier_id in_time_notifier_id) :
-		id(in_time_notifier_id)
+	explicit Timenotifier(cmzn_timenotifier_id in_timenotifier_id) :
+		id(in_timenotifier_id)
 	{  }
 
-	TimeNotifier(const TimeNotifier& time_notifier) :
-		id(cmzn_time_notifier_access(time_notifier.id))
+	Timenotifier(const Timenotifier& timenotifier) :
+		id(cmzn_timenotifier_access(timenotifier.id))
 	{  }
 
-	TimeNotifier& operator=(const TimeNotifier& time_notifierNotifier)
+	Timenotifier& operator=(const Timenotifier& timenotifier)
 	{
-		cmzn_time_notifier_id temp_id = cmzn_time_notifier_access(time_notifierNotifier.id);
+		cmzn_timenotifier_id temp_id = cmzn_timenotifier_access(timenotifier.id);
 		if (0 != id)
 		{
-			cmzn_time_notifier_destroy(&id);
+			cmzn_timenotifier_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~TimeNotifier()
+	~Timenotifier()
 	{
 		if (0 != id)
 		{
-			cmzn_time_notifier_destroy(&id);
+			cmzn_timenotifier_destroy(&id);
 		}
 	}
 
@@ -63,29 +59,35 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_time_notifier_id getId()
+	cmzn_timenotifier_id getId()
 	{
 		return id;
 	}
 /*
-	int addCallback(Time_notifier_callback callback, void *user_data)
+	int addCallback(cmzn_timenotifier_callback callback, void *user_data)
 	{
-		return cmzn_time_notifier_add_callback(id, callback, user_data);
+		return cmzn_timenotifier_add_callback(id, callback, user_data);
 	}
 
-	int removeCallback(Time_notifier_callback callback, void *user_data)
+	int removeCallback(cmzn_timenotifier_callback callback, void *user_data)
 	{
-		return cmzn_time_notifier_remove_callback(id, callback, user_data);
+		return cmzn_timenotifier_remove_callback(id, callback, user_data);
 	}
 */
+
+	double getTime()
+	{
+		return cmzn_timenotifier_get_time(id);
+	}
+
 	int setFrequency(double frequency)
 	{
-		return cmzn_time_notifier_regular_set_frequency(id, frequency);
+		return cmzn_timenotifier_regular_set_frequency(id, frequency);
 	}
 
 	int setOffset(double timeOffset)
 	{
-		return cmzn_time_notifier_regular_set_offset(id, timeOffset);
+		return cmzn_timenotifier_regular_set_offset(id, timeOffset);
 	}
 
 };

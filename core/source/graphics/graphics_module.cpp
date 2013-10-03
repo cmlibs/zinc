@@ -45,7 +45,7 @@ struct cmzn_graphics_module
 	void *font_manager_callback_id;
 	cmzn_scene_viewer_module_id scene_viewer_module;
 	Light_model_module *light_model_module;
-	struct cmzn_time_keeper *default_time_keeper;
+	struct cmzn_timekeeper *default_timekeeper;
 	cmzn_tessellation_module_id tessellation_module;
 	struct cmzn_graphics_filter_module *graphics_filter_module;
 	void *tessellation_manager_callback_id;
@@ -240,7 +240,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(cmzn_graphics_module_spectrum_manager_callback,
 					(void *)module, cmzn_spectrum_module_get_manager(module->spectrum_module));
-			module->default_time_keeper = cmzn_context_get_default_time_keeper(context);
+			module->default_timekeeper = cmzn_context_get_default_timekeeper(context);
 			module->tessellation_module = cmzn_tessellation_module_create();
 			module->member_regions_list = new std::list<cmzn_region*>;
 			module->tessellation_manager_callback_id =
@@ -357,8 +357,8 @@ int cmzn_graphics_module_destroy(
 				cmzn_graphics_material_module_destroy(&graphics_module->material_module);
 			if (graphics_module->graphics_filter_module)
 				cmzn_graphics_filter_module_destroy(&graphics_module->graphics_filter_module);
-			if (graphics_module->default_time_keeper)
-				cmzn_time_keeper_destroy(&graphics_module->default_time_keeper);
+			if (graphics_module->default_timekeeper)
+				cmzn_timekeeper_destroy(&graphics_module->default_timekeeper);
 			if (graphics_module->tessellation_module)
 				cmzn_tessellation_module_destroy(&graphics_module->tessellation_module);
 			cmzn_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
@@ -537,22 +537,22 @@ cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_module(
 	return 0;
 }
 
-struct cmzn_time_keeper *cmzn_graphics_module_get_time_keeper_internal(
+struct cmzn_timekeeper *cmzn_graphics_module_get_timekeeper_internal(
 	struct cmzn_graphics_module *module)
 {
-	struct cmzn_time_keeper *time_keeper = NULL;
+	struct cmzn_timekeeper *timekeeper = NULL;
 
-	if (module && module->default_time_keeper)
+	if (module && module->default_timekeeper)
 	{
-		time_keeper = cmzn_time_keeper_access(module->default_time_keeper);
+		timekeeper = cmzn_timekeeper_access(module->default_timekeeper);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_module_get_time_keeper_internal.  Invalid argument(s)");
+			"cmzn_graphics_module_get_timekeeper_internal.  Invalid argument(s)");
 	}
 
-	return time_keeper;
+	return timekeeper;
 }
 
 int cmzn_graphics_module_enable_scenes(

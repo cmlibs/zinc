@@ -25,7 +25,7 @@ Implements a number of basic component wise operations on computed fields.
 class Computed_field_time_package : public Computed_field_type_package
 {
 public:
-	struct cmzn_time_keeper *time_keeper;
+	struct cmzn_timekeeper *time_keeper;
 };
 
 namespace {
@@ -276,7 +276,7 @@ public:
 
 	Time_object *time_object;
 
-	Computed_field_time_value(cmzn_time_keeper* time_keeper) :
+	Computed_field_time_value(cmzn_timekeeper* time_keeper) :
 		Computed_field_core(),
 		time_object(NULL)
 	{
@@ -309,7 +309,7 @@ private:
 	Computed_field_core *copy()
 	{
 		return new Computed_field_time_value(
-			Time_object_get_time_keeper(time_object));
+			Time_object_get_timekeeper(time_object));
 	}
 
 	const char *get_type_string()
@@ -341,8 +341,8 @@ DESCRIPTION :
 	ENTER(Computed_field_time_value::compare);
 	if (field && (other = dynamic_cast<Computed_field_time_value*>(other_core)))
 	{
-		if (Time_object_get_time_keeper(time_object) ==
-			Time_object_get_time_keeper(other->time_object))
+		if (Time_object_get_timekeeper(time_object) ==
+			Time_object_get_timekeeper(other->time_object))
 		{
 			return_code = 1;
 		}
@@ -363,7 +363,7 @@ DESCRIPTION :
 int Computed_field_time_value::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	valueCache.values[0] = Time_object_get_current_time(time_object);
+	valueCache.values[0] = cmzn_timenotifier_get_time(time_object);
 	// spatial derivatives are zero
 	for (int j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
 	{
@@ -457,17 +457,17 @@ Always has multiple times.
 } //namespace
 
 cmzn_field_id cmzn_fieldmodule_create_field_time_value(
-	struct cmzn_fieldmodule *field_module, struct cmzn_time_keeper *time_keeper)
+	struct cmzn_fieldmodule *field_module, struct cmzn_timekeeper *timekeeper)
 {
 	struct Computed_field *field = NULL;
-	if (field_module && time_keeper)
+	if (field_module && timekeeper)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_time_value(time_keeper));
+			new Computed_field_time_value(timekeeper));
 	}
 	else
 	{

@@ -25,7 +25,7 @@ This provides an object which supplies a concept of time to Cmgui
  * @param time_keeper  The time keeper to be set to the time object.
  * @return  1 if successfully set the time keeper, otherwise 0.
  */
-int Time_object_set_time_keeper(struct Time_object *time,
-	struct cmzn_time_keeper *time_keeper);
+int Time_object_set_timekeeper(struct Time_object *time,
+	struct cmzn_timekeeper *time_keeper);
 
 #endif  /* !defined (TIME_TIME_PRIVATE_H) */
