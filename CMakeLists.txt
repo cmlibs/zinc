@@ -28,6 +28,7 @@ INCLUDE(glyph/tests.cmake)
 INCLUDE(graphic/tests.cmake)
 INCLUDE(graphics_material/tests.cmake)
 INCLUDE(spectrum/tests.cmake)
+INCLUDE(time/tests.cmake)
 
 SET(TEST_RESOURCE_HEADER ${CMAKE_CURRENT_BINARY_DIR}/test_resources.h)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/test_resources.h.cmake
