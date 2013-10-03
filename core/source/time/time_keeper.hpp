@@ -16,9 +16,9 @@
 #include "general/object.h"
 #include "general/debug.h"
 
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_time_keeper);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_timekeeper);
 
-#define Time_object cmzn_time_notifier
+#define Time_object cmzn_timenotifier
 
 struct Time_object;
 
@@ -29,7 +29,7 @@ struct Time_object_info
 	struct Time_object_info *next;
 };
 
-struct cmzn_time_keeper
+struct cmzn_timekeeper
 {
 private:
 	const char *name;
@@ -41,19 +41,19 @@ public:
 
 	int access_count;
 
-	cmzn_time_keeper();
+	cmzn_timekeeper();
 
-	virtual ~cmzn_time_keeper();
+	virtual ~cmzn_timekeeper();
 
-	inline cmzn_time_keeper *access()
+	inline cmzn_timekeeper *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static inline int deaccess(cmzn_time_keeper **time_keeper_address)
+	static inline int deaccess(cmzn_timekeeper **time_keeper_address)
 	{
-		return DEACCESS(cmzn_time_keeper)(time_keeper_address);
+		return DEACCESS(cmzn_timekeeper)(time_keeper_address);
 	}
 
 	bool setName(const char *name_in);

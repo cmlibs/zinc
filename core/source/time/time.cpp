@@ -14,6 +14,7 @@ This provides an object which supplies a concept of time to Cmgui
 #include <math.h>
 #include <stdio.h>
 
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/message.h"
@@ -42,7 +43,7 @@ struct Time_object
 	double time_offset;
 	enum Time_object_type type;
 	struct Time_object_callback_data *callback_list;
-	struct cmzn_time_keeper *time_keeper;
+	struct cmzn_timekeeper *time_keeper;
 	Time_object_next_time_function next_time_function;
 	void *next_time_user_data;
 
@@ -112,7 +113,7 @@ DESCRIPTION :
 	{
 		time->name = (char *)NULL;
 		time->current_time = 0.0;
-		time->time_keeper = (struct cmzn_time_keeper *)NULL;
+		time->time_keeper = (struct cmzn_timekeeper *)NULL;
 		time->callback_list = (struct Time_object_callback_data *)NULL;
 		time->update_frequency = 10.0;
 		time->time_offset = 0.0;
@@ -187,7 +188,7 @@ int Time_object_set_name(struct Time_object *time, const char *name)
 	return (return_code);
 } /* Time_object_set_name */
 
-double Time_object_get_current_time(struct Time_object *time)
+double cmzn_timenotifier_get_time(struct Time_object *time)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
@@ -196,7 +197,7 @@ DESCRIPTION :
 {
 	double return_code;
 
-	ENTER(Time_object_get_current_time);
+	ENTER(cmzn_timenotifier_get_time);
 	if (time)
 	{
 		return_code = time->current_time;
@@ -204,13 +205,13 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_get_current_time. Invalid time object");
+			"cmzn_timenotifier_get_time. Invalid time object");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Time_object_get_current_time */
+} /* cmzn_timenotifier_get_time */
 
 int Time_object_check_valid_callback_time(struct Time_object *time_object,
 	double time,enum Time_keeper_play_direction play_direction)
@@ -424,7 +425,7 @@ through the timekeeper.
 	return (return_code);
 } /* Time_object_set_current_time_privileged */
 
-int Time_object_regular_set_frequency(struct Time_object *time, double frequency)
+int cmzn_timenotifier_regular_set_frequency(struct Time_object *time, double frequency)
 /*******************************************************************************
 LAST MODIFIED : 25 November 1999
 
@@ -446,7 +447,7 @@ when in play mode.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Time_object_regular_set_frequency. Change of frequency is not allowed"
+				"cmzn_timenotifier_regular_set_frequency. Change of frequency is not allowed"
 				"for this time object/notifier type");
 			return_code = 0;
 		}
@@ -454,7 +455,7 @@ when in play mode.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_regular_set_frequency. Invalid time object");
+			"cmzn_timenotifier_regular_set_frequency. Invalid time object");
 		return_code=0;
 	}
 	LEAVE;
@@ -462,11 +463,11 @@ when in play mode.
 	return (return_code);
 } /* Time_object_set_update_frequency */
 
-int Time_object_regular_set_offset(struct Time_object *time,double time_offset)
+int cmzn_timenotifier_regular_set_offset(struct Time_object *time,double time_offset)
 {
 	int return_code;
 
-	ENTER(Time_object_regular_set_offset);
+	ENTER(cmzn_timenotifier_regular_set_offset);
 	if (time)
 	{
 		if (time->type == TIME_OBJECT_REGULAR)
@@ -477,7 +478,7 @@ int Time_object_regular_set_offset(struct Time_object *time,double time_offset)
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Time_object_regular_set_offset. Change of time offset is not allowed"
+				"cmzn_timenotifier_regular_set_offset. Change of time offset is not allowed"
 				"for this time object/notifier type");
 			return_code = 0;
 		}
@@ -525,16 +526,16 @@ time.
 	return (return_code);
 } /* Time_object_set_next_time_function */
 
-struct cmzn_time_keeper *Time_object_get_time_keeper(struct Time_object *time)
+struct cmzn_timekeeper *Time_object_get_timekeeper(struct Time_object *time)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct cmzn_time_keeper *return_code;
+	struct cmzn_timekeeper *return_code;
 
-	ENTER(Time_object_get_time_keeper);
+	ENTER(Time_object_get_timekeeper);
 
 	if (time)
 	{
@@ -543,16 +544,16 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_get_time_keeper. Invalid time object");
-		return_code=(struct cmzn_time_keeper *)NULL;
+			"Time_object_get_timekeeper. Invalid time object");
+		return_code=(struct cmzn_timekeeper *)NULL;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Time_object_get_time_keeper */
+} /* Time_object_get_timekeeper */
 
-int Time_object_set_time_keeper(struct Time_object *time,
-	struct cmzn_time_keeper *time_keeper)
+int Time_object_set_timekeeper(struct Time_object *time,
+	struct cmzn_timekeeper *time_keeper)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
@@ -561,24 +562,24 @@ DESCRIPTION :
 {
 	int return_code;
 
-	ENTER(Time_object_set_time_keeper);
+	ENTER(Time_object_set_timekeeper);
 
 	if (time)
 	{
-		return_code = REACCESS(cmzn_time_keeper)(&(time->time_keeper), time_keeper);
+		return_code = REACCESS(cmzn_timekeeper)(&(time->time_keeper), time_keeper);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_set_time_keeper. Invalid time object");
+			"Time_object_set_timekeeper. Invalid time object");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Time_object_set_time_keeper */
+} /* Time_object_set_timekeeper */
 
-int Time_object_add_callback(struct Time_object *time,
+int cmzn_timenotifier_add_callback(struct Time_object *time,
 	Time_object_callback callback, void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
@@ -587,10 +588,10 @@ DESCRIPTION :
 Adds a callback routine which is called whenever the current time is changed.
 ==============================================================================*/
 {
-	int return_code = 0;
+	int return_code = CMZN_OK;
 	struct Time_object_callback_data *callback_data, *previous;
 
-	ENTER(Time_object_add_callback);
+	ENTER(cmzn_timenotifier_add_callback);
 
 	if (time && callback)
 	{
@@ -616,34 +617,28 @@ Adds a callback routine which is called whenever the current time is changed.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Time_object_add_callback.  Unable to allocate callback data structure");
-			return_code=0;
+				"cmzn_timenotifier_add_callback.  Unable to allocate callback data structure");
+			return_code=CMZN_ERROR_MEMORY;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_add_callback.  Missing time object or callback");
-		return_code=0;
+			"cmzn_timenotifier_add_callback.  Missing time object or callback");
+		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Time_object_add_callback */
+}
 
-int Time_object_remove_callback(struct Time_object *time,
+int cmzn_timenotifier_remove_callback(struct Time_object *time,
 	Time_object_callback callback, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-Removes a callback which was added previously
-==============================================================================*/
 {
 	int return_code;
 	struct Time_object_callback_data *callback_data, *previous;
 
-	ENTER(Time_object_remove_callback);
+	ENTER(cmzn_timenotifier_remove_callback);
 
 	if (time && callback && time->callback_list)
 	{
@@ -653,12 +648,12 @@ Removes a callback which was added previously
 		{
 			time->callback_list = callback_data->next;
 			DEALLOCATE(callback_data);
-			return_code = 1;
+			return_code = CMZN_OK;
 		}
 		else
 		{
-			return_code = 0;
-			while(!return_code && callback_data->next)
+			return_code = CMZN_ERROR_ARGUMENT;
+			while(callback_data->next)
 			{
 				previous = callback_data;
 				callback_data = callback_data->next;
@@ -667,51 +662,52 @@ Removes a callback which was added previously
 				{
 					previous->next = callback_data->next;
 					DEALLOCATE(callback_data);
-					return_code = 1;		
+					return_code = CMZN_OK;		
+					break;
 				}
 			}
 			if (!return_code)
 			{
 				display_message(ERROR_MESSAGE,
-					"Time_object_remove_callback.  Unable to find callback and user_data specified");
+					"cmzn_timenotifier_remove_callback.  Unable to find callback and user_data specified");
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Time_object_remove_callback.  Missing time, callback or callback list");
-		return_code=0;
+			"cmzn_timenotifier_remove_callback.  Missing time, callback or callback list");
+		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Time_object_remove_callback */
+} /* cmzn_timenotifier_remove_callback */
 
-cmzn_time_notifier_id cmzn_time_notifier_access(cmzn_time_notifier_id time_notifier)
+cmzn_timenotifier_id cmzn_timenotifier_access(cmzn_timenotifier_id timenotifier)
 {
-	cmzn_time_notifier_id local_time_notifier;
+	cmzn_timenotifier_id local_timenotifier;
 
-	if (time_notifier)
+	if (timenotifier)
 	{
-		local_time_notifier = ACCESS(Time_object)(time_notifier);
+		local_timenotifier = ACCESS(Time_object)(timenotifier);
 	}
 	else
 	{
-		local_time_notifier = 0;
+		local_timenotifier = 0;
 	}
 
-	return local_time_notifier;
+	return local_timenotifier;
 }
 
-int cmzn_time_notifier_destroy(cmzn_time_notifier_id *time_notifier_address)
+int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_address)
 {
 	int return_code;
 
-	ENTER(cmzn_time_notifier_destroy);
-	if (time_notifier_address && *time_notifier_address)
+	ENTER(cmzn_timenotifier_destroy);
+	if (timenotifier_address && *timenotifier_address)
 	{
-		return_code = DEACCESS(Time_object)(time_notifier_address);
+		return_code = DEACCESS(Time_object)(timenotifier_address);
 	}
 	else
 	{

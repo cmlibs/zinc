@@ -18,12 +18,7 @@ This provides an object which supplies a concept of time to Cmgui
 #include "general/object.h"
 #include "time/time_keeper.hpp"
 
-#define Time_object cmzn_time_notifier
-#define Time_object_add_callback cmzn_time_notifier_add_callback
-#define Time_object_remove_callback cmzn_time_notifier_remove_callback
-#define Time_object_get_current_time cmzn_time_notifier_get_current_time
-#define Time_object_regular_set_frequency cmzn_time_notifier_regular_set_frequency
-#define Time_object_regular_set_offset cmzn_time_notifier_regular_set_offset
+#define Time_object cmzn_timenotifier
 
 struct Time_object;
 
@@ -56,13 +51,6 @@ struct Time_object *Time_object_create_regular(double update_frequency,
  * @return  1 if successfully set name for time object, otherwise 0.
  */
 int Time_object_set_name(struct Time_object *time, const char *name);
-
-double Time_object_get_current_time(struct Time_object *time);
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-==============================================================================*/
 
 /***************************************************************************//**
  * Check either the time specified is a valid callback time or not.
@@ -105,27 +93,6 @@ Users of a time object that is controlled by a timekeeper should set the time
 through the timekeeper.
 ==============================================================================*/
 
-int Time_object_regular_set_frequency(struct Time_object *time,double frequency);
-/*******************************************************************************
-LAST MODIFIED : 6 October 1998
-
-DESCRIPTION :
-This controls the rate per second which the time depedent object is called back
-when in play mode.
-==============================================================================*/
-
-/***************************************************************************//**
- * This controls the exact time which the time object receive callbacks.
- * Time offset will set the time object to receive callback when
- * time_offset + original callback time is reached. i.e
- *
- * @param time_object  The time object to be set.
- * @param offset  This set the time that notifier will receive callback.
- * @return  1 if successfully set the update frequency to the value provided,
- *    otherwise 0.
- */
-int Time_object_regular_set_offset(struct Time_object *time,double time_offset);
-
 int Time_object_set_next_time_function(struct Time_object *time,
 	Time_object_next_time_function next_time_function,void *user_data);
 /*******************************************************************************
@@ -137,29 +104,11 @@ not used.  Instead the next_time_function is called to evaluate the next valid
 time.
 ==============================================================================*/
 
-struct cmzn_time_keeper *Time_object_get_time_keeper(struct Time_object *time);
+struct cmzn_timekeeper *Time_object_get_timekeeper(struct Time_object *time);
 /*******************************************************************************
 LAST MODIFIED : 29 September 1998
 
 DESCRIPTION :
-==============================================================================*/
-
-int Time_object_add_callback(struct Time_object *time,
-	Time_object_callback callback,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-Adds a callback routine which is called whenever the current time is changed.
-==============================================================================*/
-
-int Time_object_remove_callback(struct Time_object *time,
-	Time_object_callback callback,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-Removes a callback which was added previously
 ==============================================================================*/
 
 #endif /* !defined (TIME_TIME_H) */

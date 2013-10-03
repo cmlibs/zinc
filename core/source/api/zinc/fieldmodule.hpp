@@ -100,7 +100,7 @@ class FieldDiscreteGaussianImageFilter;
 class FieldGradientMagnitudeRecursiveGaussianImageFilter;
 class FieldRescaleIntensityImageFilter;
 class FieldSigmoidImageFilter;
-class TimeKeeper;
+class Timekeeper;
 class Optimisation;
 
 class Fieldmodule
@@ -333,7 +333,7 @@ public:
 
 	FieldTimeLookup createFieldTimeLookup(Field& sourceField, Field& timeField);
 
-	FieldTimeValue createFieldTimeValue(TimeKeeper& timeKeeper);
+	FieldTimeValue createFieldTimeValue(Timekeeper& timeKeeper);
 
 	FieldDerivative createFieldDerivative(Field& sourceField, int xi_index);
 

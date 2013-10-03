@@ -38,7 +38,7 @@ struct Context *cmzn_context_create(const char *id)
 		context->element_point_ranges_selection = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
-		context->time_keeper = 0;
+		context->timekeeper = 0;
 		context->access_count = 1;
 	}
 
@@ -87,9 +87,9 @@ int cmzn_context_destroy(struct Context **context_address)
 			{
 				DESTROY(IO_stream_package)(&context->io_stream_package);
 			}
-			if (context->time_keeper)
+			if (context->timekeeper)
 			{
-				cmzn_time_keeper_destroy(&(context->time_keeper));
+				cmzn_timekeeper_destroy(&(context->timekeeper));
 			}
 			DEALLOCATE(*context_address);
 		}
@@ -250,23 +250,23 @@ struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
 	return io_stream_package;
 }
 
-struct cmzn_time_keeper *cmzn_context_get_default_time_keeper(struct Context *context)
+struct cmzn_timekeeper *cmzn_context_get_default_timekeeper(struct Context *context)
 {
-	cmzn_time_keeper *time_keeper = 0;
+	cmzn_timekeeper *timekeeper = 0;
 	if (context)
 	{
-		if (!context->time_keeper)
+		if (!context->timekeeper)
 		{
-			context->time_keeper = new cmzn_time_keeper();
+			context->timekeeper = new cmzn_timekeeper();
 		}
-		time_keeper = cmzn_time_keeper_access(context->time_keeper);
+		timekeeper = cmzn_timekeeper_access(context->timekeeper);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_context_get_default_time_keeper.  Missing context");
+			"cmzn_context_get_default_timekeeper.  Missing context");
 	}
-	return time_keeper;
+	return timekeeper;
 }
 
 struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(

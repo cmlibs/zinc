@@ -31,7 +31,7 @@ struct Context
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
-	struct cmzn_time_keeper *time_keeper;
+	struct cmzn_timekeeper *timekeeper;
 	struct MANAGER(Curve) *curve_manager;
 };
 

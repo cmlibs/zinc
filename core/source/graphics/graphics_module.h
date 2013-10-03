@@ -80,7 +80,7 @@ struct cmzn_font *cmzn_graphics_module_get_default_font(
 struct Light_model_module *cmzn_graphics_module_get_light_model_module(
 	struct cmzn_graphics_module *graphics_module);
 
-struct cmzn_time_keeper *cmzn_graphics_module_get_time_keeper_internal(
+struct cmzn_timekeeper *cmzn_graphics_module_get_timekeeper_internal(
 	struct cmzn_graphics_module *module);
 
 /***************************************************************************//**

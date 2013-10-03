@@ -42,7 +42,7 @@ private:
 	explicit FieldTimeValue(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldTimeValue Fieldmodule::createFieldTimeValue(TimeKeeper& timeKeeper);
+	friend FieldTimeValue Fieldmodule::createFieldTimeValue(Timekeeper& timeKeeper);
 
 public:
 
@@ -57,7 +57,7 @@ inline FieldTimeLookup Fieldmodule::createFieldTimeLookup(Field& sourceField, Fi
 		sourceField.getId(), timeField.getId()));
 }
 
-inline FieldTimeValue Fieldmodule::createFieldTimeValue(TimeKeeper& timeKeeper)
+inline FieldTimeValue Fieldmodule::createFieldTimeValue(Timekeeper& timeKeeper)
 {
 	return FieldTimeValue(cmzn_fieldmodule_create_field_time_value(id, timeKeeper.getId()));
 }

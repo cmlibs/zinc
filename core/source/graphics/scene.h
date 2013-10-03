@@ -63,7 +63,7 @@ Structure for maintaining a graphical scene of region.
 	/* number of segments used around cylinders */
 	int circle_discretization;
 	struct cmzn_graphics_module *graphics_module;
-	cmzn_time_notifier *time_notifier;
+	cmzn_timenotifier *time_notifier;
 	/* callback list for transformation changes */
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)) *transformation_callback_list;
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;

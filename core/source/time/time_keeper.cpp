@@ -16,6 +16,7 @@ This is intended to be multithreaded......
 #include <math.h>
 #include <stdio.h>
 
+#include "zinc/status.h"
 #include "zinc/timekeeper.h"
 #include "general/debug.h"
 #include "general/list_private.h"
@@ -28,7 +29,7 @@ This is intended to be multithreaded......
 #include "time/time_private.h"
 #include "general/enumerator_conversion.hpp"
 
-cmzn_time_keeper::cmzn_time_keeper():
+cmzn_timekeeper::cmzn_timekeeper():
 	name(NULL),
 	time(0.0),
 	time_object_info_list(NULL),
@@ -38,7 +39,7 @@ cmzn_time_keeper::cmzn_time_keeper():
 {
 }
 
-cmzn_time_keeper::~cmzn_time_keeper()
+cmzn_timekeeper::~cmzn_timekeeper()
 {
 	struct Time_object_info *object_info = this->time_object_info_list;
 	struct Time_object_info *next = 0;
@@ -46,8 +47,8 @@ cmzn_time_keeper::~cmzn_time_keeper()
 	{
 		if (object_info->time_object)
 		{
-			Time_object_set_time_keeper(object_info->time_object,
-				(struct cmzn_time_keeper *)NULL);
+			Time_object_set_timekeeper(object_info->time_object,
+				(struct cmzn_timekeeper *)NULL);
 			object_info->time_object = (struct Time_object *)NULL;
 		}
 		next = object_info->next;
@@ -61,7 +62,7 @@ cmzn_time_keeper::~cmzn_time_keeper()
 	}
 }
 
-bool cmzn_time_keeper::setName(const char *name_in)
+bool cmzn_timekeeper::setName(const char *name_in)
 {
 	char *new_name = duplicate_string(name_in);
 	if (!new_name)
@@ -72,7 +73,7 @@ bool cmzn_time_keeper::setName(const char *name_in)
 	return true;
 }
 
-char *cmzn_time_keeper::getName()
+char *cmzn_timekeeper::getName()
 {
 	char *name_out = NULL;
 	if (name)
@@ -83,14 +84,14 @@ char *cmzn_time_keeper::getName()
 	return name_out;
 }
 
-int cmzn_time_keeper::addTimeObject(struct Time_object *time_object)
+int cmzn_timekeeper::addTimeObject(struct Time_object *time_object)
 {
 	int return_code = 0;
 	struct Time_object_info *object_info, *previous;
 
 	if (time_object)
 	{
-		if (!Time_object_get_time_keeper(time_object))
+		if (!Time_object_get_timekeeper(time_object))
 		{
 			if(ALLOCATE(object_info, struct Time_object_info, 1))
 			{
@@ -111,7 +112,7 @@ int cmzn_time_keeper::addTimeObject(struct Time_object *time_object)
 				{
 					time_object_info_list = object_info;
 				}
-				Time_object_set_time_keeper(time_object, this);
+				Time_object_set_timekeeper(time_object, this);
 				return_code=1;
 			}
 
@@ -121,14 +122,14 @@ int cmzn_time_keeper::addTimeObject(struct Time_object *time_object)
 	return (return_code);
 }
 
-int cmzn_time_keeper::removeTimeObject(struct Time_object *time_object)
+int cmzn_timekeeper::removeTimeObject(struct Time_object *time_object)
 {
 	int return_code = 0;
 	struct Time_object_info *object_info, *previous = NULL;
 
 	if (time_object)
 	{
-		if (this == Time_object_get_time_keeper(time_object))
+		if (this == Time_object_get_timekeeper(time_object))
 		{
 			return_code = 0;
 			object_info = time_object_info_list;
@@ -144,7 +145,7 @@ int cmzn_time_keeper::removeTimeObject(struct Time_object *time_object)
 					{
 						previous->next = object_info->next;
 					}
-					Time_object_set_time_keeper(object_info->time_object, NULL);
+					Time_object_set_timekeeper(object_info->time_object, NULL);
 					DEALLOCATE(object_info);
 					return_code = 1;
 				}
@@ -164,36 +165,36 @@ int cmzn_time_keeper::removeTimeObject(struct Time_object *time_object)
 	return (return_code);
 }
 
-double cmzn_time_keeper::getTime()
+double cmzn_timekeeper::getTime()
 {
 	return time;
 }
 
-double cmzn_time_keeper::getMinimum()
+double cmzn_timekeeper::getMinimum()
 {
 	return minimum;
 }
 
-int cmzn_time_keeper::setMinimum(double minimum_in)
+int cmzn_timekeeper::setMinimum(double minimum_in)
 {
 	minimum = minimum_in;
 
 	return 1;
 }
 
-double cmzn_time_keeper::getMaximum()
+double cmzn_timekeeper::getMaximum()
 {
 	return maximum;
 }
 
-int cmzn_time_keeper::setMaximum(double maximum_in)
+int cmzn_timekeeper::setMaximum(double maximum_in)
 {
 	maximum = maximum_in;
 
 	return 1;
 }
 
-int cmzn_time_keeper::setTime(double new_time)
+int cmzn_timekeeper::setTime(double new_time)
 {
 	static int recursive_check = 0;
 	struct Time_object_info *object_info;
@@ -217,10 +218,10 @@ int cmzn_time_keeper::setTime(double new_time)
 		}
 		recursive_check = 0;
 	}
-	return 1;
+	return CMZN_OK;
 }
 
-int cmzn_time_keeper::hasTimeObject()
+int cmzn_timekeeper::hasTimeObject()
 {
 	 if (time_object_info_list)
 	 {
@@ -230,181 +231,124 @@ int cmzn_time_keeper::hasTimeObject()
 	return 0;
 }
 
-struct Time_object_info *cmzn_time_keeper::getObjectInfo()
+struct Time_object_info *cmzn_timekeeper::getObjectInfo()
 {
 	return time_object_info_list;
 }
 
-void cmzn_time_keeper::setTimeQuiet(double new_time)
+void cmzn_timekeeper::setTimeQuiet(double new_time)
 {
 	time = new_time;
 }
 
-int DESTROY(cmzn_time_keeper)(struct cmzn_time_keeper **time_keeper_address)
+int DESTROY(cmzn_timekeeper)(struct cmzn_timekeeper **timekeeper_address)
 {
 	int return_code = 0;
 
-	if (time_keeper_address && (*time_keeper_address))
+	if (timekeeper_address && (*timekeeper_address))
 	{
-		delete *time_keeper_address;
-		*time_keeper_address = NULL;
+		delete *timekeeper_address;
+		*timekeeper_address = NULL;
 		return_code = 1;
 	}
 
 	return (return_code);
 }
 
-DECLARE_OBJECT_FUNCTIONS(cmzn_time_keeper)
+DECLARE_OBJECT_FUNCTIONS(cmzn_timekeeper)
 
-cmzn_time_notifier_id cmzn_time_keeper_create_notifier_regular(
-	cmzn_time_keeper_id time_keeper, double update_frequency, double time_offset)
+cmzn_timenotifier_id cmzn_timekeeper_create_timenotifier_regular(
+	cmzn_timekeeper_id timekeeper, double update_frequency, double time_offset)
 {
-	cmzn_time_notifier_id time_notifier = NULL;
-	if (time_keeper)
+	cmzn_timenotifier_id timenotifier = NULL;
+	if (timekeeper)
 	{
-		time_notifier = Time_object_create_regular(update_frequency, time_offset);
-		if (time_notifier)
+		timenotifier = Time_object_create_regular(update_frequency, time_offset);
+		if (timenotifier)
 		{
-			if (!time_keeper->addTimeObject(time_notifier))
+			if (!timekeeper->addTimeObject(timenotifier))
 			{
-				cmzn_time_notifier_destroy(&time_notifier);
+				cmzn_timenotifier_destroy(&timenotifier);
 			}
 		}
 	}
-	return time_notifier;
+	return timenotifier;
 }
 
-cmzn_time_keeper_id cmzn_time_keeper_access(cmzn_time_keeper_id time_keeper)
+cmzn_timekeeper_id cmzn_timekeeper_access(cmzn_timekeeper_id timekeeper)
 {
-	if (time_keeper)
+	if (timekeeper)
 	{
-		return time_keeper->access();
+		return timekeeper->access();
 	}
 	return NULL;
 }
 
-int cmzn_time_keeper_destroy(cmzn_time_keeper_id *time_keeper_address)
+int cmzn_timekeeper_destroy(cmzn_timekeeper_id *timekeeper_address)
 {
-	return (DEACCESS(cmzn_time_keeper)(time_keeper_address));
+	return (DEACCESS(cmzn_timekeeper)(timekeeper_address));
 }
 
-double cmzn_time_keeper_get_attribute_real(cmzn_time_keeper_id time_keeper,
-	enum cmzn_time_keeper_attribute attribute)
+double cmzn_timekeeper_get_maximum_time(cmzn_timekeeper_id timekeeper)
 {
-	double value = 0.0;
-	if (time_keeper)
-	{
-		switch (attribute)
-		{
-			case CMZN_TIME_KEEPER_ATTRIBUTE_TIME:
-			{
-				value = time_keeper->getTime();
-			} break;
-			case CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
-			{
-				value = time_keeper->getMinimum();
-			}	break;
-			case CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
-			{
-				value = time_keeper->getMaximum();
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_time_keeper_get_attribute_real.  Invalid attribute");
-			} break;
-		}
-	}
-	return ((double)value);
+	if (timekeeper)
+		return timekeeper->getMaximum();
+	return 0;
 }
 
-int cmzn_time_keeper_set_attribute_real(cmzn_time_keeper_id time_keeper,
-	enum cmzn_time_keeper_attribute attribute, double value)
+int cmzn_timekeeper_set_maximum_time(cmzn_timekeeper_id timekeeper, double maximum_time)
+{
+	if (timekeeper)
+		return timekeeper->setMaximum(maximum_time);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_timekeeper_get_minimum_time(cmzn_timekeeper_id timekeeper)
+{
+	if (timekeeper)
+		return timekeeper->getMinimum();
+	return 0;
+}
+
+int cmzn_timekeeper_set_minimum_time(cmzn_timekeeper_id timekeeper, double minimum_time)
+{
+	if (timekeeper)
+		return timekeeper->setMinimum(minimum_time);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_timekeeper_get_time(cmzn_timekeeper_id timekeeper)
+{
+	if (timekeeper)
+		return timekeeper->getTime();
+	return 0;
+}
+
+int cmzn_timekeeper_set_time(cmzn_timekeeper_id timekeeper, double time)
+{
+	if (timekeeper)
+		return timekeeper->setTime(time);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_timekeeper_add_timenotifier(cmzn_timekeeper_id timekeeper,
+	cmzn_timenotifier_id timenotifier)
 {
 	int return_code = 0;
-	if (time_keeper)
+	if (timekeeper && timenotifier)
 	{
-		return_code = 1;
-		switch (attribute)
-		{
-			case CMZN_TIME_KEEPER_ATTRIBUTE_TIME:
-			{
-				return_code = time_keeper->setTime(value);
-			} break;
-			case CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
-			{
-				return_code = time_keeper->setMinimum(value);
-			}	break;
-			case CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
-			{
-				return_code = time_keeper->setMaximum(value);
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_time_keeper_set_attribute_real.  Invalid attribute");
-				return_code = 0;
-			} break;
-		}
+		return_code = timekeeper->addTimeObject(timenotifier);
 	}
 	return return_code;
 }
 
-class cmzn_time_keeper_attribute_conversion
-{
-public:
-	static const char *to_string(enum cmzn_time_keeper_attribute attribute)
-	{
-		const char *enum_string = 0;
-		switch (attribute)
-		{
-			case CMZN_TIME_KEEPER_ATTRIBUTE_TIME:
-				enum_string = "TIME";
-				break;
-			case CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME:
-				enum_string = "MINIMUM_TIME";
-				break;
-			case CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME:
-				enum_string = "MAXIMUM_TIME";
-				break;
-			default:
-				break;
-		}
-		return enum_string;
-	}
-};
-
-enum cmzn_time_keeper_attribute cmzn_time_keeper_attribute_enum_from_string(
-	const char *string)
-{
-	return string_to_enum<enum cmzn_time_keeper_attribute,
-		cmzn_time_keeper_attribute_conversion>(string);
-}
-
-char *cmzn_time_keeper_attribute_enum_to_string(enum cmzn_time_keeper_attribute attribute)
-{
-	const char *attribute_string = cmzn_time_keeper_attribute_conversion::to_string(attribute);
-	return (attribute_string ? duplicate_string(attribute_string) : 0);
-}
-
-int cmzn_time_keeper_add_time_notifier(cmzn_time_keeper_id time_keeper,
-	cmzn_time_notifier_id time_notifier)
+int cmzn_timekeeper_remove_timenotifier(cmzn_timekeeper_id timekeeper,
+	cmzn_timenotifier_id timenotifier)
 {
 	int return_code = 0;
-	if (time_keeper && time_notifier)
+	if (timekeeper && timenotifier)
 	{
-		return_code = time_keeper->addTimeObject(time_notifier);
-	}
-	return return_code;
-}
-
-int cmzn_time_keeper_remove_time_notifier(cmzn_time_keeper_id time_keeper,
-	cmzn_time_notifier_id time_notifier)
-{
-	int return_code = 0;
-	if (time_keeper && time_notifier)
-	{
-		return_code = time_keeper->removeTimeObject(time_notifier);
+		return_code = timekeeper->removeTimeObject(timenotifier);
 	}
 	return return_code;
 }

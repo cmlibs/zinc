@@ -17,41 +17,41 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class TimeKeeper
+class Timekeeper
 {
 protected:
-	cmzn_time_keeper_id id;
+	cmzn_timekeeper_id id;
 
 public:
 
-	TimeKeeper() : id(0)
+	Timekeeper() : id(0)
 	{   }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeKeeper(cmzn_time_keeper_id in_time_keeper_id) :
-		id(in_time_keeper_id)
+	explicit Timekeeper(cmzn_timekeeper_id in_timekeeper_id) :
+		id(in_timekeeper_id)
 	{  }
 
-	TimeKeeper(const TimeKeeper& timeKeeper) :
-		id(cmzn_time_keeper_access(timeKeeper.id))
+	Timekeeper(const Timekeeper& timeKeeper) :
+		id(cmzn_timekeeper_access(timeKeeper.id))
 	{  }
 
-	TimeKeeper& operator=(const TimeKeeper& timeKeeper)
+	Timekeeper& operator=(const Timekeeper& timeKeeper)
 	{
-		cmzn_time_keeper_id temp_id = cmzn_time_keeper_access(timeKeeper.id);
+		cmzn_timekeeper_id temp_id = cmzn_timekeeper_access(timeKeeper.id);
 		if (0 != id)
 		{
-			cmzn_time_keeper_destroy(&id);
+			cmzn_timekeeper_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~TimeKeeper()
+	~Timekeeper()
 	{
 		if (0 != id)
 		{
-			cmzn_time_keeper_destroy(&id);
+			cmzn_timekeeper_destroy(&id);
 		}
 	}
 
@@ -60,45 +60,55 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_time_keeper_id getId()
+	cmzn_timekeeper_id getId()
 	{
 		return id;
 	}
 
-	enum Attribute
+	Timenotifier createTimenotifierRegular(double updateFrequency, double timeOffset)
 	{
-		ATTRIBUTE_INVALID = CMZN_TIME_KEEPER_ATTRIBUTE_INVALID,
-		ATTRIBUTE_TIME = CMZN_TIME_KEEPER_ATTRIBUTE_TIME,
-		ATTRIBUTE_MINIMUM_TIME = CMZN_TIME_KEEPER_ATTRIBUTE_MINIMUM_TIME,
-		ATTRIBUTE_MAXIMUM_TIME = CMZN_TIME_KEEPER_ATTRIBUTE_MAXIMUM_TIME
-	};
-
-	double getAttributeReal(Attribute attribute)
-	{
-		return cmzn_time_keeper_get_attribute_real(id,
-			static_cast<cmzn_time_keeper_attribute>(attribute));
-	}
-
-	int setAttributeReal(Attribute attribute, double value)
-	{
-		return cmzn_time_keeper_set_attribute_real(id,
-			static_cast<cmzn_time_keeper_attribute>(attribute), value);
-	}
-
-	TimeNotifier createNotifierRegular(double updateFrequency, double timeOffset)
-	{
-		return TimeNotifier(cmzn_time_keeper_create_notifier_regular(
+		return Timenotifier(cmzn_timekeeper_create_timenotifier_regular(
 			id, updateFrequency, timeOffset));
 	}
 
-	int addTimeNotifier(TimeNotifier timeNotifier)
+	int addTimenotifier(Timenotifier timenotifier)
 	{
-		return cmzn_time_keeper_add_time_notifier(id, timeNotifier.getId());
+		return cmzn_timekeeper_add_timenotifier(id, timenotifier.getId());
 	}
 
-	int removeTimeNotifier(TimeNotifier timeNotifier)
+	int removeTimenotifier(Timenotifier timenotifier)
 	{
-		return cmzn_time_keeper_remove_time_notifier(id, timeNotifier.getId());
+		return cmzn_timekeeper_remove_timenotifier(id, timenotifier.getId());
+	}
+
+	double getMaximumTime()
+	{
+		return cmzn_timekeeper_get_maximum_time(id);
+	}
+
+	int setMaximumTime(double maximumTime)
+	{
+		return cmzn_timekeeper_set_maximum_time(id, maximumTime);
+	}
+
+	double getMinimumTime()
+	{
+		return cmzn_timekeeper_get_minimum_time(id);
+	}
+
+	int setMinimumTime(double minimumTime)
+	{
+		return cmzn_timekeeper_set_minimum_time(id, minimumTime);
+	}
+
+	double getTime()
+	{
+		return cmzn_timekeeper_get_time(id);
+	}
+
+	int setTime(double time)
+	{
+		return cmzn_timekeeper_set_time(id, time);
 	}
 
 };
