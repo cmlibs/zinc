@@ -40,28 +40,6 @@ ZINC_API cmzn_timekeeper_id cmzn_timekeeper_access(cmzn_timekeeper_id timekeeper
 ZINC_API int cmzn_timekeeper_destroy(cmzn_timekeeper_id *timekeeper_address);
 
 /**
- * Get a real value of an attribute of the time keeper.
- *
- * @param timekeeper  Handle to the zinc timekeeper.
- * @param attribute  The identifier of the real attribute to get.
- * @return  Value of the attribute.
- */
-ZINC_API double cmzn_timekeeper_get_attribute_real(cmzn_timekeeper_id timekeeper,
-	enum cmzn_timekeeper_attribute attribute);
-
-/**
- * Set a real value for an attribute of the timekeeper.
- *
- * @param timekeeper  Handle to the zinc timekeeper.
- * @param attribute  The identifier of the real attribute to set.
- * @param value  The new value for the attribute.
- * @return  Status CMZN_OK if attribute successfully set, any other value if
- * failed or attribute not valid or unable to be set for this timekeeper object.
- */
-ZINC_API int cmzn_timekeeper_set_attribute_real(cmzn_timekeeper_id timekeeper,
-	enum cmzn_timekeeper_attribute attribute, double value);
-
-/**
  * Create and returns a time notifier with regular update time in time keeper.
  * The returned time notifier will automatically be added to the time keeper.
  *
