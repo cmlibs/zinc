@@ -25,39 +25,6 @@ extern "C" {
 #endif
 
 /**
- * Labels of field attributes which may be set or obtained using generic
- * get/set_attribute functions.
- */
-enum cmzn_field_attribute
-{
-	CMZN_FIELD_ATTRIBUTE_INVALID = 0,
-	CMZN_FIELD_ATTRIBUTE_IS_MANAGED = 1,
-	/*!< Boolean as integer, when 0 (default) field is destroyed when no longer
-	 * in use, i.e. when number of external references to it, including use as a
-	 * source for other fields, drops to zero. Set to 1 to manage field
-	 * indefinitely, or until this attribute is reset to zero (which effectively
-	 * marks a formerly managed field as pending destruction).
-	 */
-	CMZN_FIELD_ATTRIBUTE_IS_COORDINATE = 2,
-	/*!< Boolean as integer, set to 1 (true) if field can be interpreted as a
-	 * "coordinate" field, i.e. suitable for supplying coordinates for graphics
-	 * and other operations. Can only be set for some fields e.g. finite_element
-	 * where its default is 0 (false). Some fields e.g. cad geometry have this
-	 * attribute fixed at 1; the majority of other fields have it fixed at 0.
-	 */
-	CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS = 3,
-	/*!< Integer number of components of field.
-	 */
-	CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = 4,
-	/*!< Integer number of source fields the field is a function of.
-	 */
-	CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS = 5,
-	/*!< Real focus parameter for coordinate system types PROLATE_SPHEROIDAL and
-	 * OBLATE_SPHEROIDAL. Must be positive.
-	 */
-};
-
-/**
  * Field attribute describing the type of space that its values are to be
  * interpreted in. Although it is usually set for all fields (default is
  * rectangular cartesian, RC), the attribute is only relevant when field is
@@ -71,9 +38,9 @@ enum cmzn_field_coordinate_system_type
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = 4,
-		/*!< uses CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+		/*!< @see cmzn_field_set_coordinate_system_focus */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = 5,
-		/*!< uses CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS */
+		/*!< @see cmzn_field_set_coordinate_system_focus */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
 		/*!< For Euler angles specifying fibre axes orientation from default
 		 * aligned with element xi coordinates. */
@@ -83,25 +50,6 @@ enum cmzn_field_coordinate_system_type
 Global functions
 ----------------
 */
-
-/**
- * Convert a short name into an enum if the name matches any of the members in
- * the enum.
- *
- * @param string  string of the short enumerator name
- * @return  the correct enum type if a match is found.
- */
-ZINC_API enum cmzn_field_attribute cmzn_field_attribute_enum_from_string(
-	const char *string);
-
-/**
- * Return an allocated short name of the enum type from the provided enum.
- * User must call cmzn_deallocate to destroy the successfully returned string.
- *
- * @param type  enum to be converted into string
- * @return  an allocated string which stored the short name of the enum.
- */
-ZINC_API char *cmzn_field_attribute_enum_to_string(enum cmzn_field_attribute attribute);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
@@ -290,59 +238,78 @@ ZINC_API int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_values, double *values);
 
 /**
- * Get an integer or Boolean attribute of the field.
+ * Get whether the field is marked as coordinate type i.e. appropriate for
+ * giving geometric location of a domain.
  *
  * @param field  The field to query.
- * @param attribute  The identifier of the integer attribute to get.
- * @return  Value of the attribute. Boolean values are 1 if true, 0 if false.
+ * @return  True if the field is coordinate type, otherwise false.
  */
-ZINC_API int cmzn_field_get_attribute_integer(cmzn_field_id field,
-	enum cmzn_field_attribute attribute);
+ZINC_API bool cmzn_field_is_type_coordinate(cmzn_field_id field);
 
 /**
- * Set an integer or Boolean attribute of the field.
+ * Set whether the field is marked as coordinate type i.e. appropriate for
+ * giving geometric location of a domain. Can only be set for some fields e.g.
+ * finite_element where its default is false. Other fields may be fixed at
+ * either state.
  *
- * @param field  The field to set the attribute for.
- * @param attribute  The identifier of the integer attribute to set.
- * @param value  The new value for the attribute. For Boolean values use 1 for
- * true in case more options are added in future.
- * @return  Status CMZN_OK if attribute successfully set, any other value if
- * failed or attribute not valid for this field.
+ * @param field  The field to modify.
+ * @param value  The new state of the coordinate type flag.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_field_set_attribute_integer(cmzn_field_id field,
-	enum cmzn_field_attribute attribute, int value);
+ZINC_API int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value);
 
 /**
- * Get a scalar real attribute of the field.
- *
- * @param field  The field to query.
- * @param attribute  The identifier of the real attribute to get.
- * @return  Value of the attribute, or 0.0 if invalid or error.
- */
-ZINC_API double cmzn_field_get_attribute_real(cmzn_field_id field,
-	enum cmzn_field_attribute attribute);
-
-/**
- * Set a scalar real attribute of the field.
- *
- * @param field  The field to set the attribute for.
- * @param attribute  The identifier of the real attribute to set.
- * @param value  The new value for the attribute.
- * @return  Status CMZN_OK if attribute successfully set, any other value if
- * failed or attribute not valid for this field.
- */
-ZINC_API int cmzn_field_set_attribute_real(cmzn_field_id field,
-	enum cmzn_field_attribute attribute, double value);
-
-/**
- * Return the name of a component of the field.
+ * Get the name of a component of the field. This is only meaningful for
+ * finite element fields; all other fields' component names are the string
+ * equivalent of the component number, e.g. 1 -> "1" etc.
+ * Also, node_value and basis_derivative fields return the base finite element
+ * field component names.
  *
  * @param field  The field whose component name is requested.
  * @param component_number  Component number from 1 to number of components.
  * @return  On success: allocated string containing field component name. Up to
  * caller to free using cmzn_deallocate().
  */
-ZINC_API char *cmzn_field_get_component_name(cmzn_field_id field, int component_number);
+ZINC_API char *cmzn_field_get_component_name(cmzn_field_id field,
+	int component_number);
+
+/**
+ * Set the name of a component of the field. This is only meaningful for
+ * finite element fields, which can be serialised.
+ *
+ * @param field  The field whose component name is requested.
+ * @param component_number  Component number from 1 to number of components.
+ * @param name  The new name of the field component.
+ * @return  On success, CMZN_OK, otherwise any other error code.
+ */
+ZINC_API int cmzn_field_set_component_name(cmzn_field_id field,
+	int component_number, const char *name);
+
+
+
+
+/**
+ * Get the coordinate system focus value, used for prolate and oblate
+ * spheroidal coordinate system types only.
+ *
+ * @param field  The field to query.
+ * @return  The focus length, or 0 if invalid field or current coordinate system type.
+ */
+ZINC_API double cmzn_field_get_coordinate_system_focus(cmzn_field_id field);
+
+/**
+ * Get the coordinate system focus value, used for prolate and oblate
+ * spheroidal coordinate system types only.
+ * @see cmzn_field_set_coordinate_system_type
+ *
+ * @param field  The field to modify.
+ * @param focus  The new focus value, > 0.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus);
+
+
+
 
 /**
  * Get the coordinate system type to interpret field values in.
@@ -356,8 +323,8 @@ ZINC_API enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system
 /**
  * Set the coordinate system type to interpret field values in.
  * Note PROLATE_SPHEROIDAL and OBLATE_SPHEROIDAL coordinate system types also
- * require the real CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS to be set to a
- * positive value.
+ * require the focus to be set to a positive value.
+ * @see cmzn_field_set_coordinate_system_focus
  *
  * @param field  The field to modify.
  * @param coordinate_system_type  The type of coordinate system.
@@ -384,6 +351,14 @@ ZINC_API char *cmzn_field_get_name(cmzn_field_id field);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_set_name(cmzn_field_id field, const char *name);
+
+/**
+ * Get the number of source fields of this field.
+ *
+ * @param field  The field to query.
+ * @return  The number of source fields of the field.
+ */
+ZINC_API int cmzn_field_get_number_of_source_fields(cmzn_field_id field);
 
 /**
  * Return a source field of this field at a given index. Source fields are in

@@ -189,7 +189,7 @@ public:
 	Elementbasis createElementbasis(int dimension, enum Elementbasis::FunctionType functionType)
 	{
 		return Elementbasis(cmzn_fieldmodule_create_elementbasis(
-			id, dimension, static_cast<cmzn_basis_function_type>(functionType)));
+			id, dimension, static_cast<cmzn_elementbasis_function_type>(functionType)));
 	}
 
 	Nodeset findNodesetByDomainType(Field::DomainType domainType)
@@ -214,9 +214,9 @@ public:
 		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}
 
-	TimeSequence getMatchingTimeSequence(int timesCount, const double *timesIn)
+	Timesequence getMatchingTimesequence(int timesCount, const double *timesIn)
 	{
-		return TimeSequence(cmzn_fieldmodule_get_matching_time_sequence(
+		return Timesequence(cmzn_fieldmodule_get_matching_timesequence(
 			id, timesCount, timesIn));
 	}
 

@@ -42,7 +42,7 @@ class cmzn_node_field
 {
 	FE_field *fe_field;
 	FE_node_field_creator *node_field_creator;
-	FE_time_sequence *time_sequence;
+	FE_time_sequence *timesequence;
 
 public:
 
@@ -50,14 +50,14 @@ public:
 		fe_field(ACCESS(FE_field)(fe_field)),
 		node_field_creator(
 			CREATE(FE_node_field_creator)(get_FE_field_number_of_components(fe_field))),
-		time_sequence(NULL)
+		timesequence(NULL)
 	{
 	}
 
 	~cmzn_node_field()
 	{
-		if (time_sequence)
-			DEACCESS(FE_time_sequence)(&time_sequence);
+		if (timesequence)
+			DEACCESS(FE_time_sequence)(&timesequence);
 		DESTROY(FE_node_field_creator)(&node_field_creator);
 		DEACCESS(FE_field)(&fe_field);
 	}
@@ -82,15 +82,15 @@ public:
 		return return_code;
 	}
 
-	int defineTimeSequence(FE_time_sequence *in_time_sequence)
+	int defineTimesequence(FE_time_sequence *in_timesequence)
 	{
-		return REACCESS(FE_time_sequence)(&time_sequence, in_time_sequence);
+		return REACCESS(FE_time_sequence)(&timesequence, in_timesequence);
 	}
 
 	/** note: does not ACCESS */
-	cmzn_time_sequence_id getTimeSequence()
+	cmzn_timesequence_id getTimesequence()
 	{
-		return reinterpret_cast<cmzn_time_sequence_id>(time_sequence);
+		return reinterpret_cast<cmzn_timesequence_id>(timesequence);
 	}
 
 	int defineVersions(int component_number, int number_of_versions)
@@ -116,7 +116,7 @@ public:
 	int defineAtNode(FE_node *node)
 	{
 		return define_FE_field_at_node(node, fe_field,
-			time_sequence, node_field_creator);
+			timesequence, node_field_creator);
 	}
 
 	int getNumberOfVersions(int component_number)
@@ -245,10 +245,10 @@ public:
 				node_field->defineVersions(component_number, number_of_versions);
 			}
 		}
-		struct FE_time_sequence *time_sequence = get_FE_node_field_FE_time_sequence(node, fe_field);
-		if (time_sequence)
+		struct FE_time_sequence *timesequence = get_FE_node_field_FE_time_sequence(node, fe_field);
+		if (timesequence)
 		{
-			node_field->defineTimeSequence(time_sequence);
+			node_field->defineTimesequence(timesequence);
 		}
 		return (node_field != NULL);
 	}
@@ -281,14 +281,14 @@ public:
 		return node_field->defineDerivative(component_number, fe_nodal_value_type);
 	}
 
-	int defineTimeSequence(cmzn_field_id field,
-		cmzn_time_sequence_id time_sequence)
+	int defineTimesequence(cmzn_field_id field,
+		cmzn_timesequence_id timesequence)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_time_sequence.  Field must be real finite_element type");
+				"cmzn_nodetemplate_define_timesequence.  Field must be real finite_element type");
 			return 0;
 		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
@@ -298,11 +298,11 @@ public:
 		if (!node_field)
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_time_sequence.  Field is not defined yet");
+				"cmzn_nodetemplate_define_timesequence.  Field is not defined yet");
 			return 0;
 		}
 		clearTemplateNode();
-		return node_field->defineTimeSequence(reinterpret_cast<struct FE_time_sequence *>(time_sequence));
+		return node_field->defineTimesequence(reinterpret_cast<struct FE_time_sequence *>(timesequence));
 	}
 
 	int defineVersions(cmzn_field_id field, int component_number,
@@ -343,7 +343,7 @@ public:
 		return node_field->getNumberOfVersions(component_number);
 	}
 
-	cmzn_time_sequence_id getTimeSequence(cmzn_field_id field)
+	cmzn_timesequence_id getTimesequence(cmzn_field_id field)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
@@ -354,10 +354,10 @@ public:
 		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
 			return 0;
-		cmzn_time_sequence_id timeSequence = node_field->getTimeSequence();
+		cmzn_timesequence_id timeSequence = node_field->getTimesequence();
 		if (timeSequence)
 		{
-			cmzn_time_sequence_access(timeSequence);
+			cmzn_timesequence_access(timeSequence);
 		}
 		return timeSequence;
 	}
@@ -1212,13 +1212,13 @@ int cmzn_nodetemplate_define_derivative(cmzn_nodetemplate_id node_template,
 	return 0;
 }
 
-int cmzn_nodetemplate_define_time_sequence(
+int cmzn_nodetemplate_define_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field,
-	cmzn_time_sequence_id time_sequence)
+	cmzn_timesequence_id timesequence)
 {
-	if (node_template && field && time_sequence)
+	if (node_template && field && timesequence)
 	{
-		return node_template->defineTimeSequence(field, time_sequence);
+		return node_template->defineTimesequence(field, timesequence);
 	}
 	return 0;
 }
@@ -1244,12 +1244,12 @@ int cmzn_nodetemplate_get_number_of_versions(cmzn_nodetemplate_id node_template,
 	return 0;
 }
 
-cmzn_time_sequence_id cmzn_nodetemplate_get_time_sequence(
+cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field)
 {
 	if (node_template && field)
 	{
-		return node_template->getTimeSequence(field);
+		return node_template->getTimesequence(field);
 	}
 	return 0;
 }

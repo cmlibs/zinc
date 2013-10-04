@@ -342,13 +342,15 @@ cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 	return Computed_field_manager_create_iterator(manager);
 }
 
-cmzn_time_sequence_id cmzn_fieldmodule_get_matching_time_sequence(
+cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 	cmzn_fieldmodule_id field_module, int number_of_times, const double *times)
 {
 	if (!field_module)
 		return NULL;
-	return (cmzn_time_sequence_id)FE_region_get_FE_time_sequence_matching_series(
-		cmzn_region_get_FE_region(field_module->region), number_of_times, times);
+	FE_time_sequence *fe_timesequence = FE_region_get_FE_time_sequence_matching_series(
+			cmzn_region_get_FE_region(field_module->region), number_of_times, times);
+	ACCESS(FE_time_sequence)(fe_timesequence);
+	return reinterpret_cast<cmzn_timesequence_id>(fe_timesequence);
 }
 
 cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id field_module)

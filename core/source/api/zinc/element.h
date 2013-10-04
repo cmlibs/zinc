@@ -47,16 +47,16 @@ enum cmzn_element_shape_type
 /**
  * Common 1-D or linked-dimension basis function types.
  */
-enum cmzn_basis_function_type
+enum cmzn_elementbasis_function_type
 {
-	CMZN_BASIS_FUNCTION_TYPE_INVALID = 0,
-	CMZN_BASIS_FUNCTION_CONSTANT = 1,
-	CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE = 2,
-	CMZN_BASIS_FUNCTION_QUADRATIC_LAGRANGE = 3,
-	CMZN_BASIS_FUNCTION_CUBIC_LAGRANGE = 4,
-	CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX = 5,   /**< linked on 2 or more dimensions */
-	CMZN_BASIS_FUNCTION_QUADRATIC_SIMPLEX = 6, /**< linked on 2 or more dimensions */
-	CMZN_BASIS_FUNCTION_CUBIC_HERMITE = 7
+	CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID = 0,
+	CMZN_ELEMENTBASIS_FUNCTION_CONSTANT = 1,
+	CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE = 2,
+	CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE = 3,
+	CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE = 4,
+	CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX = 5,   /**< linked on 2 or more dimensions */
+	CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX = 6, /**< linked on 2 or more dimensions */
+	CMZN_ELEMENTBASIS_FUNCTION_CUBIC_HERMITE = 7
 };
 
 /*
@@ -90,7 +90,7 @@ ZINC_API char *cmzn_element_shape_type_enum_to_string(enum cmzn_element_shape_ty
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_basis_function_type cmzn_basis_function_type_enum_from_string(
+ZINC_API enum cmzn_elementbasis_function_type cmzn_elementbasis_function_type_enum_from_string(
 	const char *string);
 
 /**
@@ -100,8 +100,8 @@ ZINC_API enum cmzn_basis_function_type cmzn_basis_function_type_enum_from_string
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_basis_function_type_enum_to_string(
-	enum cmzn_basis_function_type type);
+ZINC_API char *cmzn_elementbasis_function_type_enum_to_string(
+	enum cmzn_elementbasis_function_type type);
 
 /**
  * Creates an element_basis object for describing element basis functions.
@@ -115,7 +115,7 @@ ZINC_API char *cmzn_basis_function_type_enum_to_string(
  */
 ZINC_API cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 	cmzn_fieldmodule_id field_module, int dimension,
-	enum cmzn_basis_function_type function_type);
+	enum cmzn_elementbasis_function_type function_type);
 
 /**
  * Get a handle to the default mesh of a given dimension. Cmgui is currently
@@ -450,7 +450,7 @@ ZINC_API int cmzn_elementbasis_get_dimension(cmzn_elementbasis_id element_basis)
  * dimension.
  * @return  The basis function type.
  */
-ZINC_API enum cmzn_basis_function_type cmzn_elementbasis_get_function_type(
+ZINC_API enum cmzn_elementbasis_function_type cmzn_elementbasis_get_function_type(
 	cmzn_elementbasis_id element_basis, int chart_component);
 
 /**
@@ -463,7 +463,7 @@ ZINC_API enum cmzn_basis_function_type cmzn_elementbasis_get_function_type(
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_elementbasis_set_function_type(cmzn_elementbasis_id element_basis,
-	int chart_component, enum cmzn_basis_function_type function_type);
+	int chart_component, enum cmzn_elementbasis_function_type function_type);
 
 /**
  * If the basis is valid, gets the number of nodes the basis expects.

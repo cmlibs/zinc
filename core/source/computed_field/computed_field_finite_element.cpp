@@ -287,6 +287,20 @@ private:
 
 	char* get_command_string();
 
+	virtual char *getComponentName(int componentNumber) const
+	{
+		return get_FE_field_component_name(this->fe_field, componentNumber - 1);
+	}
+
+	virtual int setComponentName(int componentNumber, const char *name)
+	{
+		if (set_FE_field_component_name(this->fe_field, componentNumber - 1, name))
+		{
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	int has_multiple_times();
@@ -319,33 +333,27 @@ private:
 		return FE_region_set_FE_field_name(FE_field_get_FE_region(fe_field), fe_field, name);
 	};
 
-	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
+	virtual bool isTypeCoordinate() const
 	{
-		if (attribute == CMZN_FIELD_ATTRIBUTE_IS_COORDINATE)
-			return (get_FE_field_CM_field_type(fe_field) == CM_COORDINATE_FIELD);
-		return 0;
+		return (get_FE_field_CM_field_type(this->fe_field) == CM_COORDINATE_FIELD);
 	}
 
-	virtual int set_attribute_integer(enum cmzn_field_attribute attribute, int value)
+	virtual int setTypeCoordinate(bool value)
 	{
 		// Note that CM_field_type is an enum with 3 states
 		// so can't be COORDINATE and ANATOMICAL at the same time.
-		if (attribute == CMZN_FIELD_ATTRIBUTE_IS_COORDINATE)
+		CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
+		if (value)
 		{
-			CM_field_type cm_field_type = get_FE_field_CM_field_type(fe_field);
-			if (value)
-			{
-				if (cm_field_type != CM_COORDINATE_FIELD)
-					set_FE_field_CM_field_type(fe_field, CM_COORDINATE_FIELD);
-			}
-			else
-			{
-				if (cm_field_type == CM_COORDINATE_FIELD)
-					set_FE_field_CM_field_type(fe_field, CM_GENERAL_FIELD);
-			}
-			return 1;
+			if (cm_field_type != CM_COORDINATE_FIELD)
+				set_FE_field_CM_field_type(fe_field, CM_COORDINATE_FIELD);
 		}
-		return 0;
+		else
+		{
+			if (cm_field_type == CM_COORDINATE_FIELD)
+				set_FE_field_CM_field_type(fe_field, CM_GENERAL_FIELD);
+		}
+		return CMZN_OK;
 	}
 
 	virtual cmzn_field_value_type get_value_type() const
@@ -1161,75 +1169,32 @@ inline Computed_field_finite_element *Computed_field_finite_element_core_cast(
 		reinterpret_cast<Computed_field*>(finite_element_field)->core));
 }
 
-struct Computed_field *Computed_field_create_finite_element_internal(
+cmzn_field *Computed_field_create_finite_element_internal(
 	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
 {
-	char **component_names;
-	int i, number_of_components, return_code;
-	struct Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_finite_element_internal);
+	cmzn_field *field = 0;
 	if (field_module && fe_field)
 	{
-		return_code = 1;
 		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (FE_field_get_FE_region(fe_field) != fe_region)
 		{
 			display_message(ERROR_MESSAGE,
 				"Computed_field_create_finite_element_internal.  Region mismatch");
-			return_code = 0;
+			return 0;
 		}
-		number_of_components = get_FE_field_number_of_components(fe_field);
 		/* 1. make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(component_names, char *, number_of_components))
-		{
-			for (i = 0 ; i < number_of_components; i++)
-			{
-				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			field = Computed_field_create_generic(field_module,
-				/*check_source_field_regions*/true, number_of_components,
-				/*number_of_source_fields*/0, NULL,
-				/*number_of_source_values*/0, NULL,
-				new Computed_field_finite_element(fe_field));
-			if (field)
-			{
-				// following should be a function call
-				field->component_names = component_names;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if ((!return_code) && (component_names))
-		{
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				DEALLOCATE(component_names[i]);
-			}
-			DEALLOCATE(component_names);
-		}
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true, get_FE_field_number_of_components(fe_field),
+			/*number_of_source_fields*/0, NULL,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_finite_element(fe_field));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_finite_element_internal.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
-
 	return (field);
 }
 
@@ -1801,6 +1766,11 @@ private:
 
 	char* get_command_string();
 
+	virtual char *getComponentName(int componentNumber) const
+	{
+		return get_FE_field_component_name(this->fe_field, componentNumber - 1);
+	}
+
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	int has_numerical_components();
@@ -2184,73 +2154,25 @@ Check the fe_field
  * @return Newly created field
  */
 
-struct Computed_field *Computed_field_create_node_value(
+cmzn_field *Computed_field_create_node_value(
 	struct cmzn_fieldmodule *field_module,
 	cmzn_field_id finite_element_field, enum FE_nodal_value_type nodal_value_type,
 	int version_number)
 {
-	char **component_names;
-	int i, number_of_components, return_code;
-	struct Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_node_value);
+	cmzn_field *field = 0;
 	struct FE_field *fe_field = 0;
 	if (finite_element_field && finite_element_field->isNumerical() &&
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field) && fe_field)
 	{
-		return_code=1;
-		number_of_components = get_FE_field_number_of_components(fe_field);
-		/* 1. make dynamic allocations for any new type-specific data */
-		if (ALLOCATE(component_names, char *, number_of_components))
-		{
-			for (i = 0 ; i < number_of_components; i++)
-			{
-				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			field = Computed_field_create_generic(field_module,
-				/*check_source_field_regions*/true, number_of_components,
-				/*number_of_source_fields*/1, &finite_element_field,
-				/*number_of_source_values*/0, NULL,
-				new Computed_field_node_value(
-					finite_element_field, nodal_value_type, version_number));
-			if (field)
-			{
-				// following should be a function call
-				field->component_names = component_names;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if ((!return_code) && (component_names))
-		{
-			for (i = 0 ; i < number_of_components ; i++)
-			{
-				DEALLOCATE(component_names[i]);
-			}
-			DEALLOCATE(component_names);
-		}
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true, get_FE_field_number_of_components(fe_field),
+			/*number_of_source_fields*/1, &finite_element_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_node_value(
+				finite_element_field, nodal_value_type, version_number));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_create_node_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
 	return (field);
-} /* Computed_field_create_node_value */
+}
 
 int Computed_field_get_type_node_value(struct Computed_field *field,
 	cmzn_field_id *finite_element_field_address, enum FE_nodal_value_type *nodal_value_type,
@@ -3059,6 +2981,11 @@ private:
 
 	char* get_command_string();
 
+	virtual char *getComponentName(int componentNumber) const
+	{
+		return get_FE_field_component_name(this->fe_field, componentNumber - 1);
+	}
+
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	int has_multiple_times();
@@ -3069,6 +2996,7 @@ private:
 	{
 		return FE_field_uses_non_linear_basis(fe_field) == 1; // could check max order
 	}
+
 };
 
 Computed_field_basis_derivative::~Computed_field_basis_derivative()
@@ -3402,54 +3330,11 @@ cmzn_field_id cmzn_fieldmodule_create_field_basis_derivative(
 		Computed_field_get_type_finite_element(finite_element_field, &fe_field) && fe_field &&
 		(order > 0) && xi_indices)
 	{
-		int return_code=1;
-		int number_of_components = get_FE_field_number_of_components(fe_field);
-		char **component_names = 0;
-		if (ALLOCATE(component_names, char *, number_of_components))
-		{
-			for (int i = 0 ; i < number_of_components; i++)
-			{
-				if (!(component_names[i]=get_FE_field_component_name(fe_field,i)))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-		if (return_code)
-		{
-			field = Computed_field_create_generic(field_module,
-				/*check_source_field_regions*/true, number_of_components,
-				/*number_of_source_fields*/1, &finite_element_field,
-				/*number_of_source_values*/0, NULL,
-				new Computed_field_basis_derivative(
-					fe_field, order, xi_indices));
-			if (field)
-			{
-				// following should be a function call
-				field->component_names = component_names;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-		if ((!return_code) && (component_names))
-		{
-			for (int i = 0 ; i < number_of_components ; i++)
-			{
-				DEALLOCATE(component_names[i]);
-			}
-			DEALLOCATE(component_names);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_basis_derivative.  Invalid argument(s)");
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true, get_FE_field_number_of_components(fe_field),
+			/*number_of_source_fields*/1, &finite_element_field,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_basis_derivative(fe_field, order, xi_indices));
 	}
 	return (field);
 }

@@ -45,7 +45,7 @@ cmzn_field_id Computed_field_manager_get_field_or_component(
 			const int number_of_components = cmzn_field_get_number_of_components(field);
 			for (int i = 0; (i < number_of_components) && (component_no < 0); i++)
 			{
-				char *candidate_component_name = Computed_field_get_component_name(field, i);
+				char *candidate_component_name = cmzn_field_get_component_name(field, i + 1);
 				if (candidate_component_name)
 				{
 					if (0 == strcmp(field_component_name, candidate_component_name))

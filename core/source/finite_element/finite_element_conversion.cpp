@@ -546,7 +546,7 @@ int finite_element_conversion(struct cmzn_region *source_region,
 			char **component_names = new char*[number_of_components];
 			for (int j = 0; j < number_of_components; j++)
 			{
-				component_names[j] = Computed_field_get_component_name(field, j);
+				component_names[j] = cmzn_field_get_component_name(field, j + 1);
 			}
 			Coordinate_system *coordinate_system = Computed_field_get_coordinate_system(field);
 			enum CM_field_type cm_field_type = CM_GENERAL_FIELD;

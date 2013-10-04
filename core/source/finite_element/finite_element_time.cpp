@@ -681,7 +681,7 @@ If the <time_index> is valid returns the corresponding <time>.
 {
 	int return_code;
 
-	ENTER(FE_time_sequence_get_index_for_time);
+	ENTER(FE_time_sequence_get_time_for_index);
 
 	if (fe_time_sequence)
 	{
@@ -706,7 +706,7 @@ If the <time_index> is valid returns the corresponding <time>.
 	LEAVE;
 
 	return (return_code);
-} /* FE_time_sequence_get_index_for_time */
+}
 
 int FE_time_sequence_set_time_and_index(
 	struct FE_time_sequence *fe_time_sequence, int time_index, FE_value time)
@@ -730,7 +730,7 @@ be expanded and the unspecified times also set to <time>.
 	{
 		if (time_index >= 0)
 		{
-			return_code = 1;
+			return_code = CMZN_OK;
 			if (time_index >= fe_time_sequence->number_of_times)
 			{
 				if (REALLOCATE(new_times, fe_time_sequence->times,
@@ -748,7 +748,7 @@ be expanded and the unspecified times also set to <time>.
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_time_sequence_set_time_and_index.  Unable to reallocate times");
-					return_code = 0;
+					return_code = CMZN_ERROR_MEMORY;
 				}
 			}
 			else
@@ -760,14 +760,14 @@ be expanded and the unspecified times also set to <time>.
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_time_sequence_set_time_and_index.  Time index out of range");
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_time_sequence_set_time_and_index.  Invalid arguments");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
@@ -1178,33 +1178,49 @@ int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence)
 	if (NULL == fe_time_sequence)
 		return 0;
 	/* basic implementation assumes object is accessed by region and caller */
-	return (fe_time_sequence->access_count <= 2);
+	return (fe_time_sequence->access_count > 2);
 }
 
-cmzn_time_sequence_id cmzn_time_sequence_access(
-	cmzn_time_sequence_id time_sequence)
+cmzn_timesequence_id cmzn_timesequence_access(
+	cmzn_timesequence_id timesequence)
 {
-	return (cmzn_time_sequence_id)(ACCESS(FE_time_sequence)(
-		(struct FE_time_sequence *)time_sequence));
+	return (cmzn_timesequence_id)(ACCESS(FE_time_sequence)(
+		(struct FE_time_sequence *)timesequence));
 }
 
-int cmzn_time_sequence_destroy(cmzn_time_sequence_id *time_sequence_address)
+int cmzn_timesequence_destroy(cmzn_timesequence_id *timesequence_address)
 {
-	return DESTROY(FE_time_sequence)(
-		(struct FE_time_sequence **)time_sequence_address);
+	return DEACCESS(FE_time_sequence)(
+		(struct FE_time_sequence **)timesequence_address);
 }
 
-int cmzn_time_sequence_set_value(cmzn_time_sequence_id time_sequence,
+int cmzn_timesequence_get_number_of_times(
+	cmzn_timesequence_id timesequence)
+{
+	return FE_time_sequence_get_number_of_times(
+		reinterpret_cast<struct FE_time_sequence *>(timesequence));
+}
+
+double cmzn_timesequence_get_time(cmzn_timesequence_id timesequence,
+	int time_index)
+{
+	FE_value value = 0;
+	struct FE_time_sequence *fe_timesequence =
+		reinterpret_cast<struct FE_time_sequence *>(timesequence);
+	FE_time_sequence_get_time_for_index(fe_timesequence, time_index - 1, &value);
+	return static_cast<double>(value);
+}
+
+int cmzn_timesequence_set_time(cmzn_timesequence_id timesequence,
 	int time_index, double time)
 {
-	struct FE_time_sequence *fe_time_sequence;
-
-	fe_time_sequence = (struct FE_time_sequence *)time_sequence;
-	if (FE_time_sequence_is_in_use(fe_time_sequence))
+	struct FE_time_sequence *fe_timesequence =
+		reinterpret_cast<struct FE_time_sequence *>(timesequence);
+	if (FE_time_sequence_is_in_use(fe_timesequence))
 	{
-		display_message(ERROR_MESSAGE, "cmzn_time_sequence_set_value.  "
+		display_message(ERROR_MESSAGE, "cmzn_timesequence_set_time.  "
 			"Cannot modify time sequence while in use");
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	return FE_time_sequence_set_time_and_index(fe_time_sequence, time_index, time);
+	return FE_time_sequence_set_time_and_index(fe_timesequence, time_index - 1, time);
 }

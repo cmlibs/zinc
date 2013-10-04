@@ -295,6 +295,24 @@ public:
 
 	virtual char* get_command_string();
 
+	/**
+	 * Default component names are the component number as a string.
+	 * Override for fields with stored component names, e.g. finite element.
+	 * @param componentNumber  Starts at 1.
+	 * @return  Allocated string name. Up to caller to free.
+	 */
+	virtual char *getComponentName(int componentNumber) const;
+
+	/**
+	 * Default implementation is that field component names can't be set.
+	 * Override for fields with stored component names, e.g. finite element.
+	 * @return CMZN_ERROR_ARGUMENT.
+	 */
+	virtual int setComponentName(int, const char *)
+	{
+		return CMZN_ERROR_ARGUMENT;
+	}
+
 	virtual int has_multiple_times();
 
 	virtual int get_native_resolution(int *dimension, int **sizes,
@@ -325,21 +343,20 @@ public:
 		return 1;
 	}
 
-	// override if attribute supported by field type
-	// used only for attributes not stored in the generic field object
-	virtual int get_attribute_integer(enum cmzn_field_attribute attribute) const
+	/** override if field type can determine whether it is a coordinate type field */
+	virtual bool isTypeCoordinate() const
 	{
-		USE_PARAMETER(attribute);
-		return 0;
+		return false;
 	}
 
-	// override if attribute can be set for field type
-	// used only for attributes not stored in the generic field object
-	virtual int set_attribute_integer(enum cmzn_field_attribute attribute, int value)
+	/** override if field can is a coordinate type field or stores state
+	 * @return CMZN_OK on success, CMZN_ERROR_ARGUMENT otherwise.
+	 */
+	virtual int setTypeCoordinate(bool value)
 	{
-		USE_PARAMETER(attribute);
-		USE_PARAMETER(value);
-		return 0;
+		if (value)
+			return CMZN_ERROR_ARGUMENT;
+		return CMZN_OK;
 	}
 
 	/** clones and clears type-specific change detail, if any.
@@ -380,7 +397,7 @@ enum Computed_field_attribute_flags
 {
 	COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT = 1
 	/*!< If NOT set, destroy field when only access is from region.
-	 * @see CMZN_FIELD_ATTRIBUTE_IS_MANAGED */
+	 * @see cmzn_field_set_mnanaged */
 };
 
 struct Computed_field
@@ -400,12 +417,8 @@ DESCRIPTION :
 		a valid identifier (contains spaces etc.) */
 	char *command_string;
 	int number_of_components;
-	/* This is set for fields where the components have names other than
-		the defaults of 1,2...number_of_components */
-	char **component_names;
 
 	struct Coordinate_system coordinate_system;
-
 
 	Computed_field_core* core;
 

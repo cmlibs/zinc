@@ -72,17 +72,6 @@ public:
 		return id;
 	}
 
-	/** @see cmzn_field_attribute */
-	enum Attribute
-	{
-		ATTRIBUTE_INVALID = CMZN_FIELD_ATTRIBUTE_INVALID,
-		ATTRIBUTE_IS_MANAGED = CMZN_FIELD_ATTRIBUTE_IS_MANAGED,
-		ATTRIBUTE_IS_COORDINATE = CMZN_FIELD_ATTRIBUTE_IS_COORDINATE,
-		ATTRIBUTE_NUMBER_OF_COMPONENTS = CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS,
-		ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS = CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS,
-		ATTRIBUTE_COORDINATE_SYSTEM_FOCUS = CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS
-	};
-
 	enum CoordinateSystemType
 	{
 		COORDINATE_SYSTEM_TYPE_INVALID = CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID,
@@ -128,26 +117,24 @@ public:
 		return cmzn_field_set_managed(id, value);
 	}
 
-	int getAttributeInteger(Attribute attribute)
+	char *getComponentName(int componentNumber)
 	{
-		return cmzn_field_get_attribute_integer(id, static_cast<cmzn_field_attribute>(attribute));
+		return cmzn_field_get_component_name(id, componentNumber);
 	}
 
-	int setAttributeInteger(Attribute attribute, int value)
+	int setComponentName(int componentNumber, const char *name)
 	{
-		return cmzn_field_set_attribute_integer(id, static_cast<cmzn_field_attribute>(attribute), value);
+		return cmzn_field_set_component_name(id, componentNumber, name);
 	}
 
-	double getAttributeReal(Attribute attribute)
+	double getCoordinateSystemFocus()
 	{
-		return cmzn_field_get_attribute_real(id,
-			static_cast<cmzn_field_attribute>(attribute));
+		return cmzn_field_get_coordinate_system_focus(id);
 	}
 
-	double setAttributeReal(Attribute attribute, double value)
+	int setCoordinateSystemFocus(double focus)
 	{
-		return cmzn_field_set_attribute_real(id,
-			static_cast<cmzn_field_attribute>(attribute), value);
+		 return cmzn_field_set_coordinate_system_focus(id, focus);
 	}
 
 	CoordinateSystemType getCoordinateSystemType()
@@ -177,9 +164,24 @@ public:
 		return cmzn_field_set_name(id, name);
 	}
 
+	int getNumberOfSourceFields()
+	{
+		return cmzn_field_get_number_of_source_fields(id);
+	}
+
 	Field getSourceField(int index)
 	{
 		return Field(cmzn_field_get_source_field(id, index));
+	}
+
+	bool isTypeCoordinate()
+	{
+		return cmzn_field_is_type_coordinate(id);
+	}
+
+	int setTypeCoordinate(bool value)
+	{
+		return cmzn_field_set_type_coordinate(id, value);
 	}
 
 	ValueType getValueType()

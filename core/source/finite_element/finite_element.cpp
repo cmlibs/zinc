@@ -5927,7 +5927,7 @@ public:
 		}
 	}
 
-	inline void setTimeSequence(FE_time_sequence *timeSequenceIn)
+	inline void setTimesequence(FE_time_sequence *timeSequenceIn)
 	{
 		if (timeSequenceIn != this->timeSequence)
 		{
@@ -6103,7 +6103,7 @@ public:
 			}
 			cache.nodeFieldComponent = node_field->components + cache.componentNumber;
 			cache.nodeFieldInfo = node->fields;
-			cache.setTimeSequence(node_field->time_sequence);
+			cache.setTimesequence(node_field->time_sequence);
 		}
 		FE_nodal_value_type *valueTypes = cache.nodeFieldComponent->nodal_value_types;
 		if (!valueTypes)
