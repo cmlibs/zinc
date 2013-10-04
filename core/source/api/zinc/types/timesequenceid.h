@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : timesequenceid.h
  *
  */
@@ -11,7 +11,7 @@
 #ifndef CMZN_TIMESEQUENCEID_H__
 #define CMZN_TIMESEQUENCEID_H__
 
-	struct cmzn_time_sequence;
-	typedef struct cmzn_time_sequence *cmzn_time_sequence_id;
+	struct cmzn_timesequence;
+	typedef struct cmzn_timesequence *cmzn_timesequence_id;
 
 #endif /* CMZN_TIME_SEQUENCE_ID_H */

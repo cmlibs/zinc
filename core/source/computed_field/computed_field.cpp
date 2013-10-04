@@ -197,15 +197,6 @@ then set values - that way the field will never be left in an invalid state.
 	ENTER(Computed_field_clear_type);
 	if (field)
 	{
-		if (field->component_names)
-		{
-			for (i = 0 ; i < field->number_of_components ; i++)
-			{
-				DEALLOCATE(field->component_names[i]);
-			}
-			DEALLOCATE(field->component_names);
-		}
-
 		delete field->core;
 
 		if (field->source_fields)
@@ -293,7 +284,6 @@ COMPUTED_FIELD_INVALID with no components.
 			field->number_of_components = 0;
 			field->coordinate_system.type = RECTANGULAR_CARTESIAN;
 			field->coordinate_system.parameters.focus = 1.0;
-			field->component_names = (char **)NULL;
 
 			field->core = (Computed_field_core*)NULL;
 
@@ -336,8 +326,7 @@ DESCRIPTION :
 Frees memory/deaccess objects in computed_field at <*field_address>.
 ==============================================================================*/
 {
-	 char **component_name;
-	 int  i, return_code;
+	int return_code;
 	struct Computed_field *field;
 	ENTER(DESTROY(Computed_field));
 	if (field_address&&(field= *field_address))
@@ -350,15 +339,6 @@ Frees memory/deaccess objects in computed_field at <*field_address>.
 				DEALLOCATE(field->command_string);
 			}
 			DEALLOCATE(field->name);
-			if (NULL != (component_name=field->component_names))
-			{
-				for (i=field->number_of_components;i>0;i--)
-				{
-					DEALLOCATE(*component_name);
-					component_name++;
-				}
-				DEALLOCATE(field->component_names);
-			}
 			Computed_field_clear_type(field);
 			DEALLOCATE(*field_address);
 			return_code=1;
@@ -581,26 +561,8 @@ int Computed_field_copy_type_specific(
 	if (source && destination)
 	{
 		return_code = 1;
-		char **component_names = (char **)NULL;
 		Computed_field **source_fields = (struct Computed_field **)NULL;
 		FE_value *source_values = (FE_value *)NULL;
-		if (source->component_names)
-		{
-			if (ALLOCATE(component_names, char *, source->number_of_components))
-			{
-				for (int i = 0 ; i < source->number_of_components; i++)
-				{
-					if (!(component_names[i] = duplicate_string(source->component_names[i])))
-					{
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
 		if (source->number_of_source_fields > 0)
 		{
 			if (!ALLOCATE(source_fields, struct Computed_field *, source->number_of_source_fields))
@@ -620,7 +582,6 @@ int Computed_field_copy_type_specific(
 			Computed_field_clear_type(destination);
 
 			destination->number_of_components=source->number_of_components;
-			destination->component_names = component_names;
 			destination->number_of_source_fields = source->number_of_source_fields;
 			for (int i = 0; i < source->number_of_source_fields; i++)
 			{
@@ -654,17 +615,6 @@ int Computed_field_copy_type_specific(
 		else
 		{
 			display_message(ERROR_MESSAGE, "Computed_field_copy_type_specific.  Not enough memory");
-			if (component_names)
-			{
-				for (int i = 0 ; i < source->number_of_components ; i++)
-				{
-					if (component_names[i])
-					{
-						DEALLOCATE(component_names[i]);
-					}
-				}
-				DEALLOCATE(component_names);
-			}
 			if (source_fields)
 			{
 				DEALLOCATE(source_fields);
@@ -1255,6 +1205,13 @@ int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	return Computed_field_is_defined_at_node(field, static_cast<FE_node*>(node_void));
 }
 
+char *Computed_field_core::getComponentName(int componentNumber) const
+{
+	char name[10];
+	sprintf(name, "%d", componentNumber);
+	return duplicate_string(name);
+}
+
 FieldValueCache *Computed_field_core::createValueCache(cmzn_fieldcache& /*parentCache*/)
 {
 	return new RealFieldValueCache(field->number_of_components);
@@ -1727,12 +1684,7 @@ int recursively_add_source_fields_to_list( struct Computed_field *field, struct 
 int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_in_use)
 {
 	USE_PARAMETER(not_in_use);
-	int response = 0;
-	if (field)
-	{
-		response = field->core->get_attribute_integer(CMZN_FIELD_ATTRIBUTE_IS_COORDINATE);
-	}
-	return response;
+	return cmzn_field_is_type_coordinate(field);
 }
 
 int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )
@@ -1790,55 +1742,6 @@ DESCRIPTION :
 
 	return (number_of_components);
 } /* Computed_field_get_number_of_components */
-
-char *Computed_field_get_component_name(struct Computed_field *field,
-	int component_no)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns an allocated string containing the name of <component_no> of <field>.
-If the <field> has special component names then these are returned,
-otherwise default names are made out of the character form of the
-component_no+1, eg, 1 -> "2".
-It is up to the calling function to deallocate the returned string.
-??? Get names from coordinate system?
-==============================================================================*/
-{
-	char *component_name,temp_name[20];
-
-	ENTER(Computed_field_get_component_name);
-	component_name=(char *)NULL;
-	if (field&&(0<=component_no)&&(component_no<field->number_of_components))
-	{
-		if (field->component_names)
-		{
-			if (!(component_name=duplicate_string(
-				field->component_names[component_no])))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_component_name.  Not enough memory");
-			}
-		}
-		else
-		{
-			sprintf(temp_name,"%i",component_no+1);
-			if (!(component_name=duplicate_string(temp_name)))
-			{
-				display_message(ERROR_MESSAGE,
-					"Computed_field_get_component_name.  Not enough memory");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_get_component_name.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (component_name);
-} /* Computed_field_get_component_name */
 
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field)
@@ -2528,7 +2431,7 @@ Writes the properties of the <field> to the command window.
 ==============================================================================*/
 {
 	char *component_name,*temp_string;
-	int i,return_code;
+	int return_code;
 
 	ENTER(list_Computed_field);
 	USE_PARAMETER(dummy_void);
@@ -2551,11 +2454,11 @@ Writes the properties of the <field> to the command window.
 		if (1<field->number_of_components)
 		{
 			display_message(INFORMATION_MESSAGE,"  component names:");
-			for (i=0;i<field->number_of_components;i++)
+			for (int i = 1; i <= field->number_of_components; ++i)
 			{
-				if (NULL != (component_name=Computed_field_get_component_name(field,i)))
+				if (NULL != (component_name = cmzn_field_get_component_name(field, i)))
 				{
-					if (0<i)
+					if (1 < i)
 					{
 						display_message(INFORMATION_MESSAGE,",");
 					}
@@ -2960,141 +2863,49 @@ int cmzn_field_set_managed(cmzn_field_id field, bool value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_field_get_attribute_integer(cmzn_field_id field,
-	enum cmzn_field_attribute attribute)
-{
-	int value = 0;
-	if (field)
-	{
-		switch (attribute)
-		{
-		case CMZN_FIELD_ATTRIBUTE_IS_MANAGED:
-			value = (0 != (field->attribute_flags & COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT));
-			break;
-		case CMZN_FIELD_ATTRIBUTE_IS_COORDINATE:
-			value = field->core->get_attribute_integer(attribute);
-			break;
-		case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
-			value = field->number_of_components;
-			break;
-		case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
-			value = field->number_of_source_fields;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"cmzn_field_get_attribute_integer.  Invalid attribute");
-			break;
-		}
-	}
-	return value;
-}
-
-int cmzn_field_set_attribute_integer(cmzn_field_id field,
-	enum cmzn_field_attribute attribute, int value)
-{
-	int return_code = 0;
-	if (field)
-	{
-		return_code = 1;
-		int old_value = cmzn_field_get_attribute_integer(field, attribute);
-		enum MANAGER_CHANGE(Computed_field) change =
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field);
-		switch (attribute)
-		{
-		case CMZN_FIELD_ATTRIBUTE_IS_MANAGED:
-			if (value)
-			{
-				field->attribute_flags |= COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
-			}
-			else
-			{
-				field->attribute_flags &= ~COMPUTED_FIELD_ATTRIBUTE_IS_MANAGED_BIT;
-			}
-			change = MANAGER_CHANGE_NOT_RESULT(Computed_field);
-			break;
-		case CMZN_FIELD_ATTRIBUTE_IS_COORDINATE:
-			return_code = field->core->set_attribute_integer(attribute, value);
-			if (!return_code)
-			{
-				display_message(WARNING_MESSAGE,
-					"cmzn_field_set_attribute_integer.  Cannot set attribute");
-			}
-			change = MANAGER_CHANGE_NOT_RESULT(Computed_field);
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"cmzn_field_set_attribute_integer.  Cannot set attribute");
-			return_code = 0;
-			break;
-		}
-		if (cmzn_field_get_attribute_integer(field, attribute) != old_value)
-		{
-			MANAGED_OBJECT_CHANGE(Computed_field)(field, change);
-		}
-	}
-	return return_code;
-}
-
-double cmzn_field_get_attribute_real(cmzn_field_id field,
-	enum cmzn_field_attribute attribute)
-{
-	double value = 0.0;
-	if (field)
-	{
-		switch (attribute)
-		{
-		case CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
-			value = field->coordinate_system.parameters.focus;
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"cmzn_field_get_attribute_real.  Invalid attribute");
-			break;
-		}
-	}
-	return value;
-}
-
-int cmzn_field_set_attribute_real(cmzn_field_id field,
-	enum cmzn_field_attribute attribute, double value)
-{
-	int return_code = 0;
-	if (field)
-	{
-		return_code = 1;
-		switch (attribute)
-		{
-		case CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
-			if (value > 0.0)
-			{
-				field->coordinate_system.parameters.focus = value;
-				// copy to wrapped FE_field:
-				field->core->propagate_coordinate_system();
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_field_set_attribute_real.  Coordinate system focus must be positive");
-				return_code = 0;
-			}
-			break;
-		default:
-			display_message(ERROR_MESSAGE,
-				"cmzn_field_set_attribute_real.  Cannot set attribute");
-			return_code = 0;
-			break;
-		}
-		if (return_code)
-		{
-			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
-		}
-	}
-	return return_code;
-}
-
 char *cmzn_field_get_component_name(cmzn_field_id field, int component_number)
 {
-	return Computed_field_get_component_name(field, component_number - 1);
+	if (field && (0 < component_number) &&
+		(component_number <= field->number_of_components))
+	{
+		return field->core->getComponentName(component_number);
+	}
+	return 0;
+}
+
+int cmzn_field_set_component_name(cmzn_field_id field,
+	int component_number, const char *name)
+{
+	if (field && (0 < component_number) &&
+		(component_number <= field->number_of_components) && name)
+	{
+		return field->core->setComponentName(component_number, name);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_field_get_coordinate_system_focus(cmzn_field_id field)
+{
+	if (field)
+		return static_cast<double>(field->coordinate_system.parameters.focus);
+	return 0;
+}
+
+int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus)
+{
+	if (field && (focus > 0.0))
+	{
+		FE_value useFocus = static_cast<FE_value>(focus);
+		if (useFocus != field->coordinate_system.parameters.focus)
+		{
+			field->coordinate_system.parameters.focus = useFocus;
+			// copy to wrapped FE_field:
+			field->core->propagate_coordinate_system();
+			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+		}
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_field_coordinate_system_type cmzn_field_get_coordinate_system_type(
@@ -3261,6 +3072,13 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 	return (return_code);
 }
 
+int cmzn_field_get_number_of_source_fields(cmzn_field_id field)
+{
+	if (field)
+		return field->number_of_source_fields;
+	return 0;
+}
+
 cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int index)
 {
 	cmzn_field_id source_field = 0;
@@ -3269,6 +3087,31 @@ cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int index)
 		source_field = ACCESS(Computed_field)(field->source_fields[index - 1]);
 	}
 	return source_field;
+}
+
+bool cmzn_field_is_type_coordinate(cmzn_field_id field)
+{
+	if (field)
+		return field->core->isTypeCoordinate();
+	return false;
+}
+
+int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value)
+{
+	if (field)
+	{
+		const bool oldValue = field->core->isTypeCoordinate();
+		if (value == oldValue)
+			return CMZN_OK;
+		int result = field->core->setTypeCoordinate(value);
+		const bool newValue = field->core->isTypeCoordinate();
+		if (newValue != oldValue)
+		{
+			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_NOT_RESULT(Computed_field));
+		}
+		return result;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int Computed_field_manager_set_region(struct MANAGER(Computed_field) *manager,
@@ -3401,47 +3244,6 @@ int Computed_field_manager_message_get_object_change_and_detail(
 		*change_detail_address = NULL;
 	}
 	return (MANAGER_CHANGE_NONE(Computed_field));
-}
-
-class cmzn_field_attribute_conversion
-{
-public:
-	static const char *to_string(enum cmzn_field_attribute attribute)
-	{
-		const char *enum_string = 0;
-		switch (attribute)
-		{
-			case CMZN_FIELD_ATTRIBUTE_IS_MANAGED:
-				enum_string = "IS_MANAGED";
-				break;
-			case CMZN_FIELD_ATTRIBUTE_IS_COORDINATE:
-				enum_string = "IS_COORDINATE";
-				break;
-			case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_COMPONENTS:
-				enum_string = "NUMBER_OF_COMPONENTS";
-				break;
-			case CMZN_FIELD_ATTRIBUTE_NUMBER_OF_SOURCE_FIELDS:
-				enum_string = "NUMBER_OF_SOURCE_FIELDS";
-				break;
-			case CMZN_FIELD_ATTRIBUTE_COORDINATE_SYSTEM_FOCUS:
-				enum_string = "COORDINATE_SYSTEM_FOCUS";
-				break;
-			default:
-				break;
-		}
-		return enum_string;
-	}
-};
-
-enum cmzn_field_attribute cmzn_field_attribute_enum_from_string(const char *string)
-{
-	return string_to_enum<enum cmzn_field_attribute,	cmzn_field_attribute_conversion>(string);
-}
-
-char *cmzn_field_attribute_enum_to_string(enum cmzn_field_attribute attribute)
-{
-	const char *attribute_string = cmzn_field_attribute_conversion::to_string(attribute);
-	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }
 
 class cmzn_field_coordinate_system_type_conversion

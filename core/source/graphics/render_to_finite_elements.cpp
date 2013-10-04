@@ -158,7 +158,7 @@ struct Render_to_finite_elements_data
 		cmzn_elementtemplate_set_shape_type(line_element_template, CMZN_ELEMENT_SHAPE_LINE);
 		cmzn_elementtemplate_set_number_of_nodes(line_element_template, 2);
 		cmzn_elementbasis_id line_basis = cmzn_fieldmodule_create_elementbasis(
-			field_module, /*dimension*/1, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE);
+			field_module, /*dimension*/1, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE);
 		if (!cmzn_elementtemplate_define_field_simple_nodal(line_element_template,
 			coordinate_field, /*component_number*/-1, line_basis, /*number_of_nodes*/2, local_node_indexes))
 			return_code = 0;
@@ -168,7 +168,7 @@ struct Render_to_finite_elements_data
 		cmzn_elementtemplate_set_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TRIANGLE);
 		cmzn_elementtemplate_set_number_of_nodes(triangle_element_template, 3);
 		cmzn_elementbasis_id triangle_basis = cmzn_fieldmodule_create_elementbasis(
-			field_module, /*dimension*/2, CMZN_BASIS_FUNCTION_LINEAR_SIMPLEX);
+			field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX);
 		if (!cmzn_elementtemplate_define_field_simple_nodal(triangle_element_template,
 			coordinate_field, /*component_number*/-1, triangle_basis, /*number_of_nodes*/3, local_node_indexes))
 			return_code = 0;
@@ -178,7 +178,7 @@ struct Render_to_finite_elements_data
 		cmzn_elementtemplate_set_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_SQUARE);
 		cmzn_elementtemplate_set_number_of_nodes(square_element_template, 4);
 		cmzn_elementbasis_id square_basis = cmzn_fieldmodule_create_elementbasis(
-			field_module, /*dimension*/2, CMZN_BASIS_FUNCTION_LINEAR_LAGRANGE);
+			field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE);
 		if (!cmzn_elementtemplate_define_field_simple_nodal(square_element_template,
 			coordinate_field, /*component_number*/-1, square_basis, /*number_of_nodes*/4, local_node_indexes))
 			return_code = 0;

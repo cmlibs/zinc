@@ -296,19 +296,6 @@ LAST MODIFIED : 23 December 1998
 DESCRIPTION :
 ==============================================================================*/
 
-char *Computed_field_get_component_name(struct Computed_field *field,
-	int component_no);
-/*******************************************************************************
-LAST MODIFIED : 29 December 1998
-
-DESCRIPTION :
-Returns an allocated string containing the name of <component_no> of <field>.
-Name of the component depends on the type of the Computed_field; for example,
-COMPUTED_FIELD_FINITE_ELEMENT gets component names from the FE_field it is wrapping. Default
-names are made out of the character form of the component_no+1, eg, 1 -> "2".
-It is up to the calling function to deallocate the returned string.
-==============================================================================*/
-
 struct Coordinate_system *Computed_field_get_coordinate_system(
 	struct Computed_field *field);
 /*******************************************************************************

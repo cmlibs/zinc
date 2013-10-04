@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : timesequence.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -16,41 +16,43 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class TimeSequence
+class Timesequence
 {
+friend bool operator==(const Timesequence& a, const Timesequence& b);
+
 protected:
-	cmzn_time_sequence_id id;
+	cmzn_timesequence_id id;
 
 public:
 
-	TimeSequence() : id(0)
+	Timesequence() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TimeSequence(cmzn_time_sequence_id in_time_sequence_id) :
+	explicit Timesequence(cmzn_timesequence_id in_time_sequence_id) :
 		id(in_time_sequence_id)
 	{  }
 
-	TimeSequence(const TimeSequence& timeSequence) :
-		id(cmzn_time_sequence_access(timeSequence.id))
+	Timesequence(const Timesequence& timeSequence) :
+		id(cmzn_timesequence_access(timeSequence.id))
 	{  }
 
-	TimeSequence& operator=(const TimeSequence& timeSequence)
+	Timesequence& operator=(const Timesequence& timeSequence)
 	{
-		cmzn_time_sequence_id temp_id = cmzn_time_sequence_access(timeSequence.id);
+		cmzn_timesequence_id temp_id = cmzn_timesequence_access(timeSequence.id);
 		if (0 != id)
 		{
-			cmzn_time_sequence_destroy(&id);
+			cmzn_timesequence_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~TimeSequence()
+	~Timesequence()
 	{
 		if (0 != id)
 		{
-			cmzn_time_sequence_destroy(&id);
+			cmzn_timesequence_destroy(&id);
 		}
 	}
 
@@ -59,18 +61,32 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_time_sequence_id getId()
+	cmzn_timesequence_id getId()
 	{
 		return id;
 	}
 
-	int setValue(int timeIndex, double time)
+	double getNumberOfTimes()
 	{
-		return cmzn_time_sequence_set_value(id, timeIndex, time);
+		return cmzn_timesequence_get_number_of_times(id);
+	}
 
+	double getTime(int timeIndex)
+	{
+		return cmzn_timesequence_get_time(id, timeIndex);
+	}
+
+	int setTime(int timeIndex, double time)
+	{
+		return cmzn_timesequence_set_time(id, timeIndex, time);
 	}
 
 };
+
+inline bool operator==(const Timesequence& a, const Timesequence& b)
+{
+	return a.id == b.id;
+}
 
 }  // namespace Zinc
 }

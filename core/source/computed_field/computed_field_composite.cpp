@@ -404,8 +404,7 @@ If <commands> is set, field/components are made into valid tokens.
 					}
 					else
 					{
-						component_name = Computed_field_get_component_name(source_field,
-							source_value_numbers[i]);
+						component_name = cmzn_field_get_component_name(source_field, source_value_numbers[i] + 1);
 						if (component_name != 0)
 						{
 							append_string(&token, ".", &token_error);
@@ -927,8 +926,7 @@ Returned field is ACCESSed once.
 		}
 		else
 		{
-			component_name =
-				Computed_field_get_component_name(field, component_number);
+			component_name = cmzn_field_get_component_name(field, component_number + 1);
 			if (component_name != 0)
 			{
 				if (ALLOCATE(component_field_name, char,

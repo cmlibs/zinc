@@ -401,16 +401,16 @@ ZINC_API int cmzn_nodetemplate_define_derivative(cmzn_nodetemplate_id node_templ
  * @param node_template  Node template to modify.
  * @param field  The field to define versions for. May be finite_element type
  * only.
- * @param time_sequence  Time sequence object defining the number of times for
+ * @param timesequence  Time sequence object defining the number of times for
  * which field parameters are stored, and the times they are for (increasing).
  * @param node_field_creator  Optionally defines different versions and/or
  * derivative types. If it is NULL then a single nodal value for each component
  * will be defined.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_nodetemplate_define_time_sequence(
+ZINC_API int cmzn_nodetemplate_define_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field,
-	struct cmzn_time_sequence *time_sequence);
+	struct cmzn_timesequence *timesequence);
 
 /**
  * Adds storage for multiple versions of nodal values and derivatives for the
@@ -456,7 +456,7 @@ ZINC_API int cmzn_nodetemplate_get_number_of_versions(cmzn_nodetemplate_id node_
  * @return  Handle to time sequence object if defined for field, or NULL if none
  * or error. Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_time_sequence_id cmzn_nodetemplate_get_time_sequence(
+ZINC_API cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field);
 
 /**
