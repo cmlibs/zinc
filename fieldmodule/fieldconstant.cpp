@@ -28,6 +28,14 @@ TEST(cmzn_field_constant, issue_3348_assign)
 	cmzn_field_id f3 = cmzn_fieldmodule_create_field_add(zinc.fm, f1, f2);
 	EXPECT_NE((cmzn_field_id)0, f3);
 
+	EXPECT_EQ(2, cmzn_field_get_number_of_source_fields(f3));
+	cmzn_field_id tmp1 = cmzn_field_get_source_field(f3, 1);
+	EXPECT_EQ(f1, tmp1);
+	cmzn_field_destroy(&tmp1);
+	cmzn_field_id tmp2 = cmzn_field_get_source_field(f3, 2);
+	EXPECT_EQ(f2, tmp2);
+	cmzn_field_destroy(&tmp2);
+
 	const double expectedSum = value1 + value2;
 
 	cmzn_fieldcache_id cache1 = cmzn_fieldmodule_create_fieldcache(zinc.fm);
