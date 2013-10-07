@@ -40,10 +40,10 @@ TEST(cmzn_fieldmodule_create_field_curvature_anisotropic_diffusion_image_filter,
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_stream_information_id si = cmzn_field_image_create_stream_information(im);
-	EXPECT_NE(static_cast<cmzn_stream_information_id>(0), si);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
-	cmzn_stream_resource_id sr = cmzn_stream_information_create_resource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
+	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
 
 	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, si));
 
@@ -71,8 +71,8 @@ TEST(cmzn_fieldmodule_create_field_curvature_anisotropic_diffusion_image_filter,
 	cmzn_field_destroy(&xi);
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
-	cmzn_stream_resource_destroy(&sr);
-	cmzn_stream_information_destroy(&si);
+	cmzn_streamresource_destroy(&sr);
+	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 
 }
@@ -87,10 +87,10 @@ TEST(cmzn_fieldmodule_create_field_connected_threshold_image_filter, valid_args)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_stream_information_id si = cmzn_field_image_create_stream_information(im);
-	EXPECT_NE(static_cast<cmzn_stream_information_id>(0), si);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
-	cmzn_stream_resource_id sr = cmzn_stream_information_create_resource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
+	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
 
 	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, si));
 
@@ -113,7 +113,7 @@ TEST(cmzn_fieldmodule_create_field_connected_threshold_image_filter, valid_args)
 	cmzn_field_destroy(&xi);
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
-	cmzn_stream_resource_destroy(&sr);
-	cmzn_stream_information_destroy(&si);
+	cmzn_streamresource_destroy(&sr);
+	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 }

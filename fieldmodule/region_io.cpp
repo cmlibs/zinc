@@ -22,19 +22,19 @@ TEST(region_file_input, invalid_args)
 	cmzn_context_id context = cmzn_context_create("test");
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
-	cmzn_stream_information_id si = cmzn_region_create_stream_information(
+	cmzn_streaminformation_id si = cmzn_region_create_streaminformation(
 		root_region);
-	EXPECT_NE(static_cast<cmzn_stream_information *>(0), si);
+	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), si);
 
-	cmzn_stream_resource_id sr = cmzn_stream_information_create_resource_file(
+	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(
 		si, TestResources::getLocation(TestResources::FIELDMODULE_REGION_INPUT_RESOURCE));
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), sr);
 
 	int result = cmzn_region_read(root_region, si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_stream_resource_destroy(&sr);
-	cmzn_stream_information_destroy(&si);
+	cmzn_streamresource_destroy(&sr);
+	cmzn_streaminformation_destroy(&si);
 
 	cmzn_region_id plate_region = cmzn_region_find_child_by_name(
 		root_region, "plate");
@@ -99,19 +99,19 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
 	cmzn_region_id node_region = cmzn_region_create_child(root_region, "node");
-	cmzn_stream_information_id node_si = cmzn_region_create_stream_information(
+	cmzn_streaminformation_id node_si = cmzn_region_create_streaminformation(
 		node_region);
-	EXPECT_NE(static_cast<cmzn_stream_information *>(0), node_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), node_si);
 
-	cmzn_stream_resource_id node_sr = cmzn_stream_information_create_resource_file(
+	cmzn_streamresource_id node_sr = cmzn_streaminformation_create_streamresource_file(
 		node_si, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), node_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), node_sr);
 
 	int result = cmzn_region_read(node_region, node_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_stream_resource_destroy(&node_sr);
-	cmzn_stream_information_destroy(&node_si);
+	cmzn_streamresource_destroy(&node_sr);
+	cmzn_streaminformation_destroy(&node_si);
 
 	cmzn_fieldmodule_id node_fm = cmzn_region_get_fieldmodule(node_region);
 	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), node_fm);
@@ -126,31 +126,31 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_fieldmodule_destroy(&node_fm);
 
 	cmzn_region_id data_region = cmzn_region_create_child(root_region, "data");
-	cmzn_stream_information_id data_si = cmzn_region_create_stream_information(
+	cmzn_streaminformation_id data_si = cmzn_region_create_streaminformation(
 		data_region);
-	EXPECT_NE(static_cast<cmzn_stream_information *>(0), data_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), data_si);
 
-	cmzn_stream_resource_id data_sr = cmzn_stream_information_create_resource_file(
+	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_file(
 		data_si, TestResources::getLocation(TestResources::FIELDMODULE_EXNODE_RESOURCE));
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), data_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), data_sr);
 
-	cmzn_stream_information_region_id data_region_si = cmzn_stream_information_cast_region(
+	cmzn_streaminformation_region_id data_region_si = cmzn_streaminformation_cast_region(
 		data_si);
-	EXPECT_NE(static_cast<cmzn_stream_information_region *>(0), data_region_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation_region *>(0), data_region_si);
 
-	cmzn_stream_information_region_set_resource_domain_type(data_region_si,
+	cmzn_streaminformation_region_set_resource_domain_type(data_region_si,
 		data_sr,	CMZN_FIELD_DOMAIN_DATA);
 
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), data_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), data_sr);
 
 	result = cmzn_region_read(data_region, data_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_stream_resource_destroy(&data_sr);
-	cmzn_stream_information_destroy(&data_si);
+	cmzn_streamresource_destroy(&data_sr);
+	cmzn_streaminformation_destroy(&data_si);
 
-	data_si = cmzn_stream_information_region_base_cast(data_region_si);
-	cmzn_stream_information_destroy(&data_si);
+	data_si = cmzn_streaminformation_region_base_cast(data_region_si);
+	cmzn_streaminformation_destroy(&data_si);
 
 	cmzn_fieldmodule_id data_fm = cmzn_region_get_fieldmodule(data_region);
 	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), data_fm);
@@ -161,19 +161,19 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	numberOfNodes = cmzn_nodeset_get_size(dataset);
 	EXPECT_EQ(16, numberOfNodes);
 
-	data_si = cmzn_region_create_stream_information(data_region);
-	data_sr = cmzn_stream_information_create_resource_memory(data_si);
+	data_si = cmzn_region_create_streaminformation(data_region);
+	data_sr = cmzn_streaminformation_create_streamresource_memory(data_si);
 
 	result = cmzn_region_write(data_region, data_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_stream_resource_memory_id memeory_sr = cmzn_stream_resource_cast_memory(
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		data_sr);
 
 	char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_stream_resource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	char *temp_char = strstr ( memory_buffer, "!#nodeset datapoints");
@@ -183,13 +183,13 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	cmzn_fieldmodule_destroy(&data_fm);
 
 	cmzn_region_id new_data_region = cmzn_region_create_child(root_region, "new_data");
-	cmzn_stream_information_id new_data_si = cmzn_region_create_stream_information(
+	cmzn_streaminformation_id new_data_si = cmzn_region_create_streaminformation(
 		new_data_region);
-	EXPECT_NE(static_cast<cmzn_stream_information *>(0), new_data_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), new_data_si);
 
-	cmzn_stream_resource_id new_data_sr = cmzn_stream_information_create_resource_memory_buffer(
+	cmzn_streamresource_id new_data_sr = cmzn_streaminformation_create_streamresource_memory_buffer(
 		new_data_si, memory_buffer, size);
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), new_data_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), new_data_sr);
 
 	result = cmzn_region_read(new_data_region, new_data_si);
 	EXPECT_EQ(CMZN_OK, result);
@@ -203,17 +203,17 @@ TEST(exdata_and_exnodes_file, invalid_args)
 	numberOfNodes = cmzn_nodeset_get_size(new_dataset);
 	EXPECT_EQ(16, numberOfNodes);
 
-	cmzn_stream_resource_destroy(&new_data_sr);
-	cmzn_stream_information_destroy(&new_data_si);
+	cmzn_streamresource_destroy(&new_data_sr);
+	cmzn_streaminformation_destroy(&new_data_si);
 
 	cmzn_nodeset_destroy(&new_dataset);
 	cmzn_fieldmodule_destroy(&new_data_fm);
 
-	cmzn_stream_resource_destroy(&data_sr);
-	cmzn_stream_information_destroy(&data_si);
+	cmzn_streamresource_destroy(&data_sr);
+	cmzn_streaminformation_destroy(&data_si);
 
-	data_sr = cmzn_stream_resource_memory_base_cast(memeory_sr);
-	cmzn_stream_resource_destroy(&data_sr);
+	data_sr = cmzn_streamresource_memory_base_cast(memeory_sr);
+	cmzn_streamresource_destroy(&data_sr);
 
 	cmzn_region_destroy(&new_data_region);
 	cmzn_region_destroy(&data_region);
@@ -229,40 +229,40 @@ TEST(element_dimension_file, invalid_args)
 	cmzn_region_id root_region = cmzn_context_get_default_region(context);
 
 	cmzn_region_id cube_region = cmzn_region_create_child(root_region, "cube");
-	cmzn_stream_information_id cube_si = cmzn_region_create_stream_information(
+	cmzn_streaminformation_id cube_si = cmzn_region_create_streaminformation(
 		cube_region);
-	EXPECT_NE(static_cast<cmzn_stream_information *>(0), cube_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), cube_si);
 
-	cmzn_stream_resource_id cube_sr = cmzn_stream_information_create_resource_file(
+	cmzn_streamresource_id cube_sr = cmzn_streaminformation_create_streamresource_file(
 		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), cube_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), cube_sr);
 
 	int result = cmzn_region_read(cube_region, cube_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_stream_resource_destroy(&cube_sr);
-	cmzn_stream_information_destroy(&cube_si);
+	cmzn_streamresource_destroy(&cube_sr);
+	cmzn_streaminformation_destroy(&cube_si);
 
-	cmzn_stream_information_id output_si = cmzn_region_create_stream_information(cube_region);
-	cmzn_stream_resource_id output_sr = cmzn_stream_information_create_resource_memory(output_si);
+	cmzn_streaminformation_id output_si = cmzn_region_create_streaminformation(cube_region);
+	cmzn_streamresource_id output_sr = cmzn_streaminformation_create_streamresource_memory(output_si);
 
-	cmzn_stream_information_region_id output_region_si = cmzn_stream_information_cast_region(
+	cmzn_streaminformation_region_id output_region_si = cmzn_streaminformation_cast_region(
 		output_si);
-	EXPECT_NE(static_cast<cmzn_stream_information_region *>(0), output_region_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation_region *>(0), output_region_si);
 
-	cmzn_stream_information_region_set_resource_domain_type(output_region_si,
+	cmzn_streaminformation_region_set_resource_domain_type(output_region_si,
 		output_sr,	CMZN_FIELD_DOMAIN_MESH_1D|CMZN_FIELD_DOMAIN_MESH_2D);
 
 	result = cmzn_region_write(cube_region, output_si);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_stream_resource_memory_id memeory_sr = cmzn_stream_resource_cast_memory(
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		output_sr);
 
 	char *memory_buffer;
 	unsigned int size = 0;
 
-	result = cmzn_stream_resource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
 	EXPECT_EQ(CMZN_OK, result);
 
 	char *temp_char = strstr ( memory_buffer, "Dimension=1");
@@ -274,14 +274,14 @@ TEST(element_dimension_file, invalid_args)
 	temp_char = strstr ( memory_buffer, "Dimension=3");
 	EXPECT_EQ(static_cast<char *>(0), temp_char);
 
-	cmzn_stream_resource_destroy(&output_sr);
-	cmzn_stream_information_destroy(&output_si);
+	cmzn_streamresource_destroy(&output_sr);
+	cmzn_streaminformation_destroy(&output_si);
 
-	output_sr = cmzn_stream_resource_memory_base_cast(memeory_sr);
-	cmzn_stream_resource_destroy(&output_sr);
+	output_sr = cmzn_streamresource_memory_base_cast(memeory_sr);
+	cmzn_streamresource_destroy(&output_sr);
 
-	output_si = cmzn_stream_information_region_base_cast(output_region_si);
-	cmzn_stream_information_destroy(&output_si);
+	output_si = cmzn_streaminformation_region_base_cast(output_region_si);
+	cmzn_streaminformation_destroy(&output_si);
 
 	cmzn_region_destroy(&cube_region);
 	cmzn_region_destroy(&root_region);

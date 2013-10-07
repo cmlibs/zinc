@@ -13,9 +13,11 @@
 #include <zinc/status.h>
 #include <zinc/stream.h>
 
+#include <zinc/context.hpp>
 #include <zinc/element.hpp>
 #include <zinc/node.hpp>
 #include <zinc/status.hpp>
+#include <zinc/stream.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -24,28 +26,27 @@
 
 TEST(nodes_elements_identifier, set_identifier)
 {
-	cmzn_context_id context = cmzn_context_create("test");
-	cmzn_region_id root_region = cmzn_context_get_default_region(context);
+	ZincTestSetup zinc;
 
-	cmzn_region_id cube_region = cmzn_region_create_child(root_region, "cube");
-	cmzn_stream_information_id cube_si = cmzn_region_create_stream_information(
+	cmzn_region_id cube_region = cmzn_region_create_child(zinc.root_region, "cube");
+	cmzn_streaminformation_id cube_si = cmzn_region_create_streaminformation(
 		cube_region);
-	EXPECT_NE(static_cast<cmzn_stream_information *>(0), cube_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), cube_si);
 
-	cmzn_stream_resource_id cube_sr = cmzn_stream_information_create_resource_file(
+	cmzn_streamresource_id cube_sr = cmzn_streaminformation_create_streamresource_file(
 		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
-	EXPECT_NE(static_cast<cmzn_stream_resource *>(0), cube_sr);
+	EXPECT_NE(static_cast<cmzn_streamresource *>(0), cube_sr);
 
 	int result = 0;
 	EXPECT_EQ(CMZN_OK, result = cmzn_region_read(cube_region, cube_si));
 
-	cmzn_stream_resource_destroy(&cube_sr);
-	cmzn_stream_information_destroy(&cube_si);
+	cmzn_streamresource_destroy(&cube_sr);
+	cmzn_streaminformation_destroy(&cube_si);
 
-	cmzn_fieldmodule_id cubeFM = cmzn_region_get_fieldmodule(cube_region);
-	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), cubeFM);
+	cmzn_fieldmodule_id cubeFm = cmzn_region_get_fieldmodule(cube_region);
+	EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), cubeFm);
 
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_name(cubeFM, "nodes");
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(cubeFm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), nodeset);
 
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
@@ -54,7 +55,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_node_set_identifier(node, 3));
 	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node, 9));
 
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(cubeFM, 3);
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(cubeFm, 3);
 	EXPECT_NE(static_cast<cmzn_mesh *>(0), mesh);
 
 	cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, 1);
@@ -65,13 +66,48 @@ TEST(nodes_elements_identifier, set_identifier)
 
 	cmzn_element_destroy(&element);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_fieldmodule_destroy(&cubeFM);
+	cmzn_fieldmodule_destroy(&cubeFm);
 	cmzn_nodeset_destroy(&nodeset);
 	cmzn_node_destroy(&node);
 
 	cmzn_region_destroy(&cube_region);
-	cmzn_region_destroy(&root_region);
-	cmzn_context_destroy(&context);
+}
+
+TEST(ZincNodesElements, setIdentifier)
+{
+	ZincTestSetupCpp zinc;
+
+	Region cubeRegion = zinc.root_region.createChild("cube");
+	StreaminformationRegion cubeSi = cubeRegion.createStreaminformation();
+	EXPECT_TRUE(cubeSi.isValid());
+
+	Streamresource cubeSr = cubeSi.createStreamresourceFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+	EXPECT_TRUE(cubeSr.isValid());
+
+	int result;
+	EXPECT_EQ(OK, result = cubeRegion.read(cubeSi));
+
+	Fieldmodule cubeFm = cubeRegion.getFieldmodule();
+	EXPECT_TRUE(cubeFm.isValid());
+
+	Nodeset nodeset = cubeFm.findNodesetByDomainType(Field::DOMAIN_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	Node node = nodeset.findNodeByIdentifier(1);
+	EXPECT_TRUE(node.isValid());
+
+	EXPECT_EQ(ERROR_GENERAL, result = node.setIdentifier(3));
+	EXPECT_EQ(OK, result = node.setIdentifier(9));
+
+	Mesh mesh = cubeFm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh.isValid());
+
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+
+	EXPECT_EQ(ERROR_GENERAL, result = element.setIdentifier(1));
+	EXPECT_EQ(OK, result = element.setIdentifier(2));
 }
 
 TEST(ZincElementiterator, iteration)
