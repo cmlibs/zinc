@@ -15,7 +15,7 @@
 #include "general/mystring.h"
 #include "stream/cmiss_stream_private.hpp"
 
-cmzn_stream_resource_id cmzn_stream_resource_access(cmzn_stream_resource_id resource)
+cmzn_streamresource_id cmzn_streamresource_access(cmzn_streamresource_id resource)
 {
 	if (resource)
 	{
@@ -24,7 +24,7 @@ cmzn_stream_resource_id cmzn_stream_resource_access(cmzn_stream_resource_id reso
 	return NULL;
 }
 
-int cmzn_stream_resource_destroy(cmzn_stream_resource_id *resource_address)
+int cmzn_streamresource_destroy(cmzn_streamresource_id *resource_address)
 {
 	if (resource_address && *resource_address)
 	{
@@ -35,14 +35,14 @@ int cmzn_stream_resource_destroy(cmzn_stream_resource_id *resource_address)
 	return 0;
 }
 
-cmzn_stream_resource_file_id cmzn_stream_resource_cast_file(
-	cmzn_stream_resource_id resource)
+cmzn_streamresource_file_id cmzn_streamresource_cast_file(
+	cmzn_streamresource_id resource)
 {
 	if (resource &&
-		(dynamic_cast<cmzn_stream_resource_file *>(resource)))
+		(dynamic_cast<cmzn_streamresource_file *>(resource)))
 	{
 		resource->access();
-		return (reinterpret_cast<cmzn_stream_resource_file *>(resource));
+		return (reinterpret_cast<cmzn_streamresource_file *>(resource));
 	}
 	else
 	{
@@ -50,7 +50,7 @@ cmzn_stream_resource_file_id cmzn_stream_resource_cast_file(
 	}
 }
 
-int cmzn_stream_resource_file_destroy(cmzn_stream_resource_file_id *resource_address)
+int cmzn_streamresource_file_destroy(cmzn_streamresource_file_id *resource_address)
 {
 	if (resource_address && *resource_address)
 	{
@@ -61,14 +61,14 @@ int cmzn_stream_resource_file_destroy(cmzn_stream_resource_file_id *resource_add
 	return 0;
 }
 
-cmzn_stream_resource_memory_id cmzn_stream_resource_cast_memory(
-	cmzn_stream_resource_id resource)
+cmzn_streamresource_memory_id cmzn_streamresource_cast_memory(
+	cmzn_streamresource_id resource)
 {
 	if (resource &&
-		(dynamic_cast<cmzn_stream_resource_memory *>(resource)))
+		(dynamic_cast<cmzn_streamresource_memory *>(resource)))
 	{
 		resource->access();
-		return (reinterpret_cast<cmzn_stream_resource_memory *>(resource));
+		return (reinterpret_cast<cmzn_streamresource_memory *>(resource));
 	}
 	else
 	{
@@ -76,7 +76,7 @@ cmzn_stream_resource_memory_id cmzn_stream_resource_cast_memory(
 	}
 }
 
-int cmzn_stream_resource_memory_destroy(cmzn_stream_resource_memory_id *resource_address)
+int cmzn_streamresource_memory_destroy(cmzn_streamresource_memory_id *resource_address)
 {
 	if (resource_address && *resource_address)
 	{
@@ -87,7 +87,7 @@ int cmzn_stream_resource_memory_destroy(cmzn_stream_resource_memory_id *resource
 	return 0;
 }
 
-int cmzn_stream_resource_memory_get_buffer(cmzn_stream_resource_memory_id resource,
+int cmzn_streamresource_memory_get_buffer(cmzn_streamresource_memory_id resource,
 	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
 {
 	if (resource)
@@ -97,7 +97,7 @@ int cmzn_stream_resource_memory_get_buffer(cmzn_stream_resource_memory_id resour
 	return 0;
 }
 
-int cmzn_stream_resource_memory_get_buffer_copy(cmzn_stream_resource_memory_id resource,
+int cmzn_streamresource_memory_get_buffer_copy(cmzn_streamresource_memory_id resource,
 	void **memory_buffer_references, unsigned int *memory_buffer_sizes)
 {
 	if (resource)
@@ -107,7 +107,7 @@ int cmzn_stream_resource_memory_get_buffer_copy(cmzn_stream_resource_memory_id r
 	return 0;
 }
 
-char *cmzn_stream_resource_file_get_name(cmzn_stream_resource_file_id resource)
+char *cmzn_streamresource_file_get_name(cmzn_streamresource_file_id resource)
 {
 	if (resource)
 	{
@@ -116,54 +116,54 @@ char *cmzn_stream_resource_file_get_name(cmzn_stream_resource_file_id resource)
 	return 0;
 }
 
-cmzn_stream_information_id cmzn_stream_information_access(
-	cmzn_stream_information_id stream_information)
+cmzn_streaminformation_id cmzn_streaminformation_access(
+	cmzn_streaminformation_id streaminformation)
 {
-	if (stream_information)
+	if (streaminformation)
 	{
-		return stream_information->access();
+		return streaminformation->access();
 	}
 	return NULL;
 }
 
-int cmzn_stream_information_destroy(cmzn_stream_information_id *stream_information_address)
+int cmzn_streaminformation_destroy(cmzn_streaminformation_id *streaminformation_address)
 {
-	if (stream_information_address && *stream_information_address)
+	if (streaminformation_address && *streaminformation_address)
 	{
-		(*stream_information_address)->deaccess();
-		*stream_information_address = NULL;
+		(*streaminformation_address)->deaccess();
+		*streaminformation_address = NULL;
 		return 1;
 	}
 	return 0;
 }
 
-cmzn_stream_resource_id cmzn_stream_information_create_resource_file(
-	cmzn_stream_information_id stream_information, const char *file_name)
+cmzn_streamresource_id cmzn_streaminformation_create_streamresource_file(
+	cmzn_streaminformation_id streaminformation, const char *file_name)
 {
-	if (stream_information)
+	if (streaminformation)
 	{
-		return stream_information->createStreamResourceFile(file_name);
+		return streaminformation->createStreamresourceFile(file_name);
 	}
 	return NULL;
 }
 
-cmzn_stream_resource_id cmzn_stream_information_create_resource_memory(
-	cmzn_stream_information_id stream_information)
+cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory(
+	cmzn_streaminformation_id streaminformation)
 {
-	if (stream_information)
+	if (streaminformation)
 	{
-		return stream_information->createStreamResourceMemory();
+		return streaminformation->createStreamresourceMemory();
 	}
 	return NULL;
 }
 
-cmzn_stream_resource_id cmzn_stream_information_create_resource_memory_buffer(
-	cmzn_stream_information_id stream_information,
+cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory_buffer(
+	cmzn_streaminformation_id streaminformation,
 	const void *buffer, unsigned int buffer_length)
 {
-	if (stream_information)
+	if (streaminformation)
 	{
-		return stream_information->createStreamResourceMemoryBuffer(buffer,
+		return streaminformation->createStreamresourceMemoryBuffer(buffer,
 			buffer_length);
 	}
 	return NULL;

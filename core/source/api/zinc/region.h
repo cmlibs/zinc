@@ -1,11 +1,10 @@
-/*******************************************************************************
-FILE : region.h
-
-LAST MODIFIED : 03 March 2005
-
-DESCRIPTION :
-The public interface to the cmzn_regions.
-==============================================================================*/
+/**
+ * FILE : region.h
+ *
+ * The public interface to region objects used to managed models and submodels
+ * in a tree-like structure. Each region owns its own fields and subregions,
+ * and may have a scene attached to it which holds its graphics.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -32,7 +31,7 @@ Global functions
 extern "C" {
 #endif
 
-/*******************************************************************************
+/**
  * Returns a new reference to the region with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
@@ -41,7 +40,7 @@ extern "C" {
  */
 ZINC_API cmzn_region_id cmzn_region_access(cmzn_region_id region);
 
-/*******************************************************************************
+/**
  * Destroys this handle to the region, and sets it to NULL.
  * Internally this just decrements the reference count.
  *
@@ -51,7 +50,7 @@ ZINC_API cmzn_region_id cmzn_region_access(cmzn_region_id region);
  */
 ZINC_API int cmzn_region_destroy(cmzn_region_id *region_address);
 
-/***************************************************************************//**
+/**
  * Begin caching or increment cache level for this region only. Call this
  * function before making multiple changes to the region or its fields and
  * objects via its field_module to minimise number of change messages sent to
@@ -65,7 +64,7 @@ ZINC_API int cmzn_region_destroy(cmzn_region_id *region_address);
  */
 ZINC_API int cmzn_region_begin_change(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Decrement cache level or end caching of changes for this region only.
  * Call cmzn_region_begin_change before making multiple field or region changes
  * and call this afterwards. When change level is restored to zero in region,
@@ -77,7 +76,7 @@ ZINC_API int cmzn_region_begin_change(cmzn_region_id region);
  */
 ZINC_API int cmzn_region_end_change(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Begin caching or increment cache level for all regions in a tree, used to
  * efficiently and safely make hierarchical field changes or modify the tree.
  * Must call cmzn_region_begin_hierarchical_change after modifications made.
@@ -88,7 +87,7 @@ ZINC_API int cmzn_region_end_change(cmzn_region_id region);
  */
 ZINC_API int cmzn_region_begin_hierarchical_change(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Decrement cache level or end caching of changes for all regions in a tree.
  * Call cmzn_region_begin_hierarchical_change before making hierarchical field
  * changes or modifying the region tree, and call this afterwards. When change
@@ -100,7 +99,7 @@ ZINC_API int cmzn_region_begin_hierarchical_change(cmzn_region_id region);
  */
 ZINC_API int cmzn_region_end_hierarchical_change(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Returns the name of the region.
  *
  * @param region  The region whose name is requested.
@@ -109,7 +108,7 @@ ZINC_API int cmzn_region_end_hierarchical_change(cmzn_region_id region);
  */
 ZINC_API char *cmzn_region_get_name(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Sets the name of the region.
  * A valid region name must start with an alphanumeric character, contain only
  * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
@@ -122,7 +121,7 @@ ZINC_API char *cmzn_region_get_name(cmzn_region_id region);
  */
 ZINC_API int cmzn_region_set_name(cmzn_region_id region, const char *name);
 
-/***************************************************************************//**
+/**
  * Returns a reference to the parent region of this region.
  *
  * @param region  The child region.
@@ -130,7 +129,7 @@ ZINC_API int cmzn_region_set_name(cmzn_region_id region, const char *name);
  */
 ZINC_API cmzn_region_id cmzn_region_get_parent(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Returns a reference to the first child region of this region.
  *
  * @param region  The region whose first child is requested.
@@ -138,7 +137,7 @@ ZINC_API cmzn_region_id cmzn_region_get_parent(cmzn_region_id region);
  */
 ZINC_API cmzn_region_id cmzn_region_get_first_child(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Returns a reference to this region's next sibling region.
  *
  * @param region  The region whose next sibling is requested.
@@ -146,7 +145,7 @@ ZINC_API cmzn_region_id cmzn_region_get_first_child(cmzn_region_id region);
  */
 ZINC_API cmzn_region_id cmzn_region_get_next_sibling(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Returns a reference to this region's previous sibling region.
  *
  * @param region  The region whose previous sibling is requested.
@@ -154,7 +153,7 @@ ZINC_API cmzn_region_id cmzn_region_get_next_sibling(cmzn_region_id region);
  */
 ZINC_API cmzn_region_id cmzn_region_get_previous_sibling(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Replaces the region reference with a reference to its next sibling.
  * Convenient for iterating through a child list, equivalent to:
  * {
@@ -167,7 +166,7 @@ ZINC_API cmzn_region_id cmzn_region_get_previous_sibling(cmzn_region_id region);
  */
 ZINC_API void cmzn_region_reaccess_next_sibling(cmzn_region_id *region_address);
 
-/***************************************************************************//**
+/**
  * Adds new_child to the end of the list of child regions of this region.
  * If the new_child is already in the region tree, it is first removed.
  * Fails if new_child contains this region.
@@ -180,7 +179,7 @@ ZINC_API void cmzn_region_reaccess_next_sibling(cmzn_region_id *region_address);
  */
 ZINC_API int cmzn_region_append_child(cmzn_region_id region, cmzn_region_id new_child);
 
-/***************************************************************************//**
+/**
  * Inserts new_child before the existing ref_child in the list of child regions
  * of this region. If ref_child is NULL new_child is added at the end of the
  * list. If the new_child is already in the region tree, it is first removed.
@@ -195,7 +194,7 @@ ZINC_API int cmzn_region_append_child(cmzn_region_id region, cmzn_region_id new_
 ZINC_API int cmzn_region_insert_child_before(cmzn_region_id region,
 	cmzn_region_id new_child, cmzn_region_id ref_child);
 
-/***************************************************************************//**
+/**
  * Removes old_child from the list of child regions of this region.
  * Fails if old_child is not a child of this region.
  *
@@ -206,7 +205,7 @@ ZINC_API int cmzn_region_insert_child_before(cmzn_region_id region,
 ZINC_API int cmzn_region_remove_child(cmzn_region_id region,
 	cmzn_region_id old_child);
 
-/***************************************************************************//**
+/**
  * Returns true if region is or contains the subregion.
  *
  * @param region  The region being tested as container.
@@ -216,7 +215,7 @@ ZINC_API int cmzn_region_remove_child(cmzn_region_id region,
 ZINC_API int cmzn_region_contains_subregion(cmzn_region_id region,
 	cmzn_region_id subregion);
 
-/***************************************************************************//**
+/**
  * Returns a reference to the child region with supplied name, if any.
  *
  * @param region  The region to search.
@@ -226,7 +225,7 @@ ZINC_API int cmzn_region_contains_subregion(cmzn_region_id region,
 ZINC_API cmzn_region_id cmzn_region_find_child_by_name(
 	cmzn_region_id region, const char *name);
 
-/***************************************************************************//**
+/**
  * Returns a reference to the subregion at the path relative to this region.
  * The format of the path string is CHILD_NAME/CHILD_NAME/...
  * i.e. forward slash characters '/' are used as parent/child name separators.
@@ -240,7 +239,7 @@ ZINC_API cmzn_region_id cmzn_region_find_child_by_name(
 ZINC_API cmzn_region_id cmzn_region_find_subregion_at_path(cmzn_region_id region,
 	const char *path);
 
-/***************************************************************************//**
+/**
  * Returns field module container for this region's fields, which must be passed
  * to field factory create methods.
  *
@@ -249,7 +248,7 @@ ZINC_API cmzn_region_id cmzn_region_find_subregion_at_path(cmzn_region_id region
  */
 ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
 
-/***************************************************************************//**
+/**
  * Creates and returns a reference to a region compatible with base_region,
  * i.e. able to exist in the same region tree.
  *
@@ -259,7 +258,7 @@ ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
  */
 ZINC_API cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region);
 
-/***************************************************************************//**
+/**
  * Create a child region with provided name in parent region.
  * Fails if a child of that name exists already.
  *
@@ -271,7 +270,7 @@ ZINC_API cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region);
 ZINC_API cmzn_region_id cmzn_region_create_child(cmzn_region_id parent_region,
 	const char *name);
 
-/***************************************************************************//**
+/**
  * Create a region at the specified relative path, creating any intermediary
  * regions if required.
  * Fails if a subregion exists at that path already.
@@ -284,21 +283,21 @@ ZINC_API cmzn_region_id cmzn_region_create_child(cmzn_region_id parent_region,
 ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id top_region,
 	const char *path);
 
-/***************************************************************************//**
- * Reads region data using the cmzn_stream_resource obejcts provided in the
- * cmzn_stream_information object.
- * @see cmzn_stream_information_id
+/**
+ * Reads region data using the cmzn_streamresource obejcts provided in the
+ * cmzn_streaminformation object.
+ * @see cmzn_streaminformation_id
  *
- * @param region  The region to read the resources in stream_information into.
- * @param stream_information Handle to the cmzn_stream_information containing
+ * @param region  The region to read the resources in streaminformation into.
+ * @param streaminformation Handle to the cmzn_streaminformation containing
  * 		information to read file into.
  * @return  Status CMZN_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
 ZINC_API int cmzn_region_read(cmzn_region_id region,
-	cmzn_stream_information_id stream_information);
+	cmzn_streaminformation_id streaminformation);
 
-/***************************************************************************//**
+/**
  * Convenient function to read a file with the provided name into a region
  * directly.
  *
@@ -310,20 +309,20 @@ ZINC_API int cmzn_region_read(cmzn_region_id region,
  */
 ZINC_API int cmzn_region_read_file(cmzn_region_id region, const char *file_name);
 
-/***************************************************************************//**
+/**
  * Write region data using the data provided in the cmzn_io_stream object.
  *
  * @param region  The region to be written out.
- * @param stream_information Handle to the cmzn_stream_information containing
+ * @param streaminformation Handle to the cmzn_streaminformation containing
  * 		information to read file into.
  *
  * @return  Status CMZN_OK if data is successfully written out, any other value
  * on failure.
  */
 ZINC_API int cmzn_region_write(cmzn_region_id region,
-	cmzn_stream_information_id stream_information);
+	cmzn_streaminformation_id streaminformation);
 
-/***************************************************************************//**
+/**
  * Convenient function to write the region into a file with the provided name.
  *
  * @param region  The region to be written out.
@@ -334,188 +333,186 @@ ZINC_API int cmzn_region_write(cmzn_region_id region,
  */
 ZINC_API int cmzn_region_write_file(cmzn_region_id region, const char *file_name);
 
-enum cmzn_stream_information_region_attribute
+enum cmzn_streaminformation_region_attribute
 {
-	CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_INVALID = 0,
-	CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME = 1
+	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID = 0,
+	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME = 1
 };
 
-
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_stream_information_region_attribute
-	cmzn_stream_information_region_attribute_enum_from_string(const char *string);
+ZINC_API enum cmzn_streaminformation_region_attribute
+	cmzn_streaminformation_region_attribute_enum_from_string(const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_stream_information_region_attribute_enum_to_string(
-	enum cmzn_stream_information_region_attribute attribute);
+ZINC_API char *cmzn_streaminformation_region_attribute_enum_to_string(
+	enum cmzn_streaminformation_region_attribute attribute);
 
-/*****************************************************************************//**
- * Creates a cmzn_stream_resource object.
- *
- * #see cmzn_stream_information_id
+/**
+ * Creates a stream information object for specifying files/resources and options
+ * for reading and writing field data to/from this region and child regions.
+ * @see cmzn_streaminformation_id
  *
  * @return The created object.
  */
-ZINC_API cmzn_stream_information_id cmzn_region_create_stream_information(
+ZINC_API cmzn_streaminformation_id cmzn_region_create_streaminformation(
 	cmzn_region_id region);
 
-/***************************************************************************//**
- * If the stream_information is of region type, then this function returns
+/**
+ * If the streaminformation is of region type, then this function returns
  * the region specific representation, otherwise it returns NULL.
  * Caller is responsible for destroying the returned derived reference.
  *
- * @param stream_information  The generic stream_information to be cast.
- * @param stream_information  Handle to the cmzn_stream_information.
- * @return  region specific representation if the input stream_information is
+ * @param streaminformation  The generic streaminformation to be cast.
+ * @return  region specific representation if the input streaminformation is
  * of this type, otherwise NULL.
  */
-ZINC_API cmzn_stream_information_region_id cmzn_stream_information_cast_region(
-	cmzn_stream_information_id stream_information);
+ZINC_API cmzn_streaminformation_region_id cmzn_streaminformation_cast_region(
+	cmzn_streaminformation_id streaminformation);
 
-/***************************************************************************//**
- * Cast cmzn_stream_information_region back to its base stream_information and
- * return the stream_information.
- * IMPORTANT NOTE: Returned stream_information does not have incremented
- * reference count and must not be destroyed. Use cmzn_stream_information_access()
+/**
+ * Cast cmzn_streaminformation_region back to its base streaminformation and
+ * return the streaminformation.
+ * IMPORTANT NOTE: Returned streaminformation does not have incremented
+ * reference count and must not be destroyed. Use cmzn_streaminformation_access()
  * to add a reference if maintaining returned handle beyond the lifetime of the
- * stream_information_image argument.
+ * streaminformation_region argument.
  *
- * @param stream_information  Handle to the stream_information_image_ to cast.
+ * @param streaminformation  Handle to the streaminformation_region to cast.
  * @return  Non-accessed handle to the base stream information or NULL if failed.
  */
-ZINC_C_INLINE cmzn_stream_information_id cmzn_stream_information_region_base_cast(
-	cmzn_stream_information_region_id stream_information)
+ZINC_C_INLINE cmzn_streaminformation_id cmzn_streaminformation_region_base_cast(
+	cmzn_streaminformation_region_id streaminformation_region)
 {
-	return (cmzn_stream_information_id)(stream_information);
+	return (cmzn_streaminformation_id)(streaminformation_region);
 }
 
-/*****************************************************************************//**
- * Destroys a cmzn_stream_information_region object.
+/**
+ * Destroys a cmzn_streaminformation_region object.
  *
- * @param stream_information_address  Pointer to a stream_information object, which
+ * @param streaminformation_address  Pointer to a streaminformation object, which
  * is destroyed and the pointer is set to NULL.
  * @return  Status CMZN_OK if the operation is successful, any other value on
  * failure.
  */
-ZINC_API int cmzn_stream_information_region_destroy(
-	cmzn_stream_information_region_id *stream_information_address);
+ZINC_API int cmzn_streaminformation_region_destroy(
+	cmzn_streaminformation_region_id *streaminformation_address);
 
-/***************************************************************************//**
- * Check either an attribute of stream_information has been set or
+/**
+ * Check either an attribute of streaminformation has been set or
  * not.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
  * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
-ZINC_API bool cmzn_stream_information_region_has_attribute(
-	cmzn_stream_information_region_id stream_information,
-	enum cmzn_stream_information_region_attribute attribute);
+ZINC_API bool cmzn_streaminformation_region_has_attribute(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_attribute attribute);
 
-/***************************************************************************//**
- * Get a real value of an attribute of stream_information.
+/**
+ * Get a real value of an attribute of streaminformation.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-ZINC_API double cmzn_stream_information_region_get_attribute_real(
-	cmzn_stream_information_region_id stream_information,
-	enum cmzn_stream_information_region_attribute attribute);
+ZINC_API double cmzn_streaminformation_region_get_attribute_real(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_attribute attribute);
 
-/***************************************************************************//**
- * Set a double attribute of the cmzn_stream_information_region.
+/**
+ * Set a double attribute of the cmzn_streaminformation_region.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
  * @return  status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this
- * cmzn_stream_information_region.
+ * cmzn_streaminformation_region.
  */
-ZINC_API int cmzn_stream_information_region_set_attribute_real(
-	cmzn_stream_information_region_id stream_information,
-	enum cmzn_stream_information_region_attribute attribute,
+ZINC_API int cmzn_streaminformation_region_set_attribute_real(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_attribute attribute,
 	double value);
 
-/***************************************************************************//**
- * Check either an attribute of a stream in stream_information has been set or
+/**
+ * Check either an attribute of a stream in streaminformation has been set or
  * not.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
- * @param resource  Handle to the cmzn_stream_resource.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param resource  Handle to the cmzn_streamresource.
  * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
-ZINC_API bool cmzn_stream_information_region_has_resource_attribute(
-	cmzn_stream_information_region_id stream_information,
-	cmzn_stream_resource_id resource,
-	enum cmzn_stream_information_region_attribute attribute);
+ZINC_API bool cmzn_streaminformation_region_has_resource_attribute(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_region_attribute attribute);
 
-/***************************************************************************//**
- * Get a real value of an attribute of a stream in stream_information.
+/**
+ * Get a real value of an attribute of a stream in streaminformation.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
- * @param resource  Handle to the cmzn_stream_resource.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param resource  Handle to the cmzn_streamresource.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
-ZINC_API double cmzn_stream_information_region_get_resource_attribute_real(
-	cmzn_stream_information_region_id stream_information,
-	cmzn_stream_resource_id resource,
-	enum cmzn_stream_information_region_attribute attribute);
+ZINC_API double cmzn_streaminformation_region_get_resource_attribute_real(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_region_attribute attribute);
 
 /**
- * Set a double attribute of the cmzn_stream_information_region.
+ * Set a double attribute of the cmzn_streaminformation_region.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
- * @param resource  Handle to the cmzn_stream_resource.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param resource  Handle to the cmzn_streamresource.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
  * @return   status CMZN_OK if attribute successfully set, any other value if
  * failed or attribute not valid or unable to be set for this
- * cmzn_stream_information_region.
+ * cmzn_streaminformation_region.
  */
-ZINC_API int cmzn_stream_information_region_set_resource_attribute_real(
-	cmzn_stream_information_region_id stream_information,
-	cmzn_stream_resource_id resource,
-	enum cmzn_stream_information_region_attribute attribute,
+ZINC_API int cmzn_streaminformation_region_set_resource_attribute_real(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_region_attribute attribute,
 	double value);
 
 /**
- * Get the specified domain_type for a stream resource in stream_information.
+ * Get the specified domain_type for a stream resource in streaminformation.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
- * @param resource  Handle to the cmzn_stream_resource.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param resource  Handle to the cmzn_streamresource.
  * @return  Bitmasks for specified domain types for stream resource,
  * 	CMZN_FIELD_DOMAIN_TYPE_INVALID if failed or unset
  */
-ZINC_API int cmzn_stream_information_region_get_resource_domain_type(
-	cmzn_stream_information_region_id stream_information, cmzn_stream_resource_id resource);
+ZINC_API int cmzn_streaminformation_region_get_resource_domain_type(
+	cmzn_streaminformation_region_id streaminformation, cmzn_streamresource_id resource);
 
-/***************************************************************************//**
+/**
  * Set the domain_type to be export from the region this stream information is
  * created in. The current default setting will output all domains in region.
  * The domain type also specifies nodesets without a specified domain_type in
  * exformat file to be imported as nodes or datapoints domain.
  * If leave unset, unspecified nodesets will be import as nodes.
  *
- * @param stream_information  Handle to the cmzn_stream_information_region.
- * @param resource  Handle to the cmzn_stream_resource.
+ * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param resource  Handle to the cmzn_streamresource.
  * @param domain_type  Bitmasks for the domain type to be set for output. It currently supports
  *   the following domains:
  *   CMZN_FIELD_DOMAIN_POINT - Only output the region name if this is the only bit set
@@ -529,11 +526,11 @@ ZINC_API int cmzn_stream_information_region_get_resource_domain_type(
  *
  * @return   status CMZN_OK if domain_type is successfully set, any other value if
  *   failed or domain_type not valid or unable to be set for this
- * cmzn_stream_information_region.
+ * cmzn_streaminformation_region.
  */
-ZINC_API int cmzn_stream_information_region_set_resource_domain_type(
-	cmzn_stream_information_region_id stream_information,
-	cmzn_stream_resource_id resource,
+ZINC_API int cmzn_streaminformation_region_set_resource_domain_type(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource,
 	int domain_type);
 
 #ifdef __cplusplus

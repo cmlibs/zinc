@@ -22,7 +22,7 @@ struct cmzn_region_resource_properties : cmzn_resource_properties
 {
 public:
 
-	cmzn_region_resource_properties(cmzn_stream_resource_id resource_in) :
+	cmzn_region_resource_properties(cmzn_streamresource_id resource_in) :
 		cmzn_resource_properties(resource_in), time_enabled(false),
 		time(0.0), domain_type((int)CMZN_FIELD_DOMAIN_TYPE_INVALID)
 	{
@@ -66,18 +66,18 @@ private:
 	int domain_type;
 };
 
-struct cmzn_stream_information_region : cmzn_stream_information
+struct cmzn_streaminformation_region : cmzn_streaminformation
 {
 public:
 
-	cmzn_stream_information_region(struct cmzn_region *region_in) :
+	cmzn_streaminformation_region(struct cmzn_region *region_in) :
 		region(cmzn_region_access(region_in)), root_region(cmzn_region_access(region_in))
 	{
 		time_enabled = false;
 		time = 0.0;
 	}
 
-	virtual ~cmzn_stream_information_region()
+	virtual ~cmzn_streaminformation_region()
 	{
 		if (root_region)
 			cmzn_region_destroy(&root_region);
@@ -85,7 +85,7 @@ public:
 			cmzn_region_destroy(&region);
 	}
 
-	virtual int addResource(cmzn_stream_resource_id resourec_in)
+	virtual int addResource(cmzn_streamresource_id resourec_in)
 	{
 		if (resourec_in && !findResourceInList(resourec_in))
 		{
@@ -100,7 +100,7 @@ public:
 		}
 	}
 
-	virtual cmzn_resource_properties *createResourceProperties(cmzn_stream_resource_id resource)
+	virtual cmzn_resource_properties *createResourceProperties(cmzn_streamresource_id resource)
 	{
 		if (resource)
 			return new cmzn_region_resource_properties(resource);
@@ -123,7 +123,7 @@ public:
 		return 1;
 	}
 
-	double getResourceTime(cmzn_stream_resource_id resource)
+	double getResourceTime(cmzn_streamresource_id resource)
 	{
 		if (resource)
 		{
@@ -140,7 +140,7 @@ public:
 		return 0.0;
 	}
 
-	bool isResourceTimeEnabled(cmzn_stream_resource_id resource)
+	bool isResourceTimeEnabled(cmzn_streamresource_id resource)
 	{
 		if (resource)
 		{
@@ -154,7 +154,7 @@ public:
 		return false;
 	}
 
-	int setResourceTime(cmzn_stream_resource_id resource, double time_in)
+	int setResourceTime(cmzn_streamresource_id resource, double time_in)
 	{
 		if (resource)
 		{
@@ -169,7 +169,7 @@ public:
 		return 0;
 	}
 
-	int getResourceDomainType(cmzn_stream_resource_id resource)
+	int getResourceDomainType(cmzn_streamresource_id resource)
 	{
 		if (resource)
 		{
@@ -183,7 +183,7 @@ public:
 		return CMZN_FIELD_DOMAIN_TYPE_INVALID;
 	}
 
-	int setResourceDomainType(cmzn_stream_resource_id resource, int domain_type_in)
+	int setResourceDomainType(cmzn_streamresource_id resource, int domain_type_in)
 	{
 		if (resource)
 		{
@@ -227,10 +227,10 @@ private:
 	struct cmzn_region *region, *root_region;
 };
 
-cmzn_region_id cmzn_stream_information_region_get_region_private(
-	cmzn_stream_information_region_id stream_information);
+cmzn_region_id cmzn_streaminformation_region_get_region_private(
+	cmzn_streaminformation_region_id streaminformation);
 
-cmzn_region_id cmzn_stream_information_region_get_root_region(
-	cmzn_stream_information_region_id stream_information);
+cmzn_region_id cmzn_streaminformation_region_get_root_region(
+	cmzn_streaminformation_region_id streaminformation);
 
 #endif /* CMZN_REGION_STREAM_HPP */

@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldimage.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -19,7 +19,7 @@ namespace OpenCMISS
 {
 namespace Zinc
 {
-class StreamInformationImage;
+class StreaminformationImage;
 
 class FieldImage : public Field
 {
@@ -80,9 +80,9 @@ public:
 
 	enum HardwareCompressionMode
 	{
-		HARDWARE_COMPRESSION_MODE_INVALID = CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID,
-		HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED,
-		HARDWARE_COMPRESSION_MODE_AUTOMATIC = CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC
+		HARDWARE_COMPRESSION_INVALID = CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_INVALID,
+		HARDWARE_COMPRESSION_NONE = CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_NONE,
+		HARDWARE_COMPRESSION_AUTOMATIC = CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_AUTOMATIC
 		/*!< Allow the hardware to choose the compression */
 	};
 
@@ -159,7 +159,7 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	int read(StreamInformation& streamInformation)
+	int read(Streaminformation& streamInformation)
 	{
 		return cmzn_field_image_read(getDerivedId(), streamInformation.getId());
 	}
@@ -169,7 +169,7 @@ public:
 		return cmzn_field_image_read_file(getDerivedId(), fileName);
 	}
 
-	int write(StreamInformation& streamInformation)
+	int write(Streaminformation& streamInformation)
 	{
 		return cmzn_field_image_write(getDerivedId(), streamInformation.getId());
 	}
@@ -234,92 +234,92 @@ public:
 		return cmzn_field_image_get_property(getDerivedId(), property);
 	}
 
-	StreamInformationImage createStreamInformation();
+	StreaminformationImage createStreaminformation();
 
 };
 
-class StreamInformationImage : public StreamInformation
+class StreaminformationImage : public Streaminformation
 {
 private:
-	StreamInformationImage(StreamInformation& streamInformation) :
-		StreamInformation(streamInformation)
+	StreaminformationImage(Streaminformation& streamInformation) :
+		Streaminformation(streamInformation)
 	{ }
 
-	friend StreamInformationImage FieldImage::createStreamInformation();
+	friend StreaminformationImage FieldImage::createStreaminformation();
 
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamInformationImage(cmzn_stream_information_image_id stream_information_image_id) :
-		StreamInformation(reinterpret_cast<cmzn_stream_information_id>(stream_information_image_id))
+	explicit StreaminformationImage(cmzn_streaminformation_image_id streaminformation_image_id) :
+		Streaminformation(reinterpret_cast<cmzn_streaminformation_id>(streaminformation_image_id))
 	{ }
 
-	enum ImageAttribute
+	enum Attribute
 	{
-		IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS,
-		IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS,
-		IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT,
-		IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = CMZN_STREAM_INFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY
+		ATTRIBUTE_RAW_WIDTH_PIXELS = CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS,
+		ATTRIBUTE_RAW_HEIGHT_PIXELS = CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS,
+		ATTRIBUTE_BITS_PER_COMPONENT = CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT,
+		ATTRIBUTE_COMPRESSION_QUALITY = CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY
 	};
 
-	enum ImageFileFormat
+	enum FileFormat
 	{
-		IMAGE_FILE_FORMAT_INVALID = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_INVALID,
-		IMAGE_FILE_FORMAT_BMP = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_BMP,
-		IMAGE_FILE_FORMAT_DICOM = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_DICOM,
-		IMAGE_FILE_FORMAT_JPG = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_JPG,
-		IMAGE_FILE_FORMAT_GIF = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_GIF,
-		IMAGE_FILE_FORMAT_PNG = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_PNG,
-		IMAGE_FILE_FORMAT_SGI = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_SGI,
-		IMAGE_FILE_FORMAT_TIFF = CMZN_STREAM_INFORMATION_IMAGE_FILE_FORMAT_TIFF
+		FILE_FORMAT_INVALID = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_INVALID,
+		FILE_FORMAT_BMP = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_BMP,
+		FILE_FORMAT_DICOM = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_DICOM,
+		FILE_FORMAT_JPG = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_JPG,
+		FILE_FORMAT_GIF = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_GIF,
+		FILE_FORMAT_PNG = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_PNG,
+		FILE_FORMAT_SGI = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_SGI,
+		FILE_FORMAT_TIFF = CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_TIFF
 	};
 
-	enum ImagePixelFormat
+	enum PixelFormat
 	{
-		IMAGE_PIXEL_FORMAT_INVALID = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_INVALID,
-		IMAGE_PIXEL_FORMAT_LUMINANCE = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE,
-		IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
-		IMAGE_PIXEL_FORMAT_RGB = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB,
-		IMAGE_PIXEL_FORMAT_RGBA = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA,
-		IMAGE_PIXEL_FORMAT_ABGR = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR,
-		IMAGE_PIXEL_FORMAT_BGR = CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR
+		PIXEL_FORMAT_INVALID = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_INVALID,
+		PIXEL_FORMAT_LUMINANCE = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE,
+		PIXEL_FORMAT_LUMINANCE_ALPHA = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA,
+		PIXEL_FORMAT_RGB = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGB,
+		PIXEL_FORMAT_RGBA = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGBA,
+		PIXEL_FORMAT_ABGR = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_ABGR,
+		PIXEL_FORMAT_BGR = CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_BGR
 	};
 
-	int setAttributeInteger(ImageAttribute imageAttribute, int value)
+	int setAttributeInteger(Attribute attribute, int value)
 	{
-		return cmzn_stream_information_image_set_attribute_integer(
-			reinterpret_cast<cmzn_stream_information_image_id>(id),
-			static_cast<cmzn_stream_information_image_attribute>(imageAttribute), value);
+		return cmzn_streaminformation_image_set_attribute_integer(
+			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+			static_cast<cmzn_streaminformation_image_attribute>(attribute), value);
 	}
 
-	int setAttributeReal(ImageAttribute imageAttribute, double value)
+	int setAttributeReal(Attribute attribute, double value)
 	{
-		return cmzn_stream_information_image_set_attribute_real(
-			reinterpret_cast<cmzn_stream_information_image_id>(id),
-			static_cast<cmzn_stream_information_image_attribute>(imageAttribute), value);
+		return cmzn_streaminformation_image_set_attribute_real(
+			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+			static_cast<cmzn_streaminformation_image_attribute>(attribute), value);
 	}
 
-	int setFileFormat(ImageFileFormat imageFileFormat)
+	int setFileFormat(FileFormat imageFileFormat)
 	{
-		return cmzn_stream_information_image_set_file_format(
-			reinterpret_cast<cmzn_stream_information_image_id>(id),
-			static_cast<cmzn_stream_information_image_file_format>(imageFileFormat));
+		return cmzn_streaminformation_image_set_file_format(
+			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+			static_cast<cmzn_streaminformation_image_file_format>(imageFileFormat));
 	}
 
-	int setPixelFormat(ImagePixelFormat imagePixelFormat)
+	int setPixelFormat(PixelFormat imagePixelFormat)
 	{
-		return cmzn_stream_information_image_set_pixel_format(
-			reinterpret_cast<cmzn_stream_information_image_id>(id),
-			static_cast<cmzn_stream_information_image_pixel_format>(imagePixelFormat));
+		return cmzn_streaminformation_image_set_pixel_format(
+			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+			static_cast<cmzn_streaminformation_image_pixel_format>(imagePixelFormat));
 	}
 
 };
 
-inline StreamInformationImage FieldImage::createStreamInformation()
+inline StreaminformationImage FieldImage::createStreaminformation()
 {
-	return StreamInformationImage(
-		reinterpret_cast<cmzn_stream_information_image_id>(
-			cmzn_field_image_create_stream_information(getDerivedId())));
+	return StreaminformationImage(
+		reinterpret_cast<cmzn_streaminformation_image_id>(
+			cmzn_field_image_create_streaminformation(getDerivedId())));
 }
 
 inline FieldImage Fieldmodule::createFieldImage()
