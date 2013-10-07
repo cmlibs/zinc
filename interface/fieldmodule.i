@@ -1,5 +1,5 @@
 /*******************************************************************************
- * FieldModule.i
+ * fieldmodule.i
  *
  * Swig interface file for wrapping api functions in api/fieldmodule.hpp
  */

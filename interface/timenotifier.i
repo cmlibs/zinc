@@ -78,16 +78,16 @@ struct TimeNotifierPyDataObject
     PyObject *userObject;
 };
 
-static int callbackToPython(cmzn_time_notifier_id time_notifier,
+static int callbackToPython(cmzn_timenotifier_id timenotifier,
     double current_time, void *user_data)
 {
     PyObject *arglist = NULL;
     PyObject *result = NULL;
     PyObject *my_callback = (PyObject *)user_data;
-    /* convert time_notifier to python object */
+    /* convert timenotifier to python object */
     PyObject *obj = NULL;
-    OpenCMISS::Zinc::TimeNotifier *timeNotifier = new OpenCMISS::Zinc::TimeNotifier(cmzn_time_notifier_access(time_notifier));
-    obj = SWIG_NewPointerObj(SWIG_as_voidptr(timeNotifier), SWIGTYPE_p_OpenCMISS__Zinc__TimeNotifier, 1);
+    OpenCMISS::Zinc::Timenotifier *timeNotifier = new OpenCMISS::Zinc::Timenotifier(cmzn_timenotifier_access(timenotifier));
+    obj = SWIG_NewPointerObj(SWIG_as_voidptr(timeNotifier), SWIGTYPE_p_OpenCMISS__Zinc__Timenotifier, 1);
     /* Time to call the callback */
     arglist = Py_BuildValue("(Nd)", obj, current_time);
     result = PyObject_CallObject(my_callback, arglist);
