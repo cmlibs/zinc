@@ -9,8 +9,8 @@
 #include <zinc/fieldgroup.h>
 #include <zinc/region.h>
 #include <zinc/graphic.h>
-#include <zinc/graphicsfilter.h>
 #include <zinc/scene.h>
+#include <zinc/scenefilter.h>
 #include <zinc/sceneviewer.h>
 #include <zinc/scenepicker.h>
 
@@ -51,19 +51,19 @@ TEST(cmzn_scene_picker_api, valid_args)
 	result = cmzn_scene_viewer_view_all(sv);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_graphics_filter_module_id filter_module = cmzn_graphics_module_get_filter_module(zinc.gm);
-	EXPECT_NE(static_cast<cmzn_graphics_filter_module *>(0), filter_module);
+	cmzn_scenefiltermodule_id filter_module = cmzn_graphics_module_get_scenefiltermodule(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_scenefiltermodule *>(0), filter_module);
 
-	cmzn_graphics_filter_id gf = cmzn_graphics_filter_module_create_filter_graphic_type(filter_module,
+	cmzn_scenefilter_id sf = cmzn_scenefiltermodule_create_scenefilter_graphic_type(filter_module,
 		CMZN_GRAPHIC_POINTS);
-	EXPECT_NE(static_cast<cmzn_graphics_filter *>(0), gf);
+	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), sf);
 
-	cmzn_graphics_filter_module_destroy(&filter_module);
+	cmzn_scenefiltermodule_destroy(&filter_module);
 
 	result = cmzn_scene_picker_set_scene(scene_picker, zinc.scene);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_scene_picker_set_graphics_filter(scene_picker, gf);
+	result = cmzn_scene_picker_set_scenefilter(scene_picker, sf);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scene_picker_set_scene_viewer_rectangle(scene_picker, sv,
@@ -92,7 +92,7 @@ TEST(cmzn_scene_picker_api, valid_args)
 	result = cmzn_scene_picker_add_picked_nodes_to_group(scene_picker, fieldGroup);
 	EXPECT_EQ(static_cast<cmzn_graphic *>(0), graphic);
 
-	cmzn_graphics_filter_destroy(&gf);
+	cmzn_scenefilter_destroy(&sf);
 
 	cmzn_field_group_destroy(&fieldGroup);
 
@@ -131,16 +131,16 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	result = sv.viewAll();
 	EXPECT_EQ(CMZN_OK, result);
 
-	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
-	EXPECT_TRUE(gfm.isValid());
+	Scenefiltermodule sfm = zinc.gm.getScenefiltermodule();
+	EXPECT_TRUE(sfm.isValid());
 
-	GraphicsFilter gf = gfm.createFilterGraphicType(Graphic::POINTS);
-	EXPECT_TRUE(gf.isValid());
+	Scenefilter sf = sfm.createScenefilterGraphicType(Graphic::POINTS);
+	EXPECT_TRUE(sf.isValid());
 
 	result = scenePicker.setScene(zinc.scene);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = scenePicker.setGraphicsFilter(gf);
+	result = scenePicker.setScenefilter(sf);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = scenePicker.setSceneViewerRectangle(sv,

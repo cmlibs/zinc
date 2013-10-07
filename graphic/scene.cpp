@@ -17,6 +17,7 @@
 #include <zinc/fieldconstant.hpp>
 #include <zinc/fieldvectoroperators.hpp>
 #include <zinc/graphic.hpp>
+#include "zinc/scenefilter.hpp"
 #include "zinc/spectrum.hpp"
 
 #include "test_resources.h"
@@ -95,7 +96,7 @@ TEST(cmzn_scene, get_spectrum_data_range)
 	EXPECT_EQ(CMZN_OK, result = cmzn_graphic_set_spectrum(gr, zinc.defaultSpectrum));
 
 	double minimumValues[3], maximumValues[3];
-	int maxRanges = cmzn_scene_get_spectrum_data_range(zinc.scene, static_cast<cmzn_graphics_filter_id>(0),
+	int maxRanges = cmzn_scene_get_spectrum_data_range(zinc.scene, static_cast<cmzn_scenefilter_id>(0),
 		zinc.defaultSpectrum, 3, minimumValues, maximumValues);
 	EXPECT_EQ(2, maxRanges);
 	ASSERT_DOUBLE_EQ(0.0, minimumValues[0]);
@@ -104,7 +105,7 @@ TEST(cmzn_scene, get_spectrum_data_range)
 	ASSERT_DOUBLE_EQ(0.5, maximumValues[1]);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_graphic_set_data_field(gr, offsetYField));
-	maxRanges = cmzn_scene_get_spectrum_data_range(zinc.scene, static_cast<cmzn_graphics_filter_id>(0),
+	maxRanges = cmzn_scene_get_spectrum_data_range(zinc.scene, static_cast<cmzn_scenefilter_id>(0),
 		zinc.defaultSpectrum, 3, minimumValues, maximumValues);
 	EXPECT_EQ(1, maxRanges);
 	ASSERT_DOUBLE_EQ(-0.5, minimumValues[0]);
@@ -149,8 +150,8 @@ TEST(ZincScene, getSpectrumDataRange)
 	EXPECT_EQ(CMZN_OK, result = gr.setSpectrum(zinc.defaultSpectrum));
 
 	double minimumValues[3], maximumValues[3];
-	GraphicsFilterModule gfm = zinc.gm.getFilterModule();
-	GraphicsFilter defaultFilter = gfm.getDefaultFilter();
+	Scenefiltermodule sfm = zinc.gm.getScenefiltermodule();
+	Scenefilter defaultFilter = sfm.getDefaultScenefilter();
 
 	int maxRanges = zinc.scene.getSpectrumDataRange(defaultFilter,
 		zinc.defaultSpectrum, 3, minimumValues, maximumValues);

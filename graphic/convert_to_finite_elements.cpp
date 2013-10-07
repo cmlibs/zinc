@@ -9,10 +9,10 @@
 #include <zinc/fieldfiniteelement.h>
 #include <zinc/fieldmodule.h>
 #include <zinc/graphic.h>
-#include <zinc/graphicsfilter.h>
 #include <zinc/node.h>
 #include <zinc/region.h>
 #include <zinc/scene.h>
+#include <zinc/scenefilter.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -50,7 +50,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points)
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 
 	EXPECT_EQ(CMZN_OK, cmzn_scene_convert_to_point_cloud(zinc.scene,
-		static_cast<cmzn_graphics_filter_id>(0), nodeset, outputCoordinateField,
+		static_cast<cmzn_scenefilter_id>(0), nodeset, outputCoordinateField,
 		/*lineDensity*/0.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/100.0, /*surfaceDensityScaleFactor*/0.0));
 	int numberOfPoints = cmzn_nodeset_get_size(nodeset);
@@ -93,7 +93,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	NodesetGroup nodeset = nodeGroupField.getNodeset();
 	EXPECT_TRUE(nodeset.isValid());
 
-	GraphicsFilter noFilter;
+	Scenefilter noFilter;
 	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(noFilter,
 		nodeset, outputCoordinateField,
 		/*lineDensity*/0.0, /*lineDensityScaleFactor*/0.0,
@@ -128,7 +128,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points)
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 
 	EXPECT_EQ(CMZN_OK, cmzn_scene_convert_to_point_cloud(zinc.scene,
-		static_cast<cmzn_graphics_filter_id>(0), nodeset, outputCoordinateField,
+		static_cast<cmzn_scenefilter_id>(0), nodeset, outputCoordinateField,
 		/*lineDensity*/50.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/0.0, /*surfaceDensityScaleFactor*/0.0));
 	int numberOfPoints = cmzn_nodeset_get_size(nodeset);
@@ -165,7 +165,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points_cpp)
 	Nodeset nodeset = outputFm.findNodesetByDomainType(Field::DOMAIN_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 
-	GraphicsFilter noFilter;
+	Scenefilter noFilter;
 	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(noFilter,
 		nodeset, outputCoordinateField,
 		/*lineDensity*/50.0, /*lineDensityScaleFactor*/0.0,
