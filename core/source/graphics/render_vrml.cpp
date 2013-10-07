@@ -2695,7 +2695,7 @@ struct Export_to_vrml_data
 {
 	FILE *vrml_file;
 	cmzn_scene_id scene;
-	cmzn_graphics_filter_id filter;
+	cmzn_scenefilter_id filter;
 	/* store materials, glyphs and gt_objects that have been DEFined already so
 		 we can USE them again */
 	struct LIST(VRML_prototype) *vrml_prototype_list;
@@ -2760,7 +2760,7 @@ Global functions
 ----------------
 */
 int export_to_vrml(char *file_name, cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter)
+	cmzn_scenefilter_id filter)
 /******************************************************************************
 LAST MODIFIED : 19 October 2001
 

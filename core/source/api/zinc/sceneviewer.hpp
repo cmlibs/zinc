@@ -12,7 +12,7 @@
 #include "zinc/sceneviewer.h"
 #include "zinc/sceneviewerinput.h"
 #include "zinc/scene.hpp"
-#include "zinc/graphicsfilter.hpp"
+#include "zinc/scenefilter.hpp"
 
 namespace OpenCMISS
 {
@@ -211,14 +211,14 @@ public:
 		return Scene(cmzn_scene_viewer_get_scene(id));
 	}
 
-	int setFilter(GraphicsFilter graphicsFilter)
+	int setScenefilter(Scenefilter scenefilter)
 	{
-		return cmzn_scene_viewer_set_filter(id, graphicsFilter.getId());
+		return cmzn_scene_viewer_set_scenefilter(id, scenefilter.getId());
 	}
 
-	GraphicsFilter getFilter()
+	Scenefilter getScenefilter()
 	{
-		return GraphicsFilter(cmzn_scene_viewer_get_filter(id));
+		return Scenefilter(cmzn_scene_viewer_get_scenefilter(id));
 	}
 
 	int setGraphicsBufferWidth(int width)

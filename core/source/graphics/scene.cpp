@@ -869,7 +869,7 @@ int cmzn_scene_modify_graphic(struct cmzn_scene *scene,
 } /* cmzn_scene_modify_graphic */
 
 static int cmzn_scene_build_graphics_objects(
-	struct cmzn_scene *scene, cmzn_graphics_filter *graphics_filter,
+	struct cmzn_scene *scene, cmzn_scenefilter *scenefilter,
 	FE_value time, const char *name_prefix)
 {
 	int return_code = 1;
@@ -895,7 +895,7 @@ static int cmzn_scene_build_graphics_objects(
 			graphic_to_object_data.data_fe_region = scene->data_fe_region;
 			graphic_to_object_data.master_mesh = 0;
 			graphic_to_object_data.iteration_mesh = 0;
-			graphic_to_object_data.graphics_filter = graphics_filter;
+			graphic_to_object_data.scenefilter = scenefilter;
 			graphic_to_object_data.time = time;
 			graphic_to_object_data.selection_group_field = cmzn_field_group_base_cast(
 				cmzn_scene_get_selection_group(scene));
@@ -972,13 +972,13 @@ int cmzn_scene_set_position(struct cmzn_scene *scene, unsigned int position)
  * child region scenes.
  *
  * @param scene  The scene to get the range of.
- * @param graphics_filter  The filter to scene contents.
+ * @param scenefilter  The filter to apply to reduce scene contents.
  * @param graphics_object_range_void void pointer to graphics_object_range
  * @return If successfully get the range, otherwise NULL
  */
 int cmzn_scene_get_range(cmzn_scene_id scene,
 	cmzn_scene_id top_scene,
-	cmzn_graphics_filter_id filter,
+	cmzn_scenefilter_id filter,
 	struct Graphics_object_range_struct *graphics_object_range)
 {
 	double coordinates[4],transformed_coordinates[4];
@@ -992,7 +992,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 		/* must first build graphics objects */
 		Render_graphics_build_objects renderer;
 		renderer.set_Scene(scene);
-		renderer.setGraphicsFilter(filter);
+		renderer.setScenefilter(filter);
 
 		renderer.cmzn_scene_compile(scene);
 		if (NULL != (transformation = cmzn_scene_get_total_transformation(
@@ -1320,7 +1320,7 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 	{
 		/* check whether scene contents need building */
 		return_code = cmzn_scene_build_graphics_objects(scene,
-			renderer->getGraphicsFilter(), renderer->time, renderer->name_prefix);
+			renderer->getScenefilter(), renderer->time, renderer->name_prefix);
 	/* Call the renderer to compile each of the graphics */
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphic)(
 			cmzn_graphic_compile_visible_graphic, (void *)renderer,
@@ -2141,7 +2141,7 @@ static int Graphics_object_get_spectrum_data_range_iterator(
 }
 
 int cmzn_scene_get_spectrum_data_range(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, cmzn_spectrum_id spectrum,
+	cmzn_scenefilter_id filter, cmzn_spectrum_id spectrum,
 	int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
 {
 	if (scene && spectrum && (0 < valuesCount) && minimumValuesOut && maximumValuesOut)
@@ -3180,7 +3180,7 @@ in an easy-to-interpret matrix multiplication form.
 } /* list_cmzn_scene_transformation */
 
 int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, cmzn_nodeset_id nodeset,
+	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
 	cmzn_field_id coordinate_field,
 	double line_density, double line_density_scale_factor,
 	double surface_density, double surface_density_scale_factor)
@@ -3408,7 +3408,7 @@ cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position)
 	return scene_of_position;
 }
 
-int build_Scene(cmzn_scene_id scene, cmzn_graphics_filter_id filter)
+int build_Scene(cmzn_scene_id scene, cmzn_scenefilter_id filter)
 {
 	if (scene)
 	{
@@ -3625,7 +3625,7 @@ gtMatrix *cmzn_scene_get_total_transformation(
 }
 
 int cmzn_scene_get_global_graphics_range_internal(cmzn_scene_id top_scene,
-	cmzn_scene_id scene, cmzn_graphics_filter_id filter,
+	cmzn_scene_id scene, cmzn_scenefilter_id filter,
 	struct Graphics_object_range_struct *graphics_object_range)
 {
 	int return_code = 0;
@@ -3647,7 +3647,7 @@ int cmzn_scene_get_global_graphics_range_internal(cmzn_scene_id top_scene,
 }
 
 int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
-	cmzn_graphics_filter_id filter,
+	cmzn_scenefilter_id filter,
 	double *centre_x, double *centre_y, double *centre_z,
 	double *size_x, double *size_y, double *size_z)
 {
@@ -3707,7 +3707,7 @@ struct Scene_graphics_object_iterator_data
 	const char *graphic_name;
 	graphics_object_tree_iterator_function iterator_function;
 	void *user_data;
-	cmzn_graphics_filter_id filter;
+	cmzn_scenefilter_id filter;
 };
 
 static int Scene_graphics_objects_in_cmzn_graphic_iterator(
@@ -3722,7 +3722,7 @@ static int Scene_graphics_objects_in_cmzn_graphic_iterator(
 		if (!data->graphic_name ||
 			cmzn_graphic_has_name(graphic, (void *)data->graphic_name))
 		{
-			if ((( 0 == data->filter) || cmzn_graphics_filter_evaluate_graphic(data->filter, graphic)) &&
+			if ((( 0 == data->filter) || cmzn_scenefilter_evaluate_graphic(data->filter, graphic)) &&
 				(graphics_object = cmzn_graphic_get_graphics_object(
 					 graphic)))
 			{
@@ -3779,7 +3779,7 @@ static int cmzn_region_recursive_for_each_graphics_object(cmzn_region *region,
 }
 
 int for_each_graphics_object_in_scene_tree(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, graphics_object_tree_iterator_function iterator_function,
+	cmzn_scenefilter_id filter, graphics_object_tree_iterator_function iterator_function,
 	void *user_data)
 {
 	int return_code = 0;
@@ -3809,7 +3809,7 @@ int for_each_graphics_object_in_scene_tree(cmzn_scene_id scene,
 }
 
 int Scene_export_region_graphics_object(cmzn_scene *scene,
-	cmzn_region *region, const char *graphic_name, cmzn_graphics_filter_id filter,
+	cmzn_region *region, const char *graphic_name, cmzn_scenefilter_id filter,
 	graphics_object_tree_iterator_function iterator_function, void *user_data)
 {
 	int return_code = 0;
@@ -3846,11 +3846,11 @@ cmzn_scene_picker_id cmzn_scene_create_picker(cmzn_scene_id scene)
 {
 	if (scene)
 	{
-		cmzn_graphics_filter_module_id filter_module = cmzn_graphics_module_get_filter_module(
+		cmzn_scenefiltermodule_id filter_module = cmzn_graphics_module_get_scenefiltermodule(
 			scene->graphics_module);
 		cmzn_scene_picker_id scene_picker = cmzn_scene_picker_create(filter_module);
 		cmzn_scene_picker_set_scene(scene_picker, scene);
-		cmzn_graphics_filter_module_destroy(&filter_module);
+		cmzn_scenefiltermodule_destroy(&filter_module);
 		return scene_picker;
 	}
 	return 0;

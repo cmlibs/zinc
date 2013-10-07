@@ -94,7 +94,7 @@ ZINC_API int cmzn_scene_viewer_input_set_button(cmzn_scene_viewer_input_id input
  * @param type  Enumerator for the input event type.
  * @return  CMZN_OK if successful, any other value on failure.
  */
-ZINC_API int cmzn_scene_viewer_input_set_type(cmzn_scene_viewer_input_id input, cmzn_scene_viewer_input_event_type type);
+ZINC_API int cmzn_scene_viewer_input_set_type(cmzn_scene_viewer_input_id input, enum cmzn_scene_viewer_input_event_type type);
 
 #ifdef __cplusplus
 }

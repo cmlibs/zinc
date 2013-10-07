@@ -10,9 +10,9 @@
 #define CMZN_SCENE_HPP__
 
 #include "zinc/scene.h"
-#include "zinc/graphic.hpp"
-#include "zinc/graphicsfilter.hpp"
 #include "zinc/fieldgroup.hpp"
+#include "zinc/graphic.hpp"
+#include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
 
 namespace OpenCMISS
@@ -80,7 +80,7 @@ public:
 		return cmzn_scene_end_change(id);
 	}
 
-	int convertToPointCloud(GraphicsFilter& filter, Nodeset& nodeset,
+	int convertToPointCloud(Scenefilter& filter, Nodeset& nodeset,
 		Field& coordinateField, double lineDensity, double lineDensityScaleFactor,
 		double surfaceDensity, double surfaceDensityScaleFactor)
 	{
@@ -171,7 +171,7 @@ public:
 			(cmzn_field_group_id)(fieldGroup.getId()));
 	}
 
-	int getSpectrumDataRange(GraphicsFilter& filter, Spectrum& spectrum,
+	int getSpectrumDataRange(Scenefilter& filter, Spectrum& spectrum,
 		int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
 	{
 		return cmzn_scene_get_spectrum_data_range(id, filter.getId(),

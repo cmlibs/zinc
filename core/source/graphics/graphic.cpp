@@ -16,15 +16,15 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "zinc/status.h"
 #include "zinc/element.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "zinc/font.h"
 #include "zinc/glyph.h"
 #include "zinc/graphic.h"
-#include "zinc/font.h"
-#include "zinc/graphicsfilter.h"
 #include "zinc/graphicsmaterial.h"
-#include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
+#include "zinc/scenefilter.h"
+#include "zinc/status.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/indexed_list_stl_private.hpp"
@@ -3034,9 +3034,9 @@ int cmzn_graphic_to_graphics_object(
 		time = 0.0;
 		return_code = 1;
 		/* build only if visible... */
-		cmzn_graphics_filter_id filter = graphic_to_object_data->graphics_filter;
+		cmzn_scenefilter_id filter = graphic_to_object_data->scenefilter;
 		/* build only if visible and changed */
-		if ((0 == filter) || (cmzn_graphics_filter_evaluate_graphic(filter, graphic)))
+		if ((0 == filter) || (cmzn_scenefilter_evaluate_graphic(filter, graphic)))
 		{
 			if (graphic->graphics_changed)
 			{
@@ -3610,8 +3610,8 @@ int cmzn_graphic_compile_visible_graphic(
 		return_code = 1;
 		if (graphic->graphics_object)
 		{
-			cmzn_graphics_filter_id filter = renderer->getGraphicsFilter();
-			if ((0 == filter) || (cmzn_graphics_filter_evaluate_graphic(filter, graphic)))
+			cmzn_scenefilter_id filter = renderer->getScenefilter();
+			if ((0 == filter) || (cmzn_scenefilter_evaluate_graphic(filter, graphic)))
 			{
 				cmzn_graphic_set_renderer_highlight_functor(graphic, renderer);
 				return_code = renderer->Graphics_object_compile(graphic->graphics_object);
@@ -3644,8 +3644,8 @@ int cmzn_graphic_execute_visible_graphic(
 		return_code = 1;
 		if (graphic->graphics_object)
 		{
-			cmzn_graphics_filter_id filter = renderer->getGraphicsFilter();
-			if ((0 == filter) || (cmzn_graphics_filter_evaluate_graphic(filter, graphic)))
+			cmzn_scenefilter_id filter = renderer->getScenefilter();
+			if ((0 == filter) || (cmzn_scenefilter_evaluate_graphic(filter, graphic)))
 			{
 				if (renderer->rendering_layer(graphic->overlay_flag))
 				{
@@ -3836,7 +3836,7 @@ int cmzn_graphic_get_visible_graphics_object_range(
 			(graphic->coordinate_system == graphic_range->coordinate_system))
 		{
 			if ((0 == graphic_range->filter) ||
-				(cmzn_graphics_filter_evaluate_graphic(graphic_range->filter, graphic)))
+				(cmzn_scenefilter_evaluate_graphic(graphic_range->filter, graphic)))
 			{
 				return_code=get_graphics_object_range(graphic->graphics_object,
 					(void *)graphic_range->graphics_object_range);

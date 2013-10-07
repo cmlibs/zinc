@@ -221,14 +221,14 @@ The default data used to create cmzn_scene_viewers.
 	struct Light *default_light;
 	Light_model_module *lightModelModule;
 	struct Light_model *default_light_model;
-	cmzn_graphics_filter_module_id filterModule;
+	cmzn_scenefiltermodule_id filterModule;
 	//-- struct User_interface *user_interface;
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_viewer_module_callback))
 		*destroy_callback_list;
-	void *graphics_filter_manager_callback_id;
+	void *scenefilter_manager_callback_id;
 	void *light_manager_callback_id;
 	void *light_model_manager_callback_id;
 };
@@ -384,7 +384,7 @@ DESCRIPTION :
 	/* list of callbacks requested by other objects when scene viewer destroyed */
 	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
 	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
-	cmzn_graphics_filter_id filter;
+	cmzn_scenefilter_id filter;
 	cmzn_scene_id scene;
 }; /* struct Scene_viewer */
 
@@ -406,7 +406,7 @@ struct cmzn_scene_viewer_module *CREATE(cmzn_scene_viewer_module)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	Light_module *lightModule ,struct Light *default_light,
 	Light_model_module *lightModelModule, struct Light_model *default_light_model,
-	cmzn_graphics_filter_module_id filterModule);
+	cmzn_scenefiltermodule_id filterModule);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -446,7 +446,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct Colour *background_colour,
 	struct Light *default_light,
 	struct Light_model *default_light_model,
-	cmzn_graphics_filter_id filter);
+	cmzn_scenefilter_id filter);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 

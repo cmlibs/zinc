@@ -12,6 +12,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
+#include "zinc/types/scenefilterid.h"
 #include "zinc/element.h"
 #include "zinc/fieldgroup.h"
 #include "zinc/fieldmodule.h"
@@ -28,11 +29,10 @@
 #include "general/object.h"
 #include "general/mystring.h"
 #include "general/random.h"
+#include "general/statistics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
 #include "graphics/scene.h"
-#include "graphics/graphics_filter.hpp"
-#include "general/statistics.h"
 #include "graphics/scene.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/texture.h"
@@ -1272,7 +1272,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 
 int render_to_finite_elements(cmzn_region_id source_region,
-	const char *graphic_name, cmzn_graphics_filter_id filter,
+	const char *graphic_name, cmzn_scenefilter_id filter,
 	enum Render_to_finite_elements_mode render_mode,
 	cmzn_region_id region, cmzn_field_group_id group,
 	cmzn_field_id coordinate_field, cmzn_nodeset_id nodeset,

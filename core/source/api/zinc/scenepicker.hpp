@@ -9,13 +9,13 @@
 #ifndef CMZN_SCENEPICKER_HPP__
 #define CMZN_SCENEPICKER_HPP__
 
+#include "zinc/scenepicker.h"
 #include "zinc/element.hpp"
-#include "zinc/graphic.hpp"
-#include "zinc/graphicsfilter.hpp"
 #include "zinc/fieldgroup.hpp"
+#include "zinc/graphic.hpp"
 #include "zinc/node.hpp"
 #include "zinc/scene.hpp"
-#include "zinc/scenepicker.h"
+#include "zinc/scenefilter.hpp"
 #include "zinc/sceneviewer.hpp"
 
 namespace OpenCMISS
@@ -127,14 +127,14 @@ public:
 		return cmzn_scene_picker_set_scene(id, scene.getId());
 	}
 
-	GraphicsFilter getGraphicsFilter()
+	Scenefilter getScenefilter()
 	{
-		return GraphicsFilter(cmzn_scene_picker_get_graphics_filter(id));
+		return Scenefilter(cmzn_scene_picker_get_scenefilter(id));
 	}
 
-	int setGraphicsFilter(GraphicsFilter& filter)
+	int setScenefilter(Scenefilter& filter)
 	{
-		return cmzn_scene_picker_set_graphics_filter(id, filter.getId());
+		return cmzn_scene_picker_set_scenefilter(id, filter.getId());
 	}
 
 };

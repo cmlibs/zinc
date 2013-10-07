@@ -772,7 +772,7 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 } /* makestl */
 
 int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter);
+	cmzn_scenefilter_id filter);
 
 /**************************************************************************//**
  * Renders the visible parts of a scene object to STL.
@@ -835,7 +835,7 @@ int Graphcis_object_to_stl(struct GT_object *graphics_object, double time,
  * @return 1 on success, 0 on failure
  */
 int write_scene_stl(Stl_context& stl_context, cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter)
+	cmzn_scenefilter_id filter)
 {
 	int return_code;
 	
@@ -861,7 +861,7 @@ Global functions
 ----------------
 */
 
-int export_to_stl(char *file_name, cmzn_scene_id scene, cmzn_graphics_filter_id filter)
+int export_to_stl(char *file_name, cmzn_scene_id scene, cmzn_scenefilter_id filter)
 {
 	int return_code;
 

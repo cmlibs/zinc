@@ -10,13 +10,13 @@
 #define CMZN_GRAPHICSMODULE_HPP__
 
 #include "zinc/graphicsmodule.h"
-#include "zinc/region.hpp"
-#include "zinc/scene.hpp"
+#include "zinc/font.hpp"
 #include "zinc/glyph.hpp"
 #include "zinc/graphic.hpp"
 #include "zinc/graphicsmaterial.hpp"
-#include "zinc/graphicsfilter.hpp"
-#include "zinc/font.hpp"
+#include "zinc/region.hpp"
+#include "zinc/scene.hpp"
+#include "zinc/scenefilter.hpp"
 #include "zinc/sceneviewer.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
@@ -90,9 +90,9 @@ public:
 		return GraphicsMaterialModule(cmzn_graphics_module_get_material_module(id));
 	}
 
-	GraphicsFilterModule getFilterModule()
+	Scenefiltermodule getScenefiltermodule()
 	{
-		return GraphicsFilterModule(cmzn_graphics_module_get_filter_module(id));
+		return Scenefiltermodule(cmzn_graphics_module_get_scenefiltermodule(id));
 	}
 
 	SceneViewerModule getSceneViewerModule()
