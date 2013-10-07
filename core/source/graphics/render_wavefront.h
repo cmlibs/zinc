@@ -15,14 +15,14 @@ Renders gtObjects to WAVEFRONT file
 #define render_wavefront_H
 
 struct cmzn_scene;
-struct cmzn_graphics_filter;
+struct cmzn_scenefilter;
 
 /*
 Global functions
 ----------------
 */
 int export_to_wavefront(char *file_name, cmzn_scene *scene,
-	cmzn_graphics_filter *filter, int full_comments);
+	cmzn_scenefilter *filter, int full_comments);
 /******************************************************************************
 LAST MODIFIED : 19 October 1998
 

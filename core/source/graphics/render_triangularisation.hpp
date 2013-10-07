@@ -142,6 +142,6 @@ public:
 }; /* class Render_graphics */
 
 int render_scene_triangularisation(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, Triangle_mesh *trimesh);
+	cmzn_scenefilter_id filter, Triangle_mesh *trimesh);
 
 #endif /* !defined (RENDER_TRIANGULARISATION_HPP) */

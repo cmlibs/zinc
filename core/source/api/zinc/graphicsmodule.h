@@ -12,7 +12,7 @@
 
 #include "types/glyphid.h"
 #include "types/fontid.h"
-#include "types/graphicsfilterid.h"
+#include "types/scenefilterid.h"
 #include "types/graphicsmaterialid.h"
 #include "types/graphicsmoduleid.h"
 #include "types/regionid.h"
@@ -94,7 +94,7 @@ ZINC_API cmzn_scene_id cmzn_graphics_module_get_scene(
 	cmzn_graphics_module_id graphics_module, cmzn_region_id region);
 
 /**
-* Get the spectrum module which stores spectrum object.
+* Get the spectrum module which stores spectrum objects.
 *
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
@@ -103,7 +103,7 @@ ZINC_API cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
 	cmzn_graphics_module_id graphics_module);
 
 /**
-* Get the tessellation module which stores tessellation object.
+* Get the tessellation module which stores tessellation objects.
 *
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
@@ -112,12 +112,12 @@ ZINC_API cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_modul
 	cmzn_graphics_module_id graphics_module);
 
 /**
-* Get the graphics filter module which stores graphics_filter object.
+* Get the scene filter module which stores scenefilter objects.
 *
 * @param graphics_module  The graphics module to request module from.
-* @return  Handle to the graphics filter module, or 0 on error. Up to caller to destroy.
+* @return  Handle to the scene filter module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API cmzn_graphics_filter_module_id cmzn_graphics_module_get_filter_module(
+ZINC_API cmzn_scenefiltermodule_id cmzn_graphics_module_get_scenefiltermodule(
 	cmzn_graphics_module_id graphics_module);
 
 /**

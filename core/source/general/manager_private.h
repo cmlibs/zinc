@@ -110,7 +110,7 @@ Local functions
 /**
  * Called before manager messages are sent out.
  * Override if objects depend on one another so dependent objects are marked as
- * MANAGER_CHANGE_DEPENDENCY. Examples uses include field, graphics_filter.
+ * MANAGER_CHANGE_DEPENDENCY. Examples uses include field, scenefilter.
  */
 #define DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION( object_type ) \
 static inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(object_type) *manager) \

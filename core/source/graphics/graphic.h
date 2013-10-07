@@ -186,7 +186,7 @@ struct cmzn_graphic_update_time_behaviour_data
 struct cmzn_graphic_range
 {
 	struct Graphics_object_range_struct *graphics_object_range;
-	cmzn_graphics_filter_id filter;
+	cmzn_scenefilter_id filter;
 	enum cmzn_scene_coordinate_system coordinate_system;
 };
 
@@ -224,7 +224,7 @@ struct cmzn_graphic_to_graphics_object_data
 	FE_value *data_copy_buffer;
 
 	struct Iso_surface_specification *iso_surface_specification;
-	struct cmzn_graphics_filter *graphics_filter;
+	struct cmzn_scenefilter *scenefilter;
 	/* additional values for passing to element_to_graphics_object */
 	struct cmzn_graphic *graphic;
 	int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];

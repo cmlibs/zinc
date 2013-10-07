@@ -17,7 +17,7 @@ scenes.
 
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
-#include "types/graphicsfilterid.h"
+#include "types/scenefilterid.h"
 #include "types/interactivetoolid.h"
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
@@ -649,24 +649,25 @@ ZINC_API int cmzn_scene_viewer_set_scene(cmzn_scene_viewer_id scene_viewer,
 ZINC_API cmzn_scene_id cmzn_scene_viewer_get_scene(cmzn_scene_viewer_id scene_viewer);
 
 /**
- * Set the filter to be used in <scene_viewer>. All graphics will be shown
- * until a filter showing graphic is set.
- *
- * @param scene viewer  Scene viewer to set filter for.
- * @param filter  Filter to be set for scene viewer.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_scene_viewer_set_filter(cmzn_scene_viewer_id scene_viewer,
-	cmzn_graphics_filter_id filter);
-
-/**
  * Get the filter currently used in <scene_viewer>.
  *
  * @param scene_viewer  Scene_viewer to get the filters from.
  * @return  filter if successful, otherwise NULL.
  */
-ZINC_API cmzn_graphics_filter_id cmzn_scene_viewer_get_filter(
+ZINC_API cmzn_scenefilter_id cmzn_scene_viewer_get_scenefilter(
 	cmzn_scene_viewer_id scene_viewer);
+
+/**
+ * Set the filter to be used in <scene_viewer>. All graphics will be shown
+ * if no filter is set.
+ *
+ * @param sceneviewer  Scene viewer to set filter for.
+ * @param filter  Scene filter to set for scene viewer, or NULL to show all
+ * graphics in scene.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_scene_viewer_set_scenefilter(cmzn_scene_viewer_id scene_viewer,
+	cmzn_scenefilter_id filter);
 
 /**
  * This callback will be notified when a repaint is required by a windowless mode

@@ -60,7 +60,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/glyph_axes.hpp
 	source/graphics/glyph_circular.hpp
 	source/graphics/glyph_colour_bar.hpp
-	source/graphics/graphics_filter.hpp
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
@@ -82,6 +81,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_to_finite_elements.h
 	source/graphics/render_triangularisation.hpp
 	source/graphics/scene_coordinate_system.hpp
+	source/graphics/scenefilter.hpp
 	source/graphics/scene_viewer.h
 	source/graphics/selected_graphic.h
 	source/graphics/selection.hpp
@@ -99,13 +99,13 @@ SET( GRAPHICS_HDRS
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}
 		source/graphics/font.cpp
-		source/graphics/graphics_filter.cpp
 		source/graphics/graphics_library.cpp
 		source/graphics/graphics_object.cpp
 		source/graphics/light.cpp
 		source/graphics/light_model.cpp
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp
+		source/graphics/scenefilter.cpp
 		source/graphics/scene_picker.cpp
 		source/graphics/tile_graphics_objects.cpp )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}

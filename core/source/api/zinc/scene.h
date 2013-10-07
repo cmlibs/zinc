@@ -15,7 +15,7 @@
 #include "types/fieldid.h"
 #include "types/fieldgroupid.h"
 #include "types/graphicid.h"
-#include "types/graphicsfilterid.h"
+#include "types/scenefilterid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
 #include "types/sceneid.h"
@@ -89,7 +89,7 @@ ZINC_API int cmzn_scene_begin_change(cmzn_scene_id scene);
  * including CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, cmzn_nodeset_id nodeset,
+	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
 	cmzn_field_id coordinate_field,
 	double line_density, double line_density_scale_factor,
 	double surface_density, double surface_density_scale_factor);
@@ -279,7 +279,7 @@ ZINC_API int cmzn_scene_set_selection_group(cmzn_scene_id scene,
  * arguments.
  */
 ZINC_API int cmzn_scene_get_spectrum_data_range(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, cmzn_spectrum_id spectrum,
+	cmzn_scenefilter_id filter, cmzn_spectrum_id spectrum,
 	int valuesCount, double *minimumValuesOut, double *maximumValuesOut);
 
 /**
@@ -292,7 +292,7 @@ ZINC_API bool cmzn_scene_get_visibility_flag(cmzn_scene_id scene);
 
 /**
  * Set the state of the scene's visibility flag. Note this only affects
- * visibility of graphics when a graphics filter is using it.
+ * visibility of graphics when a scene filter is acting on it.
  *
  * @param scene  The handle to the scene.
  * @param visibility_flag  Boolean true to set, false to clear.

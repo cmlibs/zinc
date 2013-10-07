@@ -446,7 +446,7 @@ gtMatrix *cmzn_scene_get_total_transformation(
 	struct cmzn_scene *scene, struct cmzn_scene *top_scene);
 
 int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
-	cmzn_graphics_filter_id filter,
+	cmzn_scenefilter_id filter,
 	double *centre_x, double *centre_y, double *centre_z,
 	double *size_x, double *size_y, double *size_z);
 
@@ -454,11 +454,11 @@ typedef int(*graphics_object_tree_iterator_function)(
 	struct GT_object *graphics_object, double time, void *user_data);
 
 int for_each_graphics_object_in_scene_tree(cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, graphics_object_tree_iterator_function iterator_function,
+	cmzn_scenefilter_id filter, graphics_object_tree_iterator_function iterator_function,
 	void *user_data);
 
 int Scene_export_region_graphics_object(cmzn_scene *scene,
-	cmzn_region *region, const char *graphic_name, cmzn_graphics_filter_id filter,
+	cmzn_region *region, const char *graphic_name, cmzn_scenefilter_id filter,
 	graphics_object_tree_iterator_function iterator_function, void *user_data);
 
 cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position);

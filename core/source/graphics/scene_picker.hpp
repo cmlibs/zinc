@@ -10,7 +10,7 @@
 #include <map>
 #include "zinc/scenepicker.h"
 #include "zinc/types/graphicid.h"
-#include "zinc/types/graphicsfilterid.h"
+#include "zinc/types/scenefilterid.h"
 #include "zinc/types/fieldgroupid.h"
 #include "zinc/types/elementid.h"
 #include "zinc/types/nodeid.h"
@@ -39,11 +39,11 @@ private:
 	cmzn_scene_viewer_id scene_viewer;
 	int centre_x, centre_y, size_x, size_y;
 	enum cmzn_scene_coordinate_system coordinate_system;
-	cmzn_graphics_filter_id filter;
+	cmzn_scenefilter_id filter;
 	GLuint *select_buffer;
 	int select_buffer_size;
 	int number_of_hits;
-	cmzn_graphics_filter_module_id filter_module;
+	cmzn_scenefiltermodule_id filter_module;
 
 	void updateViewerRectangle();
 
@@ -63,13 +63,13 @@ public:
 
 	int access_count;
 
-	cmzn_scene_picker(cmzn_graphics_filter_module_id filter_module_in);
+	cmzn_scene_picker(cmzn_scenefiltermodule_id filter_module_in);
 
 	~cmzn_scene_picker();
 
-	cmzn_graphics_filter_id getGraphicsFilter();
+	cmzn_scenefilter_id getScenefilter();
 
-	int setGraphicsFilter(cmzn_graphics_filter_id filter_in);
+	int setScenefilter(cmzn_scenefilter_id filter_in);
 
 	cmzn_scene_id getScene();
 
@@ -102,7 +102,7 @@ public:
 
 PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scene_picker);
 
-cmzn_scene_picker_id cmzn_scene_picker_create(cmzn_graphics_filter_module_id filter_module);
+cmzn_scene_picker_id cmzn_scene_picker_create(cmzn_scenefiltermodule_id filter_module);
 
 int cmzn_scene_picker_set_interaction_volume(cmzn_scene_picker_id scene_picker,
 	struct Interaction_volume *interaction_volume);

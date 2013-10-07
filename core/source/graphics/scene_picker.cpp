@@ -6,8 +6,8 @@
 
 #include <algorithm>
 
+#include "zinc/scenefilter.h"
 #include "zinc/status.h"
-#include "zinc/graphicsfilter.h"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/object.h"
@@ -22,7 +22,7 @@
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
 
-cmzn_scene_picker::cmzn_scene_picker(cmzn_graphics_filter_module_id filter_module_in) :
+cmzn_scene_picker::cmzn_scene_picker(cmzn_scenefiltermodule_id filter_module_in) :
 	interaction_volume(0),
 	top_scene(0),
 	scene_viewer(0),
@@ -33,7 +33,7 @@ cmzn_scene_picker::cmzn_scene_picker(cmzn_graphics_filter_module_id filter_modul
 	select_buffer(0),
 	select_buffer_size(10000),
 	number_of_hits(0),
-	filter_module(cmzn_graphics_filter_module_access(filter_module_in)),
+	filter_module(cmzn_scenefiltermodule_access(filter_module_in)),
 	access_count(1)
 {
 }
@@ -47,11 +47,11 @@ cmzn_scene_picker::~cmzn_scene_picker()
 	if (top_scene)
 		cmzn_scene_destroy(&top_scene);
 	if (filter)
-		cmzn_graphics_filter_destroy(&filter);
+		cmzn_scenefilter_destroy(&filter);
 	if (select_buffer)
 		DEALLOCATE(select_buffer);
 	if (filter_module)
-		cmzn_graphics_filter_module_destroy(&filter_module);
+		cmzn_scenefiltermodule_destroy(&filter_module);
 }
 
 void cmzn_scene_picker::updateViewerRectangle()
@@ -331,20 +331,20 @@ int cmzn_scene_picker::getSceneAndGraphic(GLuint *select_buffer_ptr,
 	}
 }
 
-cmzn_graphics_filter_id cmzn_scene_picker::getGraphicsFilter()
+cmzn_scenefilter_id cmzn_scene_picker::getScenefilter()
 {
-	return cmzn_graphics_filter_access(filter);
+	return cmzn_scenefilter_access(filter);
 }
 
-int cmzn_scene_picker::setGraphicsFilter(cmzn_graphics_filter_id filter_in)
+int cmzn_scene_picker::setScenefilter(cmzn_scenefilter_id filter_in)
 {
 	if (filter_in != filter)
 	{
 		reset();
 		if (filter)
-			cmzn_graphics_filter_destroy(&filter);
+			cmzn_scenefilter_destroy(&filter);
 		if (filter_in)
-			filter = cmzn_graphics_filter_access(filter_in);
+			filter = cmzn_scenefilter_access(filter_in);
 	}
 	return CMZN_OK;
 }
@@ -786,7 +786,7 @@ int DESTROY(cmzn_scene_picker)(struct cmzn_scene_picker **scene_picker_address)
 	}
 }
 
-cmzn_scene_picker_id cmzn_scene_picker_create(cmzn_graphics_filter_module_id filter_module)
+cmzn_scene_picker_id cmzn_scene_picker_create(cmzn_scenefiltermodule_id filter_module)
 {
 	return new cmzn_scene_picker(filter_module);
 }
@@ -817,16 +817,16 @@ int cmzn_scene_picker_set_scene(cmzn_scene_picker_id scene_picker,
 	return scene_picker->setScene(scene);
 }
 
-cmzn_graphics_filter_id cmzn_scene_picker_get_graphics_filter(
+cmzn_scenefilter_id cmzn_scene_picker_get_scenefilter(
 	cmzn_scene_picker_id scene_picker)
 {
-	return scene_picker->getGraphicsFilter();
+	return scene_picker->getScenefilter();
 }
 
-int cmzn_scene_picker_set_graphics_filter(cmzn_scene_picker_id scene_picker,
-	cmzn_graphics_filter_id filter_in)
+int cmzn_scene_picker_set_scenefilter(cmzn_scene_picker_id scene_picker,
+	cmzn_scenefilter_id filter)
 {
-	return scene_picker->setGraphicsFilter(filter_in);
+	return scene_picker->setScenefilter(filter);
 }
 
 int cmzn_scene_picker_set_scene_viewer_rectangle(

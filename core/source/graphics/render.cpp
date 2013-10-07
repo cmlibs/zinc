@@ -9,7 +9,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 #include <math.h>
-#include "zinc/graphicsfilter.h"
+#include "zinc/scenefilter.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
@@ -27,10 +27,10 @@
 
 /****************** Render_graphics_compile_members **********************/
 
-int Render_graphics_compile_members::Scene_compile(cmzn_scene *scene, cmzn_graphics_filter_id graphics_filter)
+int Render_graphics_compile_members::Scene_compile(cmzn_scene *scene, cmzn_scenefilter_id scenefilter)
 {
 	set_Scene(scene);
-	setGraphicsFilter(graphics_filter);
+	setScenefilter(scenefilter);
 	return cmzn_scene_compile_tree(scene, this);
 }
 

@@ -35,7 +35,6 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldvectoroperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/glyph.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphic.hpp
-    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsfilter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/font.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsmaterial.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsmodule.hpp
@@ -43,6 +42,7 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/optimisation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/region.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scene.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenefilter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenepicker.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/sceneviewer.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/selection.hpp

@@ -14,7 +14,7 @@
 #define CMZN_SCENEPICKER_H__
 
 #include "types/graphicid.h"
-#include "types/graphicsfilterid.h"
+#include "types/scenefilterid.h"
 #include "types/fieldgroupid.h"
 #include "types/elementid.h"
 #include "types/nodeid.h"
@@ -68,24 +68,24 @@ ZINC_API int cmzn_scene_picker_set_scene(cmzn_scene_picker_id scene_picker,
 	cmzn_scene_id scene);
 
 /**
- * Get the graphics filter for the scene picker.
+ * Get the scene filter for the scene picker.
  *
- * @param scene_picker  The scene picker to get the graphics filter from.
+ * @param scene_picker  The scene picker to get the scene filter from.
  * @return  Valid handle to scene picker object on success, 0 on failure.
  */
-ZINC_API cmzn_graphics_filter_id cmzn_scene_picker_get_graphics_filter(
+ZINC_API cmzn_scenefilter_id cmzn_scene_picker_get_scenefilter(
 	cmzn_scene_picker_id scene_picker);
 
 /**
- * Set the graphics filter for the scene picker. This will affect
- * graphics to be picked,
+ * Set the scene filter for the scene picker. This filters which graphics
+ * are pickable from the scene.
  *
  * @param scene_picker  The scene picker to be modified.
- * @param scene  The scene to pick from.
+ * @param filter  The scene filter to use, or NULL if none (all pickable).
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_scene_picker_set_graphics_filter(cmzn_scene_picker_id scene_picker,
-	cmzn_graphics_filter_id filter_in);
+ZINC_API int cmzn_scene_picker_set_scenefilter(cmzn_scene_picker_id scene_picker,
+	cmzn_scenefilter_id filter);
 
 /**
  * Set the bounding box of scene picker. Scene viewer will provide the preset

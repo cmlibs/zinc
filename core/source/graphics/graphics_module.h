@@ -12,7 +12,7 @@ FILE : graphics_module.h
 #define GRAPHICS_MODULE_H
 
 #include "zinc/font.h"
-#include "zinc/graphicsfilter.h"
+#include "zinc/scenefilter.h"
 #include "general/object.h"
 #include "context/context.h"
 #include "graphics/font.h"
@@ -106,14 +106,14 @@ int cmzn_graphics_module_add_member_region(
 int cmzn_graphics_module_remove_member_region(
 		struct cmzn_graphics_module *graphics_module, struct cmzn_region *region);
 
-/***************************************************************************//**
- * Return the manager of graphics_filter objects in graphics module.
+/**
+ * Return the manager of scenefilter objects in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
- * @return  the manager of graphics_filter in graphics module if successfully called,
+ * @return  the manager of scenefilter in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_module_get_filter_manager(
+struct MANAGER(cmzn_scenefilter) *cmzn_graphics_module_get_scenefilter_manager(
 		struct cmzn_graphics_module *graphics_module);
 
 struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(

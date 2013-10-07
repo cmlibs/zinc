@@ -356,7 +356,7 @@ ZINC_API bool cmzn_graphic_get_visibility_flag(cmzn_graphic_id graphic);
 
 /**
  * Sets status of graphic visibility flag attribute. Note this only affects
- * visibility of graphics when a graphics filter is using it.
+ * visibility of graphics when a scene filter is acting on it.
  *
  * @param graphic  The graphic to modify.
  * @param visibility_flag  Boolean true to set, false to clear.
@@ -455,7 +455,7 @@ ZINC_API char *cmzn_graphic_get_name(cmzn_graphic_id graphic);
  * Sets the name of the graphic. Unlike other containers, scene can contain
  * multiple graphics with the same name. New graphics default to having no name.
  * A common use of the name is to mark the graphic for filtering, like metadata.
- * @see cmzn_graphics_filter_module_create_filter_graphic_name
+ * @see cmzn_scenefiltermodule_create_scenefilter_graphic_name
  *
  * @param graphic  The graphic to modify.
  * @param name  The new name for the graphic, OR NULL to clear.

@@ -15,13 +15,14 @@ Renders gtObjects to VRML file
 #define render_vrml_H
 
 #include "zinc/types/sceneid.h"
-#include "zinc/types/graphicsfilterid.h"
+#include "zinc/types/scenefilterid.h"
+
 /*
 Global functions
 ----------------
 */
 int export_to_vrml(char *file_name, cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter);
+	cmzn_scenefilter_id filter);
 /******************************************************************************
 LAST MODIFIED : 5 January 1998
 

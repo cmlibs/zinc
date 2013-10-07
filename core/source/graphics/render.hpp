@@ -11,7 +11,7 @@
 #define RENDER_HPP
 
 struct cmzn_scene;
-struct cmzn_graphics_filter;
+struct cmzn_scenefilter;
 #define Scene cmzn_scene // GRC temp
 struct cmzn_graphic;
 struct cmzn_scene;
@@ -34,12 +34,12 @@ class Render_graphics
 {
 private:
 	cmzn_scene *current_scene;
-	cmzn_graphics_filter *graphics_filter;
+	cmzn_scenefilter *scenefilter;
 
 public:
 	Render_graphics() :
 		current_scene(NULL),
-		graphics_filter(NULL)
+		scenefilter(NULL)
 	{
 	}
 
@@ -47,7 +47,7 @@ public:
 	{
 	}
 	
-	virtual int Scene_compile(cmzn_scene *scene, cmzn_graphics_filter *graphics_filter) = 0;
+	virtual int Scene_compile(cmzn_scene *scene, cmzn_scenefilter *scenefilter) = 0;
 
 
 	virtual int Scene_tree_execute(cmzn_scene *scene) = 0;
@@ -135,9 +135,9 @@ public:
 		return current_scene;
 	}
 
-	cmzn_graphics_filter *getGraphicsFilter()
+	cmzn_scenefilter *getScenefilter()
 	{
-		return graphics_filter;
+		return scenefilter;
 	}
 
 	void set_Scene(cmzn_scene *new_scene)
@@ -145,9 +145,9 @@ public:
 		current_scene = new_scene;
 	}
 
-	void setGraphicsFilter(cmzn_graphics_filter *new_graphics_filter)
+	void setScenefilter(cmzn_scenefilter *new_scenefilter)
 	{
-		graphics_filter = new_graphics_filter;
+		scenefilter = new_scenefilter;
 	}
 
 	/** Prepare coordinate system for executing graphics object.
@@ -206,7 +206,7 @@ public:
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
 	double world_view_matrix[16];
 	
-	virtual int Scene_compile(cmzn_scene *scene, cmzn_graphics_filter *graphics_filter);
+	virtual int Scene_compile(cmzn_scene *scene, cmzn_scenefilter *scenefilter);
 
 	/***************************************************************************//**
 	 * Compile the cmzn scene.

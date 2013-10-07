@@ -27,18 +27,14 @@ November 97 Created from rendering part of Drawing.
 #include <map>
 #include "zinc/field.h"
 #include "zinc/fieldmodule.h"
-#include "zinc/graphicsfilter.h"
+#include "zinc/scenefilter.h"
 #include "zinc/sceneviewerinput.h"
 #include "zinc/status.h"
-//#include "zinc/graphic.h"
-//#include "computed_field/computed_field.h"
-//#include "computed_field/computed_field_composite.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-//#include "computed_field/field_module.hpp"
 #include "general/enumerator_private.hpp"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
@@ -50,14 +46,13 @@ November 97 Created from rendering part of Drawing.
 #include "general/message.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
-#include "graphics/graphics_filter.hpp"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
 #include "graphics/scene.h"
+#include "graphics/scenefilter.hpp"
 #include "graphics/texture.h"
 #include "graphics/scene_viewer.h"
 #include "three_d_drawing/graphics_buffer.h"
-//#include "user_interface/event_dispatcher.h"
 #include "interaction/interactive_event.h"
 #include "graphics/render_gl.h"
 #include "graphics/scene_coordinate_system.hpp"
@@ -2477,8 +2472,8 @@ Global functions
 ----------------
 */
 
-void cmzn_scene_viewer_module_graphics_filter_manager_callback(
-	struct MANAGER_MESSAGE(cmzn_graphics_filter) *message, void *scene_viewer_module_void);
+void cmzn_scene_viewer_module_scenefilter_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_scenefilter) *message, void *scene_viewer_module_void);
 
 void cmzn_scene_viewer_module_light_manager_callback(
 	struct MANAGER_MESSAGE(Light) *message, void *scene_viewer_module_void);
@@ -2491,7 +2486,7 @@ struct cmzn_scene_viewer_module *CREATE(cmzn_scene_viewer_module)(
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	Light_module *lightModule ,struct Light *default_light,
 	Light_model_module *lightModelModule, struct Light_model *default_light_model,
-	cmzn_graphics_filter_module_id filterModule)
+	cmzn_scenefiltermodule_id filterModule)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -2514,13 +2509,13 @@ Creates a cmzn_scene_viewer_module.
 			scene_viewer_module->default_light_model = ACCESS(Light_model)(default_light_model);
 			scene_viewer_module->lightModule = Light_module_access(lightModule);
 			scene_viewer_module->lightModelModule = Light_model_module_access(lightModelModule);
-			scene_viewer_module->filterModule = cmzn_graphics_filter_module_access(filterModule);
+			scene_viewer_module->filterModule = cmzn_scenefiltermodule_access(filterModule);
 			//-- scene_viewer_module->user_interface = user_interface;
 			scene_viewer_module->scene_viewer_list = CREATE(LIST(Scene_viewer))();
-			scene_viewer_module->graphics_filter_manager_callback_id =
-				MANAGER_REGISTER(cmzn_graphics_filter)(cmzn_scene_viewer_module_graphics_filter_manager_callback,
+			scene_viewer_module->scenefilter_manager_callback_id =
+				MANAGER_REGISTER(cmzn_scenefilter)(cmzn_scene_viewer_module_scenefilter_manager_callback,
 					(void *)scene_viewer_module,
-					cmzn_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
+					cmzn_scenefiltermodule_get_manager(scene_viewer_module->filterModule));
 			scene_viewer_module->light_manager_callback_id =
 				MANAGER_REGISTER(Light)(cmzn_scene_viewer_module_light_manager_callback,
 					(void *)scene_viewer_module,
@@ -2637,10 +2632,10 @@ Destroys the scene_viewer_module.
 		DESTROY(LIST(Scene_viewer))(&scene_viewer_module->scene_viewer_list);
 		DESTROY(Graphics_buffer_package)(&scene_viewer_module->graphics_buffer_package);
 
-		MANAGER_DEREGISTER(cmzn_graphics_filter)(
-			scene_viewer_module->graphics_filter_manager_callback_id,
-			cmzn_graphics_filter_module_get_manager(scene_viewer_module->filterModule));
-		cmzn_graphics_filter_module_destroy(&scene_viewer_module->filterModule);
+		MANAGER_DEREGISTER(cmzn_scenefilter)(
+			scene_viewer_module->scenefilter_manager_callback_id,
+			cmzn_scenefiltermodule_get_manager(scene_viewer_module->filterModule));
+		cmzn_scenefiltermodule_destroy(&scene_viewer_module->filterModule);
 		MANAGER_DEREGISTER(Light)(
 			scene_viewer_module->light_manager_callback_id,
 			Light_module_get_manager(scene_viewer_module->lightModule));
@@ -2826,7 +2821,7 @@ struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffe
 	struct Colour *background_colour,
 	struct Light *default_light,
 	struct Light_model *default_light_model,
-	cmzn_graphics_filter_id filter)
+	cmzn_scenefilter_id filter)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
 
@@ -2895,7 +2890,7 @@ performed in idle time so that multiple redraws are avoided.
 				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
 			{
 				scene_viewer->access_count = 1;
-				scene_viewer->filter = cmzn_graphics_filter_access(filter);
+				scene_viewer->filter = cmzn_scenefilter_access(filter);
 				scene_viewer->graphics_buffer=ACCESS(Graphics_buffer)(graphics_buffer);
 				/* access the scene, since don't want it to disappear */
 				scene_viewer->input_mode=SCENE_VIEWER_TRANSFORM;
@@ -3125,7 +3120,7 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		}
 		if (scene_viewer->filter)
 		{
-			cmzn_graphics_filter_destroy(&scene_viewer->filter);
+			cmzn_scenefilter_destroy(&scene_viewer->filter);
 		}
 		DEALLOCATE(scene_viewer);
 		*scene_viewer_address = 0;
@@ -3189,14 +3184,14 @@ DESCRIPTION :
 	ENTER(create_Scene_viewer_from_package);
 	if (graphics_buffer && cmiss_scene_viewer_module)
 	{
-		cmzn_graphics_filter_id filter = cmzn_graphics_filter_module_get_default_filter(
+		cmzn_scenefilter_id filter = cmzn_scenefiltermodule_get_default_scenefilter(
 			cmiss_scene_viewer_module->filterModule);
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			cmiss_scene_viewer_module->background_colour,
 			cmiss_scene_viewer_module->default_light,
 			cmiss_scene_viewer_module->default_light_model,
 			filter);
-		cmzn_graphics_filter_destroy(&filter);
+		cmzn_scenefilter_destroy(&filter);
 		if (scene_viewer)
 		{
 			/* Add this scene_viewer to the package list */
@@ -7960,24 +7955,21 @@ Removes the callback calling <function> with <user_data> from
 } /* Scene_viewer_remove_transform_callback */
 
 /// new APIs
-cmzn_graphics_filter_id cmzn_scene_viewer_get_filter(cmzn_scene_viewer_id scene_viewer)
+cmzn_scenefilter_id cmzn_scene_viewer_get_scenefilter(cmzn_scene_viewer_id scene_viewer)
 {
-	cmzn_graphics_filter_id filter = NULL;
 	if (scene_viewer && scene_viewer->filter)
-	{
-		filter = cmzn_graphics_filter_access(scene_viewer->filter);
-	}
-	return filter;
+		return cmzn_scenefilter_access(scene_viewer->filter);
+	return 0;
 }
 
-int cmzn_scene_viewer_set_filter(cmzn_scene_viewer_id scene_viewer,
-	cmzn_graphics_filter_id filter)
+int cmzn_scene_viewer_set_scenefilter(cmzn_scene_viewer_id scene_viewer,
+	cmzn_scenefilter_id filter)
 {
 	if (scene_viewer)
 	{
 		if (filter != scene_viewer->filter)
 		{
-			REACCESS(cmzn_graphics_filter)(&scene_viewer->filter, filter);
+			REACCESS(cmzn_scenefilter)(&scene_viewer->filter, filter);
 			if (scene_viewer->scene)
 			{
 				cmzn_scene_changed(scene_viewer->scene);
@@ -7991,16 +7983,16 @@ int cmzn_scene_viewer_set_filter(cmzn_scene_viewer_id scene_viewer,
 	}
 }
 
-int cmzn_scene_viewer_graphics_filter_change(struct Scene_viewer *scene_viewer,	void *message_void)
+int cmzn_scene_viewer_scenefilter_change(struct Scene_viewer *scene_viewer,	void *message_void)
 {
 	int return_code = 1;
-	struct MANAGER_MESSAGE(cmzn_graphics_filter) *message =
-		(struct MANAGER_MESSAGE(cmzn_graphics_filter) *)message_void;
+	struct MANAGER_MESSAGE(cmzn_scenefilter) *message =
+		(struct MANAGER_MESSAGE(cmzn_scenefilter) *)message_void;
 	if (scene_viewer && message)
 	{
-		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_graphics_filter)(
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_scenefilter)(
 			message, scene_viewer->filter);
-		if (change_flags & MANAGER_CHANGE_RESULT(cmzn_graphics_filter))
+		if (change_flags & MANAGER_CHANGE_RESULT(cmzn_scenefilter))
 		{
 			/* calling scene changed as changing filter may require new graphics to be rebuild*/
 			if (scene_viewer->scene)
@@ -8068,19 +8060,19 @@ int cmzn_scene_viewer_light_model_change(struct Scene_viewer *scene_viewer,	void
 	return return_code;
 }
 
-void cmzn_scene_viewer_module_graphics_filter_manager_callback(
-	struct MANAGER_MESSAGE(cmzn_graphics_filter) *message, void *scene_viewer_module_void)
+void cmzn_scene_viewer_module_scenefilter_manager_callback(
+	struct MANAGER_MESSAGE(cmzn_scenefilter) *message, void *scene_viewer_module_void)
 {
 	cmzn_scene_viewer_module *scene_viewer_module = (cmzn_scene_viewer_module *)scene_viewer_module_void;
 	if (message && scene_viewer_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_graphics_filter)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_graphics_filter))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_scenefilter)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_scenefilter))
 		{
 			// minimise scene messages while updating
 			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-				cmzn_scene_viewer_graphics_filter_change,(void *)message,
+				cmzn_scene_viewer_scenefilter_change,(void *)message,
 				scene_viewer_module->scene_viewer_list);
 			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
 		}

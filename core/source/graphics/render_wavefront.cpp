@@ -1275,7 +1275,7 @@ Global functions
 */
 
 int export_to_wavefront(char *file_name, cmzn_scene_id scene,
-	cmzn_graphics_filter_id filter, int full_comments)
+	cmzn_scenefilter_id filter, int full_comments)
 /******************************************************************************
 LAST MODIFIED : 31 May 2000
 

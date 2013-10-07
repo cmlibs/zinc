@@ -23,7 +23,7 @@
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
 #include "graphics/light_model.h"
-#include "graphics/graphics_filter.hpp"
+#include "graphics/scenefilter.hpp"
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region_private.h"
 #include "region/cmiss_region.h"
@@ -47,7 +47,7 @@ struct cmzn_graphics_module
 	Light_model_module *light_model_module;
 	struct cmzn_timekeeper *default_timekeeper;
 	cmzn_tessellation_module_id tessellation_module;
-	struct cmzn_graphics_filter_module *graphics_filter_module;
+	struct cmzn_scenefiltermodule *scenefiltermodule;
 	void *tessellation_manager_callback_id;
 	int access_count;
 	cmzn_region_id root_region;
@@ -222,7 +222,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->material_module = NULL;
 			module->scene_viewer_module = NULL;
 			module->spectrum_module=cmzn_spectrum_module_create();
-			module->graphics_filter_module=cmzn_graphics_filter_module_create();
+			module->scenefiltermodule=cmzn_scenefiltermodule_create();
 			module->font_module = cmzn_font_module_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
@@ -355,8 +355,8 @@ int cmzn_graphics_module_destroy(
 				cmzn_font_module_destroy(&graphics_module->font_module);
 			if (graphics_module->material_module)
 				cmzn_graphics_material_module_destroy(&graphics_module->material_module);
-			if (graphics_module->graphics_filter_module)
-				cmzn_graphics_filter_module_destroy(&graphics_module->graphics_filter_module);
+			if (graphics_module->scenefiltermodule)
+				cmzn_scenefiltermodule_destroy(&graphics_module->scenefiltermodule);
 			if (graphics_module->default_timekeeper)
 				cmzn_timekeeper_destroy(&graphics_module->default_timekeeper);
 			if (graphics_module->tessellation_module)
@@ -505,14 +505,14 @@ cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
 			default_background_colour.blue = 0.0;
-			cmzn_graphics_filter_module_id filterModule = cmzn_graphics_module_get_filter_module(graphics_module);
+			cmzn_scenefiltermodule_id filterModule = cmzn_graphics_module_get_scenefiltermodule(graphics_module);
 			graphics_module->scene_viewer_module = CREATE(cmzn_scene_viewer_module)(
 				&default_background_colour,
 				/* interactive_tool_manager */0,
 				graphics_module->light_module, default_light,
 				graphics_module->light_model_module, default_light_model,
 				filterModule);
-			cmzn_graphics_filter_module_destroy(&filterModule);
+			cmzn_scenefiltermodule_destroy(&filterModule);
 			DEACCESS(Light_model)(&default_light_model);
 			DEACCESS(Light)(&default_light);
 		}
@@ -649,22 +649,22 @@ int cmzn_graphics_module_remove_member_region(
 	return (return_code);
 }
 
-cmzn_graphics_filter_module_id cmzn_graphics_module_get_filter_module(
+cmzn_scenefiltermodule_id cmzn_graphics_module_get_scenefiltermodule(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->graphics_filter_module)
+	if (graphics_module && graphics_module->scenefiltermodule)
 	{
-		return cmzn_graphics_filter_module_access(graphics_module->graphics_filter_module);
+		return cmzn_scenefiltermodule_access(graphics_module->scenefiltermodule);
 	}
 	return 0;
 }
 
-struct MANAGER(cmzn_graphics_filter) *cmzn_graphics_module_get_filter_manager(
+struct MANAGER(cmzn_scenefilter) *cmzn_graphics_module_get_filter_manager(
 		struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->graphics_filter_module)
+	if (graphics_module && graphics_module->scenefiltermodule)
 	{
-		return cmzn_graphics_filter_module_get_manager(graphics_module->graphics_filter_module);
+		return cmzn_scenefiltermodule_get_manager(graphics_module->scenefiltermodule);
 	}
 	return 0;
 }
