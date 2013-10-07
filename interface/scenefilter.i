@@ -1,5 +1,5 @@
 /*******************************************************************************
- * GraphicsFilter.i
+ * scenefilter.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,15 +38,15 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="opencmiss.zinc") graphicsfilter
+%module(package="opencmiss.zinc") scenefilter
 
 %import "graphic.i"
 %import "region.i"
 
 %{
-#include "zinc/graphicsfilter.hpp"
+#include "zinc/scenefilter.hpp"
 #include "zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/graphicsfilter.hpp"
+%include "zinc/scenefilter.hpp"
 

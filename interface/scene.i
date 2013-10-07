@@ -40,8 +40,8 @@
 
 %module(package="opencmiss.zinc") scene
 
-%import "graphicsfilter.i"
 %import "graphic.i"
+%import "scenefilter.i"
 %import "selection.i"
 
 %{
