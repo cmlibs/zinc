@@ -1,7 +1,7 @@
-/*******************************************************************************
-FILE : enumerator_conversion.hpp
-
-==============================================================================*/
+/**
+ * FILE : enumerator_conversion.hpp
+ *
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -10,6 +10,8 @@ FILE : enumerator_conversion.hpp
 
 #if !defined (ENUMERATOR_CONVERSION_HPP)
 #define ENUMERATOR_CONVERSION_HPP
+
+#include <cstring>
 
 template <typename enum_type, class enum_conversion>
     enum_type string_to_enum(const char *string)
