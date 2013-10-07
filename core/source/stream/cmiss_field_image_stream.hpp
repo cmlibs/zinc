@@ -18,18 +18,18 @@
 #include "general/image_utilities.h"
 #include "stream/cmiss_stream_private.hpp"
 
-struct cmzn_stream_information_image : cmzn_stream_information
+struct cmzn_streaminformation_image : cmzn_streaminformation
 {
 public:
 
-	cmzn_stream_information_image(cmzn_field_image_id image_field_in) :
+	cmzn_streaminformation_image(cmzn_field_image_id image_field_in) :
 		image_field(image_field_in)
 	{
 		cmzn_field_access(cmzn_field_image_base_cast(image_field_in));
 		image_information = CREATE(Cmgui_image_information)();
 	}
 
-	virtual ~cmzn_stream_information_image()
+	virtual ~cmzn_streaminformation_image()
 	{
 		cmzn_field_image_destroy(&image_field);
 		DESTROY(Cmgui_image_information)(&image_information);

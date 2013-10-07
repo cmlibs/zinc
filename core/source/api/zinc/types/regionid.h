@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : regionid.h
  *
  */
@@ -11,23 +11,23 @@
 #ifndef CMZN_REGIONID_H__
 #define CMZN_REGIONID_H__
 
-	struct cmzn_region;
-  typedef struct cmzn_region * cmzn_region_id;
+struct cmzn_region;
+typedef struct cmzn_region * cmzn_region_id;
 
- /***************************************************************************//**
-  * A handle to zinc stream information region. Stream information region is a
-  * derived type of cmzn_stream_information_id.
-  * User can create and get a handle to stream information region with functions
-  * provided with cmzn_region.
-  * User can use this derived type to set number of informations associate with
-  * images inputs and outputs. See region.h for more information.
-  *
-  * #see cmzn_stream_information_id
-  * #see cmzn_field_image_create_stream_information
-  * #see cmzn_stream_information_cast_image
-  * #see cmzn_stream_information_image_base_cast
-  */
-	struct cmzn_stream_information_region;
-  typedef struct cmzn_stream_information_region * cmzn_stream_information_region_id;
+/**
+ * A handle to zinc stream information region. Stream information region is a
+ * derived type of cmzn_streaminformation_id.
+ * User can create and get a handle to stream information region with functions
+ * provided with cmzn_region.
+ * User can use this derived type to set number of informations associate with
+ * images inputs and outputs. See region.h for more information.
+ *
+ * #see cmzn_streaminformation_id
+ * #see cmzn_field_image_create_streaminformation
+ * #see cmzn_streaminformation_cast_image
+ * #see cmzn_streaminformation_image_base_cast
+ */
+struct cmzn_streaminformation_region;
+typedef struct cmzn_streaminformation_region * cmzn_streaminformation_region_id;
 
 #endif /* CMZN_REGION_ID_H */

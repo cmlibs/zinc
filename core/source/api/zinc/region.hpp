@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : region.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -18,7 +18,7 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class StreamInformationRegion;
+class StreaminformationRegion;
 
 class Region
 {
@@ -173,12 +173,12 @@ public:
 		return cmzn_region_contains_subregion(id, subregion.id);
 	}
 
-	int read(StreamInformation& streamInformation)
+	int read(Streaminformation& streamInformation)
 	{
 		return cmzn_region_read(id, streamInformation.getId());
 	}
 
-	int write(StreamInformation& streamInformation)
+	int write(Streaminformation& streamInformation)
 	{
 		return cmzn_region_write(id, streamInformation.getId());
 	}
@@ -188,7 +188,7 @@ public:
 		return cmzn_region_write_file(id, fileName);
 	}
 
-	StreamInformationRegion createStreamInformation();
+	StreaminformationRegion createStreaminformation();
 
 };
 
@@ -197,92 +197,92 @@ inline bool operator==(const Region& a, const Region& b)
 	return a.id == b.id;
 }
 
-class StreamInformationRegion : public StreamInformation
+class StreaminformationRegion : public Streaminformation
 {
 	// takes ownership of C-style reference
-	explicit StreamInformationRegion(StreamInformation& streamInformation) :
-		StreamInformation(streamInformation)
+	explicit StreaminformationRegion(Streaminformation& streamInformation) :
+		Streaminformation(streamInformation)
 	{  }
 
-	friend StreamInformationRegion Region::createStreamInformation();
+	friend StreaminformationRegion Region::createStreaminformation();
 
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamInformationRegion(cmzn_stream_information_region_id stream_information_region_id) :
-		StreamInformation(reinterpret_cast<cmzn_stream_information_id>(stream_information_region_id))
+	explicit StreaminformationRegion(cmzn_streaminformation_region_id streaminformation_region_id) :
+		Streaminformation(reinterpret_cast<cmzn_streaminformation_id>(streaminformation_region_id))
 	{ }
 
 	enum RegionAttribute
 	{
-		REGION_ATTRIBUTE_INVALID = CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_INVALID ,
-		REGION_ATTRIBUTE_TIME = CMZN_STREAM_INFORMATION_REGION_ATTRIBUTE_TIME,
+		REGION_ATTRIBUTE_INVALID = CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID ,
+		REGION_ATTRIBUTE_TIME = CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME,
 	};
 
 	int hasRegionAttribute(RegionAttribute attribute)
 	{
-		return cmzn_stream_information_region_has_attribute(
-			reinterpret_cast<cmzn_stream_information_region_id>(id),
-			static_cast<cmzn_stream_information_region_attribute>(attribute));
+		return cmzn_streaminformation_region_has_attribute(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id),
+			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
 	double getRegionAttributeReal(RegionAttribute attribute)
 	{
-		return cmzn_stream_information_region_get_attribute_real(
-			reinterpret_cast<cmzn_stream_information_region_id>(id),
-			static_cast<cmzn_stream_information_region_attribute>(attribute));
+		return cmzn_streaminformation_region_get_attribute_real(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id),
+			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
 	int setRegionAttributeReal(RegionAttribute attribute, double value)
 	{
-		return cmzn_stream_information_region_set_attribute_real(
-			reinterpret_cast<cmzn_stream_information_region_id>(id),
-			static_cast<cmzn_stream_information_region_attribute>(attribute), value);
+		return cmzn_streaminformation_region_set_attribute_real(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id),
+			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	int hasRegionResourceAttribute(StreamResource resource, RegionAttribute attribute)
+	int hasRegionResourceAttribute(Streamresource resource, RegionAttribute attribute)
 	{
-		return cmzn_stream_information_region_has_resource_attribute(
-			reinterpret_cast<cmzn_stream_information_region_id>(id), resource.getId(),
-			static_cast<cmzn_stream_information_region_attribute>(attribute));
+		return cmzn_streaminformation_region_has_resource_attribute(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
+			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	double getRegionResourceAttributeReal(StreamResource resource,
+	double getRegionResourceAttributeReal(Streamresource resource,
 		RegionAttribute attribute)
 	{
-		return cmzn_stream_information_region_get_resource_attribute_real(
-			reinterpret_cast<cmzn_stream_information_region_id>(id), resource.getId(),
-			static_cast<cmzn_stream_information_region_attribute>(attribute));
+		return cmzn_streaminformation_region_get_resource_attribute_real(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
+			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	int setRegionResourceAttributeReal(StreamResource resource,
+	int setRegionResourceAttributeReal(Streamresource resource,
 		RegionAttribute attribute, double value)
 	{
-		return cmzn_stream_information_region_set_resource_attribute_real(
-			reinterpret_cast<cmzn_stream_information_region_id>(id), resource.getId(),
-			static_cast<cmzn_stream_information_region_attribute>(attribute), value);
+		return cmzn_streaminformation_region_set_resource_attribute_real(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
+			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	int getResourceDomainType(StreamResource resource)
+	int getResourceDomainType(Streamresource resource)
 	{
 		return static_cast<int>(
-			cmzn_stream_information_region_get_resource_domain_type(
-				reinterpret_cast<cmzn_stream_information_region_id>(id), resource.getId()));
+			cmzn_streaminformation_region_get_resource_domain_type(
+				reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId()));
 	}
 
-	int setResourceDomainType(StreamResource resource, int domainType)
+	int setResourceDomainType(Streamresource resource, int domainType)
 	{
-		return cmzn_stream_information_region_set_resource_domain_type(
-			reinterpret_cast<cmzn_stream_information_region_id>(id), resource.getId(),
+		return cmzn_streaminformation_region_set_resource_domain_type(
+			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
 			domainType);
 	}
 
 };
 
-inline StreamInformationRegion Region::createStreamInformation()
+inline StreaminformationRegion Region::createStreaminformation()
 {
-	return StreamInformationRegion(reinterpret_cast<cmzn_stream_information_region_id>(
-		cmzn_region_create_stream_information(id)));
+	return StreaminformationRegion(reinterpret_cast<cmzn_streaminformation_region_id>(
+		cmzn_region_create_streaminformation(id)));
 }
 
 }  // namespace Zinc

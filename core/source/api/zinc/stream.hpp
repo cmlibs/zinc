@@ -17,40 +17,40 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class StreamResource
+class Streamresource
 {
 protected:
 
-	cmzn_stream_resource_id id;
+	cmzn_streamresource_id id;
 
 public:
 
-	StreamResource() : id(0)
+	Streamresource() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamResource(cmzn_stream_resource_id in_stream_resource_id) : id(in_stream_resource_id)
+	explicit Streamresource(cmzn_streamresource_id in_streamresource_id) : id(in_streamresource_id)
 	{  }
 
-	StreamResource(const StreamResource& streamResource) : id(cmzn_stream_resource_access(streamResource.id))
+	Streamresource(const Streamresource& streamResource) : id(cmzn_streamresource_access(streamResource.id))
 	{  }
 
-	StreamResource& operator=(const StreamResource& streamInformation)
+	Streamresource& operator=(const Streamresource& streamInformation)
 	{
-		cmzn_stream_resource_id temp_id = cmzn_stream_resource_access(streamInformation.id);
+		cmzn_streamresource_id temp_id = cmzn_streamresource_access(streamInformation.id);
 		if (0 != id)
 		{
-			cmzn_stream_resource_destroy(&id);
+			cmzn_streamresource_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~StreamResource()
+	~Streamresource()
 	{
 		if (0 != id)
 		{
-			cmzn_stream_resource_destroy(&id);
+			cmzn_streamresource_destroy(&id);
 		}
 	}
 
@@ -59,88 +59,88 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_stream_resource_id getId()
+	cmzn_streamresource_id getId()
 	{
 		return id;
 	}
 
 };
 
-class StreamResourceFile : public StreamResource
+class StreamresourceFile : public Streamresource
 {
 
 public:
 
-	StreamResourceFile(StreamResource& streamResource) :
-		StreamResource(reinterpret_cast<cmzn_stream_resource_id>(
-			cmzn_stream_resource_cast_file(streamResource.getId())))
+	StreamresourceFile(Streamresource& streamResource) :
+		Streamresource(reinterpret_cast<cmzn_streamresource_id>(
+			cmzn_streamresource_cast_file(streamResource.getId())))
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamResourceFile(cmzn_stream_resource_file_id stream_resource_file_id) :
-		StreamResource(reinterpret_cast<cmzn_stream_resource_id>(stream_resource_file_id))
+	explicit StreamresourceFile(cmzn_streamresource_file_id streamresource_file_id) :
+		Streamresource(reinterpret_cast<cmzn_streamresource_id>(streamresource_file_id))
 	{ }
 
 	char *getName()
 	{
-		return cmzn_stream_resource_file_get_name(
-			reinterpret_cast<cmzn_stream_resource_file_id>(id));
+		return cmzn_streamresource_file_get_name(
+			reinterpret_cast<cmzn_streamresource_file_id>(id));
 	}
 
 };
 
-class StreamResourceMemory : public StreamResource
+class StreamresourceMemory : public Streamresource
 {
 
 public:
 
-	StreamResourceMemory(StreamResource& streamResource) :
-		StreamResource(reinterpret_cast<cmzn_stream_resource_id>(
-			cmzn_stream_resource_cast_memory(streamResource.getId())))
+	StreamresourceMemory(Streamresource& streamResource) :
+		Streamresource(reinterpret_cast<cmzn_streamresource_id>(
+			cmzn_streamresource_cast_memory(streamResource.getId())))
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamResourceMemory(cmzn_stream_resource_memory_id stream_resource_memory_id) :
-		StreamResource(reinterpret_cast<cmzn_stream_resource_id>(stream_resource_memory_id))
+	explicit StreamresourceMemory(cmzn_streamresource_memory_id streamresource_memory_id) :
+		Streamresource(reinterpret_cast<cmzn_streamresource_id>(streamresource_memory_id))
 	{ }
 
 };
 
-class StreamInformation
+class Streaminformation
 {
 protected:
 
-	cmzn_stream_information_id id;
+	cmzn_streaminformation_id id;
 
 public:
 
-	StreamInformation() : id(0)
+	Streaminformation() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit StreamInformation(cmzn_stream_information_id in_stream_information_id) : id(in_stream_information_id)
+	explicit Streaminformation(cmzn_streaminformation_id in_streaminformation_id) : id(in_streaminformation_id)
 	{  }
 
-	StreamInformation(const StreamInformation& streamInformation) :
-		id(cmzn_stream_information_access(streamInformation.id))
+	Streaminformation(const Streaminformation& streamInformation) :
+		id(cmzn_streaminformation_access(streamInformation.id))
 	{  }
 
-	StreamInformation& operator=(const StreamInformation& streamInformation)
+	Streaminformation& operator=(const Streaminformation& streamInformation)
 	{
-		cmzn_stream_information_id temp_id = cmzn_stream_information_access(streamInformation.id);
+		cmzn_streaminformation_id temp_id = cmzn_streaminformation_access(streamInformation.id);
 		if (0 != id)
 		{
-			cmzn_stream_information_destroy(&id);
+			cmzn_streaminformation_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~StreamInformation()
+	~Streaminformation()
 	{
 		if (0 != id)
 		{
-			cmzn_stream_information_destroy(&id);
+			cmzn_streaminformation_destroy(&id);
 		}
 	}
 
@@ -149,28 +149,28 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_stream_information_id getId()
+	cmzn_streaminformation_id getId()
 	{
 		return id;
 	}
 
-	StreamResourceFile createResourceFile(const char *file_name)
+	StreamresourceFile createStreamresourceFile(const char *file_name)
 	{
-		return StreamResourceFile(reinterpret_cast<cmzn_stream_resource_file_id>(
-			cmzn_stream_information_create_resource_file(id, file_name)));
+		return StreamresourceFile(reinterpret_cast<cmzn_streamresource_file_id>(
+			cmzn_streaminformation_create_streamresource_file(id, file_name)));
 	}
 
-	StreamResourceMemory createResourceMemory()
+	StreamresourceMemory createStreamresourceMemory()
 	{
-		return StreamResourceMemory(reinterpret_cast<cmzn_stream_resource_memory_id>(
-			cmzn_stream_information_create_resource_memory(id)));
+		return StreamresourceMemory(reinterpret_cast<cmzn_streamresource_memory_id>(
+			cmzn_streaminformation_create_streamresource_memory(id)));
 	}
 
-	StreamResourceMemory createResourceMemoryBuffer(const void *buffer,
+	StreamresourceMemory createStreamresourceMemoryBuffer(const void *buffer,
 		unsigned int buffer_length)
 	{
-		return StreamResourceMemory(reinterpret_cast<cmzn_stream_resource_memory_id>(
-			cmzn_stream_information_create_resource_memory_buffer(id, buffer, buffer_length)));
+		return StreamresourceMemory(reinterpret_cast<cmzn_streamresource_memory_id>(
+			cmzn_streaminformation_create_streamresource_memory_buffer(id, buffer, buffer_length)));
 	}
 
 };

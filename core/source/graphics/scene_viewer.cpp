@@ -7735,7 +7735,7 @@ Gets the NDC information.
 }
 
 int cmzn_scene_viewer_get_frame_pixels(cmzn_scene_viewer_id scene_viewer,
-	enum cmzn_stream_information_image_pixel_format storage, int *width, int *height,
+	enum cmzn_streaminformation_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen)
 /*******************************************************************************
@@ -7755,27 +7755,27 @@ scene viewer on screen.
 	int return_code = 1;
 	switch(storage)
 	{
-		case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
+		case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE:
 		{
 			internal_storage_type = TEXTURE_LUMINANCE;
 		} break;
-		case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
+		case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_LUMINANCE_ALPHA:
 		{
 			internal_storage_type = TEXTURE_LUMINANCE_ALPHA;
 		} break;
-		case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGB:
+		case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGB:
 		{
 			internal_storage_type = TEXTURE_RGB;
 		} break;
-		case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
+		case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_RGBA:
 		{
 			internal_storage_type = TEXTURE_RGBA;
 		} break;
-		case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
+		case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_ABGR:
 		{
 			internal_storage_type = TEXTURE_ABGR;
 		} break;
-		case CMZN_STREAM_INFORMATION_IMAGE_PIXEL_FORMAT_BGR:
+		case CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_BGR:
 		{
 			internal_storage_type = TEXTURE_BGR;
 		} break;

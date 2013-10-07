@@ -579,7 +579,7 @@ ZINC_API int cmzn_scene_viewer_set_viewing_volume(cmzn_scene_viewer_id scene_vie
  * scene viewer on screen.
  */
 ZINC_API int cmzn_scene_viewer_get_frame_pixels(cmzn_scene_viewer_id  scene_viewer,
-	enum cmzn_stream_information_image_pixel_format storage, int *width, int *height,
+	enum cmzn_streaminformation_image_pixel_format storage, int *width, int *height,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 

@@ -27,20 +27,20 @@ struct cmzn_stream_memory_block
 	int to_be_deallocated;
 };
 
-struct cmzn_stream_resource
+struct cmzn_streamresource
 {
 public:
 
-	cmzn_stream_resource() :
+	cmzn_streamresource() :
 		access_count(1)
 	{
 	}
 
-	virtual ~cmzn_stream_resource()
+	virtual ~cmzn_streamresource()
 	{
 	}
 
-	inline cmzn_stream_resource *access()
+	inline cmzn_streamresource *access()
 	{
 		++access_count;
 		return this;
@@ -60,15 +60,15 @@ protected:
 	int access_count;
 }; /* struct cmzn_io_stream */
 
-struct cmzn_stream_resource_file : public cmzn_stream_resource
+struct cmzn_streamresource_file : public cmzn_streamresource
 {
 public:
 
-	cmzn_stream_resource_file(const char *file_name_in) : file_name(duplicate_string(file_name_in))
+	cmzn_streamresource_file(const char *file_name_in) : file_name(duplicate_string(file_name_in))
 	{
 	}
 
-	virtual ~cmzn_stream_resource_file()
+	virtual ~cmzn_streamresource_file()
 	{
 		if (file_name)
 			DEALLOCATE(file_name);
@@ -83,18 +83,18 @@ protected:
 	char *file_name;
 }; /* struct cmzn_input_stream */
 
-struct cmzn_stream_resource_memory : public cmzn_stream_resource
+struct cmzn_streamresource_memory : public cmzn_streamresource
 {
 public:
 
-	cmzn_stream_resource_memory() : memory_block(new cmzn_stream_memory_block)
+	cmzn_streamresource_memory() : memory_block(new cmzn_stream_memory_block)
 	{
 		memory_block->to_be_deallocated = 0;
 		memory_block->memory_buffer = NULL;
 		memory_block->memory_buffer_size = 0;
 	}
 
-	cmzn_stream_resource_memory(const void *buffer, int buffer_size) :
+	cmzn_streamresource_memory(const void *buffer, int buffer_size) :
 		memory_block(new cmzn_stream_memory_block)
 	{
 		memory_block->to_be_deallocated = 0;
@@ -102,7 +102,7 @@ public:
 		memory_block->memory_buffer_size = buffer_size;
 	}
 
-	~cmzn_stream_resource_memory()
+	~cmzn_streamresource_memory()
 	{
 		if (memory_block)
 		{
@@ -160,17 +160,17 @@ struct cmzn_resource_properties
 {
 public:
 
-	cmzn_resource_properties(cmzn_stream_resource_id resource_in) : resource(
-		cmzn_stream_resource_access(resource_in))
+	cmzn_resource_properties(cmzn_streamresource_id resource_in) : resource(
+		cmzn_streamresource_access(resource_in))
 	{
 	}
 
 	~cmzn_resource_properties()
 	{
-		cmzn_stream_resource_destroy(&resource);
+		cmzn_streamresource_destroy(&resource);
 	}
 
-	cmzn_stream_resource_id getResource()
+	cmzn_streamresource_id getResource()
 	{
 		if (resource)
 			return resource;
@@ -178,27 +178,27 @@ public:
 	}
 
 protected:
-	cmzn_stream_resource_id resource;
+	cmzn_streamresource_id resource;
 };
 
 typedef std::list<cmzn_resource_properties *> cmzn_stream_properties_list;
 typedef std::list<cmzn_resource_properties *>::const_iterator cmzn_stream_properties_list_const_iterator;
 
-struct cmzn_stream_information
+struct cmzn_streaminformation
 {
 public:
 
-	cmzn_stream_information() :
+	cmzn_streaminformation() :
 		access_count(1)
 	{
 	}
 
-	virtual ~cmzn_stream_information()
+	virtual ~cmzn_streaminformation()
 	{
 		clearResources();
 	}
 
-	inline cmzn_stream_information *access()
+	inline cmzn_streaminformation *access()
 	{
 		++access_count;
 		return this;
@@ -236,18 +236,18 @@ public:
 		return 1;
 	}
 
-	virtual cmzn_resource_properties *createResourceProperties(cmzn_stream_resource_id stream)
+	virtual cmzn_resource_properties *createResourceProperties(cmzn_streamresource_id stream)
 	{
 		if (stream)
 			return new cmzn_resource_properties(stream);
 		return NULL;
 	}
 
-	cmzn_stream_resource_id createStreamResourceFile(const char *file_name)
+	cmzn_streamresource_id createStreamresourceFile(const char *file_name)
 	{
 		if (file_name)
 		{
-			cmzn_stream_resource_id stream = new cmzn_stream_resource_file(
+			cmzn_streamresource_id stream = new cmzn_streamresource_file(
 				file_name);
 			appendResourceProperties(createResourceProperties(stream));
 			return stream;
@@ -255,19 +255,19 @@ public:
 		return NULL;
 	}
 
-	cmzn_stream_resource_id createStreamResourceMemory()
+	cmzn_streamresource_id createStreamresourceMemory()
 	{
-		cmzn_stream_resource_id stream = new cmzn_stream_resource_memory();
+		cmzn_streamresource_id stream = new cmzn_streamresource_memory();
 		appendResourceProperties(createResourceProperties(stream));
 		return stream;
 	}
 
-	cmzn_stream_resource_id createStreamResourceMemoryBuffer(const void *memory_block,
+	cmzn_streamresource_id createStreamresourceMemoryBuffer(const void *memory_block,
 		unsigned int block_length)
 	{
 		if (memory_block && block_length)
 		{
-			cmzn_stream_resource_id stream = new cmzn_stream_resource_memory(
+			cmzn_streamresource_id stream = new cmzn_streamresource_memory(
 				memory_block, block_length);
 			appendResourceProperties(createResourceProperties(stream));
 			return stream;
@@ -275,7 +275,7 @@ public:
 		return NULL;
 	}
 
-	inline cmzn_resource_properties *findResourceInList(cmzn_stream_resource_id resource_in)
+	inline cmzn_resource_properties *findResourceInList(cmzn_streamresource_id resource_in)
 	{
 		std::list<cmzn_resource_properties *>::iterator pos;
 		for (pos = resources_list.begin(); pos != resources_list.end(); ++pos)
@@ -293,7 +293,7 @@ public:
 		return resources_list;
 	}
 
-	int removeResource(cmzn_stream_resource_id resource_in)
+	int removeResource(cmzn_streamresource_id resource_in)
 	{
 		std::list<cmzn_resource_properties *>::iterator pos;
 		for (pos = resources_list.begin(); pos != resources_list.end(); ++pos)
@@ -312,6 +312,6 @@ public:
 protected:
 	int access_count;
 	cmzn_stream_properties_list resources_list;
-}; /* struct cmzn_stream_information */
+}; /* struct cmzn_streaminformation */
 
 #endif /* CMZN_STREAM_PRIVATE_HPP */
