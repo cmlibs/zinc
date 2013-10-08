@@ -8,7 +8,7 @@ import unittest
 from opencmiss.zinc.context import Context
 from opencmiss.zinc.glyph import Glyph
 from opencmiss.zinc.field import Field
-from opencmiss.zinc.sceneviewer import SceneViewer
+from opencmiss.zinc.sceneviewer import Sceneviewer
 from opencmiss.zinc import status
 
 class GraphicTestCase(unittest.TestCase):
@@ -67,9 +67,9 @@ class GraphicTestCase(unittest.TestCase):
         base_size = attributes.getBaseSize(3)
         self.assertEqual([4.8, 2.1, 7], base_size[1])
         
-    def testSceneViewerBackgroundColour(self):
-        svm = self.graphics_module.getSceneViewerModule()
-        sv = svm.createSceneViewer(SceneViewer.BUFFERING_MODE_DOUBLE, SceneViewer.STEREO_MODE_MONO)
+    def testSceneviewerBackgroundColour(self):
+        svm = self.graphics_module.getSceneviewermodule()
+        sv = svm.createSceneviewer(Sceneviewer.BUFFERING_MODE_DOUBLE, Sceneviewer.STEREO_MODE_MONO)
         
         result = sv.setBackgroundColourComponentRGB(0.3, 0.8, 0.65)
         self.assertEqual(1, result)
