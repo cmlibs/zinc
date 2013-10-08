@@ -33,65 +33,56 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/light_model.h"
 
 struct Graphics_buffer;
-#define Graphics_buffer_input cmzn_scene_viewer_input
-#define Graphics_buffer_input_event_type cmzn_scene_viewer_input_event_type
+#define Graphics_buffer_input cmzn_sceneviewerinput
+#define Graphics_buffer_input_event_type cmzn_sceneviewerinput_event_type
 
 /*
 struct Scene;
 struct MANAGER(Scene);
 */
-struct cmzn_scene_viewer_module;
+struct cmzn_sceneviewermodule;
 
 /*
-The cmzn_scene_viewer which is Public is currently the same object as the
+The cmzn_sceneviewer which is Public is currently the same object as the
 cmgui internal Scene_viewer.  The Public interface is contained in
 zinc/sceneviewer.h however most of the functions come directly from
 this module.  So that these functions match the public declarations the
-struct Scene_viewer is declared to be the same as cmzn_scene_viewer here
+struct Scene_viewer is declared to be the same as cmzn_sceneviewer here
 and the functions given their public names.
 */
 /* Convert the type */
-#define Scene_viewer cmzn_scene_viewer
-
-/* Convert the enumerators */
-#define Scene_viewer_interact_mode cmzn_scene_viewer_interact_mode
-#define SCENE_VIEWER_INTERACT_STANDARD CMZN_SCENE_VIEWER_INTERACT_STANDARD
-#define SCENE_VIEWER_INTERACT_2D CMZN_SCENE_VIEWER_INTERACT_2D
+#define Scene_viewer cmzn_sceneviewer
 
 /* Convert the functions that have identical interfaces */
-#define Scene_viewer_get_interact_mode cmzn_scene_viewer_get_interact_mode
-#define Scene_viewer_set_interact_mode cmzn_scene_viewer_set_interact_mode
-#define Scene_viewer_get_view_angle cmzn_scene_viewer_get_view_angle
-#define Scene_viewer_set_view_angle cmzn_scene_viewer_set_view_angle
-#define Scene_viewer_get_antialias_mode cmzn_scene_viewer_get_antialias_mode
-#define Scene_viewer_set_antialias_mode cmzn_scene_viewer_set_antialias_mode
-#define Scene_viewer_get_depth_of_field cmzn_scene_viewer_get_depth_of_field
-#define Scene_viewer_set_depth_of_field cmzn_scene_viewer_set_depth_of_field
-#define Scene_viewer_get_perturb_lines cmzn_scene_viewer_get_perturb_lines
-#define Scene_viewer_set_perturb_lines cmzn_scene_viewer_set_perturb_lines
-#define Scene_viewer_view_all cmzn_scene_viewer_view_all
-#define Scene_viewer_render_scene cmzn_scene_viewer_render_scene
-#define Scene_viewer_get_freespin_tumble_angle cmzn_scene_viewer_get_freespin_tumble_angle
-#define Scene_viewer_set_freespin_tumble_angle cmzn_scene_viewer_set_freespin_tumble_angle
-#define Scene_viewer_get_freespin_tumble_axis cmzn_scene_viewer_get_freespin_tumble_axis
-#define Scene_viewer_start_freespin cmzn_scene_viewer_start_freespin
-#define Scene_viewer_stop_animations cmzn_scene_viewer_stop_animations
-#define Scene_viewer_get_translation_rate cmzn_scene_viewer_get_translation_rate
-#define Scene_viewer_set_translation_rate cmzn_scene_viewer_set_translation_rate
-#define Scene_viewer_get_tumble_rate cmzn_scene_viewer_get_tumble_rate
-#define Scene_viewer_set_tumble_rate cmzn_scene_viewer_set_tumble_rate
-#define Scene_viewer_get_zoom_rate cmzn_scene_viewer_get_zoom_rate
-#define Scene_viewer_set_zoom_rate cmzn_scene_viewer_set_zoom_rate
-#define Scene_viewer_get_viewing_volume cmzn_scene_viewer_get_viewing_volume
-#define Scene_viewer_set_viewing_volume cmzn_scene_viewer_set_viewing_volume
-#define Scene_viewer_set_background_texture_info cmzn_scene_viewer_set_background_texture_info
-#define Scene_viewer_add_transform_callback cmzn_scene_viewer_add_transform_callback
-#define Scene_viewer_remove_transform_callback cmzn_scene_viewer_remove_transform_callback
-#define Scene_viewer_add_input_callback cmzn_scene_viewer_add_input_callback
-#define Scene_viewer_remove_input_callback cmzn_scene_viewer_remove_input_callback
-#define Scene_viewer_add_repaint_required_callback cmzn_scene_viewer_add_repaint_required_callback
-#define Scene_viewer_remove_repaint_required_callback cmzn_scene_viewer_remove_repaint_required_callback
-#define Scene_viewer_get_frame_count cmzn_scene_viewer_get_frame_count
+#define Scene_viewer_get_antialias_mode cmzn_sceneviewer_get_antialias_mode
+#define Scene_viewer_set_antialias_mode cmzn_sceneviewer_set_antialias_mode
+#define Scene_viewer_get_depth_of_field cmzn_sceneviewer_get_depth_of_field
+#define Scene_viewer_set_depth_of_field cmzn_sceneviewer_set_depth_of_field
+#define Scene_viewer_get_perturb_lines cmzn_sceneviewer_get_perturb_lines
+#define Scene_viewer_set_perturb_lines cmzn_sceneviewer_set_perturb_lines
+#define Scene_viewer_view_all cmzn_sceneviewer_view_all
+#define Scene_viewer_render_scene cmzn_sceneviewer_render_scene
+#define Scene_viewer_get_freespin_tumble_angle cmzn_sceneviewer_get_freespin_tumble_angle
+#define Scene_viewer_set_freespin_tumble_angle cmzn_sceneviewer_set_freespin_tumble_angle
+#define Scene_viewer_get_freespin_tumble_axis cmzn_sceneviewer_get_freespin_tumble_axis
+#define Scene_viewer_start_freespin cmzn_sceneviewer_start_freespin
+#define Scene_viewer_stop_animations cmzn_sceneviewer_stop_animations
+#define Scene_viewer_get_translation_rate cmzn_sceneviewer_get_translation_rate
+#define Scene_viewer_set_translation_rate cmzn_sceneviewer_set_translation_rate
+#define Scene_viewer_get_tumble_rate cmzn_sceneviewer_get_tumble_rate
+#define Scene_viewer_set_tumble_rate cmzn_sceneviewer_set_tumble_rate
+#define Scene_viewer_get_zoom_rate cmzn_sceneviewer_get_zoom_rate
+#define Scene_viewer_set_zoom_rate cmzn_sceneviewer_set_zoom_rate
+#define Scene_viewer_get_viewing_volume cmzn_sceneviewer_get_viewing_volume
+#define Scene_viewer_set_viewing_volume cmzn_sceneviewer_set_viewing_volume
+#define Scene_viewer_set_background_texture_info cmzn_sceneviewer_set_background_texture_info
+#define Scene_viewer_add_transform_callback cmzn_sceneviewer_add_transform_callback
+#define Scene_viewer_remove_transform_callback cmzn_sceneviewer_remove_transform_callback
+#define Scene_viewer_add_input_callback cmzn_sceneviewer_add_input_callback
+#define Scene_viewer_remove_input_callback cmzn_sceneviewer_remove_input_callback
+#define Scene_viewer_add_repaint_required_callback cmzn_sceneviewer_add_repaint_required_callback
+#define Scene_viewer_remove_repaint_required_callback cmzn_sceneviewer_remove_repaint_required_callback
+#define Scene_viewer_get_frame_count cmzn_sceneviewer_get_frame_count
 
 /*
 Global types
@@ -123,18 +114,6 @@ DESCRIPTION :
 	SCENE_VIEWER_NO_INPUT,
 	SCENE_VIEWER_SELECT,
 	SCENE_VIEWER_TRANSFORM
-};
-
-enum Scene_viewer_blending_mode
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	SCENE_VIEWER_BLEND_NORMAL,
-	SCENE_VIEWER_BLEND_NONE,
-	SCENE_VIEWER_BLEND_TRUE_ALPHA
 };
 
 enum Scene_viewer_buffering_mode
@@ -175,27 +154,6 @@ Be sure to implement any new modes in Scene_viewer_stereo_mode_string.
 	SCENE_VIEWER_STEREO
 };
 
-enum Scene_viewer_viewport_mode
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-In RELATIVE viewport mode the intended viewing volume is made as large as
-possible in the physical viewport while maintaining the aspect ratio from
-NDC_width and NDC_height. In ABSOLUTE viewport mode viewport_pixels_per_unit
-values are used to give and exact mapping from user coordinates to pixels.
-In DISTORTING_RELATIVE viewport mode the intended viewing volume is made as
-large as possible in the physical viewport, and the aspect ratio may be
-changed.
-Be sure to implement any new modes in Scene_viewer_viewport_mode_string.
-==============================================================================*/
-{
-	SCENE_VIEWER_ABSOLUTE_VIEWPORT,
-	SCENE_VIEWER_RELATIVE_VIEWPORT,
-	SCENE_VIEWER_DISTORTING_RELATIVE_VIEWPORT
-};
-
-
 enum Scene_viewer_drag_mode
 {
 	SV_DRAG_NOTHING,
@@ -205,12 +163,12 @@ enum Scene_viewer_drag_mode
 	SV_DRAG_FLY
 };
 
-struct cmzn_scene_viewer_module
+struct cmzn_sceneviewermodule
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION:
-The default data used to create cmzn_scene_viewers.
+The default data used to create cmzn_sceneviewers.
 ==============================================================================*/
 {
 	int access_count;
@@ -226,7 +184,7 @@ The default data used to create cmzn_scene_viewers.
 	/* List of scene_viewers created with this package,
 		generally all scene_viewers that are not in graphics windows */
 	struct LIST(Scene_viewer) *scene_viewer_list;
-	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_viewer_module_callback))
+	struct LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback))
 		*destroy_callback_list;
 	void *scenefilter_manager_callback_id;
 	void *light_manager_callback_id;
@@ -242,17 +200,17 @@ struct Scene_viewer_image_texture
 	struct Scene_viewer *scene_viewer;
 };
 
-struct cmzn_scene_viewer_input
+struct cmzn_sceneviewerinput
 {
 	int access_count;
-	enum cmzn_scene_viewer_input_event_type type;
+	enum cmzn_sceneviewerinput_event_type type;
 	int button_number;
 	int key_code;
 	int position_x;
 	int position_y;
 	/* flags indicating the state of the shift, control and alt keys - use
-	 * logical OR with CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT etc. */
-	cmzn_scene_viewer_input_modifier input_modifier;
+	 * logical OR with CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT etc. */
+	cmzn_sceneviewerinput_modifiers_type modifiers;
 };
 
 struct Scene_viewer
@@ -308,7 +266,7 @@ DESCRIPTION :
 		 aspect ratio from NDC_width/NDC_height is ignored and the NDCs are made
 		 as large as possible(DISTORTING_RELATIVE_VIEWPORT).
 	*/
-	enum Scene_viewer_viewport_mode viewport_mode;
+	enum cmzn_sceneviewer_viewport_mode viewport_mode;
 	/* Specifies the offset and scale of user coordinates in the physical
 		 viewport, by supplying the user coordinate of the top,left position in
 		 and the number of pixels plotted for a change of 1 in user units. Note
@@ -317,7 +275,7 @@ DESCRIPTION :
 	double user_viewport_left,user_viewport_top,user_viewport_pixels_per_unit_x,
 		user_viewport_pixels_per_unit_y;
 	/* specifies the quality of transparency rendering */
-	enum cmzn_scene_viewer_transparency_mode transparency_mode;
+	enum cmzn_sceneviewer_transparency_mode transparency_mode;
 	/* number of layers used in layered transparency mode */
 	int transparency_layers;
 	/* When an ABSOLUTE_VIEWPORT is used the following values specify the
@@ -335,7 +293,7 @@ DESCRIPTION :
 	struct LIST(Light) *list_of_lights;
 	/* managers and callback IDs for automatic updates */
 	/* For interpreting mouse events */
-	enum Scene_viewer_interact_mode interact_mode;
+	cmzn_sceneviewer_interact_mode interact_mode;
 	enum Scene_viewer_drag_mode drag_mode;
 	int previous_pointer_x, previous_pointer_y;
 	/* kept tumble axis and angle for spinning scene viewer */
@@ -351,7 +309,7 @@ DESCRIPTION :
 	void *pixel_data;
 	int antialias;
 	int perturb_lines;
-	enum Scene_viewer_blending_mode blending_mode;
+	cmzn_sceneviewer_blending_mode blending_mode;
 	double depth_of_field;  /* depth_of_field, 0 == infinite */
 	double focal_depth;
 	/* flag indicating that the viewer should swap buffers at the next
@@ -366,7 +324,7 @@ DESCRIPTION :
 	/* The distance between the two stereo views in world space */
 	double stereo_eye_spacing;
 	/* Special persistent data for order independent transparency */
-	struct cmzn_scene_viewer_transparency_order_independent_data
+	struct cmzn_sceneviewer_transparency_order_independent_data
 	   *order_independent_transparency_data;
 	/* The connection to the systems user interface system */
 	//-- struct User_interface *user_interface;
@@ -388,8 +346,8 @@ DESCRIPTION :
 	cmzn_scene_id scene;
 }; /* struct Scene_viewer */
 
-DECLARE_CMZN_CALLBACK_TYPES(cmzn_scene_viewer_module_callback, \
-	struct cmzn_scene_viewer_module *, void *, void);
+DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
+	struct cmzn_sceneviewermodule *, void *, void);
 
 DECLARE_CMZN_CALLBACK_TYPES(Scene_viewer_callback, \
 	struct Scene_viewer *, void *, void);
@@ -401,7 +359,7 @@ PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
 Global functions
 ----------------
 */
-struct cmzn_scene_viewer_module *CREATE(cmzn_scene_viewer_module)(
+struct cmzn_sceneviewermodule *CREATE(cmzn_sceneviewermodule)(
 	struct Colour *background_colour,
 	struct MANAGER(Interactive_tool) *interactive_tool_manager,
 	Light_module *lightModule ,struct Light *default_light,
@@ -411,31 +369,31 @@ struct cmzn_scene_viewer_module *CREATE(cmzn_scene_viewer_module)(
 LAST MODIFIED : 19 January 2007
 
 DESCRIPTION :
-Creates a Scene_viewer_module.
+Creates a sceneviewermodule.
 ==============================================================================*/
 
-int cmzn_scene_viewer_module_add_destroy_callback(struct cmzn_scene_viewer_module *scene_viewer_module,
-	CMZN_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
+int cmzn_sceneviewermodule_add_destroy_callback(struct cmzn_sceneviewermodule *sceneviewermodule,
+	CMZN_CALLBACK_FUNCTION(cmzn_sceneviewermodule_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
-Adds a callback to the <scene_viewer_module> that is called back before the scene
+Adds a callback to the <sceneviewermodule> that is called back before the scene
 viewer is destroyed.
 ==============================================================================*/
 
-int cmzn_scene_viewer_module_remove_destroy_callback(struct cmzn_scene_viewer_module *scene_viewer_module,
-	CMZN_CALLBACK_FUNCTION(cmzn_scene_viewer_module_callback) *function,void *user_data);
+int cmzn_sceneviewermodule_remove_destroy_callback(struct cmzn_sceneviewermodule *sceneviewermodule,
+	CMZN_CALLBACK_FUNCTION(cmzn_sceneviewermodule_callback) *function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 24 January 2007
 
 DESCRIPTION :
 Removes the callback calling <function> with <user_data> from
-<scene_viewer_module>.
+<sceneviewermodule>.
 ==============================================================================*/
 
-struct Graphics_buffer_package *cmzn_scene_viewer_module_get_graphics_buffer_package(
-	struct cmzn_scene_viewer_module *cmiss_scene_viewer_module);
+struct Graphics_buffer_package *cmzn_sceneviewermodule_get_graphics_buffer_package(
+	struct cmzn_sceneviewermodule *sceneviewermodule);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
 
@@ -574,27 +532,6 @@ significant value, 0.1 is a small value causing significant distortion.
 The <focal_depth> is depth in normalised device coordinates, -1 at near plane
 and +1 at far plane.  At this <focal_depth> the image is in focus no matter
 how small the <depth_of_field>.
-==============================================================================*/
-
-int Scene_viewer_get_blending_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_blending_mode *blending_mode);
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-See Scene_viewer_set_blending_mode.
-==============================================================================*/
-
-int Scene_viewer_set_blending_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_blending_mode blending_mode);
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-Sets the blending mode for the scene draw.
-SCENE_VIEWER_BLEND_NORMAL is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
-SCENE_VIEWER_BLEND_TRUE_ALPHA is src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA
-  for rgb and src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha.
 ==============================================================================*/
 
 int Scene_viewer_get_background_colour(struct Scene_viewer *scene_viewer,
@@ -988,17 +925,6 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-int Scene_viewer_get_view_angle(struct Scene_viewer *scene_viewer,
-	double *view_angle);
-/*******************************************************************************
-LAST MODIFIED : 6 March 2001
-
-DESCRIPTION :
-Gets the diagonal view angle, in radians, of the <scene_viewer>.
-View angle is measured across the normalized device coordinates - NDCs.
-For PARALLEL and PERSPECTIVE projection modes only.
-==============================================================================*/
-
 int Scene_viewer_get_horizontal_view_angle(struct Scene_viewer *scene_viewer,
 	double *horizontal_view_angle);
 /*******************************************************************************
@@ -1018,16 +944,6 @@ LAST MODIFIED : 6 April 2001
 DESCRIPTION :
 Gets the vertical view angle, in radians, of the <scene_viewer>.
 View angle is measured across the normalized device coordinates - NDCs.
-For PARALLEL and PERSPECTIVE projection modes only.
-==============================================================================*/
-
-int Scene_viewer_set_view_angle(struct Scene_viewer *scene_viewer,
-	double view_angle);
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Sets the diagonal view angle, in radians, of the <scene_viewer>.
 For PARALLEL and PERSPECTIVE projection modes only.
 ==============================================================================*/
 
@@ -1135,28 +1051,7 @@ pixels per unit enables zooming to be achieved.
 ???RC How to handle y axis pointing down?
 ==============================================================================*/
 
-struct Graphics_buffer *cmzn_scene_viewer_get_graphics_buffer(cmzn_scene_viewer_id scene_viewer);
-
-enum Scene_viewer_viewport_mode Scene_viewer_get_viewport_mode(
-	struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 14 October 1998
-
-DESCRIPTION :
-See Scene_viewer_set_viewport_mode for explanation.
-==============================================================================*/
-
-int Scene_viewer_set_viewport_mode(struct Scene_viewer *scene_viewer,
-	enum Scene_viewer_viewport_mode viewport_mode);
-/*******************************************************************************
-LAST MODIFIED : 14 October 1998
-
-DESCRIPTION :
-Sets the viewport_mode of the Scene_viewer. A relative viewport scales the NDC
-viewing volume to the maximum size that can fit in the window. An absolute
-viewport uses the NDC_information to map the NDC viewing volume onto the
-viewport coordinates, which are specified relative to the window.
-==============================================================================*/
+struct Graphics_buffer *cmzn_sceneviewer_get_graphics_buffer(cmzn_sceneviewer_id scene_viewer);
 
 int Scene_viewer_get_viewport_size(struct Scene_viewer *scene_viewer,
 	int *width, int *height);
@@ -1351,7 +1246,7 @@ Removes the callback calling <function> with <user_data> from
 <scene_viewer>.
 ==============================================================================*/
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Scene_viewer_blending_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_sceneviewer_blending_mode);
 
 const char *Scene_viewer_buffering_mode_string(
 	enum Scene_viewer_buffering_mode buffering_mode);
@@ -1393,8 +1288,8 @@ Returns a string label for the <projection_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-const char *cmzn_scene_viewer_transparency_mode_string(
-	enum cmzn_scene_viewer_transparency_mode transparency_mode);
+const char *cmzn_sceneviewer_transparency_mode_string(
+	enum cmzn_sceneviewer_transparency_mode transparency_mode);
 /*******************************************************************************
 LAST MODIFIED : 23 November 1998
 
@@ -1403,15 +1298,12 @@ Returns a string label for the <transparency_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 
-const char *Scene_viewer_viewport_mode_string(
-	enum Scene_viewer_viewport_mode viewport_mode);
-/*******************************************************************************
-LAST MODIFIED : 14 October 1998
-
-DESCRIPTION :
-Returns a string label for the <viewport_mode>.
-NOTE: Calling function must not deallocate returned string.
-==============================================================================*/
+/**
+ * Returns a string label for the <viewport_mode>.
+ * NOTE: Calling function must not deallocate returned string.
+ */
+const char *cmzn_sceneviewer_viewport_mode_string(
+	enum cmzn_sceneviewer_viewport_mode viewport_mode);
 
 int Scene_viewer_call_next_renderer(
 	struct Scene_viewer_rendering_data *rendering_data);
@@ -1471,10 +1363,10 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
 	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
 
-int Scene_viewer_scene_change(cmzn_scene_viewer_id scene_viewer);
+int Scene_viewer_scene_change(cmzn_sceneviewer_id scene_viewer);
 
 struct Scene_viewer *create_Scene_viewer_from_package(
 	struct Graphics_buffer *graphics_buffer,
-	struct cmzn_scene_viewer_module *cmiss_scene_viewer_module);
+	struct cmzn_sceneviewermodule *sceneviewermodule);
 
 #endif /* !defined (SCENE_VIEWER_H) */

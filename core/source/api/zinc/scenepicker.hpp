@@ -71,11 +71,11 @@ public:
 		return id;
 	}
 
-	int setSceneViewerRectangle(SceneViewer& sceneViewer, SceneCoordinateSystem coordinateSystem, double x1,
+	int setSceneviewerRectangle(Sceneviewer& sceneviewer, SceneCoordinateSystem coordinateSystem, double x1,
 		double y1, double x2, double y2)
 	{
-		return cmzn_scene_picker_set_scene_viewer_rectangle(
-			id , sceneViewer.getId(),
+		return cmzn_scene_picker_set_sceneviewer_rectangle(
+			id , sceneviewer.getId(),
 			static_cast<cmzn_scene_coordinate_system>(coordinateSystem),
 			x1, y1, x2, y2);
 	}

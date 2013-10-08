@@ -57,13 +57,10 @@ DESCRIPTION :
 Returns the dot product of the two vectors = a.b.
 ==============================================================================*/
 
-double norm3(double *v);
-/*******************************************************************************
-LAST MODIFIED : 28 January 1998
-
-DESCRIPTION :
-Returns the norm/length/magnitude of vector <v>.
-==============================================================================*/
+/**
+ * Returns the norm/length/magnitude of vector <v>.
+ */
+double norm3(const double *v);
 
 double normalize3(double *v);
 /*******************************************************************************

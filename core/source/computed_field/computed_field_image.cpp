@@ -1,8 +1,8 @@
-/*****************************************************************************//**
+/**
  * FILE : computed_field_image.cpp
  *
- * Implements a computed_field which maintains a graphics transformation
- * equivalent to the scene_viewer assigned to it.
+ * Derived field type that stores an image buffer suitable for I/O and
+ * texturing.
  */
 /* OpenCMISS-Zinc Library
 *

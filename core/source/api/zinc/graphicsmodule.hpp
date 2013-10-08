@@ -95,9 +95,9 @@ public:
 		return Scenefiltermodule(cmzn_graphics_module_get_scenefiltermodule(id));
 	}
 
-	SceneViewerModule getSceneViewerModule()
+	Sceneviewermodule getSceneviewermodule()
 	{
-		return SceneViewerModule(cmzn_graphics_module_get_scene_viewer_module(id));
+		return Sceneviewermodule(cmzn_graphics_module_get_sceneviewermodule(id));
 	}
 
 	SpectrumModule getSpectrumModule()

@@ -13,7 +13,7 @@ DESCRIPTION :
 #if !defined (ORDER_INDEPENDENT_TRANSPARENCY_H)
 #define ORDER_INDEPENDENT_TRANSPARENCY_H
 
-struct cmzn_scene_viewer_transparency_order_independent_data;
+struct cmzn_sceneviewer_transparency_order_independent_data;
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
@@ -29,7 +29,7 @@ DESCRIPTION :
 Returns true if the current display is capable of order independent transparency.
 ==============================================================================*/
 
-struct cmzn_scene_viewer_transparency_order_independent_data *
+struct cmzn_sceneviewer_transparency_order_independent_data *
    order_independent_initialise(struct Scene_viewer *scene_viewer);
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
@@ -40,7 +40,7 @@ of <width> by <height>.
 ==============================================================================*/
 
 int order_independent_reshape(
-	struct cmzn_scene_viewer_transparency_order_independent_data *data,
+	struct cmzn_sceneviewer_transparency_order_independent_data *data,
 	int width, int height, int layers, int using_stencil_overlay);
 /*******************************************************************************
 LAST MODIFIED : 16 April 2003
@@ -50,9 +50,9 @@ Initialises per rendering parts of this extension.
 ==============================================================================*/
 
 void order_independent_display(struct Scene_viewer_rendering_data *rendering_data,
-	struct cmzn_scene_viewer_transparency_order_independent_data *data,
+	struct cmzn_sceneviewer_transparency_order_independent_data *data,
 	double *projection_matrix, double *modelview_matrix,
-	enum Scene_viewer_blending_mode blending_mode);
+	enum cmzn_sceneviewer_blending_mode blending_mode);
 /*******************************************************************************
 LAST MODIFIED : 16 April 2003
 
@@ -61,7 +61,7 @@ Actually preforms the rendering pass.
 ==============================================================================*/
 
 int order_independent_finalise(
-	struct cmzn_scene_viewer_transparency_order_independent_data **data_address);
+	struct cmzn_sceneviewer_transparency_order_independent_data **data_address);
 /*******************************************************************************
 LAST MODIFIED : 14 April 2003
 
