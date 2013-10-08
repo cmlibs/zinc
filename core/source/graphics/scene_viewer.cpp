@@ -3325,6 +3325,10 @@ Converts mouse button-press and motion events into viewing transformations in
 										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 									}
 								} break;
+								case CMZN_SCENEVIEWER_INTERACT_INVALID:
+								{
+									// do nothing
+								} break;
 							}
 						} break;
 						case 2:
@@ -3337,14 +3341,18 @@ Converts mouse button-press and motion events into viewing transformations in
 									{
 										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 									}
-								}break;
+								} break;
 								case CMZN_SCENEVIEWER_INTERACT_2D:
 								{
 									if (0.0 != scene_viewer->tumble_rate)
 									{
 										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 									}
-								}break;
+								} break;
+								case CMZN_SCENEVIEWER_INTERACT_INVALID:
+								{
+									// do nothing
+								} break;
 							}
 						} break;
 						case 3:
