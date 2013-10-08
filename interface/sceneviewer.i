@@ -1,5 +1,5 @@
-/*******************************************************************************
- * SceneViewer.i
+/**
+ * sceneviewer.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -46,7 +46,7 @@
 
 %import "scene.i"
 
-%extend OpenCMISS::Zinc::SceneViewer {
+%extend OpenCMISS::Zinc::Sceneviewer {
 
 	int addRepaintRequiredCallback(PyObject *callbackObject)
 	{
@@ -58,7 +58,7 @@
 		}
 		Py_XINCREF(callbackObject);         /* Add a reference to new callback */
 		my_callback = callbackObject;       /* Remember new callback */
-		return cmzn_scene_viewer_add_repaint_required_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+		return cmzn_sceneviewer_add_repaint_required_callback(($self)->getId(),callbackToPython, (void *)my_callback);
 	}
 
 	int removeRepaintRequiredCallback(PyObject *callbackObject)
@@ -68,7 +68,7 @@
 			PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
 			return 0;
 		}
-		int return_code = cmzn_scene_viewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
+		int return_code = cmzn_sceneviewer_remove_repaint_required_callback(($self)->getId(),callbackToPython,
 			(void *)callbackObject);
 		Py_XDECREF(callbackObject);         /* Add a reference to new callback */
 		return return_code;
@@ -81,13 +81,13 @@
 %{
 #include "zinc/sceneviewer.hpp"
 
-struct SceneViewerPyDataObject
+struct SceneviewerPyDataObject
 {
 	PyObject *callbackObject;
 	PyObject *userObject;
 };
 
-static void callbackToPython(cmzn_scene_viewer_id scene_viewer,
+static void callbackToPython(cmzn_sceneviewer_id sceneviewer,
 	void *callback_data, void *user_data)
 {
 	PyObject *arglist = NULL;
@@ -95,8 +95,8 @@ static void callbackToPython(cmzn_scene_viewer_id scene_viewer,
 	PyObject *my_callback = (PyObject *)user_data;
 	/* convert time_notifier to python object */
 	PyObject *obj = NULL;
-	OpenCMISS::Zinc::SceneViewer *sceneViewer = new OpenCMISS::Zinc::SceneViewer(cmzn_scene_viewer_access(scene_viewer));
-	obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneViewer), SWIGTYPE_p_OpenCMISS__Zinc__SceneViewer, 1);
+	OpenCMISS::Zinc::Sceneviewer *sceneviewer = new OpenCMISS::Zinc::Sceneviewer(cmzn_sceneviewer_access(sceneviewer));
+	obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneviewer), SWIGTYPE_p_OpenCMISS__Zinc__Sceneviewer, 1);
 	/* Time to call the callback */
 	arglist = Py_BuildValue("(N)", obj);
 	result = PyObject_CallObject(my_callback, arglist);
