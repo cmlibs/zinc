@@ -87,7 +87,7 @@ struct SceneviewerPyDataObject
 	PyObject *userObject;
 };
 
-static void callbackToPython(cmzn_sceneviewer_id sceneviewer,
+static void callbackToPython(cmzn_sceneviewer_id sceneviewer_id,
 	void *callback_data, void *user_data)
 {
 	PyObject *arglist = NULL;
@@ -95,7 +95,7 @@ static void callbackToPython(cmzn_sceneviewer_id sceneviewer,
 	PyObject *my_callback = (PyObject *)user_data;
 	/* convert time_notifier to python object */
 	PyObject *obj = NULL;
-	OpenCMISS::Zinc::Sceneviewer *sceneviewer = new OpenCMISS::Zinc::Sceneviewer(cmzn_sceneviewer_access(sceneviewer));
+	OpenCMISS::Zinc::Sceneviewer *sceneviewer = new OpenCMISS::Zinc::Sceneviewer(cmzn_sceneviewer_access(sceneviewer_id));
 	obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneviewer), SWIGTYPE_p_OpenCMISS__Zinc__Sceneviewer, 1);
 	/* Time to call the callback */
 	arglist = Py_BuildValue("(N)", obj);
