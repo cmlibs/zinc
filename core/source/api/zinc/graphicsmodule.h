@@ -62,11 +62,10 @@ ZINC_API int cmzn_graphics_module_destroy(
  * Returns a handle to a scene viewer module
  * User interface must be enabled before this function can be called successfully.
  *
- *
  * @param graphics_module  The graphics module to request the module from.
- * @return The scene viewer module if successfully called otherwise NULL.
+ * @return The scene viewer module if successfully called, otherwise NULL.
  */
-ZINC_API cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
+ZINC_API cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 	cmzn_graphics_module_id graphics_module);
 
 /**

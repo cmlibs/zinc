@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : sceneviewerinputid.h
  *
  */
@@ -14,31 +14,47 @@
 /**
  * The type of scene viewer input button.
  */
-enum cmzn_scene_viewer_input_button_type
+enum cmzn_sceneviewerinput_button_type
 {
-	CMZN_SCENE_VIEWER_INPUT_BUTTON_INVALID = -1,
-	CMZN_SCENE_VIEWER_INPUT_BUTTON_LEFT,
-	CMZN_SCENE_VIEWER_INPUT_BUTTON_MIDDLE,
-	CMZN_SCENE_VIEWER_INPUT_BUTTON_RIGHT,
-	CMZN_SCENE_VIEWER_INPUT_BUTTON_SCROLL_DOWN,
-	CMZN_SCENE_VIEWER_INPUT_BUTTON_SCROLL_UP
+	CMZN_SCENEVIEWERINPUT_BUTTON_INVALID = -1,
+	CMZN_SCENEVIEWERINPUT_BUTTON_LEFT,
+	CMZN_SCENEVIEWERINPUT_BUTTON_MIDDLE,
+	CMZN_SCENEVIEWERINPUT_BUTTON_RIGHT,
+	CMZN_SCENEVIEWERINPUT_BUTTON_SCROLL_DOWN,
+	CMZN_SCENEVIEWERINPUT_BUTTON_SCROLL_UP
+};
+
+/**
+ * Specifies the scene viewer input event type.
+ */
+enum cmzn_sceneviewerinput_event_type
+{
+	CMZN_SCENEVIEWERINPUT_EVENT_INVALID,
+	CMZN_SCENEVIEWERINPUT_EVENT_MOTION_NOTIFY,
+	CMZN_SCENEVIEWERINPUT_EVENT_BUTTON_PRESS,
+	CMZN_SCENEVIEWERINPUT_EVENT_BUTTON_RELEASE,
+	CMZN_SCENEVIEWERINPUT_EVENT_KEY_PRESS,
+	CMZN_SCENEVIEWERINPUT_EVENT_KEY_RELEASE
 };
 
 /**
  * Specifies the scene viewer input modifier flags.
  */
-enum cmzn_scene_viewer_input_modifier_flags
+enum cmzn_sceneviewerinput_modifier_flags
 {
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_NONE = 0,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_SHIFT = 1,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_CONTROL = 2,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_ALT = 4,
-	CMZN_SCENE_VIEWER_INPUT_MODIFIER_BUTTON1 = 8
+	CMZN_SCENEVIEWERINPUT_MODIFIER_NONE = 0,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT = 1,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_CONTROL = 2,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_ALT = 4,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_BUTTON1 = 8
 };
 
-struct cmzn_scene_viewer_input;
-typedef struct cmzn_scene_viewer_input *cmzn_scene_viewer_input_id;
+struct cmzn_sceneviewerinput;
+typedef struct cmzn_sceneviewerinput *cmzn_sceneviewerinput_id;
 
-typedef int cmzn_scene_viewer_input_modifier;
+/**
+ * Type for passing logical OR of #cmzn_sceneviewerinput_modifier_flags
+ */
+typedef int cmzn_sceneviewerinput_modifiers_type;
 
 #endif

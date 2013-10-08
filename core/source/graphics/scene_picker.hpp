@@ -36,7 +36,7 @@ struct cmzn_scene_picker
 private:
 	struct Interaction_volume *interaction_volume;
 	cmzn_scene_id top_scene;
-	cmzn_scene_viewer_id scene_viewer;
+	cmzn_sceneviewer_id scene_viewer;
 	int centre_x, centre_y, size_x, size_y;
 	enum cmzn_scene_coordinate_system coordinate_system;
 	cmzn_scenefilter_id filter;
@@ -75,7 +75,7 @@ public:
 
 	int setScene(cmzn_scene_id scene_in);
 
-	int setSceneViewerRectangle(cmzn_scene_viewer_id scene_viewer_in,
+	int setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
 		enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2);
 

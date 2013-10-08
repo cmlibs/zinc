@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : sceneviewerid.h
  *
  */
@@ -11,21 +11,18 @@
 #ifndef CMZN_SCENEVIEWERID_H__
 #define CMZN_SCENEVIEWERID_H__
 
-	struct cmzn_scene_viewer_module;
-	typedef struct cmzn_scene_viewer_module * cmzn_scene_viewer_module_id;
+	struct cmzn_sceneviewermodule;
+	typedef struct cmzn_sceneviewermodule * cmzn_sceneviewermodule_id;
 
-	//-- struct cmzn_scene_viewer_input;
-	//-- typedef struct cmzn_scene_viewer_input *cmzn_scene_viewer_input_id;
+	struct cmzn_sceneviewer;
+	typedef struct cmzn_sceneviewer *cmzn_sceneviewer_id;
 
-	struct cmzn_scene_viewer;
-	typedef struct cmzn_scene_viewer *cmzn_scene_viewer_id;
+	/* The cmzn_sceneviewerinput describes the input event */
+	typedef int (*cmzn_sceneviewerinput_callback)(
+		cmzn_sceneviewer_id sceneviewer,
+		struct cmzn_sceneviewerinput *, void *user_data);
 
-	/* The cmzn_scene_viewer_input describes the input event */
-	typedef int (*cmzn_scene_viewer_input_callback)(
-		cmzn_scene_viewer_id scene_viewer,
-		struct cmzn_scene_viewer_input *, void *user_data);
-
-	typedef void (*cmzn_scene_viewer_callback)(cmzn_scene_viewer_id scene_viewer,
+	typedef void (*cmzn_sceneviewer_callback)(cmzn_sceneviewer_id sceneviewer,
 		void *callback_data, void *user_data);
 
 #endif

@@ -92,13 +92,7 @@ Returns the dot product of the two vectors = a.b.
 	return (dot_product);
 } /* dot_product3 */
 
-double norm3(double *v)
-/*******************************************************************************
-LAST MODIFIED : 28 January 1998
-
-DESCRIPTION :
-Returns the norm/length/magnitude of vector <v>.
-==============================================================================*/
+double norm3(const double *v)
 {
 	double norm;
 

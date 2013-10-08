@@ -3561,7 +3561,7 @@ int cmzn_scene_triggers_top_region_change_callback(
 int cmzn_scene_notify_scene_viewer_callback(struct cmzn_scene *scene,
 	void *scene_viewer_void)
 {
-	cmzn_scene_viewer_id scene_viewer = (struct cmzn_scene_viewer *)scene_viewer_void;
+	cmzn_sceneviewer_id scene_viewer = (struct cmzn_sceneviewer *)scene_viewer_void;
 	if (scene && scene_viewer)
 	{
 		return  Scene_viewer_scene_change(scene_viewer);

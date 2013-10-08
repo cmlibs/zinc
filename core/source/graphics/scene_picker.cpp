@@ -43,7 +43,7 @@ cmzn_scene_picker::~cmzn_scene_picker()
 	if (interaction_volume)
 		DEACCESS(Interaction_volume)(&interaction_volume);
 	if (scene_viewer)
-		cmzn_scene_viewer_destroy(&scene_viewer);
+		cmzn_sceneviewer_destroy(&scene_viewer);
 	if (top_scene)
 		cmzn_scene_destroy(&top_scene);
 	if (filter)
@@ -370,7 +370,7 @@ int cmzn_scene_picker::setScene(cmzn_scene_id scene_in)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_scene_picker::setSceneViewerRectangle(cmzn_scene_viewer_id scene_viewer_in,
+int cmzn_scene_picker::setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
 	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
 	double y1, double x2, double y2)
 {
@@ -378,9 +378,9 @@ int cmzn_scene_picker::setSceneViewerRectangle(cmzn_scene_viewer_id scene_viewer
 	if (scene_viewer_in)
 	{
 		if (scene_viewer)
-			cmzn_scene_viewer_destroy(&scene_viewer);
+			cmzn_sceneviewer_destroy(&scene_viewer);
 		coordinate_system = coordinate_system_in;
-		scene_viewer = cmzn_scene_viewer_access(scene_viewer_in);
+		scene_viewer = cmzn_sceneviewer_access(scene_viewer_in);
 		size_x = x2 - x1;
 		size_y = y2 - y1;
 		centre_x = x1 + size_x/2;
@@ -394,7 +394,7 @@ int cmzn_scene_picker::setInteractionVolume(struct Interaction_volume *interacti
 {
 	reset();
 	if (scene_viewer)
-		cmzn_scene_viewer_destroy(&scene_viewer);
+		cmzn_sceneviewer_destroy(&scene_viewer);
 	size_x = 0;
 	size_y = 0;
 	centre_x = 0;
@@ -829,12 +829,12 @@ int cmzn_scene_picker_set_scenefilter(cmzn_scene_picker_id scene_picker,
 	return scene_picker->setScenefilter(filter);
 }
 
-int cmzn_scene_picker_set_scene_viewer_rectangle(
-	cmzn_scene_picker_id scene_picker, cmzn_scene_viewer_id scene_viewer_in,
+int cmzn_scene_picker_set_sceneviewer_rectangle(
+	cmzn_scene_picker_id scene_picker, cmzn_sceneviewer_id sceneviewer_in,
 	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2)
 {
-	return scene_picker->setSceneViewerRectangle(scene_viewer_in,
+	return scene_picker->setSceneviewerRectangle(sceneviewer_in,
 		coordinate_system_in, x1, y1, x2, y2);
 }
 

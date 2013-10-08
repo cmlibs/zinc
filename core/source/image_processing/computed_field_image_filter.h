@@ -1,12 +1,8 @@
-/*******************************************************************************
-FILE : computed_field_image_filter.hpp
-
-LAST MODIFIED : 11 September 2006
-
-DESCRIPTION :
-Implements a computed_field which maintains a graphics transformation 
-equivalent to the scene_viewer assigned to it.
-==============================================================================*/
+/**
+ * FILE : computed_field_image_filter.hpp
+ *
+ * Base class for itk image filter field operators.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public

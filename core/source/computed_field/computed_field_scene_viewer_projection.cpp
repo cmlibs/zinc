@@ -564,7 +564,7 @@ int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 		}
 		cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 		cmzn_scene_id scene = cmzn_region_get_scene_private(region);
-		cmzn_scene_id top_scene = cmzn_scene_viewer_get_scene(scene_viewer);
+		cmzn_scene_id top_scene = cmzn_sceneviewer_get_scene(scene_viewer);
 		gtMatrix *local_transformation_matrix = cmzn_scene_get_total_transformation(
 			scene, top_scene);
 		cmzn_scene_destroy(&top_scene);
@@ -709,7 +709,7 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 	{
 		if (current_scene)
 			cmzn_scene_destroy(&current_scene);
-		current_scene = cmzn_scene_viewer_get_scene(scene_viewer);
+		current_scene = cmzn_sceneviewer_get_scene(scene_viewer);
 		cmzn_field_id field = getField();
 		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 		if (field_module)
@@ -746,7 +746,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 
 void Computed_field_scene_viewer_projection::update_current_scene()
 {
-	cmzn_scene_id top_scene = cmzn_scene_viewer_get_scene(scene_viewer);
+	cmzn_scene_id top_scene = cmzn_sceneviewer_get_scene(scene_viewer);
 	if (current_scene != top_scene)
 	{
 		if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
@@ -910,21 +910,20 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 
 } //namespace
 
-cmzn_field_id cmzn_fieldmodule_create_field_scene_viewer_projection(
-	cmzn_fieldmodule_id field_module,
-	struct Scene_viewer *scene_viewer,
+cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
+	cmzn_fieldmodule_id field_module, cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_scene_coordinate_system from_coordinate_system,
 	enum cmzn_scene_coordinate_system to_coordinate_system)
 {
 	Computed_field *field = NULL;
-	if (scene_viewer)
+	if (sceneviewer)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false,
 			/*number_of_components*/16,
 			/*number_of_source_fields*/0, NULL,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_scene_viewer_projection(scene_viewer, from_coordinate_system,
+			new Computed_field_scene_viewer_projection(sceneviewer, from_coordinate_system,
 				to_coordinate_system));
 	}
 	else

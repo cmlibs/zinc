@@ -1,12 +1,8 @@
-/*******************************************************************************
-FILE : computed_field_curve.c
-
-LAST MODIFIED : 24 August 2006
-
-DESCRIPTION :
-Implements a computed_field which maintains a graphics transformation
-equivalent to the scene_viewer assigned to it.
-==============================================================================*/
+/**
+ * FILE : computed_field_curve.c
+ *
+ * A derived field type that looks up values from a Curve.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public

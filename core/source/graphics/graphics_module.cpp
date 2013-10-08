@@ -43,7 +43,7 @@ struct cmzn_graphics_module
 	void *spectrum_manager_callback_id;
 	cmzn_font_module_id font_module;
 	void *font_manager_callback_id;
-	cmzn_scene_viewer_module_id scene_viewer_module;
+	cmzn_sceneviewermodule_id sceneviewermodule;
 	Light_model_module *light_model_module;
 	struct cmzn_timekeeper *default_timekeeper;
 	cmzn_tessellation_module_id tessellation_module;
@@ -220,7 +220,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->light_module = Light_module_create();
 			module->light_model_module = Light_model_module_create();
 			module->material_module = NULL;
-			module->scene_viewer_module = NULL;
+			module->sceneviewermodule = NULL;
 			module->spectrum_module=cmzn_spectrum_module_create();
 			module->scenefiltermodule=cmzn_scenefiltermodule_create();
 			module->font_module = cmzn_font_module_create();
@@ -361,7 +361,7 @@ int cmzn_graphics_module_destroy(
 				cmzn_timekeeper_destroy(&graphics_module->default_timekeeper);
 			if (graphics_module->tessellation_module)
 				cmzn_tessellation_module_destroy(&graphics_module->tessellation_module);
-			cmzn_scene_viewer_module_destroy(&graphics_module->scene_viewer_module);
+			cmzn_sceneviewermodule_destroy(&graphics_module->sceneviewermodule);
 			if (graphics_module->member_regions_list)
 			{
 				cmzn_graphics_module_remove_member_regions_scene(graphics_module);
@@ -489,13 +489,13 @@ cmzn_glyph_module_id cmzn_graphics_module_get_glyph_module(
 	return 0;
 }
 
-cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
+cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 	cmzn_graphics_module_id graphics_module)
 {
-	cmzn_scene_viewer_module *scene_viewer_module = NULL;
+	cmzn_sceneviewermodule *sceneviewermodule = NULL;
 	if (graphics_module)
 	{
-		if (!graphics_module->scene_viewer_module)
+		if (!graphics_module->sceneviewermodule)
 		{
 			Light *default_light =
 				Light_module_get_default_light(graphics_module->light_module);
@@ -506,7 +506,7 @@ cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
 			default_background_colour.green = 0.0;
 			default_background_colour.blue = 0.0;
 			cmzn_scenefiltermodule_id filterModule = cmzn_graphics_module_get_scenefiltermodule(graphics_module);
-			graphics_module->scene_viewer_module = CREATE(cmzn_scene_viewer_module)(
+			graphics_module->sceneviewermodule = CREATE(cmzn_sceneviewermodule)(
 				&default_background_colour,
 				/* interactive_tool_manager */0,
 				graphics_module->light_module, default_light,
@@ -516,15 +516,15 @@ cmzn_scene_viewer_module_id cmzn_graphics_module_get_scene_viewer_module(
 			DEACCESS(Light_model)(&default_light_model);
 			DEACCESS(Light)(&default_light);
 		}
-		scene_viewer_module = cmzn_scene_viewer_module_access(graphics_module->scene_viewer_module);
+		sceneviewermodule = cmzn_sceneviewermodule_access(graphics_module->sceneviewermodule);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_module_get_scene_viewer_module.  "
+			"cmzn_graphics_module_get_sceneviewermodule.  "
 			"Missing context");
 	}
-	return scene_viewer_module;
+	return sceneviewermodule;
 }
 
 cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_module(

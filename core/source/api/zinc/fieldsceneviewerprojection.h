@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldsceneviewerprojection.h
  *
  * A field which extract a transformation matrix from a scene viewer for use in
@@ -23,12 +23,12 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a field whose values are the 4x4 transformation matrix mapping
  * coordinates between two scene coordinate systems for a scene viewer.
  * The matrix maps homogeneous coordinates (x,y,z,1) to (x',y',z',h') suitable
  * for passing to a projection field. The values are continuously updated with
- * changes to the scene_viewer and become invalid if the scene_viewer is
+ * changes to the scene viewer and become invalid if the scene viewer is
  * destroyed.
  * Note CMZN_SCENE_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
  * of the scene for the owning region of field, which is transformed from
@@ -37,16 +37,15 @@ extern "C" {
  * @see cmzn_fieldmodule_create_field_projection.
  *
  * @param field_module  Region field module which will own new field.
- * @param scene_viewer  Handle to cmzn_scene_viewer object.
+ * @param sceneviewer  Handle to cmzn_sceneviewer object.
  * @param from_coordinate_system  The input coordinate system for the
  * transformation.
  * @param to_coordinate_system  The output coordinate system for the
  * transformation.
  * @return  Newly created field with 16 components.
  */
-ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_scene_viewer_projection(
-	cmzn_fieldmodule_id field_module,
-	cmzn_scene_viewer_id scene_viewer,
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
+	cmzn_fieldmodule_id field_module, cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_scene_coordinate_system from_coordinate_system,
 	enum cmzn_scene_coordinate_system to_coordinate_system);
 
