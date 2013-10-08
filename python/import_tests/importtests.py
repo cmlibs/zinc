@@ -17,14 +17,11 @@ class ImportTestCase(unittest.TestCase):
     def testImportFieldCache(self):
         from opencmiss.zinc import fieldcache
     
-    def testImportFieldModule(self):
+    def testImportFieldmodule(self):
         from opencmiss.zinc import fieldmodule
     
     def testImportGraphic(self):
         from opencmiss.zinc import graphic
-    
-    def testImportGraphicsFilter(self):
-        from opencmiss.zinc import graphicsfilter
     
     def testImportGraphicsMaterial(self):
         from opencmiss.zinc import graphicsmaterial
@@ -46,6 +43,9 @@ class ImportTestCase(unittest.TestCase):
     
     def testImportSceneCoordinateSystem(self):
         from opencmiss.zinc import scenecoordinatesystem
+        
+    def testImportSceneFilter(self):
+        from opencmiss.zinc import scenefilter
     
     def testImportSceneViewer(self):
         from opencmiss.zinc import sceneviewer

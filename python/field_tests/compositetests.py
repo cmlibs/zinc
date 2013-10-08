@@ -13,7 +13,7 @@ class CompositeTestCase(unittest.TestCase):
     def setUp(self):
         self.context = Context("compositetest")
         root_region = self.context.getDefaultRegion()
-        self.field_module = root_region.getFieldModule()
+        self.field_module = root_region.getFieldmodule()
 
 
     def tearDown(self):
@@ -22,10 +22,10 @@ class CompositeTestCase(unittest.TestCase):
 
 
     def testCompositeFieldCreate(self):
-        self.assertRaises(TypeError, self.field_module.createConcatenate, [1])
-        f1 = self.field_module.createConstant([2])
-        f2 = self.field_module.createConstant([5])
-        f = self.field_module.createConcatenate([f1, f2])
+        self.assertRaises(TypeError, self.field_module.createFieldConcatenate, [1])
+        f1 = self.field_module.createFieldConstant([2])
+        f2 = self.field_module.createFieldConstant([5])
+        f = self.field_module.createFieldConcatenate([f1, f2])
         self.assertTrue(f.isValid())
 
 def suite():
