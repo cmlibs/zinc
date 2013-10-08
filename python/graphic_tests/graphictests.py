@@ -69,7 +69,7 @@ class GraphicTestCase(unittest.TestCase):
         
     def testSceneviewerBackgroundColour(self):
         svm = self.graphics_module.getSceneviewermodule()
-        sv = svm.createSceneviewer(Sceneviewer.BUFFERING_MODE_DOUBLE, Sceneviewer.STEREO_MODE_MONO)
+        sv = svm.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_MONO)
         
         result = sv.setBackgroundColourComponentRGB(0.3, 0.8, 0.65)
         self.assertEqual(1, result)

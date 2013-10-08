@@ -26,7 +26,7 @@ class SceneviewerTestCase(unittest.TestCase):
 
     def testLookAtParameters(self):
         scene_viewer_module = self.graphics_module.getSceneviewermodule()
-        scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_MODE_DOUBLE, Sceneviewer.STEREO_MODE_ANY)
+        scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_ANY_MODE)
         params = scene_viewer.getLookatParameters()
         self.assertEqual([0, 0, 2], params[1])
         self.assertEqual([0, 0, 0], params[2])
@@ -42,7 +42,7 @@ class SceneviewerTestCase(unittest.TestCase):
         
     def testLookAtParametersIndividual(self):
         scene_viewer_module = self.graphics_module.getSceneviewermodule()
-        scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_MODE_DOUBLE, Sceneviewer.STEREO_MODE_ANY)
+        scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_ANY_MODE)
         self.assertEqual([0, 0, 2], scene_viewer.getEyePosition()[1])
         self.assertEqual([0, 0, 0], scene_viewer.getLookatPosition()[1])
         self.assertEqual([0, 1, 0], scene_viewer.getUpVector()[1])
@@ -56,7 +56,7 @@ class SceneviewerTestCase(unittest.TestCase):
         
     def testSceneviewerinput(self):
         scene_viewer_module = self.graphics_module.getSceneviewermodule()
-        scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_MODE_DOUBLE, Sceneviewer.STEREO_MODE_ANY)
+        scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_ANY_MODE)
         scene_viewer_input = scene_viewer.createSceneviewerinput()
         self.assertEqual(status.OK, scene_viewer_input.setPosition(3, 5))
         self.assertEqual(status.OK, scene_viewer_input.setButton(Sceneviewerinput.BUTTON_LEFT))
