@@ -34,21 +34,21 @@ TEST(cmzn_scene_picker_api, valid_args)
 	cmzn_scene_picker_id scene_picker = cmzn_scene_create_picker(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_scene_picker *>(0), scene_picker);
 
-	cmzn_scene_viewer_module_id sv_module = cmzn_graphics_module_get_scene_viewer_module(
+	cmzn_sceneviewermodule_id svModule = cmzn_graphics_module_get_sceneviewermodule(
 		zinc.gm);
-	EXPECT_NE(static_cast<cmzn_scene_viewer_module *>(0), sv_module);
+	EXPECT_NE(static_cast<cmzn_sceneviewermodule *>(0), svModule);
 
-	cmzn_scene_viewer_id sv = cmzn_scene_viewer_module_create_scene_viewer(sv_module,
-		CMZN_SCENE_VIEWER_BUFFERING_DOUBLE, CMZN_SCENE_VIEWER_STEREO_ANY_MODE);
-	EXPECT_NE(static_cast<cmzn_scene_viewer *>(0), sv);
+	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
+		CMZN_SCENEVIEWER_BUFFERING_DOUBLE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
+	EXPECT_NE(static_cast<cmzn_sceneviewer *>(0), sv);
 
-	int result = cmzn_scene_viewer_set_scene(sv, zinc.scene);
+	int result = cmzn_sceneviewer_set_scene(sv, zinc.scene);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_scene_viewer_set_viewport_size(sv, 512, 512);
+	result = cmzn_sceneviewer_set_viewport_size(sv, 512, 512);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_scene_viewer_view_all(sv);
+	result = cmzn_sceneviewer_view_all(sv);
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_scenefiltermodule_id filter_module = cmzn_graphics_module_get_scenefiltermodule(zinc.gm);
@@ -66,7 +66,7 @@ TEST(cmzn_scene_picker_api, valid_args)
 	result = cmzn_scene_picker_set_scenefilter(scene_picker, sf);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_scene_picker_set_scene_viewer_rectangle(scene_picker, sv,
+	result = cmzn_scene_picker_set_sceneviewer_rectangle(scene_picker, sv,
 		CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0,
 			0, 7.0, 7.0);
 	EXPECT_EQ(CMZN_OK, result);
@@ -98,9 +98,9 @@ TEST(cmzn_scene_picker_api, valid_args)
 
 	cmzn_field_destroy(&field);
 
-	cmzn_scene_viewer_destroy(&sv);
+	cmzn_sceneviewer_destroy(&sv);
 
-	cmzn_scene_viewer_module_destroy(&sv_module);
+	cmzn_sceneviewermodule_destroy(&svModule);
 
 	cmzn_scene_picker_destroy(&scene_picker);
 
@@ -115,11 +115,11 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	ScenePicker scenePicker = zinc.scene.createPicker();
 	EXPECT_TRUE(scenePicker.isValid());
 
-	SceneViewerModule sv_module = zinc.gm.getSceneViewerModule();
-	EXPECT_TRUE(sv_module.isValid());
+	Sceneviewermodule svModule = zinc.gm.getSceneviewermodule();
+	EXPECT_TRUE(svModule.isValid());
 
-	SceneViewer sv = sv_module.createSceneViewer(
-		SceneViewer::BUFFERING_MODE_DOUBLE, SceneViewer::STEREO_MODE_ANY);
+	Sceneviewer sv = svModule.createSceneviewer(
+		Sceneviewer::BUFFERING_DOUBLE, Sceneviewer::STEREO_ANY_MODE);
 	EXPECT_TRUE(sv.isValid());
 
 	int result = sv.setScene(zinc.scene);
@@ -143,7 +143,7 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	result = scenePicker.setScenefilter(sf);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = scenePicker.setSceneViewerRectangle(sv,
+	result = scenePicker.setSceneviewerRectangle(sv,
 		SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
 	EXPECT_EQ(CMZN_OK, result);
 
