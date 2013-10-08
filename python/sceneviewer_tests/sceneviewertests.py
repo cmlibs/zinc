@@ -60,8 +60,8 @@ class SceneviewerTestCase(unittest.TestCase):
         scene_viewer_input = scene_viewer.createSceneviewerinput()
         self.assertEqual(status.OK, scene_viewer_input.setPosition(3, 5))
         self.assertEqual(status.OK, scene_viewer_input.setButton(Sceneviewerinput.BUTTON_LEFT))
-        self.assertEqual(status.OK, scene_viewer_input.setType(Sceneviewerinput.EVENT_BUTTON_PRESS))
-        self.assertEqual(status.OK, scene_viewer_input.setModifier(Sceneviewerinput.MODIFIER_CONTROL | Sceneviewerinput.MODIFIER_SHIFT))
+        self.assertEqual(status.OK, scene_viewer_input.setEventType(Sceneviewerinput.EVENT_BUTTON_PRESS))
+        self.assertEqual(status.OK, scene_viewer_input.setModifiers(Sceneviewerinput.MODIFIER_CONTROL | Sceneviewerinput.MODIFIER_SHIFT))
 
 def suite():
     #import ImportTestCase
