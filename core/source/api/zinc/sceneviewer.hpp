@@ -141,6 +141,13 @@ public:
 		BUFFERING_RENDER_OFFSCREEN_AND_BLEND = CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND
 	};
 
+	enum ProjectionMode
+	{
+		PROJECTION_INVALID = CMZN_SCENEVIEWER_PROJECTION_INVALID,
+		PROJECTION_PARALLEL = CMZN_SCENEVIEWER_PROJECTION_PARALLEL,
+		PROJECTION_PERSPECTIVE = CMZN_SCENEVIEWER_PROJECTION_PERSPECTIVE
+	};
+
 	enum StereoMode
 	{
 		STEREO_INVALID = CMZN_SCENEVIEWER_STEREO_INVALID,
@@ -248,6 +255,16 @@ public:
 		return cmzn_sceneviewer_process_sceneviewerinput(id, input.getId());
 	}
 
+	int getAntialiasSampling()
+	{
+		return cmzn_sceneviewer_get_antialias_sampling(id);
+	}
+
+	int setAntialiasSampling(int numberOfSamples)
+	{
+		return cmzn_sceneviewer_set_antialias_sampling(id, numberOfSamples);
+	}
+
 	int getEyePosition(double *eyeValuesOut3)
 	{
 		return cmzn_sceneviewer_get_eye_position(id, eyeValuesOut3);
@@ -266,6 +283,57 @@ public:
 	int setLookatPosition(double const *lookatValuesIn3)
 	{
 		return cmzn_sceneviewer_set_lookat_position(id, lookatValuesIn3);
+	}
+
+	bool getPerturbLinesFlag()
+	{
+		return cmzn_sceneviewer_get_perturb_lines_flag(id);
+	}
+
+	int setPerturbLinesFlag(bool value)
+	{
+		return cmzn_sceneviewer_set_perturb_lines_flag(id, value);
+	}
+
+	ProjectionMode getProjectionMode()
+	{
+		return static_cast<ProjectionMode>(cmzn_sceneviewer_get_projection_mode(id));
+	}
+
+	int setProjectionMode(ProjectionMode projectionMode)
+	{
+		return cmzn_sceneviewer_set_projection_mode(id,
+			static_cast<cmzn_sceneviewer_projection_mode>(projectionMode));
+	}
+
+	double getTranslationRate()
+	{
+		return cmzn_sceneviewer_get_translation_rate(id);
+	}
+
+	int setTranslationRate(double translationRate)
+	{
+		return cmzn_sceneviewer_set_translation_rate(id, translationRate);
+	}
+
+	double getTumbleRate()
+	{
+		return cmzn_sceneviewer_get_tumble_rate(id);
+	}
+
+	int setTumbleRate(double tumbleRate)
+	{
+		return cmzn_sceneviewer_set_tumble_rate(id, tumbleRate);
+	}
+
+	double getZoomRate()
+	{
+		return cmzn_sceneviewer_get_zoom_rate(id);
+	}
+
+	int setZoomRate(double zoomRate)
+	{
+		return cmzn_sceneviewer_set_zoom_rate(id, zoomRate);
 	}
 
 	int getUpVector(double *upVectorValuesOut3)
@@ -326,7 +394,7 @@ public:
 		return cmzn_sceneviewer_view_all(id);
 	}
 
-	enum TransparencyMode getTransparencyMode()
+	TransparencyMode getTransparencyMode()
 	{
 		return static_cast<TransparencyMode>(cmzn_sceneviewer_get_transparency_mode(id));
 	}
@@ -345,6 +413,16 @@ public:
 	int setTransparencyLayers(int layers)
 	{
 		return cmzn_sceneviewer_set_transparency_layers(id, layers);
+	}
+
+	double getViewAngle()
+	{
+		return cmzn_sceneviewer_get_view_angle(id);
+	}
+
+	int setViewAngle(double viewAngle)
+	{
+		return cmzn_sceneviewer_set_view_angle(id, viewAngle);
 	}
 
 };

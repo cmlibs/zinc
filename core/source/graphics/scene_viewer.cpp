@@ -2929,8 +2929,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->tumble_rate=1.5;
 				scene_viewer->zoom_rate=1.0;
 				scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
-				scene_viewer->antialias=0;
-				scene_viewer->perturb_lines=0;
+				scene_viewer->antialias = 0;
+				scene_viewer->perturb_lines = false;
 				scene_viewer->blending_mode=CMZN_SCENEVIEWER_BLENDING_NORMAL;
 				scene_viewer->depth_of_field=0.0;  /* default 0==infinite */
 				scene_viewer->focal_depth=0.0;
@@ -4979,10 +4979,13 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 		(SCENE_VIEWER_PERSPECTIVE==projection_mode)||
 		(SCENE_VIEWER_CUSTOM==projection_mode)))
 	{
-		scene_viewer->projection_mode=projection_mode;
-		Scene_viewer_trigger_transform_callback(scene_viewer);
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		if (projection_mode != scene_viewer->projection_mode)
+		{
+			scene_viewer->projection_mode=projection_mode;
+			Scene_viewer_trigger_transform_callback(scene_viewer);
+			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		}
 		return_code=1;
 	}
 	else
@@ -5084,173 +5087,74 @@ consecutive across rows, eg:
 	return (return_code);
 } /* Scene_viewer_set_projection_matrix */
 
-int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
-	double *translation_rate)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-Gets the scene viewer translation rate.
-==============================================================================*/
+double cmzn_sceneviewer_get_translation_rate(cmzn_sceneviewer_id sceneviewer)
 {
-	int return_code;
+	if (sceneviewer)
+		return sceneviewer->translate_rate;
+	return 0.0;
+}
 
-	ENTER(Scene_viewer_get_translation_rate);
-	if (scene_viewer)
-	{
-		*translation_rate = scene_viewer->translate_rate;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_get_translation_rate.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_translation_rate */
-
-int Scene_viewer_set_translation_rate(struct Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_set_translation_rate(cmzn_sceneviewer_id sceneviewer,
 	double translation_rate)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-Sets the scene viewer translation rate.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Scene_viewer_set_translation_rate);
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		scene_viewer->translate_rate = translation_rate;
-		return_code = 1;
+		if (translation_rate != sceneviewer->translate_rate)
+		{
+			sceneviewer->translate_rate = translation_rate;
+			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_set_translation_rate.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	return (return_code);
-} /* Scene_viewer_set_translation_rate */
-
-int Scene_viewer_get_tumble_rate(struct Scene_viewer *scene_viewer,
-	double *tumble_rate)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-Gets the scene viewer tumble rate.
-==============================================================================*/
+double cmzn_sceneviewer_get_tumble_rate(cmzn_sceneviewer_id sceneviewer)
 {
-	int return_code;
+	if (sceneviewer)
+		return sceneviewer->tumble_rate;
+	return 0.0;
+}
 
-	ENTER(Scene_viewer_get_translation_rate);
-	if (scene_viewer)
-	{
-		*tumble_rate = scene_viewer->tumble_rate;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_get_tumble_rate.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_tumble_rate */
-
-int Scene_viewer_set_tumble_rate(struct Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_set_tumble_rate(cmzn_sceneviewer_id sceneviewer,
 	double tumble_rate)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-Sets the scene viewer tumble rate.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Scene_viewer_set_tumble_rate);
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		scene_viewer->tumble_rate = tumble_rate;
-		return_code = 1;
+		if (tumble_rate != sceneviewer->tumble_rate)
+		{
+			sceneviewer->tumble_rate = tumble_rate;
+			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_set_tumble_rate.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	return (return_code);
-} /* Scene_viewer_set_tumble_rate */
-
-int Scene_viewer_get_zoom_rate(struct Scene_viewer *scene_viewer,
-	double *zoom_rate)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-Gets the scene viewer zoom rate.
-==============================================================================*/
+double cmzn_sceneviewer_get_zoom_rate(cmzn_sceneviewer_id sceneviewer)
 {
-	int return_code;
+	if (sceneviewer)
+		return sceneviewer->zoom_rate;
+	return 0.0;
+}
 
-	ENTER(Scene_viewer_get_zoom_rate);
-	if (scene_viewer)
-	{
-		*zoom_rate = scene_viewer->zoom_rate;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_get_zoom_rate.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_zoom_rate */
-
-int Scene_viewer_set_zoom_rate(struct Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_set_zoom_rate(cmzn_sceneviewer_id sceneviewer,
 	double zoom_rate)
-/*******************************************************************************
-LAST MODIFIED : 4 February 2005
-
-DESCRIPTION :
-Sets the scene viewer zoom rate.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Scene_viewer_set_zoom_rate);
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		scene_viewer->zoom_rate = zoom_rate;
-		return_code = 1;
+		if (zoom_rate != sceneviewer->zoom_rate)
+		{
+			sceneviewer->zoom_rate = zoom_rate;
+			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"Scene_viewer_set_zoom_rate.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_tumble_rate */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	cmzn_sceneviewer_id scene_viewer)
@@ -5259,13 +5163,11 @@ enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	{
 		return scene_viewer->transparency_mode;
 	}
-
 	return CMZN_SCENEVIEWER_TRANSPARENCY_INVALID;
 }
 
 int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
 	enum cmzn_sceneviewer_transparency_mode transparency_mode)
-
 {
 	int return_code = 0;
 
@@ -5834,85 +5736,33 @@ pixels per unit enables zooming to be achieved.
 	return (return_code);
 } /* Scene_viewer_set_viewport_info */
 
-int Scene_viewer_get_antialias_mode(struct Scene_viewer *scene_viewer,
-	unsigned int *antialias)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-==============================================================================*/
+int cmzn_sceneviewer_get_antialias_sampling(cmzn_sceneviewer_id sceneviewer)
 {
-	int return_code;
+	if (sceneviewer)
+		return sceneviewer->antialias;
+	return 0;
+}
 
-	ENTER(Scene_viewer_get_antialias_mode);
-	if (scene_viewer&&antialias)
-	{
-		*antialias=scene_viewer->antialias;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_antialias_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_antialias_mode */
-
-int Scene_viewer_set_antialias_mode(struct Scene_viewer *scene_viewer,
-	unsigned int antialias_mode)
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Sets the number of jitter samples used to antialias the scene_viewer.gfx
-Zero turns antialiasing off.
-==============================================================================*/
+int cmzn_sceneviewer_set_antialias_sampling(cmzn_sceneviewer_id sceneviewer,
+	int number_of_samples)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_set_antialias_mode);
-	if (scene_viewer)
+	if (sceneviewer && ((0 == number_of_samples) || (1 == number_of_samples) ||
+		(2 == number_of_samples) || (4 == number_of_samples) || (8 == number_of_samples)))
 	{
-		/* Could also check to see if an accumulation buffer is available */
-		if ((8==antialias_mode)||(4==antialias_mode)||(2==antialias_mode))
+		if (1 == number_of_samples)
 		{
-			scene_viewer->antialias=antialias_mode;
-			return_code=1;
+			number_of_samples = 0;
 		}
-		else
+		if (number_of_samples != sceneviewer->antialias)
 		{
-			if ((1==antialias_mode)||(0==antialias_mode))
-			{
-				/* Turn antialias off */
-				scene_viewer->antialias=0;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"Scene_viewer_set_antialias_mode.  Only 8, 4 or 2 point jitter supported at the moment");
-				return_code=0;
-			}
-		}
-		if (return_code)
-		{
+			sceneviewer->antialias = number_of_samples;
 			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
 		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_antialias_mode.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_antialias_mode */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int Scene_viewer_get_depth_of_field(struct Scene_viewer *scene_viewer,
 	double *depth_of_field, double *focal_depth)
@@ -6008,72 +5858,29 @@ int cmzn_sceneviewer_set_blending_mode(cmzn_sceneviewer_id sceneviewer,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Scene_viewer_get_perturb_lines(struct Scene_viewer *scene_viewer,
-	int *perturb_lines)
-/*******************************************************************************
-LAST MODIFIED : 13 June 2000
-
-DESCRIPTION :
-==============================================================================*/
+bool cmzn_sceneviewer_get_perturb_lines_flag(
+	cmzn_sceneviewer_id sceneviewer)
 {
-	int return_code;
+	if (sceneviewer)
+		return sceneviewer->perturb_lines;
+	return false;
+}
 
-	ENTER(Scene_viewer_get_perturb_lines);
-	if (scene_viewer&&perturb_lines)
-	{
-		*perturb_lines=scene_viewer->perturb_lines;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_perturb_lines.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_get_perturb_lines */
-
-int Scene_viewer_set_perturb_lines(struct Scene_viewer *scene_viewer,
-	int perturb_lines)
-/*******************************************************************************
-LAST MODIFIED : 4 December 2001
-
-DESCRIPTION :
-When the line draw mode is turned on (set to one) the lines are raised in the
-z direction.  This means that the lines appear solid rather than interfering with a
-surface in the same space.
-==============================================================================*/
+int cmzn_sceneviewer_set_perturb_lines_flag(cmzn_sceneviewer_id sceneviewer,
+	bool value)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_set_perturb_lines);
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		if (perturb_lines)
+		if (value != sceneviewer->perturb_lines)
 		{
-			scene_viewer->perturb_lines=1;
-			return_code=1;
+			sceneviewer->perturb_lines = value;
+			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
+				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
 		}
-		else
-		{
-			scene_viewer->perturb_lines=0;
-			return_code=1;
-		}
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_perturb_lines.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_perturb_lines */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int Scene_viewer_get_viewport_size(struct Scene_viewer *scene_viewer,
 	int *width, int *height)
