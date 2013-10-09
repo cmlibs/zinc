@@ -1,12 +1,15 @@
 #include <gtest/gtest.h>
 
 #include <zinc/zincconfigure.h>
-#include <zinc/status.h>
 #include <zinc/core.h>
 #include <zinc/context.h>
 #include <zinc/sceneviewer.h>
 
+#include <zinc/context.hpp>
+#include <zinc/sceneviewer.hpp>
+
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 
 TEST(cmzn_sceneviewer_api, destroy_context_before_scene_viewer)
 {
@@ -190,11 +193,11 @@ TEST(cmzn_sceneviewer_api, up_vector_valid_args)
 	cmzn_sceneviewermodule_destroy(&svm);
 }
 
-TEST(cmzn_sceneviewer_api, get_set)
+TEST(cmzn_sceneviewer, get_set)
 {
-	cmzn_context_id context = cmzn_context_create("test");
-	cmzn_graphics_module_id gm = cmzn_context_get_graphics_module(context);
-	cmzn_sceneviewermodule_id svModule = cmzn_graphics_module_get_sceneviewermodule(gm);
+	ZincTestSetup zinc;
+
+	cmzn_sceneviewermodule_id svModule = cmzn_graphics_module_get_sceneviewermodule(zinc.gm);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
 		CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
@@ -227,8 +230,72 @@ TEST(cmzn_sceneviewer_api, get_set)
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_view_angle(sv, 0.3));
 	ASSERT_DOUBLE_EQ(0.3, value = cmzn_sceneviewer_get_view_angle(sv));
 
-	cmzn_sceneviewermodule_destroy(&svModule);
-	cmzn_graphics_module_destroy(&gm);
-	cmzn_context_destroy(&context);
+	int number;
+	EXPECT_EQ(0, number = cmzn_sceneviewer_get_antialias_sampling(sv));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_sceneviewer_set_antialias_sampling(sv, 3));
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_antialias_sampling(sv, 8));
+	EXPECT_EQ(8, number = cmzn_sceneviewer_get_antialias_sampling(sv));
+
+	EXPECT_FALSE(cmzn_sceneviewer_get_perturb_lines_flag(sv));
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_perturb_lines_flag(sv, true));
+	EXPECT_TRUE(cmzn_sceneviewer_get_perturb_lines_flag(sv));
+
+	ASSERT_DOUBLE_EQ(1.0, value = cmzn_sceneviewer_get_translation_rate(sv));
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_translation_rate(sv, 2.0));
+	ASSERT_DOUBLE_EQ(2.0, value = cmzn_sceneviewer_get_translation_rate(sv));
+
+	ASSERT_DOUBLE_EQ(1.5, value = cmzn_sceneviewer_get_tumble_rate(sv));
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_tumble_rate(sv, 3.0));
+	ASSERT_DOUBLE_EQ(3.0, value = cmzn_sceneviewer_get_tumble_rate(sv));
+
+	ASSERT_DOUBLE_EQ(1.0, value = cmzn_sceneviewer_get_zoom_rate(sv));
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_zoom_rate(sv, 4.0));
+	ASSERT_DOUBLE_EQ(4.0, value = cmzn_sceneviewer_get_zoom_rate(sv));
+	
 	cmzn_sceneviewer_destroy(&sv);
+	cmzn_sceneviewermodule_destroy(&svModule);
+}
+
+TEST(ZincSceneviewer, get_set)
+{
+	ZincTestSetupCpp zinc;
+
+	Sceneviewermodule svModule = zinc.gm.getSceneviewermodule();
+	EXPECT_TRUE(svModule.isValid());
+	Sceneviewer sv = svModule.createSceneviewer(
+		Sceneviewer::BUFFERING_ANY_MODE, Sceneviewer::STEREO_ANY_MODE);
+	EXPECT_TRUE(sv.isValid());
+
+	Sceneviewer::ProjectionMode projectionMode = sv.getProjectionMode();
+	EXPECT_EQ(Sceneviewer::PROJECTION_PARALLEL, projectionMode);
+	EXPECT_EQ(OK, sv.setProjectionMode(Sceneviewer::PROJECTION_PERSPECTIVE));
+	projectionMode = sv.getProjectionMode();
+	EXPECT_EQ(Sceneviewer::PROJECTION_PERSPECTIVE, projectionMode);
+
+	double value;
+	ASSERT_DOUBLE_EQ(1.2309594173407747, value = sv.getViewAngle());
+	EXPECT_EQ(OK, sv.setViewAngle(0.3));
+	ASSERT_DOUBLE_EQ(0.3, value = sv.getViewAngle());
+
+	int number;
+	EXPECT_EQ(0, number = sv.getAntialiasSampling());
+	EXPECT_EQ(ERROR_ARGUMENT, sv.setAntialiasSampling(3));
+	EXPECT_EQ(OK, sv.setAntialiasSampling(8));
+	EXPECT_EQ(8, number = sv.getAntialiasSampling());
+
+	EXPECT_FALSE(sv.getPerturbLinesFlag());
+	EXPECT_EQ(OK, sv.setPerturbLinesFlag(true));
+	EXPECT_TRUE(sv.getPerturbLinesFlag());
+
+	ASSERT_DOUBLE_EQ(1.0, value = sv.getTranslationRate());
+	EXPECT_EQ(OK, sv.setTranslationRate(2.0));
+	ASSERT_DOUBLE_EQ(2.0, value = sv.getTranslationRate());
+
+	ASSERT_DOUBLE_EQ(1.5, value = sv.getTumbleRate());
+	EXPECT_EQ(OK, sv.setTumbleRate(3.0));
+	ASSERT_DOUBLE_EQ(3.0, value = sv.getTumbleRate());
+
+	ASSERT_DOUBLE_EQ(1.0, value = sv.getZoomRate());
+	EXPECT_EQ(OK, sv.setZoomRate(4.0));
+	ASSERT_DOUBLE_EQ(4.0, value = sv.getZoomRate());
 }
