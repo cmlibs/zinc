@@ -54,12 +54,8 @@ and the functions given their public names.
 #define Scene_viewer cmzn_sceneviewer
 
 /* Convert the functions that have identical interfaces */
-#define Scene_viewer_get_antialias_mode cmzn_sceneviewer_get_antialias_mode
-#define Scene_viewer_set_antialias_mode cmzn_sceneviewer_set_antialias_mode
 #define Scene_viewer_get_depth_of_field cmzn_sceneviewer_get_depth_of_field
 #define Scene_viewer_set_depth_of_field cmzn_sceneviewer_set_depth_of_field
-#define Scene_viewer_get_perturb_lines cmzn_sceneviewer_get_perturb_lines
-#define Scene_viewer_set_perturb_lines cmzn_sceneviewer_set_perturb_lines
 #define Scene_viewer_view_all cmzn_sceneviewer_view_all
 #define Scene_viewer_render_scene cmzn_sceneviewer_render_scene
 #define Scene_viewer_get_freespin_tumble_angle cmzn_sceneviewer_get_freespin_tumble_angle
@@ -67,12 +63,6 @@ and the functions given their public names.
 #define Scene_viewer_get_freespin_tumble_axis cmzn_sceneviewer_get_freespin_tumble_axis
 #define Scene_viewer_start_freespin cmzn_sceneviewer_start_freespin
 #define Scene_viewer_stop_animations cmzn_sceneviewer_stop_animations
-#define Scene_viewer_get_translation_rate cmzn_sceneviewer_get_translation_rate
-#define Scene_viewer_set_translation_rate cmzn_sceneviewer_set_translation_rate
-#define Scene_viewer_get_tumble_rate cmzn_sceneviewer_get_tumble_rate
-#define Scene_viewer_set_tumble_rate cmzn_sceneviewer_set_tumble_rate
-#define Scene_viewer_get_zoom_rate cmzn_sceneviewer_get_zoom_rate
-#define Scene_viewer_set_zoom_rate cmzn_sceneviewer_set_zoom_rate
 #define Scene_viewer_get_viewing_volume cmzn_sceneviewer_get_viewing_volume
 #define Scene_viewer_set_viewing_volume cmzn_sceneviewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info cmzn_sceneviewer_set_background_texture_info
@@ -308,7 +298,7 @@ DESCRIPTION :
 	int pixel_height,pixel_width,update_pixel_image;
 	void *pixel_data;
 	int antialias;
-	int perturb_lines;
+	bool perturb_lines;
 	cmzn_sceneviewer_blending_mode blending_mode;
 	double depth_of_field;  /* depth_of_field, 0 == infinite */
 	double focal_depth;
@@ -491,24 +481,6 @@ Turns off any pending automatic tumbles or redraws in idle time, and removes
 any manager callbacks to minimise impact of inactive scene_viewer on rest of
 program. Must call Scene_viewer_awaken to restore manager callbacks.
 Must call this in DESTROY function.
-==============================================================================*/
-
-int Scene_viewer_get_antialias_mode(struct Scene_viewer *scene_viewer,
-	unsigned int *antialias);
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-==============================================================================*/
-
-int Scene_viewer_set_antialias_mode(struct Scene_viewer *scene_viewer,
-	unsigned int antialias_mode);
-/*******************************************************************************
-LAST MODIFIED : 15 October 1998
-
-DESCRIPTION :
-Sets the number of jitter samples used to antialias the scene_viewer.
-Zero turns antialiasing off.
 ==============================================================================*/
 
 int Scene_viewer_get_depth_of_field(struct Scene_viewer *scene_viewer,
@@ -699,26 +671,6 @@ DESCRIPTION :
 Sets the Scene_viewer light_model.
 ==============================================================================*/
 
-int Scene_viewer_get_perturb_lines(struct Scene_viewer *scene_viewer,
-	int *perturb_lines);
-/*******************************************************************************
-LAST MODIFIED : 13 June 2000
-
-DESCRIPTION :
-==============================================================================*/
-
-int Scene_viewer_set_perturb_lines(struct Scene_viewer *scene_viewer,
-	int perturb_lines);
-/*******************************************************************************
-LAST MODIFIED : 13 June 2000
-
-DESCRIPTION :
-When the line draw mode is turned on (set to one) the lines are raised in the
-z direction when the GL_EXT_polygon_offset extension is available from the X
-Server.  This means that the lines appear solid rather than interfering with a
-surface in the same space.
-==============================================================================*/
-
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 	double eyex,double eyey,double eyez,
 	double lookatx,double lookaty,double lookatz,
@@ -849,60 +801,6 @@ consecutive across rows, eg:
 [y']   |  m4  m5  m6  m7 | [y]
 [z']   |  m8  m9 m10 m11 | [z]
 [w']   | m12 m13 m14 m15 | [w]
-==============================================================================*/
-
-int Scene_viewer_get_translation_rate(struct Scene_viewer *scene_viewer,
-	double *translation_rate);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2005
-
-DESCRIPTION :
-Gets the scene viewer translation rate.
-==============================================================================*/
-
-int Scene_viewer_set_translation_rate(struct Scene_viewer *scene_viewer,
-	double translation_rate);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2005
-
-DESCRIPTION :
-Sets the scene viewer translation rate.
-==============================================================================*/
-
-int Scene_viewer_get_tumble_rate(struct Scene_viewer *scene_viewer,
-	double *tumble_rate);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2005
-
-DESCRIPTION :
-Gets the scene viewer tumble rate.
-==============================================================================*/
-
-int Scene_viewer_set_tumble_rate(struct Scene_viewer *scene_viewer,
-	double tumble_rate);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2005
-
-DESCRIPTION :
-Sets the scene viewer tumble rate.
-==============================================================================*/
-
-int Scene_viewer_get_zoom_rate(struct Scene_viewer *scene_viewer,
-	double *zoom_rate);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2005
-
-DESCRIPTION :
-Gets the scene viewer tumble rate.
-==============================================================================*/
-
-int Scene_viewer_set_zoom_rate(struct Scene_viewer *scene_viewer,
-	double zoom_rate);
-/*******************************************************************************
-LAST MODIFIED : 14 February 2005
-
-DESCRIPTION :
-Sets the scene viewer zoom rate.
 ==============================================================================*/
 
 int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,

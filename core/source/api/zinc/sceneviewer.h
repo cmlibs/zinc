@@ -370,16 +370,24 @@ ZINC_API int cmzn_sceneviewer_set_graphics_buffer_height(cmzn_sceneviewer_id sce
 
 /**
  * Gets the number of jitter samples used to antialias the scene viewer.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  The number of jitter samples used to antialias the graphics, or
+ * 0 if antialiasing is off or bad argument.
  */
-ZINC_API int cmzn_sceneviewer_get_antialias_mode(cmzn_sceneviewer_id sceneviewer,
-	unsigned int *antialias);
+ZINC_API int cmzn_sceneviewer_get_antialias_sampling(
+	cmzn_sceneviewer_id sceneviewer);
 
 /**
  * Sets the number of jitter samples used to antialias the scene viewer.
- * Zero turns antialiasing off.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param number_of_samples  The number of jitter samples used to antialias the
+ * graphics. Only 2, 4 or 8 samples are supported. Zero disables antialiasing.
+ * @return  On success CMZN_OK, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_sceneviewer_set_antialias_mode(cmzn_sceneviewer_id sceneviewer,
-	unsigned int antialias_mode);
+ZINC_API int cmzn_sceneviewer_set_antialias_sampling(
+	cmzn_sceneviewer_id sceneviewer, int number_of_samples);
 
 /**
  * Get the depth of field and focal depth of the scene viewer.
@@ -400,21 +408,26 @@ ZINC_API int cmzn_sceneviewer_set_depth_of_field(cmzn_sceneviewer_id sceneviewer
 	double depth_of_field, double focal_depth);
 
 /**
- * Returns the <perturb_lines> flag which determines whether the
- * GL_EXT_polygon_offset extension is used to offset the lines from the surfaces
- * in the z direction of the scene viewer.
+ * Query whether lines are perturbed to appear in front of surfaces at the same
+ * depth to avoid visual stitching artefacts.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  Boolean true if perturbing lines, otherwise false.
  */
-ZINC_API int cmzn_sceneviewer_get_perturb_lines(cmzn_sceneviewer_id sceneviewer,
-	int *perturb_lines);
+ZINC_API bool cmzn_sceneviewer_get_perturb_lines_flag(
+	cmzn_sceneviewer_id sceneviewer);
 
 /**
- * When the line draw mode is turned on (set to one) the lines are raised in the
- * z direction when the GL_EXT_polygon_offset extension is available from the X
- * Server.  This means that the lines appear solid rather than interfering with a
- * surface in the same space.
- */
-ZINC_API int cmzn_sceneviewer_set_perturb_lines(cmzn_sceneviewer_id sceneviewer,
-	int perturb_lines);
+ * Set whether lines are perturbed to appear in front of surfaces at the same
+ * depth to avoid visual stitching artefacts. Uses GL_EXT_polygon_offset.
+ * Note that quality of surface-only graphics can be impacted with this mode.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param value  New value of perturb lines flag.
+ * @return  On success CMZN_OK, otherwise CMZN_ERROR_ARGUMENT.
+*/
+ZINC_API int cmzn_sceneviewer_set_perturb_lines_flag(
+	cmzn_sceneviewer_id sceneviewer, bool value);
 
 /**
  * Returns the background_colour of the scene viewer.
@@ -479,37 +492,61 @@ ZINC_API int cmzn_sceneviewer_view_all(cmzn_sceneviewer_id sceneviewer);
 ZINC_API int cmzn_sceneviewer_render_scene(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Gets the scene viewer translation rate.
+ * Gets the rate at which translation occurs in relation to mouse movement using
+ * standard sceneviewerinput transformation processing.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  The translation rate, or 0 if invalid arguments.
  */
-ZINC_API int cmzn_sceneviewer_get_translation_rate(cmzn_sceneviewer_id sceneviewer,
-	double *translation_rate);
+ZINC_API double cmzn_sceneviewer_get_translation_rate(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Sets the scene viewer translation rate.
+ * Sets the rate at which translation occurs in relation to mouse movement using
+ * standard sceneviewerinput transformation processing.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param translation_rate  The translation rate;
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_sceneviewer_set_translation_rate(cmzn_sceneviewer_id sceneviewer,
 	double translation_rate);
 
 /**
- * Gets the scene viewer tumble rate.
+ * Gets the rate at which tumble occurs in relation to mouse movement using
+ * standard sceneviewerinput transformation processing.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  The tumble rate, or 0 if invalid arguments.
  */
-ZINC_API int cmzn_sceneviewer_get_tumble_rate(cmzn_sceneviewer_id sceneviewer,
-	double *tumble_rate);
+ZINC_API double cmzn_sceneviewer_get_tumble_rate(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Sets the scene viewer tumble rate.
+ * Sets the rate at which tumble occurs in relation to mouse movement using
+ * standard sceneviewerinput transformation processing.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param tumble_rate  The tumble rate;
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_sceneviewer_set_tumble_rate(cmzn_sceneviewer_id sceneviewer,
 	double tumble_rate);
 
 /**
- * Gets the scene viewer zoom rate.
+ * Gets the rate at which zoom occurs in relation to mouse movement using
+ * standard sceneviewerinput transformation processing.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  The zoom rate, or 0 if invalid arguments.
  */
-ZINC_API int cmzn_sceneviewer_get_zoom_rate(cmzn_sceneviewer_id sceneviewer,
-	double *zoom_rate);
+ZINC_API double cmzn_sceneviewer_get_zoom_rate(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Sets the scene viewer zoom rate.
+ * Sets the rate at which zoom occurs in relation to mouse movement using
+ * standard sceneviewerinput transformation processing.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param zoom_rate  The zoom rate;
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_sceneviewer_set_zoom_rate(cmzn_sceneviewer_id sceneviewer,
 	double zoom_rate);
