@@ -85,16 +85,16 @@ PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_tessellation,name,con
  * @return  Handle to the newly created tessellation module if successful,
  * otherwise NULL.
  */
-cmzn_tessellation_module_id cmzn_tessellation_module_create();
+cmzn_tessellationmodule_id cmzn_tessellationmodule_create();
 
-struct MANAGER(cmzn_tessellation) *cmzn_tessellation_module_get_manager(
-	cmzn_tessellation_module_id tessellation_module);
+struct MANAGER(cmzn_tessellation) *cmzn_tessellationmodule_get_manager(
+	cmzn_tessellationmodule_id tessellationmodule);
 
 /***************************************************************************//**
  * Private; only to be called from graphics_module.
  */
 int cmzn_tessellation_manager_set_owner_private(struct MANAGER(cmzn_tessellation) *manager,
-	struct cmzn_tessellation_module *tessellation_module);
+	struct cmzn_tessellationmodule *tessellationmodule);
 
 /**
  * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_tessellation) but also returns
@@ -122,8 +122,8 @@ int cmzn_tessellation_manager_message_get_object_change_and_detail(
  * or circle divisions are omitted.
  * @return  Handle to tessellation or 0 if error. Up to caller to destroy.
  */
-cmzn_tessellation_id cmzn_tessellation_module_find_or_create_fixed_tessellation(
-	cmzn_tessellation_module_id tessellationModule,
+cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
+	cmzn_tessellationmodule_id tessellationModule,
 	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
 	cmzn_tessellation_id defaultTessellation);
 

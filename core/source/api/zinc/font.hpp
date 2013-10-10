@@ -56,10 +56,10 @@ public:
 		RENDER_TYPE_EXTRUDE = CMZN_FONT_RENDER_TYPE_EXTRUDE
 	};
 
-	enum FontType
+	enum Typeface
 	{
-		FONT_TYPE_INVALID = CMZN_FONT_TYPE_INVALID,
-		FONT_TYPE_OpenSans = CMZN_FONT_TYPE_OpenSans
+		TYPEFACE_INVALID = CMZN_FONT_TYPEFACE_INVALID,
+		TYPEFACE_OpenSans = CMZN_FONT_TYPEFACE_OpenSans
 	};
 
 	bool isValid()
@@ -82,12 +82,12 @@ public:
 		return cmzn_font_set_name(id, name);
  	}
 
-	int getBold()
+	bool isBold()
 	{
-		return cmzn_font_get_bold(id);
+		return cmzn_font_is_bold(id);
 	}
 
-	int setBold(int bold)
+	int setBold(bool bold)
 	{
 		return cmzn_font_set_bold(id, bold);
 	}
@@ -102,12 +102,12 @@ public:
 		return cmzn_font_set_depth(id, depth);
 	}
 
-	int getItalic()
+	bool isItalic()
 	{
-		return cmzn_font_get_italic(id);
+		return cmzn_font_is_italic(id);
 	}
 
-	int setItalic(int italic)
+	int setItalic(bool italic)
 	{
 		return cmzn_font_set_italic(id, italic);
 	}
@@ -133,53 +133,53 @@ public:
 			static_cast<cmzn_font_render_type>(renderType));
 	}
 
-	enum FontType getFontType()
+	Typeface getTypeface()
 	{
-		return static_cast<FontType>(cmzn_font_get_font_type(id));
+		return static_cast<Typeface>(cmzn_font_get_typeface(id));
 	}
 
-	int setFontType(FontType fontType)
+	int setTypeface(Typeface typeface)
 	{
-		return cmzn_font_set_font_type(id, static_cast<cmzn_font_type>(fontType));
+		return cmzn_font_set_typeface(id, static_cast<cmzn_font_typeface>(typeface));
 	}
 };
 
-class FontModule
+class Fontmodule
 {
 protected:
-	cmzn_font_module_id id;
+	cmzn_fontmodule_id id;
 
 public:
 
-	FontModule() : id(0)
+	Fontmodule() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FontModule(cmzn_font_module_id in_font_module_id) :
-		id(in_font_module_id)
+	explicit Fontmodule(cmzn_fontmodule_id in_fontmodule_id) :
+		id(in_fontmodule_id)
 	{  }
 
-	FontModule(const FontModule& fontModule) :
-		id(cmzn_font_module_access(fontModule.id))
+	Fontmodule(const Fontmodule& fontModule) :
+		id(cmzn_fontmodule_access(fontModule.id))
 	{  }
 
-	FontModule& operator=(const FontModule& fontModule)
+	Fontmodule& operator=(const Fontmodule& fontModule)
 	{
-		cmzn_font_module_id temp_id = cmzn_font_module_access(
+		cmzn_fontmodule_id temp_id = cmzn_fontmodule_access(
 			fontModule.id);
 		if (0 != id)
 		{
-			cmzn_font_module_destroy(&id);
+			cmzn_fontmodule_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~FontModule()
+	~Fontmodule()
 	{
 		if (0 != id)
 		{
-			cmzn_font_module_destroy(&id);
+			cmzn_fontmodule_destroy(&id);
 		}
 	}
 
@@ -188,39 +188,39 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_font_module_id getId()
+	cmzn_fontmodule_id getId()
 	{
 		return id;
 	}
 
 	Font createFont()
 	{
-		return Font(cmzn_font_module_create_font(id));
+		return Font(cmzn_fontmodule_create_font(id));
 	}
 
 	Font findFontByName(const char *name)
 	{
-		return Font(cmzn_font_module_find_font_by_name(id, name));
+		return Font(cmzn_fontmodule_find_font_by_name(id, name));
 	}
 
 	int beginChange()
 	{
-		return cmzn_font_module_begin_change(id);
+		return cmzn_fontmodule_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return cmzn_font_module_end_change(id);
+		return cmzn_fontmodule_end_change(id);
 	}
 
 	Font getDefaultFont()
 	{
-		return Font(cmzn_font_module_get_default_font(id));
+		return Font(cmzn_fontmodule_get_default_font(id));
 	}
 
 	int setDefaultFont(Font &font)
 	{
-		return cmzn_font_module_set_default_font(id, font.getId());
+		return cmzn_fontmodule_set_default_font(id, font.getId());
 	}
 };
 

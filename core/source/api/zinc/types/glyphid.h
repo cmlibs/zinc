@@ -11,8 +11,8 @@
 #ifndef CMZN_GLYPHID_H__
 #define CMZN_GLYPHID_H__
 
-struct cmzn_glyph_module;
-typedef struct cmzn_glyph_module *cmzn_glyph_module_id;
+struct cmzn_glyphmodule;
+typedef struct cmzn_glyphmodule *cmzn_glyphmodule_id;
 
 struct cmzn_glyph;
 typedef struct cmzn_glyph *cmzn_glyph_id;

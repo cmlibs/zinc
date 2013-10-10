@@ -36,7 +36,7 @@ Module types
 */
 struct cmzn_font *cmzn_font_create_private();
 
-struct cmzn_font_module
+struct cmzn_fontmodule
 {
 
 private:
@@ -45,14 +45,14 @@ private:
 	cmzn_font *defaultFont;
 	int access_count;
 
-	cmzn_font_module() :
+	cmzn_fontmodule() :
 		fontManager(CREATE(MANAGER(cmzn_font))()),
 		defaultFont(0),
 		access_count(1)
 	{
 	}
 
-	~cmzn_font_module()
+	~cmzn_fontmodule()
 	{
 		if (defaultFont)
 		{
@@ -63,28 +63,28 @@ private:
 
 public:
 
-	static cmzn_font_module *create()
+	static cmzn_fontmodule *create()
 	{
-		return new cmzn_font_module();
+		return new cmzn_fontmodule();
 	}
 
-	cmzn_font_module *access()
+	cmzn_fontmodule *access()
 
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_font_module* &font_module)
+	static int deaccess(cmzn_fontmodule* &fontmodule)
 	{
-		if (font_module)
+		if (fontmodule)
 		{
-			--(font_module->access_count);
-			if (font_module->access_count <= 0)
+			--(fontmodule->access_count);
+			if (fontmodule->access_count <= 0)
 			{
-				delete font_module;
+				delete fontmodule;
 			}
-			font_module = 0;
+			fontmodule = 0;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -168,94 +168,90 @@ public:
 
 };
 
-cmzn_font_module_id cmzn_font_module_create()
+cmzn_fontmodule_id cmzn_fontmodule_create()
 {
-	return cmzn_font_module::create();
+	return cmzn_fontmodule::create();
 }
 
-cmzn_font_module_id cmzn_font_module_access(
-	cmzn_font_module_id font_module)
+cmzn_fontmodule_id cmzn_fontmodule_access(
+	cmzn_fontmodule_id fontmodule)
 {
-	if (font_module)
-		return font_module->access();
+	if (fontmodule)
+		return fontmodule->access();
 	return 0;
 }
 
-int cmzn_font_module_destroy(cmzn_font_module_id *font_module_address)
+int cmzn_fontmodule_destroy(cmzn_fontmodule_id *fontmodule_address)
 {
-	if (font_module_address)
-		return cmzn_font_module::deaccess(*font_module_address);
+	if (fontmodule_address)
+		return cmzn_fontmodule::deaccess(*fontmodule_address);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_font_id cmzn_font_module_create_font(
-	cmzn_font_module_id font_module)
+cmzn_font_id cmzn_fontmodule_create_font(
+	cmzn_fontmodule_id fontmodule)
 {
-	if (font_module)
-		return font_module->createFont();
+	if (fontmodule)
+		return fontmodule->createFont();
 	return 0;
 }
 
-struct MANAGER(cmzn_font) *cmzn_font_module_get_manager(
-	cmzn_font_module_id font_module)
+struct MANAGER(cmzn_font) *cmzn_fontmodule_get_manager(
+	cmzn_fontmodule_id fontmodule)
 {
-	if (font_module)
-		return font_module->getManager();
+	if (fontmodule)
+		return fontmodule->getManager();
 	return 0;
 }
 
-int cmzn_font_module_begin_change(cmzn_font_module_id font_module)
+int cmzn_fontmodule_begin_change(cmzn_fontmodule_id fontmodule)
 {
-	if (font_module)
-		return font_module->beginChange();
+	if (fontmodule)
+		return fontmodule->beginChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_font_module_end_change(cmzn_font_module_id font_module)
+int cmzn_fontmodule_end_change(cmzn_fontmodule_id fontmodule)
 {
-	if (font_module)
-		return font_module->endChange();
+	if (fontmodule)
+		return fontmodule->endChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_font_id cmzn_font_module_find_font_by_name(
-	cmzn_font_module_id font_module, const char *name)
+cmzn_font_id cmzn_fontmodule_find_font_by_name(
+	cmzn_fontmodule_id fontmodule, const char *name)
 {
-	if (font_module)
-		return font_module->findFontByName(name);
+	if (fontmodule)
+		return fontmodule->findFontByName(name);
    return 0;
 }
 
-cmzn_font_id cmzn_font_module_get_default_font(
-	cmzn_font_module_id font_module)
+cmzn_font_id cmzn_fontmodule_get_default_font(
+	cmzn_fontmodule_id fontmodule)
 {
-	if (font_module)
-		return font_module->getDefaultFont();
+	if (fontmodule)
+		return fontmodule->getDefaultFont();
 	return 0;
 }
 
-int cmzn_font_module_set_default_font(
-	cmzn_font_module_id font_module,
+int cmzn_fontmodule_set_default_font(
+	cmzn_fontmodule_id fontmodule,
 	cmzn_font_id font)
 {
-	if (font_module)
-		return font_module->setDefaultFont(font);
+	if (fontmodule)
+		return fontmodule->setDefaultFont(font);
 	return 0;
 }
 
 struct cmzn_font
-/*******************************************************************************
-LAST MODIFIED : 17 November 2005
-
-DESCRIPTION :
-==============================================================================*/
 {
 	char *name;
 
+	bool bold, italic;
 	int offset_x, offset_y;
-	int size, italic, bold, changed;
+	int size, changed;
 	double depth;
-	cmzn_font_type font_type;
+	cmzn_font_typeface typeface;
 	cmzn_font_render_type render_type;
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(cmzn_font) *manager;
@@ -267,7 +263,7 @@ DESCRIPTION :
 
 FULL_DECLARE_LIST_TYPE(cmzn_font);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_font, cmzn_font_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_font, cmzn_fontmodule, void *);
 
 /*
 Module functions
@@ -350,7 +346,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_font,name)
 		destination->depth = source->depth;
 		destination->italic = source->italic;
 		destination->bold = source->bold;
-		destination->font_type = source->font_type;
+		destination->typeface = source->typeface;
 		destination->render_type = source->render_type;
 		return_code = 1;
 	}
@@ -407,12 +403,12 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_font,manager)
 
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_font,name,const char *,manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_font, struct cmzn_font_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_font, struct cmzn_fontmodule)
 
 int cmzn_font_manager_set_owner(struct MANAGER(cmzn_font) *manager,
-	struct cmzn_font_module *font_module)
+	struct cmzn_fontmodule *fontmodule)
 {
-	return MANAGER_SET_OWNER(cmzn_font)(manager, font_module);
+	return MANAGER_SET_OWNER(cmzn_font)(manager, fontmodule);
 }
 
 DECLARE_OBJECT_FUNCTIONS(cmzn_font)
@@ -433,10 +429,10 @@ DESCRIPTION :
 		font->offset_x = 0;
 		font->offset_y = 0;
 		font->size = 15;
-		font->italic = 0;
-		font->bold = 0;
+		font->italic = false;
+		font->bold = false;
 		font->depth = 0.1;
-		font->font_type = CMZN_FONT_TYPE_OpenSans;
+		font->typeface = CMZN_FONT_TYPEFACE_OpenSans;
 		font->render_type = CMZN_FONT_RENDER_TYPE_BITMAP;
 		font->manager = (struct MANAGER(cmzn_font) *)NULL;
 		font->manager_change_status = MANAGER_CHANGE_NONE(cmzn_font);
@@ -496,9 +492,9 @@ unsigned int cmzn_font_get_font_buffer(struct cmzn_font *font,
 {
 	unsigned char *font_type_buffer = 0;
 	unsigned int font_type_length = 0;
-	switch (font->font_type)
+	switch (font->typeface)
 	{
-		case CMZN_FONT_TYPE_OpenSans:
+		case CMZN_FONT_TYPEFACE_OpenSans:
 		{
 			if (font->bold)
 			{
@@ -743,36 +739,25 @@ int cmzn_font_changed(cmzn_font_id font)
 	}
 }
 
-
-cmzn_font_type cmzn_font_get_font_type(
-	cmzn_font_id font)
+cmzn_font_typeface cmzn_font_get_typeface(cmzn_font_id font)
 {
 	if (font)
-	{
-		return font->font_type;
-	}
-	else
-	{
-		return CMZN_FONT_TYPE_INVALID;
-	}
+		return font->typeface;
+	return CMZN_FONT_TYPEFACE_INVALID;
 }
 
-int cmzn_font_set_font_type(cmzn_font_id font,
-	cmzn_font_type font_type)
+int cmzn_font_set_typeface(cmzn_font_id font, cmzn_font_typeface typeface)
 {
-	if (font)
+	if (font && ENUMERATOR_STRING(cmzn_font_typeface)(typeface))
 	{
-		if (font->font_type != font_type)
+		if (font->typeface != typeface)
 		{
-			font->font_type = font_type;
+			font->typeface = typeface;
 			cmzn_font_changed(font);
 		}
-		return 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_font_render_type cmzn_font_get_render_type(
@@ -806,19 +791,14 @@ int cmzn_font_set_render_type(cmzn_font_id font,
 	}
 }
 
-int cmzn_font_get_bold(cmzn_font_id font)
+bool cmzn_font_is_bold(cmzn_font_id font)
 {
 	if (font)
-	{
 		return font->bold;
-	}
-	else
-	{
-		return 0;
-	}
+	return false;
 }
 
-int cmzn_font_set_bold(cmzn_font_id font, int bold)
+int cmzn_font_set_bold(cmzn_font_id font, bool bold)
 {
 	if (font)
 	{
@@ -827,12 +807,9 @@ int cmzn_font_set_bold(cmzn_font_id font, int bold)
 			font->bold = bold;
 			cmzn_font_changed(font);
 		}
-		return 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_font_get_depth(cmzn_font_id font)
@@ -865,19 +842,14 @@ int cmzn_font_set_depth(cmzn_font_id font, double depth)
 	}
 }
 
-int cmzn_font_get_italic(cmzn_font_id font)
+bool cmzn_font_is_italic(cmzn_font_id font)
 {
 	if (font)
-	{
 		return font->italic;
-	}
-	else
-	{
-		return 0;
-	}
+	return false;
 }
 
-int cmzn_font_set_italic(cmzn_font_id font, int italic)
+int cmzn_font_set_italic(cmzn_font_id font, bool italic)
 {
 	if (font)
 	{
@@ -886,12 +858,9 @@ int cmzn_font_set_italic(cmzn_font_id font, int italic)
 			font->italic = italic;
 			cmzn_font_changed(font);
 		}
-		return 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		return 0;
-	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_font_get_size(cmzn_font_id font)
@@ -1006,41 +975,40 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_font_render_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_font_render_type)
 
-class cmzn_font_type_conversion
+class cmzn_font_typeface_conversion
 {
 public:
-	static const char *to_string(enum cmzn_font_type font_type)
+	static const char *to_string(enum cmzn_font_typeface typeface)
 	{
-		const char *enum_string = 0;
-		switch (font_type)
+		switch (typeface)
 		{
-		case CMZN_FONT_TYPE_OpenSans:
-			enum_string = "OpenSans";
+		case CMZN_FONT_TYPEFACE_OpenSans:
+			return "OpenSans";
 			break;
-		default:
+		case CMZN_FONT_TYPEFACE_INVALID:
 			break;
 		}
-		return enum_string;
+		return 0;
 	}
 };
 
-enum cmzn_font_type cmzn_font_type_enum_from_string(
+enum cmzn_font_typeface cmzn_font_typeface_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum cmzn_font_type,
-		cmzn_font_type_conversion>(string);
+	return string_to_enum<enum cmzn_font_typeface,
+		cmzn_font_typeface_conversion>(string);
 }
 
-char *cmzn_font_type_enum_to_string(
-	enum cmzn_font_type font_type)
+char *cmzn_font_typeface_enum_to_string(
+	enum cmzn_font_typeface typeface)
 {
-	const char *font_type_string =cmzn_font_type_conversion::to_string(font_type);
-	return (font_type_string ? duplicate_string(font_type_string) : 0);
+	const char *typeface_string =cmzn_font_typeface_conversion::to_string(typeface);
+	return (typeface_string ? duplicate_string(typeface_string) : 0);
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_font_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_font_typeface)
 {
-	return cmzn_font_type_conversion::to_string(enumerator_value);
+	return cmzn_font_typeface_conversion::to_string(enumerator_value);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_font_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_font_typeface)

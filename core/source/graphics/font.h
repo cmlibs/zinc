@@ -20,7 +20,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "general/enumerator.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_font_render_type);
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_font_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_font_typeface);
 
 /*
 Global types
@@ -33,9 +33,9 @@ DECLARE_LIST_TYPES(cmzn_font);
 
 DECLARE_MANAGER_TYPES(cmzn_font);
 
-struct cmzn_font_module;
+struct cmzn_fontmodule;
 #include "general/manager_private.h"
-PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(cmzn_font, struct cmzn_font_module);
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(cmzn_font, struct cmzn_fontmodule);
 
 /*
 Global functions
@@ -60,10 +60,10 @@ PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_font,name,const char *);
  * @return  Handle to the newly created font module if successful,
  * otherwise NULL.
  */
-cmzn_font_module_id cmzn_font_module_create();
+cmzn_fontmodule_id cmzn_fontmodule_create();
 
-struct MANAGER(cmzn_font) *cmzn_font_module_get_manager(
-	cmzn_font_module_id font_module);
+struct MANAGER(cmzn_font) *cmzn_fontmodule_get_manager(
+	cmzn_fontmodule_id fontmodule);
 
 int DESTROY(cmzn_font)(struct cmzn_font **font_address);
 /*******************************************************************************

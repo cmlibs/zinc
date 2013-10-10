@@ -116,42 +116,42 @@ public:
 
 };
 
-class TessellationModule
+class Tessellationmodule
 {
 protected:
-	cmzn_tessellation_module_id id;
+	cmzn_tessellationmodule_id id;
 
 public:
 
-	TessellationModule() : id(0)
+	Tessellationmodule() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit TessellationModule(cmzn_tessellation_module_id in_tessellation_module_id) :
-		id(in_tessellation_module_id)
+	explicit Tessellationmodule(cmzn_tessellationmodule_id in_tessellationmodule_id) :
+		id(in_tessellationmodule_id)
 	{  }
 
-	TessellationModule(const TessellationModule& tessellationModule) :
-		id(cmzn_tessellation_module_access(tessellationModule.id))
+	Tessellationmodule(const Tessellationmodule& tessellationModule) :
+		id(cmzn_tessellationmodule_access(tessellationModule.id))
 	{  }
 
-	TessellationModule& operator=(const TessellationModule& tessellationModule)
+	Tessellationmodule& operator=(const Tessellationmodule& tessellationModule)
 	{
-		cmzn_tessellation_module_id temp_id = cmzn_tessellation_module_access(
+		cmzn_tessellationmodule_id temp_id = cmzn_tessellationmodule_access(
 			tessellationModule.id);
 		if (0 != id)
 		{
-			cmzn_tessellation_module_destroy(&id);
+			cmzn_tessellationmodule_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~TessellationModule()
+	~Tessellationmodule()
 	{
 		if (0 != id)
 		{
-			cmzn_tessellation_module_destroy(&id);
+			cmzn_tessellationmodule_destroy(&id);
 		}
 	}
 
@@ -160,49 +160,49 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_tessellation_module_id getId()
+	cmzn_tessellationmodule_id getId()
 	{
 		return id;
 	}
 
 	Tessellation createTessellation()
 	{
-		return Tessellation(cmzn_tessellation_module_create_tessellation(id));
+		return Tessellation(cmzn_tessellationmodule_create_tessellation(id));
 	}
 
 	Tessellation findTessellationByName(const char *name)
 	{
-		return Tessellation(cmzn_tessellation_module_find_tessellation_by_name(id, name));
+		return Tessellation(cmzn_tessellationmodule_find_tessellation_by_name(id, name));
 	}
 
 	int beginChange()
 	{
-		return cmzn_tessellation_module_begin_change(id);
+		return cmzn_tessellationmodule_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return cmzn_tessellation_module_end_change(id);
+		return cmzn_tessellationmodule_end_change(id);
 	}
 
 	Tessellation getDefaultTessellation()
 	{
-		return Tessellation(cmzn_tessellation_module_get_default_tessellation(id));
+		return Tessellation(cmzn_tessellationmodule_get_default_tessellation(id));
 	}
 
 	int setDefaultTessellation(Tessellation &tessellation)
 	{
-		return cmzn_tessellation_module_set_default_tessellation(id, tessellation.getId());
+		return cmzn_tessellationmodule_set_default_tessellation(id, tessellation.getId());
 	}
 
 	Tessellation getDefaultPointsTessellation()
 	{
-		return Tessellation(cmzn_tessellation_module_get_default_points_tessellation(id));
+		return Tessellation(cmzn_tessellationmodule_get_default_points_tessellation(id));
 	}
 
 	int setDefaultPointsTessellation(Tessellation &tessellation)
 	{
-		return cmzn_tessellation_module_set_default_points_tessellation(id, tessellation.getId());
+		return cmzn_tessellationmodule_set_default_points_tessellation(id, tessellation.getId());
 	}
 };
 

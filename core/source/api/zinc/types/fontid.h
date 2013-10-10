@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fontid.h
  *
  */
@@ -13,10 +13,10 @@
 
 #include "zinc/zincsharedobject.h"
 
-enum cmzn_font_type
+enum cmzn_font_typeface
 {
-	CMZN_FONT_TYPE_INVALID = 0,
-	CMZN_FONT_TYPE_OpenSans = 1,
+	CMZN_FONT_TYPEFACE_INVALID = 0,
+	CMZN_FONT_TYPEFACE_OpenSans = 1,
 };
 
 enum cmzn_font_render_type
@@ -32,33 +32,33 @@ enum cmzn_font_render_type
 struct cmzn_font;
 typedef struct cmzn_font *cmzn_font_id;
 
-struct cmzn_font_module;
-typedef struct cmzn_font_module *cmzn_font_module_id;
+struct cmzn_fontmodule;
+typedef struct cmzn_fontmodule *cmzn_fontmodule_id;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_font_type
-	cmzn_font_type_enum_from_string(const char *string);
+ZINC_API enum cmzn_font_typeface
+	cmzn_font_typeface_enum_from_string(const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_font_type_enum_to_string(
-	enum cmzn_font_type font_type);
+ZINC_API char *cmzn_font_typeface_enum_to_string(
+	enum cmzn_font_typeface font_type);
 
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -68,7 +68,7 @@ ZINC_API char *cmzn_font_type_enum_to_string(
 ZINC_API enum cmzn_font_render_type
 	cmzn_font_render_type_enum_from_string(const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *

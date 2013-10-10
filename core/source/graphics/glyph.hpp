@@ -259,7 +259,7 @@ public:
 	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
 };
 
-struct cmzn_glyph_module
+struct cmzn_glyphmodule
 {
 private:
 	cmzn_graphics_material_module *materialModule;
@@ -267,8 +267,8 @@ private:
 	cmzn_glyph *defaultPointGlyph;
 	int access_count;
 
-	cmzn_glyph_module(cmzn_graphics_material_module *materialModuleIn);
-	~cmzn_glyph_module();
+	cmzn_glyphmodule(cmzn_graphics_material_module *materialModuleIn);
+	~cmzn_glyphmodule();
 
 	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type);
 
@@ -276,27 +276,27 @@ private:
 
 public:
 
-	static cmzn_glyph_module *create(cmzn_graphics_material_module *materialModuleIn)
+	static cmzn_glyphmodule *create(cmzn_graphics_material_module *materialModuleIn)
 	{
-		return new cmzn_glyph_module(materialModuleIn);
+		return new cmzn_glyphmodule(materialModuleIn);
 	}
 
-	cmzn_glyph_module *access()
+	cmzn_glyphmodule *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static void deaccess(cmzn_glyph_module* &glyph_module)
+	static void deaccess(cmzn_glyphmodule* &glyphmodule)
 	{
-		if (glyph_module)
+		if (glyphmodule)
 		{
-			--(glyph_module->access_count);
-			if (glyph_module->access_count <= 0)
+			--(glyphmodule->access_count);
+			if (glyphmodule->access_count <= 0)
 			{
-				delete glyph_module;
+				delete glyphmodule;
 			}
-			glyph_module = 0;
+			glyphmodule = 0;
 		}
 	}
 
@@ -371,23 +371,23 @@ void resolve_glyph_axes(
 	Triple final_point, Triple final_axis1, Triple final_axis2, Triple final_axis3);
 
 /** internal only */
-cmzn_glyph_module_id cmzn_glyph_module_create(cmzn_graphics_material_module *materialModule);
+cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_graphics_material_module *materialModule);
 
 /* internal only */
-struct MANAGER(cmzn_glyph) *cmzn_glyph_module_get_manager(
-	cmzn_glyph_module_id glyph_module);
+struct MANAGER(cmzn_glyph) *cmzn_glyphmodule_get_manager(
+	cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Create extra glyphs such as line_ticks, diamond, only used in cmgui
  */
-int cmzn_glyph_module_define_standard_cmgui_glyphs(
-	cmzn_glyph_module_id glyph_module);
+int cmzn_glyphmodule_define_standard_cmgui_glyphs(
+	cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Internal only.
  * @return  Handle to new glyph wrapping graphics object. Up to caller to destroy.
  */
-cmzn_glyph *cmzn_glyph_module_create_glyph_static(
-	cmzn_glyph_module_id glyphModule, GT_object *graphicsObject);
+cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
+	cmzn_glyphmodule_id glyphModule, GT_object *graphicsObject);
 
 #endif /* !defined (GLYPH_HPP) */

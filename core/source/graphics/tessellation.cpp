@@ -28,7 +28,7 @@ Module types
 /* forward declaration */
 struct cmzn_tessellation *cmzn_tessellation_create_private();
 
-struct cmzn_tessellation_module
+struct cmzn_tessellationmodule
 {
 
 private:
@@ -38,7 +38,7 @@ private:
 	cmzn_tessellation *defaultPointsTessellation;
 	int access_count;
 
-	cmzn_tessellation_module() :
+	cmzn_tessellationmodule() :
 		tessellationManager(CREATE(MANAGER(cmzn_tessellation))()),
 		defaultTessellation(0),
 		defaultPointsTessellation(0),
@@ -46,7 +46,7 @@ private:
 	{
 	}
 
-	~cmzn_tessellation_module()
+	~cmzn_tessellationmodule()
 	{
 		cmzn_tessellation_destroy(&this->defaultTessellation);
 		cmzn_tessellation_destroy(&this->defaultPointsTessellation);
@@ -55,28 +55,28 @@ private:
 
 public:
 
-	static cmzn_tessellation_module *create()
+	static cmzn_tessellationmodule *create()
 	{
-		return new cmzn_tessellation_module();
+		return new cmzn_tessellationmodule();
 	}
 
-	cmzn_tessellation_module *access()
+	cmzn_tessellationmodule *access()
 
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_tessellation_module* &tessellation_module)
+	static int deaccess(cmzn_tessellationmodule* &tessellationmodule)
 	{
-		if (tessellation_module)
+		if (tessellationmodule)
 		{
-			--(tessellation_module->access_count);
-			if (tessellation_module->access_count <= 0)
+			--(tessellationmodule->access_count);
+			if (tessellationmodule->access_count <= 0)
 			{
-				delete tessellation_module;
+				delete tessellationmodule;
 			}
-			tessellation_module = 0;
+			tessellationmodule = 0;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -485,7 +485,7 @@ struct cmzn_tessellation_compare_name
 
 typedef cmzn_set<cmzn_tessellation *,cmzn_tessellation_compare_name> cmzn_set_cmzn_tessellation;
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_tessellation, cmzn_tessellation_module, cmzn_tessellation_change_detail *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_tessellation, cmzn_tessellationmodule, cmzn_tessellation_change_detail *);
 
 /*
 Module functions
@@ -559,12 +559,12 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_tessellation,name,c
 DECLARE_MANAGER_FUNCTIONS(cmzn_tessellation,manager)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_tessellation,manager)
 DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_tessellation,name,const char *,manager)
-DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_tessellation, struct cmzn_tessellation_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_tessellation, struct cmzn_tessellationmodule)
 
 int cmzn_tessellation_manager_set_owner_private(struct MANAGER(cmzn_tessellation) *manager,
-	struct cmzn_tessellation_module *tessellation_module)
+	struct cmzn_tessellationmodule *tessellationmodule)
 {
-	return MANAGER_SET_OWNER(cmzn_tessellation)(manager, tessellation_module);
+	return MANAGER_SET_OWNER(cmzn_tessellation)(manager, tessellationmodule);
 }
 
 int cmzn_tessellation_manager_message_get_object_change_and_detail(
@@ -594,95 +594,95 @@ int cmzn_tessellation_manager_message_get_object_change_and_detail(
 	return (MANAGER_CHANGE_NONE(cmzn_tessellation));
 }
 
-cmzn_tessellation_module_id cmzn_tessellation_module_create()
+cmzn_tessellationmodule_id cmzn_tessellationmodule_create()
 {
-	return cmzn_tessellation_module::create();
+	return cmzn_tessellationmodule::create();
 }
 
-cmzn_tessellation_module_id cmzn_tessellation_module_access(
-	cmzn_tessellation_module_id tessellation_module)
+cmzn_tessellationmodule_id cmzn_tessellationmodule_access(
+	cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->access();
+	if (tessellationmodule)
+		return tessellationmodule->access();
 	return 0;
 }
 
-int cmzn_tessellation_module_destroy(cmzn_tessellation_module_id *tessellation_module_address)
+int cmzn_tessellationmodule_destroy(cmzn_tessellationmodule_id *tessellationmodule_address)
 {
-	if (tessellation_module_address)
-		return cmzn_tessellation_module::deaccess(*tessellation_module_address);
+	if (tessellationmodule_address)
+		return cmzn_tessellationmodule::deaccess(*tessellationmodule_address);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_tessellation_id cmzn_tessellation_module_create_tessellation(
-	cmzn_tessellation_module_id tessellation_module)
+cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
+	cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->createTessellation();
+	if (tessellationmodule)
+		return tessellationmodule->createTessellation();
 	return 0;
 }
 
-struct MANAGER(cmzn_tessellation) *cmzn_tessellation_module_get_manager(
-	cmzn_tessellation_module_id tessellation_module)
+struct MANAGER(cmzn_tessellation) *cmzn_tessellationmodule_get_manager(
+	cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->getManager();
+	if (tessellationmodule)
+		return tessellationmodule->getManager();
 	return 0;
 }
 
-int cmzn_tessellation_module_begin_change(cmzn_tessellation_module_id tessellation_module)
+int cmzn_tessellationmodule_begin_change(cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->beginChange();
+	if (tessellationmodule)
+		return tessellationmodule->beginChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_tessellation_module_end_change(cmzn_tessellation_module_id tessellation_module)
+int cmzn_tessellationmodule_end_change(cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->endChange();
+	if (tessellationmodule)
+		return tessellationmodule->endChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_tessellation_id cmzn_tessellation_module_find_tessellation_by_name(
-	cmzn_tessellation_module_id tessellation_module, const char *name)
+cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
+	cmzn_tessellationmodule_id tessellationmodule, const char *name)
 {
-	if (tessellation_module)
-		return tessellation_module->findTessellationByName(name);
+	if (tessellationmodule)
+		return tessellationmodule->findTessellationByName(name);
    return 0;
 }
 
-cmzn_tessellation_id cmzn_tessellation_module_get_default_tessellation(
-	cmzn_tessellation_module_id tessellation_module)
+cmzn_tessellation_id cmzn_tessellationmodule_get_default_tessellation(
+	cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->getDefaultTessellation();
+	if (tessellationmodule)
+		return tessellationmodule->getDefaultTessellation();
 	return 0;
 }
 
-int cmzn_tessellation_module_set_default_tessellation(
-	cmzn_tessellation_module_id tessellation_module,
+int cmzn_tessellationmodule_set_default_tessellation(
+	cmzn_tessellationmodule_id tessellationmodule,
 	cmzn_tessellation_id tessellation)
 {
-	if (tessellation_module)
-		return tessellation_module->setDefaultTessellation(tessellation);
+	if (tessellationmodule)
+		return tessellationmodule->setDefaultTessellation(tessellation);
 	return 0;
 }
 
-cmzn_tessellation_id cmzn_tessellation_module_get_default_points_tessellation(
-	cmzn_tessellation_module_id tessellation_module)
+cmzn_tessellation_id cmzn_tessellationmodule_get_default_points_tessellation(
+	cmzn_tessellationmodule_id tessellationmodule)
 {
-	if (tessellation_module)
-		return tessellation_module->getDefaultPointsTessellation();
+	if (tessellationmodule)
+		return tessellationmodule->getDefaultPointsTessellation();
 	return 0;
 }
 
-int cmzn_tessellation_module_set_default_points_tessellation(
-	cmzn_tessellation_module_id tessellation_module,
+int cmzn_tessellationmodule_set_default_points_tessellation(
+	cmzn_tessellationmodule_id tessellationmodule,
 	cmzn_tessellation_id tessellation)
 {
-	if (tessellation_module)
-		return tessellation_module->setDefaultPointsTessellation(tessellation);
+	if (tessellationmodule)
+		return tessellationmodule->setDefaultPointsTessellation(tessellation);
 	return 0;
 }
 
@@ -890,8 +890,8 @@ int cmzn_tessellation_set_refinement_factors(cmzn_tessellation_id tessellation,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_tessellation_id cmzn_tessellation_module_find_or_create_fixed_tessellation(
-	cmzn_tessellation_module_id tessellationModule,
+cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
+	cmzn_tessellationmodule_id tessellationModule,
 	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
 	cmzn_tessellation_id defaultTessellation)
 {

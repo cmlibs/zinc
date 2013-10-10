@@ -27,43 +27,43 @@ extern "C" {
  * Returns a new reference to the glyph module with reference count
  * incremented. Caller is responsible for destroying the new reference.
  *
- * @param glyph_module  The glyph module to obtain a new reference to.
+ * @param glyphmodule  The glyph module to obtain a new reference to.
  * @return  Glyph module with incremented reference count.
  */
-ZINC_API cmzn_glyph_module_id cmzn_glyph_module_access(
-	cmzn_glyph_module_id glyph_module);
+ZINC_API cmzn_glyphmodule_id cmzn_glyphmodule_access(
+	cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Destroys this reference to the glyph module (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
- * @param glyph_module_address  Address of handle to glyph module to destroy.
+ * @param glyphmodule_address  Address of handle to glyph module to destroy.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_glyph_module_destroy(
-	cmzn_glyph_module_id *glyph_module_address);
+ZINC_API int cmzn_glyphmodule_destroy(
+	cmzn_glyphmodule_id *glyphmodule_address);
 
 /**
  * Begin caching or increment cache level for this glyph module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
- * @see cmzn_glyph_module_end_change
+ * @see cmzn_glyphmodule_end_change
  *
- * @param glyph_module  The glyph module to begin change cache on.
+ * @param glyphmodule  The glyph module to begin change cache on.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_glyph_module_begin_change(cmzn_glyph_module_id glyph_module);
+ZINC_API int cmzn_glyphmodule_begin_change(cmzn_glyphmodule_id glyphmodule);
 
 /***************************************************************************//**
  * Decrement cache level or end caching of changes for the glyph module.
- * Call cmzn_glyph_module_begin_change before making multiple changes
+ * Call cmzn_glyphmodule_begin_change before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
  *
- * @param glyph_module  The glyph module to end change cache on.
+ * @param glyphmodule  The glyph module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_glyph_module_end_change(cmzn_glyph_module_id glyph_module);
+ZINC_API int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Defines a selection of standard glyphs for visualising points, vectors etc.
@@ -106,53 +106,53 @@ ZINC_API int cmzn_glyph_module_end_change(cmzn_glyph_module_id glyph_module);
  * get their circle divisions from the tessellation specified in the graphic.
  * If not already set, the default glyph is set to "point" by this function.
  *
- * @param glyph_module  The glyph module to create the glyph in.
+ * @param glyphmodule  The glyph module to create the glyph in.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_glyph_module_define_standard_glyphs(
-	cmzn_glyph_module_id glyph_module);
+ZINC_API int cmzn_glyphmodule_define_standard_glyphs(
+	cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Find the glyph with the specified name, if any.
  *
- * @param glyph_module  Glyph module to search.
+ * @param glyphmodule  Glyph module to search.
  * @param name  The name of the glyph.
  * @return  Handle to the glyph of that name, or 0 if not found.
  * Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_glyph_id cmzn_glyph_module_find_glyph_by_name(
-	cmzn_glyph_module_id glyph_module, const char *name);
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
+	cmzn_glyphmodule_id glyphmodule, const char *name);
 
 /**
  * Find the glyph with the specified type, if any.
  *
- * @param glyph_module  Glyph module to search.
+ * @param glyphmodule  Glyph module to search.
  * @param glyph_type  A glyph type identifier.
  * @return  Handle to a glyph with that type, or 0 if not found.
  * Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_glyph_id cmzn_glyph_module_find_glyph_by_type(
-	cmzn_glyph_module_id glyph_module, enum cmzn_glyph_type glyph_type);
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_type(
+	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_type glyph_type);
 
 /**
  * Get the default glyph used for new point graphics, if any.
  *
- * @param glyph_module  Glyph module to query.
+ * @param glyphmodule  Glyph module to query.
  * @return  Handle to the default point glyph, or 0 if none.
  * Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_glyph_id cmzn_glyph_module_get_default_point_glyph(
-	cmzn_glyph_module_id glyph_module);
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_get_default_point_glyph(
+	cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Set the default glyph used for new point graphics.
  *
- * @param glyph_module  Glyph module to modify.
+ * @param glyphmodule  Glyph module to modify.
  * @param glyph  The glyph to set as default.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_glyph_module_set_default_point_glyph(
-	cmzn_glyph_module_id glyph_module, cmzn_glyph_id glyph);
+ZINC_API int cmzn_glyphmodule_set_default_point_glyph(
+	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id glyph);
 
 /**
  * Returns a new reference to the glyph with reference count incremented.
@@ -173,7 +173,7 @@ ZINC_API cmzn_glyph_id cmzn_glyph_access(cmzn_glyph_id glyph);
 ZINC_API int cmzn_glyph_destroy(cmzn_glyph_id *glyph_address);
 
 /**
- * Get managed status of glyph in its owning glyph_module.
+ * Get managed status of glyph in its owning glyph module.
  * @see cmzn_glyph_set_managed
  *
  * @param glyph  The glyph to query.
@@ -218,15 +218,15 @@ ZINC_API int cmzn_glyph_set_name(cmzn_glyph_id glyph, const char *name);
  * Create a glyph which drawing 3-D axes repeating the supplied axis glyph
  * on three axes with the given axis width.
  *
- * @param glyph_module  The glyph module to create the glyph in.
+ * @param glyphmodule  The glyph module to create the glyph in.
  * @param axis_glyph  A glyph to repeat on each of 3 axes.
  * @param axis_width  The width of each axis glyph when drawn at unit length;
  * a fraction of 1 to give an appropriate arrow head size. Typically 0.1 for
  * glyph 'axis', 0.25 for glyph 'arrow_solid'. Must be non-negative.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_glyph_axes_id cmzn_glyph_module_create_axes(
-	cmzn_glyph_module_id glyph_module, cmzn_glyph_id axis_glyph,
+ZINC_API cmzn_glyph_axes_id cmzn_glyphmodule_create_axes(
+	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id axis_glyph,
 	double axis_width);
 
 /**
@@ -332,12 +332,12 @@ ZINC_API int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
  * value labels. The glyph dynamically updates to match the current range and
  * definition of the spectrum. Note it only shows a single component.
  *
- * @param glyph_module  The glyph module to create the glyph in.
+ * @param glyphmodule  The glyph module to create the glyph in.
  * @param spectrum  The spectrum to be displayed on the colour bar.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_glyph_colour_bar_id cmzn_glyph_module_create_colour_bar(
-	cmzn_glyph_module_id glyph_module, cmzn_spectrum_id spectrum);
+ZINC_API cmzn_glyph_colour_bar_id cmzn_glyphmodule_create_colour_bar(
+	cmzn_glyphmodule_id glyphmodule, cmzn_spectrum_id spectrum);
 
 /**
  * If the glyph is type colour bar, returns the type-specific handle.

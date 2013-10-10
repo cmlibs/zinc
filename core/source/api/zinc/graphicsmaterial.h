@@ -102,7 +102,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_material_module_create_material
 * sent to clients. Must remember to end_change after completing changes.
 * @see cmzn_graphics_material_module_end_change
 *
-* @param material_module  The graphics_material_module to begin change cache on.
+* @param material_module  The material module to begin change cache on.
 * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
 */
 ZINC_API int cmzn_graphics_material_module_begin_change(
@@ -114,7 +114,7 @@ ZINC_API int cmzn_graphics_material_module_begin_change(
 * and call this afterwards. When change level is restored to zero,
 * cached change messages are sent out to clients.
 *
-* @param material_module  The glyph_module to end change cache on.
+* @param material_module  The material module to end change cache on.
 * @return  Status CMZN_OK on success, any other value on failure.
 */
 ZINC_API int cmzn_graphics_material_module_end_change(
