@@ -20,7 +20,7 @@ public:
 	Region root_region;
 	Fieldmodule fm;
 	GraphicsModule gm;
-	GlyphModule glyphModule;
+	Glyphmodule glyphmodule;
 	Scene scene;
 
 	ZincTestSetupCpp() :
@@ -28,14 +28,14 @@ public:
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldmodule()),
 		gm(context.getGraphicsModule()),
-		glyphModule(gm.getGlyphModule()),
+		glyphmodule(gm.getGlyphmodule()),
 		scene(0)
 	{
 		scene = gm.getScene(root_region);
 		EXPECT_TRUE(fm.isValid());
 		EXPECT_TRUE(gm.isValid());
-		EXPECT_TRUE(glyphModule.isValid());
-		EXPECT_EQ(CMZN_OK, glyphModule.defineStandardGlyphs());
+		EXPECT_TRUE(glyphmodule.isValid());
+		EXPECT_EQ(CMZN_OK, glyphmodule.defineStandardGlyphs());
 		EXPECT_TRUE(scene.isValid());
 	}
 

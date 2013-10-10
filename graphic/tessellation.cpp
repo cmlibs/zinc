@@ -10,17 +10,17 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/tessellation.hpp"
 
-TEST(cmzn_tessellation_module_api, valid_args)
+TEST(cmzn_tessellationmodule_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_tessellation_module_id tm = cmzn_graphics_module_get_tessellation_module(zinc.gm);
-	EXPECT_NE(static_cast<cmzn_tessellation_module *>(0), tm);
+	cmzn_tessellationmodule_id tm = cmzn_graphics_module_get_tessellationmodule(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_tessellationmodule *>(0), tm);
 
-	int result = cmzn_tessellation_module_begin_change(tm);
+	int result = cmzn_tessellationmodule_begin_change(tm);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_tessellation_id tessellation = cmzn_tessellation_module_get_default_tessellation(tm);
+	cmzn_tessellation_id tessellation = cmzn_tessellationmodule_get_default_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 	int value;
 	result = cmzn_tessellation_get_minimum_divisions(tessellation, 1, &value);
@@ -35,10 +35,10 @@ TEST(cmzn_tessellation_module_api, valid_args)
 
 	// following should destroy default tessellation as not managed and not used
 	// otherwise it isn't possible to create a tessellation named "default" below
-	result = cmzn_tessellation_module_set_default_tessellation(tm, 0);
+	result = cmzn_tessellationmodule_set_default_tessellation(tm, 0);
 	EXPECT_EQ(CMZN_OK, result);
 
-	tessellation = cmzn_tessellation_module_get_default_points_tessellation(tm);
+	tessellation = cmzn_tessellationmodule_get_default_points_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 	result = cmzn_tessellation_get_minimum_divisions(tessellation, 1, &value);
 	EXPECT_EQ(1, result);
@@ -50,43 +50,43 @@ TEST(cmzn_tessellation_module_api, valid_args)
 	EXPECT_EQ(12, result);
 	cmzn_tessellation_destroy(&tessellation);
 
-	tessellation = cmzn_tessellation_module_create_tessellation(tm);
+	tessellation = cmzn_tessellationmodule_create_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 
 	result = cmzn_tessellation_set_name(tessellation, "default");
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_tessellation_module_end_change(tm);
+	result = cmzn_tessellationmodule_end_change(tm);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_tessellation_module_set_default_tessellation(tm, tessellation);
+	result = cmzn_tessellationmodule_set_default_tessellation(tm, tessellation);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_tessellation_set_managed(tessellation, 1);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_tessellation_id temp_tessellation = cmzn_tessellation_module_get_default_tessellation(tm);
+	cmzn_tessellation_id temp_tessellation = cmzn_tessellationmodule_get_default_tessellation(tm);
 	EXPECT_EQ(tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 
-	temp_tessellation = cmzn_tessellation_module_find_tessellation_by_name(tm, "default");
+	temp_tessellation = cmzn_tessellationmodule_find_tessellation_by_name(tm, "default");
 	EXPECT_EQ(tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 
 	cmzn_tessellation_destroy(&tessellation);
 
-	tessellation = cmzn_tessellation_module_get_default_tessellation(tm);
+	tessellation = cmzn_tessellationmodule_get_default_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 	cmzn_tessellation_destroy(&tessellation);
 
-	cmzn_tessellation_module_destroy(&tm);
+	cmzn_tessellationmodule_destroy(&tm);
 }
 
-TEST(cmzn_tessellation_module_api, valid_args_cpp)
+TEST(cmzn_tessellationmodule_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	TessellationModule tm = zinc.gm.getTessellationModule();
+	Tessellationmodule tm = zinc.gm.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
 	int result = tm.beginChange();
@@ -151,19 +151,19 @@ TEST(cmzn_tessellation_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_tessellation_module_id tm = cmzn_graphics_module_get_tessellation_module(zinc.gm);
-	EXPECT_NE(static_cast<cmzn_tessellation_module *>(0), tm);
+	cmzn_tessellationmodule_id tm = cmzn_graphics_module_get_tessellationmodule(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_tessellationmodule *>(0), tm);
 
-	int result = cmzn_tessellation_module_begin_change(tm);
+	int result = cmzn_tessellationmodule_begin_change(tm);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_tessellation_id tessellation = cmzn_tessellation_module_create_tessellation(tm);
+	cmzn_tessellation_id tessellation = cmzn_tessellationmodule_create_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 
 	result = cmzn_tessellation_set_name(tessellation, "default");
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_tessellation_module_end_change(tm);
+	result = cmzn_tessellationmodule_end_change(tm);
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_tessellation_set_circle_divisions(tessellation, 10);
@@ -196,14 +196,14 @@ TEST(cmzn_tessellation_api, valid_args)
 
 	cmzn_tessellation_destroy(&tessellation);
 
-	cmzn_tessellation_module_destroy(&tm);
+	cmzn_tessellationmodule_destroy(&tm);
 }
 
 TEST(cmzn_tessellation_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	TessellationModule tm = zinc.gm.getTessellationModule();
+	Tessellationmodule tm = zinc.gm.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
 	int result = tm.beginChange();

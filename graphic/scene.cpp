@@ -27,21 +27,21 @@
 class ZincTestSetupSpectrum : public ZincTestSetup
 {
 public:
-	cmzn_spectrum_module_id spectrumModule;
+	cmzn_spectrummodule_id spectrummodule;
 	cmzn_spectrum_id defaultSpectrum;
 
 	ZincTestSetupSpectrum() :
 		ZincTestSetup(),
-		spectrumModule(cmzn_graphics_module_get_spectrum_module(gm)),
-		defaultSpectrum(cmzn_spectrum_module_get_default_spectrum(spectrumModule))
+		spectrummodule(cmzn_graphics_module_get_spectrummodule(gm)),
+		defaultSpectrum(cmzn_spectrummodule_get_default_spectrum(spectrummodule))
 	{
-		EXPECT_NE(static_cast<cmzn_spectrum_module *>(0), this->spectrumModule);
+		EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), this->spectrummodule);
 		EXPECT_NE(static_cast<cmzn_spectrum *>(0), this->defaultSpectrum);
 	}
 
 	~ZincTestSetupSpectrum()
 	{
-		cmzn_spectrum_module_destroy(&spectrumModule);
+		cmzn_spectrummodule_destroy(&spectrummodule);
 		cmzn_spectrum_destroy(&defaultSpectrum);
 	}
 };
@@ -49,15 +49,15 @@ public:
 class ZincTestSetupSpectrumCpp : public ZincTestSetupCpp
 {
 public:
-	SpectrumModule spectrumModule;
+	Spectrummodule spectrummodule;
 	Spectrum defaultSpectrum;
 
 	ZincTestSetupSpectrumCpp() :
 		ZincTestSetupCpp(),
-		spectrumModule(gm.getSpectrumModule()),
-		defaultSpectrum(spectrumModule.getDefaultSpectrum())
+		spectrummodule(gm.getSpectrummodule()),
+		defaultSpectrum(spectrummodule.getDefaultSpectrum())
 	{
-		EXPECT_TRUE(this->spectrumModule.isValid());
+		EXPECT_TRUE(this->spectrummodule.isValid());
 		EXPECT_TRUE(this->defaultSpectrum.isValid());
 	}
 

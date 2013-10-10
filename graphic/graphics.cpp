@@ -443,13 +443,13 @@ TEST(cmzn_graphic_api, spectrum)
 	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	cmzn_spectrum_module_id spectrum_module = cmzn_graphics_module_get_spectrum_module(zinc.gm);
-	EXPECT_NE(static_cast<cmzn_spectrum_module *>(0), spectrum_module);
+	cmzn_spectrummodule_id spectrummodule = cmzn_graphics_module_get_spectrummodule(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), spectrummodule);
 
-	cmzn_spectrum_id spectrum = cmzn_spectrum_module_create_spectrum(spectrum_module);
+	cmzn_spectrum_id spectrum = cmzn_spectrummodule_create_spectrum(spectrummodule);
 	EXPECT_NE(static_cast<cmzn_spectrum *>(0), spectrum);
 
-	cmzn_spectrum_module_destroy(&spectrum_module);
+	cmzn_spectrummodule_destroy(&spectrummodule);
 
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_spectrum(gr, spectrum));
 
@@ -538,15 +538,15 @@ TEST(cmzn_graphic_api, tessellation)
 	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	cmzn_tessellation_module_id tessellation_module = cmzn_graphics_module_get_tessellation_module(zinc.gm);
-	cmzn_tessellation_id default_tessellation = cmzn_tessellation_module_get_default_tessellation(tessellation_module);
+	cmzn_tessellationmodule_id tessellationmodule = cmzn_graphics_module_get_tessellationmodule(zinc.gm);
+	cmzn_tessellation_id default_tessellation = cmzn_tessellationmodule_get_default_tessellation(tessellationmodule);
 	EXPECT_NE(static_cast<cmzn_tessellation_id>(0), default_tessellation);
 	cmzn_tessellation_id temp_tessellation = cmzn_graphic_get_tessellation(gr);
 	EXPECT_EQ(default_tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 	cmzn_tessellation_destroy(&default_tessellation);
 
-	cmzn_tessellation_id tessellation = cmzn_tessellation_module_create_tessellation(tessellation_module);
+	cmzn_tessellation_id tessellation = cmzn_tessellationmodule_create_tessellation(tessellationmodule);
 	EXPECT_NE(static_cast<cmzn_tessellation_id>(0), tessellation);
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_tessellation(gr, tessellation));
 	temp_tessellation = cmzn_graphic_get_tessellation(gr);
@@ -557,7 +557,7 @@ TEST(cmzn_graphic_api, tessellation)
 	// can't remove tessellation
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_tessellation(gr, 0));
 
-	cmzn_tessellation_module_destroy(&tessellation_module);
+	cmzn_tessellationmodule_destroy(&tessellationmodule);
 	cmzn_graphic_destroy(&gr);
 }
 
@@ -568,7 +568,7 @@ TEST(cmzn_graphic_api, tessellation_cpp)
 	Graphic gr = zinc.scene.createGraphicSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
-	TessellationModule tessellationModule = zinc.gm.getTessellationModule();
+	Tessellationmodule tessellationModule = zinc.gm.getTessellationmodule();
 	Tessellation defaultTessellation = tessellationModule.getDefaultTessellation();
 	Tessellation tempTessellation = gr.getTessellation();
 	EXPECT_EQ(defaultTessellation.getId(), tempTessellation.getId());
@@ -710,7 +710,7 @@ TEST(cmzn_graphic_api, point_attributes_glyph)
 		cmzn_graphic_get_point_attributes(cmzn_graphic_points_base_cast(gr));
 	EXPECT_NE(static_cast<cmzn_graphic_point_attributes *>(0), pointattr);
 
-	cmzn_glyph_id glyph = cmzn_glyph_module_get_default_point_glyph(zinc.glyph_module);
+	cmzn_glyph_id glyph = cmzn_glyphmodule_get_default_point_glyph(zinc.glyphmodule);
 	EXPECT_NE((cmzn_glyph_id)0, glyph);
 	cmzn_glyph_id temp_glyph = cmzn_graphic_point_attributes_get_glyph(pointattr);
 	EXPECT_EQ(glyph, temp_glyph);
@@ -718,7 +718,7 @@ TEST(cmzn_graphic_api, point_attributes_glyph)
 	cmzn_glyph_destroy(&glyph);
 	EXPECT_EQ(CMZN_GLYPH_POINT, cmzn_graphic_point_attributes_get_glyph_type(pointattr));
 
-	glyph = cmzn_glyph_module_find_glyph_by_name(zinc.glyph_module, "sphere");
+	glyph = cmzn_glyphmodule_find_glyph_by_name(zinc.glyphmodule, "sphere");
 	EXPECT_NE((cmzn_glyph_id)0, glyph);
 	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_glyph(pointattr, glyph));
 	temp_glyph = cmzn_graphic_point_attributes_get_glyph(pointattr);
@@ -824,13 +824,13 @@ TEST(cmzn_graphic_api, point_attributes_glyph_cpp)
 	GraphicPointAttributes pointattr = gr.getPointAttributes();
 	EXPECT_TRUE(pointattr.isValid());
 
-	Glyph glyph = zinc.glyphModule.getDefaultPointGlyph();
+	Glyph glyph = zinc.glyphmodule.getDefaultPointGlyph();
 	EXPECT_TRUE(glyph.isValid());
 	Glyph tempGlyph = pointattr.getGlyph();
 	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
 	EXPECT_EQ(Glyph::POINT, pointattr.getGlyphType());
 
-	glyph = zinc.glyphModule.findGlyphByName("sphere");
+	glyph = zinc.glyphmodule.findGlyphByName("sphere");
 	EXPECT_TRUE(glyph.isValid());
 	EXPECT_EQ(OK, pointattr.setGlyph(glyph));
 	tempGlyph = pointattr.getGlyph();

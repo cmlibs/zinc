@@ -10,48 +10,48 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/font.hpp"
 
-TEST(cmzn_font_module_api, valid_args)
+TEST(cmzn_fontmodule_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_font_module_id fontmodule = cmzn_graphics_module_get_font_module(zinc.gm);
-	EXPECT_NE(static_cast<cmzn_font_module *>(0), fontmodule);
+	cmzn_fontmodule_id fontmodule = cmzn_graphics_module_get_fontmodule(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_fontmodule *>(0), fontmodule);
 
-	int result = cmzn_font_module_begin_change(fontmodule);
+	int result = cmzn_fontmodule_begin_change(fontmodule);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_font_id font = cmzn_font_module_create_font(fontmodule);
+	cmzn_font_id font = cmzn_fontmodule_create_font(fontmodule);
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
 	result = cmzn_font_set_name(font, "default");
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_font_module_end_change(fontmodule);
+	result = cmzn_fontmodule_end_change(fontmodule);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_font_module_set_default_font(fontmodule, font);
+	result = cmzn_fontmodule_set_default_font(fontmodule, font);
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_font_destroy(&font);
 
-	font = cmzn_font_module_find_font_by_name(fontmodule, "default");
+	font = cmzn_fontmodule_find_font_by_name(fontmodule, "default");
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
 	cmzn_font_destroy(&font);
 
-	font = cmzn_font_module_get_default_font(fontmodule);
+	font = cmzn_fontmodule_get_default_font(fontmodule);
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
 	cmzn_font_destroy(&font);
 
-	cmzn_font_module_destroy(&fontmodule);
+	cmzn_fontmodule_destroy(&fontmodule);
 }
 
-TEST(cmzn_font_module_api, valid_args_cpp)
+TEST(cmzn_fontmodule_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	FontModule fontmodule = zinc.gm.getFontModule();
+	Fontmodule fontmodule = zinc.gm.getFontmodule();
 	EXPECT_TRUE(fontmodule.isValid());
 
 	int result = fontmodule.beginChange();
@@ -80,26 +80,25 @@ TEST(cmzn_font_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_font_module_id fontmodule = cmzn_graphics_module_get_font_module(zinc.gm);
-	EXPECT_NE(static_cast<cmzn_font_module *>(0), fontmodule);
+	cmzn_fontmodule_id fontmodule = cmzn_graphics_module_get_fontmodule(zinc.gm);
+	EXPECT_NE(static_cast<cmzn_fontmodule *>(0), fontmodule);
 
-	int result = cmzn_font_module_begin_change(fontmodule);
+	int result = cmzn_fontmodule_begin_change(fontmodule);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_font_id font = cmzn_font_module_create_font(fontmodule);
+	cmzn_font_id font = cmzn_fontmodule_create_font(fontmodule);
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
 	result = cmzn_font_set_name(font, "default");
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_font_module_end_change(fontmodule);
+	result = cmzn_fontmodule_end_change(fontmodule);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_font_set_bold(font, 1);
+	EXPECT_FALSE(cmzn_font_is_bold(font));
+	result = cmzn_font_set_bold(font, true);
 	EXPECT_EQ(CMZN_OK, result);
-
-	result = cmzn_font_get_bold(font);
-	EXPECT_EQ(1, result);
+	EXPECT_TRUE(cmzn_font_is_bold(font));
 
 	result = cmzn_font_set_depth(font,10.0);
 	EXPECT_EQ(CMZN_OK, result);
@@ -107,15 +106,15 @@ TEST(cmzn_font_api, valid_args)
 	double depth = cmzn_font_get_depth(font);
 	EXPECT_EQ(10.0, depth);
 
-	result = cmzn_font_set_italic(font, 1);
+	EXPECT_FALSE(cmzn_font_is_italic(font));
+	result = cmzn_font_set_italic(font, true);
 	EXPECT_EQ(CMZN_OK, result);
+	EXPECT_TRUE(cmzn_font_is_italic(font));
 
-	result = cmzn_font_get_italic(font);
-	EXPECT_EQ(1, result);
-
+	result = cmzn_font_get_size(font);
+	EXPECT_EQ(15, result); // default
 	result = cmzn_font_set_size(font, 20);
 	EXPECT_EQ(CMZN_OK, result);
-
 	result = cmzn_font_get_size(font);
 	EXPECT_EQ(20, result);
 
@@ -125,22 +124,22 @@ TEST(cmzn_font_api, valid_args)
 	enum cmzn_font_render_type render_type = cmzn_font_get_render_type(font);
 	EXPECT_EQ(CMZN_FONT_RENDER_TYPE_POLYGON, render_type);
 
-	result = cmzn_font_set_font_type(font, CMZN_FONT_TYPE_OpenSans);
+	result = cmzn_font_set_typeface(font, CMZN_FONT_TYPEFACE_OpenSans);
 	EXPECT_EQ(CMZN_OK, result);
 
-	enum cmzn_font_type font_type = cmzn_font_get_font_type(font);
-	EXPECT_EQ(CMZN_FONT_TYPE_OpenSans, font_type);
+	enum cmzn_font_typeface typeface = cmzn_font_get_typeface(font);
+	EXPECT_EQ(CMZN_FONT_TYPEFACE_OpenSans, typeface);
 
 	cmzn_font_destroy(&font);
 
-	cmzn_font_module_destroy(&fontmodule);
+	cmzn_fontmodule_destroy(&fontmodule);
 }
 
 TEST(cmzn_font_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	FontModule fontmodule = zinc.gm.getFontModule();
+	Fontmodule fontmodule = zinc.gm.getFontmodule();
 	EXPECT_TRUE(fontmodule.isValid());
 
 	int result = fontmodule.beginChange();
@@ -155,11 +154,10 @@ TEST(cmzn_font_api, valid_args_cpp)
 	result = fontmodule.endChange();
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = font.setBold(1);
+	EXPECT_FALSE(font.isBold());
+	result = font.setBold(true);
 	EXPECT_EQ(CMZN_OK, result);
-
-	result = font.getBold();
-	EXPECT_EQ(1, result);
+	EXPECT_TRUE(font.isBold());
 
 	result = font.setDepth(10.0);
 	EXPECT_EQ(CMZN_OK, result);
@@ -167,15 +165,15 @@ TEST(cmzn_font_api, valid_args_cpp)
 	double depth = font.getDepth();
 	EXPECT_EQ(10.0, depth);
 
-	result = font.setItalic(1);
+	EXPECT_FALSE(font.isItalic());
+	result = font.setItalic(true);
 	EXPECT_EQ(CMZN_OK, result);
+	EXPECT_TRUE(font.isItalic());
 
-	result = font.getItalic();
-	EXPECT_EQ(1, result);
-
+	result = font.getSize();
+	EXPECT_EQ(15, result); // default
 	result = font.setSize(20);
 	EXPECT_EQ(CMZN_OK, result);
-
 	result = font.getSize();
 	EXPECT_EQ(20, result);
 
@@ -185,12 +183,11 @@ TEST(cmzn_font_api, valid_args_cpp)
 	enum Font::RenderType render_type = font.getRenderType();
 	EXPECT_EQ(font.RENDER_TYPE_POLYGON, render_type);
 
-	result = font.setFontType(font.FONT_TYPE_OpenSans);
+	result = font.setTypeface(font.TYPEFACE_OpenSans);
 	EXPECT_EQ(CMZN_OK, result);
 
-	enum Font::FontType font_type = font.getFontType();
-	EXPECT_EQ(font.FONT_TYPE_OpenSans, font_type);
-
+	enum Font::Typeface typeface = font.getTypeface();
+	EXPECT_EQ(font.TYPEFACE_OpenSans, typeface);
 
 }
 
