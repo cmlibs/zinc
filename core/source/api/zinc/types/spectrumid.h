@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : spectrumid.h
  *
  */
@@ -11,13 +11,13 @@
 #ifndef CMZN_SPECTRUMID_H__
 #define CMZN_SPECTRUMID_H__
 
-struct cmzn_spectrum_component;
-typedef struct cmzn_spectrum_component *cmzn_spectrum_component_id;
+struct cmzn_spectrumcomponent;
+typedef struct cmzn_spectrumcomponent *cmzn_spectrumcomponent_id;
 
 struct cmzn_spectrum;
 typedef struct cmzn_spectrum *cmzn_spectrum_id;
 
-struct cmzn_spectrum_module;
-typedef struct cmzn_spectrum_module *cmzn_spectrum_module_id;
+struct cmzn_spectrummodule;
+typedef struct cmzn_spectrummodule *cmzn_spectrummodule_id;
 
 #endif

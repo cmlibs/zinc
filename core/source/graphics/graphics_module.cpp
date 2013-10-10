@@ -34,19 +34,19 @@
 struct cmzn_graphics_module
 {
 	/* attribute managers and defaults: */
-	struct cmzn_glyph_module *glyph_module;
+	struct cmzn_glyphmodule *glyphmodule;
 	void *glyph_manager_callback_id;
 	struct cmzn_graphics_material_module *material_module;
 	void *material_manager_callback_id;
 	Light_module *light_module;
-	cmzn_spectrum_module_id spectrum_module;
+	cmzn_spectrummodule_id spectrummodule;
 	void *spectrum_manager_callback_id;
-	cmzn_font_module_id font_module;
+	cmzn_fontmodule_id fontmodule;
 	void *font_manager_callback_id;
 	cmzn_sceneviewermodule_id sceneviewermodule;
 	Light_model_module *light_model_module;
 	struct cmzn_timekeeper *default_timekeeper;
-	cmzn_tessellation_module_id tessellation_module;
+	cmzn_tessellationmodule_id tessellationmodule;
 	struct cmzn_scenefiltermodule *scenefiltermodule;
 	void *tessellation_manager_callback_id;
 	int access_count;
@@ -126,14 +126,14 @@ void cmzn_graphics_module_spectrum_manager_callback(
 		if (change_summary & MANAGER_CHANGE_RESULT(Spectrum))
 		{
 			// update colour_bar glyphs, if any
-			graphics_module->glyph_module->beginChange();
-			cmzn_set_cmzn_glyph *glyphList = graphics_module->glyph_module->getGlyphListPrivate();
+			graphics_module->glyphmodule->beginChange();
+			cmzn_set_cmzn_glyph *glyphList = graphics_module->glyphmodule->getGlyphListPrivate();
 			for (cmzn_set_cmzn_glyph::iterator iter = glyphList->begin(); iter != glyphList->end(); ++iter)
 			{
 				cmzn_glyph *glyph = *iter;
 				glyph->spectrumChange(message);
 			}
-			graphics_module->glyph_module->endChange();
+			graphics_module->glyphmodule->endChange();
 			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
 				region_iter != graphics_module->member_regions_list->end(); ++region_iter)
@@ -221,31 +221,31 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->light_model_module = Light_model_module_create();
 			module->material_module = NULL;
 			module->sceneviewermodule = NULL;
-			module->spectrum_module=cmzn_spectrum_module_create();
+			module->spectrummodule=cmzn_spectrummodule_create();
 			module->scenefiltermodule=cmzn_scenefiltermodule_create();
-			module->font_module = cmzn_font_module_create();
+			module->fontmodule = cmzn_fontmodule_create();
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
-					(void *)module, cmzn_font_module_get_manager(module->font_module));
+					(void *)module, cmzn_fontmodule_get_manager(module->fontmodule));
 			module->root_region = cmzn_context_get_default_region(context);
 			module->material_module = cmzn_graphics_material_module_create(
-					cmzn_spectrum_module_get_manager(module->spectrum_module));
-			module->glyph_module = cmzn_glyph_module_create(module->material_module);
+					cmzn_spectrummodule_get_manager(module->spectrummodule));
+			module->glyphmodule = cmzn_glyphmodule_create(module->material_module);
 			module->glyph_manager_callback_id =
 				MANAGER_REGISTER(cmzn_glyph)(cmzn_graphics_module_glyph_manager_callback,
-					(void *)module, cmzn_glyph_module_get_manager(module->glyph_module));
+					(void *)module, cmzn_glyphmodule_get_manager(module->glyphmodule));
 			module->material_manager_callback_id =
 				MANAGER_REGISTER(Graphical_material)(cmzn_graphics_module_material_manager_callback,
 					(void *)module, cmzn_graphics_material_module_get_manager(module->material_module));
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(cmzn_graphics_module_spectrum_manager_callback,
-					(void *)module, cmzn_spectrum_module_get_manager(module->spectrum_module));
+					(void *)module, cmzn_spectrummodule_get_manager(module->spectrummodule));
 			module->default_timekeeper = cmzn_context_get_default_timekeeper(context);
-			module->tessellation_module = cmzn_tessellation_module_create();
+			module->tessellationmodule = cmzn_tessellationmodule_create();
 			module->member_regions_list = new std::list<cmzn_region*>;
 			module->tessellation_manager_callback_id =
 				MANAGER_REGISTER(cmzn_tessellation)(cmzn_graphics_module_tessellation_manager_callback,
-					(void *)module, cmzn_tessellation_module_get_manager(module->tessellation_module));
+					(void *)module, cmzn_tessellationmodule_get_manager(module->tessellationmodule));
 			module->access_count = 1;
 		}
 		else
@@ -329,38 +329,38 @@ int cmzn_graphics_module_destroy(
 		{
 			MANAGER_DEREGISTER(cmzn_glyph)(
 				graphics_module->glyph_manager_callback_id,
-				cmzn_glyph_module_get_manager(graphics_module->glyph_module));
+				cmzn_glyphmodule_get_manager(graphics_module->glyphmodule));
 			if (graphics_module->root_region)
 				cmzn_region_destroy(&graphics_module->root_region);
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id,
 				cmzn_graphics_material_module_get_manager(graphics_module->material_module));
 			MANAGER_DEREGISTER(Spectrum)(
-				graphics_module->spectrum_manager_callback_id, cmzn_spectrum_module_get_manager(graphics_module->spectrum_module));
+				graphics_module->spectrum_manager_callback_id, cmzn_spectrummodule_get_manager(graphics_module->spectrummodule));
 			MANAGER_DEREGISTER(cmzn_tessellation)(
 				graphics_module->tessellation_manager_callback_id,
-				cmzn_tessellation_module_get_manager(graphics_module->tessellation_module));
+				cmzn_tessellationmodule_get_manager(graphics_module->tessellationmodule));
 			MANAGER_DEREGISTER(cmzn_font)(
 				graphics_module->font_manager_callback_id,
-				cmzn_font_module_get_manager(graphics_module->font_module));
+				cmzn_fontmodule_get_manager(graphics_module->fontmodule));
 			/* This will remove all callbacks used by the scene_viewer projection_field callback */
-			cmzn_glyph_module_destroy(&graphics_module->glyph_module);
+			cmzn_glyphmodule_destroy(&graphics_module->glyphmodule);
 			if (graphics_module->light_module)
 				Light_module_destroy(&graphics_module->light_module);
 			if (graphics_module->light_model_module)
 				Light_model_module_destroy(&graphics_module->light_model_module);
-			if (graphics_module->spectrum_module)
-				cmzn_spectrum_module_destroy(&graphics_module->spectrum_module);
-			if (graphics_module->font_module)
-				cmzn_font_module_destroy(&graphics_module->font_module);
+			if (graphics_module->spectrummodule)
+				cmzn_spectrummodule_destroy(&graphics_module->spectrummodule);
+			if (graphics_module->fontmodule)
+				cmzn_fontmodule_destroy(&graphics_module->fontmodule);
 			if (graphics_module->material_module)
 				cmzn_graphics_material_module_destroy(&graphics_module->material_module);
 			if (graphics_module->scenefiltermodule)
 				cmzn_scenefiltermodule_destroy(&graphics_module->scenefiltermodule);
 			if (graphics_module->default_timekeeper)
 				cmzn_timekeeper_destroy(&graphics_module->default_timekeeper);
-			if (graphics_module->tessellation_module)
-				cmzn_tessellation_module_destroy(&graphics_module->tessellation_module);
+			if (graphics_module->tessellationmodule)
+				cmzn_tessellationmodule_destroy(&graphics_module->tessellationmodule);
 			cmzn_sceneviewermodule_destroy(&graphics_module->sceneviewermodule);
 			if (graphics_module->member_regions_list)
 			{
@@ -430,20 +430,20 @@ int cmzn_graphics_module_create_scene(
 struct MANAGER(Spectrum) *cmzn_graphics_module_get_spectrum_manager(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->spectrum_module)
+	if (graphics_module && graphics_module->spectrummodule)
 	{
-		return cmzn_spectrum_module_get_manager(graphics_module->spectrum_module);
+		return cmzn_spectrummodule_get_manager(graphics_module->spectrummodule);
 	}
 
 	return NULL;
 }
 
-cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
+cmzn_spectrummodule_id cmzn_graphics_module_get_spectrummodule(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->spectrum_module)
+	if (graphics_module && graphics_module->spectrummodule)
 	{
-		return cmzn_spectrum_module_access(graphics_module->spectrum_module);
+		return cmzn_spectrummodule_access(graphics_module->spectrummodule);
 	}
 	return 0;
 }
@@ -451,19 +451,19 @@ cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
 struct cmzn_font *cmzn_graphics_module_get_default_font(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->font_module)
+	if (graphics_module && graphics_module->fontmodule)
 	{
-		return cmzn_font_module_get_default_font(graphics_module->font_module);
+		return cmzn_fontmodule_get_default_font(graphics_module->fontmodule);
 	}
 	return 0;
 }
 
-cmzn_font_module_id cmzn_graphics_module_get_font_module(
+cmzn_fontmodule_id cmzn_graphics_module_get_fontmodule(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->font_module)
+	if (graphics_module && graphics_module->fontmodule)
 	{
-		return cmzn_font_module_access(graphics_module->font_module);
+		return cmzn_fontmodule_access(graphics_module->fontmodule);
 	}
 	return 0;
 }
@@ -471,20 +471,20 @@ cmzn_font_module_id cmzn_graphics_module_get_font_module(
 struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->font_module)
+	if (graphics_module && graphics_module->fontmodule)
 	{
-		return cmzn_font_module_get_manager(graphics_module->font_module);
+		return cmzn_fontmodule_get_manager(graphics_module->fontmodule);
 	}
 	return 0;
 }
 
-cmzn_glyph_module_id cmzn_graphics_module_get_glyph_module(
+cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
 	cmzn_graphics_module_id graphics_module)
 {
 	if (graphics_module)
 	{
-		cmzn_glyph_module_access(graphics_module->glyph_module);
-		return graphics_module->glyph_module;
+		cmzn_glyphmodule_access(graphics_module->glyphmodule);
+		return graphics_module->glyphmodule;
 	}
 	return 0;
 }
@@ -527,12 +527,12 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 	return sceneviewermodule;
 }
 
-cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_module(
+cmzn_tessellationmodule_id cmzn_graphics_module_get_tessellationmodule(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->tessellation_module)
+	if (graphics_module && graphics_module->tessellationmodule)
 	{
-		return cmzn_tessellation_module_access(graphics_module->tessellation_module);
+		return cmzn_tessellationmodule_access(graphics_module->tessellationmodule);
 	}
 	return 0;
 }

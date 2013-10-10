@@ -141,7 +141,7 @@ ZINC_API int cmzn_scenefiltermodule_begin_change(
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
  *
- * @param filtermodule  The glyph_module to end change cache on.
+ * @param filtermodule  The scene filter module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scenefiltermodule_end_change(

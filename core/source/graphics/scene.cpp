@@ -697,15 +697,15 @@ int cmzn_scene_set_minimum_graphic_defaults(struct cmzn_scene *scene,
 	{
 		cmzn_graphic_type graphic_type = cmzn_graphic_get_graphic_type(graphic);
 
-		cmzn_tessellation_module_id tessellationModule =
-			cmzn_graphics_module_get_tessellation_module(scene->graphics_module);
+		cmzn_tessellationmodule_id tessellationModule =
+			cmzn_graphics_module_get_tessellationmodule(scene->graphics_module);
 		cmzn_tessellation *tessellation =
 			((graphic_type == CMZN_GRAPHIC_POINTS) || (graphic_type == CMZN_GRAPHIC_STREAMLINES)) ?
-			cmzn_tessellation_module_get_default_points_tessellation(tessellationModule) :
-			cmzn_tessellation_module_get_default_tessellation(tessellationModule);
+			cmzn_tessellationmodule_get_default_points_tessellation(tessellationModule) :
+			cmzn_tessellationmodule_get_default_tessellation(tessellationModule);
 		cmzn_graphic_set_tessellation(graphic, tessellation);
 		cmzn_tessellation_destroy(&tessellation);
-		cmzn_tessellation_module_destroy(&tessellationModule);
+		cmzn_tessellationmodule_destroy(&tessellationModule);
 
 		cmzn_graphic_point_attributes_id point_attributes = cmzn_graphic_get_point_attributes(graphic);
 		if (point_attributes)
@@ -716,9 +716,9 @@ int cmzn_scene_set_minimum_graphic_defaults(struct cmzn_scene *scene,
 			cmzn_glyph_id glyph = cmzn_graphic_point_attributes_get_glyph(point_attributes);
 			if (!glyph)
 			{
-				cmzn_glyph_module_id glyph_module = cmzn_graphics_module_get_glyph_module(scene->graphics_module);
-				glyph = cmzn_glyph_module_get_default_point_glyph(glyph_module);
-				cmzn_glyph_module_destroy(&glyph_module);
+				cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(scene->graphics_module);
+				glyph = cmzn_glyphmodule_get_default_point_glyph(glyphmodule);
+				cmzn_glyphmodule_destroy(&glyphmodule);
 				cmzn_graphic_point_attributes_set_glyph(point_attributes, glyph);
 			}
 			cmzn_glyph_destroy(&glyph);
@@ -780,11 +780,11 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 		}
 		if (use_element_discretization || use_circle_discretization)
 		{
-			cmzn_tessellation_module_id tessellationModule =
-				cmzn_graphics_module_get_tessellation_module(scene->graphics_module);
+			cmzn_tessellationmodule_id tessellationModule =
+				cmzn_graphics_module_get_tessellationmodule(scene->graphics_module);
 			cmzn_tessellation_id currentTessellation = cmzn_graphic_get_tessellation(graphic);
 			cmzn_tessellation_id tessellation =
-				cmzn_tessellation_module_find_or_create_fixed_tessellation(tessellationModule,
+				cmzn_tessellationmodule_find_or_create_fixed_tessellation(tessellationModule,
 					use_element_discretization ? scene->element_divisions_size : 0,
 					use_element_discretization ? scene->element_divisions : 0,
 					use_circle_discretization ? scene->circle_discretization : 0,
@@ -792,7 +792,7 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 			cmzn_graphic_set_tessellation(graphic, tessellation);
 			cmzn_tessellation_destroy(&tessellation);
 			cmzn_tessellation_destroy(&currentTessellation);
-			cmzn_tessellation_module_destroy(&tessellationModule);
+			cmzn_tessellationmodule_destroy(&tessellationModule);
 		}
 	}
 	else

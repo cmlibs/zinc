@@ -28,7 +28,7 @@ Spectrum structures and support code.
 #include "general/manager_private.h"
 
 struct cmzn_graphics_material;
-struct cmzn_spectrum_component;
+struct cmzn_spectrumcomponent;
 /*
 Global types
 ------------
@@ -46,7 +46,7 @@ Spectrum type is private.
 	ZnReal maximum,minimum;
 	char *name;
 	bool overwrite_colour;
-	struct LIST(cmzn_spectrum_component) *list_of_components;
+	struct LIST(cmzn_spectrumcomponent) *list_of_components;
 
 	struct Texture *colour_lookup_texture;
 	int cache, changed;
@@ -63,7 +63,7 @@ DECLARE_LIST_TYPES(Spectrum);
 
 DECLARE_MANAGER_TYPES(Spectrum);
 
-PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct cmzn_spectrum_module);
+PROTOTYPE_MANAGER_GET_OWNER_FUNCTION(Spectrum, struct cmzn_spectrummodule);
 
 enum Spectrum_colour_components
 /*******************************************************************************
@@ -109,7 +109,7 @@ PROTOTYPE_MANAGER_FUNCTIONS(Spectrum);
 
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *);
 
-struct cmzn_spectrum_component *cmzn_spectrum_get_component_at_position(
+struct cmzn_spectrumcomponent *cmzn_spectrum_get_component_at_position(
 	 struct Spectrum *spectrum,int position);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2007
@@ -139,7 +139,7 @@ it returns UNKNOWN_SPECTRUM
 ==============================================================================*/
 
 int Spectrum_add_component(struct Spectrum *spectrum,
-	struct cmzn_spectrum_component *component,int position);
+	struct cmzn_spectrumcomponent *component,int position);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -151,7 +151,7 @@ position one greater than the last.
 ==============================================================================*/
 
 int cmzn_spectrum_get_component_position(struct Spectrum *spectrum,
-	struct cmzn_spectrum_component *component);
+	struct cmzn_spectrumcomponent *component);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -249,7 +249,7 @@ DESCRIPTION :
 Resets the caches and graphics state after rendering values.
 ==============================================================================*/
 
-struct LIST(cmzn_spectrum_component) *get_cmzn_spectrum_component_list(
+struct LIST(cmzn_spectrumcomponent) *get_cmzn_spectrumcomponent_list(
 	struct Spectrum *spectrum );
 /*******************************************************************************
 LAST MODIFIED : 12 March 1998
@@ -268,10 +268,10 @@ DESCRIPTION :
 Allocates memory and assigns fields for a Spectrum object.
 ==============================================================================*/
 
-struct MANAGER(cmzn_spectrum) *cmzn_spectrum_module_get_manager(
-	cmzn_spectrum_module_id spectrum_module);
+struct MANAGER(cmzn_spectrum) *cmzn_spectrummodule_get_manager(
+	cmzn_spectrummodule_id spectrummodule);
 
-struct cmzn_spectrum_module *cmzn_spectrum_module_create();
+struct cmzn_spectrummodule *cmzn_spectrummodule_create();
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Spectrum);
 

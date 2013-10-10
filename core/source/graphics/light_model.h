@@ -278,7 +278,7 @@ int Light_model_module_begin_change(Light_model_module *light_model_module);
 * and call this afterwards. When change level is restored to zero,
 * cached change messages are sent out to clients.
 *
-* @param light_model_module  The glyph_module to end change cache on.
+* @param light_model_module  The light model module to end change cache on.
 * @return  Status CMZN_OK on success, any other value on failure.
 */
 int Light_model_module_end_change(Light_model_module *light_model_module);

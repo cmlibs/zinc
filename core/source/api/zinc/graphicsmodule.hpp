@@ -80,9 +80,9 @@ public:
 		return Scene(cmzn_graphics_module_get_scene(id, region.getId()));
 	}
 
-	GlyphModule getGlyphModule()
+	Glyphmodule getGlyphmodule()
 	{
-		return GlyphModule(cmzn_graphics_module_get_glyph_module(id));
+		return Glyphmodule(cmzn_graphics_module_get_glyphmodule(id));
 	}
 
 	GraphicsMaterialModule getMaterialModule()
@@ -100,19 +100,19 @@ public:
 		return Sceneviewermodule(cmzn_graphics_module_get_sceneviewermodule(id));
 	}
 
-	SpectrumModule getSpectrumModule()
+	Spectrummodule getSpectrummodule()
 	{
-		return SpectrumModule(cmzn_graphics_module_get_spectrum_module(id));
+		return Spectrummodule(cmzn_graphics_module_get_spectrummodule(id));
 	}
 
-	FontModule getFontModule()
+	Fontmodule getFontmodule()
 	{
-		return FontModule(cmzn_graphics_module_get_font_module(id));
+		return Fontmodule(cmzn_graphics_module_get_fontmodule(id));
 	}
 
-	TessellationModule getTessellationModule()
+	Tessellationmodule getTessellationmodule()
 	{
-		return TessellationModule(cmzn_graphics_module_get_tessellation_module(id));
+		return Tessellationmodule(cmzn_graphics_module_get_tessellationmodule(id));
 	}
 
 

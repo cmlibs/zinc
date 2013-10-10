@@ -641,15 +641,15 @@ void cmzn_glyph_colour_bar::spectrumChange(struct MANAGER_MESSAGE(Spectrum) *mes
 	}
 }
 
-cmzn_glyph_colour_bar_id cmzn_glyph_module_create_colour_bar(
-	cmzn_glyph_module_id glyph_module, cmzn_spectrum_id spectrum)
+cmzn_glyph_colour_bar_id cmzn_glyphmodule_create_colour_bar(
+	cmzn_glyphmodule_id glyphmodule, cmzn_spectrum_id spectrum)
 {
-	if (glyph_module)
+	if (glyphmodule)
 	{
 		cmzn_glyph_colour_bar_id colour_bar = cmzn_glyph_colour_bar::create(spectrum);
 		if (colour_bar)
 		{
-			glyph_module->addGlyph(colour_bar);
+			glyphmodule->addGlyph(colour_bar);
 			return colour_bar;
 		}
 	}

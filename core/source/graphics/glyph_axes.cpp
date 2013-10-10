@@ -260,16 +260,16 @@ void cmzn_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material) 
 	}
 }
 
-cmzn_glyph_axes_id cmzn_glyph_module_create_axes(
-	cmzn_glyph_module_id glyph_module, cmzn_glyph_id axis_glyph,
+cmzn_glyph_axes_id cmzn_glyphmodule_create_axes(
+	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id axis_glyph,
 	double axis_width)
 {
-	if (glyph_module)
+	if (glyphmodule)
 	{
 		cmzn_glyph_axes_id axes = cmzn_glyph_axes::create(axis_glyph, axis_width);
 		if (axes)
 		{
-			glyph_module->addGlyph(axes);
+			glyphmodule->addGlyph(axes);
 			return axes;
 		}
 	}

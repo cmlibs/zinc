@@ -1177,7 +1177,7 @@ ZINC_API enum cmzn_glyph_type cmzn_graphic_point_attributes_get_glyph_type(
 /**
  * Sets the glyph used for visualising a graphics point from a set of
  * enumerations. Requires standard glyphs to first be created.
- * @see cmzn_glyph_module_define_standard_glyphs
+ * @see cmzn_glyphmodule_define_standard_glyphs
  * If no glyph exists with the type identifier, the glyph is unchanged.
  *
  * @param point_attributes  The point attributes to modify.

@@ -161,7 +161,7 @@ Global functions
 int file_read_graphics_objects(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct cmzn_graphics_material_module *material_module,
-	struct cmzn_glyph_module *glyph_module)
+	struct cmzn_glyphmodule *glyphmodule)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
 
@@ -199,7 +199,7 @@ DESCRIPTION :
 	double time;
 
 	ENTER(file_read_graphics_objects);
-	cmzn_glyph_module_begin_change(glyph_module);
+	cmzn_glyphmodule_begin_change(glyphmodule);
 #if defined (DEBUG_CODE)
 	/*???debug*/
 	printf("ENTER(file_read_graphics_objects)\n");
@@ -303,7 +303,7 @@ DESCRIPTION :
 									transform[3][3]);
 							}
 						}
-						cmzn_glyph_id glyph = cmzn_glyph_module_find_glyph_by_name(glyph_module, objname);
+						cmzn_glyph_id glyph = cmzn_glyphmodule_find_glyph_by_name(glyphmodule, objname);
 						obj = 0;
 						cmzn_glyph_static *glyphStatic = dynamic_cast<cmzn_glyph_static*>(glyph);
 						if (glyphStatic)
@@ -331,7 +331,7 @@ DESCRIPTION :
 						else if (return_code)
 						{
 							obj=CREATE(GT_object)(objname,object_type,object_material);
-							glyph = cmzn_glyph_module_create_glyph_static(glyph_module, obj);
+							glyph = cmzn_glyphmodule_create_glyph_static(glyphmodule, obj);
 							if (glyph)
 							{
 								glyph->setName(objname);
@@ -778,7 +778,7 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,
 			"file_read_graphics_objects.  Invalid argument(s)");
 	}
-	cmzn_glyph_module_end_change(glyph_module);
+	cmzn_glyphmodule_end_change(glyphmodule);
 #if defined (DEBUG_CODE)
 	/*???debug */
 	printf("LEAVE(file_read_graphics_objects)\n");
@@ -794,7 +794,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
 	ZnReal time, struct cmzn_graphics_material_module *material_module,
-	struct cmzn_glyph_module *glyph_module)
+	struct cmzn_glyphmodule *glyphmodule)
 {
 	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
 	enum GT_voltex_type voltex_type;
@@ -814,7 +814,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct VT_iso_triangle *triangle, **triangle_list;
 
 	ENTER(file_read_voltex_graphics_objects_from_obj);
-	cmzn_glyph_module_begin_change(glyph_module);
+	cmzn_glyphmodule_begin_change(glyphmodule);
 	return_code = 1;
 	if (file_name && material_module)
 	{
@@ -829,7 +829,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			{
 				sprintf(objname, "%s", file_name);
 			}
-			cmzn_glyph_id glyph = cmzn_glyph_module_find_glyph_by_name(glyph_module, objname);
+			cmzn_glyph_id glyph = cmzn_glyphmodule_find_glyph_by_name(glyphmodule, objname);
 			obj = 0;
 			cmzn_glyph_static *glyphStatic = dynamic_cast<cmzn_glyph_static*>(glyph);
 			if (glyphStatic)
@@ -872,7 +872,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			else if (return_code)
 			{
 				obj = CREATE(GT_object)(objname, g_VOLTEX, NULL);
-				glyph = cmzn_glyph_module_create_glyph_static(glyph_module, obj);
+				glyph = cmzn_glyphmodule_create_glyph_static(glyphmodule, obj);
 				if (glyph)
 				{
 					glyph->setName(objname);
@@ -1460,7 +1460,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 		display_message(ERROR_MESSAGE,
 			"file_read_voltex_graphics_object_from_obj.  Invalid argument(s)");
 	}
-	cmzn_glyph_module_end_change(glyph_module);
+	cmzn_glyphmodule_end_change(glyphmodule);
 	LEAVE;
 
 	return (return_code);

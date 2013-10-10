@@ -76,7 +76,7 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
  * @param graphics_module  The graphics module to request manager from.
  * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_glyph_module_id cmzn_graphics_module_get_glyph_module(
+ZINC_API cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
 	cmzn_graphics_module_id graphics_module);
 
 /***************************************************************************//**
@@ -98,7 +98,7 @@ ZINC_API cmzn_scene_id cmzn_graphics_module_get_scene(
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
+ZINC_API cmzn_spectrummodule_id cmzn_graphics_module_get_spectrummodule(
 	cmzn_graphics_module_id graphics_module);
 
 /**
@@ -107,7 +107,7 @@ ZINC_API cmzn_spectrum_module_id cmzn_graphics_module_get_spectrum_module(
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API cmzn_tessellation_module_id cmzn_graphics_module_get_tessellation_module(
+ZINC_API cmzn_tessellationmodule_id cmzn_graphics_module_get_tessellationmodule(
 	cmzn_graphics_module_id graphics_module);
 
 /**
@@ -125,7 +125,7 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_graphics_module_get_scenefiltermodule(
 * @param graphics_module  The graphics module to request module from.
 * @return  Handle to the font module, or 0 on error. Up to caller to destroy.
 */
-ZINC_API cmzn_font_module_id cmzn_graphics_module_get_font_module(
+ZINC_API cmzn_fontmodule_id cmzn_graphics_module_get_fontmodule(
 	cmzn_graphics_module_id graphics_module);
 
 #ifdef __cplusplus

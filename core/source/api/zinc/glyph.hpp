@@ -283,41 +283,41 @@ public:
 
 };
 
-class GlyphModule
+class Glyphmodule
 {
 protected:
-	cmzn_glyph_module_id id;
+	cmzn_glyphmodule_id id;
 
 public:
 
-	GlyphModule() : id(0)
+	Glyphmodule() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit GlyphModule(cmzn_glyph_module_id in_glyph_module_id) :
-		id(in_glyph_module_id)
+	explicit Glyphmodule(cmzn_glyphmodule_id in_glyphmodule_id) :
+		id(in_glyphmodule_id)
 	{  }
 
-	GlyphModule(const GlyphModule& glyphModule) :
-		id(cmzn_glyph_module_access(glyphModule.id))
+	Glyphmodule(const Glyphmodule& glyphModule) :
+		id(cmzn_glyphmodule_access(glyphModule.id))
 	{  }
 
-	GlyphModule& operator=(const GlyphModule& glyphModule)
+	Glyphmodule& operator=(const Glyphmodule& glyphModule)
 	{
-		cmzn_glyph_module_id temp_id = cmzn_glyph_module_access(glyphModule.id);
+		cmzn_glyphmodule_id temp_id = cmzn_glyphmodule_access(glyphModule.id);
 		if (0 != id)
 		{
-			cmzn_glyph_module_destroy(&id);
+			cmzn_glyphmodule_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~GlyphModule()
+	~Glyphmodule()
 	{
 		if (0 != id)
 		{
-			cmzn_glyph_module_destroy(&id);
+			cmzn_glyphmodule_destroy(&id);
 		}
 	}
 
@@ -326,54 +326,54 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_glyph_module_id getId()
+	cmzn_glyphmodule_id getId()
 	{
 		return id;
 	}
 
 	int beginChange()
 	{
-		return cmzn_glyph_module_begin_change(id);
+		return cmzn_glyphmodule_begin_change(id);
 	}
 
 	int endChange()
 	{
-		return cmzn_glyph_module_end_change(id);
+		return cmzn_glyphmodule_end_change(id);
 	}
 
 	GlyphAxes createAxes(Glyph& axisGlyph, double axisWidth)
 	{
-		return GlyphAxes(cmzn_glyph_module_create_axes(id, axisGlyph.getId(), axisWidth));
+		return GlyphAxes(cmzn_glyphmodule_create_axes(id, axisGlyph.getId(), axisWidth));
 	}
 
 	GlyphColourBar createColourBar(Spectrum& spectrum)
 	{
-		return GlyphColourBar(cmzn_glyph_module_create_colour_bar(id, spectrum.getId()));
+		return GlyphColourBar(cmzn_glyphmodule_create_colour_bar(id, spectrum.getId()));
 	}
 
 	int defineStandardGlyphs()
 	{
-		return cmzn_glyph_module_define_standard_glyphs(id);
+		return cmzn_glyphmodule_define_standard_glyphs(id);
 	}
 
 	Glyph findGlyphByName(const char *name)
 	{
-		return Glyph(cmzn_glyph_module_find_glyph_by_name(id, name));
+		return Glyph(cmzn_glyphmodule_find_glyph_by_name(id, name));
 	}
 
 	Glyph findGlyphByType(Glyph::Type glyphType)
 	{
-		return Glyph(cmzn_glyph_module_find_glyph_by_type(id, static_cast<cmzn_glyph_type>(glyphType)));
+		return Glyph(cmzn_glyphmodule_find_glyph_by_type(id, static_cast<cmzn_glyph_type>(glyphType)));
 	}
 
 	Glyph getDefaultPointGlyph()
 	{
-		return Glyph(cmzn_glyph_module_get_default_point_glyph(id));
+		return Glyph(cmzn_glyphmodule_get_default_point_glyph(id));
 	}
 
 	int setDefaultPointGlyph(Glyph& glyph)
 	{
-		return cmzn_glyph_module_set_default_point_glyph(id, glyph.getId());
+		return cmzn_glyphmodule_set_default_point_glyph(id, glyph.getId());
 	}
 
 };

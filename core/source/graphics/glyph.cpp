@@ -1628,7 +1628,7 @@ int cmzn_glyph_set_managed(cmzn_glyph_id glyph, bool value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_glyph_module::cmzn_glyph_module(cmzn_graphics_material_module *materialModuleIn) :
+cmzn_glyphmodule::cmzn_glyphmodule(cmzn_graphics_material_module *materialModuleIn) :
 	materialModule(cmzn_graphics_material_module_access(materialModuleIn)),
 	manager(CREATE(MANAGER(cmzn_glyph))()),
 	defaultPointGlyph(0),
@@ -1636,7 +1636,7 @@ cmzn_glyph_module::cmzn_glyph_module(cmzn_graphics_material_module *materialModu
 {
 }
 
-cmzn_glyph_module::~cmzn_glyph_module()
+cmzn_glyphmodule::~cmzn_glyphmodule()
 {
 	cmzn_graphics_material_module_destroy(&materialModule);
 	if (defaultPointGlyph)
@@ -1651,7 +1651,7 @@ cmzn_glyph_module::~cmzn_glyph_module()
 	* and add to glyph module.
 	* Always free handle to glyph.
 	*/
-void cmzn_glyph_module::defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type)
+void cmzn_glyphmodule::defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type)
 {
 	if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(name, this->getManager()))
 	{
@@ -1670,7 +1670,7 @@ void cmzn_glyph_module::defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_gl
  * wrapping it or not.
  * @return  true if glyph added, false if not.
  */
-bool cmzn_glyph_module::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_type type)
+bool cmzn_glyphmodule::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_type type)
 {
 	bool glyphAdded = true;
 	char *name = 0;
@@ -1694,7 +1694,7 @@ bool cmzn_glyph_module::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph
 	return glyphAdded;
 }
 
-cmzn_glyph *cmzn_glyph_module::findGlyphByType(enum cmzn_glyph_type glyph_type)
+cmzn_glyph *cmzn_glyphmodule::findGlyphByType(enum cmzn_glyph_type glyph_type)
 {
 	cmzn_set_cmzn_glyph *glyphs = this->getGlyphListPrivate();
 	for (cmzn_set_cmzn_glyph::iterator iter = glyphs->begin(); iter != glyphs->end(); ++iter)
@@ -1707,11 +1707,11 @@ cmzn_glyph *cmzn_glyph_module::findGlyphByType(enum cmzn_glyph_type glyph_type)
 	return 0;
 }
 
-void cmzn_glyph_module::addGlyph(cmzn_glyph *glyph)
+void cmzn_glyphmodule::addGlyph(cmzn_glyph *glyph)
 {
 	if (glyph->manager)
 	{
-		display_message(ERROR_MESSAGE, "cmzn_glyph_module::addGlyph.  Glyph already managed");
+		display_message(ERROR_MESSAGE, "cmzn_glyphmodule::addGlyph.  Glyph already managed");
 		return;
 	}
 	if ((0 == glyph->getName()) || (static_cast<cmzn_glyph*>(0) != 
@@ -1730,7 +1730,7 @@ void cmzn_glyph_module::addGlyph(cmzn_glyph *glyph)
 	ADD_OBJECT_TO_MANAGER(cmzn_glyph)(glyph, this->manager);
 }
 
-int cmzn_glyph_module::defineStandardGlyphs()
+int cmzn_glyphmodule::defineStandardGlyphs()
 {
 	beginChange();
 	GT_object *graphicsObject = 0;
@@ -1832,7 +1832,7 @@ int cmzn_glyph_module::defineStandardGlyphs()
 	return CMZN_OK;
 }
 
-int cmzn_glyph_module::defineStandardCmguiGlyphs()
+int cmzn_glyphmodule::defineStandardCmguiGlyphs()
 {
 	beginChange();
 	GT_object *graphicsObject = 0;
@@ -1864,124 +1864,124 @@ int cmzn_glyph_module::defineStandardCmguiGlyphs()
 	return CMZN_OK;
 }
 
-cmzn_set_cmzn_glyph *cmzn_glyph_module::getGlyphListPrivate()
+cmzn_set_cmzn_glyph *cmzn_glyphmodule::getGlyphListPrivate()
 {
 	return reinterpret_cast<cmzn_set_cmzn_glyph *>(this->manager->object_list);
 }
 
-cmzn_glyph_module_id cmzn_glyph_module_create(cmzn_graphics_material_module *materialModule)
+cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_graphics_material_module *materialModule)
 {
-	return cmzn_glyph_module::create(materialModule);
+	return cmzn_glyphmodule::create(materialModule);
 }
 
-struct MANAGER(cmzn_glyph) *cmzn_glyph_module_get_manager(
-	cmzn_glyph_module_id glyph_module)
+struct MANAGER(cmzn_glyph) *cmzn_glyphmodule_get_manager(
+	cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->getManager();
+	if (glyphmodule)
+		return glyphmodule->getManager();
 	return 0;
 }
 
-cmzn_glyph_module_id cmzn_glyph_module_access(
-	cmzn_glyph_module_id glyph_module)
+cmzn_glyphmodule_id cmzn_glyphmodule_access(
+	cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->access();
+	if (glyphmodule)
+		return glyphmodule->access();
 	return 0;
 }
 
-int cmzn_glyph_module_destroy(cmzn_glyph_module_id *glyph_module_address)
+int cmzn_glyphmodule_destroy(cmzn_glyphmodule_id *glyphmodule_address)
 {
-	if (glyph_module_address)
+	if (glyphmodule_address)
 	{
-		cmzn_glyph_module::deaccess(*glyph_module_address);
+		cmzn_glyphmodule::deaccess(*glyphmodule_address);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_glyph_module_begin_change(cmzn_glyph_module_id glyph_module)
+int cmzn_glyphmodule_begin_change(cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->beginChange();
+	if (glyphmodule)
+		return glyphmodule->beginChange();
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_glyph_module_end_change(cmzn_glyph_module_id glyph_module)
+int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->endChange();
+	if (glyphmodule)
+		return glyphmodule->endChange();
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_glyph_module_define_standard_glyphs(
-	cmzn_glyph_module_id glyph_module)
+int cmzn_glyphmodule_define_standard_glyphs(
+	cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->defineStandardGlyphs();
+	if (glyphmodule)
+		return glyphmodule->defineStandardGlyphs();
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_glyph_module_define_standard_cmgui_glyphs(
-	cmzn_glyph_module_id glyph_module)
+int cmzn_glyphmodule_define_standard_cmgui_glyphs(
+	cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->defineStandardCmguiGlyphs();
+	if (glyphmodule)
+		return glyphmodule->defineStandardCmguiGlyphs();
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_glyph_id cmzn_glyph_module_find_glyph_by_name(
-	cmzn_glyph_module_id glyph_module, const char *name)
+cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
+	cmzn_glyphmodule_id glyphmodule, const char *name)
 {
 	cmzn_glyph *glyph = 0;
-	if (glyph_module)
+	if (glyphmodule)
 	{
-		glyph = glyph_module->findGlyphByName(name);
+		glyph = glyphmodule->findGlyphByName(name);
 		if (glyph)
 			glyph->access();
 	}
 	return glyph;
 }
 
-cmzn_glyph_id cmzn_glyph_module_find_glyph_by_type(
-	cmzn_glyph_module_id glyph_module, enum cmzn_glyph_type glyph_type)
+cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_type(
+	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_type glyph_type)
 {
 	cmzn_glyph *glyph = 0;
-	if (glyph_module)
+	if (glyphmodule)
 	{
-		glyph = glyph_module->findGlyphByType(glyph_type);
+		glyph = glyphmodule->findGlyphByType(glyph_type);
 		if (glyph)
 			glyph->access();
 	}
 	return glyph;
 }
 
-cmzn_glyph_id cmzn_glyph_module_get_default_point_glyph(
-	cmzn_glyph_module_id glyph_module)
+cmzn_glyph_id cmzn_glyphmodule_get_default_point_glyph(
+	cmzn_glyphmodule_id glyphmodule)
 {
-	if (glyph_module)
-		return glyph_module->getDefaultPointGlyph();
+	if (glyphmodule)
+		return glyphmodule->getDefaultPointGlyph();
 	return 0;
 }
 
-int cmzn_glyph_module_set_default_point_glyph(
-	cmzn_glyph_module_id glyph_module, cmzn_glyph_id glyph)
+int cmzn_glyphmodule_set_default_point_glyph(
+	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id glyph)
 {
-	if (glyph_module)
+	if (glyphmodule)
 	{
-		glyph_module->setDefaultPointGlyph(glyph);
+		glyphmodule->setDefaultPointGlyph(glyph);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_glyph *cmzn_glyph_module_create_glyph_static(
-	cmzn_glyph_module_id glyphModule, GT_object *graphicsObject)
+cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
+	cmzn_glyphmodule_id glyphmodule, GT_object *graphicsObject)
 {
-	if (glyphModule && graphicsObject)
+	if (glyphmodule && graphicsObject)
 	{
 		cmzn_glyph *glyph = cmzn_glyph_static::create(graphicsObject);
-		glyphModule->addGlyph(glyph);
+		glyphmodule->addGlyph(glyph);
 		return glyph;
 	}
 	return 0;

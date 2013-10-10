@@ -6537,13 +6537,13 @@ int cmzn_graphic_point_attributes_set_glyph_type(
 	if (graphic && (CMZN_GLYPH_TYPE_INVALID != glyph_type))
 	{
 		cmzn_graphics_module_id graphics_module = cmzn_scene_get_graphics_module(graphic->scene);
-		cmzn_glyph_module_id glyph_module = cmzn_graphics_module_get_glyph_module(graphics_module);
-		cmzn_glyph_id glyph = glyph_module->findGlyphByType(glyph_type);
+		cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(graphics_module);
+		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_type);
 		if (glyph || (glyph_type == CMZN_GLYPH_NONE))
 		{
 			return_code = cmzn_graphic_point_attributes_set_glyph(point_attributes, glyph);
 		}
-		cmzn_glyph_module_destroy(&glyph_module);
+		cmzn_glyphmodule_destroy(&glyphmodule);
 		cmzn_graphics_module_destroy(&graphics_module);
 	}
 	return return_code;

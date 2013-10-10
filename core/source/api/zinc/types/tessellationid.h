@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : tessellationid.h
  *
  */
@@ -11,8 +11,8 @@
 #ifndef CMZN_TESSELLATIONID_H__
 #define CMZN_TESSELLATIONID_H__
 
-	struct cmzn_tessellation_module;
-	typedef struct cmzn_tessellation_module * cmzn_tessellation_module_id;
+	struct cmzn_tessellationmodule;
+	typedef struct cmzn_tessellationmodule * cmzn_tessellationmodule_id;
 
 	struct cmzn_tessellation;
 	typedef struct cmzn_tessellation * cmzn_tessellation_id;
