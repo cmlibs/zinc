@@ -269,7 +269,7 @@ void Computed_field_canny_edge_detection_image_filter::create_functor()
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_canny_edge_detection_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_canny_edge_detection(
 	struct cmzn_fieldmodule *field_module,
   struct Computed_field *source_field, double variance, double maximumError, 
   double upperThreshold, double lowerThreshold)
@@ -288,7 +288,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_canny_edge_detection_image_
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_canny_edge_detection_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_canny_edge_detection.  Invalid argument(s)");
 	}
 
 	return (field);

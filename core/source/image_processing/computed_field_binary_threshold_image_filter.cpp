@@ -38,10 +38,40 @@ public:
 	double upper_threshold;
 
 	Computed_field_binary_threshold_image_filter(Computed_field *source_field,
-		double lower_threshold, double upper_threshold);
+		double lower_threshold = 0.0, double upper_threshold = 1.0);
 
 	~Computed_field_binary_threshold_image_filter()
 	{
+	}
+
+	double getLowerThreshold()
+	{
+		return lower_threshold;
+	}
+
+	int setLowerThreshold(double lowerThresholdIn)
+	{
+		if (lower_threshold != lowerThresholdIn)
+		{
+			lower_threshold = lowerThresholdIn;
+			clear_cache();
+		}
+		return CMZN_OK;
+	}
+
+	double getUpperThreshold()
+	{
+		return upper_threshold;
+	}
+
+	int setUpperThreshold(double upperThresholdIn)
+	{
+		if (upper_threshold != upperThresholdIn)
+		{
+			upper_threshold = upperThresholdIn;
+			clear_cache();
+		}
+		return CMZN_OK;
 	}
 
 private:
@@ -64,6 +94,14 @@ private:
 
 	char* get_command_string();
 };
+
+inline Computed_field_binary_threshold_image_filter *
+	Computed_field_binary_threshold_image_filter_core_cast(
+		cmzn_field_imagefilter_binary_threshold *imagefilter_binary_threshold)
+{
+	return (static_cast<Computed_field_binary_threshold_image_filter*>(
+		reinterpret_cast<Computed_field*>(imagefilter_binary_threshold)->core));
+}
 
 /*****************************************************************************//**
  * Compare the type specific data
@@ -248,19 +286,12 @@ char *Computed_field_binary_threshold_image_filter::get_command_string()
 
 } //namespace
 
-/*****************************************************************************//**
- * If field can be cast to a COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER do so
- * and return the field.  Otherwise return NULL.
- * 
- * @param field Id of the field to cast
- * @return Id of the cast field, or NULL
-*/
-cmzn_field_binary_threshold_image_filter_id cmzn_field_cast_binary_threshold_image_filter(cmzn_field_id field)
+cmzn_field_imagefilter_binary_threshold_id cmzn_field_cast_imagefilter_binary_threshold(cmzn_field_id field)
 {
 	if (dynamic_cast<Computed_field_binary_threshold_image_filter*>(field->core))
 	{
 		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_binary_threshold_image_filter_id>(field));
+		return (reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(field));
 	}
 	else
 	{
@@ -268,10 +299,69 @@ cmzn_field_binary_threshold_image_filter_id cmzn_field_cast_binary_threshold_ima
 	}
 }
 
-struct Computed_field *cmzn_fieldmodule_create_field_binary_threshold_image_filter(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double lower_threshold,
+double cmzn_field_imagefilter_binary_threshold_get_lower_threshold(
+	cmzn_field_imagefilter_binary_threshold_id imagefilter_binary_threshold)
+{
+	if (imagefilter_binary_threshold)
+	{
+		Computed_field_binary_threshold_image_filter *filter_core =
+			Computed_field_binary_threshold_image_filter_core_cast(
+				imagefilter_binary_threshold);
+		return filter_core->getLowerThreshold();
+	}
+
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_binary_threshold_set_lower_threshold(
+	cmzn_field_imagefilter_binary_threshold_id imagefilter_binary_threshold,
+	double lower_threshold)
+{
+	if (imagefilter_binary_threshold)
+	{
+		Computed_field_binary_threshold_image_filter *filter_core =
+			Computed_field_binary_threshold_image_filter_core_cast(
+				imagefilter_binary_threshold);
+		return filter_core->setLowerThreshold(lower_threshold);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_field_imagefilter_binary_threshold_get_upper_threshold(
+	cmzn_field_imagefilter_binary_threshold_id imagefilter_binary_threshold)
+{
+	if (imagefilter_binary_threshold)
+	{
+		Computed_field_binary_threshold_image_filter *filter_core =
+			Computed_field_binary_threshold_image_filter_core_cast(
+				imagefilter_binary_threshold);
+		return filter_core->getUpperThreshold();
+	}
+
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_binary_threshold_set_upper_threshold(
+	cmzn_field_imagefilter_binary_threshold_id imagefilter_binary_threshold,
 	double upper_threshold)
+{
+	if (imagefilter_binary_threshold)
+	{
+		Computed_field_binary_threshold_image_filter *filter_core =
+			Computed_field_binary_threshold_image_filter_core_cast(
+				imagefilter_binary_threshold);
+		return filter_core->setUpperThreshold(upper_threshold);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+int cmzn_field_imagefilter_binary_threshold_destroy(
+	cmzn_field_imagefilter_binary_threshold_id *imagefilter_binary_threshold_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(imagefilter_binary_threshold_address));
+}
+
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_binary_threshold(
+	struct cmzn_fieldmodule *field_module, struct Computed_field *source_field)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
@@ -281,13 +371,12 @@ struct Computed_field *cmzn_fieldmodule_create_field_binary_threshold_image_filt
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_binary_threshold_image_filter(source_field,
-				lower_threshold, upper_threshold));
+			new Computed_field_binary_threshold_image_filter(source_field));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_binary_threshold_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_binary_threshold.  Invalid argument(s)");
 	}
 
 	return (field);

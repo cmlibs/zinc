@@ -19,7 +19,7 @@ DESCRIPTION :
  * Creates a field performing ITK derivative image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.
  */
-struct Computed_field *cmzn_fieldmodule_create_field_derivative_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_derivative(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, int order, int direction);
 

@@ -14,19 +14,19 @@
 /*****************************************************************************//**
  * The image field specific handle to a zinc binary threshold field.
  */
-struct cmzn_field_binary_threshold_image_filter;
-typedef struct cmzn_field_binary_threshold_image_filter * cmzn_field_binary_threshold_image_filter_id;
+struct cmzn_field_imagefilter_binary_threshold;
+typedef struct cmzn_field_imagefilter_binary_threshold * cmzn_field_imagefilter_binary_threshold_id;
 
 /*****************************************************************************//**
  * The image field specific handle to a zinc discrete gaussian field.
  */
-struct cmzn_field_discrete_gaussian_image_filter;
-typedef struct cmzn_field_discrete_gaussian_image_filter * cmzn_field_discrete_gaussian_image_filter_id;
+struct cmzn_field_imagefilter_discrete_gaussian;
+typedef struct cmzn_field_imagefilter_discrete_gaussian * cmzn_field_imagefilter_discrete_gaussian_id;
 
 /*****************************************************************************//**
  * The image field specific handle to a zinc threshold field.
  */
-struct cmzn_field_threshold_image_filter;
-typedef struct cmzn_field_threshold_image_filter * cmzn_field_threshold_image_filter_id;
+struct cmzn_field_imagefilter_threshold;
+typedef struct cmzn_field_imagefilter_threshold * cmzn_field_imagefilter_threshold_id;
 
 #endif

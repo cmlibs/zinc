@@ -253,7 +253,7 @@ void Computed_field_curvature_anisotropic_diffusion_image_filter::create_functor
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_curvature_anisotropic_diffusion_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double timeStep, double conductance, int numIterations)
 {
@@ -271,7 +271,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_curvature_anisotropic_diffu
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_curvature_anisotropic_diffusion_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion.  Invalid argument(s)");
 	}
 
 	return (field);

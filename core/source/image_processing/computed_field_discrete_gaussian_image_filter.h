@@ -16,7 +16,4 @@ DESCRIPTION :
 #include "zinc/field.h"
 #include "zinc/fieldimageprocessing.h"
 
-cmzn_field_discrete_gaussian_image_filter_id cmzn_field_cast_discrete_gaussian_image_filter(cmzn_field_id field);
-
-
 #endif /* !defined (COMPUTED_FIELD_DISCRETE_GAUSSIAN_IMAGE_FILTER_H) */
