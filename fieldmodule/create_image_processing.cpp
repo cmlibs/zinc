@@ -12,7 +12,7 @@
 #include <zinc/fieldimageprocessing.h>
 #include <zinc/fieldmodule.h>
 #include <zinc/region.h>
-#include <zinc/status.h>Ä
+#include <zinc/status.h>
 #include <zinc/stream.h>
 
 #include "zinctestsetup.hpp"
