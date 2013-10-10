@@ -27,6 +27,4 @@ int cmzn_field_get_type_binary_threshold_image_filter(struct Computed_field *fie
 	struct Computed_field **source_field, double *lower_threshold,
 	double *upper_threshold);
 
-cmzn_field_binary_threshold_image_filter_id cmzn_field_cast_binary_threshold_image_filter(cmzn_field_id field);
-
 #endif /* !defined (COMPUTED_FIELD_BINARY_THRESHOLD_IMAGE_FILTER_H) */

@@ -241,7 +241,7 @@ void Computed_field_gradient_magnitude_recursive_gaussian_image_filter::create_f
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_gradient_magnitude_recursive_gaussian_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_gradient_magnitude_recursive_gaussian(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double sigma)
 {
@@ -259,7 +259,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_gradient_magnitude_recursiv
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_gradient_magnitude_recursive_gaussian_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_gradient_magnitude_recursive_gaussian.  Invalid argument(s)");
 	}
 
 	return (field);

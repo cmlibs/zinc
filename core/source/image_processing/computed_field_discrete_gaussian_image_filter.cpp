@@ -36,14 +36,43 @@ class Computed_field_discrete_gaussian_image_filter : public computed_field_imag
 public:
 	double variance;
 	int maxKernelWidth;
-       
 
 	Computed_field_discrete_gaussian_image_filter(Computed_field *source_field,
-		double variance, int maxKernelWidth);
+		double variance = 1.0, int maxKernelWidth = 4.0);
 
 	~Computed_field_discrete_gaussian_image_filter()
 	{
 	};
+
+	double getVariance()
+	{
+		return variance;
+	}
+
+	int setVariance(double varianceIn)
+	{
+		if (variance != varianceIn)
+		{
+			variance = varianceIn;
+			clear_cache();
+		}
+		return CMZN_OK;
+	}
+
+	int getMaxKernelWidth()
+	{
+		return maxKernelWidth;
+	}
+
+	int setMaxKernelWidth(int maxKernelWidthIn)
+	{
+		if (maxKernelWidthIn != maxKernelWidth)
+		{
+			maxKernelWidth = maxKernelWidthIn;
+			clear_cache();
+		}
+		return CMZN_OK;
+	}
 
 private:
 	virtual void create_functor();
@@ -65,6 +94,15 @@ private:
 
 	char* get_command_string();
 };
+
+inline Computed_field_discrete_gaussian_image_filter *
+	Computed_field_discrete_gaussian_image_filter_core_cast(
+		cmzn_field_imagefilter_discrete_gaussian *imagefilter_discrete_gaussian)
+{
+	return (static_cast<Computed_field_discrete_gaussian_image_filter*>(
+		reinterpret_cast<Computed_field*>(
+			imagefilter_discrete_gaussian)->core));
+}
 
 int Computed_field_discrete_gaussian_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -219,7 +257,7 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_discrete_gaussian_image_filter_Functor */
 
 Computed_field_discrete_gaussian_image_filter::Computed_field_discrete_gaussian_image_filter(
-	Computed_field *source_field, double variance, int maxKernelWidth) : 
+	Computed_field *source_field, double variance, int maxKernelWidth) :
 	computed_field_image_filter(source_field), 
 	variance(variance), maxKernelWidth(maxKernelWidth)
 /*******************************************************************************
@@ -246,12 +284,12 @@ void Computed_field_discrete_gaussian_image_filter::create_functor()
 } //namespace
 
 
-cmzn_field_discrete_gaussian_image_filter_id cmzn_field_cast_discrete_gaussian_image_filter(cmzn_field_id field)
+cmzn_field_imagefilter_discrete_gaussian_id cmzn_field_cast_imagefilter_discrete_gaussian(cmzn_field_id field)
 {
 	if (dynamic_cast<Computed_field_discrete_gaussian_image_filter*>(field->core))
 	{
 		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_discrete_gaussian_image_filter_id>(field));
+		return (reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(field));
 	}
 	else
 	{
@@ -259,9 +297,66 @@ cmzn_field_discrete_gaussian_image_filter_id cmzn_field_cast_discrete_gaussian_i
 	}
 }
 
-struct Computed_field *cmzn_fieldmodule_create_field_discrete_gaussian_image_filter(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double variance, int maxKernelWidth)
+int cmzn_field_imagefilter_discrete_gaussian_destroy(
+	cmzn_field_imagefilter_discrete_gaussian_id *imagefilter_discrete_gaussian_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(
+			imagefilter_discrete_gaussian_address));
+}
+
+double cmzn_field_imagefilter_discrete_gaussian_get_variance(
+		cmzn_field_imagefilter_discrete_gaussian_id imagefilter_discrete_gaussian)
+{
+	if (imagefilter_discrete_gaussian)
+	{
+		Computed_field_discrete_gaussian_image_filter *filter_core =
+			Computed_field_discrete_gaussian_image_filter_core_cast(imagefilter_discrete_gaussian);
+		return filter_core->getVariance();
+	}
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_discrete_gaussian_set_variance(
+	cmzn_field_imagefilter_discrete_gaussian_id imagefilter_discrete_gaussian,
+	double variance)
+{
+	if (imagefilter_discrete_gaussian)
+	{
+		Computed_field_discrete_gaussian_image_filter *filter_core =
+			Computed_field_discrete_gaussian_image_filter_core_cast(imagefilter_discrete_gaussian);
+		return filter_core->setVariance(variance);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_imagefilter_discrete_gaussian_get_max_kernel_width(
+		cmzn_field_imagefilter_discrete_gaussian_id imagefilter_discrete_gaussian)
+{
+	if (imagefilter_discrete_gaussian)
+	{
+		Computed_field_discrete_gaussian_image_filter *filter_core =
+			Computed_field_discrete_gaussian_image_filter_core_cast(imagefilter_discrete_gaussian);
+		return filter_core->getMaxKernelWidth();
+	}
+	return 0;
+}
+
+int cmzn_field_imagefilter_discrete_gaussian_set_max_kernel_width(
+	cmzn_field_imagefilter_discrete_gaussian_id imagefilter_discrete_gaussian,
+	int max_kernel_width)
+{
+	if (imagefilter_discrete_gaussian)
+	{
+		Computed_field_discrete_gaussian_image_filter *filter_core =
+			Computed_field_discrete_gaussian_image_filter_core_cast(imagefilter_discrete_gaussian);
+		return filter_core->setMaxKernelWidth(max_kernel_width);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(
+	struct cmzn_fieldmodule *field_module, struct Computed_field *source_field)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
@@ -271,13 +366,12 @@ struct Computed_field *cmzn_fieldmodule_create_field_discrete_gaussian_image_fil
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_discrete_gaussian_image_filter(source_field,
-				variance, maxKernelWidth));
+			new Computed_field_discrete_gaussian_image_filter(source_field));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_discrete_gaussian_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian.  Invalid argument(s)");
 	}
 
 	return (field);

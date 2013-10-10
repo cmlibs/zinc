@@ -445,7 +445,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_fast_marching_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_fast_marching(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double stopping_value,
   int num_seed_points, int dimension, const double *seed_points, const double *seed_values,
@@ -466,7 +466,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_fast_marching_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_fast_marching_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_fast_marching.  Invalid argument(s)");
 	}
 
 	return (field);

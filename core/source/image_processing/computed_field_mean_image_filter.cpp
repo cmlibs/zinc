@@ -269,7 +269,7 @@ void Computed_field_mean_image_filter::create_functor()
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_mean_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_mean(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, int *radius_sizes)
 {
@@ -286,7 +286,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_mean_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_mean_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_mean.  Invalid argument(s)");
 	}
 
 	return (field);

@@ -332,7 +332,7 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_connected_threshold_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_connected_threshold(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field,
   double lower_threshold, double upper_threshold, double replace_value,
@@ -353,7 +353,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_connected_threshold_image_f
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_connected_threshold_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_connected_threshold.  Invalid argument(s)");
 	}
 
 	return (field);

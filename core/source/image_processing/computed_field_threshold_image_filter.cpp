@@ -39,22 +39,22 @@ can be used in three different ways.
 
 using namespace CMZN;
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_imagefilter_threshold_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(General_threshold_filter_mode));
+	ENTER(ENUMERATOR_STRING(cmzn_field_imagefilter_threshold_mode));
 	switch (enumerator_value)
 	{
-		case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
+		case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW:
 		{
 			enumerator_string = "below";
 		} break;
-		case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
+		case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE:
 		{
 			enumerator_string = "above";
 		} break;
-		case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
+		case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE:
 		{
 			enumerator_string = "outside";
 		} break;
@@ -66,9 +66,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(General_threshold_filter_mode)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(General_threshold_filter_mode) */
+} /* ENUMERATOR_STRING(cmzn_field_imagefilter_threshold_mode) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(General_threshold_filter_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_field_imagefilter_threshold_mode)
 
 namespace {
 
@@ -80,18 +80,78 @@ namespace {
 	public:
 		/* to specify the threshold filter we use an enumerated type that
 			can take values ABOVE, BELOW or OUTSIDE */
-		enum General_threshold_filter_mode threshold_mode;
+		enum cmzn_field_imagefilter_threshold_mode threshold_mode;
 
 		double outside_value; // used by all modes
 		double below_value;   // needed for both below and outside mode
 		double above_value;   // neeeded for both above and outside mode
 
 		Computed_field_threshold_image_filter(Computed_field *source_field,
-			enum General_threshold_filter_mode threshold_mode,
-			double oustide_value, double below_value, double above_value);
+			enum cmzn_field_imagefilter_threshold_mode threshold_mode = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW,
+			double oustide_value = 0.0, double below_value = 0.5, double above_value = 0.5);
 
 		~Computed_field_threshold_image_filter()
 		{
+		}
+
+		enum cmzn_field_imagefilter_threshold_mode getMode()
+		{
+			return threshold_mode;
+		}
+
+		int setMode(enum cmzn_field_imagefilter_threshold_mode thresholdModeIn)
+		{
+			if (threshold_mode != thresholdModeIn)
+			{
+				threshold_mode = thresholdModeIn;
+				clear_cache();
+			}
+			return CMZN_OK;
+		}
+
+		double getOutsideValue()
+		{
+			return outside_value;
+		}
+
+		int setOutsideValue(double outsideValueIn)
+		{
+			if (outside_value != outsideValueIn)
+			{
+				outside_value = outsideValueIn;
+				clear_cache();
+			}
+			return CMZN_OK;
+		}
+
+		double getBelow()
+		{
+			return below_value;
+		}
+
+		int setBelow(double belowIn)
+		{
+			if (below_value != belowIn)
+			{
+				below_value = belowIn;
+				clear_cache();
+			}
+			return CMZN_OK;
+		}
+
+		double getAbove()
+		{
+			return above_value;
+		}
+
+		int setAbove(double aboveIn)
+		{
+			if (above_value != aboveIn)
+			{
+				above_value = aboveIn;
+				clear_cache();
+			}
+			return CMZN_OK;
 		}
 
 	private:
@@ -114,6 +174,14 @@ namespace {
 
 		char* get_command_string();
 	};
+
+	inline Computed_field_threshold_image_filter *
+		Computed_field_threshold_image_filter_core_cast(
+			cmzn_field_imagefilter_threshold *imagefilter_threshold)
+	{
+		return (static_cast<Computed_field_threshold_image_filter*>(
+			reinterpret_cast<Computed_field*>(imagefilter_threshold)->core));
+	}
 
 	int Computed_field_threshold_image_filter::compare(Computed_field_core *other_core)
 /*******************************************************************************
@@ -199,15 +267,15 @@ and generate the outputImage.
 
 			switch (threshold_image_filter->threshold_mode)
 			{
-				case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW:
 				{
 					filter->ThresholdBelow( threshold_image_filter->below_value );
 				} break;
-				case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE:
 				{
 					filter->ThresholdAbove( threshold_image_filter->above_value );
 				} break;
-				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE:
 				{
 					filter->ThresholdOutside( threshold_image_filter->below_value, threshold_image_filter->above_value );
 				} break;
@@ -230,7 +298,7 @@ and generate the outputImage.
 
 	Computed_field_threshold_image_filter::Computed_field_threshold_image_filter(
 		Computed_field *source_field,
-		enum General_threshold_filter_mode threshold_mode,
+		enum cmzn_field_imagefilter_threshold_mode threshold_mode,
 		double outside_value, double below_value, double above_value) :
 		computed_field_image_filter(source_field),
 		threshold_mode(threshold_mode), outside_value(outside_value),
@@ -273,23 +341,23 @@ DESCRIPTION : list out the threshold filter options
 				"    source field : %s\n",field->source_fields[0]->name);
 
 			display_message(INFORMATION_MESSAGE,
-			"    threshold mode: %s\n", ENUMERATOR_STRING(General_threshold_filter_mode)(threshold_mode));
+			"    threshold mode: %s\n", ENUMERATOR_STRING(cmzn_field_imagefilter_threshold_mode)(threshold_mode));
 			display_message(INFORMATION_MESSAGE,
 				"    outside_value : %g\n", outside_value);
 
 			switch (threshold_mode)
 			{
-				case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW:
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    below_value : %g\n", below_value);
 				} break;
-				case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE:
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    above_value : %g\n", above_value);
 				} break;
-				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE:
 				{
 					display_message(INFORMATION_MESSAGE,
 						"    below_value : %g\n", below_value);
@@ -334,20 +402,20 @@ Returns allocated command string for reproducing field. Includes type.
 				DEALLOCATE(field_name);
 			}
 			sprintf(temp_string, " %s outside_value %g",
-				ENUMERATOR_STRING(General_threshold_filter_mode)(threshold_mode), outside_value);
+				ENUMERATOR_STRING(cmzn_field_imagefilter_threshold_mode)(threshold_mode), outside_value);
 			append_string(&command_string, temp_string, &error);
 
 			switch (threshold_mode)
 			{
-				case GENERAL_THRESHOLD_FILTER_MODE_BELOW:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW:
 				{
 					sprintf(temp_string, " below_value %g", below_value);
 				} break;
-				case GENERAL_THRESHOLD_FILTER_MODE_ABOVE:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE:
 				{
 					sprintf(temp_string, " above_value %g", above_value);
 				} break;
-				case GENERAL_THRESHOLD_FILTER_MODE_OUTSIDE:
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE:
 				{
 					sprintf(temp_string, " below_value %g above_value %g",
 						below_value, above_value);
@@ -369,12 +437,12 @@ Returns allocated command string for reproducing field. Includes type.
 } //namespace
 
 
-cmzn_field_threshold_image_filter_id cmzn_field_cast_threshold_image_filter(cmzn_field_id field)
+cmzn_field_imagefilter_threshold_id cmzn_field_cast_imagefilter_threshold(cmzn_field_id field)
 {
 	if (dynamic_cast<Computed_field_threshold_image_filter*>(field->core))
 	{
 		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_threshold_image_filter_id>(field));
+		return (reinterpret_cast<cmzn_field_imagefilter_threshold_id>(field));
 	}
 	else
 	{
@@ -382,11 +450,112 @@ cmzn_field_threshold_image_filter_id cmzn_field_cast_threshold_image_filter(cmzn
 	}
 }
 
-struct Computed_field *cmzn_fieldmodule_create_field_threshold_image_filter(
+int cmzn_field_imagefilter_threshold_destroy(
+	cmzn_field_imagefilter_threshold_id *imagefilter_threshold_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(
+		imagefilter_threshold_address));
+}
+
+enum cmzn_field_imagefilter_threshold_mode cmzn_field_imagefilter_threshold_get_mode(
+	cmzn_field_imagefilter_threshold_id imagefilter_threshold)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->getMode();
+	}
+	return CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW;
+}
+
+int cmzn_field_imagefilter_threshold_set_mode(cmzn_field_imagefilter_threshold_id
+	imagefilter_threshold, enum cmzn_field_imagefilter_threshold_mode mode)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->setMode(mode);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_field_imagefilter_threshold_get_outside_value(
+	cmzn_field_imagefilter_threshold_id imagefilter_threshold)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->getOutsideValue();
+	}
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_threshold_set_outside_value(cmzn_field_imagefilter_threshold_id
+	imagefilter_threshold, double outside_value)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->setOutsideValue(outside_value);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_field_imagefilter_threshold_get_below(
+	cmzn_field_imagefilter_threshold_id imagefilter_threshold)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->getBelow();
+	}
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_threshold_set_below(cmzn_field_imagefilter_threshold_id
+	imagefilter_threshold, double below_value)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->setBelow(below_value);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_field_imagefilter_threshold_get_above(
+	cmzn_field_imagefilter_threshold_id imagefilter_threshold)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->getAbove();
+	}
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_threshold_set_above(cmzn_field_imagefilter_threshold_id
+	imagefilter_threshold, double above_value)
+{
+	if (imagefilter_threshold)
+	{
+		Computed_field_threshold_image_filter *filter_core =
+			Computed_field_threshold_image_filter_core_cast(imagefilter_threshold);
+		return filter_core->setAbove(above_value);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_threshold(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field,
-	enum General_threshold_filter_mode threshold_mode, double outside_value,
-	double below_value, double above_value)
+	struct Computed_field *source_field)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
@@ -396,13 +565,12 @@ struct Computed_field *cmzn_fieldmodule_create_field_threshold_image_filter(
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_threshold_image_filter(source_field,
-				threshold_mode, outside_value, below_value, above_value));
+			new Computed_field_threshold_image_filter(source_field));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_threshold_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_threshold.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -410,7 +578,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_threshold_image_filter(
 
 int cmzn_field_get_type_threshold_image_filter(struct Computed_field *field,
 	struct Computed_field **source_field,
-	enum General_threshold_filter_mode *threshold_mode,
+	enum cmzn_field_imagefilter_threshold_mode *threshold_mode,
 	double *outside_value, double *below_value,	double *above_value)
 /*******************************************************************************
 LAST MODIFIED : 8 December 2006

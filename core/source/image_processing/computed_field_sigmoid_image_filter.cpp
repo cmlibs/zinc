@@ -258,7 +258,7 @@ void Computed_field_sigmoid_image_filter::create_functor()
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_sigmoid_image_filter(
+struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_sigmoid(
 	struct cmzn_fieldmodule *field_module,
 	struct Computed_field *source_field, double min, double max,
 	double alpha, double beta)
@@ -277,7 +277,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_sigmoid_image_filter(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_sigmoid_image_filter.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_imagefilter_sigmoid.  Invalid argument(s)");
 	}
 
 	return (field);

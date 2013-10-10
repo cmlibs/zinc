@@ -18,283 +18,424 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class FieldBinaryDilateImageFilter : public Field
+class FieldImagefilterBinaryDilate : public Field
 {
 
 private:
-	explicit FieldBinaryDilateImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterBinaryDilate(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldBinaryDilateImageFilter
-		Fieldmodule::createFieldBinaryDilateImageFilter(Field& sourceField,
+	friend FieldImagefilterBinaryDilate
+		Fieldmodule::createFieldImagefilterBinaryDilate(Field& sourceField,
 			int radius, double dilate_value);
 
 public:
 
-	FieldBinaryDilateImageFilter() : Field(0)
+	FieldImagefilterBinaryDilate() : Field(0)
 	{	}
 
 };
 
-class FieldBinaryErodeImageFilter : public Field
+class FieldImagefilterBinaryErode : public Field
 {
 
 private:
-	explicit FieldBinaryErodeImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterBinaryErode(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldBinaryErodeImageFilter
-		Fieldmodule::createFieldBinaryErodeImageFilter(Field& sourceField,
+	friend FieldImagefilterBinaryErode
+		Fieldmodule::createFieldImagefilterBinaryErode(Field& sourceField,
 			int radius, double erode_value);
 
 public:
 
-	FieldBinaryErodeImageFilter() : Field(0)
+	FieldImagefilterBinaryErode() : Field(0)
 	{	}
 
 };
 
-class FieldBinaryThresholdImageFilter : public Field
+class FieldImagefilterBinaryThreshold : public Field
 {
 
 private:
-	explicit FieldBinaryThresholdImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterBinaryThreshold(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldBinaryThresholdImageFilter
-		Fieldmodule::createFieldBinaryThresholdImageFilter(Field& sourceField,
-			double lower_threshold, double upper_threshold);
+	friend FieldImagefilterBinaryThreshold
+		Fieldmodule::createFieldImagefilterBinaryThreshold(Field& sourceField);
 
 public:
 
-	FieldBinaryThresholdImageFilter() : Field(0)
+	FieldImagefilterBinaryThreshold() : Field(0)
 	{	}
+
+	FieldImagefilterBinaryThreshold(Field& field) :
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_binary_threshold(field.getId())))
+	{	}
+
+	double getLowerThreshold()
+	{
+		return cmzn_field_imagefilter_binary_threshold_get_lower_threshold(
+			reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(id));
+	}
+
+	int setLowerThreshold(double lowerThreshold)
+	{
+		return cmzn_field_imagefilter_binary_threshold_set_lower_threshold(
+			reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(id),
+			lowerThreshold);
+	}
+
+	double getUpperThreshold()
+	{
+		return cmzn_field_imagefilter_binary_threshold_get_upper_threshold(
+			reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(id));
+	}
+
+	int setUpperThreshold(double upperThreshold)
+	{
+		return cmzn_field_imagefilter_binary_threshold_set_upper_threshold(
+			reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(id),
+			upperThreshold);
+	}
 
 };
 
-class FieldCannyEdgeDetectionImageFilter : public Field
+class FieldImagefilterCannyEdgeDetection : public Field
 {
 
 private:
-	explicit FieldCannyEdgeDetectionImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterCannyEdgeDetection(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldCannyEdgeDetectionImageFilter
-		Fieldmodule::createFieldCannyEdgeDetectionImageFilter(Field& sourceField,
+	friend FieldImagefilterCannyEdgeDetection
+		Fieldmodule::createFieldImagefilterCannyEdgeDetection(Field& sourceField,
 			double variance, double maximumError, double upperThreshold, double lowerThreshold);
 
 public:
 
-	FieldCannyEdgeDetectionImageFilter() : Field(0)
+	FieldImagefilterCannyEdgeDetection() : Field(0)
 	{	}
 
 };
 
-class FieldConnectedThresholdImageFilter : public Field
+class FieldImagefilterConnectedThreshold : public Field
 {
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldConnectedThresholdImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterConnectedThreshold(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldConnectedThresholdImageFilter
-		Fieldmodule::createFieldConnectedThresholdImageFilter(Field& sourceField,
+	friend FieldImagefilterConnectedThreshold
+		Fieldmodule::createFieldImagefilterConnectedThreshold(Field& sourceField,
 			  double lowerThreshold, double upperThreshold, double replaceValue,
 			  int dimension, int seedPointsCount, const double *seedPoints);
 
 public:
 
-	FieldConnectedThresholdImageFilter() : Field(0)
+	FieldImagefilterConnectedThreshold() : Field(0)
 	{	}
 
 };
 
-class FieldCurvatureAnisotropicDiffusionImageFilter : public Field
+class FieldImagefilterCurvatureAnisotropicDiffusion : public Field
 {
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldCurvatureAnisotropicDiffusionImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterCurvatureAnisotropicDiffusion(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldCurvatureAnisotropicDiffusionImageFilter
-		Fieldmodule::createFieldCurvatureAnisotropicDiffusionImageFilter(Field& sourceField,
+	friend FieldImagefilterCurvatureAnisotropicDiffusion
+		Fieldmodule::createFieldImagefilterCurvatureAnisotropicDiffusion(Field& sourceField,
 			double timeStep, double conductance, int numIterations);
 
 public:
 
-	FieldCurvatureAnisotropicDiffusionImageFilter() : Field(0)
+	FieldImagefilterCurvatureAnisotropicDiffusion() : Field(0)
 	{	}
 
 };
 
-class FieldDiscreteGaussianImageFilter : public Field
+class FieldImagefilterDiscreteGaussian : public Field
 {
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldDiscreteGaussianImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterDiscreteGaussian(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldDiscreteGaussianImageFilter
-		Fieldmodule::createFieldDiscreteGaussianImageFilter(Field& sourceField,
-			double variance, int maxKernelWidth);
+	friend FieldImagefilterDiscreteGaussian
+		Fieldmodule::createFieldImagefilterDiscreteGaussian(Field& sourceField);
 
 public:
 
-	FieldDiscreteGaussianImageFilter() : Field(0)
+	FieldImagefilterDiscreteGaussian() : Field(0)
 	{	}
+
+	FieldImagefilterDiscreteGaussian(Field& field) :
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_discrete_gaussian(field.getId())))
+	{	}
+
+	double getVariance()
+	{
+		return cmzn_field_imagefilter_discrete_gaussian_get_variance(
+			reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(id));
+	}
+
+	int setVariance(double variance)
+	{
+		return cmzn_field_imagefilter_discrete_gaussian_set_variance(
+			reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(id),
+			variance);
+	}
+
+	int getMaxKernelWidth()
+	{
+		return cmzn_field_imagefilter_discrete_gaussian_get_max_kernel_width(
+			reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(id));
+	}
+
+	int setMaxKernelWidth(int maxKernelWidth)
+	{
+		return cmzn_field_imagefilter_discrete_gaussian_set_max_kernel_width(
+			reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(id),
+			maxKernelWidth);
+	}
 
 };
 
-class FieldGradientMagnitudeRecursiveGaussianImageFilter : public Field
+class FieldImagefilterGradientMagnitudeRecursiveGaussian : public Field
 {
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGradientMagnitudeRecursiveGaussianImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterGradientMagnitudeRecursiveGaussian(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldGradientMagnitudeRecursiveGaussianImageFilter
-		Fieldmodule::createFieldGradientMagnitudeRecursiveGaussianImageFilter(Field& sourceField,
+	friend FieldImagefilterGradientMagnitudeRecursiveGaussian
+		Fieldmodule::createFieldImagefilterGradientMagnitudeRecursiveGaussian(Field& sourceField,
 			double sigma);
 
 public:
 
-	FieldGradientMagnitudeRecursiveGaussianImageFilter() : Field(0)
+	FieldImagefilterGradientMagnitudeRecursiveGaussian() : Field(0)
 	{	}
 
 };
 
-class FieldRescaleIntensityImageFilter : public Field
+class FieldImagefilterRescaleIntensity : public Field
 {
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldRescaleIntensityImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterRescaleIntensity(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldRescaleIntensityImageFilter
-		Fieldmodule::createFieldRescaleIntensityImageFilter(Field& sourceField,
+	friend FieldImagefilterRescaleIntensity
+		Fieldmodule::createFieldImagefilterRescaleIntensity(Field& sourceField,
 			double outputMin, double outputMax);
 
 public:
 
-	FieldRescaleIntensityImageFilter() : Field(0)
+	FieldImagefilterRescaleIntensity() : Field(0)
 	{	}
 
 };
 
-class FieldSigmoidImageFilter : public Field
+class FieldImagefilterSigmoid : public Field
 {
 
 private:
 	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldSigmoidImageFilter(cmzn_field_id field_id) : Field(field_id)
+	explicit FieldImagefilterSigmoid(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldSigmoidImageFilter
-		Fieldmodule::createFieldSigmoidImageFilter(Field& sourceField,
+	friend FieldImagefilterSigmoid
+		Fieldmodule::createFieldImagefilterSigmoid(Field& sourceField,
 			double min, double max,	double alpha, double beta);
 
 public:
 
-	FieldSigmoidImageFilter() : Field(0)
+	FieldImagefilterSigmoid() : Field(0)
 	{	}
 
 };
 
-inline FieldBinaryDilateImageFilter
-	Fieldmodule::createFieldBinaryDilateImageFilter(Field& sourceField,
+
+class FieldImagefilterThreshold : public Field
+{
+
+private:
+	explicit FieldImagefilterThreshold(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldImagefilterThreshold
+		Fieldmodule::createFieldImagefilterThreshold(Field& sourceField);
+
+public:
+
+	FieldImagefilterThreshold() : Field(0)
+	{	}
+
+	FieldImagefilterThreshold(Field& field) :
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_threshold(field.getId())))
+	{	}
+
+	enum ThresholdMode
+	{
+		THRESHOLD_MODE_BELOW = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW,
+		THRESHOLD_MODE_ABOVE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE,
+		THRESHOLD_MODE_OUTSIDE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE
+	};
+
+	enum ThresholdMode getMode()
+	{
+		return static_cast<ThresholdMode>(cmzn_field_imagefilter_threshold_get_mode(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id)));
+	}
+
+	int setMode(enum ThresholdMode thresholdMode)
+	{
+		return cmzn_field_imagefilter_threshold_set_mode(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id),
+			static_cast<cmzn_field_imagefilter_threshold_mode>(thresholdMode));
+	}
+
+	double getOutsideValue()
+	{
+		return cmzn_field_imagefilter_threshold_get_outside_value(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
+	}
+
+	int setOutsideValue(double outsideValue)
+	{
+		return cmzn_field_imagefilter_threshold_set_outside_value(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), outsideValue);
+	}
+
+	double getBelow()
+	{
+		return cmzn_field_imagefilter_threshold_get_below(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
+	}
+
+	int setBelow(double belowValue)
+	{
+		return cmzn_field_imagefilter_threshold_set_below(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), belowValue);
+	}
+
+	double getAbove()
+	{
+		return cmzn_field_imagefilter_threshold_get_below(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
+	}
+
+	int setAbove(double aboveValue)
+	{
+		return cmzn_field_imagefilter_threshold_set_above(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), aboveValue);
+	}
+
+};
+
+inline FieldImagefilterBinaryDilate
+	Fieldmodule::createFieldImagefilterBinaryDilate(Field& sourceField,
 		int radius, double erode_value)
 {
-	return FieldBinaryDilateImageFilter(
-		cmzn_fieldmodule_create_field_binary_dilate_image_filter(id, sourceField.getId(),
+	return FieldImagefilterBinaryDilate(
+		cmzn_fieldmodule_create_field_imagefilter_binary_dilate(id, sourceField.getId(),
 			radius, erode_value));
 }
 
-inline FieldBinaryErodeImageFilter
-	Fieldmodule::createFieldBinaryErodeImageFilter(Field& sourceField,
+inline FieldImagefilterBinaryErode
+	Fieldmodule::createFieldImagefilterBinaryErode(Field& sourceField,
 		int radius, double dilate_value)
 {
-	return FieldBinaryErodeImageFilter(
-		cmzn_fieldmodule_create_field_binary_erode_image_filter(id, sourceField.getId(),
+	return FieldImagefilterBinaryErode(
+		cmzn_fieldmodule_create_field_imagefilter_binary_erode(id, sourceField.getId(),
 			radius, dilate_value));
 }
 
-inline FieldBinaryThresholdImageFilter
-	Fieldmodule::createFieldBinaryThresholdImageFilter(Field& sourceField,
-		double lower_threshold, double upper_threshold)
+inline FieldImagefilterBinaryThreshold
+	Fieldmodule::createFieldImagefilterBinaryThreshold(Field& sourceField)
 {
-	return FieldBinaryThresholdImageFilter(
-		cmzn_fieldmodule_create_field_binary_threshold_image_filter(
-			id, sourceField.getId(), lower_threshold, upper_threshold));
+	return FieldImagefilterBinaryThreshold(
+		cmzn_fieldmodule_create_field_imagefilter_binary_threshold(
+			id, sourceField.getId()));
 }
 
-inline FieldCannyEdgeDetectionImageFilter
-	Fieldmodule::createFieldCannyEdgeDetectionImageFilter(Field& sourceField,
+inline FieldImagefilterCannyEdgeDetection
+	Fieldmodule::createFieldImagefilterCannyEdgeDetection(Field& sourceField,
 		double variance, double maximumError, double upperThreshold, double lowerThreshold)
 {
-	return FieldCannyEdgeDetectionImageFilter(
-		cmzn_fieldmodule_create_field_canny_edge_detection_image_filter(
+	return FieldImagefilterCannyEdgeDetection(
+		cmzn_fieldmodule_create_field_imagefilter_canny_edge_detection(
 			id, sourceField.getId(),
 			variance, maximumError, upperThreshold, lowerThreshold));
 }
 
-inline FieldConnectedThresholdImageFilter
-	Fieldmodule::createFieldConnectedThresholdImageFilter(Field& sourceField,
+inline FieldImagefilterConnectedThreshold
+	Fieldmodule::createFieldImagefilterConnectedThreshold(Field& sourceField,
 		  double lowerThreshold, double upperThreshold, double replaceValue,
 		  int dimension, int seedPointsCount, const double *seedPoints)
 {
-	return FieldConnectedThresholdImageFilter(
-		cmzn_fieldmodule_create_field_connected_threshold_image_filter(id, sourceField.getId(),
+	return FieldImagefilterConnectedThreshold(
+		cmzn_fieldmodule_create_field_imagefilter_connected_threshold(id, sourceField.getId(),
 		lowerThreshold, upperThreshold, replaceValue, seedPointsCount, dimension, seedPoints));
 }
 
-inline FieldCurvatureAnisotropicDiffusionImageFilter
-	Fieldmodule::createFieldCurvatureAnisotropicDiffusionImageFilter(Field& sourceField,
+inline FieldImagefilterCurvatureAnisotropicDiffusion
+	Fieldmodule::createFieldImagefilterCurvatureAnisotropicDiffusion(Field& sourceField,
 		double timeStep, double conductance, int numIterations)
 {
-	return FieldCurvatureAnisotropicDiffusionImageFilter(
-		cmzn_fieldmodule_create_field_curvature_anisotropic_diffusion_image_filter(id, sourceField.getId(),
+	return FieldImagefilterCurvatureAnisotropicDiffusion(
+		cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion(id, sourceField.getId(),
 			timeStep, conductance, numIterations));
 }
 
-inline FieldDiscreteGaussianImageFilter
-	Fieldmodule::createFieldDiscreteGaussianImageFilter(Field& sourceField,
-		double variance, int maxKernelWidth)
+inline FieldImagefilterDiscreteGaussian
+	Fieldmodule::createFieldImagefilterDiscreteGaussian(Field& sourceField)
 {
-	return FieldDiscreteGaussianImageFilter(
-		cmzn_fieldmodule_create_field_discrete_gaussian_image_filter(id, sourceField.getId(),
-			variance, maxKernelWidth));
+	return FieldImagefilterDiscreteGaussian(
+		cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(id, sourceField.getId()));
 }
 
-inline FieldGradientMagnitudeRecursiveGaussianImageFilter
-	Fieldmodule::createFieldGradientMagnitudeRecursiveGaussianImageFilter(Field& sourceField,
+inline FieldImagefilterGradientMagnitudeRecursiveGaussian
+	Fieldmodule::createFieldImagefilterGradientMagnitudeRecursiveGaussian(Field& sourceField,
 		double sigma)
 {
-	return FieldGradientMagnitudeRecursiveGaussianImageFilter(
-		cmzn_fieldmodule_create_field_gradient_magnitude_recursive_gaussian_image_filter(id,
+	return FieldImagefilterGradientMagnitudeRecursiveGaussian(
+		cmzn_fieldmodule_create_field_imagefilter_gradient_magnitude_recursive_gaussian(id,
 			sourceField.getId(), sigma));
 }
 
-inline FieldRescaleIntensityImageFilter
-	Fieldmodule::createFieldRescaleIntensityImageFilter(Field& sourceField,
+inline FieldImagefilterRescaleIntensity
+	Fieldmodule::createFieldImagefilterRescaleIntensity(Field& sourceField,
 		double outputMin, double outputMax)
 {
-	return FieldRescaleIntensityImageFilter(
-		cmzn_fieldmodule_create_field_rescale_intensity_image_filter(id,
+	return FieldImagefilterRescaleIntensity(
+		cmzn_fieldmodule_create_field_imagefilter_rescale_intensity(id,
 			sourceField.getId(), outputMin, outputMax));
 }
 
-inline FieldSigmoidImageFilter
-	Fieldmodule::createFieldSigmoidImageFilter(Field& sourceField,
+inline FieldImagefilterSigmoid
+	Fieldmodule::createFieldImagefilterSigmoid(Field& sourceField,
 		double min, double max,	double alpha, double beta)
 {
-	return FieldSigmoidImageFilter(
-		cmzn_fieldmodule_create_field_sigmoid_image_filter(id,
+	return FieldImagefilterSigmoid(
+		cmzn_fieldmodule_create_field_imagefilter_sigmoid(id,
 			sourceField.getId(), min, max, alpha, beta));
+}
+
+inline FieldImagefilterThreshold
+	Fieldmodule::createFieldImagefilterThreshold(Field& sourceField)
+{
+	return FieldImagefilterThreshold(
+		cmzn_fieldmodule_create_field_imagefilter_threshold(
+			id, sourceField.getId()));
 }
 
 }  // namespace Zinc
