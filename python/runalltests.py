@@ -19,6 +19,9 @@ def suite():
     from sceneviewer_tests import sceneviewertests
     tests.addTests(sceneviewertests.suite())
     
+    from imageprocessing_tests import imageprocessingtests
+    tests.addTests(imageprocessingtests.suite())
+    
     return tests
 
 if __name__ == '__main__':
