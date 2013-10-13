@@ -34,7 +34,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertEqual(status.OK, result)
         attributes = graphic.getPointAttributes()
         self.assertTrue(attributes.isValid())
-        glyph_module = self.graphics_module.getGlyphModule()
+        glyph_module = self.graphics_module.getGlyphmodule()
         glyph_module.defineStandardGlyphs()
         result = attributes.setGlyphType(Glyph.SPHERE)
         self.assertEqual(status.OK, result)
