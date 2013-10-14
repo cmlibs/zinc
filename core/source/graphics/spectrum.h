@@ -15,7 +15,6 @@ Spectrum structures and support code.
 #define SPECTRUM_H
 
 #include "zinc/zincconfigure.h"
-#include "zinc/graphicsmodule.h"
 #include "zinc/spectrum.h"
 
 #if defined (USE_GLEW)

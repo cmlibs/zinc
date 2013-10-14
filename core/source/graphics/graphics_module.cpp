@@ -9,8 +9,8 @@
 
 #include "zinc/glyph.h"
 #include "zinc/graphicsmaterial.h"
-#include "zinc/graphicsmodule.h"
 #include "zinc/scene.h"
+#include "zinc/timekeeper.h"
 #include "general/debug.h"
 #include "general/object.h"
 #include "general/mystring.h"
@@ -27,7 +27,6 @@
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region_private.h"
 #include "region/cmiss_region.h"
-#include "time/time_keeper.hpp"
 #include "general/message.h"
 #include <list>
 
@@ -479,7 +478,7 @@ struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(
 }
 
 cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
-	cmzn_graphics_module_id graphics_module)
+	cmzn_graphics_module * graphics_module)
 {
 	if (graphics_module)
 	{
@@ -490,7 +489,7 @@ cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
 }
 
 cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
-	cmzn_graphics_module_id graphics_module)
+	cmzn_graphics_module * graphics_module)
 {
 	cmzn_sceneviewermodule *sceneviewermodule = NULL;
 	if (graphics_module)
@@ -588,7 +587,7 @@ int cmzn_graphics_module_enable_scenes(
 }
 
 cmzn_scene_id cmzn_graphics_module_get_scene(
-	cmzn_graphics_module_id graphics_module, cmzn_region_id region)
+	cmzn_graphics_module * graphics_module, cmzn_region_id region)
 {
 	struct cmzn_scene *scene = NULL;
 	if (graphics_module && region)

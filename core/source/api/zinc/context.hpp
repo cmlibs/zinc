@@ -11,10 +11,14 @@
 #define CMZN_CONTEXT_HPP__
 
 #include "zinc/context.h"
+#include "zinc/font.hpp"
+#include "zinc/glyph.hpp"
+#include "zinc/graphicsmaterial.hpp"
 #include "zinc/region.hpp"
-#include "zinc/graphicsmodule.hpp"
-#include "zinc/timekeeper.hpp"
 #include "zinc/sceneviewer.hpp"
+#include "zinc/spectrum.hpp"
+#include "zinc/tessellation.hpp"
+#include "zinc/timekeeper.hpp"
 
 namespace OpenCMISS
 {
@@ -84,14 +88,44 @@ public:
 		return Region(cmzn_context_create_region(id));
 	}
 
-	GraphicsModule getGraphicsModule()
-	{
-		return GraphicsModule(cmzn_context_get_graphics_module(id));
-	}
-
 	Timekeeper getDefaultTimekeeper()
 	{
 		return Timekeeper(cmzn_context_get_default_timekeeper(id));
+	}
+
+	Sceneviewermodule getSceneviewermodule()
+	{
+		return Sceneviewermodule(cmzn_context_get_sceneviewermodule(id));
+	}
+
+	Glyphmodule getGlyphmodule()
+	{
+		return Glyphmodule(cmzn_context_get_glyphmodule(id));
+	}
+
+	GraphicsMaterialModule getMaterialModule()
+	{
+		return GraphicsMaterialModule(cmzn_context_get_material_module(id));
+	}
+
+	Scenefiltermodule getScenefiltermodule()
+	{
+		return Scenefiltermodule(cmzn_context_get_scenefiltermodule(id));
+	}
+
+	Spectrummodule getSpectrummodule()
+	{
+		return Spectrummodule(cmzn_context_get_spectrummodule(id));
+	}
+
+	Fontmodule getFontmodule()
+	{
+		return Fontmodule(cmzn_context_get_fontmodule(id));
+	}
+
+	Tessellationmodule getTessellationmodule()
+	{
+		return Tessellationmodule(cmzn_context_get_tessellationmodule(id));
 	}
 
 };

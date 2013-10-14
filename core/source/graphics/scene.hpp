@@ -35,6 +35,6 @@ int Scene_render_opengl(cmzn_scene *scene, Render_graphics_opengl *renderer);
 int cmzn_scene_compile_tree(cmzn_scene *cmiss_scene,
 	Render_graphics_compile_members *renderer);
 
-int build_Scene(cmzn_scene_id scene, cmzn_scenefilter_id filter);
+int build_Scene(cmzn_scene *scene, cmzn_scenefilter *filter);
 
 #endif /* !defined (CMZN_SCENE_HPP) */

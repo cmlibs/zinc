@@ -22,6 +22,7 @@ FILE : scene.h
 #include "graphics/graphics_library.h"
 #include "context/context.h"
 #include "region/cmiss_region.h"
+#include "zinc/types/timeid.h"
 
 typedef std::list<cmzn_selection_handler *> Selection_handler_list;
 
@@ -63,7 +64,7 @@ Structure for maintaining a graphical scene of region.
 	/* number of segments used around cylinders */
 	int circle_discretization;
 	struct cmzn_graphics_module *graphics_module;
-	cmzn_timenotifier *time_notifier;
+	cmzn_timenotifier_id time_notifier;
 	/* callback list for transformation changes */
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_transformation)) *transformation_callback_list;
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
@@ -88,7 +89,7 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 	struct cmzn_graphics_module *graphics_module);
 
 /** @return  Handle to graphics module. Up to caller to destroy */
-cmzn_graphics_module_id cmzn_scene_get_graphics_module(cmzn_scene_id scene);
+cmzn_graphics_module * cmzn_scene_get_graphics_module(cmzn_scene_id scene);
 
 /***************************************************************************//**
  * Destroy cmzn_scene and clean up the memory it uses.
@@ -118,15 +119,6 @@ int cmzn_scene_set_position(struct cmzn_scene *scene, unsigned int position);
  * @return Non-accessed handle to scene for region, or 0 if none.
  */
 struct cmzn_scene *cmzn_region_get_scene_private(struct cmzn_region *region);
-
-/**
- * Return accessed handle to the scene for this region.
- * Currently, a cmzn_region may have at most one cmiss_scene.
- * Currently used by cmgui, but not approved for zinc external API!
- * @param cmiss_region  The region of query.
- * @return Accessed handle to scene for region, or 0 if none.
- */
-struct cmzn_scene *cmzn_region_get_scene_internal(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Deaccess the scene of the region

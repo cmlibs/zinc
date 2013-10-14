@@ -19,6 +19,7 @@ namespace Zinc
 {
 
 class StreaminformationRegion;
+class Scene;
 
 class Region
 {
@@ -187,6 +188,8 @@ public:
 	{
 		return cmzn_region_write_file(id, fileName);
 	}
+
+	Scene getScene();
 
 	StreaminformationRegion createStreaminformation();
 

@@ -12,6 +12,7 @@
 
 #include "zinc/fieldgroup.h"
 #include "zinc/graphic.h"
+#include "zinc/types/scenefilterid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"

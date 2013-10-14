@@ -13,10 +13,15 @@
 #define CMZN_CONTEXT_H__
 
 #include "types/contextid.h"
-#include "graphicsmodule.h"
-#include "sceneviewer.h"
+#include "types/fontid.h"
+#include "types/glyphid.h"
+#include "types/graphicsmaterialid.h"
 #include "types/regionid.h"
-#include "timekeeper.h"
+#include "types/scenefilterid.h"
+#include "types/sceneviewerid.h"
+#include "types/spectrumid.h"
+#include "types/tessellationid.h"
+#include "types/timekeeperid.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -47,16 +52,6 @@ ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
-
-/***************************************************************************//**
- * Returns a handle to the default graphics module.
- *
- * @param context  Handle to a context object.
- * @return  The handle to the default graphics module of the context if
- *    successfully called, otherwise 0.
- */
-ZINC_API cmzn_graphics_module_id cmzn_context_get_graphics_module(
-	cmzn_context_id context);
 
 /***************************************************************************//**
  * Returns the default region in the context.
@@ -98,6 +93,74 @@ ZINC_API cmzn_timekeeper_id cmzn_context_get_default_timekeeper(
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_context_process_idle_event(cmzn_context_id context);
+
+/**
+ * Returns a handle to a scene viewer module
+ * User interface must be enabled before this function can be called successfully.
+ *
+ * @param context  Handle to a context object.
+ * @return The scene viewer module if successfully called, otherwise NULL.
+ */
+ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
+	cmzn_context_id context);
+
+
+/***************************************************************************//**
+ * Return the material module in context.
+ *
+ * @param context  The context to request module from.
+ * @return  the material pacakage in context if successfully called,
+ *    otherwise NULL.
+ */
+ZINC_API cmzn_graphics_material_module_id cmzn_context_get_material_module(
+	cmzn_context_id context);
+
+/**
+* Get the scene filter module which stores scenefilter objects.
+*
+* @param context  The context to request the module from.
+* @return  Handle to the context filter module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
+	cmzn_context_id context);
+
+/**
+* Get the font module which stores font object.
+*
+* @param context  The context to request the module from.
+* @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
+	cmzn_context_id context);
+
+/**
+* Get the tessellation module which stores tessellation objects.
+*
+* @param context  The context to request the module from.
+* @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
+	cmzn_context_id context);
+
+/**
+* Get the spectrum module which stores spectrum objects.
+*
+* @param context  The context to request the module from.
+* @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
+	cmzn_context_id context);
+
+/**
+ * Get the glyph module which stores static graphics for visualising points,
+ * vectors, axes etc. Note on startup no glyphs are defined and glyph module
+ * functions need to be called to set up standard glyphs.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
+	cmzn_context_id context);
 
 #ifdef __cplusplus
 }

@@ -18,7 +18,6 @@ The data structures used for representing graphical materials.
 #include "zinc/zincconfigure.h"
 #include "zinc/field.h"
 #include "zinc/fieldimage.h"
-#include "zinc/graphicsmodule.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
