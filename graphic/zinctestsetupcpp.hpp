@@ -8,7 +8,6 @@
 #include <zinc/region.hpp>
 #include <zinc/fieldmodule.hpp>
 #include <zinc/glyph.hpp>
-#include <zinc/graphicsmodule.hpp>
 #include <zinc/scene.hpp>
 
 using namespace OpenCMISS::Zinc;
@@ -19,7 +18,6 @@ public:
 	Context context;
 	Region root_region;
 	Fieldmodule fm;
-	GraphicsModule gm;
 	Glyphmodule glyphmodule;
 	Scene scene;
 
@@ -27,13 +25,11 @@ public:
 		context("test"),
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldmodule()),
-		gm(context.getGraphicsModule()),
-		glyphmodule(gm.getGlyphmodule()),
+		glyphmodule(context.getGlyphmodule()),
 		scene(0)
 	{
-		scene = gm.getScene(root_region);
+		scene = root_region.getScene();
 		EXPECT_TRUE(fm.isValid());
-		EXPECT_TRUE(gm.isValid());
 		EXPECT_TRUE(glyphmodule.isValid());
 		EXPECT_EQ(OK, glyphmodule.defineStandardGlyphs());
 		EXPECT_TRUE(scene.isValid());

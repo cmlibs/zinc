@@ -14,7 +14,7 @@ TEST(cmzn_spectrummodule_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_spectrummodule_id sm = cmzn_graphics_module_get_spectrummodule(zinc.gm);
+	cmzn_spectrummodule_id sm = cmzn_context_get_spectrummodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), sm);
 
 	int result = cmzn_spectrummodule_begin_change(sm);
@@ -54,7 +54,7 @@ TEST(cmzn_spectrummodule_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Spectrummodule sm = zinc.gm.getSpectrummodule();
+	Spectrummodule sm = zinc.context.getSpectrummodule();
 	EXPECT_TRUE(sm.isValid());
 
 	int result = sm.beginChange();
@@ -86,7 +86,7 @@ TEST(cmzn_spectrum_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_spectrummodule_id sm = cmzn_graphics_module_get_spectrummodule(zinc.gm);
+	cmzn_spectrummodule_id sm = cmzn_context_get_spectrummodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), sm);
 
 	int result = cmzn_spectrummodule_begin_change(sm);
@@ -198,7 +198,7 @@ TEST(cmzn_spectrum_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Spectrummodule sm = zinc.gm.getSpectrummodule();
+	Spectrummodule sm = zinc.context.getSpectrummodule();
 	EXPECT_TRUE(sm.isValid());
 
 	int result = sm.beginChange();

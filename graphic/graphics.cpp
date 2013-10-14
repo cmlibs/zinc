@@ -186,7 +186,7 @@ TEST(cmzn_graphic_api, material)
 	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	cmzn_graphics_material_module_id material_module = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_module_id material_module = cmzn_context_get_material_module(zinc.context);
 	cmzn_graphics_material_id default_material = cmzn_graphics_material_module_get_default_material(material_module);
 	cmzn_graphics_material_id temp_material = cmzn_graphic_get_material(gr);
 	EXPECT_EQ(default_material, temp_material);
@@ -213,7 +213,7 @@ TEST(cmzn_graphic_api, material_cpp)
 	GraphicLines gr = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
+	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
 	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
 	GraphicsMaterial tempMaterial = gr.getMaterial();
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
@@ -349,7 +349,7 @@ TEST(cmzn_graphic_api, selected_material)
 	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	cmzn_graphics_material_module_id material_module = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_module_id material_module = cmzn_context_get_material_module(zinc.context);
 	cmzn_graphics_material_id default_selected_material = cmzn_graphics_material_module_get_default_selected_material(material_module);
 	cmzn_graphics_material_id temp_selected_material = cmzn_graphic_get_selected_material(gr);
 	EXPECT_EQ(default_selected_material, temp_selected_material);
@@ -376,7 +376,7 @@ TEST(cmzn_graphic_api, selected_material_cpp)
 	GraphicLines gr = zinc.scene.createGraphicLines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
+	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
 	GraphicsMaterial defaultSelectedMaterial = materialModule.getDefaultSelectedMaterial();
 	GraphicsMaterial tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(defaultSelectedMaterial.getId(), tempSelectedMaterial.getId());
@@ -443,7 +443,7 @@ TEST(cmzn_graphic_api, spectrum)
 	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	cmzn_spectrummodule_id spectrummodule = cmzn_graphics_module_get_spectrummodule(zinc.gm);
+	cmzn_spectrummodule_id spectrummodule = cmzn_context_get_spectrummodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), spectrummodule);
 
 	cmzn_spectrum_id spectrum = cmzn_spectrummodule_create_spectrum(spectrummodule);
@@ -538,7 +538,7 @@ TEST(cmzn_graphic_api, tessellation)
 	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
 	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
 
-	cmzn_tessellationmodule_id tessellationmodule = cmzn_graphics_module_get_tessellationmodule(zinc.gm);
+	cmzn_tessellationmodule_id tessellationmodule = cmzn_context_get_tessellationmodule(zinc.context);
 	cmzn_tessellation_id default_tessellation = cmzn_tessellationmodule_get_default_tessellation(tessellationmodule);
 	EXPECT_NE(static_cast<cmzn_tessellation_id>(0), default_tessellation);
 	cmzn_tessellation_id temp_tessellation = cmzn_graphic_get_tessellation(gr);
@@ -568,7 +568,7 @@ TEST(cmzn_graphic_api, tessellation_cpp)
 	Graphic gr = zinc.scene.createGraphicSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
-	Tessellationmodule tessellationModule = zinc.gm.getTessellationmodule();
+	Tessellationmodule tessellationModule = zinc.context.getTessellationmodule();
 	Tessellation defaultTessellation = tessellationModule.getDefaultTessellation();
 	Tessellation tempTessellation = gr.getTessellation();
 	EXPECT_EQ(defaultTessellation.getId(), tempTessellation.getId());

@@ -14,7 +14,7 @@ TEST(cmzn_tessellationmodule_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_tessellationmodule_id tm = cmzn_graphics_module_get_tessellationmodule(zinc.gm);
+	cmzn_tessellationmodule_id tm = cmzn_context_get_tessellationmodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_tessellationmodule *>(0), tm);
 
 	int result = cmzn_tessellationmodule_begin_change(tm);
@@ -86,7 +86,7 @@ TEST(cmzn_tessellationmodule_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Tessellationmodule tm = zinc.gm.getTessellationmodule();
+	Tessellationmodule tm = zinc.context.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
 	int result = tm.beginChange();
@@ -151,7 +151,7 @@ TEST(cmzn_tessellation_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_tessellationmodule_id tm = cmzn_graphics_module_get_tessellationmodule(zinc.gm);
+	cmzn_tessellationmodule_id tm = cmzn_context_get_tessellationmodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_tessellationmodule *>(0), tm);
 
 	int result = cmzn_tessellationmodule_begin_change(tm);
@@ -203,7 +203,7 @@ TEST(cmzn_tessellation_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Tessellationmodule tm = zinc.gm.getTessellationmodule();
+	Tessellationmodule tm = zinc.context.getTessellationmodule();
 	EXPECT_TRUE(tm.isValid());
 
 	int result = tm.beginChange();

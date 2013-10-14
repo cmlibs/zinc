@@ -14,12 +14,10 @@
 TEST(cmzn_sceneviewer_api, destroy_context_before_scene_viewer)
 {
 	 cmzn_context_id context = cmzn_context_create("test");
-	 cmzn_graphics_module_id gm = cmzn_context_get_graphics_module(context);
-	 cmzn_sceneviewermodule_id svModule = cmzn_graphics_module_get_sceneviewermodule(gm);
+	 cmzn_sceneviewermodule_id svModule = cmzn_context_get_sceneviewermodule(context);
 	 cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
 	  CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 	 cmzn_sceneviewermodule_destroy(&svModule);
-	 cmzn_graphics_module_destroy(&gm);
 	 cmzn_context_destroy(&context);
 	 cmzn_sceneviewer_destroy(&sv);
 }
@@ -28,7 +26,7 @@ TEST(cmzn_sceneviewer_api, set_background_invalid_args)
 {
 	ZincTestSetup z;
 
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_sceneviewer_set_background_colour_component_rgb(0, 0.0, 0.0, 0.0));
@@ -50,7 +48,7 @@ TEST(cmzn_sceneviewer_api, set_background_valid_args)
 {
 	ZincTestSetup z;
 
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_background_colour_component_rgb(sv, 0.5, 0.2, 0.8));
@@ -65,7 +63,7 @@ TEST(cmzn_sceneviewer_api, set_background_valid_args)
 TEST(cmzn_sceneviewer_api, get_background_rgb_invalid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_sceneviewer_get_background_colour_rgb(0, 0));
@@ -80,7 +78,7 @@ TEST(cmzn_sceneviewer_api, get_background_rgb)
 	ZincTestSetup z;
 	double rgb[3] = {0.0, 0.0, 0.0};
 
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_background_colour_component_rgb(sv, 0.5, 0.2, 0.8));
@@ -97,7 +95,7 @@ TEST(cmzn_sceneviewer_api, get_background_rgb)
 TEST(cmzn_sceneviewer_api, eye_position_invalid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_sceneviewer_set_eye_position(0, 0));
@@ -112,7 +110,7 @@ TEST(cmzn_sceneviewer_api, eye_position_invalid_args)
 TEST(cmzn_sceneviewer_api, eye_position_valid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	double eye[] = {3.0, 4.5, 6.7};
@@ -130,7 +128,7 @@ TEST(cmzn_sceneviewer_api, eye_position_valid_args)
 TEST(cmzn_sceneviewer_api, lookat_position_invalid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_sceneviewer_set_lookat_position(0, 0));
@@ -145,7 +143,7 @@ TEST(cmzn_sceneviewer_api, lookat_position_invalid_args)
 TEST(cmzn_sceneviewer_api, lookat_position_valid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	double lookat[] = {-2.0, 1.5, 16.7};
@@ -163,7 +161,7 @@ TEST(cmzn_sceneviewer_api, lookat_position_valid_args)
 TEST(cmzn_sceneviewer_api, up_vector_invalid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_sceneviewer_set_up_vector(0, 0));
@@ -178,7 +176,7 @@ TEST(cmzn_sceneviewer_api, up_vector_invalid_args)
 TEST(cmzn_sceneviewer_api, up_vector_valid_args)
 {
 	ZincTestSetup z;
-	cmzn_sceneviewermodule_id svm = cmzn_graphics_module_get_sceneviewermodule(z.gm);
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
 	double upVector[] = {2.0, 0.0, 0.0};
@@ -197,7 +195,7 @@ TEST(cmzn_sceneviewer, get_set)
 {
 	ZincTestSetup zinc;
 
-	cmzn_sceneviewermodule_id svModule = cmzn_graphics_module_get_sceneviewermodule(zinc.gm);
+	cmzn_sceneviewermodule_id svModule = cmzn_context_get_sceneviewermodule(zinc.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
 		CMZN_SCENEVIEWER_BUFFERING_ANY_MODE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
 
@@ -260,7 +258,7 @@ TEST(ZincSceneviewer, get_set)
 {
 	ZincTestSetupCpp zinc;
 
-	Sceneviewermodule svModule = zinc.gm.getSceneviewermodule();
+	Sceneviewermodule svModule = zinc.context.getSceneviewermodule();
 	EXPECT_TRUE(svModule.isValid());
 	Sceneviewer sv = svModule.createSceneviewer(
 		Sceneviewer::BUFFERING_ANY_MODE, Sceneviewer::STEREO_ANY_MODE);

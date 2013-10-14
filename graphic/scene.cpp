@@ -32,7 +32,7 @@ public:
 
 	ZincTestSetupSpectrum() :
 		ZincTestSetup(),
-		spectrummodule(cmzn_graphics_module_get_spectrummodule(gm)),
+		spectrummodule(cmzn_context_get_spectrummodule(context)),
 		defaultSpectrum(cmzn_spectrummodule_get_default_spectrum(spectrummodule))
 	{
 		EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), this->spectrummodule);
@@ -54,7 +54,7 @@ public:
 
 	ZincTestSetupSpectrumCpp() :
 		ZincTestSetupCpp(),
-		spectrummodule(gm.getSpectrummodule()),
+		spectrummodule(context.getSpectrummodule()),
 		defaultSpectrum(spectrummodule.getDefaultSpectrum())
 	{
 		EXPECT_TRUE(this->spectrummodule.isValid());
@@ -150,7 +150,7 @@ TEST(ZincScene, getSpectrumDataRange)
 	EXPECT_EQ(CMZN_OK, result = gr.setSpectrum(zinc.defaultSpectrum));
 
 	double minimumValues[3], maximumValues[3];
-	Scenefiltermodule sfm = zinc.gm.getScenefiltermodule();
+	Scenefiltermodule sfm = zinc.context.getScenefiltermodule();
 	Scenefilter defaultFilter = sfm.getDefaultScenefilter();
 
 	int maxRanges = zinc.scene.getSpectrumDataRange(defaultFilter,

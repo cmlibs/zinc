@@ -15,7 +15,7 @@ TEST(cmzn_scenefiltermodule_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_scenefiltermodule_id sfm = cmzn_graphics_module_get_scenefiltermodule(zinc.gm);
+	cmzn_scenefiltermodule_id sfm = cmzn_context_get_scenefiltermodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_scenefiltermodule *>(0), sfm);
 
 	int result = cmzn_scenefiltermodule_begin_change(sfm);
@@ -80,7 +80,7 @@ TEST(cmzn_scenefiltermodule_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Scenefiltermodule sfm = zinc.gm.getScenefiltermodule();
+	Scenefiltermodule sfm = zinc.context.getScenefiltermodule();
 	EXPECT_TRUE(sfm.isValid());
 
 	int result = sfm.beginChange();
@@ -127,7 +127,7 @@ TEST(cmzn_scenefilter_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_scenefiltermodule_id sfm = cmzn_graphics_module_get_scenefiltermodule(zinc.gm);
+	cmzn_scenefiltermodule_id sfm = cmzn_context_get_scenefiltermodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_scenefiltermodule *>(0), sfm);
 
 	cmzn_scenefilter_id filter = cmzn_scenefiltermodule_get_default_scenefilter(sfm);
@@ -254,7 +254,7 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Scenefiltermodule sfm = zinc.gm.getScenefiltermodule();
+	Scenefiltermodule sfm = zinc.context.getScenefiltermodule();
 	EXPECT_TRUE(sfm.isValid());
 
 	Scenefilter filter = sfm.getDefaultScenefilter();

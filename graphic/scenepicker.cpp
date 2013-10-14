@@ -34,8 +34,8 @@ TEST(cmzn_scene_picker_api, valid_args)
 	cmzn_scene_picker_id scene_picker = cmzn_scene_create_picker(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_scene_picker *>(0), scene_picker);
 
-	cmzn_sceneviewermodule_id svModule = cmzn_graphics_module_get_sceneviewermodule(
-		zinc.gm);
+	cmzn_sceneviewermodule_id svModule = cmzn_context_get_sceneviewermodule(
+		zinc.context);
 	EXPECT_NE(static_cast<cmzn_sceneviewermodule *>(0), svModule);
 
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
@@ -51,7 +51,7 @@ TEST(cmzn_scene_picker_api, valid_args)
 	result = cmzn_sceneviewer_view_all(sv);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_scenefiltermodule_id filter_module = cmzn_graphics_module_get_scenefiltermodule(zinc.gm);
+	cmzn_scenefiltermodule_id filter_module = cmzn_context_get_scenefiltermodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_scenefiltermodule *>(0), filter_module);
 
 	cmzn_scenefilter_id sf = cmzn_scenefiltermodule_create_scenefilter_graphic_type(filter_module,
@@ -115,7 +115,7 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	ScenePicker scenePicker = zinc.scene.createPicker();
 	EXPECT_TRUE(scenePicker.isValid());
 
-	Sceneviewermodule svModule = zinc.gm.getSceneviewermodule();
+	Sceneviewermodule svModule = zinc.context.getSceneviewermodule();
 	EXPECT_TRUE(svModule.isValid());
 
 	Sceneviewer sv = svModule.createSceneviewer(
@@ -131,7 +131,7 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	result = sv.viewAll();
 	EXPECT_EQ(CMZN_OK, result);
 
-	Scenefiltermodule sfm = zinc.gm.getScenefiltermodule();
+	Scenefiltermodule sfm = zinc.context.getScenefiltermodule();
 	EXPECT_TRUE(sfm.isValid());
 
 	Scenefilter sf = sfm.createScenefilterGraphicType(Graphic::POINTS);

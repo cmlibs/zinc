@@ -14,7 +14,7 @@ TEST(cmzn_fontmodule_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_fontmodule_id fontmodule = cmzn_graphics_module_get_fontmodule(zinc.gm);
+	cmzn_fontmodule_id fontmodule = cmzn_context_get_fontmodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_fontmodule *>(0), fontmodule);
 
 	int result = cmzn_fontmodule_begin_change(fontmodule);
@@ -51,7 +51,7 @@ TEST(cmzn_fontmodule_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Fontmodule fontmodule = zinc.gm.getFontmodule();
+	Fontmodule fontmodule = zinc.context.getFontmodule();
 	EXPECT_TRUE(fontmodule.isValid());
 
 	int result = fontmodule.beginChange();
@@ -80,7 +80,7 @@ TEST(cmzn_font_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_fontmodule_id fontmodule = cmzn_graphics_module_get_fontmodule(zinc.gm);
+	cmzn_fontmodule_id fontmodule = cmzn_context_get_fontmodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_fontmodule *>(0), fontmodule);
 
 	int result = cmzn_fontmodule_begin_change(fontmodule);
@@ -139,7 +139,7 @@ TEST(cmzn_font_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Fontmodule fontmodule = zinc.gm.getFontmodule();
+	Fontmodule fontmodule = zinc.context.getFontmodule();
 	EXPECT_TRUE(fontmodule.isValid());
 
 	int result = fontmodule.beginChange();

@@ -14,7 +14,7 @@ TEST(cmzn_graphics_material_module_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_material_module_id materialmodule = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_module_id materialmodule = cmzn_context_get_material_module(zinc.context);
 	EXPECT_NE(static_cast<cmzn_graphics_material_module *>(0), materialmodule);
 
 	int result = cmzn_graphics_material_module_begin_change(materialmodule);
@@ -65,7 +65,7 @@ TEST(cmzn_graphics_material_module_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicsMaterialModule materialmodule = zinc.gm.getMaterialModule();
+	GraphicsMaterialModule materialmodule = zinc.context.getMaterialModule();
 	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();
@@ -103,7 +103,7 @@ TEST(cmzn_graphics_material_api, valid_args)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_material_module_id materialmodule = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_module_id materialmodule = cmzn_context_get_material_module(zinc.context);
 	EXPECT_NE(static_cast<cmzn_graphics_material_module *>(0), materialmodule);
 
 	int result = cmzn_graphics_material_module_begin_change(materialmodule);
@@ -193,7 +193,7 @@ TEST(cmzn_graphics_material_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicsMaterialModule materialmodule = zinc.gm.getMaterialModule();
+	GraphicsMaterialModule materialmodule = zinc.context.getMaterialModule();
 	EXPECT_TRUE(materialmodule.isValid());
 
 	int result = materialmodule.beginChange();

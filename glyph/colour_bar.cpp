@@ -16,7 +16,7 @@ public:
 
 	ZincTestSetupSpectrum() :
 		ZincTestSetup(),
-		spectrummodule(cmzn_graphics_module_get_spectrummodule(gm)),
+		spectrummodule(cmzn_context_get_spectrummodule(context)),
 		defaultSpectrum(cmzn_spectrummodule_get_default_spectrum(spectrummodule))
 	{
 		EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), this->spectrummodule);
@@ -38,7 +38,7 @@ public:
 
 	ZincTestSetupSpectrumCpp() :
 		ZincTestSetupCpp(),
-		spectrummodule(gm.getSpectrummodule()),
+		spectrummodule(context.getSpectrummodule()),
 		defaultSpectrum(spectrummodule.getDefaultSpectrum())
 	{
 		EXPECT_TRUE(this->spectrummodule.isValid());
@@ -150,7 +150,7 @@ TEST(cmzn_glyph_colour_bar, valid_attributes)
 	EXPECT_EQ(labelDivisionsIn, value = cmzn_glyph_colour_bar_get_label_divisions(colourBar));
 
 	EXPECT_EQ(0, cmzn_glyph_colour_bar_get_label_material(colourBar));
-	cmzn_graphics_material_module_id materialModule = cmzn_graphics_module_get_material_module(zinc.gm);
+	cmzn_graphics_material_module_id materialModule = cmzn_context_get_material_module(zinc.context);
 	cmzn_graphics_material_id defaultMaterial = cmzn_graphics_material_module_get_default_material(materialModule);
 	EXPECT_NE(static_cast<cmzn_graphics_material_id>(0), defaultMaterial);
 	EXPECT_EQ(CMZN_OK, result = cmzn_glyph_colour_bar_set_label_material(colourBar, defaultMaterial));
@@ -243,7 +243,7 @@ TEST(cmzn_glyph_colour_bar, valid_attributes_cpp)
 
 	GraphicsMaterial tempMaterial = colourBar.getLabelMaterial();
 	EXPECT_FALSE(tempMaterial.isValid());
-	GraphicsMaterialModule materialModule = zinc.gm.getMaterialModule();
+	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
 	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
 	EXPECT_TRUE(defaultMaterial.isValid());
 	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelMaterial(defaultMaterial));
