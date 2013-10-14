@@ -17,12 +17,10 @@ class GraphicTestCase(unittest.TestCase):
     def setUp(self):
         self.context = Context('graphictest')
         root_region = self.context.getDefaultRegion()
-        self.graphics_module = self.context.getGraphicsModule()
-        self.scene = self.graphics_module.getScene(root_region)
+        self.scene = root_region.getScene()
 
 
     def tearDown(self):
-        del self.graphics_module
         del self.scene
         del self.context
 
@@ -34,7 +32,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertEqual(status.OK, result)
         attributes = graphic.getPointAttributes()
         self.assertTrue(attributes.isValid())
-        glyph_module = self.graphics_module.getGlyphmodule()
+        glyph_module = self.context.getGlyphmodule()
         glyph_module.defineStandardGlyphs()
         result = attributes.setGlyphType(Glyph.SPHERE)
         self.assertEqual(status.OK, result)
@@ -68,7 +66,7 @@ class GraphicTestCase(unittest.TestCase):
         self.assertEqual([4.8, 2.1, 7], base_size[1])
         
     def testSceneviewerBackgroundColour(self):
-        svm = self.graphics_module.getSceneviewermodule()
+        svm = self.context.getSceneviewermodule()
         sv = svm.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_MONO)
         
         result = sv.setBackgroundColourComponentRGB(0.3, 0.8, 0.65)

@@ -14,18 +14,16 @@ class SceneviewerTestCase(unittest.TestCase):
     def setUp(self):
         self.context = Context('sceneviewertest')
         root_region = self.context.getDefaultRegion()
-        self.graphics_module = self.context.getGraphicsModule()
-        self.scene = self.graphics_module.getScene(root_region)
+        self.scene = root_region.getScene()
 
 
     def tearDown(self):
-        del self.graphics_module
         del self.scene
         del self.context
 
 
     def testLookAtParameters(self):
-        scene_viewer_module = self.graphics_module.getSceneviewermodule()
+        scene_viewer_module = self.context.getSceneviewermodule()
         scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_ANY_MODE)
         params = scene_viewer.getLookatParameters()
         self.assertEqual([0, 0, 2], params[1])
@@ -41,7 +39,7 @@ class SceneviewerTestCase(unittest.TestCase):
         self.assertAlmostEqual(0.0109091457492757, params[3][2], 8)
         
     def testLookAtParametersIndividual(self):
-        scene_viewer_module = self.graphics_module.getSceneviewermodule()
+        scene_viewer_module = self.context.getSceneviewermodule()
         scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_ANY_MODE)
         self.assertEqual([0, 0, 2], scene_viewer.getEyePosition()[1])
         self.assertEqual([0, 0, 0], scene_viewer.getLookatPosition()[1])
@@ -55,7 +53,7 @@ class SceneviewerTestCase(unittest.TestCase):
         self.assertEqual([0, 0, 1], scene_viewer.getUpVector()[1])
         
     def testSceneviewerinput(self):
-        scene_viewer_module = self.graphics_module.getSceneviewermodule()
+        scene_viewer_module = self.context.getSceneviewermodule()
         scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_DOUBLE, Sceneviewer.STEREO_ANY_MODE)
         scene_viewer_input = scene_viewer.createSceneviewerinput()
         self.assertEqual(status.OK, scene_viewer_input.setPosition(3, 5))
