@@ -10,7 +10,6 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "zinc/fieldgroup.h"
-#include "zinc/graphicsmodule.h"
 #include "context/context.h"
 #include "curve/curve.h"
 #include "general/debug.h"
@@ -21,7 +20,7 @@
 #include "graphics/scene.h"
 #include "selection/any_object_selection.h"
 #include "region/cmiss_region.h"
-#include "time/time_keeper.hpp"
+#include "zinc/timekeeper.h"
 //-- #include "user_interface/event_dispatcher.h"
 /* following is temporary until circular references are removed for cmzn_region  */
 #include "region/cmiss_region_private.h"
@@ -134,6 +133,9 @@ struct cmzn_region *cmzn_context_get_default_region(struct Context *context)
 		if (!context->root_region)
 		{
 			context->root_region = cmzn_region_create_internal();
+			struct cmzn_graphics_module *graphicsModule = cmzn_context_get_graphics_module(context);
+			cmzn_graphics_module_enable_scenes(graphicsModule, context->root_region);
+			cmzn_graphics_module_destroy(&graphicsModule);
 		}
 		root_region = ACCESS(cmzn_region)(context->root_region);
 	}
@@ -180,6 +182,9 @@ struct cmzn_region *cmzn_context_create_region(struct Context *context)
 			cmzn_region_destroy(&default_region);
 		}
 		region = cmzn_region_create_region(context->root_region);
+		struct cmzn_graphics_module *graphicsModule = cmzn_context_get_graphics_module(context);
+		cmzn_graphics_module_enable_scenes(graphicsModule, region);
+		cmzn_graphics_module_destroy(&graphicsModule);
 	}
 	else
 	{
@@ -290,3 +295,115 @@ struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(
 	return curve_manager;
 }
 
+cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_sceneviewermodule_id sceneviewermodule =
+			cmzn_graphics_module_get_sceneviewermodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return sceneviewermodule;
+	}
+
+	return 0;
+}
+
+
+cmzn_graphics_material_module_id cmzn_context_get_material_module(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_graphics_material_module_id material_module =
+			cmzn_graphics_module_get_material_module(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return material_module;
+	}
+
+	return 0;
+}
+
+cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_scenefiltermodule_id scenefiltermodule =
+			cmzn_graphics_module_get_scenefiltermodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return scenefiltermodule;
+	}
+
+	return 0;
+}
+
+cmzn_fontmodule_id cmzn_context_get_fontmodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_fontmodule_id fontmodule =
+			cmzn_graphics_module_get_fontmodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return fontmodule;
+	}
+
+	return 0;
+}
+
+cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_tessellationmodule_id tessellationmodule =
+			cmzn_graphics_module_get_tessellationmodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return tessellationmodule;
+	}
+
+	return 0;
+}
+
+cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_spectrummodule_id spectrummodule =
+			cmzn_graphics_module_get_spectrummodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return spectrummodule;
+	}
+
+	return 0;
+}
+
+cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_glyphmodule_id glyphmodule =
+			cmzn_graphics_module_get_glyphmodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return glyphmodule;
+	}
+
+	return 0;
+}

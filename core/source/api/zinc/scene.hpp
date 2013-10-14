@@ -15,11 +15,13 @@
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
 
+
 namespace OpenCMISS
 {
 namespace Zinc
 {
 
+class Sceneviewermodule;
 class ScenePicker;
 
 class Scene
@@ -206,6 +208,11 @@ public:
 	ScenePicker createPicker();
 
 };
+
+inline Scene Region::getScene()
+{
+	return Scene(cmzn_region_get_scene(id));
+}
 
 } // namespace Zinc
 }

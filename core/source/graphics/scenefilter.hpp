@@ -12,7 +12,6 @@
 #ifndef SCENEFILTER_PRIVATE_HPP
 #define SCENEFILTER_PRIVATE_HPP
 
-#include "zinc/graphicsmodule.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/mystring.h"

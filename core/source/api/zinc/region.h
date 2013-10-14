@@ -17,6 +17,7 @@
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
 #include "types/nodeid.h"
+#include "types/sceneid.h"
 #include "types/streamid.h"
 #include "types/regionid.h"
 
@@ -532,6 +533,15 @@ ZINC_API int cmzn_streaminformation_region_set_resource_domain_type(
 	cmzn_streaminformation_region_id streaminformation,
 	cmzn_streamresource_id resource,
 	int domain_type);
+
+/**
+ * Return accessed handle to the scene for this region.
+ * Currently, a cmzn_region may have at most one cmiss_scene.
+ *
+ * @param cmiss_region  The region of query.
+ * @return Accessed handle to scene for region, or 0 if none.
+ */
+ZINC_API cmzn_scene_id cmzn_region_get_scene(cmzn_region_id region);
 
 #ifdef __cplusplus
 }

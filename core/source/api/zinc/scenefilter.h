@@ -15,7 +15,6 @@
 
 #include "types/fieldid.h"
 #include "types/graphicid.h"
-#include "types/graphicsmoduleid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
 

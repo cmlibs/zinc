@@ -25,8 +25,6 @@ struct Context
 	/* Always want the entry for graphics_buffer_package even if it will
 		not be available on this implementation */
 	struct cmzn_graphics_module *graphics_module;
-	//-- struct User_interface_module *UI_module;
-	struct cmzn_sceneviewermodule *sceneviewermodule;
 	struct Any_object_selection *any_object_selection;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
@@ -35,6 +33,15 @@ struct Context
 	struct MANAGER(Curve) *curve_manager;
 };
 
+/***************************************************************************//**
+ * Returns a handle to the default graphics module.
+ *
+ * @param context  Handle to a context object.
+ * @return  The handle to the default graphics module of the context if
+ *    successfully called, otherwise 0.
+ */
+cmzn_graphics_module * cmzn_context_get_graphics_module(
+	cmzn_context_id context);
 
 /***************************************************************************//**
  * Return the any object selection in context.

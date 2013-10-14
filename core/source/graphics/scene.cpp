@@ -17,7 +17,6 @@ FILE : scene.cpp
 #include "zinc/glyph.h"
 #include "zinc/graphic.h"
 #include "zinc/graphicsmaterial.h"
-#include "zinc/graphicsmodule.h"
 #include "zinc/node.h"
 #include "zinc/scenepicker.h"
 #include "zinc/scene.h"
@@ -1097,7 +1096,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 	return (return_code);
 } /* cmzn_scene_get_range */
 
-cmzn_graphics_module_id cmzn_scene_get_graphics_module(cmzn_scene_id scene)
+cmzn_graphics_module * cmzn_scene_get_graphics_module(cmzn_scene_id scene)
 {
 	return cmzn_graphics_module_access(scene->graphics_module);
 }
@@ -1114,7 +1113,7 @@ struct cmzn_scene *cmzn_region_get_scene_private(struct cmzn_region *region)
 	return scene;
 }
 
-struct cmzn_scene *cmzn_region_get_scene_internal(struct cmzn_region *region)
+cmzn_scene_id cmzn_region_get_scene(cmzn_region_id region)
 {
 	return cmzn_scene_access(cmzn_region_get_scene_private(region));
 }

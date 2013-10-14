@@ -42,6 +42,27 @@ struct cmzn_graphics_module;
 struct cmzn_graphics_module *cmzn_graphics_module_create(struct Context *context);
 
 /***************************************************************************//**
+ * Return an additional handle to the graphics module. Increments the
+ * internal 'access count' of the module.
+ *
+ * @param graphics_module  Existing handle to the graphics module.
+ * @return  Additional handle to graphics module.
+ */
+cmzn_graphics_module * cmzn_graphics_module_access(
+	cmzn_graphics_module * graphics_module);
+
+/***************************************************************************//**
+ * Destroy this handle to the graphics module. The graphics module itself will
+ * only be destroyed when all handles to it are destroyed.
+ *
+ * @param graphics_module_address  Address of the graphics module handle to be
+ * destroyed.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+int cmzn_graphics_module_destroy(
+	cmzn_graphics_module * *graphics_module_address);
+
+/***************************************************************************//**
  * Return the light module in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
@@ -125,5 +146,90 @@ struct MANAGER(cmzn_font) *cmzn_graphics_module_get_font_manager(
  */
 void cmzn_graphics_module_remove_external_callback_dependency(
 	struct cmzn_graphics_module *graphics_module);
+
+
+/**
+ * Returns a handle to a scene viewer module
+ * User interface must be enabled before this function can be called successfully.
+ *
+ * @param graphics_module  The graphics module to request the module from.
+ * @return The scene viewer module if successfully called, otherwise NULL.
+ */
+cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
+	cmzn_graphics_module * graphics_module);
+
+/**
+ * Get the glyph module which stores static graphics for visualising points,
+ * vectors, axes etc. Note on startup no glyphs are defined and glyph module
+ * functions need to be called to set up standard glyphs.
+ *
+ * @param graphics_module  The graphics module to request manager from.
+ * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ */
+cmzn_glyphmodule_id cmzn_graphics_module_get_glyphmodule(
+	cmzn_graphics_module * graphics_module);
+
+/***************************************************************************//**
+ * Get a scene of region from graphics module with an access_count incremented
+ * by 1. Caller is responsible for calling cmzn_scene_destroy to destroy the
+ * reference to it.
+ *
+ * @param graphics_module  The module at which the scene will get its
+ * graphics setting for.
+ * @param region  The region at which the scene is representing for.
+ * @return  Reference to the scene.
+ */
+cmzn_scene_id cmzn_graphics_module_get_scene(
+	cmzn_graphics_module * graphics_module, cmzn_region_id region);
+
+/**
+* Get the spectrum module which stores spectrum objects.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
+*/
+cmzn_spectrummodule_id cmzn_graphics_module_get_spectrummodule(
+	cmzn_graphics_module * graphics_module);
+
+/**
+* Get the tessellation module which stores tessellation objects.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
+*/
+cmzn_tessellationmodule_id cmzn_graphics_module_get_tessellationmodule(
+	cmzn_graphics_module * graphics_module);
+
+/**
+* Get the scene filter module which stores scenefilter objects.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the scene filter module, or 0 on error. Up to caller to destroy.
+*/
+cmzn_scenefiltermodule_id cmzn_graphics_module_get_scenefiltermodule(
+	cmzn_graphics_module * graphics_module);
+
+/**
+* Get the font module which stores font object.
+*
+* @param graphics_module  The graphics module to request module from.
+* @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+*/
+cmzn_fontmodule_id cmzn_graphics_module_get_fontmodule(
+	cmzn_graphics_module * graphics_module);
+
+/***************************************************************************//**
+ * Return the material module in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the material pacakage in graphics module if successfully called,
+ *    otherwise NULL.
+ */
+cmzn_graphics_material_module_id cmzn_graphics_module_get_material_module(
+	struct cmzn_graphics_module *graphics_module);
+
+int cmzn_graphics_module_enable_scenes(
+	struct cmzn_graphics_module *graphics_module,
+	struct cmzn_region *cmiss_region);
 
 #endif /* !defined (GRAPHICS_MODULE_H) */

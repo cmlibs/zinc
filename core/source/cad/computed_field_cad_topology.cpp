@@ -932,7 +932,7 @@ int gfx_list_cad_entity(struct Parse_state *state,
 				//DEBUG_PRINT("gfx_list_cad_entity:  id type '%d'\n", cad_identifier.type);
 				if (selected_flag)
 				{
-					cmzn_scene *scene = cmzn_region_get_scene_internal(region_path_and_name.region);
+					cmzn_scene *scene = cmzn_region_get_scene(region_path_and_name.region);
 					cmzn_field_group_id selection_group = cmzn_scene_get_selection_group(scene);
 
 					struct MANAGER(Computed_field) *manager = cmzn_region_get_Computed_field_manager(

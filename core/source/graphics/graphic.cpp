@@ -49,8 +49,8 @@
 #include "graphics/glyph.hpp"
 #include "graphics/graphics_object.h"
 #include "graphics/scene.h"
-#include "graphics/scene.h"
 #include "graphics/graphic.h"
+#include "graphics/graphics_module.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include "graphics/render_gl.h"
@@ -6536,7 +6536,7 @@ int cmzn_graphic_point_attributes_set_glyph_type(
 	cmzn_graphic *graphic = reinterpret_cast<cmzn_graphic *>(point_attributes);
 	if (graphic && (CMZN_GLYPH_TYPE_INVALID != glyph_type))
 	{
-		cmzn_graphics_module_id graphics_module = cmzn_scene_get_graphics_module(graphic->scene);
+		cmzn_graphics_module* graphics_module = cmzn_scene_get_graphics_module(graphic->scene);
 		cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(graphics_module);
 		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_type);
 		if (glyph || (glyph_type == CMZN_GLYPH_NONE))
