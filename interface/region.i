@@ -46,6 +46,7 @@
 %{
 #include "zinc/fieldimage.hpp"
 #include "zinc/region.hpp"
+#include "zinc/scene.hpp"
 %}
 
 %include "zinc/region.hpp"

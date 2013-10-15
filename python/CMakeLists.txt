@@ -61,7 +61,6 @@ SET(INTERFACE_SRCS
 	../interface/context.i
 	../interface/region.i
 	../interface/fieldmodule.i
-	../interface/graphicsmodule.i
 	../interface/graphicsmaterial.i
 	../interface/field.i
 	../interface/stream.i

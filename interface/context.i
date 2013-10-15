@@ -41,7 +41,6 @@
 
 %module(package="opencmiss.zinc") context
 
-%import "graphicsmodule.i"
 %import "scene.i"
 %import "sceneviewer.i"
 %import "field.i"
