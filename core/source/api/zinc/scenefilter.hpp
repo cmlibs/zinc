@@ -9,7 +9,7 @@
 #ifndef CMZN_SCENEFILTER_HPP__
 #define CMZN_SCENEFILTER_HPP__
 
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/region.hpp"
 #include "zinc/scenefilter.h"
 
@@ -76,9 +76,9 @@ public:
 		return cmzn_scenefilter_set_managed(id, value);
 	}
 
-	bool evaluateGraphic(Graphic& graphic)
+	bool evaluateGraphics(Graphics& graphics)
 	{
-		return cmzn_scenefilter_evaluate_graphic(id, graphic.getId());
+		return cmzn_scenefilter_evaluate_graphics(id, graphics.getId());
 	}
 
 	bool isInverse()
@@ -219,15 +219,15 @@ public:
 			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 
-	Scenefilter createScenefilterGraphicName(const char *matchName)
+	Scenefilter createScenefilterGraphicsName(const char *matchName)
 	{
-		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_graphic_name(id, matchName));
+		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_graphics_name(id, matchName));
 	}
 
-	Scenefilter createScenefilterGraphicType(Graphic::Type graphicType)
+	Scenefilter createScenefilterGraphicsType(Graphics::Type graphicsType)
 	{
-		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_graphic_type(id,
-			static_cast<cmzn_graphic_type>(graphicType)));
+		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_graphics_type(id,
+			static_cast<cmzn_graphics_type>(graphicsType)));
 	}
 
 	Scenefilter createScenefilterRegion(Region& matchRegion)

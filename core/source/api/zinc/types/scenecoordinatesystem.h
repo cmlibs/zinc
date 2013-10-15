@@ -17,7 +17,7 @@
 
 /***************************************************************************//**
  * Enumerated type for identifying scene and window coordinate systems.
- * cmzn_graphic objects are given in one of these coordinate systems.
+ * Graphics are drawn in one of these coordinate systems.
  */
 enum cmzn_scene_coordinate_system
 {

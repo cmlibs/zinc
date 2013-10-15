@@ -9,7 +9,7 @@
 
 #include <map>
 #include "zinc/scenepicker.h"
-#include "zinc/types/graphicid.h"
+#include "zinc/types/graphicsid.h"
 #include "zinc/types/scenefilterid.h"
 #include "zinc/types/fieldgroupid.h"
 #include "zinc/types/elementid.h"
@@ -55,9 +55,9 @@ private:
 
 	void reset();
 
-	/*provide a select buffer pointer and return the scene and graphic */
-	int getSceneAndGraphic(GLuint *select_buffer_ptr,
-		cmzn_scene_id *scene, cmzn_graphic_id *graphic);
+	/*provide a select buffer pointer and return the scene and graphics */
+	int getSceneAndGraphics(GLuint *select_buffer_ptr,
+		cmzn_scene_id *scene, cmzn_graphics_id *graphics);
 
 public:
 
@@ -85,7 +85,7 @@ public:
 
 	cmzn_node_id getNearestNode(enum cmzn_scene_picker_object_type type);
 
-	cmzn_graphic_id getNearestGraphic(enum cmzn_scene_picker_object_type type);
+	cmzn_graphics_id getNearestGraphics(enum cmzn_scene_picker_object_type type);
 
 	inline cmzn_scene_picker *access()
 	{
@@ -110,7 +110,7 @@ int cmzn_scene_picker_set_interaction_volume(cmzn_scene_picker_id scene_picker,
 int cmzn_scene_picker_add_picked_data_to_group(cmzn_scene_picker_id scene_picker,
 	cmzn_field_group_id group);
 
-cmzn_graphic_id cmzn_scene_picker_get_nearest_data_graphic(cmzn_scene_picker_id scene_picker);
+cmzn_graphics_id cmzn_scene_picker_get_nearest_data_graphics(cmzn_scene_picker_id scene_picker);
 
 cmzn_node_id cmzn_scene_picker_get_nearest_data(cmzn_scene_picker_id scene_picker);
 

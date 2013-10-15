@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : scene.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -11,7 +11,7 @@
 
 #include "zinc/scene.h"
 #include "zinc/fieldgroup.hpp"
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
 
@@ -92,35 +92,35 @@ public:
 			surfaceDensity, surfaceDensityScaleFactor);
 	}
 
-	Graphic createGraphic(Graphic::Type graphicType)
+	Graphics createGraphics(Graphics::Type graphicsType)
 	{
-		return Graphic(cmzn_scene_create_graphic(id,
-			static_cast<cmzn_graphic_type>(graphicType)));
+		return Graphics(cmzn_scene_create_graphics(id,
+			static_cast<cmzn_graphics_type>(graphicsType)));
 	}
 
-	GraphicContours createGraphicContours()
+	GraphicsContours createGraphicsContours()
 	{
-		return GraphicContours(cmzn_scene_create_graphic_contours(id));
+		return GraphicsContours(cmzn_scene_create_graphics_contours(id));
 	}
 
-	GraphicLines createGraphicLines()
+	GraphicsLines createGraphicsLines()
 	{
-		return GraphicLines(cmzn_scene_create_graphic_lines(id));
+		return GraphicsLines(cmzn_scene_create_graphics_lines(id));
 	}
 
-	GraphicPoints createGraphicPoints()
+	GraphicsPoints createGraphicsPoints()
 	{
-		return GraphicPoints(cmzn_scene_create_graphic_points(id));
+		return GraphicsPoints(cmzn_scene_create_graphics_points(id));
 	}
 
-	GraphicStreamlines createGraphicStreamlines()
+	GraphicsStreamlines createGraphicsStreamlines()
 	{
-		return GraphicStreamlines(cmzn_scene_create_graphic_streamlines(id));
+		return GraphicsStreamlines(cmzn_scene_create_graphics_streamlines(id));
 	}
 
-	GraphicSurfaces createGraphicSurfaces()
+	GraphicsSurfaces createGraphicsSurfaces()
 	{
-		return GraphicSurfaces(cmzn_scene_create_graphic_surfaces(id));
+		return GraphicsSurfaces(cmzn_scene_create_graphics_surfaces(id));
 	}
 
 	SelectionHandler createSelectionHandler()
@@ -129,32 +129,32 @@ public:
 	}
 
 	/**
-	 * Returns the graphic of the specified name from the scene. Beware that
+	 * Returns the graphics of the specified name from the scene. Beware that
 	 * graphics in the same scene may have the same name and this function will
-	 * only return the first graphic found with the specified name;
+	 * only return the first graphics found with the specified name;
 	 *
-	 * @param scene  Scene in which to find the graphic.
-	 * @param graphic_name  The name of the graphic to find.
-	 * @return  New reference to graphic of specified name, or 0 if not found.
+	 * @param scene  Scene in which to find the graphics.
+	 * @param name  The name of the graphics to find.
+	 * @return  New reference to graphics of specified name, or 0 if not found.
 	 */
-	Graphic findGraphicByName(const char *graphicName)
+	Graphics findGraphicsByName(const char *name)
 	{
-		return Graphic(cmzn_scene_find_graphic_by_name(id, graphicName));
+		return Graphics(cmzn_scene_find_graphics_by_name(id, name));
 	}
 
-	Graphic getFirstGraphic()
+	Graphics getFirstGraphics()
 	{
-		return Graphic(cmzn_scene_get_first_graphic(id));
+		return Graphics(cmzn_scene_get_first_graphics(id));
 	}
 
-	Graphic getNextGraphic(Graphic& refGraphic)
+	Graphics getNextGraphics(Graphics& refGraphics)
 	{
-		return Graphic(cmzn_scene_get_next_graphic(id, refGraphic.getId()));
+		return Graphics(cmzn_scene_get_next_graphics(id, refGraphics.getId()));
 	}
 
-	Graphic getPreviousGraphic(Graphic& refGraphic)
+	Graphics getPreviousGraphics(Graphics& refGraphics)
 	{
-		return Graphic(cmzn_scene_get_previous_graphic(id, refGraphic.getId()));
+		return Graphics(cmzn_scene_get_previous_graphics(id, refGraphics.getId()));
 	}
 
 	int getNumberOfGraphics()
@@ -190,9 +190,9 @@ public:
 		return cmzn_scene_set_visibility_flag(id, visibilityFlag);
 	}
 
-	int moveGraphicBefore(Graphic& graphic, Graphic& refGraphic)
+	int moveGraphicsBefore(Graphics& graphics, Graphics& refGraphics)
 	{
-		return cmzn_scene_move_graphic_before(id, graphic.getId(), refGraphic.getId());
+		return cmzn_scene_move_graphics_before(id, graphics.getId(), refGraphics.getId());
 	}
 
 	int removeAllGraphics()
@@ -200,9 +200,9 @@ public:
 		return cmzn_scene_remove_all_graphics(id);
 	}
 
-	int removeGraphic(Graphic& graphic)
+	int removeGraphics(Graphics& graphics)
 	{
-		return cmzn_scene_remove_graphic(id, graphic.getId());
+		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}
 
 	ScenePicker createPicker();

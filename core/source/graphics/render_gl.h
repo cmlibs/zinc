@@ -37,7 +37,7 @@ public:
 	SubObjectGroupHighlightFunctor *highlight_functor;
 
 private:
-	// scale factor multiplying graphic render_line_width and render_point_size
+	// scale factor multiplying graphics render_line_width and render_point_size
 	// to get size in pixels. Set it so high resolution output has thick enough
 	// lines and visible points compared with on-screen resolution.
 	double point_unit_size_pixels;

@@ -95,11 +95,11 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
-	enum cmzn_graphic_line_attributes_shape line_shape, int circleDivisions,
+	enum cmzn_graphicslineattributes_shape line_shape, int circleDivisions,
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	struct FE_region *fe_region, enum cmzn_graphic_render_polygon_mode render_polygon_mode);
+	struct FE_region *fe_region, enum cmzn_graphics_render_polygon_mode render_polygon_mode);
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,

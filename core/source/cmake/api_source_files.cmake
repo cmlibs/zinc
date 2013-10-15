@@ -36,7 +36,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtrigonometry.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldvectoroperators.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/glyph.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphic.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphics.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/font.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsmaterial.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/interactivetool.h
@@ -69,7 +69,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldmoduleid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldsubobjectgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/glyphid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmaterialid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/interactivetoolid.h

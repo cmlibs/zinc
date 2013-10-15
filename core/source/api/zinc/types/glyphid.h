@@ -47,12 +47,12 @@ enum cmzn_glyph_repeat_mode
 		 * axis. Not suitable for sphere, cube etc. which are symmetric about 0.0 on
 		 * axis 1. In this mode the label is only shown for the first glyph and the
 		 * label offset is not reversed with the glyph.
-		 * @see cmzn_graphic_point_attributes_set_signed_scale_field
+		 * @see cmzn_graphicspointattributes_set_signed_scale_field
 		 */
 };
 
 /**
- * An enum defining the type of graphic glyph.
+ * An enum defining the type of graphics glyph.
  */
 enum cmzn_glyph_type
 {

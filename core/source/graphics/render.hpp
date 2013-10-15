@@ -13,7 +13,7 @@
 struct cmzn_scene;
 struct cmzn_scenefilter;
 #define Scene cmzn_scene // GRC temp
-struct cmzn_graphic;
+struct cmzn_graphics;
 struct cmzn_scene;
 struct GT_element_group;
 struct Texture;
@@ -157,7 +157,7 @@ public:
 	/** Must be called after executing graphics object after successful call to begin_coordinate_system. */
 	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/) = 0;
 
-	/** Ensure this returns true for each graphic's layer before rendering.
+	/** Ensure this returns true for each graphics layer before rendering.
 	 * Override if renderer renders in layers to return true only when the
 	 * supplied layer matches the current layer being rendered graphics. */
 	virtual int rendering_layer(int /*layer*/)
@@ -200,7 +200,7 @@ public:
 	}
 
 	FE_value time;
-	/** Passed from cmiss_scenes to graphic for compilation */
+	/** Passed from cmiss_scenes to graphics for compilation */
 	const char *name_prefix;
 	/** set to initial modelview_matrix from viewer to get world coordinates.
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */

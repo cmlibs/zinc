@@ -19,7 +19,7 @@ represent curves in three xi-directions;
 #define AUXILIARY_GRAPHICS_TYPES_H
 
 #include "zinc/zincconfigure.h"
-#include "zinc/types/graphicid.h"
+#include "zinc/types/graphicsid.h"
 
 #include "general/enumerator.h"
 //#if defined (WIN32_SYSTEM)
@@ -91,13 +91,13 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_select_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_select_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_render_polygon_mode);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_render_polygon_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_line_attributes_shape);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphicslineattributes_shape);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_streamlines_track_direction);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_track_direction);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
 

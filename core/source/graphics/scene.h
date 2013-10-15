@@ -18,7 +18,7 @@ FILE : scene.h
 #include "general/any_object_prototype.h"
 #include "general/manager.h"
 #include "general/object.h"
-#include "graphics/graphic.h"
+#include "graphics/graphics.h"
 #include "graphics/graphics_library.h"
 #include "context/context.h"
 #include "region/cmiss_region.h"
@@ -46,7 +46,7 @@ Structure for maintaining a graphical scene of region.
 	struct cmzn_scene_callback_data *update_callback_list;
 	/* managers for updating graphics in response to global changes */
 	struct MANAGER(Computed_field) *computed_field_manager;
-	struct LIST(cmzn_graphic) *list_of_graphics;
+	struct LIST(cmzn_graphics) *list_of_graphics;
 	void *computed_field_manager_callback_id;
 	/* level of cache in effect */
 	int cache;
@@ -128,15 +128,15 @@ struct cmzn_scene *cmzn_region_get_scene_private(struct cmzn_region *region);
 int cmzn_region_deaccess_scene(struct cmzn_region *region);
 
 /***************************************************************************//**
- * Wrapper for accessing the list of graphic in <cmzn_scene>.
+ * Wrapper for accessing the list of graphics in <cmzn_scene>.
  * @param cmiss_scene target for that scene
  * @param conditional_function conditional function for the list
  * @param data void pointer to data to pass into the conditional function
- * @return Return the first graphic that fullfill the conditional function
+ * @return Return the first graphics that fullfill the conditional function
  */
-struct cmzn_graphic *cmzn_scene_get_first_graphic_with_condition(
+struct cmzn_graphics *cmzn_scene_get_first_graphics_with_condition(
 	struct cmzn_scene *cmiss_scene,
-	LIST_CONDITIONAL_FUNCTION(cmzn_graphic) *conditional_function,
+	LIST_CONDITIONAL_FUNCTION(cmzn_graphics) *conditional_function,
 	void *data);
 
 /***************************************************************************//**
@@ -222,15 +222,15 @@ int for_each_child_scene_in_scene_tree(
 		void *user_data),	void *user_data);
 
 /***************************************************************************//**
- * Returns the position of <graphic> in <scene>.
+ * Returns the position of <graphics> in <scene>.
  */
-int cmzn_scene_get_graphic_position(
+int cmzn_scene_get_graphics_position(
 	struct cmzn_scene *scene,
-	struct cmzn_graphic *graphic);
+	struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
  * Returns true if <scene1> and <scene2> match in
- * main attributes of scene, graphic etc. such that they would produce
+ * main attributes of scene, graphics etc. such that they would produce
  * the same graphics.
  */
 int cmzn_scenes_match(struct cmzn_scene *scene1,
@@ -243,9 +243,9 @@ int cmzn_scenes_match(struct cmzn_scene *scene1,
 struct cmzn_scene *create_editor_copy_cmzn_scene(
 	struct cmzn_scene *existing_scene);
 
-int for_each_graphic_in_cmzn_scene(
+int for_each_graphics_in_cmzn_scene(
 	struct cmzn_scene *scene,
-	int (*cmiss_scene_graphic_iterator_function)(struct cmzn_graphic *graphic,
+	int (*cmiss_scene_graphics_iterator_function)(struct cmzn_graphics *graphics,
 		void *user_data),	void *user_data);
 
 /***************************************************************************//**
@@ -256,7 +256,7 @@ struct cmzn_region *cmzn_scene_get_region(
 
 /***************************************************************************//**
  *Copies the cmzn_scene contents from source to destination, keeping any
- *graphics objects from the destination that will not change with the new graphic
+ *graphics objects from the destination that will not change with the new graphics
  *from source. Used to apply the changed cmzn_scene from the editor to the
  *actual cmzn_scene.
  */
@@ -319,33 +319,33 @@ int cmzn_scene_create_node_list_selection(cmzn_scene_id scene,
 	struct LIST(FE_node) *node_list);
 
 /***************************************************************************//**
- * Set default graphic attributes depending on type, e.g. tessellation,
+ * Set default graphics attributes depending on type, e.g. tessellation,
  * materials, etc.
  */
-int cmzn_scene_set_minimum_graphic_defaults(struct cmzn_scene *scene,
-	struct cmzn_graphic *graphic);
+int cmzn_scene_set_minimum_graphics_defaults(struct cmzn_scene *scene,
+	struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
  * Set additional default attributes for backward compatibility with gfx modify
  * g_element commands: default coordinate, discretization etc.
  */
 int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
-	struct cmzn_graphic *graphic);
+	struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
- * Adds the <graphic> to <scene> at the given <position>, where 1 is
+ * Adds the <graphics> to <scene> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
- * last position in the list cause the graphic to be added at its end, with a
+ * last position in the list cause the graphics to be added at its end, with a
  * position one greater than the last.
  *
  * @param scene  The handle to the scene.
- * @param graphic  The handle to the cmiss graphic which will be added to the
+ * @param graphics  The handle to the cmiss graphics which will be added to the
  *   scene.
- * @param pos  The position to put the target graphic to.
- * @return  Returns 1 if successfully add graphic to scene at pos, otherwise
+ * @param pos  The position to put the target graphics to.
+ * @return  Returns 1 if successfully add graphics to scene at pos, otherwise
  *   returns 0.
  */
-int cmzn_scene_add_graphic(cmzn_scene_id scene, cmzn_graphic_id graphic, int pos);
+int cmzn_scene_add_graphics(cmzn_scene_id scene, cmzn_graphics_id graphics, int pos);
 
 int list_cmzn_scene_transformation_commands(struct cmzn_scene *scene,
 	void *command_prefix_void);
@@ -375,13 +375,13 @@ int cmzn_scene_remove_selection_from_element_list_of_dimension(cmzn_scene_id sce
 int cmzn_scene_is_visible_hierarchical(cmzn_scene_id scene);
 
 /***************************************************************************//**
- * Get graphic at position <pos> in the internal graphics list of scene.
+ * Get graphics at position <pos> in the internal graphics list of scene.
  *
- * @param scene  The handle to the scene of which the graphic is located.
- * @param pos  The position of the graphic, starting from 0.
- * @return  returns the found graphic if found at pos, otherwise returns NULL.
+ * @param scene  The handle to the scene of which the graphics is located.
+ * @param pos  The position of the graphics, starting from 0.
+ * @return  returns the found graphics if found at pos, otherwise returns NULL.
  */
-cmzn_graphic_id cmzn_scene_get_graphic_at_position(
+cmzn_graphics_id cmzn_scene_get_graphics_at_position(
 	cmzn_scene_id scene, int pos);
 
 /***************************************************************************//**
@@ -396,13 +396,13 @@ cmzn_field_id cmzn_scene_get_selection_group_private_for_highlighting(
 	cmzn_scene_id scene);
 
 int cmzn_region_modify_scene(struct cmzn_region *region,
-	struct cmzn_graphic *graphic, int delete_flag, int position);
+	struct cmzn_graphics *graphics, int delete_flag, int position);
 
 
 /**
  * Inform scene that it has changed and must be rebuilt.
  * Unless change caching is on, informs clients of scene that it has changed.
- * For internal use only; called by changed graphic to owning scene.
+ * For internal use only; called by changed graphics to owning scene.
  */
 void cmzn_scene_changed(struct cmzn_scene *scene);
 
@@ -450,7 +450,7 @@ int for_each_graphics_object_in_scene_tree(cmzn_scene_id scene,
 	void *user_data);
 
 int Scene_export_region_graphics_object(cmzn_scene *scene,
-	cmzn_region *region, const char *graphic_name, cmzn_scenefilter_id filter,
+	cmzn_region *region, const char *graphics_name, cmzn_scenefilter_id filter,
 	graphics_object_tree_iterator_function iterator_function, void *user_data);
 
 cmzn_scene *cmzn_scene_get_child_of_position(cmzn_scene *scene, int position);

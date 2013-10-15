@@ -3276,7 +3276,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 } /* GT_polyline_set_integer_identifier */
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GLfloat *data)
@@ -3695,7 +3695,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 		if (ALLOCATE(object, gtObject, 1) &&
 			(object->name = duplicate_string(name)))
 		{
-			object->select_mode=CMZN_GRAPHIC_NO_SELECT;
+			object->select_mode=CMZN_GRAPHICS_NO_SELECT;
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
@@ -5992,7 +5992,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 		{
 			n_texture_coordinates = 3;
 		}
-		GT_voltex_type voltex_type = (surface_list->render_polygon_mode == CMZN_GRAPHIC_RENDER_POLYGON_SHADED) ?
+		GT_voltex_type voltex_type = (surface_list->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_SHADED) ?
 			g_VOLTEX_SHADED_TEXMAP : g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 		voltex = CREATE(GT_voltex)(vertex_count, vertex_list,
 			triangle_count, triangle_list, n_data_components,
@@ -6127,8 +6127,8 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 					index++;
 				}
 			}
-			cmzn_graphic_render_polygon_mode render_polygon_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
-					CMZN_GRAPHIC_RENDER_POLYGON_SHADED : CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME;
+			cmzn_graphics_render_polygon_mode render_polygon_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
+					CMZN_GRAPHICS_RENDER_POLYGON_SHADED : CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME;
 			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode, g_TRIANGLE,
 				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 				normalpoints, tangentpoints, texturepoints, n_data_components, datavalues);
@@ -6222,18 +6222,18 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
 	return (return_code);
 } /* GT_object_decimate_GT_surface */
 
-enum cmzn_graphic_select_mode GT_object_get_select_mode(
+enum cmzn_graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object)
 {
 	if (graphics_object)
 		return graphics_object->select_mode;
-	return CMZN_GRAPHIC_SELECT_MODE_INVALID;
+	return CMZN_GRAPHICS_SELECT_MODE_INVALID;
 }
 
 int GT_object_set_select_mode(struct GT_object *graphics_object,
-	enum cmzn_graphic_select_mode select_mode)
+	enum cmzn_graphics_select_mode select_mode)
 {
-	if (graphics_object && (0 != ENUMERATOR_STRING(cmzn_graphic_select_mode)(select_mode)))
+	if (graphics_object && (0 != ENUMERATOR_STRING(cmzn_graphics_select_mode)(select_mode)))
 	{
 		if (select_mode != graphics_object->select_mode)
 		{
@@ -6867,7 +6867,7 @@ int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
 }
 
 int set_GT_object_render_polygon_mode(struct GT_object *graphics_object,
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode)
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode)
 {
 	int return_code = 0;
 	if (graphics_object)

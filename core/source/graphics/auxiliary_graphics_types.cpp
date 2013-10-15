@@ -31,26 +31,26 @@ Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_select_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_select_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(cmzn_graphic_select_mode));
+	ENTER(ENUMERATOR_STRING(cmzn_graphics_select_mode));
 	switch (enumerator_value)
 	{
-		case CMZN_GRAPHIC_SELECT_ON:
+		case CMZN_GRAPHICS_SELECT_ON:
 		{
 			enumerator_string = "select_on";
 		} break;
-		case CMZN_GRAPHIC_NO_SELECT:
+		case CMZN_GRAPHICS_NO_SELECT:
 		{
 			enumerator_string = "no_select";
 		} break;
-		case CMZN_GRAPHIC_DRAW_SELECTED:
+		case CMZN_GRAPHICS_DRAW_SELECTED:
 		{
 			enumerator_string = "draw_selected";
 		} break;
-		case CMZN_GRAPHIC_DRAW_UNSELECTED:
+		case CMZN_GRAPHICS_DRAW_UNSELECTED:
 		{
 			enumerator_string = "draw_unselected";
 		} break;
@@ -62,9 +62,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_select_mode)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(cmzn_graphic_select_mode) */
+} /* ENUMERATOR_STRING(cmzn_graphics_select_mode) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_select_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_select_mode)
 
 int check_Element_discretization(struct Element_discretization
 	*element_discretization)
@@ -128,23 +128,23 @@ read_Element_discretization_defaults().
 	return return_code;
 } /* check_Element_discretization */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_line_attributes_shape)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphicslineattributes_shape)
 {
 	switch (enumerator_value)
 	{
-		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE:
+		case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE:
 		{
 			return "line";
 		} break;
-		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_RIBBON:
+		case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_RIBBON:
 		{
 			return "ribbon";
 		} break;
-		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
+		case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
 		{
 			return "circle_extrusion";
 		} break;
-		case CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
+		case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
 		{
 			return "square_extrusion";
 		} break;
@@ -156,17 +156,17 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_line_attributes_shape)
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_line_attributes_shape)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphicslineattributes_shape)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_streamlines_track_direction)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_streamlines_track_direction)
 {
 	switch (enumerator_value)
 	{
-		case CMZN_GRAPHIC_STREAMLINES_FORWARD_TRACK:
+		case CMZN_GRAPHICS_STREAMLINES_FORWARD_TRACK:
 		{
 			return "forward_track";
 		} break;
-		case CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK:
+		case CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK:
 		{
 			return "reverse_track";
 		} break;
@@ -178,7 +178,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_streamlines_track_direction)
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_streamlines_track_direction)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_track_direction)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 {
@@ -215,18 +215,18 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_render_polygon_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_render_polygon_mode)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(cmzn_graphic_render_polygon_mode));
+	ENTER(ENUMERATOR_STRING(cmzn_graphics_render_polygon_mode));
 	switch (enumerator_value)
 	{
-		case CMZN_GRAPHIC_RENDER_POLYGON_SHADED:
+		case CMZN_GRAPHICS_RENDER_POLYGON_SHADED:
 		{
 			enumerator_string = "render_shaded";
 		} break;
-		case CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME:
+		case CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME:
 		{
 			enumerator_string = "render_wireframe";
 		} break;
@@ -240,4 +240,4 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphic_render_polygon_mode)
 	return (enumerator_string);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphic_render_polygon_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_render_polygon_mode)

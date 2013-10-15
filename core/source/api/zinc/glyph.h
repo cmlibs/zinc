@@ -103,7 +103,7 @@ ZINC_API int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule);
  * function, the standard glyph is not created.
  * All glyphs created by this function have IS_MANAGED set to 1.
  * Circular glyphs including sphere, cylinders, cones and solid arrow and axis
- * get their circle divisions from the tessellation specified in the graphic.
+ * get their circle divisions from the tessellation specified in the graphics.
  * If not already set, the default glyph is set to "point" by this function.
  *
  * @param glyphmodule  The glyph module to create the glyph in.
@@ -316,12 +316,12 @@ ZINC_API cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
 
 /**
  * Set the material an axis is drawn with. Note if the material is NULL for
- * any axis the default material for the graphic is used for that axis.
+ * any axis the default material for the graphics is used for that axis.
  *
  * @param axes  The axes glyph to modify.
  * @param axis_number  The axis number from 1 to 3.
  * @param material  The material, or NULL to use the default material from the
- * graphic.
+ * graphics.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
@@ -411,8 +411,8 @@ ZINC_API int cmzn_glyph_colour_bar_get_centre(
 /**
  * Sets the centre position of the colour bar.
  * The default centre is (0,0,0). It is recommended that this not be changed
- * and instead use the graphic point attributes glyph offset.
- * @see cmzn_graphic_point_attributes_set_glyph_offset
+ * and instead use the graphics point attributes glyph offset.
+ * @see cmzn_graphicspointattributes_set_glyph_offset
  *
  * @param colour_bar  The colour bar glyph to modify.
  * @param valuesCount  The size of valuesIn array. Sets maximum of 3 values.
@@ -479,7 +479,7 @@ ZINC_API cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
 /**
  * Sets the material used for colour bar labels and ticks. Can be NULL.
  * Default is none i.e. use the same material as for the colour bar
- * itself, which is supplied by the graphic.
+ * itself, which is supplied by the graphics.
  *
  * @param colour_bar  The colour bar glyph to modify.
  * @param material  The new label material; can be NULL to clear.

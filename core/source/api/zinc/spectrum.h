@@ -587,7 +587,7 @@ ZINC_API int cmzn_spectrumcomponent_set_extend_below(
  * Get the field component lookup number of a spectrum component, this value
  * determines which of the field component this spectrum component will look up on.
  *
- * @See cmzn_graphic_set_data_field
+ * @See cmzn_graphics_set_data_field
  *
  * @param component  Handle to the zinc spectrum component.
  * @return  positive integer of the field component number to look up to.
@@ -600,7 +600,7 @@ ZINC_API int cmzn_spectrumcomponent_get_field_component(
  * Set the field component lookup number of a spectrum component, this value
  * determines which of the field component this spectrum component will look up on.
  *
- * @See cmzn_graphic_set_data_field
+ * @See cmzn_graphics_set_data_field
  *
  * @param component  Handle to the zinc spectrum component.
  * @param component_number  field component number for this spectrum to lookup.

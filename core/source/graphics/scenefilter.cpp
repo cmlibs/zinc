@@ -19,7 +19,7 @@
 #include "general/mystring.h"
 #include "general/manager_private.h"
 #include "graphics/element_point_ranges.h"
-#include "graphics/graphic.h"
+#include "graphics/graphics.h"
 #include "graphics/graphics_module.h"
 #include "graphics/scenefilter.hpp"
 #include "region/cmiss_region.h"
@@ -115,7 +115,7 @@ public:
 		return 0;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic) = 0;
+	virtual bool match(struct cmzn_graphics *graphics) = 0;
 
 	void list_operands() const
 	{
@@ -270,12 +270,12 @@ public:
 		filter_type = CMZN_SCENEFILTER_TYPE_OPERATOR_AND;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
 		int return_code = 1;
 		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
-			if ((*pos)->isActive && (!(*pos)->filter->match(graphic)))
+			if ((*pos)->isActive && (!(*pos)->filter->match(graphics)))
 			{
 				return_code = 0;
 				break;
@@ -299,7 +299,7 @@ public:
 		filter_type = CMZN_SCENEFILTER_TYPE_OPERATOR_OR;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
 		int return_code = 1;
 		if (operands.size() > 0)
@@ -308,7 +308,7 @@ public:
 		}
 		for (OperandList::iterator pos = operands.begin(); pos != operands.end(); ++pos)
 		{
-			if ((*pos)->isActive && (*pos)->filter->match(graphic))
+			if ((*pos)->isActive && (*pos)->filter->match(graphics))
 			{
 				return_code = 1;
 				break;
@@ -327,30 +327,30 @@ public:
 
 namespace {
 
-class cmzn_scenefilter_graphic_name : public cmzn_scenefilter
+class cmzn_scenefilter_graphics_name : public cmzn_scenefilter
 {
 	const char *matchName;
 
 public:
-	cmzn_scenefilter_graphic_name(const char *inMatchName) :
+	cmzn_scenefilter_graphics_name(const char *inMatchName) :
 		matchName(duplicate_string(inMatchName))
 	{
-		filter_type = CMZN_SCENEFILTER_TYPE_GRAPHIC_NAME;
+		filter_type = CMZN_SCENEFILTER_TYPE_GRAPHICS_NAME;
 	}
 
-	virtual ~cmzn_scenefilter_graphic_name()
+	virtual ~cmzn_scenefilter_graphics_name()
 	{
 		DEALLOCATE(matchName);
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (::cmzn_graphic_has_name(graphic, (void *)matchName) == !isInverse());
+		return (::cmzn_graphics_has_name(graphics, (void *)matchName) == !isInverse());
 	}
 
 	virtual void list_type_specific() const
 	{
-		display_message(INFORMATION_MESSAGE, "match_graphic_name %s", matchName);
+		display_message(INFORMATION_MESSAGE, "match_graphics_name %s", matchName);
 	}
 
 };
@@ -363,9 +363,9 @@ public:
 		filter_type = CMZN_SCENEFILTER_TYPE_VISIBILITY_FLAGS;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (!isInverse() == cmzn_graphic_and_scene_visibility_flags_is_set(graphic));
+		return (!isInverse() == cmzn_graphics_and_scene_visibility_flags_is_set(graphics));
 	}
 
 	virtual void list_type_specific() const
@@ -385,9 +385,9 @@ public:
 		filter_type = CMZN_SCENEFILTER_TYPE_REGION;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (!isInverse() == cmzn_graphic_is_from_region_hierarchical(graphic, matchRegion));
+		return (!isInverse() == cmzn_graphics_is_from_region_hierarchical(graphics, matchRegion));
 	}
 
 	virtual void list_type_specific() const
@@ -409,9 +409,9 @@ public:
 		filter_type = CMZN_SCENEFILTER_TYPE_DOMAIN_TYPE;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (!isInverse() == (domain_type == cmzn_graphic_get_domain_type(graphic)));
+		return (!isInverse() == (domain_type == cmzn_graphics_get_domain_type(graphics)));
 	}
 
 	virtual void list_type_specific() const
@@ -420,25 +420,25 @@ public:
 	}
 };
 
-class cmzn_scenefilter_graphic_type : public cmzn_scenefilter
+class cmzn_scenefilter_graphics_type : public cmzn_scenefilter
 {
-	enum cmzn_graphic_type graphic_type;
+	enum cmzn_graphics_type graphics_type;
 
 public:
-	cmzn_scenefilter_graphic_type(enum cmzn_graphic_type inGraphicType) :
-		graphic_type(inGraphicType)
+	cmzn_scenefilter_graphics_type(enum cmzn_graphics_type inGraphicType) :
+		graphics_type(inGraphicType)
 	{
-		filter_type = CMZN_SCENEFILTER_TYPE_GRAPHIC_TYPE;
+		filter_type = CMZN_SCENEFILTER_TYPE_GRAPHICS_TYPE;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (!isInverse() == (graphic_type == cmzn_graphic_get_graphic_type(graphic)));
+		return (!isInverse() == (graphics_type == cmzn_graphics_get_graphics_type(graphics)));
 	}
 
 	virtual void list_type_specific() const
 	{
-		char *filter_type_name = cmzn_graphic_type_enum_to_string(graphic_type);
+		char *filter_type_name = cmzn_graphics_type_enum_to_string(graphics_type);
 		display_message(INFORMATION_MESSAGE, "%s", filter_type_name);
 		DEALLOCATE(filter_type_name);
 	}
@@ -709,7 +709,7 @@ public:
 		if (scenefilterManager && match_name)
 		{
 			char *name = getValidTemporaryNameForScenefilter();
-			scenefilter = new cmzn_scenefilter_graphic_name(match_name);
+			scenefilter = new cmzn_scenefilter_graphics_name(match_name);
 			cmzn_scenefilter_set_name(scenefilter, name);
 			if (!ADD_OBJECT_TO_MANAGER(cmzn_scenefilter)(scenefilter, scenefilterManager))
 			{
@@ -721,13 +721,13 @@ public:
 	}
 
 	cmzn_scenefilter_id createFilterGraphicType(
-		enum cmzn_graphic_type graphic_type)
+		enum cmzn_graphics_type graphics_type)
 	{
 		cmzn_scenefilter_id scenefilter = NULL;
 		if (scenefilterManager)
 		{
 			char *name = getValidTemporaryNameForScenefilter();
-			scenefilter = new cmzn_scenefilter_graphic_type(graphic_type);
+			scenefilter = new cmzn_scenefilter_graphics_type(graphics_type);
 			cmzn_scenefilter_set_name(scenefilter, name);
 			if (!ADD_OBJECT_TO_MANAGER(cmzn_scenefilter)(scenefilter, scenefilterManager))
 			{
@@ -859,7 +859,7 @@ cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_domain_type(
 
 }
 
-cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphic_name(
+cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_name(
 	cmzn_scenefiltermodule_id scenefiltermodule, const char *match_name)
 {
 	if (scenefiltermodule)
@@ -869,12 +869,12 @@ cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphic_name(
 	return 0;
 }
 
-cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphic_type(
-	cmzn_scenefiltermodule_id scenefiltermodule, enum cmzn_graphic_type graphic_type)
+cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_type(
+	cmzn_scenefiltermodule_id scenefiltermodule, enum cmzn_graphics_type graphics_type)
 {
 	if (scenefiltermodule)
 	{
-		return scenefiltermodule->createFilterGraphicType(graphic_type);
+		return scenefiltermodule->createFilterGraphicType(graphics_type);
 	}
 	return 0;
 }
@@ -1055,11 +1055,11 @@ int cmzn_scenefilter_set_name(cmzn_scenefilter_id scenefilter, const char *name)
 	return (return_code);
 }
 
-bool cmzn_scenefilter_evaluate_graphic(cmzn_scenefilter_id filter,
-	cmzn_graphic_id graphic)
+bool cmzn_scenefilter_evaluate_graphics(cmzn_scenefilter_id filter,
+	cmzn_graphics_id graphics)
 {
-	if (filter && graphic)
-		return filter->match(graphic);
+	if (filter && graphics)
+		return filter->match(graphics);
 	return false;
 }
 

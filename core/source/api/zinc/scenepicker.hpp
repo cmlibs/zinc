@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : scenepicker.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -12,7 +12,7 @@
 #include "zinc/scenepicker.h"
 #include "zinc/element.hpp"
 #include "zinc/fieldgroup.hpp"
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/node.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/scenefilter.hpp"
@@ -90,19 +90,19 @@ public:
 		return Node(cmzn_scene_picker_get_nearest_node(id));
 	}
 
-	Graphic getNearestElementGraphic()
+	Graphics getNearestElementGraphics()
 	{
-		return Graphic(cmzn_scene_picker_get_nearest_element_graphic(id));
+		return Graphics(cmzn_scene_picker_get_nearest_element_graphics(id));
 	}
 
-	Graphic getNearestNodeGraphic()
+	Graphics getNearestNodeGraphics()
 	{
-		return Graphic(cmzn_scene_picker_get_nearest_node_graphic(id));
+		return Graphics(cmzn_scene_picker_get_nearest_node_graphics(id));
 	}
 
-	Graphic getNearestGraphic()
+	Graphics getNearestGraphics()
 	{
-		return Graphic(cmzn_scene_picker_get_nearest_graphic(id));
+		return Graphics(cmzn_scene_picker_get_nearest_graphics(id));
 	}
 
 	int addPickedElementsToGroup(FieldGroup& fieldGroup)

@@ -52,7 +52,6 @@ Used to be gtypes.h
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
 #include "graphics/material.h"
-#include "graphics/selected_graphic.h"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
@@ -230,7 +229,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	enum GT_surface_type surface_type;
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode;
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode;
 	gtPolygonType polygon;
 	int n_data_components;
 	int n_pts1;
@@ -256,7 +255,7 @@ User defined graphics object primitive type. Contains three parameters:
 - void pointer to data for user defined graphics;
 - pointer to function used to destroy user data when the GT_userdef is
 	destroyed.
-- pointer to function for rendering the user defined graphic passing data as
+- pointer to function for rendering the user defined graphics passing data as
 	a parameter.
 ???RC May wish to add time to render function.
 ???RC This structure could/should be made private.
@@ -356,7 +355,7 @@ Graphical object data structure.
 	/* for inheritance */
 	struct GT_object *parentobject;
 	/* for selected primitives and subobjects */
-	enum cmzn_graphic_select_mode select_mode;
+	enum cmzn_graphics_select_mode select_mode;
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */
