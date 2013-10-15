@@ -4,7 +4,7 @@
 #include <zinc/zincconfigure.h>
 #include <zinc/status.h>
 #include <zinc/core.h>
-#include <zinc/graphic.h>
+#include <zinc/graphics.h>
 #include <zinc/scenefilter.h>
 
 #include "zinctestsetup.hpp"
@@ -48,12 +48,12 @@ TEST(cmzn_scenefiltermodule_api, valid_args)
 
 	cmzn_scenefilter_destroy(&filter);
 
-	filter = cmzn_scenefiltermodule_create_scenefilter_graphic_name(sfm, "lines");
+	filter = cmzn_scenefiltermodule_create_scenefilter_graphics_name(sfm, "lines");
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), filter);
 
 	cmzn_scenefilter_destroy(&filter);
 
-	filter = cmzn_scenefiltermodule_create_scenefilter_graphic_type(sfm, CMZN_GRAPHIC_POINTS);
+	filter = cmzn_scenefiltermodule_create_scenefilter_graphics_type(sfm, CMZN_GRAPHICS_POINTS);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), filter);
 
 	cmzn_scenefilter_destroy(&filter);
@@ -107,10 +107,10 @@ TEST(cmzn_scenefiltermodule_api, valid_args_cpp)
 	filter = sfm.getDefaultScenefilter();
 	EXPECT_TRUE(filter.isValid());
 
-	filter =  sfm.createScenefilterGraphicName("lines");
+	filter =  sfm.createScenefilterGraphicsName("lines");
 	EXPECT_TRUE(filter.isValid());
 
-	filter = sfm.createScenefilterGraphicType(Graphic::POINTS);
+	filter = sfm.createScenefilterGraphicsType(Graphics::POINTS);
 	EXPECT_TRUE(filter.isValid());
 
 	filter = sfm.createScenefilterRegion(zinc.root_region);
@@ -145,29 +145,29 @@ TEST(cmzn_scenefilter_api, valid_args)
 	EXPECT_TRUE(cmzn_scenefilter_is_inverse(filter));
 	EXPECT_EQ(CMZN_OK, result = cmzn_scenefilter_set_inverse(filter, false));
 
-	cmzn_scenefilter_id graphic_type_filter1 = cmzn_scenefiltermodule_create_scenefilter_graphic_type(sfm, CMZN_GRAPHIC_POINTS);
-	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), graphic_type_filter1);
-	EXPECT_FALSE(cmzn_scenefilter_is_managed(graphic_type_filter1));
-	cmzn_scenefilter_id graphic_type_filter2 = cmzn_scenefiltermodule_create_scenefilter_graphic_type(sfm, CMZN_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), graphic_type_filter2);
+	cmzn_scenefilter_id graphics_type_filter1 = cmzn_scenefiltermodule_create_scenefilter_graphics_type(sfm, CMZN_GRAPHICS_POINTS);
+	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), graphics_type_filter1);
+	EXPECT_FALSE(cmzn_scenefilter_is_managed(graphics_type_filter1));
+	cmzn_scenefilter_id graphics_type_filter2 = cmzn_scenefiltermodule_create_scenefilter_graphics_type(sfm, CMZN_GRAPHICS_LINES);
+	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), graphics_type_filter2);
 	cmzn_scenefilter_id domain_type_filter1 = cmzn_scenefiltermodule_create_scenefilter_domain_type(sfm, CMZN_FIELD_DOMAIN_NODES);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), domain_type_filter1);
 	cmzn_scenefilter_id domain_type_filter2 = cmzn_scenefiltermodule_create_scenefilter_domain_type(sfm, CMZN_FIELD_DOMAIN_MESH_1D);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), domain_type_filter2);
 
-	cmzn_graphic_id graphic = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), graphic);
+	cmzn_graphics_id graphics = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), graphics);
 
-	result = cmzn_scenefilter_evaluate_graphic(graphic_type_filter1, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(graphics_type_filter1, graphics);
 	EXPECT_EQ(0, result);
-	result = cmzn_scenefilter_evaluate_graphic(graphic_type_filter2, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(graphics_type_filter2, graphics);
 	EXPECT_EQ(1, result);
-	result = cmzn_scenefilter_evaluate_graphic(domain_type_filter1, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(domain_type_filter1, graphics);
 	EXPECT_EQ(0, result);
-	result = cmzn_scenefilter_evaluate_graphic(domain_type_filter2, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(domain_type_filter2, graphics);
 	EXPECT_EQ(1, result);
 
-	result = cmzn_scenefilter_evaluate_graphic(filter, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(filter, graphics);
 	EXPECT_EQ(1, result);
 
 	cmzn_scenefilter_id and_filter = cmzn_scenefiltermodule_create_scenefilter_operator_and(sfm);
@@ -182,10 +182,10 @@ TEST(cmzn_scenefilter_api, valid_args)
 	cmzn_scenefilter_operator_id or_operator = cmzn_scenefilter_cast_operator(or_filter);
 	EXPECT_NE(static_cast<cmzn_scenefilter_operator *>(0), or_operator);
 
-	result = cmzn_scenefilter_operator_append_operand(and_operator, graphic_type_filter1);
+	result = cmzn_scenefilter_operator_append_operand(and_operator, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	cmzn_scenefilter_operator_insert_operand_before(and_operator, filter, graphic_type_filter1);
+	cmzn_scenefilter_operator_insert_operand_before(and_operator, filter, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
 	result = cmzn_scenefilter_operator_set_operand_is_active(and_operator, filter, 1);
@@ -194,10 +194,10 @@ TEST(cmzn_scenefilter_api, valid_args)
 	result = cmzn_scenefilter_operator_get_operand_is_active(and_operator, filter);
 	EXPECT_EQ(1, result);
 
-	result = cmzn_scenefilter_operator_set_operand_is_active(and_operator, graphic_type_filter1, 1);
+	result = cmzn_scenefilter_operator_set_operand_is_active(and_operator, graphics_type_filter1, 1);
 	EXPECT_EQ(1, result);
 
-	result = cmzn_scenefilter_operator_get_operand_is_active(and_operator, graphic_type_filter1);
+	result = cmzn_scenefilter_operator_get_operand_is_active(and_operator, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
 	cmzn_scenefilter_id temp_filter = cmzn_scenefilter_operator_get_first_operand(
@@ -207,30 +207,30 @@ TEST(cmzn_scenefilter_api, valid_args)
 
 	cmzn_scenefilter_id temp_filter2 = cmzn_scenefilter_operator_get_next_operand(
 		and_operator, temp_filter);
-	result = (graphic_type_filter1 == temp_filter2);
+	result = (graphics_type_filter1 == temp_filter2);
 	EXPECT_EQ(1, result);
 
-	result = cmzn_scenefilter_operator_append_operand(or_operator, graphic_type_filter1);
+	result = cmzn_scenefilter_operator_append_operand(or_operator, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	cmzn_scenefilter_operator_insert_operand_before(or_operator, filter, graphic_type_filter1);
+	cmzn_scenefilter_operator_insert_operand_before(or_operator, filter, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = cmzn_scenefilter_evaluate_graphic(and_filter, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(and_filter, graphics);
 	EXPECT_EQ(0, result);
 
-	result = cmzn_scenefilter_evaluate_graphic(or_filter, graphic);
+	result = cmzn_scenefilter_evaluate_graphics(or_filter, graphics);
 	EXPECT_EQ(1, result);
 
 	result = cmzn_scenefilter_operator_remove_operand(
-		or_operator, graphic_type_filter1);
+		or_operator, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
 	cmzn_scenefilter_destroy(&temp_filter2);
 
 	cmzn_scenefilter_destroy(&temp_filter);
 
-	cmzn_graphic_destroy(&graphic);
+	cmzn_graphics_destroy(&graphics);
 
 	cmzn_scenefilter_operator_destroy(&and_operator);
 
@@ -240,8 +240,8 @@ TEST(cmzn_scenefilter_api, valid_args)
 
 	cmzn_scenefilter_destroy(&or_filter);
 
-	cmzn_scenefilter_destroy(&graphic_type_filter1);
-	cmzn_scenefilter_destroy(&graphic_type_filter2);
+	cmzn_scenefilter_destroy(&graphics_type_filter1);
+	cmzn_scenefilter_destroy(&graphics_type_filter2);
 	cmzn_scenefilter_destroy(&domain_type_filter1);
 	cmzn_scenefilter_destroy(&domain_type_filter2);
 
@@ -272,28 +272,28 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 	EXPECT_TRUE(filter.isInverse());
 	EXPECT_EQ(CMZN_OK, result = filter.setInverse(false));
 
-	Scenefilter graphic_type_filter1 = sfm.createScenefilterGraphicType(Graphic::POINTS);
-	EXPECT_TRUE(graphic_type_filter1.isValid());
-	Scenefilter graphic_type_filter2 = sfm.createScenefilterGraphicType(Graphic::LINES);
-	EXPECT_TRUE(graphic_type_filter2.isValid());
+	Scenefilter graphics_type_filter1 = sfm.createScenefilterGraphicsType(Graphics::POINTS);
+	EXPECT_TRUE(graphics_type_filter1.isValid());
+	Scenefilter graphics_type_filter2 = sfm.createScenefilterGraphicsType(Graphics::LINES);
+	EXPECT_TRUE(graphics_type_filter2.isValid());
 	Scenefilter domain_type_filter1 = sfm.createScenefilterDomainType(Field::DOMAIN_NODES);
 	EXPECT_TRUE(domain_type_filter1.isValid());
 	Scenefilter domain_type_filter2 = sfm.createScenefilterDomainType(Field::DOMAIN_MESH_1D);
 	EXPECT_TRUE(domain_type_filter2.isValid());
 
-	Graphic graphic = zinc.scene.createGraphic(Graphic::LINES);
-	EXPECT_TRUE(graphic.isValid());
+	Graphics graphics = zinc.scene.createGraphics(Graphics::LINES);
+	EXPECT_TRUE(graphics.isValid());
 
-	result = graphic_type_filter1.evaluateGraphic(graphic);
+	result = graphics_type_filter1.evaluateGraphics(graphics);
 	EXPECT_EQ(0, result);
-	result = graphic_type_filter2.evaluateGraphic(graphic);
+	result = graphics_type_filter2.evaluateGraphics(graphics);
 	EXPECT_EQ(1, result);
-	result = domain_type_filter1.evaluateGraphic(graphic);
+	result = domain_type_filter1.evaluateGraphics(graphics);
 	EXPECT_EQ(0, result);
-	result = domain_type_filter2.evaluateGraphic(graphic);
+	result = domain_type_filter2.evaluateGraphics(graphics);
 	EXPECT_EQ(1, result);
 
-	result = filter.evaluateGraphic(graphic);
+	result = filter.evaluateGraphics(graphics);
 	EXPECT_EQ(1, result);
 
 	ScenefilterOperator and_operator = sfm.createScenefilterOperatorAnd();
@@ -302,10 +302,10 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 	ScenefilterOperator or_operator = sfm.createScenefilterOperatorOr();
 	EXPECT_TRUE(or_operator.isValid());
 
-	result = and_operator.appendOperand(graphic_type_filter1);
+	result = and_operator.appendOperand(graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.insertOperandBefore(filter, graphic_type_filter1);
+	result = and_operator.insertOperandBefore(filter, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
 	result = and_operator.setOperandIsActive(filter, 1);
@@ -314,10 +314,10 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 	result = and_operator.getOperandIsActive(filter);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.setOperandIsActive(graphic_type_filter1, 1);
+	result = and_operator.setOperandIsActive(graphics_type_filter1, 1);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.getOperandIsActive(graphic_type_filter1);
+	result = and_operator.getOperandIsActive(graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
 	Scenefilter temp_filter = and_operator.getFirstOperand();
@@ -325,21 +325,21 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 	EXPECT_EQ(1, result);
 
 	temp_filter = and_operator.getNextOperand(temp_filter);
-	result = (graphic_type_filter1.getId() == temp_filter.getId());
+	result = (graphics_type_filter1.getId() == temp_filter.getId());
 	EXPECT_EQ(1, result);
 
-	result = or_operator.appendOperand(graphic_type_filter1);
+	result = or_operator.appendOperand(graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = or_operator.insertOperandBefore(filter, graphic_type_filter1);
+	result = or_operator.insertOperandBefore(filter, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.evaluateGraphic(graphic);
+	result = and_operator.evaluateGraphics(graphics);
 	EXPECT_EQ(0, result);
 
-	result = or_operator.evaluateGraphic(graphic);
+	result = or_operator.evaluateGraphics(graphics);
 	EXPECT_EQ(1, result);
 
-	result = or_operator.removeOperand(graphic_type_filter1);
+	result = or_operator.removeOperand(graphics_type_filter1);
 	EXPECT_EQ(1, result);
 }

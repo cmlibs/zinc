@@ -8,7 +8,7 @@
 #include <zinc/field.h>
 #include <zinc/fieldfiniteelement.h>
 #include <zinc/fieldmodule.h>
-#include <zinc/graphic.h>
+#include <zinc/graphics.h>
 #include <zinc/node.h>
 #include <zinc/region.h>
 #include <zinc/scene.h>
@@ -16,7 +16,7 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 #include "zinc/fieldfiniteelement.hpp"
@@ -33,9 +33,9 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points)
 
 	cmzn_field_id graphicCoordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), graphicCoordinateField);
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic_id>(0), gr);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_coordinate_field(gr, graphicCoordinateField));
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_field(gr, graphicCoordinateField));
 	cmzn_field_destroy(&graphicCoordinateField);
 
 	cmzn_region_id outputRegion = cmzn_region_create_child(zinc.root_region, "output");
@@ -61,7 +61,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points)
 	cmzn_field_destroy(&outputCoordinateField);
 	cmzn_fieldmodule_destroy(&outputFm);
 	cmzn_region_destroy(&outputRegion);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_destroy(&gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_destroy(&gr));
 }
 
 TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
@@ -72,7 +72,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());
-	GraphicSurfaces su = zinc.scene.createGraphicSurfaces();
+	GraphicsSurfaces su = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(su.isValid());
 	EXPECT_EQ(CMZN_OK, su.setCoordinateField(graphicCoordinateField));
 
@@ -111,9 +111,9 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points)
 
 	cmzn_field_id graphicCoordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
 	EXPECT_NE(static_cast<cmzn_field_id>(0), graphicCoordinateField);
-	cmzn_graphic_id gr = cmzn_graphic_lines_base_cast(cmzn_scene_create_graphic_lines(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic_id>(0), gr);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_coordinate_field(gr, graphicCoordinateField));
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_lines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_field(gr, graphicCoordinateField));
 	cmzn_field_destroy(&graphicCoordinateField);
 
 	cmzn_region_id outputRegion = cmzn_region_create_child(zinc.root_region, "output");
@@ -139,7 +139,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points)
 	cmzn_field_destroy(&outputCoordinateField);
 	cmzn_fieldmodule_destroy(&outputFm);
 	cmzn_region_destroy(&outputRegion);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_destroy(&gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_destroy(&gr));
 }
 
 TEST(cmzn_scene_convert_to_point_cloud, line_points_cpp)
@@ -150,7 +150,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points_cpp)
 
 	Field graphicCoordinateField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(graphicCoordinateField.isValid());
-	GraphicLines su = zinc.scene.createGraphicLines();
+	GraphicsLines su = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(su.isValid());
 	EXPECT_EQ(CMZN_OK, su.setCoordinateField(graphicCoordinateField));
 

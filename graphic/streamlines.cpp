@@ -10,59 +10,50 @@
 #include <zinc/scene.h>
 #include <zinc/field.h>
 #include <zinc/fieldconstant.h>
-#include <zinc/graphic.h>
+#include <zinc/graphics.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 #include "zinc/fieldconstant.hpp"
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 
-TEST(cmzn_graphic_streamlines, create)
+TEST(cmzn_graphics_streamlines, create_cast)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_STREAMLINES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_destroy(&st));
+	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
+	EXPECT_EQ(reinterpret_cast<cmzn_graphics_streamlines *>(gr), st);
+	EXPECT_EQ(static_cast<cmzn_graphics_points *>(0), cmzn_graphics_cast_points(gr));
+
+	// Must not to destroy the returned base handle
+	EXPECT_EQ(gr, cmzn_graphics_streamlines_base_cast(st));
+
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_destroy(&st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_destroy(&gr));
 }
 
-TEST(cmzn_graphic_streamlines, create_cpp)
+TEST(cmzn_graphics_streamlines, create_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
+	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(st.isValid());
 }
 
-TEST(cmzn_graphic_streamlines, cast)
-{
-	ZincTestSetup zinc;
-
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_STREAMLINES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
-
-	cmzn_graphic_streamlines_id st = cmzn_graphic_cast_streamlines(gr);
-	EXPECT_EQ(reinterpret_cast<cmzn_graphic_streamlines *>(gr), st);
-	EXPECT_EQ(static_cast<cmzn_graphic_points *>(0), cmzn_graphic_cast_points(gr));
-
-	EXPECT_EQ(gr, cmzn_graphic_streamlines_base_cast(st));
-
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_destroy(&st));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_destroy(&gr));
-}
-
-TEST(cmzn_graphic_streamlines, cast_cpp)
+TEST(cmzn_graphics_streamlines, cast_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphic(Graphic::STREAMLINES);
+	Graphics gr = zinc.scene.createGraphics(Graphics::STREAMLINES);
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicStreamlines st(gr);
+	GraphicsStreamlines st(gr);
 	EXPECT_TRUE(st.isValid());
 
-	GraphicPoints po(gr);
+	GraphicsPoints po(gr);
 	EXPECT_FALSE(po.isValid());
 
 	// try any base class API
@@ -70,37 +61,39 @@ TEST(cmzn_graphic_streamlines, cast_cpp)
 	ASSERT_TRUE(material.isValid());
 }
 
-TEST(cmzn_graphic_streamlines, stream_vector_field)
+TEST(cmzn_graphics_streamlines, stream_vector_field)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_streamlines(zinc.scene);
+	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
+	cmzn_graphics_destroy(&gr);
+	EXPECT_NE(static_cast<cmzn_graphics_streamlines *>(0), st);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
 	cmzn_field_id stream_vector_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), stream_vector_field);
 
-	EXPECT_EQ((cmzn_field_id)0, cmzn_graphic_streamlines_get_stream_vector_field(st));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, stream_vector_field));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_graphics_streamlines_get_stream_vector_field(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_stream_vector_field(st, stream_vector_field));
 
-	cmzn_field_id temp_stream_vector_field = cmzn_graphic_streamlines_get_stream_vector_field(st);
+	cmzn_field_id temp_stream_vector_field = cmzn_graphics_streamlines_get_stream_vector_field(st);
 	EXPECT_EQ(stream_vector_field, temp_stream_vector_field);
 	cmzn_field_destroy(&temp_stream_vector_field);
 	cmzn_field_destroy(&stream_vector_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_stream_vector_field(st, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_streamlines_get_stream_vector_field(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_stream_vector_field(st, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_streamlines_get_stream_vector_field(st));
 
-	cmzn_graphic_streamlines_destroy(&st);
+	cmzn_graphics_streamlines_destroy(&st);
 }
 
-TEST(cmzn_graphic_streamlines, stream_vector_field_cpp)
+TEST(cmzn_graphics_streamlines, stream_vector_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
+	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(st.isValid());
 
 	Field tempStreamVectorField = st.getStreamVectorField();
@@ -120,52 +113,56 @@ TEST(cmzn_graphic_streamlines, stream_vector_field_cpp)
 	EXPECT_FALSE(tempStreamVectorField.isValid());
 }
 
-TEST(cmzn_graphic_streamlines, track_direction)
+TEST(cmzn_graphics_streamlines, track_direction)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_streamlines(zinc.scene);
+	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
+	cmzn_graphics_destroy(&gr);
+	EXPECT_NE(static_cast<cmzn_graphics_streamlines *>(0), st);
 
-	EXPECT_EQ(CMZN_GRAPHIC_STREAMLINES_FORWARD_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_track_direction(st, CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK));
-	EXPECT_EQ(CMZN_GRAPHIC_STREAMLINES_REVERSE_TRACK, cmzn_graphic_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_FORWARD_TRACK, cmzn_graphics_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_track_direction(st, CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK));
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK, cmzn_graphics_streamlines_get_track_direction(st));
 
-	cmzn_graphic_streamlines_destroy(&st);
+	cmzn_graphics_streamlines_destroy(&st);
 }
 
-TEST(cmzn_graphic_streamlines, track_direction_cpp)
+TEST(cmzn_graphics_streamlines, track_direction_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
+	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(st.isValid());
 
-	EXPECT_EQ(GraphicStreamlines::FORWARD_TRACK, st.getTrackDirection());
-	EXPECT_EQ(CMZN_OK, st.setTrackDirection(GraphicStreamlines::REVERSE_TRACK));
-	EXPECT_EQ(GraphicStreamlines::REVERSE_TRACK, st.getTrackDirection());
+	EXPECT_EQ(GraphicsStreamlines::FORWARD_TRACK, st.getTrackDirection());
+	EXPECT_EQ(CMZN_OK, st.setTrackDirection(GraphicsStreamlines::REVERSE_TRACK));
+	EXPECT_EQ(GraphicsStreamlines::REVERSE_TRACK, st.getTrackDirection());
 }
 
-TEST(cmzn_graphic_streamlines, track_length)
+TEST(cmzn_graphics_streamlines, track_length)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_streamlines_id st = cmzn_scene_create_graphic_streamlines(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_streamlines *>(0), st);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_streamlines(zinc.scene);
+	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
+	cmzn_graphics_destroy(&gr);
+	EXPECT_NE(static_cast<cmzn_graphics_streamlines *>(0), st);
 
 	const double trackLength = 500.0;
-	EXPECT_DOUBLE_EQ(1.0, cmzn_graphic_streamlines_get_track_length(st));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_streamlines_set_track_length(st, trackLength));
-	EXPECT_DOUBLE_EQ(trackLength, cmzn_graphic_streamlines_get_track_length(st));
+	EXPECT_DOUBLE_EQ(1.0, cmzn_graphics_streamlines_get_track_length(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_track_length(st, trackLength));
+	EXPECT_DOUBLE_EQ(trackLength, cmzn_graphics_streamlines_get_track_length(st));
 
-	cmzn_graphic_streamlines_destroy(&st);
+	cmzn_graphics_streamlines_destroy(&st);
 }
 
-TEST(cmzn_graphic_streamlines, track_length_cpp)
+TEST(cmzn_graphics_streamlines, track_length_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines st = zinc.scene.createGraphicStreamlines();
+	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(st.isValid());
 
 	const double trackLength = 500.0;

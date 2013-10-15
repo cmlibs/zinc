@@ -9,48 +9,48 @@
 #include <zinc/scene.h>
 #include <zinc/field.h>
 #include <zinc/fieldconstant.h>
-#include <zinc/graphic.h>
+#include <zinc/graphics.h>
 #include <zinc/spectrum.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/fieldconstant.hpp"
 #include "zinc/font.hpp"
 
-TEST(cmzn_graphic_api, set_use_element_type)
+TEST(cmzn_graphics_api, set_use_element_type)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_contours_id is = cmzn_scene_create_graphic_contours(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_contours *>(0), is);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_contours(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	int result = cmzn_graphic_set_domain_type(cmzn_graphic_contours_base_cast(is), CMZN_FIELD_DOMAIN_MESH_2D);
+	int result = cmzn_graphics_set_domain_type(gr, CMZN_FIELD_DOMAIN_MESH_2D);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_graphic_contours_destroy(&is);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, exterior)
+TEST(cmzn_graphics_api, exterior)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_FALSE(cmzn_graphic_is_exterior(gr));
-	int result = cmzn_graphic_set_exterior(gr, true);
+	EXPECT_FALSE(cmzn_graphics_is_exterior(gr));
+	int result = cmzn_graphics_set_exterior(gr, true);
 	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_TRUE(cmzn_graphic_is_exterior(gr));
+	EXPECT_TRUE(cmzn_graphics_is_exterior(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, exterior)
+TEST(ZincGraphics, exterior)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphicSurfaces();
+	Graphics gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	EXPECT_FALSE(gr.isExterior());
@@ -59,22 +59,22 @@ TEST(ZincGraphic, exterior)
 	EXPECT_TRUE(gr.isExterior());
 }
 
-TEST(cmzn_graphic_api, face)
+TEST(cmzn_graphics_api, face)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_lines_base_cast(cmzn_scene_create_graphic_lines(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_lines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_ELEMENT_FACE_ALL, cmzn_graphic_get_face(gr));
-	int result = cmzn_graphic_set_face(gr, CMZN_ELEMENT_FACE_XI2_0);
+	EXPECT_EQ(CMZN_ELEMENT_FACE_ALL, cmzn_graphics_get_face(gr));
+	int result = cmzn_graphics_set_face(gr, CMZN_ELEMENT_FACE_XI2_0);
 	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_EQ(CMZN_ELEMENT_FACE_XI2_0, cmzn_graphic_get_face(gr));
+	EXPECT_EQ(CMZN_ELEMENT_FACE_XI2_0, cmzn_graphics_get_face(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, coordinate_field)
+TEST(cmzn_graphics_api, coordinate_field)
 {
 	ZincTestSetup zinc;
 
@@ -83,12 +83,12 @@ TEST(cmzn_graphic_api, coordinate_field)
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), coordinate_field);
 
-	cmzn_graphic_id gr = cmzn_graphic_points_base_cast(cmzn_scene_create_graphic_points(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_domain_type(gr, CMZN_FIELD_DOMAIN_NODES));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_domain_type(gr, CMZN_FIELD_DOMAIN_NODES));
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_coordinate_field(gr, coordinate_field));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_field(gr, coordinate_field));
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
@@ -96,16 +96,16 @@ TEST(cmzn_graphic_api, coordinate_field)
 		sizeof(values4)/sizeof(double), values4);
 	EXPECT_NE(static_cast<cmzn_field *>(0), bad_coordinate_field);
 	// previous coordinate field should be left unchanged
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_coordinate_field(gr, bad_coordinate_field));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_coordinate_field(gr, bad_coordinate_field));
 	cmzn_field_destroy(&bad_coordinate_field);
 
-	cmzn_field_id temp_coordinate_field = cmzn_graphic_get_coordinate_field(gr);
+	cmzn_field_id temp_coordinate_field = cmzn_graphics_get_coordinate_field(gr);
 	EXPECT_EQ(coordinate_field, temp_coordinate_field);
 	cmzn_field_destroy(&temp_coordinate_field);
 	cmzn_field_destroy(&coordinate_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_coordinate_field(gr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_coordinate_field(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_field(gr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_coordinate_field(gr));
 
 	// check coordinate_field removed as no longer used
 	cmzn_fielditerator_id iter = cmzn_fieldmodule_create_fielditerator(zinc.fm);
@@ -113,31 +113,31 @@ TEST(cmzn_graphic_api, coordinate_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_fielditerator_next(iter));
 	cmzn_fielditerator_destroy(&iter);
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic, coordinate_system)
+TEST(cmzn_graphics, coordinate_system)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_POINTS);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_POINTS);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	enum cmzn_scene_coordinate_system coordinate_system = cmzn_graphic_get_coordinate_system(gr);
+	enum cmzn_scene_coordinate_system coordinate_system = cmzn_graphics_get_coordinate_system(gr);
 	EXPECT_EQ(CMZN_SCENE_COORDINATE_SYSTEM_LOCAL, coordinate_system);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_coordinate_system(gr, CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
-	coordinate_system = cmzn_graphic_get_coordinate_system(gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_system(gr, CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
+	coordinate_system = cmzn_graphics_get_coordinate_system(gr);
 	EXPECT_EQ(CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinate_system);
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, CoordinateSystem)
+TEST(ZincGraphics, CoordinateSystem)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphic(Graphic::POINTS);
+	Graphics gr = zinc.scene.createGraphics(Graphics::POINTS);
 	EXPECT_TRUE(gr.isValid());
 
 	SceneCoordinateSystem coordinateSystem = gr.getCoordinateSystem();
@@ -148,7 +148,7 @@ TEST(ZincGraphic, CoordinateSystem)
 	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinateSystem);
 }
 
-TEST(cmzn_graphic_api, data_field)
+TEST(cmzn_graphics_api, data_field)
 {
 	ZincTestSetup zinc;
 
@@ -157,18 +157,18 @@ TEST(cmzn_graphic_api, data_field)
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), data_field);
 
-	cmzn_graphic_id gr = cmzn_graphic_points_base_cast(cmzn_scene_create_graphic_points(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_data_field(gr, data_field));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_data_field(gr, data_field));
 
-	cmzn_field_id temp_data_field = cmzn_graphic_get_data_field(gr);
+	cmzn_field_id temp_data_field = cmzn_graphics_get_data_field(gr);
 	EXPECT_EQ(temp_data_field, data_field);
 	cmzn_field_destroy(&temp_data_field);
 	cmzn_field_destroy(&data_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_data_field(gr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_data_field(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_data_field(gr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_data_field(gr));
 
 	// check data_field removed as no longer used
 	cmzn_fielditerator_id iter = cmzn_fieldmodule_create_fielditerator(zinc.fm);
@@ -176,41 +176,41 @@ TEST(cmzn_graphic_api, data_field)
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_fielditerator_next(iter));
 	cmzn_fielditerator_destroy(&iter);
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, material)
+TEST(cmzn_graphics_api, material)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_graphics_material_module_id material_module = cmzn_context_get_material_module(zinc.context);
 	cmzn_graphics_material_id default_material = cmzn_graphics_material_module_get_default_material(material_module);
-	cmzn_graphics_material_id temp_material = cmzn_graphic_get_material(gr);
+	cmzn_graphics_material_id temp_material = cmzn_graphics_get_material(gr);
 	EXPECT_EQ(default_material, temp_material);
 	cmzn_graphics_material_destroy(&temp_material);
 	cmzn_graphics_material_destroy(&default_material);
 
 	cmzn_graphics_material_id material = cmzn_graphics_material_module_create_material(material_module);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_material(gr, material));
-	temp_material = cmzn_graphic_get_material(gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_material(gr, material));
+	temp_material = cmzn_graphics_get_material(gr);
 	EXPECT_EQ(material, temp_material);
 	cmzn_graphics_material_destroy(&temp_material);
 	cmzn_graphics_material_destroy(&material);
 
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_material(gr, 0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_material(gr, 0));
 
 	cmzn_graphics_material_module_destroy(&material_module);
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, material_cpp)
+TEST(cmzn_graphics_api, material_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicLines gr = zinc.scene.createGraphicLines();
+	GraphicsLines gr = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
@@ -227,32 +227,32 @@ TEST(cmzn_graphic_api, material_cpp)
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setMaterial(noMaterial));
 }
 
-TEST(cmzn_graphic, render_line_width)
+TEST(cmzn_graphics, render_line_width)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	const double inWidth = 2.0;
 	double outWidth;
-	ASSERT_DOUBLE_EQ(1.0, outWidth = cmzn_graphic_get_render_line_width(gr));
+	ASSERT_DOUBLE_EQ(1.0, outWidth = cmzn_graphics_get_render_line_width(gr));
 
 	int result;
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_render_line_width(static_cast<cmzn_graphic_id>(0), 2.0));
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_render_line_width(gr, 0.0));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_line_width(static_cast<cmzn_graphics_id>(0), 2.0));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_line_width(gr, 0.0));
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphic_set_render_line_width(gr, inWidth));
-	ASSERT_DOUBLE_EQ(inWidth, outWidth = cmzn_graphic_get_render_line_width(gr));
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_render_line_width(gr, inWidth));
+	ASSERT_DOUBLE_EQ(inWidth, outWidth = cmzn_graphics_get_render_line_width(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, RenderLineWidth)
+TEST(ZincGraphics, RenderLineWidth)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicLines gr = zinc.scene.createGraphicLines();
+	GraphicsLines gr = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(gr.isValid());
 
 	const double inWidth = 2.0;
@@ -266,32 +266,32 @@ TEST(ZincGraphic, RenderLineWidth)
 	ASSERT_EQ(inWidth, outWidth = gr.getRenderLineWidth());
 }
 
-TEST(cmzn_graphic, render_point_size)
+TEST(cmzn_graphics, render_point_size)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_POINTS);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_POINTS);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	const double inSize = 2.0;
 	double outSize;
-	ASSERT_DOUBLE_EQ(1.0, outSize = cmzn_graphic_get_render_point_size(gr));
+	ASSERT_DOUBLE_EQ(1.0, outSize = cmzn_graphics_get_render_point_size(gr));
 
 	int result;
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_render_point_size(static_cast<cmzn_graphic_id>(0), 2.0));
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_render_point_size(gr, 0.0));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_point_size(static_cast<cmzn_graphics_id>(0), 2.0));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_point_size(gr, 0.0));
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphic_set_render_point_size(gr, inSize));
-	ASSERT_DOUBLE_EQ(inSize, outSize = cmzn_graphic_get_render_point_size(gr));
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_render_point_size(gr, inSize));
+	ASSERT_DOUBLE_EQ(inSize, outSize = cmzn_graphics_get_render_point_size(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, RenderPointSize)
+TEST(ZincGraphics, RenderPointSize)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.scene.createGraphicPoints();
+	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
 	EXPECT_TRUE(gr.isValid());
 
 	const double inSize = 2.0;
@@ -305,75 +305,75 @@ TEST(ZincGraphic, RenderPointSize)
 	ASSERT_EQ(inSize, outSize = gr.getRenderPointSize());
 }
 
-TEST(cmzn_graphic, select_mode)
+TEST(cmzn_graphics, select_mode)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_SURFACES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_SURFACES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphic_select_mode selectMode;
-	ASSERT_EQ(CMZN_GRAPHIC_SELECT_ON, selectMode = cmzn_graphic_get_select_mode(gr));
+	cmzn_graphics_select_mode selectMode;
+	ASSERT_EQ(CMZN_GRAPHICS_SELECT_ON, selectMode = cmzn_graphics_get_select_mode(gr));
 
 	int result;
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_select_mode(static_cast<cmzn_graphic_id>(0), CMZN_GRAPHIC_DRAW_SELECTED));
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_select_mode(gr, CMZN_GRAPHIC_SELECT_MODE_INVALID));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_select_mode(static_cast<cmzn_graphics_id>(0), CMZN_GRAPHICS_DRAW_SELECTED));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_select_mode(gr, CMZN_GRAPHICS_SELECT_MODE_INVALID));
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphic_set_select_mode(gr, CMZN_GRAPHIC_DRAW_SELECTED));
-	ASSERT_EQ(CMZN_GRAPHIC_DRAW_SELECTED, selectMode = cmzn_graphic_get_select_mode(gr));
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_select_mode(gr, CMZN_GRAPHICS_DRAW_SELECTED));
+	ASSERT_EQ(CMZN_GRAPHICS_DRAW_SELECTED, selectMode = cmzn_graphics_get_select_mode(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, selectMode)
+TEST(ZincGraphics, selectMode)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicSurfaces gr = zinc.scene.createGraphicSurfaces();
+	GraphicsSurfaces gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
-	Graphic::SelectMode selectMode;
-	ASSERT_EQ(Graphic::SELECT_ON, selectMode = gr.getSelectMode());
+	Graphics::SelectMode selectMode;
+	ASSERT_EQ(Graphics::SELECT_ON, selectMode = gr.getSelectMode());
 
 	int result;
-	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setSelectMode(Graphic::SELECT_MODE_INVALID));
+	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setSelectMode(Graphics::SELECT_MODE_INVALID));
 
-	ASSERT_EQ(OK, result = gr.setSelectMode(Graphic::DRAW_SELECTED));
-	ASSERT_EQ(Graphic::DRAW_SELECTED, selectMode = gr.getSelectMode());
+	ASSERT_EQ(OK, result = gr.setSelectMode(Graphics::DRAW_SELECTED));
+	ASSERT_EQ(Graphics::DRAW_SELECTED, selectMode = gr.getSelectMode());
 }
 
-TEST(cmzn_graphic_api, selected_material)
+TEST(cmzn_graphics_api, selected_material)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_graphics_material_module_id material_module = cmzn_context_get_material_module(zinc.context);
 	cmzn_graphics_material_id default_selected_material = cmzn_graphics_material_module_get_default_selected_material(material_module);
-	cmzn_graphics_material_id temp_selected_material = cmzn_graphic_get_selected_material(gr);
+	cmzn_graphics_material_id temp_selected_material = cmzn_graphics_get_selected_material(gr);
 	EXPECT_EQ(default_selected_material, temp_selected_material);
 	cmzn_graphics_material_destroy(&temp_selected_material);
 	cmzn_graphics_material_destroy(&default_selected_material);
 
 	cmzn_graphics_material_id selected_material = cmzn_graphics_material_module_create_material(material_module);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_selected_material(gr, selected_material));
-	temp_selected_material = cmzn_graphic_get_selected_material(gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_selected_material(gr, selected_material));
+	temp_selected_material = cmzn_graphics_get_selected_material(gr);
 	EXPECT_EQ(selected_material, temp_selected_material);
 	cmzn_graphics_material_destroy(&temp_selected_material);
 	cmzn_graphics_material_destroy(&selected_material);
 
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_selected_material(gr, 0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_selected_material(gr, 0));
 
 	cmzn_graphics_material_module_destroy(&material_module);
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, selected_material_cpp)
+TEST(cmzn_graphics_api, selected_material_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicLines gr = zinc.scene.createGraphicLines();
+	GraphicsLines gr = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
@@ -390,35 +390,35 @@ TEST(cmzn_graphic_api, selected_material_cpp)
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
 }
 
-TEST(cmzn_graphic, name)
+TEST(cmzn_graphics, name)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	char *name = cmzn_graphic_get_name(gr);
+	char *name = cmzn_graphics_get_name(gr);
 	EXPECT_STREQ(static_cast<char *>(0), name);
 
 	const char *nameBob = "Bob";
 	int result;
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphic_set_name(gr, nameBob));
-	name = cmzn_graphic_get_name(gr);
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_name(gr, nameBob));
+	name = cmzn_graphics_get_name(gr);
 	EXPECT_STREQ(nameBob, name);
 	cmzn_deallocate(name);
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphic_set_name(gr, static_cast<char *>(0)));
-	name = cmzn_graphic_get_name(gr);
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_name(gr, static_cast<char *>(0)));
+	name = cmzn_graphics_get_name(gr);
 	EXPECT_STREQ(static_cast<char *>(0), name);
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, name)
+TEST(ZincGraphics, name)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphicSurfaces();
+	Graphics gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	char *name = gr.getName();
@@ -436,12 +436,12 @@ TEST(ZincGraphic, name)
 	EXPECT_STREQ(static_cast<char *>(0), name);
 }
 
-TEST(cmzn_graphic_api, spectrum)
+TEST(cmzn_graphics_api, spectrum)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_spectrummodule_id spectrummodule = cmzn_context_get_spectrummodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_spectrummodule *>(0), spectrummodule);
@@ -451,59 +451,59 @@ TEST(cmzn_graphic_api, spectrum)
 
 	cmzn_spectrummodule_destroy(&spectrummodule);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_spectrum(gr, spectrum));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_spectrum(gr, spectrum));
 
-	cmzn_spectrum_id temp_spectrum = cmzn_graphic_get_spectrum(gr);
+	cmzn_spectrum_id temp_spectrum = cmzn_graphics_get_spectrum(gr);
 	EXPECT_EQ(temp_spectrum, spectrum);
 	cmzn_spectrum_destroy(&temp_spectrum);
 	cmzn_spectrum_destroy(&spectrum);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_spectrum(gr, 0));
-	EXPECT_EQ(static_cast<cmzn_spectrum *>(0), cmzn_graphic_get_spectrum(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_spectrum(gr, 0));
+	EXPECT_EQ(static_cast<cmzn_spectrum *>(0), cmzn_graphics_get_spectrum(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, subgroup_field)
+TEST(cmzn_graphics_api, subgroup_field)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_points_base_cast(cmzn_scene_create_graphic_points(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_domain_type(gr, CMZN_FIELD_DOMAIN_NODES));
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_domain_type(gr, CMZN_FIELD_DOMAIN_NODES));
 
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_subgroup_field(gr));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_subgroup_field(gr));
 
 	const double value = 1.0;
 	cmzn_field_id subgroup_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), subgroup_field);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_subgroup_field(gr, subgroup_field));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_subgroup_field(gr, subgroup_field));
 
 	// subgroup field must be scalar
 	double values2[] = { 1.0, 2.0 };
 	cmzn_field_id bad_subgroup_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values2)/sizeof(double), values2);
 	EXPECT_NE(static_cast<cmzn_field *>(0), bad_subgroup_field);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_subgroup_field(gr, bad_subgroup_field));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_subgroup_field(gr, bad_subgroup_field));
 	cmzn_field_destroy(&bad_subgroup_field);
 
 	// previous subgroup field should be left unchanged
-	cmzn_field_id temp_subgroup_field = cmzn_graphic_get_subgroup_field(gr);
+	cmzn_field_id temp_subgroup_field = cmzn_graphics_get_subgroup_field(gr);
 	EXPECT_EQ(subgroup_field, temp_subgroup_field);
 	cmzn_field_destroy(&temp_subgroup_field);
 	cmzn_field_destroy(&subgroup_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_subgroup_field(gr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_subgroup_field(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_subgroup_field(gr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_subgroup_field(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, subgroup_field_cpp)
+TEST(cmzn_graphics_api, subgroup_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.scene.createGraphicPoints();
+	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
 	EXPECT_TRUE(gr.isValid());
 	EXPECT_EQ(OK, gr.setDomainType(Field::DOMAIN_NODES));
 
@@ -531,41 +531,41 @@ TEST(cmzn_graphic_api, subgroup_field_cpp)
 	EXPECT_FALSE(tempSubgroupField.isValid());
 }
 
-TEST(cmzn_graphic_api, tessellation)
+TEST(cmzn_graphics_api, tessellation)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_tessellationmodule_id tessellationmodule = cmzn_context_get_tessellationmodule(zinc.context);
 	cmzn_tessellation_id default_tessellation = cmzn_tessellationmodule_get_default_tessellation(tessellationmodule);
 	EXPECT_NE(static_cast<cmzn_tessellation_id>(0), default_tessellation);
-	cmzn_tessellation_id temp_tessellation = cmzn_graphic_get_tessellation(gr);
+	cmzn_tessellation_id temp_tessellation = cmzn_graphics_get_tessellation(gr);
 	EXPECT_EQ(default_tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 	cmzn_tessellation_destroy(&default_tessellation);
 
 	cmzn_tessellation_id tessellation = cmzn_tessellationmodule_create_tessellation(tessellationmodule);
 	EXPECT_NE(static_cast<cmzn_tessellation_id>(0), tessellation);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_tessellation(gr, tessellation));
-	temp_tessellation = cmzn_graphic_get_tessellation(gr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_tessellation(gr, tessellation));
+	temp_tessellation = cmzn_graphics_get_tessellation(gr);
 	EXPECT_EQ(tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 	cmzn_tessellation_destroy(&tessellation);
 
 	// can't remove tessellation
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_tessellation(gr, 0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_tessellation(gr, 0));
 
 	cmzn_tessellationmodule_destroy(&tessellationmodule);
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, tessellation_cpp)
+TEST(cmzn_graphics_api, tessellation_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphicSurfaces();
+	Graphics gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	Tessellationmodule tessellationModule = zinc.context.getTessellationmodule();
@@ -584,36 +584,36 @@ TEST(cmzn_graphic_api, tessellation_cpp)
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setTessellation(noTessellation));
 }
 
-TEST(cmzn_graphic_api, tessellation_field)
+TEST(cmzn_graphics_api, tessellation_field)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_contours_base_cast(cmzn_scene_create_graphic_contours(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_contours(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_tessellation_field(gr));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_tessellation_field(gr));
 
 	const double value = 1.0;
 	cmzn_field_id tessellation_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), tessellation_field);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_tessellation_field(gr, tessellation_field));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_tessellation_field(gr, tessellation_field));
 
-	cmzn_field_id temp_tessellation_field = cmzn_graphic_get_tessellation_field(gr);
+	cmzn_field_id temp_tessellation_field = cmzn_graphics_get_tessellation_field(gr);
 	EXPECT_EQ(tessellation_field, temp_tessellation_field);
 	cmzn_field_destroy(&temp_tessellation_field);
 	cmzn_field_destroy(&tessellation_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_tessellation_field(gr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_tessellation_field(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_tessellation_field(gr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_tessellation_field(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, tessellation_field_cpp)
+TEST(cmzn_graphics_api, tessellation_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicContours gr = zinc.scene.createGraphicContours();
+	GraphicsContours gr = zinc.scene.createGraphicsContours();
 	EXPECT_TRUE(gr.isValid());
 
 	Field tempTessellationField = gr.getTessellationField();
@@ -633,46 +633,46 @@ TEST(cmzn_graphic_api, tessellation_field_cpp)
 	EXPECT_FALSE(tempTessellationField.isValid());
 }
 
-TEST(cmzn_graphic_api, texture_coordinate_field)
+TEST(cmzn_graphics_api, texture_coordinate_field)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	const double values[] = { 1.0, 2.0, 3.0 };
 	cmzn_field_id texture_coordinate_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), texture_coordinate_field);
 
-	EXPECT_EQ((cmzn_field_id)0, cmzn_graphic_get_texture_coordinate_field(gr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_texture_coordinate_field(gr, texture_coordinate_field));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_graphics_get_texture_coordinate_field(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_texture_coordinate_field(gr, texture_coordinate_field));
 
 	// coordinate field cannot have more than 3 components
 	const double values4[] = { 1.0, 2.0, 3.0, 4.0 };
 	cmzn_field_id bad_texture_coordinate_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values4)/sizeof(double), values4);
 	EXPECT_NE(static_cast<cmzn_field *>(0), bad_texture_coordinate_field);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_set_texture_coordinate_field(gr, bad_texture_coordinate_field));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_texture_coordinate_field(gr, bad_texture_coordinate_field));
 	cmzn_field_destroy(&bad_texture_coordinate_field);
 
 	// previous texture coordinate field should be left unchanged
-	cmzn_field_id temp_texture_coordinate_field = cmzn_graphic_get_texture_coordinate_field(gr);
+	cmzn_field_id temp_texture_coordinate_field = cmzn_graphics_get_texture_coordinate_field(gr);
 	EXPECT_EQ(texture_coordinate_field, temp_texture_coordinate_field);
 	cmzn_field_destroy(&temp_texture_coordinate_field);
 	cmzn_field_destroy(&texture_coordinate_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_texture_coordinate_field(gr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_get_texture_coordinate_field(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_texture_coordinate_field(gr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_texture_coordinate_field(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, texture_coordinate_field_cpp)
+TEST(cmzn_graphics_api, texture_coordinate_field_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicSurfaces gr = zinc.scene.createGraphicSurfaces();
+	GraphicsSurfaces gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	Field tempTextureCoordinateField = gr.getTextureCoordinateField();
@@ -699,63 +699,62 @@ TEST(cmzn_graphic_api, texture_coordinate_field_cpp)
 	EXPECT_FALSE(tempTextureCoordinateField.isValid());
 }
 
-TEST(cmzn_graphic_api, point_attributes_glyph)
+TEST(cmzn_graphics_api, point_attributes_glyph)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_points_id gr = cmzn_scene_create_graphic_points(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_points *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphic_point_attributes_id pointattr =
-		cmzn_graphic_get_point_attributes(cmzn_graphic_points_base_cast(gr));
-	EXPECT_NE(static_cast<cmzn_graphic_point_attributes *>(0), pointattr);
+	cmzn_graphicspointattributes_id pointattr = cmzn_graphics_get_graphicspointattributes(gr);
+	EXPECT_NE(static_cast<cmzn_graphicspointattributes *>(0), pointattr);
 
 	cmzn_glyph_id glyph = cmzn_glyphmodule_get_default_point_glyph(zinc.glyphmodule);
 	EXPECT_NE((cmzn_glyph_id)0, glyph);
-	cmzn_glyph_id temp_glyph = cmzn_graphic_point_attributes_get_glyph(pointattr);
+	cmzn_glyph_id temp_glyph = cmzn_graphicspointattributes_get_glyph(pointattr);
 	EXPECT_EQ(glyph, temp_glyph);
 	cmzn_glyph_destroy(&temp_glyph);
 	cmzn_glyph_destroy(&glyph);
-	EXPECT_EQ(CMZN_GLYPH_POINT, cmzn_graphic_point_attributes_get_glyph_type(pointattr));
+	EXPECT_EQ(CMZN_GLYPH_POINT, cmzn_graphicspointattributes_get_glyph_type(pointattr));
 
 	glyph = cmzn_glyphmodule_find_glyph_by_name(zinc.glyphmodule, "sphere");
 	EXPECT_NE((cmzn_glyph_id)0, glyph);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_glyph(pointattr, glyph));
-	temp_glyph = cmzn_graphic_point_attributes_get_glyph(pointattr);
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph(pointattr, glyph));
+	temp_glyph = cmzn_graphicspointattributes_get_glyph(pointattr);
 	EXPECT_EQ(glyph, temp_glyph);
 	cmzn_glyph_destroy(&temp_glyph);
 	cmzn_glyph_destroy(&glyph);
-	EXPECT_EQ(CMZN_GLYPH_SPHERE, cmzn_graphic_point_attributes_get_glyph_type(pointattr));
+	EXPECT_EQ(CMZN_GLYPH_SPHERE, cmzn_graphicspointattributes_get_glyph_type(pointattr));
 
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_glyph_type(pointattr, CMZN_GLYPH_TYPE_INVALID));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_glyph_type(pointattr, CMZN_GLYPH_CUBE_SOLID));
-	EXPECT_EQ(CMZN_GLYPH_CUBE_SOLID, cmzn_graphic_point_attributes_get_glyph_type(pointattr));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_type(pointattr, CMZN_GLYPH_TYPE_INVALID));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_type(pointattr, CMZN_GLYPH_CUBE_SOLID));
+	EXPECT_EQ(CMZN_GLYPH_CUBE_SOLID, cmzn_graphicspointattributes_get_glyph_type(pointattr));
 
-	EXPECT_EQ(CMZN_GLYPH_REPEAT_NONE, cmzn_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_glyph_repeat_mode(0, CMZN_GLYPH_REPEAT_MIRROR));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MODE_INVALID));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MIRROR));
-	EXPECT_EQ(CMZN_GLYPH_REPEAT_MIRROR, cmzn_graphic_point_attributes_get_glyph_repeat_mode(pointattr));
+	EXPECT_EQ(CMZN_GLYPH_REPEAT_NONE, cmzn_graphicspointattributes_get_glyph_repeat_mode(pointattr));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_repeat_mode(0, CMZN_GLYPH_REPEAT_MIRROR));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MODE_INVALID));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MIRROR));
+	EXPECT_EQ(CMZN_GLYPH_REPEAT_MIRROR, cmzn_graphicspointattributes_get_glyph_repeat_mode(pointattr));
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
 	cmzn_field_id field = cmzn_fieldmodule_create_field_constant(zinc.fm, 3, fieldValues);
 	EXPECT_NE(static_cast<cmzn_field *>(0), field);
 	cmzn_field_id temp_field = 0;
 
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_point_attributes_get_orientation_scale_field(pointattr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_orientation_scale_field(pointattr, field));
-	temp_field = cmzn_graphic_point_attributes_get_orientation_scale_field(pointattr);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicspointattributes_get_orientation_scale_field(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_orientation_scale_field(pointattr, field));
+	temp_field = cmzn_graphicspointattributes_get_orientation_scale_field(pointattr);
 	EXPECT_EQ(temp_field, field);
 	cmzn_field_destroy(&temp_field);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_orientation_scale_field(pointattr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_point_attributes_get_orientation_scale_field(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_orientation_scale_field(pointattr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicspointattributes_get_orientation_scale_field(pointattr));
 
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_point_attributes_get_signed_scale_field(pointattr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_signed_scale_field(pointattr, field));
-	temp_field = cmzn_graphic_point_attributes_get_signed_scale_field(pointattr);
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicspointattributes_get_signed_scale_field(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_signed_scale_field(pointattr, field));
+	temp_field = cmzn_graphicspointattributes_get_signed_scale_field(pointattr);
 	EXPECT_EQ(temp_field, field);
 	cmzn_field_destroy(&temp_field);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_signed_scale_field(pointattr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_point_attributes_get_signed_scale_field(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_signed_scale_field(pointattr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicspointattributes_get_signed_scale_field(pointattr));
 
 	cmzn_field_destroy(&field);
 
@@ -763,65 +762,65 @@ TEST(cmzn_graphic_api, point_attributes_glyph)
 	double outputValues[3];
 
 	// check default values = 0.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_base_size(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_base_size(pointattr, 3, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_base_size(pointattr, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_base_size(pointattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_base_size(pointattr, 2, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_base_size(pointattr, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_base_size(pointattr, 3, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_base_size(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_base_size(pointattr, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_base_size(pointattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_base_size(pointattr, 2, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_base_size(pointattr, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_base_size(pointattr, 3, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_base_size(pointattr, 3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
 	// check default values = 0.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_glyph_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_glyph_offset(pointattr, 3, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_glyph_offset(pointattr, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_glyph_offset(pointattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_glyph_offset(pointattr, 2, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_glyph_offset(pointattr, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_glyph_offset(pointattr, 3, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_glyph_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_offset(pointattr, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_offset(pointattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_offset(pointattr, 2, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_glyph_offset(pointattr, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_glyph_offset(pointattr, 3, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_glyph_offset(pointattr, 3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
 
 	// check default values = 1.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_scale_factors(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_scale_factors(pointattr, 3, outputValues));
 	EXPECT_EQ(1.0, outputValues[0]);
 	EXPECT_EQ(1.0, outputValues[1]);
 	EXPECT_EQ(1.0, outputValues[2]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_scale_factors(pointattr, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_scale_factors(pointattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_scale_factors(pointattr, 2, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_scale_factors(pointattr, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_scale_factors(pointattr, 3, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_scale_factors(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_scale_factors(pointattr, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_scale_factors(pointattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_scale_factors(pointattr, 2, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_scale_factors(pointattr, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_scale_factors(pointattr, 3, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_scale_factors(pointattr, 3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[1], outputValues[2]);
 
-	cmzn_graphic_point_attributes_destroy(&pointattr);
-	cmzn_graphic_points_destroy(&gr);
+	cmzn_graphicspointattributes_destroy(&pointattr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, point_attributes_glyph_cpp)
+TEST(cmzn_graphics_api, point_attributes_glyph_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.scene.createGraphicPoints();
+	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
 	EXPECT_TRUE(gr.isValid());
 	// test can assign to base class handle
-	Graphic tmp(gr);
+	Graphics tmp(gr);
 	EXPECT_TRUE(tmp.isValid());
 
-	GraphicPointAttributes pointattr = gr.getPointAttributes();
+	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
 	EXPECT_TRUE(pointattr.isValid());
 
 	Glyph glyph = zinc.glyphmodule.getDefaultPointGlyph();
@@ -900,83 +899,83 @@ TEST(cmzn_graphic_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(values[1], outputValues[2]);
 }
 
-TEST(cmzn_graphic_api, point_attributes_label)
+TEST(cmzn_graphics_api, point_attributes_label)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_points_id gr = cmzn_scene_create_graphic_points(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_graphic_points *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphic_point_attributes_id pointattr = cmzn_graphic_get_point_attributes(cmzn_graphic_points_base_cast(gr));
-	EXPECT_NE(static_cast<cmzn_graphic_point_attributes *>(0), pointattr);
+	cmzn_graphicspointattributes_id pointattr = cmzn_graphics_get_graphicspointattributes(gr);
+	EXPECT_NE(static_cast<cmzn_graphicspointattributes *>(0), pointattr);
 
 	double values[] = { 1.0, 2.0, 3.0 };
 	cmzn_field_id label_field = cmzn_fieldmodule_create_field_constant(zinc.fm,
 		sizeof(values)/sizeof(double), values);
 	EXPECT_NE(static_cast<cmzn_field *>(0), label_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_label_field(pointattr, label_field));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_label_field(pointattr, label_field));
 
-	cmzn_field_id temp_label_field = cmzn_graphic_point_attributes_get_label_field(pointattr);
+	cmzn_field_id temp_label_field = cmzn_graphicspointattributes_get_label_field(pointattr);
 	EXPECT_EQ(temp_label_field, label_field);
 	cmzn_field_destroy(&temp_label_field);
 	cmzn_field_destroy(&label_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_label_field(pointattr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_point_attributes_get_label_field(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_label_field(pointattr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicspointattributes_get_label_field(pointattr));
 
 	double outputValues[3];
 	// check default values = 0.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_label_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_label_offset(pointattr, 3, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_label_offset(pointattr, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_label_offset(pointattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_label_offset(pointattr, 2, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_label_offset(pointattr, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_get_label_offset(pointattr, 3, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_get_label_offset(pointattr, 3, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_label_offset(pointattr, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_label_offset(pointattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_label_offset(pointattr, 2, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_label_offset(pointattr, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_get_label_offset(pointattr, 3, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_get_label_offset(pointattr, 3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
 
 	// should start with a default font
-	cmzn_font_id font = cmzn_graphic_point_attributes_get_font(pointattr);
+	cmzn_font_id font = cmzn_graphicspointattributes_get_font(pointattr);
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_font(pointattr, 0));
-	EXPECT_EQ(static_cast<cmzn_font *>(0), cmzn_graphic_point_attributes_get_font(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_font(pointattr, 0));
+	EXPECT_EQ(static_cast<cmzn_font *>(0), cmzn_graphicspointattributes_get_font(pointattr));
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_font(pointattr, font));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_font(pointattr, font));
 
 	const char *text = "ABC";
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_label_text(0, 1, text));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_point_attributes_set_label_text(pointattr, 0, text));
-	EXPECT_EQ((char *)0, cmzn_graphic_point_attributes_get_label_text(0, 1));
-	EXPECT_EQ((char *)0, cmzn_graphic_point_attributes_get_label_text(pointattr, 0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_label_text(0, 1, text));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_label_text(pointattr, 0, text));
+	EXPECT_EQ((char *)0, cmzn_graphicspointattributes_get_label_text(0, 1));
+	EXPECT_EQ((char *)0, cmzn_graphicspointattributes_get_label_text(pointattr, 0));
 	for (int labelNumber = 1; labelNumber <= 3; ++labelNumber)
 	{
 		char *outText;
-		EXPECT_EQ((char *)0, cmzn_graphic_point_attributes_get_label_text(pointattr, labelNumber));
-		EXPECT_EQ(CMZN_OK, cmzn_graphic_point_attributes_set_label_text(pointattr, labelNumber, text));
-		outText = cmzn_graphic_point_attributes_get_label_text(pointattr, labelNumber);
+		EXPECT_EQ((char *)0, cmzn_graphicspointattributes_get_label_text(pointattr, labelNumber));
+		EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_label_text(pointattr, labelNumber, text));
+		outText = cmzn_graphicspointattributes_get_label_text(pointattr, labelNumber);
 		EXPECT_STREQ(text, outText);
 		cmzn_deallocate(outText);
 	}
 	cmzn_font_destroy(&font);
-	cmzn_graphic_point_attributes_destroy(&pointattr);
-	cmzn_graphic_points_destroy(&gr);
+	cmzn_graphicspointattributes_destroy(&pointattr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, point_attributes_label_cpp)
+TEST(cmzn_graphics_api, point_attributes_label_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicPoints gr = zinc.scene.createGraphicPoints();
+	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicPointAttributes pointattr = gr.getPointAttributes();
+	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
 	EXPECT_TRUE(pointattr.isValid());
 
 	double values[] = { 1.0, 2.0, 3.0 };
@@ -1027,116 +1026,116 @@ TEST(cmzn_graphic_api, point_attributes_label_cpp)
 	}
 }
 
-TEST(cmzn_graphic, render_polygon_mode)
+TEST(cmzn_graphics, render_polygon_mode)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_SURFACES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_SURFACES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphic_render_polygon_mode renderPolygonMode;
-	ASSERT_EQ(CMZN_GRAPHIC_RENDER_POLYGON_SHADED, renderPolygonMode = cmzn_graphic_get_render_polygon_mode(gr));
+	cmzn_graphics_render_polygon_mode renderPolygonMode;
+	ASSERT_EQ(CMZN_GRAPHICS_RENDER_POLYGON_SHADED, renderPolygonMode = cmzn_graphics_get_render_polygon_mode(gr));
 
 	int result;
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_render_polygon_mode(static_cast<cmzn_graphic_id>(0), CMZN_GRAPHIC_RENDER_POLYGON_SHADED));
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphic_set_render_polygon_mode(gr, CMZN_GRAPHIC_RENDER_POLYGON_MODE_INVALID));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_polygon_mode(static_cast<cmzn_graphics_id>(0), CMZN_GRAPHICS_RENDER_POLYGON_SHADED));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_polygon_mode(gr, CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID));
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphic_set_render_polygon_mode(gr, CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME));
-	ASSERT_EQ(CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME, renderPolygonMode = cmzn_graphic_get_render_polygon_mode(gr));
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_render_polygon_mode(gr, CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME));
+	ASSERT_EQ(CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME, renderPolygonMode = cmzn_graphics_get_render_polygon_mode(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(ZincGraphic, RenderPolygonMode)
+TEST(ZincGraphics, RenderPolygonMode)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicSurfaces gr = zinc.scene.createGraphicSurfaces();
+	GraphicsSurfaces gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
-	Graphic::RenderPolygonMode renderPolygonMode;
-	ASSERT_EQ(Graphic::RENDER_POLYGON_SHADED, renderPolygonMode = gr.getRenderPolygonMode());
+	Graphics::RenderPolygonMode renderPolygonMode;
+	ASSERT_EQ(Graphics::RENDER_POLYGON_SHADED, renderPolygonMode = gr.getRenderPolygonMode());
 
 	int result;
-	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setRenderPolygonMode(Graphic::RENDER_POLYGON_MODE_INVALID));
+	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setRenderPolygonMode(Graphics::RENDER_POLYGON_MODE_INVALID));
 
-	ASSERT_EQ(OK, result = gr.setRenderPolygonMode(Graphic::RENDER_POLYGON_WIREFRAME));
-	ASSERT_EQ(Graphic::RENDER_POLYGON_WIREFRAME, renderPolygonMode = gr.getRenderPolygonMode());
+	ASSERT_EQ(OK, result = gr.setRenderPolygonMode(Graphics::RENDER_POLYGON_WIREFRAME));
+	ASSERT_EQ(Graphics::RENDER_POLYGON_WIREFRAME, renderPolygonMode = gr.getRenderPolygonMode());
 }
 
-TEST(cmzn_graphic_api, line_attributes)
+TEST(cmzn_graphics_api, line_attributes)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_scene_create_graphic(zinc.scene, CMZN_GRAPHIC_LINES);
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphic_line_attributes_id lineattr = cmzn_graphic_get_line_attributes(gr);
-	EXPECT_NE(static_cast<cmzn_graphic_line_attributes *>(0), lineattr);
-	EXPECT_EQ(CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_LINE, cmzn_graphic_line_attributes_get_shape(lineattr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_set_shape(lineattr, CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION));
-	EXPECT_EQ(CMZN_GRAPHIC_LINE_ATTRIBUTES_SHAPE_CIRCLE_EXTRUSION, cmzn_graphic_line_attributes_get_shape(lineattr));
+	cmzn_graphicslineattributes_id lineattr = cmzn_graphics_get_graphicslineattributes(gr);
+	EXPECT_NE(static_cast<cmzn_graphicslineattributes *>(0), lineattr);
+	EXPECT_EQ(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE, cmzn_graphicslineattributes_get_shape(lineattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_shape(lineattr, CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION, cmzn_graphicslineattributes_get_shape(lineattr));
 
 	double value = 1.0;
 	cmzn_field_id orientation_scale_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), orientation_scale_field);
 
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_line_attributes_get_orientation_scale_field(lineattr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_set_orientation_scale_field(lineattr, orientation_scale_field));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicslineattributes_get_orientation_scale_field(lineattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_orientation_scale_field(lineattr, orientation_scale_field));
 
-	cmzn_field_id temp_orientation_scale_field = cmzn_graphic_line_attributes_get_orientation_scale_field(lineattr);
+	cmzn_field_id temp_orientation_scale_field = cmzn_graphicslineattributes_get_orientation_scale_field(lineattr);
 	EXPECT_EQ(temp_orientation_scale_field, orientation_scale_field);
 	cmzn_field_destroy(&temp_orientation_scale_field);
 	cmzn_field_destroy(&orientation_scale_field);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_set_orientation_scale_field(lineattr, 0));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_line_attributes_get_orientation_scale_field(lineattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_orientation_scale_field(lineattr, 0));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicslineattributes_get_orientation_scale_field(lineattr));
 
 	const double values[] = { 0.5, 1.2 };
 	double outputValues[2];
 
 	// check default values = 0.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_get_base_size(lineattr, 2, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_get_base_size(lineattr, 2, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_set_base_size(lineattr, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_set_base_size(lineattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_set_base_size(lineattr, 2, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_get_base_size(lineattr, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_get_base_size(lineattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_get_base_size(lineattr, 2, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_set_base_size(lineattr, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_set_base_size(lineattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_base_size(lineattr, 2, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_get_base_size(lineattr, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_get_base_size(lineattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_get_base_size(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
 	// check default values = 1.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_get_scale_factors(lineattr, 2, outputValues));
 	EXPECT_EQ(1.0, outputValues[0]);
 	EXPECT_EQ(1.0, outputValues[1]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_set_scale_factors(lineattr, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_set_scale_factors(lineattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_set_scale_factors(lineattr, 2, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_get_scale_factors(lineattr, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_line_attributes_get_scale_factors(lineattr, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_line_attributes_get_scale_factors(lineattr, 2, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_set_scale_factors(lineattr, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_set_scale_factors(lineattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_scale_factors(lineattr, 2, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_get_scale_factors(lineattr, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicslineattributes_get_scale_factors(lineattr, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_get_scale_factors(lineattr, 2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 
-	cmzn_graphic_line_attributes_destroy(&lineattr);
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphicslineattributes_destroy(&lineattr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, line_attributes_cpp)
+TEST(cmzn_graphics_api, line_attributes_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphic(Graphic::LINES);
+	Graphics gr = zinc.scene.createGraphics(Graphics::LINES);
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicLineAttributes lineattr = gr.getLineAttributes();
+	Graphicslineattributes lineattr = gr.getGraphicslineattributes();
 	EXPECT_TRUE(lineattr.isValid());
-	EXPECT_EQ(GraphicLineAttributes::SHAPE_LINE, lineattr.getShape());
-	EXPECT_EQ(OK, lineattr.setShape(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION));
-	EXPECT_EQ(GraphicLineAttributes::SHAPE_CIRCLE_EXTRUSION, lineattr.getShape());
+	EXPECT_EQ(Graphicslineattributes::SHAPE_LINE, lineattr.getShape());
+	EXPECT_EQ(OK, lineattr.setShape(Graphicslineattributes::SHAPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(Graphicslineattributes::SHAPE_CIRCLE_EXTRUSION, lineattr.getShape());
 
 	double value = 1.0;
 	Field orientationScaleField = zinc.fm.createFieldConstant(1, &value);
@@ -1174,25 +1173,25 @@ TEST(cmzn_graphic_api, line_attributes_cpp)
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
 }
 
-TEST(cmzn_graphic_api, visibility_flag)
+TEST(cmzn_graphics_api, visibility_flag)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_TRUE(cmzn_graphic_get_visibility_flag(gr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_set_visibility_flag(gr, false));
-	EXPECT_FALSE(cmzn_graphic_get_visibility_flag(gr));
+	EXPECT_TRUE(cmzn_graphics_get_visibility_flag(gr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_visibility_flag(gr, false));
+	EXPECT_FALSE(cmzn_graphics_get_visibility_flag(gr));
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, visibility_flag_cpp)
+TEST(cmzn_graphics_api, visibility_flag_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphic gr = zinc.scene.createGraphicSurfaces();
+	Graphics gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 
 	EXPECT_TRUE(gr.getVisibilityFlag());
@@ -1200,65 +1199,65 @@ TEST(cmzn_graphic_api, visibility_flag_cpp)
 	EXPECT_FALSE(gr.getVisibilityFlag());
 }
 
-TEST(cmzn_graphic_api, sampling_attributes)
+TEST(cmzn_graphics_api, sampling_attributes)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphic_id gr = cmzn_graphic_streamlines_base_cast(cmzn_scene_create_graphic_streamlines(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic *>(0), gr);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_streamlines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphic_sampling_attributes_id sampling = cmzn_graphic_get_sampling_attributes(gr);
-	EXPECT_NE(static_cast<cmzn_graphic_sampling_attributes *>(0), sampling);
+	cmzn_graphicssamplingattributes_id sampling = cmzn_graphics_get_graphicssamplingattributes(gr);
+	EXPECT_NE(static_cast<cmzn_graphicssamplingattributes *>(0), sampling);
 
-	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES, cmzn_graphic_sampling_attributes_get_mode(sampling));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_set_mode(sampling, CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON));
-	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON, cmzn_graphic_sampling_attributes_get_mode(sampling));
+	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES, cmzn_graphicssamplingattributes_get_mode(sampling));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_mode(sampling, CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON));
+	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON, cmzn_graphicssamplingattributes_get_mode(sampling));
 
 	double value = 1.0;
 	cmzn_field_id density_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
 	EXPECT_NE(static_cast<cmzn_field *>(0), density_field);
 
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_sampling_attributes_get_density_field(sampling));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_set_density_field(sampling, density_field));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicssamplingattributes_get_density_field(sampling));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_density_field(sampling, density_field));
 
-	cmzn_field_id temp_density_field = cmzn_graphic_sampling_attributes_get_density_field(sampling);
+	cmzn_field_id temp_density_field = cmzn_graphicssamplingattributes_get_density_field(sampling);
 	EXPECT_EQ(density_field, temp_density_field);
 	cmzn_field_destroy(&temp_density_field);
 	cmzn_field_destroy(&density_field);
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_set_density_field(sampling, static_cast<cmzn_field_id>(0)));
-	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphic_sampling_attributes_get_density_field(sampling));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_density_field(sampling, static_cast<cmzn_field_id>(0)));
+	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicssamplingattributes_get_density_field(sampling));
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_set_mode(sampling, CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_mode(sampling, CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION));
 
 	const double values[] = { 0.5, 0.20, 0.8 };
 	double outputValues[3];
 	// check default values = 0.0
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_get_location(sampling, 3, outputValues));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_get_location(sampling, 3, outputValues));
 	EXPECT_EQ(0.0, outputValues[0]);
 	EXPECT_EQ(0.0, outputValues[1]);
 	EXPECT_EQ(0.0, outputValues[2]);
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_sampling_attributes_set_location(sampling, 0, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_sampling_attributes_set_location(sampling, 2, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_set_location(sampling, 3, values));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_sampling_attributes_get_location(sampling, 0, outputValues));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphic_sampling_attributes_get_location(sampling, 3, 0));
-	EXPECT_EQ(CMZN_OK, cmzn_graphic_sampling_attributes_get_location(sampling, 3, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicssamplingattributes_set_location(sampling, 0, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicssamplingattributes_set_location(sampling, 2, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_location(sampling, 3, values));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicssamplingattributes_get_location(sampling, 0, outputValues));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicssamplingattributes_get_location(sampling, 3, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_get_location(sampling, 3, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[2], outputValues[2]);
 
-	cmzn_graphic_sampling_attributes_destroy(&sampling);
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphicssamplingattributes_destroy(&sampling);
+	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphic_api, sampling_attributes_cpp)
+TEST(cmzn_graphics_api, sampling_attributes_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	GraphicStreamlines gr = zinc.scene.createGraphicStreamlines();
+	GraphicsStreamlines gr = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicSamplingAttributes sampling = gr.getSamplingAttributes();
+	Graphicsamplingattributes sampling = gr.getGraphicsamplingattributes();
 	EXPECT_TRUE(sampling.isValid());
 
 	EXPECT_EQ(Element::POINT_SAMPLE_CELL_CENTRES, sampling.getMode());

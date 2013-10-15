@@ -8,7 +8,7 @@
 #include <zinc/fieldcomposite.h>
 #include <zinc/fieldconstant.h>
 #include <zinc/fieldvectoroperators.h>
-#include <zinc/graphic.h>
+#include <zinc/graphics.h>
 #include <zinc/region.h>
 #include <zinc/spectrum.h>
 
@@ -16,7 +16,7 @@
 #include <zinc/fieldcomposite.hpp>
 #include <zinc/fieldconstant.hpp>
 #include <zinc/fieldvectoroperators.hpp>
-#include <zinc/graphic.hpp>
+#include <zinc/graphics.hpp>
 #include "zinc/scenefilter.hpp"
 #include "zinc/spectrum.hpp"
 
@@ -89,11 +89,11 @@ TEST(cmzn_scene, get_spectrum_data_range)
 	cmzn_field_id dataField = cmzn_fieldmodule_create_field_concatenate(zinc.fm, 2, sourceFields);
 	EXPECT_NE(static_cast<cmzn_field_id>(0), dataField);
 
-	cmzn_graphic_id gr = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic_id>(0), gr);
-	EXPECT_EQ(CMZN_OK, result = cmzn_graphic_set_coordinate_field(gr, coordinateField));
-	EXPECT_EQ(CMZN_OK, result = cmzn_graphic_set_data_field(gr, dataField));
-	EXPECT_EQ(CMZN_OK, result = cmzn_graphic_set_spectrum(gr, zinc.defaultSpectrum));
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), gr);
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_set_coordinate_field(gr, coordinateField));
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_set_data_field(gr, dataField));
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_set_spectrum(gr, zinc.defaultSpectrum));
 
 	double minimumValues[3], maximumValues[3];
 	int maxRanges = cmzn_scene_get_spectrum_data_range(zinc.scene, static_cast<cmzn_scenefilter_id>(0),
@@ -104,14 +104,14 @@ TEST(cmzn_scene, get_spectrum_data_range)
 	ASSERT_DOUBLE_EQ(-0.5, minimumValues[1]);
 	ASSERT_DOUBLE_EQ(0.5, maximumValues[1]);
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_graphic_set_data_field(gr, offsetYField));
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_set_data_field(gr, offsetYField));
 	maxRanges = cmzn_scene_get_spectrum_data_range(zinc.scene, static_cast<cmzn_scenefilter_id>(0),
 		zinc.defaultSpectrum, 3, minimumValues, maximumValues);
 	EXPECT_EQ(1, maxRanges);
 	ASSERT_DOUBLE_EQ(-0.5, minimumValues[0]);
 	ASSERT_DOUBLE_EQ(0.5, maximumValues[0]);
 
-	cmzn_graphic_destroy(&gr);
+	cmzn_graphics_destroy(&gr);
 	cmzn_field_destroy(&dataField);
 	cmzn_field_destroy(&offsetYField);
 	cmzn_field_destroy(&yField);
@@ -143,7 +143,7 @@ TEST(ZincScene, getSpectrumDataRange)
 	Field dataField = zinc.fm.createFieldConcatenate(2, sourceFields);
 	EXPECT_TRUE(dataField.isValid());
 
-	Graphic gr = zinc.scene.createGraphicSurfaces();
+	Graphics gr = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(gr.isValid());
 	EXPECT_EQ(CMZN_OK, result = gr.setCoordinateField(coordinateField));
 	EXPECT_EQ(CMZN_OK, result = gr.setDataField(dataField));
@@ -185,149 +185,149 @@ TEST(ZincScene, visibilityFlag)
 	EXPECT_FALSE(zinc.scene.getVisibilityFlag());
 }
 
-TEST(cmzn_scene, graphic_list)
+TEST(cmzn_scene, graphics_list)
 {
 	ZincTestSetup zinc;
-	cmzn_graphic_id lines = cmzn_graphic_lines_base_cast(cmzn_scene_create_graphic_lines(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic_id>(0), lines);
-	cmzn_graphic_id points = cmzn_graphic_points_base_cast(cmzn_scene_create_graphic_points(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic_id>(0), points);
-	cmzn_graphic_id surfaces = cmzn_graphic_surfaces_base_cast(cmzn_scene_create_graphic_surfaces(zinc.scene));
-	EXPECT_NE(static_cast<cmzn_graphic_id>(0), surfaces);
+	cmzn_graphics_id lines = cmzn_scene_create_graphics_lines(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), lines);
+	cmzn_graphics_id points = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), points);
+	cmzn_graphics_id surfaces = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), surfaces);
 
-	cmzn_graphic_id gr = 0;
-	gr = cmzn_scene_get_first_graphic(zinc.scene);
+	cmzn_graphics_id gr = 0;
+	gr = cmzn_scene_get_first_graphics(zinc.scene);
 	ASSERT_EQ(lines, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, lines);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, lines);
 	ASSERT_EQ(points, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, points);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, points);
 	ASSERT_EQ(surfaces, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, surfaces);
-	ASSERT_EQ(static_cast<cmzn_graphic_id>(0), gr);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, surfaces);
+	ASSERT_EQ(static_cast<cmzn_graphics_id>(0), gr);
 
 	// reverse iteration
-	gr = cmzn_scene_get_previous_graphic(zinc.scene, points);
+	gr = cmzn_scene_get_previous_graphics(zinc.scene, points);
 	ASSERT_EQ(lines, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_previous_graphic(zinc.scene, lines);
-	ASSERT_EQ(static_cast<cmzn_graphic_id>(0), gr);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_previous_graphics(zinc.scene, lines);
+	ASSERT_EQ(static_cast<cmzn_graphics_id>(0), gr);
 
 	int result;
-	ASSERT_EQ(CMZN_OK, result = cmzn_scene_move_graphic_before(zinc.scene, surfaces, lines));
+	ASSERT_EQ(CMZN_OK, result = cmzn_scene_move_graphics_before(zinc.scene, surfaces, lines));
 
-	gr = cmzn_scene_get_first_graphic(zinc.scene);
+	gr = cmzn_scene_get_first_graphics(zinc.scene);
 	ASSERT_EQ(surfaces, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, surfaces);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, surfaces);
 	ASSERT_EQ(lines, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, lines);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, lines);
 	ASSERT_EQ(points, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, points);
-	ASSERT_EQ(static_cast<cmzn_graphic_id>(0), gr);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, points);
+	ASSERT_EQ(static_cast<cmzn_graphics_id>(0), gr);
 
 	// move to end of list
-	ASSERT_EQ(CMZN_OK, result = cmzn_scene_move_graphic_before(zinc.scene, surfaces, static_cast<cmzn_graphic_id>(0)));
+	ASSERT_EQ(CMZN_OK, result = cmzn_scene_move_graphics_before(zinc.scene, surfaces, static_cast<cmzn_graphics_id>(0)));
 
-	gr = cmzn_scene_get_first_graphic(zinc.scene);
+	gr = cmzn_scene_get_first_graphics(zinc.scene);
 	ASSERT_EQ(lines, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, lines);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, lines);
 	ASSERT_EQ(points, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, points);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, points);
 	ASSERT_EQ(surfaces, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, surfaces);
-	ASSERT_EQ(static_cast<cmzn_graphic_id>(0), gr);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, surfaces);
+	ASSERT_EQ(static_cast<cmzn_graphics_id>(0), gr);
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_scene_remove_graphic(zinc.scene, points));
+	ASSERT_EQ(CMZN_OK, result = cmzn_scene_remove_graphics(zinc.scene, points));
 
-	gr = cmzn_scene_get_first_graphic(zinc.scene);
+	gr = cmzn_scene_get_first_graphics(zinc.scene);
 	ASSERT_EQ(lines, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, lines);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, lines);
 	ASSERT_EQ(surfaces, gr);
-	cmzn_graphic_destroy(&gr);
-	gr = cmzn_scene_get_next_graphic(zinc.scene, surfaces);
-	ASSERT_EQ(static_cast<cmzn_graphic_id>(0), gr);
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_get_next_graphics(zinc.scene, surfaces);
+	ASSERT_EQ(static_cast<cmzn_graphics_id>(0), gr);
 
-	// can't re-add points graphic that has been removed
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_scene_move_graphic_before(zinc.scene, points, static_cast<cmzn_graphic_id>(0)));
+	// can't re-add points graphics that has been removed
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_scene_move_graphics_before(zinc.scene, points, static_cast<cmzn_graphics_id>(0)));
 
 	ASSERT_EQ(CMZN_OK, result = cmzn_scene_remove_all_graphics(zinc.scene));
 
-	cmzn_graphic_destroy(&lines);
-	cmzn_graphic_destroy(&points);
-	cmzn_graphic_destroy(&surfaces);
+	cmzn_graphics_destroy(&lines);
+	cmzn_graphics_destroy(&points);
+	cmzn_graphics_destroy(&surfaces);
 }
 
-TEST(ZincScene, graphic_list)
+TEST(ZincScene, graphics_list)
 {
 	ZincTestSetupCpp zinc;
-	GraphicLines lines = zinc.scene.createGraphicLines();
+	GraphicsLines lines = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(lines.isValid());
-	GraphicPoints points = zinc.scene.createGraphicPoints();
+	GraphicsPoints points = zinc.scene.createGraphicsPoints();
 	EXPECT_TRUE(points.isValid());
-	GraphicSurfaces surfaces = zinc.scene.createGraphicSurfaces();
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
 	EXPECT_TRUE(surfaces.isValid());
 
-	Graphic gr;
-	gr = zinc.scene.getFirstGraphic();
+	Graphics gr;
+	gr = zinc.scene.getFirstGraphics();
 	ASSERT_EQ(lines.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(points.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(surfaces.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_FALSE(gr.isValid());
 
 	// reverse iteration
-	gr = zinc.scene.getPreviousGraphic(points);
+	gr = zinc.scene.getPreviousGraphics(points);
 	ASSERT_EQ(lines.getId(), gr.getId());
-	gr = zinc.scene.getPreviousGraphic(gr);
+	gr = zinc.scene.getPreviousGraphics(gr);
 	ASSERT_FALSE(gr.isValid());
 
 	int result;
-	ASSERT_EQ(CMZN_OK, result = zinc.scene.moveGraphicBefore(surfaces, lines));
+	ASSERT_EQ(CMZN_OK, result = zinc.scene.moveGraphicsBefore(surfaces, lines));
 
-	gr = zinc.scene.getFirstGraphic();
+	gr = zinc.scene.getFirstGraphics();
 	ASSERT_EQ(surfaces.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(lines.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(points.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_FALSE(gr.isValid());
 
 	// move to end of list
-	Graphic noGraphic;
-	ASSERT_EQ(CMZN_OK, result = zinc.scene.moveGraphicBefore(surfaces, noGraphic));
+	Graphics noGraphics;
+	ASSERT_EQ(CMZN_OK, result = zinc.scene.moveGraphicsBefore(surfaces, noGraphics));
 
-	gr = zinc.scene.getFirstGraphic();
+	gr = zinc.scene.getFirstGraphics();
 	ASSERT_EQ(lines.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(points.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(surfaces.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_FALSE(gr.isValid());
 
-	ASSERT_EQ(CMZN_OK, result = zinc.scene.removeGraphic(points));
+	ASSERT_EQ(CMZN_OK, result = zinc.scene.removeGraphics(points));
 
-	gr = zinc.scene.getFirstGraphic();
+	gr = zinc.scene.getFirstGraphics();
 	ASSERT_EQ(lines.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_EQ(surfaces.getId(), gr.getId());
-	gr = zinc.scene.getNextGraphic(gr);
+	gr = zinc.scene.getNextGraphics(gr);
 	ASSERT_FALSE(gr.isValid());
 
-	// can't re-add points graphic that has been removed
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = result = zinc.scene.moveGraphicBefore(points, noGraphic));
+	// can't re-add points graphics that has been removed
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = result = zinc.scene.moveGraphicsBefore(points, noGraphics));
 
 	ASSERT_EQ(CMZN_OK, result = zinc.scene.removeAllGraphics());
 }

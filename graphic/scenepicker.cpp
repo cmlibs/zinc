@@ -8,7 +8,7 @@
 #include <zinc/field.h>
 #include <zinc/fieldgroup.h>
 #include <zinc/region.h>
-#include <zinc/graphic.h>
+#include <zinc/graphics.h>
 #include <zinc/scene.h>
 #include <zinc/scenefilter.h>
 #include <zinc/sceneviewer.h>
@@ -17,7 +17,7 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 #include "zinc/element.hpp"
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/node.hpp"
 #include "zinc/scenepicker.hpp"
 #include "zinc/scene.hpp"
@@ -54,8 +54,8 @@ TEST(cmzn_scene_picker_api, valid_args)
 	cmzn_scenefiltermodule_id filter_module = cmzn_context_get_scenefiltermodule(zinc.context);
 	EXPECT_NE(static_cast<cmzn_scenefiltermodule *>(0), filter_module);
 
-	cmzn_scenefilter_id sf = cmzn_scenefiltermodule_create_scenefilter_graphic_type(filter_module,
-		CMZN_GRAPHIC_POINTS);
+	cmzn_scenefilter_id sf = cmzn_scenefiltermodule_create_scenefilter_graphics_type(filter_module,
+		CMZN_GRAPHICS_POINTS);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), sf);
 
 	cmzn_scenefiltermodule_destroy(&filter_module);
@@ -77,20 +77,20 @@ TEST(cmzn_scene_picker_api, valid_args)
 	cmzn_node_id node = cmzn_scene_picker_get_nearest_node(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_node *>(0), node);
 
-	cmzn_graphic_id graphic = cmzn_scene_picker_get_nearest_element_graphic(scene_picker);
-	EXPECT_EQ(static_cast<cmzn_graphic *>(0), graphic);
+	cmzn_graphics_id graphic = cmzn_scene_picker_get_nearest_element_graphics(scene_picker);
+	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	graphic = cmzn_scene_picker_get_nearest_node_graphic(scene_picker);
-	EXPECT_EQ(static_cast<cmzn_graphic *>(0), graphic);
+	graphic = cmzn_scene_picker_get_nearest_node_graphics(scene_picker);
+	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	graphic = cmzn_scene_picker_get_nearest_graphic(scene_picker);
-	EXPECT_EQ(static_cast<cmzn_graphic *>(0), graphic);
+	graphic = cmzn_scene_picker_get_nearest_graphics(scene_picker);
+	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
 	result = cmzn_scene_picker_add_picked_elements_to_group(scene_picker, fieldGroup);
-	EXPECT_EQ(static_cast<cmzn_graphic *>(0), graphic);
+	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
 	result = cmzn_scene_picker_add_picked_nodes_to_group(scene_picker, fieldGroup);
-	EXPECT_EQ(static_cast<cmzn_graphic *>(0), graphic);
+	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
 	cmzn_scenefilter_destroy(&sf);
 
@@ -134,7 +134,7 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	Scenefiltermodule sfm = zinc.context.getScenefiltermodule();
 	EXPECT_TRUE(sfm.isValid());
 
-	Scenefilter sf = sfm.createScenefilterGraphicType(Graphic::POINTS);
+	Scenefilter sf = sfm.createScenefilterGraphicsType(Graphics::POINTS);
 	EXPECT_TRUE(sf.isValid());
 
 	result = scenePicker.setScene(zinc.scene);
@@ -153,13 +153,13 @@ TEST(cmzn_scene_picker_api, valid_args_cpp)
 	Node node = scenePicker.getNearestNode();
 	EXPECT_FALSE(node.isValid());
 
-	Graphic graphic = scenePicker.getNearestElementGraphic();
+	Graphics graphic = scenePicker.getNearestElementGraphics();
 	EXPECT_FALSE(graphic.isValid());
 
-	graphic = scenePicker.getNearestNodeGraphic();
+	graphic = scenePicker.getNearestNodeGraphics();
 	EXPECT_FALSE(graphic.isValid());
 
-	graphic = scenePicker.getNearestGraphic();
+	graphic = scenePicker.getNearestGraphics();
 	EXPECT_FALSE(graphic.isValid());
 
 	result = scenePicker.addPickedElementsToGroup(fieldGroup);
