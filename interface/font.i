@@ -40,7 +40,7 @@
 
 %module(package="opencmiss.zinc") font
 
-%import "graphic.i"
+%import "graphics.i"
 
 %{
 #include "zinc/font.hpp"

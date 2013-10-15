@@ -1,5 +1,5 @@
 /**
- * graphic.i
+ * graphics.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -38,7 +38,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="opencmiss.zinc") graphic
+%module(package="opencmiss.zinc") graphics
 %include "doublevaluesarraytypemap.i"
 %include "integervaluesarraytypemap.i"
 
@@ -51,9 +51,9 @@
 %import "font.i"
 
 %{
-#include "zinc/graphic.hpp"
+#include "zinc/graphics.hpp"
 #include "zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/graphic.hpp"
+%include "zinc/graphics.hpp"
 

@@ -41,7 +41,7 @@
 %module(package="opencmiss.zinc") scenepicker
 
 %import "element.i"
-%import "graphic.i"
+%import "graphics.i"
 %import "node.i"
 %import "scenecoordinatesystem.i"
 %import "sceneviewer.i"

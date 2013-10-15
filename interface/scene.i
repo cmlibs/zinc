@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Scene.i
+/**
+ * scene.i
  *
  */
 /* ***** BEGIN LICENSE BLOCK *****
@@ -40,7 +40,7 @@
 
 %module(package="opencmiss.zinc") scene
 
-%import "graphic.i"
+%import "graphics.i"
 %import "scenefilter.i"
 %import "selection.i"
 

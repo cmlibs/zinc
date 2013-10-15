@@ -1,4 +1,4 @@
-/*******************************************************************************
+/**
  * scenefilter.i
  *
  */
@@ -40,7 +40,7 @@
 
 %module(package="opencmiss.zinc") scenefilter
 
-%import "graphic.i"
+%import "graphics.i"
 %import "region.i"
 
 %{

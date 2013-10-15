@@ -70,7 +70,7 @@ SET(INTERFACE_SRCS
 	../interface/fieldcache.i
 	../interface/tessellation.i
 	../interface/glyph.i
-	../interface/graphic.i
+	../interface/graphics.i
 	../interface/selection.i
 	../interface/font.i
 	../interface/scene.i
