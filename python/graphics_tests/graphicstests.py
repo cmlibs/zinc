@@ -11,11 +11,11 @@ from opencmiss.zinc.field import Field
 from opencmiss.zinc.sceneviewer import Sceneviewer
 from opencmiss.zinc import status
 
-class GraphicTestCase(unittest.TestCase):
+class GraphicsTestCase(unittest.TestCase):
 
 
     def setUp(self):
-        self.context = Context('graphictest')
+        self.context = Context('graphicstest')
         root_region = self.context.getDefaultRegion()
         self.scene = root_region.getScene()
 
@@ -25,12 +25,12 @@ class GraphicTestCase(unittest.TestCase):
         del self.context
 
 
-    def testGraphicCreation(self):
-        graphic = self.scene.createGraphicPoints()
-        self.assertTrue(graphic.isValid())
-        result = graphic.setDomainType(Field.DOMAIN_NODES)
+    def testGraphicsCreation(self):
+        graphics = self.scene.createGraphicsPoints()
+        self.assertTrue(graphics.isValid())
+        result = graphics.setDomainType(Field.DOMAIN_NODES)
         self.assertEqual(status.OK, result)
-        attributes = graphic.getPointAttributes()
+        attributes = graphics.getGraphicspointattributes()
         self.assertTrue(attributes.isValid())
         glyph_module = self.context.getGlyphmodule()
         glyph_module.defineStandardGlyphs()
@@ -41,10 +41,10 @@ class GraphicTestCase(unittest.TestCase):
         glyphType = attributes.getGlyphType()
         self.assertEqual(Glyph.SPHERE, glyphType)
 
-    def testGraphicSetBaseSize(self):
-        graphic = self.scene.createGraphicPoints()
-        self.assertTrue(graphic.isValid())
-        attributes = graphic.getPointAttributes()
+    def testGraphicsPointsSetBaseSize(self):
+        graphics = self.scene.createGraphicsPoints()
+        self.assertTrue(graphics.isValid())
+        attributes = graphics.getGraphicspointattributes()
         result = attributes.setBaseSize([1])
         self.assertEqual(status.OK, result)
         result = attributes.setBaseSize([6, 2, 0.3])
@@ -52,10 +52,10 @@ class GraphicTestCase(unittest.TestCase):
         result = attributes.setBaseSize(3)
         self.assertEqual(status.OK, result)
 
-    def testGraphicGetBaseSize(self):
-        graphic = self.scene.createGraphicPoints()
-        self.assertTrue(graphic.isValid())
-        attributes = graphic.getPointAttributes()
+    def testGraphicsPointsGetBaseSize(self):
+        graphics = self.scene.createGraphicsPoints()
+        self.assertTrue(graphics.isValid())
+        attributes = graphics.getGraphicspointattributes()
         result = attributes.setBaseSize(5.4)
         self.assertEqual(status.OK, result)
         base_size = attributes.getBaseSize(1)
@@ -86,7 +86,7 @@ class GraphicTestCase(unittest.TestCase):
 def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
-    tests.addTests(unittest.TestLoader().loadTestsFromTestCase(GraphicTestCase))
+    tests.addTests(unittest.TestLoader().loadTestsFromTestCase(GraphicsTestCase))
     return tests
 
 if __name__ == '__main__':

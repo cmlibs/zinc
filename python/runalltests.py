@@ -10,8 +10,8 @@ def suite():
     from region_tests import regiontests
     tests.addTests(regiontests.suite())
 
-    from graphic_tests import graphictests
-    tests.addTests(graphictests.suite())
+    from graphics_tests import graphicstests
+    tests.addTests(graphicstests.suite())
     
     from field_tests import fieldtests
     tests.addTests(fieldtests.suite())
