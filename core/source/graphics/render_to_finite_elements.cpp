@@ -1272,7 +1272,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
 
 int render_to_finite_elements(cmzn_region_id source_region,
-	const char *graphic_name, cmzn_scenefilter_id filter,
+	const char *graphics_name, cmzn_scenefilter_id filter,
 	enum Render_to_finite_elements_mode render_mode,
 	cmzn_region_id region, cmzn_field_group_id group,
 	cmzn_field_id coordinate_field, cmzn_nodeset_id nodeset,
@@ -1297,7 +1297,7 @@ int render_to_finite_elements(cmzn_region_id source_region,
 			else
 			{
 				return_code = Scene_export_region_graphics_object(scene, source_region,
-					graphic_name, filter, Graphics_object_render_to_finite_elements_iterator,
+					graphics_name, filter, Graphics_object_render_to_finite_elements_iterator,
 					(void *)&data);
 			}
 		}

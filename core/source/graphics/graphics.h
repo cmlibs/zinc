@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * cmiss_graphic.h
+ * graphics.h
  */
 /* OpenCMISS-Zinc Library
 *
@@ -7,11 +7,11 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if !defined (CMZN_GRAPHIC_H)
-#define CMZN_GRAPHIC_H
+#if !defined (CMZN_GRAPHICS_H)
+#define CMZN_GRAPHICS_H
 
 #include "zinc/fieldgroup.h"
-#include "zinc/graphic.h"
+#include "zinc/graphics.h"
 #include "zinc/types/scenefilterid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
@@ -25,10 +25,10 @@
 #include "graphics/material.h"
 #include "graphics/spectrum.h"
 
-struct cmzn_graphic_point_attributes;
-struct cmzn_graphic_line_attributes;
+struct cmzn_graphicspointattributes;
+struct cmzn_graphicslineattributes;
 
-struct cmzn_graphic
+struct cmzn_graphics
 /*******************************************************************************
 LAST MODIFIED : 14 March 2003
 
@@ -40,18 +40,18 @@ finite element group scene.
 	/* position identifier for ordering settings in list */
 	int position;
 
-	/* scene which owns this graphic */
+	/* scene which owns this graphics */
 	struct cmzn_scene *scene;
 
 	/* name for identifying settings */
 	const char *name;
 
 // 	/* geometry settings */
-// 	/* for all graphic types */
-	enum cmzn_graphic_type graphic_type;
+// 	/* for all graphics types */
+	enum cmzn_graphics_type graphics_type;
 	struct Computed_field *subgroup_field;
 	struct Computed_field *coordinate_field;
-	enum cmzn_graphic_select_mode select_mode;
+	enum cmzn_graphics_select_mode select_mode;
 	enum cmzn_field_domain_type domain_type;
 
 	/* for 1-D and 2-D elements only */
@@ -63,7 +63,7 @@ finite element group scene.
 	struct Computed_field *texture_coordinate_field;
 
 	/* line attributes */
-	enum cmzn_graphic_line_attributes_shape line_shape;
+	enum cmzn_graphicslineattributes_shape line_shape;
 	FE_value line_base_size[2];
 	FE_value line_scale_factors[2];
 	cmzn_field_id line_orientation_scale_field;
@@ -106,7 +106,7 @@ finite element group scene.
 
 	/* streamlines */
 	struct Computed_field *stream_vector_field;
-	enum cmzn_graphic_streamlines_track_direction streamlines_track_direction;
+	enum cmzn_graphics_streamlines_track_direction streamlines_track_direction;
 	FE_value streamline_length;
 	enum Streamline_data_type streamline_data_type;
 	/* streamline seed nodeset and field giving mesh location */
@@ -114,7 +114,7 @@ finite element group scene.
 	struct Computed_field *seed_node_mesh_location_field;
 
 	/* appearance settings */
-	/* for all graphic types */
+	/* for all graphics types */
 	bool visibility_flag;
 	struct Graphical_material *material, *selected_material,
 		*secondary_material;
@@ -124,7 +124,7 @@ finite element group scene.
 	/* for glyphsets */
 	struct cmzn_font *font;
 	/* for surfaces */
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode;
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode;
 	/* for rendering lines in GL, positive value; default 1.0 */
 	double render_line_width;
 	/* for rendering points in GL, positive value; default 1.0 */
@@ -144,39 +144,39 @@ finite element group scene.
 // 	/* for accessing objects */
 	int access_count;
 
-	inline cmzn_graphic *access()
+	inline cmzn_graphics *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static inline int deaccess(cmzn_graphic **graphic_address);
+	static inline int deaccess(cmzn_graphics **graphics_address);
 
 };
 
 struct cmzn_graphics_module;
 
-typedef enum cmzn_graphic_type cmzn_graphic_type_enum;
+typedef enum cmzn_graphics_type cmzn_graphics_type_enum;
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphic_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_type);
 
-enum cmzn_graphic_string_details
+enum cmzn_graphics_string_details
 {
-  GRAPHIC_STRING_GEOMETRY,
-	GRAPHIC_STRING_COMPLETE,
-	GRAPHIC_STRING_COMPLETE_PLUS
-}; /* enum cmzn_graphic_string_details */
+  GRAPHICS_STRING_GEOMETRY,
+	GRAPHICS_STRING_COMPLETE,
+	GRAPHICS_STRING_COMPLETE_PLUS
+}; /* enum cmzn_graphics_string_details */
 
 /***************************************************************************//**
  * Data for formating output with GT_element_settings_list_contents function.
  */
-struct cmzn_graphic_list_data
+struct cmzn_graphics_list_data
 {
 	const char *line_prefix,*line_suffix;
-	enum cmzn_graphic_string_details graphic_string_detail;
-}; /* cmzn_graphic_list_data */
+	enum cmzn_graphics_string_details graphics_string_detail;
+}; /* cmzn_graphics_list_data */
 
-struct cmzn_graphic_update_time_behaviour_data
+struct cmzn_graphics_update_time_behaviour_data
 {
 	/* flag set by cmzn_scene if the default coordinate field depends on time */
 	int default_coordinate_depends_on_time;
@@ -184,14 +184,14 @@ struct cmzn_graphic_update_time_behaviour_data
 	int time_dependent;
 };
 
-struct cmzn_graphic_range
+struct cmzn_graphics_range
 {
 	struct Graphics_object_range_struct *graphics_object_range;
 	cmzn_scenefilter_id filter;
 	enum cmzn_scene_coordinate_system coordinate_system;
 };
 
-struct cmzn_graphic_to_graphics_object_data
+struct cmzn_graphics_to_graphics_object_data
 {
 	cmzn_fieldcache_id field_cache;
 	/* graphics object names are preceded by this */
@@ -227,331 +227,316 @@ struct cmzn_graphic_to_graphics_object_data
 	struct Iso_surface_specification *iso_surface_specification;
 	struct cmzn_scenefilter *scenefilter;
 	/* additional values for passing to element_to_graphics_object */
-	struct cmzn_graphic *graphic;
+	struct cmzn_graphics *graphics;
 	int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 };
 
-struct Modify_scene_data
-/*******************************************************************************
-LAST MODIFIED : 5 June 1998
-
-DESCRIPTION :
-Structure modified by g_element modify routines.
-==============================================================================*/
-{
-	char delete_flag;
-	int position;
-	struct cmzn_graphic *graphic;
-	int modify_this_graphic;
-	cmzn_field_group_id group; // optional group field for migrating group regions
-}; /* struct Modify_graphic_data */
-
-struct cmzn_graphic_Computed_field_change_data
+struct cmzn_graphics_Computed_field_change_data
 {
 	struct LIST(Computed_field) *changed_field_list;
 	int selection_changed;
 };
 
-DECLARE_LIST_TYPES(cmzn_graphic);
+DECLARE_LIST_TYPES(cmzn_graphics);
 
 /***************************************************************************//**
  * Created with access_count = 1.
  */
-struct cmzn_graphic *CREATE(cmzn_graphic)(
-	enum cmzn_graphic_type graphic_type);
+struct cmzn_graphics *CREATE(cmzn_graphics)(
+	enum cmzn_graphics_type graphics_type);
 
-int DESTROY(cmzn_graphic)(struct cmzn_graphic **cmiss_graphic_address);
+int DESTROY(cmzn_graphics)(struct cmzn_graphics **graphicss_address);
 
 /***************************************************************************//**
- * Adds the <graphics> to <list_of_graphicss> at the given <position>, where 1 is
+ * Adds the <graphics> to <list_of_graphics> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
  * last position in the list cause the graphics to be added at its end, with a
  * position one greater than the last.
- * @param graphic The graphic to be added
+ * @param graphics The graphics to be added
  * @param position Given position of the item
- * @param list_of_graphic The list of graphic
- * @return If successfully add graphic to list of graphic returns 1, otherwise 0
+ * @param list_of_graphics The list of graphics
+ * @return If successfully add graphics to list of graphics returns 1, otherwise 0
  */
-int cmzn_graphic_add_to_list(struct cmzn_graphic *graphic,
-	int position,struct LIST(cmzn_graphic) *list_of_graphic);
+int cmzn_graphics_add_to_list(struct cmzn_graphics *graphics,
+	int position,struct LIST(cmzn_graphics) *list_of_graphics);
 
 /***************************************************************************//**
- * Removes the <graphic> from <list_of_graphic> and decrements the position
- * of all subsequent graphic.
+ * Removes the <graphics> from <list_of_graphics> and decrements the position
+ * of all subsequent graphics.
  */
-int cmzn_graphic_remove_from_list(struct cmzn_graphic *graphic,
-	struct LIST(cmzn_graphic) *list_of_graphic);
+int cmzn_graphics_remove_from_list(struct cmzn_graphics *graphics,
+	struct LIST(cmzn_graphics) *list_of_graphics);
 
 /***************************************************************************//**
- * Changes the contents of <graphic> to match <new_graphic>, with no change in
- * position in <list_of_graphic>.
+ * Changes the contents of <graphics> to match <new_graphics>, with no change in
+ * position in <list_of_graphics>.
  */
-int cmzn_graphic_modify_in_list(struct cmzn_graphic *graphic,
-	struct cmzn_graphic *new_graphic,
-	struct LIST(cmzn_graphic) *list_of_graphic);
+int cmzn_graphics_modify_in_list(struct cmzn_graphics *graphics,
+	struct cmzn_graphics *new_graphics,
+	struct LIST(cmzn_graphics) *list_of_graphics);
 
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_graphic);
-PROTOTYPE_LIST_FUNCTIONS(cmzn_graphic);
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_graphic,position,int);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_graphics);
+PROTOTYPE_LIST_FUNCTIONS(cmzn_graphics);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_graphics,position,int);
 
-int cmzn_graphic::deaccess(cmzn_graphic **graphic_address)
+int cmzn_graphics::deaccess(cmzn_graphics **graphics_address)
 {
-	return DEACCESS(cmzn_graphic)(graphic_address);
+	return DEACCESS(cmzn_graphics)(graphics_address);
 }
 
 /***************************************************************************//**
- * Returns a string summarising the graphic type, name and subset field.
- * @param graphic  The graphic.
+ * Returns a string summarising the graphics type, name and subset field.
+ * @param graphics  The graphics.
  * @return  Allocated string.
  */
-char *cmzn_graphic_get_summary_string(struct cmzn_graphic *graphic);
+char *cmzn_graphics_get_summary_string(struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
- * Returns a string describing the graphic, suitable for entry into the command
- * line. Parameter <graphic_detail> selects whether appearance graphic are
+ * Returns a string describing the graphics, suitable for entry into the command
+ * line. Parameter <graphics_detail> selects whether appearance graphics are
  * included in the string. User must remember to DEALLOCATE the name afterwards.
- * ???RC When we have editing of graphic, rather than creating from scratch each
+ * ???RC When we have editing of graphics, rather than creating from scratch each
  * time as we do now with our text commands, we must ensure that defaults are
  * restored by commands generated by this string, eg. must have coordinate NONE
  * if no coordinate field. Currently only write if we have a field.
- * @param graphic The cmiss graphic
- * @param graphic_detail given detail of the string
- * @return the cmzn_graphic_string
+ * @param graphics The cmiss graphics
+ * @param graphics_detail given detail of the string
+ * @return the cmzn_graphics_string
  */
-char *cmzn_graphic_string(struct cmzn_graphic *graphic,
-	enum cmzn_graphic_string_details graphic_detail);
+char *cmzn_graphics_string(struct cmzn_graphics *graphics,
+	enum cmzn_graphics_string_details graphics_detail);
 
 /***************************************************************************//**
- * @return  1 if both graphic and its scene visibility flags are set,
+ * @return  1 if both graphics and its scene visibility flags are set,
  * otherwise 0.
  */
-int cmzn_graphic_and_scene_visibility_flags_is_set(struct cmzn_graphic *graphic);
+int cmzn_graphics_and_scene_visibility_flags_is_set(struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
- * @return  1 if graphic is one of the graphical representations of region,
+ * @return  1 if graphics is one of the graphical representations of region,
  * otherwise 0.
  */
-int cmzn_graphic_is_from_region_hierarchical(struct cmzn_graphic *graphic, struct cmzn_region *region);
+int cmzn_graphics_is_from_region_hierarchical(struct cmzn_graphics *graphics, struct cmzn_region *region);
 
 /**
- * Returns true if graphic is generated from elements and they are pickable via it.
+ * Returns true if graphics is generated from elements and they are pickable via it.
  */
-bool cmzn_graphic_selects_elements(struct cmzn_graphic *graphic);
+bool cmzn_graphics_selects_elements(struct cmzn_graphics *graphics);
 
 /**
- * Returns the dimension of the domain used in the graphic. Note for domain
+ * Returns the dimension of the domain used in the graphics. Note for domain
  * type CMZN_DOMAIN_MESH_HIGHEST_DIMENSION the region is checked for the
  * highest dimension.
- * @param graphic  The graphic to query.
- * @return  The dimension of the graphic domain, or -1 on error.
+ * @param graphics  The graphics to query.
+ * @return  The dimension of the graphics domain, or -1 on error.
  */
-int cmzn_graphic_get_domain_dimension(struct cmzn_graphic *graphic);
+int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics);
 
 #if defined (USE_OPENCASCADE)
 /**
  * Returns 1 if the graphics are output with names that identify
  * the elements they are calculated from.  Otherwise it returns 0.
  */
-int cmzn_graphic_selects_cad_primitives(struct cmzn_graphic *graphic);
+int cmzn_graphics_selects_cad_primitives(struct cmzn_graphics *graphics);
 #endif /* defined (USE_OPENCASCADE) */
 
 /***************************************************************************//**
- *Returns the settings type of the <graphic>, eg. CMZN_GRAPHIC_LINES.
+ *Returns the settings type of the <graphics>, eg. CMZN_GRAPHICS_LINES.
  */
-enum cmzn_graphic_type cmzn_graphic_get_graphic_type(
-	struct cmzn_graphic *graphic);
+enum cmzn_graphics_type cmzn_graphics_get_graphics_type(
+	struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
- *Returns 1 if the graphic type of the <graphic> is same as the one specified.
+ *Returns 1 if the graphics type of the <graphics> is same as the one specified.
  */
-int cmzn_graphic_is_graphic_type(struct cmzn_graphic *graphic,
-	enum cmzn_graphic_type graphic_type);
+int cmzn_graphics_is_graphics_type(struct cmzn_graphics *graphics,
+	enum cmzn_graphics_type graphics_type);
 
-int cmzn_graphic_to_graphics_object(
-	struct cmzn_graphic *graphic,void *graphic_to_object_data_void);
+int cmzn_graphics_to_graphics_object(
+	struct cmzn_graphics *graphics,void *graphics_to_object_data_void);
 
 /***************************************************************************//**
  * If the settings visibility flag is set and it has a graphics_object, the
  * graphics_object is compiled.
- * @param graphic The graphic to be edit
+ * @param graphics The graphics to be edit
  * @param context_void Void pointer to the GT_object_compile_context
  * @return If successfully compile visible setting returns 1, else 0
  */
-int cmzn_graphic_compile_visible_graphic(
-	struct cmzn_graphic *graphic, void *renderer_void);
+int cmzn_graphics_compile_visible_graphics(
+	struct cmzn_graphics *graphics, void *renderer_void);
 
 /***************************************************************************//**
  * If the settings visibility flag is set and it has a graphics_object, the
  * graphics_object is executed, while the position of the settings in the list
  * is put out as a name to identify the object in OpenGL picking.
- * @param graphic The graphic to be edit
+ * @param graphics The graphics to be edit
  * @param dummy_void void pointer to NULL
- * @return If successfully execute visible graphic returns 1, else 0
+ * @return If successfully execute visible graphics returns 1, else 0
  */
-int cmzn_graphic_execute_visible_graphic(
-	struct cmzn_graphic *graphic, void *renderer_void);
+int cmzn_graphics_execute_visible_graphics(
+	struct cmzn_graphics *graphics, void *renderer_void);
 
-int cmzn_graphic_get_visible_graphics_object_range(
-	struct cmzn_graphic *graphic,void *graphic_range_void);
+int cmzn_graphics_get_visible_graphics_object_range(
+	struct cmzn_graphics *graphics,void *graphics_range_void);
 
-struct GT_object *cmzn_graphic_get_graphics_object(
-	struct cmzn_graphic *graphic);
+struct GT_object *cmzn_graphics_get_graphics_object(
+	struct cmzn_graphics *graphics);
 
 /**
  * Gets the streamline data type which allows extended options for colouring
  * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
  */
-enum Streamline_data_type cmzn_graphic_get_streamline_data_type(
-	cmzn_graphic_id graphic);
+enum Streamline_data_type cmzn_graphics_get_streamline_data_type(
+	cmzn_graphics_id graphics);
 
 /**
  * Sets the streamline data type which allows extended options for colouring
  * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-int cmzn_graphic_set_streamline_data_type(cmzn_graphic_id graphic,
+int cmzn_graphics_set_streamline_data_type(cmzn_graphics_id graphics,
 	enum Streamline_data_type streamline_data_type);
 
 /**
  * Fills the top_level_number_in_xi array with the discretization computed for
- * the graphic taking into account the tessellation and non-linearity of the
+ * the graphics taking into account the tessellation and non-linearity of the
  * coordinate field.
  *
  * @param max_dimensions  Size of supplied top_level_number_in_xi array.
  * @param top_level_number_in_xi  Array to receive values.
  */
-int cmzn_graphic_get_top_level_number_in_xi(struct cmzn_graphic *graphic,
+int cmzn_graphics_get_top_level_number_in_xi(struct cmzn_graphics *graphics,
 	int max_dimensions, int *top_level_number_in_xi);
 
 /**
  * Get iso surface decimation threshold.
  */
-double cmzn_graphic_contours_get_decimation_threshold(
-	cmzn_graphic_contours_id contours_graphic);
+double cmzn_graphics_contours_get_decimation_threshold(
+	cmzn_graphics_contours_id contours);
 
 /**
  * Set iso surface decimation threshold, controlling polygon reduction.
  * Converts iso surface into a voltex first.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-int cmzn_graphic_contours_set_decimation_threshold(
-	cmzn_graphic_contours_id contours_graphic, double decimation_threshold);
+int cmzn_graphics_contours_set_decimation_threshold(
+	cmzn_graphics_contours_id contours, double decimation_threshold);
 
 /***************************************************************************//**
- * For graphic starting in a particular element.
+ * For graphics starting in a particular element.
  */
-struct FE_element *cmzn_graphic_get_seed_element(
-	struct cmzn_graphic *graphic);
+struct FE_element *cmzn_graphics_get_seed_element(
+	struct cmzn_graphics *graphics);
 
-int cmzn_graphic_set_seed_element(struct cmzn_graphic *graphic,
+int cmzn_graphics_set_seed_element(struct cmzn_graphics *graphics,
 	struct FE_element *seed_element);
 
 /***************************************************************************//**
- * Copies the cmiss_graphic contents from source to destination.
+ * Copies the graphics contents from source to destination.
  * Notes:
  * destination->access_count is not changed by COPY.
  * graphics_object is NOT copied; destination->graphics_object is cleared.
- * @param destination Copy the graphic to this address
- * @param source the source cmiss graphic
- * @return If successfully copy the graphic returns 1, else 0
+ * @param destination Copy the graphics to this address
+ * @param source the source cmiss graphics
+ * @return If successfully copy the graphics returns 1, else 0
  */
-int cmzn_graphic_copy_without_graphics_object(
-	struct cmzn_graphic *destination, struct cmzn_graphic *source);
+int cmzn_graphics_copy_without_graphics_object(
+	struct cmzn_graphics *destination, struct cmzn_graphics *source);
 
 /***************************************************************************//**
- * Graphic iterator function returning true if <graphic> has the
- * specified <name>.  If the graphic doesn't have a name then the position
+ * Graphics iterator function returning true if <graphics> has the
+ * specified <name>.  If the graphics doesn't have a name then the position
  * number is converted to a string and that is compared to the supplied <name>.
- * @param graphic The graphic
+ * @param graphics The graphics
  * @param name_void void pointer to name
- * @return If graphic has name <name> returns 1, else 0
+ * @return If graphics has name <name> returns 1, else 0
  */
-int cmzn_graphic_has_name(struct cmzn_graphic *graphic,
+int cmzn_graphics_has_name(struct cmzn_graphics *graphics,
 	void *name_void);
 
 /***************************************************************************//**
- * cmzn_graphic list conditional function returning 1 if graphic has the
+ * cmzn_graphics list conditional function returning 1 if graphics has the
  * name.
  */
-int cmzn_graphic_same_name(struct cmzn_graphic *graphic,
+int cmzn_graphics_same_name(struct cmzn_graphics *graphics,
 	void *name_void);
 
 /***************************************************************************//**
- * Writes out the <graphic> as a text string in the command window with the
- * <graphic_string_detail>, <line_prefix> and <line_suffix> given in the
+ * Writes out the <graphics> as a text string in the command window with the
+ * <graphics_string_detail>, <line_prefix> and <line_suffix> given in the
  * <list_data>.
  */
-int cmzn_graphic_list_contents(struct cmzn_graphic *graphic,
+int cmzn_graphics_list_contents(struct cmzn_graphics *graphics,
 	void *list_data_void);
 
 /***************************************************************************//**
- * Returns the position of <graphic> in <list_of_grpahic>.
+ * Returns the position of <graphics> in <list_of_grpahic>.
  */
-int cmzn_graphic_get_position_in_list(
-	struct cmzn_graphic *graphic,
-	struct LIST(cmzn_graphic) *list_of_graphic);
+int cmzn_graphics_get_position_in_list(
+	struct cmzn_graphics *graphics,
+	struct LIST(cmzn_graphics) *list_of_graphics);
 
 /***************************************************************************//**
- * Returns true if <graphic1> and <graphic2> would produce identical graphics.
+ * Returns true if <graphics1> and <graphics2> would produce identical graphics.
  */
-int cmzn_graphic_match(struct cmzn_graphic *graphic1,
-	struct cmzn_graphic *graphic2);
+int cmzn_graphics_match(struct cmzn_graphics *graphics1,
+	struct cmzn_graphics *graphics2);
 
 /***************************************************************************//**
- * cmzn_graphic iterator function for copying a list_of_graphic.
- * Makes a copy of the graphic and puts it in the list_of_graphic.
+ * cmzn_graphics iterator function for copying a list_of_graphics.
+ * Makes a copy of the graphics and puts it in the list_of_graphics.
  */
-int cmzn_graphic_copy_and_put_in_list(
-	struct cmzn_graphic *graphic,void *list_of_graphic_void);
+int cmzn_graphics_copy_and_put_in_list(
+	struct cmzn_graphics *graphics,void *list_of_graphics_void);
 
 /***************************************************************************//**
- *Returns 1 if the graphic are of the specified graphic_type.
+ *Returns 1 if the graphics are of the specified graphics_type.
  */
-int cmzn_graphic_type_matches(struct cmzn_graphic *graphic,
-	void *graphic_type_void);
+int cmzn_graphics_type_matches(struct cmzn_graphics *graphics,
+	void *graphics_type_void);
 
 /***************************************************************************//**
- * If <graphic> does not already have a graphics object, this function attempts
- * to find graphic in <list_of_graphic> which differ only trivially in material,
- * spectrum etc. AND have a graphics object. If such a graphic is found, the
- * graphics_object is moved from the matching graphic and put in <graphic>, while
+ * If <graphics> does not already have a graphics object, this function attempts
+ * to find graphics in <list_of_graphics> which differ only trivially in material,
+ * spectrum etc. AND have a graphics object. If such a graphics is found, the
+ * graphics_object is moved from the matching graphics and put in <graphics>, while
  * any trivial differences are fixed up in the graphics_obejct.
  */
-int cmzn_graphic_extract_graphics_object_from_list(
-	struct cmzn_graphic *graphic,void *list_of_graphic_void);
+int cmzn_graphics_extract_graphics_object_from_list(
+	struct cmzn_graphics *graphics,void *list_of_graphics_void);
 
 /***************************************************************************//**
- * Same as cmzn_graphic_same_non_trivial except <graphic> must also have
- * a graphics_object. Used for getting graphics objects from previous graphic
+ * Same as cmzn_graphics_same_non_trivial except <graphics> must also have
+ * a graphics_object. Used for getting graphics objects from previous graphics
  * that are the same except for trivial differences such as the material and
- * spectrum which can be changed in the graphics object to match the new graphic .
+ * spectrum which can be changed in the graphics object to match the new graphics .
  */
-int cmzn_graphic_same_non_trivial_with_graphics_object(
-	struct cmzn_graphic *graphic,void *second_graphic_void);
+int cmzn_graphics_same_non_trivial_with_graphics_object(
+	struct cmzn_graphics *graphics,void *second_graphics_void);
 
 /***************************************************************************//**
- * Gets the graphic's stored name, or generates one based on its position.
+ * Gets the graphics's stored name, or generates one based on its position.
  * @return  Allocated string.
  */
-char *cmzn_graphic_get_name_internal(struct cmzn_graphic *graphic);
+char *cmzn_graphics_get_name_internal(struct cmzn_graphics *graphics);
 
-int cmzn_graphic_time_change(
-	struct cmzn_graphic *graphic,void *dummy_void);
+int cmzn_graphics_time_change(
+	struct cmzn_graphics *graphics,void *dummy_void);
 
-int cmzn_graphic_update_time_behaviour(
-	struct cmzn_graphic *graphic, void *update_time_behaviour_void);
+int cmzn_graphics_update_time_behaviour(
+	struct cmzn_graphics *graphics, void *update_time_behaviour_void);
 
-int cmzn_graphic_FE_region_change(
-	struct cmzn_graphic *graphic, void *data_void);
+int cmzn_graphics_FE_region_change(
+	struct cmzn_graphics *graphics, void *data_void);
 
-int cmzn_graphic_data_FE_region_change(
-	struct cmzn_graphic *graphic, void *data_void);
+int cmzn_graphics_data_FE_region_change(
+	struct cmzn_graphics *graphics, void *data_void);
 
-int cmzn_graphic_Computed_field_change(
-	struct cmzn_graphic *graphic, void *change_data_void);
+int cmzn_graphics_Computed_field_change(
+	struct cmzn_graphics *graphics, void *change_data_void);
 
 
-struct cmzn_graphic_FE_region_change_data
+struct cmzn_graphics_FE_region_change_data
 {
 	/* changes to fields with summary */
 	int fe_field_change_summary;
@@ -568,95 +553,94 @@ struct cmzn_graphic_FE_region_change_data
 	/* the FE_region the settings apply to */
 	struct FE_region *fe_region;
 	int element_type;
-}; /* struct cmzn_graphic_FE_region_change_data */
+}; /* struct cmzn_graphics_FE_region_change_data */
 
 /**
- * Inform graphic of changes in the glyph manager. Marks graphic for redraw if
+ * Inform graphics of changes in the glyph manager. Marks graphics for redraw if
  * uses a changed glyph, and propagates change to owning scene.
  * @param manager_message_void  A struct MANAGER_MESSAGE(cmzn_glyph) *.
  */
-int cmzn_graphic_glyph_change(struct cmzn_graphic *graphic,
+int cmzn_graphics_glyph_change(struct cmzn_graphics *graphics,
 	void *manager_message_void);
 
 /***************************************************************************//**
- * Inform graphic of changes in the material manager. Marks affected
+ * Inform graphics of changes in the material manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of scene.
  * Note: only graphics combining a material with data/spectrum are updated;
  * pure material changes do not require update.
  *
  * @param material_manager_message_void  MANAGER_MESSAGE(Material).
  */
-int cmzn_graphics_material_change(struct cmzn_graphic *graphic,
+int cmzn_graphics_material_change(struct cmzn_graphics *graphics,
 	void *material_change_data_void);
 
 /***************************************************************************//**
- * Inform graphic of changes in the spectrum manager. Marks affected
+ * Inform graphics of changes in the spectrum manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of scene.
  *
  * @param spectrum_manager_message_void  MANAGER_MESSAGE(Spectrum).
  */
-int cmzn_graphic_spectrum_change(struct cmzn_graphic *graphic,
+int cmzn_graphics_spectrum_change(struct cmzn_graphics *graphics,
 	void *spectrum_manager_message_void);
 
 /***************************************************************************//**
- * Inform graphic of changes in the tessellation manager. Marks affected
+ * Inform graphics of changes in the tessellation manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of scene.
  *
  * @param tessellation_manager_message_void  Pointer to
  * struct MANAGER_MESSAGE(cmzn_tessellation).
  */
-int cmzn_graphic_tessellation_change(struct cmzn_graphic *graphic,
+int cmzn_graphics_tessellation_change(struct cmzn_graphics *graphics,
 	void *tessellation_manager_message_void);
 
 /***************************************************************************//**
- * Inform graphic of changes in the font manager. Marks affected
+ * Inform graphics of changes in the font manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of scene.
  *
  * @param font_manager_message_void  Pointer to
  * struct MANAGER_MESSAGE(cmzn_font).
  */
-int cmzn_graphic_font_change(struct cmzn_graphic *graphic,
+int cmzn_graphics_font_change(struct cmzn_graphics *graphics,
 	void *font_manager_message_void);
 
 /* Overlay disabled
-int cmzn_graphic_enable_overlay(struct cmzn_graphic *graphic, int flag);
+int cmzn_graphics_enable_overlay(struct cmzn_graphics *graphics, int flag);
 
-int cmzn_graphic_is_overlay(struct cmzn_graphic *graphic);
+int cmzn_graphics_is_overlay(struct cmzn_graphics *graphics);
 
-int cmzn_graphic_set_overlay_order(struct cmzn_graphic *graphic, int order);
+int cmzn_graphics_set_overlay_order(struct cmzn_graphics *graphics, int order);
 
-int cmzn_graphic_get_overlay_order(struct cmzn_graphic *graphic);
+int cmzn_graphics_get_overlay_order(struct cmzn_graphics *graphics);
 */
 
 /***************************************************************************//**
- * This function will deaccess any computed fields being used by graphic, this
+ * This function will deaccess any computed fields being used by graphics, this
  * should only be called from cmzn_scene_detach_fields.
  *
- * @param cmiss_graphic  pointer to the graphic.
- *
- * @return Return 1 if successfully detach fields from graphic otherwise 0.
+ * @param graphics  pointer to the graphics.
+ * @return Return 1 if successfully detach fields from graphics otherwise 0.
  */
-int cmzn_graphic_detach_fields(struct cmzn_graphic *graphic, void *dummy_void);
+int cmzn_graphics_detach_fields(struct cmzn_graphics *graphics, void *dummy_void);
 
-struct cmzn_scene *cmzn_graphic_get_scene_private(struct cmzn_graphic *graphic);
+struct cmzn_scene *cmzn_graphics_get_scene_private(struct cmzn_graphics *graphics);
 
-int cmzn_graphic_set_scene_private(struct cmzn_graphic *graphic,
+int cmzn_graphics_set_scene_private(struct cmzn_graphics *graphics,
 	struct cmzn_scene *scene);
 
-int cmzn_graphic_selected_element_points_change(
-	struct cmzn_graphic *graphic,void *dummy_void);
+int cmzn_graphics_selected_element_points_change(
+	struct cmzn_graphics *graphics,void *dummy_void);
 
 /***************************************************************************//**
  * A function to call set_scene_private but with a void pointer to the
  * scene passing into the function for list macro.
  *
- * @param cmiss_graphic  pointer to the graphic.
+ * @param graphics  pointer to the graphics.
  * @param scene_void  void pointer to the scene.
- * @return Return 1 if successfully set the graphic.
+ * @return Return 1 if successfully set the graphics.
  */
-int cmzn_graphic_set_scene_for_list_private(
-		struct cmzn_graphic *graphic, void *scene_void);
+int cmzn_graphics_set_scene_for_list_private(
+		struct cmzn_graphics *graphics, void *scene_void);
 
-int cmzn_graphic_update_selected(struct cmzn_graphic *graphic, void *dummy_void);
+int cmzn_graphics_update_selected(struct cmzn_graphics *graphics, void *dummy_void);
 
 #endif

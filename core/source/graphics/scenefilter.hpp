@@ -1,7 +1,7 @@
 /**
  * scenefilter.hpp
  *
- * Declaration of scene graphic filter classes and functions.
+ * Declaration of scene filter classes and functions.
  */
 /* OpenCMISS-Zinc Library
 *
@@ -20,7 +20,7 @@
 #include "general/cmiss_set.hpp"
 
 struct cmzn_scene;
-struct cmzn_graphic;
+struct cmzn_graphics;
 
 enum cmzn_scenefilter_type
 {
@@ -28,8 +28,8 @@ enum cmzn_scenefilter_type
 	CMZN_SCENEFILTER_TYPE_BASE,
 	CMZN_SCENEFILTER_TYPE_IDENTIFIER ,
 	CMZN_SCENEFILTER_TYPE_DOMAIN_TYPE,
-	CMZN_SCENEFILTER_TYPE_GRAPHIC_NAME,
-	CMZN_SCENEFILTER_TYPE_GRAPHIC_TYPE,
+	CMZN_SCENEFILTER_TYPE_GRAPHICS_NAME,
+	CMZN_SCENEFILTER_TYPE_GRAPHICS_TYPE,
 	CMZN_SCENEFILTER_TYPE_VISIBILITY_FLAGS ,
 	CMZN_SCENEFILTER_TYPE_REGION,
 	CMZN_SCENEFILTER_TYPE_OPERATOR,
@@ -87,7 +87,7 @@ public:
 		DEALLOCATE(name);
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic) = 0;
+	virtual bool match(struct cmzn_graphics *graphics) = 0;
 
 	bool setName(const char *name_in)
 	{
@@ -205,9 +205,9 @@ public:
 		cmzn_scenefilter::name = NULL;
 	}
 
-	virtual bool match(struct cmzn_graphic *graphic)
+	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		USE_PARAMETER(graphic);
+		USE_PARAMETER(graphics);
 		return false;
 	}
 

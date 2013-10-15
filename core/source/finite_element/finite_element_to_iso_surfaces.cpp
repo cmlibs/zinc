@@ -600,7 +600,7 @@ public:
 	int sweep();
 
 	int fill_graphics(struct GT_object *graphics_object,
-		enum cmzn_graphic_render_polygon_mode render_polygon_mode);
+		enum cmzn_graphics_render_polygon_mode render_polygon_mode);
 
 private:
 
@@ -1810,7 +1810,7 @@ bool Isosurface_builder::reverse_winding()
 }
 
 int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode)
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode)
 {
 	int return_code = 1;
 	bool reverse = reverse_winding();
@@ -2039,7 +2039,7 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh,
 	FE_value time, int *number_in_xi,
 	struct Iso_surface_specification *specification,
-	struct GT_object *graphics_object, enum cmzn_graphic_render_polygon_mode render_polygon_mode)
+	struct GT_object *graphics_object, enum cmzn_graphics_render_polygon_mode render_polygon_mode)
 {
 	ENTER(create_iso_surfaces_from_FE_element_new);
 	int return_code = 0;

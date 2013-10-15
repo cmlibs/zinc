@@ -14,7 +14,7 @@
 
 #include "types/fieldid.h"
 #include "types/fieldgroupid.h"
-#include "types/graphicid.h"
+#include "types/graphicsid.h"
 #include "types/scenefilterid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
@@ -29,7 +29,7 @@
 extern "C" {
 #endif
 
-/*******************************************************************************
+/**
  * Returns a new reference to the scene with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
@@ -38,7 +38,7 @@ extern "C" {
  */
 ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
 
-/*******************************************************************************
+/**
  * Destroys this reference to the scene (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
@@ -48,7 +48,7 @@ ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
  */
 ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene);
 
-/***************************************************************************//**
+/**
  * Use this function with cmzn_scene_end_change.
  *
  * Use this function before making multiple changes on the scene, this
@@ -68,7 +68,7 @@ ZINC_API int cmzn_scene_begin_change(cmzn_scene_id scene);
  * are in the scene tree (filtered by the optional filter), i.e. including
  * all its descendents. Points/nodes are created with the next available
  * identifier. The density of points is set by supplied arguments and may be
- * scaled by data values stored in each graphic.
+ * scaled by data values stored in each graphics.
  *
  * @param scene  The root scene containing graphics to convert.
  * @param filter  The filter determining which graphics from the scene tree
@@ -77,12 +77,12 @@ ZINC_API int cmzn_scene_begin_change(cmzn_scene_id scene);
  * @param coordinate_field  The coordinate field to be defined and assigned on
  * the new nodes. Must be from the same region as the nodeset.
  * @param line_density  The expected number of points per unit length for lines.
- * @param line_density_scale_factor  If a line graphic has a data field the mean
- * value of its first component multiplied by this factor is added to the
+ * @param line_density_scale_factor  If a lines graphics has a data field the
+ * mean value of its first component multiplied by this factor is added to the
  * expected value.
  * @param surface_density  The expected number of points per unit area of
  * surfaces.
- * @param surface_density_scale_factor  If a surface graphic has a data field
+ * @param surface_density_scale_factor  If a surfaces graphics has a data field
  * the mean value of its first component multiplied by this factor is added to
  * the expected value.
  * @return  Status CMZN_OK on success, otherwise some other error code
@@ -95,68 +95,68 @@ ZINC_API int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	double surface_density, double surface_density_scale_factor);
 
 /**
- * Create a graphic of the given type in the scene.
+ * Create a graphics of the given type in the scene.
  *
- * @param scene  Handle to scene the graphic is created in.
- * @param graphic_type  Enumerator for a specific graphic type.
- * @return  Handle to the new graphic on success, otherwise 0.
+ * @param scene  Handle to scene the graphics is created in.
+ * @param graphics_type  Enumerator for a specific graphics type.
+ * @return  Handle to the new graphics on success, otherwise 0.
  */
-ZINC_API cmzn_graphic_id cmzn_scene_create_graphic(cmzn_scene_id scene,
-	enum cmzn_graphic_type graphic_type);
+ZINC_API cmzn_graphics_id cmzn_scene_create_graphics(cmzn_scene_id scene,
+	enum cmzn_graphics_type graphics_type);
 
 /**
- * Create a contours graphic in the scene. Contours create graphics showing
+ * Create a contours graphics in the scene. Contours create graphics showing
  * where the isoscalar field has fixed value(s): iso-surfaces for 3-D domains,
  * iso-lines for 2-D domains.
  *
- * @param scene  Handle to scene the graphic is created in.
- * @return  Handle to the new contours graphic on success, otherwise 0.
+ * @param scene  Handle to scene the graphics is created in.
+ * @return  Handle to the new graphics on success, otherwise 0.
  */
-ZINC_API cmzn_graphic_contours_id cmzn_scene_create_graphic_contours(
+ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_contours(
 	cmzn_scene_id scene);
 
 /**
- * Create a lines graphic in the scene. Used to visualise 1-D elements and
+ * Create a lines graphics in the scene. Used to visualise 1-D elements and
  * lines/faces of elements.
  *
- * @param scene  Handle to scene the graphic is created in.
- * @return  Handle to the new lines graphic on success, otherwise 0.
+ * @param scene  Handle to scene the graphics is created in.
+ * @return  Handle to the new graphics on success, otherwise 0.
  */
-ZINC_API cmzn_graphic_lines_id cmzn_scene_create_graphic_lines(
+ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_lines(
 	cmzn_scene_id scene);
 
 /**
- * Create a points graphic in the scene. Used to visualise static points,
+ * Create a points graphics in the scene. Used to visualise static points,
  * nodes, data and sampled element points. Must set the domain type after
  * creation.
- * @see cmzn_graphic_set_domain_type
+ * @see cmzn_graphics_set_domain_type
  *
- * @param scene  Handle to scene the graphic is created in.
- * @return  Handle to the new points graphic on success, otherwise 0.
+ * @param scene  Handle to scene the graphics is created in.
+ * @return  Handle to the new graphics on success, otherwise 0.
  */
-ZINC_API cmzn_graphic_points_id cmzn_scene_create_graphic_points(
+ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_points(
 	cmzn_scene_id scene);
 
 /**
- * Create a streamlines graphic in the scene.
+ * Create a streamlines graphics in the scene.
  *
- * @param scene  Handle to scene the graphic is created in.
- * @return  Handle to the new steamlines graphic on success, otherwise 0.
+ * @param scene  Handle to scene the graphics is created in.
+ * @return  Handle to the new graphics on success, otherwise 0.
  */
-ZINC_API cmzn_graphic_streamlines_id cmzn_scene_create_graphic_streamlines(
+ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_streamlines(
 	cmzn_scene_id scene);
 
 /**
- * Create a surfaces graphic in the scene. Used to visualise 2-D elements
+ * Create a surfaces graphics in the scene. Used to visualise 2-D elements
  * and faces.
  *
- * @param scene  Handle to scene the graphic is created in.
- * @return  Handle to the new surfaces graphic on success, otherwise 0.
+ * @param scene  Handle to scene the graphics is created in.
+ * @return  Handle to the new graphics on success, otherwise 0.
  */
-ZINC_API cmzn_graphic_surfaces_id cmzn_scene_create_graphic_surfaces(
+ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
 	cmzn_scene_id scene);
 
-/***************************************************************************//**
+/**
  * Return a handle to selection handler for this scene. User can add and
  * remove callback functions of the selection handler. The callback functions
  * will be called when selection on the scene has changed. Please see
@@ -168,7 +168,7 @@ ZINC_API cmzn_graphic_surfaces_id cmzn_scene_create_graphic_surfaces(
 ZINC_API cmzn_selection_handler_id cmzn_scene_create_selection_handler(
 	cmzn_scene_id scene);
 
-/***************************************************************************//**
+/**
  * Use this function with cmzn_scene_begin_change.
  *
  * Use cmzn_scene_begin_change before making multiple changes on the
@@ -182,55 +182,55 @@ ZINC_API cmzn_selection_handler_id cmzn_scene_create_selection_handler(
  */
 ZINC_API int cmzn_scene_end_change(cmzn_scene_id scene);
 
-/***************************************************************************//**
- * Returns the graphic of the specified name from the scene. Beware that
+/**
+ * Returns the graphics of the specified name from the scene. Beware that
  * graphics in the same scene may have the same name and this function will
- * only return the first graphic found with the specified name;
+ * only return the first graphics found with the specified name;
  *
- * @param scene  Scene in which to find the graphic.
- * @param graphic_name  The name of the graphic to find.
- * @return  New reference to graphic of specified name, or NULL if not found.
+ * @param scene  Scene in which to find the graphics.
+ * @param name  The name of the graphics to find.
+ * @return  New reference to graphics of specified name, or NULL if not found.
  */
-ZINC_API cmzn_graphic_id cmzn_scene_find_graphic_by_name(cmzn_scene_id scene,
-	const char *graphic_name);
+ZINC_API cmzn_graphics_id cmzn_scene_find_graphics_by_name(cmzn_scene_id scene,
+	const char *name);
 
-/***************************************************************************//**
- * Get the first graphic on the graphics list of <scene>.
+/**
+ * Get the first graphics on the graphics list of <scene>.
 
  * @param scene  Handle to a scene object.
- * @return  Handle to a graphic object if successful, otherwise NULL;
+ * @return  Handle to a graphics object if successful, otherwise NULL;
  */
-ZINC_API cmzn_graphic_id cmzn_scene_get_first_graphic(cmzn_scene_id scene);
+ZINC_API cmzn_graphics_id cmzn_scene_get_first_graphics(cmzn_scene_id scene);
 
-/***************************************************************************//**
- * Get the next graphic after <ref_graphic> on the graphics list of <scene>.
+/**
+ * Get the next graphics after <ref_graphics> on the graphics list of <scene>.
 
  * @param scene  Handle to a scene object.
- * @param ref_graphic  Handle to a graphic object.
- * @return  Handle to a graphic object if successful, otherwise NULL;
+ * @param ref_graphics  Handle to a graphics object.
+ * @return  Handle to a graphics object if successful, otherwise NULL;
  */
-ZINC_API cmzn_graphic_id cmzn_scene_get_next_graphic(cmzn_scene_id scene,
-	cmzn_graphic_id ref_graphic);
+ZINC_API cmzn_graphics_id cmzn_scene_get_next_graphics(cmzn_scene_id scene,
+	cmzn_graphics_id ref_graphics);
 
-/***************************************************************************//**
- * Get the graphic before <ref_graphic> on the graphics list of <scene>.
+/**
+ * Get the graphics before <ref_graphics> on the graphics list of <scene>.
 
  * @param scene  Handle to a scene object.
- * @param ref_grpahic  Handle to a graphic object.
- * @return  Handle to a graphic object if successful, otherwise NULL;
+ * @param ref_grpahic  Handle to a graphics object.
+ * @return  Handle to a graphics object if successful, otherwise NULL;
  */
-ZINC_API cmzn_graphic_id cmzn_scene_get_previous_graphic(cmzn_scene_id scene,
-	cmzn_graphic_id ref_graphic);
+ZINC_API cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
+	cmzn_graphics_id ref_graphics);
 
-/***************************************************************************//**
+/**
  * Returns the number of graphics in <scene>.
  *
  * @param scene  The handle to the scene
- * @return  Returns the number of graphic in scene.
+ * @return  Returns the number of graphics in scene.
  */
 ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 
-/***************************************************************************//**
+/**
  * Get and return an accessed handle to the selection group of scene.
  * This function will only return selection group that is still being managed.
  * Caller must destroy the reference to the handler.
@@ -241,7 +241,7 @@ ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
  */
 ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene);
 
-/***************************************************************************//**
+/**
  * Set the specified selection field to be the highlighting and selection group
  * of the specified scene. This function will also set the selection field
  * for all of its subregion scenes if the a corresponding subregion selection
@@ -258,7 +258,7 @@ ZINC_API int cmzn_scene_set_selection_group(cmzn_scene_id scene,
 	cmzn_field_group_id selection_field);
 
 /**
- * Get the range of graphic data field values rendered with the spectrum.
+ * Get the range of graphics data field values rendered with the spectrum.
  * Search is limited to the scene and its sub-scenes with an optional filter.
  * Spectrum colour bar glyphs do not contribute to the range.
  *
@@ -302,19 +302,19 @@ ZINC_API int cmzn_scene_set_visibility_flag(cmzn_scene_id scene,
 	bool visibility_flag);
 
 /**
- * Move a graphic to the position before ref_graphic in the scene's
- * graphic list, or last in the list if no reference graphic supplied.
+ * Move a graphics to the position before ref_graphics in the scene's
+ * graphics list, or last in the list if no reference graphics supplied.
  * Earlier graphics are drawn first and in hardware rendering their pixel
  * fragments are displayed in priority over later graphics at the same depth.
  *
  * @param scene  The scene to modify.
- * @param graphic  The graphic to be moved. Must be from scene.
- * @param ref_graphic  Another graphic from this scene to insert before, or
- * NULL to move graphic to last position in list.
+ * @param graphics  The graphics to be moved. Must be from scene.
+ * @param ref_graphics  Another graphics from this scene to insert before, or
+ * NULL to move graphics to last position in list.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
-	cmzn_graphic_id graphic, cmzn_graphic_id ref_graphic);
+ZINC_API int cmzn_scene_move_graphics_before(cmzn_scene_id scene,
+	cmzn_graphics_id graphics, cmzn_graphics_id ref_graphics);
 
 /**
  * Removes all graphics from the scene.
@@ -325,16 +325,16 @@ ZINC_API int cmzn_scene_move_graphic_before(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_remove_all_graphics(cmzn_scene_id scene);
 
 /**
- * Removes a graphic from scene and decrements the position of all subsequent graphics.
+ * Removes a graphics from scene and decrements the position of all subsequent graphics.
  *
  * @param scene  The scene to modify.
- * @param graphic  The graphic to be removed.
+ * @param graphics  The graphics to be removed.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_scene_remove_graphic(cmzn_scene_id scene,
-	cmzn_graphic_id graphic);
+ZINC_API int cmzn_scene_remove_graphics(cmzn_scene_id scene,
+	cmzn_graphics_id graphics);
 
-/***************************************************************************//**
+/**
  * Create a scene picker which user can use to define a picking volume and
  * find the onjects included in this volume.
  *

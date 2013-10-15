@@ -595,7 +595,7 @@ DESCRIPTION :
 											}
 										} break;
 									}
-									surface=CREATE(GT_surface)(surface_type,CMZN_GRAPHIC_RENDER_POLYGON_SHADED,
+									surface=CREATE(GT_surface)(surface_type,CMZN_GRAPHICS_RENDER_POLYGON_SHADED,
 										g_QUADRILATERAL,npts1,npts2,pointlist,normallist,
 										/*tangentlist*/(Triple *)NULL,texturelist,
 										n_data_components,data);
@@ -792,7 +792,7 @@ DESCRIPTION :
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	char *graphics_object_name, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
+	char *graphics_object_name, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	ZnReal time, struct cmzn_graphics_material_module *material_module,
 	struct cmzn_glyphmodule *glyphmodule)
 {
@@ -885,11 +885,11 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			}
 			switch (render_polygon_mode)
 			{
-				case CMZN_GRAPHIC_RENDER_POLYGON_SHADED:
+				case CMZN_GRAPHICS_RENDER_POLYGON_SHADED:
 				{
 					voltex_type = g_VOLTEX_SHADED_TEXMAP;
 				} break;
-				case CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME:
+				case CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME:
 				{
 					voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 				} break;

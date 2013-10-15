@@ -1,4 +1,4 @@
-/*******************************************************************************
+/**
  * scenepicker.h
  *
  * Public interface to the cmzn_scene picker which represents a tool for
@@ -13,7 +13,7 @@
 #ifndef CMZN_SCENEPICKER_H__
 #define CMZN_SCENEPICKER_H__
 
-#include "types/graphicid.h"
+#include "types/graphicsid.h"
 #include "types/scenefilterid.h"
 #include "types/fieldgroupid.h"
 #include "types/elementid.h"
@@ -125,30 +125,30 @@ ZINC_API cmzn_node_id cmzn_scene_picker_get_nearest_node(
 	cmzn_scene_picker_id scene_picker);
 
 /**
- * Get the nearest element graphic in the defined bounding box on scene.
+ * Get the nearest element graphics in the defined bounding box on scene.
  *
- * @param scene_picker  The scene picker to pick the nearest element graphic.
- * @return a valid handle to the nearest picked graphic, otherwise null.
+ * @param scene_picker  The scene picker to pick the nearest element graphics.
+ * @return a valid handle to the nearest picked graphics, otherwise null.
  */
-ZINC_API cmzn_graphic_id cmzn_scene_picker_get_nearest_element_graphic(
+ZINC_API cmzn_graphics_id cmzn_scene_picker_get_nearest_element_graphics(
 	cmzn_scene_picker_id scene_picker);
 
 /**
- * Get the nearest node graphic in the defined bounding box on scene.
+ * Get the nearest node graphics in the defined bounding box on scene.
  *
- * @param scene_picker  The scene picker to pick the nearest node graphic.
- * @return a valid handle to the nearest picked graphic, otherwise null.
+ * @param scene_picker  The scene picker to pick the nearest node graphics.
+ * @return a valid handle to the nearest picked graphics, otherwise null.
  */
-ZINC_API cmzn_graphic_id cmzn_scene_picker_get_nearest_node_graphic(
+ZINC_API cmzn_graphics_id cmzn_scene_picker_get_nearest_node_graphics(
 	cmzn_scene_picker_id scene_picker);
 
 /**
- * Get the nearest graphic in the defined bounding box on scene.
+ * Get the nearest graphics in the defined bounding box on scene.
  *
- * @param scene_picker  The scene picker to pick the nearest graphic.
- * @return a valid handle to the nearest picked graphic, otherwise null.
+ * @param scene_picker  The scene picker to pick the nearest graphics.
+ * @return a valid handle to the nearest picked graphics, otherwise null.
  */
-ZINC_API cmzn_graphic_id cmzn_scene_picker_get_nearest_graphic(
+ZINC_API cmzn_graphics_id cmzn_scene_picker_get_nearest_graphics(
 	cmzn_scene_picker_id scene_picker);
 
 /**

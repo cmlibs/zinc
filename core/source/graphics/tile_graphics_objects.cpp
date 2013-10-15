@@ -36,7 +36,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		current_surface->object_name = original_surface->object_name;
 		current_surface->n_data_components = original_surface->n_data_components;
 		current_surface->surface_type = g_SH_DISCONTINUOUS_TEXMAP;
-		current_surface->render_polygon_mode = CMZN_GRAPHIC_RENDER_POLYGON_SHADED;
+		current_surface->render_polygon_mode = CMZN_GRAPHICS_RENDER_POLYGON_SHADED;
 		current_surface->ptrnext = (struct GT_surface *)NULL;
 		switch (polygon_size)
 		{

@@ -179,7 +179,7 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		cmzn_scene_id picked_scene = 0, existing_scene = 0;
-		cmzn_graphic_id graphic = 0;
+		cmzn_graphics_id graphics = 0;
 		cmzn_nodeset_id nodeset = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
 		{
@@ -187,7 +187,7 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
-			 * select_buffer[4] = graphic position
+			 * select_buffer[4] = graphics position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
 			 */
@@ -196,13 +196,13 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 			next_select_buffer = select_buffer_ptr + number_of_names + 3;
 			if (number_of_names >= 4)
 			{
-				if ((getSceneAndGraphic(select_buffer_ptr,
-						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
+				if ((getSceneAndGraphics(select_buffer_ptr,
+						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 				{
 					if (((type == CMZN_SCENE_PICKER_OBJECT_DATA) &&
-							(CMZN_FIELD_DOMAIN_DATA == cmzn_graphic_get_domain_type(graphic))) ||
+							(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
 						((type == CMZN_SCENE_PICKER_OBJECT_NODE) &&
-							(CMZN_FIELD_DOMAIN_NODES == cmzn_graphic_get_domain_type(graphic))))
+							(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
 					{
 						if (picked_scene)
 						{
@@ -226,7 +226,7 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 							}
 						}
 					}
-					cmzn_graphic_destroy(&graphic);
+					cmzn_graphics_destroy(&graphics);
 				}
 			}
 		}
@@ -245,7 +245,7 @@ Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
 		int hit_no, number_of_names;
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		cmzn_scene_id picked_scene = 0, existing_scene = 0;
-		cmzn_graphic_id graphic = 0;
+		cmzn_graphics_id graphics = 0;
 		cmzn_mesh_id mesh = 0;
 		int current_element_type = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
@@ -254,7 +254,7 @@ Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
-			 * select_buffer[4] = graphic position
+			 * select_buffer[4] = graphics position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
 			 */
@@ -263,15 +263,15 @@ Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
 			next_select_buffer = select_buffer_ptr + number_of_names + 3;
 			if (number_of_names >= 3)
 			{
-				if ((getSceneAndGraphic(select_buffer_ptr,
-					&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
+				if ((getSceneAndGraphics(select_buffer_ptr,
+					&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 				{
-					if (cmzn_graphic_selects_elements(graphic))
+					if (cmzn_graphics_selects_elements(graphics))
 					{
 						if (picked_scene)
 						{
 							cmzn_region *region = cmzn_scene_get_region(picked_scene);
-							int element_type = cmzn_graphic_get_domain_dimension(graphic);
+							int element_type = cmzn_graphics_get_domain_dimension(graphics);
 							if ((existing_scene != picked_scene) ||
 								(current_element_type != element_type))
 							{
@@ -292,7 +292,7 @@ Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
 							}
 						}
 					}
-					cmzn_graphic_destroy(&graphic);
+					cmzn_graphics_destroy(&graphics);
 				}
 			}
 		}
@@ -312,21 +312,21 @@ void cmzn_scene_picker::reset()
 	number_of_hits = 0;
 }
 
-/*provide a select buffer pointer and return the scene and graphic */
-int cmzn_scene_picker::getSceneAndGraphic(GLuint *select_buffer_ptr,
-	cmzn_scene_id *picked_scene, cmzn_graphic_id *graphic)
+/*provide a select buffer pointer and return the scene and graphics */
+int cmzn_scene_picker::getSceneAndGraphics(GLuint *select_buffer_ptr,
+	cmzn_scene_id *picked_scene, cmzn_graphics_id *graphics)
 {
 	if (top_scene && select_buffer_ptr)
 	{
 		*picked_scene = cmzn_scene_get_child_of_position(top_scene, (int)(select_buffer_ptr[3]));
-		*graphic = cmzn_scene_get_graphic_at_position(*picked_scene,
+		*graphics = cmzn_scene_get_graphics_at_position(*picked_scene,
 			(int)(select_buffer_ptr[4]));
 		return 1;
 	}
 	else
 	{
 		*picked_scene = 0;
-		*graphic = 0;
+		*graphics = 0;
 		return 0;
 	}
 }
@@ -412,7 +412,7 @@ cmzn_element_id cmzn_scene_picker::getNearestElement()
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		double current_nearest = 0, nearest = 0;
 		cmzn_scene_id picked_scene = 0, existing_scene = 0;
-		cmzn_graphic_id graphic = 0;
+		cmzn_graphics_id graphics = 0;
 		cmzn_mesh_id mesh = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
 		{
@@ -420,7 +420,7 @@ cmzn_element_id cmzn_scene_picker::getNearestElement()
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
-			 * select_buffer[4] = graphic position
+			 * select_buffer[4] = graphics position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
 			 */
@@ -436,15 +436,15 @@ cmzn_element_id cmzn_scene_picker::getNearestElement()
 				nearest = (double)(select_buffer_ptr[1]);
 				if ((nearest_element == NULL) || (nearest < current_nearest))
 				{
-					if ((getSceneAndGraphic(select_buffer_ptr,
-						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
+					if ((getSceneAndGraphics(select_buffer_ptr,
+						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 					{
-						if (cmzn_graphic_selects_elements(graphic))
+						if (cmzn_graphics_selects_elements(graphics))
 						{
 							if (picked_scene)
 							{
 								cmzn_region *region = cmzn_scene_get_region(picked_scene);
-								int element_type = cmzn_graphic_get_domain_dimension(graphic);
+								int element_type = cmzn_graphics_get_domain_dimension(graphics);
 								if ((existing_scene != picked_scene) ||
 									(current_element_type != element_type))
 								{
@@ -468,7 +468,7 @@ cmzn_element_id cmzn_scene_picker::getNearestElement()
 								}
 							}
 						}
-						cmzn_graphic_destroy(&graphic);
+						cmzn_graphics_destroy(&graphics);
 					}
 				}
 			}
@@ -488,7 +488,7 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		double current_nearest = 0, nearest = 0;
 		cmzn_scene_id picked_scene = 0, existing_scene = 0;
-		cmzn_graphic_id graphic = 0;
+		cmzn_graphics_id graphics = 0;
 		cmzn_nodeset_id nodeset = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
 		{
@@ -496,7 +496,7 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
-			 * select_buffer[4] = graphic position
+			 * select_buffer[4] = graphics position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
 			 */
@@ -512,13 +512,13 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 				nearest = (double)(select_buffer_ptr[1]);
 				if ((nearest_node == NULL) || (nearest < current_nearest))
 				{
-					if ((getSceneAndGraphic(select_buffer_ptr,
-						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
+					if ((getSceneAndGraphics(select_buffer_ptr,
+						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 					{
 						if (((type == CMZN_SCENE_PICKER_OBJECT_DATA) &&
-								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphic_get_domain_type(graphic))) ||
+								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
 							((type == CMZN_SCENE_PICKER_OBJECT_NODE) &&
-								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphic_get_domain_type(graphic))))
+								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
 						{
 							if (picked_scene)
 							{
@@ -544,7 +544,7 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 								}
 							}
 						}
-						cmzn_graphic_destroy(&graphic);
+						cmzn_graphics_destroy(&graphics);
 					}
 				}
 			}
@@ -555,7 +555,7 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 	return nearest_node;
 }
 
-cmzn_graphic_id cmzn_scene_picker::getNearestGraphic(enum cmzn_scene_picker_object_type type)
+cmzn_graphics_id cmzn_scene_picker::getNearestGraphics(enum cmzn_scene_picker_object_type type)
 {
 	if ((CMZN_OK == pickObjects()) && select_buffer)
 	{
@@ -563,14 +563,14 @@ cmzn_graphic_id cmzn_scene_picker::getNearestGraphic(enum cmzn_scene_picker_obje
 		GLuint *select_buffer_ptr = 0, *next_select_buffer = select_buffer;
 		double current_nearest = 0, nearest = 0;
 		cmzn_scene_id picked_scene = 0;
-		cmzn_graphic_id graphic = 0, nearest_graphic = 0;
+		cmzn_graphics_id graphics = 0, nearest_graphics = 0;
 		for (hit_no=0;(hit_no<number_of_hits);hit_no++)
 		{
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
-			 * select_buffer[4] = graphic position
+			 * select_buffer[4] = graphics position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
 			 */
@@ -584,29 +584,29 @@ cmzn_graphic_id cmzn_scene_picker::getNearestGraphic(enum cmzn_scene_picker_obje
 					made into integers from 0 to 2^32-1. Just convert to
 						doubles for now */
 				nearest = (double)(select_buffer_ptr[1]);
-				if ((nearest_graphic == NULL) || (nearest < current_nearest))
+				if ((nearest_graphics == NULL) || (nearest < current_nearest))
 				{
-					if ((getSceneAndGraphic(select_buffer_ptr,
-						&picked_scene, &graphic) && (0 != picked_scene) && (0 != graphic)))
+					if ((getSceneAndGraphics(select_buffer_ptr,
+						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 					{
 						if ((type == CMZN_SCENE_PICKER_OBJECT_ANY) ||
 							((type == CMZN_SCENE_PICKER_OBJECT_ELEMENT) &&
-								(cmzn_graphic_selects_elements(graphic))) ||
+								(cmzn_graphics_selects_elements(graphics))) ||
 							((type == CMZN_SCENE_PICKER_OBJECT_DATA) &&
-								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphic_get_domain_type(graphic))) ||
+								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
 							((type == CMZN_SCENE_PICKER_OBJECT_NODE) &&
-								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphic_get_domain_type(graphic))))
+								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
 						{
 							current_nearest = nearest;
-							if (graphic != nearest_graphic)
-								REACCESS(cmzn_graphic)(&nearest_graphic, graphic);
+							if (graphics != nearest_graphics)
+								REACCESS(cmzn_graphics)(&nearest_graphics, graphics);
 						}
-						cmzn_graphic_destroy(&graphic);
+						cmzn_graphics_destroy(&graphics);
 					}
 				}
 			}
 		}
-		return nearest_graphic;
+		return nearest_graphics;
 	}
 	return 0;
 }
@@ -853,24 +853,24 @@ cmzn_node_id cmzn_scene_picker_get_nearest_node(cmzn_scene_picker_id scene_picke
 	return scene_picker->getNearestNode(CMZN_SCENE_PICKER_OBJECT_NODE);
 }
 
-cmzn_graphic_id cmzn_scene_picker_get_nearest_graphic(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scene_picker_get_nearest_graphics(cmzn_scene_picker_id scene_picker)
 {
-	return scene_picker->getNearestGraphic(CMZN_SCENE_PICKER_OBJECT_ANY);
+	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_ANY);
 }
 
-cmzn_graphic_id cmzn_scene_picker_get_nearest_data_graphic(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scene_picker_get_nearest_data_graphics(cmzn_scene_picker_id scene_picker)
 {
-	return scene_picker->getNearestGraphic(CMZN_SCENE_PICKER_OBJECT_DATA);
+	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_DATA);
 }
 
-cmzn_graphic_id cmzn_scene_picker_get_nearest_element_graphic(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scene_picker_get_nearest_element_graphics(cmzn_scene_picker_id scene_picker)
 {
-	return scene_picker->getNearestGraphic(CMZN_SCENE_PICKER_OBJECT_ELEMENT);
+	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_ELEMENT);
 }
 
-cmzn_graphic_id cmzn_scene_picker_get_nearest_node_graphic(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scene_picker_get_nearest_node_graphics(cmzn_scene_picker_id scene_picker)
 {
-	return scene_picker->getNearestGraphic(CMZN_SCENE_PICKER_OBJECT_NODE);
+	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_NODE);
 }
 
 int cmzn_scene_picker_add_picked_data_to_group(cmzn_scene_picker_id scene_picker,

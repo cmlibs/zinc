@@ -17,6 +17,7 @@ The function prototypes for creating graphical objects from finite elements.
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"
+#include "general/multi_range.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
 #include "graphics/volume_texture.h"
@@ -116,7 +117,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 	struct Computed_field *data_field, 
 	struct cmzn_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
-	enum cmzn_graphic_select_mode select_mode, int element_selected,
+	enum cmzn_graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
 LAST MODIFIED : 18 November 2005
@@ -139,7 +140,7 @@ The optional <top_level_element> may be provided as a clue to Computed_fields
 to say which parent element they should be evaluated on as necessary.
 <select_mode> is used in combination with the <element_selected> and
 <selected_ranges> to draw only those points with numbers in or out of the given
-ranges when given value CMZN_GRAPHIC_DRAW_SELECTED or CMZN_GRAPHIC_DRAW_UNSELECTED.
+ranges when given value CMZN_GRAPHICS_DRAW_SELECTED or CMZN_GRAPHICS_DRAW_UNSELECTED.
 If <element_selected> is true, all points are selected, otherwise selection is
 determined from the <selected_ranges>, and if <selected_ranges> is NULL, no
 numbers are selected.
@@ -163,7 +164,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct cmzn_font *font, struct Computed_field *label_field,
 	FE_value *label_offset, char *static_label_text[3],
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum cmzn_graphic_select_mode select_mode,
+	struct Computed_field *subgroup_field, enum cmzn_graphics_select_mode select_mode,
 	struct Computed_field *group_field);
 /*******************************************************************************
 Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
@@ -238,7 +239,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
+	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	FE_value time);
 
 /****************************************************************************//**
@@ -276,6 +277,6 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode, FE_value time);
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode, FE_value time);
 
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */

@@ -2332,6 +2332,5 @@ int cmzn_spectrum_get_number_of_spectrumcomponents(cmzn_spectrum_id spectrum)
 		return NUMBER_IN_LIST(cmzn_spectrumcomponent)(
 			get_cmzn_spectrumcomponent_list(spectrum));
 	}
-
 	return 0;
-} /* cmzn_group_get_number_of_graphic */
+}

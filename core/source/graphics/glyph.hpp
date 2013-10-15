@@ -120,13 +120,13 @@ public:
 		return false;
 	}
 
-	// override if glyph uses the font supplied by graphic
+	// override if glyph uses the font supplied by graphics
 	virtual bool usesFont()
 	{
 		return false;
 	}
 
-	// override for glyphs that use the font from the graphic
+	// override for glyphs that use the font from the graphics
 	virtual void fontChange()
 	{
 	}

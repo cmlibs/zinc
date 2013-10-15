@@ -1685,7 +1685,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 static int draw_surface_vrml(FILE *vrml_file,Triple *surfpts, Triple *normalpts,
 	Triple *texturepts, int number_of_data_components, GLfloat *data,
 	struct Graphical_material *material,struct Spectrum *spectrum,int npts1,
-	int npts2,enum GT_surface_type surface_type,enum cmzn_graphic_render_polygon_mode render_polygon_mode,
+	int npts2,enum GT_surface_type surface_type,enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	gtPolygonType polygon_type,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
@@ -1760,7 +1760,7 @@ DESCRIPTION :
 				write_texture_vrml(vrml_file, texture);
 			}
 			fprintf(vrml_file,"}\n");
-			if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 			{
 				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
 			}
@@ -1780,7 +1780,7 @@ DESCRIPTION :
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (CMZN_GRAPHIC_RENDER_POLYGON_SHADED == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_SHADED == render_polygon_mode)
 			{
 				triple=normalpts;
 				if (triple)
@@ -1808,7 +1808,7 @@ DESCRIPTION :
 				spectrum_end_render_vrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
-			if (CMZN_GRAPHIC_RENDER_POLYGON_SHADED == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_SHADED == render_polygon_mode)
 			{
 				triple=texturepts;
 				if (triple)
@@ -1836,7 +1836,7 @@ DESCRIPTION :
 						case g_QUADRILATERAL:
 						{
 							index=0;
-							if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+							if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 							{
 								for (j=0;j<npts2-1;j++)
 								{
@@ -1870,7 +1870,7 @@ DESCRIPTION :
 							/* triangle strip */
 							index_1=0;
 							index_2=index_1+npts1;
-							if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+							if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 							{
 								for (i=npts1-1;i>0;i--)
 								{
@@ -1921,7 +1921,7 @@ DESCRIPTION :
 				case g_SH_DISCONTINUOUS:
 				case g_SH_DISCONTINUOUS_TEXMAP:
 				{
-					if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+					if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 					{
 						/* npts1 = number of polygons */
 						for (i=0;i<npts1;i++)
@@ -1960,7 +1960,7 @@ DESCRIPTION :
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
-			if (CMZN_GRAPHIC_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
 			{
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 			}

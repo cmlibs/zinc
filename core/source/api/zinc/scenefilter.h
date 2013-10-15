@@ -14,7 +14,7 @@
 #define CMZN_SCENEFILTER_H__
 
 #include "types/fieldid.h"
-#include "types/graphicid.h"
+#include "types/graphicsid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
 
@@ -46,7 +46,7 @@ ZINC_API int cmzn_scenefiltermodule_destroy(
 	cmzn_scenefiltermodule_id *filtermodule_address);
 
 /**
- * Creates a scene filter which matches any graphic with visibility
+ * Creates a scene filter which matches any graphics with visibility
  * flag set AND its owning region and all ancestor region scenes' visibility
  * flags set i.e. scene visibility flags work hierarchically.
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
@@ -58,7 +58,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_visibilit
 	cmzn_scenefiltermodule_id filtermodule);
 
 /**
- * Creates a scene filter which matches any graphic with given domain type.
+ * Creates a scene filter which matches any graphics with given domain type.
  *
  * @param filtermodule  The module to create the filter in.
  * @param domain_type  The domain type to be matched by this filter.
@@ -70,29 +70,29 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_domain_ty
 	enum cmzn_field_domain_type domain_type);
 
 /**
- * Creates a cmzn_scenefilter which matches any graphic with the supplied
+ * Creates a cmzn_scenefilter which matches any graphics with the supplied
  * name.
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
- * @param match_name  The name of a graphic must be matched by this filter.
+ * @param match_name  The name of a graphics must be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
-ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphic_name(
+ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_name(
 	cmzn_scenefiltermodule_id filtermodule, const char *match_name);
 
 /**
- * Creates a cmzn_scenefilter which matches any graphic with matching
+ * Creates a cmzn_scenefilter which matches any graphics with matching
  * type.
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
- * @param graphic_type  The type of a graphic must be matched by this filter.
+ * @param graphics_type  The type of a graphics must be matched by this filter.
  * @return  Handle to the new filter, or NULL on failure.
  */
-ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphic_type(
-	cmzn_scenefiltermodule_id filtermodule, enum cmzn_graphic_type graphic_type);
+ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_type(
+	cmzn_scenefiltermodule_id filtermodule, enum cmzn_graphics_type graphics_type);
 
 /**
- * Creates a cmzn_scenefilter which matches any graphic in region or any
+ * Creates a cmzn_scenefilter which matches any graphics in region or any
  * of its sub-regions.
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
@@ -225,12 +225,12 @@ ZINC_API int cmzn_scenefilter_set_managed(cmzn_scenefilter_id filter,
  * Query whether graphics is shown (or processed) with a scene filter.
  *
  * @param filter  The filter to perform the check.
- * @param graphic  The graphic to query.
- * @return  Boolean true if this filter shows (includes) this graphic,
+ * @param graphics  The graphics to query.
+ * @return  Boolean true if this filter shows (includes) this graphics,
  * otherwise false (hides).
  */
-ZINC_API bool cmzn_scenefilter_evaluate_graphic(cmzn_scenefilter_id filter,
-	cmzn_graphic_id graphic);
+ZINC_API bool cmzn_scenefilter_evaluate_graphics(cmzn_scenefilter_id filter,
+	cmzn_graphics_id graphics);
 
 /**
  * Return an allocated string containing scene filter name.

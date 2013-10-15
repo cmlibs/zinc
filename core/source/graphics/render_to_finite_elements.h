@@ -52,7 +52,7 @@ Global functions
  * points in.
  */
 int render_to_finite_elements(cmzn_region_id source_region,
-	const char *graphic_name, cmzn_scenefilter *filter,
+	const char *graphics_name, cmzn_scenefilter *filter,
 	enum Render_to_finite_elements_mode render_mode,
 	cmzn_region_id region, cmzn_field_group_id group,
 	cmzn_field_id coordinate_field, cmzn_nodeset_id nodeset,

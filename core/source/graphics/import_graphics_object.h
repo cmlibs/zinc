@@ -30,7 +30,7 @@ int file_read_graphics_objects(char *file_name,
 
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	char *graphics_object_name, enum cmzn_graphic_render_polygon_mode render_polygon_mode,
+	char *graphics_object_name, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	ZnReal time, struct cmzn_graphics_material_module *material_module,
 	struct cmzn_glyphmodule *glyphmodule);
 

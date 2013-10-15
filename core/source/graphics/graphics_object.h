@@ -14,11 +14,10 @@
 
 #include "zinc/zincconfigure.h"
 #include "zinc/types/glyphid.h"
-#include "zinc/graphic.h"
+#include "zinc/graphics.h"
 #include "general/geometry.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/material.h"
-#include "graphics/selected_graphic.h"
 #include "graphics/spectrum.h"
 #include "graphics/volume_texture.h"
 #if defined (USE_OPENCASCADE)
@@ -762,7 +761,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
 ==============================================================================*/
 
 struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
 	int n_pts1,int n_pts2,Triple *pointlist,
 	Triple *normallist, Triple *tangentlist, Triple *texturelist,
 	int n_data_components,GLfloat *data);
@@ -1175,7 +1174,7 @@ int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
  * Gets the mode controlling how graphics are drawn depending on whether the
  * primitive is selected.
  */
-enum cmzn_graphic_select_mode GT_object_get_select_mode(
+enum cmzn_graphics_select_mode GT_object_get_select_mode(
 	struct GT_object *graphics_object);
 
 /**
@@ -1187,7 +1186,7 @@ enum cmzn_graphic_select_mode GT_object_get_select_mode(
  * @return  On success CMZN_OK, otherwise CMZN_ERROR_ARGUMENT.
  */
 int GT_object_set_select_mode(struct GT_object *graphics_object,
-	enum cmzn_graphic_select_mode select_mode);
+	enum cmzn_graphics_select_mode select_mode);
 
 /**
  * Gets the width of lines rendered with GL, in pixels.
@@ -1368,7 +1367,7 @@ int set_GT_object_glyph_label_text(struct GT_object *graphics_object,
  * GT_object.
  */
 int set_GT_object_render_polygon_mode(struct GT_object *graphics_object,
-	enum cmzn_graphic_render_polygon_mode render_polygon_mode);
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode);
 
 int GT_object_list_contents(struct GT_object *graphics_object,void *dummy_void);
 /*******************************************************************************
