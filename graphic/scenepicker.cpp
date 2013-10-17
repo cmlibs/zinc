@@ -23,7 +23,7 @@
 #include "zinc/scene.hpp"
 #include "zinc/sceneviewer.hpp"
 
-TEST(cmzn_scene_picker_api, valid_args)
+TEST(cmzn_scenepicker_api, valid_args)
 {
 	ZincTestSetup zinc;
 
@@ -31,8 +31,8 @@ TEST(cmzn_scene_picker_api, valid_args)
 
 	cmzn_field_group_id fieldGroup = cmzn_field_cast_group(field);
 
-	cmzn_scene_picker_id scene_picker = cmzn_scene_create_picker(zinc.scene);
-	EXPECT_NE(static_cast<cmzn_scene_picker *>(0), scene_picker);
+	cmzn_scenepicker_id scene_picker = cmzn_scene_create_scenepicker(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_scenepicker *>(0), scene_picker);
 
 	cmzn_sceneviewermodule_id svModule = cmzn_context_get_sceneviewermodule(
 		zinc.context);
@@ -60,36 +60,36 @@ TEST(cmzn_scene_picker_api, valid_args)
 
 	cmzn_scenefiltermodule_destroy(&filter_module);
 
-	result = cmzn_scene_picker_set_scene(scene_picker, zinc.scene);
+	result = cmzn_scenepicker_set_scene(scene_picker, zinc.scene);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_scene_picker_set_scenefilter(scene_picker, sf);
+	result = cmzn_scenepicker_set_scenefilter(scene_picker, sf);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_scene_picker_set_sceneviewer_rectangle(scene_picker, sv,
+	result = cmzn_scenepicker_set_sceneviewer_rectangle(scene_picker, sv,
 		CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0,
 			0, 7.0, 7.0);
 	EXPECT_EQ(CMZN_OK, result);
 
-	cmzn_element_id element = cmzn_scene_picker_get_nearest_element(scene_picker);
+	cmzn_element_id element = cmzn_scenepicker_get_nearest_element(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_element *>(0), element);
 
-	cmzn_node_id node = cmzn_scene_picker_get_nearest_node(scene_picker);
+	cmzn_node_id node = cmzn_scenepicker_get_nearest_node(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_node *>(0), node);
 
-	cmzn_graphics_id graphic = cmzn_scene_picker_get_nearest_element_graphics(scene_picker);
+	cmzn_graphics_id graphic = cmzn_scenepicker_get_nearest_element_graphics(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	graphic = cmzn_scene_picker_get_nearest_node_graphics(scene_picker);
+	graphic = cmzn_scenepicker_get_nearest_node_graphics(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	graphic = cmzn_scene_picker_get_nearest_graphics(scene_picker);
+	graphic = cmzn_scenepicker_get_nearest_graphics(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	result = cmzn_scene_picker_add_picked_elements_to_group(scene_picker, fieldGroup);
+	result = cmzn_scenepicker_add_picked_elements_to_group(scene_picker, fieldGroup);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	result = cmzn_scene_picker_add_picked_nodes_to_group(scene_picker, fieldGroup);
+	result = cmzn_scenepicker_add_picked_nodes_to_group(scene_picker, fieldGroup);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
 	cmzn_scenefilter_destroy(&sf);
@@ -102,17 +102,17 @@ TEST(cmzn_scene_picker_api, valid_args)
 
 	cmzn_sceneviewermodule_destroy(&svModule);
 
-	cmzn_scene_picker_destroy(&scene_picker);
+	cmzn_scenepicker_destroy(&scene_picker);
 
 }
 
-TEST(cmzn_scene_picker_api, valid_args_cpp)
+TEST(cmzn_scenepicker_api, valid_args_cpp)
 {
 	ZincTestSetupCpp zinc;
 
 	FieldGroup fieldGroup = zinc.fm.createFieldGroup();
 
-	ScenePicker scenePicker = zinc.scene.createPicker();
+	Scenepicker scenePicker = zinc.scene.createScenepicker();
 	EXPECT_TRUE(scenePicker.isValid());
 
 	Sceneviewermodule svModule = zinc.context.getSceneviewermodule();

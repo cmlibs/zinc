@@ -27,6 +27,7 @@ INCLUDE(fieldmodule/tests.cmake)
 INCLUDE(glyph/tests.cmake)
 INCLUDE(graphic/tests.cmake)
 INCLUDE(graphics_material/tests.cmake)
+INCLUDE(selection/tests.cmake)
 INCLUDE(spectrum/tests.cmake)
 INCLUDE(time/tests.cmake)
 

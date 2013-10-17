@@ -19,9 +19,6 @@ int timeNotifierCallback(cmzn_timenotifier_id timenotifier,
 	return CMZN_OK;
 }
 
-typedef int (*cmzn_timenotifier_callback)(cmzn_timenotifier_id timenotifier,
-	double current_time, void *user_data);
-
 TEST(cmzn_timekeeper, api)
 {
 	ZincTestSetup zinc;
