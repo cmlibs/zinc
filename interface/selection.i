@@ -1,5 +1,5 @@
-/*******************************************************************************
- * CmissSelection.i
+/**
+ * selection.i
  *
  * Swig interface file for cmgui selection API.
  */
@@ -41,7 +41,7 @@
 
 %module(package="opencmiss.zinc") selection
 
-%extend OpenCMISS::Zinc::SelectionHandler {
+%extend OpenCMISS::Zinc::Selectionnotifier {
 
     int setCallback(PyObject *callbackObject)
     {
@@ -53,28 +53,28 @@
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */
-        return cmzn_selection_handler_set_callback(($self)->getId(), selectionCallbackToPython, (void *)my_callback);
+        return cmzn_selectionnotifier_set_callback(($self)->getId(), selectionCallbackToPython, (void *)my_callback);
     }
 
     int clearCallback()
     {
         // Py_XDECREF(callbackObject);
-        return cmzn_selection_handler_clear_callback(($self)->getId());
+        return cmzn_selectionnotifier_clear_callback(($self)->getId());
     }
 }
 
 %{
 #include "zinc/selection.hpp"
 
-static void selectionCallbackToPython(cmzn_selection_event_id selection_event,	void *user_data)
+static void selectionCallbackToPython(cmzn_selectionevent_id selectionevent, void *user_data)
 {
     PyObject *arglist = NULL;
     PyObject *result = NULL;
     PyObject *my_callback = (PyObject *)user_data;
-    /* convert time_notifier to python object */
+    /* convert selectionevent to python object */
     PyObject *obj = NULL;
-    OpenCMISS::Zinc::SelectionEvent *selectionEvent = new OpenCMISS::Zinc::SelectionEvent(cmzn_selection_event_access(selection_event));
-    obj = SWIG_NewPointerObj(SWIG_as_voidptr(selectionEvent), SWIGTYPE_p_OpenCMISS__Zinc__SelectionEvent, 1);
+    OpenCMISS::Zinc::Selectionevent *selectionEvent = new OpenCMISS::Zinc::Selectionevent(cmzn_selectionevent_access(selectionevent));
+    obj = SWIG_NewPointerObj(SWIG_as_voidptr(selectionEvent), SWIGTYPE_p_OpenCMISS__Zinc__Selectionevent, 1);
     /* Time to call the callback */
     arglist = Py_BuildValue("(N)", obj);
     result = PyObject_CallObject(my_callback, arglist);
