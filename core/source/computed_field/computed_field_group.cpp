@@ -91,7 +91,13 @@ public:
 		local_change = CMZN_FIELD_GROUP_CLEAR;
 	}
 
-	/** Inform local group has been replaced, but wasn't before */
+	/** Inform local group has had part removed */
+	void changeRemoveLocal()
+	{
+		local_change = CMZN_FIELD_GROUP_REMOVE;
+	}
+
+	/** Inform local group has been replaced: mix of add and remove */
 	void changeReplaceLocal()
 	{
 		local_change = CMZN_FIELD_GROUP_REPLACE;
@@ -179,7 +185,7 @@ class Computed_field_group : public Computed_field_group_base
 private:
 	cmzn_field_hierarchical_group_change_detail change_detail;
 	cmzn_region *region;
-	int contains_all;
+	bool contains_all;
 	Computed_field *local_node_group, *local_data_group, *local_element_group[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 
 public:
@@ -189,7 +195,7 @@ public:
 	Computed_field_group(cmzn_region *region)
 		: Computed_field_group_base()
 		, region(region)
-		, contains_all(0)
+		, contains_all(false)
 		, local_node_group(NULL)
 		, local_data_group(NULL)
 		, subregion_group_map()
@@ -283,9 +289,9 @@ public:
 
 	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message);
 
-	int isEmptyLocal() const;
+	bool isEmptyLocal() const;
 
-	virtual int isEmpty() const
+	virtual bool isEmpty() const
 	{
 		return (isEmptyLocal() && isEmptyNonLocal());
 	}
@@ -296,13 +302,15 @@ public:
 
 	int addLocalRegion();
 
-	int containsLocalRegion();
+	int removeLocalRegion();
+
+	bool containsLocalRegion();
 
 	int addRegion(struct cmzn_region *child_region);
 
 	int removeRegion(struct cmzn_region *region);
 
-	int containsRegion(struct cmzn_region *region);
+	bool containsRegion(struct cmzn_region *region);
 
 private:
 
@@ -355,7 +363,7 @@ private:
 		return 0;
 	}
 
-	int isEmptyNonLocal() const;
+	bool isEmptyNonLocal() const;
 
 	int check_subobject_group_dependency(Computed_field_core *source_core);
 
@@ -451,42 +459,40 @@ int Computed_field_group::evaluate(cmzn_fieldcache& cache, FieldValueCache& inVa
 	return 1;
 }
 
-int Computed_field_group::isEmptyLocal() const
+bool Computed_field_group::isEmptyLocal() const
 {
 	if (contains_all)
-	{
-		return 0;
-	}
+		return false;
 	if (local_node_group && !isSubGroupEmpty(local_node_group->core))
-		return 0;
+		return false;
 	if (local_data_group && !isSubGroupEmpty(local_data_group->core))
-		return 0;
+		return false;
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 	{
 		if (local_element_group[i] && !isSubGroupEmpty(local_element_group[i]->core))
-			return 0;
+			return false;
 	}
 	std::map<Computed_field *, Computed_field *>::const_iterator it = domain_selection_group.begin();
 	while (it != domain_selection_group.end())
 	{
 		Computed_field *subobject_group_field = it->second;
 		if (!isSubGroupEmpty(subobject_group_field->core))
-			return 0;
+			return false;
 		++it;
 	}
-	return 1;
+	return true;
 }
 
-int Computed_field_group::isEmptyNonLocal() const
+bool Computed_field_group::isEmptyNonLocal() const
 {
 	for (Region_field_map_const_iterator iter = subregion_group_map.begin();
 		iter != subregion_group_map.end(); iter++)
 	{
 		cmzn_field_group_id subregion_group_field = iter->second;
 		if (!isSubGroupEmpty(cmzn_field_group_base_cast(subregion_group_field)->core))
-			return 0;
+			return false;
 	}
-	return 1;
+	return true;
 }
 
 int Computed_field_group::clearLocal()
@@ -494,7 +500,7 @@ int Computed_field_group::clearLocal()
 	int return_code = 1;
 	cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 	cmzn_fieldmodule_begin_change(field_module);
-	contains_all = 0;
+	contains_all = false;
 	if (local_node_group)
 	{
 		Computed_field_group_base *group_base = dynamic_cast<Computed_field_group_base *>(local_node_group->core);
@@ -675,38 +681,33 @@ int Computed_field_group::list()
 
 int Computed_field_group::removeRegion(cmzn_region_id region)
 {
-	int return_code = 0;
-	cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-	cmzn_fieldmodule_begin_change(field_module);
 	cmzn_field_group_id subgroup = getSubRegionGroup(region);
 	if (subgroup)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(subgroup);
 		if (group_core->contains_all)
 		{
-			group_core->contains_all = 0;
+			group_core->contains_all = false;
 			group_core->change_detail.changeClearLocal();
+			Computed_field_changed(cmzn_field_group_base_cast(subgroup));
+			//Computed_field_changed(this->field); shouldn't be necessary
 		}
-		Computed_field_changed(cmzn_field_group_base_cast(subgroup));
 		cmzn_field_group_destroy(&subgroup);
 	}
-	Computed_field_changed(this->field);
-	cmzn_fieldmodule_end_change(field_module);
-	cmzn_fieldmodule_destroy(&field_module);
-	return return_code;
+	return CMZN_OK;
 }
 
-int Computed_field_group::containsRegion(cmzn_region_id region)
+bool Computed_field_group::containsRegion(cmzn_region_id region)
 {
-	int return_code = 0;
+	bool result = false;
 	cmzn_field_group_id subgroup = getSubRegionGroup(region);
 	if (subgroup)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(subgroup);
-		return_code = group_core->containsLocalRegion();
+		result = group_core->containsLocalRegion();
 		cmzn_field_group_destroy(&subgroup);
 	}
-	return return_code;
+	return result;
 }
 
 cmzn_field_group_id Computed_field_group::getSubRegionGroup(cmzn_region_id subregion)
@@ -1085,31 +1086,28 @@ int Computed_field_group::clear_region_tree_cad_primitive()
 
 int Computed_field_group::addRegion(struct cmzn_region *child_region)
 {
-	int return_code = 0;
 	if (cmzn_region_contains_subregion(region, child_region))
 	{
+		cmzn_region_begin_hierarchical_change(region);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(child_region);
-		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_group_id subregion_group = getSubRegionGroup(child_region);
 		if (!subregion_group)
 			subregion_group = createSubRegionGroup(child_region);
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(subregion_group);
+		Computed_field_group *group_core = Computed_field_group_core_cast(subregion_group);
 		group_core->addLocalRegion();
 		cmzn_field_group_destroy(&subregion_group);
 		Computed_field_changed(this->field);
-		cmzn_fieldmodule_end_change(field_module);
 		cmzn_fieldmodule_destroy(&field_module);
+		cmzn_region_end_hierarchical_change(region);
+		return CMZN_OK;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_group::addRegion.  Sub region is not a child region"
 			"or part of the parent region");
-		return_code = 0;
 	}
-
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 void Computed_field_group::remove_child_group(struct cmzn_region *child_region)
@@ -1221,21 +1219,30 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 
 int Computed_field_group::addLocalRegion()
 {
-	cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-	cmzn_fieldmodule_begin_change(field_module);
-	if (isEmpty())
+	if (!this->contains_all)
+	{
+		this->contains_all = true;
 		change_detail.changeAddLocal();
-	else
-		change_detail.changeReplaceLocal();
-	clearLocal();
-	contains_all = 1;
-	Computed_field_changed(this->field);
-	cmzn_fieldmodule_end_change(field_module);
-	cmzn_fieldmodule_destroy(&field_module);
-	return 1;
+		Computed_field_changed(this->field);
+	}
+	return CMZN_OK;
 }
 
-int Computed_field_group::containsLocalRegion()
+int Computed_field_group::removeLocalRegion()
+{
+	if (this->contains_all)
+	{
+		this->contains_all = false;
+		if (this->isEmptyLocal())
+			change_detail.changeClearLocal();
+		else
+			change_detail.changeRemoveLocal();
+		Computed_field_changed(this->field);
+	}
+	return CMZN_OK;
+}
+
+bool Computed_field_group::containsLocalRegion()
 {
 	return contains_all;
 }
@@ -1619,7 +1626,7 @@ int cmzn_field_group_clear_local(cmzn_field_group_id group)
 	return 0;
 }
 
-int cmzn_field_group_is_empty(cmzn_field_group_id group)
+bool cmzn_field_group_is_empty(cmzn_field_group_id group)
 {
 	if (group)
 	{
@@ -1630,10 +1637,10 @@ int cmzn_field_group_is_empty(cmzn_field_group_id group)
 			return group_core->isEmpty();
 		}
 	}
-	return 0;
+	return false;
 }
 
-int cmzn_field_group_is_empty_local(cmzn_field_group_id group)
+bool cmzn_field_group_is_empty_local(cmzn_field_group_id group)
 {
 	if (group)
 	{
@@ -1644,77 +1651,85 @@ int cmzn_field_group_is_empty_local(cmzn_field_group_id group)
 			return group_core->isEmptyLocal();
 		}
 	}
-	return 0;
+	return false;
 }
 
 int cmzn_field_group_add_local_region(cmzn_field_group_id group)
 {
 	if (group)
 	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
 		{
 			return group_core->addLocalRegion();
 		}
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_field_group_contains_local_region(cmzn_field_group_id group)
+bool cmzn_field_group_contains_local_region(cmzn_field_group_id group)
 {
 	if (group)
 	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
 		{
 			return group_core->containsLocalRegion();
 		}
 	}
-	return 0;
+	return false;
 }
 
-int cmzn_field_group_contains_region(cmzn_field_group_id group, cmzn_region_id region)
+int cmzn_field_group_remove_local_region(cmzn_field_group_id group)
 {
-	if (group && region)
+	if (group)
 	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
 		{
-			return group_core->containsRegion(region);
+			return group_core->removeLocalRegion();
 		}
 	}
-	return 0;
-}
-
-int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_region_id region)
-{
-	if (group && region)
-	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
-		if (group_core)
-		{
-			return group_core->removeRegion(region);
-		}
-	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_field_group_add_region(cmzn_field_group_id group, cmzn_region_id region)
 {
 	if (group && region)
 	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
 		if (group_core)
 		{
 			return group_core->addRegion(region);
 		}
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
+}
+
+bool cmzn_field_group_contains_region(cmzn_field_group_id group, cmzn_region_id region)
+{
+	if (group && region)
+	{
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->containsRegion(region);
+		}
+	}
+	return false;
+}
+
+int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_region_id region)
+{
+	if (group && region)
+	{
+		Computed_field_group *group_core = Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->removeRegion(region);
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_field_group_id cmzn_field_group_get_first_non_empty_group(

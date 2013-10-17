@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : scenepickerid.h
  *
  */
@@ -11,7 +11,7 @@
 #ifndef CMZN_SCENEPICKERID_H__
 #define CMZN_SCENEPICKERID_H__
 
-	struct cmzn_scene_picker;
-	typedef struct cmzn_scene_picker * cmzn_scene_picker_id;
+	struct cmzn_scenepicker;
+	typedef struct cmzn_scenepicker * cmzn_scenepicker_id;
 
 #endif

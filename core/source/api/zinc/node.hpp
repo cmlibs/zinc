@@ -271,7 +271,7 @@ public:
 		return id;
 	}
 
-	int containsNode(Node& node)
+	bool containsNode(Node& node)
 	{
 		return cmzn_nodeset_contains_node(id, node.getId());
 	}

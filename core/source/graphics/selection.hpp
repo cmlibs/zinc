@@ -9,16 +9,16 @@
 
 #include "zinc/selection.h"
 
-struct cmzn_selection_event;
+struct cmzn_selectionevent;
 
-struct cmzn_selection_handler;
+struct cmzn_selectionnotifier;
 
-struct cmzn_selection_handler *cmzn_selection_handler_create_private();
+struct cmzn_selectionnotifier *cmzn_selectionnotifier_create_private();
 
-int cmzn_selection_handler_set_scene(cmzn_selection_handler_id selection_handler,
+int cmzn_selectionnotifier_set_scene(cmzn_selectionnotifier_id selectionnotifier,
 	struct cmzn_scene *scene_in);
 
-int cmzn_selection_handler_scene_destroyed(cmzn_selection_handler_id selection_handler);
+int cmzn_selectionnotifier_scene_destroyed(cmzn_selectionnotifier_id selectionnotifier);
 
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_selection_handler);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_selectionnotifier);
 #endif /* (SELECTION_HPP) */

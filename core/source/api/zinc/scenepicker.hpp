@@ -23,41 +23,41 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class ScenePicker
+class Scenepicker
 {
 protected:
-	cmzn_scene_picker_id id;
+	cmzn_scenepicker_id id;
 
 public:
 
-	ScenePicker() : id(0)
+	Scenepicker() : id(0)
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit ScenePicker(cmzn_scene_picker_id in_scene_picker_id) :
-		id(in_scene_picker_id)
+	explicit Scenepicker(cmzn_scenepicker_id in_scenepicker_id) :
+		id(in_scenepicker_id)
 	{  }
 
-	ScenePicker(const ScenePicker& scene_picker) :
-		id(cmzn_scene_picker_access(scene_picker.id))
+	Scenepicker(const Scenepicker& scenepicker) :
+		id(cmzn_scenepicker_access(scenepicker.id))
 	{  }
 
-	ScenePicker& operator=(const ScenePicker& scene_picker)
+	Scenepicker& operator=(const Scenepicker& scenepicker)
 	{
-		cmzn_scene_picker_id temp_id = cmzn_scene_picker_access(scene_picker.id);
+		cmzn_scenepicker_id temp_id = cmzn_scenepicker_access(scenepicker.id);
 		if (0 != id)
 		{
-			cmzn_scene_picker_destroy(&id);
+			cmzn_scenepicker_destroy(&id);
 		}
 		id = temp_id;
 		return *this;
 	}
 
-	~ScenePicker()
+	~Scenepicker()
 	{
 		if (0 != id)
 		{
-			cmzn_scene_picker_destroy(&id);
+			cmzn_scenepicker_destroy(&id);
 		}
 	}
 
@@ -66,7 +66,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_scene_picker_id getId()
+	cmzn_scenepicker_id getId()
 	{
 		return id;
 	}
@@ -74,7 +74,7 @@ public:
 	int setSceneviewerRectangle(Sceneviewer& sceneviewer, SceneCoordinateSystem coordinateSystem, double x1,
 		double y1, double x2, double y2)
 	{
-		return cmzn_scene_picker_set_sceneviewer_rectangle(
+		return cmzn_scenepicker_set_sceneviewer_rectangle(
 			id , sceneviewer.getId(),
 			static_cast<cmzn_scene_coordinate_system>(coordinateSystem),
 			x1, y1, x2, y2);
@@ -82,66 +82,66 @@ public:
 
 	Element getNearestElement()
 	{
-		return Element(cmzn_scene_picker_get_nearest_element(id));
+		return Element(cmzn_scenepicker_get_nearest_element(id));
 	}
 
 	Node getNearestNode()
 	{
-		return Node(cmzn_scene_picker_get_nearest_node(id));
+		return Node(cmzn_scenepicker_get_nearest_node(id));
 	}
 
 	Graphics getNearestElementGraphics()
 	{
-		return Graphics(cmzn_scene_picker_get_nearest_element_graphics(id));
+		return Graphics(cmzn_scenepicker_get_nearest_element_graphics(id));
 	}
 
 	Graphics getNearestNodeGraphics()
 	{
-		return Graphics(cmzn_scene_picker_get_nearest_node_graphics(id));
+		return Graphics(cmzn_scenepicker_get_nearest_node_graphics(id));
 	}
 
 	Graphics getNearestGraphics()
 	{
-		return Graphics(cmzn_scene_picker_get_nearest_graphics(id));
+		return Graphics(cmzn_scenepicker_get_nearest_graphics(id));
 	}
 
 	int addPickedElementsToGroup(FieldGroup& fieldGroup)
 	{
-		return cmzn_scene_picker_add_picked_elements_to_group(id,
+		return cmzn_scenepicker_add_picked_elements_to_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 
 	int addPickedNodesToGroup(FieldGroup& fieldGroup)
 	{
-		return cmzn_scene_picker_add_picked_nodes_to_group(id,
+		return cmzn_scenepicker_add_picked_nodes_to_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 
 	Scene getScene()
 	{
-		return Scene(cmzn_scene_picker_get_scene(id));
+		return Scene(cmzn_scenepicker_get_scene(id));
 	}
 
 	int setScene(Scene& scene)
 	{
-		return cmzn_scene_picker_set_scene(id, scene.getId());
+		return cmzn_scenepicker_set_scene(id, scene.getId());
 	}
 
 	Scenefilter getScenefilter()
 	{
-		return Scenefilter(cmzn_scene_picker_get_scenefilter(id));
+		return Scenefilter(cmzn_scenepicker_get_scenefilter(id));
 	}
 
 	int setScenefilter(Scenefilter& filter)
 	{
-		return cmzn_scene_picker_set_scenefilter(id, filter.getId());
+		return cmzn_scenepicker_set_scenefilter(id, filter.getId());
 	}
 
 };
 
-inline ScenePicker Scene::createPicker()
+inline Scenepicker Scene::createScenepicker()
 {
-	return ScenePicker(cmzn_scene_create_picker(id));
+	return Scenepicker(cmzn_scene_create_scenepicker(id));
 }
 
 }  // namespace Zinc

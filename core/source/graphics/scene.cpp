@@ -256,7 +256,7 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 				cmiss_scene->transformation_time_callback_flag = 0;
 				cmiss_scene->selection_group = NULL;
 				cmiss_scene->selection_removed = 0;
-				cmiss_scene->selection_handler_list = NULL;
+				cmiss_scene->selectionnotifier_list = NULL;
 			}
 			else
 			{
@@ -2654,16 +2654,16 @@ int DESTROY(cmzn_scene)(
 
 	if (cmiss_scene_address && (cmiss_scene = *cmiss_scene_address))
 	{
-		if (cmiss_scene->selection_handler_list)
+		if (cmiss_scene->selectionnotifier_list)
 		{
-			for (Selection_handler_list::iterator iter = cmiss_scene->selection_handler_list->begin();
-				iter != cmiss_scene->selection_handler_list->end(); ++iter)
+			for (cmzn_selectionnotifier_list::iterator iter = cmiss_scene->selectionnotifier_list->begin();
+				iter != cmiss_scene->selectionnotifier_list->end(); ++iter)
 			{
-				cmzn_selection_handler_id selection_handler = *iter;
-				cmzn_selection_handler_scene_destroyed(selection_handler);
-				cmzn_selection_handler_destroy(&selection_handler);
+				cmzn_selectionnotifier_id selectionnotifier = *iter;
+				cmzn_selectionnotifier_scene_destroyed(selectionnotifier);
+				cmzn_selectionnotifier_destroy(&selectionnotifier);
 			}
-			delete cmiss_scene->selection_handler_list;
+			delete cmiss_scene->selectionnotifier_list;
 		}
 		if (cmiss_scene->computed_field_manager &&
 				cmiss_scene->computed_field_manager_callback_id)
@@ -3234,19 +3234,19 @@ cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
 	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_SURFACES);
 }
 
-cmzn_selection_handler_id cmzn_scene_create_selection_handler(cmzn_scene_id scene)
+cmzn_selectionnotifier_id cmzn_scene_create_selectionnotifier(cmzn_scene_id scene)
 {
-	cmzn_selection_handler_id selection_handler = NULL;
+	cmzn_selectionnotifier_id selectionnotifier = NULL;
 	if (scene)
 	{
-		selection_handler = cmzn_selection_handler_create_private();
-		ACCESS(cmzn_selection_handler)(selection_handler);
-		cmzn_selection_handler_set_scene(selection_handler, scene);
-		if (!scene->selection_handler_list)
-			scene->selection_handler_list = new Selection_handler_list();
-		scene->selection_handler_list->push_back(selection_handler);
+		selectionnotifier = cmzn_selectionnotifier_create_private();
+		ACCESS(cmzn_selectionnotifier)(selectionnotifier);
+		cmzn_selectionnotifier_set_scene(selectionnotifier, scene);
+		if (!scene->selectionnotifier_list)
+			scene->selectionnotifier_list = new cmzn_selectionnotifier_list();
+		scene->selectionnotifier_list->push_back(selectionnotifier);
 	}
-	return selection_handler;
+	return selectionnotifier;
 }
 
 cmzn_graphics_id cmzn_scene_get_first_graphics(cmzn_scene_id scene)
@@ -3803,7 +3803,7 @@ int Scene_export_region_graphics_object(cmzn_scene *scene,
 		data.user_data = user_data;
 		data.graphics_name = graphics_name;
 		data.filter = filter;
-		if (1 == cmzn_region_contains_subregion(scene->region, region))
+		if (cmzn_region_contains_subregion(scene->region, region))
 		{
 			struct cmzn_scene *export_scene = cmzn_region_get_scene_private(region);
 			if (export_scene)
@@ -3812,7 +3812,6 @@ int Scene_export_region_graphics_object(cmzn_scene *scene,
 					Scene_graphics_objects_in_cmzn_graphics_iterator, (void *)&data);
 			}
 		}
-
 	}
 	else
 	{
@@ -3824,16 +3823,16 @@ int Scene_export_region_graphics_object(cmzn_scene *scene,
 	return (return_code);
 }
 
-cmzn_scene_picker_id cmzn_scene_create_picker(cmzn_scene_id scene)
+cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene)
 {
 	if (scene)
 	{
 		cmzn_scenefiltermodule_id filter_module = cmzn_graphics_module_get_scenefiltermodule(
 			scene->graphics_module);
-		cmzn_scene_picker_id scene_picker = cmzn_scene_picker_create(filter_module);
-		cmzn_scene_picker_set_scene(scene_picker, scene);
+		cmzn_scenepicker_id scenepicker = cmzn_scenepicker_create(filter_module);
+		cmzn_scenepicker_set_scene(scenepicker, scene);
 		cmzn_scenefiltermodule_destroy(&filter_module);
-		return scene_picker;
+		return scenepicker;
 	}
 	return 0;
 }

@@ -169,9 +169,9 @@ ZINC_API int cmzn_mesh_destroy(cmzn_mesh_id *mesh_address);
  *
  * @param mesh  The mesh to query.
  * @param element  The element to query about.
- * @return  1 if element is in the mesh, 0 if not or error.
+ * @return  Boolean true if element is in the mesh, otherwise false.
  */
-ZINC_API int cmzn_mesh_contains_element(cmzn_mesh_id mesh,
+ZINC_API bool cmzn_mesh_contains_element(cmzn_mesh_id mesh,
 	cmzn_element_id element);
 
 /**

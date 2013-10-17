@@ -22,7 +22,7 @@ namespace Zinc
 {
 
 class Sceneviewermodule;
-class ScenePicker;
+class Scenepicker;
 
 class Scene
 {
@@ -123,9 +123,9 @@ public:
 		return GraphicsSurfaces(cmzn_scene_create_graphics_surfaces(id));
 	}
 
-	SelectionHandler createSelectionHandler()
+	Selectionnotifier createSelectionnotifier()
 	{
-		return SelectionHandler(cmzn_scene_create_selection_handler(id));
+		return Selectionnotifier(cmzn_scene_create_selectionnotifier(id));
 	}
 
 	/**
@@ -205,7 +205,7 @@ public:
 		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}
 
-	ScenePicker createPicker();
+	Scenepicker createScenepicker();
 
 };
 

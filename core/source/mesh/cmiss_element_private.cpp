@@ -840,7 +840,7 @@ public:
 		return CMZN_OK;
 	}
 
-	int containsElement(cmzn_element_id element)
+	bool containsElement(cmzn_element_id element)
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->containsObject(element);
@@ -852,10 +852,10 @@ public:
 				// special 'group region' check:
 				FE_region_contains_FE_element(fe_region, element))
 			{
-				return 1;
+				return true;
 			}
 		}
-		return 0;
+		return false;
 	}
 
 	cmzn_element_id createElement(int identifier,
@@ -1163,11 +1163,11 @@ int cmzn_mesh_destroy(cmzn_mesh_id *mesh_address)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_mesh_contains_element(cmzn_mesh_id mesh, cmzn_element_id element)
+bool cmzn_mesh_contains_element(cmzn_mesh_id mesh, cmzn_element_id element)
 {
 	if (mesh)
 		return mesh->containsElement(element);
-	return 0;
+	return false;
 }
 
 cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
@@ -1331,21 +1331,21 @@ int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group, cmzn_element_id e
 {
 	if (mesh_group && element)
 		return mesh_group->addElement(element);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group)
 {
 	if (mesh_group)
 		return mesh_group->removeAllElements();
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->removeElement(element);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
@@ -1353,21 +1353,21 @@ int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
 {
 	if (mesh_group && conditional_field)
 		return mesh_group->removeElementsConditional(conditional_field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->addElementFaces(element);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
 	if (mesh_group && element)
 		return mesh_group->removeElementFaces(element);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_mesh_group_id cmzn_field_element_group_get_mesh(

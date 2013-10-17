@@ -24,7 +24,7 @@ FILE : scene.h
 #include "region/cmiss_region.h"
 #include "zinc/types/timeid.h"
 
-typedef std::list<cmzn_selection_handler *> Selection_handler_list;
+typedef std::list<cmzn_selectionnotifier *> cmzn_selectionnotifier_list;
 
 struct cmzn_scene
 /*******************************************************************************
@@ -71,7 +71,7 @@ Structure for maintaining a graphical scene of region.
 	unsigned int position;
 	cmzn_field_group_id selection_group;
 	int selection_removed; // flag set when selection_group cleared
-	Selection_handler_list *selection_handler_list;
+	cmzn_selectionnotifier_list *selectionnotifier_list;
 }; /* struct cmzn_scene */
 
 struct MANAGER_MESSAGE(cmzn_tessellation);

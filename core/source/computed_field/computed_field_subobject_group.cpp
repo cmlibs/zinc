@@ -87,7 +87,7 @@ int cmzn_node_field_is_true_iterator(cmzn_node_id node, void *data_void)
 int Computed_field_element_group::removeElementsConditional(cmzn_field_id conditional_field)
 {
 	if (!conditional_field)
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	Computed_field_element_group *other_element_group = 0;
 	cmzn_field_group_id group = cmzn_field_cast_group(conditional_field);
 	if (group)
@@ -95,7 +95,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 		cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, master_mesh);
 		cmzn_field_group_destroy(&group);
 		if (!element_group)
-			return 1;
+			return CMZN_OK;
 		other_element_group = Computed_field_element_group_core_cast(element_group);
 		cmzn_field_element_group_destroy(&element_group);
 	}
@@ -103,7 +103,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	{
 		other_element_group = dynamic_cast<Computed_field_element_group *>(conditional_field->core);
 	}
-	int return_code = 0;
+	int return_code = CMZN_OK;
 	const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
 	if (other_element_group)
 	{
@@ -122,8 +122,11 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 		}
 		else
 		{
-			return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-				FE_element_is_in_list, (void *)other_element_group->object_list, object_list);
+			if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+				FE_element_is_in_list, (void *)other_element_group->object_list, object_list))
+			{
+				return_code = CMZN_ERROR_GENERAL;
+			}
 		}
 	}
 	else
@@ -132,8 +135,11 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_element_field_is_true_iterator_data data = { cache, conditional_field };
-		return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-			cmzn_element_field_is_true_iterator, (void *)&data, object_list);
+		if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+			cmzn_element_field_is_true_iterator, (void *)&data, object_list))
+		{
+			return_code = CMZN_ERROR_GENERAL;
+		}
 		cmzn_fieldcache_destroy(&cache);
 		cmzn_fieldmodule_destroy(&field_module);
 	}
@@ -152,8 +158,8 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 {
 	if (!isParentElementCompatible(parent))
-		return 0;
-	int return_code = 1;
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
 	int number_of_faces = 0;
 	get_FE_element_number_of_faces(parent, &number_of_faces);
 	cmzn_element_id face = 0;
@@ -170,7 +176,7 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 				}
 				else
 				{
-					return_code = 0;
+					return_code = CMZN_ERROR_GENERAL;
 					break;
 				}
 			}
@@ -187,7 +193,7 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 {
 	if (!isParentElementCompatible(parent))
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	int number_of_faces = 0;
 	get_FE_element_number_of_faces(parent, &number_of_faces);
 	cmzn_element_id face = 0;
@@ -211,13 +217,13 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 			change_detail.changeRemove();
 		update();
 	}
-	return 1;
+	return CMZN_OK;
 };
 
 int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_field)
 {
 	if (!conditional_field)
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	Computed_field_node_group *other_node_group = 0;
 	cmzn_field_group_id group = cmzn_field_cast_group(conditional_field);
 	if (group)
@@ -225,7 +231,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, master_nodeset);
 		cmzn_field_group_destroy(&group);
 		if (!node_group)
-			return 1;
+			return CMZN_OK;
 		other_node_group = Computed_field_node_group_core_cast(node_group);
 		cmzn_field_node_group_destroy(&node_group);
 	}
@@ -233,7 +239,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	{
 		other_node_group = dynamic_cast<Computed_field_node_group *>(conditional_field->core);
 	}
-	int return_code = 0;
+	int return_code = CMZN_OK;
 	const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
 	if (other_node_group)
 	{
@@ -252,8 +258,11 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 		}
 		else
 		{
-			return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-				FE_node_is_in_list, (void *)other_node_group->object_list, object_list);
+			if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+				FE_node_is_in_list, (void *)other_node_group->object_list, object_list))
+			{
+				return_code = CMZN_ERROR_GENERAL;
+			}
 		}
 	}
 	else
@@ -262,8 +271,11 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_node_field_is_true_iterator_data data = { cache, conditional_field };
-		return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-			cmzn_node_field_is_true_iterator, (void *)&data, object_list);
+		if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+			cmzn_node_field_is_true_iterator, (void *)&data, object_list))
+		{
+			return_code = CMZN_ERROR_GENERAL;
+		}
 		cmzn_fieldcache_destroy(&cache);
 		cmzn_fieldmodule_destroy(&field_module);
 	}
@@ -282,8 +294,8 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 {
 	if (!isParentElementCompatible(element))
-		return 0;
-	int return_code = 1;
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
 	int number_of_nodes = 0;
 	int number_of_parents = 0;
 	get_FE_element_number_of_nodes(element, &number_of_nodes);
@@ -303,7 +315,7 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 					}
 					else
 					{
-						return_code = 0;
+						return_code = CMZN_ERROR_GENERAL;
 						break;
 					}
 				}
@@ -333,7 +345,7 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 						else
 						{
 							display_message(ERROR_MESSAGE, "Could not add node");
-							return_code = 0;
+							return_code = CMZN_ERROR_GENERAL;
 						}
 					}
 					cmzn_node_destroy(&node);
@@ -353,8 +365,7 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 {
 	if (!isParentElementCompatible(element))
-		return 0;
-	int return_code = 1;
+		return CMZN_ERROR_ARGUMENT;
 	int number_of_nodes = 0;
 	int number_of_parents = 0;
 	get_FE_element_number_of_nodes(element, &number_of_nodes);
@@ -407,7 +418,7 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 			change_detail.changeRemove();
 		update();
 	}
-	return return_code;
+	return CMZN_OK;
 };
 
 cmzn_field_node_group *cmzn_field_cast_node_group(cmzn_field_id field)

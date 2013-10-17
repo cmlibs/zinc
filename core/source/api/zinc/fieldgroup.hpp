@@ -45,12 +45,12 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_group(field.getId())))
 	{	}
 
-	int isEmpty()
+	bool isEmpty()
 	{
 		return cmzn_field_group_is_empty(reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
-	int isEmptyLocal()
+	bool isEmptyLocal()
 	{
 		return cmzn_field_group_is_empty_local(reinterpret_cast<cmzn_field_group_id>(id));
 	}
@@ -77,9 +77,15 @@ public:
 			reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
-	int containsLocalRegion()
+	bool containsLocalRegion()
 	{
 		return cmzn_field_group_contains_local_region(
+			reinterpret_cast<cmzn_field_group_id>(id));
+	}
+
+	int removeLocalRegion()
+	{
+		return cmzn_field_group_remove_local_region(
 			reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
@@ -95,7 +101,7 @@ public:
 			region.getId());
 	}
 
-	int containsRegion(Region& region)
+	bool containsRegion(Region& region)
 	{
 		return cmzn_field_group_contains_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());

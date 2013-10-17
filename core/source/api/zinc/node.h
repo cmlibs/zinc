@@ -99,9 +99,9 @@ ZINC_API int cmzn_nodeset_destroy(cmzn_nodeset_id *nodeset_address);
  *
  * @param nodeset  The nodeset to query.
  * @param node  The node to query about.
- * @return  1 if node is in the nodeset, 0 if not or error.
+ * @return  Boolean true if node is in the nodeset, otherwise false.
  */
-ZINC_API int cmzn_nodeset_contains_node(cmzn_nodeset_id nodeset, cmzn_node_id node);
+ZINC_API bool cmzn_nodeset_contains_node(cmzn_nodeset_id nodeset, cmzn_node_id node);
 
 /**
  * Create a blank template from which new nodes can be created in this nodeset.

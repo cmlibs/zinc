@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : selectionid.h
  *
  */
@@ -11,10 +11,10 @@
 #ifndef CMZN_SELECTIONID_H__
 #define CMZN_SELECTIONID_H__
 
-	struct cmzn_selection_handler;
-	typedef struct cmzn_selection_handler * cmzn_selection_handler_id;
+	struct cmzn_selectionnotifier;
+	typedef struct cmzn_selectionnotifier * cmzn_selectionnotifier_id;
 
-	struct cmzn_selection_event;
-	typedef struct cmzn_selection_event * cmzn_selection_event_id;
+	struct cmzn_selectionevent;
+	typedef struct cmzn_selectionevent * cmzn_selectionevent_id;
 
 #endif /* CMZN_SELECTION_ID_H */
