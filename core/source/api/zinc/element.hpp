@@ -414,7 +414,7 @@ public:
 
 	bool containsElement(Element& element)
 	{
-		return (0 != cmzn_mesh_contains_element(id, element.getId()));
+		return cmzn_mesh_contains_element(id, element.getId());
 	}
 
 	Elementtemplate createElementtemplate()

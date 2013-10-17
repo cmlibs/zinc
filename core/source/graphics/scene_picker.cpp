@@ -22,7 +22,7 @@
 
 #define SELECT_BUFFER_SIZE_INCREMENT 10000
 
-cmzn_scene_picker::cmzn_scene_picker(cmzn_scenefiltermodule_id filter_module_in) :
+cmzn_scenepicker::cmzn_scenepicker(cmzn_scenefiltermodule_id filter_module_in) :
 	interaction_volume(0),
 	top_scene(0),
 	scene_viewer(0),
@@ -38,7 +38,7 @@ cmzn_scene_picker::cmzn_scene_picker(cmzn_scenefiltermodule_id filter_module_in)
 {
 }
 
-cmzn_scene_picker::~cmzn_scene_picker()
+cmzn_scenepicker::~cmzn_scenepicker()
 {
 	if (interaction_volume)
 		DEACCESS(Interaction_volume)(&interaction_volume);
@@ -54,7 +54,7 @@ cmzn_scene_picker::~cmzn_scene_picker()
 		cmzn_scenefiltermodule_destroy(&filter_module);
 }
 
-void cmzn_scene_picker::updateViewerRectangle()
+void cmzn_scenepicker::updateViewerRectangle()
 {
 	if (scene_viewer)
 	{
@@ -91,7 +91,7 @@ void cmzn_scene_picker::updateViewerRectangle()
 	}
 }
 
-int cmzn_scene_picker::pickObjects()
+int cmzn_scenepicker::pickObjects()
 {
 	double modelview_matrix[16],projection_matrix[16];
 	GLdouble opengl_modelview_matrix[16],opengl_projection_matrix[16];
@@ -169,8 +169,8 @@ int cmzn_scene_picker::pickObjects()
 	return return_code;
 }
 
-Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
-	enum cmzn_scene_picker_object_type type)
+Region_node_map cmzn_scenepicker::getPickedRegionSortedNodes(
+	enum cmzn_scenepicker_object_type type)
 {
 	Region_node_map node_map;
 
@@ -199,9 +199,9 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 				if ((getSceneAndGraphics(select_buffer_ptr,
 						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 				{
-					if (((type == CMZN_SCENE_PICKER_OBJECT_DATA) &&
+					if (((type == CMZN_SCENEPICKER_OBJECT_DATA) &&
 							(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
-						((type == CMZN_SCENE_PICKER_OBJECT_NODE) &&
+						((type == CMZN_SCENEPICKER_OBJECT_NODE) &&
 							(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
 					{
 						if (picked_scene)
@@ -214,7 +214,7 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 								if (nodeset)
 									cmzn_nodeset_destroy(&nodeset);
 								nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-									(type == CMZN_SCENE_PICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+									(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 								cmzn_fieldmodule_destroy(&field_module);
 							}
 							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset,
@@ -236,7 +236,7 @@ Region_node_map cmzn_scene_picker::getPickedRegionSortedNodes(
 	return node_map;
 }
 
-Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
+Region_element_map cmzn_scenepicker::getPickedRegionSortedElements()
 {
 	Region_element_map element_map;
 
@@ -301,7 +301,7 @@ Region_element_map cmzn_scene_picker::getPickedRegionSortedElements()
 	return element_map;
 }
 
-void cmzn_scene_picker::reset()
+void cmzn_scenepicker::reset()
 {
 	if (select_buffer)
 	{
@@ -313,7 +313,7 @@ void cmzn_scene_picker::reset()
 }
 
 /*provide a select buffer pointer and return the scene and graphics */
-int cmzn_scene_picker::getSceneAndGraphics(GLuint *select_buffer_ptr,
+int cmzn_scenepicker::getSceneAndGraphics(GLuint *select_buffer_ptr,
 	cmzn_scene_id *picked_scene, cmzn_graphics_id *graphics)
 {
 	if (top_scene && select_buffer_ptr)
@@ -331,12 +331,12 @@ int cmzn_scene_picker::getSceneAndGraphics(GLuint *select_buffer_ptr,
 	}
 }
 
-cmzn_scenefilter_id cmzn_scene_picker::getScenefilter()
+cmzn_scenefilter_id cmzn_scenepicker::getScenefilter()
 {
 	return cmzn_scenefilter_access(filter);
 }
 
-int cmzn_scene_picker::setScenefilter(cmzn_scenefilter_id filter_in)
+int cmzn_scenepicker::setScenefilter(cmzn_scenefilter_id filter_in)
 {
 	if (filter_in != filter)
 	{
@@ -349,12 +349,12 @@ int cmzn_scene_picker::setScenefilter(cmzn_scenefilter_id filter_in)
 	return CMZN_OK;
 }
 
-cmzn_scene_id cmzn_scene_picker::getScene()
+cmzn_scene_id cmzn_scenepicker::getScene()
 {
 	return cmzn_scene_access(top_scene);
 }
 
-int cmzn_scene_picker::setScene(cmzn_scene_id scene_in)
+int cmzn_scenepicker::setScene(cmzn_scene_id scene_in)
 {
 	if (scene_in)
 	{
@@ -370,7 +370,7 @@ int cmzn_scene_picker::setScene(cmzn_scene_id scene_in)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_scene_picker::setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
+int cmzn_scenepicker::setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
 	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
 	double y1, double x2, double y2)
 {
@@ -390,7 +390,7 @@ int cmzn_scene_picker::setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_scene_picker::setInteractionVolume(struct Interaction_volume *interaction_volume_in)
+int cmzn_scenepicker::setInteractionVolume(struct Interaction_volume *interaction_volume_in)
 {
 	reset();
 	if (scene_viewer)
@@ -403,7 +403,7 @@ int cmzn_scene_picker::setInteractionVolume(struct Interaction_volume *interacti
 	return 1;
 }
 
-cmzn_element_id cmzn_scene_picker::getNearestElement()
+cmzn_element_id cmzn_scenepicker::getNearestElement()
 {
 	cmzn_element_id nearest_element = 0;
 	if ((CMZN_OK == pickObjects()) && select_buffer)
@@ -479,7 +479,7 @@ cmzn_element_id cmzn_scene_picker::getNearestElement()
 	return nearest_element;
 }
 
-cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_type type)
+cmzn_node_id cmzn_scenepicker::getNearestNode(enum cmzn_scenepicker_object_type type)
 {
 	cmzn_node_id nearest_node = 0;
 	if ((CMZN_OK == pickObjects()) && select_buffer)
@@ -515,9 +515,9 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 					if ((getSceneAndGraphics(select_buffer_ptr,
 						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 					{
-						if (((type == CMZN_SCENE_PICKER_OBJECT_DATA) &&
+						if (((type == CMZN_SCENEPICKER_OBJECT_DATA) &&
 								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
-							((type == CMZN_SCENE_PICKER_OBJECT_NODE) &&
+							((type == CMZN_SCENEPICKER_OBJECT_NODE) &&
 								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
 						{
 							if (picked_scene)
@@ -530,7 +530,7 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 									if (nodeset)
 										cmzn_nodeset_destroy(&nodeset);
 									nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-										(type == CMZN_SCENE_PICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+										(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 									cmzn_fieldmodule_destroy(&field_module);
 								}
 								cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset,
@@ -555,7 +555,7 @@ cmzn_node_id cmzn_scene_picker::getNearestNode(enum cmzn_scene_picker_object_typ
 	return nearest_node;
 }
 
-cmzn_graphics_id cmzn_scene_picker::getNearestGraphics(enum cmzn_scene_picker_object_type type)
+cmzn_graphics_id cmzn_scenepicker::getNearestGraphics(enum cmzn_scenepicker_object_type type)
 {
 	if ((CMZN_OK == pickObjects()) && select_buffer)
 	{
@@ -589,12 +589,12 @@ cmzn_graphics_id cmzn_scene_picker::getNearestGraphics(enum cmzn_scene_picker_ob
 					if ((getSceneAndGraphics(select_buffer_ptr,
 						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 					{
-						if ((type == CMZN_SCENE_PICKER_OBJECT_ANY) ||
-							((type == CMZN_SCENE_PICKER_OBJECT_ELEMENT) &&
+						if ((type == CMZN_SCENEPICKER_OBJECT_ANY) ||
+							((type == CMZN_SCENEPICKER_OBJECT_ELEMENT) &&
 								(cmzn_graphics_selects_elements(graphics))) ||
-							((type == CMZN_SCENE_PICKER_OBJECT_DATA) &&
+							((type == CMZN_SCENEPICKER_OBJECT_DATA) &&
 								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
-							((type == CMZN_SCENE_PICKER_OBJECT_NODE) &&
+							((type == CMZN_SCENEPICKER_OBJECT_NODE) &&
 								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
 						{
 							current_nearest = nearest;
@@ -611,7 +611,7 @@ cmzn_graphics_id cmzn_scene_picker::getNearestGraphics(enum cmzn_scene_picker_ob
 	return 0;
 }
 
-int cmzn_scene_picker::addPickedElementsToGroup(cmzn_field_group_id group)
+int cmzn_scenepicker::addPickedElementsToGroup(cmzn_field_group_id group)
 {
 	if (group)
 	{
@@ -697,8 +697,8 @@ int cmzn_scene_picker::addPickedElementsToGroup(cmzn_field_group_id group)
 	return CMZN_OK;
 }
 
-int cmzn_scene_picker::addPickedNodesToGroup(cmzn_field_group_id group,
-	enum cmzn_scene_picker_object_type type)
+int cmzn_scenepicker::addPickedNodesToGroup(cmzn_field_group_id group,
+	enum cmzn_scenepicker_object_type type)
 {
 	if (group)
 	{
@@ -734,7 +734,7 @@ int cmzn_scene_picker::addPickedNodesToGroup(cmzn_field_group_id group,
 					{
 						cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(sub_region);
 						cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-							(type == CMZN_SCENE_PICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+							(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
 						if (master_nodeset)
 						{
 							cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(
@@ -772,12 +772,12 @@ int cmzn_scene_picker::addPickedNodesToGroup(cmzn_field_group_id group,
 	return CMZN_OK;
 }
 
-int DESTROY(cmzn_scene_picker)(struct cmzn_scene_picker **scene_picker_address)
+int DESTROY(cmzn_scenepicker)(struct cmzn_scenepicker **scenepicker_address)
 {
-	if (scene_picker_address && (*scene_picker_address))
+	if (scenepicker_address && (*scenepicker_address))
 	{
-		delete *scene_picker_address;
-		*scene_picker_address = NULL;
+		delete *scenepicker_address;
+		*scenepicker_address = NULL;
 		return 1;
 	}
 	else
@@ -786,113 +786,113 @@ int DESTROY(cmzn_scene_picker)(struct cmzn_scene_picker **scene_picker_address)
 	}
 }
 
-cmzn_scene_picker_id cmzn_scene_picker_create(cmzn_scenefiltermodule_id filter_module)
+cmzn_scenepicker_id cmzn_scenepicker_create(cmzn_scenefiltermodule_id filter_module)
 {
-	return new cmzn_scene_picker(filter_module);
+	return new cmzn_scenepicker(filter_module);
 }
 
-DECLARE_OBJECT_FUNCTIONS(cmzn_scene_picker);
+DECLARE_OBJECT_FUNCTIONS(cmzn_scenepicker);
 
-cmzn_scene_picker_id cmzn_scene_picker_access(
-	cmzn_scene_picker_id scene_picker)
+cmzn_scenepicker_id cmzn_scenepicker_access(
+	cmzn_scenepicker_id scenepicker)
 {
-	if (scene_picker)
-		return scene_picker->access();
+	if (scenepicker)
+		return scenepicker->access();
 	return 0;
 }
 
-int cmzn_scene_picker_destroy(cmzn_scene_picker_id *scene_picker_address)
+int cmzn_scenepicker_destroy(cmzn_scenepicker_id *scenepicker_address)
 {
-	return DEACCESS(cmzn_scene_picker)(scene_picker_address);
+	return DEACCESS(cmzn_scenepicker)(scenepicker_address);
 }
 
-cmzn_scene_id cmzn_scene_picker_get_scene(cmzn_scene_picker_id scene_picker)
+cmzn_scene_id cmzn_scenepicker_get_scene(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getScene();
+	return scenepicker->getScene();
 }
 
-int cmzn_scene_picker_set_scene(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_set_scene(cmzn_scenepicker_id scenepicker,
 	cmzn_scene_id scene)
 {
-	return scene_picker->setScene(scene);
+	return scenepicker->setScene(scene);
 }
 
-cmzn_scenefilter_id cmzn_scene_picker_get_scenefilter(
-	cmzn_scene_picker_id scene_picker)
+cmzn_scenefilter_id cmzn_scenepicker_get_scenefilter(
+	cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getScenefilter();
+	return scenepicker->getScenefilter();
 }
 
-int cmzn_scene_picker_set_scenefilter(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_set_scenefilter(cmzn_scenepicker_id scenepicker,
 	cmzn_scenefilter_id filter)
 {
-	return scene_picker->setScenefilter(filter);
+	return scenepicker->setScenefilter(filter);
 }
 
-int cmzn_scene_picker_set_sceneviewer_rectangle(
-	cmzn_scene_picker_id scene_picker, cmzn_sceneviewer_id sceneviewer_in,
+int cmzn_scenepicker_set_sceneviewer_rectangle(
+	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer_in,
 	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
 		double y1, double x2, double y2)
 {
-	return scene_picker->setSceneviewerRectangle(sceneviewer_in,
+	return scenepicker->setSceneviewerRectangle(sceneviewer_in,
 		coordinate_system_in, x1, y1, x2, y2);
 }
 
-cmzn_element_id cmzn_scene_picker_get_nearest_element(cmzn_scene_picker_id scene_picker)
+cmzn_element_id cmzn_scenepicker_get_nearest_element(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestElement();
+	return scenepicker->getNearestElement();
 }
 
-cmzn_node_id cmzn_scene_picker_get_nearest_data(cmzn_scene_picker_id scene_picker)
+cmzn_node_id cmzn_scenepicker_get_nearest_data(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestNode(CMZN_SCENE_PICKER_OBJECT_DATA);
+	return scenepicker->getNearestNode(CMZN_SCENEPICKER_OBJECT_DATA);
 }
 
-cmzn_node_id cmzn_scene_picker_get_nearest_node(cmzn_scene_picker_id scene_picker)
+cmzn_node_id cmzn_scenepicker_get_nearest_node(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestNode(CMZN_SCENE_PICKER_OBJECT_NODE);
+	return scenepicker->getNearestNode(CMZN_SCENEPICKER_OBJECT_NODE);
 }
 
-cmzn_graphics_id cmzn_scene_picker_get_nearest_graphics(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scenepicker_get_nearest_graphics(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_ANY);
+	return scenepicker->getNearestGraphics(CMZN_SCENEPICKER_OBJECT_ANY);
 }
 
-cmzn_graphics_id cmzn_scene_picker_get_nearest_data_graphics(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scenepicker_get_nearest_data_graphics(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_DATA);
+	return scenepicker->getNearestGraphics(CMZN_SCENEPICKER_OBJECT_DATA);
 }
 
-cmzn_graphics_id cmzn_scene_picker_get_nearest_element_graphics(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scenepicker_get_nearest_element_graphics(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_ELEMENT);
+	return scenepicker->getNearestGraphics(CMZN_SCENEPICKER_OBJECT_ELEMENT);
 }
 
-cmzn_graphics_id cmzn_scene_picker_get_nearest_node_graphics(cmzn_scene_picker_id scene_picker)
+cmzn_graphics_id cmzn_scenepicker_get_nearest_node_graphics(cmzn_scenepicker_id scenepicker)
 {
-	return scene_picker->getNearestGraphics(CMZN_SCENE_PICKER_OBJECT_NODE);
+	return scenepicker->getNearestGraphics(CMZN_SCENEPICKER_OBJECT_NODE);
 }
 
-int cmzn_scene_picker_add_picked_data_to_group(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_add_picked_data_to_group(cmzn_scenepicker_id scenepicker,
 	cmzn_field_group_id group)
 {
-	return scene_picker->addPickedNodesToGroup(group, CMZN_SCENE_PICKER_OBJECT_DATA);
+	return scenepicker->addPickedNodesToGroup(group, CMZN_SCENEPICKER_OBJECT_DATA);
 }
 
-int cmzn_scene_picker_add_picked_elements_to_group(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_add_picked_elements_to_group(cmzn_scenepicker_id scenepicker,
 	cmzn_field_group_id group)
 {
-	return scene_picker->addPickedElementsToGroup(group);
+	return scenepicker->addPickedElementsToGroup(group);
 }
 
-int cmzn_scene_picker_add_picked_nodes_to_group(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_add_picked_nodes_to_group(cmzn_scenepicker_id scenepicker,
 	cmzn_field_group_id group)
 {
-	return scene_picker->addPickedNodesToGroup(group, CMZN_SCENE_PICKER_OBJECT_NODE);
+	return scenepicker->addPickedNodesToGroup(group, CMZN_SCENEPICKER_OBJECT_NODE);
 }
 
-int cmzn_scene_picker_set_interaction_volume(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_set_interaction_volume(cmzn_scenepicker_id scenepicker,
 	struct Interaction_volume *interaction_volume)
 {
-	return scene_picker->setInteractionVolume(interaction_volume);
+	return scenepicker->setInteractionVolume(interaction_volume);
 }

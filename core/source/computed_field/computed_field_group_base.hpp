@@ -53,7 +53,7 @@ public:
 		return 0;
 	}
 
-	virtual int isEmpty() const = 0;
+	virtual bool isEmpty() const = 0;
 
 	virtual int clear() = 0;
 };

@@ -23,15 +23,15 @@
 typedef std::multimap<cmzn_region *, cmzn_element_id> Region_element_map;
 typedef std::multimap<cmzn_region *, cmzn_node_id> Region_node_map;
 
-enum cmzn_scene_picker_object_type
+enum cmzn_scenepicker_object_type
 {
-	CMZN_SCENE_PICKER_OBJECT_ANY = 0,
-	CMZN_SCENE_PICKER_OBJECT_NODE = 1,
-	CMZN_SCENE_PICKER_OBJECT_ELEMENT = 2,
-	CMZN_SCENE_PICKER_OBJECT_DATA = 3
+	CMZN_SCENEPICKER_OBJECT_ANY = 0,
+	CMZN_SCENEPICKER_OBJECT_NODE = 1,
+	CMZN_SCENEPICKER_OBJECT_ELEMENT = 2,
+	CMZN_SCENEPICKER_OBJECT_DATA = 3
 };
 
-struct cmzn_scene_picker
+struct cmzn_scenepicker
 {
 private:
 	struct Interaction_volume *interaction_volume;
@@ -49,7 +49,7 @@ private:
 
 	int pickObjects();
 
-	Region_node_map getPickedRegionSortedNodes(enum cmzn_scene_picker_object_type type);
+	Region_node_map getPickedRegionSortedNodes(enum cmzn_scenepicker_object_type type);
 
 	Region_element_map getPickedRegionSortedElements();
 
@@ -63,9 +63,9 @@ public:
 
 	int access_count;
 
-	cmzn_scene_picker(cmzn_scenefiltermodule_id filter_module_in);
+	cmzn_scenepicker(cmzn_scenefiltermodule_id filter_module_in);
 
-	~cmzn_scene_picker();
+	~cmzn_scenepicker();
 
 	cmzn_scenefilter_id getScenefilter();
 
@@ -83,11 +83,11 @@ public:
 
 	cmzn_element_id getNearestElement();
 
-	cmzn_node_id getNearestNode(enum cmzn_scene_picker_object_type type);
+	cmzn_node_id getNearestNode(enum cmzn_scenepicker_object_type type);
 
-	cmzn_graphics_id getNearestGraphics(enum cmzn_scene_picker_object_type type);
+	cmzn_graphics_id getNearestGraphics(enum cmzn_scenepicker_object_type type);
 
-	inline cmzn_scene_picker *access()
+	inline cmzn_scenepicker *access()
 	{
 		++access_count;
 		return this;
@@ -96,22 +96,22 @@ public:
 	int addPickedElementsToGroup(cmzn_field_group_id group);
 
 	int addPickedNodesToGroup(cmzn_field_group_id group,
-		enum cmzn_scene_picker_object_type type);
+		enum cmzn_scenepicker_object_type type);
 
 };
 
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scene_picker);
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scenepicker);
 
-cmzn_scene_picker_id cmzn_scene_picker_create(cmzn_scenefiltermodule_id filter_module);
+cmzn_scenepicker_id cmzn_scenepicker_create(cmzn_scenefiltermodule_id filter_module);
 
-int cmzn_scene_picker_set_interaction_volume(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_set_interaction_volume(cmzn_scenepicker_id scenepicker,
 	struct Interaction_volume *interaction_volume);
 
-int cmzn_scene_picker_add_picked_data_to_group(cmzn_scene_picker_id scene_picker,
+int cmzn_scenepicker_add_picked_data_to_group(cmzn_scenepicker_id scenepicker,
 	cmzn_field_group_id group);
 
-cmzn_graphics_id cmzn_scene_picker_get_nearest_data_graphics(cmzn_scene_picker_id scene_picker);
+cmzn_graphics_id cmzn_scenepicker_get_nearest_data_graphics(cmzn_scenepicker_id scenepicker);
 
-cmzn_node_id cmzn_scene_picker_get_nearest_data(cmzn_scene_picker_id scene_picker);
+cmzn_node_id cmzn_scenepicker_get_nearest_data(cmzn_scenepicker_id scenepicker);
 
 #endif /* (SCENE_PICKER_HPP) */

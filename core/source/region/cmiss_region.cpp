@@ -1092,22 +1092,18 @@ int cmzn_region_remove_child(struct cmzn_region *region,
 	return (return_code);
 }
 
-int cmzn_region_contains_subregion(struct cmzn_region *region,
+bool cmzn_region_contains_subregion(struct cmzn_region *region,
 	struct cmzn_region *subregion)
 {
-	int return_code = 0;
 	if (region && subregion)
 	{
 		do
 		{
 			if (subregion == region)
-			{
-				return_code = 1;
-				break;
-			}
-		} while (NULL != (subregion = subregion->parent));
+				return true;
+		} while (0 != (subregion = subregion->parent));
 	}
-	return (return_code);
+	return false;
 }
 
 struct cmzn_region *cmzn_region_find_child_by_name(

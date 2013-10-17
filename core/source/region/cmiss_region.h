@@ -302,16 +302,6 @@ int cmzn_region_remove_child(struct cmzn_region *region,
 	struct cmzn_region *old_child);
 
 /***************************************************************************//**
- * Returns true if region is or contains the subregion.
- *
- * @param region  The region being tested as container.
- * @param subregion  The region being tested for containment.
- * @return  1 if this region is or contains subregion, 0 if not.
- */
-int cmzn_region_contains_subregion(struct cmzn_region *region,
-	struct cmzn_region *subregion);
-
-/***************************************************************************//**
  * Returns a reference to the child region with supplied name, if any.
  *
  * @param region  The region to search.

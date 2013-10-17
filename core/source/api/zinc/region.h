@@ -211,9 +211,9 @@ ZINC_API int cmzn_region_remove_child(cmzn_region_id region,
  *
  * @param region  The region being tested as container.
  * @param subregion  The region being tested for containment.
- * @return  1 if this region is or contains subregion, 0 if not.
+ * @return  Boolean true if this region is or contains subregion, otherwise false.
  */
-ZINC_API int cmzn_region_contains_subregion(cmzn_region_id region,
+ZINC_API bool cmzn_region_contains_subregion(cmzn_region_id region,
 	cmzn_region_id subregion);
 
 /**

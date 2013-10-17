@@ -220,7 +220,7 @@ public:
 			return (return_code);
 		};
 
-		virtual int isEmpty() const
+		virtual bool isEmpty() const
 		{
 			return object_map.empty();
 		}
@@ -356,15 +356,16 @@ public:
 
 		inline int addObject(FE_element *object)
 		{
-			if (isElementCompatible(object) &&
-				(!IS_OBJECT_IN_LIST(FE_element)(object, object_list)) &&
-				ADD_OBJECT_TO_LIST(FE_element)(object, object_list))
+			if (isElementCompatible(object))
 			{
+				if (IS_OBJECT_IN_LIST(FE_element)(object, object_list))
+					return CMZN_ERROR_GENERAL;
+				ADD_OBJECT_TO_LIST(FE_element)(object, object_list);
 				change_detail.changeAdd();
 				update();
-				return 1;
+				return CMZN_OK;
 			}
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		};
 
 		inline int removeObject(FE_element *object)
@@ -381,9 +382,9 @@ public:
 					change_detail.changeRemove();
 				}
 				update();
-				return 1;
+				return CMZN_OK;
 			}
-			return 0;
+			return CMZN_ERROR_GENERAL;
 		};
 
 		/** remove all elements for which conditional_field is true */
@@ -397,22 +398,12 @@ public:
 				change_detail.changeClear();
 				update();
 			}
-			return 1;
+			return CMZN_OK;
 		};
 
-		int containsObject(FE_element *object)
+		bool containsObject(FE_element *object)
 		{
-			int return_code = 0;
-			if (IS_OBJECT_IN_LIST(FE_element)(object, object_list))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				return_code = 0;
-			}
-
-			return (return_code);
+			return (0 != IS_OBJECT_IN_LIST(FE_element)(object, object_list));
 		};
 
 		cmzn_elementiterator_id createIterator()
@@ -434,12 +425,11 @@ public:
 			return NUMBER_IN_LIST(FE_element)(object_list);
 		}
 
-		virtual int isEmpty() const
+		virtual bool isEmpty() const
 		{
 			if (NUMBER_IN_LIST(FE_element)(object_list))
-				return 0;
-			else
-				return 1;
+				return false;
+			return true;
 		}
 
 		virtual int isIdentifierInList(int identifier)
@@ -508,7 +498,7 @@ public:
 				cmzn_element_id element = element_xi_location->get_element();
 				if (cmzn_element_get_dimension(element) == dimension)
 				{
-					valueCache.values[0] = containsObject(element);
+					valueCache.values[0] = this->containsObject(element) ? 1 : 0;
 				}
 				else
 				{
@@ -625,15 +615,16 @@ public:
 
 		inline int addObject(FE_node *object)
 		{
-			if (isNodeCompatible(object) &&
-				(!IS_OBJECT_IN_LIST(FE_node)(object, object_list)) &&
-				ADD_OBJECT_TO_LIST(FE_node)(object, object_list))
+			if (isNodeCompatible(object))
 			{
+				if (IS_OBJECT_IN_LIST(FE_node)(object, object_list))
+					return CMZN_ERROR_GENERAL;
+				ADD_OBJECT_TO_LIST(FE_node)(object, object_list);
 				change_detail.changeAdd();
 				update();
-				return 1;
+				return CMZN_OK;
 			}
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		};
 
 		inline int removeObject(FE_node *object)
@@ -650,9 +641,9 @@ public:
 					change_detail.changeRemove();
 				}
 				update();
-				return 1;
+				return CMZN_OK;
 			}
-			return 0;
+			return CMZN_ERROR_GENERAL;
 		};
 
 		/** remove all nodes for which conditional_field is true */
@@ -666,12 +657,12 @@ public:
 				change_detail.changeClear();
 				update();
 			}
-			return 1;
+			return CMZN_OK;
 		};
 
-		int containsObject(FE_node *object)
+		bool containsObject(FE_node *object)
 		{
-			return IS_OBJECT_IN_LIST(FE_node)(object, object_list);
+			return (0 != IS_OBJECT_IN_LIST(FE_node)(object, object_list));
 		};
 
 		cmzn_nodeiterator_id createIterator()
@@ -690,12 +681,11 @@ public:
 			return NUMBER_IN_LIST(FE_node)(object_list);
 		}
 
-		virtual int isEmpty() const
+		virtual bool isEmpty() const
 		{
 			if (NUMBER_IN_LIST(FE_node)(object_list))
-				return 0;
-			else
-				return 1;
+				return false;
+			return true;
 		}
 
 		virtual int isIdentifierInList(int identifier)
@@ -762,7 +752,7 @@ public:
 			{
 				RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
 				cmzn_node_id node = node_location->get_node();
-				valueCache.values[0] = containsObject(node);
+				valueCache.values[0] = this->containsObject(node) ? 1 : 0;
 				return 1;
 			}
 			return 0;

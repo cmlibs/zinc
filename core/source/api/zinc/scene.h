@@ -157,15 +157,16 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
 	cmzn_scene_id scene);
 
 /**
- * Return a handle to selection handler for this scene. User can add and
- * remove callback functions of the selection handler. The callback functions
+ * Return a handle to selection notifier for this scene. User can add and
+ * remove callback functions from the selection notifier. The callback functions
  * will be called when selection on the scene has changed. Please see
- * selection.h for more detail
+ * selection.h for more details.
  *
  * @param scene  Handle to a scene object.
- * @return  selection handler of this scene if successful, otherwise NULL.
+ * @return  On success, handle to selection notifier of this scene, otherwise
+ * NULL. Up to caller to destroy handle.
  */
-ZINC_API cmzn_selection_handler_id cmzn_scene_create_selection_handler(
+ZINC_API cmzn_selectionnotifier_id cmzn_scene_create_selectionnotifier(
 	cmzn_scene_id scene);
 
 /**
@@ -231,13 +232,11 @@ ZINC_API cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 
 /**
- * Get and return an accessed handle to the selection group of scene.
- * This function will only return selection group that is still being managed.
- * Caller must destroy the reference to the handler.
+ * Get the selection group for the scene, if any.
  *
- * @param scene  pointer to the scene.
- *
- * @return Return selection group if successfully otherwise null.
+ * @param scene  The scene to query.
+ * @return  Handle to selection group or NULL if none or error. Up to caller to
+ * destroy returned handle.
  */
 ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene);
 
@@ -250,8 +249,8 @@ ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene)
  * Selection field set in the scene using this function will not have its
  * access count increased.
  *
- * @param scene  pointer to the scene.
- * @param selection_field  selection field to be set for this group.
+ * @param scene  The scene to modify.
+ * @param selection_field  Group field to be used as the selection.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_scene_set_selection_group(cmzn_scene_id scene,
@@ -341,7 +340,7 @@ ZINC_API int cmzn_scene_remove_graphics(cmzn_scene_id scene,
  * @param scene  Scene to create the scene picker for.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API cmzn_scene_picker_id cmzn_scene_create_picker(cmzn_scene_id scene);
+ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
 
 #ifdef __cplusplus
 }

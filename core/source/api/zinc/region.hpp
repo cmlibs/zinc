@@ -169,7 +169,7 @@ public:
 		return Region(cmzn_region_find_subregion_at_path(id, path));
 	}
 
-	int containsSubregion(Region& subregion)
+	bool containsSubregion(Region& subregion)
 	{
 		return cmzn_region_contains_subregion(id, subregion.id);
 	}
