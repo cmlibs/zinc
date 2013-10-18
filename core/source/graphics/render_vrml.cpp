@@ -608,7 +608,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
 		char **label;
 		ZnReal a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
-			bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, f0, f1, j1, j2, j3,
+			bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, j1, j2, j3,
 			c_magnitude, s1, s2, s3, x, y, z;
 		int i, j, number_of_skew_glyph_axes, skewed_axes;
 		struct Graphical_material *material_copy;
@@ -660,11 +660,9 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #Pointset\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMZN_GLYPH_LINE) && (
-			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE) ||
-			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR)))
+		else if ((glyph_type == CMZN_GLYPH_LINE) &&
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
 		{
-			const ZnReal f = (glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR) ? -1.0 : 0.0;
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
 			if (material)
@@ -685,19 +683,23 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"      point [\n");
 			for (i=0;i<number_of_points;i++)
 			{
-				f0 = f*(*scale)[0];
-				x = (*point)[0] + f0*(*axis1)[0];
-				y = (*point)[1] + f0*(*axis1)[1];
-				z = (*point)[2] + f0*(*axis1)[2];
+				resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+					glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+					*point, *axis1, *axis2, *axis3, *scale,
+					temp_point, temp_axis1, temp_axis2, temp_axis3);
+				x = temp_point[0];
+				y = temp_point[1];
+				z = temp_point[2];
 				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
-				f1 = (*scale)[0];
-				x = (*point)[0] + f1*(*axis1)[0];
-				y = (*point)[1] + f1*(*axis1)[1];
-				z = (*point)[2] + f1*(*axis1)[2];
+				x = temp_point[0] + temp_axis1[0];
+				y = temp_point[1] + temp_axis1[1];
+				z = temp_point[2] + temp_axis1[2];
 				fprintf(vrml_file,"        %f %f %f,\n",x,y,z);
 				point++;
-				scale++;
 				axis1++;
+				axis2++;
+				axis3++;
+				scale++;
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
