@@ -16476,7 +16476,7 @@ Returns the type of mapping used by <element_field_component>.
  * will be the case for 'can be merged' code, but not for determining if field
  * headers have to change in output files.
  */
-static int FE_element_field_components_match(
+static bool FE_element_field_components_match(
 	struct FE_element_field_component *component_1,
 	struct FE_element_node_scale_field_info *info_1,
 	struct LIST(FE_node) *global_node_list1,
@@ -16484,116 +16484,112 @@ static int FE_element_field_components_match(
 	struct FE_element_node_scale_field_info *info_2,
 	int differences_are_errors)
 {
-	int return_code = 1;
 	if (component_1 && info_1 && component_2 && info_2)
 	{
-		if ((component_1->type == component_2->type) &&
-			(component_1->basis == component_2->basis) &&
-			(component_1->modify == component_2->modify) &&
-			(component_1->get_scale_factor_set() == component_2->get_scale_factor_set()))
+		if ((component_1->type != component_2->type) ||
+			(component_1->basis != component_2->basis) ||
+			(component_1->modify != component_2->modify))
 		{
-			switch (component_1->type)
+			if (differences_are_errors)
 			{
-				case STANDARD_NODE_TO_ELEMENT_MAP:
+				display_message(ERROR_MESSAGE,
+					"FE_element_field_components_match.  Inconsistent type or basis");
+			}
+			return false;
+		}
+
+		cmzn_mesh_scale_factor_set *scale_factor_set1 = component_1->get_scale_factor_set();
+		cmzn_mesh_scale_factor_set *scale_factor_set2 = component_2->get_scale_factor_set();
+		// allow scale factor set to match by name to merge from other region
+		if (((scale_factor_set1) && (!scale_factor_set2)) ||
+			((!scale_factor_set1) && (scale_factor_set2)) ||
+			(scale_factor_set1 && (scale_factor_set1 != scale_factor_set2) &&
+				(0 != strcmp(scale_factor_set1->getName(), scale_factor_set2->getName()))))
+		{
+			if (differences_are_errors)
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_element_field_components_match.  Different scale factor sets");
+			}
+			return false;
+		}
+
+		switch (component_1->type)
+		{
+			case STANDARD_NODE_TO_ELEMENT_MAP:
+			{
+				int j, k, *scale_factor_index_1, *scale_factor_index_2,
+					*value_index_1, *value_index_2;
+				struct FE_node *node1, *node2;
+				struct Standard_node_to_element_map **standard_node_map_1,
+					**standard_node_map_2;
+
+				// since scale factor indices are absolute in the element
+				// need to find position of scale factor set in source
+				// and merged data. Future: make indices relative to set!
+				int scale_factor_offset = 0;
+				int number_of_scale_factors1 = 0;
+				int number_of_scale_factors2 = 0;
+				if (scale_factor_set1)
 				{
-					int j, k, *scale_factor_index_1, *scale_factor_index_2,
-						*value_index_1, *value_index_2;
-					struct FE_node *node1, *node2;
-					struct Standard_node_to_element_map **standard_node_map_1,
-						**standard_node_map_2;
+					int scale_factor_set_offset1 = info_1->getScaleFactorSetOffset(
+						component_1->get_scale_factor_set(), number_of_scale_factors1);
+					int scale_factor_set_offset2 = info_2->getScaleFactorSetOffset(
+						component_2->get_scale_factor_set(), number_of_scale_factors2);
+					scale_factor_offset = scale_factor_set_offset2 - scale_factor_set_offset1;
+				}
+				if (number_of_scale_factors1 != number_of_scale_factors2)
+				{
+					if (differences_are_errors)
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_components_match.  Different numbers of scale factors in sets");
+					}
+					return false;
+				}
 
-					cmzn_mesh_scale_factor_set *scale_factor_set1 = component_1->get_scale_factor_set();
-					cmzn_mesh_scale_factor_set *scale_factor_set2 = component_2->get_scale_factor_set();
-					if (((scale_factor_set1) && (!scale_factor_set2)) ||
-						((!scale_factor_set1) && (scale_factor_set2)) ||
-						(scale_factor_set1 && (scale_factor_set1 != scale_factor_set2) &&
-							(0 != strcmp(scale_factor_set1->getName(), scale_factor_set2->getName()))))
+				if (((j = component_1->map.standard_node_based.number_of_nodes) ==
+					component_2->map.standard_node_based.number_of_nodes) &&
+					(standard_node_map_1 =
+						component_1->map.standard_node_based.node_to_element_maps) &&
+					(standard_node_map_2 =
+						component_2->map.standard_node_based.node_to_element_maps))
+				{
+					/* check each standard node to element map */
+					while (j > 0)
 					{
-						if (differences_are_errors)
+						if ((*standard_node_map_1) && (*standard_node_map_2) &&
+							(node1 = (info_1->nodes)[(*standard_node_map_1)->node_index]) &&
+							(node2 = (info_2->nodes)[(*standard_node_map_2)->node_index]) &&
+							(((!global_node_list1) && (node1 == node2)) ||
+								(global_node_list1 && (node2 ==
+									FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
+										get_FE_node_identifier(node1), global_node_list1)))) &&
+							((k = (*standard_node_map_1)->number_of_nodal_values) ==
+								(*standard_node_map_2)->number_of_nodal_values) &&
+							(value_index_1 =
+								(*standard_node_map_1)->nodal_value_indices) &&
+							(value_index_2 =
+								(*standard_node_map_2)->nodal_value_indices) &&
+							(scale_factor_index_1 =
+								(*standard_node_map_1)->scale_factor_indices) &&
+							(scale_factor_index_2 =
+								(*standard_node_map_2)->scale_factor_indices))
 						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  Different scale factor sets");
-						}
-						return 0;
-					}
-					// since scale factor indices are absolute in the element
-					// need to find position of scale factor set in source
-					// and merged data. Future: make indices relative to set!
-					int scale_factor_offset = 0;
-					int number_of_scale_factors1 = 0;
-					int number_of_scale_factors2 = 0;
-					if (scale_factor_set1)
-					{
-						int scale_factor_set_offset1 = info_1->getScaleFactorSetOffset(
-							component_1->get_scale_factor_set(), number_of_scale_factors1);
-						int scale_factor_set_offset2 = info_2->getScaleFactorSetOffset(
-							component_2->get_scale_factor_set(), number_of_scale_factors2);
-						scale_factor_offset = scale_factor_set_offset2 - scale_factor_set_offset1;
-					}
-					if (number_of_scale_factors1 != number_of_scale_factors2)
-					{
-						if (differences_are_errors)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  Different numbers of scale factors in sets");
-						}
-						return 0;
-					}
-
-					if (((j = component_1->map.standard_node_based.number_of_nodes) ==
-						component_2->map.standard_node_based.number_of_nodes) &&
-						(standard_node_map_1 =
-							component_1->map.standard_node_based.node_to_element_maps) &&
-						(standard_node_map_2 =
-							component_2->map.standard_node_based.node_to_element_maps))
-					{
-						/* check each standard node to element map */
-						while (return_code && (j > 0))
-						{
-							if ((*standard_node_map_1) && (*standard_node_map_2) &&
-								(node1 = (info_1->nodes)[(*standard_node_map_1)->node_index]) &&
-								(node2 = (info_2->nodes)[(*standard_node_map_2)->node_index]) &&
-								(((!global_node_list1) && (node1 == node2)) ||
-									(global_node_list1 && (node2 ==
-										FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-											get_FE_node_identifier(node1), global_node_list1)))) &&
-								((k = (*standard_node_map_1)->number_of_nodal_values) ==
-									(*standard_node_map_2)->number_of_nodal_values) &&
-								(value_index_1 =
-									(*standard_node_map_1)->nodal_value_indices) &&
-								(value_index_2 =
-									(*standard_node_map_2)->nodal_value_indices) &&
-								(scale_factor_index_1 =
-									(*standard_node_map_1)->scale_factor_indices) &&
-								(scale_factor_index_2 =
-									(*standard_node_map_2)->scale_factor_indices))
+							while ((k > 0) && (*value_index_1 == *value_index_2) &&
+								((*scale_factor_index_1) == ((*scale_factor_index_2) + scale_factor_offset)))
 							{
-								while (return_code && (k > 0) &&
-									(*value_index_1 == *value_index_2) &&
-									((*scale_factor_index_1) == ((*scale_factor_index_2) + scale_factor_offset)))
-								{
-									++value_index_1;
-									++value_index_2;
-									++scale_factor_index_1;
-									++scale_factor_index_2;
-									--k;
-								}
-								if (k <= 0)
-								{
-									++standard_node_map_1;
-									++standard_node_map_2;
-									--j;
-								}
-								else
-								{
-									if (differences_are_errors)
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_field_components_match.  "
-											"Inconsistent indexes in standard node to element map");
-									}
-									return_code = 0;
-								}
+								++value_index_1;
+								++value_index_2;
+								++scale_factor_index_1;
+								++scale_factor_index_2;
+								--k;
+							}
+							if (k <= 0)
+							{
+								++standard_node_map_1;
+								++standard_node_map_2;
+								--j;
 							}
 							else
 							{
@@ -16601,95 +16597,105 @@ static int FE_element_field_components_match(
 								{
 									display_message(ERROR_MESSAGE,
 										"FE_element_field_components_match.  "
-										"Inconsistent standard node to element maps");
+										"Inconsistent indexes in standard node to element map");
 								}
-								return_code = 0;
+								return false;
 							}
 						}
-					}
-					else
-					{
-						if (differences_are_errors)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  "
-								"Different or invalid standard node to element maps");
-						}
-						return_code = 0;
-					}
-				} break;
-				case GENERAL_ELEMENT_MAP:
-				{
-					int numberOfMaps = component_1->map.general_map_based.number_of_maps;
-					if (numberOfMaps != component_2->map.general_map_based.number_of_maps)
-					{
-						if (differences_are_errors)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  Different numbers of element DOF maps");
-						}
-						return 0;
-					}
-					ElementDOFMapMatchCache cache(component_1->get_scale_factor_set(), info_1, info_2, global_node_list1);
-					if (cache.numberOfScaleFactors1 != cache.numberOfScaleFactors2)
-					{
-						if (differences_are_errors)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  Different numbers of scale factors for basis");
-						}
-						return 0;
-					}
-					// could compare scale factors here, otherwise make them overwritable
-					ElementDOFMap **maps1 = component_1->map.general_map_based.maps;
-					ElementDOFMap **maps2 = component_2->map.general_map_based.maps;
-					for (int j = 0; j < numberOfMaps; ++j)
-					{
-						if (!maps1[j]->matchesWithInfo(maps2[j], cache))
+						else
 						{
 							if (differences_are_errors)
 							{
 								display_message(ERROR_MESSAGE,
-									"FE_element_field_components_match.  Element DOF map %d is different", j + 1);
+									"FE_element_field_components_match.  "
+									"Inconsistent standard node to element maps");
 							}
-							return 0;
+							return false;
 						}
 					}
-				} break;
-				case ELEMENT_GRID_MAP:
+				}
+				else
 				{
-					int *number_in_xi_1 = component_1->map.element_grid_based.number_in_xi;
-					int *number_in_xi_2 = component_2->map.element_grid_based.number_in_xi;
-					int j = 0;
-					FE_basis_get_dimension(component_1->basis, &j);
-					int number_of_values = 1;
-					while (j && (*number_in_xi_1 == *number_in_xi_2))
+					if (differences_are_errors)
 					{
-						number_of_values *= (*number_in_xi_1) + 1;
-						j--;
-						number_in_xi_1++;
-						number_in_xi_2++;
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_components_match.  "
+							"Different or invalid standard node to element maps");
 					}
-					if (j)
+					return false;
+				}
+			} break;
+			case GENERAL_ELEMENT_MAP:
+			{
+				int numberOfMaps = component_1->map.general_map_based.number_of_maps;
+				if (numberOfMaps != component_2->map.general_map_based.number_of_maps)
+				{
+					if (differences_are_errors)
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_components_match.  Different numbers of element DOF maps");
+					}
+					return false;
+				}
+				ElementDOFMapMatchCache cache(component_1->get_scale_factor_set(), info_1, info_2, global_node_list1);
+				if (cache.numberOfScaleFactors1 != cache.numberOfScaleFactors2)
+				{
+					if (differences_are_errors)
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_components_match.  Different numbers of scale factors for basis");
+					}
+					return false;
+				}
+				// could compare scale factors here, otherwise make them overwritable
+				ElementDOFMap **maps1 = component_1->map.general_map_based.maps;
+				ElementDOFMap **maps2 = component_2->map.general_map_based.maps;
+				for (int j = 0; j < numberOfMaps; ++j)
+				{
+					if (!maps1[j]->matchesWithInfo(maps2[j], cache))
 					{
 						if (differences_are_errors)
 						{
 							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  Inconsistent grids");
+								"FE_element_field_components_match.  Element DOF map %d is different", j + 1);
 						}
-						return_code = 0;
+						return false;
 					}
-				} break;
-			}
+				}
+			} break;
+			case ELEMENT_GRID_MAP:
+			{
+				int *number_in_xi_1 = component_1->map.element_grid_based.number_in_xi;
+				int *number_in_xi_2 = component_2->map.element_grid_based.number_in_xi;
+				int j = 0;
+				FE_basis_get_dimension(component_1->basis, &j);
+				int number_of_values = 1;
+				while (j && (*number_in_xi_1 == *number_in_xi_2))
+				{
+					number_of_values *= (*number_in_xi_1) + 1;
+					j--;
+					number_in_xi_1++;
+					number_in_xi_2++;
+				}
+				if (j)
+				{
+					if (differences_are_errors)
+					{
+						display_message(ERROR_MESSAGE,
+							"FE_element_field_components_match.  Inconsistent grids");
+					}
+					return false;
+				}
+			} break;
 		}
+		return true; // matches!
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_field_components_match.  Invalid argument(s)");
-		return_code = 0;
 	}
-	return (return_code);
+	return false;
 }
 
 struct FE_element_field *CREATE(FE_element_field)(struct FE_field *field)
