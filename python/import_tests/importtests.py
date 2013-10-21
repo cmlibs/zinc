@@ -23,8 +23,8 @@ class ImportTestCase(unittest.TestCase):
     def testImportGraphics(self):
         from opencmiss.zinc import graphics
     
-    def testImportGraphicsMaterial(self):
-        from opencmiss.zinc import graphicsmaterial
+    def testImportMaterial(self):
+        from opencmiss.zinc import material
     
     def testImportNode(self):
         from opencmiss.zinc import node
