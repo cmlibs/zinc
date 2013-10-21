@@ -40,7 +40,7 @@
 
 %module(package="opencmiss.zinc") timenotifier
 
-%extend OpenCMISS::Zinc::TimeNotifier {
+%extend OpenCMISS::Zinc::Timenotifier {
 
     int addCallback(PyObject *callbackObject)
     {
@@ -52,7 +52,7 @@
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */
-        return cmzn_time_notifier_add_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+        return cmzn_timenotifier_add_callback(($self)->getId(),callbackToPython, (void *)my_callback);
     }
 
     int removeCallback(PyObject *callbackObject)
@@ -64,7 +64,7 @@
         }
 
         Py_XDECREF(callbackObject);         /* Add a reference to new callback */
-        return cmzn_time_notifier_remove_callback(($self)->getId(),callbackToPython,
+        return cmzn_timenotifier_remove_callback(($self)->getId(),callbackToPython,
             (void *)callbackObject);
     }
 }
@@ -72,7 +72,7 @@
 %{
 #include "zinc/timenotifier.hpp"
 
-struct TimeNotifierPyDataObject
+struct TimenotifierPyDataObject
 {
     PyObject *callbackObject;
     PyObject *userObject;

@@ -39,7 +39,7 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-%module(package="opencmiss.zinc") graphicsmaterial
+%module(package="opencmiss.zinc") material
 
 %include "doublevaluesarraytypemap.i"
 
@@ -47,8 +47,8 @@
 %import "font.i"
 
 %{
-#include "zinc/graphicsmaterial.hpp"
+#include "zinc/material.hpp"
 #include "zinc/fieldconditional.hpp"
 %}
 
-%include "zinc/graphicsmaterial.hpp"
+%include "zinc/material.hpp"

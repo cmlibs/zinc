@@ -40,7 +40,7 @@
 
 %module(package="opencmiss.zinc") glyph
 
-%import "graphicsmaterial.i"
+%import "material.i"
 %import "spectrum.i"
 
 %{

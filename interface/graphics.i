@@ -45,7 +45,7 @@
 %import "field.i"
 %import "tessellation.i"
 %import "glyph.i"
-%import "graphicsmaterial.i"
+%import "material.i"
 %import "scenecoordinatesystem.i"
 %import "spectrum.i"
 %import "font.i"
