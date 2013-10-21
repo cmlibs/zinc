@@ -1554,8 +1554,7 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 						cmzn_scene_add_graphics(scene, same_graphics, position);
 					}
 					/* modify same_graphics to match new ones */
-					return_code = cmzn_scene_modify_graphics(scene,
-						same_graphics, graphics);
+					return_code = 1;
 					if (!cmzn_graphics_get_scene_private(same_graphics))
 						cmzn_graphics_set_scene_private(same_graphics, scene);
 					DEACCESS(cmzn_graphics)(&same_graphics);
