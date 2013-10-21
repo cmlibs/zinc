@@ -22,7 +22,7 @@
 #include "zinc/font.h"
 #include "zinc/glyph.h"
 #include "zinc/graphics.h"
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "zinc/node.h"
 #include "zinc/scenefilter.h"
 #include "zinc/status.h"
@@ -379,15 +379,15 @@ int DESTROY(cmzn_graphics)(
 		/* appearance graphics */
 		if (graphics->material)
 		{
-			cmzn_graphics_material_destroy(&(graphics->material));
+			cmzn_material_destroy(&(graphics->material));
 		}
 		if (graphics->secondary_material)
 		{
-			cmzn_graphics_material_destroy(&(graphics->secondary_material));
+			cmzn_material_destroy(&(graphics->secondary_material));
 		}
 		if (graphics->selected_material)
 		{
-			cmzn_graphics_material_destroy(&(graphics->selected_material));
+			cmzn_material_destroy(&(graphics->selected_material));
 		}
 		if (graphics->data_field)
 		{
@@ -1745,7 +1745,7 @@ int cmzn_graphics_update_graphics_object_trivial(struct cmzn_graphics *graphics)
 	return return_code;
 }
 
-cmzn_graphics_material_id cmzn_graphics_get_material(
+cmzn_material_id cmzn_graphics_get_material(
 	cmzn_graphics_id graphics)
 {
 	if (graphics)
@@ -1756,7 +1756,7 @@ cmzn_graphics_material_id cmzn_graphics_get_material(
 }
 
 int cmzn_graphics_set_material(cmzn_graphics_id graphics,
-	cmzn_graphics_material_id material)
+	cmzn_material_id material)
 {
 	if (graphics && material)
 	{
@@ -1782,7 +1782,7 @@ struct Graphical_material *cmzn_graphics_get_selected_material(
 }
 
 int cmzn_graphics_set_selected_material(cmzn_graphics_id graphics,
-	cmzn_graphics_material_id selected_material)
+	cmzn_material_id selected_material)
 {
 	if (graphics && selected_material)
 	{
@@ -5279,7 +5279,7 @@ int cmzn_graphics_glyph_change(
 	return 0;
 }
 
-int cmzn_graphics_material_change(
+int cmzn_material_change(
 	struct cmzn_graphics *graphics, void *material_manager_message_void)
 {
 	int return_code;
@@ -5325,7 +5325,7 @@ int cmzn_graphics_material_change(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_material_change.  Invalid argument(s)");
+			"cmzn_material_change.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return return_code;

@@ -562,7 +562,7 @@ struct GT_object *create_GT_object_sphere(const char *name,int number_of_segment
 	return (glyph);
 }
 
-GT_object *cmzn_glyph_circular::getGraphicsObject(cmzn_tessellation *tessellation, cmzn_graphics_material *, cmzn_font *)
+GT_object *cmzn_glyph_circular::getGraphicsObject(cmzn_tessellation *tessellation, cmzn_material *, cmzn_font *)
 {
 	const int circleDivisions = cmzn_tessellation_get_circle_divisions(tessellation);
 	const size_t size = this->objects.size();

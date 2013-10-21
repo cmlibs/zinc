@@ -15,7 +15,7 @@
 #include "types/contextid.h"
 #include "types/fontid.h"
 #include "types/glyphid.h"
-#include "types/graphicsmaterialid.h"
+#include "types/materialid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
 #include "types/sceneviewerid.h"
@@ -112,7 +112,7 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
  * @return  the material pacakage in context if successfully called,
  *    otherwise NULL.
  */
-ZINC_API cmzn_graphics_material_module_id cmzn_context_get_material_module(
+ZINC_API cmzn_materialmodule_id cmzn_context_get_materialmodule(
 	cmzn_context_id context);
 
 /**

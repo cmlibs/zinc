@@ -16,7 +16,7 @@ FILE : scene.cpp
 #include "zinc/core.h"
 #include "zinc/glyph.h"
 #include "zinc/graphics.h"
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "zinc/node.h"
 #include "zinc/scenepicker.h"
 #include "zinc/scene.h"
@@ -724,16 +724,16 @@ int cmzn_scene_set_minimum_graphics_defaults(struct cmzn_scene *scene,
 			cmzn_graphicspointattributes_destroy(&point_attributes);
 		}
 
-		struct cmzn_graphics_material_module *material_module = cmzn_graphics_module_get_material_module(scene->graphics_module);
-		cmzn_graphics_material *default_material =
-			cmzn_graphics_material_module_get_default_material(material_module);
+		struct cmzn_materialmodule *materialmodule = cmzn_graphics_module_get_materialmodule(scene->graphics_module);
+		cmzn_material *default_material =
+			cmzn_materialmodule_get_default_material(materialmodule);
 		cmzn_graphics_set_material(graphics, default_material);
-		cmzn_graphics_material_destroy(&default_material);
-		cmzn_graphics_material *default_selected =
-			cmzn_graphics_material_module_get_default_selected_material(material_module);
+		cmzn_material_destroy(&default_material);
+		cmzn_material *default_selected =
+			cmzn_materialmodule_get_default_selected_material(materialmodule);
 		cmzn_graphics_set_selected_material(graphics, default_selected);
-		cmzn_graphics_material_destroy(&default_selected);
-		cmzn_graphics_material_module_destroy(&material_module);
+		cmzn_material_destroy(&default_selected);
+		cmzn_materialmodule_destroy(&materialmodule);
 	}
 	else
 	{
@@ -1226,7 +1226,7 @@ void cmzn_scene_material_change(struct cmzn_scene *scene,
 	{
 		cmzn_scene_begin_change(scene);
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-			cmzn_graphics_material_change, (void *)manager_message,
+			cmzn_material_change, (void *)manager_message,
 			scene->list_of_graphics);
 		// inform child scenes of changes
 		cmzn_region *child = cmzn_region_get_first_child(scene->region);
@@ -1702,11 +1702,11 @@ int cmzn_scene_for_each_material(struct cmzn_scene *scene,
 	{
 		/* Could be smarter if there was a reduced number used by the
 			scene, however for now just do every material in the manager */
-		cmzn_graphics_material_module_id material_module =
-			cmzn_graphics_module_get_material_module(scene->graphics_module);
+		cmzn_materialmodule_id materialmodule =
+			cmzn_graphics_module_get_materialmodule(scene->graphics_module);
 		return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
-			iterator_function, user_data, cmzn_graphics_material_module_get_manager(material_module));
-		cmzn_graphics_material_module_destroy(&material_module);
+			iterator_function, user_data, cmzn_materialmodule_get_manager(materialmodule));
+		cmzn_materialmodule_destroy(&materialmodule);
 	}
 	else
 	{

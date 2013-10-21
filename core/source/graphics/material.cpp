@@ -34,7 +34,7 @@ return to direct rendering, as described with these routines.
 #include "zinc/zincconfigure.h"
 
 #include "zinc/fieldmodule.h"
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_image.h"
 #include "general/compare.h"
@@ -76,7 +76,7 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, cmzn_material_module, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, cmzn_materialmodule, void *);
 
 /*
 Module functions
@@ -3178,15 +3178,15 @@ Global functions
 */
 
 static int Graphical_material_remove_module_if_matching(struct Graphical_material *material,
-	void *material_module_void)
+	void *materialmodule_void)
 {
 	int return_code;
 
-	if (material && material_module_void)
+	if (material && materialmodule_void)
 	{
-		if (material->module == (struct cmzn_graphics_material_module *)material_module_void)
+		if (material->module == (struct cmzn_materialmodule *)materialmodule_void)
 		{
-			material->module = (struct cmzn_graphics_material_module *)NULL;
+			material->module = (struct cmzn_materialmodule *)NULL;
 		}
 		return_code = 1;
 	}
@@ -3200,19 +3200,19 @@ static int Graphical_material_remove_module_if_matching(struct Graphical_materia
 	return (return_code);
 }
 
-struct cmzn_graphics_material_module
+struct cmzn_materialmodule
 {
 
 private:
 
 	struct MANAGER(Graphical_material) *materialManager;
-	cmzn_graphics_material *defaultMaterial;
+	cmzn_material *defaultMaterial;
 	struct Graphical_material *defaultSelectedMaterial;
 	struct MANAGER(Spectrum) *spectrumManager;
 	struct LIST(Material_program) *materialProgramList;
 	int access_count;
 
-	cmzn_graphics_material_module() :
+	cmzn_materialmodule() :
 		materialManager(CREATE(MANAGER(Graphical_material))()),
 		defaultMaterial(0),
 		defaultSelectedMaterial(0),
@@ -3222,15 +3222,15 @@ private:
 	{
 	}
 
-	~cmzn_graphics_material_module()
+	~cmzn_materialmodule()
 	{
 		if (defaultMaterial)
 		{
-			cmzn_graphics_material_destroy(&defaultMaterial);
+			cmzn_material_destroy(&defaultMaterial);
 		}
 		if (defaultSelectedMaterial)
 		{
-			cmzn_graphics_material_destroy(&defaultSelectedMaterial);
+			cmzn_material_destroy(&defaultSelectedMaterial);
 		}
 		DESTROY(LIST(Material_program))(&materialProgramList);
 		/* Make sure each material no longer points at this module */
@@ -3242,27 +3242,27 @@ private:
 
 public:
 
-	static cmzn_graphics_material_module *create()
+	static cmzn_materialmodule *create()
 	{
-		return new cmzn_graphics_material_module();
+		return new cmzn_materialmodule();
 	}
 
-	cmzn_graphics_material_module *access()
+	cmzn_materialmodule *access()
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(cmzn_graphics_material_module* &material_module)
+	static int deaccess(cmzn_materialmodule* &materialmodule)
 	{
-		if (material_module)
+		if (materialmodule)
 		{
-			--(material_module->access_count);
-			if (material_module->access_count <= 0)
+			--(materialmodule->access_count);
+			if (materialmodule->access_count <= 0)
 			{
-				delete material_module;
+				delete materialmodule;
 			}
-			material_module = 0;
+			materialmodule = 0;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -3284,127 +3284,127 @@ public:
 		return spectrumManager;
 	}
 
-	struct MANAGER(cmzn_graphics_material) *getManager()
+	struct MANAGER(cmzn_material) *getManager()
 	{
 		return materialManager;
 	}
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(cmzn_graphics_material)(this->materialManager);
+		return MANAGER_BEGIN_CACHE(cmzn_material)(this->materialManager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(cmzn_graphics_material)(this->materialManager);
+		return MANAGER_END_CACHE(cmzn_material)(this->materialManager);
 	}
 
-	cmzn_graphics_material_id createMaterial()
+	cmzn_material_id createMaterial()
 	{
-		cmzn_graphics_material_id material = NULL;
+		cmzn_material_id material = NULL;
 		char temp_name[20];
-		int i = NUMBER_IN_MANAGER(cmzn_graphics_material)(this->materialManager);
+		int i = NUMBER_IN_MANAGER(cmzn_material)(this->materialManager);
 		do
 		{
 			i++;
 			sprintf(temp_name, "temp%d",i);
 		}
-		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_graphics_material,name)(temp_name,
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material,name)(temp_name,
 			this->materialManager));
-		material = cmzn_graphics_material_create_private();
-		cmzn_graphics_material_set_name(material, temp_name);
-		if (!ADD_OBJECT_TO_MANAGER(cmzn_graphics_material)(material, this->materialManager))
+		material = cmzn_material_create_private();
+		cmzn_material_set_name(material, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(cmzn_material)(material, this->materialManager))
 		{
-			cmzn_graphics_material_destroy(&material);
+			cmzn_material_destroy(&material);
 		}
 		material->module = this;
 		return material;
 	}
 
-	cmzn_graphics_material *findMaterialByName(const char *name)
+	cmzn_material *findMaterialByName(const char *name)
 	{
-		cmzn_graphics_material *material = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_graphics_material,name)(name,
+		cmzn_material *material = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material,name)(name,
 			this->materialManager);
 		if (material)
 		{
-			return cmzn_graphics_material_access(material);
+			return cmzn_material_access(material);
 		}
 		return 0;
 	}
 
-	cmzn_graphics_material *getDefaultMaterial()
+	cmzn_material *getDefaultMaterial()
 	{
 		if (this->defaultMaterial)
 		{
-			return cmzn_graphics_material_access(this->defaultMaterial);
+			return cmzn_material_access(this->defaultMaterial);
 		}
 		return 0;
 	}
 
-	int setDefaultMaterial(cmzn_graphics_material *material)
+	int setDefaultMaterial(cmzn_material *material)
 	{
-		REACCESS(cmzn_graphics_material)(&this->defaultMaterial, material);
+		REACCESS(cmzn_material)(&this->defaultMaterial, material);
 		return CMZN_OK;
 	}
 
-	cmzn_graphics_material *getDefaultSelectedMaterial()
+	cmzn_material *getDefaultSelectedMaterial()
 	{
 		if (this->defaultSelectedMaterial)
 		{
-			return cmzn_graphics_material_access(this->defaultSelectedMaterial);
+			return cmzn_material_access(this->defaultSelectedMaterial);
 		}
 		return 0;
 	}
 
-	int setDefaultSelectedMaterial(cmzn_graphics_material *material)
+	int setDefaultSelectedMaterial(cmzn_material *material)
 	{
-		REACCESS(cmzn_graphics_material)(&this->defaultSelectedMaterial, material);
+		REACCESS(cmzn_material)(&this->defaultSelectedMaterial, material);
 		return CMZN_OK;
 	}
 
 };
 
-cmzn_graphics_material_module_id cmzn_graphics_material_module_access(
-	cmzn_graphics_material_module_id material_module)
+cmzn_materialmodule_id cmzn_materialmodule_access(
+	cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->access();
+	if (materialmodule)
+		return materialmodule->access();
 	return 0;
 }
 
-int cmzn_graphics_material_module_destroy(cmzn_graphics_material_module_id *material_module_address)
+int cmzn_materialmodule_destroy(cmzn_materialmodule_id *materialmodule_address)
 {
-	if (material_module_address)
-		return cmzn_graphics_material_module::deaccess(*material_module_address);
+	if (materialmodule_address)
+		return cmzn_materialmodule::deaccess(*materialmodule_address);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_graphics_material_id cmzn_graphics_material_module_create_material(
-	cmzn_graphics_material_module_id material_module)
+cmzn_material_id cmzn_materialmodule_create_material(
+	cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->createMaterial();
+	if (materialmodule)
+		return materialmodule->createMaterial();
 	return 0;
 }
 
-struct MANAGER(cmzn_graphics_material) *cmzn_graphics_material_module_get_manager(
-	cmzn_graphics_material_module_id material_module)
+struct MANAGER(cmzn_material) *cmzn_materialmodule_get_manager(
+	cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->getManager();
+	if (materialmodule)
+		return materialmodule->getManager();
 	return 0;
 }
 
-struct MANAGER(Spectrum) *cmzn_graphics_material_module_get_spectrum_manager(
-	struct cmzn_graphics_material_module *material_module)
+struct MANAGER(Spectrum) *cmzn_materialmodule_get_spectrum_manager(
+	struct cmzn_materialmodule *materialmodule)
 {
-	if (material_module)
-		return material_module->getSpectrumManager();
+	if (materialmodule)
+		return materialmodule->getSpectrumManager();
 	return 0;
 }
 
-int cmzn_graphics_material_module_define_standard_materials(
-	cmzn_graphics_material_module_id material_module)
+int cmzn_materialmodule_define_standard_materials(
+	cmzn_materialmodule_id materialmodule)
 {
 	struct Startup_material_definition
 		startup_materials[] =
@@ -3539,36 +3539,36 @@ int cmzn_graphics_material_module_define_standard_materials(
 	int i, return_code;
 	int number_of_startup_materials = sizeof(startup_materials) /
 		sizeof(struct Startup_material_definition);
-	cmzn_graphics_material *material = 0;
+	cmzn_material *material = 0;
 
-	if (material_module)
+	if (materialmodule)
 	{
 		for (i = 0; i < number_of_startup_materials; i++)
 		{
 			material = NULL;
-			if (NULL != (material = cmzn_graphics_material_module_find_material_by_name(
-				material_module, startup_materials[i].name)))
+			if (NULL != (material = cmzn_materialmodule_find_material_by_name(
+				materialmodule, startup_materials[i].name)))
 			{
-				cmzn_graphics_material_destroy(&material);
+				cmzn_material_destroy(&material);
 			}
-			else if ((NULL != (material = cmzn_graphics_material_module_create_material(material_module))) &&
-				cmzn_graphics_material_set_name(material, startup_materials[i].name))
+			else if ((NULL != (material = cmzn_materialmodule_create_material(materialmodule))) &&
+				cmzn_material_set_name(material, startup_materials[i].name))
 			{
-				cmzn_graphics_material_set_attribute_real3(material,
-					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
-				cmzn_graphics_material_set_attribute_real3(material,
-					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
-				cmzn_graphics_material_set_attribute_real3(material,
-					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
-				cmzn_graphics_material_set_attribute_real3(material,
-					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
-				cmzn_graphics_material_set_attribute_real(material,
-					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
-				cmzn_graphics_material_set_attribute_real(material,
-					CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
-				cmzn_graphics_material_set_managed(material, true);
-				material->module = material_module;
-				cmzn_graphics_material_destroy(&material);
+				cmzn_material_set_attribute_real3(material,
+					CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &startup_materials[i].ambient[0]);
+				cmzn_material_set_attribute_real3(material,
+					CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &startup_materials[i].diffuse[0]);
+				cmzn_material_set_attribute_real3(material,
+					CMZN_MATERIAL_ATTRIBUTE_EMISSION, & startup_materials[i].emission[0]);
+				cmzn_material_set_attribute_real3(material,
+					CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &startup_materials[i].specular[0]);
+				cmzn_material_set_attribute_real(material,
+					CMZN_MATERIAL_ATTRIBUTE_ALPHA, startup_materials[i].alpha);
+				cmzn_material_set_attribute_real(material,
+					CMZN_MATERIAL_ATTRIBUTE_SHININESS, startup_materials[i].shininess);
+				cmzn_material_set_managed(material, true);
+				material->module = materialmodule;
+				cmzn_material_destroy(&material);
 			}
 		}
 
@@ -3577,76 +3577,76 @@ int cmzn_graphics_material_module_define_standard_materials(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_material_module_define_standard_materials.  Invalid argument(s)");
+			"cmzn_materialmodule_define_standard_materials.  Invalid argument(s)");
 		return_code = 0;
 	}
 
 	return return_code;
 }
 
-int cmzn_graphics_material_module_begin_change(cmzn_graphics_material_module_id material_module)
+int cmzn_materialmodule_begin_change(cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->beginChange();
+	if (materialmodule)
+		return materialmodule->beginChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_graphics_material_module_end_change(cmzn_graphics_material_module_id material_module)
+int cmzn_materialmodule_end_change(cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->endChange();
+	if (materialmodule)
+		return materialmodule->endChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_graphics_material_id cmzn_graphics_material_module_find_material_by_name(
-	cmzn_graphics_material_module_id material_module, const char *name)
+cmzn_material_id cmzn_materialmodule_find_material_by_name(
+	cmzn_materialmodule_id materialmodule, const char *name)
 {
-	if (material_module)
-		return material_module->findMaterialByName(name);
+	if (materialmodule)
+		return materialmodule->findMaterialByName(name);
    return 0;
 }
 
-cmzn_graphics_material_id cmzn_graphics_material_module_get_default_material(
-	cmzn_graphics_material_module_id material_module)
+cmzn_material_id cmzn_materialmodule_get_default_material(
+	cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->getDefaultMaterial();
+	if (materialmodule)
+		return materialmodule->getDefaultMaterial();
 	return 0;
 }
 
-int cmzn_graphics_material_module_set_default_material(
-	cmzn_graphics_material_module_id material_module,
-	cmzn_graphics_material_id material)
+int cmzn_materialmodule_set_default_material(
+	cmzn_materialmodule_id materialmodule,
+	cmzn_material_id material)
 {
-	if (material_module)
-		return material_module->setDefaultMaterial(material);
+	if (materialmodule)
+		return materialmodule->setDefaultMaterial(material);
 	return 0;
 }
 
-cmzn_graphics_material_id cmzn_graphics_material_module_get_default_selected_material(
-	cmzn_graphics_material_module_id material_module)
+cmzn_material_id cmzn_materialmodule_get_default_selected_material(
+	cmzn_materialmodule_id materialmodule)
 {
-	if (material_module)
-		return material_module->getDefaultSelectedMaterial();
+	if (materialmodule)
+		return materialmodule->getDefaultSelectedMaterial();
 	return 0;
 }
 
-int cmzn_graphics_material_module_set_default_selected_material(
-	cmzn_graphics_material_module_id material_module,
-	cmzn_graphics_material_id material)
+int cmzn_materialmodule_set_default_selected_material(
+	cmzn_materialmodule_id materialmodule,
+	cmzn_material_id material)
 {
-	if (material_module)
-		return material_module->setDefaultSelectedMaterial(material);
+	if (materialmodule)
+		return materialmodule->setDefaultSelectedMaterial(material);
 	return 0;
 }
 
-cmzn_graphics_material_module_id cmzn_graphics_material_module_create(
+cmzn_materialmodule_id cmzn_materialmodule_create(
 	struct MANAGER(Spectrum) *spectrum_manager)
 {
-	cmzn_graphics_material_module *material_module =
-		cmzn_graphics_material_module::create();
-	cmzn_graphics_material *defaultMaterial = 0, *defaultSelectedMaterial = 0;
-	material_module->setSpectrumManager(spectrum_manager);
+	cmzn_materialmodule *materialmodule =
+		cmzn_materialmodule::create();
+	cmzn_material *defaultMaterial = 0, *defaultSelectedMaterial = 0;
+	materialmodule->setSpectrumManager(spectrum_manager);
 	struct Material_definition
 	{
 		double ambient[3];
@@ -3670,54 +3670,54 @@ cmzn_graphics_material_module_id cmzn_graphics_material_module_create(
 		/*specular*/{ 0.00, 0.00, 0.00},
 		/*alpha*/1.0,
 		/*shininess*/0.0};
-	defaultMaterial = cmzn_graphics_material_module_create_material(
-		material_module);
-	cmzn_graphics_material_set_name(defaultMaterial, "default");
-	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
-	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
-	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
-	cmzn_graphics_material_set_attribute_real3(defaultMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
-	cmzn_graphics_material_set_attribute_real(defaultMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
-	cmzn_graphics_material_set_attribute_real(defaultMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
-	cmzn_graphics_material_set_managed(defaultMaterial, true);
-	defaultMaterial->module = material_module;
-	cmzn_graphics_material_module_set_default_material(
-		material_module, defaultMaterial);
-	cmzn_graphics_material_destroy(&defaultMaterial);
+	defaultMaterial = cmzn_materialmodule_create_material(
+		materialmodule);
+	cmzn_material_set_name(defaultMaterial, "default");
+	cmzn_material_set_attribute_real3(defaultMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &default_material.ambient[0]);
+	cmzn_material_set_attribute_real3(defaultMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &default_material.diffuse[0]);
+	cmzn_material_set_attribute_real3(defaultMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_EMISSION, &default_material.emission[0]);
+	cmzn_material_set_attribute_real3(defaultMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &default_material.specular[0]);
+	cmzn_material_set_attribute_real(defaultMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_ALPHA, default_material.alpha);
+	cmzn_material_set_attribute_real(defaultMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_SHININESS, default_material.shininess);
+	cmzn_material_set_managed(defaultMaterial, true);
+	defaultMaterial->module = materialmodule;
+	cmzn_materialmodule_set_default_material(
+		materialmodule, defaultMaterial);
+	cmzn_material_destroy(&defaultMaterial);
 
-	defaultSelectedMaterial = cmzn_graphics_material_module_create_material(
-		material_module);
-	cmzn_graphics_material_set_name(defaultSelectedMaterial, "default_selected");
-	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
-	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
-	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
-	cmzn_graphics_material_set_attribute_real3(defaultSelectedMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
-	cmzn_graphics_material_set_attribute_real(defaultSelectedMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
-	cmzn_graphics_material_set_attribute_real(defaultSelectedMaterial,
-		CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
-	cmzn_graphics_material_set_managed(defaultSelectedMaterial, true);
-	defaultSelectedMaterial->module = material_module;
-	cmzn_graphics_material_module_set_default_selected_material(
-		material_module, defaultSelectedMaterial);
-	cmzn_graphics_material_destroy(&defaultSelectedMaterial);
+	defaultSelectedMaterial = cmzn_materialmodule_create_material(
+		materialmodule);
+	cmzn_material_set_name(defaultSelectedMaterial, "default_selected");
+	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_AMBIENT, &default_selected.ambient[0]);
+	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE, &default_selected.diffuse[0]);
+	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_EMISSION, &default_selected.emission[0]);
+	cmzn_material_set_attribute_real3(defaultSelectedMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_SPECULAR, &default_selected.specular[0]);
+	cmzn_material_set_attribute_real(defaultSelectedMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_ALPHA, default_selected.alpha);
+	cmzn_material_set_attribute_real(defaultSelectedMaterial,
+		CMZN_MATERIAL_ATTRIBUTE_SHININESS, default_selected.shininess);
+	cmzn_material_set_managed(defaultSelectedMaterial, true);
+	defaultSelectedMaterial->module = materialmodule;
+	cmzn_materialmodule_set_default_selected_material(
+		materialmodule, defaultSelectedMaterial);
+	cmzn_material_destroy(&defaultSelectedMaterial);
 
-	return material_module;
+	return materialmodule;
 }
 
-cmzn_graphics_material *cmzn_graphics_material_create_private()
+cmzn_material *cmzn_material_create_private()
 {
-	cmzn_graphics_material *material = 0;
+	cmzn_material *material = 0;
 
 	/* allocate memory for structure */
 	if (ALLOCATE(material,struct Graphical_material,1))
@@ -3762,7 +3762,7 @@ cmzn_graphics_material *cmzn_graphics_material_create_private()
 		(material->fourth_image_texture).field  = NULL;
 		(material->fourth_image_texture).callback_id = NULL;
 		(material->fourth_image_texture).material = material;
-		material->module = (struct cmzn_graphics_material_module *)NULL;
+		material->module = (struct cmzn_materialmodule *)NULL;
 		material->lit_volume_normal_scaling[0] = 1.0;
 		material->lit_volume_normal_scaling[1] = 1.0;
 		material->lit_volume_normal_scaling[2] = 1.0;
@@ -4067,7 +4067,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 		}
 		else
 		{
-			destination->module = (struct cmzn_graphics_material_module *)NULL;
+			destination->module = (struct cmzn_materialmodule *)NULL;
 		}
 		REACCESS(Material_program)(&destination->program, source->program);
 		destination->lit_volume_normal_scaling[0] =
@@ -4192,12 +4192,12 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material,manager)
 DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
 	Graphical_material, name, const char *, manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Graphical_material, struct cmzn_material_module)
+DECLARE_MANAGER_OWNER_FUNCTIONS(Graphical_material, struct cmzn_materialmodule)
 
 int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
-	struct cmzn_material_module *material_module)
+	struct cmzn_materialmodule *materialmodule)
 {
-	return MANAGER_SET_OWNER(Graphical_material)(manager, material_module);
+	return MANAGER_SET_OWNER(Graphical_material)(manager, materialmodule);
 }
 
 const char *Graphical_material_name(struct Graphical_material *material)
@@ -4688,12 +4688,12 @@ Returns the flag set for per_pixel_lighting.
 	return (return_code);
 }
 
-cmzn_field_image_id  cmzn_graphics_material_get_image_field(cmzn_graphics_material_id material,
+cmzn_field_image_id  cmzn_material_get_image_field(cmzn_material_id material,
 	int image_number)
 {
 	cmzn_field_image_id image_field = NULL;
 
-	ENTER(cmzn_graphics_material_get_image_field);
+	ENTER(cmzn_material_get_image_field);
 	if (material)
 	{
 		switch(image_number)
@@ -4717,7 +4717,7 @@ cmzn_field_image_id  cmzn_graphics_material_get_image_field(cmzn_graphics_materi
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_graphics_material_get_image_field.  Invalid image field has been specified");
+					"cmzn_material_get_image_field.  Invalid image field has been specified");
 				image_field = NULL;
 			} break;
 		}
@@ -4729,13 +4729,13 @@ cmzn_field_image_id  cmzn_graphics_material_get_image_field(cmzn_graphics_materi
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_material_get_image_field.  Missing material");
+			"cmzn_material_get_image_field.  Missing material");
 		image_field=NULL;
 	}
 	LEAVE;
 
 	return (image_field);
-} /* cmzn_graphics_material_get_fourth_image_field */
+} /* cmzn_material_get_fourth_image_field */
 
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material)
@@ -4920,11 +4920,11 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-int cmzn_graphics_material_set_image_field(cmzn_graphics_material_id material,
+int cmzn_material_set_image_field(cmzn_material_id material,
 		int image_number, cmzn_field_image_id field)
 {
 	int return_code = 1;
-	ENTER(cmzn_graphics_material_set_image_field);
+	ENTER(cmzn_material_set_image_field);
 	if (material)
 	{
 		switch(image_number)
@@ -4948,7 +4948,7 @@ int cmzn_graphics_material_set_image_field(cmzn_graphics_material_id material,
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_graphics_material_set_image_field.  Invalid image field has been specified");
+					"cmzn_material_set_image_field.  Invalid image field has been specified");
 			} break;
 		}
 		if (return_code)
@@ -4960,12 +4960,12 @@ int cmzn_graphics_material_set_image_field(cmzn_graphics_material_id material,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_material_set_image_field.  Missing material");
+			"cmzn_material_set_image_field.  Missing material");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* cmzn_graphics_material_set_image_field */
+} /* cmzn_material_set_image_field */
 
 int set_material_program_type_texture_mode(struct Graphical_material *material_to_be_modified,
 	 int *type, int return_code)
@@ -5208,7 +5208,7 @@ functions are orginally from the modify_graphical_materil.
 }
 
 int material_update_material_program(struct Graphical_material *material_to_be_modified,
-	 struct cmzn_graphics_material_module *material_module, enum Material_program_type type, int return_code)
+	 struct cmzn_materialmodule *materialmodule, enum Material_program_type type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
@@ -5224,7 +5224,7 @@ DESCRIPTION : Check the material program and renew it if necessary.
 				 DEACCESS(Material_program)(&material_to_be_modified->program);
 			}
 			material_to_be_modified->program = FIND_BY_IDENTIFIER_IN_LIST(Material_program,type)(
-				type, material_module->getMaterialProgramList());
+				type, materialmodule->getMaterialProgramList());
 			if (material_to_be_modified->program)
 			{
 				 ACCESS(Material_program)(material_to_be_modified->program);
@@ -5236,7 +5236,7 @@ DESCRIPTION : Check the material program and renew it if necessary.
 				 if (material_to_be_modified->program)
 				 {
 						ADD_OBJECT_TO_LIST(Material_program)(material_to_be_modified->program,
-							 material_module->getMaterialProgramList());
+							 materialmodule->getMaterialProgramList());
 				 }
 				 else
 				 {
@@ -5260,7 +5260,7 @@ LAST MODIFIED : 4 Dec 2007
 DESCRIPTION : Set up the material program type for using the vertex
 and fragment program. This and following functions are orginally
 from the modify_graphical_material.
-NOTE: I use the pointer to the material_module from the material.
+NOTE: I use the pointer to the materialmodule from the material.
 ==============================================================================*/
 {
 	 int type;
@@ -5801,11 +5801,11 @@ specified name and the default properties.
 			}
 			else
 			{
-				material=cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material, material_name);
+				material=cmzn_material_create_private();
+				cmzn_material_set_name(material, material_name);
 				if (material)
 				{
-					cmzn_graphics_material_set_managed(material, true);
+					cmzn_material_set_managed(material, true);
 					if (ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
 						graphical_material_manager))
 					{
@@ -5816,7 +5816,7 @@ specified name and the default properties.
 					{
 						return_code=0;
 					}
-					cmzn_graphics_material_destroy(&material);
+					cmzn_material_destroy(&material);
 				}
 				else
 				{
@@ -5984,7 +5984,7 @@ will work with order_independent_transparency.
 	int modified_type;
 	int dimension;
 	struct Material_order_independent_transparency *data;
-	struct cmzn_graphics_material_module *material_module;
+	struct cmzn_materialmodule *materialmodule;
 	struct Material_program *unmodified_program;
 
 	ENTER(compile_Graphical_material_for_order_independent_transparency);
@@ -5993,7 +5993,7 @@ will work with order_independent_transparency.
 			material_order_independent_data_void))
 	{
 		return_code = 1;
-		material_module = material->module;
+		materialmodule = material->module;
 		/* Only do the materials that have been compiled already as the scene
 			is compiled so presumably uncompiled materials are not used. */
 		if ((GRAPHICS_COMPILED == material->compile_status) &&
@@ -6100,14 +6100,14 @@ will work with order_independent_transparency.
 			{
 				if (!(material->program = FIND_BY_IDENTIFIER_IN_LIST(
 					Material_program,type)((Material_program_type)modified_type,
-						material_module->getMaterialProgramList())))
+						materialmodule->getMaterialProgramList())))
 				{
 					material->program = ACCESS(Material_program)(
 						CREATE(Material_program)((Material_program_type)modified_type));
 					if (material->program)
 					{
 						ADD_OBJECT_TO_LIST(Material_program)(material->program,
-							material_module->getMaterialProgramList());
+							materialmodule->getMaterialProgramList());
 					}
 					else
 					{
@@ -6385,12 +6385,12 @@ deaccess the material program from the material.
 	 return return_code;
 }
 
-int cmzn_graphics_material_set_texture(
+int cmzn_material_set_texture(
 	Graphical_material *material, Texture *texture)
 {
 	int return_code = 0;
 
-	ENTER(cmzn_graphics_material_set_texture);
+	ENTER(cmzn_material_set_texture);
 	if (material)
 	{
 		REACCESS(Texture)(&(material->image_texture.texture), texture);
@@ -6405,9 +6405,9 @@ int cmzn_graphics_material_set_texture(
 	return return_code;
 }
 
-struct Graphical_material *cmzn_graphics_material_access(struct Graphical_material *material)
+struct Graphical_material *cmzn_material_access(struct Graphical_material *material)
 {
-	ENTER(cmzn_graphics_material_access);
+	ENTER(cmzn_material_access);
 	if (material)
 	{
 		material->access_count++;
@@ -6416,12 +6416,12 @@ struct Graphical_material *cmzn_graphics_material_access(struct Graphical_materi
 	return material;
 }
 
-int cmzn_graphics_material_destroy(Graphical_material **material_address)
+int cmzn_material_destroy(Graphical_material **material_address)
 {
 	int return_code = 0;
 	struct Graphical_material *material;
 
-	ENTER(cmzn_graphics_material_destroy);
+	ENTER(cmzn_material_destroy);
 	if (material_address && (material = *material_address))
 	{
 		(material->access_count)--;
@@ -6446,7 +6446,7 @@ int cmzn_graphics_material_destroy(Graphical_material **material_address)
 	return return_code;
 }
 
-bool cmzn_graphics_material_is_managed(cmzn_graphics_material_id material)
+bool cmzn_material_is_managed(cmzn_material_id material)
 {
 	if (material)
 	{
@@ -6455,7 +6455,7 @@ bool cmzn_graphics_material_is_managed(cmzn_graphics_material_id material)
 	return 0;
 }
 
-int cmzn_graphics_material_set_managed(cmzn_graphics_material_id material, bool value)
+int cmzn_material_set_managed(cmzn_material_id material, bool value)
 {
 	if (material)
 	{
@@ -6470,7 +6470,7 @@ int cmzn_graphics_material_set_managed(cmzn_graphics_material_id material, bool 
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_graphics_material_set_name(
+int cmzn_material_set_name(
 	Graphical_material *material, const char *name)
 {
 	int return_code = 0;
@@ -6480,7 +6480,7 @@ int cmzn_graphics_material_set_name(
 		return_code = 1;
 		if (material->manager)
 		{
-			return_code = MANAGER_MODIFY_IDENTIFIER(cmzn_graphics_material, name)(
+			return_code = MANAGER_MODIFY_IDENTIFIER(cmzn_material, name)(
 				material, name, material->manager);
 		}
 		else
@@ -6502,7 +6502,7 @@ int cmzn_graphics_material_set_name(
 	return return_code;
 }
 
-char *cmzn_graphics_material_get_name(cmzn_graphics_material_id material)
+char *cmzn_material_get_name(cmzn_material_id material)
 {
 	char *name = NULL;
 	if (material)
@@ -6513,34 +6513,34 @@ char *cmzn_graphics_material_get_name(cmzn_graphics_material_id material)
 	return name;
 }
 
-double cmzn_graphics_material_get_attribute_real(cmzn_graphics_material_id material,
-	enum cmzn_graphics_material_attribute attribute)
+double cmzn_material_get_attribute_real(cmzn_material_id material,
+	enum cmzn_material_attribute attribute)
 {
 	ZnReal value = 0.0;
 	if (material)
 	{
 		switch (attribute)
 		{
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			case CMZN_MATERIAL_ATTRIBUTE_ALPHA:
 			{
 				Graphical_material_get_alpha(material, &value);
 			} break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			case CMZN_MATERIAL_ATTRIBUTE_SHININESS:
 			{
 				Graphical_material_get_shininess(material, &value);
 			}	break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_graphics_material_get_attribute_real.  Invalid attribute");
+					"cmzn_material_get_attribute_real.  Invalid attribute");
 			} break;
 		}
 	}
 	return ((double)value);
 }
 
-int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id material,
-	enum cmzn_graphics_material_attribute attribute, double value)
+int cmzn_material_set_attribute_real(cmzn_material_id material,
+	enum cmzn_material_attribute attribute, double value)
 {
 	int return_code = 0;
 	if (material)
@@ -6548,18 +6548,18 @@ int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id material
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			case CMZN_MATERIAL_ATTRIBUTE_ALPHA:
 			{
 				return_code = Graphical_material_set_alpha(material, value);
 			} break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			case CMZN_MATERIAL_ATTRIBUTE_SHININESS:
 			{
 				return_code = Graphical_material_set_shininess(material, value);
 			}	break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_graphics_material_set_attribute_real.  Invalid attribute");
+					"cmzn_material_set_attribute_real.  Invalid attribute");
 				return_code = 0;
 			} break;
 		}
@@ -6567,8 +6567,8 @@ int cmzn_graphics_material_set_attribute_real(cmzn_graphics_material_id material
 	return return_code;
 }
 
-int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_id material,
-	enum cmzn_graphics_material_attribute attribute, double *values)
+int cmzn_material_get_attribute_real3(cmzn_material_id material,
+	enum cmzn_material_attribute attribute, double *values)
 {
 	struct Colour colour;
 	int return_code = 0;
@@ -6580,26 +6580,26 @@ int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_id materia
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			case CMZN_MATERIAL_ATTRIBUTE_AMBIENT:
 			{
 				return_code = Graphical_material_get_ambient(material, &colour);
 			} break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			case CMZN_MATERIAL_ATTRIBUTE_DIFFUSE:
 			{
 				return_code = Graphical_material_get_diffuse(material, &colour);
 			}	break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			case CMZN_MATERIAL_ATTRIBUTE_EMISSION:
 			{
 				return_code = Graphical_material_get_emission(material, &colour);
 			}	break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			case CMZN_MATERIAL_ATTRIBUTE_SPECULAR:
 			{
 				return_code = Graphical_material_get_specular(material, &colour);
 			}	break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_graphics_material_get_attribute_real3.  Invalid attribute");
+					"cmzn_material_get_attribute_real3.  Invalid attribute");
 				return_code = 0;
 			} break;
 		}
@@ -6613,8 +6613,8 @@ int cmzn_graphics_material_get_attribute_real3(cmzn_graphics_material_id materia
 	return (return_code);
 }
 
-int cmzn_graphics_material_set_attribute_real3(cmzn_graphics_material_id material,
-	enum cmzn_graphics_material_attribute attribute, const double *values)
+int cmzn_material_set_attribute_real3(cmzn_material_id material,
+	enum cmzn_material_attribute attribute, const double *values)
 {
 	struct Colour colour;
 	int return_code = 0;
@@ -6626,26 +6626,26 @@ int cmzn_graphics_material_set_attribute_real3(cmzn_graphics_material_id materia
 		return_code = 1;
 		switch (attribute)
 		{
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			case CMZN_MATERIAL_ATTRIBUTE_AMBIENT:
 			{
 				return_code = Graphical_material_set_ambient(material, &colour);
 			} break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			case CMZN_MATERIAL_ATTRIBUTE_DIFFUSE:
 			{
 				return_code = Graphical_material_set_diffuse(material, &colour);
 			}	break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			case CMZN_MATERIAL_ATTRIBUTE_EMISSION:
 			{
 				return_code = Graphical_material_set_emission(material, &colour);
 			}	break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			case CMZN_MATERIAL_ATTRIBUTE_SPECULAR:
 			{
 				return_code = Graphical_material_set_specular(material, &colour);
 			}	break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_graphics_material_set_attribute_real3.  Invalid attribute");
+					"cmzn_material_set_attribute_real3.  Invalid attribute");
 				return_code = 0;
 			} break;
 		}
@@ -6653,30 +6653,30 @@ int cmzn_graphics_material_set_attribute_real3(cmzn_graphics_material_id materia
 	return return_code;
 }
 
-class cmzn_graphics_material_attribute_conversion
+class cmzn_material_attribute_conversion
 {
 public:
-	static const char *to_string(enum cmzn_graphics_material_attribute attribute)
+	static const char *to_string(enum cmzn_material_attribute attribute)
 	{
 		const char *enum_string = 0;
 		switch (attribute)
 		{
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_ALPHA:
+			case CMZN_MATERIAL_ATTRIBUTE_ALPHA:
 				enum_string = "ALPHA";
 				break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_AMBIENT:
+			case CMZN_MATERIAL_ATTRIBUTE_AMBIENT:
 				enum_string = "AMBIENT";
 				break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_DIFFUSE:
+			case CMZN_MATERIAL_ATTRIBUTE_DIFFUSE:
 				enum_string = "DIFFUSE";
 				break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_EMISSION:
+			case CMZN_MATERIAL_ATTRIBUTE_EMISSION:
 				enum_string = "EMISSION";
 				break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SHININESS:
+			case CMZN_MATERIAL_ATTRIBUTE_SHININESS:
 				enum_string = "SHININESS";
 				break;
-			case CMZN_GRAPHICS_MATERIAL_ATTRIBUTE_SPECULAR:
+			case CMZN_MATERIAL_ATTRIBUTE_SPECULAR:
 				enum_string = "SPECULAR";
 				break;
 			default:
@@ -6686,16 +6686,16 @@ public:
 	}
 };
 
-enum cmzn_graphics_material_attribute cmzn_graphics_material_attribute_enum_from_string(
+enum cmzn_material_attribute cmzn_material_attribute_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum cmzn_graphics_material_attribute,
-	cmzn_graphics_material_attribute_conversion>(string);
+	return string_to_enum<enum cmzn_material_attribute,
+	cmzn_material_attribute_conversion>(string);
 }
 
-char *cmzn_graphics_material_attribute_enum_to_string(
-	enum cmzn_graphics_material_attribute attribute)
+char *cmzn_material_attribute_enum_to_string(
+	enum cmzn_material_attribute attribute)
 {
-	const char *attribute_string = cmzn_graphics_material_attribute_conversion::to_string(attribute);
+	const char *attribute_string = cmzn_material_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
 }

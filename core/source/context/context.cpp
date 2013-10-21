@@ -312,17 +312,17 @@ cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
 }
 
 
-cmzn_graphics_material_module_id cmzn_context_get_material_module(
+cmzn_materialmodule_id cmzn_context_get_materialmodule(
 	cmzn_context_id context)
 {
 	if (context)
 	{
 		struct cmzn_graphics_module *graphicsModule =
 			cmzn_context_get_graphics_module(context);
-		cmzn_graphics_material_module_id material_module =
-			cmzn_graphics_module_get_material_module(graphicsModule);
+		cmzn_materialmodule_id materialmodule =
+			cmzn_graphics_module_get_materialmodule(graphicsModule);
 		cmzn_graphics_module_destroy(&graphicsModule);
-		return material_module;
+		return materialmodule;
 	}
 
 	return 0;

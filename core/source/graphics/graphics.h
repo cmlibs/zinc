@@ -571,7 +571,7 @@ int cmzn_graphics_glyph_change(struct cmzn_graphics *graphics,
  *
  * @param material_manager_message_void  MANAGER_MESSAGE(Material).
  */
-int cmzn_graphics_material_change(struct cmzn_graphics *graphics,
+int cmzn_material_change(struct cmzn_graphics *graphics,
 	void *material_change_data_void);
 
 /***************************************************************************//**

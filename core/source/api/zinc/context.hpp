@@ -13,7 +13,7 @@
 #include "zinc/context.h"
 #include "zinc/font.hpp"
 #include "zinc/glyph.hpp"
-#include "zinc/graphicsmaterial.hpp"
+#include "zinc/material.hpp"
 #include "zinc/region.hpp"
 #include "zinc/sceneviewer.hpp"
 #include "zinc/spectrum.hpp"
@@ -103,9 +103,9 @@ public:
 		return Glyphmodule(cmzn_context_get_glyphmodule(id));
 	}
 
-	GraphicsMaterialModule getMaterialModule()
+	Materialmodule getMaterialmodule()
 	{
-		return GraphicsMaterialModule(cmzn_context_get_material_module(id));
+		return Materialmodule(cmzn_context_get_materialmodule(id));
 	}
 
 	Scenefiltermodule getScenefiltermodule()
