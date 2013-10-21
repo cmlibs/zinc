@@ -24,7 +24,7 @@
 #include <cmath>
 #include "zinc/types/fontid.h"
 #include "zinc/status.h"
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
 #include "general/manager_private.h"
@@ -151,7 +151,7 @@ void cmzn_glyph_static::materialChange(struct MANAGER_MESSAGE(Graphical_material
 	bool changed = false;
 	while (object)
 	{
-		cmzn_graphics_material *material = get_GT_object_default_material(object);
+		cmzn_material *material = get_GT_object_default_material(object);
 		if (material)
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, material);
@@ -945,28 +945,28 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				glyph = create_GT_object_arrow_solid(name, /*primary_axis*/1,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
-				material = cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material, "red");
+				material = cmzn_material_create_private();
+				cmzn_material_set_name(material, "red");
 				colour.red = 1;
 				colour.green = 0;
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(glyph, material);
-				cmzn_graphics_material_destroy(&material);
+				cmzn_material_destroy(&material);
 				last_object = glyph;
 
 				sprintf(glyph_name, "%s_arrow2", name);
 				GT_object *arrow2 = create_GT_object_arrow_solid(glyph_name, /*primary_axis*/2,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
-				material = cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material, "green");
+				material = cmzn_material_create_private();
+				cmzn_material_set_name(material, "green");
 				colour.red = 0;
 				colour.green = 1;
 				colour.blue = 0;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow2, material);
-				cmzn_graphics_material_destroy(&material);
+				cmzn_material_destroy(&material);
 				GT_object_set_next_object(last_object, arrow2);
 				last_object = arrow2;
 				DEACCESS(GT_object)(&arrow2);
@@ -975,14 +975,14 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				GT_object *arrow3 = create_GT_object_arrow_solid(glyph_name, /*primary_axis*/3,
 					/*number_of_segments_around*/12, /*shaft_length*/2.f/3.f,
 					/*shaft_radius*/1.f/20.f, /*cone_radius*/1.f/8.f);
-				material = cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material, "blue");
+				material = cmzn_material_create_private();
+				cmzn_material_set_name(material, "blue");
 				colour.red = 0;
 				colour.green = 0;
 				colour.blue = 1;
 				Graphical_material_set_diffuse(material, &colour);
 				set_GT_object_default_material(arrow3, material);
-				cmzn_graphics_material_destroy(&material);
+				cmzn_material_destroy(&material);
 				GT_object_set_next_object(last_object, arrow3);
 				last_object = arrow3;
 				DEACCESS(GT_object)(&arrow3);
@@ -1628,8 +1628,8 @@ int cmzn_glyph_set_managed(cmzn_glyph_id glyph, bool value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_glyphmodule::cmzn_glyphmodule(cmzn_graphics_material_module *materialModuleIn) :
-	materialModule(cmzn_graphics_material_module_access(materialModuleIn)),
+cmzn_glyphmodule::cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn) :
+	materialModule(cmzn_materialmodule_access(materialModuleIn)),
 	manager(CREATE(MANAGER(cmzn_glyph))()),
 	defaultPointGlyph(0),
 	access_count(1)
@@ -1638,7 +1638,7 @@ cmzn_glyphmodule::cmzn_glyphmodule(cmzn_graphics_material_module *materialModule
 
 cmzn_glyphmodule::~cmzn_glyphmodule()
 {
-	cmzn_graphics_material_module_destroy(&materialModule);
+	cmzn_materialmodule_destroy(&materialModule);
 	if (defaultPointGlyph)
 	{
 		DEACCESS(cmzn_glyph)(&(this->defaultPointGlyph));
@@ -1806,9 +1806,9 @@ int cmzn_glyphmodule::defineStandardGlyphs()
 	axes->setAxisLabel(3, "z");
 	this->defineGlyph("axes_solid_xyz", axes, CMZN_GLYPH_AXES_SOLID_XYZ);
 
-	cmzn_graphics_material_id red = cmzn_graphics_material_module_find_material_by_name(this->materialModule, "red");
-	cmzn_graphics_material_id green = cmzn_graphics_material_module_find_material_by_name(this->materialModule, "green");
-	cmzn_graphics_material_id blue = cmzn_graphics_material_module_find_material_by_name(this->materialModule, "blue");
+	cmzn_material_id red = cmzn_materialmodule_find_material_by_name(this->materialModule, "red");
+	cmzn_material_id green = cmzn_materialmodule_find_material_by_name(this->materialModule, "green");
+	cmzn_material_id blue = cmzn_materialmodule_find_material_by_name(this->materialModule, "blue");
 	if (red && green && blue)
 	{
 		axes = cmzn_glyph_axes::create(axis, /*axis_width*/0.1);
@@ -1823,9 +1823,9 @@ int cmzn_glyphmodule::defineStandardGlyphs()
 		axes->setAxisMaterial(3, blue);
 		this->defineGlyph("axes_solid_colour", axes, CMZN_GLYPH_AXES_SOLID_COLOUR);
 	}
-	cmzn_graphics_material_destroy(&red);
-	cmzn_graphics_material_destroy(&green);
-	cmzn_graphics_material_destroy(&blue);
+	cmzn_material_destroy(&red);
+	cmzn_material_destroy(&green);
+	cmzn_material_destroy(&blue);
 
 	endChange();
 
@@ -1869,7 +1869,7 @@ cmzn_set_cmzn_glyph *cmzn_glyphmodule::getGlyphListPrivate()
 	return reinterpret_cast<cmzn_set_cmzn_glyph *>(this->manager->object_list);
 }
 
-cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_graphics_material_module *materialModule)
+cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_materialmodule *materialModule)
 {
 	return cmzn_glyphmodule::create(materialModule);
 }

@@ -16,7 +16,7 @@ Renders gtObjects to VRML file
 #include <string.h>
 #include <math.h>
 
-#include "zinc/graphicsmaterial.hpp"
+#include "zinc/material.hpp"
 #include "general/debug.h"
 #include "general/list.h"
 #include "general/list_private.h"
@@ -813,8 +813,8 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		{
 			if (data_spectrum)
 			{
-				material_copy=cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material_copy, "render_vrml_copy");
+				material_copy=cmzn_material_create_private();
+				cmzn_material_set_name(material_copy, "render_vrml_copy");
 			}
 			else
 			{
@@ -1110,7 +1110,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			}
 			if (material_copy)
 			{
-				cmzn_graphics_material_destroy(&material_copy);
+				cmzn_material_destroy(&material_copy);
 			}
 		}
 		/* output label at each point, if supplied */
@@ -1129,8 +1129,8 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			point=glyph_set->point_list;
 			if (data_spectrum)
 			{
-				material_copy=cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material_copy, "render_vrml_copy");
+				material_copy=cmzn_material_create_private();
+				cmzn_material_set_name(material_copy, "render_vrml_copy");
 			}
 			else
 			{
@@ -1250,7 +1250,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			}
 			if (material_copy)
 			{
-				cmzn_graphics_material_destroy(&material_copy);
+				cmzn_material_destroy(&material_copy);
 			}
 		}
 	}
@@ -1473,8 +1473,8 @@ Writes VRML code to the file handle which represents the given pointset.
 			point=point_list;
 			if (number_of_data_components && data && material && spectrum)
 			{
-				material_copy=cmzn_graphics_material_create_private();
-				cmzn_graphics_material_set_name(material_copy, "render_vrml_copy");
+				material_copy=cmzn_material_create_private();
+				cmzn_material_set_name(material_copy, "render_vrml_copy");
 			}
 			else
 			{
@@ -1535,7 +1535,7 @@ Writes VRML code to the file handle which represents the given pointset.
 			}
 			if (material_copy)
 			{
-				cmzn_graphics_material_destroy(&material_copy);
+				cmzn_material_destroy(&material_copy);
 			}
 		}
 		return_code = 1;

@@ -18,7 +18,7 @@ Functions for reading graphics object data from a file.
 #include <stdlib.h>
 #include <string.h>
 
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "general/debug.h"
 #include "general/io_stream.h"
 #include "general/matrix_vector.h"
@@ -160,7 +160,7 @@ Global functions
 
 int file_read_graphics_objects(char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct cmzn_graphics_material_module *material_module,
+	struct cmzn_materialmodule *materialmodule,
 	struct cmzn_glyphmodule *glyphmodule)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2003
@@ -270,7 +270,7 @@ DESCRIPTION :
 							IO_stream_scan(stream,"%lf", &time);
 						}
 						file_read_Graphical_material_name(stream,&object_material,
-							cmzn_graphics_material_module_get_manager(material_module));
+							cmzn_materialmodule_get_manager(materialmodule));
 						if (version<2)
 						{
 							transtype=g_ID;
@@ -793,7 +793,7 @@ DESCRIPTION :
 int file_read_voltex_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
-	ZnReal time, struct cmzn_graphics_material_module *material_module,
+	ZnReal time, struct cmzn_materialmodule *materialmodule,
 	struct cmzn_glyphmodule *glyphmodule)
 {
 	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
@@ -816,7 +816,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 	ENTER(file_read_voltex_graphics_objects_from_obj);
 	cmzn_glyphmodule_begin_change(glyphmodule);
 	return_code = 1;
-	if (file_name && material_module)
+	if (file_name && materialmodule)
 	{
 		file = CREATE(IO_stream)(io_stream_package);
 		if (file && (IO_stream_open_for_read(file, file_name)))
@@ -994,19 +994,19 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								matname[strlen(word)] = 0;
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
 									Graphical_material,name)(matname,
-										cmzn_graphics_material_module_get_manager(material_module));
+										cmzn_materialmodule_get_manager(materialmodule));
 								if (scanned_material)
 									ACCESS(Graphical_material)(scanned_material);
 								if (!(scanned_material ||
 										fuzzy_string_compare_same_length(matname,"NONE")))
 								{
-									scanned_material = cmzn_graphics_material_create_private();
-									cmzn_graphics_material_set_name(scanned_material, matname);
+									scanned_material = cmzn_material_create_private();
+									cmzn_material_set_name(scanned_material, matname);
 									if(scanned_material &&
 										(ADD_OBJECT_TO_MANAGER(Graphical_material)
-											(scanned_material, cmzn_graphics_material_module_get_manager(material_module))))
+											(scanned_material, cmzn_materialmodule_get_manager(materialmodule))))
 									{
-										cmzn_graphics_material_set_managed(scanned_material, true);
+										cmzn_material_set_managed(scanned_material, true);
 									}
 									else
 									{
@@ -1030,7 +1030,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								DEACCESS(GT_object)(&new_obj);
 								if (scanned_material)
 								{
-									cmzn_graphics_material_destroy(&scanned_material);
+									cmzn_material_destroy(&scanned_material);
 								}
 							}
 							else

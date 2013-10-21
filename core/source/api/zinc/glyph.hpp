@@ -10,7 +10,7 @@
 #define CMZN_GLYPH_HPP__
 
 #include "zinc/glyph.h"
-#include "zinc/graphicsmaterial.hpp"
+#include "zinc/material.hpp"
 #include "zinc/spectrum.hpp"
 
 namespace OpenCMISS
@@ -168,12 +168,12 @@ public:
 		return cmzn_glyph_axes_set_axis_label(getDerivedId(), axisNumber, label);
 	}
 
-	GraphicsMaterial getAxisMaterial(int axisNumber)
+	Material getAxisMaterial(int axisNumber)
 	{
-		return GraphicsMaterial(cmzn_glyph_axes_get_axis_material(getDerivedId(), axisNumber));
+		return Material(cmzn_glyph_axes_get_axis_material(getDerivedId(), axisNumber));
 	}
 
-	int setAxisMaterial(int axisNumber, GraphicsMaterial material)
+	int setAxisMaterial(int axisNumber, Material material)
 	{
 		return cmzn_glyph_axes_set_axis_material(getDerivedId(), axisNumber, material.getId());
 	}
@@ -241,12 +241,12 @@ public:
 		return cmzn_glyph_colour_bar_set_label_divisions(getDerivedId(), labelDivisions);
 	}
 
-	GraphicsMaterial getLabelMaterial()
+	Material getLabelMaterial()
 	{
-		return GraphicsMaterial(cmzn_glyph_colour_bar_get_label_material(getDerivedId()));
+		return Material(cmzn_glyph_colour_bar_get_label_material(getDerivedId()));
 	}
 
-	int setLabelMaterial(GraphicsMaterial& material)
+	int setLabelMaterial(Material& material)
 	{
 		return cmzn_glyph_colour_bar_set_label_material(getDerivedId(), material.getId());
 	}

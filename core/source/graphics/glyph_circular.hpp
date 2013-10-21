@@ -77,7 +77,7 @@ public:
 		return true;
 	}
 
-	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *);
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_material *, cmzn_font *);
 
 };
 

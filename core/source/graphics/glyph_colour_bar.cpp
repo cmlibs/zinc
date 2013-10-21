@@ -403,11 +403,11 @@ cmzn_glyph_colour_bar::~cmzn_glyph_colour_bar()
 	{
 		DEALLOCATE(this->numberFormat);
 	}
-	cmzn_graphics_material_destroy(&labelMaterial);
+	cmzn_material_destroy(&labelMaterial);
 }
 
 GT_object *cmzn_glyph_colour_bar::getGraphicsObject(cmzn_tessellation *tessellation,
-	cmzn_graphics_material *material, cmzn_font *font)
+	cmzn_material *material, cmzn_font *font)
 {
 	USE_PARAMETER(tessellation);
 	if (this->graphicsObject)
@@ -533,7 +533,7 @@ int cmzn_glyph_colour_bar::setLabelDivisions(int labelDivisionsIn)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_glyph_colour_bar::setLabelMaterial(cmzn_graphics_material_id material)
+int cmzn_glyph_colour_bar::setLabelMaterial(cmzn_material_id material)
 {
 	if (material != this->labelMaterial)
 	{
@@ -735,7 +735,7 @@ int cmzn_glyph_colour_bar_set_label_divisions(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
+cmzn_material_id cmzn_glyph_colour_bar_get_label_material(
 	cmzn_glyph_colour_bar_id colour_bar)
 {
 	if (colour_bar)
@@ -744,7 +744,7 @@ cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
 }
 
 int cmzn_glyph_colour_bar_set_label_material(
-	cmzn_glyph_colour_bar_id colour_bar, cmzn_graphics_material_id material)
+	cmzn_glyph_colour_bar_id colour_bar, cmzn_material_id material)
 {
 	if (colour_bar)
 		return colour_bar->setLabelMaterial(material);

@@ -151,7 +151,7 @@ public:
 	}
 
 	/** return ACCESSed pointer to graphics object */
-	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *) = 0;
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_material *, cmzn_font *) = 0;
 
 	const char *getName() const
 	{
@@ -190,7 +190,7 @@ public:
 		this->name = 0;
 	}
 
-	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *)
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_material *, cmzn_font *)
 	{
 		return 0;
 	}
@@ -246,7 +246,7 @@ public:
 		GT_object_time_change(graphicsObject);
 	}
 
-	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_graphics_material *, cmzn_font *)
+	virtual GT_object *getGraphicsObject(cmzn_tessellation *, cmzn_material *, cmzn_font *)
 	{
 		return ACCESS(GT_object)(graphicsObject);
 	}
@@ -262,12 +262,12 @@ public:
 struct cmzn_glyphmodule
 {
 private:
-	cmzn_graphics_material_module *materialModule;
+	cmzn_materialmodule *materialModule;
 	struct MANAGER(cmzn_glyph) *manager;
 	cmzn_glyph *defaultPointGlyph;
 	int access_count;
 
-	cmzn_glyphmodule(cmzn_graphics_material_module *materialModuleIn);
+	cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn);
 	~cmzn_glyphmodule();
 
 	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type);
@@ -276,7 +276,7 @@ private:
 
 public:
 
-	static cmzn_glyphmodule *create(cmzn_graphics_material_module *materialModuleIn)
+	static cmzn_glyphmodule *create(cmzn_materialmodule *materialModuleIn)
 	{
 		return new cmzn_glyphmodule(materialModuleIn);
 	}
@@ -371,7 +371,7 @@ void resolve_glyph_axes(
 	Triple final_point, Triple final_axis1, Triple final_axis2, Triple final_axis3);
 
 /** internal only */
-cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_graphics_material_module *materialModule);
+cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_materialmodule *materialModule);
 
 /* internal only */
 struct MANAGER(cmzn_glyph) *cmzn_glyphmodule_get_manager(

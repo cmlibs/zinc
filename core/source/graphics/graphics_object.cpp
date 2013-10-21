@@ -25,7 +25,7 @@ gtObject/gtWindow management routines.
 
 #include "zinc/field.h"
 #include "zinc/fieldsubobjectgroup.h"
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "zinc/status.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.h"
@@ -3750,7 +3750,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 				object->object_type=object_type;
 				if (default_material)
 				{
-					object->default_material=cmzn_graphics_material_access(default_material);
+					object->default_material=cmzn_material_access(default_material);
 				}
 				else
 				{
@@ -3828,15 +3828,15 @@ static int DESTROY(GT_object)(struct GT_object **object_ptr)
 			DEALLOCATE(object->name);
 			if (object->default_material)
 			{
-				cmzn_graphics_material_destroy(&(object->default_material));
+				cmzn_material_destroy(&(object->default_material));
 			}
 			if (object->selected_material)
 			{
-				cmzn_graphics_material_destroy(&(object->selected_material));
+				cmzn_material_destroy(&(object->selected_material));
 			}
 			if (object->secondary_material)
 			{
-				cmzn_graphics_material_destroy(&(object->secondary_material));
+				cmzn_material_destroy(&(object->secondary_material));
 			}
 			if (object->spectrum)
 			{

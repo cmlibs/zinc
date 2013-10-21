@@ -12,7 +12,7 @@
 #ifndef GLYPH_COLOUR_BAR_HPP
 #define GLYPH_COLOUR_BAR_HPP
 
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "graphics/glyph.hpp"
 
 struct cmzn_spectrum;
@@ -24,7 +24,7 @@ private:
 	GT_object *graphicsObject;
 	double axis[3], centre[3], sideAxis[3];
 	double extendLength;
-	cmzn_graphics_material *labelMaterial;
+	cmzn_material *labelMaterial;
 	char *numberFormat;
 	int labelDivisions;
 	double tickLength;
@@ -50,7 +50,7 @@ public:
 	}
 
 	virtual GT_object *getGraphicsObject(cmzn_tessellation *tessellation,
-		cmzn_graphics_material *material, cmzn_font *font);
+		cmzn_material *material, cmzn_font *font);
 
 	virtual bool usesFont()
 	{
@@ -79,12 +79,12 @@ public:
 
 	int setLabelDivisions(int labelDivisionsIn);
 
-	cmzn_graphics_material_id getLabelMaterial() const
+	cmzn_material_id getLabelMaterial() const
 	{
-		return labelMaterial ? cmzn_graphics_material_access(labelMaterial) : 0;
+		return labelMaterial ? cmzn_material_access(labelMaterial) : 0;
 	}
 
-	int setLabelMaterial(cmzn_graphics_material_id material);
+	int setLabelMaterial(cmzn_material_id material);
 
 	char *getNumberFormat() const;
 

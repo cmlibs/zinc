@@ -41,7 +41,7 @@ cmzn_glyph_axes::~cmzn_glyph_axes()
 		{
 			DEALLOCATE(axisLabels[i]);
 		}
-		cmzn_graphics_material_destroy(&axisMaterials[i]);
+		cmzn_material_destroy(&axisMaterials[i]);
 	}
 }
 
@@ -59,7 +59,7 @@ namespace {
  * @param primaryAxis  0, 1 or 2.
  */
 GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
-	double axisWidth, const char *name, cmzn_graphics_material *material, cmzn_font *font,
+	double axisWidth, const char *name, cmzn_material *material, cmzn_font *font,
 	int axisLabelsCount, char **axisLabels, enum cmzn_glyph_repeat_mode repeat_mode)
 {
 	Triple *point_list, *axis1_list, *axis2_list, *axis3_list, *scale_list;
@@ -108,7 +108,7 @@ GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
 } // namespace
 
 GT_object *cmzn_glyph_axes::getGraphicsObject(cmzn_tessellation *tessellation,
-	cmzn_graphics_material *material, cmzn_font *font)
+	cmzn_material *material, cmzn_font *font)
 {
 	USE_PARAMETER(tessellation);
 	GT_object *axis_gt_object = this->axisGlyph->getGraphicsObject(tessellation, material, font);
@@ -127,7 +127,7 @@ GT_object *cmzn_glyph_axes::getGraphicsObject(cmzn_tessellation *tessellation,
 			GT_object *thisObject = this->graphicsObject;
 			for (int i = 0; i < 3; ++i)
 			{
-				cmzn_graphics_material *useMaterial = this->axisMaterials[i] ? this->axisMaterials[i] : material;
+				cmzn_material *useMaterial = this->axisMaterials[i] ? this->axisMaterials[i] : material;
 				if (get_GT_object_default_material(thisObject) != useMaterial)
 				{
 					DEACCESS(GT_object)(&this->graphicsObject);
@@ -162,7 +162,7 @@ GT_object *cmzn_glyph_axes::getGraphicsObject(cmzn_tessellation *tessellation,
 		else
 		{
 			this->graphicsObject = createAxisGraphicsObject(/*primaryAxis*/0, axis_gt_object, this->axisWidth,
-				this->name, static_cast<cmzn_graphics_material_id>(0),
+				this->name, static_cast<cmzn_material_id>(0),
 				font, 3, this->axisLabels, CMZN_GLYPH_REPEAT_AXES_3D);
 		}
 	}
@@ -213,16 +213,16 @@ int cmzn_glyph_axes::setAxisLabel(int axisNumber, const char *label)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_graphics_material *cmzn_glyph_axes::getAxisMaterial(int axisNumber)
+cmzn_material *cmzn_glyph_axes::getAxisMaterial(int axisNumber)
 {
 	if ((0 < axisNumber) && (axisNumber <= 3) && (this->axisMaterials[axisNumber - 1]))
 	{
-		return cmzn_graphics_material_access(this->axisMaterials[axisNumber - 1]);
+		return cmzn_material_access(this->axisMaterials[axisNumber - 1]);
 	}
 	return 0;
 }
 
-int cmzn_glyph_axes::setAxisMaterial(int axisNumber, cmzn_graphics_material *material)
+int cmzn_glyph_axes::setAxisMaterial(int axisNumber, cmzn_material *material)
 {
 	if ((0 < axisNumber) && (axisNumber <= 3))
 	{
@@ -321,7 +321,7 @@ int cmzn_glyph_axes_set_axis_label(cmzn_glyph_axes_id axes,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
+cmzn_material_id cmzn_glyph_axes_get_axis_material(
 	cmzn_glyph_axes_id axes, int axis_number)
 {
 	if (axes)
@@ -330,7 +330,7 @@ cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
 }
 
 int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
-	int axis_number, cmzn_graphics_material_id material)
+	int axis_number, cmzn_material_id material)
 {
 	if (axes)
 		return axes->setAxisMaterial(axis_number, material);

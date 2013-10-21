@@ -30,7 +30,7 @@ The data structures used for representing graphical materials.
 Global constants
 ----------------
 */
-#define Graphical_material cmzn_graphics_material
+#define Graphical_material cmzn_material
 
 /*
 Global types
@@ -252,7 +252,7 @@ The properties of a material.
 	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
 	   Material_programs */
-	struct cmzn_graphics_material_module *module;
+	struct cmzn_materialmodule *module;
 	/* The normal calculated from the volume texture needs to be
 		scaled similarly to how it is scaled into coordinate space,
 		we do not take account of rotations or any other distortions.
@@ -281,16 +281,16 @@ Global functions
 ----------------
 */
 
-cmzn_graphics_material *cmzn_graphics_material_create_private();
+cmzn_material *cmzn_material_create_private();
 
-struct cmzn_graphics_material_module *cmzn_graphics_material_module_create(
+struct cmzn_materialmodule *cmzn_materialmodule_create(
 	struct MANAGER(Spectrum) *spectrum_manager);
 
-struct MANAGER(Graphical_material) *cmzn_graphics_material_module_get_manager(
-	struct cmzn_graphics_material_module *material_module);
+struct MANAGER(Graphical_material) *cmzn_materialmodule_get_manager(
+	struct cmzn_materialmodule *materialmodule);
 
-struct MANAGER(Spectrum) *cmzn_graphics_material_module_get_spectrum_manager(
-	struct cmzn_graphics_material_module *material_module);
+struct MANAGER(Spectrum) *cmzn_materialmodule_get_spectrum_manager(
+	struct cmzn_materialmodule *materialmodule);
 
 int DESTROY(Graphical_material)(struct Graphical_material **material_address);
 /*******************************************************************************
@@ -552,7 +552,7 @@ LAST MODIFIED : 4 Dec 2007
 DESCRIPTION : Set up the material program type for using the vertex
 and fragment program. This and following functions are orginally
 from the modify_graphical_material.
-NOTE: I use the pointer to the material_module from the material.
+NOTE: I use the pointer to the materialmodule from the material.
 ==============================================================================*/
 
 int material_copy_bump_mapping_and_per_pixel_lighting_flag(struct Graphical_material *material,
@@ -594,7 +594,7 @@ int Material_set_program_uniform_qualifier_variable_value(
  * @return  The owning Graphics_module object.
  */
 int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
-	struct cmzn_material_module *material_module);
+	struct cmzn_materialmodule *materialmodule);
 
 int material_deaccess_material_program(struct Graphical_material *material_to_be_modified);
 
@@ -603,7 +603,7 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 
 struct Material_program_uniform *CREATE(Material_program_uniform)(char *name);
 
-struct cmzn_material_module *manager_get_owner_cmzn_graphics_material(manager_cmzn_graphics_material *manager);
+struct cmzn_materialmodule *manager_get_owner_cmzn_material(manager_cmzn_material *manager);
 
 //struct Material_program_uniform *list_find_by_identifier_Material_program_uniformname(const char *name, list_Material_program_uniform *list);
 #endif

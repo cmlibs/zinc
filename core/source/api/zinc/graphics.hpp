@@ -15,7 +15,7 @@
 #include "zinc/field.hpp"
 #include "zinc/glyph.hpp"
 #include "zinc/font.hpp"
-#include "zinc/graphicsmaterial.hpp"
+#include "zinc/material.hpp"
 #include "zinc/spectrum.hpp"
 #include "zinc/tessellation.hpp"
 
@@ -182,14 +182,14 @@ public:
 		return cmzn_graphics_set_texture_coordinate_field(id, textureCoordinateField.getId());
 	}
 
-	GraphicsMaterial getMaterial()
+	Material getMaterial()
 	{
-		return GraphicsMaterial(cmzn_graphics_get_material(id));
+		return Material(cmzn_graphics_get_material(id));
 	}
 
-	int setMaterial(GraphicsMaterial& graphicsMaterial)
+	int setMaterial(Material& material)
 	{
-		return cmzn_graphics_set_material(id, graphicsMaterial.getId());
+		return cmzn_graphics_set_material(id, material.getId());
 	}
 
 	Graphicslineattributes getGraphicslineattributes();
@@ -198,14 +198,14 @@ public:
 
 	Graphicsamplingattributes getGraphicsamplingattributes();
 
-	GraphicsMaterial getSelectedMaterial()
+	Material getSelectedMaterial()
 	{
-		return GraphicsMaterial(cmzn_graphics_get_selected_material(id));
+		return Material(cmzn_graphics_get_selected_material(id));
 	}
 
-	int setSelectedMaterial(GraphicsMaterial& graphicsMaterial)
+	int setSelectedMaterial(Material& material)
 	{
-		return cmzn_graphics_set_selected_material(id, graphicsMaterial.getId());
+		return cmzn_graphics_set_selected_material(id, material.getId());
 	}
 
 	Spectrum getSpectrum()

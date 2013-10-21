@@ -8,7 +8,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "zinc/glyph.h"
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "zinc/scene.h"
 #include "zinc/timekeeper.h"
 #include "general/debug.h"
@@ -35,7 +35,7 @@ struct cmzn_graphics_module
 	/* attribute managers and defaults: */
 	struct cmzn_glyphmodule *glyphmodule;
 	void *glyph_manager_callback_id;
-	struct cmzn_graphics_material_module *material_module;
+	struct cmzn_materialmodule *materialmodule;
 	void *material_manager_callback_id;
 	Light_module *light_module;
 	cmzn_spectrummodule_id spectrummodule;
@@ -218,7 +218,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 		{
 			module->light_module = Light_module_create();
 			module->light_model_module = Light_model_module_create();
-			module->material_module = NULL;
+			module->materialmodule = NULL;
 			module->sceneviewermodule = NULL;
 			module->spectrummodule=cmzn_spectrummodule_create();
 			module->scenefiltermodule=cmzn_scenefiltermodule_create();
@@ -227,15 +227,15 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
 					(void *)module, cmzn_fontmodule_get_manager(module->fontmodule));
 			module->root_region = cmzn_context_get_default_region(context);
-			module->material_module = cmzn_graphics_material_module_create(
+			module->materialmodule = cmzn_materialmodule_create(
 					cmzn_spectrummodule_get_manager(module->spectrummodule));
-			module->glyphmodule = cmzn_glyphmodule_create(module->material_module);
+			module->glyphmodule = cmzn_glyphmodule_create(module->materialmodule);
 			module->glyph_manager_callback_id =
 				MANAGER_REGISTER(cmzn_glyph)(cmzn_graphics_module_glyph_manager_callback,
 					(void *)module, cmzn_glyphmodule_get_manager(module->glyphmodule));
 			module->material_manager_callback_id =
 				MANAGER_REGISTER(Graphical_material)(cmzn_graphics_module_material_manager_callback,
-					(void *)module, cmzn_graphics_material_module_get_manager(module->material_module));
+					(void *)module, cmzn_materialmodule_get_manager(module->materialmodule));
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(Spectrum)(cmzn_graphics_module_spectrum_manager_callback,
 					(void *)module, cmzn_spectrummodule_get_manager(module->spectrummodule));
@@ -264,12 +264,12 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 	return (module);
 }
 
-struct cmzn_graphics_material_module *cmzn_graphics_module_get_material_module(
+struct cmzn_materialmodule *cmzn_graphics_module_get_materialmodule(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->material_module)
+	if (graphics_module && graphics_module->materialmodule)
 	{
-		return cmzn_graphics_material_module_access(graphics_module->material_module);
+		return cmzn_materialmodule_access(graphics_module->materialmodule);
 	}
 
 	return 0;
@@ -333,7 +333,7 @@ int cmzn_graphics_module_destroy(
 				cmzn_region_destroy(&graphics_module->root_region);
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id,
-				cmzn_graphics_material_module_get_manager(graphics_module->material_module));
+				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
 			MANAGER_DEREGISTER(Spectrum)(
 				graphics_module->spectrum_manager_callback_id, cmzn_spectrummodule_get_manager(graphics_module->spectrummodule));
 			MANAGER_DEREGISTER(cmzn_tessellation)(
@@ -352,8 +352,8 @@ int cmzn_graphics_module_destroy(
 				cmzn_spectrummodule_destroy(&graphics_module->spectrummodule);
 			if (graphics_module->fontmodule)
 				cmzn_fontmodule_destroy(&graphics_module->fontmodule);
-			if (graphics_module->material_module)
-				cmzn_graphics_material_module_destroy(&graphics_module->material_module);
+			if (graphics_module->materialmodule)
+				cmzn_materialmodule_destroy(&graphics_module->materialmodule);
 			if (graphics_module->scenefiltermodule)
 				cmzn_scenefiltermodule_destroy(&graphics_module->scenefiltermodule);
 			if (graphics_module->default_timekeeper)

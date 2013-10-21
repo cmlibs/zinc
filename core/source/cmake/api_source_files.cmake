@@ -38,7 +38,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/glyph.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphics.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/font.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphicsmaterial.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/material.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/interactivetool.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/node.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/optimisation.h
@@ -71,7 +71,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/glyphid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsmaterialid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/materialid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/interactivetoolid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/nodeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/optimisationid.h

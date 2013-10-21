@@ -14,7 +14,7 @@
 #define CMZN_GLYPH_H__
 
 #include "types/glyphid.h"
-#include "types/graphicsmaterialid.h"
+#include "types/materialid.h"
 #include "types/spectrumid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -96,7 +96,7 @@ ZINC_API int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule);
  * - using glyph "arrow_solid" and axis width 0.25. 
  * Note that the colour axes find standard materials "red", "green" and "blue"
  * for the 3 axes but are not created if those materials are not defined.
- * @see cmzn_graphics_material_module_define_standard_materials
+ * @see cmzn_materialmodule_define_standard_materials
  * All the above standard glyphs also have unique types enumeration.
  * @see cmzn_glyph_type
  * Note if any glyphs of the predefined name already exist prior to calling this
@@ -311,7 +311,7 @@ ZINC_API int cmzn_glyph_axes_set_axis_label(cmzn_glyph_axes_id axes,
  * @param axis_number  The axis number from 1 to 3.
  * @return  Handle to material or NULL if none or error. Up to caller to destroy.
  */
-ZINC_API cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
+ZINC_API cmzn_material_id cmzn_glyph_axes_get_axis_material(
 	cmzn_glyph_axes_id axes, int axis_number);
 
 /**
@@ -325,7 +325,7 @@ ZINC_API cmzn_graphics_material_id cmzn_glyph_axes_get_axis_material(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
-	int axis_number, cmzn_graphics_material_id material);
+	int axis_number, cmzn_material_id material);
 
 /**
  * Create a glyph which draws a colour bar for the spectrum with ticks and
@@ -473,7 +473,7 @@ ZINC_API int cmzn_glyph_colour_bar_set_label_divisions(
  * @return  Handle to label material, or 0 if none or error.
  * Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
+ZINC_API cmzn_material_id cmzn_glyph_colour_bar_get_label_material(
 	cmzn_glyph_colour_bar_id colour_bar);
 
 /**
@@ -486,7 +486,7 @@ ZINC_API cmzn_graphics_material_id cmzn_glyph_colour_bar_get_label_material(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_glyph_colour_bar_set_label_material(
-	cmzn_glyph_colour_bar_id colour_bar, cmzn_graphics_material_id material);
+	cmzn_glyph_colour_bar_id colour_bar, cmzn_material_id material);
 
 /**
  * Get the number format used to write value labels on the colour bar.

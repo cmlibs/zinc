@@ -225,7 +225,7 @@ cmzn_fontmodule_id cmzn_graphics_module_get_fontmodule(
  * @return  the material pacakage in graphics module if successfully called,
  *    otherwise NULL.
  */
-cmzn_graphics_material_module_id cmzn_graphics_module_get_material_module(
+cmzn_materialmodule_id cmzn_graphics_module_get_materialmodule(
 	struct cmzn_graphics_module *graphics_module);
 
 int cmzn_graphics_module_enable_scenes(

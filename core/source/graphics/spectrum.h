@@ -26,7 +26,7 @@ Spectrum structures and support code.
 #include "general/object.h"
 #include "general/manager_private.h"
 
-struct cmzn_graphics_material;
+struct cmzn_material;
 struct cmzn_spectrumcomponent;
 /*
 Global types
@@ -219,7 +219,7 @@ Returns the string of the spectrum.
 ==============================================================================*/
 
 int Spectrum_render_value_on_material(struct Spectrum *spectrum,
-	struct cmzn_graphics_material *material, int number_of_data_components,
+	struct cmzn_material *material, int number_of_data_components,
 	GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006

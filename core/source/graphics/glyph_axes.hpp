@@ -12,7 +12,7 @@
 #ifndef GLYPH_AXES_HPP
 #define GLYPH_AXES_HPP
 
-#include "zinc/graphicsmaterial.h"
+#include "zinc/material.h"
 #include "graphics/glyph.hpp"
 
 struct cmzn_glyph_axes : public cmzn_glyph
@@ -21,7 +21,7 @@ private:
 	cmzn_glyph *axisGlyph;
 	double axisWidth;
 	char *axisLabels[3];
-	cmzn_graphics_material *axisMaterials[3];
+	cmzn_material *axisMaterials[3];
 	GT_object *graphicsObject;
 
 	cmzn_glyph_axes(cmzn_glyph *axisGlyphIn, double axisWidthIn);
@@ -37,7 +37,7 @@ public:
 	}
 
 	virtual GT_object *getGraphicsObject(cmzn_tessellation *tessellation,
-		cmzn_graphics_material *material, cmzn_font *font);
+		cmzn_material *material, cmzn_font *font);
 
 	virtual bool usesFont()
 	{
@@ -62,9 +62,9 @@ public:
 	int setAxisLabel(int axisNumber, const char *label);
 
 	/** @return  ACCESSed material or 0 */
-	cmzn_graphics_material *getAxisMaterial(int axisNumber);
+	cmzn_material *getAxisMaterial(int axisNumber);
 
-	int setAxisMaterial(int axisNumber, cmzn_graphics_material *material);
+	int setAxisMaterial(int axisNumber, cmzn_material *material);
 
 	virtual void fontChange();
 

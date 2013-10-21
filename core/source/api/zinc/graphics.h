@@ -18,7 +18,7 @@
 #include "types/glyphid.h"
 #include "types/graphicsid.h"
 #include "types/fontid.h"
-#include "types/graphicsmaterialid.h"
+#include "types/materialid.h"
 #include "types/scenecoordinatesystem.h"
 #include "types/spectrumid.h"
 #include "types/tessellationid.h"
@@ -93,7 +93,7 @@ ZINC_API int cmzn_graphics_set_data_field(cmzn_graphics_id graphics,
  * @return  Handle to material, or 0 if error. Up to caller to destroy returned
  * handle.
  */
-ZINC_API cmzn_graphics_material_id cmzn_graphics_get_material(
+ZINC_API cmzn_material_id cmzn_graphics_get_material(
 	cmzn_graphics_id graphics);
 
 /**
@@ -104,7 +104,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_get_material(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_set_material(cmzn_graphics_id graphics,
-	cmzn_graphics_material_id material);
+	cmzn_material_id material);
 
 /**
  * Get the width used for rendering line primitives in GL in renderer 'point
@@ -226,7 +226,7 @@ ZINC_API int cmzn_graphics_set_select_mode(cmzn_graphics_id graphics,
  * @return  Handle to material, or 0 if error. Up to caller to destroy returned
  * handle.
  */
-ZINC_API cmzn_graphics_material_id cmzn_graphics_get_selected_material(
+ZINC_API cmzn_material_id cmzn_graphics_get_selected_material(
 	cmzn_graphics_id graphics);
 
 /**
@@ -237,7 +237,7 @@ ZINC_API cmzn_graphics_material_id cmzn_graphics_get_selected_material(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_set_selected_material(cmzn_graphics_id graphics,
-	cmzn_graphics_material_id selected_material);
+	cmzn_material_id selected_material);
 
 /**
  * Gets the spectrum used with the data field to colour the graphics.
