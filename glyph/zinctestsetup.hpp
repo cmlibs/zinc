@@ -9,7 +9,7 @@
 #include <zinc/region.h>
 #include <zinc/fieldmodule.h>
 #include <zinc/glyph.h>
-#include <zinc/graphicsmaterial.h>
+#include <zinc/material.h>
 #include <zinc/scene.h>
 
 class ZincTestSetup
@@ -19,7 +19,7 @@ public:
 	cmzn_region_id root_region;
 	cmzn_fieldmodule_id fm;
 	cmzn_glyphmodule_id glyphmodule;
-	cmzn_graphics_material_module_id material_module;
+	cmzn_materialmodule_id materialmodule;
 	cmzn_scene_id scene;
 
 	ZincTestSetup() :
@@ -27,21 +27,21 @@ public:
 		root_region(cmzn_context_get_default_region(context)),
 		fm(cmzn_region_get_fieldmodule(root_region)),
 		glyphmodule(cmzn_context_get_glyphmodule(context)),
-		material_module(cmzn_context_get_material_module(context)),
+		materialmodule(cmzn_context_get_materialmodule(context)),
 		scene(0)
 	{
 		scene = cmzn_region_get_scene(root_region);
 		EXPECT_NE(static_cast<cmzn_fieldmodule *>(0), fm);
 		EXPECT_NE(static_cast<cmzn_glyphmodule *>(0), glyphmodule);
 		EXPECT_EQ(CMZN_OK, cmzn_glyphmodule_define_standard_glyphs(glyphmodule));
-		EXPECT_EQ(CMZN_OK, cmzn_graphics_material_module_define_standard_materials(material_module));
+		EXPECT_EQ(CMZN_OK, cmzn_materialmodule_define_standard_materials(materialmodule));
 		EXPECT_NE(static_cast<cmzn_scene *>(0), scene);
 	}
 
 	~ZincTestSetup()
 	{
 		cmzn_scene_destroy(&scene);
-		cmzn_graphics_material_module_destroy(&material_module);
+		cmzn_materialmodule_destroy(&materialmodule);
 		cmzn_glyphmodule_destroy(&glyphmodule);
 		cmzn_fieldmodule_destroy(&fm);
 		cmzn_region_destroy(&root_region);

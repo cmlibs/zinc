@@ -186,23 +186,23 @@ TEST(cmzn_graphics_api, material)
 	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphics_material_module_id material_module = cmzn_context_get_material_module(zinc.context);
-	cmzn_graphics_material_id default_material = cmzn_graphics_material_module_get_default_material(material_module);
-	cmzn_graphics_material_id temp_material = cmzn_graphics_get_material(gr);
+	cmzn_materialmodule_id materialmodule = cmzn_context_get_materialmodule(zinc.context);
+	cmzn_material_id default_material = cmzn_materialmodule_get_default_material(materialmodule);
+	cmzn_material_id temp_material = cmzn_graphics_get_material(gr);
 	EXPECT_EQ(default_material, temp_material);
-	cmzn_graphics_material_destroy(&temp_material);
-	cmzn_graphics_material_destroy(&default_material);
+	cmzn_material_destroy(&temp_material);
+	cmzn_material_destroy(&default_material);
 
-	cmzn_graphics_material_id material = cmzn_graphics_material_module_create_material(material_module);
+	cmzn_material_id material = cmzn_materialmodule_create_material(materialmodule);
 	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_material(gr, material));
 	temp_material = cmzn_graphics_get_material(gr);
 	EXPECT_EQ(material, temp_material);
-	cmzn_graphics_material_destroy(&temp_material);
-	cmzn_graphics_material_destroy(&material);
+	cmzn_material_destroy(&temp_material);
+	cmzn_material_destroy(&material);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_material(gr, 0));
 
-	cmzn_graphics_material_module_destroy(&material_module);
+	cmzn_materialmodule_destroy(&materialmodule);
 	cmzn_graphics_destroy(&gr);
 }
 
@@ -213,17 +213,17 @@ TEST(cmzn_graphics_api, material_cpp)
 	GraphicsLines gr = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
-	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
-	GraphicsMaterial tempMaterial = gr.getMaterial();
+	Materialmodule materialModule = zinc.context.getMaterialmodule();
+	Material defaultMaterial = materialModule.getDefaultMaterial();
+	Material tempMaterial = gr.getMaterial();
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
 
-	GraphicsMaterial material = materialModule.createMaterial();
+	Material material = materialModule.createMaterial();
 	EXPECT_EQ(OK, gr.setMaterial(material));
 	tempMaterial = gr.getMaterial();
 	EXPECT_EQ(material.getId(), tempMaterial.getId());
 
-	GraphicsMaterial noMaterial;
+	Material noMaterial;
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setMaterial(noMaterial));
 }
 
@@ -349,23 +349,23 @@ TEST(cmzn_graphics_api, selected_material)
 	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	cmzn_graphics_material_module_id material_module = cmzn_context_get_material_module(zinc.context);
-	cmzn_graphics_material_id default_selected_material = cmzn_graphics_material_module_get_default_selected_material(material_module);
-	cmzn_graphics_material_id temp_selected_material = cmzn_graphics_get_selected_material(gr);
+	cmzn_materialmodule_id materialmodule = cmzn_context_get_materialmodule(zinc.context);
+	cmzn_material_id default_selected_material = cmzn_materialmodule_get_default_selected_material(materialmodule);
+	cmzn_material_id temp_selected_material = cmzn_graphics_get_selected_material(gr);
 	EXPECT_EQ(default_selected_material, temp_selected_material);
-	cmzn_graphics_material_destroy(&temp_selected_material);
-	cmzn_graphics_material_destroy(&default_selected_material);
+	cmzn_material_destroy(&temp_selected_material);
+	cmzn_material_destroy(&default_selected_material);
 
-	cmzn_graphics_material_id selected_material = cmzn_graphics_material_module_create_material(material_module);
+	cmzn_material_id selected_material = cmzn_materialmodule_create_material(materialmodule);
 	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_selected_material(gr, selected_material));
 	temp_selected_material = cmzn_graphics_get_selected_material(gr);
 	EXPECT_EQ(selected_material, temp_selected_material);
-	cmzn_graphics_material_destroy(&temp_selected_material);
-	cmzn_graphics_material_destroy(&selected_material);
+	cmzn_material_destroy(&temp_selected_material);
+	cmzn_material_destroy(&selected_material);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphics_set_selected_material(gr, 0));
 
-	cmzn_graphics_material_module_destroy(&material_module);
+	cmzn_materialmodule_destroy(&materialmodule);
 	cmzn_graphics_destroy(&gr);
 }
 
@@ -376,17 +376,17 @@ TEST(cmzn_graphics_api, selected_material_cpp)
 	GraphicsLines gr = zinc.scene.createGraphicsLines();
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
-	GraphicsMaterial defaultSelectedMaterial = materialModule.getDefaultSelectedMaterial();
-	GraphicsMaterial tempSelectedMaterial = gr.getSelectedMaterial();
+	Materialmodule materialModule = zinc.context.getMaterialmodule();
+	Material defaultSelectedMaterial = materialModule.getDefaultSelectedMaterial();
+	Material tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(defaultSelectedMaterial.getId(), tempSelectedMaterial.getId());
 
-	GraphicsMaterial selectedMaterial = materialModule.createMaterial();
+	Material selectedMaterial = materialModule.createMaterial();
 	EXPECT_EQ(OK, gr.setSelectedMaterial(selectedMaterial));
 	tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(selectedMaterial.getId(), tempSelectedMaterial.getId());
 
-	GraphicsMaterial noMaterial;
+	Material noMaterial;
 	EXPECT_EQ(ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
 }
 

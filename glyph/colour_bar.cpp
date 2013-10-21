@@ -150,18 +150,18 @@ TEST(cmzn_glyph_colour_bar, valid_attributes)
 	EXPECT_EQ(labelDivisionsIn, value = cmzn_glyph_colour_bar_get_label_divisions(colourBar));
 
 	EXPECT_EQ(0, cmzn_glyph_colour_bar_get_label_material(colourBar));
-	cmzn_graphics_material_module_id materialModule = cmzn_context_get_material_module(zinc.context);
-	cmzn_graphics_material_id defaultMaterial = cmzn_graphics_material_module_get_default_material(materialModule);
-	EXPECT_NE(static_cast<cmzn_graphics_material_id>(0), defaultMaterial);
+	cmzn_materialmodule_id materialModule = cmzn_context_get_materialmodule(zinc.context);
+	cmzn_material_id defaultMaterial = cmzn_materialmodule_get_default_material(materialModule);
+	EXPECT_NE(static_cast<cmzn_material_id>(0), defaultMaterial);
 	EXPECT_EQ(CMZN_OK, result = cmzn_glyph_colour_bar_set_label_material(colourBar, defaultMaterial));
-	cmzn_graphics_material_id tempMaterial = cmzn_glyph_colour_bar_get_label_material(colourBar);
+	cmzn_material_id tempMaterial = cmzn_glyph_colour_bar_get_label_material(colourBar);
 	EXPECT_EQ(defaultMaterial, tempMaterial);
-	cmzn_graphics_material_destroy(&tempMaterial);
+	cmzn_material_destroy(&tempMaterial);
 	EXPECT_EQ(CMZN_OK, result = cmzn_glyph_colour_bar_set_label_material(colourBar, 0));
 	tempMaterial = cmzn_glyph_colour_bar_get_label_material(colourBar);
-	EXPECT_EQ(static_cast<cmzn_graphics_material_id>(0), tempMaterial);
-	cmzn_graphics_material_destroy(&defaultMaterial);
-	cmzn_graphics_material_module_destroy(&materialModule);
+	EXPECT_EQ(static_cast<cmzn_material_id>(0), tempMaterial);
+	cmzn_material_destroy(&defaultMaterial);
+	cmzn_materialmodule_destroy(&materialModule);
 
 	const char *numberFormatIn = "%+5.2f %%";
 	char *numberFormat = cmzn_glyph_colour_bar_get_number_format(colourBar);
@@ -241,15 +241,15 @@ TEST(cmzn_glyph_colour_bar, valid_attributes_cpp)
 	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelDivisions(labelDivisionsIn));
 	EXPECT_EQ(labelDivisionsIn, value = colourBar.getLabelDivisions());
 
-	GraphicsMaterial tempMaterial = colourBar.getLabelMaterial();
+	Material tempMaterial = colourBar.getLabelMaterial();
 	EXPECT_FALSE(tempMaterial.isValid());
-	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
-	GraphicsMaterial defaultMaterial = materialModule.getDefaultMaterial();
+	Materialmodule materialModule = zinc.context.getMaterialmodule();
+	Material defaultMaterial = materialModule.getDefaultMaterial();
 	EXPECT_TRUE(defaultMaterial.isValid());
 	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelMaterial(defaultMaterial));
 	tempMaterial = colourBar.getLabelMaterial();
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
-	GraphicsMaterial noMaterial;
+	Material noMaterial;
 	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelMaterial(noMaterial));
 	tempMaterial = colourBar.getLabelMaterial();
 	EXPECT_FALSE(tempMaterial.isValid());

@@ -19,7 +19,7 @@ public:
 	Region root_region;
 	Fieldmodule fm;
 	Glyphmodule glyphmodule;
-	GraphicsMaterialModule materialModule;
+	Materialmodule materialModule;
 	Scene scene;
 
 	ZincTestSetupCpp() :
@@ -27,7 +27,7 @@ public:
 		root_region(context.getDefaultRegion()),
 		fm(root_region.getFieldmodule()),
 		glyphmodule(context.getGlyphmodule()),
-		materialModule(context.getMaterialModule()),
+		materialModule(context.getMaterialmodule()),
 		scene(0)
 	{
 		scene = root_region.getScene();

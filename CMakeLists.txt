@@ -26,7 +26,7 @@ SET(TESTIMAGE_GRAY_JPG_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/testimage
 INCLUDE(fieldmodule/tests.cmake)
 INCLUDE(glyph/tests.cmake)
 INCLUDE(graphic/tests.cmake)
-INCLUDE(graphics_material/tests.cmake)
+INCLUDE(material/tests.cmake)
 INCLUDE(selection/tests.cmake)
 INCLUDE(spectrum/tests.cmake)
 INCLUDE(time/tests.cmake)

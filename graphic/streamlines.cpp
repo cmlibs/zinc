@@ -57,7 +57,7 @@ TEST(cmzn_graphics_streamlines, cast_cpp)
 	EXPECT_FALSE(po.isValid());
 
 	// try any base class API
-	GraphicsMaterial material = st.getMaterial();
+	Material material = st.getMaterial();
 	ASSERT_TRUE(material.isValid());
 }
 

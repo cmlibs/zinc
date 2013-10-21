@@ -3,9 +3,9 @@
 
 #include <zinc/core.h>
 #include <zinc/glyph.h>
-#include <zinc/graphicsmaterial.h>
+#include <zinc/material.h>
 
-#include <zinc/graphicsmaterial.hpp>
+#include <zinc/material.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
@@ -83,9 +83,9 @@ TEST(cmzn_glyph_axes, valid_attributes)
 	ASSERT_DOUBLE_EQ(0.25, axisWidth);
 
 	const char *axisLabels[3] = { "A", "B", "C" };
-	cmzn_graphics_material_module_id materialModule = cmzn_context_get_material_module(zinc.context);
-	cmzn_graphics_material_id red = cmzn_graphics_material_module_find_material_by_name(materialModule, "red");
-	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), red);
+	cmzn_materialmodule_id materialModule = cmzn_context_get_materialmodule(zinc.context);
+	cmzn_material_id red = cmzn_materialmodule_find_material_by_name(materialModule, "red");
+	EXPECT_NE(static_cast<cmzn_material *>(0), red);
 
 	for (int i = 1; i <= 3; ++i)
 	{
@@ -95,18 +95,18 @@ TEST(cmzn_glyph_axes, valid_attributes)
 		EXPECT_STREQ(axisLabels[i - 1], label);
 		cmzn_deallocate(label);
 
-		cmzn_graphics_material_id material = cmzn_glyph_axes_get_axis_material(axes, i);
-		EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), material);
+		cmzn_material_id material = cmzn_glyph_axes_get_axis_material(axes, i);
+		EXPECT_EQ(static_cast<cmzn_material *>(0), material);
 		EXPECT_EQ(CMZN_OK, cmzn_glyph_axes_set_axis_material(axes, i, red));
 		material = cmzn_glyph_axes_get_axis_material(axes, i);
 		EXPECT_EQ(red, material);
-		cmzn_graphics_material_destroy(&material);
+		cmzn_material_destroy(&material);
 	}
 	// check can clear label
 	EXPECT_EQ(CMZN_OK, cmzn_glyph_axes_set_axis_label(axes, 1, 0));
 
-	cmzn_graphics_material_destroy(&red);
-	cmzn_graphics_material_module_destroy(&materialModule);
+	cmzn_material_destroy(&red);
+	cmzn_materialmodule_destroy(&materialModule);
 	cmzn_glyph_destroy(&axisGlyph);
 	cmzn_glyph_axes_destroy(&axes);
 }
@@ -126,8 +126,8 @@ TEST(ZincGlyphAxes, valid_attributes)
 	axisWidth = axes.getAxisWidth();
 	ASSERT_DOUBLE_EQ(0.25, axisWidth);
 
-	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
-	GraphicsMaterial red = materialModule.findMaterialByName("red");
+	Materialmodule materialModule = zinc.context.getMaterialmodule();
+	Material red = materialModule.findMaterialByName("red");
 	EXPECT_TRUE(red.isValid());
 
 	const char *axisLabels[3] = { "A", "B", "C" };
@@ -139,7 +139,7 @@ TEST(ZincGlyphAxes, valid_attributes)
 		EXPECT_STREQ(axisLabels[i - 1], label);
 		cmzn_deallocate(label);
 
-		GraphicsMaterial material = axes.getAxisMaterial(i);
+		Material material = axes.getAxisMaterial(i);
 		EXPECT_FALSE(material.isValid());
 		EXPECT_EQ(CMZN_OK, axes.setAxisMaterial(i, red));
 		material = axes.getAxisMaterial(i);
@@ -175,21 +175,21 @@ TEST(cmzn_glyph_axes, invalid_attributes)
 	EXPECT_EQ(static_cast<char *>(0), cmzn_glyph_axes_get_axis_label(axes, 0));
 	EXPECT_EQ(static_cast<char *>(0), cmzn_glyph_axes_get_axis_label(axes, 4));
 
-	cmzn_graphics_material_module_id materialModule = cmzn_context_get_material_module(zinc.context);
-	cmzn_graphics_material_id red = cmzn_graphics_material_module_find_material_by_name(materialModule, "red");
-	EXPECT_NE(static_cast<cmzn_graphics_material *>(0), red);
+	cmzn_materialmodule_id materialModule = cmzn_context_get_materialmodule(zinc.context);
+	cmzn_material_id red = cmzn_materialmodule_find_material_by_name(materialModule, "red");
+	EXPECT_NE(static_cast<cmzn_material *>(0), red);
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_material(0, 1, red));
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_material(axes, 0, red));
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_glyph_axes_set_axis_material(axes, 4, red));
 	EXPECT_EQ(CMZN_OK, cmzn_glyph_axes_set_axis_material(axes, 1, red));
 
-	EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), cmzn_glyph_axes_get_axis_material(0, 1));
-	EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), cmzn_glyph_axes_get_axis_material(axes, 0));
-	EXPECT_EQ(static_cast<cmzn_graphics_material *>(0), cmzn_glyph_axes_get_axis_material(axes, 4));
+	EXPECT_EQ(static_cast<cmzn_material *>(0), cmzn_glyph_axes_get_axis_material(0, 1));
+	EXPECT_EQ(static_cast<cmzn_material *>(0), cmzn_glyph_axes_get_axis_material(axes, 0));
+	EXPECT_EQ(static_cast<cmzn_material *>(0), cmzn_glyph_axes_get_axis_material(axes, 4));
 
-	cmzn_graphics_material_destroy(&red);
-	cmzn_graphics_material_module_destroy(&materialModule);
+	cmzn_material_destroy(&red);
+	cmzn_materialmodule_destroy(&materialModule);
 	cmzn_glyph_destroy(&axisGlyph);
 	cmzn_glyph_axes_destroy(&axes);
 }
@@ -224,8 +224,8 @@ TEST(ZincGlyphAxes, invalid_attributes)
 	EXPECT_EQ(static_cast<char *>(0), axes.getAxisLabel(0));
 	EXPECT_EQ(static_cast<char *>(0), axes.getAxisLabel(4));
 
-	GraphicsMaterialModule materialModule = zinc.context.getMaterialModule();
-	GraphicsMaterial red = materialModule.findMaterialByName("red");
+	Materialmodule materialModule = zinc.context.getMaterialmodule();
+	Material red = materialModule.findMaterialByName("red");
 	EXPECT_TRUE(red.isValid());
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, noAxes.setAxisMaterial(1, red));
@@ -233,7 +233,7 @@ TEST(ZincGlyphAxes, invalid_attributes)
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, axes.setAxisMaterial(4, red));
 	EXPECT_EQ(CMZN_OK, axes.setAxisMaterial(1, red));
 
-	GraphicsMaterial material;
+	Material material;
 	material = noAxes.getAxisMaterial(1);
 	EXPECT_FALSE(material.isValid());
 	material = axes.getAxisMaterial(0);
