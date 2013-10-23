@@ -606,10 +606,13 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		Triple *axis3 = glyph_set->axis3_list;
 		Triple *scale = glyph_set->scale_list;
 		Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+		temp_point[0] = 0.0;
+		temp_point[1] = 0.0;
+		temp_point[2] = 0.0;
 		char **label;
 		ZnReal a1, a2, a3, a_angle, a_magnitude, ax1, ax2, ax3, b1, b2, b3, b_angle,
 			bx1, bx2, bx3, c1, c2, c3, cx1, cx2, cx3, dp, j1, j2, j3,
-			c_magnitude, s1, s2, s3, x, y, z;
+			c_magnitude, s1, s2, s3, x = 0.0, y = 0.0, z = 0.0;
 		int i, j, number_of_skew_glyph_axes, skewed_axes;
 		struct Graphical_material *material_copy;
 		GT_object *glyph = glyph_set->glyph;
@@ -1273,7 +1276,7 @@ Writes VRML code to the file handle which represents the given pointset.
 ==============================================================================*/
 {
 	char **text_string;
-	ZnReal delta, x, y, z;
+	ZnReal delta, x = 0.0, y = 0.0, z = 0.0;
 	int i, offset, return_code;
 	Triple *point;
 	struct Graphical_material *material_copy;
