@@ -201,7 +201,7 @@ ZINC_API int cmzn_region_insert_child_before(cmzn_region_id region,
  *
  * @param region  The current parent region of old_child.
  * @param old_child  The child to remove.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_region_remove_child(cmzn_region_id region,
 	cmzn_region_id old_child);

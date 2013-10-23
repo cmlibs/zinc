@@ -174,6 +174,11 @@ public:
 
 	virtual void propagate_hierarchical_field_changes(MANAGER_MESSAGE(Computed_field) *message);
 
+	virtual void subregionRemoved(cmzn_region *subregion)
+	{
+		this->removeRegion(subregion);
+	}
+
 	bool isEmptyLocal() const;
 
 	virtual bool isEmpty() const

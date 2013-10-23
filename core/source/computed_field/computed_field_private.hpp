@@ -387,6 +387,13 @@ public:
 	{
 	}
 
+	/**
+	 * Override for hierarchical fields (e.g. group) which must remove any links
+	 * to removed subregion */
+	virtual void subregionRemoved(cmzn_region *subregion)
+	{
+	}
+
 	/** Override if field is not real valued */
 	virtual cmzn_field_value_type get_value_type() const
 	{
@@ -899,7 +906,7 @@ int cmzn_fieldmodule_set_replace_field(
 struct Computed_field *cmzn_fieldmodule_get_replace_field(
 	struct cmzn_fieldmodule *field_module);
 
-/***************************************************************************//**
+/**
  * For each hierarchical field in manager, propagates changes from sub-region
  * fields, if any.
  *
@@ -908,6 +915,16 @@ struct Computed_field *cmzn_fieldmodule_get_replace_field(
  */
 void Computed_field_manager_propagate_hierarchical_field_changes(
 	MANAGER(Computed_field) *manager, MANAGER_MESSAGE(Computed_field) *message);
+
+/**
+ * For each hierarchical field in manager, ensure any subfields in the removed
+ * subregion are removed. Currently only applicable to group fields.
+ *
+ * @param manager  Parent region field manager.
+ * @param subregion  The subregion being removed.
+ */
+void Computed_field_manager_subregion_removed(MANAGER(Computed_field) *manager,
+	cmzn_region *subregion);
 
 /***************************************************************************//**
  * Same as MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field) but also returns
