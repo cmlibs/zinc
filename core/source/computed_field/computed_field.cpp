@@ -3186,35 +3186,28 @@ int Computed_field_is_not_source_field_of_others(struct Computed_field *field)
 	return return_code;
 }
 
-/***************************************************************************//**
- * Asks field to propagates changes from sub-region field, as appropriate to
- * field type.
- *
- * @param field  Parent field.
- * @param message_void  Child region field manager change message.
- * @return 1
- */
-static int Computed_field_propagate_hierarchical_field_changes(
-	Computed_field *field, void *message_void)
-{
-	if (field)
-	{
-		MANAGER_MESSAGE(Computed_field) *message =
-			(MANAGER_MESSAGE(Computed_field) *)message_void;
-		field->core->propagate_hierarchical_field_changes(message);
-	}
-	return 1;
-}
-
 void Computed_field_manager_propagate_hierarchical_field_changes(
 	MANAGER(Computed_field) *manager, MANAGER_MESSAGE(Computed_field) *message)
 {
 	if (manager && message)
 	{
 		MANAGER_BEGIN_CACHE(Computed_field)(manager);
-		FOR_EACH_OBJECT_IN_MANAGER(Computed_field)(
-			Computed_field_propagate_hierarchical_field_changes, (void *)message,
-			manager);
+		cmzn_set_cmzn_field *all_fields = reinterpret_cast<cmzn_set_cmzn_field *>(manager->object_list);
+		for (cmzn_set_cmzn_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
+			(*iter)->core->propagate_hierarchical_field_changes(message);
+		MANAGER_END_CACHE(Computed_field)(manager);
+	}
+}
+
+void Computed_field_manager_subregion_removed(MANAGER(Computed_field) *manager,
+	cmzn_region *subregion)
+{
+	if (manager && subregion)
+	{
+		MANAGER_BEGIN_CACHE(Computed_field)(manager);
+		cmzn_set_cmzn_field *all_fields = reinterpret_cast<cmzn_set_cmzn_field *>(manager->object_list);
+		for (cmzn_set_cmzn_field::iterator iter = all_fields->begin(); iter != all_fields->end(); iter++)
+			(*iter)->core->subregionRemoved(subregion);
 		MANAGER_END_CACHE(Computed_field)(manager);
 	}
 }

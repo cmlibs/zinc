@@ -1048,11 +1048,12 @@ int cmzn_region_insert_child_before(struct cmzn_region *region,
 int cmzn_region_remove_child(struct cmzn_region *region,
 	struct cmzn_region *old_child)
 {
-	int return_code = 0;
 	if (region && old_child)
 	{
 		if (old_child->parent == region)
 		{
+			cmzn_region_begin_change(region);
+			Computed_field_manager_subregion_removed(region->field_manager, old_child);
 			int delta_change_level = cmzn_region_get_sum_hierarchical_change_level(region);
 			if (old_child == region->first_child)
 			{
@@ -1086,10 +1087,11 @@ int cmzn_region_remove_child(struct cmzn_region *region,
 			}
 			cmzn_region_update(region);
 			DEACCESS(cmzn_region)(&old_child);
-			return_code = 1;
+			cmzn_region_end_change(region);
+			return CMZN_OK;
 		}
 	}
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_region_contains_subregion(struct cmzn_region *region,
