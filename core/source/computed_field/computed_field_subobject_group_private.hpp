@@ -131,14 +131,7 @@ public:
 			if (object_map.find(identifier) != object_map.end())
 			{
 				object_map.erase(identifier);
-				if (0 == object_map.size())
-				{
-					change_detail.changeClear();
-				}
-				else
-				{
-					change_detail.changeRemove();
-				}
+				change_detail.changeRemove();
 				update();
 				return 1;
 			}
@@ -159,7 +152,7 @@ public:
 			if (object_map.size())
 			{
 				object_map.clear();
-				change_detail.changeClear();
+				change_detail.changeRemove();
 				update();
 			}
 			return 1;
