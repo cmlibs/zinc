@@ -217,13 +217,21 @@ TEST(cmzn_selectionnotifier, hierarchical_change)
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_region(group, childRegion));
 	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_TRUE(cmzn_field_group_contains_region(group, childRegion));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_remove_region(group, childRegion));
 	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_FALSE(cmzn_field_group_contains_region(group, childRegion));
 
-	// note: not testing removal of non-empty childRegion; not reported as REMOVED
+	// test removal of non-empty childRegion
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_region(group, childRegion));
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_TRUE(cmzn_field_group_contains_region(group, childRegion));
 
+	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
 	cmzn_region_remove_child(zinc.root_region, childRegion);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_FALSE(cmzn_field_group_contains_region(group, childRegion));
 	cmzn_region_destroy(&childRegion);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_destroy(&selectionnotifier));
