@@ -275,3 +275,32 @@ TEST(cmzn_material_api, valid_args_cpp)
 
 }
 
+TEST(ZincMaterial, unmanage)
+{
+	ZincTestSetupCpp zinc;
+
+	Materialmodule materialmodule = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(materialmodule.isValid());
+
+	Material material = materialmodule.createMaterial();
+	EXPECT_TRUE(material.isValid());
+
+	const char name[] = "temp";
+	int result;
+	EXPECT_EQ(CMZN_OK, result = material.setName(name));
+	EXPECT_EQ(CMZN_OK, result = material.setManaged(true));
+
+	// clear material so no local reference held
+	Material noMaterial;
+	material = noMaterial;
+	EXPECT_FALSE(material.isValid());
+
+	material = materialmodule.findMaterialByName(name);
+	EXPECT_TRUE(material.isValid());
+	EXPECT_EQ(CMZN_OK, result = material.setManaged(false));
+	material = noMaterial;
+
+	// material should be removed
+	material = materialmodule.findMaterialByName(name);
+	EXPECT_FALSE(material.isValid());
+}
