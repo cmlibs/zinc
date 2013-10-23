@@ -16536,7 +16536,7 @@ static bool FE_element_field_components_match(
 						component_1->get_scale_factor_set(), number_of_scale_factors1);
 					int scale_factor_set_offset2 = info_2->getScaleFactorSetOffset(
 						component_2->get_scale_factor_set(), number_of_scale_factors2);
-					scale_factor_offset = scale_factor_set_offset2 - scale_factor_set_offset1;
+					scale_factor_offset = scale_factor_set_offset1 - scale_factor_set_offset2;
 				}
 				if (number_of_scale_factors1 != number_of_scale_factors2)
 				{
