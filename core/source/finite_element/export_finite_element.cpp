@@ -2365,7 +2365,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
 						cmzn_field_node_group_destroy(&node_group);
 					}
-					if (nodeset)
+					if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
 					{
 						(*output_file) << " !#nodeset datapoints\n";
 						cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
@@ -2394,7 +2394,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
 						cmzn_field_node_group_destroy(&node_group);
 					}
-					if (nodeset)
+					if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
 					{
 						(*output_file) << " !#nodeset nodes\n";
 						cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
