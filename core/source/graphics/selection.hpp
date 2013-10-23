@@ -7,18 +7,88 @@
 #if !defined (SELECTION_HPP)
 #define SELECTION_HPP
 
+#include "zinc/scene.h"
 #include "zinc/selection.h"
 
-struct cmzn_selectionevent;
+/**
+ * @param group_change_type  Logical OR of cmzn_field_group_change_type enums.
+ * @return  Equivalent logical OR of cmzn_selectionevent_change_type enums.
+ */
+inline int cmzn_field_group_change_type_to_selectionevent_change_type(int group_change_type)
+{
+	// currently the same values used
+	return group_change_type;
+}
 
-struct cmzn_selectionnotifier;
+struct cmzn_selectionevent
+{
+	int changeSummary;
+	int access_count;
 
-struct cmzn_selectionnotifier *cmzn_selectionnotifier_create_private();
+	cmzn_selectionevent() :
+		changeSummary(CMZN_SELECTIONEVENT_CHANGE_NONE),
+		access_count(1)
+	{
+	}
 
-int cmzn_selectionnotifier_set_scene(cmzn_selectionnotifier_id selectionnotifier,
-	struct cmzn_scene *scene_in);
+	~cmzn_selectionevent()
+	{
+	}
 
-int cmzn_selectionnotifier_scene_destroyed(cmzn_selectionnotifier_id selectionnotifier);
+	cmzn_selectionevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
 
-PROTOTYPE_OBJECT_FUNCTIONS(cmzn_selectionnotifier);
+	static int deaccess(cmzn_selectionevent* &event);
+
+};
+
+struct cmzn_selectionnotifier
+{
+private:
+	cmzn_scene_id scene; // owning scene: not accessed
+	cmzn_selectionnotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_selectionnotifier(cmzn_scene *scene);
+
+	~cmzn_selectionnotifier();
+
+	static void fieldmanager_callback(struct MANAGER_MESSAGE(Computed_field) *message,
+		void *selectionnotifier_void);
+
+public:
+
+	/** private: external code must use cmzn_scene_create_selectionnotifier */
+	static cmzn_selectionnotifier *create(cmzn_scene *scene)
+	{
+		return new cmzn_selectionnotifier(scene);
+	}
+
+	cmzn_selectionnotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_selectionnotifier* &notifier);
+
+	int setCallback(cmzn_selectionnotifier_callback_function function_in,
+		void *user_data_in);
+
+	void clearCallback();
+
+	void sceneDestroyed();
+
+	void notify(cmzn_selectionevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
 #endif /* (SELECTION_HPP) */

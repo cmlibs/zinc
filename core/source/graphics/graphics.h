@@ -234,7 +234,7 @@ struct cmzn_graphics_to_graphics_object_data
 struct cmzn_graphics_Computed_field_change_data
 {
 	struct LIST(Computed_field) *changed_field_list;
-	int selection_changed;
+	bool selection_changed;
 };
 
 DECLARE_LIST_TYPES(cmzn_graphics);

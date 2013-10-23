@@ -34,69 +34,36 @@
 struct cmzn_field_subobject_group_change_detail : public cmzn_field_group_base_change_detail
 {
 private:
-	cmzn_field_group_change_type change;
+	int changeSummary;
 
 public:
 	cmzn_field_subobject_group_change_detail() :
-		change(CMZN_FIELD_GROUP_NO_CHANGE)
+		changeSummary(CMZN_FIELD_GROUP_CHANGE_NONE)
 	{
 	}
 
-	void clear()
+	virtual void clear()
 	{
-		change = CMZN_FIELD_GROUP_NO_CHANGE;
+		changeSummary = CMZN_FIELD_GROUP_CHANGE_NONE;
 	}
 
-	cmzn_field_group_change_type getChange() const
+	virtual int getChangeSummary() const
 	{
-		return change;
-	}
-
-	cmzn_field_group_change_type getLocalChange() const
-	{
-		return change;
+		return changeSummary;
 	}
 
 	/** Inform object(s) have been added */
 	void changeAdd()
 	{
-		switch (change)
-		{
-		case CMZN_FIELD_GROUP_NO_CHANGE:
-			change = CMZN_FIELD_GROUP_ADD;
-			break;
-		case CMZN_FIELD_GROUP_CLEAR:
-		case CMZN_FIELD_GROUP_REMOVE:
-			change = CMZN_FIELD_GROUP_REPLACE;
-			break;
-		default:
-			// do nothing
-			break;
-		}
+		this->changeSummary |= CMZN_FIELD_GROUP_CHANGE_ADD;
 	}
 
 	/** Inform object(s) have been removed (clear handled separately) */
 	void changeRemove()
 	{
-		switch (change)
-		{
-		case CMZN_FIELD_GROUP_NO_CHANGE:
-			change = CMZN_FIELD_GROUP_REMOVE;
-			break;
-		case CMZN_FIELD_GROUP_ADD:
-			change = CMZN_FIELD_GROUP_REPLACE;
-			break;
-		default:
-			// do nothing
-			break;
-		}
+		this->changeSummary |= CMZN_FIELD_GROUP_CHANGE_REMOVE;
 	}
 
-	/** Inform group has been cleared, but wasn't before */
-	void changeClear()
-	{
-		change = CMZN_FIELD_GROUP_CLEAR;
-	}
 };
 
 class Computed_field_subobject_group : public Computed_field_group_base
@@ -115,24 +82,19 @@ public:
 
 	virtual int isIdentifierInList(int identifier) = 0;
 
-	int check_dependency_for_group_special()
+	bool check_dependency_for_group_special()
 	{
-		int dependency_changed = 0;
 		if (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
-		{
-			dependency_changed = 1;
-		}
+			return true;
 		else if (field->manager_change_status & MANAGER_CHANGE_ADD(Computed_field))
 		{
 			const cmzn_field_subobject_group_change_detail *change_detail =
 				dynamic_cast<const cmzn_field_subobject_group_change_detail *>(get_change_detail());
-			const cmzn_field_group_change_type change = change_detail->getChange();
-			if ((change == CMZN_FIELD_GROUP_ADD) || (change == CMZN_FIELD_GROUP_REPLACE))
-			{
-				dependency_changed = 1;
-			}
+			const int changeSummary = change_detail->getChangeSummary();
+			if (changeSummary & CMZN_FIELD_GROUP_CHANGE_ADD)
+				return true;
 		}
-		return dependency_changed;
+		return false;
 	}
 
 };
@@ -257,11 +219,10 @@ public:
 
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
-				return NULL;
+			if (this->change_detail.getChangeSummary() == CMZN_FIELD_GROUP_CHANGE_NONE)
+				return 0;
 			cmzn_field_subobject_group_change_detail *prior_change_detail =
-				new cmzn_field_subobject_group_change_detail();
-			*prior_change_detail = change_detail;
+				new cmzn_field_subobject_group_change_detail(change_detail);
 			change_detail.clear();
 			return prior_change_detail;
 		}
@@ -373,14 +334,7 @@ public:
 			if (IS_OBJECT_IN_LIST(FE_element)(object, object_list))
 			{
 				REMOVE_OBJECT_FROM_LIST(FE_element)(object, object_list);
-				if (0 == NUMBER_IN_LIST(FE_element)(object_list))
-				{
-					change_detail.changeClear();
-				}
-				else
-				{
-					change_detail.changeRemove();
-				}
+				change_detail.changeRemove();
 				update();
 				return CMZN_OK;
 			}
@@ -395,7 +349,7 @@ public:
 			if (NUMBER_IN_LIST(FE_element)(object_list))
 			{
 				REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(object_list);
-				change_detail.changeClear();
+				change_detail.changeRemove();
 				update();
 			}
 			return CMZN_OK;
@@ -439,11 +393,10 @@ public:
 
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
-				return NULL;
+			if (this->change_detail.getChangeSummary() == CMZN_FIELD_GROUP_CHANGE_NONE)
+				return 0;
 			cmzn_field_subobject_group_change_detail *prior_change_detail =
-				new cmzn_field_subobject_group_change_detail();
-			*prior_change_detail = change_detail;
+				new cmzn_field_subobject_group_change_detail(change_detail);
 			change_detail.clear();
 			return prior_change_detail;
 		}
@@ -528,10 +481,7 @@ public:
 			const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
 			if (new_size != old_size)
 			{
-				if (new_size == 0)
-					change_detail.changeClear();
-				else
-					change_detail.changeRemove();
+				change_detail.changeRemove();
 				update();
 			}
 			return return_code;
@@ -632,14 +582,7 @@ public:
 			if (IS_OBJECT_IN_LIST(FE_node)(object, object_list))
 			{
 				REMOVE_OBJECT_FROM_LIST(FE_node)(object, object_list);
-				if (0 == NUMBER_IN_LIST(FE_node)(object_list))
-				{
-					change_detail.changeClear();
-				}
-				else
-				{
-					change_detail.changeRemove();
-				}
+				change_detail.changeRemove();
 				update();
 				return CMZN_OK;
 			}
@@ -654,7 +597,7 @@ public:
 			if (NUMBER_IN_LIST(FE_node)(object_list))
 			{
 				REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(object_list);
-				change_detail.changeClear();
+				change_detail.changeRemove();
 				update();
 			}
 			return CMZN_OK;
@@ -695,11 +638,10 @@ public:
 
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
-			if (change_detail.getChange() == CMZN_FIELD_GROUP_NO_CHANGE)
-				return NULL;
+			if (this->change_detail.getChangeSummary() == CMZN_FIELD_GROUP_CHANGE_NONE)
+				return 0;
 			cmzn_field_subobject_group_change_detail *prior_change_detail =
-				new cmzn_field_subobject_group_change_detail();
-			*prior_change_detail = change_detail;
+				new cmzn_field_subobject_group_change_detail(change_detail);
 			change_detail.clear();
 			return prior_change_detail;
 		}
@@ -777,10 +719,7 @@ public:
 			const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
 			if (new_size != old_size)
 			{
-				if (new_size == 0)
-					change_detail.changeClear();
-				else
-					change_detail.changeRemove();
+				change_detail.changeRemove();
 				update();
 			}
 			return return_code;

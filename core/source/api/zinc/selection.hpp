@@ -38,10 +38,9 @@ public:
 	enum ChangeType
 	{
 		CHANGE_NONE = CMZN_SELECTIONEVENT_CHANGE_NONE,
-		CHANGE_CLEAR = CMZN_SELECTIONEVENT_CHANGE_CLEAR,
 		CHANGE_ADD = CMZN_SELECTIONEVENT_CHANGE_ADD,
 		CHANGE_REMOVE = CMZN_SELECTIONEVENT_CHANGE_REMOVE,
-		CHANGE_REPLACE = CMZN_SELECTIONEVENT_CHANGE_REPLACE,
+		CHANGE_FINAL = CMZN_SELECTIONEVENT_CHANGE_FINAL
 	};
 
 	Selectionevent& operator=(const Selectionevent& selectionEvent)
@@ -73,14 +72,9 @@ public:
 		return id;
 	}
 
-	ChangeType getChangeType() const
+	int getChangeSummary() const
 	{
-		return static_cast<ChangeType>(cmzn_selectionevent_get_change_type(id));
-	}
-
-	int owningSceneIsDestroyed() const
-	{
-		return cmzn_selectionevent_owning_scene_is_destroyed(id);
+		return static_cast<ChangeType>(cmzn_selectionevent_get_change_summary(id));
 	}
 
 };
@@ -161,16 +155,6 @@ public:
 	cmzn_selectionnotifier_id getId()
 	{
 		return id;
-	}
-
-	bool isHierarchical()
-	{
-		return cmzn_selectionnotifier_is_hierarchical(id);
-	}
-
-	int setHierarchical(bool hierarchicalFlag)
-	{
-		return cmzn_selectionnotifier_set_hierarchical(id, hierarchicalFlag);
 	}
 
 	int setCallback(Selectioncallback& callback)

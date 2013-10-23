@@ -146,10 +146,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
 	if (new_size != old_size)
 	{
-		if (new_size == 0)
-			change_detail.changeClear();
-		else
-			change_detail.changeRemove();
+		change_detail.changeRemove();
 		update();
 	}
 	return return_code;
@@ -211,10 +208,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 	}
 	if (number_removed)
 	{
-		if (NUMBER_IN_LIST(FE_element)(object_list) == 0)
-			change_detail.changeClear();
-		else
-			change_detail.changeRemove();
+		change_detail.changeRemove();
 		update();
 	}
 	return CMZN_OK;
@@ -282,10 +276,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
 	if (new_size != old_size)
 	{
-		if (new_size == 0)
-			change_detail.changeClear();
-		else
-			change_detail.changeRemove();
+		change_detail.changeRemove();
 		update();
 	}
 	return return_code;
@@ -412,10 +403,7 @@ int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 	}
 	if (number_removed)
 	{
-		if (NUMBER_IN_LIST(FE_node)(object_list) == 0)
-			change_detail.changeClear();
-		else
-			change_detail.changeRemove();
+		change_detail.changeRemove();
 		update();
 	}
 	return CMZN_OK;

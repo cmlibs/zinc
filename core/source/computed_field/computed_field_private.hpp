@@ -132,7 +132,7 @@ passed around as part of Computed_field_modify_data in to_be_modified argument.
 {
 };
 
-/***************************************************************************//**
+/**
  * Base class of type-specific field change details.
  */
 struct cmzn_field_change_detail
@@ -140,6 +140,9 @@ struct cmzn_field_change_detail
 	virtual ~cmzn_field_change_detail()
 	{
 	}
+
+	/** override to clear change detail in derived type */
+	virtual void clear() = 0;
 };
 
 /***************************************************************************//**

@@ -535,8 +535,8 @@ ZINC_API int cmzn_streaminformation_region_set_resource_domain_type(
 	int domain_type);
 
 /**
- * Return accessed handle to the scene for this region.
- * Currently, a cmzn_region may have at most one cmiss_scene.
+ * Return accessed handle to the scene for this region, which contains
+ * graphics for visualising fields in the region.
  *
  * @param cmiss_region  The region of query.
  * @return Accessed handle to scene for region, or 0 if none.

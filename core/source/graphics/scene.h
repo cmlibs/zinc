@@ -70,8 +70,12 @@ Structure for maintaining a graphical scene of region.
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
 	unsigned int position;
 	cmzn_field_group_id selection_group;
-	int selection_removed; // flag set when selection_group cleared
 	cmzn_selectionnotifier_list *selectionnotifier_list;
+
+public:
+	void addSelectionnotifier(cmzn_selectionnotifier *selectionnotifier);
+
+	void removeSelectionnotifier(cmzn_selectionnotifier *selectionnotifier);
 }; /* struct cmzn_scene */
 
 struct MANAGER_MESSAGE(cmzn_tessellation);
@@ -94,12 +98,10 @@ cmzn_graphics_module * cmzn_scene_get_graphics_module(cmzn_scene_id scene);
 /***************************************************************************//**
  * Destroy cmzn_scene and clean up the memory it uses.
  *
- * @param  cmiss_scene_address the address to the pointer of
- *   the cmiss_scene_address to be deleted
- * @return  1 if successfully destroy cmiss_scene, otherwise 0
+ * @param  scene_address the address of pointer to the scene to destroy.
+ * @return  1 if successfully destroy scene, otherwise 0
  */
-int DESTROY(cmzn_scene)(
-	struct cmzn_scene **cmiss_scene_address);
+int DESTROY(cmzn_scene)(struct cmzn_scene **scene_address);
 
 int cmzn_scene_get_position(struct cmzn_scene *scene);
 
@@ -107,13 +109,13 @@ int cmzn_scene_set_position(struct cmzn_scene *scene, unsigned int position);
 /***************************************************************************//**
  * Set the position of the scene
  * @param scene to be edited
- * @param position Position to be set for the cmiss_scene
+ * @param position Position to be set for the scene
  * @return If successfully set the position, otherwise NULL
  */
 
 /**
  * Return non-accessed handle to the scene for this region.
- * Currently, a cmzn_region may have at most one cmiss_scene.
+ * Currently, a cmzn_region may have at most one scene.
  * Private; do not use out of zinc library.
  * @param cmiss_region  The region of query.
  * @return Non-accessed handle to scene for region, or 0 if none.
@@ -129,13 +131,13 @@ int cmzn_region_deaccess_scene(struct cmzn_region *region);
 
 /***************************************************************************//**
  * Wrapper for accessing the list of graphics in <cmzn_scene>.
- * @param cmiss_scene target for that scene
+ * @param scene target for that scene
  * @param conditional_function conditional function for the list
  * @param data void pointer to data to pass into the conditional function
  * @return Return the first graphics that fullfill the conditional function
  */
 struct cmzn_graphics *cmzn_scene_get_first_graphics_with_condition(
-	struct cmzn_scene *cmiss_scene,
+	struct cmzn_scene *scene,
 	LIST_CONDITIONAL_FUNCTION(cmzn_graphics) *conditional_function,
 	void *data);
 
@@ -218,7 +220,7 @@ void cmzn_scene_font_change(struct cmzn_scene *scene,
 
 int for_each_child_scene_in_scene_tree(
 	struct cmzn_scene *scene,
-	int (*cmiss_scene_tree_iterator_function)(struct cmzn_scene *scene,
+	int (*cmzn_scene_tree_iterator_function)(struct cmzn_scene *scene,
 		void *user_data),	void *user_data);
 
 /***************************************************************************//**
@@ -243,16 +245,14 @@ int cmzn_scenes_match(struct cmzn_scene *scene1,
 struct cmzn_scene *create_editor_copy_cmzn_scene(
 	struct cmzn_scene *existing_scene);
 
-int for_each_graphics_in_cmzn_scene(
-	struct cmzn_scene *scene,
-	int (*cmiss_scene_graphics_iterator_function)(struct cmzn_graphics *graphics,
+int for_each_graphics_in_cmzn_scene(struct cmzn_scene *scene,
+	int (*cmzn_scene_graphics_iterator_function)(struct cmzn_graphics *graphics,
 		void *user_data),	void *user_data);
 
 /***************************************************************************//**
  * Get region of scene
  */
-struct cmzn_region *cmzn_scene_get_region(
-	struct cmzn_scene *scene);
+struct cmzn_region *cmzn_scene_get_region(struct cmzn_scene *scene);
 
 /***************************************************************************//**
  *Copies the cmzn_scene contents from source to destination, keeping any
@@ -287,7 +287,7 @@ int cmzn_scene_get_transformation(struct cmzn_scene *scene,
 /***************************************************************************//**
  * This function will remove field manager and its callback to the scene.
  *
- * @param cmiss_scene  pointer to the cmiss_scene.
+ * @param scene  pointer to the scene.
  *
  * @return Return 1 if successfully remove field manager and its callback
  *    from scene otherwise 0.
@@ -298,7 +298,7 @@ int cmzn_scene_remove_field_manager_and_callback(struct cmzn_scene *scene);
  * This function will deaccess any computed fields being used by the scene
  * when the scene itself is not present in any scene.
  *
- * @param cmiss_scene  pointer to the cmiss_scene.
+ * @param scene  pointer to the scene.
  *
  * @return Return 1 if successfully detach fields from scene otherwise 0.
  */
@@ -428,7 +428,7 @@ int cmzn_scene_notify_scene_viewer_callback(struct cmzn_scene *scene,
  * This function will return the gtMatrix containing the total transformation
  * from the top scene to scene.
  *
- * @param cmiss_scene  pointer to the scene.
+ * @param scene  pointer to the scene.
  * @param top_scene  pointer to the the top scene.
  *
  * @return Return an allocated gtMatrix if successfully get a transformation
@@ -468,7 +468,7 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
  * 	- scene is being removed from graphics module
  * 	- context is being destroyed
  */
-void cmzn_scene_detach_from_owner(cmzn_scene_id cmiss_scene);
+void cmzn_scene_detach_from_owner(cmzn_scene_id scene);
 
 #endif /* !defined (SCENE_H) */
 

@@ -73,22 +73,22 @@ public:
 	 * Execute the cmzn scene.
 	 */
 	virtual int cmzn_scene_execute(
-		cmzn_scene *cmiss_scene) = 0;
+		cmzn_scene *scene) = 0;
 
 	/***************************************************************************//**
 	 * Compile the cmzn scene.
 	 */
 	virtual int cmzn_scene_compile(
-	  cmzn_scene *cmiss_scene) = 0;
+	  cmzn_scene *scene) = 0;
 
 	virtual int cmzn_scene_execute_graphics(
-		cmzn_scene *cmiss_scene) = 0;
+		cmzn_scene *scene) = 0;
 
 	virtual int cmzn_scene_execute_child_scene(
-		cmzn_scene *cmiss_scene) = 0;
+		cmzn_scene *scene) = 0;
 
 	virtual int cmzn_scene_compile_members(
-		cmzn_scene *cmiss_scene) = 0;
+		cmzn_scene *scene) = 0;
 	
 	/***************************************************************************//**
 	 * Compile the Material.
@@ -200,7 +200,7 @@ public:
 	}
 
 	FE_value time;
-	/** Passed from cmiss_scenes to graphics for compilation */
+	/** Passed from scene to graphics for compilation */
 	const char *name_prefix;
 	/** set to initial modelview_matrix from viewer to get world coordinates.
 	 * Values ordered down columns first, OpenGL style. Initialised to identity */
@@ -212,10 +212,10 @@ public:
 	 * Compile the cmzn scene.
 	 */
 	virtual int cmzn_scene_compile(
-	  cmzn_scene *cmiss_scene);
+	  cmzn_scene *scene);
 
 	virtual int cmzn_scene_compile_members(
-		cmzn_scene *cmiss_scene);
+		cmzn_scene *scene);
 
 	/***************************************************************************//**
 	 * @see Render_graphics::Texture_compile
@@ -253,10 +253,9 @@ public:
 	}
 };
 
-
 /***************************************************************************//**
  * This renderer ensures that all the sub-objects are up to date.  In particular
- * this triggers cmiss_scenes to generate their Graphics_object
+ * this triggers scenes to generate their Graphics_object
  * representations.  (Previously this behaviour was build_GT_element_group.)
  * Unless overridden this renderer only builds objects so the execute methods all
  * just return 1. 
@@ -294,17 +293,17 @@ public:
 		return 1;
 	}
 	
-	virtual int cmzn_scene_execute(cmzn_scene * /*cmiss_scene*/)
+	virtual int cmzn_scene_execute(cmzn_scene * /*scene*/)
 	{
 		return 1;
 	}
 
-	virtual int cmzn_scene_execute_graphics(cmzn_scene * /*cmiss_scene*/)
+	virtual int cmzn_scene_execute_graphics(cmzn_scene * /*scene*/)
 	{
 		return 1;
 	}
 	
-	virtual int cmzn_scene_execute_child_scene(cmzn_scene * /*cmiss_scene*/)
+	virtual int cmzn_scene_execute_child_scene(cmzn_scene * /*scene*/)
 	{
 		return 1;
 	}
