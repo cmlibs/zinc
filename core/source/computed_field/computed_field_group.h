@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  *FILE : computed_field_group.h
  *
  * Implements a "group" computed_field which group regions, 
@@ -15,6 +15,64 @@
 
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldgroup.h"
+#include "computed_field/computed_field_group_base.hpp"
+
+struct cmzn_field_hierarchical_group_change_detail : public cmzn_field_group_base_change_detail
+{
+private:
+	int localChangeSummary;
+	int nonlocalChangeSummary;
+
+public:
+	cmzn_field_hierarchical_group_change_detail() :
+		localChangeSummary(CMZN_FIELD_GROUP_CHANGE_NONE),
+		nonlocalChangeSummary(CMZN_FIELD_GROUP_CHANGE_NONE)
+	{
+	}
+
+	void clear()
+	{
+		localChangeSummary = CMZN_FIELD_GROUP_CHANGE_NONE;
+		nonlocalChangeSummary = CMZN_FIELD_GROUP_CHANGE_NONE;
+	}
+
+	virtual int getChangeSummary() const
+	{
+		return localChangeSummary | nonlocalChangeSummary;
+	}
+
+	int getLocalChangeSummary() const
+	{
+		return localChangeSummary;
+	}
+
+	int getNonlocalChangeSummary() const
+	{
+		return nonlocalChangeSummary;
+	}
+
+	/** Inform local group has been added, but wasn't before */
+	void changeAddLocal()
+	{
+		localChangeSummary |= CMZN_FIELD_GROUP_CHANGE_ADD;
+	}
+
+	/** Inform local group has had part removed */
+	void changeRemoveLocal()
+	{
+		localChangeSummary |= CMZN_FIELD_GROUP_CHANGE_REMOVE;
+	}
+
+	void changeMergeLocal(int inChangeSummary)
+	{
+		localChangeSummary |= inChangeSummary;
+	}
+
+	void changeMergeNonlocal(int inChangeSummary)
+	{
+		nonlocalChangeSummary |= inChangeSummary;
+	}
+};
 
 /*****************************************************************************//**
  * Sets up command data for group field.
@@ -47,5 +105,7 @@ int cmzn_field_group_clear_region_tree_data(cmzn_field_group_id group);
 int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group);
 
 int cmzn_field_is_type_group(cmzn_field_id field, void *dummy_void);
+
+bool cmzn_field_group_was_modified(cmzn_field_group_id group);
 
 #endif /* !defined (COMPUTED_FIELD_GROUP_H) */

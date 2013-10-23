@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * cmiss_scene.hpp
+ * scene.hpp
  */
 /* OpenCMISS-Zinc Library
 *
@@ -15,16 +15,16 @@ struct cmzn_scene;
 class Render_graphics_compile_members;
 class Render_graphics_opengl;
 
-int cmzn_scene_compile_scene(cmzn_scene *cmiss_scene,
+int cmzn_scene_compile_scene(cmzn_scene *scene,
 	Render_graphics_compile_members *renderer);
 
-int cmzn_scene_compile_graphics(cmzn_scene *cmiss_scene,
+int cmzn_scene_compile_graphics(cmzn_scene *scene,
 	Render_graphics_compile_members *renderer);
 
-int execute_cmzn_scene(cmzn_scene *cmiss_scene,
+int execute_cmzn_scene(cmzn_scene *scene,
 	Render_graphics_opengl *renderer);
 
-int cmzn_scene_graphics_render_opengl(struct cmzn_scene *cmiss_scene,
+int cmzn_scene_graphics_render_opengl(struct cmzn_scene *scene,
 	Render_graphics_opengl *renderer);
 
 int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
@@ -32,7 +32,7 @@ int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 
 int Scene_render_opengl(cmzn_scene *scene, Render_graphics_opengl *renderer);
 
-int cmzn_scene_compile_tree(cmzn_scene *cmiss_scene,
+int cmzn_scene_compile_tree(cmzn_scene *scene,
 	Render_graphics_compile_members *renderer);
 
 int build_Scene(cmzn_scene *scene, cmzn_scenefilter *filter);

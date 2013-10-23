@@ -34,12 +34,12 @@ int Render_graphics_compile_members::Scene_compile(cmzn_scene *scene, cmzn_scene
 	return cmzn_scene_compile_tree(scene, this);
 }
 
-int Render_graphics_compile_members::cmzn_scene_compile(cmzn_scene *cmiss_scene)
+int Render_graphics_compile_members::cmzn_scene_compile(cmzn_scene *scene)
 {
-	return cmzn_scene_compile_scene(cmiss_scene, this);
+	return cmzn_scene_compile_scene(scene, this);
 }
 
-int Render_graphics_compile_members::cmzn_scene_compile_members(cmzn_scene *cmiss_scene)
+int Render_graphics_compile_members::cmzn_scene_compile_members(cmzn_scene *scene)
 {
-	return cmzn_scene_compile_graphics(cmiss_scene, this);
+	return cmzn_scene_compile_graphics(scene, this);
 }

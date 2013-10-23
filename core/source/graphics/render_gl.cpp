@@ -135,19 +135,19 @@ public:
 			  GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
 	  }
 
-	  int cmzn_scene_execute(cmzn_scene *cmiss_scene)
+	  int cmzn_scene_execute(cmzn_scene *scene)
 	  {
-		  return execute_cmzn_scene(cmiss_scene, this);
+		  return execute_cmzn_scene(scene, this);
 	  }
 
-	  int cmzn_scene_execute_graphics(cmzn_scene *cmiss_scene)
+	  int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	  {
-		  return cmzn_scene_graphics_render_opengl(cmiss_scene, this);
+		  return cmzn_scene_graphics_render_opengl(scene, this);
 	  }
 
-	  int cmzn_scene_execute_child_scene(cmzn_scene *cmiss_scene)
+	  int cmzn_scene_execute_child_scene(cmzn_scene *scene)
 	  {
-		  return cmzn_scene_render_child_scene(cmiss_scene, this);
+		  return cmzn_scene_render_child_scene(scene, this);
 	  }
 
 	  int Material_execute(Graphical_material *material)
@@ -399,14 +399,14 @@ public:
 	  {
 	  }
 
-	  int cmzn_scene_execute_graphics(cmzn_scene *cmiss_scene)
+	  int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	  {
-		  return cmzn_scene_graphics_render_opengl(cmiss_scene, this);
+		  return cmzn_scene_graphics_render_opengl(scene, this);
 	  }
 
-	  int cmzn_scene_execute_child_scene(cmzn_scene *cmiss_scene)
+	  int cmzn_scene_execute_child_scene(cmzn_scene *scene)
 	  {
-		  return cmzn_scene_render_child_scene(cmiss_scene, this);
+		  return cmzn_scene_render_child_scene(scene, this);
 	  }
 
 	  int Graphics_object_execute_parent(GT_object *graphics_object)

@@ -14,26 +14,26 @@
 
 #include "computed_field/computed_field_private.hpp"
 
-/***************************************************************************//**
- * Summary of changes to a group.
+/**
+ * Flags summarising changes to a group.
  */
 enum cmzn_field_group_change_type
 {
-	CMZN_FIELD_GROUP_NO_CHANGE,
-	CMZN_FIELD_GROUP_CLEAR,     /*!< group is empty, but wasn't before */
-	CMZN_FIELD_GROUP_ADD,       /*!< objects have been added only */
-	CMZN_FIELD_GROUP_REMOVE,    /*!< objects have been removed only */
-	CMZN_FIELD_GROUP_REPLACE    /*!< contents replaced: clear+add, add+remove */
+	CMZN_FIELD_GROUP_CHANGE_NONE = 0,  /*!< no change */
+	CMZN_FIELD_GROUP_CHANGE_ADD = 1,   /*!< one or more objects added */
+	CMZN_FIELD_GROUP_CHANGE_REMOVE = 2 /*!< one or more objects removed */
 };
 
-/***************************************************************************//**
+/**
  * Base class for all group field change details.
  */
 struct cmzn_field_group_base_change_detail : public cmzn_field_change_detail
 {
-	virtual cmzn_field_group_change_type getChange() const = 0;
-
-	virtual cmzn_field_group_change_type getLocalChange() const = 0;
+	/**
+	 * Override to return overall summary of changes to group.
+	 * @return Logical OR of enum cmzn_field_group_change_type values.
+	 */
+	virtual int getChangeSummary() const = 0;
 };
 
 /***************************************************************************//**
