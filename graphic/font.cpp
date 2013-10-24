@@ -124,11 +124,11 @@ TEST(cmzn_font_api, valid_args)
 	enum cmzn_font_render_type render_type = cmzn_font_get_render_type(font);
 	EXPECT_EQ(CMZN_FONT_RENDER_TYPE_POLYGON, render_type);
 
-	result = cmzn_font_set_typeface(font, CMZN_FONT_TYPEFACE_OpenSans);
+	result = cmzn_font_set_typeface(font, CMZN_FONT_TYPEFACE_OPENSANS);
 	EXPECT_EQ(CMZN_OK, result);
 
 	enum cmzn_font_typeface typeface = cmzn_font_get_typeface(font);
-	EXPECT_EQ(CMZN_FONT_TYPEFACE_OpenSans, typeface);
+	EXPECT_EQ(CMZN_FONT_TYPEFACE_OPENSANS, typeface);
 
 	cmzn_font_destroy(&font);
 
@@ -183,11 +183,11 @@ TEST(cmzn_font_api, valid_args_cpp)
 	enum Font::RenderType render_type = font.getRenderType();
 	EXPECT_EQ(font.RENDER_TYPE_POLYGON, render_type);
 
-	result = font.setTypeface(font.TYPEFACE_OpenSans);
+	result = font.setTypeface(font.TYPEFACE_OPENSANS);
 	EXPECT_EQ(CMZN_OK, result);
 
 	enum Font::Typeface typeface = font.getTypeface();
-	EXPECT_EQ(font.TYPEFACE_OpenSans, typeface);
+	EXPECT_EQ(font.TYPEFACE_OPENSANS, typeface);
 
 }
 
