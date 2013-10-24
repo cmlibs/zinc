@@ -332,13 +332,6 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_sigmoid(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	double min, double max,	double alpha, double beta);
 
-enum cmzn_field_imagefilter_threshold_mode
-{
-	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW,
-	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE,
-	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE
-}; /* enum cmzn_field_imagefilter_threshold_mode */
-
 /**
  * Creates a field applying the ITK threshold image filter to the source field.
  * The newly created field replaces certain values with a specified outside

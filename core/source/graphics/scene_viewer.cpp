@@ -97,7 +97,7 @@ cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_v
 			input->key_code = 0;
 			input->position_x = 0;
 			input->position_y = 0;
-			input->type = CMZN_SCENEVIEWERINPUT_EVENT_INVALID;
+			input->type = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_INVALID;
 		}
 	}
 	else
@@ -792,7 +792,7 @@ modes, so push/pop them if you want them preserved.
 					 This is a simple no-op, as the identity matrix is sufficient to achieve this.
 				*/
 			} break;
-			case CMZN_SCENEVIEWER_VIEWPORT_INVALID:
+			case CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID:
 			{
 				display_message(ERROR_MESSAGE,
 					"Scene_viewer_calculate_transformation.  Invalid viewport mode");
@@ -3325,7 +3325,7 @@ Converts mouse button-press and motion events into viewing transformations in
 										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 									}
 								} break;
-								case CMZN_SCENEVIEWER_INTERACT_INVALID:
+								case CMZN_SCENEVIEWER_INTERACT_MODE_INVALID:
 								{
 									// do nothing
 								} break;
@@ -3349,7 +3349,7 @@ Converts mouse button-press and motion events into viewing transformations in
 										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 									}
 								} break;
-								case CMZN_SCENEVIEWER_INTERACT_INVALID:
+								case CMZN_SCENEVIEWER_INTERACT_MODE_INVALID:
 								{
 									// do nothing
 								} break;
@@ -4388,7 +4388,7 @@ enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(
 {
 	if (sceneviewer)
 		return sceneviewer->interact_mode;
-	return CMZN_SCENEVIEWER_INTERACT_INVALID;
+	return CMZN_SCENEVIEWER_INTERACT_MODE_INVALID;
 }
 
 int cmzn_sceneviewer_set_interact_mode(cmzn_sceneviewer_id sceneviewer,
@@ -5827,7 +5827,7 @@ enum cmzn_sceneviewer_blending_mode cmzn_sceneviewer_get_blending_mode(
 {
 	if (sceneviewer)
 		return sceneviewer->blending_mode;
-	return CMZN_SCENEVIEWER_BLENDING_INVALID;
+	return CMZN_SCENEVIEWER_BLENDING_MODE_INVALID;
 }
 
 int cmzn_sceneviewer_set_blending_mode(cmzn_sceneviewer_id sceneviewer,
@@ -6608,7 +6608,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_sceneviewer_blending_mode)
 		{
 			return "blend_true_alpha";
 		} break;
-		case CMZN_SCENEVIEWER_BLENDING_INVALID:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_INVALID:
 		{
 			// do nothing
 		} break;
@@ -6783,7 +6783,7 @@ const char *cmzn_sceneviewer_viewport_mode_string(
 		{
 			return "absolute_viewport";
 		} break;
-		case CMZN_SCENEVIEWER_VIEWPORT_INVALID:
+		case CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID:
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_sceneviewer_viewport_mode_string.  Unknown viewport mode");
@@ -6987,7 +6987,7 @@ enum cmzn_sceneviewer_viewport_mode cmzn_sceneviewer_get_viewport_mode(
 {
 	if (sceneviewer)
 		return sceneviewer->viewport_mode;
-	return CMZN_SCENEVIEWER_VIEWPORT_INVALID;
+	return CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID;
 }
 
 int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
@@ -7018,7 +7018,7 @@ enum cmzn_sceneviewer_projection_mode
 			"cmzn_sceneviewer_get_projection_mode.  "
 			"Projection mode not supported in public interface.");
 	}
-	return CMZN_SCENEVIEWER_PROJECTION_INVALID;
+	return CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID;
 }
 
 int cmzn_sceneviewer_set_projection_mode(cmzn_sceneviewer_id sceneviewer,

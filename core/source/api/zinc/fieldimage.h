@@ -23,27 +23,6 @@ extern "C" {
 #endif
 
 /**
- * Describes the format for storage.
- * Whether a particular format is actually available depends on whether
- * it is compatible with a particular format type when used with
- * #cmzn_field_image_get_formatted_image_data and whether support for that combination
- * has been included when the program was built.
- * This is a small subset of formats available, more can be selected by specifying
- * the appropriate format_string for a cmzn_streaminformation_image.
- */
-enum cmzn_streaminformation_image_file_format
-{
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_INVALID = 0,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_BMP = 1,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_DICOM = 2,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_JPG = 3,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_GIF = 4,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_PNG = 5,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_SGI = 6,
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_TIFF = 7
-};
-
-/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -62,29 +41,6 @@ ZINC_API enum cmzn_streaminformation_image_file_format
  */
 ZINC_API char *cmzn_streaminformation_image_file_format_enum_to_string(
 	enum cmzn_streaminformation_image_file_format format);
-
-/**
- * Describes the blending of the texture with the texture constant colour and
- * the underlying fragment colour
- */
-enum cmzn_field_image_combine_mode
-{
-	CMZN_FIELD_IMAGE_COMBINE_INVALID = 0,
-	CMZN_FIELD_IMAGE_COMBINE_BLEND = 1,
-	CMZN_FIELD_IMAGE_COMBINE_DECAL = 2,
-	CMZN_FIELD_IMAGE_COMBINE_MODULATE = 3,
-	CMZN_FIELD_IMAGE_COMBINE_ADD = 4,
-	CMZN_FIELD_IMAGE_COMBINE_ADD_SIGNED = 5,  /*!< Add the value and subtract 0.5 so the texture value
-								 effectively ranges from -0.5 to 0.5 */
-	CMZN_FIELD_IMAGE_COMBINE_MODULATE_SCALE_4 = 6,  /*!< Multiply and then scale by 4, so that we can
-										 scale down or up */
-	CMZN_FIELD_IMAGE_COMBINE_BLEND_SCALE_4 = 7,  /*!< Same as blend with a 4 * scaling */
-	CMZN_FIELD_IMAGE_COMBINE_SUBTRACT = 8,
-	CMZN_FIELD_IMAGE_COMBINE_ADD_SCALE_4 = 9,
-	CMZN_FIELD_IMAGE_COMBINE_SUBTRACT_SCALE_4 = 10,
-	CMZN_FIELD_IMAGE_COMBINE_INVERT_ADD_SCALE_4 = 11,
-	CMZN_FIELD_IMAGE_COMBINE_INVERT_SUBTRACT_SCALE_4 = 12
-};
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
@@ -107,18 +63,6 @@ ZINC_API char *cmzn_field_image_combine_mode_enum_to_string(
 	enum cmzn_field_image_combine_mode mode);
 
 /**
- * Whether the texture is compressed.  Could add specific compression formats that
- * are explictly requested from the hardware.
- */
-enum cmzn_field_image_hardware_compression_mode
-{
-	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_INVALID = 0,
-	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_NONE = 1,
-	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_AUTOMATIC = 2
-	/*!< Allow the hardware to choose the compression */
-};
-
-/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -139,19 +83,6 @@ ZINC_API char *cmzn_field_image_hardware_compression_mode_enum_to_string(
 	enum cmzn_field_image_hardware_compression_mode mode);
 
 /**
- * Specfiy how the graphics hardware rasterises the texture onto the screen.
- */
-enum cmzn_field_image_filter_mode
-{
-	CMZN_FIELD_IMAGE_FILTER_INVALID = 0,
-	CMZN_FIELD_IMAGE_FILTER_NEAREST = 1,
-	CMZN_FIELD_IMAGE_FILTER_LINEAR = 2,
-	CMZN_FIELD_IMAGE_FILTER_NEAREST_MIPMAP_NEAREST = 3,
-	CMZN_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_NEAREST = 4,
-	CMZN_FIELD_IMAGE_FILTER_LINEAR_MIPMAP_LINEAR = 5
-};
-
-/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -170,26 +101,6 @@ ZINC_API enum cmzn_field_image_filter_mode cmzn_field_image_filter_mode_enum_fro
  */
 ZINC_API char *cmzn_field_image_filter_mode_enum_to_string(
 	enum cmzn_field_image_filter_mode mode);
-
-/**
- * Describes how the image is to be wrapped when texture coordinate is assigned
- * outside the range [0,1], you can choose to have them clamp or repeat.
- */
-enum cmzn_field_image_wrap_mode
-{
-	CMZN_FIELD_IMAGE_WRAP_INVALID = 0,
-	CMZN_FIELD_IMAGE_WRAP_CLAMP = 1,/*!< With repeating textures and when texture
-	 coordinates greater than [0,1], the texture will repeat*/
-	CMZN_FIELD_IMAGE_WRAP_REPEAT = 2,
-	CMZN_FIELD_IMAGE_WRAP_EDGE_CLAMP = 3, /*!< always ignore the border,
-		texels at or near the edge of the texure are used for texturing */
-	CMZN_FIELD_IMAGE_WRAP_BORDER_CLAMP = 4, /*!< With nearest filter mode,
-		closest texel in the texture is used, with linear filter mode, a weighted
-		combiination in a 2x2 awrray of colour data us used */
-	CMZN_FIELD_IMAGE_WRAP_MIRROR_REPEAT = 5/*!< Texture will be flip-flop outside
-		of the range. Texture may appear up-right in coordinate range[0,1] but
-		upside-down in coordinate range[1,2]*/
-};
 
 /**
  * Convert a short name into an enum if the name matches any of the members in

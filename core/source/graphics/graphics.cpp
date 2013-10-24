@@ -1641,12 +1641,12 @@ enum cmzn_element_face_type cmzn_graphics_get_face(cmzn_graphics_id graphics)
 	{
 		return graphics->face;
 	}
-	return CMZN_ELEMENT_FACE_INVALID;
+	return CMZN_ELEMENT_FACE_TYPE_INVALID;
 }
 
 int cmzn_graphics_set_face(cmzn_graphics_id graphics, enum cmzn_element_face_type face)
 {
-	if (graphics && (face != CMZN_ELEMENT_FACE_INVALID))
+	if (graphics && (face != CMZN_ELEMENT_FACE_TYPE_INVALID))
 	{
 		if (face != graphics->face)
 		{

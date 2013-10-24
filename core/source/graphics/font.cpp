@@ -432,7 +432,7 @@ DESCRIPTION :
 		font->italic = false;
 		font->bold = false;
 		font->depth = 0.1;
-		font->typeface = CMZN_FONT_TYPEFACE_OpenSans;
+		font->typeface = CMZN_FONT_TYPEFACE_OPENSANS;
 		font->render_type = CMZN_FONT_RENDER_TYPE_BITMAP;
 		font->manager = (struct MANAGER(cmzn_font) *)NULL;
 		font->manager_change_status = MANAGER_CHANGE_NONE(cmzn_font);
@@ -494,7 +494,7 @@ unsigned int cmzn_font_get_font_buffer(struct cmzn_font *font,
 	unsigned int font_type_length = 0;
 	switch (font->typeface)
 	{
-		case CMZN_FONT_TYPEFACE_OpenSans:
+		case CMZN_FONT_TYPEFACE_OPENSANS:
 		{
 			if (font->bold)
 			{
@@ -982,7 +982,7 @@ public:
 	{
 		switch (typeface)
 		{
-		case CMZN_FONT_TYPEFACE_OpenSans:
+		case CMZN_FONT_TYPEFACE_OPENSANS:
 			return "OpenSans";
 			break;
 		case CMZN_FONT_TYPEFACE_INVALID:

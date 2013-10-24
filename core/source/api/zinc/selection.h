@@ -22,17 +22,6 @@ typedef void (*cmzn_selectionnotifier_callback_function)(
 	cmzn_selectionevent_id selectionevent,	void *client_data);
 
 /**
- * Bit flags summarising changes to the selection.
- */
-enum cmzn_selectionevent_change_flags
-{
-	CMZN_SELECTIONEVENT_CHANGE_NONE = 0,
-	CMZN_SELECTIONEVENT_CHANGE_ADD = 1,       /*!< one or more objects added */
-	CMZN_SELECTIONEVENT_CHANGE_REMOVE = 2,    /*!< one or more objects removed */
-	CMZN_SELECTIONEVENT_CHANGE_FINAL = 4      /*!< final notification: owning object destroyed */
-};
-
-/**
 * Returns a new reference to the selection notifier with reference count incremented.
 * Caller is responsible for destroying the new reference.
 *
