@@ -1127,6 +1127,11 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			}
 		}
 		label = glyph_set->labels;
+		point = glyph_set->point_list;
+		axis1 = glyph_set->axis1_list;
+		axis2 = glyph_set->axis2_list;
+		axis3 = glyph_set->axis3_list;
+		scale = glyph_set->scale_list;
 		if (label || static_labels)
 		{
 			point=glyph_set->point_list;
