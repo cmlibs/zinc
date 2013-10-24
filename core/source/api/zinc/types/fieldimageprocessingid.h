@@ -29,4 +29,11 @@ typedef struct cmzn_field_imagefilter_discrete_gaussian * cmzn_field_imagefilter
 struct cmzn_field_imagefilter_threshold;
 typedef struct cmzn_field_imagefilter_threshold * cmzn_field_imagefilter_threshold_id;
 
+enum cmzn_field_imagefilter_threshold_mode
+{
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW,
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE,
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE
+};
+
 #endif

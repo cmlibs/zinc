@@ -16,7 +16,7 @@
 enum cmzn_font_typeface
 {
 	CMZN_FONT_TYPEFACE_INVALID = 0,
-	CMZN_FONT_TYPEFACE_OpenSans = 1,
+	CMZN_FONT_TYPEFACE_OPENSANS = 1,
 };
 
 enum cmzn_font_render_type

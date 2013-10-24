@@ -386,7 +386,7 @@ ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior
  * Gets the face the graphics is limited to generate graphics for.
  *
  * @param graphics  The graphics to query.
- * @return  The face type of the graphics, or CMZN_ELEMENT_FACE_INVALID if the
+ * @return  The face type of the graphics, or CMZN_ELEMENT_FACE_TYPE_INVALID if the
  * graphics is invalid.
  */
 ZINC_API enum cmzn_element_face_type cmzn_graphics_get_face(cmzn_graphics_id graphics);

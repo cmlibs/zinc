@@ -448,7 +448,7 @@ enum cmzn_spectrumcomponent_scale_type cmzn_spectrumcomponent_get_scale_type(
 		return component->component_scale;
 	}
 
-	return CMZN_SPECTRUMCOMPONENT_SCALE_INVALID;
+	return CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID;
 }
 
 int cmzn_spectrumcomponent_set_scale_type(
@@ -966,7 +966,7 @@ component number used.  The first component_index is 0, so this means 1 componen
 	ENTER(cmzn_spectrumcomponent_expand_maximum_component_index);
 	if (component && (component_index = (int *)component_index_void))
 	{
-		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_INVALID &&
+		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID &&
 			component->is_field_lookup)
 		{
 			int number_of_input_components =
@@ -1014,7 +1014,7 @@ in the value pointed to by <colour_components_void>.
 			(enum Spectrum_colour_components *)colour_components_void))
 	{
 		done = 0;
-		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_INVALID &&
+		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID &&
 			component->is_field_lookup)
 		{
 			int number_of_components = Computed_field_get_number_of_components
@@ -1345,7 +1345,7 @@ passed in render data.
 	{
 		data_component = 0.0;
 		return_code=1;
-		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_INVALID &&
+		if (component->component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID &&
 			component->is_field_lookup)
 		{
 			if (component->active)

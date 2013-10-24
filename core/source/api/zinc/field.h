@@ -24,28 +24,6 @@
 extern "C" {
 #endif
 
-/**
- * Field attribute describing the type of space that its values are to be
- * interpreted in. Although it is usually set for all fields (default is
- * rectangular cartesian, RC), the attribute is only relevant when field is
- * used to supply coordinates or vector values, e.g. to graphics, where it
- * prompts automatic conversion to the underlying RC coordinate system.
- */
-enum cmzn_field_coordinate_system_type
-{
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID = 0,
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN = 1,
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = 4,
-		/*!< @see cmzn_field_set_coordinate_system_focus */
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = 5,
-		/*!< @see cmzn_field_set_coordinate_system_focus */
-	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
-		/*!< For Euler angles specifying fibre axes orientation from default
-		 * aligned with element xi coordinates. */
-};
-
 /*
 Global functions
 ----------------
@@ -379,18 +357,6 @@ ZINC_API cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int inde
  * @return  Field module which this field belongs to.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field);
-
-/**
- * The types of values fields may produce.
- * @see cmzn_field_get_value_type
- */
-enum cmzn_field_value_type
-{
-	CMZN_FIELD_VALUE_TYPE_INVALID = 0,
-	CMZN_FIELD_VALUE_TYPE_REAL = 1,
-	CMZN_FIELD_VALUE_TYPE_STRING = 2,
-	CMZN_FIELD_VALUE_TYPE_MESH_LOCATION = 3
-};
 
 /**
  * Gets the type of values produced by the field.

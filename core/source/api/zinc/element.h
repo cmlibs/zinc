@@ -28,37 +28,6 @@ Global types
 extern "C" {
 #endif
 
-/**
- * Common element shapes.
- */
-enum cmzn_element_shape_type
-{
-	CMZN_ELEMENT_SHAPE_TYPE_INVALID = 0,/**< unspecified shape of known dimension */
-	CMZN_ELEMENT_SHAPE_LINE = 1,        /**< 1-D: 0 <= xi1 <= 1 */
-	CMZN_ELEMENT_SHAPE_SQUARE = 2,      /**< 2-D: 0 <= xi1,xi2 <= 1 */
-	CMZN_ELEMENT_SHAPE_TRIANGLE = 3,    /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1 */
-	CMZN_ELEMENT_SHAPE_CUBE = 4,        /**< 3-D: 0 <= xi1,xi2,xi3 <= 1 */
-	CMZN_ELEMENT_SHAPE_TETRAHEDRON = 5, /**< 3-D: 0 <= xi1,xi2,xi3; xi1+xi2+xi3 <= 1 */
-	CMZN_ELEMENT_SHAPE_WEDGE12 = 6,     /**< 3-D: 0 <= xi1,xi2; xi1+xi2 <= 1; 0 <= xi3 <= 1 */
-	CMZN_ELEMENT_SHAPE_WEDGE13 = 7,     /**< 3-D: 0 <= xi1,xi3; xi1+xi3 <= 1; 0 <= xi2 <= 1 */
-	CMZN_ELEMENT_SHAPE_WEDGE23 = 8      /**< 3-D: 0 <= xi2,xi3; xi2+xi3 <= 1; 0 <= xi1 <= 1 */
-};
-
-/**
- * Common 1-D or linked-dimension basis function types.
- */
-enum cmzn_elementbasis_function_type
-{
-	CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID = 0,
-	CMZN_ELEMENTBASIS_FUNCTION_CONSTANT = 1,
-	CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE = 2,
-	CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE = 3,
-	CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE = 4,
-	CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX = 5,   /**< linked on 2 or more dimensions */
-	CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX = 6, /**< linked on 2 or more dimensions */
-	CMZN_ELEMENTBASIS_FUNCTION_CUBIC_HERMITE = 7
-};
-
 /*
 Global functions
 ----------------
