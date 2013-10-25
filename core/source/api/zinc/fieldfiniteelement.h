@@ -159,21 +159,6 @@ ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
 	cmzn_field_find_mesh_location_id find_mesh_location_field);
 
 /***************************************************************************//**
- * Enumeration controlling whether find_mesh_location returns location of exact
- * field value match, or nearest value.
- */
-enum cmzn_field_find_mesh_location_search_mode
-{
-	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT = 1,
-	/*!< Only location where mesh field value is exactly equal to source field is
-	 * returned. This is the default search criterion.
-	 */
-	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST = 2,
-	/*!< Location of RMS nearest value of mesh field to source field is returned.
-	 */
-};
-
-/***************************************************************************//**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *

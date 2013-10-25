@@ -334,12 +334,6 @@ ZINC_API int cmzn_region_write(cmzn_region_id region,
  */
 ZINC_API int cmzn_region_write_file(cmzn_region_id region, const char *file_name);
 
-enum cmzn_streaminformation_region_attribute
-{
-	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID = 0,
-	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME = 1
-};
-
 /**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.

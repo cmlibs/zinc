@@ -30,4 +30,10 @@ typedef struct cmzn_region * cmzn_region_id;
 struct cmzn_streaminformation_region;
 typedef struct cmzn_streaminformation_region * cmzn_streaminformation_region_id;
 
+enum cmzn_streaminformation_region_attribute
+{
+	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID = 0,
+	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME = 1
+};
+
 #endif /* CMZN_REGION_ID_H */
