@@ -517,28 +517,6 @@ ZINC_API int cmzn_field_image_set_wrap_mode(cmzn_field_image_id image_field,
 ZINC_API char *cmzn_field_image_get_property(cmzn_field_image_id image,
 	const char* property);
 
-enum cmzn_streaminformation_image_attribute
-{
-	CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,
-	/*!< Integer specifies the pixel width for binary data reading in using this
-	 * stream information.
-	 */
-	CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_RAW_HEIGHT_PIXELS = 2,
-	/*!< Integer specifies the pixel height for binary data reading in using this
-	 * stream information.
-	 */
-	CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_BITS_PER_COMPONENT = 3,
-	/*!< Integer specifies the number of bytes per component for binary data using
-	 * this stream information. Only 8 and 16 bits are supported at the moment.
-	 */
-	CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_COMPRESSION_QUALITY = 4
-	/*!< Real number specifies the quality for binary data using this stream information.
-	 * This parameter controls compression for compressed lossy formats,
-	 * where a quality of 1.0 specifies the least lossy output for a given format and a
-	 * quality of 0.0 specifies the most compression.
-	 */
-};
-
 /**
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.

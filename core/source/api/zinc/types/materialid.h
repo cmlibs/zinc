@@ -34,4 +34,51 @@
 	struct cmzn_materialmodule;
 	typedef struct cmzn_materialmodule * cmzn_materialmodule_id;
 
+
+	/***************************************************************************//**
+	 * Labels of material attributes which may be set or obtained using generic
+	 * get/set_attribute functions.
+	 */
+	enum cmzn_material_attribute
+	{
+		CMZN_MATERIAL_ATTRIBUTE_INVALID = 0,
+		CMZN_MATERIAL_ATTRIBUTE_ALPHA = 1,
+		/*!< Opacity of the material. Transparent or translucent objects has
+		 * lower alpha values then an opaque ones. Minimum acceptable value is 0
+		 * and maximum acceptable value is 1. Use attribute_real to get and set
+		 * its values.
+		 */
+		CMZN_MATERIAL_ATTRIBUTE_AMBIENT = 2,
+		/*!< Ambient colour of the material. Ambient colour simulates the colour
+		 * of the material when it does not receive direct illumination.
+		 * Composed of RGB components. Use attribute_real3 to get and set its
+		 * values. Minimum acceptable value is 0 and maximum acceptable value is 1.
+		 */
+		CMZN_MATERIAL_ATTRIBUTE_DIFFUSE = 3,
+		/*!< Diffuse colour of the material. Diffuse colour response to light that
+		 * comes from one direction and this colour scattered equally in all directions
+		 * once the light hits it. Composed of RGB components. Use attribute_real3
+		 * to get and set its values. Minimum acceptable value is 0 and maximum acceptable
+		 * value is 1.
+		 */
+		CMZN_MATERIAL_ATTRIBUTE_EMISSION = 4,
+		/*!< Emissive colour of the material. Emissive colour simulates colours
+		 * that is originating from the material itself. Composed of RGB components.
+		 * Use attribute_real3 to get and set its values. Minimum acceptable value is 0
+		 * and maximum acceptable value is 1.
+		 */
+		CMZN_MATERIAL_ATTRIBUTE_SHININESS = 5,
+		/*!< Shininess determines the brightness of the highlight. Minimum acceptable
+		 * value is 0 and maximum acceptable value is 1. Use attribute_real to get and
+		 * set its values.
+		 */
+		CMZN_MATERIAL_ATTRIBUTE_SPECULAR = 6
+		/*!< Specular colour of the material. Specular colour produces highlights.
+		 * Unlike ambient and diffuse, specular colour depends on location of
+		 * the viewpoint, it is brightest along the direct angle of reflection.
+		 * Composed of RGB components. Use attribute_real3 to get and set its values.
+		 * Minimum acceptable value is 0 and maximum acceptable value is 1.
+		 */
+	};
+
 #endif

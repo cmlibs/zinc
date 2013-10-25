@@ -676,35 +676,6 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewe
 ZINC_API int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneviewermodule_address);
 
 /**
- * Controls the way partially transparent objects are rendered in scene viewer.
- */
-enum cmzn_sceneviewer_transparency_mode
-{
-	CMZN_SCENEVIEWER_TRANSPARENCY_INVALID = 0,
-	CMZN_SCENEVIEWER_TRANSPARENCY_FAST = 1,
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_FAST just includes
-	 * transparent objects in the normal render, this causes them
-	 * to obscure other objects behind if they are drawn first.
-	 */
-	CMZN_SCENEVIEWER_TRANSPARENCY_SLOW = 2,
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_SLOW puts out all the
-	 * opaque geometry first and then ignores the depth test while
-	 * drawing all partially transparent objects, this ensures everything
-	 * is drawn but multiple layers of transparency will always draw
-	 * on top of each other which means a surface that is behind another
-	 * may be drawn over the top of one that is supposed to be in front.
-	 */
-	CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT = 3
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT uses
-	 * some Nvidia extensions to implement a full back to front perl pixel
-	 * fragment sort correctly rendering transparency with a small number
-	 * of passes, specified by "transparency layers". This uses all the
-	 * texturing resources of the current Nvidia hardware and so
-	 * no materials used in the scene can contain textures.
-	 */
-};
-
-/**
  * Get the transparency_mode of the scene viewer. In fast transparency mode,
  * the scene is drawn as it is, with depth buffer writing even for semi-transparent
  * objects. In slow transparency mode, opaque objects are rendered first, then
