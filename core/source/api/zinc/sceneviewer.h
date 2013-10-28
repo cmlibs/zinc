@@ -14,7 +14,6 @@
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
 #include "types/scenefilterid.h"
-#include "types/interactivetoolid.h"
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
 #include "types/sceneid.h"
