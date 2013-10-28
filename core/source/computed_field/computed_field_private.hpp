@@ -390,7 +390,7 @@ public:
 	/**
 	 * Override for hierarchical fields (e.g. group) which must remove any links
 	 * to removed subregion */
-	virtual void subregionRemoved(cmzn_region *subregion)
+	virtual void subregionRemoved(cmzn_region *)
 	{
 	}
 
