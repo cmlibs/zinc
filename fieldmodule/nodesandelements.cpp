@@ -37,10 +37,15 @@ TEST(nodes_elements_identifier, set_identifier)
 		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), cube_sr);
 
+	cmzn_streaminformation_region_id cube_si_region = cmzn_streaminformation_cast_region(
+		cube_si);
+	EXPECT_NE(static_cast<cmzn_streaminformation_region *>(0), cube_si_region);
+
 	int result = 0;
-	EXPECT_EQ(CMZN_OK, result = cmzn_region_read(cube_region, cube_si));
+	EXPECT_EQ(CMZN_OK, result = cmzn_region_read(cube_region, cube_si_region));
 
 	cmzn_streamresource_destroy(&cube_sr);
+	cmzn_streaminformation_region_destroy(&cube_si_region);
 	cmzn_streaminformation_destroy(&cube_si);
 
 	cmzn_fieldmodule_id cubeFm = cmzn_region_get_fieldmodule(cube_region);

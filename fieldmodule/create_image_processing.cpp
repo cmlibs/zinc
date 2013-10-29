@@ -45,7 +45,10 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion, 
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
 
-	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, si));
+	cmzn_streaminformation_image_id si_image = cmzn_streaminformation_cast_image(si);
+	EXPECT_NE(static_cast<cmzn_streaminformation_image_id>(0), si_image);
+
+	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, si_image));
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion(zinc.fm, cmzn_field_image_base_cast(im), 0.1, 1.0, 1);
 	EXPECT_NE((cmzn_field_id)0, f2);
@@ -72,6 +75,7 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion, 
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_streamresource_destroy(&sr);
+	cmzn_streaminformation_image_destroy(&si_image);
 	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 
@@ -90,9 +94,12 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_connected_threshold, valid_args)
 	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
+	cmzn_streaminformation_image_id si_image = cmzn_streaminformation_cast_image(si);
+	EXPECT_NE(static_cast<cmzn_streaminformation_image_id>(0), si_image);
+
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
 
-	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, si));
+	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, si_image));
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_imagefilter_connected_threshold(zinc.fm, cmzn_field_image_base_cast(im), 0.2, 0.22, 0.33, 1, 2, location);
 	EXPECT_NE((cmzn_field_id)0, f2);
@@ -114,6 +121,7 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_connected_threshold, valid_args)
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_streamresource_destroy(&sr);
+	cmzn_streaminformation_image_destroy(&si_image);
 	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 }
