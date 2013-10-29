@@ -296,7 +296,7 @@ ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id top_region,
  * region, any other value on failure.
  */
 ZINC_API int cmzn_region_read(cmzn_region_id region,
-	cmzn_streaminformation_id streaminformation);
+	cmzn_streaminformation_region_id streaminformation_region);
 
 /**
  * Convenient function to read a file with the provided name into a region
@@ -321,7 +321,7 @@ ZINC_API int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
  * on failure.
  */
 ZINC_API int cmzn_region_write(cmzn_region_id region,
-	cmzn_streaminformation_id streaminformation);
+	cmzn_streaminformation_region_id streaminformation_region);
 
 /**
  * Convenient function to write the region into a file with the provided name.

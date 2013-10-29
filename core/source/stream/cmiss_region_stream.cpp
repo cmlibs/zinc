@@ -84,20 +84,15 @@ int cmzn_region_read_field_file_of_name(struct cmzn_region *region, const char *
 }
 
 int cmzn_region_read(cmzn_region_id region,
-	cmzn_streaminformation_id streaminformation)
+	cmzn_streaminformation_region_id streaminformation_region)
 {
 	struct FE_import_time_index time_index_value, *time_index = NULL,
 		stream_time_index_value, *stream_time_index = NULL;
 	int return_code = 0;
-	cmzn_streaminformation_region_id region_streaminformation = NULL;
-	if (streaminformation)
+	if (region && streaminformation_region &&
+		(cmzn_streaminformation_region_get_region_private(streaminformation_region) == region))
 	{
-		region_streaminformation = dynamic_cast<cmzn_streaminformation_region *>(streaminformation);
-	}
-	if (region && region_streaminformation &&
-		(cmzn_streaminformation_region_get_region_private(region_streaminformation) == region))
-	{
-		const cmzn_stream_properties_list streams_list = region_streaminformation->getResourcesList();
+		const cmzn_stream_properties_list streams_list = streaminformation_region->getResourcesList();
 		struct IO_stream_package *io_stream_package = CREATE(IO_stream_package)();
 		struct cmzn_region *temp_region = cmzn_region_create_region(region);
 		if (!(streams_list.empty()) && io_stream_package && temp_region)
@@ -106,11 +101,11 @@ int cmzn_region_read(cmzn_region_id region,
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
 			return_code = 1;
-			if (cmzn_streaminformation_region_has_attribute(region_streaminformation,
+			if (cmzn_streaminformation_region_has_attribute(streaminformation_region,
 				CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 			{
 				time_index_value.time = cmzn_streaminformation_region_get_attribute_real(
-					region_streaminformation, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
+					streaminformation_region, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 				time_index = &time_index_value;
 			}
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
@@ -118,10 +113,10 @@ int cmzn_region_read(cmzn_region_id region,
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
 				if (cmzn_streaminformation_region_has_resource_attribute(
-					region_streaminformation, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
+					streaminformation_region, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 				{
 					stream_time_index_value.time = cmzn_streaminformation_region_get_resource_attribute_real(
-						region_streaminformation, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
+						streaminformation_region, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 					stream_time_index = &stream_time_index_value;
 				}
 				else
@@ -134,7 +129,7 @@ int cmzn_region_read(cmzn_region_id region,
 				unsigned int buffer_size = 0;
 				int readData = 0;
 				int domain_type = cmzn_streaminformation_region_get_resource_domain_type(
-					region_streaminformation, stream);
+					streaminformation_region, stream);
 				if ((domain_type & CMZN_FIELD_DOMAIN_DATA) && (!(domain_type & CMZN_FIELD_DOMAIN_NODES)))
 				{
 					readData = 1;
@@ -198,48 +193,47 @@ int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
 			cmzn_region_create_streaminformation(region);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
-		return_code = cmzn_region_read(region, streaminformation);
+		cmzn_streaminformation_region_id streaminformation_region =
+			cmzn_streaminformation_cast_region(streaminformation);
+		return_code = cmzn_region_read(region, streaminformation_region);
 		cmzn_streamresource_destroy(&resource);
+		cmzn_streaminformation_region_destroy(&streaminformation_region);
 		cmzn_streaminformation_destroy(&streaminformation);
 	}
 	return return_code;
 }
 
 int cmzn_region_write(cmzn_region_id region,
-	cmzn_streaminformation_id streaminformation)
+	cmzn_streaminformation_region_id streaminformation_region)
 {
 	int return_code = 0;
 	double time = 0.0, stream_time = 0.0;
-	cmzn_streaminformation_region_id region_streaminformation = NULL;
-	if (streaminformation)
+
+	if (region && streaminformation_region &&
+		(cmzn_streaminformation_region_get_region_private(streaminformation_region) == region))
 	{
-		region_streaminformation = dynamic_cast<cmzn_streaminformation_region *>(streaminformation);
-	}
-	if (region && region_streaminformation &&
-		(cmzn_streaminformation_region_get_region_private(region_streaminformation) == region))
-	{
-		const cmzn_stream_properties_list streams_list = region_streaminformation->getResourcesList();
+		const cmzn_stream_properties_list streams_list = streaminformation_region->getResourcesList();
 		if (!(streams_list.empty()))
 		{
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
 			return_code = 1;
-			if (cmzn_streaminformation_region_has_attribute(region_streaminformation,
+			if (cmzn_streaminformation_region_has_attribute(streaminformation_region,
 				CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 			{
 				time = cmzn_streaminformation_region_get_attribute_real(
-					region_streaminformation, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
+					streaminformation_region, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 			}
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
 				if (cmzn_streaminformation_region_has_resource_attribute(
-					region_streaminformation, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
+					streaminformation_region, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 				{
 					stream_time = cmzn_streaminformation_region_get_resource_attribute_real(
-						region_streaminformation, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
+						streaminformation_region, stream, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 				}
 				else
 				{
@@ -251,7 +245,7 @@ int cmzn_region_write(cmzn_region_id region,
 				unsigned int buffer_size = 0;
 				int writeElements = 0, writeData = 0, writeNodes = 0;
 				int domain_type =	cmzn_streaminformation_region_get_resource_domain_type(
-					region_streaminformation, stream);
+					streaminformation_region, stream);
 				if (domain_type == CMZN_FIELD_DOMAIN_TYPE_INVALID)
 				{
 					writeElements = CMZN_FIELD_DOMAIN_MESH_1D|CMZN_FIELD_DOMAIN_MESH_2D|
@@ -292,7 +286,7 @@ int cmzn_region_write(cmzn_region_id region,
 					if (file_name)
 					{
 						if (!write_exregion_file_of_name(file_name, region, (cmzn_field_group_id)0,
-							cmzn_streaminformation_region_get_root_region(region_streaminformation),
+							cmzn_streaminformation_region_get_root_region(streaminformation_region),
 							writeElements,	writeNodes, writeData,
 							FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
 							stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
@@ -307,7 +301,7 @@ int cmzn_region_write(cmzn_region_id region,
 				else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 				{
 					if (!write_exregion_file_to_memory_block(region, (cmzn_field_group_id)0,
-						cmzn_streaminformation_region_get_root_region(region_streaminformation),
+						cmzn_streaminformation_region_get_root_region(streaminformation_region),
 						writeElements,	writeNodes, writeData,
 						FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
 						stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
@@ -345,8 +339,11 @@ int cmzn_region_write_file(cmzn_region_id region, const char *file_name)
 			cmzn_region_create_streaminformation(region);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
-		return_code = cmzn_region_write(region, streaminformation);
+		cmzn_streaminformation_region_id streaminformation_region =
+			cmzn_streaminformation_cast_region(streaminformation);
+		return_code = cmzn_region_write(region, streaminformation_region);
 		cmzn_streamresource_destroy(&resource);
+		cmzn_streaminformation_region_destroy(&streaminformation_region);
 		cmzn_streaminformation_destroy(&streaminformation);
 	}
 	return return_code;
