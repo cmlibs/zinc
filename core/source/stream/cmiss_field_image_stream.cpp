@@ -21,20 +21,16 @@
 #include "stream/cmiss_field_image_stream.hpp"
 
 int cmzn_field_image_read(cmzn_field_image_id image_field,
-	cmzn_streaminformation_id streaminformation)
+	cmzn_streaminformation_image_id streaminformation_image)
 {
 	int return_code = 1;
 	struct Cmgui_image_information *image_information = NULL;
-	cmzn_streaminformation_image_id image_streaminformation = NULL;
-	if (streaminformation)
-	{
-		image_streaminformation = dynamic_cast<cmzn_streaminformation_image *>(streaminformation);
-	}
-	if (image_field && image_streaminformation &&
-		(NULL != (image_information = image_streaminformation->getImageInformation())))
+
+	if (image_field && streaminformation_image &&
+		(NULL != (image_information = streaminformation_image->getImageInformation())))
 	{
 		char *field_name = cmzn_field_get_name(cmzn_field_image_base_cast(image_field));
-		const cmzn_stream_properties_list streams_list = image_streaminformation->getResourcesList();
+		const cmzn_stream_properties_list streams_list = streaminformation_image->getResourcesList();
 		if (!(streams_list.empty()))
 		{
 			cmzn_stream_properties_list_const_iterator iter;
@@ -181,29 +177,28 @@ int cmzn_field_image_read_file(cmzn_field_image_id image_field, const char *file
 			cmzn_field_image_create_streaminformation(image_field);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
-	  return_code = cmzn_field_image_read(image_field, streaminformation);
-  	cmzn_streamresource_destroy(&resource);
-  	cmzn_streaminformation_destroy(&streaminformation);
+		cmzn_streaminformation_image_id streaminformation_image =
+			cmzn_streaminformation_cast_image(streaminformation);
+		return_code = cmzn_field_image_read(image_field, streaminformation_image);
+		cmzn_streamresource_destroy(&resource);
+		cmzn_streaminformation_image_destroy(&streaminformation_image);
+		cmzn_streaminformation_destroy(&streaminformation);
 	}
 	return return_code;
 }
 
 int cmzn_field_image_write(cmzn_field_image_id image_field,
-	cmzn_streaminformation_id streaminformation)
+	cmzn_streaminformation_image_id streaminformation_image)
 {
 	int return_code = 1;
 	struct Cmgui_image_information *image_information = NULL;
-	cmzn_streaminformation_image_id image_streaminformation = NULL;
-	if (streaminformation)
-	{
-		image_streaminformation = dynamic_cast<cmzn_streaminformation_image *>(streaminformation);
-	}
+
 	return_code = 1;
-	if (image_field && image_streaminformation &&
-		(NULL != (image_information = image_streaminformation->getImageInformation())))
+	if (image_field && streaminformation_image &&
+		(NULL != (image_information = streaminformation_image->getImageInformation())))
 	{
 		struct Cmgui_image *cmgui_image = Texture_get_image(cmzn_field_image_get_texture(image_field));
-		const cmzn_stream_properties_list streams_list = image_streaminformation->getResourcesList();
+		const cmzn_stream_properties_list streams_list = streaminformation_image->getResourcesList();
 		int number_of_streams = streams_list.size();
 		if ((number_of_streams > 0 ) && cmgui_image &&
 			(Cmgui_image_get_number_of_images(cmgui_image) == number_of_streams))
@@ -336,8 +331,11 @@ int cmzn_field_image_write_file(cmzn_field_image_id image_field, const char *fil
 			cmzn_field_image_create_streaminformation(image_field);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
-	  return_code = cmzn_field_image_write(image_field, streaminformation);
+		cmzn_streaminformation_image_id streaminformation_image =
+			cmzn_streaminformation_cast_image(streaminformation);
+	  return_code = cmzn_field_image_write(image_field, streaminformation_image);
   	cmzn_streamresource_destroy(&resource);
+  	cmzn_streaminformation_image_destroy(&streaminformation_image);
   	cmzn_streaminformation_destroy(&streaminformation);
 	}
 	return return_code;

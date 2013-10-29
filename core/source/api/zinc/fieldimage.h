@@ -343,14 +343,14 @@ ZINC_API int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id i
  * supplied in the streaminformation parameter.
  *
  * @param image_field The image field.
- * @param streaminformation  Information about the supplied formatted image data.
- * At a minimum it should specify either a filename or a memory block
- * reference.
+ * @param streaminformationImage Derived information about the supplied
+ * formatted image data. At a minimum it should specify either a filename
+ * or a memory block reference.
  * @return  Status CMZN_OK if the operation is successful, any other value on
  * failure.
  */
 ZINC_API int cmzn_field_image_read(cmzn_field_image_id image_field,
-	cmzn_streaminformation_id streaminformation);
+	cmzn_streaminformation_image_id streaminformationImage);
 
 /**
  * Convenient function to read a file with the provided name into a field image
@@ -385,7 +385,7 @@ ZINC_API int cmzn_field_image_read_file(cmzn_field_image_id image_field, const c
  * on failure.
  */
 ZINC_API int cmzn_field_image_write(cmzn_field_image_id image_field,
-	cmzn_streaminformation_id streaminformation);
+	cmzn_streaminformation_image_id streaminformation_image);
 
 /**
  * Convenient function to write the image into a file with the provided name.
