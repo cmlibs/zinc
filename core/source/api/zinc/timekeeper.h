@@ -56,32 +56,6 @@ ZINC_API cmzn_timenotifier_id cmzn_timekeeper_create_timenotifier_regular(
 	cmzn_timekeeper_id timekeeper, double update_frequency, double time_offset);
 
 /**
- * Add a time notifier to the time keeper. The time keeper will keep track of the
- * time. When time changes, time keeper will notify the time notifier and then
- * the time notifier will notify its clients. time notifier can only have one set of
- * time keeper but time keeper can have multiple time notifiers. This function
- * will increase the access count of the time notifier.
- *
- * @param timekeeper  Handle to time keeper.
- * @param timenotifier  Handle to time notifier.
- * @return  Status CMZN_OK if successfully set time notifier to time keeper,
- * any other value on failure.
- */
-ZINC_API int cmzn_timekeeper_add_timenotifier(cmzn_timekeeper_id timekeeper,
-	cmzn_timenotifier_id timenotifier);
-
-/**
- * Remove the time notifier from the time keeper. This function will decrease the
- * access count of the time notifier.
- * @param timekeeper  Handle to time keeper.
- * @param timenotifier  Handle to time notifier.
- * @return  Status CMZN_OK if successfully set time notifier to time keeper,
- * any other value on failure.
- */
-ZINC_API int cmzn_timekeeper_remove_timenotifier(cmzn_timekeeper_id timekeeper,
-	cmzn_timenotifier_id timenotifier);
-
-/**
  * Gets the maximum time in the timekeeper.
  *
  * @param timekeeper  The timekeeper to query.

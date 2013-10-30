@@ -31,8 +31,7 @@ extern "C" {
  * @return  return one if such the callback function
  *    has been called successfully otherwise 0.
  */
-typedef int (*cmzn_timenotifier_callback)(cmzn_timenotifier_id timenotifier,
-	double current_time, void *user_data);
+typedef int (*cmzn_timenotifier_callback)(double current_time, void *user_data);
 
 /**
  * Access the time notifier, increase the access count of the time notifier
@@ -54,30 +53,40 @@ ZINC_API cmzn_timenotifier_id cmzn_timenotifier_access(
  */
 ZINC_API int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_address);
 
+
+/**
+ * Assign the callback function and user_data for the time notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_timenotifier_callback_function
+ * @param timenotifier  Handle to the time notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to an user object. User is responsible for
+ *   the life time of such object.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
 /**
  * Adds a callback routine which is called whenever the time given to the
  * time notifier has been changed.
  *
  * @param timenotifier  Handle to time notifier.
- * @param cmzn_timenotifier_callback  callback function to be set.
- * @param user_data  Data to be past into the callback routine.
- * @return  Status CMZN_OK if successfully add callback,
- * any other value on failure.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to an user object. User is responsible for
+ *   the life time of such object.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_timenotifier_add_callback(cmzn_timenotifier_id timenotifier,
-	cmzn_timenotifier_callback callback, void *user_data);
+ZINC_API int cmzn_timenotifier_set_callback(cmzn_timenotifier_id timenotifier,
+	cmzn_timenotifier_callback function, void *user_data_in);
+
 
 /**
- * Remove a callback routine which has been added to the time notifier before.
+ * Stop and clear selection callback. This will stop the callback and also
+ * remove the callback function from the selection notifier.
  *
- * @param timenotifier  Handle to time notifier.
- * @param cmzn_timenotifier_callback  callback function to be .
- * @param user_data  Data that was added to the callback.
- * @return  Status CMZN_OK if successfully remove callback, any other value
- * on failure.
+ * @param selectionnotifier  Handle to the selection notifier.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_timenotifier_remove_callback(cmzn_timenotifier_id timenotifier,
-  cmzn_timenotifier_callback callback, void *user_data);
+ZINC_API int cmzn_timenotifier_clear_callback(cmzn_timenotifier_id timenotifier);
 
 /**
  * Gets the current time from the time notifier.
