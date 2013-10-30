@@ -9,10 +9,8 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
-int timeNotifierCallback(cmzn_timenotifier_id timenotifier,
-	double currentTime, void *storeTimeAddressVoid)
+int timeNotifierCallback(double currentTime, void *storeTimeAddressVoid)
 {
-	EXPECT_NE(static_cast<cmzn_timenotifier_id>(0), timenotifier);
 	double *storeTimeAddress = static_cast<double *>(storeTimeAddressVoid);
 	EXPECT_NE(static_cast<double *>(0), storeTimeAddress);
 	*storeTimeAddress = currentTime;
@@ -39,12 +37,12 @@ TEST(cmzn_timekeeper, api)
 	EXPECT_NE(static_cast<cmzn_timenotifier_id>(0), timenotifier);
 	ASSERT_DOUBLE_EQ(2.5, cmzn_timenotifier_get_time(timenotifier));
 	double notifiedTime = 0.0;
-	EXPECT_EQ(CMZN_OK, cmzn_timenotifier_add_callback(timenotifier, timeNotifierCallback, static_cast<void *>(&notifiedTime)));
+	EXPECT_EQ(CMZN_OK, cmzn_timenotifier_set_callback(timenotifier, timeNotifierCallback, static_cast<void *>(&notifiedTime)));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_timekeeper_set_time(timekeeper, 3.3));
 	// check callback happened
 	ASSERT_DOUBLE_EQ(3.3, notifiedTime);
-	EXPECT_EQ(CMZN_OK, cmzn_timenotifier_remove_callback(timenotifier, timeNotifierCallback, static_cast<void *>(&notifiedTime)));
+	EXPECT_EQ(CMZN_OK, cmzn_timenotifier_clear_callback(timenotifier));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_timekeeper_set_time(timekeeper, 4.7));
 	// check callback did not happen
