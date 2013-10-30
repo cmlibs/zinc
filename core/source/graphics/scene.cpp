@@ -2344,63 +2344,48 @@ int cmzn_scene_set_transformation(struct cmzn_scene *scene,
 	return (return_code);
 } /* cmzn_scene_set_transformation */
 
-static int cmzn_scene_set_time_dependent_transformation(cmzn_timenotifier *time_notifier,
-	double current_time, void *scene_void)
+int cmzn_scene_trigger_time_dependent_transformation(cmzn_scene_id scene, double current_time)
 {
 	int return_code;
-	struct cmzn_scene *scene;
 	FE_value *values;
 	gtMatrix transformation_matrix;
 
-	ENTER(cmzn_scene_set_time_dependent_transformation);
-	USE_PARAMETER(time_notifier);
-
-	if (NULL != (scene = (struct cmzn_scene *)scene_void))
+	if (scene && scene->transformation_field)
 	{
-		if (scene->transformation_field)
+		if (ALLOCATE(values, FE_value, 16))
 		{
-			if (ALLOCATE(values, FE_value, 16))
+			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
+			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+			cmzn_fieldcache_set_time(field_cache, current_time);
+			if (cmzn_field_evaluate_real(scene->transformation_field,
+				field_cache, /*number_of_values*/16, values))
 			{
-				cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
-				cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-				cmzn_fieldcache_set_time(field_cache, current_time);
-				if (cmzn_field_evaluate_real(scene->transformation_field,
-					field_cache, /*number_of_values*/16, values))
+				int i, j, k;
+				k = 0;
+				for (i = 0; i < 4; i++)
 				{
-					int i, j, k;
-					k = 0;
-					for (i = 0; i < 4; i++)
+					for (j = 0; j < 4; j++)
 					{
-						for (j = 0; j < 4; j++)
-						{
-							transformation_matrix[i][j] = values[k];
-							k++;
-						}
+						transformation_matrix[i][j] = values[k];
+						k++;
 					}
-					return_code = cmzn_scene_set_transformation(scene,
-						&transformation_matrix);
 				}
-				else
-				{
-					return_code = 0;
-				}
-				cmzn_fieldcache_destroy(&field_cache);
-				cmzn_fieldmodule_destroy(&field_module);
-				DEALLOCATE(values);
+				return_code = cmzn_scene_set_transformation(scene,
+					&transformation_matrix);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_scene_set_time_dependent_transformation.  "
-					"Unable to allocate values.");
-				return_code=0;
+				return_code = 0;
 			}
+			cmzn_fieldcache_destroy(&field_cache);
+			cmzn_fieldmodule_destroy(&field_module);
+			DEALLOCATE(values);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_scene_set_time_dependent_transformation.  "
-				"Missing transformation field.");
+				"Unable to allocate values.");
 			return_code=0;
 		}
 	}
@@ -2411,34 +2396,24 @@ static int cmzn_scene_set_time_dependent_transformation(cmzn_timenotifier *time_
 			"invalid argument.");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 }
 
 void cmzn_scene_remove_time_dependent_transformation(struct cmzn_scene *scene)
 {
-	ENTER(cmzn_scene_remove_time_dependent_transformation);
-
 	if (scene->transformation_time_callback_flag)
 	{
-		 cmzn_timenotifier_remove_callback(scene->time_notifier,
-			 cmzn_scene_set_time_dependent_transformation, scene);
 		 DEACCESS(Computed_field)(&(scene->transformation_field));
 		 scene->transformation_time_callback_flag = 0;
 	}
-
-	LEAVE;
 }
 
 int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 	 struct Computed_field *transformation_field)
 {
-	 int return_code;
+	 int return_code = 0;
 
-	 ENTER(cmzn_scene_set_transformation_with_time_callback);
-
-	 return_code = 0;
 	 if (scene && transformation_field)
 	 {
 			if (scene->time_notifier)
@@ -2446,19 +2421,10 @@ int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 				 cmzn_scene_remove_time_dependent_transformation(scene);
 				 scene->transformation_field=
 						ACCESS(Computed_field)(transformation_field);
-				 cmzn_scene_set_time_dependent_transformation(scene->time_notifier,
-					 cmzn_timenotifier_get_time(scene->time_notifier), (void *)scene);
-				 cmzn_timenotifier_add_callback(scene->time_notifier,
-						cmzn_scene_set_time_dependent_transformation, scene);
+				 cmzn_scene_trigger_time_dependent_transformation(scene,
+					 cmzn_timenotifier_get_time(scene->time_notifier));
 				 scene->transformation_time_callback_flag = 1;
 				 return_code = 1;
-			}
-			else
-			{
-				 display_message(ERROR_MESSAGE,
-						"cmzn_scene_set_transformation_with_time_callback.  "
-						"Missing time object.");
-				 return_code=0;
 			}
 			return_code = scene->transformation_time_callback_flag;
 	 }
@@ -2470,22 +2436,22 @@ int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 			return_code=0;
 	 }
 
-	 LEAVE;
-
 	 return (return_code);
 }
 
-static int cmzn_scene_time_update_callback(cmzn_timenotifier *time_notifier,
-	double current_time, void *scene_void)
+static int cmzn_scene_time_update_callback(double current_time, void *scene_void)
 {
 	int return_code;
 	struct cmzn_scene *scene;
 
-	ENTER(cmzn_scene_time_update_callback);
-	USE_PARAMETER(current_time);
-	if (time_notifier && (scene=(struct cmzn_scene *)scene_void))
+	if ((scene=(struct cmzn_scene *)scene_void))
 	{
 		cmzn_scene_begin_change(scene);
+		if (scene->transformation_time_callback_flag)
+		{
+			cmzn_scene_trigger_time_dependent_transformation(scene,
+				current_time);
+		}
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_time_change,NULL,
 			scene->list_of_graphics);
@@ -2498,10 +2464,9 @@ static int cmzn_scene_time_update_callback(cmzn_timenotifier *time_notifier,
 			"cmzn_scene_time_update_callback.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* cmzn_scene_time_update_callback */
+}
 
 int cmzn_scene_has_multiple_times(
 	struct cmzn_scene *scene)
@@ -2534,7 +2499,6 @@ cmzn_timenotifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
 {
 	cmzn_timenotifier *return_time;
 
-	ENTER(cmzn_scene_get_time_notifier);
 	if (scene)
 	{
 		return_time=scene->time_notifier;
@@ -2545,29 +2509,27 @@ cmzn_timenotifier *cmzn_scene_get_time_notifier(struct cmzn_scene *scene)
 			"cmzn_scene_get_time_notifier.  Missing scene");
 		return_time=(cmzn_timenotifier *)NULL;
 	}
-	LEAVE;
 
 	return (return_time);
-} /* cmzn_scene_get_time_notifier */
+}
 
 int cmzn_scene_set_time_notifier(struct cmzn_scene *scene,
 	cmzn_timenotifier *time)
 {
 	int return_code;
-	ENTER(cmzn_scene_set_time_notifier);
+
 	if (scene)
 	{
 		if (scene->time_notifier != time)
 		{
 			if (scene->time_notifier)
 			{
-				cmzn_timenotifier_remove_callback(scene->time_notifier,
-					cmzn_scene_time_update_callback, scene);
+				cmzn_timenotifier_clear_callback(scene->time_notifier);
 			}
 			REACCESS(Time_object)(&(scene->time_notifier),time);
 			if (time)
 			{
-				cmzn_timenotifier_add_callback(scene->time_notifier,
+				cmzn_timenotifier_set_callback(scene->time_notifier,
 					cmzn_scene_time_update_callback, scene);
 			}
 		}
@@ -2575,11 +2537,8 @@ int cmzn_scene_set_time_notifier(struct cmzn_scene *scene,
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_set_time_notifier.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* cmzn_scene_set_time_notifier */

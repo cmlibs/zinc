@@ -330,25 +330,3 @@ int cmzn_timekeeper_set_time(cmzn_timekeeper_id timekeeper, double time)
 		return timekeeper->setTime(time);
 	return CMZN_ERROR_ARGUMENT;
 }
-
-int cmzn_timekeeper_add_timenotifier(cmzn_timekeeper_id timekeeper,
-	cmzn_timenotifier_id timenotifier)
-{
-	int return_code = 0;
-	if (timekeeper && timenotifier)
-	{
-		return_code = timekeeper->addTimeObject(timenotifier);
-	}
-	return return_code;
-}
-
-int cmzn_timekeeper_remove_timenotifier(cmzn_timekeeper_id timekeeper,
-	cmzn_timenotifier_id timenotifier)
-{
-	int return_code = 0;
-	if (timekeeper && timenotifier)
-	{
-		return_code = timekeeper->removeTimeObject(timenotifier);
-	}
-	return return_code;
-}

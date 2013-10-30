@@ -22,8 +22,7 @@ This provides an object which supplies a concept of time to Cmgui
 
 struct Time_object;
 
-typedef int (*Time_object_callback)(struct Time_object *time,
-	double current_time, void *user_data);
+typedef int (*Time_object_callback)(double current_time, void *user_data);
 typedef double (*Time_object_next_time_function)(double time_after,
 	enum Time_keeper_play_direction play_direction, void *user_data);
 

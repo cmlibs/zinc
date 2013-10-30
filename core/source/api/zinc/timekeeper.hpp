@@ -71,16 +71,6 @@ public:
 			id, updateFrequency, timeOffset));
 	}
 
-	int addTimenotifier(Timenotifier timenotifier)
-	{
-		return cmzn_timekeeper_add_timenotifier(id, timenotifier.getId());
-	}
-
-	int removeTimenotifier(Timenotifier timenotifier)
-	{
-		return cmzn_timekeeper_remove_timenotifier(id, timenotifier.getId());
-	}
-
 	double getMaximumTime()
 	{
 		return cmzn_timekeeper_get_maximum_time(id);

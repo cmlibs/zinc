@@ -15,7 +15,7 @@
  * A handle to zinc time notifier. This notifier provides a concept of time to
  * Cmgui, it will notify its client when time has changed if a callback is setup
  * for this notifier. time notifier normally receives its callback from a
- * time keeper. See cmzn_timekeeper_add_timenotifier function.
+ * time keeper. See cmzn_timekeeper_create_timenotifier_regular function.
  */
 	struct cmzn_timenotifier;
 	typedef struct cmzn_timenotifier *cmzn_timenotifier_id;

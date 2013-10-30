@@ -16,6 +16,36 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+
+class Timenotifiercallback
+{
+friend class Timenotifier;
+private:
+	Timenotifiercallback(Timenotifiercallback&); // not implemented
+	Timenotifiercallback& operator=(Timenotifiercallback&); // not implemented
+
+	static int C_callback(double current_time, void *callbackVoid)
+	{
+		Timenotifiercallback *callback = reinterpret_cast<Timenotifiercallback *>(callbackVoid);
+		(*callback)(current_time);
+	}
+
+	int set_C_callback(cmzn_timenotifier_id timenotifier_id)
+	{
+		return cmzn_timenotifier_set_callback(timenotifier_id, C_callback, static_cast<void*>(this));
+	}
+
+  virtual void operator()(double current_time) = 0;
+
+protected:
+  Timenotifiercallback()
+	{ }
+
+public:
+	virtual ~Timenotifiercallback()
+	{ }
+};
+
 class Timenotifier
 {
 protected:
@@ -63,17 +93,6 @@ public:
 	{
 		return id;
 	}
-/*
-	int addCallback(cmzn_timenotifier_callback callback, void *user_data)
-	{
-		return cmzn_timenotifier_add_callback(id, callback, user_data);
-	}
-
-	int removeCallback(cmzn_timenotifier_callback callback, void *user_data)
-	{
-		return cmzn_timenotifier_remove_callback(id, callback, user_data);
-	}
-*/
 
 	double getTime()
 	{
@@ -88,6 +107,16 @@ public:
 	int setOffset(double timeOffset)
 	{
 		return cmzn_timenotifier_regular_set_offset(id, timeOffset);
+	}
+
+	int setCallback(Timenotifiercallback& callback)
+	{
+		return callback.set_C_callback(id);
+	}
+
+	int clearCallback()
+	{
+		return cmzn_timenotifier_clear_callback(id);
 	}
 
 };
