@@ -3307,10 +3307,36 @@ Converts mouse button-press and motion events into viewing transformations in
 					{
 						case 1:
 						{
-							scene_viewer->tumble_angle = 0;
-							scene_viewer->tumble_active = 0;
-							switch (scene_viewer->interact_mode)
+							if (input->modifiers & INTERACTIVE_EVENT_MODIFIER_SHIFT)
 							{
+								switch (scene_viewer->interact_mode)
+								{
+									case CMZN_SCENEVIEWER_INTERACT_STANDARD:
+									{
+										if (0.0 != scene_viewer->translate_rate)
+										{
+											scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
+										}
+									} break;
+									case CMZN_SCENEVIEWER_INTERACT_2D:
+									{
+										if (0.0 != scene_viewer->tumble_rate)
+										{
+											scene_viewer->drag_mode=SV_DRAG_TUMBLE;
+										}
+									} break;
+									case CMZN_SCENEVIEWER_INTERACT_MODE_INVALID:
+									{
+										// do nothing
+									} break;
+								}
+							}
+							else
+							{
+								scene_viewer->tumble_angle = 0;
+								scene_viewer->tumble_active = 0;
+								switch (scene_viewer->interact_mode)
+								{
 								case CMZN_SCENEVIEWER_INTERACT_STANDARD:
 								{
 									if (0.0 != scene_viewer->tumble_rate)
@@ -3329,6 +3355,7 @@ Converts mouse button-press and motion events into viewing transformations in
 								{
 									// do nothing
 								} break;
+								}
 							}
 						} break;
 						case 2:
