@@ -364,6 +364,9 @@ DESCRIPTION : list out the threshold filter options
 					display_message(INFORMATION_MESSAGE,
 						"    upper value : %g\n", upperValue);
 				} break;
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_INVALID:
+				{
+				} break;
 			}
 		}
 		else
@@ -420,9 +423,11 @@ Returns allocated command string for reproducing field. Includes type.
 					sprintf(temp_string, " below_value %g above_value %g",
 						lowerValue, upperValue);
 				} break;
+				case CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_INVALID:
+				{
+				} break;
 			}
 			append_string(&command_string, temp_string, &error);
-
 		}
 		else
 		{
