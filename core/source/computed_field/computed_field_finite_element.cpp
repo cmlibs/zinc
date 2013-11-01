@@ -2412,7 +2412,7 @@ public:
 	Computed_field_find_mesh_location(cmzn_mesh_id mesh) :
 		Computed_field_core(),
 		mesh(cmzn_mesh_access(mesh)),
-		search_mode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT)
+		search_mode(CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT)
 	{
 	};
 
@@ -2445,7 +2445,7 @@ public:
 			search_mode = search_mode_in;
 			Computed_field_changed(field);
 		}
-		return 1;
+		return CMZN_OK;
 	}
 
 private:
@@ -2527,7 +2527,7 @@ int Computed_field_find_mesh_location::evaluate(cmzn_fieldcache& cache, FieldVal
 		if (Computed_field_find_element_xi(get_mesh_field(), &extraCache,
 			sourceValueCache->values, sourceValueCache->componentCount, &meshLocationValueCache.element,
 			meshLocationValueCache.xi, mesh, /*propagate_field*/0,
-			/*find_nearest*/(search_mode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT))
+			/*find_nearest*/(search_mode != CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT))
 			&& meshLocationValueCache.element)
 		{
 			cmzn_element_access(meshLocationValueCache.element);
@@ -2543,7 +2543,7 @@ int Computed_field_find_mesh_location::list()
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    search mode : ");
-		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
+		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
 		{
 			display_message(INFORMATION_MESSAGE, " find_nearest\n");
 		}
@@ -2573,7 +2573,7 @@ char *Computed_field_find_mesh_location::get_command_string()
 	{
 		append_string(&command_string, computed_field_find_mesh_location_type_string, &error);
 
-		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST)
+		if (search_mode == CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST)
 		{
 			append_string(&command_string, " find_nearest", &error);
 		}
@@ -2685,10 +2685,10 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT:
+			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT:
 				enum_string = "FIND_EXACT";
 				break;
-			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST:
+			case CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST:
 				enum_string = "FIND_NEAREST";
 				break;
 			default:
@@ -2716,25 +2716,18 @@ enum cmzn_field_find_mesh_location_search_mode
 	cmzn_field_find_mesh_location_get_search_mode(
 		cmzn_field_find_mesh_location_id find_mesh_location_field)
 {
-	cmzn_field_find_mesh_location_search_mode search_mode =
-		CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT;
 	if (find_mesh_location_field)
-	{
-		search_mode = find_mesh_location_field->get_core()->get_search_mode();
-	}
-	return search_mode;
+		return find_mesh_location_field->get_core()->get_search_mode();
+	return CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_INVALID;
 }
 
 int cmzn_field_find_mesh_location_set_search_mode(
 	cmzn_field_find_mesh_location_id find_mesh_location_field,
 	enum cmzn_field_find_mesh_location_search_mode search_mode)
 {
-	int return_code = 0;
 	if (find_mesh_location_field)
-	{
-		return_code = find_mesh_location_field->get_core()->set_search_mode(search_mode);
-	}
-	return return_code;
+		return find_mesh_location_field->get_core()->set_search_mode(search_mode);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 namespace {

@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldimageprocessingid.h
  *
  */
@@ -11,29 +11,38 @@
 #ifndef CMZN_FIELDIMAGEPROCESSINGID_H__
 #define CMZN_FIELDIMAGEPROCESSINGID_H__
 
-/*****************************************************************************//**
+/**
  * The image field specific handle to a zinc binary threshold field.
  */
 struct cmzn_field_imagefilter_binary_threshold;
 typedef struct cmzn_field_imagefilter_binary_threshold * cmzn_field_imagefilter_binary_threshold_id;
 
-/*****************************************************************************//**
+/**
  * The image field specific handle to a zinc discrete gaussian field.
  */
 struct cmzn_field_imagefilter_discrete_gaussian;
 typedef struct cmzn_field_imagefilter_discrete_gaussian * cmzn_field_imagefilter_discrete_gaussian_id;
 
-/*****************************************************************************//**
+/**
  * The image field specific handle to a zinc threshold field.
  */
 struct cmzn_field_imagefilter_threshold;
 typedef struct cmzn_field_imagefilter_threshold * cmzn_field_imagefilter_threshold_id;
 
-enum cmzn_field_imagefilter_threshold_mode
+/**
+ * The condition to be true for pixel values to be assigned to the outside value
+ * for the threshold image filter field.
+ */
+enum cmzn_field_imagefilter_threshold_condition
 {
-	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW,
-	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE,
-	CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_INVALID = 0,
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_ABOVE = 1,
+		/*!< Assign where pixel values are greater than or equal to the upper threshold */
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_BELOW = 2,
+		/*!< Assign where pixel values are less than or equal to lower threshold
+		     This is the default condition for the threshold image filter. */
+	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE = 3
+		/*!< Assign where pixel values are outside the lower to upper threshold range */
 };
 
 #endif
