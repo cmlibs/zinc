@@ -125,3 +125,40 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_connected_threshold, valid_args)
 	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 }
+
+TEST(cmzn_field_imagefilter_threshold, api)
+{
+	ZincTestSetup zinc;
+	int result;
+
+	cmzn_field_id f1 = cmzn_fieldmodule_create_field_image(zinc.fm);
+	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
+	cmzn_field_image_id im = cmzn_field_cast_image(f1);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)));
+
+	cmzn_field_id f2 = cmzn_fieldmodule_create_field_imagefilter_threshold(zinc.fm, f1);
+	cmzn_field_imagefilter_threshold_id th = cmzn_field_cast_imagefilter_threshold(f2);
+
+	cmzn_field_imagefilter_threshold_condition condition;
+	EXPECT_EQ(CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_BELOW, condition = cmzn_field_imagefilter_threshold_get_condition(th));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_imagefilter_threshold_set_condition(th, CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE));
+	EXPECT_EQ(CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE, condition = cmzn_field_imagefilter_threshold_get_condition(th));
+
+	double value;
+	ASSERT_DOUBLE_EQ(0.0, value = cmzn_field_imagefilter_threshold_get_outside_value(th));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_imagefilter_threshold_set_outside_value(th, 1.0));
+	ASSERT_DOUBLE_EQ(1.0, value = cmzn_field_imagefilter_threshold_get_outside_value(th));
+
+	ASSERT_DOUBLE_EQ(0.5, value = cmzn_field_imagefilter_threshold_get_lower_threshold(th));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_imagefilter_threshold_set_lower_threshold(th, 0.2));
+	ASSERT_DOUBLE_EQ(0.2, value = cmzn_field_imagefilter_threshold_get_lower_threshold(th));
+
+	ASSERT_DOUBLE_EQ(0.5, value = cmzn_field_imagefilter_threshold_get_upper_threshold(th));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_imagefilter_threshold_set_upper_threshold(th, 0.8));
+	ASSERT_DOUBLE_EQ(0.8, value = cmzn_field_imagefilter_threshold_get_upper_threshold(th));
+
+	cmzn_field_imagefilter_threshold_destroy(&th);
+	cmzn_field_destroy(&f1);
+	cmzn_field_destroy(&f2);
+	cmzn_field_image_destroy(&im);
+}
