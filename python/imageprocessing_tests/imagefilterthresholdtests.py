@@ -27,14 +27,30 @@ class ImagefilterThresholdTestsCase(unittest.TestCase):
         imageField.read(si);   
         f = self.field_module.createFieldImagefilterThreshold(imageField)
         self.assertTrue(f.isValid())
+        condition = f.getCondition();
+        self.assertEqual(f.CONDITION_BELOW, condition)
         result = f.setCondition(f.CONDITION_OUTSIDE)
         self.assertEqual(status.OK, result)
+        condition = f.getCondition();
+        self.assertEqual(f.CONDITION_OUTSIDE, condition)
+        value = f.getOutsideValue()
+        self.assertEqual(0.0, value)
         result = f.setOutsideValue(0.5)
         self.assertEqual(status.OK, result)
+        value = f.getOutsideValue()
+        self.assertEqual(0.5, value)
+        value = f.getLowerThreshold()
+        self.assertEqual(0.5, value)
         result = f.setLowerThreshold(0.0)
         self.assertEqual(status.OK, result)
+        value = f.getLowerThreshold()
+        self.assertEqual(0.0, value)
+        value = f.getUpperThreshold()
+        self.assertEqual(0.5, value)
         result = f.setUpperThreshold(1.0)
         self.assertEqual(status.OK, result)
+        value = f.getUpperThreshold()
+        self.assertEqual(1.0, value)
         
 def suite():
     #import ImportTestCase
