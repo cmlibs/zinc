@@ -1,5 +1,5 @@
-/*******************************************************************************
- * ZnDifferentialOperator.i
+/**
+ * differentialoperator.i
  * 
  */
 /* ***** BEGIN LICENSE BLOCK *****

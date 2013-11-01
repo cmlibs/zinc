@@ -1,7 +1,7 @@
 /**
  * selection.i
  *
- * Swig interface file for cmgui selection API.
+ * Swig interface file for Zinc selection API.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

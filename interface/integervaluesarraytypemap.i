@@ -1,4 +1,4 @@
-/*******************************************************************************
+/**
  * integervaluesarraytypemap.i
  * 
  * Swig interface file for integer array.

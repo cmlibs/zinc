@@ -1,4 +1,4 @@
-/*******************************************************************************
+/**
  * fieldarraytypemap.i
  * 
  * Swig interface file for field array.

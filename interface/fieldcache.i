@@ -1,5 +1,5 @@
-/*******************************************************************************
- * FieldCache.i
+/**
+ * fieldcache.i
  * 
  * Swig interface file for wrapping api functions in api/fieldcache.hpp
  */

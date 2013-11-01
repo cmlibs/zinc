@@ -1,4 +1,4 @@
-/*******************************************************************************
+/**
  * doublevaluesarraytypemap.i
  *
  * Swig interface file for double array.

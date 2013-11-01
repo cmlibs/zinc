@@ -1,7 +1,7 @@
-/*******************************************************************************
- * Material.i
+/**
+ * material.i
  *
- * Swig interface file for cmiss material.
+ * Swig interface file for Zinc material.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1

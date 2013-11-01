@@ -1,5 +1,5 @@
-/*******************************************************************************
- * FieldOperators.i
+/**
+ * fieldoperators.i
  * 
  * Swig interface file for wrapping overloading operators of fields
  */

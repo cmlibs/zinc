@@ -1,5 +1,5 @@
-/*******************************************************************************
- * Field.i
+/**
+ * field.i
  *
  * Swig interface file for wrapping api functions in api/field.hpp
  */

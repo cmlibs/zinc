@@ -1,7 +1,7 @@
-/*******************************************************************************
- * CmissContext.i
+/**
+ * context.i
  *
- * Swig interface file for cmgui context.
+ * Swig interface file for zinc context.
  */
 /* ***** BEGIN LICENSE BLOCK *****
  * Version: MPL 1.1/GPL 2.0/LGPL 2.1
@@ -16,7 +16,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * The Original Code is cmgui.
+ * The Original Code is libZinc.
  *
  * The Initial Developer of the Original Code is
  * Auckland Uniservices Ltd, Auckland, New Zealand.
