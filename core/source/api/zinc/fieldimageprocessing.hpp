@@ -283,24 +283,25 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_threshold(field.getId())))
 	{	}
 
-	enum ThresholdMode
+	enum Condition
 	{
-		THRESHOLD_MODE_BELOW = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_BELOW,
-		THRESHOLD_MODE_ABOVE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_ABOVE,
-		THRESHOLD_MODE_OUTSIDE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_MODE_OUTSIDE
+		CONDITION_INVALID = CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_INVALID,
+		CONDITION_ABOVE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_ABOVE,
+		CONDITION_BELOW = CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_BELOW,
+		CONDITION_OUTSIDE = CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_OUTSIDE
 	};
 
-	enum ThresholdMode getMode()
+	enum Condition getCondition()
 	{
-		return static_cast<ThresholdMode>(cmzn_field_imagefilter_threshold_get_mode(
+		return static_cast<Condition>(cmzn_field_imagefilter_threshold_get_condition(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id)));
 	}
 
-	int setMode(enum ThresholdMode thresholdMode)
+	int setCondition(Condition condition)
 	{
-		return cmzn_field_imagefilter_threshold_set_mode(
+		return cmzn_field_imagefilter_threshold_set_condition(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id),
-			static_cast<cmzn_field_imagefilter_threshold_mode>(thresholdMode));
+			static_cast<cmzn_field_imagefilter_threshold_condition>(condition));
 	}
 
 	double getOutsideValue()
@@ -315,28 +316,28 @@ public:
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), outsideValue);
 	}
 
-	double getBelow()
+	double getLowerThreshold()
 	{
-		return cmzn_field_imagefilter_threshold_get_below(
+		return cmzn_field_imagefilter_threshold_get_lower_threshold(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
 	}
 
-	int setBelow(double belowValue)
+	int setLowerThreshold(double lowerValue)
 	{
-		return cmzn_field_imagefilter_threshold_set_below(
-			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), belowValue);
+		return cmzn_field_imagefilter_threshold_set_lower_threshold(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), lowerValue);
 	}
 
-	double getAbove()
+	double getUpperThreshold()
 	{
-		return cmzn_field_imagefilter_threshold_get_below(
+		return cmzn_field_imagefilter_threshold_get_upper_threshold(
 			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id));
 	}
 
-	int setAbove(double aboveValue)
+	int setUpperThreshold(double upperValue)
 	{
-		return cmzn_field_imagefilter_threshold_set_above(
-			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), aboveValue);
+		return cmzn_field_imagefilter_threshold_set_upper_threshold(
+			reinterpret_cast<cmzn_field_imagefilter_threshold_id>(id), upperValue);
 	}
 
 };

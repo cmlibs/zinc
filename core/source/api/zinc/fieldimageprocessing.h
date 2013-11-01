@@ -356,92 +356,88 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
 ZINC_API cmzn_field_imagefilter_threshold_id cmzn_field_cast_imagefilter_threshold(cmzn_field_id field);
 
 /**
- *  Get the threshold mode for this image filter.
+ * Get the threshold condition for this image filter.
  *
  * @param imagefilter_threshold  handle of the threshold image filter.
- * @return  the current threshold mode seleted for this filter.
+ * @return  The current threshold condition, otherwise CONDITION_INVALID.
  */
-ZINC_API enum cmzn_field_imagefilter_threshold_mode cmzn_field_imagefilter_threshold_get_mode(
+ZINC_API enum cmzn_field_imagefilter_threshold_condition
+	cmzn_field_imagefilter_threshold_get_condition(
 	cmzn_field_imagefilter_threshold_id imagefilter_threshold);
 
 /**
- *  Set the threshold mode for this image filter.
- *
- * For the below mode, all pixels BELOW the below value are set to
- * the outside value
- * For the above mode, all pixels ABOVE the above value are set to a
- * outside value
- * For the oustide mode, all pixels OUTSIDE the range defined by the
- * below and above values are set to the outside value
+ * Set the threshold condition for this image filter.
+ * @see cmzn_field_imagefilter_threshold_condition
  *
  * @param imagefilter_threshold  handle of the threshold image filter.
- * @param mode The threshold mode to apply, either BELOW, ABOVE or OUTSIDE
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param condition  The threshold condition to be true for pixel values to be
+ * assigned to the outside value: either BELOW, ABOVE or OUTSIDE.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_field_imagefilter_threshold_set_mode(
+ZINC_API int cmzn_field_imagefilter_threshold_set_condition(
 	cmzn_field_imagefilter_threshold_id imagefilter_threshold,
-	enum cmzn_field_imagefilter_threshold_mode mode);
+	enum cmzn_field_imagefilter_threshold_condition condition);
 
 /**
  *  Get the outside value for this image filter.
  *
- * @param imagefilter_threshold  handle of the threshold image filter.
- * @return  the current outside value mode set on this filter.
+ * @param imagefilter_threshold  The threshold image filter to query.
+ * @return  The current outside value mode set on this filter.
  */
 ZINC_API double cmzn_field_imagefilter_threshold_get_outside_value(
 	cmzn_field_imagefilter_threshold_id imagefilter_threshold);
 
 /**
- *  Set the outside value for this image filter.
+ * Set the outside value for this image filter.
  *
- * @param imagefilter_threshold  handle of the threshold image filter.
- * @param outside_value The value to replace all thresholded values with
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param imagefilter_threshold  The threshold image filter to modify.
+ * @param outside_value  The value to replace all thresholded values with.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_imagefilter_threshold_set_outside_value(
 	cmzn_field_imagefilter_threshold_id imagefilter_threshold, double outside_value);
 
 /**
- *  Get the outside value for this image filter.
+ * Get the lower threshold pixel value.
  *
- * @param imagefilter_threshold  handle of the threshold image filter.
- * @return  the current below value set on this filter.
+ * @param imagefilter_threshold  The threshold image filter to query.
+ * @return  The current lower threshold value, or 0.0 on error.
  */
-ZINC_API double cmzn_field_imagefilter_threshold_get_below(
+ZINC_API double cmzn_field_imagefilter_threshold_get_lower_threshold(
 	cmzn_field_imagefilter_threshold_id imagefilter_threshold);
 
 /**
- *  Set the below value for this image filter.
+ * Set the lower threshold value for this image filter. Depending on the
+ * condition this sets the lowest pixel value below which the outside value
+ * is set.
  *
- *  all pixels BELOW the below value are set to a outside value
- *
- * @param imagefilter_threshold  handle of the threshold image filter.
- * @param below The below value to be set.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param imagefilter_threshold  The threshold image filter to modify.
+ * @param lower_value  The lower pixel value to be set.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_field_imagefilter_threshold_set_below(cmzn_field_imagefilter_threshold_id
-	imagefilter_threshold, double below_value);
+ZINC_API int cmzn_field_imagefilter_threshold_set_lower_threshold(
+	cmzn_field_imagefilter_threshold_id imagefilter_threshold, double lower_value);
 
 /**
- *  Get the above value for this image filter.
+ * Get the upper threshold pixel value.
  *
- * @param imagefilter_threshold  handle of the threshold image filter.
- * @return  the current above value set on this filter.
+ * @param imagefilter_threshold  The threshold image filter to query.
+ * @return  The current upper threshold value, or 0.0 on error.
  */
-ZINC_API double cmzn_field_imagefilter_threshold_get_above(
+ZINC_API double cmzn_field_imagefilter_threshold_get_upper_threshold(
 	cmzn_field_imagefilter_threshold_id imagefilter_threshold);
 
 /**
- *  Set the above value for this image filter.
+ * Set the upper threshold value for this image filter. Depending on the
+ * condition this sets the highest pixel value above which the outside value
+ * is set.
  *
- * all pixels ABOVE the above value are set to a outside value
- *
- * @param imagefilter_threshold  handle of the threshold image filter.
- * @param above The above value to be set.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param imagefilter_threshold  The threshold image filter to modify.
+ * @param upper_value  The upper pixel value to be set.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_field_imagefilter_threshold_set_above(cmzn_field_imagefilter_threshold_id
-	imagefilter_threshold, double above_value);
+ZINC_API int cmzn_field_imagefilter_threshold_set_upper_threshold(
+	cmzn_field_imagefilter_threshold_id imagefilter_threshold, double upper_value);
 
 /**
  * Cast imagefilter_threshold field back to its base field and return the field.

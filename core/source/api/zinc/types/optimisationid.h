@@ -32,7 +32,7 @@
 		 * fields' components), finds the set of DOFs for the independent field(s)
 		 * which minimises the objective function value.
 		 */
-		CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2,
+		CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON = 2
 		/*!< A least squares method better suited to larger problems.
 		 * Finds the set of independent field(s) DOF values which minimises the
 		 * squares of the objective components supplied. Works specially with fields

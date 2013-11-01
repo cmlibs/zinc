@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldfiniteelementid.h
  *
  */
@@ -28,17 +28,18 @@ typedef struct cmzn_field_stored_mesh_location *cmzn_field_stored_mesh_location_
 struct cmzn_field_stored_string_location;
 typedef struct cmzn_field_stored_string *cmzn_field_stored_string_id;
 
-/***************************************************************************//**
+/**
  * Enumeration controlling whether find_mesh_location returns location of exact
  * field value match, or nearest value.
  */
 enum cmzn_field_find_mesh_location_search_mode
 {
-	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_EXACT = 1,
+	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_INVALID = 0,
+	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_EXACT = 1,
 	/*!< Only location where mesh field value is exactly equal to source field is
 	 * returned. This is the default search criterion.
 	 */
-	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_FIND_NEAREST = 2,
+	CMZN_FIELD_FIND_MESH_LOCATION_SEARCH_MODE_NEAREST = 2
 	/*!< Location of RMS nearest value of mesh field to source field is returned.
 	 */
 };
