@@ -42,7 +42,7 @@
 
 %extend OpenCMISS::Zinc::Timenotifier {
 
-    int addCallback(PyObject *callbackObject)
+    int setCallback(PyObject *callbackObject)
     {
         PyObject *my_callback = NULL;
         if (!PyCallable_Check(callbackObject))
@@ -52,44 +52,27 @@
         }
         Py_XINCREF(callbackObject);         /* Add a reference to new callback */
         my_callback = callbackObject;       /* Remember new callback */
-        return cmzn_timenotifier_add_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+        return cmzn_timenotifier_set_callback(($self)->getId(),callbackToPython, (void *)my_callback);
     }
 
-    int removeCallback(PyObject *callbackObject)
+    int removeCallback()
     {
-        if (!PyCallable_Check(callbackObject))
-        {
-            PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
-            return 0;
-        }
-
-        Py_XDECREF(callbackObject);         /* Add a reference to new callback */
-        return cmzn_timenotifier_remove_callback(($self)->getId(),callbackToPython,
-            (void *)callbackObject);
+	    //Py_XDECREF(callbackObject);         /* Add a reference to new callback */
+        return cmzn_timenotifier_clear_callback(($self)->getId());
     }
 }
 
 %{
 #include "zinc/timenotifier.hpp"
 
-struct TimenotifierPyDataObject
-{
-    PyObject *callbackObject;
-    PyObject *userObject;
-};
-
-static int callbackToPython(cmzn_timenotifier_id timenotifier,
-    double current_time, void *user_data)
+static int callbackToPython(double current_time, void *user_data)
 {
     PyObject *arglist = NULL;
     PyObject *result = NULL;
     PyObject *my_callback = (PyObject *)user_data;
     /* convert timenotifier to python object */
-    PyObject *obj = NULL;
-    OpenCMISS::Zinc::Timenotifier *timeNotifier = new OpenCMISS::Zinc::Timenotifier(cmzn_timenotifier_access(timenotifier));
-    obj = SWIG_NewPointerObj(SWIG_as_voidptr(timeNotifier), SWIGTYPE_p_OpenCMISS__Zinc__Timenotifier, 1);
     /* Time to call the callback */
-    arglist = Py_BuildValue("(Nd)", obj, current_time);
+    arglist = Py_BuildValue("(d)", current_time);
     result = PyObject_CallObject(my_callback, arglist);
     Py_DECREF(arglist);
     if (result)
