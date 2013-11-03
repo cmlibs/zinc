@@ -27,7 +27,7 @@ private:
 	static int C_callback(double current_time, void *callbackVoid)
 	{
 		Timenotifiercallback *callback = reinterpret_cast<Timenotifiercallback *>(callbackVoid);
-		(*callback)(current_time);
+		return (*callback)(current_time);
 	}
 
 	int set_C_callback(cmzn_timenotifier_id timenotifier_id)
@@ -35,7 +35,7 @@ private:
 		return cmzn_timenotifier_set_callback(timenotifier_id, C_callback, static_cast<void*>(this));
 	}
 
-  virtual void operator()(double current_time) = 0;
+  virtual int operator()(double current_time) = 0;
 
 protected:
   Timenotifiercallback()
