@@ -55,15 +55,15 @@ ZINC_API int cmzn_sceneviewerinput_destroy(cmzn_sceneviewerinput_id *address_inp
 ZINC_API int cmzn_sceneviewerinput_set_position(cmzn_sceneviewerinput_id input, int x, int y);
 
 /**
- * Set modifiers for the input, e.g. shift, ctrl, alt.
+ * Set modifier flags for the input, e.g. shift, ctrl, alt.
  *
  * @param input  Handle to cmzn_sceneviewerinput object.
- * @param modifiers  The input modifiers to set, logical OR of
- * enum cmzn_sceneviewerinput_modifier_flags.
+ * @param modifier_flags  The input modifier flags to set: logical OR of
+ * enum cmzn_sceneviewerinput_modifier_flag.
  * @return  CMZN_OK if successful, any other value on failure.
  */
-ZINC_API int cmzn_sceneviewerinput_set_modifiers(cmzn_sceneviewerinput_id input,
-	cmzn_sceneviewerinput_modifiers_type modifiers);
+ZINC_API int cmzn_sceneviewerinput_set_modifier_flags(cmzn_sceneviewerinput_id input,
+	cmzn_sceneviewerinput_modifier_flags modifier_flags);
 
 /**
  * Set the button for the scene viewer input.

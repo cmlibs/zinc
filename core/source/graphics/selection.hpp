@@ -22,11 +22,11 @@ inline int cmzn_field_group_change_type_to_selectionevent_change_type(int group_
 
 struct cmzn_selectionevent
 {
-	int changeSummary;
+	cmzn_selectionevent_change_flags changeFlags;
 	int access_count;
 
 	cmzn_selectionevent() :
-		changeSummary(CMZN_SELECTIONEVENT_CHANGE_NONE),
+		changeFlags(CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE),
 		access_count(1)
 	{
 	}

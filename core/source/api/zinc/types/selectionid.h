@@ -20,12 +20,17 @@ typedef struct cmzn_selectionevent * cmzn_selectionevent_id;
 /**
  * Bit flags summarising changes to the selection.
  */
-enum cmzn_selectionevent_change_flags
+enum cmzn_selectionevent_change_flag
 {
-	CMZN_SELECTIONEVENT_CHANGE_NONE = 0,
-	CMZN_SELECTIONEVENT_CHANGE_ADD = 1,       /*!< one or more objects added */
-	CMZN_SELECTIONEVENT_CHANGE_REMOVE = 2,    /*!< one or more objects removed */
-	CMZN_SELECTIONEVENT_CHANGE_FINAL = 4      /*!< final notification: owning object destroyed */
+	CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE = 0,
+	CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD = 1,       /*!< one or more objects added */
+	CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE = 2,    /*!< one or more objects removed */
+	CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL = 4      /*!< final notification: owning object destroyed */
 };
+
+/**
+ * Type for passing logical OR of #cmzn_selectionevent_change_flag
+ */
+typedef int cmzn_selectionevent_change_flags;
 
 #endif /* CMZN_SELECTION_ID_H */

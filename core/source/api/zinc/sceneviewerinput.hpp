@@ -42,16 +42,16 @@ public:
 		EVENT_TYPE_KEY_RELEASE = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_KEY_RELEASE
 	};
 
-	enum ModifierFlags
+	enum ModifierFlag
 	{
-		MODIFIER_NONE = CMZN_SCENEVIEWERINPUT_MODIFIER_NONE,
-		MODIFIER_SHIFT = CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT,
-		MODIFIER_CONTROL = CMZN_SCENEVIEWERINPUT_MODIFIER_CONTROL,
-		MODIFIER_ALT = CMZN_SCENEVIEWERINPUT_MODIFIER_ALT,
-		MODIFIER_BUTTON1 = CMZN_SCENEVIEWERINPUT_MODIFIER_BUTTON1
+		MODIFIER_FLAG_NONE = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_NONE,
+		MODIFIER_FLAG_SHIFT = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_SHIFT,
+		MODIFIER_FLAG_CONTROL = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_CONTROL,
+		MODIFIER_FLAG_ALT = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_ALT,
+		MODIFIER_FLAG_BUTTON1 = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_BUTTON1
 	};
 
-	typedef int ModifiersType;
+	typedef cmzn_sceneviewerinput_modifier_flags ModifierFlags;
 
 	Sceneviewerinput() : id(0)
 	{  }
@@ -109,9 +109,9 @@ public:
 		return cmzn_sceneviewerinput_set_event_type(id, static_cast<cmzn_sceneviewerinput_event_type>(eventType));
 	}
 
-	int setModifiers(ModifiersType modifiers)
+	int setModifierFlags(ModifierFlags modifierFlags)
 	{
-		return cmzn_sceneviewerinput_set_modifiers(id, static_cast<cmzn_sceneviewerinput_modifiers_type>(modifiers));
+		return cmzn_sceneviewerinput_set_modifier_flags(id, modifierFlags);
 	}
 
 };

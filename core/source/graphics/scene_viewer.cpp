@@ -93,7 +93,7 @@ cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_v
 		{
 			input->access_count = 1;
 			input->button_number = 0;
-			input->modifiers = CMZN_SCENEVIEWERINPUT_MODIFIER_NONE;
+			input->modifiers = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_NONE;
 			input->key_code = 0;
 			input->position_x = 0;
 			input->position_y = 0;
@@ -163,12 +163,12 @@ int cmzn_sceneviewerinput_set_position(cmzn_sceneviewerinput_id input, int x, in
 	return (return_code);
 }
 
-int cmzn_sceneviewerinput_set_modifiers(cmzn_sceneviewerinput_id input,
-	cmzn_sceneviewerinput_modifiers_type modifiers)
+int cmzn_sceneviewerinput_set_modifier_flags(cmzn_sceneviewerinput_id input,
+	cmzn_sceneviewerinput_modifier_flags modifier_flags)
 {
 	if (input)
 	{
-		input->modifiers = modifiers;
+		input->modifiers = modifier_flags;
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;

@@ -35,13 +35,15 @@ public:
 		id(cmzn_selectionevent_access(selectionEvent.id))
 	{  }
 
-	enum ChangeType
+	enum ChangeFlag
 	{
-		CHANGE_NONE = CMZN_SELECTIONEVENT_CHANGE_NONE,
-		CHANGE_ADD = CMZN_SELECTIONEVENT_CHANGE_ADD,
-		CHANGE_REMOVE = CMZN_SELECTIONEVENT_CHANGE_REMOVE,
-		CHANGE_FINAL = CMZN_SELECTIONEVENT_CHANGE_FINAL
+		CHANGE_FLAG_NONE = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_ADD = CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD,
+		CHANGE_FLAG_REMOVE = CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE,
+		CHANGE_FLAG_FINAL = CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL
 	};
+
+	typedef cmzn_selectionevent_change_flags ChangeFlags;
 
 	Selectionevent& operator=(const Selectionevent& selectionEvent)
 	{
@@ -72,9 +74,9 @@ public:
 		return id;
 	}
 
-	int getChangeSummary() const
+	ChangeFlags getChangeFlags() const
 	{
-		return static_cast<ChangeType>(cmzn_selectionevent_get_change_summary(id));
+		return cmzn_selectionevent_get_change_flags(id);
 	}
 
 };
