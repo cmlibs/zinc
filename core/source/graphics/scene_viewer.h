@@ -132,18 +132,6 @@ Specifies the sort of projection matrix used to render the 3D scene.
 	SCENE_VIEWER_CUSTOM
 };
 
-enum Scene_viewer_stereo_mode
-/*******************************************************************************
-LAST MODIFIED : 19 September 2002
-
-DESCRIPTION :
-Be sure to implement any new modes in Scene_viewer_stereo_mode_string.
-==============================================================================*/
-{
-	SCENE_VIEWER_MONO,
-	SCENE_VIEWER_STEREO
-};
-
 enum Scene_viewer_drag_mode
 {
 	SV_DRAG_NOTHING,
@@ -294,7 +282,7 @@ DESCRIPTION :
 	/* background */
 	struct Colour background_colour;
 	enum Scene_viewer_buffering_mode buffering_mode;
-	enum Scene_viewer_stereo_mode stereo_mode;
+	enum cmzn_sceneviewer_stereo_mode stereo_mode;
 	int pixel_height,pixel_width,update_pixel_image;
 	void *pixel_data;
 	int antialias;
@@ -568,15 +556,6 @@ LAST MODIFIED : 15 October 1998
 
 DESCRIPTION :
 Returns the buffer mode - single_buffer/double_buffer - of the Scene_viewer.
-==============================================================================*/
-
-enum Scene_viewer_stereo_mode Scene_viewer_get_stereo_mode(
-	struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 16 September 2002
-
-DESCRIPTION :
-Returns the stereo mode - mono/stereo - of the Scene_viewer.
 ==============================================================================*/
 
 enum Scene_viewer_input_mode Scene_viewer_get_input_mode(
@@ -1153,16 +1132,6 @@ LAST MODIFIED : 14 October 1998
 
 DESCRIPTION :
 Returns a string label for the <buffering_mode>.
-NOTE: Calling function must not deallocate returned string.
-==============================================================================*/
-
-const char *Scene_viewer_stereo_mode_string(
-	enum Scene_viewer_stereo_mode stereo_mode);
-/*******************************************************************************
-LAST MODIFIED : 16 September 2002
-
-DESCRIPTION :
-Returns a string label for the <stereo_mode>.
 NOTE: Calling function must not deallocate returned string.
 ==============================================================================*/
 

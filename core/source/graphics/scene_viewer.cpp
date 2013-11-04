@@ -174,33 +174,15 @@ int cmzn_sceneviewerinput_set_modifiers(cmzn_sceneviewerinput_id input,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_sceneviewerinput_set_button_number(cmzn_sceneviewerinput_id input, int number)
+int cmzn_sceneviewerinput_set_button_type(cmzn_sceneviewerinput_id input,
+	cmzn_sceneviewerinput_button_type button_type)
 {
-	int return_code = 0;
 	if (input)
 	{
-		return_code = 1;
-		input->button_number = number;
+		input->button_number = static_cast<int>(button_type) + 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewerinput_set_button_number.  Invalid argument(s)");
-	}
-
-	return (return_code);
-}
-
-int cmzn_sceneviewerinput_set_button(cmzn_sceneviewerinput_id input, cmzn_sceneviewerinput_button_type button)
-{
-	int return_code = CMZN_ERROR_ARGUMENT;
-	if (input)
-	{
-		return_code = CMZN_OK;
-		input->button_number = static_cast<int>(button) + 1;
-	}
-
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sceneviewerinput_event_type event_type)
@@ -745,7 +727,7 @@ modes, so push/pop them if you want them preserved.
 		postmultiply_matrix[15] = 1.0;
 		switch (scene_viewer->viewport_mode)
 		{
-			case CMZN_SCENEVIEWER_VIEWPORT_ABSOLUTE:
+			case CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE:
 			{
 				/* absolute viewport: NDC volume is placed in the position
 					 described by the NDC_info relative to user viewport
@@ -763,7 +745,7 @@ modes, so push/pop them if you want them preserved.
 					(-(scene_viewer->NDC_height)+
 						2.0*(scene_viewer->NDC_top-scene_viewer->user_viewport_top));
 			} break;
-			case CMZN_SCENEVIEWER_VIEWPORT_RELATIVE:
+			case CMZN_SCENEVIEWER_VIEWPORT_MODE_RELATIVE:
 			{
 				/* relative viewport: NDC volume is scaled to the largest size
 					 that can fit in the viewport without distorting its shape. Note that
@@ -783,7 +765,7 @@ modes, so push/pop them if you want them preserved.
 						(scene_viewer->NDC_width*viewport_height));
 				}
 			} break;
-			case CMZN_SCENEVIEWER_VIEWPORT_DISTORTING_RELATIVE:
+			case CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE:
 			{
 				/* distorting relative viewport: NDC volume is scaled to the largest size
 					 that can fit in the viewport. Note that
@@ -2052,7 +2034,7 @@ access this function.
 				ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 					rendering_data.render_callstack);
 
-				if (SCENE_VIEWER_STEREO == scene_viewer->stereo_mode)
+				if (CMZN_SCENEVIEWER_STEREO_MODE_STEREO == scene_viewer->stereo_mode)
 				{
 					render_object = CREATE(Scene_viewer_render_object)(
 						Scene_viewer_stereo);
@@ -2062,14 +2044,14 @@ access this function.
 
 				switch (scene_viewer->transparency_mode)
 				{
-					case CMZN_SCENEVIEWER_TRANSPARENCY_SLOW:
+					case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW:
 					{
 						render_object = CREATE(Scene_viewer_render_object)(
 							Scene_viewer_slow_transparency);
 						ADD_OBJECT_TO_LIST(Scene_viewer_render_object)(render_object,
 							rendering_data.render_callstack);
 					} break;
-					case CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT:
+					case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT:
 					{
 						Scene_viewer_initialise_order_independent_transparency(&rendering_data);
 
@@ -2127,7 +2109,7 @@ access this function.
 #endif
 				if (!framebuffer_flag)
 				{
-					if (SCENE_VIEWER_STEREO != scene_viewer->stereo_mode)
+					if (CMZN_SCENEVIEWER_STEREO_MODE_STEREO != scene_viewer->stereo_mode)
 					{
 						if (double_buffer)
 						{
@@ -2162,17 +2144,17 @@ access this function.
 				switch(scene_viewer->blending_mode)
 				{
 					default:
-					case CMZN_SCENEVIEWER_BLENDING_NORMAL:
+					case CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL:
 					{
 						glEnable(GL_BLEND);
 						glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 					} break;
-					case CMZN_SCENEVIEWER_BLENDING_NONE:
+					case CMZN_SCENEVIEWER_BLENDING_MODE_NONE:
 					{
 						glDisable(GL_BLEND);
 					} break;
 #if defined GL_VERSION_1_4
-					case CMZN_SCENEVIEWER_BLENDING_TRUE_ALPHA:
+					case CMZN_SCENEVIEWER_BLENDING_MODE_TRUE_ALPHA:
 					{
 						/* This function is protected at runtime by testing in the set
 							blending mode function */
@@ -2839,7 +2821,6 @@ performed in idle time so that multiple redraws are avoided.
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode = GRAPHICS_BUFFER_MONO;
 	enum Scene_viewer_buffering_mode buffering_mode = SCENE_VIEWER_PIXEL_BUFFER;
-	enum Scene_viewer_stereo_mode stereo_mode;
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;
 
@@ -2866,16 +2847,17 @@ performed in idle time so that multiple redraws are avoided.
 				return_code = 0;
 			} break;
 		}
+		enum cmzn_sceneviewer_stereo_mode stereo_mode;
 		switch(graphics_buffer_stereo_mode)
 		{
 			case GRAPHICS_BUFFER_MONO:
 			case GRAPHICS_BUFFER_ANY_STEREO_MODE:
 			{
-				stereo_mode = SCENE_VIEWER_MONO;
+				stereo_mode = CMZN_SCENEVIEWER_STEREO_MODE_MONO;
 			} break;
 			case GRAPHICS_BUFFER_STEREO:
 			{
-				stereo_mode = SCENE_VIEWER_STEREO;
+				stereo_mode = CMZN_SCENEVIEWER_STEREO_MODE_STEREO;
 			} break;
 			default:
 			{
@@ -2931,7 +2913,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
 				scene_viewer->antialias = 0;
 				scene_viewer->perturb_lines = false;
-				scene_viewer->blending_mode=CMZN_SCENEVIEWER_BLENDING_NORMAL;
+				scene_viewer->blending_mode=CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL;
 				scene_viewer->depth_of_field=0.0;  /* default 0==infinite */
 				scene_viewer->focal_depth=0.0;
 				scene_viewer->transform_flag=0;
@@ -2970,7 +2952,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->NDC_height=scene_viewer->top-scene_viewer->bottom;
 				scene_viewer->NDC_top=scene_viewer->top;
 				scene_viewer->NDC_left=scene_viewer->left;
-				scene_viewer->viewport_mode = CMZN_SCENEVIEWER_VIEWPORT_RELATIVE;
+				scene_viewer->viewport_mode = CMZN_SCENEVIEWER_VIEWPORT_MODE_RELATIVE;
 				scene_viewer->user_viewport_top=0.0;
 				scene_viewer->user_viewport_left=0.0;
 				scene_viewer->user_viewport_pixels_per_unit_x=1.0;
@@ -2979,7 +2961,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->bk_texture_left=0.0;
 				scene_viewer->bk_texture_width=0.0;
 				scene_viewer->bk_texture_height=0.0;
-				scene_viewer->interact_mode=CMZN_SCENEVIEWER_INTERACT_STANDARD;
+				scene_viewer->interact_mode=CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD;
 				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 				scene_viewer->previous_pointer_x = 0;
 				scene_viewer->previous_pointer_y = 0;
@@ -2992,7 +2974,7 @@ performed in idle time so that multiple redraws are avoided.
 				/* by default, use undistort stuff on textures */
 				scene_viewer->bk_texture_undistort_on=1;
 				scene_viewer->bk_texture_max_pixels_per_polygon=16.0;
-				scene_viewer->transparency_mode=CMZN_SCENEVIEWER_TRANSPARENCY_FAST;
+				scene_viewer->transparency_mode=CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST;
 				scene_viewer->transparency_layers=1;
 				scene_viewer->pixel_width=0;
 				scene_viewer->pixel_height=0;
@@ -3218,19 +3200,19 @@ cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 
 	if (sceneviewermodule)
 	{
-		if (CMZN_SCENEVIEWER_BUFFERING_ANY_MODE==buffer_mode)
+		if (CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_ANY_BUFFERING_MODE;
 		}
-		else if (CMZN_SCENEVIEWER_BUFFERING_SINGLE==buffer_mode)
+		else if (CMZN_SCENEVIEWER_BUFFERING_MODE_SINGLE==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_SINGLE_BUFFERING;
 		}
-		else if (CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY==buffer_mode)
+		else if (CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_COPY==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_COPY;
 		}
-		else if (CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND==buffer_mode)
+		else if (CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_BLEND==buffer_mode)
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_RENDER_OFFSCREEN_AND_BLEND;
 		}
@@ -3238,11 +3220,11 @@ cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 		{
 			graphics_buffer_buffering_mode = GRAPHICS_BUFFER_DOUBLE_BUFFERING;
 		}
-		if (CMZN_SCENEVIEWER_STEREO_ANY_MODE==stereo_mode)
+		if (CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT==stereo_mode)
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_ANY_STEREO_MODE;
 		}
-		else if (CMZN_SCENEVIEWER_STEREO_STEREO==stereo_mode)
+		else if (CMZN_SCENEVIEWER_STEREO_MODE_STEREO==stereo_mode)
 		{
 			graphics_buffer_stereo_mode = GRAPHICS_BUFFER_STEREO;
 		}
@@ -3292,7 +3274,7 @@ Converts mouse button-press and motion events into viewing transformations in
 		return_code=1;
 		switch (input->type)
 		{
-			case CMZN_SCENEVIEWERINPUT_EVENT_BUTTON_PRESS:
+			case CMZN_SCENEVIEWERINPUT_EVENT_TYPE_BUTTON_PRESS:
 			{
 				pointer_x=input->position_x;
 				pointer_y=input->position_y;
@@ -3311,14 +3293,14 @@ Converts mouse button-press and motion events into viewing transformations in
 							{
 								switch (scene_viewer->interact_mode)
 								{
-									case CMZN_SCENEVIEWER_INTERACT_STANDARD:
+									case CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD:
 									{
 										if (0.0 != scene_viewer->translate_rate)
 										{
 											scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 										}
 									} break;
-									case CMZN_SCENEVIEWER_INTERACT_2D:
+									case CMZN_SCENEVIEWER_INTERACT_MODE_2D:
 									{
 										if (0.0 != scene_viewer->tumble_rate)
 										{
@@ -3337,14 +3319,14 @@ Converts mouse button-press and motion events into viewing transformations in
 								scene_viewer->tumble_active = 0;
 								switch (scene_viewer->interact_mode)
 								{
-								case CMZN_SCENEVIEWER_INTERACT_STANDARD:
+								case CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD:
 								{
 									if (0.0 != scene_viewer->tumble_rate)
 									{
 										scene_viewer->drag_mode=SV_DRAG_TUMBLE;
 									}
 								} break;
-								case CMZN_SCENEVIEWER_INTERACT_2D:
+								case CMZN_SCENEVIEWER_INTERACT_MODE_2D:
 								{
 									if (0.0 != scene_viewer->translate_rate)
 									{
@@ -3362,14 +3344,14 @@ Converts mouse button-press and motion events into viewing transformations in
 						{
 							switch (scene_viewer->interact_mode)
 							{
-								case CMZN_SCENEVIEWER_INTERACT_STANDARD:
+								case CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD:
 								{
 									if (0.0 != scene_viewer->translate_rate)
 									{
 										scene_viewer->drag_mode=SV_DRAG_TRANSLATE;
 									}
 								} break;
-								case CMZN_SCENEVIEWER_INTERACT_2D:
+								case CMZN_SCENEVIEWER_INTERACT_MODE_2D:
 								{
 									if (0.0 != scene_viewer->tumble_rate)
 									{
@@ -3404,7 +3386,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					scene_viewer->previous_pointer_y=pointer_y;
 				}
 			} break;
-			case CMZN_SCENEVIEWERINPUT_EVENT_MOTION_NOTIFY:
+			case CMZN_SCENEVIEWERINPUT_EVENT_TYPE_MOTION_NOTIFY:
 			{
 				pointer_x=input->position_x;
 				pointer_y=input->position_y;
@@ -3644,7 +3626,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					scene_viewer->previous_pointer_y=pointer_y;
 				}
 			} break;
-			case CMZN_SCENEVIEWERINPUT_EVENT_BUTTON_RELEASE:
+			case CMZN_SCENEVIEWERINPUT_EVENT_TYPE_BUTTON_RELEASE:
 			{
 				//-- if ((scene_viewer->drag_mode == SV_DRAG_TUMBLE) && scene_viewer->tumble_angle)
 				//-- {
@@ -3664,14 +3646,14 @@ Converts mouse button-press and motion events into viewing transformations in
 #endif /* defined (DEBUG_CODE) */
 				scene_viewer->drag_mode=SV_DRAG_NOTHING;
 			} break;
-			case CMZN_SCENEVIEWERINPUT_EVENT_KEY_PRESS:
+			case CMZN_SCENEVIEWERINPUT_EVENT_TYPE_KEY_PRESS:
 			{
 #if defined (DEBUG_CODE)
 				printf("key %d press at %d %d\n",input->key_code,input->position_x,
 					input->position_y);
 #endif /* defined (DEBUG_CODE) */
 			} break;
-			case CMZN_SCENEVIEWERINPUT_EVENT_KEY_RELEASE:
+			case CMZN_SCENEVIEWERINPUT_EVENT_TYPE_KEY_RELEASE:
 			{
 #if defined (DEBUG_CODE)
 				printf("key %d release at %d %d\n",input->key_code,input->position_x,
@@ -4065,34 +4047,6 @@ Returns the buffer mode - single_buffer/double_buffer - of the Scene_viewer.
 	return (buffering_mode);
 } /* Scene_viewer_get_buffering_mode */
 
-enum Scene_viewer_stereo_mode Scene_viewer_get_stereo_mode(
-	struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 16 September 2002
-
-DESCRIPTION :
-Returns the stereo mode - mono/stereo - of the Scene_viewer.
-==============================================================================*/
-{
-	enum Scene_viewer_stereo_mode stereo_mode;
-
-	ENTER(Scene_viewer_get_stereo_mode);
-	if (scene_viewer)
-	{
-		stereo_mode=scene_viewer->stereo_mode;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_stereo_mode.  Invalid argument(s)");
-		/* return any valid mode */
-		stereo_mode=SCENE_VIEWER_MONO;
-	}
-	LEAVE;
-
-	return (stereo_mode);
-} /* Scene_viewer_get_stereo_mode */
-
 enum Scene_viewer_input_mode Scene_viewer_get_input_mode(
 	struct Scene_viewer *scene_viewer)
 /*******************************************************************************
@@ -4421,8 +4375,8 @@ enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(
 int cmzn_sceneviewer_set_interact_mode(cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_sceneviewer_interact_mode interact_mode)
 {
-	if (sceneviewer && ((CMZN_SCENEVIEWER_INTERACT_STANDARD == interact_mode) ||
-		(CMZN_SCENEVIEWER_INTERACT_2D == interact_mode)))
+	if (sceneviewer && ((CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD == interact_mode) ||
+		(CMZN_SCENEVIEWER_INTERACT_MODE_2D == interact_mode)))
 	{
 		sceneviewer->interact_mode = interact_mode;
 		return CMZN_OK;
@@ -5190,7 +5144,7 @@ enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
 	{
 		return scene_viewer->transparency_mode;
 	}
-	return CMZN_SCENEVIEWER_TRANSPARENCY_INVALID;
+	return CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID;
 }
 
 int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
@@ -5198,12 +5152,12 @@ int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
 {
 	int return_code = 0;
 
-	if (scene_viewer&&((CMZN_SCENEVIEWER_TRANSPARENCY_FAST==transparency_mode)||
-		(CMZN_SCENEVIEWER_TRANSPARENCY_SLOW==transparency_mode)||
-		(CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT==transparency_mode)))
+	if (scene_viewer&&((CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST==transparency_mode)||
+		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW==transparency_mode)||
+		(CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT==transparency_mode)))
 	{
 		return_code=1;
-		if (CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT==transparency_mode)
+		if (CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT==transparency_mode)
 		{
 			if (!order_independent_capable())
 			{
@@ -5243,7 +5197,7 @@ int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id scene_viewer,
 		if (scene_viewer->transparency_layers != transparency_layers)
 		{
 			scene_viewer->transparency_layers = transparency_layers;
-			if (scene_viewer->transparency_mode==CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT)
+			if (scene_viewer->transparency_mode==CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT)
 			{
 				CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
 					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
@@ -5864,7 +5818,7 @@ int cmzn_sceneviewer_set_blending_mode(cmzn_sceneviewer_id sceneviewer,
 		/* Check that this represents a valid mode */
 		(ENUMERATOR_STRING(cmzn_sceneviewer_blending_mode)(blending_mode)))
 	{
-		if (CMZN_SCENEVIEWER_BLENDING_TRUE_ALPHA == blending_mode)
+		if (CMZN_SCENEVIEWER_BLENDING_MODE_TRUE_ALPHA == blending_mode)
 		{
 #if defined (GL_VERSION_1_4)
 			if (!Graphics_library_check_extension(GL_VERSION_1_4))
@@ -6623,15 +6577,15 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_sceneviewer_blending_mode)
 {
 	switch (enumerator_value)
 	{
-		case CMZN_SCENEVIEWER_BLENDING_NORMAL:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL:
 		{
 			return "blend_normal";
 		} break;
-		case CMZN_SCENEVIEWER_BLENDING_NONE:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_NONE:
 		{
 			return "blend_none";
 		} break;
-		case CMZN_SCENEVIEWER_BLENDING_TRUE_ALPHA:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_TRUE_ALPHA:
 		{
 			return "blend_true_alpha";
 		} break;
@@ -6683,41 +6637,6 @@ NOTE: Calling function must not deallocate returned string.
 
 	return (return_string);
 } /* Scene_viewer_buffering_mode_string */
-
-const char *Scene_viewer_stereo_mode_string(
-	enum Scene_viewer_stereo_mode stereo_mode)
-/*******************************************************************************
-LAST MODIFIED : 16 September 2002
-
-DESCRIPTION :
-Returns a string label for the <stereo_mode>.
-NOTE: Calling function must not deallocate returned string.
-==============================================================================*/
-{
-	const char *return_string;
-
-	ENTER(Scene_viewer_stereo_mode_string);
-	switch (stereo_mode)
-	{
-		case SCENE_VIEWER_MONO:
-		{
-			return_string="mono";
-		} break;
-		case SCENE_VIEWER_STEREO:
-		{
-			return_string="stereo";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_stereo_mode_string.  Unknown stereo mode");
-			return_string=(const char *)NULL;
-		}
-	}
-	LEAVE;
-
-	return (return_string);
-} /* Scene_viewer_stereo_mode_string */
 
 const char *Scene_viewer_projection_mode_string(
 	enum Scene_viewer_projection_mode projection_mode)
@@ -6772,15 +6691,15 @@ NOTE: Calling function must not deallocate returned string.
 
 	switch (transparency_mode)
 	{
-		case CMZN_SCENEVIEWER_TRANSPARENCY_FAST:
+		case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST:
 		{
 			return_string="fast_transparency";
 		} break;
-		case CMZN_SCENEVIEWER_TRANSPARENCY_SLOW:
+		case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW:
 		{
 			return_string="slow_transparency";
 		} break;
-		case CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT:
+		case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT:
 		{
 			return_string="order_independent_transparency";
 		} break;
@@ -6798,15 +6717,15 @@ const char *cmzn_sceneviewer_viewport_mode_string(
 {
 	switch (viewport_mode)
 	{
-		case CMZN_SCENEVIEWER_VIEWPORT_RELATIVE:
+		case CMZN_SCENEVIEWER_VIEWPORT_MODE_RELATIVE:
 		{
 			return "relative_viewport";
 		} break;
-		case CMZN_SCENEVIEWER_VIEWPORT_DISTORTING_RELATIVE:
+		case CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE:
 		{
 			return "distorting_relative_viewport";
 		} break;
-		case CMZN_SCENEVIEWER_VIEWPORT_ABSOLUTE:
+		case CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE:
 		{
 			return "absolute_viewport";
 		} break;
@@ -7021,9 +6940,9 @@ int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_sceneviewer_viewport_mode viewport_mode)
 {
 	if (sceneviewer && (
-		(CMZN_SCENEVIEWER_VIEWPORT_RELATIVE == viewport_mode) ||
-		(CMZN_SCENEVIEWER_VIEWPORT_ABSOLUTE == viewport_mode) ||
-		(CMZN_SCENEVIEWER_VIEWPORT_DISTORTING_RELATIVE == viewport_mode)))
+		(CMZN_SCENEVIEWER_VIEWPORT_MODE_RELATIVE == viewport_mode) ||
+		(CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE == viewport_mode) ||
+		(CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE == viewport_mode)))
 	{
 		sceneviewer->viewport_mode = viewport_mode;
 		Scene_viewer_trigger_transform_callback(sceneviewer);
@@ -7038,9 +6957,9 @@ enum cmzn_sceneviewer_projection_mode
 	if (sceneviewer)
 	{
 		if (sceneviewer->projection_mode == SCENE_VIEWER_PERSPECTIVE)
-			return CMZN_SCENEVIEWER_PROJECTION_PERSPECTIVE;
+			return CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE;
 		if (sceneviewer->projection_mode == SCENE_VIEWER_PARALLEL)
-			return CMZN_SCENEVIEWER_PROJECTION_PARALLEL;
+			return CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL;
 		display_message(ERROR_MESSAGE,
 			"cmzn_sceneviewer_get_projection_mode.  "
 			"Projection mode not supported in public interface.");
@@ -7053,12 +6972,12 @@ int cmzn_sceneviewer_set_projection_mode(cmzn_sceneviewer_id sceneviewer,
 {
 	if (sceneviewer)
 	{
-		if (CMZN_SCENEVIEWER_PROJECTION_PERSPECTIVE == projection_mode)
+		if (CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE == projection_mode)
 		{
 			Scene_viewer_set_projection_mode(sceneviewer, SCENE_VIEWER_PERSPECTIVE);
 			return CMZN_OK;
 		}
-		if (CMZN_SCENEVIEWER_PROJECTION_PARALLEL == projection_mode)
+		if (CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL == projection_mode)
 		{
 			Scene_viewer_set_projection_mode(sceneviewer, SCENE_VIEWER_PARALLEL);
 			return CMZN_OK;

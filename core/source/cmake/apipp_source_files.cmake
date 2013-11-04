@@ -44,6 +44,7 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenefilter.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/scenepicker.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/sceneviewer.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/sceneviewerinput.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/selection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/spectrum.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/status.hpp

@@ -10,119 +10,14 @@
 #define CMZN_SCENEVIEWER_HPP__
 
 #include "zinc/sceneviewer.h"
-#include "zinc/sceneviewerinput.h"
 #include "zinc/scene.hpp"
 #include "zinc/scenefilter.hpp"
+#include "zinc/sceneviewerinput.hpp"
 
 namespace OpenCMISS
 {
 namespace Zinc
 {
-
-class Sceneviewerinput
-{
-protected:
-	cmzn_sceneviewerinput_id id;
-
-public:
-	enum EventType
-	{
-		EVENT_TYPE_INVALID = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_INVALID,
-		EVENT_MOTION_NOTIFY = CMZN_SCENEVIEWERINPUT_EVENT_MOTION_NOTIFY,
-		EVENT_BUTTON_PRESS = CMZN_SCENEVIEWERINPUT_EVENT_BUTTON_PRESS,
-		EVENT_BUTTON_RELEASE = CMZN_SCENEVIEWERINPUT_EVENT_BUTTON_RELEASE,
-		EVENT_KEY_PRESS = CMZN_SCENEVIEWERINPUT_EVENT_KEY_PRESS,
-		EVENT_KEY_RELEASE = CMZN_SCENEVIEWERINPUT_EVENT_KEY_RELEASE
-	};
-
-	enum ButtonType
-	{
-		BUTTON_TYPE_INVALID = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_INVALID,
-		BUTTON_LEFT = CMZN_SCENEVIEWERINPUT_BUTTON_LEFT,
-		BUTTON_MIDDLE = CMZN_SCENEVIEWERINPUT_BUTTON_MIDDLE,
-		BUTTON_RIGHT = CMZN_SCENEVIEWERINPUT_BUTTON_RIGHT,
-		BUTTON_SCROLL_DOWN = CMZN_SCENEVIEWERINPUT_BUTTON_SCROLL_DOWN,
-		BUTTON_SCROLL_UP = CMZN_SCENEVIEWERINPUT_BUTTON_SCROLL_UP
-	};
-
-	enum ModifierFlags
-	{
-		MODIFIER_NONE = CMZN_SCENEVIEWERINPUT_MODIFIER_NONE,
-		MODIFIER_SHIFT = CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT,
-		MODIFIER_CONTROL = CMZN_SCENEVIEWERINPUT_MODIFIER_CONTROL,
-		MODIFIER_ALT = CMZN_SCENEVIEWERINPUT_MODIFIER_ALT,
-		MODIFIER_BUTTON1 = CMZN_SCENEVIEWERINPUT_MODIFIER_BUTTON1
-	};
-
-	typedef int ModifiersType;
-
-	Sceneviewerinput() : id(0)
-	{  }
-
-	// takes ownership of C-style region reference
-	explicit Sceneviewerinput(cmzn_sceneviewerinput_id in_sceneviewerinput_id) :
-		id(in_sceneviewerinput_id)
-	{  }
-
-	Sceneviewerinput(const Sceneviewerinput& sceneviewerinput) :
-		id(cmzn_sceneviewerinput_access(sceneviewerinput.id))
-	{  }
-
-	Sceneviewerinput& operator=(const Sceneviewerinput& sceneviewerinput)
-	{
-		cmzn_sceneviewerinput_id temp_id = cmzn_sceneviewerinput_access(sceneviewerinput.id);
-		if (0 != id)
-		{
-			cmzn_sceneviewerinput_destroy(&id);
-		}
-		id = temp_id;
-		return *this;
-	}
-
-	~Sceneviewerinput()
-	{
-		if (0 != id)
-		{
-			cmzn_sceneviewerinput_destroy(&id);
-		}
-	}
-
-	bool isValid()
-	{
-		return (0 != id);
-	}
-
-	cmzn_sceneviewerinput_id getId()
-	{
-		return id;
-	}
-
-	int setPosition(int x, int y)
-	{
-		return cmzn_sceneviewerinput_set_position(id, x, y);
-	}
-
-	int setButtonNumber(int number)
-	{
-		return cmzn_sceneviewerinput_set_button_number(id, number);
-	}
-
-	int setButton(ButtonType button)
-	{
-		return cmzn_sceneviewerinput_set_button(id, static_cast<cmzn_sceneviewerinput_button_type>(button));
-	}
-
-	int setEventType(EventType eventType)
-	{
-		return cmzn_sceneviewerinput_set_event_type(id, static_cast<cmzn_sceneviewerinput_event_type>(eventType));
-	}
-
-	int setModifiers(ModifiersType modifiers)
-	{
-		return cmzn_sceneviewerinput_set_modifiers(id, static_cast<cmzn_sceneviewerinput_modifiers_type>(modifiers));
-	}
-
-};
 
 class Sceneviewer
 {
@@ -134,34 +29,49 @@ public:
 	enum BufferingMode
 	{
 		BUFFERING_MODE_INVALID = CMZN_SCENEVIEWER_BUFFERING_MODE_INVALID,
-		BUFFERING_ANY_MODE = CMZN_SCENEVIEWER_BUFFERING_ANY_MODE,
-		BUFFERING_SINGLE = CMZN_SCENEVIEWER_BUFFERING_SINGLE,
-		BUFFERING_DOUBLE = CMZN_SCENEVIEWER_BUFFERING_DOUBLE,
-		BUFFERING_RENDER_OFFSCREEN_AND_COPY = CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY,
-		BUFFERING_RENDER_OFFSCREEN_AND_BLEND = CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND
+		BUFFERING_MODE_DEFAULT = CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT,
+		BUFFERING_MODE_SINGLE = CMZN_SCENEVIEWER_BUFFERING_MODE_SINGLE,
+		BUFFERING_MODE_DOUBLE = CMZN_SCENEVIEWER_BUFFERING_MODE_DOUBLE,
+		BUFFERING_MODE_RENDER_OFFSCREEN_AND_COPY = CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_COPY,
+		BUFFERING_MODE_RENDER_OFFSCREEN_AND_BLEND = CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_BLEND
+	};
+
+	enum InteractMode
+	{
+		INTERACT_MODE_INVALID = CMZN_SCENEVIEWER_INTERACT_MODE_INVALID,
+		INTERACT_MODE_STANDARD = CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD,
+		INTERACT_MODE_2D = CMZN_SCENEVIEWER_INTERACT_MODE_2D
 	};
 
 	enum ProjectionMode
 	{
 		PROJECTION_MODE_INVALID = CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID,
-		PROJECTION_PARALLEL = CMZN_SCENEVIEWER_PROJECTION_PARALLEL,
-		PROJECTION_PERSPECTIVE = CMZN_SCENEVIEWER_PROJECTION_PERSPECTIVE
+		PROJECTION_MODE_PARALLEL = CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL,
+		PROJECTION_MODE_PERSPECTIVE = CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE
 	};
 
 	enum StereoMode
 	{
 		STEREO_MODE_INVALID = CMZN_SCENEVIEWER_STEREO_MODE_INVALID,
-		STEREO_ANY_MODE = CMZN_SCENEVIEWER_STEREO_ANY_MODE,
-		STEREO_MONO = CMZN_SCENEVIEWER_STEREO_MONO,
-		STEREO_STEREO = CMZN_SCENEVIEWER_STEREO_STEREO
+		STEREO_MODE_DEFAULT = CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT,
+		STEREO_MODE_MONO = CMZN_SCENEVIEWER_STEREO_MODE_MONO,
+		STEREO_MODE_STEREO = CMZN_SCENEVIEWER_STEREO_MODE_STEREO
 	};
 
 	enum TransparencyMode
 	{
-		TRANSPARENCY_INVALID = CMZN_SCENEVIEWER_TRANSPARENCY_INVALID,
-		TRANSPARENCY_FAST = CMZN_SCENEVIEWER_TRANSPARENCY_FAST,
-		TRANSPARENCY_SLOW = CMZN_SCENEVIEWER_TRANSPARENCY_SLOW,
-		TRANSPARENCY_ORDER_INDEPENDENT = CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+		TRANSPARENCY_MODE_INVALID = CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID,
+		TRANSPARENCY_MODE_FAST = CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST,
+		TRANSPARENCY_MODE_SLOW = CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW,
+		TRANSPARENCY_MODE_ORDER_INDEPENDENT = CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT
+	};
+
+	enum ViewportMode
+	{
+		VIEWPORT_MODE_INVALID = CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID,
+		VIEWPORT_MODE_ABSOLUTE = CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE,
+		VIEWPORT_MODE_RELATIVE = CMZN_SCENEVIEWER_VIEWPORT_MODE_RELATIVE,
+		VIEWPORT_MODE_DISTORTING_RELATIVE = CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE
 	};
 
 	Sceneviewer() : id(0)
@@ -273,6 +183,17 @@ public:
 	int setEyePosition(double const *eyeValuesIn3)
 	{
 		return cmzn_sceneviewer_set_eye_position(id, eyeValuesIn3);
+	}
+
+	InteractMode getInteractMode()
+	{
+		return static_cast<InteractMode>(cmzn_sceneviewer_get_interact_mode(id));
+	}
+
+	int setInteractMode(InteractMode interactMode)
+	{
+		return cmzn_sceneviewer_set_interact_mode(id,
+			static_cast<cmzn_sceneviewer_interact_mode>(interactMode));
 	}
 
 	int getLookatPosition(double *lookatValuesOut3)
@@ -423,6 +344,17 @@ public:
 	int setViewAngle(double viewAngle)
 	{
 		return cmzn_sceneviewer_set_view_angle(id, viewAngle);
+	}
+
+	ViewportMode getViewportMode()
+	{
+		return static_cast<ViewportMode>(cmzn_sceneviewer_get_viewport_mode(id));
+	}
+
+	int setViewportMode(ViewportMode viewportMode)
+	{
+		return cmzn_sceneviewer_set_viewport_mode(id,
+			static_cast<cmzn_sceneviewer_viewport_mode>(viewportMode));
 	}
 
 };

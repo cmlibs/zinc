@@ -368,17 +368,17 @@ Draw a textured quad for each layer and blend them all together correctly.
 	switch(blending_mode)
 	{
 		default:
-		case CMZN_SCENEVIEWER_BLENDING_NORMAL:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL:
 		{
 			glEnable(GL_BLEND);
 			glBlendFunc(GL_SRC_ALPHA,GL_ONE_MINUS_SRC_ALPHA);
 		} break;
-		case CMZN_SCENEVIEWER_BLENDING_NONE:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_NONE:
 		{
 			glDisable(GL_BLEND);
 		} break;
 #if defined GL_VERSION_1_4
-		case CMZN_SCENEVIEWER_BLENDING_TRUE_ALPHA:
+		case CMZN_SCENEVIEWER_BLENDING_MODE_TRUE_ALPHA:
 		{
 			glBlendFuncSeparate(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA,
 				GL_ONE, GL_ONE_MINUS_SRC_ALPHA);

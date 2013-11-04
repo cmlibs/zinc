@@ -687,7 +687,7 @@ ZINC_API int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneview
  * @param sceneviewer  Handle to the scene viewer.
  *
  * @return  transparency_mode set for this sceneviewer.
- *   CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT if failed or
+ *   CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT if failed or
  *   mode is not set correctly
  */
 ZINC_API enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparency_mode(
@@ -710,7 +710,7 @@ ZINC_API int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scenevie
 
 
 /**
- * Get the number of layers used in the CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+ * Get the number of layers used in the CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT
  * transparency_mode.
  *
  * @See cmzn_sceneviewer_transparency_mode
@@ -722,7 +722,7 @@ ZINC_API int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scenevie
 ZINC_API int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Set the number of layers used in the CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT
+ * Set the number of layers used in the CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT
  * transparency_mode.
  *
  * @See cmzn_sceneviewer_transparency_mode

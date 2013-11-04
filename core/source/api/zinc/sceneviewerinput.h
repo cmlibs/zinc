@@ -66,27 +66,14 @@ ZINC_API int cmzn_sceneviewerinput_set_modifiers(cmzn_sceneviewerinput_id input,
 	cmzn_sceneviewerinput_modifiers_type modifiers);
 
 /**
- * Set the button number for the input.
- *   1 ==> left mouse button.
- *   2 ==> middle mouse button.
- *   3 ==> right mouse button.
- *
- * @deprecated see cmzn_sceneviewerinput_set_button
- *
- * @param input  Handle to cmzn_sceneviewerinput object.
- * @param number  The numeric value of the button.
- * @return  CMZN_OK if successful, any other value on failure.
- */
-ZINC_API int cmzn_sceneviewerinput_set_button_number(cmzn_sceneviewerinput_id input, int number);
-
-/**
  * Set the button for the scene viewer input.
  *
  * @param input zinc scene viewer input.
- * @param button zinc scene viewer input button enumeration value.
+ * @param button_type zinc scene viewer input button enumeration value.
  * @return CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_sceneviewerinput_set_button(cmzn_sceneviewerinput_id input, enum cmzn_sceneviewerinput_button_type button);
+ZINC_API int cmzn_sceneviewerinput_set_button_type(cmzn_sceneviewerinput_id input,
+	enum cmzn_sceneviewerinput_button_type button_type);
 
 /**
  * Set the scene viewer input event type: button press, motion, etc.
