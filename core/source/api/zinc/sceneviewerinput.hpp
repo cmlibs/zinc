@@ -1,0 +1,122 @@
+/**
+ * FILE : sceneviewerinput.hpp
+ */
+/* OpenCMISS-Zinc Library
+*
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#ifndef CMZN_SCENEVIEWERINPUT_HPP__
+#define CMZN_SCENEVIEWERINPUT_HPP__
+
+#include "zinc/sceneviewerinput.h"
+
+namespace OpenCMISS
+{
+namespace Zinc
+{
+
+class Sceneviewerinput
+{
+protected:
+	cmzn_sceneviewerinput_id id;
+
+public:
+	enum ButtonType
+	{
+		BUTTON_TYPE_INVALID = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_INVALID,
+		BUTTON_TYPE_LEFT = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_LEFT,
+		BUTTON_TYPE_MIDDLE = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_MIDDLE,
+		BUTTON_TYPE_RIGHT = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_RIGHT,
+		BUTTON_TYPE_SCROLL_DOWN = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_SCROLL_DOWN,
+		BUTTON_TYPE_SCROLL_UP = CMZN_SCENEVIEWERINPUT_BUTTON_TYPE_SCROLL_UP
+	};
+
+	enum EventType
+	{
+		EVENT_TYPE_INVALID = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_INVALID,
+		EVENT_TYPE_MOTION_NOTIFY = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_MOTION_NOTIFY,
+		EVENT_TYPE_BUTTON_PRESS = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_BUTTON_PRESS,
+		EVENT_TYPE_BUTTON_RELEASE = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_BUTTON_RELEASE,
+		EVENT_TYPE_KEY_PRESS = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_KEY_PRESS,
+		EVENT_TYPE_KEY_RELEASE = CMZN_SCENEVIEWERINPUT_EVENT_TYPE_KEY_RELEASE
+	};
+
+	enum ModifierFlags
+	{
+		MODIFIER_NONE = CMZN_SCENEVIEWERINPUT_MODIFIER_NONE,
+		MODIFIER_SHIFT = CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT,
+		MODIFIER_CONTROL = CMZN_SCENEVIEWERINPUT_MODIFIER_CONTROL,
+		MODIFIER_ALT = CMZN_SCENEVIEWERINPUT_MODIFIER_ALT,
+		MODIFIER_BUTTON1 = CMZN_SCENEVIEWERINPUT_MODIFIER_BUTTON1
+	};
+
+	typedef int ModifiersType;
+
+	Sceneviewerinput() : id(0)
+	{  }
+
+	// takes ownership of C-style region reference
+	explicit Sceneviewerinput(cmzn_sceneviewerinput_id in_sceneviewerinput_id) :
+		id(in_sceneviewerinput_id)
+	{  }
+
+	Sceneviewerinput(const Sceneviewerinput& sceneviewerinput) :
+		id(cmzn_sceneviewerinput_access(sceneviewerinput.id))
+	{  }
+
+	Sceneviewerinput& operator=(const Sceneviewerinput& sceneviewerinput)
+	{
+		cmzn_sceneviewerinput_id temp_id = cmzn_sceneviewerinput_access(sceneviewerinput.id);
+		if (0 != id)
+		{
+			cmzn_sceneviewerinput_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Sceneviewerinput()
+	{
+		if (0 != id)
+		{
+			cmzn_sceneviewerinput_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_sceneviewerinput_id getId()
+	{
+		return id;
+	}
+
+	int setPosition(int x, int y)
+	{
+		return cmzn_sceneviewerinput_set_position(id, x, y);
+	}
+
+	int setButtonType(ButtonType buttonType)
+	{
+		return cmzn_sceneviewerinput_set_button_type(id, static_cast<cmzn_sceneviewerinput_button_type>(buttonType));
+	}
+
+	int setEventType(EventType eventType)
+	{
+		return cmzn_sceneviewerinput_set_event_type(id, static_cast<cmzn_sceneviewerinput_event_type>(eventType));
+	}
+
+	int setModifiers(ModifiersType modifiers)
+	{
+		return cmzn_sceneviewerinput_set_modifiers(id, static_cast<cmzn_sceneviewerinput_modifiers_type>(modifiers));
+	}
+
+};
+
+}  // namespace Zinc
+}
+
+#endif

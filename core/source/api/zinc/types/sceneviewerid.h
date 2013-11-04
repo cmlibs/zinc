@@ -26,6 +26,23 @@ typedef void (*cmzn_sceneviewer_callback)(cmzn_sceneviewer_id sceneviewer,
 	void *callback_data, void *user_data);
 
 /**
+ * Scene viewer GL blending mode.
+ */
+enum cmzn_sceneviewer_blending_mode
+{
+	CMZN_SCENEVIEWER_BLENDING_MODE_INVALID,
+	CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL,
+		/*!< src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA */
+	CMZN_SCENEVIEWER_BLENDING_MODE_NONE,
+		/*!<  */
+	CMZN_SCENEVIEWER_BLENDING_MODE_TRUE_ALPHA
+		/*!< Available for OpenGL version 1.4 and above:
+		 * src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA for rgb,
+		 * src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha,
+		 * which results in the correct final alpha value in a saved image. */
+};
+
+/**
  * Describes the buffering mode of the scene viewer.  A DOUBLE_BUFFER allows the
  * graphics to be drawn offscreen before being displayed all at once, reducing the
  * apparent flicker.  A SINGLE_BUFFER may allow you a greater colour depth or
@@ -44,11 +61,11 @@ typedef void (*cmzn_sceneviewer_callback)(cmzn_sceneviewer_id sceneviewer,
 enum cmzn_sceneviewer_buffering_mode
 {
 	CMZN_SCENEVIEWER_BUFFERING_MODE_INVALID,
-	CMZN_SCENEVIEWER_BUFFERING_ANY_MODE,
-	CMZN_SCENEVIEWER_BUFFERING_SINGLE,
-	CMZN_SCENEVIEWER_BUFFERING_DOUBLE,
-	CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_COPY,
-	CMZN_SCENEVIEWER_BUFFERING_RENDER_OFFSCREEN_AND_BLEND
+	CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT,
+	CMZN_SCENEVIEWER_BUFFERING_MODE_SINGLE,
+	CMZN_SCENEVIEWER_BUFFERING_MODE_DOUBLE,
+	CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_COPY,
+	CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_BLEND
 };
 
 /**
@@ -57,16 +74,26 @@ enum cmzn_sceneviewer_buffering_mode
 enum cmzn_sceneviewer_interact_mode
 {
 	CMZN_SCENEVIEWER_INTERACT_MODE_INVALID,
-	CMZN_SCENEVIEWER_INTERACT_STANDARD,
-		/*!< CMZN_SCENEVIEWER_INTERACT_STANDARD is the traditional cmgui mode.
+	CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD,
+		/*!< CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD is the traditional cmgui mode.
 		 *   Rotate: Left mouse button
 		 *   Translate: Middle mouse button
 		 *   Zoom: Right mouse button */
-	CMZN_SCENEVIEWER_INTERACT_2D
-		/*!< CMZN_SCENEVIEWER_INTERACT_2D is a mode more suitable for 2D use
+	CMZN_SCENEVIEWER_INTERACT_MODE_2D
+		/*!< CMZN_SCENEVIEWER_INTERACT_MODE_2D is a mode more suitable for 2D use
 		 *   Translate: Left mouse button
 		 *   Rotate: Middle mouse button
 		 *   Zoom: Right mouse button */
+};
+
+/**
+ * Specifies the sort of projection matrix used to render the 3D scene.
+ */
+enum cmzn_sceneviewer_projection_mode
+{
+	CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID,
+	CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL,
+	CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE
 };
 
 /**
@@ -76,12 +103,41 @@ enum cmzn_sceneviewer_interact_mode
 enum cmzn_sceneviewer_stereo_mode
 {
 	CMZN_SCENEVIEWER_STEREO_MODE_INVALID,
-	CMZN_SCENEVIEWER_STEREO_ANY_MODE,
+	CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT,
 		/*!< either STEREO or MONO depending on other scene viewer requirements */
-	CMZN_SCENEVIEWER_STEREO_MONO,
+	CMZN_SCENEVIEWER_STEREO_MODE_MONO,
 		/*!< Normal 2-D Monoscopic display */
-	CMZN_SCENEVIEWER_STEREO_STEREO
+	CMZN_SCENEVIEWER_STEREO_MODE_STEREO
 		/*!< Stereoscopic display */
+};
+
+/**
+ * Controls the way partially transparent objects are rendered in scene viewer.
+ */
+enum cmzn_sceneviewer_transparency_mode
+{
+	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID = 0,
+	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST = 1,
+	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST just includes
+	 * transparent objects in the normal render, this causes them
+	 * to obscure other objects behind if they are drawn first.
+	 */
+	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW = 2,
+	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW puts out all the
+	 * opaque geometry first and then ignores the depth test while
+	 * drawing all partially transparent objects, this ensures everything
+	 * is drawn but multiple layers of transparency will always draw
+	 * on top of each other which means a surface that is behind another
+	 * may be drawn over the top of one that is supposed to be in front.
+	 */
+	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT = 3
+	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT uses
+	 * some Nvidia extensions to implement a full back to front perl pixel
+	 * fragment sort correctly rendering transparency with a small number
+	 * of passes, specified by "transparency layers". This uses all the
+	 * texturing resources of the current Nvidia hardware and so
+	 * no materials used in the scene can contain textures.
+	 */
 };
 
 /**
@@ -91,71 +147,15 @@ enum cmzn_sceneviewer_stereo_mode
 enum cmzn_sceneviewer_viewport_mode
 {
 	CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID,
-	CMZN_SCENEVIEWER_VIEWPORT_ABSOLUTE,
+	CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE,
 		/*!< viewport_pixels_per_unit values are used to give and exact mapping from
 		 *   user coordinates to pixels. */
-	CMZN_SCENEVIEWER_VIEWPORT_RELATIVE,
+	CMZN_SCENEVIEWER_VIEWPORT_MODE_RELATIVE,
 		/*!< the intended viewing volume is made as large as possible in the physical
 		 *   viewport while maintaining the aspect ratio from NDC_width and NDC_height. */
-	CMZN_SCENEVIEWER_VIEWPORT_DISTORTING_RELATIVE
+	CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE
 		/*!< the intended viewing volume is made as large as possible in the physical
 		 *   viewport, and the aspect ratio may be changed. */
-};
-
-/**
- * Specifies the sort of projection matrix used to render the 3D scene.
- */
-enum cmzn_sceneviewer_projection_mode
-{
-	CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID,
-	CMZN_SCENEVIEWER_PROJECTION_PARALLEL,
-	CMZN_SCENEVIEWER_PROJECTION_PERSPECTIVE
-};
-
-/**
- * Scene viewer GL blending mode.
- */
-enum cmzn_sceneviewer_blending_mode
-{
-	CMZN_SCENEVIEWER_BLENDING_MODE_INVALID,
-	CMZN_SCENEVIEWER_BLENDING_NORMAL,
-		/*!< src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA */
-	CMZN_SCENEVIEWER_BLENDING_NONE,
-		/*!<  */
-	CMZN_SCENEVIEWER_BLENDING_TRUE_ALPHA
-		/*!< Available for OpenGL version 1.4 and above:
-		 * src=GL_SRC_ALPHA and dest=GL_ONE_MINUS_SRC_ALPHA for rgb,
-		 * src=GL_ONE and dest=GL_ONE_MINUS_SRC_ALPHA for alpha,
-		 * which results in the correct final alpha value in a saved image. */
-};
-
-/**
- * Controls the way partially transparent objects are rendered in scene viewer.
- */
-enum cmzn_sceneviewer_transparency_mode
-{
-	CMZN_SCENEVIEWER_TRANSPARENCY_INVALID = 0,
-	CMZN_SCENEVIEWER_TRANSPARENCY_FAST = 1,
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_FAST just includes
-	 * transparent objects in the normal render, this causes them
-	 * to obscure other objects behind if they are drawn first.
-	 */
-	CMZN_SCENEVIEWER_TRANSPARENCY_SLOW = 2,
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_SLOW puts out all the
-	 * opaque geometry first and then ignores the depth test while
-	 * drawing all partially transparent objects, this ensures everything
-	 * is drawn but multiple layers of transparency will always draw
-	 * on top of each other which means a surface that is behind another
-	 * may be drawn over the top of one that is supposed to be in front.
-	 */
-	CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT = 3
-	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_ORDER_INDEPENDENT uses
-	 * some Nvidia extensions to implement a full back to front perl pixel
-	 * fragment sort correctly rendering transparency with a small number
-	 * of passes, specified by "transparency layers". This uses all the
-	 * texturing resources of the current Nvidia hardware and so
-	 * no materials used in the scene can contain textures.
-	 */
 };
 
 #endif
