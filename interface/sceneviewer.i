@@ -80,6 +80,7 @@
 
 %{
 #include "zinc/sceneviewer.hpp"
+#include "zinc/sceneviewerinput.hpp"
 
 struct SceneviewerPyDataObject
 {
@@ -109,4 +110,4 @@ static void callbackToPython(cmzn_sceneviewer_id sceneviewer_id,
 %}
 
 %include "zinc/sceneviewer.hpp"
-
+%include "zinc/sceneviewerinput.hpp"
