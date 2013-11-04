@@ -21,14 +21,14 @@
 
 struct RecordChange
 {
-	int changeSummary;
+	int changeFlags;
 };
 
 void selectionCallback(cmzn_selectionevent_id selectionevent,
 	void *recordChangeVoid)
 {
 	RecordChange *recordChange = reinterpret_cast<RecordChange*>(recordChangeVoid);
-	recordChange->changeSummary = cmzn_selectionevent_get_change_summary(selectionevent);
+	recordChange->changeFlags = cmzn_selectionevent_get_change_flags(selectionevent);
 }
 
 void addSomeNodes(cmzn_fieldmodule_id fm)
@@ -59,7 +59,7 @@ TEST(cmzn_selectionnotifier, changeCallback)
 	EXPECT_NE(static_cast<cmzn_selectionnotifier_id>(0), selectionnotifier);
 
 	RecordChange recordChange;
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_set_callback(selectionnotifier,
 		selectionCallback, static_cast<void*>(&recordChange)));
 
@@ -71,15 +71,15 @@ TEST(cmzn_selectionnotifier, changeCallback)
 	cmzn_field_group_id temp = cmzn_scene_get_selection_group(zinc.scene);
 	EXPECT_EQ(temp, group);
 	cmzn_field_group_destroy(&temp);
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_NONE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE, recordChange.changeFlags);
 	EXPECT_FALSE(cmzn_field_group_contains_local_region(group));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_local_region(group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 	EXPECT_TRUE(cmzn_field_group_contains_local_region(group));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_remove_local_region(group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 	EXPECT_FALSE(cmzn_field_group_contains_local_region(group));
 
 	addSomeNodes(zinc.fm);
@@ -94,52 +94,52 @@ TEST(cmzn_selectionnotifier, changeCallback)
 	EXPECT_FALSE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_add_node(nodesetGroup, node1));
 	EXPECT_TRUE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node1));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_NE(CMZN_OK, result = cmzn_nodeset_group_add_node(nodesetGroup, node1)); // already in group
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_NONE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE, recordChange.changeFlags);
 
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_NE(CMZN_OK, cmzn_nodeset_group_remove_node(nodesetGroup, node2)); // not in group
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_NONE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE, recordChange.changeFlags);
 
 	EXPECT_FALSE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node2));
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_add_node(nodesetGroup, node2));
 	EXPECT_TRUE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node2));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_remove_node(nodesetGroup, node2));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_remove_node(nodesetGroup, node1));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_add_node(nodesetGroup, node1));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 
 	cmzn_fieldmodule_begin_change(zinc.fm);
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_remove_node(nodesetGroup, node1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_add_node(nodesetGroup, node2));
 	cmzn_fieldmodule_end_change(zinc.fm);
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD | CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD | CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	cmzn_fieldmodule_begin_change(zinc.fm);
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_add_node(nodesetGroup, node1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_group_remove_node(nodesetGroup, node2));
 	cmzn_fieldmodule_end_change(zinc.fm);
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD | CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD | CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_local_region(group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_local_region(group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_NONE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE, recordChange.changeFlags);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_clear_local(group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 
 	cmzn_node_destroy(&node1);
 	cmzn_node_destroy(&node2);
@@ -175,17 +175,17 @@ TEST(cmzn_selectionnotifier, destroy_scene)
 	cmzn_scene_destroy(&scene);
 
 	RecordChange recordChange;
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_set_callback(selectionnotifier,
 		selectionCallback, static_cast<void*>(&recordChange)));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_local_region(group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 
 	cmzn_region_remove_child(zinc.root_region, region);
 	cmzn_region_destroy(&region);
 
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FINAL, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL, recordChange.changeFlags);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_clear_callback(selectionnotifier));
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_destroy(&selectionnotifier));
@@ -211,26 +211,26 @@ TEST(cmzn_selectionnotifier, hierarchical_change)
 	cmzn_scene_destroy(&scene);
 
 	RecordChange recordChange;
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_set_callback(selectionnotifier,
 		selectionCallback, static_cast<void*>(&recordChange)));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_region(group, childRegion));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 	EXPECT_TRUE(cmzn_field_group_contains_region(group, childRegion));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_remove_region(group, childRegion));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 	EXPECT_FALSE(cmzn_field_group_contains_region(group, childRegion));
 
 	// test removal of non-empty childRegion
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_region(group, childRegion));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 	EXPECT_TRUE(cmzn_field_group_contains_region(group, childRegion));
 
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	cmzn_region_remove_child(zinc.root_region, childRegion);
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 	EXPECT_FALSE(cmzn_field_group_contains_region(group, childRegion));
 	cmzn_region_destroy(&childRegion);
 
@@ -247,7 +247,7 @@ TEST(cmzn_selectionnotifier, add_remove_selection_group)
 	EXPECT_NE(static_cast<cmzn_selectionnotifier_id>(0), selectionnotifier);
 
 	RecordChange recordChange;
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_set_callback(selectionnotifier,
 		selectionCallback, static_cast<void*>(&recordChange)));
 
@@ -257,16 +257,16 @@ TEST(cmzn_selectionnotifier, add_remove_selection_group)
 	EXPECT_NE(static_cast<cmzn_field_group_id>(0), group);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_group_add_local_region(group));
 	// not the selection group yet, so no notification
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_NONE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE, recordChange.changeFlags);
 
 	// test setting as selection group when not empty
 	EXPECT_EQ(CMZN_OK, result = cmzn_scene_set_selection_group(zinc.scene, group));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_ADD, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD, recordChange.changeFlags);
 
 	// test removing as selection group when not empty
-	recordChange.changeSummary = CMZN_SELECTIONEVENT_CHANGE_NONE;
+	recordChange.changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE;
 	EXPECT_EQ(CMZN_OK, result = cmzn_scene_set_selection_group(zinc.scene, static_cast<cmzn_field_group_id>(0)));
-	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_REMOVE, recordChange.changeSummary);
+	EXPECT_EQ(CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE, recordChange.changeFlags);
 
 	cmzn_field_group_destroy(&group);
 	EXPECT_EQ(CMZN_OK, result = cmzn_selectionnotifier_destroy(&selectionnotifier));
@@ -274,27 +274,27 @@ TEST(cmzn_selectionnotifier, add_remove_selection_group)
 
 class SelectioncallbackRecordChange : public Selectioncallback
 {
-	int changeSummary;
+	int changeFlags;
 
 	virtual void operator()(const Selectionevent &selectionevent)
 	{
-		this->changeSummary = selectionevent.getChangeSummary();
+		this->changeFlags = selectionevent.getChangeFlags();
 	}
 
 public:
 	SelectioncallbackRecordChange() :
 			Selectioncallback(),
-			changeSummary(Selectionevent::CHANGE_NONE)
+			changeFlags(Selectionevent::CHANGE_FLAG_NONE)
 	{ }
 
 	void clear()
 	{
-		changeSummary = Selectionevent::CHANGE_NONE;
+		changeFlags = Selectionevent::CHANGE_FLAG_NONE;
 	}
 
 	int getChangeSummary() const
 	{
-		return this->changeSummary;
+		return this->changeFlags;
 	}
 
 };
@@ -315,15 +315,15 @@ TEST(ZincSelectionnotifier, changeCallback)
 	EXPECT_EQ(OK, result = zinc.scene.setSelectionGroup(group));
 	FieldGroup temp = zinc.scene.getSelectionGroup();
 	EXPECT_EQ(group, temp);
-	EXPECT_EQ(Selectionevent::CHANGE_NONE, callback.getChangeSummary());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, callback.getChangeSummary());
 	EXPECT_FALSE(group.containsLocalRegion());
 
 	EXPECT_EQ(CMZN_OK, result = group.addLocalRegion());
-	EXPECT_EQ(Selectionevent::CHANGE_ADD, callback.getChangeSummary());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, callback.getChangeSummary());
 	EXPECT_TRUE(group.containsLocalRegion());
 
 	EXPECT_EQ(CMZN_OK, result = group.removeLocalRegion());
-	EXPECT_EQ(Selectionevent::CHANGE_REMOVE, callback.getChangeSummary());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, callback.getChangeSummary());
 	EXPECT_FALSE(group.containsLocalRegion());
 
 	EXPECT_EQ(OK, result = selectionnotifier.clearCallback());
