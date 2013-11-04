@@ -1770,7 +1770,7 @@ DESCRIPTION :
 				write_texture_vrml(vrml_file, texture);
 			}
 			fprintf(vrml_file,"}\n");
-			if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME == render_polygon_mode)
 			{
 				fprintf(vrml_file,"  geometry IndexedLineSet {\n");
 			}
@@ -1790,7 +1790,7 @@ DESCRIPTION :
 			}
 			fprintf(vrml_file,"      ]\n");
 			fprintf(vrml_file,"    }\n");
-			if (CMZN_GRAPHICS_RENDER_POLYGON_SHADED == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED == render_polygon_mode)
 			{
 				triple=normalpts;
 				if (triple)
@@ -1818,7 +1818,7 @@ DESCRIPTION :
 				spectrum_end_render_vrml(vrml_file, spectrum);
 			}
 			/* texture coordinates */
-			if (CMZN_GRAPHICS_RENDER_POLYGON_SHADED == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED == render_polygon_mode)
 			{
 				triple=texturepts;
 				if (triple)
@@ -1846,7 +1846,7 @@ DESCRIPTION :
 						case g_QUADRILATERAL:
 						{
 							index=0;
-							if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+							if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME == render_polygon_mode)
 							{
 								for (j=0;j<npts2-1;j++)
 								{
@@ -1880,7 +1880,7 @@ DESCRIPTION :
 							/* triangle strip */
 							index_1=0;
 							index_2=index_1+npts1;
-							if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+							if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME == render_polygon_mode)
 							{
 								for (i=npts1-1;i>0;i--)
 								{
@@ -1931,7 +1931,7 @@ DESCRIPTION :
 				case g_SH_DISCONTINUOUS:
 				case g_SH_DISCONTINUOUS_TEXMAP:
 				{
-					if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+					if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME == render_polygon_mode)
 					{
 						/* npts1 = number of polygons */
 						for (i=0;i<npts1;i++)
@@ -1970,7 +1970,7 @@ DESCRIPTION :
 				} break;
 			}
 			fprintf(vrml_file,"    ]\n");
-			if (CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME == render_polygon_mode)
+			if (CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME == render_polygon_mode)
 			{
 				fprintf(vrml_file,"  } #IndexedLineSet\n");
 			}

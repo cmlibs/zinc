@@ -133,23 +133,23 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_type)
 	ENTER(ENUMERATOR_STRING(cmzn_graphics_type));
 	switch (enumerator_value)
 	{
-		case CMZN_GRAPHICS_POINTS:
+		case CMZN_GRAPHICS_TYPE_POINTS:
 		{
 			enumerator_string = "points";
 		} break;
-		case CMZN_GRAPHICS_LINES:
+		case CMZN_GRAPHICS_TYPE_LINES:
 		{
 			enumerator_string = "lines";
 		} break;
-		case CMZN_GRAPHICS_SURFACES:
+		case CMZN_GRAPHICS_TYPE_SURFACES:
 		{
 			enumerator_string = "surfaces";
 		} break;
-		case CMZN_GRAPHICS_CONTOURS:
+		case CMZN_GRAPHICS_TYPE_CONTOURS:
 		{
 			enumerator_string = "contours";
 		} break;
-		case CMZN_GRAPHICS_STREAMLINES:
+		case CMZN_GRAPHICS_TYPE_STREAMLINES:
 		{
 			enumerator_string = "streamlines";
 		} break;
@@ -171,11 +171,11 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 	struct cmzn_graphics *graphics;
 
 	ENTER(CREATE(cmzn_graphics));
-	if ((CMZN_GRAPHICS_POINTS==graphics_type)||
-		(CMZN_GRAPHICS_LINES==graphics_type)||
-		(CMZN_GRAPHICS_SURFACES==graphics_type)||
-		(CMZN_GRAPHICS_CONTOURS==graphics_type)||
-		(CMZN_GRAPHICS_STREAMLINES==graphics_type))
+	if ((CMZN_GRAPHICS_TYPE_POINTS==graphics_type)||
+		(CMZN_GRAPHICS_TYPE_LINES==graphics_type)||
+		(CMZN_GRAPHICS_TYPE_SURFACES==graphics_type)||
+		(CMZN_GRAPHICS_TYPE_CONTOURS==graphics_type)||
+		(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics_type))
 	{
 		if (ALLOCATE(graphics,struct cmzn_graphics,1))
 		{
@@ -194,7 +194,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->face=CMZN_ELEMENT_FACE_ALL; /* any face */
 
 			/* line attributes */
-			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE;
+			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE;
 			for (int i = 0; i < 2; i++)
 			{
 				graphics->line_base_size[i] = 0.0;
@@ -227,16 +227,16 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->label_density_field = 0;
 
 			graphics->subgroup_field=(struct Computed_field *)NULL;
-			graphics->select_mode=CMZN_GRAPHICS_SELECT_ON;
+			graphics->select_mode=CMZN_GRAPHICS_SELECT_MODE_ON;
 			switch (graphics_type)
 			{
-			case CMZN_GRAPHICS_POINTS:
+			case CMZN_GRAPHICS_TYPE_POINTS:
 				graphics->domain_type = CMZN_FIELD_DOMAIN_POINT;
 				break;
-			case CMZN_GRAPHICS_LINES:
+			case CMZN_GRAPHICS_TYPE_LINES:
 				graphics->domain_type = CMZN_FIELD_DOMAIN_MESH_1D;
 				break;
-			case CMZN_GRAPHICS_SURFACES:
+			case CMZN_GRAPHICS_TYPE_SURFACES:
 				graphics->domain_type = CMZN_FIELD_DOMAIN_MESH_2D;
 				break;
 			default:
@@ -257,7 +257,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->seed_element=(struct FE_element *)NULL;
 			/* for streamlines only */
 			graphics->stream_vector_field=(struct Computed_field *)NULL;
-			graphics->streamlines_track_direction = CMZN_GRAPHICS_STREAMLINES_FORWARD_TRACK;
+			graphics->streamlines_track_direction = CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD;
 			graphics->streamline_length=1.0;
 			graphics->seed_nodeset = (cmzn_nodeset_id)0;
 			graphics->seed_node_mesh_location_field = (struct Computed_field *)NULL;
@@ -276,7 +276,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			/* for glyphsets */
 			graphics->font = NULL;
 			/* for surface rendering */
-			graphics->render_polygon_mode = CMZN_GRAPHICS_RENDER_POLYGON_SHADED;
+			graphics->render_polygon_mode = CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED;
 			/* for streamlines only */
 			graphics->streamline_data_type=STREAM_NO_DATA;
 			graphics->render_line_width = 1.0;
@@ -548,15 +548,15 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		int name_selected = 0;
 		if (draw_element)
 		{
-			if ((CMZN_GRAPHICS_DRAW_SELECTED == graphics->select_mode) ||
-				(CMZN_GRAPHICS_DRAW_UNSELECTED == graphics->select_mode))
+			if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode) ||
+				(CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == graphics->select_mode))
 			{
 				if (graphics_to_object_data->selection_group_field)
 				{
 					name_selected = cmzn_field_evaluate_boolean(graphics_to_object_data->selection_group_field, graphics_to_object_data->field_cache);
 				}
-				draw_element = ((name_selected && (CMZN_GRAPHICS_DRAW_SELECTED == graphics->select_mode)) ||
-					((!name_selected) && (CMZN_GRAPHICS_DRAW_SELECTED != graphics->select_mode)));
+				draw_element = ((name_selected && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode)) ||
+					((!name_selected) && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics->select_mode)));
 			}
 		}
 		if (draw_element)
@@ -585,9 +585,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				time = 0.0;
 				switch (graphics->graphics_type)
 				{
-					case CMZN_GRAPHICS_LINES:
+					case CMZN_GRAPHICS_TYPE_LINES:
 					{
-						if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE == graphics->line_shape)
+						if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 						{
 							if (graphics_to_object_data->existing_graphics)
 							{
@@ -655,7 +655,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							}
 						}
 					} break;
-					case CMZN_GRAPHICS_SURFACES:
+					case CMZN_GRAPHICS_TYPE_SURFACES:
 					{
 						if (graphics_to_object_data->existing_graphics)
 						{
@@ -699,7 +699,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							}
 						}
 					} break;
-					case CMZN_GRAPHICS_CONTOURS:
+					case CMZN_GRAPHICS_TYPE_CONTOURS:
 					{
 						switch (GT_object_get_type(graphics->graphics_object))
 						{
@@ -833,7 +833,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							} break;
 						}
 					} break;
-					case CMZN_GRAPHICS_POINTS:
+					case CMZN_GRAPHICS_TYPE_POINTS:
 					{
 						cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 						glyph_set = (struct GT_glyph_set *)NULL;
@@ -950,7 +950,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							}
 						}
 					} break;
-					case CMZN_GRAPHICS_STREAMLINES:
+					case CMZN_GRAPHICS_TYPE_STREAMLINES:
 					{
 						/* use local copy of sample_location since tracking function updates it */
 						for (i = 0; i < 3; i++)
@@ -967,7 +967,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 						{
 							switch (graphics->line_shape)
 							{
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE:
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE:
 								{
 									for (i = 0; i < number_of_xi_points; i++)
 									{
@@ -978,7 +978,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												element, initial_xi, graphics_to_object_data->field_cache,
 												graphics_to_object_data->rc_coordinate_field,
 												graphics_to_object_data->wrapper_stream_vector_field,
-												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK),
+												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 												graphics->streamline_length,
 												graphics->streamline_data_type, graphics->data_field,
 												graphics_to_object_data->fe_region)))
@@ -991,9 +991,9 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										}
 									}
 								} break;
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_RIBBON:
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
 								{
 									for (i = 0; i < number_of_xi_points; i++)
 									{
@@ -1004,7 +1004,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												element, initial_xi, graphics_to_object_data->field_cache,
 												graphics_to_object_data->rc_coordinate_field,
 												graphics_to_object_data->wrapper_stream_vector_field,
-												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK),
+												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 												graphics->streamline_length,
 												graphics->line_shape, cmzn_tessellation_get_circle_divisions(graphics->tessellation),
 												graphics->line_base_size, graphics->line_scale_factors,
@@ -1020,7 +1020,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										}
 									}
 								} break;
-							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_INVALID:
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
 								{
 									display_message(ERROR_MESSAGE,
 										"FE_element_to_graphics_object.  Unknown streamline type");
@@ -1089,14 +1089,14 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 		{
 			switch (graphics->line_shape)
 			{
-			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE:
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE:
 				{
 					struct GT_polyline *polyline;
 					if (NULL != (polyline=create_GT_polyline_streamline_FE_element(element,
 							xi, graphics_to_object_data->field_cache,
 							graphics_to_object_data->rc_coordinate_field,
 							graphics_to_object_data->wrapper_stream_vector_field,
-							static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK),
+							static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 							graphics->streamline_length,
 							graphics->streamline_data_type, graphics->data_field,
 							graphics_to_object_data->fe_region)))
@@ -1113,16 +1113,16 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 						return_code=0;
 					}
 				} break;
-			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_RIBBON:
-			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION:
-			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_SQUARE_EXTRUSION:
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
 				{
 					struct GT_surface *surface;
 					if (NULL != (surface=create_GT_surface_streamribbon_FE_element(element,
 						xi, graphics_to_object_data->field_cache,
 						graphics_to_object_data->rc_coordinate_field,
 						graphics_to_object_data->wrapper_stream_vector_field,
-						static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK),
+						static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 						graphics->streamline_length,
 						graphics->line_shape, cmzn_tessellation_get_circle_divisions(graphics->tessellation),
 						graphics->line_base_size, graphics->line_scale_factors,
@@ -1141,7 +1141,7 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 						return_code = 0;
 					}
 				} break;
-			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_INVALID:
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
 				{
 					display_message(ERROR_MESSAGE,
 						"cmzn_node_to_streamline.  Unknown streamline type");
@@ -1356,9 +1356,9 @@ int cmzn_graphics_selects_cad_primitives(struct cmzn_graphics *graphics)
 
 	if (graphics)
 	{
-		return_code=(CMZN_GRAPHICS_NO_SELECT != graphics->select_mode)&&(
-			(CMZN_GRAPHICS_LINES==graphics->graphics_type)||
-			(CMZN_GRAPHICS_SURFACES==graphics->graphics_type));
+		return_code=(CMZN_GRAPHICS_SELECT_MODE_OFF != graphics->select_mode)&&(
+			(CMZN_GRAPHICS_TYPE_LINES==graphics->graphics_type)||
+			(CMZN_GRAPHICS_TYPE_SURFACES==graphics->graphics_type));
 	}
 	else
 	{
@@ -1374,7 +1374,7 @@ int cmzn_graphics_selects_cad_primitives(struct cmzn_graphics *graphics)
 
 bool cmzn_graphics_selects_elements(struct cmzn_graphics *graphics)
 {
-	return (CMZN_GRAPHICS_NO_SELECT != graphics->select_mode) &&
+	return (CMZN_GRAPHICS_SELECT_MODE_OFF != graphics->select_mode) &&
 		(0 < cmzn_graphics_get_domain_dimension(graphics));
 }
 
@@ -1447,7 +1447,7 @@ enum cmzn_graphics_type cmzn_graphics_get_graphics_type(
 	{
 		display_message(ERROR_MESSAGE,
 			"cmzn_graphics_get_graphics_type.  Invalid argument(s)");
-		graphics_type = CMZN_GRAPHICS_LINES;
+		graphics_type = CMZN_GRAPHICS_TYPE_LINES;
 	}
 	LEAVE;
 
@@ -1665,14 +1665,14 @@ int cmzn_graphics_update_selected(struct cmzn_graphics *graphics, void *dummy_vo
 	{
 		switch (graphics->select_mode)
 		{
-		case CMZN_GRAPHICS_SELECT_ON:
+		case CMZN_GRAPHICS_SELECT_MODE_ON:
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_SELECTION);
 			break;
-		case CMZN_GRAPHICS_NO_SELECT:
+		case CMZN_GRAPHICS_SELECT_MODE_OFF:
 			/* nothing to do as selection doesn't affect appearance in this mode */
 			break;
-		case CMZN_GRAPHICS_DRAW_SELECTED:
-		case CMZN_GRAPHICS_DRAW_UNSELECTED:
+		case CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED:
+		case CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED:
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 			break;
 		default:
@@ -1689,7 +1689,7 @@ int cmzn_graphics_update_selected(struct cmzn_graphics *graphics, void *dummy_vo
 void cmzn_graphics_update_graphics_object_trivial_glyph(struct cmzn_graphics *graphics)
 {
 	if (graphics && graphics->graphics_object &&
-		(CMZN_GRAPHICS_POINTS == graphics->graphics_type))
+		(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type))
 	{
 		if (graphics->glyph)
 		{
@@ -1718,7 +1718,7 @@ int cmzn_graphics_update_graphics_object_trivial(struct cmzn_graphics *graphics)
 		set_GT_object_selected_material(graphics->graphics_object,
 			graphics->selected_material);
 		set_GT_object_Spectrum(graphics->graphics_object, graphics->spectrum);
-		if (CMZN_GRAPHICS_POINTS == graphics->graphics_type)
+		if (CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type)
 		{
 			cmzn_graphics_update_graphics_object_trivial_glyph(graphics);
 			set_GT_object_glyph_repeat_mode(graphics->graphics_object, graphics->glyph_repeat_mode);
@@ -2041,7 +2041,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		}
 		*/
 
-		if (CMZN_GRAPHICS_CONTOURS == graphics->graphics_type)
+		if (CMZN_GRAPHICS_TYPE_CONTOURS == graphics->graphics_type)
 		{
 			if (graphics->isoscalar_field)
 			{
@@ -2090,12 +2090,12 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		}
 
 		// line attributes
-		if ((graphics->graphics_type == CMZN_GRAPHICS_LINES) ||
-			(graphics->graphics_type == CMZN_GRAPHICS_STREAMLINES))
+		if ((graphics->graphics_type == CMZN_GRAPHICS_TYPE_LINES) ||
+			(graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES))
 		{
 			append_string(&graphics_string," ",&error);
 			append_string(&graphics_string,
-				ENUMERATOR_STRING(cmzn_graphicslineattributes_shape)(graphics->line_shape),&error);
+				ENUMERATOR_STRING(cmzn_graphicslineattributes_shape_type)(graphics->line_shape),&error);
 
 			append_string(&graphics_string, " line_base_size ", &error);
 			if (graphics->line_base_size[1] == graphics->line_base_size[0])
@@ -2131,7 +2131,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		}
 
 		// point attributes
-		if (CMZN_GRAPHICS_POINTS == graphics->graphics_type)
+		if (CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type)
 		{
 			if (graphics->glyph)
 			{
@@ -2275,8 +2275,8 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 
 		/* for sampling points only */
 		if ((domain_dimension > 0) && (
-			(CMZN_GRAPHICS_POINTS == graphics->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type)))
+			(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)))
 		{
 			append_string(&graphics_string," ",&error);
 			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
@@ -2323,7 +2323,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		}
 
 		/* for graphics starting in a particular element */
-		if (CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type)
+		if (CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type)
 		{
 			if (graphics->seed_element)
 			{
@@ -2335,8 +2335,8 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 
 		/* for graphics requiring an exact xi location */
 		if ((domain_dimension > 0) && (
-			(CMZN_GRAPHICS_POINTS == graphics->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type)) &&
+			(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
 			(CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION == graphics->sample_mode))
 		{
 			sprintf(temp_string," xi %g,%g,%g",
@@ -2345,7 +2345,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		}
 
 		/* for streamlines only */
-		if (CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type)
+		if (CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type)
 		{
 			if (graphics->stream_vector_field)
 			{
@@ -2646,7 +2646,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 	{
 		switch (graphics->graphics_type)
 		{
-			case CMZN_GRAPHICS_SURFACES:
+			case CMZN_GRAPHICS_TYPE_SURFACES:
 			{
 				//printf( "Building cad geometry surfaces\n" );
 				int surface_count = cmzn_field_cad_topology_get_surface_count(cad_topology);
@@ -2670,7 +2670,7 @@ static int Cad_shape_to_graphics_object(struct Computed_field *field,
 				}
 				break;
 			}
-			case CMZN_GRAPHICS_LINES:
+			case CMZN_GRAPHICS_TYPE_LINES:
 			{
 				//struct GT_object *graphics_object = settings->graphics_object;
 				/*
@@ -2836,8 +2836,8 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 			if (group_field &&
 				(NULL != (field_module = cmzn_field_get_fieldmodule(group_field))))
 			{
-				if ((CMZN_GRAPHICS_SELECT_ON == graphics->select_mode) ||
-					(CMZN_GRAPHICS_DRAW_SELECTED == graphics->select_mode))
+				if ((CMZN_GRAPHICS_SELECT_MODE_ON == graphics->select_mode) ||
+					(CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode))
 				{
 					SubObjectGroupHighlightFunctor *functor = 0;
 					switch (graphics->domain_type)
@@ -2860,7 +2860,7 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 						case CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
 						{
 #if defined(USE_OPENCASCADE)
-							if (graphics->graphics_type == CMZN_GRAPHICS_SURFACES)
+							if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_SURFACES)
 							{
 								// test here for domain of object coordinate_field
 								// if it is a cad_geometry do something about it
@@ -2885,7 +2885,7 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 							if (!functor)
 							{
 #endif // defined(USE_OPENCASCADE)
-							if (graphics->graphics_type != CMZN_GRAPHICS_STREAMLINES)
+							if (graphics->graphics_type != CMZN_GRAPHICS_TYPE_STREAMLINES)
 							{
 								int dimension = cmzn_graphics_get_domain_dimension(graphics);
 								cmzn_mesh_id temp_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
@@ -3137,9 +3137,9 @@ int cmzn_graphics_to_graphics_object(
 							{
 								switch (graphics->graphics_type)
 								{
-								case CMZN_GRAPHICS_LINES:
+								case CMZN_GRAPHICS_TYPE_LINES:
 								{
-									if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE == graphics->line_shape)
+									if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 									{
 										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
 									}
@@ -3148,11 +3148,11 @@ int cmzn_graphics_to_graphics_object(
 										graphics_object_type = g_SURFACE;
 									}
 								} break;
-								case CMZN_GRAPHICS_SURFACES:
+								case CMZN_GRAPHICS_TYPE_SURFACES:
 								{
 									graphics_object_type = g_SURFACE;
 								} break;
-								case CMZN_GRAPHICS_CONTOURS:
+								case CMZN_GRAPHICS_TYPE_CONTOURS:
 								{
 									switch (dimension)
 									{
@@ -3180,13 +3180,13 @@ int cmzn_graphics_to_graphics_object(
 									} break;
 									}
 								} break;
-								case CMZN_GRAPHICS_POINTS:
+								case CMZN_GRAPHICS_TYPE_POINTS:
 								{
 									graphics_object_type = g_GLYPH_SET;
 								} break;
-								case CMZN_GRAPHICS_STREAMLINES:
+								case CMZN_GRAPHICS_TYPE_STREAMLINES:
 								{
-									if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE == graphics->line_shape)
+									if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 									{
 										graphics_object_type = g_POLYLINE;
 									}
@@ -3248,7 +3248,7 @@ int cmzn_graphics_to_graphics_object(
 							cmzn_graphics_get_iteration_domain(graphics, graphics_to_object_data);
 							switch (graphics->graphics_type)
 							{
-							case CMZN_GRAPHICS_POINTS:
+							case CMZN_GRAPHICS_TYPE_POINTS:
 							{
 								switch (graphics->domain_type)
 								{
@@ -3345,7 +3345,7 @@ int cmzn_graphics_to_graphics_object(
 								} break;
 								}
 							} break;
-							case CMZN_GRAPHICS_LINES:
+							case CMZN_GRAPHICS_TYPE_LINES:
 							{
 #if defined(USE_OPENCASCADE)
 								// test here for domain of rc_coordinate_field
@@ -3368,7 +3368,7 @@ int cmzn_graphics_to_graphics_object(
 								if ( domain_field_list )
 									DESTROY_LIST(Computed_field)(&domain_field_list);
 #endif /* defined(USE_OPENCASCADE) */
-								if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE == graphics->line_shape)
+								if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
 								{
 									GT_polyline_vertex_buffers *lines =
 										CREATE(GT_polyline_vertex_buffers)(g_PLAIN);
@@ -3392,7 +3392,7 @@ int cmzn_graphics_to_graphics_object(
 									return_code = cmzn_mesh_to_graphics(graphics_to_object_data->iteration_mesh, graphics_to_object_data);
 								}
 							} break;
-							case CMZN_GRAPHICS_SURFACES:
+							case CMZN_GRAPHICS_TYPE_SURFACES:
 							{
 								bool cad_surfaces = false;
 #if defined(USE_OPENCASCADE)
@@ -3430,7 +3430,7 @@ int cmzn_graphics_to_graphics_object(
 									}
 								}
 							} break;
-							case CMZN_GRAPHICS_CONTOURS:
+							case CMZN_GRAPHICS_TYPE_CONTOURS:
 							{
 								cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 								if (0 < graphics->number_of_isovalues)
@@ -3475,7 +3475,7 @@ int cmzn_graphics_to_graphics_object(
 									}
 								}
 							} break;
-							case CMZN_GRAPHICS_STREAMLINES:
+							case CMZN_GRAPHICS_TYPE_STREAMLINES:
 							{
 								cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 								// must always regenerate ALL streamlines since they can cross into other elements
@@ -3523,7 +3523,7 @@ int cmzn_graphics_to_graphics_object(
 							{
 								/* set the spectrum in the graphics object - if required */
 								if ((graphics->data_field)||
-									((CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type) &&
+									((CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type) &&
 										(STREAM_NO_DATA != graphics->streamline_data_type)))
 								{
 									set_GT_object_Spectrum(graphics->graphics_object, graphics->spectrum);
@@ -3708,8 +3708,8 @@ static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
 			return_code = 1;
 		}
 		/* line attributes */
-		else if (((CMZN_GRAPHICS_LINES==graphics->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type)) &&
+		else if (((CMZN_GRAPHICS_TYPE_LINES==graphics->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
 			graphics->line_orientation_scale_field &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphics->line_orientation_scale_field, conditional_function, user_data))
@@ -3717,7 +3717,7 @@ static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
 			return_code = 1;
 		}
 		/* for contours only */
-		else if ((CMZN_GRAPHICS_CONTOURS == graphics->graphics_type) &&
+		else if ((CMZN_GRAPHICS_TYPE_CONTOURS == graphics->graphics_type) &&
 			(graphics->isoscalar_field &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphics->isoscalar_field, conditional_function, user_data)))
@@ -3725,7 +3725,7 @@ static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
 			return_code = 1;
 		}
 		/* point attributes */
-		else if ((CMZN_GRAPHICS_POINTS == graphics->graphics_type) &&
+		else if ((CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) &&
 			((graphics->point_orientation_scale_field &&
 				(Computed_field_or_ancestor_satisfies_condition(
 					graphics->point_orientation_scale_field, conditional_function, user_data)))||
@@ -3742,8 +3742,8 @@ static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
 			return_code = 1;
 		}
 		/* for graphics using a sampling density field only */
-		else if (((CMZN_GRAPHICS_POINTS == graphics->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type)) &&
+		else if (((CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
 			(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == graphics->sample_mode) &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphics->sample_density_field, conditional_function, user_data))
@@ -3751,7 +3751,7 @@ static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
 			return_code = 1;
 		}
 		/* for streamlines only */
-		else if ((CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type) &&
+		else if ((CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type) &&
 			graphics->stream_vector_field &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphics->stream_vector_field, conditional_function, user_data))
@@ -3806,7 +3806,7 @@ int cmzn_graphics_Computed_field_change(
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		if (change_data->selection_changed && graphics->graphics_object &&
-			(CMZN_GRAPHICS_STREAMLINES != graphics->graphics_type))
+			(CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
 		{
 			cmzn_graphics_update_selected(graphics, (void *)NULL);
 		}
@@ -3933,7 +3933,7 @@ int cmzn_graphics_set_spectrum(cmzn_graphics_id graphics,
 enum Streamline_data_type cmzn_graphics_get_streamline_data_type(
 	cmzn_graphics_id graphics)
 {
-	if (graphics && (CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type))
+	if (graphics && (CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type))
 	{
 		return graphics->streamline_data_type;
 	}
@@ -3944,7 +3944,7 @@ int cmzn_graphics_set_streamline_data_type(cmzn_graphics_id graphics,
 	enum Streamline_data_type streamline_data_type)
 {
 	int return_code = 0;
-	if (graphics && (CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type))
+	if (graphics && (CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type))
 	{
 		if (streamline_data_type != graphics->streamline_data_type)
 		{
@@ -3997,8 +3997,8 @@ int cmzn_graphics_copy_without_graphics_object(
 
 		/* line attributes */
 		destination->line_shape = source->line_shape;
-		if ((CMZN_GRAPHICS_LINES == source->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES == source->graphics_type))
+		if ((CMZN_GRAPHICS_TYPE_LINES == source->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES == source->graphics_type))
 		{
 			REACCESS(Computed_field)(&destination->line_orientation_scale_field,
 				source->line_orientation_scale_field);
@@ -4432,8 +4432,8 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 
 		/* line attributes */
 		if (return_code && (
-			(CMZN_GRAPHICS_LINES==graphics->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type)))
+			(CMZN_GRAPHICS_TYPE_LINES==graphics->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type)))
 		{
 			if ((graphics->line_shape != second_graphics->line_shape) ||
 				(graphics->line_orientation_scale_field !=
@@ -4456,7 +4456,7 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 
 		/* for iso_surfaces only */
 		if (return_code&&
-			(CMZN_GRAPHICS_CONTOURS==graphics->graphics_type))
+			(CMZN_GRAPHICS_TYPE_CONTOURS==graphics->graphics_type))
 		{
 			return_code=(graphics->number_of_isovalues==
 				second_graphics->number_of_isovalues)&&
@@ -4499,7 +4499,7 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 			}
 		}
 
-		if (return_code && (CMZN_GRAPHICS_POINTS == graphics->graphics_type))
+		if (return_code && (CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type))
 		{
 			return_code=
 				(graphics->point_orientation_scale_field==
@@ -4519,8 +4519,8 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 
 		// for element sampling: element points, streamlines
 		if (return_code && (0 < domain_dimension) && (
-			(CMZN_GRAPHICS_POINTS == graphics->graphics_type) ||
-			(CMZN_GRAPHICS_STREAMLINES == graphics->graphics_type)))
+			(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
+			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)))
 		{
 			return_code = (graphics->sample_mode == second_graphics->sample_mode) &&
 				((graphics->sample_mode != CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON) ||
@@ -4531,13 +4531,13 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 					 (graphics->sample_location[2] == second_graphics->sample_location[2])));
 		}
 		/* for graphics starting in a particular element */
-		if (return_code&&(CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type))
+		if (return_code&&(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type))
 		{
 			return_code=
 				(graphics->seed_element==second_graphics->seed_element);
 		}
 		/* for streamlines only */
-		if (return_code&&(CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type))
+		if (return_code&&(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type))
 		{
 			return_code=
 				(graphics->stream_vector_field==second_graphics->stream_vector_field)&&
@@ -4554,7 +4554,7 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 			return_code =
 				(graphics->data_field==second_graphics->data_field)&&
 				(graphics->texture_coordinate_field==second_graphics->texture_coordinate_field)&&
-				((CMZN_GRAPHICS_STREAMLINES != graphics->graphics_type) ||
+				((CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type) ||
 				 (graphics->streamline_data_type==second_graphics->streamline_data_type));
 		}
 	}
@@ -4617,7 +4617,7 @@ int cmzn_graphics_match(struct cmzn_graphics *graphics1,
 			(graphics1->spectrum == graphics2->spectrum) &&
 			(graphics1->font == graphics2->font) &&
 			(graphics1->render_polygon_mode == graphics2->render_polygon_mode) &&
-			((CMZN_GRAPHICS_POINTS != graphics1->graphics_type) || (
+			((CMZN_GRAPHICS_TYPE_POINTS != graphics1->graphics_type) || (
 				(graphics1->glyph == graphics2->glyph) &&
 				(graphics1->glyph_repeat_mode == graphics2->glyph_repeat_mode) &&
 				(graphics1->point_base_size[0] == graphics2->point_base_size[0]) &&
@@ -5009,7 +5009,7 @@ struct FE_element *cmzn_graphics_get_seed_element(
 	struct FE_element *seed_element;
 
 	ENTER(cmzn_graphics_get_seed_element);
-	if (graphics&&(CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type))
+	if (graphics&&(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type))
 	{
 		seed_element=graphics->seed_element;
 	}
@@ -5036,7 +5036,7 @@ For graphics starting in a particular element.
 	int return_code;
 
 	ENTER(cmzn_graphics_set_seed_element);
-	if (graphics&&(CMZN_GRAPHICS_STREAMLINES==graphics->graphics_type))
+	if (graphics&&(CMZN_GRAPHICS_TYPE_STREAMLINES==graphics->graphics_type))
 	{
 		REACCESS(FE_element)(&graphics->seed_element,seed_element);
 		return_code=1;
@@ -5407,7 +5407,7 @@ int cmzn_graphics_tessellation_change(struct cmzn_graphics *graphics,
 				}
 				else if (change_detail->isCircleDivisionsChanged())
 				{
-					if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION == graphics->line_shape)
+					if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION == graphics->line_shape)
 					{
 						cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					}
@@ -5438,7 +5438,7 @@ int cmzn_graphics_font_change(struct cmzn_graphics *graphics,
 	if (graphics && manager_message)
 	{
 		return_code = 1;
-		if ((graphics->graphics_type == CMZN_GRAPHICS_POINTS) && (graphics->font))
+		if ((graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS) && (graphics->font))
 		{
 			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_font)(
 				manager_message, graphics->font);
@@ -5561,7 +5561,7 @@ Must call cmzn_graphics_to_graphics_object afterwards to complete.
 	{
 		return_code=1;
 		if (graphics->graphics_object&&
-			(CMZN_GRAPHICS_POINTS == graphics->graphics_type) &&
+			(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) &&
 			(0 < cmzn_graphics_get_domain_dimension(graphics)))
 		{
 			cmzn_graphics_update_selected(graphics, (void *)NULL);
@@ -5652,19 +5652,19 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-			case CMZN_GRAPHICS_POINTS:
+			case CMZN_GRAPHICS_TYPE_POINTS:
 				enum_string = "POINTS";
 				break;
-			case CMZN_GRAPHICS_LINES:
+			case CMZN_GRAPHICS_TYPE_LINES:
 				enum_string = "LINES";
 				break;
-			case CMZN_GRAPHICS_SURFACES:
+			case CMZN_GRAPHICS_TYPE_SURFACES:
 				enum_string = "SURFACES";
 				break;
-			case CMZN_GRAPHICS_CONTOURS:
+			case CMZN_GRAPHICS_TYPE_CONTOURS:
 				enum_string = "CONTOURS";
 				break;
-			case CMZN_GRAPHICS_STREAMLINES:
+			case CMZN_GRAPHICS_TYPE_STREAMLINES:
 				enum_string = "STREAMLINES";
 				break;
 		default:
@@ -5693,10 +5693,10 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
-		case CMZN_GRAPHICS_RENDER_POLYGON_SHADED:
+		case CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED:
 			enum_string = "RENDER_POLYGON_SHADED";
 			break;
-		case CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME:
+		case CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME:
 			enum_string = "RENDER_POLYGON_WIREFRAME";
 			break;
 		default:
@@ -5732,9 +5732,9 @@ int cmzn_graphics_set_domain_type(cmzn_graphics_id graphics,
 	enum cmzn_field_domain_type domain_type)
 {
 	if (graphics && (domain_type != CMZN_FIELD_DOMAIN_TYPE_INVALID) &&
-		(graphics->graphics_type != CMZN_GRAPHICS_LINES) &&
-		(graphics->graphics_type != CMZN_GRAPHICS_SURFACES) &&
-		((graphics->graphics_type == CMZN_GRAPHICS_POINTS) ||
+		(graphics->graphics_type != CMZN_GRAPHICS_TYPE_LINES) &&
+		(graphics->graphics_type != CMZN_GRAPHICS_TYPE_SURFACES) &&
+		((graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS) ||
 		 ((domain_type != CMZN_FIELD_DOMAIN_POINT) &&
 			(domain_type != CMZN_FIELD_DOMAIN_NODES) &&
 			(domain_type != CMZN_FIELD_DOMAIN_DATA))))
@@ -5752,7 +5752,7 @@ int cmzn_graphics_set_domain_type(cmzn_graphics_id graphics,
 
 cmzn_graphics_contours_id cmzn_graphics_cast_contours(cmzn_graphics_id graphics)
 {
-	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_CONTOURS))
+	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_TYPE_CONTOURS))
 	{
 		cmzn_graphics_access(graphics);
 		return (reinterpret_cast<cmzn_graphics_contours_id>(graphics));
@@ -5977,7 +5977,7 @@ int cmzn_graphics_contours_set_range_isovalues(
 
 cmzn_graphics_lines_id cmzn_graphics_cast_lines(cmzn_graphics_id graphics)
 {
-	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_LINES))
+	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_TYPE_LINES))
 	{
 		cmzn_graphics_access(graphics);
 		return (reinterpret_cast<cmzn_graphics_lines_id>(graphics));
@@ -5992,7 +5992,7 @@ int cmzn_graphics_lines_destroy(cmzn_graphics_lines_id *lines_address)
 
 cmzn_graphics_points_id cmzn_graphics_cast_points(cmzn_graphics_id graphics)
 {
-	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_POINTS))
+	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS))
 	{
 		cmzn_graphics_access(graphics);
 		return (reinterpret_cast<cmzn_graphics_points_id>(graphics));
@@ -6007,7 +6007,7 @@ int cmzn_graphics_points_destroy(cmzn_graphics_points_id *points_address)
 
 cmzn_graphics_streamlines_id cmzn_graphics_cast_streamlines(cmzn_graphics_id graphics)
 {
-	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_STREAMLINES))
+	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES))
 	{
 		cmzn_graphics_access(graphics);
 		return (reinterpret_cast<cmzn_graphics_streamlines_id>(graphics));
@@ -6102,7 +6102,7 @@ int cmzn_graphics_streamlines_set_track_length(
 
 cmzn_graphics_surfaces_id cmzn_graphics_cast_surfaces(cmzn_graphics_id graphics)
 {
-	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_SURFACES))
+	if (graphics && (graphics->graphics_type == CMZN_GRAPHICS_TYPE_SURFACES))
 	{
 		cmzn_graphics_access(graphics);
 		return (reinterpret_cast<cmzn_graphics_surfaces_id>(graphics));
@@ -6119,8 +6119,8 @@ cmzn_graphicslineattributes_id cmzn_graphics_get_graphicslineattributes(
 	cmzn_graphics_id graphics)
 {
 	if (graphics && (
-		(graphics->graphics_type == CMZN_GRAPHICS_LINES) ||
-		(graphics->graphics_type == CMZN_GRAPHICS_STREAMLINES)))
+		(graphics->graphics_type == CMZN_GRAPHICS_TYPE_LINES) ||
+		(graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)))
 	{
 		cmzn_graphics_access(graphics);
 		return reinterpret_cast<cmzn_graphicslineattributes_id>(graphics);
@@ -6166,7 +6166,7 @@ int cmzn_graphicslineattributes_set_base_size(
 	if (graphics && (0 < number) && base_size)
 	{
 		bool changed = false;
-		if (graphics->graphics_type == CMZN_GRAPHICS_LINES)
+		if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_LINES)
 		{
 			number = 1; // only equal values supported for lines (cylinders)
 		}
@@ -6245,7 +6245,7 @@ int cmzn_graphicslineattributes_set_scale_factors(
 	if (graphics && (0 < number) && scale_factors)
 	{
 		bool changed = false;
-		if (graphics->graphics_type == CMZN_GRAPHICS_LINES)
+		if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_LINES)
 		{
 			number = 1; // only equal values supported for lines (cylinders)
 		}
@@ -6271,7 +6271,7 @@ int cmzn_graphicslineattributes_set_scale_factors(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_graphicslineattributes_shape cmzn_graphicslineattributes_get_shape(
+enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_get_shape_type(
 	cmzn_graphicslineattributes_id line_attributes)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(line_attributes);
@@ -6279,22 +6279,22 @@ enum cmzn_graphicslineattributes_shape cmzn_graphicslineattributes_get_shape(
 	{
 		return graphics->line_shape;
 	}
-	return CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_INVALID;
+	return CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID;
 }
 
-int cmzn_graphicslineattributes_set_shape(
+int cmzn_graphicslineattributes_set_shape_type(
 	cmzn_graphicslineattributes_id line_attributes,
-	enum cmzn_graphicslineattributes_shape shape)
+	enum cmzn_graphicslineattributes_shape_type shape_type)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(line_attributes);
-	if (graphics && (shape != CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_INVALID) &&
-		((graphics->graphics_type == CMZN_GRAPHICS_STREAMLINES) ||
-			(shape == CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE) ||
-			(shape == CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION)))
+	if (graphics && (shape_type != CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID) &&
+		((graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES) ||
+			(shape_type == CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE) ||
+			(shape_type == CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION)))
 	{
-		if (shape != graphics->line_shape)
+		if (shape_type != graphics->line_shape)
 		{
-			graphics->line_shape = shape;
+			graphics->line_shape = shape_type;
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -6306,7 +6306,7 @@ cmzn_graphicspointattributes_id cmzn_graphics_get_graphicspointattributes(
 	cmzn_graphics_id graphics)
 {
 	if (graphics && (
-		(graphics->graphics_type == CMZN_GRAPHICS_POINTS)))
+		(graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS)))
 	{
 		cmzn_graphics_access(graphics);
 		return reinterpret_cast<cmzn_graphicspointattributes_id>(graphics);
@@ -6769,8 +6769,8 @@ int cmzn_graphicspointattributes_set_signed_scale_field(
 cmzn_graphicssamplingattributes_id cmzn_graphics_get_graphicssamplingattributes(
 	cmzn_graphics_id graphics)
 {
-	if (graphics && ((graphics->graphics_type == CMZN_GRAPHICS_POINTS) ||
-		(graphics->graphics_type == CMZN_GRAPHICS_STREAMLINES)))
+	if (graphics && ((graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS) ||
+		(graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)))
 	{
 		cmzn_graphics_access(graphics);
 		return reinterpret_cast<cmzn_graphicssamplingattributes_id>(graphics);

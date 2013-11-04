@@ -3040,7 +3040,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 			spectrum=get_GT_object_spectrum(object);
 			/* determine if picking names are to be output */
 			picking_names = renderer->picking &&
-				(CMZN_GRAPHICS_NO_SELECT != GT_object_get_select_mode(object));
+				(CMZN_GRAPHICS_SELECT_MODE_OFF != GT_object_get_select_mode(object));
 			/* determine which material to use */
 			if (draw_selected)
 			{
@@ -3769,7 +3769,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 							{
 								glPushName(0);
 							}
-							bool wireframe_flag = (surface->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME);
+							bool wireframe_flag = (surface->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME);
 							if (wireframe_flag)
 							{
 								glPushAttrib(GL_POLYGON_BIT);
@@ -4407,8 +4407,8 @@ struct GT_object *graphics_object,
 			}
 			graphics_object_no++;
 
-			if ((CMZN_GRAPHICS_SELECT_ON == graphics_object_item->select_mode) ||
-				(CMZN_GRAPHICS_DRAW_SELECTED == graphics_object_item->select_mode))
+			if ((CMZN_GRAPHICS_SELECT_MODE_ON == graphics_object_item->select_mode) ||
+				(CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics_object_item->select_mode))
 			{
 				if (graphics_object_item->selected_material)
 				{
@@ -4429,7 +4429,7 @@ struct GT_object *graphics_object,
 				}
 			}
 			// there is no highlight_functor when picking, but draw_selected graphics need to be pickable
-			if ((CMZN_GRAPHICS_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
+			if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics_object_item->select_mode) || (!renderer->highlight_functor))
 			{
 				if (graphics_object_item->default_material)
 				{

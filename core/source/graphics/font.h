@@ -20,7 +20,7 @@ This provides a Cmgui interface to the OpenGL contexts of many types.
 #include "general/enumerator.h"
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_font_render_type);
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_font_typeface);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_font_typeface_type);
 
 /*
 Global types

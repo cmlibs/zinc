@@ -13,10 +13,10 @@
 
 #include "zinc/zincsharedobject.h"
 
-enum cmzn_font_typeface
+enum cmzn_font_typeface_type
 {
-	CMZN_FONT_TYPEFACE_INVALID = 0,
-	CMZN_FONT_TYPEFACE_OPENSANS = 1,
+	CMZN_FONT_TYPEFACE_TYPE_INVALID = 0,
+	CMZN_FONT_TYPEFACE_TYPE_OPENSANS = 1
 };
 
 enum cmzn_font_render_type
@@ -45,8 +45,8 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_font_typeface
-	cmzn_font_typeface_enum_from_string(const char *string);
+ZINC_API enum cmzn_font_typeface_type
+	cmzn_font_typeface_type_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
@@ -55,8 +55,8 @@ ZINC_API enum cmzn_font_typeface
  * @param system  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_font_typeface_enum_to_string(
-	enum cmzn_font_typeface font_type);
+ZINC_API char *cmzn_font_typeface_type_enum_to_string(
+	enum cmzn_font_typeface_type typeface_type);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
