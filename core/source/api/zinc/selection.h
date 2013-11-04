@@ -90,12 +90,13 @@ ZINC_API int cmzn_selectionevent_destroy(cmzn_selectionevent_id *selectionevent_
 /**
  * Get logical OR of flags indicating how the selection has changed, whether in
  * the local region or hierarchically.
- * @see cmzn_selectionevent_change_flags
+ * @see cmzn_selectionevent_change_flag
  *
  * @param selectionevent  Handle to the selection event.
- * @return  The local change type flags.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_selectionevent_change_flag values.
  */
-ZINC_API int cmzn_selectionevent_get_change_summary(
+ZINC_API cmzn_selectionevent_change_flags cmzn_selectionevent_get_change_flags(
 	cmzn_selectionevent_id selectionevent);
 
 #ifdef __cplusplus

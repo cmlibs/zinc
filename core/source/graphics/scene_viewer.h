@@ -187,8 +187,8 @@ struct cmzn_sceneviewerinput
 	int position_x;
 	int position_y;
 	/* flags indicating the state of the shift, control and alt keys - use
-	 * logical OR with CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT etc. */
-	cmzn_sceneviewerinput_modifiers_type modifiers;
+	 * logical OR with CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_SHIFT etc. */
+	cmzn_sceneviewerinput_modifier_flags modifiers;
 };
 
 struct Scene_viewer

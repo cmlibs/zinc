@@ -465,7 +465,7 @@ static void cmzn_scene_Computed_field_change(
 					if (scene->selectionnotifier_list && (0 < scene->selectionnotifier_list->size()))
 					{
 						cmzn_selectionevent_id event = new cmzn_selectionevent();
-						event->changeSummary = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
+						event->changeFlags = cmzn_field_group_change_type_to_selectionevent_change_type(group_local_change)
 							| cmzn_field_group_change_type_to_selectionevent_change_type(group_nonlocal_change);
 						for (cmzn_selectionnotifier_list::iterator iter = scene->selectionnotifier_list->begin();
 							iter != scene->selectionnotifier_list->end(); ++iter)
@@ -2764,9 +2764,9 @@ int cmzn_scene_set_selection_group(cmzn_scene_id scene,
 				// notify clients of changed selection
 				cmzn_selectionevent *event = new cmzn_selectionevent();
 				if (!wasEmpty)
-					event->changeSummary |= CMZN_SELECTIONEVENT_CHANGE_REMOVE;
+					event->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE;
 				if (!isEmpty)
-					event->changeSummary |= CMZN_SELECTIONEVENT_CHANGE_ADD;
+					event->changeFlags |= CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD;
 				for (cmzn_selectionnotifier_list::iterator iter = scene->selectionnotifier_list->begin();
 					iter != scene->selectionnotifier_list->end(); ++iter)
 				{

@@ -71,7 +71,7 @@ void cmzn_selectionnotifier::sceneDestroyed()
 	if (this->function)
 	{
 		cmzn_selectionevent_id event = new cmzn_selectionevent();
-		event->changeSummary = CMZN_SELECTIONEVENT_CHANGE_FINAL;
+		event->changeFlags = CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL;
 		(this->function)(event, this->user_data);
 		cmzn_selectionevent_destroy(&event);
 		this->clearCallback();
@@ -120,7 +120,7 @@ int cmzn_selectionevent_destroy(cmzn_selectionevent_id *selectionevent_address)
 	return cmzn_selectionevent::deaccess(*selectionevent_address);
 }
 
-int cmzn_selectionevent_get_change_summary(cmzn_selectionevent_id selectionevent)
+cmzn_selectionevent_change_flags cmzn_selectionevent_get_change_flags(cmzn_selectionevent_id selectionevent)
 {
-	return selectionevent->changeSummary;
+	return selectionevent->changeFlags;
 }

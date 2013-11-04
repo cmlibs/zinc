@@ -11,6 +11,9 @@
 #ifndef CMZN_SCENEVIEWERINPUTID_H__
 #define CMZN_SCENEVIEWERINPUTID_H__
 
+struct cmzn_sceneviewerinput;
+typedef struct cmzn_sceneviewerinput *cmzn_sceneviewerinput_id;
+
 /**
  * The type of scene viewer input button.
  */
@@ -40,21 +43,18 @@ enum cmzn_sceneviewerinput_event_type
 /**
  * Specifies the scene viewer input modifier flags.
  */
-enum cmzn_sceneviewerinput_modifier_flags
+enum cmzn_sceneviewerinput_modifier_flag
 {
-	CMZN_SCENEVIEWERINPUT_MODIFIER_NONE = 0,
-	CMZN_SCENEVIEWERINPUT_MODIFIER_SHIFT = 1,
-	CMZN_SCENEVIEWERINPUT_MODIFIER_CONTROL = 2,
-	CMZN_SCENEVIEWERINPUT_MODIFIER_ALT = 4,
-	CMZN_SCENEVIEWERINPUT_MODIFIER_BUTTON1 = 8
+	CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_NONE = 0,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_SHIFT = 1,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_CONTROL = 2,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_ALT = 4,
+	CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_BUTTON1 = 8
 };
 
-struct cmzn_sceneviewerinput;
-typedef struct cmzn_sceneviewerinput *cmzn_sceneviewerinput_id;
-
 /**
- * Type for passing logical OR of #cmzn_sceneviewerinput_modifier_flags
+ * Type for passing logical OR of #cmzn_sceneviewerinput_modifier_flag
  */
-typedef int cmzn_sceneviewerinput_modifiers_type;
+typedef int cmzn_sceneviewerinput_modifier_flags;
 
 #endif
