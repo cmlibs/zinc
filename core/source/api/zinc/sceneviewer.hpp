@@ -155,12 +155,12 @@ public:
 		return cmzn_sceneviewer_set_viewport_size(id, width, height);
 	}
 
-	Sceneviewerinput createSceneviewerinput()
+	OpenCMISS::Zinc::Sceneviewerinput createSceneviewerinput()
 	{
-		return Sceneviewerinput(cmzn_sceneviewer_create_sceneviewerinput(id));
+		return OpenCMISS::Zinc::Sceneviewerinput(cmzn_sceneviewer_create_sceneviewerinput(id));
 	}
 
-	int processSceneviewerinput(Sceneviewerinput input)
+	int processSceneviewerinput(OpenCMISS::Zinc::Sceneviewerinput& input)
 	{
 		return cmzn_sceneviewer_process_sceneviewerinput(id, input.getId());
 	}
