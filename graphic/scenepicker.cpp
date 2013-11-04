@@ -55,7 +55,7 @@ TEST(cmzn_scenepicker_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_scenefiltermodule *>(0), filter_module);
 
 	cmzn_scenefilter_id sf = cmzn_scenefiltermodule_create_scenefilter_graphics_type(filter_module,
-		CMZN_GRAPHICS_POINTS);
+		CMZN_GRAPHICS_TYPE_POINTS);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), sf);
 
 	cmzn_scenefiltermodule_destroy(&filter_module);
@@ -134,7 +134,7 @@ TEST(cmzn_scenepicker_api, valid_args_cpp)
 	Scenefiltermodule sfm = zinc.context.getScenefiltermodule();
 	EXPECT_TRUE(sfm.isValid());
 
-	Scenefilter sf = sfm.createScenefilterGraphicsType(Graphics::POINTS);
+	Scenefilter sf = sfm.createScenefilterGraphicsType(Graphics::TYPE_POINTS);
 	EXPECT_TRUE(sf.isValid());
 
 	result = scenePicker.setScene(zinc.scene);

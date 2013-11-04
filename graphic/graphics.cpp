@@ -120,7 +120,7 @@ TEST(cmzn_graphics, coordinate_system)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_POINTS);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_POINTS);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	enum cmzn_scene_coordinate_system coordinate_system = cmzn_graphics_get_coordinate_system(gr);
@@ -137,7 +137,7 @@ TEST(ZincGraphics, CoordinateSystem)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphics gr = zinc.scene.createGraphics(Graphics::POINTS);
+	Graphics gr = zinc.scene.createGraphics(Graphics::TYPE_POINTS);
 	EXPECT_TRUE(gr.isValid());
 
 	SceneCoordinateSystem coordinateSystem = gr.getCoordinateSystem();
@@ -183,7 +183,7 @@ TEST(cmzn_graphics_api, material)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_materialmodule_id materialmodule = cmzn_context_get_materialmodule(zinc.context);
@@ -231,7 +231,7 @@ TEST(cmzn_graphics, render_line_width)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	const double inWidth = 2.0;
@@ -270,7 +270,7 @@ TEST(cmzn_graphics, render_point_size)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_POINTS);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_POINTS);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	const double inSize = 2.0;
@@ -309,18 +309,18 @@ TEST(cmzn_graphics, select_mode)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_SURFACES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_SURFACES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_graphics_select_mode selectMode;
-	ASSERT_EQ(CMZN_GRAPHICS_SELECT_ON, selectMode = cmzn_graphics_get_select_mode(gr));
+	ASSERT_EQ(CMZN_GRAPHICS_SELECT_MODE_ON, selectMode = cmzn_graphics_get_select_mode(gr));
 
 	int result;
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_select_mode(static_cast<cmzn_graphics_id>(0), CMZN_GRAPHICS_DRAW_SELECTED));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_select_mode(static_cast<cmzn_graphics_id>(0), CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED));
 	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_select_mode(gr, CMZN_GRAPHICS_SELECT_MODE_INVALID));
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_select_mode(gr, CMZN_GRAPHICS_DRAW_SELECTED));
-	ASSERT_EQ(CMZN_GRAPHICS_DRAW_SELECTED, selectMode = cmzn_graphics_get_select_mode(gr));
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_select_mode(gr, CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED));
+	ASSERT_EQ(CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED, selectMode = cmzn_graphics_get_select_mode(gr));
 
 	cmzn_graphics_destroy(&gr);
 }
@@ -333,20 +333,20 @@ TEST(ZincGraphics, selectMode)
 	EXPECT_TRUE(gr.isValid());
 
 	Graphics::SelectMode selectMode;
-	ASSERT_EQ(Graphics::SELECT_ON, selectMode = gr.getSelectMode());
+	ASSERT_EQ(Graphics::SELECT_MODE_ON, selectMode = gr.getSelectMode());
 
 	int result;
 	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setSelectMode(Graphics::SELECT_MODE_INVALID));
 
-	ASSERT_EQ(OK, result = gr.setSelectMode(Graphics::DRAW_SELECTED));
-	ASSERT_EQ(Graphics::DRAW_SELECTED, selectMode = gr.getSelectMode());
+	ASSERT_EQ(OK, result = gr.setSelectMode(Graphics::SELECT_MODE_DRAW_SELECTED));
+	ASSERT_EQ(Graphics::SELECT_MODE_DRAW_SELECTED, selectMode = gr.getSelectMode());
 }
 
 TEST(cmzn_graphics_api, selected_material)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_materialmodule_id materialmodule = cmzn_context_get_materialmodule(zinc.context);
@@ -1030,18 +1030,18 @@ TEST(cmzn_graphics, render_polygon_mode)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_SURFACES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_SURFACES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_graphics_render_polygon_mode renderPolygonMode;
-	ASSERT_EQ(CMZN_GRAPHICS_RENDER_POLYGON_SHADED, renderPolygonMode = cmzn_graphics_get_render_polygon_mode(gr));
+	ASSERT_EQ(CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED, renderPolygonMode = cmzn_graphics_get_render_polygon_mode(gr));
 
 	int result;
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_polygon_mode(static_cast<cmzn_graphics_id>(0), CMZN_GRAPHICS_RENDER_POLYGON_SHADED));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_polygon_mode(static_cast<cmzn_graphics_id>(0), CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED));
 	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_graphics_set_render_polygon_mode(gr, CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID));
 
-	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_render_polygon_mode(gr, CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME));
-	ASSERT_EQ(CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME, renderPolygonMode = cmzn_graphics_get_render_polygon_mode(gr));
+	ASSERT_EQ(CMZN_OK, result = cmzn_graphics_set_render_polygon_mode(gr, CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME));
+	ASSERT_EQ(CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME, renderPolygonMode = cmzn_graphics_get_render_polygon_mode(gr));
 
 	cmzn_graphics_destroy(&gr);
 }
@@ -1054,27 +1054,27 @@ TEST(ZincGraphics, RenderPolygonMode)
 	EXPECT_TRUE(gr.isValid());
 
 	Graphics::RenderPolygonMode renderPolygonMode;
-	ASSERT_EQ(Graphics::RENDER_POLYGON_SHADED, renderPolygonMode = gr.getRenderPolygonMode());
+	ASSERT_EQ(Graphics::RENDER_POLYGON_MODE_SHADED, renderPolygonMode = gr.getRenderPolygonMode());
 
 	int result;
 	ASSERT_EQ(ERROR_ARGUMENT, result = gr.setRenderPolygonMode(Graphics::RENDER_POLYGON_MODE_INVALID));
 
-	ASSERT_EQ(OK, result = gr.setRenderPolygonMode(Graphics::RENDER_POLYGON_WIREFRAME));
-	ASSERT_EQ(Graphics::RENDER_POLYGON_WIREFRAME, renderPolygonMode = gr.getRenderPolygonMode());
+	ASSERT_EQ(OK, result = gr.setRenderPolygonMode(Graphics::RENDER_POLYGON_MODE_WIREFRAME));
+	ASSERT_EQ(Graphics::RENDER_POLYGON_MODE_WIREFRAME, renderPolygonMode = gr.getRenderPolygonMode());
 }
 
 TEST(cmzn_graphics_api, line_attributes)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_LINES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_LINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_graphicslineattributes_id lineattr = cmzn_graphics_get_graphicslineattributes(gr);
 	EXPECT_NE(static_cast<cmzn_graphicslineattributes *>(0), lineattr);
-	EXPECT_EQ(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_LINE, cmzn_graphicslineattributes_get_shape(lineattr));
-	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_shape(lineattr, CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION));
-	EXPECT_EQ(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION, cmzn_graphicslineattributes_get_shape(lineattr));
+	EXPECT_EQ(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE, cmzn_graphicslineattributes_get_shape_type(lineattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicslineattributes_set_shape_type(lineattr, CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION, cmzn_graphicslineattributes_get_shape_type(lineattr));
 
 	double value = 1.0;
 	cmzn_field_id orientation_scale_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
@@ -1128,14 +1128,14 @@ TEST(cmzn_graphics_api, line_attributes_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphics gr = zinc.scene.createGraphics(Graphics::LINES);
+	Graphics gr = zinc.scene.createGraphics(Graphics::TYPE_LINES);
 	EXPECT_TRUE(gr.isValid());
 
 	Graphicslineattributes lineattr = gr.getGraphicslineattributes();
 	EXPECT_TRUE(lineattr.isValid());
-	EXPECT_EQ(Graphicslineattributes::SHAPE_LINE, lineattr.getShape());
-	EXPECT_EQ(OK, lineattr.setShape(Graphicslineattributes::SHAPE_CIRCLE_EXTRUSION));
-	EXPECT_EQ(Graphicslineattributes::SHAPE_CIRCLE_EXTRUSION, lineattr.getShape());
+	EXPECT_EQ(Graphicslineattributes::SHAPE_TYPE_LINE, lineattr.getShapeType());
+	EXPECT_EQ(OK, lineattr.setShapeType(Graphicslineattributes::SHAPE_TYPE_CIRCLE_EXTRUSION));
+	EXPECT_EQ(Graphicslineattributes::SHAPE_TYPE_CIRCLE_EXTRUSION, lineattr.getShapeType());
 
 	double value = 1.0;
 	Field orientationScaleField = zinc.fm.createFieldConstant(1, &value);

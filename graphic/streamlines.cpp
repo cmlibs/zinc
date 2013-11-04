@@ -21,7 +21,7 @@ TEST(cmzn_graphics_streamlines, create_cast)
 {
 	ZincTestSetup zinc;
 
-	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_STREAMLINES);
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_STREAMLINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
 	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
@@ -47,7 +47,7 @@ TEST(cmzn_graphics_streamlines, cast_cpp)
 {
 	ZincTestSetupCpp zinc;
 
-	Graphics gr = zinc.scene.createGraphics(Graphics::STREAMLINES);
+	Graphics gr = zinc.scene.createGraphics(Graphics::TYPE_STREAMLINES);
 	EXPECT_TRUE(gr.isValid());
 
 	GraphicsStreamlines st(gr);
@@ -122,9 +122,9 @@ TEST(cmzn_graphics_streamlines, track_direction)
 	cmzn_graphics_destroy(&gr);
 	EXPECT_NE(static_cast<cmzn_graphics_streamlines *>(0), st);
 
-	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_FORWARD_TRACK, cmzn_graphics_streamlines_get_track_direction(st));
-	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_track_direction(st, CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK));
-	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_REVERSE_TRACK, cmzn_graphics_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD, cmzn_graphics_streamlines_get_track_direction(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_track_direction(st, CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE));
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE, cmzn_graphics_streamlines_get_track_direction(st));
 
 	cmzn_graphics_streamlines_destroy(&st);
 }
@@ -136,9 +136,9 @@ TEST(cmzn_graphics_streamlines, track_direction_cpp)
 	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(st.isValid());
 
-	EXPECT_EQ(GraphicsStreamlines::FORWARD_TRACK, st.getTrackDirection());
-	EXPECT_EQ(CMZN_OK, st.setTrackDirection(GraphicsStreamlines::REVERSE_TRACK));
-	EXPECT_EQ(GraphicsStreamlines::REVERSE_TRACK, st.getTrackDirection());
+	EXPECT_EQ(GraphicsStreamlines::TRACK_DIRECTION_FORWARD, st.getTrackDirection());
+	EXPECT_EQ(CMZN_OK, st.setTrackDirection(GraphicsStreamlines::TRACK_DIRECTION_REVERSE));
+	EXPECT_EQ(GraphicsStreamlines::TRACK_DIRECTION_REVERSE, st.getTrackDirection());
 }
 
 TEST(cmzn_graphics_streamlines, track_length)

@@ -111,11 +111,11 @@ TEST(cmzn_font_api, valid_args)
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_TRUE(cmzn_font_is_italic(font));
 
-	result = cmzn_font_get_size(font);
+	result = cmzn_font_get_point_size(font);
 	EXPECT_EQ(15, result); // default
-	result = cmzn_font_set_size(font, 20);
+	result = cmzn_font_set_point_size(font, 20);
 	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_font_get_size(font);
+	result = cmzn_font_get_point_size(font);
 	EXPECT_EQ(20, result);
 
 	result = cmzn_font_set_render_type(font, CMZN_FONT_RENDER_TYPE_POLYGON);
@@ -124,11 +124,11 @@ TEST(cmzn_font_api, valid_args)
 	enum cmzn_font_render_type render_type = cmzn_font_get_render_type(font);
 	EXPECT_EQ(CMZN_FONT_RENDER_TYPE_POLYGON, render_type);
 
-	result = cmzn_font_set_typeface(font, CMZN_FONT_TYPEFACE_OPENSANS);
+	result = cmzn_font_set_typeface_type(font, CMZN_FONT_TYPEFACE_TYPE_OPENSANS);
 	EXPECT_EQ(CMZN_OK, result);
 
-	enum cmzn_font_typeface typeface = cmzn_font_get_typeface(font);
-	EXPECT_EQ(CMZN_FONT_TYPEFACE_OPENSANS, typeface);
+	enum cmzn_font_typeface_type typeface_type = cmzn_font_get_typeface_type(font);
+	EXPECT_EQ(CMZN_FONT_TYPEFACE_TYPE_OPENSANS, typeface_type);
 
 	cmzn_font_destroy(&font);
 
@@ -170,11 +170,11 @@ TEST(cmzn_font_api, valid_args_cpp)
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_TRUE(font.isItalic());
 
-	result = font.getSize();
+	result = font.getPointSize();
 	EXPECT_EQ(15, result); // default
-	result = font.setSize(20);
+	result = font.setPointSize(20);
 	EXPECT_EQ(CMZN_OK, result);
-	result = font.getSize();
+	result = font.getPointSize();
 	EXPECT_EQ(20, result);
 
 	result = font.setRenderType(font.RENDER_TYPE_POLYGON);
@@ -183,11 +183,11 @@ TEST(cmzn_font_api, valid_args_cpp)
 	enum Font::RenderType render_type = font.getRenderType();
 	EXPECT_EQ(font.RENDER_TYPE_POLYGON, render_type);
 
-	result = font.setTypeface(font.TYPEFACE_OPENSANS);
+	result = font.setTypefaceType(font.TYPEFACE_TYPE_OPENSANS);
 	EXPECT_EQ(CMZN_OK, result);
 
-	enum Font::Typeface typeface = font.getTypeface();
-	EXPECT_EQ(font.TYPEFACE_OPENSANS, typeface);
+	enum Font::TypefaceType typefaceType = font.getTypefaceType();
+	EXPECT_EQ(font.TYPEFACE_TYPE_OPENSANS, typefaceType);
 
 }
 
