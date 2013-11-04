@@ -95,7 +95,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
-	enum cmzn_graphicslineattributes_shape line_shape, int circleDivisions,
+	enum cmzn_graphicslineattributes_shape_type line_shape, int circleDivisions,
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,

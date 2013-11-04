@@ -694,7 +694,7 @@ int cmzn_scene_set_minimum_graphics_defaults(struct cmzn_scene *scene,
 		cmzn_tessellationmodule_id tessellationModule =
 			cmzn_graphics_module_get_tessellationmodule(scene->graphics_module);
 		cmzn_tessellation *tessellation =
-			((graphics_type == CMZN_GRAPHICS_POINTS) || (graphics_type == CMZN_GRAPHICS_STREAMLINES)) ?
+			((graphics_type == CMZN_GRAPHICS_TYPE_POINTS) || (graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)) ?
 			cmzn_tessellationmodule_get_default_points_tessellation(tessellationModule) :
 			cmzn_tessellationmodule_get_default_tessellation(tessellationModule);
 		cmzn_graphics_set_tessellation(graphics, tessellation);
@@ -752,7 +752,7 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 		cmzn_graphics_type graphics_type = cmzn_graphics_get_graphics_type(graphics);
 		cmzn_field_domain_type domain_type = cmzn_graphics_get_domain_type(graphics);
 
-		if ((graphics_type != CMZN_GRAPHICS_POINTS) || (domain_type != CMZN_FIELD_DOMAIN_POINT))
+		if ((graphics_type != CMZN_GRAPHICS_TYPE_POINTS) || (domain_type != CMZN_FIELD_DOMAIN_POINT))
 		{
 			cmzn_field_id coordinate_field = cmzn_scene_get_default_coordinate_field(scene);
 			if (!coordinate_field)
@@ -762,14 +762,14 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 		}
 
 		bool use_element_discretization = (0 != scene->element_divisions) &&
-			(graphics_type != CMZN_GRAPHICS_POINTS) && (graphics_type != CMZN_GRAPHICS_STREAMLINES);
+			(graphics_type != CMZN_GRAPHICS_TYPE_POINTS) && (graphics_type != CMZN_GRAPHICS_TYPE_STREAMLINES);
 		bool use_circle_discretization = (scene->circle_discretization >= 3) &&
-			(graphics_type == CMZN_GRAPHICS_LINES);
+			(graphics_type == CMZN_GRAPHICS_TYPE_LINES);
 		if (use_circle_discretization)
 		{
 			cmzn_graphicslineattributes_id lineAttr = cmzn_graphics_get_graphicslineattributes(graphics);
-			use_circle_discretization = (cmzn_graphicslineattributes_get_shape(lineAttr) ==
-				CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_CIRCLE_EXTRUSION);
+			use_circle_discretization = (cmzn_graphicslineattributes_get_shape_type(lineAttr) ==
+				CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION);
 			cmzn_graphicslineattributes_destroy(&lineAttr);
 		}
 		if (use_element_discretization || use_circle_discretization)
@@ -3192,31 +3192,31 @@ cmzn_graphics_id cmzn_scene_create_graphics(cmzn_scene_id scene,
 cmzn_graphics_id cmzn_scene_create_graphics_contours(
 	cmzn_scene_id scene)
 {
-	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_CONTOURS);
+	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_TYPE_CONTOURS);
 }
 
 cmzn_graphics_id cmzn_scene_create_graphics_lines(
 	cmzn_scene_id scene)
 {
-	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_LINES);
+	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_TYPE_LINES);
 }
 
 cmzn_graphics_id cmzn_scene_create_graphics_points(
 	cmzn_scene_id scene)
 {
-	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_POINTS);
+	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_TYPE_POINTS);
 }
 
 cmzn_graphics_id cmzn_scene_create_graphics_streamlines(
 	cmzn_scene_id scene)
 {
-	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_STREAMLINES);
+	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_TYPE_STREAMLINES);
 }
 
 cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
 	cmzn_scene_id scene)
 {
-	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_SURFACES);
+	return cmzn_scene_create_graphics(scene, CMZN_GRAPHICS_TYPE_SURFACES);
 }
 
 void cmzn_scene::addSelectionnotifier(cmzn_selectionnotifier *selectionnotifier)

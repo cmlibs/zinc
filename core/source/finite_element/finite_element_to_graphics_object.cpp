@@ -91,18 +91,18 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 	}
 	int return_code = 1;
 	int show_point = 1;
-	if (glyph_set_data->select_mode == CMZN_GRAPHICS_DRAW_SELECTED ||
-		glyph_set_data->select_mode == CMZN_GRAPHICS_DRAW_UNSELECTED)
+	if (glyph_set_data->select_mode == CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED ||
+		glyph_set_data->select_mode == CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED)
 	{
 		if (glyph_set_data->group_field &&
 			cmzn_field_evaluate_boolean(glyph_set_data->group_field, field_cache))
 		{
-			if (glyph_set_data->select_mode == CMZN_GRAPHICS_DRAW_UNSELECTED)
+			if (glyph_set_data->select_mode == CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED)
 			{
 				show_point = 0;
 			}
 		}
-		else if (glyph_set_data->select_mode == CMZN_GRAPHICS_DRAW_SELECTED)
+		else if (glyph_set_data->select_mode == CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED)
 		{
 			show_point = 0;
 		}
@@ -758,7 +758,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 				label_bounds_field = coordinate_field;
 			}
 		}
-		if (return_code && ((CMZN_GRAPHICS_DRAW_SELECTED!=select_mode) || group_field))
+		if (return_code && ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED!=select_mode) || group_field))
 		{
 			// allocate for all nodes, trim arrays for fields not defined
 			int number_of_points = cmzn_nodeset_get_size(nodeset);
@@ -806,7 +806,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 						label_bounds_bit_pattern[i] = 2 * label_bounds_bit_pattern[i - 1];
 					}
 				}
-				if (CMZN_GRAPHICS_NO_SELECT != select_mode)
+				if (CMZN_GRAPHICS_SELECT_MODE_OFF != select_mode)
 				{
 					ALLOCATE(names,int,number_of_points);
 				}
@@ -830,7 +830,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 				if (point_list && axis1_list && axis2_list && axis3_list && scale_list &&
 					((!n_data_components) || (data && data_values)) &&
 					((!label_field) || labels) &&
-					((CMZN_GRAPHICS_NO_SELECT==select_mode)||names))
+					((CMZN_GRAPHICS_SELECT_MODE_OFF==select_mode)||names))
 				{
 					Glyph_set_data glyph_set_data;
 					glyph_set_data.number_of_points = 0;
@@ -2418,13 +2418,13 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 		n_data_components = 0;
 		data = 0;
 		names = (int *)NULL;
-		if ((CMZN_GRAPHICS_SELECT_ON == select_mode) ||
-			(CMZN_GRAPHICS_NO_SELECT == select_mode) ||
-			((CMZN_GRAPHICS_DRAW_SELECTED == select_mode) && element_selected))
+		if ((CMZN_GRAPHICS_SELECT_MODE_ON == select_mode) ||
+			(CMZN_GRAPHICS_SELECT_MODE_OFF == select_mode) ||
+			((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == select_mode) && element_selected))
 		{
 			points_to_draw = number_of_xi_points;
 		}
-		else if ((CMZN_GRAPHICS_DRAW_UNSELECTED == select_mode) && element_selected)
+		else if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == select_mode) && element_selected)
 		{
 			points_to_draw = 0;
 		}
@@ -2449,7 +2449,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 					}
 				}
 			}
-			if (CMZN_GRAPHICS_DRAW_UNSELECTED == select_mode)
+			if (CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == select_mode)
 			{
 				points_to_draw = number_of_xi_points - points_to_draw;
 			}
@@ -2474,7 +2474,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 					}
 				}
 			}
-			if (CMZN_GRAPHICS_NO_SELECT != select_mode)
+			if (CMZN_GRAPHICS_SELECT_MODE_OFF != select_mode)
 			{
 				ALLOCATE(names,int,points_to_draw);
 			}
@@ -2489,7 +2489,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 				glyph_label_offset[i] = static_cast<GLfloat>(label_offset[i]);
 			}
 			if ((data || (!n_data_components)) && ((!label_field) || labels) &&
-				((CMZN_GRAPHICS_NO_SELECT == select_mode) || names) &&
+				((CMZN_GRAPHICS_SELECT_MODE_OFF == select_mode) || names) &&
 				ALLOCATE(point_list, Triple, points_to_draw) &&
 				ALLOCATE(axis1_list, Triple, points_to_draw) &&
 				ALLOCATE(axis2_list, Triple, points_to_draw) &&
@@ -2533,8 +2533,8 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 						}
 					}
 					if (draw_all ||
-						((CMZN_GRAPHICS_DRAW_SELECTED == select_mode) && point_selected) ||
-						((CMZN_GRAPHICS_DRAW_UNSELECTED == select_mode) && (!point_selected)))
+						((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == select_mode) && point_selected) ||
+						((CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == select_mode) && (!point_selected)))
 					{
 						xi[0] = xi_points[i][0];
 						xi[1] = xi_points[i][1];

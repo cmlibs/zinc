@@ -178,7 +178,8 @@ ZINC_API char *cmzn_graphics_render_polygon_mode_enum_to_string(
  * Get mode controlling how polygons in the graphics are rendered in GL.
  *
  * @param graphics  The graphics to query.
- * @return  The render mode, or MODE_INVALID if bad arguments.
+ * @return  The render polygon mode, or
+ * CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID if bad arguments.
  */
 ZINC_API enum cmzn_graphics_render_polygon_mode cmzn_graphics_get_render_polygon_mode(
 	cmzn_graphics_id graphics);
@@ -210,7 +211,7 @@ ZINC_API enum cmzn_graphics_select_mode cmzn_graphics_get_select_mode(
  * underlying object is selected, and also whether picking is enabled.
  * An object is selected if it is in the current selection_group for the scene
  * which owns the graphics.
- * The default select mode for new graphics is CMZN_GRAPHICS_SELECT_ON.
+ * The default select mode for new graphics is CMZN_GRAPHICS_SELECT_MODE_ON.
  *
  * @param graphics  The graphics to modify.
  * @param select_mode  A valid select mode for the graphics.
@@ -973,10 +974,10 @@ ZINC_API int cmzn_graphicslineattributes_set_scale_factors(
  * @see cmzn_graphicspointattributes_set_glyph_repeat_mode
  *
  * @param line_attributes  The line_attributes to query.
- * @return  The current shape.
+ * @return  The current shape type.
  */
-ZINC_API enum cmzn_graphicslineattributes_shape
-	cmzn_graphicslineattributes_get_shape(
+ZINC_API enum cmzn_graphicslineattributes_shape_type
+	cmzn_graphicslineattributes_get_shape_type(
 		cmzn_graphicslineattributes_id line_attributes);
 
 /**
@@ -984,15 +985,15 @@ ZINC_API enum cmzn_graphicslineattributes_shape
  * LINE, RIBBON, CIRCLE_EXTRUSION or SQUARE_EXTRUSION.
  * Note: only LINE and CIRCLE_EXTRUSION are supported for LINES type;
  * all shapes are supported for STREAMLINES.
- * @see cmzn_graphicslineattributes_shape
+ * @see cmzn_graphicslineattributes_shape_type
  *
  * @param line_attributes  The line_attributes to modify.
- * @param shape  The new shape.
+ * @param shape_type  The new shape type enumeration.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphicslineattributes_set_shape(
+ZINC_API int cmzn_graphicslineattributes_set_shape_type(
 	cmzn_graphicslineattributes_id line_attributes,
-	enum cmzn_graphicslineattributes_shape shape);
+	enum cmzn_graphicslineattributes_shape_type shape_type);
 
 /**
  * If the graphics produces points then returns a handle to point attribute

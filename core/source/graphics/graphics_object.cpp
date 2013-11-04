@@ -3695,7 +3695,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 		if (ALLOCATE(object, gtObject, 1) &&
 			(object->name = duplicate_string(name)))
 		{
-			object->select_mode=CMZN_GRAPHICS_NO_SELECT;
+			object->select_mode=CMZN_GRAPHICS_SELECT_MODE_OFF;
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
@@ -5992,7 +5992,7 @@ struct GT_voltex *GT_voltex_create_from_GT_surface(
 		{
 			n_texture_coordinates = 3;
 		}
-		GT_voltex_type voltex_type = (surface_list->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_SHADED) ?
+		GT_voltex_type voltex_type = (surface_list->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED) ?
 			g_VOLTEX_SHADED_TEXMAP : g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
 		voltex = CREATE(GT_voltex)(vertex_count, vertex_list,
 			triangle_count, triangle_list, n_data_components,
@@ -6128,7 +6128,7 @@ struct GT_surface *GT_surface_create_from_GT_voltex(
 				}
 			}
 			cmzn_graphics_render_polygon_mode render_polygon_mode = (voltex->voltex_type == g_VOLTEX_SHADED_TEXMAP) ?
-					CMZN_GRAPHICS_RENDER_POLYGON_SHADED : CMZN_GRAPHICS_RENDER_POLYGON_WIREFRAME;
+					CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED : CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME;
 			surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode, g_TRIANGLE,
 				/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
 				normalpoints, tangentpoints, texturepoints, n_data_components, datavalues);

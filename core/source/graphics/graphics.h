@@ -63,7 +63,7 @@ finite element group scene.
 	struct Computed_field *texture_coordinate_field;
 
 	/* line attributes */
-	enum cmzn_graphicslineattributes_shape line_shape;
+	enum cmzn_graphicslineattributes_shape_type line_shape;
 	FE_value line_base_size[2];
 	FE_value line_scale_factors[2];
 	cmzn_field_id line_orientation_scale_field;
@@ -341,7 +341,7 @@ int cmzn_graphics_selects_cad_primitives(struct cmzn_graphics *graphics);
 #endif /* defined (USE_OPENCASCADE) */
 
 /***************************************************************************//**
- *Returns the settings type of the <graphics>, eg. CMZN_GRAPHICS_LINES.
+ *Returns the settings type of the <graphics>, eg. CMZN_GRAPHICS_TYPE_LINES.
  */
 enum cmzn_graphics_type cmzn_graphics_get_graphics_type(
 	struct cmzn_graphics *graphics);

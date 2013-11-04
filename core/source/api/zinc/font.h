@@ -143,23 +143,23 @@ ZINC_API char *cmzn_font_get_name(cmzn_font_id font);
 ZINC_API int cmzn_font_set_name(cmzn_font_id font, const char *name);
 
 /**
- * Get the True Type typeface of the font.
+ * Get the True Type typeface type of the font.
  *
  * @param font  The font to query.
- * @return  The enumerated typeface value, or CMZN_FONT_TYPEFACE_INVALID on error.
+ * @return  The enumerated typeface type, or CMZN_FONT_TYPEFACE_TYPE_INVALID on error.
  */
-ZINC_API cmzn_font_typeface cmzn_font_get_typeface(cmzn_font_id font);
+ZINC_API cmzn_font_typeface_type cmzn_font_get_typeface_type(cmzn_font_id font);
 
 /**
- * Set the True Type typeface of the font.
+ * Set the True Type typeface type of the font.
  *
  * @param font  The font to modify.
- * @param typeface  The enumerator of the TrueType typeface to use for font.
+ * @param typeface_type  The enumerator of the TrueType typeface to use for font.
  * @return  status CMZN_OK if successfully set the true type for font,
  * any other value on failure.
  */
-ZINC_API int cmzn_font_set_typeface(cmzn_font_id font,
-	cmzn_font_typeface typeface);
+ZINC_API int cmzn_font_set_typeface_type(cmzn_font_id font,
+	cmzn_font_typeface_type typeface_type);
 
 /**
  * Get the render type of the given font.
@@ -234,23 +234,21 @@ ZINC_API bool cmzn_font_is_italic(cmzn_font_id font);
 ZINC_API int cmzn_font_set_italic(cmzn_font_id font, bool italic);
 
 /**
- * Get the size for extrude font type.
+ * Get the point size for the font.
  *
  * @param font  The handle to zinc graphics font.
- * @return  size of the font.
+ * @return  Point size of the font.
  */
-ZINC_API int cmzn_font_get_size(cmzn_font_id font);
+ZINC_API int cmzn_font_get_point_size(cmzn_font_id font);
 
 /**
- * Set the size for font type.
+ * Set the point size for font type.
  *
  * @param font  The handle to zinc graphics font.
- * @param size  size of the font to be set.
- * @return  status CMZN_OK if successfully set size for font,
- * any other value on failure.
+ * @param point_size  Point size of the font to be set, > 0.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_font_set_size(cmzn_font_id font, int size);
-
+ZINC_API int cmzn_font_set_point_size(cmzn_font_id font, int point_size);
 
 #ifdef __cplusplus
 }

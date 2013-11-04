@@ -1255,7 +1255,7 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 				(*normalpoint)[c] = 0.0;
 				normalpoint++;
 			}
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,CMZN_GRAPHICS_RENDER_POLYGON_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
 				g_QUADRILATERAL,6,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
 			{
@@ -1548,7 +1548,7 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 				(*point)[2] = 0.0;
 				point++;
 			}
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_SHADED,
+			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
 				g_QUADRILATERAL,1,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
 				texturepoints,g_NO_DATA,(GLfloat *)NULL)))
 			{

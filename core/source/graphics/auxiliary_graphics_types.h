@@ -95,7 +95,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_select_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_render_polygon_mode);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphicslineattributes_shape);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphicslineattributes_shape_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_track_direction);
 

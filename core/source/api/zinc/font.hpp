@@ -56,10 +56,10 @@ public:
 		RENDER_TYPE_EXTRUDE = CMZN_FONT_RENDER_TYPE_EXTRUDE
 	};
 
-	enum Typeface
+	enum TypefaceType
 	{
-		TYPEFACE_INVALID = CMZN_FONT_TYPEFACE_INVALID,
-		TYPEFACE_OPENSANS = CMZN_FONT_TYPEFACE_OPENSANS
+		TYPEFACE_TYPE_INVALID = CMZN_FONT_TYPEFACE_TYPE_INVALID,
+		TYPEFACE_TYPE_OPENSANS = CMZN_FONT_TYPEFACE_TYPE_OPENSANS
 	};
 
 	bool isValid()
@@ -112,14 +112,14 @@ public:
 		return cmzn_font_set_italic(id, italic);
 	}
 
-	int getSize()
+	int getPointSize()
 	{
-		return cmzn_font_get_size(id);
+		return cmzn_font_get_point_size(id);
 	}
 
-	int setSize(int size)
+	int setPointSize(int size)
 	{
-		return cmzn_font_set_size(id, size);
+		return cmzn_font_set_point_size(id, size);
 	}
 
 	enum RenderType getRenderType()
@@ -133,14 +133,14 @@ public:
 			static_cast<cmzn_font_render_type>(renderType));
 	}
 
-	Typeface getTypeface()
+	TypefaceType getTypefaceType()
 	{
-		return static_cast<Typeface>(cmzn_font_get_typeface(id));
+		return static_cast<TypefaceType>(cmzn_font_get_typeface_type(id));
 	}
 
-	int setTypeface(Typeface typeface)
+	int setTypefaceType(TypefaceType typefaceType)
 	{
-		return cmzn_font_set_typeface(id, static_cast<cmzn_font_typeface>(typeface));
+		return cmzn_font_set_typeface_type(id, static_cast<cmzn_font_typeface_type>(typefaceType));
 	}
 };
 
