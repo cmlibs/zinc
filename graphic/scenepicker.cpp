@@ -39,7 +39,7 @@ TEST(cmzn_scenepicker_api, valid_args)
 	EXPECT_NE(static_cast<cmzn_sceneviewermodule *>(0), svModule);
 
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svModule,
-		CMZN_SCENEVIEWER_BUFFERING_DOUBLE, CMZN_SCENEVIEWER_STEREO_ANY_MODE);
+		CMZN_SCENEVIEWER_BUFFERING_MODE_DOUBLE, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
 	EXPECT_NE(static_cast<cmzn_sceneviewer *>(0), sv);
 
 	int result = cmzn_sceneviewer_set_scene(sv, zinc.scene);
@@ -119,7 +119,7 @@ TEST(cmzn_scenepicker_api, valid_args_cpp)
 	EXPECT_TRUE(svModule.isValid());
 
 	Sceneviewer sv = svModule.createSceneviewer(
-		Sceneviewer::BUFFERING_DOUBLE, Sceneviewer::STEREO_ANY_MODE);
+		Sceneviewer::BUFFERING_MODE_DOUBLE, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv.isValid());
 
 	int result = sv.setScene(zinc.scene);
