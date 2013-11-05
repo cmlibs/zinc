@@ -191,7 +191,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
 			graphics->exterior = false;
-			graphics->face=CMZN_ELEMENT_FACE_ALL; /* any face */
+			graphics->face=CMZN_ELEMENT_FACE_TYPE_ALL; /* any face */
 
 			/* line attributes */
 			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE;
@@ -231,20 +231,20 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			switch (graphics_type)
 			{
 			case CMZN_GRAPHICS_TYPE_POINTS:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_POINT;
+				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_POINT;
 				break;
 			case CMZN_GRAPHICS_TYPE_LINES:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_MESH_1D;
+				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_MESH1D;
 				break;
 			case CMZN_GRAPHICS_TYPE_SURFACES:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_MESH_2D;
+				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_MESH2D;
 				break;
 			default:
-				graphics->domain_type = CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
+				graphics->domain_type = CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
 				break;
 			}
 			// for element sampling: element points, streamlines
-			graphics->sample_mode = CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES;
+			graphics->sampling_mode = CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES;
 			graphics->sample_density_field = 0;
 			for (int i = 0; i < 3; i++)
 			{
@@ -434,21 +434,21 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
 	{
 		switch (graphics->domain_type)
 		{
-		case CMZN_FIELD_DOMAIN_POINT:
-		case CMZN_FIELD_DOMAIN_NODES:
-		case CMZN_FIELD_DOMAIN_DATA:
+		case CMZN_FIELD_DOMAIN_TYPE_POINT:
+		case CMZN_FIELD_DOMAIN_TYPE_NODES:
+		case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
 			dimension = 0;
 			break;
-		case CMZN_FIELD_DOMAIN_MESH_1D:
+		case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
 			dimension = 1;
 			break;
-		case CMZN_FIELD_DOMAIN_MESH_2D:
+		case CMZN_FIELD_DOMAIN_TYPE_MESH2D:
 			dimension = 2;
 			break;
-		case CMZN_FIELD_DOMAIN_MESH_3D:
+		case CMZN_FIELD_DOMAIN_TYPE_MESH3D:
 			dimension = 3;
 			break;
-		case CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
+		case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
 			dimension = 3;
 			if (graphics->scene)
 			{
@@ -854,7 +854,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										graphics->sample_location[i];
 								}
 								if (FE_element_get_xi_points(element,
-									graphics->sample_mode, number_in_xi,
+									graphics->sampling_mode, number_in_xi,
 									element_point_ranges_identifier.exact_xi,
 									graphics_to_object_data->field_cache,
 									graphics_to_object_data->rc_coordinate_field,
@@ -864,8 +864,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									get_FE_element_identifier(element, &cm);
 									element_graphics_name = cm.number;
 									top_level_xi_point_numbers = (int *)NULL;
-									if (CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS ==
-										graphics->sample_mode)
+									if (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS ==
+										graphics->sampling_mode)
 									{
 										FE_element_convert_xi_points_cell_corners_to_top_level(
 											element, top_level_element, top_level_number_in_xi,
@@ -886,8 +886,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									element_point_ranges_identifier.element = use_element;
 									element_point_ranges_identifier.top_level_element=
 										top_level_element;
-									element_point_ranges_identifier.sample_mode =
-										graphics->sample_mode;
+									element_point_ranges_identifier.sampling_mode =
+										graphics->sampling_mode;
 									use_element_dimension = get_FE_element_dimension(use_element);
 									for (i = 0; i < use_element_dimension; i++)
 									{
@@ -958,7 +958,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 							initial_xi[i] =  element_point_ranges_identifier.exact_xi[i] = graphics->sample_location[i];
 						}
 						if (FE_element_get_xi_points(element,
-							graphics->sample_mode, number_in_xi,
+							graphics->sampling_mode, number_in_xi,
 							element_point_ranges_identifier.exact_xi,
 							graphics_to_object_data->field_cache,
 							graphics_to_object_data->rc_coordinate_field,
@@ -1635,22 +1635,20 @@ int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_element_face_type cmzn_graphics_get_face(cmzn_graphics_id graphics)
+enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_graphics_id graphics)
 {
 	if (graphics)
-	{
 		return graphics->face;
-	}
 	return CMZN_ELEMENT_FACE_TYPE_INVALID;
 }
 
-int cmzn_graphics_set_face(cmzn_graphics_id graphics, enum cmzn_element_face_type face)
+int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics, enum cmzn_element_face_type face_type)
 {
-	if (graphics && (face != CMZN_ELEMENT_FACE_TYPE_INVALID))
+	if (graphics && (face_type != CMZN_ELEMENT_FACE_TYPE_INVALID))
 	{
-		if (face != graphics->face)
+		if (face_type != graphics->face)
 		{
-			graphics->face = face;
+			graphics->face = face_type;
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;
@@ -1956,32 +1954,32 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			{
 				append_string(&graphics_string," exterior",&error);
 			}
-			if (CMZN_ELEMENT_FACE_ALL != graphics->face)
+			if (CMZN_ELEMENT_FACE_TYPE_ALL != graphics->face)
 			{
 				append_string(&graphics_string," face",&error);
 				switch (graphics->face)
 				{
-					case CMZN_ELEMENT_FACE_XI1_0:
+					case CMZN_ELEMENT_FACE_TYPE_XI1_0:
 					{
 						append_string(&graphics_string," xi1_0",&error);
 					} break;
-					case CMZN_ELEMENT_FACE_XI1_1:
+					case CMZN_ELEMENT_FACE_TYPE_XI1_1:
 					{
 						append_string(&graphics_string," xi1_1",&error);
 					} break;
-					case CMZN_ELEMENT_FACE_XI2_0:
+					case CMZN_ELEMENT_FACE_TYPE_XI2_0:
 					{
 						append_string(&graphics_string," xi2_0",&error);
 					} break;
-					case CMZN_ELEMENT_FACE_XI2_1:
+					case CMZN_ELEMENT_FACE_TYPE_XI2_1:
 					{
 						append_string(&graphics_string," xi2_1",&error);
 					} break;
-					case CMZN_ELEMENT_FACE_XI3_0:
+					case CMZN_ELEMENT_FACE_TYPE_XI3_0:
 					{
 						append_string(&graphics_string," xi3_0",&error);
 					} break;
-					case CMZN_ELEMENT_FACE_XI3_1:
+					case CMZN_ELEMENT_FACE_TYPE_XI3_1:
 					{
 						append_string(&graphics_string," xi3_1",&error);
 					} break;
@@ -2279,11 +2277,11 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)))
 		{
 			append_string(&graphics_string," ",&error);
-			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				graphics->sample_mode), &error);
-			if (CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION != graphics->sample_mode)
+			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_point_sampling_mode)(
+				graphics->sampling_mode), &error);
+			if (CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION != graphics->sampling_mode)
 			{
-				if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == graphics->sample_mode)
+				if (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == graphics->sampling_mode)
 				{
 					append_string(&graphics_string, " density ", &error);
 					if (graphics->sample_density_field)
@@ -2337,7 +2335,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		if ((domain_dimension > 0) && (
 			(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
 			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
-			(CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION == graphics->sample_mode))
+			(CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION == graphics->sampling_mode))
 		{
 			sprintf(temp_string," xi %g,%g,%g",
 				graphics->sample_location[0],graphics->sample_location[1],graphics->sample_location[2]);
@@ -2842,22 +2840,22 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 					SubObjectGroupHighlightFunctor *functor = 0;
 					switch (graphics->domain_type)
 					{
-						case CMZN_FIELD_DOMAIN_POINT:
+						case CMZN_FIELD_DOMAIN_TYPE_POINT:
 						{
 							// no functor
 						} break;
-						case CMZN_FIELD_DOMAIN_DATA:
-						case CMZN_FIELD_DOMAIN_NODES:
+						case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
+						case CMZN_FIELD_DOMAIN_TYPE_NODES:
 						{
 							cmzn_nodeset_id nodeset =
 								cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, graphics->domain_type);
 							functor = create_highlight_functor_nodeset(group_field, nodeset);
 							cmzn_nodeset_destroy(&nodeset);
 						} break;
-						case CMZN_FIELD_DOMAIN_MESH_1D:
-						case CMZN_FIELD_DOMAIN_MESH_2D:
-						case CMZN_FIELD_DOMAIN_MESH_3D:
-						case CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
+						case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
+						case CMZN_FIELD_DOMAIN_TYPE_MESH2D:
+						case CMZN_FIELD_DOMAIN_TYPE_MESH3D:
+						case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
 						{
 #if defined(USE_OPENCASCADE)
 							if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_SURFACES)
@@ -3026,7 +3024,7 @@ int cmzn_graphics_to_graphics_object(
 	struct cmzn_graphics_to_graphics_object_data *graphics_to_object_data =
 		reinterpret_cast<struct cmzn_graphics_to_graphics_object_data *>(graphics_to_object_data_void);
 	if (graphics && graphics_to_object_data &&
-		(((CMZN_FIELD_DOMAIN_DATA == graphics->domain_type) &&
+		(((CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == graphics->domain_type) &&
 			(fe_region = graphics_to_object_data->data_fe_region)) ||
 			(fe_region = graphics_to_object_data->fe_region)))
 	{
@@ -3043,7 +3041,7 @@ int cmzn_graphics_to_graphics_object(
 			{
 				Computed_field *coordinate_field = graphics->coordinate_field;
 				if (coordinate_field ||
-					(graphics->domain_type == CMZN_FIELD_DOMAIN_POINT))
+					(graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_POINT))
 				{
 					/* RC coordinate_field to pass to FE_element_to_graphics_object */
 					graphics_to_object_data->rc_coordinate_field = (cmzn_field_id)0;
@@ -3252,8 +3250,8 @@ int cmzn_graphics_to_graphics_object(
 							{
 								switch (graphics->domain_type)
 								{
-								case CMZN_FIELD_DOMAIN_NODES:
-								case CMZN_FIELD_DOMAIN_DATA:
+								case CMZN_FIELD_DOMAIN_TYPE_NODES:
+								case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
 								{
 									// all nodes are in a single GT_glyph_set, so rebuild all even if
 									// editing a single node or element
@@ -3331,7 +3329,7 @@ int cmzn_graphics_to_graphics_object(
 									}
 									cmzn_nodeset_destroy(&master_nodeset);
 								} break;
-								case CMZN_FIELD_DOMAIN_POINT:
+								case CMZN_FIELD_DOMAIN_TYPE_POINT:
 								{
 									cmzn_graphics_to_point_object_at_time(
 										graphics, graphics_to_object_data, /*graphics_object_primitive_time*/time);
@@ -3744,7 +3742,7 @@ static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
 		/* for graphics using a sampling density field only */
 		else if (((CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
 			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
-			(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == graphics->sample_mode) &&
+			(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == graphics->sampling_mode) &&
 			Computed_field_or_ancestor_satisfies_condition(
 				graphics->sample_density_field, conditional_function, user_data))
 		{
@@ -4085,7 +4083,7 @@ int cmzn_graphics_copy_without_graphics_object(
 		destination->overlay_order = source->overlay_order;
 
 		// for element sampling: element points, streamlines
-		destination->sample_mode=source->sample_mode;
+		destination->sampling_mode=source->sampling_mode;
 		REACCESS(Computed_field)(&(destination->sample_density_field),
 			source->sample_density_field);
 		for (int i = 0; i < 3; i++)
@@ -4251,8 +4249,8 @@ int cmzn_graphics_FE_region_change(
 	{
 		if (graphics->graphics_object)
 		{
-			// CMZN_FIELD_DOMAIN_DATA is handled by cmzn_graphics_data_FE_region_change
-			if (graphics->domain_type == CMZN_FIELD_DOMAIN_NODES)
+			// CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS is handled by cmzn_graphics_data_FE_region_change
+			if (graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_NODES)
 			{
 				/* must always rebuild if identifiers changed */
 				if ((data->fe_node_change_summary &
@@ -4351,7 +4349,7 @@ int cmzn_graphics_data_FE_region_change(
 	{
 		if (graphics->graphics_object)
 		{
-			if (graphics->domain_type == CMZN_FIELD_DOMAIN_DATA)
+			if (graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
 			{
 				// must ensure changes to fields on host elements/nodes force
 				// data_points to be rebuilt if using embedded fields referencing them:
@@ -4522,10 +4520,10 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 			(CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
 			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)))
 		{
-			return_code = (graphics->sample_mode == second_graphics->sample_mode) &&
-				((graphics->sample_mode != CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON) ||
+			return_code = (graphics->sampling_mode == second_graphics->sampling_mode) &&
+				((graphics->sampling_mode != CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON) ||
 					(graphics->sample_density_field == second_graphics->sample_density_field)) &&
-				((graphics->sample_mode != CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION) ||
+				((graphics->sampling_mode != CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION) ||
 					((graphics->sample_location[0] == second_graphics->sample_location[0]) &&
 					 (graphics->sample_location[1] == second_graphics->sample_location[1]) &&
 					 (graphics->sample_location[2] == second_graphics->sample_location[2])));
@@ -5720,7 +5718,7 @@ char *cmzn_graphics_render_polygon_mode_enum_to_string(
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
-enum cmzn_field_domain_type cmzn_graphics_get_domain_type(
+enum cmzn_field_domain_type cmzn_graphics_get_field_domain_type(
 	cmzn_graphics_id graphics)
 {
 	if (graphics)
@@ -5728,16 +5726,16 @@ enum cmzn_field_domain_type cmzn_graphics_get_domain_type(
 	return CMZN_FIELD_DOMAIN_TYPE_INVALID;
 }
 
-int cmzn_graphics_set_domain_type(cmzn_graphics_id graphics,
+int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 	enum cmzn_field_domain_type domain_type)
 {
 	if (graphics && (domain_type != CMZN_FIELD_DOMAIN_TYPE_INVALID) &&
 		(graphics->graphics_type != CMZN_GRAPHICS_TYPE_LINES) &&
 		(graphics->graphics_type != CMZN_GRAPHICS_TYPE_SURFACES) &&
 		((graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS) ||
-		 ((domain_type != CMZN_FIELD_DOMAIN_POINT) &&
-			(domain_type != CMZN_FIELD_DOMAIN_NODES) &&
-			(domain_type != CMZN_FIELD_DOMAIN_DATA))))
+		 ((domain_type != CMZN_FIELD_DOMAIN_TYPE_POINT) &&
+			(domain_type != CMZN_FIELD_DOMAIN_TYPE_NODES) &&
+			(domain_type != CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS))))
 	{
 		graphics->domain_type = domain_type;
 		if (domain_type != graphics->domain_type)
@@ -6865,25 +6863,25 @@ int cmzn_graphicssamplingattributes_set_location(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_element_point_sample_mode cmzn_graphicssamplingattributes_get_mode(
+enum cmzn_element_point_sampling_mode cmzn_graphicssamplingattributes_get_element_point_sampling_mode(
 	cmzn_graphicssamplingattributes_id sampling_attributes)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(sampling_attributes);
 	if (graphics)
-		return graphics->sample_mode;
-	return CMZN_ELEMENT_POINT_SAMPLE_MODE_INVALID;
+		return graphics->sampling_mode;
+	return CMZN_ELEMENT_POINT_SAMPLING_MODE_INVALID;
 }
 
-int cmzn_graphicssamplingattributes_set_mode(
+int cmzn_graphicssamplingattributes_set_element_point_sampling_mode(
 	cmzn_graphicssamplingattributes_id sampling_attributes,
-	enum cmzn_element_point_sample_mode sample_mode)
+	enum cmzn_element_point_sampling_mode sampling_mode)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(sampling_attributes);
-	if (graphics && (0 != ENUMERATOR_STRING(cmzn_element_point_sample_mode)(sample_mode)))
+	if (graphics && (0 != ENUMERATOR_STRING(cmzn_element_point_sampling_mode)(sampling_mode)))
 	{
-		if (sample_mode != graphics->sample_mode)
+		if (sampling_mode != graphics->sampling_mode)
 		{
-			graphics->sample_mode = sample_mode;
+			graphics->sampling_mode = sampling_mode;
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 		}
 		return CMZN_OK;

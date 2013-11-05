@@ -750,9 +750,9 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 	if (scene && graphics)
 	{
 		cmzn_graphics_type graphics_type = cmzn_graphics_get_graphics_type(graphics);
-		cmzn_field_domain_type domain_type = cmzn_graphics_get_domain_type(graphics);
+		cmzn_field_domain_type domain_type = cmzn_graphics_get_field_domain_type(graphics);
 
-		if ((graphics_type != CMZN_GRAPHICS_TYPE_POINTS) || (domain_type != CMZN_FIELD_DOMAIN_POINT))
+		if ((graphics_type != CMZN_GRAPHICS_TYPE_POINTS) || (domain_type != CMZN_FIELD_DOMAIN_TYPE_POINT))
 		{
 			cmzn_field_id coordinate_field = cmzn_scene_get_default_coordinate_field(scene);
 			if (!coordinate_field)
@@ -2867,7 +2867,7 @@ int cmzn_scene_change_selection_from_node_list(cmzn_scene_id scene,
 		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_group_id selection_group = cmzn_scene_get_or_create_selection_group(scene);
 		cmzn_nodeset_id temp_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(
-			field_module, use_data ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+			field_module, use_data ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(selection_group, temp_nodeset);
 		if (!node_group)
 			node_group = cmzn_field_group_create_node_group(selection_group, temp_nodeset);

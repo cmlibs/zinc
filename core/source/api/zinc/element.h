@@ -515,9 +515,9 @@ ZINC_API int cmzn_elementtemplate_destroy(
  * Gets the current element shape type set in the element_template.
  *
  * @param element_template  Element template to query.
- * @return  The shape set in the element template.
+ * @return  The element shape type enumeration set in the element template.
  */
-ZINC_API enum cmzn_element_shape_type cmzn_elementtemplate_get_shape_type(
+ZINC_API enum cmzn_element_shape_type cmzn_elementtemplate_get_element_shape_type(
 	cmzn_elementtemplate_id element_template);
 
 /**
@@ -531,11 +531,11 @@ ZINC_API enum cmzn_element_shape_type cmzn_elementtemplate_get_shape_type(
  * and merge into existing elements.
  *
  * @param element_template  Element template to modify.
- * @param shape_type  Enumerator of standard element shapes.
+ * @param shape_type  Enumeration of standard element shapes.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_elementtemplate_set_shape_type(cmzn_elementtemplate_id element_template,
-	enum cmzn_element_shape_type shape_type);
+ZINC_API int cmzn_elementtemplate_set_element_shape_type(
+	cmzn_elementtemplate_id element_template, enum cmzn_element_shape_type shape_type);
 
 /**
  * Gets the number of local nodes this element_template can address.

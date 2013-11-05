@@ -1,8 +1,9 @@
-/*****************************************************************************//**
+/**
  * FILE : computed_field_group.cpp
  * 
- * Implements a cmiss field which is an group for another field, commonly from a
- * different region to make it available locally.
+ * Implements a field for representing hierarchical groups, essentially a
+ * predicate function returning true for parts of domains considered in the group,
+ * and coordinating related subobject groups.
  *
  */
 /* OpenCMISS-Zinc Library

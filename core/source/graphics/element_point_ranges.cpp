@@ -59,51 +59,51 @@ Global functions
 ----------------
 */
 
-const char **cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges(
+const char **cmzn_element_point_sampling_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2001
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for valid
-cmzn_element_point_sample_modes that can be used for Element_point_ranges, obtained
+cmzn_element_point_sampling_modes that can be used for Element_point_ranges, obtained
 from function ENUMERATOR_STRING.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 {
 	const char **valid_strings;
 
-	ENTER(cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges);
+	ENTER(cmzn_element_point_sampling_mode_get_valid_strings_for_Element_point_ranges);
 	if (number_of_valid_strings)
 	{
 		*number_of_valid_strings=3;
 		if (ALLOCATE(valid_strings,const char *,*number_of_valid_strings))
 		{
-			valid_strings[0] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES);
-			valid_strings[1] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS);
-			valid_strings[2] = ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-				CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION);
+			valid_strings[0] = ENUMERATOR_STRING(cmzn_element_point_sampling_mode)(
+				CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES);
+			valid_strings[1] = ENUMERATOR_STRING(cmzn_element_point_sampling_mode)(
+				CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS);
+			valid_strings[2] = ENUMERATOR_STRING(cmzn_element_point_sampling_mode)(
+				CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges.  "
+				"cmzn_element_point_sampling_mode_get_valid_strings_for_Element_point_ranges.  "
 				"Not enough memory");
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges.  "
+			"cmzn_element_point_sampling_mode_get_valid_strings_for_Element_point_ranges.  "
 			"Invalid argument(s)");
 		valid_strings=(const char **)NULL;
 	}
 	LEAVE;
 
 	return (valid_strings);
-} /* cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges */
+} /* cmzn_element_point_sampling_mode_get_valid_strings_for_Element_point_ranges */
 
 int compare_Element_point_ranges_identifier(
 	struct Element_point_ranges_identifier *identifier1,
@@ -114,7 +114,7 @@ LAST MODIFIED : 8 June 2000
 DESCRIPTION :
 Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
 indexing lists of Element_point_ranges.
-First the elements are compared, then the cmzn_element_point_sample_mode, then the
+First the elements are compared, then the cmzn_element_point_sampling_mode, then the
 identifying values depending on this mode.
 ==============================================================================*/
 {
@@ -144,26 +144,24 @@ identifying values depending on this mode.
 			}
 			else
 			{
-				/* same elements; now compare sample_mode */
-				if (identifier1->sample_mode <
-					identifier2->sample_mode)
+				/* same elements; now compare sampling_mode */
+				if (identifier1->sampling_mode < identifier2->sampling_mode)
 				{
 					return_code = -1;
 				}
-				else if (identifier1->sample_mode >
-					identifier2->sample_mode)
+				else if (identifier1->sampling_mode > identifier2->sampling_mode)
 				{
 					return_code = 1;
 				}
 				else
 				{
-					/* same sample_mode; now compare identifying values
+					/* same sampling_mode; now compare identifying values
 						 depending on this mode */
 					dimension=get_FE_element_dimension(identifier1->element);
-					switch (identifier1->sample_mode)
+					switch (identifier1->sampling_mode)
 					{
-						case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
-						case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+						case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES:
+						case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS:
 						{
 							return_code=0;
 							for (i=0;!return_code&&(i<dimension);i++)
@@ -179,7 +177,7 @@ identifying values depending on this mode.
 								}
 							}
 						} break;
-						case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+						case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
 						{
 							return_code=0;
 							for (i=0;!return_code&&(i<dimension);i++)
@@ -198,7 +196,7 @@ identifying values depending on this mode.
 						{
 							display_message(ERROR_MESSAGE,
 								"compare_Element_point_ranges_identifier.  "
-								"Invalid cmzn_element_point_sample_mode");
+								"Invalid cmzn_element_point_sampling_mode");
 							/* error defaults to the same? */
 							return_code=0;
 						} break;
@@ -225,7 +223,7 @@ int Element_point_ranges_identifier_is_valid(
 LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
-Returns true if <identifier> has a valid element, cmzn_element_point_sample_mode and
+Returns true if <identifier> has a valid element, cmzn_element_point_sampling_mode and
 number_in_xi for being used in an Element_point_ranges structure.
 Writes what is invalid about the identifier.
 ==============================================================================*/
@@ -241,10 +239,10 @@ Writes what is invalid about the identifier.
 		{
 			return_code=1;
 			dimension=get_FE_element_dimension(identifier->element);
-			switch (identifier->sample_mode)
+			switch (identifier->sampling_mode)
 			{
-				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
-				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+				case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES:
+				case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS:
 				{
 					for (i=0;i<dimension;i++)
 					{
@@ -259,7 +257,7 @@ Writes what is invalid about the identifier.
 						}
 					}
 				} break;
-				case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+				case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
 				{
 					for (i=0;i<dimension;i++)
 					{
@@ -278,9 +276,9 @@ Writes what is invalid about the identifier.
 				{
 					display_message(ERROR_MESSAGE,
 						"Element_point_ranges_identifier_is_valid.  "
-						"Invalid cmzn_element_point_sample_mode: %s",
-						ENUMERATOR_STRING(cmzn_element_point_sample_mode)(
-							identifier->sample_mode));
+						"Invalid cmzn_element_point_sampling_mode: %s",
+						ENUMERATOR_STRING(cmzn_element_point_sampling_mode)(
+							identifier->sampling_mode));
 					return_code=0;
 				} break;
 			}
@@ -321,7 +319,7 @@ Element_point_ranges_identifier_is_valid.
 	{
 		return_code = ((0 <= element_point_number) &&
 			FE_element_get_xi_points(identifier->element,
-				identifier->sample_mode,
+				identifier->sampling_mode,
 				identifier->number_in_xi, identifier->exact_xi,
 				(cmzn_fieldcache_id)0,
 				/*coordinate_field*/(struct Computed_field *)NULL,
@@ -359,7 +357,7 @@ purely a copy. [DE]ACCESSing must be handled by calling function if required.
 	{
 		destination->element=source->element;
 		destination->top_level_element=source->top_level_element;
-		destination->sample_mode=source->sample_mode;
+		destination->sampling_mode=source->sampling_mode;
 		for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 		{
 			destination->number_in_xi[i]=source->number_in_xi[i];
@@ -402,11 +400,11 @@ top_level. Assumes <identifier> has been validated.
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMZN_ELEMENT_FACE_ALL, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,
-					identifier->sample_mode,
+					identifier->sampling_mode,
 					identifier->number_in_xi, identifier->exact_xi,
 					(cmzn_fieldcache_id)0,
 					/*coordinate_field*/(struct Computed_field *)NULL,
@@ -416,7 +414,7 @@ top_level. Assumes <identifier> has been validated.
 					get_FE_element_dimension(identifier->top_level_element)))
 			{
 				identifier->element=top_level_element;
-				identifier->sample_mode=CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION;
+				identifier->sampling_mode=CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION;
 				for (i=0;i<MAXIMUM_ELEMENT_XI_DIMENSIONS;i++)
 				{
 					identifier->number_in_xi[i]=1;
@@ -467,7 +465,7 @@ LAST MODIFIED : 8 June 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
-element:cmzn_element_point_sample_mode of the <identifier>.
+element:cmzn_element_point_sampling_mode of the <identifier>.
 ==============================================================================*/
 {
 	struct Element_point_ranges *element_point_ranges;
@@ -600,7 +598,7 @@ Adds the range from <start> to <stop> to the ranges in <element_point_ranges>.
 	{
 		/* check start/stop are within allowed ranges for identifier */
 		FE_element_get_xi_points(element_point_ranges->id.element,
-			element_point_ranges->id.sample_mode,
+			element_point_ranges->id.sampling_mode,
 			element_point_ranges->id.number_in_xi,
 			element_point_ranges->id.exact_xi,
 			(cmzn_fieldcache_id)0,
@@ -1079,7 +1077,7 @@ No Element_point_ranges object is returned without error if:
 				{
 					identifier.element=element;
 					identifier.top_level_element=element;
-					identifier.sample_mode=CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS;
+					identifier.sampling_mode=CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS;
 					get_FE_element_field_component_grid_map_number_in_xi(element,grid_field,
 						/*component_number*/0, identifier.number_in_xi);
 					/* set exact_xi to something reasonable, just in case it is used */
@@ -1214,8 +1212,8 @@ If field and element_point_ranges not identically grid-based, clear
 		native=0;
 		if (get_FE_element_identifier(element, &element_identifier) &&
 			(CM_ELEMENT == element_identifier.type) &&
-			(CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS ==
-				element_point_ranges->id.sample_mode)&&
+			(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS ==
+				element_point_ranges->id.sampling_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
 		{
 			return_code=get_FE_element_field_component_grid_map_number_in_xi(element,
@@ -1376,7 +1374,7 @@ If field and element_point_ranges not identically grid-based, clear
 	{
 		int number_of_components = cmzn_field_get_number_of_components(field);
 		if (FE_element_get_numbered_xi_point(
-				 source_element, source_identifier->sample_mode,
+				 source_element, source_identifier->sampling_mode,
 				 source_identifier->number_in_xi, source_identifier->exact_xi,
 				 (cmzn_fieldcache_id)0,
 				 /*coordinate_field*/(struct Computed_field *)NULL,
@@ -1399,7 +1397,7 @@ If field and element_point_ranges not identically grid-based, clear
 				{
 					set_grid_values_data->number_of_points++;
 					if (FE_element_get_numbered_xi_point(
-							 destination_element, destination_identifier->sample_mode,
+							 destination_element, destination_identifier->sampling_mode,
 							 destination_identifier->number_in_xi, destination_identifier->exact_xi,
 							 (cmzn_fieldcache_id)0,
 							 /*coordinate_field*/(struct Computed_field *)NULL,

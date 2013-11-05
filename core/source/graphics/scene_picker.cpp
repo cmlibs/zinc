@@ -200,9 +200,9 @@ Region_node_map cmzn_scenepicker::getPickedRegionSortedNodes(
 						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 				{
 					if (((type == CMZN_SCENEPICKER_OBJECT_DATA) &&
-							(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
+							(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == cmzn_graphics_get_field_domain_type(graphics))) ||
 						((type == CMZN_SCENEPICKER_OBJECT_NODE) &&
-							(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
+							(CMZN_FIELD_DOMAIN_TYPE_NODES == cmzn_graphics_get_field_domain_type(graphics))))
 					{
 						if (picked_scene)
 						{
@@ -214,7 +214,7 @@ Region_node_map cmzn_scenepicker::getPickedRegionSortedNodes(
 								if (nodeset)
 									cmzn_nodeset_destroy(&nodeset);
 								nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-									(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+									(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 								cmzn_fieldmodule_destroy(&field_module);
 							}
 							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset,
@@ -516,9 +516,9 @@ cmzn_node_id cmzn_scenepicker::getNearestNode(enum cmzn_scenepicker_object_type 
 						&picked_scene, &graphics) && (0 != picked_scene) && (0 != graphics)))
 					{
 						if (((type == CMZN_SCENEPICKER_OBJECT_DATA) &&
-								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
+								(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == cmzn_graphics_get_field_domain_type(graphics))) ||
 							((type == CMZN_SCENEPICKER_OBJECT_NODE) &&
-								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
+								(CMZN_FIELD_DOMAIN_TYPE_NODES == cmzn_graphics_get_field_domain_type(graphics))))
 						{
 							if (picked_scene)
 							{
@@ -530,7 +530,7 @@ cmzn_node_id cmzn_scenepicker::getNearestNode(enum cmzn_scenepicker_object_type 
 									if (nodeset)
 										cmzn_nodeset_destroy(&nodeset);
 									nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-										(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+										(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 									cmzn_fieldmodule_destroy(&field_module);
 								}
 								cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset,
@@ -593,9 +593,9 @@ cmzn_graphics_id cmzn_scenepicker::getNearestGraphics(enum cmzn_scenepicker_obje
 							((type == CMZN_SCENEPICKER_OBJECT_ELEMENT) &&
 								(cmzn_graphics_selects_elements(graphics))) ||
 							((type == CMZN_SCENEPICKER_OBJECT_DATA) &&
-								(CMZN_FIELD_DOMAIN_DATA == cmzn_graphics_get_domain_type(graphics))) ||
+								(CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == cmzn_graphics_get_field_domain_type(graphics))) ||
 							((type == CMZN_SCENEPICKER_OBJECT_NODE) &&
-								(CMZN_FIELD_DOMAIN_NODES == cmzn_graphics_get_domain_type(graphics))))
+								(CMZN_FIELD_DOMAIN_TYPE_NODES == cmzn_graphics_get_field_domain_type(graphics))))
 						{
 							current_nearest = nearest;
 							if (graphics != nearest_graphics)
@@ -734,7 +734,7 @@ int cmzn_scenepicker::addPickedNodesToGroup(cmzn_field_group_id group,
 					{
 						cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(sub_region);
 						cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-							(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+							(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 						if (master_nodeset)
 						{
 							cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(

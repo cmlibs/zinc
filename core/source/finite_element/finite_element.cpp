@@ -10676,29 +10676,29 @@ Up to the calling function to deallocate the returned char string.
 	return (return_code);
 } /* GET_NAME(FE_field_component) */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sample_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sampling_mode)
 {
 	switch (enumerator_value)
 	{
-		case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES:
 			return "cell_centres";
 			break;
-		case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS:
 			return "cell_corners";
 			break;
-		case CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON:
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON:
 			return "cell_poisson";
 			break;
-		case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
 			return "set_location";
 			break;
-		case CMZN_ELEMENT_POINT_SAMPLE_MODE_INVALID:
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_INVALID:
 			break;
 	}
 	return 0;
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_point_sample_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode)
 
 /** Important: check other enumerator functions work when adding new values.
  * They assume enums are powers of 2 */
@@ -10706,25 +10706,25 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_domain_type)
 {
 	switch (enumerator_value)
 	{
-	case CMZN_FIELD_DOMAIN_POINT:
+	case CMZN_FIELD_DOMAIN_TYPE_POINT:
 		return "domain_point";
 		break;
-	case CMZN_FIELD_DOMAIN_NODES:
+	case CMZN_FIELD_DOMAIN_TYPE_NODES:
 		return "domain_nodes";
 		break;
-	case CMZN_FIELD_DOMAIN_DATA:
+	case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
 		return "domain_datapoints";
 		break;
-	case CMZN_FIELD_DOMAIN_MESH_1D:
+	case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
 		return "domain_mesh1d";
 		break;
-	case CMZN_FIELD_DOMAIN_MESH_2D:
+	case CMZN_FIELD_DOMAIN_TYPE_MESH2D:
 		return "domain_mesh2d";
 		break;
-	case CMZN_FIELD_DOMAIN_MESH_3D:
+	case CMZN_FIELD_DOMAIN_TYPE_MESH3D:
 		return "domain_mesh3d";
 		break;
-	case CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION:
+	case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
 		return "domain_mesh_highest_dimension";
 		break;
 	case CMZN_FIELD_DOMAIN_TYPE_INVALID:
@@ -20443,14 +20443,14 @@ struct cmzn_element_shape_type_map
 
 const struct cmzn_element_shape_type_map standard_shape_type_maps[] =
 {
-	{ CMZN_ELEMENT_SHAPE_LINE,        1, { LINE_SHAPE, 0, 0, 0, 0, 0 } },
-	{ CMZN_ELEMENT_SHAPE_SQUARE,      2, { LINE_SHAPE, 0, LINE_SHAPE, 0, 0, 0 } },
-	{ CMZN_ELEMENT_SHAPE_TRIANGLE,    2, { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE, 0, 0, 0 } },
-	{ CMZN_ELEMENT_SHAPE_CUBE,        3, { LINE_SHAPE, 0, 0, LINE_SHAPE, 0, LINE_SHAPE } },
-	{ CMZN_ELEMENT_SHAPE_TETRAHEDRON, 3, { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } },
-	{ CMZN_ELEMENT_SHAPE_WEDGE12,     3, { SIMPLEX_SHAPE, 1, 0, SIMPLEX_SHAPE, 0, LINE_SHAPE } },
-	{ CMZN_ELEMENT_SHAPE_WEDGE13,     3, { SIMPLEX_SHAPE, 0, 1, LINE_SHAPE, 0, SIMPLEX_SHAPE } },
-	{ CMZN_ELEMENT_SHAPE_WEDGE23,     3, { LINE_SHAPE, 0, 0, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } }
+	{ CMZN_ELEMENT_SHAPE_TYPE_LINE,        1, { LINE_SHAPE, 0, 0, 0, 0, 0 } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_SQUARE,      2, { LINE_SHAPE, 0, LINE_SHAPE, 0, 0, 0 } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE,    2, { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE, 0, 0, 0 } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_CUBE,        3, { LINE_SHAPE, 0, 0, LINE_SHAPE, 0, LINE_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON, 3, { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_WEDGE12,     3, { SIMPLEX_SHAPE, 1, 0, SIMPLEX_SHAPE, 0, LINE_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_WEDGE13,     3, { SIMPLEX_SHAPE, 0, 1, LINE_SHAPE, 0, SIMPLEX_SHAPE } },
+	{ CMZN_ELEMENT_SHAPE_TYPE_WEDGE23,     3, { LINE_SHAPE, 0, 0, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE } }
 };
 
 const int standard_shape_type_maps_length = sizeof(standard_shape_type_maps) / sizeof(struct cmzn_element_shape_type_map);
@@ -21322,7 +21322,7 @@ struct FE_element *FE_element_get_parent_on_face(
 	struct FE_element *element, cmzn_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
 {
-	int face_number = static_cast<int>(face) - CMZN_ELEMENT_FACE_XI1_0;
+	int face_number = static_cast<int>(face) - CMZN_ELEMENT_FACE_TYPE_XI1_0;
 	if (element && (0 <= face_number))
 	{
 		int i, j;
@@ -22216,7 +22216,7 @@ int FE_element_meets_topological_criteria(struct FE_element *element,
 						}
 					}
 					/* test for on correct face */
-					if (return_code && (CMZN_ELEMENT_FACE_XI1_0 <= face))
+					if (return_code && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= face))
 					{
 						if (NULL == FE_element_get_parent_on_face(
 							element, face, conditional, conditional_data))
@@ -28250,7 +28250,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			}
 			if (!parent)
 			{
-				if (CMZN_ELEMENT_FACE_XI1_0 <= specified_face)
+				if (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= specified_face)
 				{
 					parent = FE_element_get_parent_on_face(
 						element, specified_face, conditional, conditional_data);
@@ -28398,7 +28398,7 @@ is checked and the <top_level_xi> calculated.
 			if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
 				element,*top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMZN_ELEMENT_FACE_ALL, element_to_top_level)))
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
 				*top_level_element_dimension = (*top_level_element)->shape->dimension;

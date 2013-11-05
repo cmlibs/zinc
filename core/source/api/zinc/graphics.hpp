@@ -259,14 +259,14 @@ public:
 			static_cast<cmzn_scene_coordinate_system>(coordinateSystem));
 	}
 
-	Field::DomainType getDomainType()
+	Field::DomainType getFieldDomainType()
 	{
-		return static_cast<Field::DomainType>(cmzn_graphics_get_domain_type(id));
+		return static_cast<Field::DomainType>(cmzn_graphics_get_field_domain_type(id));
 	}
 
-	int setDomainType(Field::DomainType domainType)
+	int setFieldDomainType(Field::DomainType domainType)
 	{
-		return cmzn_graphics_set_domain_type(id, static_cast<cmzn_field_domain_type>(domainType));
+		return cmzn_graphics_set_field_domain_type(id, static_cast<cmzn_field_domain_type>(domainType));
 	}
 
 	char *getName()
@@ -279,14 +279,14 @@ public:
 		return cmzn_graphics_set_name(id, name);
 	}
 
-	int setFace(Element::FaceType face)
+	int setElementFaceType(Element::FaceType faceType)
 	{
-		return cmzn_graphics_set_face(id, static_cast<cmzn_element_face_type>(face));
+		return cmzn_graphics_set_element_face_type(id, static_cast<cmzn_element_face_type>(faceType));
 	}
 
-	Element::FaceType getFace()
+	Element::FaceType getElementFaceType()
 	{
-		return static_cast<Element::FaceType>(cmzn_graphics_get_face(id));
+		return static_cast<Element::FaceType>(cmzn_graphics_get_element_face_type(id));
 	}
 
 	bool isExterior()
@@ -760,15 +760,15 @@ public:
 		return cmzn_graphicssamplingattributes_set_location(id, valuesCount, valuesIn);
 	}
 
-	Element::PointSampleMode getMode()
+	Element::PointSamplingMode getElementPointSamplingMode()
 	{
-		return static_cast<Element::PointSampleMode>(cmzn_graphicssamplingattributes_get_mode(id));
+		return static_cast<Element::PointSamplingMode>(cmzn_graphicssamplingattributes_get_element_point_sampling_mode(id));
 	}
 
-	int setMode(Element::PointSampleMode sampleMode)
+	int setElementPointSamplingMode(Element::PointSamplingMode samplingMode)
 	{
-		return cmzn_graphicssamplingattributes_set_mode(id,
-			static_cast<cmzn_element_point_sample_mode>(sampleMode));
+		return cmzn_graphicssamplingattributes_set_element_point_sampling_mode(id,
+			static_cast<cmzn_element_point_sampling_mode>(samplingMode));
 	}
 
 };

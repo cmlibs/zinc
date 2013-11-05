@@ -92,18 +92,18 @@ public:
 			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	int getResourceDomainType(Streamresource resource)
+	Field::DomainTypes getResourceDomainTypes(Streamresource resource)
 	{
-		return static_cast<int>(
-			cmzn_streaminformation_region_get_resource_domain_type(
+		return static_cast<Field::DomainTypes>(
+			cmzn_streaminformation_region_get_resource_domain_types(
 				reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId()));
 	}
 
-	int setResourceDomainType(Streamresource resource, int domainType)
+	int setResourceDomainTypes(Streamresource resource, Field::DomainTypes domainTypes)
 	{
-		return cmzn_streaminformation_region_set_resource_domain_type(
+		return cmzn_streaminformation_region_set_resource_domain_types(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
-			domainType);
+			static_cast<cmzn_field_domain_types>(domainTypes));
 	}
 
 };

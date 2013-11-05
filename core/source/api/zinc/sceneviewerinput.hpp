@@ -51,7 +51,11 @@ public:
 		MODIFIER_FLAG_BUTTON1 = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_BUTTON1
 	};
 
-	typedef ModifierFlag ModifierFlags;
+	/**
+	 * Type for passing logical OR of #ModifierFlag
+	 * @see setModifierFlags
+	 */
+	typedef int ModifierFlags;
 
 	Sceneviewerinput() : id(0)
 	{  }

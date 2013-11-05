@@ -411,7 +411,7 @@ public:
 
 	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (!isInverse() == (domain_type == cmzn_graphics_get_domain_type(graphics)));
+		return (!isInverse() == (domain_type == cmzn_graphics_get_field_domain_type(graphics)));
 	}
 
 	virtual void list_type_specific() const

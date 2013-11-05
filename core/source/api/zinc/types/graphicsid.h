@@ -126,7 +126,7 @@ enum cmzn_graphicslineattributes_shape_type
 
 /**
  * A handle to graphics attributes specifying how points are sampled in elements,
- * including sample mode, density, etc.
+ * including sampling mode, density, etc.
  */
 struct cmzn_graphicssamplingattributes;
 typedef struct cmzn_graphicssamplingattributes * cmzn_graphicssamplingattributes_id;

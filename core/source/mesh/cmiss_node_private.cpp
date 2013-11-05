@@ -879,11 +879,11 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_domain_type(
 	{
 		cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 		FE_region *fe_region = 0;
-		if (CMZN_FIELD_DOMAIN_NODES == domain_type)
+		if (CMZN_FIELD_DOMAIN_TYPE_NODES == domain_type)
 		{
 			fe_region = cmzn_region_get_FE_region(region);
 		}
-		else if (CMZN_FIELD_DOMAIN_DATA == domain_type)
+		else if (CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == domain_type)
 		{
 			fe_region = FE_region_get_data_FE_region(cmzn_region_get_FE_region(region));
 		}
@@ -916,11 +916,11 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
 		{
 			if (0 == strcmp(nodeset_name, "nodes"))
 			{
-				nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
+				nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			}
 			else if (0 == strcmp(nodeset_name, "datapoints"))
 			{
-				nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_DATA);
+				nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 			}
 		}
 	}
