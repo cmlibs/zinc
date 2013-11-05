@@ -28,7 +28,7 @@ class GraphicsTestCase(unittest.TestCase):
     def testGraphicsCreation(self):
         graphics = self.scene.createGraphicsPoints()
         self.assertTrue(graphics.isValid())
-        result = graphics.setDomainType(Field.DOMAIN_NODES)
+        result = graphics.setFieldDomainType(Field.DOMAIN_TYPE_NODES)
         self.assertEqual(status.OK, result)
         attributes = graphics.getGraphicspointattributes()
         self.assertTrue(attributes.isValid())
