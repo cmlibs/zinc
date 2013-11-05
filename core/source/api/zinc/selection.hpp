@@ -43,7 +43,7 @@ public:
 		CHANGE_FLAG_FINAL = CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL
 	};
 
-	typedef cmzn_selectionevent_change_flags ChangeFlags;
+	typedef ChangeFlag ChangeFlags;
 
 	Selectionevent& operator=(const Selectionevent& selectionEvent)
 	{
@@ -76,7 +76,7 @@ public:
 
 	ChangeFlags getChangeFlags() const
 	{
-		return cmzn_selectionevent_get_change_flags(id);
+		return static_cast<ChangeFlag>(cmzn_selectionevent_get_change_flags(id));
 	}
 
 };
