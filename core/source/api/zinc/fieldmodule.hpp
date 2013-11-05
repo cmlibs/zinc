@@ -369,10 +369,10 @@ public:
 	FieldNormalise createFieldNormalise(Field& sourceField);
 
 	FieldImagefilterBinaryDilate createFieldImagefilterBinaryDilate(Field& sourceField,
-		int radius, double erode_value);
+		int radius, double dilate_value);
 
 	FieldImagefilterBinaryErode createFieldImagefilterBinaryErode(Field& sourceField,
-		int radius, double dilate_value);
+		int radius, double erode_value);
 
 	FieldImagefilterBinaryThreshold createFieldImagefilterBinaryThreshold(Field& sourceField);
 

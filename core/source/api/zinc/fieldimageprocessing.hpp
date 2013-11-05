@@ -344,20 +344,20 @@ public:
 
 inline FieldImagefilterBinaryDilate
 	Fieldmodule::createFieldImagefilterBinaryDilate(Field& sourceField,
-		int radius, double erode_value)
+		int radius, double dilate_value)
 {
 	return FieldImagefilterBinaryDilate(
 		cmzn_fieldmodule_create_field_imagefilter_binary_dilate(id, sourceField.getId(),
-			radius, erode_value));
+			radius, dilate_value));
 }
 
 inline FieldImagefilterBinaryErode
 	Fieldmodule::createFieldImagefilterBinaryErode(Field& sourceField,
-		int radius, double dilate_value)
+		int radius, double erode_value)
 {
 	return FieldImagefilterBinaryErode(
 		cmzn_fieldmodule_create_field_imagefilter_binary_erode(id, sourceField.getId(),
-			radius, dilate_value));
+			radius, erode_value));
 }
 
 inline FieldImagefilterBinaryThreshold
