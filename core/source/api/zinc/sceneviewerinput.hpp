@@ -51,7 +51,7 @@ public:
 		MODIFIER_FLAG_BUTTON1 = CMZN_SCENEVIEWERINPUT_MODIFIER_FLAG_BUTTON1
 	};
 
-	typedef cmzn_sceneviewerinput_modifier_flags ModifierFlags;
+	typedef ModifierFlag ModifierFlags;
 
 	Sceneviewerinput() : id(0)
 	{  }
