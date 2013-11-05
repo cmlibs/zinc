@@ -25,7 +25,7 @@ TEST(cmzn_graphics_api, set_use_element_type)
 	cmzn_graphics_id gr = cmzn_scene_create_graphics_contours(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	int result = cmzn_graphics_set_domain_type(gr, CMZN_FIELD_DOMAIN_MESH_2D);
+	int result = cmzn_graphics_set_field_domain_type(gr, CMZN_FIELD_DOMAIN_TYPE_MESH2D);
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_graphics_destroy(&gr);
@@ -66,10 +66,10 @@ TEST(cmzn_graphics_api, face)
 	cmzn_graphics_id gr = cmzn_scene_create_graphics_lines(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_ELEMENT_FACE_ALL, cmzn_graphics_get_face(gr));
-	int result = cmzn_graphics_set_face(gr, CMZN_ELEMENT_FACE_XI2_0);
+	EXPECT_EQ(CMZN_ELEMENT_FACE_TYPE_ALL, cmzn_graphics_get_element_face_type(gr));
+	int result = cmzn_graphics_set_element_face_type(gr, CMZN_ELEMENT_FACE_TYPE_XI2_0);
 	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_EQ(CMZN_ELEMENT_FACE_XI2_0, cmzn_graphics_get_face(gr));
+	EXPECT_EQ(CMZN_ELEMENT_FACE_TYPE_XI2_0, cmzn_graphics_get_element_face_type(gr));
 
 	cmzn_graphics_destroy(&gr);
 }
@@ -86,7 +86,7 @@ TEST(cmzn_graphics_api, coordinate_field)
 	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_domain_type(gr, CMZN_FIELD_DOMAIN_NODES));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_field_domain_type(gr, CMZN_FIELD_DOMAIN_TYPE_NODES));
 
 	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_field(gr, coordinate_field));
 
@@ -470,7 +470,7 @@ TEST(cmzn_graphics_api, subgroup_field)
 
 	cmzn_graphics_id gr = cmzn_scene_create_graphics_points(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
-	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_domain_type(gr, CMZN_FIELD_DOMAIN_NODES));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_field_domain_type(gr, CMZN_FIELD_DOMAIN_TYPE_NODES));
 
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphics_get_subgroup_field(gr));
 
@@ -505,7 +505,7 @@ TEST(cmzn_graphics_api, subgroup_field_cpp)
 
 	GraphicsPoints gr = zinc.scene.createGraphicsPoints();
 	EXPECT_TRUE(gr.isValid());
-	EXPECT_EQ(OK, gr.setDomainType(Field::DOMAIN_NODES));
+	EXPECT_EQ(OK, gr.setFieldDomainType(Field::DOMAIN_TYPE_NODES));
 
 	Field tempSubgroupField = gr.getSubgroupField();
 	EXPECT_FALSE(tempSubgroupField.isValid());
@@ -1209,9 +1209,9 @@ TEST(cmzn_graphics_api, sampling_attributes)
 	cmzn_graphicssamplingattributes_id sampling = cmzn_graphics_get_graphicssamplingattributes(gr);
 	EXPECT_NE(static_cast<cmzn_graphicssamplingattributes *>(0), sampling);
 
-	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES, cmzn_graphicssamplingattributes_get_mode(sampling));
-	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_mode(sampling, CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON));
-	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON, cmzn_graphicssamplingattributes_get_mode(sampling));
+	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES, cmzn_graphicssamplingattributes_get_element_point_sampling_mode(sampling));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_element_point_sampling_mode(sampling, CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON));
+	EXPECT_EQ(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON, cmzn_graphicssamplingattributes_get_element_point_sampling_mode(sampling));
 
 	double value = 1.0;
 	cmzn_field_id density_field = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value);
@@ -1227,7 +1227,7 @@ TEST(cmzn_graphics_api, sampling_attributes)
 	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_density_field(sampling, static_cast<cmzn_field_id>(0)));
 	EXPECT_EQ(static_cast<cmzn_field *>(0), cmzn_graphicssamplingattributes_get_density_field(sampling));
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_mode(sampling, CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicssamplingattributes_set_element_point_sampling_mode(sampling, CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION));
 
 	const double values[] = { 0.5, 0.20, 0.8 };
 	double outputValues[3];
@@ -1260,9 +1260,9 @@ TEST(cmzn_graphics_api, sampling_attributes_cpp)
 	Graphicsamplingattributes sampling = gr.getGraphicsamplingattributes();
 	EXPECT_TRUE(sampling.isValid());
 
-	EXPECT_EQ(Element::POINT_SAMPLE_CELL_CENTRES, sampling.getMode());
-	EXPECT_EQ(OK, sampling.setMode(Element::POINT_SAMPLE_CELL_POISSON));
-	EXPECT_EQ(Element::POINT_SAMPLE_CELL_POISSON, sampling.getMode());
+	EXPECT_EQ(Element::POINT_SAMPLING_MODE_CELL_CENTRES, sampling.getElementPointSamplingMode());
+	EXPECT_EQ(OK, sampling.setElementPointSamplingMode(Element::POINT_SAMPLING_MODE_CELL_POISSON));
+	EXPECT_EQ(Element::POINT_SAMPLING_MODE_CELL_POISSON, sampling.getElementPointSamplingMode());
 
 	double value = 1.0;
 	Field densityField = zinc.fm.createFieldConstant(1, &value);
@@ -1279,7 +1279,7 @@ TEST(cmzn_graphics_api, sampling_attributes_cpp)
 	tempField = sampling.getDensityField();
 	EXPECT_FALSE(tempField.isValid());
 
-	EXPECT_EQ(OK, sampling.setMode(Element::POINT_SAMPLE_SET_LOCATION));
+	EXPECT_EQ(OK, sampling.setElementPointSamplingMode(Element::POINT_SAMPLING_MODE_SET_LOCATION));
 
 	const double values[] = { 0.5, 0.20, 0.8 };
 	double outputValues[3];

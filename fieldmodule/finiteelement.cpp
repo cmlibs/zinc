@@ -57,7 +57,7 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_STREQ("y", componentName);
 	cmzn_deallocate(componentName);
 
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
 	EXPECT_NE(static_cast<cmzn_nodetemplate_id>(0), nodetemplate);
@@ -88,10 +88,10 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_NE(static_cast<cmzn_mesh_id>(0), mesh);
 	cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
 	EXPECT_NE(static_cast<cmzn_elementtemplate_id>(0), elementtemplate);
-	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_set_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_SQUARE));
+	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_SQUARE));
 	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_set_number_of_nodes(elementtemplate, 4));
 
-	cmzn_elementbasis_id basis = cmzn_fieldmodule_create_elementbasis(zinc.fm, 2, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE);
+	cmzn_elementbasis_id basis = cmzn_fieldmodule_create_elementbasis(zinc.fm, 2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
 	EXPECT_NE(static_cast<cmzn_elementbasis_id>(0), basis);
 	int localNodeIndexes[4] = { 1, 2, 3, 4 };
 	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_define_field_simple_nodal(
@@ -161,7 +161,7 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_STREQ("y", componentName);
 	cmzn_deallocate(componentName);
 
-	Nodeset nodeset = zinc.fm.findNodesetByDomainType(Field::DOMAIN_NODES);
+	Nodeset nodeset = zinc.fm.findNodesetByDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 	Nodetemplate nodetemplate = nodeset.createNodetemplate();
 	EXPECT_TRUE(nodetemplate.isValid());
@@ -189,10 +189,10 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_TRUE(mesh.isValid());
 	Elementtemplate elementtemplate = mesh.createElementtemplate();
 	EXPECT_TRUE(elementtemplate.isValid());
-	EXPECT_EQ(CMZN_OK, result = elementtemplate.setShapeType(Element::SHAPE_SQUARE));
+	EXPECT_EQ(CMZN_OK, result = elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
 	EXPECT_EQ(CMZN_OK, result = elementtemplate.setNumberOfNodes(4));
 
-	Elementbasis basis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_LINEAR_LAGRANGE);
+	Elementbasis basis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
 	EXPECT_TRUE(basis.isValid());
 	int localNodeIndexes[4] = { 1, 2, 3, 4 };
 	EXPECT_EQ(CMZN_OK, result = elementtemplate.defineFieldSimpleNodal(

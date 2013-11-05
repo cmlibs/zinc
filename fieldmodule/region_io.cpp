@@ -78,7 +78,7 @@ TEST(issue3614, read_embedded_nodes)
 
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1003);
 	EXPECT_NE(static_cast<cmzn_node_id>(0), node);
@@ -148,8 +148,8 @@ TEST(exdata_and_exnodes_file, invalid_args)
 		data_si);
 	EXPECT_NE(static_cast<cmzn_streaminformation_region *>(0), data_region_si);
 
-	cmzn_streaminformation_region_set_resource_domain_type(data_region_si,
-		data_sr,	CMZN_FIELD_DOMAIN_DATA);
+	cmzn_streaminformation_region_set_resource_domain_types(data_region_si,
+		data_sr, CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), data_sr);
 
@@ -275,8 +275,8 @@ TEST(element_dimension_file, invalid_args)
 		output_si);
 	EXPECT_NE(static_cast<cmzn_streaminformation_region *>(0), output_region_si);
 
-	cmzn_streaminformation_region_set_resource_domain_type(output_region_si,
-		output_sr,	CMZN_FIELD_DOMAIN_MESH_1D|CMZN_FIELD_DOMAIN_MESH_2D);
+	cmzn_streaminformation_region_set_resource_domain_types(output_region_si,
+		output_sr, CMZN_FIELD_DOMAIN_TYPE_MESH1D|CMZN_FIELD_DOMAIN_TYPE_MESH2D);
 
 	result = cmzn_region_write(cube_region, output_region_si);
 	EXPECT_EQ(CMZN_OK, result);

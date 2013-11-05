@@ -34,7 +34,7 @@ void selectionCallback(cmzn_selectionevent_id selectionevent,
 void addSomeNodes(cmzn_fieldmodule_id fm)
 {
 	cmzn_fieldmodule_begin_change(fm);
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
 	EXPECT_NE(static_cast<cmzn_nodetemplate_id>(0), nodetemplate);
@@ -84,7 +84,7 @@ TEST(cmzn_selectionnotifier, changeCallback)
 
 	addSomeNodes(zinc.fm);
 
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	cmzn_field_node_group_id nodeGroup = cmzn_field_group_create_node_group(group, nodeset);
 	cmzn_nodeset_group_id nodesetGroup = cmzn_field_node_group_get_nodeset(nodeGroup);
 	cmzn_node_id node1 = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
