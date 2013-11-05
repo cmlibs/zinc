@@ -49,10 +49,10 @@ ZINC_API char *cmzn_node_value_type_enum_to_string(enum cmzn_node_value_type typ
 
 /**
  * Get a handle to a nodeset by its domain type, either
- * CMZN_FIELD_DOMAIN_NODES or CMZN_FIELD_DOMAIN_DATA.
+ * CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
  *
  * @param field_module  The field module the nodeset belongs to.
- * @param domain_type  CMZN_FIELD_DOMAIN_NODES or CMZN_FIELD_DOMAIN_DATA.
+ * @param domain_type  CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
  * @return  Handle to the nodeset, or 0 if error.
  */
 ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_domain_type(

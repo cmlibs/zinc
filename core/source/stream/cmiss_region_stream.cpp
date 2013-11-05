@@ -128,9 +128,9 @@ int cmzn_region_read(cmzn_region_id region,
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int readData = 0;
-				int domain_type = cmzn_streaminformation_region_get_resource_domain_type(
+				int domain_type = cmzn_streaminformation_region_get_resource_domain_types(
 					streaminformation_region, stream);
-				if ((domain_type & CMZN_FIELD_DOMAIN_DATA) && (!(domain_type & CMZN_FIELD_DOMAIN_NODES)))
+				if ((domain_type & CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS) && (!(domain_type & CMZN_FIELD_DOMAIN_TYPE_NODES)))
 				{
 					readData = 1;
 				}
@@ -244,40 +244,40 @@ int cmzn_region_write(cmzn_region_id region,
 				void *memory_block = NULL;
 				unsigned int buffer_size = 0;
 				int writeElements = 0, writeData = 0, writeNodes = 0;
-				int domain_type =	cmzn_streaminformation_region_get_resource_domain_type(
+				int domain_type =	cmzn_streaminformation_region_get_resource_domain_types(
 					streaminformation_region, stream);
 				if (domain_type == CMZN_FIELD_DOMAIN_TYPE_INVALID)
 				{
-					writeElements = CMZN_FIELD_DOMAIN_MESH_1D|CMZN_FIELD_DOMAIN_MESH_2D|
-						CMZN_FIELD_DOMAIN_MESH_3D|CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
+					writeElements = CMZN_FIELD_DOMAIN_TYPE_MESH1D|CMZN_FIELD_DOMAIN_TYPE_MESH2D|
+						CMZN_FIELD_DOMAIN_TYPE_MESH3D|CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
 					writeData = 1;
 					writeNodes = 1;
 				}
 				else
 				{
-					if (domain_type & CMZN_FIELD_DOMAIN_NODES)
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_NODES)
 					{
 						writeNodes = 1;
 					}
-					if (domain_type & CMZN_FIELD_DOMAIN_DATA)
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
 					{
 						writeData = 1;
 					}
-					if (domain_type & CMZN_FIELD_DOMAIN_MESH_1D)
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH1D)
 					{
-						writeElements = CMZN_FIELD_DOMAIN_MESH_1D;
+						writeElements = CMZN_FIELD_DOMAIN_TYPE_MESH1D;
 					}
-					if (domain_type & CMZN_FIELD_DOMAIN_MESH_2D)
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH2D)
 					{
-						writeElements |= CMZN_FIELD_DOMAIN_MESH_2D;
+						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH2D;
 					}
-					if (domain_type & CMZN_FIELD_DOMAIN_MESH_3D)
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH3D)
 					{
-						writeElements |= CMZN_FIELD_DOMAIN_MESH_3D;
+						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH3D;
 					}
-					if (domain_type & CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION)
+					if (domain_type & CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION)
 					{
-						writeElements |= CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION;
+						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
 					}
 				}
 				if (file_resource)
@@ -522,7 +522,7 @@ int cmzn_streaminformation_region_set_resource_attribute_real(
 	return return_code;
 }
 
-int cmzn_streaminformation_region_get_resource_domain_type(
+cmzn_field_domain_types cmzn_streaminformation_region_get_resource_domain_types(
 	cmzn_streaminformation_region_id streaminformation,
 	cmzn_streamresource_id resource)
 {
@@ -533,15 +533,12 @@ int cmzn_streaminformation_region_get_resource_domain_type(
 	return (int)CMZN_FIELD_DOMAIN_TYPE_INVALID;
 }
 
-int cmzn_streaminformation_region_set_resource_domain_type(
+int cmzn_streaminformation_region_set_resource_domain_types(
 	cmzn_streaminformation_region_id streaminformation,
-	cmzn_streamresource_id resource,
-	int domain_type)
+	cmzn_streamresource_id resource, cmzn_field_domain_types domain_types)
 {
 	if (streaminformation && resource)
-	{
-		return streaminformation->setResourceDomainType(resource, domain_type);
-	}
+		return streaminformation->setResourceDomainType(resource, domain_types);
 	return CMZN_ERROR_ARGUMENT;
 }
 

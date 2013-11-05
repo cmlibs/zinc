@@ -263,9 +263,6 @@ ZINC_API char *cmzn_field_get_component_name(cmzn_field_id field,
 ZINC_API int cmzn_field_set_component_name(cmzn_field_id field,
 	int component_number, const char *name);
 
-
-
-
 /**
  * Get the coordinate system focus value, used for prolate and oblate
  * spheroidal coordinate system types only.
@@ -285,9 +282,6 @@ ZINC_API double cmzn_field_get_coordinate_system_focus(cmzn_field_id field);
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_set_coordinate_system_focus(cmzn_field_id field, double focus);
-
-
-
 
 /**
  * Get the coordinate system type to interpret field values in.

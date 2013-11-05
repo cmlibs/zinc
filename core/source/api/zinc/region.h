@@ -489,44 +489,43 @@ ZINC_API int cmzn_streaminformation_region_set_resource_attribute_real(
 	double value);
 
 /**
- * Get the specified domain_type for a stream resource in streaminformation.
+ * Get the specified domain types for a stream resource in streaminformation.
  *
  * @param streaminformation  Handle to the cmzn_streaminformation_region.
  * @param resource  Handle to the cmzn_streamresource.
  * @return  Bitmasks for specified domain types for stream resource,
  * 	CMZN_FIELD_DOMAIN_TYPE_INVALID if failed or unset
  */
-ZINC_API int cmzn_streaminformation_region_get_resource_domain_type(
+ZINC_API cmzn_field_domain_types cmzn_streaminformation_region_get_resource_domain_types(
 	cmzn_streaminformation_region_id streaminformation, cmzn_streamresource_id resource);
 
 /**
- * Set the domain_type to be export from the region this stream information is
- * created in. The current default setting will output all domains in region.
- * The domain type also specifies nodesets without a specified domain_type in
- * exformat file to be imported as nodes or datapoints domain.
- * If leave unset, unspecified nodesets will be import as nodes.
+ * Set the domain types to be exported from the region this stream information is
+ * created in. The current default setting will output all domain types in region.
+ * On import, the domain type also specifies nodesets without a specified domain
+ * type in exformat file to be imported as nodes or datapoints domain. If unset,
+ * unspecified nodesets will be imported as nodes.
  *
  * @param streaminformation  Handle to the cmzn_streaminformation_region.
  * @param resource  Handle to the cmzn_streamresource.
- * @param domain_type  Bitmasks for the domain type to be set for output. It currently supports
+ * @param domain_types  Bitmasks for the domain type to be set for output. It currently supports
  *   the following domains:
- *   CMZN_FIELD_DOMAIN_POINT - Only output the region name if this is the only bit set
- *   CMZN_FIELD_DOMAIN_NODES - Enable output of nodes
- *   CMZN_FIELD_DOMAIN_DATA - Enable output of datapoints
- *   CMZN_FIELD_DOMAIN_MESH_1D - Enable output of 1D mesh
- *   CMZN_FIELD_DOMAIN_MESH_2D - Enable output of 2D mesh
- *   CMZN_FIELD_DOMAIN_MESH_3D - Enable output of 3D mesh
- *   CMZN_FIELD_DOMAIN_MESH_HIGHEST_DIMENSION - Enable output of mesh with highest
+ *   CMZN_FIELD_DOMAIN_TYPE_POINT - Only output the region name if this is the only bit set
+ *   CMZN_FIELD_DOMAIN_TYPE_NODES - Enable output of nodes
+ *   CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS - Enable output of datapoints
+ *   CMZN_FIELD_DOMAIN_TYPE_MESH1D - Enable output of 1D mesh
+ *   CMZN_FIELD_DOMAIN_TYPE_MESH2D - Enable output of 2D mesh
+ *   CMZN_FIELD_DOMAIN_TYPE_MESH3D - Enable output of 3D mesh
+ *   CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION - Enable output of mesh with highest
  *   dimension possible
  *
- * @return   status CMZN_OK if domain_type is successfully set, any other value if
- *   failed or domain_type not valid or unable to be set for this
+ * @return   status CMZN_OK if domain types successfully set, any other value if
+ *   failed or domain type not valid or unable to be set for this
  * cmzn_streaminformation_region.
  */
-ZINC_API int cmzn_streaminformation_region_set_resource_domain_type(
+ZINC_API int cmzn_streaminformation_region_set_resource_domain_types(
 	cmzn_streaminformation_region_id streaminformation,
-	cmzn_streamresource_id resource,
-	int domain_type);
+	cmzn_streamresource_id resource, cmzn_field_domain_types domain_types);
 
 /**
  * Return accessed handle to the scene for this region, which contains

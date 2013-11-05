@@ -3676,7 +3676,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 										{
 											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 											cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
-												use_data_meta_flag ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES);
+												use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
 											if (!node_group)
 											{

@@ -64,7 +64,7 @@ Otherwise the routine returns 0.
 ==============================================================================*/
 
 int FE_element_get_xi_points(struct FE_element *element,
-	cmzn_element_point_sample_mode sample_mode,
+	cmzn_element_point_sampling_mode sampling_mode,
 	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);
@@ -73,7 +73,7 @@ LAST MODIFIED : 20 April 2001
 
 DESCRIPTION :
 Calculates the <number_of_xi_points> across the <element_shape> according to
-the <sample_mode> and some of <number_in_xi>, <exact_xi>,
+the <sampling_mode> and some of <number_in_xi>, <exact_xi>,
 <coordinate_field> and <density_field>, depending on the mode.
 If <xi_points_address> is supplied an array containing the xi locations of these
 points is allocated and put in this address. Xi positions are always returned as
@@ -99,14 +99,14 @@ Also allocates the *<top_level_xi_point_numbers_address> to contain the
 appropriate xi_point_numbers relative to the top-level element.
 Notes:
 1. The xi_points put into this function must have been calculated with the
-CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
+CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS more and the number_in_xi determined from the
 relation from <element> to <top_level_element> and its <top_level_number_in_xi>.
 2. Sets *<top_level_xi_point_numbers_address> to NULL if not ALLOCATED; hence
 a return value here indicates that the xi_points have been converted.
 ==============================================================================*/
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
-	cmzn_element_point_sample_mode sample_mode,
+	cmzn_element_point_sampling_mode sampling_mode,
 	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi);

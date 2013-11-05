@@ -31,7 +31,7 @@ element point sample modes.
 struct Element_point_ranges_identifier
 {
 	struct FE_element *element,*top_level_element;
-	cmzn_element_point_sample_mode sample_mode;
+	cmzn_element_point_sampling_mode sampling_mode;
 	/* following could/should be in a union */
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	FE_value exact_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -127,15 +127,15 @@ Global functions
 ----------------
 */
 
-const char **cmzn_element_point_sample_mode_get_valid_strings_for_Element_point_ranges(
+const char **cmzn_element_point_sampling_mode_get_valid_strings_for_Element_point_ranges(
 	int *number_of_valid_strings);
 /*******************************************************************************
 LAST MODIFIED : 30 May 2000
 
 DESCRIPTION :
 Returns an allocated array of pointers to all static strings for valid
-cmzn_element_point_sample_modes that can be used for Element_point_ranges, obtained
-from function cmzn_element_point_sample_mode_string.
+cmzn_element_point_sampling_modes that can be used for Element_point_ranges, obtained
+from function cmzn_element_point_sampling_mode_string.
 Up to calling function to deallocate returned array - but not the strings in it!
 ==============================================================================*/
 
@@ -148,7 +148,7 @@ LAST MODIFIED : 7 June 2000
 DESCRIPTION :
 Returns -1 (identifier1 less), 0 (equal) or +1 (identifier1 greater) for
 indexing lists of Element_point_ranges.
-First the element is compared, then the cmzn_element_point_sample_mode, then the
+First the element is compared, then the cmzn_element_point_sampling_mode, then the
 identifying values depending on this mode.
 ==============================================================================*/
 
@@ -158,7 +158,7 @@ int Element_point_ranges_identifier_is_valid(
 LAST MODIFIED : 24 May 2000
 
 DESCRIPTION :
-Returns true if <identifier> has a valid element, cmzn_element_point_sample_mode and
+Returns true if <identifier> has a valid element, cmzn_element_point_sampling_mode and
 number_in_xi for being used in an Element_point_ranges structure.
 ==============================================================================*/
 
@@ -193,7 +193,7 @@ LAST MODIFIED : 28 February 2000
 
 DESCRIPTION :
 Creates an Element_point_ranges object that can store ranges of points in the
-element:cmzn_element_point_sample_mode of the <identifier>.
+element:cmzn_element_point_sampling_mode of the <identifier>.
 ==============================================================================*/
 
 int DESTROY(Element_point_ranges)(

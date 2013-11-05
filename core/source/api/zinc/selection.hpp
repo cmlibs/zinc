@@ -43,7 +43,11 @@ public:
 		CHANGE_FLAG_FINAL = CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL
 	};
 
-	typedef ChangeFlag ChangeFlags;
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 * @see getChangeFlags
+	 */
+	typedef int ChangeFlags;
 
 	Selectionevent& operator=(const Selectionevent& selectionEvent)
 	{

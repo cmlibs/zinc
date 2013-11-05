@@ -1078,7 +1078,7 @@ Otherwise the routine returns 0.
 
 static int FE_element_add_xi_points_1d_line_cell_random(
 	struct FE_element	*element,
-	cmzn_element_point_sample_mode sample_mode, FE_value xi_centre,
+	cmzn_element_point_sampling_mode sampling_mode, FE_value xi_centre,
 	FE_value delta_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points,
@@ -1088,7 +1088,7 @@ LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
-the <sample_mode>; see FE_element_get_xi_points_cell_random.
+the <sampling_mode>; see FE_element_get_xi_points_cell_random.
 If <xi_points> and current <number_of_xi_points_allocated> are supplied, the
 array is enlarged if necessary and the new points added at random locations.
 #Define XI_POINTS_REALLOCATE_SIZE provides a minimum step size for enlarging the
@@ -1110,7 +1110,7 @@ array is enlarged if necessary and the new points added at random locations.
 		return_code = 1;
 		centre_xi1 = (FE_value)xi_centre;
 		dxi1 = (FE_value)delta_xi;
-		if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
+		if (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == sampling_mode)
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1168,7 +1168,7 @@ array is enlarged if necessary and the new points added at random locations.
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_element_add_xi_points_1d_line_cell_random.  "
-				"Invalid sample_mode");
+				"Invalid sampling_mode");
 			return_code = 0;
 		}
 		if (return_code)
@@ -1239,7 +1239,7 @@ array is enlarged if necessary and the new points added at random locations.
 } /* FE_element_add_xi_points_1d_line_cell_random */
 
 static int FE_element_add_xi_points_2d_square_cell_random(
-	struct FE_element	*element, cmzn_element_point_sample_mode sample_mode,
+	struct FE_element	*element, cmzn_element_point_sampling_mode sampling_mode,
 	enum FE_element_shape_category element_shape_category,
 	FE_value *centre_xi, FE_value *dxi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
@@ -1251,7 +1251,7 @@ LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
-the <sample_mode>; see FE_element_get_xi_points_cell_random.
+the <sampling_mode>; see FE_element_get_xi_points_cell_random.
 If <xi_points> and current <number_of_xi_points_allocated> are supplied, the
 array is enlarged if necessary and the new points added at random locations.
 #Define XI_POINTS_REALLOCATE_SIZE provides a minimum step size for enlarging the
@@ -1275,7 +1275,7 @@ array is enlarged if necessary and the new points added at random locations.
 		centre_xi2 = (FE_value)centre_xi[1];
 		dxi1 = (FE_value)dxi[0];
 		dxi2 = (FE_value)dxi[1];
-		if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
+		if (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == sampling_mode)
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1329,7 +1329,7 @@ array is enlarged if necessary and the new points added at random locations.
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_element_add_xi_points_2d_square_cell_random.  "
-				"Invalid sample_mode");
+				"Invalid sampling_mode");
 			return_code = 0;
 		}
 		if (return_code)
@@ -1438,7 +1438,7 @@ array is enlarged if necessary and the new points added at random locations.
 
 static int FE_element_add_xi_points_3d_cube_cell_random(
 	struct FE_element	*element,
-	cmzn_element_point_sample_mode sample_mode,
+	cmzn_element_point_sampling_mode sampling_mode,
 	enum FE_element_shape_category element_shape_category,
 	FE_value *centre_xi, FE_value *dxi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
@@ -1450,7 +1450,7 @@ LAST MODIFIED : 21 March 2003
 
 DESCRIPTION :
 Adds to the <number_of_xi_points> the number of points to be added according to
-the <sample_mode>; see FE_element_get_xi_points_cell_random.
+the <sampling_mode>; see FE_element_get_xi_points_cell_random.
 If <xi_points> and current <number_of_xi_points_allocated> are supplied, the
 array is enlarged if necessary and the new points added at random locations.
 #Define XI_POINTS_REALLOCATE_SIZE provides a minimum step size for enlarging the
@@ -1475,7 +1475,7 @@ array is enlarged if necessary and the new points added at random locations.
 		dxi1 = dxi[0];
 		dxi2 = dxi[1];
 		dxi3 = dxi[2];
-		if (CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode)
+		if (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == sampling_mode)
 		{
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
@@ -1516,7 +1516,7 @@ array is enlarged if necessary and the new points added at random locations.
 		{
 			display_message(ERROR_MESSAGE,
 				"FE_element_add_xi_points_3d_cube_cell_random.  "
-				"Invalid sample_mode");
+				"Invalid sampling_mode");
 			return_code = 0;
 		}
 		if (return_code)
@@ -1672,7 +1672,7 @@ array is enlarged if necessary and the new points added at random locations.
 } /* FE_element_add_xi_points_3d_cube_cell_random */
 
 static int FE_element_get_xi_points_cell_random(struct FE_element *element,
-	cmzn_element_point_sample_mode sample_mode, int *number_in_xi,
+	cmzn_element_point_sampling_mode sampling_mode, int *number_in_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *density_field, int *number_of_xi_points_address,
 	FE_value_triple **xi_points_address)
@@ -1682,7 +1682,7 @@ LAST MODIFIED : 3 December 2001
 DESCRIPTION :
 Calculates the <number_of_xi_points> to be randomly located in uniform cells
 across the <element_shape> according to <number_in_xi>. The number of points
-placed in each cell depends on the <sample_mode> which can be one of:
+placed in each cell depends on the <sampling_mode> which can be one of:
 CELL_POISSON = as for above but the actual number is sampled
   from a Poisson distribution with mean given by the expected number. While this
 	adds noise to the density function, it overcomes the problem that small cells
@@ -1712,7 +1712,7 @@ fields, required for DENSITY and POISSON modes.
 	if (element && get_FE_element_shape(element, &element_shape) &&
 		get_FE_element_shape_dimension(element_shape,
 		&element_dimension) && (0 < element_dimension) && number_in_xi &&
-		(CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON == sample_mode) &&
+		(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == sampling_mode) &&
 			coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 			(Computed_field_get_number_of_components(coordinate_field) >=
@@ -1761,7 +1761,7 @@ fields, required for DENSITY and POISSON modes.
 					{
 						xi_centre = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 						return_code = FE_element_add_xi_points_1d_line_cell_random(
-							element, sample_mode, xi_centre, delta_xi,
+							element, sampling_mode, xi_centre, delta_xi,
 							field_cache, coordinate_field, density_field,
 							&number_of_xi_points, xi_points_address,
 							&number_of_xi_points_allocated);
@@ -1781,7 +1781,7 @@ fields, required for DENSITY and POISSON modes.
 						{
 							centre_xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
-								element, sample_mode, element_shape_category,
+								element, sampling_mode, element_shape_category,
 								centre_xi, dxi, field_cache, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
 								&number_of_xi_points_allocated, xi_offset);
@@ -1811,7 +1811,7 @@ fields, required for DENSITY and POISSON modes.
 							centre_xi[0] = ((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
 							centre_xi[2] = 0.0;
 							return_code = FE_element_add_xi_points_2d_square_cell_random(
-								element, sample_mode, element_shape_category,
+								element, sampling_mode, element_shape_category,
 								centre_xi, dxi, field_cache, coordinate_field, density_field,
 								&number_of_xi_points, xi_points_address,
 								&number_of_xi_points_allocated, xi_offset);
@@ -1843,7 +1843,7 @@ fields, required for DENSITY and POISSON modes.
 							{
 								centre_xi[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, sample_mode, element_shape_category,
+									element, sampling_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -1881,7 +1881,7 @@ fields, required for DENSITY and POISSON modes.
 							{
 								centre_xi[0] = ((FE_value)i + 0.25)/(FE_value)number_in_xi_simplex;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, sample_mode, element_shape_category,
+									element, sampling_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -1920,7 +1920,7 @@ fields, required for DENSITY and POISSON modes.
 								centre_xi[linked_xi_directions[1]] = xi_j;
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, sample_mode, element_shape_category,
+									element, sampling_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -1939,7 +1939,7 @@ fields, required for DENSITY and POISSON modes.
 								centre_xi[linked_xi_directions[1]] = xi_j;
 								centre_xi[line_direction] = xi_k;
 								return_code = FE_element_add_xi_points_3d_cube_cell_random(
-									element, sample_mode, element_shape_category,
+									element, sampling_mode, element_shape_category,
 									centre_xi, dxi, field_cache, coordinate_field, density_field,
 									&number_of_xi_points, xi_points_address,
 									&number_of_xi_points_allocated, xi_offset);
@@ -2004,7 +2004,7 @@ fields, required for DENSITY and POISSON modes.
 } /* FE_element_get_xi_points_cell_random */
 
 int FE_element_get_xi_points(struct FE_element *element,
-	cmzn_element_point_sample_mode sample_mode,
+	cmzn_element_point_sampling_mode sampling_mode,
 	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
@@ -2019,29 +2019,29 @@ int FE_element_get_xi_points(struct FE_element *element,
 		number_in_xi && number_of_xi_points_address)
 	{
 		return_code = 1;
-		switch (sample_mode)
+		switch (sampling_mode)
 		{
-			case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+			case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES:
 			{
 				return_code = FE_element_shape_get_xi_points_cell_centres(element_shape,
 					number_in_xi, number_of_xi_points_address, xi_points_address);
 			} break;
-			case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+			case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS:
 			{
 				return_code = FE_element_shape_get_xi_points_cell_corners(element_shape,
 					number_in_xi, number_of_xi_points_address, xi_points_address);
 			} break;
-			case CMZN_ELEMENT_POINT_SAMPLE_CELL_POISSON:
+			case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON:
 			{
 				/* seed random number generator with the element number so "random"
 					 layout is consistent for the same element */
 				get_FE_element_identifier(element, &identifier);
 				CMGUI_SEED_RANDOM(identifier.number);
 				return_code = FE_element_get_xi_points_cell_random(element,
-					sample_mode, number_in_xi, field_cache, coordinate_field, density_field,
+					sampling_mode, number_in_xi, field_cache, coordinate_field, density_field,
 					number_of_xi_points_address, xi_points_address);
 			} break;
-			case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+			case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
 			{
 				if (exact_xi)
 				{
@@ -2073,7 +2073,7 @@ int FE_element_get_xi_points(struct FE_element *element,
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_element_get_xi_points.  Unknown sample_mode");
+					"FE_element_get_xi_points.  Unknown sampling_mode");
 				return_code = 0;
 			} break;
 		}
@@ -2103,7 +2103,7 @@ Also allocates the *<top_level_xi_point_numbers_address> to contain the
 appropriate xi_point_numbers relative to the top-level element.
 Notes:
 1. The xi_points put into this function must have been calculated with the
-CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS more and the number_in_xi determined from the
+CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS more and the number_in_xi determined from the
 relation from <element> to <top_level_element> and its <top_level_number_in_xi>.
 2. Sets *<top_level_xi_point_numbers_address> to NULL if not ALLOCATED; hence
 a return value here indicates that the xi_points have been converted.
@@ -2154,7 +2154,7 @@ a return value here indicates that the xi_points have been converted.
 			if ((temp_element = FE_element_get_top_level_element_conversion(
 				element, top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMZN_ELEMENT_FACE_ALL, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,
 					top_level_element_dimension, top_level_number_in_xi,
@@ -2214,7 +2214,7 @@ a return value here indicates that the xi_points have been converted.
 } /* FE_element_convert_xi_points_cell_corners_to_top_level */
 
 int FE_element_get_numbered_xi_point(struct FE_element *element,
-	cmzn_element_point_sample_mode sample_mode,
+	cmzn_element_point_sampling_mode sampling_mode,
 	int *number_in_xi, FE_value_triple exact_xi, cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field, struct Computed_field *density_field,
 	int xi_point_number, FE_value *xi)
@@ -2243,9 +2243,9 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 		{
 			default_behaviour = 1;
 			/* for efficiency, handle some simple cases to avoid the slower default */
-			switch (sample_mode)
+			switch (sampling_mode)
 			{
-				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CENTRES:
+				case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES:
 				{
 					switch (element_shape_category)
 					{
@@ -2326,7 +2326,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 						} break;
 					}
 				} break;
-				case CMZN_ELEMENT_POINT_SAMPLE_CELL_CORNERS:
+				case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS:
 				{
 					switch (element_shape_category)
 					{
@@ -2407,7 +2407,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 						} break;
 					}
 				} break;
-				case CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION:
+				case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
 				{
 					if (exact_xi)
 					{
@@ -2443,7 +2443,7 @@ int FE_element_get_numbered_xi_point(struct FE_element *element,
 			}
 			if (return_code && default_behaviour)
 			{
-				if (FE_element_get_xi_points(element, sample_mode,
+				if (FE_element_get_xi_points(element, sampling_mode,
 					number_in_xi, exact_xi, field_cache, coordinate_field, density_field,
 					&number_of_xi_points, &xi_points))
 				{

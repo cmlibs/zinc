@@ -384,25 +384,25 @@ ZINC_API bool cmzn_graphics_is_exterior(cmzn_graphics_id graphics);
 ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior);
 
 /**
- * Gets the face the graphics is limited to generate graphics for.
+ * Gets the element face type the graphics is limited to generating graphics for.
  *
  * @param graphics  The graphics to query.
  * @return  The face type of the graphics, or CMZN_ELEMENT_FACE_TYPE_INVALID if the
  * graphics is invalid.
  */
-ZINC_API enum cmzn_element_face_type cmzn_graphics_get_face(cmzn_graphics_id graphics);
+ZINC_API enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_graphics_id graphics);
 
 /**
- * Sets the face the graphics is limited to generate graphics for.
- * e.g. CMZN_ELEMENT_FACE_XI1_0 generates graphics only on faces and lines
+ * Sets the element face type the graphics is limited to generating graphics for.
+ * e.g. CMZN_ELEMENT_FACE_TYPE_XI1_0 generates graphics only on faces and lines
  * where the top-level element 'xi' coordinate equals 0.
  *
  * @param graphics  The graphics to modify.
- * @param face  A valid face type.
+ * @param face_type  A valid element face type.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphics_set_face(cmzn_graphics_id graphics,
-	enum cmzn_element_face_type face);
+ZINC_API int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics,
+	enum cmzn_element_face_type face_type);
 
 /**
  * Specifying the coordinate system in which to render the coordinates of graphics.
@@ -470,7 +470,7 @@ ZINC_API int cmzn_graphics_set_name(cmzn_graphics_id graphics, const char *name)
  * @return  The domain type of the graphics or CMZN_FIELD_DOMAIN_TYPE_INVALID
  * on error.
  */
-ZINC_API enum cmzn_field_domain_type cmzn_graphics_get_domain_type(
+ZINC_API enum cmzn_field_domain_type cmzn_graphics_get_field_domain_type(
 	cmzn_graphics_id graphics);
 
 /**
@@ -483,7 +483,7 @@ ZINC_API enum cmzn_field_domain_type cmzn_graphics_get_domain_type(
  * @param domain_type  Enumerated value of the field domain type to use.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphics_set_domain_type(cmzn_graphics_id graphics,
+ZINC_API int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 	enum cmzn_field_domain_type domain_type);
 
 /**
@@ -1387,7 +1387,7 @@ ZINC_API int cmzn_graphicspointattributes_set_signed_scale_field(
 
 /**
  * If the graphics samples points from elements then returns a handle to sampling
- * attribute object for specifying sample mode, density field etc.
+ * attribute object for specifying sampling mode, density field etc.
  *
  * @param graphics  The graphics to request sampling attributes from.
  * @return  Handle to sampling attributes object, or 0 if not supported for
@@ -1420,7 +1420,7 @@ ZINC_API int cmzn_graphicssamplingattributes_destroy(
 
 /**
  * Gets the scalar field specifying the density of points sampled from elements
- * when used with CELL_POISSON sample mode.
+ * when used with CELL_POISSON sampling mode.
  *
  * @param sampling_attributes  The graphics sampling attributes to query.
  * @return  Handle to sample density field, or 0 if none. Up to caller to
@@ -1431,9 +1431,9 @@ ZINC_API cmzn_field_id cmzn_graphicssamplingattributes_get_density_field(
 
 /**
  * Sets the scalar field specifying the density of points sampled from elements
- * when used with CELL_POISSON sample mode. The density is applied per unit
+ * when used with CELL_POISSON sampling mode. The density is applied per unit
  * volume/area/length, depending on dimension, evaluated at cell centres.
- * @see cmzn_graphicssamplingattributes_set_mode
+ * @see cmzn_graphicssamplingattributes_set_element_point_sampling_mode
  *
  * @param sampling_attributes  The graphics sampling attributes to modify.
  * @param sample_density_field  Scalar density field to set.
@@ -1445,7 +1445,7 @@ ZINC_API int cmzn_graphicssamplingattributes_set_density_field(
 
 /**
  * Gets the location in the element chart where a point is sampled in mode
- * CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION. Up to 3 values can be returned.
+ * CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION. Up to 3 values can be returned.
  *
  * @param sampling_attributes  The graphics sampling attributes to query.
  * @param valuesCount  The size of the valuesOut array.
@@ -1458,9 +1458,9 @@ ZINC_API int cmzn_graphicssamplingattributes_get_location(
 
 /**
  * Sets the location in the element chart where a point is sampled in mode
- * CMZN_ELEMENT_POINT_SAMPLE_SET_LOCATION.
+ * CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION.
  * Up to 3 values can be set, with 0 assumed for additional chart coordinates.
- * @see cmzn_graphicssamplingattributes_set_mode
+ * @see cmzn_graphicssamplingattributes_set_element_point_sampling_mode
  *
  * @param sampling_attributes  The graphics sampling attributes to modify.
  * @param valuesCount  The size of the valuesIn array.
@@ -1477,20 +1477,20 @@ ZINC_API int cmzn_graphicssamplingattributes_set_location(
  * @param sampling_attributes  The graphics sampling attributes to query.
  * @return  The point sampling mode, or MODE_INVALID on error.
  */
-ZINC_API enum cmzn_element_point_sample_mode cmzn_graphicssamplingattributes_get_mode(
+ZINC_API enum cmzn_element_point_sampling_mode cmzn_graphicssamplingattributes_get_element_point_sampling_mode(
 	cmzn_graphicssamplingattributes_id sampling_attributes);
 
 /**
  * Set the mode for sampling points in elements.
- * The default point sample mode is CELL_CENTRES.
+ * The default element point sampling mode is CELL_CENTRES.
  *
  * @param sampling_attributes  The graphics sampling attributes to modify.
- * @param sample_mode  The element point sample mode to set.
+ * @param sampling_mode  The element point sampling mode to set.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphicssamplingattributes_set_mode(
+ZINC_API int cmzn_graphicssamplingattributes_set_element_point_sampling_mode(
 	cmzn_graphicssamplingattributes_id sampling_attributes,
-	enum cmzn_element_point_sample_mode sample_mode);
+	enum cmzn_element_point_sampling_mode sampling_mode);
 
 #ifdef __cplusplus
 }

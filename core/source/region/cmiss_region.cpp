@@ -1537,7 +1537,7 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 				// merge node groups
 				for (int i = 0; i < 2; i++)
 				{
-					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_DATA : CMZN_FIELD_DOMAIN_NODES;
+					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
 					cmzn_nodeset_id source_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(source_field_module, nodeset_domain_type);
 					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_node_group(source_group, source_nodeset);
 					if (source_node_group)

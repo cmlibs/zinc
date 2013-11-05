@@ -129,7 +129,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_lines(
  * Create a points graphics in the scene. Used to visualise static points,
  * nodes, data and sampled element points. Must set the domain type after
  * creation.
- * @see cmzn_graphics_set_domain_type
+ * @see cmzn_graphics_set_field_domain_type
  *
  * @param scene  Handle to scene the graphics is created in.
  * @return  Handle to the new graphics on success, otherwise 0.

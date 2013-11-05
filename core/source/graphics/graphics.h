@@ -91,7 +91,7 @@ finite element group scene.
 	struct Computed_field *label_density_field;
 
 	// for element sampling: element points, streamlines
-	cmzn_element_point_sample_mode sample_mode;
+	cmzn_element_point_sampling_mode sampling_mode;
 	struct Computed_field *sample_density_field;
 	FE_value sample_location[3];
 

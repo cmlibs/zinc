@@ -44,14 +44,14 @@ struct ShapeType
 
 const ShapeType libraryShapes[] =
 {
-	{ "shape.unit.line",        1, CMZN_ELEMENT_SHAPE_LINE },
-	{ "shape.unit.square",      2, CMZN_ELEMENT_SHAPE_SQUARE },
-	{ "shape.unit.triangle",    2, CMZN_ELEMENT_SHAPE_TRIANGLE },
-	{ "shape.unit.cube",        3, CMZN_ELEMENT_SHAPE_CUBE },
-	{ "shape.unit.tetrahedron", 3, CMZN_ELEMENT_SHAPE_TETRAHEDRON },
-	{ "shape.unit.wedge12",     3, CMZN_ELEMENT_SHAPE_WEDGE12 },
-	{ "shape.unit.wedge13",     3, CMZN_ELEMENT_SHAPE_WEDGE13 },
-	{ "shape.unit.wedge23",     3, CMZN_ELEMENT_SHAPE_WEDGE23 }
+	{ "shape.unit.line",        1, CMZN_ELEMENT_SHAPE_TYPE_LINE },
+	{ "shape.unit.square",      2, CMZN_ELEMENT_SHAPE_TYPE_SQUARE },
+	{ "shape.unit.triangle",    2, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE },
+	{ "shape.unit.cube",        3, CMZN_ELEMENT_SHAPE_TYPE_CUBE },
+	{ "shape.unit.tetrahedron", 3, CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON },
+	{ "shape.unit.wedge12",     3, CMZN_ELEMENT_SHAPE_TYPE_WEDGE12 },
+	{ "shape.unit.wedge13",     3, CMZN_ELEMENT_SHAPE_TYPE_WEDGE13 },
+	{ "shape.unit.wedge23",     3, CMZN_ELEMENT_SHAPE_TYPE_WEDGE23 }
 };
 const int numLibraryShapes = sizeof(libraryShapes) / sizeof(ShapeType);
 
@@ -79,23 +79,23 @@ struct BasisType
 
 const BasisType libraryBases[] =
 {
-	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
-	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_CUBIC_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
-	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_LINEAR_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_QUADRATIC_LAGRANGE }, 0 },
+	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
+	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
+	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
+	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
 	// GRC add Hermite!
 	// GRC add vtk, zienkiewicz simplex ordering, swizzle
 };
@@ -1147,7 +1147,7 @@ int FieldMLReader::readMeshes()
 			}
 			if (shape_type != last_shape_type)
 			{
-				if (!(cmzn_elementtemplate_set_shape_type(element_template, shape_type)))
+				if (!(cmzn_elementtemplate_set_element_shape_type(element_template, shape_type)))
 				{
 					return_code = 0;
 					break;
@@ -1432,7 +1432,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	// create nodes and set node parameters
 
-	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_NODES);
+	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	cmzn_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
 	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
@@ -1561,7 +1561,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				cmzn_elementtemplate_destroy(&element_template);
 			element_template = cmzn_mesh_create_elementtemplate(mesh);
 			// do not want to override shape of existing elements:
-			cmzn_elementtemplate_set_shape_type(element_template, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
+			cmzn_elementtemplate_set_element_shape_type(element_template, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
 			int total_local_point_count = 0;
 			for (int ic = 0; ic < componentCount; ic++)
 			{
