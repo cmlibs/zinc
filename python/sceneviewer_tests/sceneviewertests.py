@@ -57,7 +57,7 @@ class SceneviewerTestCase(unittest.TestCase):
         scene_viewer = scene_viewer_module.createSceneviewer(Sceneviewer.BUFFERING_MODE_DOUBLE, Sceneviewer.STEREO_MODE_DEFAULT)
         scene_viewer_input = scene_viewer.createSceneviewerinput()
         self.assertEqual(status.OK, scene_viewer_input.setPosition(3, 5))
-        self.assertEqual(status.OK, scene_viewer_input.setButton(Sceneviewerinput.BUTTON_TYPE_LEFT))
+        self.assertEqual(status.OK, scene_viewer_input.setButtonType(Sceneviewerinput.BUTTON_TYPE_LEFT))
         self.assertEqual(status.OK, scene_viewer_input.setEventType(Sceneviewerinput.EVENT_TYPE_BUTTON_PRESS))
         self.assertEqual(status.OK, scene_viewer_input.setModifiers(Sceneviewerinput.MODIFIER_FLAG_CONTROL | Sceneviewerinput.MODIFIER_FLAG_SHIFT))
 
