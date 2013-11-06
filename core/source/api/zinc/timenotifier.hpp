@@ -16,6 +16,60 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Timenotifierevent
+{
+protected:
+	cmzn_timenotifierevent_id id;
+
+public:
+
+	Timenotifierevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Timenotifierevent(cmzn_timenotifierevent_id in_timenotifier_event_id) :
+		id(in_timenotifier_event_id)
+	{  }
+
+	Timenotifierevent(const Timenotifierevent& timenotifierEvent) :
+		id(cmzn_timenotifierevent_access(timenotifierEvent.id))
+	{  }
+
+	Timenotifierevent& operator=(const Timenotifierevent& timenotifierEvent)
+	{
+		cmzn_timenotifierevent_id temp_id = cmzn_timenotifierevent_access(timenotifierEvent.id);
+		if (0 != id)
+		{
+			cmzn_timenotifierevent_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Timenotifierevent()
+	{
+		if (0 != id)
+		{
+			cmzn_timenotifierevent_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_timenotifierevent_id getId()
+	{
+		return id;
+	}
+
+	double getTime() const
+	{
+		return cmzn_timenotifierevent_get_time(id);
+	}
+
+};
 
 class Timenotifiercallback
 {
@@ -24,10 +78,11 @@ private:
 	Timenotifiercallback(Timenotifiercallback&); // not implemented
 	Timenotifiercallback& operator=(Timenotifiercallback&); // not implemented
 
-	static int C_callback(double current_time, void *callbackVoid)
+	static int C_callback(cmzn_timenotifierevent_id timenotifierevent_id, void *callbackVoid)
 	{
+		Timenotifierevent timenotifierevent(cmzn_timenotifierevent_access(timenotifierevent_id));
 		Timenotifiercallback *callback = reinterpret_cast<Timenotifiercallback *>(callbackVoid);
-		return (*callback)(current_time);
+		return (*callback)(timenotifierevent);
 	}
 
 	int set_C_callback(cmzn_timenotifier_id timenotifier_id)
@@ -35,7 +90,7 @@ private:
 		return cmzn_timenotifier_set_callback(timenotifier_id, C_callback, static_cast<void*>(this));
 	}
 
-  virtual int operator()(double current_time) = 0;
+  virtual int operator()(const Timenotifierevent &timenotifierevent) = 0;
 
 protected:
   Timenotifiercallback()

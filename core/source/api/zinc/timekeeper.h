@@ -12,7 +12,7 @@
 #ifndef CMZN_TIMEKEEPER_H__
 #define CMZN_TIMEKEEPER_H__
 
-#include "types/timeid.h"
+#include "types/timenotifierid.h"
 #include "types/timekeeperid.h"
 
 #include "zinc/zincsharedobject.h"

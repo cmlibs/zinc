@@ -22,7 +22,7 @@ FILE : scene.h
 #include "graphics/graphics_library.h"
 #include "context/context.h"
 #include "region/cmiss_region.h"
-#include "zinc/types/timeid.h"
+#include "zinc/types/timenotifierid.h"
 
 typedef std::list<cmzn_selectionnotifier *> cmzn_selectionnotifier_list;
 
