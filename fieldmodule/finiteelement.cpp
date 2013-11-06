@@ -267,3 +267,79 @@ TEST(ZincFieldFiniteElement, createProlateSpheroidal)
 	ASSERT_DOUBLE_EQ(35.5, value = field.getCoordinateSystemFocus());
 	EXPECT_TRUE(field.isManaged());
 }
+
+TEST(ZincFieldFiniteElement, node_value_label)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	FieldFiniteElement coordinateField = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(coordinateField.isValid());
+	EXPECT_EQ(OK, result = coordinateField.setManaged(true));
+	EXPECT_EQ(OK, result = coordinateField.setName("coordinates"));
+	EXPECT_EQ(OK, result = coordinateField.setTypeCoordinate(true));
+
+	Nodeset nodeset = zinc.fm.findNodesetByDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	Nodetemplate nodeTemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodeTemplate.isValid());
+	EXPECT_EQ(OK, nodeTemplate.defineField(coordinateField));
+	EXPECT_EQ(1, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(OK, result = nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1, 2));
+	EXPECT_EQ(2, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 1));
+	// following is 2 not 1, due to limitation that all values/derivatives have same number of versions
+	EXPECT_EQ(2, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	// test clearing the number of versions
+	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 0));
+	EXPECT_EQ(0, result = nodeTemplate.getValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2));
+	EXPECT_EQ(OK, nodeTemplate.setValueNumberOfVersions(coordinateField, /*componentNumber*/-1, Node::VALUE_LABEL_D_DS2, 1));
+
+	FieldNodeValue dx_ds1_v1 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS1, 1);
+	EXPECT_TRUE(dx_ds1_v1.isValid());
+	FieldNodeValue dx_ds1_v2 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS1, 2);
+	EXPECT_TRUE(dx_ds1_v2.isValid());
+	FieldNodeValue dx_ds2 = zinc.fm.createFieldNodeValue(coordinateField, Node::VALUE_LABEL_D_DS2, 1);
+	EXPECT_TRUE(dx_ds2.isValid());
+
+	Node node = nodeset.createNode(1, nodeTemplate);
+	double coordinates[3] = { 1.0, 2.0, 3.0 };
+	double derivatives1_v1[3] = { 0.1, 0.2, 0.4 };
+	double derivatives1_v2[3] = { 0.6, 0.5, 0.4 };
+	double derivatives2[3] = { -0.1, -0.2, -0.4 };
+	{
+		// assign in temporary cache so later we don't evaluate the value from cache
+		Fieldcache tmpCache = zinc.fm.createFieldcache();
+		EXPECT_EQ(OK, result = tmpCache.setNode(node));
+		EXPECT_EQ(OK, result = coordinateField.assignReal(tmpCache, 3, coordinates));
+		EXPECT_EQ(OK, result = dx_ds1_v1.assignReal(tmpCache, 3, derivatives1_v1));
+		EXPECT_EQ(OK, result = dx_ds1_v2.assignReal(tmpCache, 3, derivatives1_v2));
+		EXPECT_EQ(OK, result = dx_ds2.assignReal(tmpCache, 3, derivatives2));
+	}
+	Fieldcache cache = zinc.fm.createFieldcache();
+	cache.setNode(node);
+	double outCoordinates[3];
+	double outDerivatives1_v1[3];
+	double outDerivatives1_v2[3];
+	double outDerivatives2[3];
+	EXPECT_EQ(OK, result = coordinateField.evaluateReal(cache, 3, outCoordinates));
+	ASSERT_DOUBLE_EQ(coordinates[0], outCoordinates[0]);
+	ASSERT_DOUBLE_EQ(coordinates[1], outCoordinates[1]);
+	ASSERT_DOUBLE_EQ(coordinates[2], outCoordinates[2]);
+	EXPECT_EQ(OK, result = dx_ds1_v1.evaluateReal(cache, 3, outDerivatives1_v1));
+	ASSERT_DOUBLE_EQ(derivatives1_v1[0], outDerivatives1_v1[0]);
+	ASSERT_DOUBLE_EQ(derivatives1_v1[1], outDerivatives1_v1[1]);
+	ASSERT_DOUBLE_EQ(derivatives1_v1[2], outDerivatives1_v1[2]);
+	EXPECT_EQ(OK, result = dx_ds1_v2.evaluateReal(cache, 3, outDerivatives1_v2));
+	ASSERT_DOUBLE_EQ(derivatives1_v2[0], outDerivatives1_v2[0]);
+	ASSERT_DOUBLE_EQ(derivatives1_v2[1], outDerivatives1_v2[1]);
+	ASSERT_DOUBLE_EQ(derivatives1_v2[2], outDerivatives1_v2[2]);
+	EXPECT_EQ(OK, result = dx_ds2.evaluateReal(cache, 3, outDerivatives2));
+	ASSERT_DOUBLE_EQ(derivatives2[0], outDerivatives2[0]);
+	ASSERT_DOUBLE_EQ(derivatives2[1], outDerivatives2[1]);
+	ASSERT_DOUBLE_EQ(derivatives2[2], outDerivatives2[2]);
+}
