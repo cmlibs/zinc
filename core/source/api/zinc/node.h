@@ -35,7 +35,7 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_node_value_type cmzn_node_value_type_enum_from_string(
+ZINC_API enum cmzn_node_value_label cmzn_node_value_label_enum_from_string(
 	const char *string);
 
 /**
@@ -45,7 +45,7 @@ ZINC_API enum cmzn_node_value_type cmzn_node_value_type_enum_from_string(
  * @param type  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_node_value_type_enum_to_string(enum cmzn_node_value_type type);
+ZINC_API char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label type);
 
 /**
  * Get a handle to a nodeset by its domain type, either
@@ -377,21 +377,62 @@ ZINC_API int cmzn_nodetemplate_define_field_from_node(
 	cmzn_node_id node);
 
 /**
- * Adds storage for the supplied derivative type for the component/s of the
- * field in the node template.
- * Must have first called cmzn_nodetemplate_define_field for field.
+ * Gets the number of value/derivative parameters under a given node value label
+ * for a field component in the node template.
+ *
+ * @param node_template  Node template to query.
+ * @param field  The field to query value/derivative parameters for. Must be
+ * finite_element type only.
+ * @param component_number  The component from 1 to the number of field
+ * components, or -1 to get maximum number of versions in any component.
+ * @param node_value_label  The label of the node value/derivative to query.
+ * @return  Number of versions value label in component of field, or maximum in
+ * any component if component_number is -1. Valid return value can be 0.
+ * Returns 0 if field not defined or invalid arguments are supplied.
+ */
+ZINC_API int cmzn_nodetemplate_get_value_number_of_versions(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field, int component_number,
+	enum cmzn_node_value_label node_value_label);
+
+/**
+ * Sets the number of value/derivative parameters under a given node value label
+ * for a field component in the node template.
+ * Must have first called cmzn_nodetemplate_define_field() for field.
+ * Limitation: Zinc is currently limited to having either 0 versions for a
+ * derivative label (but at least 1 for the VALUE), or the same positive
+ * number of versions for all value/derivative perameters.
+ * Callers should assume this will be fixed in a future release, and therefore
+ * set the number of versions independently for each value/derivative.
+ * For now the largest number of versions set for any value/derivative will be
+ * the amount of storage set aside per-field-component, and the field will need
+ * to be undefined then re-defined to reduce the number of versions.
  *
  * @param node_template  Node template to modify.
- * @param field  The field to define derivatives for. May be finite_element
- * type only.
+ * @param field  The field to define value/derivative parameters for. Must be
+ * finite_element type only.
  * @param component_number  The component from 1 to the number of field
- * components, or -1 to define the derivative for all components.
- * @param derivative_type  The type of nodal derivative to define.
+ * components, or -1 to define identically for all components.
+ * @param node_value_label  The label of the node value/derivative to define.
+ * @param number_of_versions  The number of versions of the value to define.
+ * Can be 0 to request no parameters be stored, however the storage allocated
+ * may be greater.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_nodetemplate_define_derivative(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number,
-	enum cmzn_node_value_type derivative_type);
+ZINC_API int cmzn_nodetemplate_set_value_number_of_versions(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field, int component_number,
+	enum cmzn_node_value_label node_value_label, int number_of_versions);
+
+/**
+ * Returns the time sequence defined for field in node_template, if any.
+ *
+ * @param node_template  Node template to query.
+ * @param field  The field to get time sequence for. May be finite_element
+ * type only.
+ * @return  Handle to time sequence object if defined for field, or NULL if none
+ * or error. Up to caller to destroy returned handle.
+ */
+ZINC_API cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field);
 
 /**
  * Defines variation of all nodal values/derivatives * versions with the
@@ -408,73 +449,9 @@ ZINC_API int cmzn_nodetemplate_define_derivative(cmzn_nodetemplate_id node_templ
  * will be defined.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_nodetemplate_define_timesequence(
+ZINC_API int cmzn_nodetemplate_set_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field,
 	struct cmzn_timesequence *timesequence);
-
-/**
- * Adds storage for multiple versions of nodal values and derivatives for the
- * component/s of the field in the node template.
- * Note: currently limited to having the same number of versions for all values
- * and derivatives in a given component.
- * Must have first called cmzn_nodetemplate_define_field for field.
- *
- * @param node_template  Node template to modify.
- * @param field  The field to define versions for. May be finite_element type
- * only.
- * @param component_number  The component from 1 to the number of field
- * components, or -1 to define the number of versions for all components.
- * @param number_of_versions  The number of versions of each value & derivative
- * stored for the component/s, at least 1 (the default).
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_nodetemplate_define_versions(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number, int number_of_versions);
-
-/**
- * Returns the number of versions defined for a given component of the field in
- * the node template.
- *
- * @param node_template  Node template to query.
- * @param field  The field to get number of versions for. May be finite_element
- * type only.
- * @param component_number  The component from 1 to the number of field
- * components, or -1 to get maximum number of versions in any component.
- * @return  Number of versions for component of field, or maximum in any
- * component if component_number is -1). Returns 0 if field not defined or
- * invalid arguments are supplied.
- */
-ZINC_API int cmzn_nodetemplate_get_number_of_versions(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number);
-
-/**
- * Returns the time sequence defined for field in node_template, if any.
- *
- * @param node_template  Node template to query.
- * @param field  The field to get time sequence for. May be finite_element
- * type only.
- * @return  Handle to time sequence object if defined for field, or NULL if none
- * or error. Up to caller to destroy returned handle.
- */
-ZINC_API cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
-	cmzn_nodetemplate_id node_template, cmzn_field_id field);
-
-/**
- * Returns whether a nodal derivative is defined for a component of the field
- * in the node template.
- *
- * @param node_template  Node template to query.
- * @param field  The field to check derivatives for. May be finite_element
- * type only.
- * @param component_number  The component from 1 to the number of field
- * components, or -1 to check if *any* component has the nodal derivative.
- * @param derivative_type  The type of nodal derivative to check.
- * @return  1 if derivative_type is defined for component_number of field (or
- * for any component if component_number is -1), 0 if not.
- */
-ZINC_API int cmzn_nodetemplate_has_derivative(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number,
-	enum cmzn_node_value_type derivative_type);
 
 /**
  * Sets field to be undefined when next merged into an existing node. Has no

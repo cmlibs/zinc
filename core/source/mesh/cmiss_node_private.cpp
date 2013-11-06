@@ -62,55 +62,15 @@ public:
 		DEACCESS(FE_field)(&fe_field);
 	}
 
-	int defineDerivative(int component_number, enum FE_nodal_value_type derivative_type)
-	{
-		int first = 0;
-		int limit = get_FE_field_number_of_components(fe_field);
-		if ((component_number < -1) || (component_number == 0) || (component_number > limit))
-			return 0;
-		if (component_number > 0)
-		{
-			first = component_number - 1;
-			limit = component_number;
-		}
-		int return_code = 1;
-		for (int i = first; i < limit; i++)
-		{
-			if (!FE_node_field_creator_define_derivative(node_field_creator, i, derivative_type))
-				return_code = 0;
-		}
-		return return_code;
-	}
-
-	int defineTimesequence(FE_time_sequence *in_timesequence)
-	{
-		return REACCESS(FE_time_sequence)(&timesequence, in_timesequence);
-	}
-
 	/** note: does not ACCESS */
 	cmzn_timesequence_id getTimesequence()
 	{
 		return reinterpret_cast<cmzn_timesequence_id>(timesequence);
 	}
 
-	int defineVersions(int component_number, int number_of_versions)
+	int setTimesequence(FE_time_sequence *in_timesequence)
 	{
-		int first = 0;
-		int limit = get_FE_field_number_of_components(fe_field);
-		if ((component_number < -1) || (component_number == 0) || (component_number > limit))
-			return 0;
-		if (component_number > 0)
-		{
-			first = component_number - 1;
-			limit = component_number;
-		}
-		int return_code = 1;
-		for (int i = first; i < limit; i++)
-		{
-			if (!FE_node_field_creator_define_versions(node_field_creator, i, number_of_versions))
-				return_code = 0;
-		}
-		return return_code;
+		return REACCESS(FE_time_sequence)(&timesequence, in_timesequence);
 	}
 
 	int defineAtNode(FE_node *node)
@@ -119,21 +79,54 @@ public:
 			timesequence, node_field_creator);
 	}
 
-	int getNumberOfVersions(int component_number)
+	int getValueNumberOfVersions(int componentNumber, enum FE_nodal_value_type fe_nodal_value_type)
 	{
-		int number_of_components = get_FE_field_number_of_components(fe_field);
-		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
+		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
 			return 0;
-		return FE_node_field_creator_get_number_of_versions(node_field_creator, component_number - 1);
+		USE_PARAMETER(fe_nodal_value_type);
+		if ((componentNumber < -1) || (componentNumber == 0) ||
+				(componentNumber > get_FE_field_number_of_components(fe_field)))
+			return 0;
+		if ((FE_NODAL_VALUE != fe_nodal_value_type) &&
+				!FE_node_field_creator_has_derivative(node_field_creator, componentNumber - 1, fe_nodal_value_type))
+			return 0;
+		return FE_node_field_creator_get_number_of_versions(node_field_creator, componentNumber - 1);
 	}
 
-	int hasDerivative(int component_number, enum FE_nodal_value_type derivative_type)
+	/** versions should be per-fe_nodal_value_type, but are not currently */
+	int setValueNumberOfVersions(int componentNumber,
+		enum FE_nodal_value_type fe_nodal_value_type, int numberOfVersions)
 	{
-		int number_of_components = get_FE_field_number_of_components(fe_field);
-		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
+		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
+			return CMZN_ERROR_ARGUMENT;
+		if (numberOfVersions < 0)
+			return CMZN_ERROR_ARGUMENT;
+		int first = 0;
+		int limit = get_FE_field_number_of_components(fe_field);
+		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > limit))
 			return 0;
-		return FE_node_field_creator_has_derivative(node_field_creator, component_number - 1, derivative_type);
-	}
+		if (componentNumber > 0)
+		{
+			first = componentNumber - 1;
+			limit = componentNumber;
+		}
+		if (numberOfVersions == 0)
+		{
+			for (int i = first; i < limit; i++)
+				FE_node_field_creator_undefine_derivative(node_field_creator, i, fe_nodal_value_type);
+		}
+		else
+		{
+			int currentNumberOfVersions = FE_node_field_creator_get_number_of_versions(node_field_creator, componentNumber - 1);
+			for (int i = first; i < limit; i++)
+			{
+				FE_node_field_creator_define_derivative(node_field_creator, i, fe_nodal_value_type);
+				if (numberOfVersions > currentNumberOfVersions)
+					FE_node_field_creator_define_versions(node_field_creator, i, numberOfVersions);
+			}
+		}
+		return CMZN_OK;
+	}		
 
 	FE_field *getFeField() const { return fe_field; }
 };
@@ -201,17 +194,12 @@ public:
 			return 0;
 		if (!FE_region_contains_FE_node(fe_region, node))
 			return 0;
-
-		FE_field *fe_field = NULL;
+		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		if (getNodeField(fe_field))
-		{
 			return 0;
-		}
 		if (getUndefineNodeField(fe_field))
-		{
 			return 0;
-		}
 
 		const enum FE_nodal_value_type all_fe_nodal_value_types[] = {
 			FE_NODAL_VALUE,
@@ -229,118 +217,22 @@ public:
 		int number_of_components = cmzn_field_get_number_of_components(field);
 		for (int component_number = 1; component_number <= number_of_components; ++component_number)
 		{
-			for (int i = 1; i < number_of_fe_value_types; ++i)
+			// versions should be per-nodal-value-type, but are not currently
+			const int numberOfVersions = get_FE_node_field_component_number_of_versions(node, fe_field, component_number - 1);
+			for (int i = 0; i < number_of_fe_value_types; ++i)
 			{
 				enum FE_nodal_value_type fe_nodal_value_type = all_fe_nodal_value_types[i];
-				if (FE_nodal_value_version_exists(node, fe_field,
-					component_number - 1, /*version*/0, fe_nodal_value_type))
-				{
-					node_field->defineDerivative(component_number, fe_nodal_value_type);
-				}
-			}
-			// versions should be per-nodal-value-type, but are not currently
-			int number_of_versions = get_FE_node_field_component_number_of_versions(node, fe_field, component_number - 1);
-			if (number_of_versions > 1)
-			{
-				node_field->defineVersions(component_number, number_of_versions);
+				if (FE_nodal_value_version_exists(node, fe_field, component_number - 1,
+						/*version*/0, fe_nodal_value_type))
+					node_field->setValueNumberOfVersions(component_number, fe_nodal_value_type, numberOfVersions);
 			}
 		}
 		struct FE_time_sequence *timesequence = get_FE_node_field_FE_time_sequence(node, fe_field);
 		if (timesequence)
 		{
-			node_field->defineTimesequence(timesequence);
+			node_field->setTimesequence(timesequence);
 		}
 		return (node_field != NULL);
-	}
-
-	int defineDerivative(cmzn_field_id field, int component_number,
-		enum cmzn_node_value_type derivative_type)
-	{
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		if (!finite_element_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_derivative.  Field must be real finite_element type");
-			return 0;
-		}
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(field, &fe_field);
-		cmzn_node_field *node_field = getNodeField(fe_field);
-		if (!node_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_derivative.  Field is not defined yet");
-			return 0;
-		}
-		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_node_value_type_to_FE_nodal_value_type(derivative_type);
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
-			return 0;
-		clearTemplateNode();
-		return node_field->defineDerivative(component_number, fe_nodal_value_type);
-	}
-
-	int defineTimesequence(cmzn_field_id field,
-		cmzn_timesequence_id timesequence)
-	{
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		if (!finite_element_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_timesequence.  Field must be real finite_element type");
-			return 0;
-		}
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(field, &fe_field);
-		cmzn_node_field *node_field = getNodeField(fe_field);
-		if (!node_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_timesequence.  Field is not defined yet");
-			return 0;
-		}
-		clearTemplateNode();
-		return node_field->defineTimesequence(reinterpret_cast<struct FE_time_sequence *>(timesequence));
-	}
-
-	int defineVersions(cmzn_field_id field, int component_number,
-		int number_of_versions)
-	{
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		if (!finite_element_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_versions.  Field must be real finite_element type");
-			return 0;
-		}
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(field, &fe_field);
-		cmzn_node_field *node_field = getNodeField(fe_field);
-		if (!node_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_versions.  Field is not defined yet");
-			return 0;
-		}
-		clearTemplateNode();
-		return node_field->defineVersions(component_number, number_of_versions);
-	}
-
-	int getNumberOfVersions(cmzn_field_id field, int component_number)
-	{
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		if (!finite_element_field)
-			return 0;
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		FE_field *fe_field = NULL;
-		Computed_field_get_type_finite_element(field, &fe_field);
-		cmzn_node_field *node_field = getNodeField(fe_field);
-		if (!node_field)
-			return 0;
-		return node_field->getNumberOfVersions(component_number);
 	}
 
 	cmzn_timesequence_id getTimesequence(cmzn_field_id field)
@@ -362,8 +254,31 @@ public:
 		return timeSequence;
 	}
 
-	int hasDerivative(cmzn_field_id field, int component_number,
-		enum cmzn_node_value_type derivative_type)
+	int setTimesequence(cmzn_field_id field, cmzn_timesequence_id timesequence)
+	{
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
+		if (!finite_element_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_nodetemplate_set_timesequence.  Field must be real finite_element type");
+			return 0;
+		}
+		cmzn_field_finite_element_destroy(&finite_element_field);
+		FE_field *fe_field = NULL;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		cmzn_node_field *node_field = getNodeField(fe_field);
+		if (!node_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_nodetemplate_set_timesequence.  Field is not defined yet");
+			return 0;
+		}
+		clearTemplateNode();
+		return node_field->setTimesequence(reinterpret_cast<struct FE_time_sequence *>(timesequence));
+	}
+
+	int getValueNumberOfVersions(cmzn_field_id field, int componentNumber,
+		enum cmzn_node_value_label nodeValueLabel)
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
@@ -371,14 +286,29 @@ public:
 		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		cmzn_node_field *node_field = getNodeField(fe_field);
+		cmzn_node_field *node_field = this->getNodeField(fe_field);
 		if (!node_field)
 			return 0;
 		enum FE_nodal_value_type fe_nodal_value_type =
-			cmzn_node_value_type_to_FE_nodal_value_type(derivative_type);
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
-			return 0;
-		return node_field->hasDerivative(component_number, fe_nodal_value_type);
+			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
+		return node_field->getValueNumberOfVersions(componentNumber, fe_nodal_value_type);
+	}
+
+	int setValueNumberOfVersions(cmzn_field_id field, int componentNumber,
+		enum cmzn_node_value_label nodeValueLabel, int numberOfVersions)
+	{
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
+		if (!finite_element_field)
+			return CMZN_ERROR_ARGUMENT;
+		cmzn_field_finite_element_destroy(&finite_element_field);
+		FE_field *fe_field = NULL;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		cmzn_node_field *node_field = this->getNodeField(fe_field);
+		if (!node_field)
+			return CMZN_ERROR_ARGUMENT;
+		enum FE_nodal_value_type fe_nodal_value_type =
+			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
+		return node_field->setValueNumberOfVersions(componentNumber, fe_nodal_value_type, numberOfVersions);
 	}
 
 	int undefineField(cmzn_field_id field)
@@ -582,37 +512,37 @@ private:
 		return result;
 	}
 
-	FE_nodal_value_type cmzn_node_value_type_to_FE_nodal_value_type(
-		enum cmzn_node_value_type nodal_value_type)
+	FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
+		enum cmzn_node_value_label nodal_value_label)
 	{
 		FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
-		switch (nodal_value_type)
+		switch (nodal_value_label)
 		{
-			case CMZN_NODE_VALUE_TYPE_INVALID:
+			case CMZN_NODE_VALUE_LABEL_INVALID:
 				fe_nodal_value_type = FE_NODAL_UNKNOWN;
 				break;
-			case CMZN_NODE_VALUE:
+			case CMZN_NODE_VALUE_LABEL_VALUE:
 				fe_nodal_value_type = FE_NODAL_VALUE;
 				break;
-			case CMZN_NODE_D_DS1:
+			case CMZN_NODE_VALUE_LABEL_D_DS1:
 				fe_nodal_value_type = FE_NODAL_D_DS1;
 				break;
-			case CMZN_NODE_D_DS2:
+			case CMZN_NODE_VALUE_LABEL_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMZN_NODE_D_DS3:
+			case CMZN_NODE_VALUE_LABEL_D_DS3:
 				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
-			case CMZN_NODE_D2_DS1DS2:
+			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
 				break;
-			case CMZN_NODE_D2_DS1DS3:
+			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
 				break;
-			case CMZN_NODE_D2_DS2DS3:
+			case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
 				break;
-			case CMZN_NODE_D3_DS1DS2DS3:
+			case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
 				break;
 		}
@@ -1201,68 +1131,39 @@ int cmzn_nodetemplate_define_field_from_node(
 	return 0;
 }
 
-int cmzn_nodetemplate_define_derivative(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number,
-	enum cmzn_node_value_type derivative_type)
-{
-	if (node_template && field)
-	{
-		return node_template->defineDerivative(field, component_number, derivative_type);
-	}
-	return 0;
-}
-
-int cmzn_nodetemplate_define_timesequence(
-	cmzn_nodetemplate_id node_template, cmzn_field_id field,
-	cmzn_timesequence_id timesequence)
-{
-	if (node_template && field && timesequence)
-	{
-		return node_template->defineTimesequence(field, timesequence);
-	}
-	return 0;
-}
-
-int cmzn_nodetemplate_define_versions(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number,
-	int number_of_versions)
-{
-	if (node_template && field)
-	{
-		return node_template->defineVersions(field, component_number, number_of_versions);
-	}
-	return 0;
-}
-
-int cmzn_nodetemplate_get_number_of_versions(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number)
-{
-	if (node_template && field)
-	{
-		return node_template->getNumberOfVersions(field, component_number);
-	}
-	return 0;
-}
-
 cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field)
 {
 	if (node_template && field)
-	{
 		return node_template->getTimesequence(field);
-	}
 	return 0;
 }
 
-int cmzn_nodetemplate_has_derivative(cmzn_nodetemplate_id node_template,
-	cmzn_field_id field, int component_number,
-	enum cmzn_node_value_type derivative_type)
+int cmzn_nodetemplate_set_timesequence(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field,
+	cmzn_timesequence_id timesequence)
 {
-	if (node_template && field)
-	{
-		return node_template->hasDerivative(field, component_number, derivative_type);
-	}
+	if (node_template && field && timesequence)
+		return node_template->setTimesequence(field, timesequence);
 	return 0;
+}
+
+int cmzn_nodetemplate_get_value_number_of_versions(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field, int component_number,
+	enum cmzn_node_value_label node_value_label)
+{
+	if (node_template)
+		return node_template->getValueNumberOfVersions(field, component_number, node_value_label);
+	return 0;
+}
+
+int cmzn_nodetemplate_set_value_number_of_versions(
+	cmzn_nodetemplate_id node_template, cmzn_field_id field, int component_number,
+	enum cmzn_node_value_label node_value_label, int number_of_versions)
+{
+	if (node_template)
+		return node_template->setValueNumberOfVersions(field, component_number, node_value_label, number_of_versions);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template,
@@ -1299,36 +1200,36 @@ int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_template)
 	return 0;
 }
 
-class cmzn_node_value_type_conversion
+class cmzn_node_value_label_conversion
 {
 public:
-	static const char *to_string(enum cmzn_node_value_type type)
+	static const char *to_string(enum cmzn_node_value_label label)
 	{
 		const char *enum_string = 0;
-		switch (type)
+		switch (label)
 		{
-			case CMZN_NODE_VALUE:
+			case CMZN_NODE_VALUE_LABEL_VALUE:
 				enum_string = "VALUE";
 				break;
-			case CMZN_NODE_D_DS1:
+			case CMZN_NODE_VALUE_LABEL_D_DS1:
 				enum_string = "D_DS1";
 				break;
-			case CMZN_NODE_D_DS2:
+			case CMZN_NODE_VALUE_LABEL_D_DS2:
 				enum_string = "D_DS2";
 				break;
-			case CMZN_NODE_D_DS3:
+			case CMZN_NODE_VALUE_LABEL_D_DS3:
 				enum_string = "D_DS3";
 				break;
-			case CMZN_NODE_D2_DS1DS2:
+			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 				enum_string = "D2_DS1DS2";
 				break;
-			case CMZN_NODE_D2_DS1DS3:
-				enum_string = "_D2_DS1DS3";
+			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
+				enum_string = "D2_DS1DS3";
 				break;
-			case CMZN_NODE_D2_DS2DS3:
+			case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
 				enum_string = "D2_DS2DS3";
 				break;
-			case CMZN_NODE_D3_DS1DS2DS3:
+			case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
 				enum_string = "D3_DS1DS2DS3";
 				break;
 			default:
@@ -1338,14 +1239,14 @@ public:
 	}
 };
 
-enum cmzn_node_value_type cmzn_node_value_type_enum_from_string(
+enum cmzn_node_value_label cmzn_node_value_label_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum cmzn_node_value_type,	cmzn_node_value_type_conversion>(string);
+	return string_to_enum<enum cmzn_node_value_label, cmzn_node_value_label_conversion>(string);
 }
 
-char *cmzn_node_value_type_enum_to_string(enum cmzn_node_value_type type)
+char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label label)
 {
-	const char *type_string = cmzn_node_value_type_conversion::to_string(type);
-	return (type_string ? duplicate_string(type_string) : 0);
+	const char *label_string = cmzn_node_value_label_conversion::to_string(label);
+	return (label_string ? duplicate_string(label_string) : 0);
 }

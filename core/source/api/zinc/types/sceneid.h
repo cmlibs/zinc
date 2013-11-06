@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : sceneid.h
  *
  */
@@ -11,7 +11,7 @@
 #ifndef CMZN_SCENEID_H__
 #define CMZN_SCENEID_H__
 
-/***************************************************************************//**
+/**
  * A handle to zinc scene, zinc scene contains a top region to display
  * scene of itself and all of its child regions, it also store a a
  * collections of objects that make up a 3-D graphical model - lights,

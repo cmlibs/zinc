@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldgroupid.h
  *
  */
@@ -10,7 +10,9 @@
 
 #ifndef CMZN_FIELDGROUPID_H__
 #define CMZN_FIELDGROUPID_H__
+
 /** Handle to a finite_element type cmzn_field */
 	struct cmzn_field_group;
 	typedef struct cmzn_field_group *cmzn_field_group_id;
+
 #endif

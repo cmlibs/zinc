@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : materialid.h
  *
  */
@@ -11,7 +11,7 @@
 #ifndef CMZN_MATERIALID_H__
 #define CMZN_MATERIALID_H__
 
-/***************************************************************************//**
+/**
  * A handle to zinc material. zinc material describes the
  * colour, shading and other graphical properties of a material, it is highly
  * similar to material described by OpenGL.
@@ -35,7 +35,7 @@
 	typedef struct cmzn_materialmodule * cmzn_materialmodule_id;
 
 
-	/***************************************************************************//**
+	/**
 	 * Labels of material attributes which may be set or obtained using generic
 	 * get/set_attribute functions.
 	 */
