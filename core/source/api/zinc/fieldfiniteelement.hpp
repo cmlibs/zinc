@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldfiniteelement.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -111,7 +111,7 @@ private:
 	{	}
 
 	friend FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
-		Node::ValueType valueType, int versionNumber);
+		Node::ValueLabel nodeValueLabel, int versionNumber);
 
 public:
 
@@ -180,10 +180,10 @@ inline FieldFindMeshLocation Fieldmodule::createFieldFindMeshLocation(
 }
 
 inline FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
-	Node::ValueType valueType, int versionNumber)
+	Node::ValueLabel nodeValueLabel, int versionNumber)
 {
 	return FieldNodeValue(cmzn_fieldmodule_create_field_node_value(id,
-		sourceField.getId(), static_cast<cmzn_node_value_type>(valueType),
+		sourceField.getId(), static_cast<cmzn_node_value_label>(nodeValueLabel),
 		versionNumber));
 }
 

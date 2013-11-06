@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : node.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -11,6 +11,7 @@
 
 #include "zinc/node.h"
 #include "zinc/field.hpp"
+#include "zinc/timesequence.hpp"
 
 namespace OpenCMISS
 {
@@ -40,17 +41,17 @@ public:
 		id(cmzn_node_access(node.id))
 	{ }
 
-	enum ValueType
+	enum ValueLabel
 	{
-		VALUE_TYPE_INVALID = CMZN_NODE_VALUE_TYPE_INVALID,
-		VALUE = CMZN_NODE_VALUE,                /*!< literal field value */
-		D_DS1 = CMZN_NODE_D_DS1,                /*!< derivative w.r.t. arc length S1 */
-		D_DS2 = CMZN_NODE_D_DS2,                /*!< derivative w.r.t. arc length S2 */
-		D2_DS1DS2 = CMZN_NODE_D2_DS1DS2,        /*!< cross derivative w.r.t. arc lengths S1,S2 */
-		D_DS3 = CMZN_NODE_D_DS3,                /*!< derivative w.r.t. arc length S3 */
-		D2_DS1DS3 = CMZN_NODE_D2_DS1DS3,        /*!< cross derivative w.r.t. arc lengths S1,S3 */
-		D2_DS2DS3 = CMZN_NODE_D2_DS2DS3,        /*!< cross derivative w.r.t. arc lengths S2,S3 */
-		D3_DS1DS2DS3 = CMZN_NODE_D3_DS1DS2DS3,  /*!< triple cross derivative w.r.t. arc lengths S1,S2,S3 */
+		VALUE_LABEL_INVALID = CMZN_NODE_VALUE_LABEL_INVALID,
+		VALUE_LABEL_VALUE = CMZN_NODE_VALUE_LABEL_VALUE,                /*!< literal field value */
+		VALUE_LABEL_D_DS1 = CMZN_NODE_VALUE_LABEL_D_DS1,                /*!< derivative w.r.t. arc length S1 */
+		VALUE_LABEL_D_DS2 = CMZN_NODE_VALUE_LABEL_D_DS2,                /*!< derivative w.r.t. arc length S2 */
+		VALUE_LABEL_D2_DS1DS2 = CMZN_NODE_VALUE_LABEL_D2_DS1DS2,        /*!< cross derivative w.r.t. arc lengths S1,S2 */
+		VALUE_LABEL_D_DS3 = CMZN_NODE_VALUE_LABEL_D_DS3,                /*!< derivative w.r.t. arc length S3 */
+		VALUE_LABEL_D2_DS1DS3 = CMZN_NODE_VALUE_LABEL_D2_DS1DS3,        /*!< cross derivative w.r.t. arc lengths S1,S3 */
+		VALUE_LABEL_D2_DS2DS3 = CMZN_NODE_VALUE_LABEL_D2_DS2DS3,        /*!< cross derivative w.r.t. arc lengths S2,S3 */
+		VALUE_LABEL_D3_DS1DS2DS3 = CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3,  /*!< triple cross derivative w.r.t. arc lengths S1,S2,S3 */
 	};
 
 	Node& operator=(const Node& node)
@@ -150,21 +151,28 @@ public:
 		return id;
 	}
 
-	int defineDerivative(Field& field, int componentNumber, Node::ValueType derivativeType)
-	{
-		return cmzn_nodetemplate_define_derivative(id, field.getId(),
-			componentNumber, static_cast<cmzn_node_value_type>(derivativeType));
-	}
-
 	int defineField(Field& field)
 	{
 		return cmzn_nodetemplate_define_field(id, field.getId());
 	}
 
-	int defineVersions(Field& field, int componentNumber, int numberOfVersions)
+	int setTimesequence(Field& field, Timesequence& timesequence)
 	{
-		return cmzn_nodetemplate_define_versions(id,
-			field.getId(), componentNumber, numberOfVersions);
+		return cmzn_nodetemplate_set_timesequence(id, field.getId(), timesequence.getId());
+	}
+
+	int getValueNumberOfVersions(Field& field, int componentNumber,
+		Node::ValueLabel valueLabel)
+	{
+		return cmzn_nodetemplate_get_value_number_of_versions(id, field.getId(),
+			componentNumber, static_cast<cmzn_node_value_label>(valueLabel));
+	}
+
+	int setValueNumberOfVersions(Field& field, int componentNumber,
+		Node::ValueLabel valueLabel, int numberOfVersions)
+	{
+		return cmzn_nodetemplate_set_value_number_of_versions(id, field.getId(),
+			componentNumber, static_cast<cmzn_node_value_label>(valueLabel), numberOfVersions);
 	}
 
 	int undefineField(Field& field)

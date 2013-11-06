@@ -193,7 +193,7 @@ Used to specify a component of a field.  If the component <number> is < 0 or
 	int number;
 }; /* struct FE_field_component */
 
-/* API uses external type enum cmzn_node_value_type */
+/* API uses external type enum cmzn_node_value_label */
 enum FE_nodal_value_type
 /*******************************************************************************
 LAST MODIFIED : 27 January 1998
@@ -488,11 +488,19 @@ Frees the memory for the node field creator and sets
 <*node_field_creator_address> to NULL.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Adds the derivative of specified <derivative_type> to the <component_number>
  * specified.
  */
 int FE_node_field_creator_define_derivative(
+	struct FE_node_field_creator *node_field_creator, int component_number,
+	enum FE_nodal_value_type derivative_type);
+
+/**
+ * Removes the derivative of specified <derivative_type> for the <component_number>
+ * specified.
+ */
+void FE_node_field_creator_undefine_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type);
 

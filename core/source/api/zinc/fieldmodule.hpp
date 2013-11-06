@@ -275,7 +275,7 @@ public:
 		Field& sourceField, Field& meshField, Mesh& mesh);
 
 	FieldNodeValue createFieldNodeValue(Field& sourceField,
-		Node::ValueType valueType, int versionNumber);
+		Node::ValueLabel nodeValueLabel, int versionNumber);
 
 	FieldStoredMeshLocation createFieldStoredMeshLocation(Mesh& mesh);
 

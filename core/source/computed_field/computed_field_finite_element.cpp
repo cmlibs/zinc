@@ -3907,38 +3907,38 @@ Returns the <fe_time_sequence> corresponding to the <node> and <field>.  If the
 
 cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	cmzn_fieldmodule_id field_module, cmzn_field_id field,
-	enum cmzn_node_value_type type, int version)
+	enum cmzn_node_value_label node_value_label, int version)
 {
 	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
 	{
 		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
-		switch (type)
+		switch (node_value_label)
 		{
-			case CMZN_NODE_VALUE_TYPE_INVALID:
+			case CMZN_NODE_VALUE_LABEL_INVALID:
 				fe_nodal_value_type = FE_NODAL_UNKNOWN;
 				break;
-			case CMZN_NODE_VALUE:
+			case CMZN_NODE_VALUE_LABEL_VALUE:
 				fe_nodal_value_type = FE_NODAL_VALUE;
 				break;
-			case CMZN_NODE_D_DS1:
+			case CMZN_NODE_VALUE_LABEL_D_DS1:
 				fe_nodal_value_type = FE_NODAL_D_DS1;
 				break;
-			case CMZN_NODE_D_DS2:
+			case CMZN_NODE_VALUE_LABEL_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMZN_NODE_D_DS3:
+			case CMZN_NODE_VALUE_LABEL_D_DS3:
 				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
-			case CMZN_NODE_D2_DS1DS2:
+			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
 				break;
-			case CMZN_NODE_D2_DS1DS3:
+			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
 				break;
-			case CMZN_NODE_D2_DS2DS3:
+			case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
 				break;
-			case CMZN_NODE_D3_DS1DS2DS3:
+			case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
 				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
 				break;
 		}

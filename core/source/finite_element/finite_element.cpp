@@ -10956,13 +10956,6 @@ Frees the memory for the node field creator and sets
 int FE_node_field_creator_define_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type)
-/*******************************************************************************
-LAST MODIFIED: 16 November 2001
-
-DESCRIPTION:
-Adds the derivative of specified <derivative_type> to the <component_number>
-specified.
-==============================================================================*/
 {
 	enum FE_nodal_value_type *new_nodal_value_types;
 	int number_of_derivatives, return_code;
@@ -10995,6 +10988,32 @@ specified.
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+void FE_node_field_creator_undefine_derivative(
+	struct FE_node_field_creator *node_field_creator, int component_number,
+	enum FE_nodal_value_type derivative_type)
+{
+	if (node_field_creator && (component_number >= 0) &&
+		 (component_number < node_field_creator->number_of_components))
+	{
+		int number_of_derivatives = node_field_creator->numbers_of_derivatives[component_number];
+		enum FE_nodal_value_type *nodal_value_types = node_field_creator->nodal_value_types[component_number];
+		// start at 1 so can't underfine FE_NODAL_VALUE
+		for (int j = 1; j <= number_of_derivatives; ++j)
+		{
+			if (nodal_value_types[j] == derivative_type)
+			{
+				while (j < number_of_derivatives)
+				{
+					nodal_value_types[j] = nodal_value_types[j + 1];
+					++j;
+				}
+				--(node_field_creator->numbers_of_derivatives[component_number]);
+				return;
+			}
+		}
+	}
 }
 
 int FE_node_field_creator_define_versions(
