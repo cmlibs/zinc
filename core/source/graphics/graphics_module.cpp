@@ -49,7 +49,6 @@ struct cmzn_graphics_module
 	struct cmzn_scenefiltermodule *scenefiltermodule;
 	void *tessellation_manager_callback_id;
 	int access_count;
-	cmzn_region_id root_region;
 	std::list<cmzn_region*> *member_regions_list;
 };
 
@@ -226,7 +225,6 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 			module->font_manager_callback_id =
 				MANAGER_REGISTER(cmzn_font)(cmzn_graphics_module_font_manager_callback,
 					(void *)module, cmzn_fontmodule_get_manager(module->fontmodule));
-			module->root_region = cmzn_context_get_default_region(context);
 			module->materialmodule = cmzn_materialmodule_create(
 					cmzn_spectrummodule_get_manager(module->spectrummodule));
 			module->glyphmodule = cmzn_glyphmodule_create(module->materialmodule);
@@ -329,8 +327,6 @@ int cmzn_graphics_module_destroy(
 			MANAGER_DEREGISTER(cmzn_glyph)(
 				graphics_module->glyph_manager_callback_id,
 				cmzn_glyphmodule_get_manager(graphics_module->glyphmodule));
-			if (graphics_module->root_region)
-				cmzn_region_destroy(&graphics_module->root_region);
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id,
 				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
