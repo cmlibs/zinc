@@ -9,11 +9,11 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
-int timeNotifierCallback(double currentTime, void *storeTimeAddressVoid)
+int timeNotifierCallback(cmzn_timenotifierevent_id event, void *storeTimeAddressVoid)
 {
 	double *storeTimeAddress = static_cast<double *>(storeTimeAddressVoid);
 	EXPECT_NE(static_cast<double *>(0), storeTimeAddress);
-	*storeTimeAddress = currentTime;
+	*storeTimeAddress = cmzn_timenotifierevent_get_time(event);
 	return CMZN_OK;
 }
 
@@ -57,9 +57,9 @@ class myTimenotifier : public Timenotifiercallback
 private:
 	Timekeeper timekeeper;
 
-	virtual int operator()(double current_time)
+	virtual int operator()(const Timenotifierevent &event)
 	{
-		EXPECT_EQ(timekeeper.getTime(), current_time);
+		EXPECT_EQ(timekeeper.getTime(), event.getTime());
 		return CMZN_OK;
 	}
 
