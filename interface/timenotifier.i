@@ -65,14 +65,16 @@
 %{
 #include "zinc/timenotifier.hpp"
 
-static int callbackToPython(double current_time, void *user_data)
+static int callbackToPython(cmzn_timenotifierevent_id timenotifier_event, void *user_data)
 {
     PyObject *arglist = NULL;
     PyObject *result = NULL;
     PyObject *my_callback = (PyObject *)user_data;
     /* convert timenotifier to python object */
     /* Time to call the callback */
-    arglist = Py_BuildValue("(d)", current_time);
+    OpenCMISS::Zinc::Timenotifierevent *timenotifierevent = new OpenCMISS::Zinc::Timenotifierevent(cmzn_timenotifierevent_access(timenotifier_event));
+    PyObject *obj = SWIG_NewPointerObj(SWIG_as_voidptr(timenotifierevent), SWIGTYPE_p_OpenCMISS__Zinc__Timenotifierevent, 1);
+    arglist = Py_BuildValue("(N)", obj);
     result = PyObject_CallObject(my_callback, arglist);
     Py_DECREF(arglist);
     if (result)
