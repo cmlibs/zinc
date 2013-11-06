@@ -2439,7 +2439,8 @@ int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 	 return (return_code);
 }
 
-static int cmzn_scene_time_update_callback(double current_time, void *scene_void)
+static int cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifierevent,
+	void *scene_void)
 {
 	int return_code;
 	struct cmzn_scene *scene;
@@ -2450,7 +2451,7 @@ static int cmzn_scene_time_update_callback(double current_time, void *scene_void
 		if (scene->transformation_time_callback_flag)
 		{
 			cmzn_scene_trigger_time_dependent_transformation(scene,
-				current_time);
+				cmzn_timenotifierevent_get_time(timenotifierevent));
 		}
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_time_change,NULL,

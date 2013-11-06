@@ -21,6 +21,37 @@ This provides an object which supplies a concept of time to Cmgui
 #include "time/time.h"
 #include "time/time_keeper.hpp"
 
+int cmzn_timenotifierevent::deaccess(cmzn_timenotifierevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_timenotifierevent_id cmzn_timenotifierevent_access(
+	cmzn_timenotifierevent_id timenotifierevent)
+{
+	if (timenotifierevent)
+		return timenotifierevent->access();
+	return 0;
+}
+
+int cmzn_timenotifierevent_destroy(cmzn_timenotifierevent_id *timenotifierevent_address)
+{
+	return cmzn_timenotifierevent::deaccess(*timenotifierevent_address);
+}
+
+double cmzn_timenotifierevent_get_time(cmzn_timenotifierevent_id timenotifierevent)
+{
+	return timenotifierevent->time;
+}
+
 enum Time_object_type
 {
 	TIME_OBJECT_REGULAR,
@@ -34,7 +65,7 @@ struct Time_object
 	double update_frequency;
 	double time_offset;
 	enum Time_object_type type;
-	Time_object_callback callback_function;
+	cmzn_timenotifier_callback callback_function;
 	void *callback_user_data;
 	struct cmzn_timekeeper *time_keeper;
 	Time_object_next_time_function next_time_function;
@@ -387,8 +418,10 @@ through the timekeeper.
 
 	if (time && time->callback_function)
 	{
-		(time->callback_function)(time->current_time,
-			time->callback_user_data);
+		cmzn_timenotifierevent_id event = new cmzn_timenotifierevent();
+		event->time = time->current_time;
+		(time->callback_function)(event,time->callback_user_data);
+		cmzn_timenotifierevent_destroy(&event);
 		return_code = 1;
 	}
 	else

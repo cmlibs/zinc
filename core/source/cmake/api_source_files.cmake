@@ -82,7 +82,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/spectrumid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/streamid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/tessellationid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timeid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timenotifierid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timekeeperid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timesequenceid.h )
 

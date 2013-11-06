@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : timeid.h
+ * FILE : timenotifierid.h
  *
  */
 /* OpenCMISS-Zinc Library
@@ -8,8 +8,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef CMZN_TIMEID_H__
-#define CMZN_TIMEID_H__
+#ifndef CMZN_TIMENOTIFIERID_H__
+#define CMZN_TIMENOTIFIERID_H__
 
 /***************************************************************************//**
  * A handle to zinc time notifier. This notifier provides a concept of time to
@@ -20,4 +20,7 @@
 	struct cmzn_timenotifier;
 	typedef struct cmzn_timenotifier *cmzn_timenotifier_id;
 
-#endif /* CMZN_TIME_ID_H */
+	struct cmzn_timenotifierevent;
+	typedef struct cmzn_timenotifierevent * cmzn_timenotifierevent_id;
+
+#endif

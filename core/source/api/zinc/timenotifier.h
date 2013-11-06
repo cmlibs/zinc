@@ -12,7 +12,7 @@
 #ifndef CMZN_TIMENOTIFIER_H__
 #define CMZN_TIMENOTIFIER_H__
 
-#include "types/timeid.h"
+#include "types/timenotifierid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -31,7 +31,8 @@ extern "C" {
  * @return  return one if such the callback function
  *    has been called successfully otherwise 0.
  */
-typedef int (*cmzn_timenotifier_callback)(double current_time, void *user_data);
+typedef int (*cmzn_timenotifier_callback)(cmzn_timenotifierevent_id timenotifierevent,
+	void *user_data);
 
 /**
  * Access the time notifier, increase the access count of the time notifier
@@ -127,6 +128,38 @@ ZINC_API int cmzn_timenotifier_regular_set_frequency(cmzn_timenotifier_id timeno
  */
 ZINC_API int cmzn_timenotifier_regular_set_offset(cmzn_timenotifier_id timenotifier,
 	double time_offset);
+
+/**
+* Returns a new reference to the timenotifier event with reference count incremented.
+* Caller is responsible for destroying the new reference.
+*
+* @param timenotifierevent  The timenotifier event to obtain a new reference to.
+* @return  New timenotifierevent reference with incremented reference count.
+*/
+ZINC_API cmzn_timenotifierevent_id cmzn_timenotifierevent_access(
+	cmzn_timenotifierevent_id timenotifierevent);
+
+/**
+ * Destroys this reference to the timenotifier event (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * Note: At the end of the cmzn_timenotifier_callback_function, the caller
+ * will destroy the event argument so users do not need to call this destroy
+ * function unless, an additional reference count has been added through
+ * cmzn_timenotifierevent_access function.
+ *
+ * @param timenotifierevent_address  Address of timenotifier event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_timenotifierevent_destroy(cmzn_timenotifierevent_id *timenotifierevent_address);
+
+/**
+ * Get the time when this timenotifier event is triggered.
+ *
+ * @param timenotifierevent  Handle to the timenotifier event.
+ * @return  The time when this timenotifier event is triggered
+ */
+ZINC_API double cmzn_timenotifierevent_get_time(cmzn_timenotifierevent_id timenotifierevent);
 
 #ifdef __cplusplus
 }
