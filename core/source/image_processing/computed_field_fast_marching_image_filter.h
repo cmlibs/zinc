@@ -27,4 +27,14 @@ If the field is of type COMPUTED_FIELD_FAST_MARCHING_IMAGE_FILTER, the source_fi
 used by it are returned - otherwise an error is reported.
 ==============================================================================*/
 
+
+/***************************************************************************//**
+ * Creates a field performing ITK fast marching image filter on scalar source field
+ * image. Sets number of components to same number as <source_field>.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_fast_marching(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	double stopping_value, int num_seed_points, int dimension,
+	const double *seed_points, const double *seed_values, const int *output_size);
+
 #endif /* !defined (COMPUTED_FIELD_FAST_MARCHING_IMAGE_FILTER_H) */

@@ -30,6 +30,12 @@ struct cmzn_field_imagefilter_threshold;
 typedef struct cmzn_field_imagefilter_threshold * cmzn_field_imagefilter_threshold_id;
 
 /**
+ * The image field specific handle to a zinc histogram field.
+ */
+struct cmzn_field_imagefilter_histogram;
+typedef struct cmzn_field_imagefilter_histogram * cmzn_field_imagefilter_histogram_id;
+
+/**
  * The condition to be true for pixel values to be assigned to the outside value
  * for the threshold image filter field.
  */
