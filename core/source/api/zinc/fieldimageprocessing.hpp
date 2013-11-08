@@ -206,6 +206,82 @@ public:
 
 };
 
+class FieldImagefilterHistogram : public Field
+{
+
+private:
+	explicit FieldImagefilterHistogram(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldImagefilterHistogram
+		Fieldmodule::createFieldImagefilterHistogram(Field& sourceField);
+
+public:
+
+	FieldImagefilterHistogram() : Field(0)
+	{	}
+
+	FieldImagefilterHistogram(Field& field) :
+		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_histogram(field.getId())))
+	{	}
+
+	int getComputeMinimumValues(int valuesCount, double *valuesOut)
+	{
+		return cmzn_field_imagefilter_histogram_get_compute_minimum_values(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			valuesCount, valuesOut);
+	}
+
+	int setComputeMinimumValues(int valuesCount, const double *valuesIn)
+	{
+		return cmzn_field_imagefilter_histogram_set_compute_minimum_values(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			valuesCount, valuesIn);
+	}
+
+	int getComputeMaximumValues(int valuesCount, double *valuesOut)
+	{
+		return cmzn_field_imagefilter_histogram_get_compute_maximum_values(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			valuesCount, valuesOut);
+	}
+
+	int setComputeMaximumValues(int valuesCount, const double *valuesIn)
+	{
+		return cmzn_field_imagefilter_histogram_set_compute_maximum_values(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			valuesCount, valuesIn);
+	}
+
+	int getNumberOfBins(int valuesCount, int *valuesOut)
+	{
+		return cmzn_field_imagefilter_histogram_get_number_of_bins(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			valuesCount, valuesOut);
+	}
+
+	int setNumberOfBins(int valuesCount, const int *valuesIn)
+	{
+		return cmzn_field_imagefilter_histogram_set_number_of_bins(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			valuesCount, valuesIn);
+	}
+
+	int getMarginalScale()
+	{
+		return cmzn_field_imagefilter_histogram_get_marginal_scale(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id));
+	}
+
+	int setMarginalScale(double marginalScale)
+	{
+		return cmzn_field_imagefilter_histogram_set_marginal_scale(
+			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id),
+			marginalScale);
+	}
+
+};
+
 class FieldImagefilterGradientMagnitudeRecursiveGaussian : public Field
 {
 
@@ -240,6 +316,26 @@ private:
 public:
 
 	FieldImagefilterRescaleIntensity() : Field(0)
+	{	}
+
+};
+
+
+class FieldImagefilterMean : public Field
+{
+
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImagefilterMean(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldImagefilterMean
+		Fieldmodule::createFieldImagefilterMean(Field& sourceField,
+			int valuesCount,const int *radiusSizesIn);
+
+public:
+
+	FieldImagefilterMean() : Field(0)
 	{	}
 
 };
@@ -413,6 +509,13 @@ inline FieldImagefilterGradientMagnitudeRecursiveGaussian
 			sourceField.getId(), sigma));
 }
 
+inline FieldImagefilterHistogram
+	Fieldmodule::createFieldImagefilterHistogram(Field& sourceField)
+{
+	return FieldImagefilterHistogram(cmzn_fieldmodule_create_field_imagefilter_histogram(
+			id, sourceField.getId()));
+}
+
 inline FieldImagefilterRescaleIntensity
 	Fieldmodule::createFieldImagefilterRescaleIntensity(Field& sourceField,
 		double outputMin, double outputMax)
@@ -420,6 +523,13 @@ inline FieldImagefilterRescaleIntensity
 	return FieldImagefilterRescaleIntensity(
 		cmzn_fieldmodule_create_field_imagefilter_rescale_intensity(id,
 			sourceField.getId(), outputMin, outputMax));
+}
+
+inline FieldImagefilterMean Fieldmodule::createFieldImagefilterMean(Field& sourceField,
+	int valuesCount, const int *radiusSizesIn)
+{
+	return FieldImagefilterMean(cmzn_fieldmodule_create_field_imagefilter_mean(
+		id, sourceField.getId(), valuesCount, radiusSizesIn));
 }
 
 inline FieldImagefilterSigmoid

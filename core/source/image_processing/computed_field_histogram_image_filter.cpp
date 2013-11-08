@@ -42,6 +42,8 @@ public:
 	double *histogramMinimum;
 	double *histogramMaximum;
 	int totalPixels;
+
+	Computed_field_histogram_image_filter(Computed_field *source_field);
        
 	Computed_field_histogram_image_filter(Computed_field *source_field,
 		const int *numberOfBins, double marginalScale, const double *histogramMinimumIn, const double *histogramMaximumIn);
@@ -66,6 +68,120 @@ public:
 	int evaluate_histogram(cmzn_fieldcache& cache, RealFieldValueCache& valueCache,
 		const typename HistogramGeneratorType::HistogramType *outputHistogram,
 		ImageType *dummytemplarg, HistogramGeneratorType *dummytemplarg2);
+
+	double getMaginalScale()
+	{
+		return marginalScale;
+	}
+
+	int setMaginalScale(double maginalScaleIn)
+	{
+		marginalScale = maginalScaleIn;
+		clear_cache();
+		return CMZN_OK;
+	}
+
+	int getNumberOfBins(int valuesCount, int *valuesOut)
+	{
+		if ((valuesCount == 0) || ((valuesCount > 0) && valuesOut))
+		{
+			for (int i = 0; i < sourceNumberOfComponents; i++)
+			{
+				valuesOut[i] = numberOfBins[i];
+			}
+			return sourceNumberOfComponents;
+		}
+		return 0;
+	}
+
+	int setNumberOfBins(int valuesCount, const int *valuesIn)
+	{
+		if ((valuesCount > 0) && valuesIn)
+		{
+			for (int i = 0; i < sourceNumberOfComponents; i++)
+			{
+				if (i > valuesCount)
+				{
+					numberOfBins[i] = valuesIn[valuesCount - 1];
+				}
+				else
+				{
+					numberOfBins[i] = valuesIn[i];
+				}
+			}
+			clear_cache();
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int getHistogramMinimum(int valuesCount, double *valuesOut)
+	{
+		if ((valuesCount == 0) || ((valuesCount > 0) && valuesOut))
+		{
+			for (int i = 0; i < sourceNumberOfComponents; i++)
+			{
+				valuesOut[i] = histogramMinimum[i];
+			}
+			return sourceNumberOfComponents;
+		}
+		return 0;
+	}
+
+	int setHistogramMinimum(int valuesCount, const double *valuesIn)
+	{
+		if ((valuesCount > 0) && valuesIn)
+		{
+			for (int i = 0; i < sourceNumberOfComponents; i++)
+			{
+				if (i > valuesCount)
+				{
+					histogramMinimum[i] = valuesIn[valuesCount - 1];
+				}
+				else
+				{
+					histogramMinimum[i] = valuesIn[i];
+				}
+			}
+			clear_cache();
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int getHistogramMaximum(int valuesCount, double *valuesOut)
+	{
+		if ((valuesCount == 0) || ((valuesCount > 0) && valuesOut))
+		{
+			for (int i = 0; i < sourceNumberOfComponents; i++)
+			{
+				valuesOut[i] = histogramMaximum[i];
+			}
+			return sourceNumberOfComponents;
+		}
+		return 0;
+	}
+
+	int setHistogramMaximum(int valuesCount, const double *valuesIn)
+	{
+		if ((valuesCount > 0) && valuesIn)
+		{
+			for (int i = 0; i < sourceNumberOfComponents; i++)
+			{
+				if (i > valuesCount)
+				{
+					histogramMaximum[i] = valuesIn[valuesCount - 1];
+				}
+				else
+				{
+					histogramMaximum[i] = valuesIn[i];
+				}
+			}
+			clear_cache();
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
 
 private:
 	virtual void create_functor();
@@ -123,6 +239,14 @@ private:
 		ComputedFieldFilter* filter);
 
 };
+
+inline Computed_field_histogram_image_filter *
+	Computed_field_histogram_image_filter_core_cast(
+		cmzn_field_imagefilter_histogram *imagefilter_histogram)
+{
+	return (static_cast<Computed_field_histogram_image_filter*>(
+		reinterpret_cast<Computed_field*>(imagefilter_histogram)->core));
+}
 
 template <class ImageType, class HistogramGeneratorType >
 int Computed_field_histogram_image_filter::update_histogram(
@@ -782,6 +906,44 @@ Evaluate the fields cache at the location
 	return (return_code);
 } /* computed_field_image_filter::create_filters_multicomponent_multidimensions */
 
+
+Computed_field_histogram_image_filter::Computed_field_histogram_image_filter(
+	Computed_field *source_field) :	computed_field_image_filter(source_field)
+/*******************************************************************************
+LAST MODIFIED : 25 March 2008
+
+DESCRIPTION :
+Create the computed_field representation of the RescaleIntensityImageFilter.
+==============================================================================*/
+{
+	int i;
+	sourceNumberOfComponents = source_field->number_of_components;
+	numberOfBins = new int [sourceNumberOfComponents];
+	for (i = 0 ; i < sourceNumberOfComponents ; i++)
+	{
+		numberOfBins[i] = 64;
+	}
+	histogramMinimum = new double [sourceNumberOfComponents];
+	for (i = 0 ; i < sourceNumberOfComponents ; i++)
+	{
+		histogramMinimum[i] = 0.0;
+	}
+	histogramMaximum = new double [sourceNumberOfComponents];
+	for (i = 0 ; i < sourceNumberOfComponents ; i++)
+	{
+		histogramMaximum[i] = 1.0;
+	}
+	marginalScale = 10.0;
+	if (dimension > 0 && sizes)
+	{
+		totalPixels = sizes[0];
+		for (i = 1 ; i < dimension ; i++)
+		{
+			totalPixels *= sizes[i];
+		}
+	}
+}
+
 Computed_field_histogram_image_filter::Computed_field_histogram_image_filter(
 	Computed_field *source_field, const int *numberOfBinsIn, double marginalScale,
 	const double *histogramMinimumIn, const double *histogramMaximumIn) :
@@ -820,7 +982,7 @@ Create the computed_field representation of the RescaleIntensityImageFilter.
 	}
 	else
 		histogramMaximum = (double *)NULL;
-	/* We need to leave the sizes and dimension for 
+	/* We need to leave the sizes and dimension for
 		using the functions from computed_field_image_filter::set_input_image */
 	if (dimension > 0 && sizes)
 	{
@@ -841,10 +1003,130 @@ void Computed_field_histogram_image_filter::create_functor()
 
 } //namespace
 
+cmzn_field_imagefilter_histogram_id cmzn_field_cast_imagefilter_histogram(cmzn_field_id field)
+{
+	if (dynamic_cast<Computed_field_histogram_image_filter*>(field->core))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_imagefilter_histogram_id>(field));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+int cmzn_field_imagefilter_histogram_destroy(
+	cmzn_field_imagefilter_histogram_id *imagefilter_histogram_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(
+		imagefilter_histogram_address));
+}
+
+int cmzn_field_imagefilter_histogram_get_compute_minimum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, double *valuesOut)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->getHistogramMinimum(valuesCount, valuesOut);
+	}
+	return 0;
+}
+
+int cmzn_field_imagefilter_histogram_set_compute_minimum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, const double *valuesIn)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->setHistogramMinimum(valuesCount, valuesIn);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_imagefilter_histogram_get_compute_maximum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, double *valuesOut)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->getHistogramMaximum(valuesCount, valuesOut);
+	}
+	return 0;
+}
+
+int cmzn_field_imagefilter_histogram_set_compute_maximum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, const double *valuesIn)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->setHistogramMaximum(valuesCount, valuesIn);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_imagefilter_histogram_get_number_of_bins(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, int *valuesOut)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->getNumberOfBins(valuesCount, valuesOut);
+	}
+	return 0;
+}
+
+int cmzn_field_imagefilter_histogram_set_number_of_bins(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, const int *valuesIn)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->setNumberOfBins(valuesCount, valuesIn);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+double cmzn_field_imagefilter_histogram_get_marginal_scale(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->getMaginalScale();
+	}
+	return 0.0;
+}
+
+int cmzn_field_imagefilter_histogram_set_marginal_scale(cmzn_field_imagefilter_histogram_id
+	imagefilter_histogram, double marginal_scale)
+{
+	if (imagefilter_histogram)
+	{
+		Computed_field_histogram_image_filter *filter_core =
+			Computed_field_histogram_image_filter_core_cast(imagefilter_histogram);
+		return filter_core->setMaginalScale(marginal_scale);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_histogram(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, const int *numberOfBins, double marginalScale,
-	const double *histogramMinimum, const double *histogramMaximum)
+	struct cmzn_fieldmodule *field_module,	struct Computed_field *source_field)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
@@ -854,8 +1136,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_histogram(
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_histogram_image_filter(source_field,
-				numberOfBins, marginalScale, histogramMinimum, histogramMaximum));
+			new Computed_field_histogram_image_filter(source_field));
 	}
 	else
 	{

@@ -275,15 +275,6 @@ ZINC_API int cmzn_field_imagefilter_discrete_gaussian_destroy(
 		cmzn_field_imagefilter_discrete_gaussian_id *imagefilter_discrete_gaussian_address);
 
 /***************************************************************************//**
- * Creates a field performing ITK fast marching image filter on scalar source field
- * image. Sets number of components to same number as <source_field>.
- */
-ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_fast_marching(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-	double stopping_value, int num_seed_points, int dimension,
-	const double *seed_points, const double *seed_values, const int *output_size);
-
-/***************************************************************************//**
  * Creates a field performing ITK gradient magnitude recursive gaussian image
  * filter on scalar source field image.
  * Sets number of components to same number as <source_field>.
@@ -293,20 +284,6 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_gradient_magnit
 	double sigma);
 
 /***************************************************************************//**
- * Creates a field performing ITK histogram image filter on source field image.
- * If neither histogramMinimum or histogramMaximum are specified then the minimums and
- * maximums are calculated based on the minimum and maximum values in the input image.
- * @param numberOfBins  Number of bins per source field component.
- * @param marginalScale  A measure of precision with which the histogram is calculated
- * @param histogramMinimum  Optional array of minimum value of histogram for each source field component
- * @param histogramMaximum  Optional array of maximum value of histogram for each source field component
- */
-ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-	const int *numberOfBins, double marginalScale,
-	const double *histogramMinimum, const double *histogramMaximum);
-
-/***************************************************************************//**
  * Create field performing ITK mean image filter on source_field image.
  * The <radius_sizes> is a vector of integers of dimension specified by the
  * <source_field> dimension.
@@ -314,7 +291,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_mean(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-	int *radius_sizes);
+	int valuesCount, const int *radius_sizes);
 
 /***************************************************************************//**
  * Creates a field performing ITK rescale intensity image filter on scalar
@@ -466,6 +443,183 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_threshold_base_cast(
  */
 ZINC_API int cmzn_field_imagefilter_threshold_destroy(
 		cmzn_field_imagefilter_threshold_id *imagefilter_threshold_address);
+
+/***************************************************************************//**
+ * Creates a field performing ITK histogram image filter on source field image.
+ * If neither histogramMinimum or histogramMaximum are specified then the minimums and
+ * maximums are calculated based on the minimum and maximum values in the input image.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field The field to generate the histogram for.
+ *
+ * @return Newly created field
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
+
+/**
+ * If field can be cast to a cmzn_field_imagefilter_histogram_id do so
+ * and return the field.  Otherwise return NULL.
+ * Caller is responsible for destroying the new image filter reference.
+ *
+ * @param field Id of the field to cast
+ * @return Id of the cast field, or NULL
+*/
+ZINC_API cmzn_field_imagefilter_histogram_id cmzn_field_cast_imagefilter_histogram(cmzn_field_id field);
+
+/**
+ * Gets the minimum values to be computed for generating the histogram.
+ *
+ * @see cmzn_field_imagefilter_histogram_set_compute_minimum_values
+ * @param imagefilter_histogram  The image filter to query.
+ * @param valuesCount  The size of the minimum_values array to fill. Values
+ * for component beyond the size set use the last value.
+ * @param valuesOut  Array to receive minimum_values.
+ * @return  The actual number of minimum_values, this should be the same
+ * 	as the number of source components Returns 0 on error.
+ */
+ZINC_API  int cmzn_field_imagefilter_histogram_get_compute_minimum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, double *valuesOut);
+
+/**
+ * Sets the minimum values to be computed for generating the histogram.
+ * The default minimum values for new histogram filter is 0.0 for each source
+ * component.
+ * Note: The value set for the last source component applies to higher order
+ *  components.
+ *
+ * @param imagefilter_histogram  The image filter to modify.
+ * @param valuesCount  The size of the valuesIn array, >= 1.
+ * @param valuesIn  Array of minimum values (>=1) for each source component,
+ * with the last number in array applying to all higher order components.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_imagefilter_histogram_set_compute_minimum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, const double *valuesIn);
+
+/**
+ * Gets the maximum values to be computed for generating the histogram.
+ *
+ * @see cmzn_field_imagefilter_histogram_set_compute_maximum_values
+ * @param imagefilter_histogram  The image filter to query.
+ * @param valuesCount  The size of the maximum_values array to fill. Values
+ * for component beyond the size set use the last value.
+ * @param valuesOut  Array to receive maximum_values.
+ * @return  The actual number of maximum_values, this should be the same
+ * 	as the number of source components Returns 0 on error.
+ */
+ZINC_API  int cmzn_field_imagefilter_histogram_get_compute_maximum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, double *valuesOut);
+
+/**
+ * Sets the maximum values to be computed for generating the histogram.
+ * The default maximum values for new histogram filter is 1.0 for each source
+ * component.
+ * Note: The value set for the last source component applies to higher order
+ *  components.
+ *
+ * @param imagefilter_histogram  The image filter to modify.
+ * @param valuesCount  The size of the valuesIn array, >= 1.
+ * @param valuesIn  Array of maximum values (>=1) for each source component,
+ * with the last number in array applying to all higher order components.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_imagefilter_histogram_set_compute_maximum_values(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, const double *valuesIn);
+
+/**
+ * Gets the number of bins used to generate histogram. Higher number of bins
+ * increase the density and gives greater precision to the density estimation.
+ *
+ * @see cmzn_field_imagefilter_histogram_set_number_of_bins
+ * @param imagefilter_histogram  The image filter to query.
+ * @param valuesCount  The size of the number_of_bins array to fill. Values
+ * for component beyond the size set use the last value.
+ * @param valuesOut  Array to receive numbers of bins.
+ * @return  The actual number of number of bin values, this should be the same
+ * 	as the number of source components Returns 0 on error.
+ */
+ZINC_API int cmzn_field_imagefilter_histogram_get_number_of_bins(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, int *valuesOut);
+
+/**
+ * Sets the number of bins used to generate histogram. Higher number of bins
+ * increase the density and gives greater precision to the density estimation.
+ * This value can be set for each source field component.
+ * The default number of bins for new histogram filter is 64 for each source
+ * component.
+ * Note: The value set for the last source component applies to higher order
+ *  components.
+ *
+ * @param imagefilter_histogram  The image filter to modify.
+ * @param valuesCount  The size of the valuesIn array, >= 1.
+ * @param valuesIn  Array of number of bins (>=1) for each source component, with
+ * 	the last number in array applying to all higher order
+ *  	components.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_imagefilter_histogram_set_number_of_bins(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
+	int valuesCount, const int *valuesIn);
+
+/**
+ * Get the marginal scale value for this image filter. The Marginal
+ * scale is used to define a fraction of the bin width to be used as a
+ * tolerance around the upper bound of the bin.
+ *
+ * @see cmzn_field_imagefilter_histogram_set_marginal_scale
+ * @param imagefilter_histogram  The histogram image filter to query.
+ * @return  The current marginal value, or 0.0 on error.
+ */
+ZINC_API double cmzn_field_imagefilter_histogram_get_marginal_scale(
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram);
+
+/**
+ * Set the marginal scale value for this image filter. The Marginal
+ * scale is used to define a fraction of the bin width to be used as a
+ * tolerance around the upper bound of the bin.
+ * The default marginal_scale for new histogram filter is 10.
+ *
+ * @param imagefilter_histogram  The histogram image filter to modify.
+ * @param marginal_scale  The marginal_scale value to be set.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_imagefilter_histogram_set_marginal_scale(
+	cmzn_field_imagefilter_histogram_id	imagefilter_histogram,
+	double marginal_scale);
+
+/**
+ * Cast imagefilter_histogram field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param imagefilter_discrete_gaussian  Handle to the imagefilter_discrete_gaussian field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_histogram_base_cast(
+		cmzn_field_imagefilter_histogram_id imagefilter_histogram)
+{
+	return (cmzn_field_id)(imagefilter_histogram);
+}
+
+/**
+ * Destroys this reference to the imagefilter_histogram field and sets it
+ * to NULL. Internally this just decrements the reference count.
+ *
+ * @param imagefilter_histogram_address  Address of handle to the field to
+ * 		destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_imagefilter_histogram_destroy(
+		cmzn_field_imagefilter_histogram_id *imagefilter_histogram_address);
 
 #ifdef __cplusplus
 }

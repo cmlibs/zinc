@@ -37,7 +37,7 @@ public:
 	int *radius_sizes;
 
 	Computed_field_mean_image_filter(Computed_field *source_field,
-		int *radius_sizes_in);
+		int valuesCount, const int *radius_sizes_in);
 
 	~Computed_field_mean_image_filter()
 	{
@@ -52,7 +52,7 @@ private:
 
 	Computed_field_core *copy()
 	{
-		return new Computed_field_mean_image_filter(field->source_fields[0], radius_sizes);
+		return new Computed_field_mean_image_filter(field->source_fields[0], dimension,radius_sizes);
 	}
 
 	const char *get_type_string()
@@ -237,7 +237,7 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_mean_image_filter_Functor */
 
 Computed_field_mean_image_filter::Computed_field_mean_image_filter(
-	Computed_field *source_field, int *radius_sizes_in) : 
+	Computed_field *source_field, int valuesCount, const int *radius_sizes_in) :
 	computed_field_image_filter(source_field),
 	radius_sizes(NULL)
 /*******************************************************************************
@@ -251,7 +251,14 @@ Create the computed_field representation of the MeanImageFilter.
 	radius_sizes = new int[dimension];
 	for (i = 0 ; i < dimension ; i++)
 	{
-		radius_sizes[i] = radius_sizes_in[i];
+		if (i > valuesCount)
+		{
+			radius_sizes[i] = radius_sizes_in[valuesCount - 1];
+		}
+		else
+		{
+			radius_sizes[i] = radius_sizes_in[i];
+		}
 	}
 }
 
@@ -271,7 +278,7 @@ void Computed_field_mean_image_filter::create_functor()
 
 struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_mean(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int *radius_sizes)
+	struct Computed_field *source_field, int valuesCount, const int *radius_sizes)
 {
 	Computed_field *field = NULL;
 	if (source_field)
@@ -281,7 +288,7 @@ struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_mean(
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_mean_image_filter(source_field, radius_sizes));
+			new Computed_field_mean_image_filter(source_field, valuesCount, radius_sizes));
 	}
 	else
 	{

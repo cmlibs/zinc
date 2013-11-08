@@ -97,6 +97,8 @@ class FieldImagefilterCannyEdgeDetection;
 class FieldImagefilterConnectedThreshold;
 class FieldImagefilterCurvatureAnisotropicDiffusion;
 class FieldImagefilterDiscreteGaussian;
+class FieldImagefilterHistogram;
+class FieldImagefilterMean;
 class FieldImagefilterGradientMagnitudeRecursiveGaussian;
 class FieldImagefilterRescaleIntensity;
 class FieldImagefilterSigmoid;
@@ -387,6 +389,11 @@ public:
 		Field& sourceField, double timeStep, double conductance, int numIterations);
 
 	FieldImagefilterDiscreteGaussian createFieldImagefilterDiscreteGaussian(Field& sourceField);
+
+	FieldImagefilterHistogram createFieldImagefilterHistogram(Field& sourceField);
+
+	FieldImagefilterMean createFieldImagefilterMean(Field& sourceField, int valuesCount,
+		const int *radiusSizesIn);
 
 	FieldImagefilterGradientMagnitudeRecursiveGaussian
 		createFieldImagefilterGradientMagnitudeRecursiveGaussian(Field& sourceField,
