@@ -42,6 +42,7 @@
 %module(package="opencmiss.zinc") fieldmodule
 
 %include "doublevaluesarraytypemap.i"
+%include "integervaluesarraytypemap.i"
 %include "fieldarraytypemap.i"
 
 %import "timesequence.i"
