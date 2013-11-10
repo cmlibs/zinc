@@ -36,6 +36,22 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_STREQ("xi", name);
 	cmzn_deallocate(name);
 
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_combine_mode(im, CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL, result = cmzn_field_image_get_combine_mode(im));
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_hardware_compression_mode(im,
+		CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC,
+		result = cmzn_field_image_get_hardware_compression_mode(im));
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_filter_mode(im,
+		CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST,
+		result = cmzn_field_image_get_filter_mode(im));
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_wrap_mode(im, CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP, result = cmzn_field_image_get_wrap_mode(im));
+
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 	EXPECT_NE(static_cast<cmzn_fieldcache_id>(0), cache);
 	double outRGB[3];
@@ -124,6 +140,18 @@ TEST(ZincFieldImage, create_evaluate)
 	char *name = xi.getName();
 	EXPECT_STREQ("xi", name);
 	cmzn_deallocate(name);
+
+	EXPECT_EQ(CMZN_OK, result = im.setCombineMode(im.COMBINE_MODE_DECAL));
+	EXPECT_EQ(im.COMBINE_MODE_DECAL, result = im.getCombineMode());
+
+	EXPECT_EQ(CMZN_OK, result = im.setHardwareCompressionMode(im.HARDWARE_COMPRESSION_MODE_AUTOMATIC));
+	EXPECT_EQ(im.HARDWARE_COMPRESSION_MODE_AUTOMATIC, result = im.getHardwareCompressionMode());
+
+	EXPECT_EQ(CMZN_OK, result = im.setFilterMode(im.FILTER_MODE_NEAREST_MIPMAP_NEAREST));
+	EXPECT_EQ(im.FILTER_MODE_NEAREST_MIPMAP_NEAREST, result = im.getFilterMode());
+
+	EXPECT_EQ(CMZN_OK, result = im.setWrapMode(im.WRAP_MODE_EDGE_CLAMP));
+	EXPECT_EQ(im.WRAP_MODE_EDGE_CLAMP, result = im.getWrapMode());
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
