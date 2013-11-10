@@ -36,22 +36,6 @@ TEST(cmzn_field_image, create_evaluate)
 	EXPECT_STREQ("xi", name);
 	cmzn_deallocate(name);
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_combine_mode(im, CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL));
-	EXPECT_EQ(CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL, result = cmzn_field_image_get_combine_mode(im));
-
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_hardware_compression_mode(im,
-		CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC));
-	EXPECT_EQ(CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC,
-		result = cmzn_field_image_get_hardware_compression_mode(im));
-
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_filter_mode(im,
-		CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST));
-	EXPECT_EQ(CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST,
-		result = cmzn_field_image_get_filter_mode(im));
-
-	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_wrap_mode(im, CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP));
-	EXPECT_EQ(CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP, result = cmzn_field_image_get_wrap_mode(im));
-
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 	EXPECT_NE(static_cast<cmzn_fieldcache_id>(0), cache);
 	double outRGB[3];
@@ -141,18 +125,6 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_STREQ("xi", name);
 	cmzn_deallocate(name);
 
-	EXPECT_EQ(CMZN_OK, result = im.setCombineMode(im.COMBINE_MODE_DECAL));
-	EXPECT_EQ(im.COMBINE_MODE_DECAL, result = im.getCombineMode());
-
-	EXPECT_EQ(CMZN_OK, result = im.setHardwareCompressionMode(im.HARDWARE_COMPRESSION_MODE_AUTOMATIC));
-	EXPECT_EQ(im.HARDWARE_COMPRESSION_MODE_AUTOMATIC, result = im.getHardwareCompressionMode());
-
-	EXPECT_EQ(CMZN_OK, result = im.setFilterMode(im.FILTER_MODE_NEAREST_MIPMAP_NEAREST));
-	EXPECT_EQ(im.FILTER_MODE_NEAREST_MIPMAP_NEAREST, result = im.getFilterMode());
-
-	EXPECT_EQ(CMZN_OK, result = im.setWrapMode(im.WRAP_MODE_EDGE_CLAMP));
-	EXPECT_EQ(im.WRAP_MODE_EDGE_CLAMP, result = im.getWrapMode());
-
 	Fieldcache cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
 	double outRGB[3];
@@ -212,4 +184,68 @@ TEST(ZincFieldImage, create_evaluate)
 	EXPECT_EQ(expectedRGB1[0], outRGB[0]);
 	EXPECT_EQ(expectedRGB1[1], outRGB[1]);
 	EXPECT_EQ(expectedRGB1[2], outRGB[2]);
+}
+
+TEST(cmzn_field_image, enumerations)
+{
+	ZincTestSetup zinc;
+
+	cmzn_field_id f1 = cmzn_fieldmodule_create_field_image(zinc.fm);
+	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
+
+	cmzn_field_image_id im = cmzn_field_cast_image(f1);
+	EXPECT_NE(static_cast<cmzn_field_image_id>(0), im);
+
+	int result;
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_read_file(im, TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+
+	EXPECT_EQ(CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL, result = cmzn_field_image_get_combine_mode(im));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_combine_mode(im, CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND, result = cmzn_field_image_get_combine_mode(im));
+
+	EXPECT_EQ(CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST, result = cmzn_field_image_get_filter_mode(im));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_filter_mode(im,
+		CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST, result = cmzn_field_image_get_filter_mode(im));
+
+	EXPECT_EQ(CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED,
+		result = cmzn_field_image_get_hardware_compression_mode(im));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_hardware_compression_mode(im,
+		CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC,
+		result = cmzn_field_image_get_hardware_compression_mode(im));
+
+	EXPECT_EQ(CMZN_FIELD_IMAGE_WRAP_MODE_REPEAT, result = cmzn_field_image_get_wrap_mode(im));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_image_set_wrap_mode(im, CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP));
+	EXPECT_EQ(CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP, result = cmzn_field_image_get_wrap_mode(im));
+
+	cmzn_field_image_destroy(&im);
+	cmzn_field_destroy(&f1);
+}
+
+TEST(ZincFieldImage, enumerations)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldImage im = zinc.fm.createFieldImage();
+	EXPECT_TRUE(im.isValid());
+
+	int result;
+	EXPECT_EQ(OK, result = im.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
+
+	EXPECT_EQ(FieldImage::COMBINE_MODE_DECAL, im.getCombineMode());
+	EXPECT_EQ(OK, result = im.setCombineMode(FieldImage::COMBINE_MODE_BLEND));
+	EXPECT_EQ(FieldImage::COMBINE_MODE_BLEND, im.getCombineMode());
+
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST, im.getFilterMode());
+	EXPECT_EQ(OK, result = im.setFilterMode(FieldImage::FILTER_MODE_NEAREST_MIPMAP_NEAREST));
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST_MIPMAP_NEAREST, im.getFilterMode());
+
+	EXPECT_EQ(FieldImage::HARDWARE_COMPRESSION_MODE_UNCOMPRESSED, im.getHardwareCompressionMode());
+	EXPECT_EQ(OK, result = im.setHardwareCompressionMode(FieldImage::HARDWARE_COMPRESSION_MODE_AUTOMATIC));
+	EXPECT_EQ(FieldImage::HARDWARE_COMPRESSION_MODE_AUTOMATIC, im.getHardwareCompressionMode());
+
+	EXPECT_EQ(FieldImage::WRAP_MODE_REPEAT, im.getWrapMode());
+	EXPECT_EQ(OK, result = im.setWrapMode(FieldImage::WRAP_MODE_EDGE_CLAMP));
+	EXPECT_EQ(FieldImage::WRAP_MODE_EDGE_CLAMP, im.getWrapMode());
 }
