@@ -67,7 +67,7 @@ TEST(cmzn_scenepicker_api, valid_args)
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scenepicker_set_sceneviewer_rectangle(scene_picker, sv,
-		CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0,
+		CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT, 0,
 			0, 7.0, 7.0);
 	EXPECT_EQ(CMZN_OK, result);
 
@@ -144,7 +144,7 @@ TEST(cmzn_scenepicker_api, valid_args_cpp)
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = scenePicker.setSceneviewerRectangle(sv,
-		SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
+		SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT, 0, 0, 7.0, 7.0);
 	EXPECT_EQ(CMZN_OK, result);
 
 	Element element = scenePicker.getNearestElement();

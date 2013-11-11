@@ -116,19 +116,19 @@ TEST(cmzn_graphics_api, coordinate_field)
 	cmzn_graphics_destroy(&gr);
 }
 
-TEST(cmzn_graphics, coordinate_system)
+TEST(cmzn_graphics, scenecoordinatesystem)
 {
 	ZincTestSetup zinc;
 
 	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_POINTS);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	enum cmzn_scene_coordinate_system coordinate_system = cmzn_graphics_get_coordinate_system(gr);
-	EXPECT_EQ(CMZN_SCENE_COORDINATE_SYSTEM_LOCAL, coordinate_system);
+	enum cmzn_scenecoordinatesystem coordinatesystem = cmzn_graphics_get_scenecoordinatesystem(gr);
+	EXPECT_EQ(CMZN_SCENECOORDINATESYSTEM_LOCAL, coordinatesystem);
 
-	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_coordinate_system(gr, CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
-	coordinate_system = cmzn_graphics_get_coordinate_system(gr);
-	EXPECT_EQ(CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinate_system);
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_set_scenecoordinatesystem(gr, CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT));
+	coordinatesystem = cmzn_graphics_get_scenecoordinatesystem(gr);
+	EXPECT_EQ(CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinatesystem);
 
 	cmzn_graphics_destroy(&gr);
 }
@@ -140,12 +140,12 @@ TEST(ZincGraphics, CoordinateSystem)
 	Graphics gr = zinc.scene.createGraphics(Graphics::TYPE_POINTS);
 	EXPECT_TRUE(gr.isValid());
 
-	SceneCoordinateSystem coordinateSystem = gr.getCoordinateSystem();
-	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_LOCAL, coordinateSystem);
+	Scenecoordinatesystem coordinatesystem = gr.getScenecoordinatesystem();
+	EXPECT_EQ(SCENECOORDINATESYSTEM_LOCAL, coordinatesystem);
 
-	EXPECT_EQ(OK, gr.setCoordinateSystem(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT));
-	coordinateSystem = gr.getCoordinateSystem();
-	EXPECT_EQ(SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinateSystem);
+	EXPECT_EQ(OK, gr.setScenecoordinatesystem(SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT));
+	coordinatesystem = gr.getScenecoordinatesystem();
+	EXPECT_EQ(SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT, coordinatesystem);
 }
 
 TEST(cmzn_graphics_api, data_field)
