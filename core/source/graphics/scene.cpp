@@ -992,7 +992,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 			graphics_range.graphics_object_range = graphics_object_range;
 		}
 		graphics_range.filter = filter;
-		graphics_range.coordinate_system = CMZN_SCENE_COORDINATE_SYSTEM_LOCAL;
+		graphics_range.coordinate_system = CMZN_SCENECOORDINATESYSTEM_LOCAL;
 		return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_get_visible_graphics_object_range, (void *)&graphics_range,
 			scene->list_of_graphics);
@@ -1066,7 +1066,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 			}
 		}
 		graphics_range.graphics_object_range = graphics_object_range;
-		graphics_range.coordinate_system = CMZN_SCENE_COORDINATE_SYSTEM_WORLD;
+		graphics_range.coordinate_system = CMZN_SCENECOORDINATESYSTEM_WORLD;
 		return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_get_visible_graphics_object_range, (void *)&graphics_range,
 			scene->list_of_graphics);

@@ -152,10 +152,10 @@ public:
 
 	/** Prepare coordinate system for executing graphics object.
 	 * @return 1 on success, 0 if renderer should not display objects in coordinate system */
-	virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/) = 0;
+	virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem /*coordinate_system*/) = 0;
 
 	/** Must be called after executing graphics object after successful call to begin_coordinate_system. */
-	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/) = 0;
+	virtual void end_coordinate_system(enum cmzn_scenecoordinatesystem /*coordinate_system*/) = 0;
 
 	/** Ensure this returns true for each graphics layer before rendering.
 	 * Override if renderer renders in layers to return true only when the
@@ -338,12 +338,12 @@ public:
 		return 1;
 	}
 
-	virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/)
+	virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem /*coordinate_system*/)
 	{
 		return 1;
 	}
 
-	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/)
+	virtual void end_coordinate_system(enum cmzn_scenecoordinatesystem /*coordinate_system*/)
 	{
 	}
 

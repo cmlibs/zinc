@@ -28,7 +28,7 @@ cmzn_scenepicker::cmzn_scenepicker(cmzn_scenefiltermodule_id filter_module_in) :
 	scene_viewer(0),
 	centre_x(0), centre_y(0),
 	size_x(0), size_y(0),
-	coordinate_system(CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT),
+	coordinate_system(CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT),
 	filter(0),
 	select_buffer(0),
 	select_buffer_size(10000),
@@ -371,7 +371,7 @@ int cmzn_scenepicker::setScene(cmzn_scene_id scene_in)
 }
 
 int cmzn_scenepicker::setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
-	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
+	enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
 	double y1, double x2, double y2)
 {
 	reset();
@@ -831,7 +831,7 @@ int cmzn_scenepicker_set_scenefilter(cmzn_scenepicker_id scenepicker,
 
 int cmzn_scenepicker_set_sceneviewer_rectangle(
 	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer_in,
-	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
+	enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
 		double y1, double x2, double y2)
 {
 	return scenepicker->setSceneviewerRectangle(sceneviewer_in,

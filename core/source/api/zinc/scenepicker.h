@@ -103,7 +103,7 @@ ZINC_API int cmzn_scenepicker_set_scenefilter(cmzn_scenepicker_id scenepicker,
  */
 ZINC_API int cmzn_scenepicker_set_sceneviewer_rectangle(
 	cmzn_scenepicker_id scenepicker, cmzn_sceneviewer_id sceneviewer_in,
-	enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
+	enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
 		double y1, double x2, double y2);
 
 /**

@@ -38,7 +38,7 @@ private:
 	cmzn_scene_id top_scene;
 	cmzn_sceneviewer_id scene_viewer;
 	int centre_x, centre_y, size_x, size_y;
-	enum cmzn_scene_coordinate_system coordinate_system;
+	enum cmzn_scenecoordinatesystem coordinate_system;
 	cmzn_scenefilter_id filter;
 	GLuint *select_buffer;
 	int select_buffer_size;
@@ -76,7 +76,7 @@ public:
 	int setScene(cmzn_scene_id scene_in);
 
 	int setSceneviewerRectangle(cmzn_sceneviewer_id scene_viewer_in,
-		enum cmzn_scene_coordinate_system coordinate_system_in, double x1,
+		enum cmzn_scenecoordinatesystem coordinate_system_in, double x1,
 		double y1, double x2, double y2);
 
 	int setInteractionVolume(struct Interaction_volume *interaction_volume_in);

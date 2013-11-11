@@ -248,15 +248,15 @@ public:
 		return cmzn_graphics_set_visibility_flag(id, visibilityFlag);
 	}
 
-	enum SceneCoordinateSystem getCoordinateSystem()
+	enum Scenecoordinatesystem getScenecoordinatesystem()
 	{
-		return static_cast<SceneCoordinateSystem>(cmzn_graphics_get_coordinate_system(id));
+		return static_cast<Scenecoordinatesystem>(cmzn_graphics_get_scenecoordinatesystem(id));
 	}
 
-	int setCoordinateSystem(SceneCoordinateSystem coordinateSystem)
+	int setScenecoordinatesystem(Scenecoordinatesystem coordinateSystem)
 	{
-		return cmzn_graphics_set_coordinate_system(id,
-			static_cast<cmzn_scene_coordinate_system>(coordinateSystem));
+		return cmzn_graphics_set_scenecoordinatesystem(id,
+			static_cast<cmzn_scenecoordinatesystem>(coordinateSystem));
 	}
 
 	Field::DomainType getFieldDomainType()
