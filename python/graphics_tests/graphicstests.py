@@ -34,12 +34,12 @@ class GraphicsTestCase(unittest.TestCase):
         self.assertTrue(attributes.isValid())
         glyph_module = self.context.getGlyphmodule()
         glyph_module.defineStandardGlyphs()
-        result = attributes.setGlyphType(Glyph.SPHERE)
+        result = attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_SPHERE)
         self.assertEqual(status.OK, result)
-        result = attributes.setGlyphType(Glyph.TYPE_INVALID)
+        result = attributes.setGlyphShapeType(Glyph.SHAPE_TYPE_INVALID)
         self.assertEqual(status.ERROR_ARGUMENT, result)
-        glyphType = attributes.getGlyphType()
-        self.assertEqual(Glyph.SPHERE, glyphType)
+        shapeType = attributes.getGlyphShapeType()
+        self.assertEqual(Glyph.SHAPE_TYPE_SPHERE, shapeType)
 
     def testGraphicsPointsSetBaseSize(self):
         graphics = self.scene.createGraphicsPoints()
