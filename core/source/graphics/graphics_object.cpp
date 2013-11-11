@@ -3699,7 +3699,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 			object->times = (ZnReal *)NULL;
 			object->primitive_lists = (union GT_primitive_list *)NULL;
 			object->glyph_labels_function = (Graphics_object_glyph_labels_function)NULL;
-			object->glyph_type = CMZN_GLYPH_TYPE_INVALID;
+			object->glyph_type = CMZN_GLYPH_SHAPE_TYPE_INVALID;
 			object->texture_tiling = (struct Texture_tiling *)NULL;
 			object->vertex_array = (Graphics_vertex_array *)NULL;
 			object->access_count = 1;
@@ -7404,16 +7404,16 @@ Graphics_vertex_array::~Graphics_vertex_array()
 	delete internal;
 }
 
-enum cmzn_glyph_type GT_object_get_glyph_type(
+enum cmzn_glyph_shape_type GT_object_get_glyph_type(
 	struct GT_object *gt_object)
 {
 	if (gt_object)
 		return gt_object->glyph_type;
-	return CMZN_GLYPH_TYPE_INVALID;
+	return CMZN_GLYPH_SHAPE_TYPE_INVALID;
 }
 
 int GT_object_set_glyph_type(struct GT_object *gt_object,
-	enum cmzn_glyph_type glyph_type)
+	enum cmzn_glyph_shape_type glyph_type)
 {
 	if (gt_object)
 	{

@@ -212,7 +212,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 
 			/* point attributes */
 			graphics->glyph = 0;
-			graphics->glyph_repeat_mode = CMZN_GLYPH_REPEAT_NONE;
+			graphics->glyph_repeat_mode = CMZN_GLYPH_REPEAT_MODE_NONE;
 			for (int i = 0; i < 3; i++)
 			{
 				graphics->point_offset[i] = 0.0;
@@ -2116,7 +2116,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 				append_string(&graphics_string,name,&error);
 				DEALLOCATE(name);
 
-				if (graphics->glyph_repeat_mode != CMZN_GLYPH_REPEAT_NONE)
+				if (graphics->glyph_repeat_mode != CMZN_GLYPH_REPEAT_MODE_NONE)
 				{
 					append_string(&graphics_string, " ", &error);
 					append_string(&graphics_string,
@@ -6487,7 +6487,7 @@ int cmzn_graphicspointattributes_set_glyph_repeat_mode(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_glyph_type cmzn_graphicspointattributes_get_glyph_type(
+enum cmzn_glyph_shape_type cmzn_graphicspointattributes_get_glyph_shape_type(
 	cmzn_graphicspointattributes_id point_attributes)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
@@ -6499,24 +6499,24 @@ enum cmzn_glyph_type cmzn_graphicspointattributes_get_glyph_type(
 		}
 		else
 		{
-			return CMZN_GLYPH_NONE;
+			return CMZN_GLYPH_SHAPE_TYPE_NONE;
 		}
 	}
-	return CMZN_GLYPH_TYPE_INVALID;
+	return CMZN_GLYPH_SHAPE_TYPE_INVALID;
 }
 
-int cmzn_graphicspointattributes_set_glyph_type(
+int cmzn_graphicspointattributes_set_glyph_shape_type(
 	cmzn_graphicspointattributes_id point_attributes,
-	enum cmzn_glyph_type glyph_type)
+	enum cmzn_glyph_shape_type glyph_type)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
-	if (graphics && (CMZN_GLYPH_TYPE_INVALID != glyph_type))
+	if (graphics && (CMZN_GLYPH_SHAPE_TYPE_INVALID != glyph_type))
 	{
 		cmzn_graphics_module* graphics_module = cmzn_scene_get_graphics_module(graphics->scene);
 		cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(graphics_module);
 		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_type);
-		if (glyph || (glyph_type == CMZN_GLYPH_NONE))
+		if (glyph || (glyph_type == CMZN_GLYPH_SHAPE_TYPE_NONE))
 		{
 			return_code = cmzn_graphicspointattributes_set_glyph(point_attributes, glyph);
 		}

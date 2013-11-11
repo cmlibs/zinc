@@ -409,7 +409,7 @@ Graphical object data structure.
 	/* Custom per compile code for graphics_objects used as glyphs. */
 	Graphics_object_glyph_labels_function glyph_labels_function;
 	/* identifier for quickly matching standard point, line, cross glyphs */
-	enum cmzn_glyph_type glyph_type;
+	enum cmzn_glyph_shape_type glyph_type;
 
 	int access_count;
 };

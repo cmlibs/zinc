@@ -87,45 +87,45 @@ bool cmzn_spectrumcomponent_is_active(cmzn_spectrumcomponent_id component)
 	return false;
 }
 
-class cmzn_spectrumcomponent_colour_mapping_conversion
+class cmzn_spectrumcomponent_colour_mapping_type_conversion
 {
 public:
-    static const char *to_string(enum cmzn_spectrumcomponent_colour_mapping colour)
+    static const char *to_string(enum cmzn_spectrumcomponent_colour_mapping_type colour)
     {
         const char *enum_string = 0;
         switch (colour)
         {
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
             enum_string = "ALPHA";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
             enum_string = "BANDED";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
             enum_string = "BLUE";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
             enum_string = "GREEN";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
             enum_string = "MONOCHROME";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
             enum_string = "RAINBOW";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
             enum_string = "RED";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
             enum_string = "STEP";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
             enum_string = "WHITE_TO_BLUE";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
             enum_string = "WHITE_TO_RED";
             break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
             enum_string = "WHITE_TO_GREEN";
             break;
         default:
@@ -135,17 +135,17 @@ public:
     }
 };
 
-enum cmzn_spectrumcomponent_colour_mapping cmzn_spectrumcomponent_colour_mapping_enum_from_string(
+enum cmzn_spectrumcomponent_colour_mapping_type cmzn_spectrumcomponent_colour_mapping_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum cmzn_spectrumcomponent_colour_mapping,
-		cmzn_spectrumcomponent_colour_mapping_conversion>(string);
+	return string_to_enum<enum cmzn_spectrumcomponent_colour_mapping_type,
+		cmzn_spectrumcomponent_colour_mapping_type_conversion>(string);
 }
 
-char *cmzn_spectrumcomponent_colour_mapping_enum_to_string(
-	enum cmzn_spectrumcomponent_colour_mapping component_colour)
+char *cmzn_spectrumcomponent_colour_mapping_type_enum_to_string(
+	enum cmzn_spectrumcomponent_colour_mapping_type component_colour)
 {
-	const char *colour_string = cmzn_spectrumcomponent_colour_mapping_conversion::to_string(component_colour);
+	const char *colour_string = cmzn_spectrumcomponent_colour_mapping_type_conversion::to_string(component_colour);
 	return (colour_string ? duplicate_string(colour_string) : 0);
 }
 
@@ -153,54 +153,54 @@ char *cmzn_spectrumcomponent_colour_mapping_enum_to_string(
 Global functions
 ----------------
 */
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_spectrumcomponent_colour_mapping)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_spectrumcomponent_colour_mapping_type)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(cmzn_spectrumcomponent_colour_mapping));
+	ENTER(ENUMERATOR_STRING(cmzn_spectrumcomponent_colour_mapping_type));
 	switch (enumerator_value)
 	{
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
 		{
 			enumerator_string = "alpha";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
 		{
 			enumerator_string = "banded";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
 		{
 			enumerator_string = "blue";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
 		{
 			enumerator_string = "green";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
 		{
 			enumerator_string = "monochrome";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
 		{
 			enumerator_string = "rainbow";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
 		{
 			enumerator_string = "red";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
 		{
 			enumerator_string = "step";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
 		{
 			enumerator_string = "white_to_blue";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
 		{
 			enumerator_string = "white_to_red";
 		} break;
-		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
 		{
 			enumerator_string = "white_to_green";
 		} break;
@@ -212,9 +212,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_spectrumcomponent_colour_mapping)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(cmzn_spectrumcomponent_colour_mapping) */
+} /* ENUMERATOR_STRING(cmzn_spectrumcomponent_colour_mapping_type) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_spectrumcomponent_colour_mapping)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_spectrumcomponent_colour_mapping_type)
 
 struct cmzn_spectrumcomponent *CREATE(cmzn_spectrumcomponent)(void)
 /*******************************************************************************
@@ -231,7 +231,7 @@ Allocates memory and assigns fields for a struct cmzn_spectrumcomponent.
 	{
 		component->spectrum = 0;
 		component->component_number = 0;
-		component->component_scale=CMZN_SPECTRUMCOMPONENT_SCALE_LINEAR;
+		component->component_scale=CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR;
 		component->changed=1;
 		component->minimum = 0;
 		component->maximum = 1;
@@ -241,7 +241,7 @@ Allocates memory and assigns fields for a struct cmzn_spectrumcomponent.
 		component->extend_below = 0;
 		component->min_value = 0;
 		component->max_value = 1;
-		component->colour_mapping = CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW;
+		component->colour_mapping_type = CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW;
 		component->reverse = false;
 		component->exaggeration = 1.0;
 		component->step_value = 0.5;
@@ -293,8 +293,8 @@ Frees the memory for the fields of <**component_ptr>, frees the memory for
 #endif /* defined (OPENGL_API) */
 			switch (component->component_scale)
 			{
-				case CMZN_SPECTRUMCOMPONENT_SCALE_LINEAR:
-				case CMZN_SPECTRUMCOMPONENT_SCALE_LOG:
+				case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR:
+				case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG:
 				{
 					/* Don't need to do anything */
 				} break;
@@ -366,7 +366,7 @@ Note: destination->access_count is not changed by COPY.
 		destination->extend_below = source->extend_below;
 		destination->min_value = source->min_value;
 		destination->max_value = source->max_value;
-		destination->colour_mapping = source->colour_mapping;
+		destination->colour_mapping_type = source->colour_mapping_type;
 		destination->exaggeration = source->exaggeration;
 		destination->number_of_bands = source->number_of_bands;
 		destination->black_band_proportion = source->black_band_proportion;
@@ -516,7 +516,7 @@ int cmzn_spectrumcomponent_set_colour_reverse(cmzn_spectrumcomponent_id componen
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_spectrumcomponent_colour_mapping cmzn_spectrumcomponent_get_colour_mapping(
+enum cmzn_spectrumcomponent_colour_mapping_type cmzn_spectrumcomponent_get_colour_mapping_type(
 	struct cmzn_spectrumcomponent *component)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
@@ -525,27 +525,27 @@ DESCRIPTION :
 Returns the colour mapping of the cmzn_spectrumcomponent <spectrum>.
 ==============================================================================*/
 {
-	enum cmzn_spectrumcomponent_colour_mapping type;
+	enum cmzn_spectrumcomponent_colour_mapping_type type;
 
-	ENTER(cmzn_spectrumcomponent_get_colour_mapping);
+	ENTER(cmzn_spectrumcomponent_get_colour_mapping_type);
 
 	if (component)
 	{
-		type = component->colour_mapping;
+		type = component->colour_mapping_type;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"cmzn_spectrumcomponent_get_colour_mapping.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrumcomponent_get_colour_mapping_type.  "
 			"Invalid argument(s)");
-		type = CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW;
+		type = CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW;
 	}
 	LEAVE;
 
 	return (type);
-} /* cmzn_spectrumcomponent_get_colour_mapping */
+} /* cmzn_spectrumcomponent_get_colour_mapping_type */
 
-int cmzn_spectrumcomponent_set_colour_mapping(struct cmzn_spectrumcomponent *component,
-	enum cmzn_spectrumcomponent_colour_mapping type)
+int cmzn_spectrumcomponent_set_colour_mapping_type(struct cmzn_spectrumcomponent *component,
+	enum cmzn_spectrumcomponent_colour_mapping_type type)
 /*******************************************************************************
 LAST MODIFIED : 14 July 1998
 
@@ -555,24 +555,24 @@ Sets the colour mapping of the cmzn_spectrumcomponent <component>.
 {
 	int return_code;
 
-	ENTER(cmzn_spectrumcomponent_set_colour_mapping);
+	ENTER(cmzn_spectrumcomponent_set_colour_mapping_type);
 
 	if (component)
 	{
-		component->colour_mapping = type;
+		component->colour_mapping_type = type;
 		cmzn_spectrumcomponent_changed(component);
 		return_code = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"cmzn_spectrumcomponent_set_colour_mapping.  "
+		display_message(ERROR_MESSAGE,"cmzn_spectrumcomponent_set_colour_mapping_type.  "
 			"Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* cmzn_spectrumcomponent_set_colour_mapping */
+} /* cmzn_spectrumcomponent_set_colour_mapping_type */
 
 double cmzn_spectrumcomponent_get_exaggeration(cmzn_spectrumcomponent_id component)
 {
@@ -1048,41 +1048,41 @@ in the value pointed to by <colour_components_void>.
 		}
 		if (!done)
 		{
-			switch (component->colour_mapping)
+			switch (component->colour_mapping_type)
 			{
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
 				{
 				(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 					| SPECTRUM_COMPONENT_RED
 					| SPECTRUM_COMPONENT_GREEN
 					| SPECTRUM_COMPONENT_BLUE);
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_RED);
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_GREEN);
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_BLUE);
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_ALPHA);
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
 				{
 					(*colour_components) = static_cast<Spectrum_colour_components>((*colour_components)
 						| SPECTRUM_COMPONENT_MONOCHROME);
@@ -1125,21 +1125,21 @@ DESCRIPTION :
 		return_code=1;
 		if (component->active)
 		{
-			switch (component->colour_mapping)
+			switch (component->colour_mapping_type)
 			{
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
 				{
 					/* Do nothing but valid. */
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
 				{
 #if defined (OPENGL_API)
 					if ((component->black_band_proportion)&&(component->number_of_bands))
@@ -1261,7 +1261,7 @@ DESCRIPTION :
 					}
 #endif /* defined (OPENGL_API) */
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
 				{
 #if defined (OPENGL_API)
 					pixels[0]=255;
@@ -1393,13 +1393,13 @@ passed in render data.
 				if (1 == number_of_components)
 				{
 					value = values[0];
-					switch (component->colour_mapping)
+					switch (component->colour_mapping_type)
 					{
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
 						{
 							render_data->rgba[3] = value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
 							{
 								if (value<1.0/3.0)
 								{
@@ -1442,37 +1442,37 @@ passed in render data.
 									}
 								}
 							} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
 							{
 								render_data->rgba[0]=value;
 							} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
 							{
 								render_data->rgba[1]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
 						{
 							render_data->rgba[2]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
 						{
 							render_data->rgba[0]=value;
 							render_data->rgba[1]=value;
 							render_data->rgba[2]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
 						{
 							render_data->rgba[2]=1.0;
 							render_data->rgba[0]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
 						{
 							render_data->rgba[0]=1;
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
 						{
 							render_data->rgba[1]=1.0;
 							render_data->rgba[0]=(1-value);
@@ -1516,8 +1516,8 @@ passed in render data.
 			{
 				data_component = render_data->data[component->component_number];
 				/* Always set a value for texture_coordinate based spectrums */
-				if ((CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED==component->colour_mapping)
-					|| (CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP==component->colour_mapping)
+				if ((CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED==component->colour_mapping_type)
+					|| (CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP==component->colour_mapping_type)
 					|| (((data_component>=component->minimum)||component->extend_below)&&
 						((data_component<=component->maximum)||component->extend_above)))
 				{
@@ -1526,12 +1526,12 @@ passed in render data.
 					{
 						switch (component->component_scale)
 						{
-							case CMZN_SPECTRUMCOMPONENT_SCALE_LINEAR:
+							case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR:
 							{
 										value=(data_component-component->minimum)/
 											 (component->maximum-component->minimum);
 							} break;
-							case CMZN_SPECTRUMCOMPONENT_SCALE_LOG:
+							case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG:
 							{
 								if (component->exaggeration<0)
 								{
@@ -1584,9 +1584,9 @@ passed in render data.
 					/* apply the value minimums and maximums */
 					value=component->min_value+(component->max_value-component->min_value)*
 						value;
-					switch (component->colour_mapping)
+					switch (component->colour_mapping_type)
 					{
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
 						{
 							if ((component->number_of_bands)&&(component->black_band_proportion))
 							{
@@ -1605,7 +1605,7 @@ passed in render data.
 #endif /* defined (OPENGL_API) */
 							}
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
 						{
 							step_xi=(component->step_value-component->minimum)/
 								(component->maximum-component->minimum);
@@ -1623,11 +1623,11 @@ passed in render data.
 							glTexCoord1f(value);
 #endif /* defined (OPENGL_API) */
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
 						{
 							render_data->rgba[3] = value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
 						{
 							if (value<1.0/3.0)
 							{
@@ -1670,37 +1670,37 @@ passed in render data.
 								}
 							}
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
 						{
 							render_data->rgba[0]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
 						{
 							render_data->rgba[1]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
 						{
 							render_data->rgba[2]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
 						{
 							render_data->rgba[0]=value;
 							render_data->rgba[1]=value;
 							render_data->rgba[2]=value;
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
 						{
 							render_data->rgba[2]=1.0;
 							render_data->rgba[0]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
 						{
 							render_data->rgba[0]=1.0;
 							render_data->rgba[2]=(1-value);
 							render_data->rgba[1]=(1-value);
 						} break;
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
 						{
 							render_data->rgba[1]=1.0;
 							render_data->rgba[0]=(1-value);
@@ -1713,10 +1713,10 @@ passed in render data.
 				}
 				else
 				{
-					switch (component->colour_mapping)
+					switch (component->colour_mapping_type)
 					{
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
-						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
+						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
 						{
 							/* the values are large so they quickly transition to the last
 								texel */
@@ -1769,22 +1769,22 @@ DESCRIPTION :
 		return_code=1;
 		if (component->active)
 		{
-			switch (component->colour_mapping)
+			switch (component->colour_mapping_type)
 			{
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_GREEN:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_ALPHA:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_GREEN:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
 				{
 					/* do nothing */
 				} break;
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED:
-				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_STEP:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
+				case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
 				{
 #if defined (OPENGL_API)
 					glDisable(GL_TEXTURE_1D);

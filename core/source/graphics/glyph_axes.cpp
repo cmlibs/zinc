@@ -146,7 +146,7 @@ GT_object *cmzn_glyph_axes::getGraphicsObject(cmzn_tessellation *tessellation,
 			{
 				GT_object *thisObject = createAxisGraphicsObject(/*primaryAxis*/i, axis_gt_object, this->axisWidth,
 					this->name, this->axisMaterials[i] ? this->axisMaterials[i] : material,
-					font, 1, this->axisLabels + i, CMZN_GLYPH_REPEAT_NONE);
+					font, 1, this->axisLabels + i, CMZN_GLYPH_REPEAT_MODE_NONE);
 				if (lastObject)
 				{
 					GT_object_set_next_object(lastObject, thisObject);
@@ -163,7 +163,7 @@ GT_object *cmzn_glyph_axes::getGraphicsObject(cmzn_tessellation *tessellation,
 		{
 			this->graphicsObject = createAxisGraphicsObject(/*primaryAxis*/0, axis_gt_object, this->axisWidth,
 				this->name, static_cast<cmzn_material_id>(0),
-				font, 3, this->axisLabels, CMZN_GLYPH_REPEAT_AXES_3D);
+				font, 3, this->axisLabels, CMZN_GLYPH_REPEAT_MODE_AXES_3D);
 		}
 	}
 	DEACCESS(GT_object)(&axis_gt_object);

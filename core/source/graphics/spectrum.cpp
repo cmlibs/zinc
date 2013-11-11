@@ -562,10 +562,10 @@ some predetermined simple types.
 				component = CREATE(cmzn_spectrumcomponent)();
 
 				Spectrum_add_component(spectrum, component, /* end of list = 0 */0);
-				cmzn_spectrumcomponent_set_scale_type(component, CMZN_SPECTRUMCOMPONENT_SCALE_LINEAR);
+				cmzn_spectrumcomponent_set_scale_type(component, CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR);
 				component->is_field_lookup = false;
-				cmzn_spectrumcomponent_set_colour_mapping(component,
-					CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW);
+				cmzn_spectrumcomponent_set_colour_mapping_type(component,
+					CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW);
 				cmzn_spectrumcomponent_set_extend_above(component,true);
 				cmzn_spectrumcomponent_set_extend_below(component, true);
 				switch (type)
@@ -599,17 +599,17 @@ some predetermined simple types.
 				Spectrum_add_component(spectrum, second_component, /* end of list = 0 */0);
 
 
-				cmzn_spectrumcomponent_set_scale_type(component, CMZN_SPECTRUMCOMPONENT_SCALE_LOG);
+				cmzn_spectrumcomponent_set_scale_type(component, CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG);
 				component->is_field_lookup = false;
 				cmzn_spectrumcomponent_set_exaggeration(component, 1.0);
-				cmzn_spectrumcomponent_set_colour_mapping(component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW);
+				cmzn_spectrumcomponent_set_colour_mapping_type(component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW);
 				cmzn_spectrumcomponent_set_range_minimum(component, -1.0);
 				cmzn_spectrumcomponent_set_range_maximum(component, 0.0);
 
-				cmzn_spectrumcomponent_set_scale_type(second_component, CMZN_SPECTRUMCOMPONENT_SCALE_LOG);
+				cmzn_spectrumcomponent_set_scale_type(second_component, CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG);
 				second_component->is_field_lookup = false;
 				cmzn_spectrumcomponent_set_exaggeration(second_component, -1.0);
-				cmzn_spectrumcomponent_set_colour_mapping(second_component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW);
+				cmzn_spectrumcomponent_set_colour_mapping_type(second_component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW);
 				cmzn_spectrumcomponent_set_range_minimum(second_component, 0.0);
 				cmzn_spectrumcomponent_set_range_maximum(second_component, 1.0);
 
@@ -656,7 +656,7 @@ some predetermined simple types.
 				Spectrum_add_component(spectrum, component, /* end of list = 0 */0);
 				Spectrum_add_component(spectrum, second_component, /* end of list = 0 */0);
 
-				cmzn_spectrumcomponent_set_scale_type(component, CMZN_SPECTRUMCOMPONENT_SCALE_LOG);
+				cmzn_spectrumcomponent_set_scale_type(component, CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG);
 				component->is_field_lookup = false;
 				cmzn_spectrumcomponent_set_exaggeration(component, -10.0);
 				cmzn_spectrumcomponent_set_range_minimum(component, -1.0);
@@ -665,11 +665,11 @@ some predetermined simple types.
 				/* fix the maximum (white ) at zero */
 				cmzn_spectrumcomponent_set_fix_maximum_flag(component, true);
 				cmzn_spectrumcomponent_set_extend_below(component, true);
-				cmzn_spectrumcomponent_set_colour_mapping(component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BLUE);
+				cmzn_spectrumcomponent_set_colour_mapping_type(component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE);
 				cmzn_spectrumcomponent_set_colour_minimum(component, 0);
 				cmzn_spectrumcomponent_set_colour_maximum(component, 1);
 
-				cmzn_spectrumcomponent_set_scale_type(second_component, CMZN_SPECTRUMCOMPONENT_SCALE_LOG);
+				cmzn_spectrumcomponent_set_scale_type(second_component, CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG);
 				second_component->is_field_lookup = false;
 				cmzn_spectrumcomponent_set_exaggeration(second_component, 10.0);
 				cmzn_spectrumcomponent_set_range_minimum(second_component, 0.0);
@@ -677,7 +677,7 @@ some predetermined simple types.
 				/* fix the minimum (white ) at zero */
 				cmzn_spectrumcomponent_set_fix_minimum_flag(second_component, true);
 				cmzn_spectrumcomponent_set_extend_above(second_component, true);
-				cmzn_spectrumcomponent_set_colour_mapping(second_component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED);
+				cmzn_spectrumcomponent_set_colour_mapping_type(second_component, CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED);
 				cmzn_spectrumcomponent_set_colour_minimum(second_component, 0);
 				cmzn_spectrumcomponent_set_colour_maximum(second_component, 1);
 			} break;
@@ -721,7 +721,7 @@ it returns UNKNOWN_SPECTRUM
 	enum cmzn_spectrumcomponent_scale_type component_scale, second_component_scale;
 	int number_in_list;
 	bool reverse, second_reverse;
-	enum cmzn_spectrumcomponent_colour_mapping colour_mapping, second_colour_mapping;
+	enum cmzn_spectrumcomponent_colour_mapping_type colour_mapping_type, second_colour_mapping_type;
 	enum Spectrum_simple_type type;
 
 	ENTER(Spectrum_get_simple_type);
@@ -741,11 +741,11 @@ it returns UNKNOWN_SPECTRUM
 					spectrum_component_list);
 				component_scale = cmzn_spectrumcomponent_get_scale_type(component);
 				reverse = cmzn_spectrumcomponent_is_colour_reverse(component);
-				colour_mapping = cmzn_spectrumcomponent_get_colour_mapping(component);
+				colour_mapping_type = cmzn_spectrumcomponent_get_colour_mapping_type(component);
 
-				if ( component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_LINEAR )
+				if ( component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR )
 				{
-					if ( colour_mapping == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW )
+					if ( colour_mapping_type == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW )
 					{
 						if ( reverse )
 						{
@@ -768,17 +768,17 @@ it returns UNKNOWN_SPECTRUM
 				{
 					component_scale = cmzn_spectrumcomponent_get_scale_type(component);
 					reverse = cmzn_spectrumcomponent_is_colour_reverse(component);
-					colour_mapping = cmzn_spectrumcomponent_get_colour_mapping(component);
+					colour_mapping_type = cmzn_spectrumcomponent_get_colour_mapping_type(component);
 					second_component_scale = cmzn_spectrumcomponent_get_scale_type(second_component);
 					second_reverse = cmzn_spectrumcomponent_is_colour_reverse(second_component);
-					second_colour_mapping = cmzn_spectrumcomponent_get_colour_mapping
+					second_colour_mapping_type = cmzn_spectrumcomponent_get_colour_mapping_type
 						(second_component);
 
-					if((component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_LOG)
-						&& (second_component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_LOG))
+					if((component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG)
+						&& (second_component_scale == CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG))
 					{
-						if ((colour_mapping == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW)
-							&& (second_colour_mapping == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW))
+						if ((colour_mapping_type == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW)
+							&& (second_colour_mapping_type == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW))
 						{
 							if ( reverse && second_reverse )
 							{
@@ -789,8 +789,8 @@ it returns UNKNOWN_SPECTRUM
 								type = LOG_RED_TO_BLUE_SPECTRUM;
 							}
 						}
-						else if ((colour_mapping == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_BLUE)
-							&& (second_colour_mapping == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_WHITE_TO_RED))
+						else if ((colour_mapping_type == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE)
+							&& (second_colour_mapping_type == CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED))
 						{
 							type = BLUE_WHITE_RED_SPECTRUM;
 						}

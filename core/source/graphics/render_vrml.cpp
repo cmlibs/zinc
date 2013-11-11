@@ -618,11 +618,11 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 		GT_object *glyph = glyph_set->glyph;
 		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 		/* try to draw points and lines faster */
-		cmzn_glyph_type glyph_type = glyph ?
-			GT_object_get_glyph_type(glyph) : CMZN_GLYPH_NONE;
-		if ((glyph_type == CMZN_GLYPH_POINT) && (
-			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE) ||
-			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR)))
+		cmzn_glyph_shape_type glyph_type = glyph ?
+			GT_object_get_glyph_type(glyph) : CMZN_GLYPH_SHAPE_TYPE_NONE;
+		if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_POINT) && (
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE) ||
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_MIRROR)))
 		{
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
@@ -663,8 +663,8 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #Pointset\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMZN_GLYPH_LINE) &&
-			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
+		else if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_LINE) &&
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE))
 		{
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
@@ -726,8 +726,8 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 			fprintf(vrml_file,"  } #IndexedLineSet\n");
 			fprintf(vrml_file,"} #Shape\n");
 		}
-		else if ((glyph_type == CMZN_GLYPH_CROSS) &&
-			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_NONE))
+		else if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_CROSS) &&
+			(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE))
 		{
 			fprintf(vrml_file,"Shape {\n");
 			fprintf(vrml_file,"  appearance\n");
@@ -1157,7 +1157,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyph_set *glyph_set,
 							glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
 							*point, *axis1, *axis2, *axis3, *scale,
 							temp_point, temp_axis1, temp_axis2, temp_axis3);
-						if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR) && ((*scale)[0] < 0.0f))
+						if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_MIRROR) && ((*scale)[0] < 0.0f))
 						{
 							for (int j = 0; j < 3; ++j)
 							{
