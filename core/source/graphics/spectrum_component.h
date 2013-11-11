@@ -66,7 +66,7 @@ Stores one group of component for a single part of a spectrum scene.
 		a colour, i.e. red varies from <min_value> red at the <minimum> to
 		<max_value> red at the <maximum> */
 	ZnReal max_value, min_value;
-	enum cmzn_spectrumcomponent_colour_mapping colour_mapping;
+	enum cmzn_spectrumcomponent_colour_mapping_type colour_mapping_type;
 	ZnReal exaggeration, step_value;
 	/* The number of bands in a banded contour and the proportion (out of 1000)
 		of the black bands */
@@ -89,7 +89,7 @@ Stores one group of component for a single part of a spectrum scene.
 Global functions
 ----------------
 */
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_spectrumcomponent_colour_mapping);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_spectrumcomponent_colour_mapping_type);
 
 DECLARE_LIST_TYPES(cmzn_spectrumcomponent);
 

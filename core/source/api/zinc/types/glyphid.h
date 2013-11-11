@@ -29,17 +29,18 @@ typedef struct cmzn_glyph_colour_bar *cmzn_glyph_colour_bar_id;
 enum cmzn_glyph_repeat_mode
 {
 	CMZN_GLYPH_REPEAT_MODE_INVALID = 0,
-	CMZN_GLYPH_REPEAT_NONE = 1,
-		/*!< normal single glyph display, no repeat */
-	CMZN_GLYPH_REPEAT_AXES_2D = 2,
+	CMZN_GLYPH_REPEAT_MODE_NONE = 1,
+		/*!< default cmzn_glyph_repeat_mode
+		 * normal single glyph display, no repeat */
+	CMZN_GLYPH_REPEAT_MODE_AXES_2D = 2,
 		/*!< draw glyph 2 times treating each axis as a separate vector. Base size
 		 * and scale factors are applied separately to each axis.
 		 */
-	CMZN_GLYPH_REPEAT_AXES_3D = 3,
+	CMZN_GLYPH_REPEAT_MODE_AXES_3D = 3,
 		/*!< draw glyph 3 times treating each axis as a separate vector. Base size
 		 * and scale factors are applied separately to each axis.
 		 */
-	CMZN_GLYPH_REPEAT_MIRROR = 4
+	CMZN_GLYPH_REPEAT_MODE_MIRROR = 4
 		/*!< draw glyph twice, second mirrored about axis1 == 0.0. Commonly used
 		 * with a signed_scale_field to visualise stress and strains using pairs of
 		 * arrow glyphs pointing inward for compression, outward for tension.
@@ -54,34 +55,34 @@ enum cmzn_glyph_repeat_mode
 /**
  * An enum defining the type of graphics glyph.
  */
-enum cmzn_glyph_type
+enum cmzn_glyph_shape_type
 {
-	CMZN_GLYPH_TYPE_INVALID = 0,
-	CMZN_GLYPH_NONE,             /*!< no glyph */
-	CMZN_GLYPH_ARROW,            /*!< line arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
-	CMZN_GLYPH_ARROW_SOLID,      /*!< solid arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
-	CMZN_GLYPH_AXIS,             /*!< line arrow from 0,0,0 to 1,0,0, head 0.1 long unit width */
-	CMZN_GLYPH_AXIS_SOLID,       /*!< solid arrow from 0,0,0 to 1,0,0, head 0.1 long unit width */
-	CMZN_GLYPH_CONE,             /*!< unit diameter cone from base 0,0,0 to apex 1,0,0, open base */
-	CMZN_GLYPH_CONE_SOLID,       /*!< unit diameter cone from base 0,0,0 to apex 1,0,0, closed base */
-	CMZN_GLYPH_CROSS,            /*!< 3 crossed lines on each axis, centre 0,0,0 */
-	CMZN_GLYPH_CUBE_SOLID,       /*!< solid unit cube centred at 0,0,0 and aligned with axes */
-	CMZN_GLYPH_CUBE_WIREFRAME,   /*!< wireframe unit cube centred at 0,0,0 and aligned with axes */
-	CMZN_GLYPH_CYLINDER,         /*!< unit diameter cylinder from 0,0,0 to 1,0,0, open ends */
-	CMZN_GLYPH_CYLINDER_SOLID,   /*!< unit diameter cylinder from 0,0,0 to 1,0,0, closed ends */
-	CMZN_GLYPH_DIAMOND,          /*!< unit regular octahedron centred at 0,0,0; a degenerate sphere */
-	CMZN_GLYPH_LINE,             /*!< line from 0,0,0 to 1,0,0 */
-	CMZN_GLYPH_POINT,            /*!< a single point at 0,0,0 */
-	CMZN_GLYPH_SHEET,            /*!< unit square in 1-2 plane centred at 0,0,0 */
-	CMZN_GLYPH_SPHERE,           /*!< unit sphere centred at 0,0,0 */
-	CMZN_GLYPH_AXES,             /*!< unit line axes without labels */
-	CMZN_GLYPH_AXES_123,         /*!< unit line axes with labels 1,2,3 */
-	CMZN_GLYPH_AXES_XYZ,         /*!< unit line axes with labels x,y,z */
-	CMZN_GLYPH_AXES_COLOUR,      /*!< unit line axes with materials red, green, blue */
-	CMZN_GLYPH_AXES_SOLID,       /*!< unit solid arrow axes without labels */
-	CMZN_GLYPH_AXES_SOLID_123,   /*!< unit solid arrow axes with labels 1,2,3 */
-	CMZN_GLYPH_AXES_SOLID_XYZ,   /*!< unit solid arrow axes with labels x,y,z */
-	CMZN_GLYPH_AXES_SOLID_COLOUR /*!< unit solid arrow axes with materials red, green, blue */
+	CMZN_GLYPH_SHAPE_TYPE_INVALID = 0,
+	CMZN_GLYPH_SHAPE_TYPE_NONE,             /*!< no glyph */
+	CMZN_GLYPH_SHAPE_TYPE_ARROW,            /*!< line arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
+	CMZN_GLYPH_SHAPE_TYPE_ARROW_SOLID,      /*!< solid arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
+	CMZN_GLYPH_SHAPE_TYPE_AXIS,             /*!< line arrow from 0,0,0 to 1,0,0, head 0.1 long unit width */
+	CMZN_GLYPH_SHAPE_TYPE_AXIS_SOLID,       /*!< solid arrow from 0,0,0 to 1,0,0, head 0.1 long unit width */
+	CMZN_GLYPH_SHAPE_TYPE_CONE,             /*!< unit diameter cone from base 0,0,0 to apex 1,0,0, open base */
+	CMZN_GLYPH_SHAPE_TYPE_CONE_SOLID,       /*!< unit diameter cone from base 0,0,0 to apex 1,0,0, closed base */
+	CMZN_GLYPH_SHAPE_TYPE_CROSS,            /*!< 3 crossed lines on each axis, centre 0,0,0 */
+	CMZN_GLYPH_SHAPE_TYPE_CUBE_SOLID,       /*!< solid unit cube centred at 0,0,0 and aligned with axes */
+	CMZN_GLYPH_SHAPE_TYPE_CUBE_WIREFRAME,   /*!< wireframe unit cube centred at 0,0,0 and aligned with axes */
+	CMZN_GLYPH_SHAPE_TYPE_CYLINDER,         /*!< unit diameter cylinder from 0,0,0 to 1,0,0, open ends */
+	CMZN_GLYPH_SHAPE_TYPE_CYLINDER_SOLID,   /*!< unit diameter cylinder from 0,0,0 to 1,0,0, closed ends */
+	CMZN_GLYPH_SHAPE_TYPE_DIAMOND,          /*!< unit regular octahedron centred at 0,0,0; a degenerate sphere */
+	CMZN_GLYPH_SHAPE_TYPE_LINE,             /*!< line from 0,0,0 to 1,0,0 */
+	CMZN_GLYPH_SHAPE_TYPE_POINT,            /*!< a single point at 0,0,0 */
+	CMZN_GLYPH_SHAPE_TYPE_SHEET,            /*!< unit square in 1-2 plane centred at 0,0,0 */
+	CMZN_GLYPH_SHAPE_TYPE_SPHERE,           /*!< unit sphere centred at 0,0,0 */
+	CMZN_GLYPH_SHAPE_TYPE_AXES,             /*!< unit line axes without labels */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_123,         /*!< unit line axes with labels 1,2,3 */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_XYZ,         /*!< unit line axes with labels x,y,z */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_COLOUR,      /*!< unit line axes with materials red, green, blue */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID,       /*!< unit solid arrow axes without labels */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_123,   /*!< unit solid arrow axes with labels 1,2,3 */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_XYZ,   /*!< unit solid arrow axes with labels x,y,z */
+	CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_COLOUR /*!< unit solid arrow axes with materials red, green, blue */
 };
 
 #endif

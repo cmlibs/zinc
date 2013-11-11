@@ -84,7 +84,7 @@ ZINC_API cmzn_spectrum_id cmzn_spectrummodule_find_spectrum_by_name(
 
 /**
 * Get the default spectrum, if any. By default, a single component spectrum
-* with CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_RAINBOW is returned.
+* with CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW is returned.
 * Call cmzn_spectrummodule_set_default_spectrum to change the default
 * spectrum.
 *
@@ -417,7 +417,7 @@ ZINC_API int cmzn_spectrumcomponent_set_colour_maximum(
 /**
  * Get the step value of a spectrum component. The step spectrum
  * defines the boundary between the red and blue colour of the
- * COLOUR_MAPPING_STEP spectrum compomemt.
+ * COLOUR_MAPPING_TYPE_STEP spectrum compomemt.
  *
  * @param component  The handle of the spectrum component.
  *
@@ -429,7 +429,7 @@ ZINC_API double cmzn_spectrumcomponent_get_step_value(
 /**
  * Set the step value of a spectrum component. The step spectrum
  * defines the boundary between the red and blue colour of the
- * COLOUR_MAPPING_STEP spectrum component.
+ * COLOUR_MAPPING_TYPE_STEP spectrum component.
  *
  * @param component  The handle of the spectrum component.
  * @value  the step value to be set
@@ -441,7 +441,7 @@ ZINC_API int cmzn_spectrumcomponent_set_step_value(
 
 /**
  * Get the value which alters the colour progression when scale type
- * is set to CMZN_SPECTRUMCOMPONENT_SCALE_LOG
+ * is set to CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG
  *
  * @param component  The handle of the spectrum component.
  *
@@ -452,7 +452,7 @@ ZINC_API double cmzn_spectrumcomponent_get_exaggeration(
 
 /**
  * Set the value which alters the colour progression when scale type
- * is set to CMZN_SPECTRUMCOMPONENT_SCALE_LOG
+ * is set to CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG
  *
  * @param component  The handle of the spectrum component.
  * @value  the exaggeration value to be set
@@ -613,7 +613,7 @@ ZINC_API int cmzn_spectrumcomponent_set_field_component(
 
 /**
  * Get the number of bands this component contains within its range in
- * CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED
+ * CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED
  *
  * @param component  Handle to the zinc spectrum component.
  *
@@ -624,7 +624,7 @@ ZINC_API int cmzn_spectrumcomponent_get_number_of_bands(cmzn_spectrumcomponent_i
 
 /**
  * Set the number of bands this component contains within its range in
- * CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_BANDED
+ * CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED
  *
  * @param component  Handle to the zinc spectrum component.
  * @param number of bands  number of bands for this component
@@ -667,8 +667,8 @@ ZINC_API int cmzn_spectrumcomponent_set_scale_type(
  * @param attribute_name  string of the short enumerator name
  * @return  the correct enum type if a match is found.
  */
-ZINC_API enum cmzn_spectrumcomponent_colour_mapping
-	cmzn_spectrumcomponent_colour_mapping_enum_from_string(const char *string);
+ZINC_API enum cmzn_spectrumcomponent_colour_mapping_type
+	cmzn_spectrumcomponent_colour_mapping_type_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum type from the provided enum.
@@ -677,32 +677,32 @@ ZINC_API enum cmzn_spectrumcomponent_colour_mapping
  * @param attribute  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_spectrumcomponent_colour_mapping_enum_to_string(
-	enum cmzn_spectrumcomponent_colour_mapping component_colour);
+ZINC_API char *cmzn_spectrumcomponent_colour_mapping_type_enum_to_string(
+	enum cmzn_spectrumcomponent_colour_mapping_type component_colour);
 
 /**
- * Get the colour_mapping of this component.
+ * Get the colour_mapping_type of this component.
  *
  * @param component  Handle to the zinc spectrum component.
  *
- * @return  colour_mapping of the spectrum component.
- *   CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_INVALID if failed or
+ * @return  colour_mapping_type of the spectrum component.
+ *   CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_INVALID if failed or
  *   mode is not set correctly.
  */
-ZINC_API enum cmzn_spectrumcomponent_colour_mapping
-cmzn_spectrumcomponent_get_colour_mapping(cmzn_spectrumcomponent_id component);
+ZINC_API enum cmzn_spectrumcomponent_colour_mapping_type
+cmzn_spectrumcomponent_get_colour_mapping_type(cmzn_spectrumcomponent_id component);
 
 /**
- * Set the colour_mapping of this component.
+ * Set the colour_mapping_type of this component.
  *
  * @param component  Handle to the zinc spectrum component.
- * @param colour_mapping  colour_mapping to be set for spectrum component
+ * @param colour_mapping_type  colour_mapping_type to be set for spectrum component
  *
  * @return  CMZN_OK if value is set successfully, any other value if
  * 	failed.
  */
-ZINC_API int cmzn_spectrumcomponent_set_colour_mapping(
-	cmzn_spectrumcomponent_id component,	enum cmzn_spectrumcomponent_colour_mapping type);
+ZINC_API int cmzn_spectrumcomponent_set_colour_mapping_type(
+	cmzn_spectrumcomponent_id component,	enum cmzn_spectrumcomponent_colour_mapping_type type);
 
 
 #ifdef __cplusplus

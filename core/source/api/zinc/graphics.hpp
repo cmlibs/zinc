@@ -636,15 +636,15 @@ public:
 			static_cast<enum cmzn_glyph_repeat_mode>(glyphRepeatMode));
 	}
 
-	Glyph::Type getGlyphType()
+	Glyph::ShapeType getGlyphShapeType()
 	{
-		return static_cast<Glyph::Type>(cmzn_graphicspointattributes_get_glyph_type(id));
+		return static_cast<Glyph::ShapeType>(cmzn_graphicspointattributes_get_glyph_shape_type(id));
 	}
 
-	int setGlyphType(Glyph::Type type)
+	int setGlyphShapeType(Glyph::ShapeType shapeType)
 	{
-		return cmzn_graphicspointattributes_set_glyph_type(id,
-			static_cast<cmzn_glyph_type>(type));
+		return cmzn_graphicspointattributes_set_glyph_shape_type(id,
+			static_cast<cmzn_glyph_shape_type>(shapeType));
 	}
 
 	Field getLabelField()

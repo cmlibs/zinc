@@ -41,7 +41,7 @@ struct cmzn_glyph
 	bool isManagedFlag;
 	int access_count;
 private:
-	cmzn_glyph_type type;
+	cmzn_glyph_shape_type type;
 
 protected:
 
@@ -51,7 +51,7 @@ protected:
 		manager_change_status(0),
 		isManagedFlag(false),
 		access_count(1),
-		type(CMZN_GLYPH_TYPE_INVALID)
+		type(CMZN_GLYPH_SHAPE_TYPE_INVALID)
 	{
 	}
 
@@ -160,14 +160,14 @@ public:
 
 	int setName(const char *newName);
 
-	cmzn_glyph_type getType() const
+	cmzn_glyph_shape_type getType() const
 	{
 		return this->type;
 	}
 
 	/** Set type metadata as alternative means to identify glyph.
 	 * Should ensure no two glyphs have the same type. */
-	void setType(cmzn_glyph_type typeIn)
+	void setType(cmzn_glyph_shape_type typeIn)
 	{
 		this->type = typeIn;
 	}
@@ -270,9 +270,9 @@ private:
 	cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn);
 	~cmzn_glyphmodule();
 
-	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type);
+	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_shape_type type);
 
-	bool defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_type type);
+	bool defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_shape_type type);
 
 public:
 
@@ -328,7 +328,7 @@ public:
 	}
 
 	/** @return non-ACCESSed pointer to glyph, or 0 if no match */
-	cmzn_glyph *findGlyphByType(enum cmzn_glyph_type glyph_type);
+	cmzn_glyph *findGlyphByType(enum cmzn_glyph_shape_type glyph_type);
 
 	/** adds glyph to manager, ensuring it has a unique name */
 	void addGlyph(cmzn_glyph *glyph);

@@ -648,17 +648,17 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_glyph_repeat_mode)
 {
 	switch (enumerator_value)
 	{
-		case CMZN_GLYPH_REPEAT_NONE:
-			return "REPEAT_NONE";
+		case CMZN_GLYPH_REPEAT_MODE_NONE:
+			return "REPEAT_MODE_NONE";
 			break;
-		case CMZN_GLYPH_REPEAT_AXES_2D:
-			return "REPEAT_AXES_2D";
+		case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
+			return "REPEAT_MODE_AXES_2D";
 			break;
-		case CMZN_GLYPH_REPEAT_AXES_3D:
-			return "REPEAT_AXES_3D";
+		case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
+			return "REPEAT_MODE_AXES_3D";
 			break;
-		case CMZN_GLYPH_REPEAT_MIRROR:
-			return "REPEAT_MIRROR";
+		case CMZN_GLYPH_REPEAT_MODE_MIRROR:
+			return "REPEAT_MODE_MIRROR";
 			break;
 		default:
 			// fall through to normal return
@@ -674,14 +674,14 @@ int cmzn_glyph_repeat_mode_get_number_of_glyphs(
 {
 	switch (glyph_repeat_mode)
 	{
-		case CMZN_GLYPH_REPEAT_NONE:
+		case CMZN_GLYPH_REPEAT_MODE_NONE:
 			return 1;
 			break;
-		case CMZN_GLYPH_REPEAT_AXES_2D:
-		case CMZN_GLYPH_REPEAT_MIRROR:
+		case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
+		case CMZN_GLYPH_REPEAT_MODE_MIRROR:
 			return 2;
 			break;
-		case CMZN_GLYPH_REPEAT_AXES_3D:
+		case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
 			return 3;
 			break;
 		default:
@@ -696,14 +696,14 @@ bool cmzn_glyph_repeat_mode_glyph_number_has_label(
 {
 	switch (glyph_repeat_mode)
 	{
-		case CMZN_GLYPH_REPEAT_NONE:
-		case CMZN_GLYPH_REPEAT_MIRROR:
+		case CMZN_GLYPH_REPEAT_MODE_NONE:
+		case CMZN_GLYPH_REPEAT_MODE_MIRROR:
 			return (glyph_number == 0);
 			break;
-		case CMZN_GLYPH_REPEAT_AXES_2D:
+		case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
 			return (glyph_number < 2);
 			break;
-		case CMZN_GLYPH_REPEAT_AXES_3D:
+		case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
 			return (glyph_number < 3);
 			break;
 		default:
@@ -721,8 +721,8 @@ void resolve_glyph_axes(
 {
 	switch (glyph_repeat_mode)
 	{
-	case CMZN_GLYPH_REPEAT_NONE:
-	case CMZN_GLYPH_REPEAT_MIRROR:
+	case CMZN_GLYPH_REPEAT_MODE_NONE:
+	case CMZN_GLYPH_REPEAT_MODE_MIRROR:
 	default:
 		{
 			Triple axis_scale;
@@ -740,7 +740,7 @@ void resolve_glyph_axes(
 					+ offset[0]*final_axis1[j]
 					+ offset[1]*final_axis2[j]
 					+ offset[2]*final_axis3[j];
-				if (glyph_repeat_mode == CMZN_GLYPH_REPEAT_MIRROR)
+				if (glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_MIRROR)
 				{
 					if (glyph_number == 1)
 					{
@@ -769,8 +769,8 @@ void resolve_glyph_axes(
 				final_axis3[2] = -final_axis3[2];
 			}
 		} break;
-	case CMZN_GLYPH_REPEAT_AXES_2D:
-	case CMZN_GLYPH_REPEAT_AXES_3D:
+	case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
+	case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
 		{
 			Triple axis_scale;
 			for (int j = 0; j < 3; j++)
@@ -795,7 +795,7 @@ void resolve_glyph_axes(
 			else if (glyph_number == 1)
 			{
 				use_axis1 = axis2;
-				use_axis2 = (glyph_repeat_mode == CMZN_GLYPH_REPEAT_AXES_2D) ? axis1 : axis3;
+				use_axis2 = (glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_AXES_2D) ? axis1 : axis3;
 			}
 			else // if (glyph_number == 2)
 			{
@@ -814,7 +814,7 @@ void resolve_glyph_axes(
 			if (0.0 < magnitude)
 			{
 				GLfloat scaling = (base_size[2] + use_scale*scale_factors[2]) / magnitude;
-				if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_AXES_2D) && (glyph_number > 0))
+				if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_AXES_2D) && (glyph_number > 0))
 				{
 					scaling *= -1.0;
 				}
@@ -1651,7 +1651,7 @@ cmzn_glyphmodule::~cmzn_glyphmodule()
 	* and add to glyph module.
 	* Always free handle to glyph.
 	*/
-void cmzn_glyphmodule::defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_type type)
+void cmzn_glyphmodule::defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_shape_type type)
 {
 	if (0 == FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(name, this->getManager()))
 	{
@@ -1670,7 +1670,7 @@ void cmzn_glyphmodule::defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_gly
  * wrapping it or not.
  * @return  true if glyph added, false if not.
  */
-bool cmzn_glyphmodule::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_type type)
+bool cmzn_glyphmodule::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_shape_type type)
 {
 	bool glyphAdded = true;
 	char *name = 0;
@@ -1694,7 +1694,7 @@ bool cmzn_glyphmodule::defineGlyphStatic(GT_object*& graphicsObject, cmzn_glyph_
 	return glyphAdded;
 }
 
-cmzn_glyph *cmzn_glyphmodule::findGlyphByType(enum cmzn_glyph_type glyph_type)
+cmzn_glyph *cmzn_glyphmodule::findGlyphByType(enum cmzn_glyph_shape_type glyph_type)
 {
 	cmzn_set_cmzn_glyph *glyphs = this->getGlyphListPrivate();
 	for (cmzn_set_cmzn_glyph::iterator iter = glyphs->begin(); iter != glyphs->end(); ++iter)
@@ -1736,75 +1736,75 @@ int cmzn_glyphmodule::defineStandardGlyphs()
 	GT_object *graphicsObject = 0;
 
 	graphicsObject = create_GT_object_arrow_line("arrow", 1.f/3.f, 0.5);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_ARROW);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_ARROW);
 
-	this->defineGlyph("arrow_solid", cmzn_glyph_arrow_solid::create(1.0/3.0, 1.0/3.0), CMZN_GLYPH_ARROW_SOLID);
+	this->defineGlyph("arrow_solid", cmzn_glyph_arrow_solid::create(1.0/3.0, 1.0/3.0), CMZN_GLYPH_SHAPE_TYPE_ARROW_SOLID);
 
 	graphicsObject = create_GT_object_arrow_line("axis", 0.1, 0.5);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_AXIS);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_AXIS);
 
-	this->defineGlyph("axis_solid", cmzn_glyph_arrow_solid::create(0.1, 1.0/3.0), CMZN_GLYPH_AXIS_SOLID);
+	this->defineGlyph("axis_solid", cmzn_glyph_arrow_solid::create(0.1, 1.0/3.0), CMZN_GLYPH_SHAPE_TYPE_AXIS_SOLID);
 
-	this->defineGlyph("cone", cmzn_glyph_cone::create(), CMZN_GLYPH_CONE);
-	this->defineGlyph("cone_solid", cmzn_glyph_cone_solid::create(), CMZN_GLYPH_CONE_SOLID);
+	this->defineGlyph("cone", cmzn_glyph_cone::create(), CMZN_GLYPH_SHAPE_TYPE_CONE);
+	this->defineGlyph("cone_solid", cmzn_glyph_cone_solid::create(), CMZN_GLYPH_SHAPE_TYPE_CONE_SOLID);
 
 	graphicsObject = create_GT_object_cross("cross");
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_CROSS);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_CROSS);
 
 	graphicsObject = create_GT_object_cube_solid("cube_solid");
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_CUBE_SOLID);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_CUBE_SOLID);
 
 	graphicsObject = create_GT_object_cube_wireframe("cube_wireframe");
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_CUBE_WIREFRAME);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_CUBE_WIREFRAME);
 
-	this->defineGlyph("cylinder", cmzn_glyph_cylinder::create(), CMZN_GLYPH_CYLINDER);
-	this->defineGlyph("cylinder_solid", cmzn_glyph_cylinder_solid::create(), CMZN_GLYPH_CYLINDER_SOLID);
+	this->defineGlyph("cylinder", cmzn_glyph_cylinder::create(), CMZN_GLYPH_SHAPE_TYPE_CYLINDER);
+	this->defineGlyph("cylinder_solid", cmzn_glyph_cylinder_solid::create(), CMZN_GLYPH_SHAPE_TYPE_CYLINDER_SOLID);
 
 	graphicsObject = create_GT_object_sphere("diamond", 4, 2);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_DIAMOND);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_DIAMOND);
 
 	graphicsObject = create_GT_object_line("line");
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_LINE);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_LINE);
 
 	graphicsObject = create_GT_object_point("point", g_POINT_MARKER, 0);
-	if (this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_POINT) && (!this->defaultPointGlyph))
+	if (this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_POINT) && (!this->defaultPointGlyph))
 	{
 		setDefaultPointGlyph(this->findGlyphByName("point"));
 	}
 
 	graphicsObject = create_GT_object_sheet("sheet", /*define_texturepoints*/0);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHEET);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_SHEET);
 
-	this->defineGlyph("sphere", cmzn_glyph_sphere::create(), CMZN_GLYPH_SPHERE);
+	this->defineGlyph("sphere", cmzn_glyph_sphere::create(), CMZN_GLYPH_SHAPE_TYPE_SPHERE);
 
 	cmzn_glyph_axes_id axes = 0;
-	cmzn_glyph_id axis = this->findGlyphByType(CMZN_GLYPH_AXIS);
+	cmzn_glyph_id axis = this->findGlyphByType(CMZN_GLYPH_SHAPE_TYPE_AXIS);
 	axes = cmzn_glyph_axes::create(axis, /*axis_width*/0.1);
-	this->defineGlyph("axes", axes, CMZN_GLYPH_AXES);
+	this->defineGlyph("axes", axes, CMZN_GLYPH_SHAPE_TYPE_AXES);
 	axes = cmzn_glyph_axes::create(axis, /*axis_width*/0.1);
 	axes->setAxisLabel(1, "1");
 	axes->setAxisLabel(2, "2");
 	axes->setAxisLabel(3, "3");
-	this->defineGlyph("axes_123", axes, CMZN_GLYPH_AXES_123);
+	this->defineGlyph("axes_123", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_123);
 	axes = cmzn_glyph_axes::create(axis, /*axis_width*/0.1);
 	axes->setAxisLabel(1, "x");
 	axes->setAxisLabel(2, "y");
 	axes->setAxisLabel(3, "z");
-	this->defineGlyph("axes_xyz", axes, CMZN_GLYPH_AXES_XYZ);
+	this->defineGlyph("axes_xyz", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_XYZ);
 
-	cmzn_glyph_id arrow_solid = this->findGlyphByType(CMZN_GLYPH_ARROW_SOLID);
+	cmzn_glyph_id arrow_solid = this->findGlyphByType(CMZN_GLYPH_SHAPE_TYPE_ARROW_SOLID);
 	axes = cmzn_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
-	this->defineGlyph("axes_solid", axes, CMZN_GLYPH_AXES_SOLID);
+	this->defineGlyph("axes_solid", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID);
 	axes = cmzn_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
 	axes->setAxisLabel(1, "1");
 	axes->setAxisLabel(2, "2");
 	axes->setAxisLabel(3, "3");
-	this->defineGlyph("axes_solid_123", axes, CMZN_GLYPH_AXES_SOLID_123);
+	this->defineGlyph("axes_solid_123", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_123);
 	axes = cmzn_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
 	axes->setAxisLabel(1, "x");
 	axes->setAxisLabel(2, "y");
 	axes->setAxisLabel(3, "z");
-	this->defineGlyph("axes_solid_xyz", axes, CMZN_GLYPH_AXES_SOLID_XYZ);
+	this->defineGlyph("axes_solid_xyz", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_XYZ);
 
 	cmzn_material_id red = cmzn_materialmodule_find_material_by_name(this->materialModule, "red");
 	cmzn_material_id green = cmzn_materialmodule_find_material_by_name(this->materialModule, "green");
@@ -1815,13 +1815,13 @@ int cmzn_glyphmodule::defineStandardGlyphs()
 		axes->setAxisMaterial(1, red);
 		axes->setAxisMaterial(2, green);
 		axes->setAxisMaterial(3, blue);
-		this->defineGlyph("axes_colour", axes, CMZN_GLYPH_AXES_COLOUR);
+		this->defineGlyph("axes_colour", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_COLOUR);
 
 		axes = cmzn_glyph_axes::create(arrow_solid, /*axis_width*/0.25);
 		axes->setAxisMaterial(1, red);
 		axes->setAxisMaterial(2, green);
 		axes->setAxisMaterial(3, blue);
-		this->defineGlyph("axes_solid_colour", axes, CMZN_GLYPH_AXES_SOLID_COLOUR);
+		this->defineGlyph("axes_solid_colour", axes, CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_COLOUR);
 	}
 	cmzn_material_destroy(&red);
 	cmzn_material_destroy(&green);
@@ -1837,28 +1837,28 @@ int cmzn_glyphmodule::defineStandardCmguiGlyphs()
 	beginChange();
 	GT_object *graphicsObject = 0;
 
-	cmzn_glyph_id axis = this->findGlyphByType(CMZN_GLYPH_AXIS);
+	cmzn_glyph_id axis = this->findGlyphByType(CMZN_GLYPH_SHAPE_TYPE_AXIS);
 	cmzn_glyph_axes_id axes = cmzn_glyph_axes::create(axis, /*axis_width*/0.1);
 	if (axes)
 	{
 		axes->setAxisLabel(1, "f");
 		axes->setAxisLabel(2, "s");
 		axes->setAxisLabel(3, "n");
-		this->defineGlyph("axes_fsn", axes, CMZN_GLYPH_TYPE_INVALID);
+		this->defineGlyph("axes_fsn", axes, CMZN_GLYPH_SHAPE_TYPE_INVALID);
 	}
 
 	graphicsObject = create_GT_object_axes("grid_lines",
 		/*make_solid*/0, /*head_length*/0.0, /*half_head_width*/0.0,
 		/*labels*/(const char **)NULL, /*label_offset*/0.1f, (cmzn_font*)0);
 	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_grid_lines);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_TYPE_INVALID);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_INVALID);
 
 	graphicsObject = create_GT_object_line("line_ticks");
 	Graphics_object_set_glyph_labels_function(graphicsObject, draw_glyph_axes_ticks);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_TYPE_INVALID);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_INVALID);
 
 	graphicsObject = create_GT_object_sheet("textured_sheet", /*define_texturepoints*/1);
-	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_TYPE_INVALID);
+	this->defineGlyphStatic(graphicsObject, CMZN_GLYPH_SHAPE_TYPE_INVALID);
 
 	endChange();
 	return CMZN_OK;
@@ -1944,7 +1944,7 @@ cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
 }
 
 cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_type(
-	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_type glyph_type)
+	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_shape_type glyph_type)
 {
 	cmzn_glyph *glyph = 0;
 	if (glyphmodule)

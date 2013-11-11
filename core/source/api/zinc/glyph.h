@@ -98,7 +98,7 @@ ZINC_API int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule);
  * for the 3 axes but are not created if those materials are not defined.
  * @see cmzn_materialmodule_define_standard_materials
  * All the above standard glyphs also have unique types enumeration.
- * @see cmzn_glyph_type
+ * @see cmzn_glyph_shape_type
  * Note if any glyphs of the predefined name already exist prior to calling this
  * function, the standard glyph is not created.
  * All glyphs created by this function have IS_MANAGED set to 1.
@@ -132,7 +132,7 @@ ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
  * Up to caller to destroy returned handle.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_type(
-	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_type glyph_type);
+	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_shape_type glyph_type);
 
 /**
  * Get the default glyph used for new point graphics, if any.

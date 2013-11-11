@@ -1168,10 +1168,10 @@ ZINC_API int cmzn_graphicspointattributes_set_glyph_repeat_mode(
  * attributes.
  *
  * @param point_attributes  The point attributes to query.
- * @return  The glyph type identifier, or CMZN_GLYPH_TYPE_INVALID if
+ * @return  The glyph type identifier, or CMZN_GLYPH_SHAPE_TYPE_INVALID if
  * invalid arguments or glyph does not have a valid type.
  */
-ZINC_API enum cmzn_glyph_type cmzn_graphicspointattributes_get_glyph_type(
+ZINC_API enum cmzn_glyph_shape_type cmzn_graphicspointattributes_get_glyph_shape_type(
 	cmzn_graphicspointattributes_id point_attributes);
 
 /**
@@ -1184,9 +1184,9 @@ ZINC_API enum cmzn_glyph_type cmzn_graphicspointattributes_get_glyph_type(
  * @param glyph_type  The glyph type identifier.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_graphicspointattributes_set_glyph_type(
+ZINC_API int cmzn_graphicspointattributes_set_glyph_shape_type(
 	cmzn_graphicspointattributes_id point_attributes,
-	enum cmzn_glyph_type glyph_type);
+	enum cmzn_glyph_shape_type glyph_type);
 
 /**
  * Gets the label field from the graphics point attributes.
@@ -1253,8 +1253,8 @@ ZINC_API char *cmzn_graphicspointattributes_get_label_text(
 
 /**
  * Set static label text to be shown near each glyph. The number of labels
- * depends on the glyph repeat mode, one label per glyph for REPEAT_AXES,
- * one label for REPEAT_NONE and REPEAT_MIRROR. Note the label field value is
+ * depends on the glyph repeat mode, one label per glyph for REPEAT_MODE_AXES,
+ * one label for REPEAT_MODE_NONE and REPEAT_MODE_MIRROR. Note the label field value is
  * written for the first label only, prefixed by the first static label text.
  * @see cmzn_graphicspointattributes_set_glyph_repeat_mode
  *
@@ -1367,7 +1367,7 @@ ZINC_API cmzn_field_id cmzn_graphicspointattributes_get_signed_scale_field(
  * Sets the signed scale field in the graphics point attributes. Can have from 1
  * to 3 components which multiply the scaling from the orientation scale field
  * on the corresponding axis.
- * Note special behaviour applies when used with the GLYPH_REPEAT_MIRROR mode:
+ * Note special behaviour applies when used with the GLYPH_REPEAT_MODE_MIRROR mode:
  * If value is negative on the first axis, the origin of the glyph is moved to
  * the end of the first axis and its direction is reversed. This is commonly
  * used to draw stress and strain with mirrored arrow-like glyphs pointing

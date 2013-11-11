@@ -1413,7 +1413,7 @@ Frees the memory for <**context> and sets <*context> to NULL.
  * Internal function for getting type enum for quickly matching standard glyphs for
  * point, line, cross, for fast alternative rendering
  */
-enum cmzn_glyph_type GT_object_get_glyph_type(
+enum cmzn_glyph_shape_type GT_object_get_glyph_type(
 	struct GT_object *gt_object);
 
 /**
@@ -1421,6 +1421,6 @@ enum cmzn_glyph_type GT_object_get_glyph_type(
  * point, line, cross, for fast alternative rendering
  */
 int GT_object_set_glyph_type(struct GT_object *gt_object,
-	enum cmzn_glyph_type glyph_type);
+	enum cmzn_glyph_shape_type glyph_type);
 
 #endif /* !defined (GRAPHICS_OBJECT_H) */
