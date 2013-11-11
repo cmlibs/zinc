@@ -6865,68 +6865,66 @@ Closes the scene_viewer.
 	return (return_code);
 }
 
-double cmzn_sceneviewer_get_far_clipping_plane(cmzn_sceneviewer_id scene_viewer)
+double cmzn_sceneviewer_get_far_clipping_plane(cmzn_sceneviewer_id sceneviewer)
 {
 	double left, right, bottom, top, far_plane = 0.0, near_plane;
 
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		Scene_viewer_get_viewing_volume(scene_viewer,
+		Scene_viewer_get_viewing_volume(sceneviewer,
 		  &left, &right, &bottom, &top, &near_plane, &far_plane);
 	}
 
 	return far_plane;
 }
 
-double cmzn_sceneviewer_get_near_clipping_plane(cmzn_sceneviewer_id scene_viewer)
+double cmzn_sceneviewer_get_near_clipping_plane(cmzn_sceneviewer_id sceneviewer)
 {
 	double left, right, bottom, top, far_plane, near_plane = 0.0;
 
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		Scene_viewer_get_viewing_volume(scene_viewer,
+		Scene_viewer_get_viewing_volume(sceneviewer,
 		  &left, &right, &bottom, &top, &near_plane, &far_plane);
 	}
 
 	return near_plane;
 }
 
-int cmzn_sceneviewer_set_far_clipping_plane(cmzn_sceneviewer_id scene_viewer,
+int cmzn_sceneviewer_set_far_clipping_plane(cmzn_sceneviewer_id sceneviewer,
 	double far_clipping_plane)
 {
-	double left, right, bottom, top, near, old_far;
-	int return_code = CMZN_ERROR_ARGUMENT;
+	double left, right, bottom, top, near_plane, old_far;
 
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		if (Scene_viewer_get_viewing_volume(scene_viewer,
-			&left, &right, &bottom, &top, &near, &old_far))
+		if (Scene_viewer_get_viewing_volume(sceneviewer,
+			&left, &right, &bottom, &top, &near_plane, &old_far))
 		{
-			return_code = Scene_viewer_set_viewing_volume(scene_viewer,
-				left, right, bottom, top, near, far_clipping_plane);
+			return Scene_viewer_set_viewing_volume(sceneviewer,
+				left, right, bottom, top, near_plane, far_clipping_plane);
 		}
 	}
 
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_sceneviewer_set_near_clipping_plane(cmzn_sceneviewer_id scene_viewer,
+int cmzn_sceneviewer_set_near_clipping_plane(cmzn_sceneviewer_id sceneviewer,
 	double near_clipping_plane)
 {
-	double left, right, bottom, top, old_near, far;
-	int return_code = CMZN_ERROR_ARGUMENT;
+	double left, right, bottom, top, old_near, far_plane;
 
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		if (Scene_viewer_get_viewing_volume(scene_viewer,
-			&left, &right, &bottom, &top, &old_near, &far))
+		if (Scene_viewer_get_viewing_volume(sceneviewer,
+			&left, &right, &bottom, &top, &old_near, &far_plane))
 		{
-			return_code = Scene_viewer_set_viewing_volume(scene_viewer,
-				left, right, bottom, top, near_clipping_plane, far);
+			return Scene_viewer_set_viewing_volume(sceneviewer,
+				left, right, bottom, top, near_clipping_plane, far_plane);
 		}
 	}
 
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_sceneviewer_viewport_mode cmzn_sceneviewer_get_viewport_mode(
