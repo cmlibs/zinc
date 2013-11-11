@@ -1748,8 +1748,8 @@ public:
 		const char *enum_string = 0;
 		switch (mode)
 		{
-		case CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_NONE:
-			enum_string = "NONE";
+		case CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED:
+			enum_string = "UNCOMPRESSED";
 			break;
 		case CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC:
 			enum_string = "AUTOMATIC";

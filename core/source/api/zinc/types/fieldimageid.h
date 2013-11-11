@@ -41,14 +41,18 @@ enum cmzn_field_image_combine_mode
 {
 	CMZN_FIELD_IMAGE_COMBINE_MODE_INVALID = 0,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND = 1,
+		/*!< default combine mode */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL = 2,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_MODULATE = 3,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_ADD = 4,
-	CMZN_FIELD_IMAGE_COMBINE_MODE_ADD_SIGNED = 5,  /*!< Add the value and subtract 0.5 so the texture value
-								 effectively ranges from -0.5 to 0.5 */
-	CMZN_FIELD_IMAGE_COMBINE_MODE_MODULATE_SCALE_4 = 6,  /*!< Multiply and then scale by 4, so that we can
-										 scale down or up */
-	CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND_SCALE_4 = 7,  /*!< Same as blend with a 4 * scaling */
+	CMZN_FIELD_IMAGE_COMBINE_MODE_ADD_SIGNED = 5,
+		/*!< Add the value and subtract 0.5 so the texture value
+		     effectively ranges from -0.5 to 0.5 */
+	CMZN_FIELD_IMAGE_COMBINE_MODE_MODULATE_SCALE_4 = 6,
+		/*!< Multiply and then scale by 4, so that we can
+		     scale down or up */
+	CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND_SCALE_4 = 7, 
+		/*!< Same as blend with a 4 * scaling */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_SUBTRACT = 8,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_ADD_SCALE_4 = 9,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_SUBTRACT_SCALE_4 = 10,
@@ -63,6 +67,7 @@ enum cmzn_field_image_filter_mode
 {
 	CMZN_FIELD_IMAGE_FILTER_MODE_INVALID = 0,
 	CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST = 1,
+		/*!< default combine mode */
 	CMZN_FIELD_IMAGE_FILTER_MODE_LINEAR = 2,
 	CMZN_FIELD_IMAGE_FILTER_MODE_NEAREST_MIPMAP_NEAREST = 3,
 	CMZN_FIELD_IMAGE_FILTER_MODE_LINEAR_MIPMAP_NEAREST = 4,
@@ -76,9 +81,10 @@ enum cmzn_field_image_filter_mode
 enum cmzn_field_image_hardware_compression_mode
 {
 	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID = 0,
-	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_NONE = 1,
+	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = 1,
+		/* default hardware compression mode */
 	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC = 2
-	/*!< Allow the hardware to choose the compression */
+		/*!< Allow the hardware to choose the compression */
 };
 
 /**
@@ -88,17 +94,20 @@ enum cmzn_field_image_hardware_compression_mode
 enum cmzn_field_image_wrap_mode
 {
 	CMZN_FIELD_IMAGE_WRAP_MODE_INVALID = 0,
-	CMZN_FIELD_IMAGE_WRAP_MODE_CLAMP = 1,/*!< With repeating textures and when texture
-	 coordinates greater than [0,1], the texture will repeat*/
+	CMZN_FIELD_IMAGE_WRAP_MODE_CLAMP = 1,
+		/*!< Clamp to a blend of the pixel edge and border colour */
 	CMZN_FIELD_IMAGE_WRAP_MODE_REPEAT = 2,
-	CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP = 3, /*!< always ignore the border,
-		texels at or near the edge of the texure are used for texturing */
-	CMZN_FIELD_IMAGE_WRAP_MODE_BORDER_CLAMP = 4, /*!< With nearest filter mode,
-		closest texel in the texture is used, with linear filter mode, a weighted
-		combiination in a 2x2 awrray of colour data us used */
-	CMZN_FIELD_IMAGE_WRAP_MODE_MIRROR_REPEAT = 5/*!< Texture will be flip-flop outside
-		of the range. Texture may appear up-right in coordinate range[0,1] but
-		upside-down in coordinate range[1,2]*/
+		/*!< Default wrap mode. Repeat texture cylically in multiples of the
+		     texture coordinate range */
+	CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP = 3,
+		/*!< Always ignore the border, texels at or near the edge of the texure are
+		     used for texturing */
+	CMZN_FIELD_IMAGE_WRAP_MODE_BORDER_CLAMP = 4,
+		/*!< Clamp to the border colour when outside the texture coordinate range. */
+	CMZN_FIELD_IMAGE_WRAP_MODE_MIRROR_REPEAT = 5
+		/*!< Repeat but mirror every second multiple of the texture coordinates
+		     range. Texture may appear up-right in coordinate range[0,1] but
+		     upside-down in coordinate range[1,2] */
 };
 
 /**
