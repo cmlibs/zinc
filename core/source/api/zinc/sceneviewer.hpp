@@ -357,6 +357,26 @@ public:
 			static_cast<cmzn_sceneviewer_viewport_mode>(viewportMode));
 	}
 
+	double getFarClippingPlane()
+	{
+		return cmzn_sceneviewer_get_far_clipping_plane(id);
+	}
+
+	double getNearClippingPlane()
+	{
+		return cmzn_sceneviewer_get_near_clipping_plane(id);
+	}
+
+	int setFarClippingPlane(double farClippingPlane)
+	{
+		return cmzn_sceneviewer_set_far_clipping_plane(id, farClippingPlane);
+	}
+
+	int setNearClippingPlane(double nearClippingPlane)
+	{
+		return cmzn_sceneviewer_set_near_clipping_plane(id, nearClippingPlane);
+	}
+
 };
 
 class Sceneviewermodule
