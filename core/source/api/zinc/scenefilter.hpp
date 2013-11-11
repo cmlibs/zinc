@@ -134,15 +134,15 @@ public:
 			reinterpret_cast<cmzn_scenefilter_operator_id>(id), refOperand.getId()));
 	}
 
-	int getOperandIsActive(Scenefilter& operand)
+	int isOperandActive(Scenefilter& operand)
 	{
-		return cmzn_scenefilter_operator_get_operand_is_active(
+		return cmzn_scenefilter_operator_is_operand_active(
 			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId());
 	}
 
-	int setOperandIsActive(Scenefilter& operand, int isActive)
+	int setOperandActive(Scenefilter& operand, int isActive)
 	{
-		return cmzn_scenefilter_operator_set_operand_is_active(
+		return cmzn_scenefilter_operator_set_operand_active(
 			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId(), isActive);
 	}
 
