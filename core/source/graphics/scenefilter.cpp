@@ -1159,7 +1159,7 @@ cmzn_scenefilter_id cmzn_scenefilter_operator_get_next_operand(
 	return operand;
 }
 
-int cmzn_scenefilter_operator_get_operand_is_active(
+int cmzn_scenefilter_operator_is_operand_active(
 	cmzn_scenefilter_operator_id operator_filter,
 	cmzn_scenefilter_id operand)
 {
@@ -1171,7 +1171,7 @@ int cmzn_scenefilter_operator_get_operand_is_active(
 	return return_code;
 }
 
-int cmzn_scenefilter_operator_set_operand_is_active(
+int cmzn_scenefilter_operator_set_operand_active(
 	cmzn_scenefilter_operator_id operator_filter,
 	cmzn_scenefilter_id operand, int is_active)
 {

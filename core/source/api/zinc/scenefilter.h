@@ -349,7 +349,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefilter_operator_get_next_operand(
  * @param operand  The filter to be checked.
  * @return  1 if operand is active, 0 if operand is not active or not an operand.
  */
-ZINC_API int cmzn_scenefilter_operator_get_operand_is_active(
+ZINC_API int cmzn_scenefilter_operator_is_operand_active(
 	cmzn_scenefilter_operator_id operator_filter,
 	cmzn_scenefilter_id operand);
 
@@ -361,7 +361,7 @@ ZINC_API int cmzn_scenefilter_operator_get_operand_is_active(
  * @param is_active  Value to set: non-zero to mark as active, 0 for inactive.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_scenefilter_operator_set_operand_is_active(
+ZINC_API int cmzn_scenefilter_operator_set_operand_active(
 	cmzn_scenefilter_operator_id operator_filter,
 	cmzn_scenefilter_id operand, int is_active);
 
