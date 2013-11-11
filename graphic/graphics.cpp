@@ -715,7 +715,7 @@ TEST(cmzn_graphics_api, point_attributes_glyph)
 	EXPECT_EQ(glyph, temp_glyph);
 	cmzn_glyph_destroy(&temp_glyph);
 	cmzn_glyph_destroy(&glyph);
-	EXPECT_EQ(CMZN_GLYPH_POINT, cmzn_graphicspointattributes_get_glyph_type(pointattr));
+	EXPECT_EQ(CMZN_GLYPH_SHAPE_TYPE_POINT, cmzn_graphicspointattributes_get_glyph_shape_type(pointattr));
 
 	glyph = cmzn_glyphmodule_find_glyph_by_name(zinc.glyphmodule, "sphere");
 	EXPECT_NE((cmzn_glyph_id)0, glyph);
@@ -724,17 +724,17 @@ TEST(cmzn_graphics_api, point_attributes_glyph)
 	EXPECT_EQ(glyph, temp_glyph);
 	cmzn_glyph_destroy(&temp_glyph);
 	cmzn_glyph_destroy(&glyph);
-	EXPECT_EQ(CMZN_GLYPH_SPHERE, cmzn_graphicspointattributes_get_glyph_type(pointattr));
+	EXPECT_EQ(CMZN_GLYPH_SHAPE_TYPE_SPHERE, cmzn_graphicspointattributes_get_glyph_shape_type(pointattr));
 
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_type(pointattr, CMZN_GLYPH_TYPE_INVALID));
-	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_type(pointattr, CMZN_GLYPH_CUBE_SOLID));
-	EXPECT_EQ(CMZN_GLYPH_CUBE_SOLID, cmzn_graphicspointattributes_get_glyph_type(pointattr));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_shape_type(pointattr, CMZN_GLYPH_SHAPE_TYPE_INVALID));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_shape_type(pointattr, CMZN_GLYPH_SHAPE_TYPE_CUBE_SOLID));
+	EXPECT_EQ(CMZN_GLYPH_SHAPE_TYPE_CUBE_SOLID, cmzn_graphicspointattributes_get_glyph_shape_type(pointattr));
 
-	EXPECT_EQ(CMZN_GLYPH_REPEAT_NONE, cmzn_graphicspointattributes_get_glyph_repeat_mode(pointattr));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_repeat_mode(0, CMZN_GLYPH_REPEAT_MIRROR));
+	EXPECT_EQ(CMZN_GLYPH_REPEAT_MODE_NONE, cmzn_graphicspointattributes_get_glyph_repeat_mode(pointattr));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_repeat_mode(0, CMZN_GLYPH_REPEAT_MODE_MIRROR));
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, cmzn_graphicspointattributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MODE_INVALID));
-	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MIRROR));
-	EXPECT_EQ(CMZN_GLYPH_REPEAT_MIRROR, cmzn_graphicspointattributes_get_glyph_repeat_mode(pointattr));
+	EXPECT_EQ(CMZN_OK, cmzn_graphicspointattributes_set_glyph_repeat_mode(pointattr, CMZN_GLYPH_REPEAT_MODE_MIRROR));
+	EXPECT_EQ(CMZN_GLYPH_REPEAT_MODE_MIRROR, cmzn_graphicspointattributes_get_glyph_repeat_mode(pointattr));
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
 	cmzn_field_id field = cmzn_fieldmodule_create_field_constant(zinc.fm, 3, fieldValues);
 	EXPECT_NE(static_cast<cmzn_field *>(0), field);
@@ -827,23 +827,23 @@ TEST(cmzn_graphics_api, point_attributes_glyph_cpp)
 	EXPECT_TRUE(glyph.isValid());
 	Glyph tempGlyph = pointattr.getGlyph();
 	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
-	EXPECT_EQ(Glyph::POINT, pointattr.getGlyphType());
+	EXPECT_EQ(Glyph::SHAPE_TYPE_POINT, pointattr.getGlyphShapeType());
 
 	glyph = zinc.glyphmodule.findGlyphByName("sphere");
 	EXPECT_TRUE(glyph.isValid());
 	EXPECT_EQ(OK, pointattr.setGlyph(glyph));
 	tempGlyph = pointattr.getGlyph();
 	EXPECT_EQ(glyph.getId(), tempGlyph.getId());
-	EXPECT_EQ(Glyph::SPHERE, pointattr.getGlyphType());
+	EXPECT_EQ(Glyph::SHAPE_TYPE_SPHERE, pointattr.getGlyphShapeType());
 
-	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphType(Glyph::TYPE_INVALID));
-	EXPECT_EQ(OK, pointattr.setGlyphType(Glyph::CUBE_SOLID));
-	EXPECT_EQ(Glyph::CUBE_SOLID, pointattr.getGlyphType());
+	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphShapeType(Glyph::SHAPE_TYPE_INVALID));
+	EXPECT_EQ(OK, pointattr.setGlyphShapeType(Glyph::SHAPE_TYPE_CUBE_SOLID));
+	EXPECT_EQ(Glyph::SHAPE_TYPE_CUBE_SOLID, pointattr.getGlyphShapeType());
 
-	EXPECT_EQ(Glyph::REPEAT_NONE, pointattr.getGlyphRepeatMode());
+	EXPECT_EQ(Glyph::REPEAT_MODE_NONE, pointattr.getGlyphRepeatMode());
 	EXPECT_EQ(ERROR_ARGUMENT, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MODE_INVALID));
-	EXPECT_EQ(OK, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MIRROR));
-	EXPECT_EQ(Glyph::REPEAT_MIRROR, pointattr.getGlyphRepeatMode());
+	EXPECT_EQ(OK, pointattr.setGlyphRepeatMode(Glyph::REPEAT_MODE_MIRROR));
+	EXPECT_EQ(Glyph::REPEAT_MODE_MIRROR, pointattr.getGlyphRepeatMode());
 
 	double fieldValues[] = { 0.3, 0.4, 0.5 };
 	Field field = zinc.fm.createFieldConstant(sizeof(fieldValues)/sizeof(double), fieldValues);

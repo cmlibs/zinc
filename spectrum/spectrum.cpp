@@ -170,20 +170,20 @@ TEST(cmzn_spectrum_api, valid_args)
 	EXPECT_EQ(6, result);
 
 	result = cmzn_spectrumcomponent_set_scale_type(component1,
-		CMZN_SPECTRUMCOMPONENT_SCALE_LOG);
+		CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG);
 	EXPECT_EQ(CMZN_OK, result);
 
 	enum cmzn_spectrumcomponent_scale_type scale_type =
 		cmzn_spectrumcomponent_get_scale_type(component1);
-	EXPECT_EQ(CMZN_SPECTRUMCOMPONENT_SCALE_LOG, scale_type);
+	EXPECT_EQ(CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG, scale_type);
 
-	result = cmzn_spectrumcomponent_set_colour_mapping(component1,
-		CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME);
+	result = cmzn_spectrumcomponent_set_colour_mapping_type(component1,
+		CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME);
 	EXPECT_EQ(CMZN_OK, result);
 
-	enum cmzn_spectrumcomponent_colour_mapping _colour_mapping =
-		cmzn_spectrumcomponent_get_colour_mapping(component1);
-	EXPECT_EQ(CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_MONOCHROME, _colour_mapping);
+	enum cmzn_spectrumcomponent_colour_mapping_type _colour_mapping_type =
+		cmzn_spectrumcomponent_get_colour_mapping_type(component1);
+	EXPECT_EQ(CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME, _colour_mapping_type);
 
 	cmzn_spectrumcomponent_destroy(&component2);
 
@@ -276,16 +276,22 @@ TEST(cmzn_spectrum_api, valid_args_cpp)
 	result = component1.getNumberOfBands();
 	EXPECT_EQ(6, result);
 
-	result = component1.setScaleType(component1.SCALE_LOG);
-	EXPECT_EQ(CMZN_OK, result);
-
 	enum Spectrumcomponent::ScaleType scale_type = component1.getScaleType();
-	EXPECT_EQ(Spectrumcomponent::SCALE_LOG, scale_type);
+	EXPECT_EQ(Spectrumcomponent::SCALE_TYPE_LINEAR, scale_type);
 
-	result = component1.setColourMapping(component1.COLOUR_MAPPING_MONOCHROME);
+	result = component1.setScaleType(component1.SCALE_TYPE_LOG);
 	EXPECT_EQ(CMZN_OK, result);
 
-	enum Spectrumcomponent::ColourMapping colour_mapping = component1.getColourMapping();
-	EXPECT_EQ(Spectrumcomponent::COLOUR_MAPPING_MONOCHROME, colour_mapping);
+	scale_type = component1.getScaleType();
+	EXPECT_EQ(Spectrumcomponent::SCALE_TYPE_LOG, scale_type);
+
+	enum Spectrumcomponent::ColourMappingType colour_mapping_type = component1.getColourMappingType();
+	EXPECT_EQ(Spectrumcomponent::COLOUR_MAPPING_TYPE_RAINBOW, colour_mapping_type);
+
+	result = component1.setColourMappingType(component1.COLOUR_MAPPING_TYPE_MONOCHROME);
+	EXPECT_EQ(CMZN_OK, result);
+
+	colour_mapping_type = component1.getColourMappingType();
+	EXPECT_EQ(Spectrumcomponent::COLOUR_MAPPING_TYPE_MONOCHROME, colour_mapping_type);
 
 }
