@@ -250,6 +250,14 @@ TEST(cmzn_sceneviewer, get_set)
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_zoom_rate(sv, 4.0));
 	ASSERT_DOUBLE_EQ(4.0, value = cmzn_sceneviewer_get_zoom_rate(sv));
 	
+	ASSERT_DOUBLE_EQ(1000.0, value = cmzn_sceneviewer_get_far_clipping_plane(sv));
+	EXPECT_EQ(OK, cmzn_sceneviewer_set_far_clipping_plane(sv, 700.0));
+	ASSERT_DOUBLE_EQ(700.0, value = cmzn_sceneviewer_get_far_clipping_plane(sv));
+
+	ASSERT_DOUBLE_EQ(0.1, value = cmzn_sceneviewer_get_near_clipping_plane(sv));
+	EXPECT_EQ(OK, cmzn_sceneviewer_set_near_clipping_plane(sv, 100.0));
+	ASSERT_DOUBLE_EQ(100.0, value = cmzn_sceneviewer_get_near_clipping_plane(sv));
+
 	cmzn_sceneviewer_destroy(&sv);
 	cmzn_sceneviewermodule_destroy(&svModule);
 }
@@ -296,4 +304,12 @@ TEST(ZincSceneviewer, get_set)
 	ASSERT_DOUBLE_EQ(1.0, value = sv.getZoomRate());
 	EXPECT_EQ(OK, sv.setZoomRate(4.0));
 	ASSERT_DOUBLE_EQ(4.0, value = sv.getZoomRate());
+
+	ASSERT_DOUBLE_EQ(1000.0, value = sv.getFarClippingPlane());
+	EXPECT_EQ(OK, sv.setFarClippingPlane(700.0));
+	ASSERT_DOUBLE_EQ(700.0, value = sv.getFarClippingPlane());
+
+	ASSERT_DOUBLE_EQ(0.1, value = sv.getNearClippingPlane());
+	EXPECT_EQ(OK, sv.setNearClippingPlane(100.0));
+	ASSERT_DOUBLE_EQ(100.0, value = sv.getNearClippingPlane());
 }
