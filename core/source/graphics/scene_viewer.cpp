@@ -6865,68 +6865,69 @@ Closes the scene_viewer.
 	return (return_code);
 }
 
-int cmzn_sceneviewer_get_near_and_far_plane(cmzn_sceneviewer_id scene_viewer,
-	double *near_plane, double *far_plane)
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Gets the distance from the eye_point to the <near> clip plane and to the <far>
-clip plane in the <scene_viewer>.
-==============================================================================*/
+double cmzn_sceneviewer_get_far_clipping_plane(cmzn_sceneviewer_id scene_viewer)
 {
-	double left, right, bottom, top;
-	int return_code;
+	double left, right, bottom, top, far_plane = 0.0, near_plane;
 
-	ENTER(cmzn_sceneviewer_get_near_and_far_plane);
 	if (scene_viewer)
 	{
-		return_code = Scene_viewer_get_viewing_volume(scene_viewer,
-		  &left, &right, &bottom, &top, near_plane, far_plane);
+		Scene_viewer_get_viewing_volume(scene_viewer,
+		  &left, &right, &bottom, &top, &near_plane, &far_plane);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"cmzn_sceneviewer_get_near_and_far_plane.  "
-			"Missing scene_viewer parameter.");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* cmzn_sceneviewer_get_near_and_far_plane */
+	return far_plane;
+}
 
-int cmzn_sceneviewer_set_near_and_far_plane(cmzn_sceneviewer_id scene_viewer,
-	double near_plane, double far_plane)
-/*******************************************************************************
-LAST MODIFIED : 13 September 2002
-
-DESCRIPTION :
-Sets the distance from the eye_point to the <near> clip plane and to the <far>
-clip plane in the <scene_viewer>.
-==============================================================================*/
+double cmzn_sceneviewer_get_near_clipping_plane(cmzn_sceneviewer_id scene_viewer)
 {
-	double left, right, bottom, top, old_near, old_far;
-	int return_code = 0;
+	double left, right, bottom, top, far_plane, near_plane = 0.0;
 
-	ENTER(cmzn_sceneviewer_set_near_and_far_plane);
+	if (scene_viewer)
+	{
+		Scene_viewer_get_viewing_volume(scene_viewer,
+		  &left, &right, &bottom, &top, &near_plane, &far_plane);
+	}
+
+	return near_plane;
+}
+
+int cmzn_sceneviewer_set_far_clipping_plane(cmzn_sceneviewer_id scene_viewer,
+	double far_clipping_plane)
+{
+	double left, right, bottom, top, near, old_far;
+	int return_code = CMZN_ERROR_ARGUMENT;
+
 	if (scene_viewer)
 	{
 		if (Scene_viewer_get_viewing_volume(scene_viewer,
-			&left, &right, &bottom, &top, &old_near, &old_far))
+			&left, &right, &bottom, &top, &near, &old_far))
 		{
 			return_code = Scene_viewer_set_viewing_volume(scene_viewer,
-				left, right, bottom, top, near_plane, far_plane);
+				left, right, bottom, top, near, far_clipping_plane);
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"cmzn_sceneviewer_get_near_and_far_plane.  "
-			"Missing scene_viewer parameter.");
-	}
-	LEAVE;
 
 	return (return_code);
-} /* cmzn_sceneviewer_get_near_and_far_plane */
+}
+
+int cmzn_sceneviewer_set_near_clipping_plane(cmzn_sceneviewer_id scene_viewer,
+	double near_clipping_plane)
+{
+	double left, right, bottom, top, old_near, far;
+	int return_code = CMZN_ERROR_ARGUMENT;
+
+	if (scene_viewer)
+	{
+		if (Scene_viewer_get_viewing_volume(scene_viewer,
+			&left, &right, &bottom, &top, &old_near, &far))
+		{
+			return_code = Scene_viewer_set_viewing_volume(scene_viewer,
+				left, right, bottom, top, near_clipping_plane, far);
+		}
+	}
+
+	return (return_code);
+}
 
 enum cmzn_sceneviewer_viewport_mode cmzn_sceneviewer_get_viewport_mode(
 	cmzn_sceneviewer_id sceneviewer)

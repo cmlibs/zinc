@@ -150,18 +150,42 @@ ZINC_API int cmzn_sceneviewer_set_lookat_parameters_non_skew(
 	double upx,double upy,double upz);
 
 /**
- * Gets the distance from the eye_point to the <near> clip plane and to the <far>
- * clip plane in the scene viewer.
+ * Gets the distance from the eye_point to the near clipping plane in the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @return distance from the eye_point to the near clipping plane on success,
+ * 	any other value on failure.
  */
-ZINC_API int cmzn_sceneviewer_get_near_and_far_plane(cmzn_sceneviewer_id sceneviewer,
-	double *near_plane, double *far_plane);
+ZINC_API double cmzn_sceneviewer_get_near_clipping_plane(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Sets the distance from the eye_point to the <near> clip plane and to the <far>
- * clip plane in the scene viewer.
+ * Gets the distance from the eye_point to the far clipping plane in the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @return distance from the eye_point to the far clipping plane on success,
+ * 	any other value on failure.
  */
-ZINC_API int cmzn_sceneviewer_set_near_and_far_plane(cmzn_sceneviewer_id sceneviewer,
-	double near_plane, double far_plane);
+ZINC_API double cmzn_sceneviewer_get_far_clipping_plane(cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Sets the distance from the eye_point to the far clipping plane in the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param far_palne  distance from the eye_point to the far clipping plane
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_set_far_clipping_plane(cmzn_sceneviewer_id sceneviewer,
+	double far_clipping_plane);
+
+/**
+ * Sets the distance from the eye_point to the near clipping plane in the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param near_plane  distance from the eye_point to the near clipping plane
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_set_near_clipping_plane(cmzn_sceneviewer_id sceneviewer,
+	double near_clipping_plane);
 
 /**
  * Gets the viewport mode (absolute/relative/distorting relative) for the
