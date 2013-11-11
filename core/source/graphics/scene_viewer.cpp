@@ -7198,7 +7198,7 @@ scene viewer on screen.
 }
 
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
-	enum cmzn_scene_coordinate_system coordinate_system,
+	enum cmzn_scenecoordinatesystem coordinate_system,
 	gtMatrix *local_transformation_matrix, double *projection)
 {
 	int return_code = 1;
@@ -7208,8 +7208,8 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 		double viewport_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		switch (coordinate_system)
 		{
-			case CMZN_SCENE_COORDINATE_SYSTEM_LOCAL:
-			case CMZN_SCENE_COORDINATE_SYSTEM_WORLD:
+			case CMZN_SCENECOORDINATESYSTEM_LOCAL:
+			case CMZN_SCENECOORDINATESYSTEM_WORLD:
 			{
 				double sum;
 				int i, j, k;
@@ -7230,7 +7230,7 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 				{
 					projection[i] = -projection[i];
 				}
-				if (coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL)
+				if (coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL)
 				{
 					double sum;
 					// apply local transformation if there is one
@@ -7258,10 +7258,10 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 			{
 				static double identity[16] = { 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1 };
 				memcpy(projection, identity, 16*sizeof(double));
-				if (coordinate_system != CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL)
+				if (coordinate_system != CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FILL)
 				{
 					double left, right, bottom, top;
-					if (cmzn_scene_coordinate_system_get_viewport(
+					if (cmzn_scenecoordinatesystem_get_viewport(
 						coordinate_system, viewport_width, viewport_height,
 						&left, &right, &bottom, &top))
 					{

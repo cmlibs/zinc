@@ -263,7 +263,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->seed_node_mesh_location_field = (struct Computed_field *)NULL;
 			graphics->overlay_flag = 0;
 			graphics->overlay_order = 1;
-			graphics->coordinate_system = CMZN_SCENE_COORDINATE_SYSTEM_LOCAL;
+			graphics->coordinate_system = CMZN_SCENECOORDINATESYSTEM_LOCAL;
 			/* appearance settings defaults */
 			/* for all graphics types */
 			graphics->visibility_flag = true;
@@ -1378,38 +1378,23 @@ bool cmzn_graphics_selects_elements(struct cmzn_graphics *graphics)
 		(0 < cmzn_graphics_get_domain_dimension(graphics));
 }
 
-enum cmzn_scene_coordinate_system cmzn_graphics_get_coordinate_system(
+enum cmzn_scenecoordinatesystem cmzn_graphics_get_scenecoordinatesystem(
 	struct cmzn_graphics *graphics)
 {
-	enum cmzn_scene_coordinate_system coordinate_system;
-
-	ENTER(cmzn_graphics_get_coordinate_system);
 	if (graphics)
-	{
-		coordinate_system=graphics->coordinate_system;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_get_coordinate_system.  Invalid argument(s)");
-		coordinate_system = CMZN_SCENE_COORDINATE_SYSTEM_INVALID;
-	}
-	LEAVE;
-
-	return (coordinate_system);
+		return graphics->coordinate_system;
+	return CMZN_SCENECOORDINATESYSTEM_INVALID;
 }
 
-int cmzn_graphics_set_coordinate_system(
-	struct cmzn_graphics *graphics, enum cmzn_scene_coordinate_system coordinate_system)
+int cmzn_graphics_set_scenecoordinatesystem(
+	struct cmzn_graphics *graphics, enum cmzn_scenecoordinatesystem coordinate_system)
 {
-	int return_code = 1;
-	ENTER(cmzn_graphics_set_coordinate_system);
 	if (graphics)
 	{
 		if (coordinate_system != graphics->coordinate_system)
 		{
-			graphics->coordinate_system=coordinate_system;
-			if (cmzn_scene_coordinate_system_is_window_relative(coordinate_system))
+			graphics->coordinate_system = coordinate_system;
+			if (cmzn_scenecoordinatesystem_is_window_relative(coordinate_system))
 			{
 				graphics->overlay_flag = 1;
 				graphics->overlay_order = 1;
@@ -1421,16 +1406,9 @@ int cmzn_graphics_set_coordinate_system(
 			}
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
 		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_set_coordinate_system.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_graphics_type cmzn_graphics_get_graphics_type(
@@ -2010,7 +1988,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 
 		append_string(&graphics_string," ",&error);
 		append_string(&graphics_string,
-			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(graphics->coordinate_system),&error);
+			ENUMERATOR_STRING(cmzn_scenecoordinatesystem)(graphics->coordinate_system),&error);
 
 		if ((graphics->render_line_width < 0.99999) || (1.00001 < graphics->render_line_width))
 		{

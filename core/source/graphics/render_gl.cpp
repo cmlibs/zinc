@@ -175,29 +175,29 @@ public:
 		  return Light_model_render_opengl(light_model, this);
 	  }
 
-	  virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system coordinate_system)
+	  virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem coordinate_system)
 	  {
 		  int return_code = 1;
 		  switch (coordinate_system)
 		  {
-		  case CMZN_SCENE_COORDINATE_SYSTEM_LOCAL:
+		  case CMZN_SCENECOORDINATESYSTEM_LOCAL:
 			  {
 				  /* Do nothing */
 			  } break;
-		  case CMZN_SCENE_COORDINATE_SYSTEM_WORLD:
+		  case CMZN_SCENECOORDINATESYSTEM_WORLD:
 			  {
 				  glMatrixMode(GL_MODELVIEW);
 				  glPushMatrix();
 				  glLoadMatrixd(world_view_matrix);
 			  } break;
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FILL:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_TOP:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+		  case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+		  case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT:
 			  {
 				  if (picking)
 				  {
@@ -212,7 +212,7 @@ public:
 					  glPushMatrix();
 					  glLoadIdentity();
 					  double left, right, bottom, top;
-					  if (cmzn_scene_coordinate_system_get_viewport(coordinate_system,
+					  if (cmzn_scenecoordinatesystem_get_viewport(coordinate_system,
 						  viewport_width, viewport_height, &left, &right, &bottom, &top))
 					  {
 						  /* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
@@ -239,27 +239,27 @@ public:
 		  return return_code;
 	  }
 
-	  virtual void end_coordinate_system(enum cmzn_scene_coordinate_system coordinate_system)
+	  virtual void end_coordinate_system(enum cmzn_scenecoordinatesystem coordinate_system)
 	  {
 		  switch (coordinate_system)
 		  {
-		  case CMZN_SCENE_COORDINATE_SYSTEM_LOCAL:
+		  case CMZN_SCENECOORDINATESYSTEM_LOCAL:
 			  {
 				  /* Do nothing */
 			  } break;
-		  case CMZN_SCENE_COORDINATE_SYSTEM_WORLD:
+		  case CMZN_SCENECOORDINATESYSTEM_WORLD:
 			  {
 				  glMatrixMode(GL_MODELVIEW);
 				  glPopMatrix();
 			  } break;
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FILL:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_TOP:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		  case CMZN_SCENE_COORDINATE_SYSTEM_WINDOW_PIXEL_TOP_LEFT:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FILL:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_TOP:
+		  case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+		  case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+		  case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT:
 			  {
 				  /* Pop the model matrix stack */
 				  glMatrixMode(GL_PROJECTION);

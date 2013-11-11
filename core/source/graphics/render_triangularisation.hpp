@@ -127,13 +127,13 @@ public:
 	virtual int Scene_tree_execute(cmzn_scene *scene);
 
 	/** Only draw graphics in world and local coordinates. Not fully implemented */
-	virtual int begin_coordinate_system(enum cmzn_scene_coordinate_system coordinate_system)
+	virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem coordinate_system)
 	{
-		return !cmzn_scene_coordinate_system_is_window_relative(coordinate_system);
+		return !cmzn_scenecoordinatesystem_is_window_relative(coordinate_system);
 	}
 
 	/** Not fully implemented */
-	virtual void end_coordinate_system(enum cmzn_scene_coordinate_system /*coordinate_system*/)
+	virtual void end_coordinate_system(enum cmzn_scenecoordinatesystem /*coordinate_system*/)
 	{
 	}
 

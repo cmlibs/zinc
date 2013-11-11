@@ -30,7 +30,7 @@ extern "C" {
  * for passing to a projection field. The values are continuously updated with
  * changes to the scene viewer and become invalid if the scene viewer is
  * destroyed.
- * Note CMZN_SCENE_COORDINATE_SYSTEM_LOCAL gives the local coordinate system
+ * Note CMZN_SCENECOORDINATESYSTEM_LOCAL gives the local coordinate system
  * of the scene for the owning region of field, which is transformed from
  * world coordinates by the cumulative transformation matrices of all scenes
  * down from the root region of the scene viewer's scene.
@@ -46,8 +46,8 @@ extern "C" {
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	cmzn_fieldmodule_id field_module, cmzn_sceneviewer_id sceneviewer,
-	enum cmzn_scene_coordinate_system from_coordinate_system,
-	enum cmzn_scene_coordinate_system to_coordinate_system);
+	enum cmzn_scenecoordinatesystem from_coordinate_system,
+	enum cmzn_scenecoordinatesystem to_coordinate_system);
 
 #ifdef __cplusplus
 }

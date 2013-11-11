@@ -49,8 +49,8 @@ public:
 		a destroy callback and then must evaluate correctly with a NULL scene_viewer */
 	struct Scene_viewer *scene_viewer;
 	gtMatrix *current_local_transformation;
-	enum cmzn_scene_coordinate_system from_coordinate_system;
-	enum cmzn_scene_coordinate_system to_coordinate_system;
+	enum cmzn_scenecoordinatesystem from_coordinate_system;
+	enum cmzn_scenecoordinatesystem to_coordinate_system;
 	int change_required;
 	cmzn_scene_id current_scene;
 
@@ -61,8 +61,8 @@ public:
 
 	Computed_field_scene_viewer_projection(
 		Scene_viewer *scene_viewer,
-		enum cmzn_scene_coordinate_system from_coordinate_system,
-		enum cmzn_scene_coordinate_system to_coordinate_system) :
+		enum cmzn_scenecoordinatesystem from_coordinate_system,
+		enum cmzn_scenecoordinatesystem to_coordinate_system) :
 		Computed_field_core(),
 		graphics_window_name(NULL),
 		pane_number(-1), scene_viewer(scene_viewer),
@@ -158,8 +158,8 @@ DESCRIPTION :
 					Computed_field_scene_viewer_projection_scene_viewer_callback,
 				 		(void *)field);
 			}
-			if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
-				(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
+			if ((from_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL) ||
+				(to_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL))
 			{
 				add_transformation_callback();
 			}
@@ -553,8 +553,8 @@ int Computed_field_scene_viewer_projection::evaluate(cmzn_fieldcache& cache, Fie
 int Computed_field_scene_viewer_projection::requiredProjectionMatrixUpdate()
 {
 	int return_code = 0;
-	if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
-		(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
+	if ((from_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL) ||
+		(to_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL))
 	{
 		cmzn_field_id field = getField();
 		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
@@ -629,9 +629,9 @@ DESCRIPTION :
 			display_message(INFORMATION_MESSAGE,"    pane number : %d\n",
 				pane_number + 1);
 		display_message(INFORMATION_MESSAGE,"    from_coordinate_system : %s\n",
-			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(from_coordinate_system));
+			ENUMERATOR_STRING(cmzn_scenecoordinatesystem)(from_coordinate_system));
 		display_message(INFORMATION_MESSAGE,"    to_coordinate_system : %s\n",
-			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(to_coordinate_system));
+			ENUMERATOR_STRING(cmzn_scenecoordinatesystem)(to_coordinate_system));
 	}
 	else
 	{
@@ -676,10 +676,10 @@ Returns allocated command string for reproducing field. Includes type.
 		}
 		append_string(&command_string, " from_coordinate_system ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(from_coordinate_system), &error);
+			ENUMERATOR_STRING(cmzn_scenecoordinatesystem)(from_coordinate_system), &error);
 		append_string(&command_string, " to_coordinate_system ", &error);
 		append_string(&command_string,
-			ENUMERATOR_STRING(cmzn_scene_coordinate_system)(to_coordinate_system), &error);
+			ENUMERATOR_STRING(cmzn_scenecoordinatesystem)(to_coordinate_system), &error);
 	}
 	else
 	{
@@ -749,8 +749,8 @@ void Computed_field_scene_viewer_projection::update_current_scene()
 	cmzn_scene_id top_scene = cmzn_sceneviewer_get_scene(scene_viewer);
 	if (current_scene != top_scene)
 	{
-		if ((from_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL) ||
-			(to_coordinate_system == CMZN_SCENE_COORDINATE_SYSTEM_LOCAL))
+		if ((from_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL) ||
+			(to_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL))
 		{
 			remove_transformation_callback();
 			add_transformation_callback();
@@ -912,8 +912,8 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 
 cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	cmzn_fieldmodule_id field_module, cmzn_sceneviewer_id sceneviewer,
-	enum cmzn_scene_coordinate_system from_coordinate_system,
-	enum cmzn_scene_coordinate_system to_coordinate_system)
+	enum cmzn_scenecoordinatesystem from_coordinate_system,
+	enum cmzn_scenecoordinatesystem to_coordinate_system)
 {
 	Computed_field *field = NULL;
 	if (sceneviewer)
@@ -965,8 +965,8 @@ int cmzn_field_projection_set_pane_number(struct Computed_field *field, int pane
 
 int Computed_field_get_type_scene_viewer_projection(struct Computed_field *field,
 	struct Scene_viewer **scene_viewer, char **graphics_window_name, int *pane_number,
-	enum cmzn_scene_coordinate_system *from_coordinate_system,
-	enum cmzn_scene_coordinate_system *to_coordinate_system)
+	enum cmzn_scenecoordinatesystem *from_coordinate_system,
+	enum cmzn_scenecoordinatesystem *to_coordinate_system)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 

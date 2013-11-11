@@ -13,7 +13,7 @@
 #include "zinc/types/scenecoordinatesystem.h"
 #include "general/enumerator.h"
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scene_coordinate_system);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scenecoordinatesystem);
 
 /*******************************************************************************
  * Returns the orthographic viewport bounds for 'device' scene coordinate
@@ -29,8 +29,8 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scene_coordinate_system);
  * @param top  Address to return coordinate of top of top-most pixel.
  * @return  1 on success, 0 on failure.
  */
-int cmzn_scene_coordinate_system_get_viewport(
-	enum cmzn_scene_coordinate_system coordinate_system,
+int cmzn_scenecoordinatesystem_get_viewport(
+	enum cmzn_scenecoordinatesystem coordinate_system,
 	double viewport_width, double viewport_height,
 	double *left, double *right, double *bottom, double *top);
 
@@ -41,7 +41,7 @@ int cmzn_scene_coordinate_system_get_viewport(
  * @param coordinate_system  The scene coordinate system.
  * @return  1 if window-relative, 0 if not.
  */
-int cmzn_scene_coordinate_system_is_window_relative(
-	enum cmzn_scene_coordinate_system coordinate_system);
+int cmzn_scenecoordinatesystem_is_window_relative(
+	enum cmzn_scenecoordinatesystem coordinate_system);
 
 #endif /* SCENE_COORDINATE_SYSTEM_HPP */

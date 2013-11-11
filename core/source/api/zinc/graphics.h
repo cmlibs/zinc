@@ -405,24 +405,24 @@ ZINC_API int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics,
 	enum cmzn_element_face_type face_type);
 
 /**
- * Specifying the coordinate system in which to render the coordinates of graphics.
+ * Get the scene coordinate system in which to render the coordinates of graphics.
+ *
+ * @param graphics  The graphics to modify.
+ * @return  coordinate system used in graphics.
+ */
+ZINC_API enum cmzn_scenecoordinatesystem cmzn_graphics_get_scenecoordinatesystem(
+	cmzn_graphics_id graphics);
+
+/**
+ * Set the scene coordinate system in which to render the coordinates of graphics.
  *
  *  @param graphics  The graphics to modify.
  * @param coordinate_system  enumerator describing coordinate system to be set
  * 		for graphics.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_graphics_set_coordinate_system(cmzn_graphics_id graphics,
-	enum cmzn_scene_coordinate_system coordinate_system);
-
-/**
- * Get the coordinate system in which to render the coordinates of graphics.
- *
- * @param graphics  The graphics to modify.
- * @return  coordinate system used in graphics.
- */
-ZINC_API enum cmzn_scene_coordinate_system cmzn_graphics_get_coordinate_system(
-	cmzn_graphics_id graphics);
+ZINC_API int cmzn_graphics_set_scenecoordinatesystem(cmzn_graphics_id graphics,
+	enum cmzn_scenecoordinatesystem coordinate_system);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
