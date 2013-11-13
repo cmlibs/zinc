@@ -78,6 +78,17 @@ void cmzn_selectionnotifier::sceneDestroyed()
 	}
 }
 
+void *cmzn_selectionnotifier_get_callback_user_data(
+	cmzn_selectionnotifier_id selectionnotifier)
+{
+	if (selectionnotifier)
+	{
+		return selectionnotifier->getUserData();
+	}
+
+	return 0;
+}
+
 int cmzn_selectionnotifier_set_callback(cmzn_selectionnotifier_id selectionnotifier,
 	cmzn_selectionnotifier_callback_function function_in, void *user_data_in)
 {

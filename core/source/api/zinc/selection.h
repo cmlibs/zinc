@@ -41,6 +41,16 @@ ZINC_API cmzn_selectionnotifier_id cmzn_selectionnotifier_access(
 ZINC_API int cmzn_selectionnotifier_destroy(cmzn_selectionnotifier_id *selectionnotifier);
 
 /**
+ * Return the user data set by user when calling cmzn_selectionnotifier_set_callback
+ *
+ * @see cmzn_selectionnotifier_set_callback
+ * @param selectionnotifier  Handle to the selection notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_selectionnotifier_get_callback_user_data(
+	cmzn_selectionnotifier_id selectionnotifier);
+
+/**
  * Stop and clear selection callback. This will stop the callback and also
  * remove the callback function from the selection notifier.
  *

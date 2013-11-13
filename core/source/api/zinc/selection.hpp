@@ -99,11 +99,6 @@ private:
 		(*callback)(selectionevent);
 	}
 
-	int set_C_callback(cmzn_selectionnotifier_id selectionnotifier_id)
-	{
-		return cmzn_selectionnotifier_set_callback(selectionnotifier_id, C_callback, static_cast<void*>(this));
-	}
-
   virtual void operator()(const Selectionevent &selectionevent) = 0;
 
 protected:
@@ -165,7 +160,8 @@ public:
 
 	int setCallback(Selectioncallback& callback)
 	{
-		return callback.set_C_callback(id);
+		return cmzn_selectionnotifier_set_callback(
+			id, callback.C_callback, static_cast<void*>(&callback));
 	}
 
 	int clearCallback()

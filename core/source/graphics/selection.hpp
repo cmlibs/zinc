@@ -76,6 +76,11 @@ public:
 
 	static int deaccess(cmzn_selectionnotifier* &notifier);
 
+	void *getUserData()
+	{
+		return user_data;
+	}
+
 	int setCallback(cmzn_selectionnotifier_callback_function function_in,
 		void *user_data_in);
 
