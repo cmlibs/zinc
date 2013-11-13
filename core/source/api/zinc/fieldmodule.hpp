@@ -16,6 +16,7 @@
 #include "zinc/node.hpp"
 #include "zinc/optimisation.hpp"
 #include "zinc/timesequence.hpp"
+#include "zinc/types/scenecoordinatesystem.hpp"
 
 namespace OpenCMISS
 {
@@ -103,8 +104,10 @@ class FieldImagefilterGradientMagnitudeRecursiveGaussian;
 class FieldImagefilterRescaleIntensity;
 class FieldImagefilterSigmoid;
 class FieldImagefilterThreshold;
+class FieldSceneviewerProjection;
 class Timekeeper;
 class Optimisation;
+class Sceneviewer;
 
 class Fieldmodule
 {
@@ -406,6 +409,10 @@ public:
 		double min, double max,	double alpha, double beta);
 
 	FieldImagefilterThreshold createFieldImagefilterThreshold(Field& sourceField);
+
+	FieldSceneviewerProjection createFieldSceneviewerProjection(
+		Sceneviewer& sceneviewer, Scenecoordinatesystem fromCoordinateSystem,
+		Scenecoordinatesystem toCoordinateSystem);
 };
 
 inline Fieldmodule Field::getFieldmodule()
