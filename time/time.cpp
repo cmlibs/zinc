@@ -9,12 +9,11 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
-int timeNotifierCallback(cmzn_timenotifierevent_id event, void *storeTimeAddressVoid)
+void timeNotifierCallback(cmzn_timenotifierevent_id event, void *storeTimeAddressVoid)
 {
 	double *storeTimeAddress = static_cast<double *>(storeTimeAddressVoid);
 	EXPECT_NE(static_cast<double *>(0), storeTimeAddress);
 	*storeTimeAddress = cmzn_timenotifierevent_get_time(event);
-	return CMZN_OK;
 }
 
 TEST(cmzn_timekeeper, api)
@@ -57,10 +56,9 @@ class myTimenotifier : public Timenotifiercallback
 private:
 	Timekeeper timekeeper;
 
-	virtual int operator()(const Timenotifierevent &event)
+	virtual void operator()(const Timenotifierevent &event)
 	{
 		EXPECT_EQ(timekeeper.getTime(), event.getTime());
-		return CMZN_OK;
 	}
 
 public:

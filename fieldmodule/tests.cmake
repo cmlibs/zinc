@@ -13,6 +13,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldconstant.cpp
 	${CURRENT_TEST}/fieldimage.cpp
 	${CURRENT_TEST}/fielditerator.cpp
+	${CURRENT_TEST}/fieldmodulenotifier.cpp
 	${CURRENT_TEST}/finiteelement.cpp
 	${CURRENT_TEST}/nodesandelements.cpp
 	${CURRENT_TEST}/timesequence.cpp
