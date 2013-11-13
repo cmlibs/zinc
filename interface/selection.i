@@ -51,14 +51,15 @@
             PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
             return 0;
         }
-        Py_XINCREF(callbackObject);         /* Add a reference to new callback */
-        my_callback = callbackObject;       /* Remember new callback */
-        return cmzn_selectionnotifier_set_callback(($self)->getId(), selectionCallbackToPython, (void *)my_callback);
+        Py_XINCREF(callbackObject);         /* Add a reference to new callback */     /* Remember new callback */
+        return cmzn_selectionnotifier_set_callback(($self)->getId(), selectionCallbackToPython, (void *)callbackObject);
     }
 
     int clearCallback()
     {
-        // Py_XDECREF(callbackObject);
+      	void *user_data = cmzn_selectionnotifier_get_callback_user_data(($self)->getId());
+	    PyObject *callbackObject = static_cast<PyObject *>(user_data);
+	    Py_XDECREF(callbackObject);         /* Decrease a reference count */
         return cmzn_selectionnotifier_clear_callback(($self)->getId());
     }
 }

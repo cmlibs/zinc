@@ -50,14 +50,16 @@
             PyErr_SetString(PyExc_TypeError, "callbackObject must be callable");
             return 0;
         }
-        Py_XINCREF(callbackObject);         /* Add a reference to new callback */
-        my_callback = callbackObject;       /* Remember new callback */
-        return cmzn_timenotifier_set_callback(($self)->getId(),callbackToPython, (void *)my_callback);
+        Py_XINCREF(callbackObject);         /* Add a reference count to new callback */
+        /* Remember new callback */
+        return cmzn_timenotifier_set_callback(($self)->getId(),callbackToPython, (void *)callbackObject);
     }
 
-    int removeCallback()
+    int clearCallback()
     {
-	    //Py_XDECREF(callbackObject);         /* Add a reference to new callback */
+	    void *user_data = cmzn_timenotifier_get_callback_user_data(($self)->getId());
+	    PyObject *callbackObject =  static_cast<PyObject *>(user_data);
+	    Py_XDECREF(callbackObject);         /* Decrease a reference count */
         return cmzn_timenotifier_clear_callback(($self)->getId());
     }
 }
@@ -65,7 +67,7 @@
 %{
 #include "zinc/timenotifier.hpp"
 
-static int callbackToPython(cmzn_timenotifierevent_id timenotifier_event, void *user_data)
+static void callbackToPython(cmzn_timenotifierevent_id timenotifier_event, void *user_data)
 {
     PyObject *arglist = NULL;
     PyObject *result = NULL;
@@ -79,7 +81,6 @@ static int callbackToPython(cmzn_timenotifierevent_id timenotifier_event, void *
     Py_DECREF(arglist);
     if (result)
         Py_DECREF(result);
-    return 1;
 }
 %}
 
