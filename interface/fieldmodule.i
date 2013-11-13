@@ -45,6 +45,7 @@
 %include "integervaluesarraytypemap.i"
 %include "fieldarraytypemap.i"
 
+%import "scenecoordinatesystem.i"
 %import "timesequence.i"
 %import "optimisation.i"
 %import "field.i"
@@ -66,6 +67,7 @@
 #include "zinc/fieldlogicaloperators.hpp"
 #include "zinc/fieldmatrixoperators.hpp"
 #include "zinc/fieldnodesetoperators.hpp"
+#include "zinc/fieldsceneviewerprojection.hpp"
 #include "zinc/fieldtime.hpp"
 #include "zinc/fieldtrigonometry.hpp"
 #include "zinc/fieldvectoroperators.hpp"
