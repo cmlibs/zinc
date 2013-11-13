@@ -31,7 +31,7 @@ extern "C" {
  * @return  return one if such the callback function
  *    has been called successfully otherwise 0.
  */
-typedef int (*cmzn_timenotifier_callback)(cmzn_timenotifierevent_id timenotifierevent,
+typedef void (*cmzn_timenotifier_callback)(cmzn_timenotifierevent_id timenotifierevent,
 	void *user_data);
 
 /**
@@ -54,6 +54,14 @@ ZINC_API cmzn_timenotifier_id cmzn_timenotifier_access(
  */
 ZINC_API int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_address);
 
+/**
+ * Return the user data set by user when calling cmzn_timenotifier_set_callback
+ *
+ * @see cmzn_timenotifier_set_callback
+ * @param timenotifier  Handle to the time notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_timenotifier_get_callback_user_data(cmzn_timenotifier_id timenotifier);
 
 /**
  * Assign the callback function and user_data for the time notifier.

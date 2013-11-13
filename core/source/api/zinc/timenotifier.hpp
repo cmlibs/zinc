@@ -78,19 +78,14 @@ private:
 	Timenotifiercallback(Timenotifiercallback&); // not implemented
 	Timenotifiercallback& operator=(Timenotifiercallback&); // not implemented
 
-	static int C_callback(cmzn_timenotifierevent_id timenotifierevent_id, void *callbackVoid)
+	static void C_callback(cmzn_timenotifierevent_id timenotifierevent_id, void *callbackVoid)
 	{
 		Timenotifierevent timenotifierevent(cmzn_timenotifierevent_access(timenotifierevent_id));
 		Timenotifiercallback *callback = reinterpret_cast<Timenotifiercallback *>(callbackVoid);
-		return (*callback)(timenotifierevent);
+		(*callback)(timenotifierevent);
 	}
 
-	int set_C_callback(cmzn_timenotifier_id timenotifier_id)
-	{
-		return cmzn_timenotifier_set_callback(timenotifier_id, C_callback, static_cast<void*>(this));
-	}
-
-  virtual int operator()(const Timenotifierevent &timenotifierevent) = 0;
+  virtual void operator()(const Timenotifierevent &timenotifierevent) = 0;
 
 protected:
   Timenotifiercallback()
@@ -166,7 +161,7 @@ public:
 
 	int setCallback(Timenotifiercallback& callback)
 	{
-		return callback.set_C_callback(id);
+		return cmzn_timenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
 	}
 
 	int clearCallback()

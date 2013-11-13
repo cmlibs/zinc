@@ -586,6 +586,16 @@ DESCRIPTION :
 	return (return_code);
 } /* Time_object_set_timekeeper */
 
+void *cmzn_timenotifier_get_callback_user_data(cmzn_timenotifier_id timenotifier)
+{
+	if (timenotifier)
+	{
+		return timenotifier->callback_user_data;
+	}
+
+	return 0;
+}
+
 int cmzn_timenotifier_set_callback(cmzn_timenotifier_id timenotifier,
 	cmzn_timenotifier_callback function, void *user_data_in)
 {

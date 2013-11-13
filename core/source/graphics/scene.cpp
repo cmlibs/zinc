@@ -2439,10 +2439,9 @@ int cmzn_scene_set_transformation_with_time_callback(struct cmzn_scene *scene,
 	 return (return_code);
 }
 
-static int cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifierevent,
+static void cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifierevent,
 	void *scene_void)
 {
-	int return_code;
 	struct cmzn_scene *scene;
 
 	if ((scene=(struct cmzn_scene *)scene_void))
@@ -2457,16 +2456,12 @@ static int cmzn_scene_time_update_callback(cmzn_timenotifierevent_id timenotifie
 			cmzn_graphics_time_change,NULL,
 			scene->list_of_graphics);
 		cmzn_scene_end_change(scene);
-		return_code = 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"cmzn_scene_time_update_callback.  Invalid argument(s)");
-		return_code=0;
 	}
-
-	return (return_code);
 }
 
 int cmzn_scene_has_multiple_times(
