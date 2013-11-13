@@ -23,6 +23,7 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Fieldmodulenotifier;
 class FieldAlias;
 class FieldAdd;
 class FieldPower;
@@ -191,6 +192,8 @@ public:
 	{
 		return Fielditerator(cmzn_fieldmodule_create_fielditerator(id));
 	}
+
+	Fieldmodulenotifier createNotifier();
 
 	Elementbasis createElementbasis(int dimension, enum Elementbasis::FunctionType functionType)
 	{
@@ -415,9 +418,176 @@ public:
 		Scenecoordinatesystem toCoordinateSystem);
 };
 
+class Fieldmoduleevent
+{
+protected:
+	cmzn_fieldmoduleevent_id id;
+
+public:
+
+	Fieldmoduleevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Fieldmoduleevent(cmzn_fieldmoduleevent_id in_fieldmodule_event_id) :
+		id(in_fieldmodule_event_id)
+	{  }
+
+	Fieldmoduleevent(const Fieldmoduleevent& fieldmoduleEvent) :
+		id(cmzn_fieldmoduleevent_access(fieldmoduleEvent.id))
+	{  }
+
+	enum ChangeFlag
+	{
+		CHANGE_FLAG_NONE = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_ADD = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_ADD,
+		CHANGE_FLAG_REMOVE = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_REMOVE,
+		CHANGE_FLAG_IDENTIFIER = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_IDENTIFIER,
+		CHANGE_FLAG_DEFINITION = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEFINITION,
+		CHANGE_FLAG_DEPENDENCY = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEPENDENCY,
+		CHANGE_FLAG_METADATA = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_METADATA,
+		CHANGE_FLAG_FINAL = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL,
+		CHANGE_FLAG_RESULT = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_RESULT
+	};
+
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 * @see getChangeFlags
+	 */
+	typedef int ChangeFlags;
+
+	Fieldmoduleevent& operator=(const Fieldmoduleevent& fieldmoduleEvent)
+	{
+		cmzn_fieldmoduleevent_id temp_id = cmzn_fieldmoduleevent_access(fieldmoduleEvent.id);
+		if (0 != id)
+			cmzn_fieldmoduleevent_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Fieldmoduleevent()
+	{
+		if (0 != id)
+		{
+			cmzn_fieldmoduleevent_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_fieldmoduleevent_id getId()
+	{
+		return id;
+	}
+
+	ChangeFlags getChangeFlags() const
+	{
+		return static_cast<ChangeFlag>(cmzn_fieldmoduleevent_get_change_flags(id));
+	}
+
+};
+
+/**
+ * Base class functor for field module notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Fieldmoduleevent&) to handle callback.
+ * @see Fieldmodulenotifier::setCallback()
+ */
+class Fieldmodulecallback
+{
+friend class Fieldmodulenotifier;
+private:
+	Fieldmodulecallback(Fieldmodulecallback&); // not implemented
+	Fieldmodulecallback& operator=(Fieldmodulecallback&); // not implemented
+
+	static void C_callback(cmzn_fieldmoduleevent_id fieldmoduleevent_id, void *callbackVoid)
+	{
+		Fieldmoduleevent fieldmoduleevent(cmzn_fieldmoduleevent_access(fieldmoduleevent_id));
+		Fieldmodulecallback *callback = reinterpret_cast<Fieldmodulecallback *>(callbackVoid);
+		(*callback)(fieldmoduleevent);
+	}
+
+  virtual void operator()(const Fieldmoduleevent &fieldmoduleevent) = 0;
+
+protected:
+	Fieldmodulecallback()
+	{ }
+
+public:
+	virtual ~Fieldmodulecallback()
+	{ }
+};
+
+class Fieldmodulenotifier
+{
+protected:
+	cmzn_fieldmodulenotifier_id id;
+
+public:
+
+	Fieldmodulenotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Fieldmodulenotifier(cmzn_fieldmodulenotifier_id in_fieldmodulenotifier_id) :
+		id(in_fieldmodulenotifier_id)
+	{  }
+
+	Fieldmodulenotifier(const Fieldmodulenotifier& fieldmoduleNotifier) :
+		id(cmzn_fieldmodulenotifier_access(fieldmoduleNotifier.id))
+	{  }
+
+	Fieldmodulenotifier& operator=(const Fieldmodulenotifier& fieldmoduleNotifier)
+	{
+		cmzn_fieldmodulenotifier_id temp_id = cmzn_fieldmodulenotifier_access(fieldmoduleNotifier.id);
+		if (0 != id)
+		{
+			cmzn_fieldmodulenotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Fieldmodulenotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_fieldmodulenotifier_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_fieldmodulenotifier_id getId()
+	{
+		return id;
+	}
+
+	int setCallback(Fieldmodulecallback& callback)
+	{
+		return cmzn_fieldmodulenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_fieldmodulenotifier_clear_callback(id);
+	}
+};
+
 inline Fieldmodule Field::getFieldmodule()
 {
 	return Fieldmodule(*this);
+}
+
+inline Fieldmodulenotifier Fieldmodule::createNotifier()
+{
+	return Fieldmodulenotifier(cmzn_fieldmodule_create_notifier(id));
 }
 
 }  // namespace Zinc

@@ -53,6 +53,7 @@
 #include "image_processing/computed_field_binary_erode_image_filter.h"
 #endif
 #include "region/cmiss_region.h"
+#include "region/cmiss_region_private.h"
 #include "general/message.h"
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
@@ -342,6 +343,12 @@ cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 	return Computed_field_manager_create_iterator(manager);
 }
 
+cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_notifier(
+	cmzn_fieldmodule_id fieldmodule)
+{
+	return cmzn_fieldmodulenotifier::create(fieldmodule);
+}
+
 cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 	cmzn_fieldmodule_id field_module, int number_of_times, const double *times)
 {
@@ -384,4 +391,129 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id field_
 		}
 	}
 	return xi_field;
+}
+
+int cmzn_fieldmoduleevent::deaccess(cmzn_fieldmoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_fieldmodulenotifier::cmzn_fieldmodulenotifier(cmzn_fieldmodule *fieldmodule) :
+	region(fieldmodule->region),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	cmzn_region_add_fieldmodulenotifier(region, this);
+}
+
+cmzn_fieldmodulenotifier::~cmzn_fieldmodulenotifier()
+{
+}
+
+int cmzn_fieldmodulenotifier::deaccess(cmzn_fieldmodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->region)
+			cmzn_region_remove_fieldmodulenotifier(notifier->region, notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_fieldmodulenotifier::setCallback(cmzn_fieldmodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_fieldmodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_fieldmodulenotifier::regionDestroyed()
+{
+	this->region = 0;
+	if (this->function)
+	{
+		cmzn_fieldmoduleevent_id event = new cmzn_fieldmoduleevent();
+		event->changeFlags = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL;
+		(this->function)(event, this->user_data);
+		cmzn_fieldmoduleevent_destroy(&event);
+		this->clearCallback();
+	}
+}
+
+int cmzn_fieldmodulenotifier_clear_callback(cmzn_fieldmodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_fieldmodulenotifier_set_callback(cmzn_fieldmodulenotifier_id notifier,
+	cmzn_fieldmodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_fieldmodulenotifier_get_callback_user_data( 
+ cmzn_fieldmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_fieldmodulenotifier_id cmzn_fieldmodulenotifier_access(
+	cmzn_fieldmodulenotifier_id notifier)
+{
+	return notifier->access();
+}
+
+int cmzn_fieldmodulenotifier_destroy(cmzn_fieldmodulenotifier_id *notifier_address)
+{
+	return cmzn_fieldmodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_fieldmoduleevent_id cmzn_fieldmoduleevent_access(
+	cmzn_fieldmoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_fieldmoduleevent_destroy(cmzn_fieldmoduleevent_id *event_address)
+{
+	return cmzn_fieldmoduleevent::deaccess(*event_address);
+}
+
+cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_change_flags(cmzn_fieldmoduleevent_id event)
+{
+	return event->changeFlags;
 }

@@ -17,6 +17,9 @@ typedef struct cmzn_selectionnotifier * cmzn_selectionnotifier_id;
 struct cmzn_selectionevent;
 typedef struct cmzn_selectionevent * cmzn_selectionevent_id;
 
+typedef void (*cmzn_selectionnotifier_callback_function)(
+	cmzn_selectionevent_id selectionevent, void *client_data);
+
 /**
  * Bit flags summarising changes to the selection.
  */

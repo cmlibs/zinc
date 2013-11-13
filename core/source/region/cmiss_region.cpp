@@ -17,6 +17,7 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
+#include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_finite_element.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
@@ -25,6 +26,7 @@
 #include "region/cmiss_region_private.h"
 #include "finite_element/finite_element_region.h"
 #include "general/message.h"
+#include <algorithm>
 #include <list>
 #include <vector>
 
@@ -35,6 +37,8 @@ Module types
 
 FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_region_change, \
 	struct cmzn_region *, struct cmzn_region_changes *);
+
+typedef std::list<cmzn_fieldmodulenotifier *> cmzn_fieldmodulenotifier_list;
 
 /***************************************************************************//**
  * A region object which contains fields and child regions.
@@ -71,6 +75,9 @@ struct cmzn_region
 	/* list of change callbacks */
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)) *change_callback_list;
 
+	// list of notifiers which receive field module callbacks
+	cmzn_fieldmodulenotifier_list *notifier_list;
+
 	/* number of objects using this region */
 	int access_count;
 };
@@ -85,10 +92,10 @@ DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_region_change, void)
 DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_region_change, \
 	struct cmzn_region *, struct cmzn_region_changes *)
 
-/***************************************************************************//**
- * Computed field manager callback. Asks fields of
- * parent region to propagate field changes if hierarchical.
- * Initially supports cmzn_field_group.
+/**
+ * Computed field manager callback.
+ * Calls notifier callbacks, propagates hierarchical field changes to
+ * paranet region (currently only for cmzn_field_group).
  *
  * @param message  The changes to the fields in the region's manager.
  * @param region_void  Void pointer to changed region (not the parent).
@@ -99,8 +106,20 @@ static void cmzn_region_Computed_field_change(
 	cmzn_region *region = (cmzn_region *)region_void;
 	if (message && region)
 	{
-		int change_summary =
-			MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Computed_field)(message);
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Computed_field)(message);
+
+		if (0 < region->notifier_list->size())
+		{
+			cmzn_fieldmoduleevent_id event = new cmzn_fieldmoduleevent();
+			event->changeFlags = change_summary;
+			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list->begin();
+				iter != region->notifier_list->end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_fieldmoduleevent_destroy(&event);
+		}
+
 		if (change_summary & (MANAGER_CHANGE_RESULT(Computed_field) |
 			MANAGER_CHANGE_ADD(Computed_field)))
 		{
@@ -298,6 +317,7 @@ struct cmzn_region *CREATE(cmzn_region)(struct cmzn_region *base_region)
 		region->changes.child_removed = NULL;
 		region->change_callback_list =
 			CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))();
+		region->notifier_list = new cmzn_fieldmodulenotifier_list();
 		region->field_manager = CREATE(MANAGER(Computed_field))();
 		Computed_field_manager_set_region(region->field_manager, region);
 		region->field_manager_callback_id = MANAGER_REGISTER(Computed_field)(
@@ -341,7 +361,7 @@ static void cmzn_region_detach_fields(struct cmzn_region *region)
 	}
 }
 
-/***************************************************************************//**
+/**
  * Destructor for cmzn_region. Sets <*cmiss_region_address> to NULL.
  */
 int DESTROY(cmzn_region)(struct cmzn_region **region_address)
@@ -352,6 +372,17 @@ int DESTROY(cmzn_region)(struct cmzn_region **region_address)
 	{
 		if (0 == region->access_count)
 		{
+			// first notify clients as they call some region/fieldmodule APIs
+			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list->begin();
+				iter != region->notifier_list->end(); ++iter)
+			{
+				cmzn_fieldmodulenotifier *notifier = *iter;
+				notifier->regionDestroyed();
+				cmzn_fieldmodulenotifier::deaccess(notifier);
+			}
+			delete region->notifier_list;
+			region->notifier_list = 0;
+
 			delete region->field_caches;
 			DESTROY(LIST(Any_object))(&(region->any_object_list));
 
@@ -1685,4 +1716,26 @@ int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region
 	int return_code = cmzn_region_merge_private(target_region, source_region, /*root_region*/target_region);
 	cmzn_region_end_hierarchical_change(target_region);
 	return return_code;
+}
+
+void cmzn_region_add_fieldmodulenotifier(cmzn_region *region,
+	cmzn_fieldmodulenotifier *notifier)
+{
+	if (region && notifier)
+		region->notifier_list->push_back(notifier->access());
+}
+
+void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
+	cmzn_fieldmodulenotifier *notifier)
+{
+	if (region && notifier)
+	{
+		cmzn_fieldmodulenotifier_list::iterator iter = std::find(
+			region->notifier_list->begin(), region->notifier_list->end(), notifier);
+		if (iter != region->notifier_list->end())
+		{
+			cmzn_fieldmodulenotifier::deaccess(notifier);
+			region->notifier_list->erase(iter);
+		}
+	}
 }

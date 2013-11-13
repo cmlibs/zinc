@@ -18,9 +18,6 @@
 extern "C" {
 #endif
 
-typedef void (*cmzn_selectionnotifier_callback_function)(
-	cmzn_selectionevent_id selectionevent,	void *client_data);
-
 /**
 * Returns a new reference to the selection notifier with reference count incremented.
 * Caller is responsible for destroying the new reference.

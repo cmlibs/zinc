@@ -75,4 +75,12 @@ Returns the list of objects, abstractly stored as struct Any_object from
 This function is only externally visible to context objects.
 ==============================================================================*/
 
+/** private for use by cmzn_fieldmodulenotifier */
+void cmzn_region_add_fieldmodulenotifier(cmzn_region *region,
+	cmzn_fieldmodulenotifier *notifier);
+
+/** private for use by cmzn_fieldmodulenotifier */
+void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
+	cmzn_fieldmodulenotifier *notifier);
+
 #endif /* !defined (CMZN_REGION_PRIVATE_H) */

@@ -13,6 +13,85 @@
 
 #include "zinc/fieldmodule.h"
 
+struct cmzn_fieldmoduleevent
+{
+	cmzn_fieldmoduleevent_change_flags changeFlags;
+	int access_count;
+
+	cmzn_fieldmoduleevent() :
+		changeFlags(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE),
+		access_count(1)
+	{
+	}
+
+	~cmzn_fieldmoduleevent()
+	{
+	}
+
+	cmzn_fieldmoduleevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_fieldmoduleevent* &event);
+
+};
+
+struct cmzn_fieldmodulenotifier
+{
+private:
+	cmzn_region_id region; // owning region: not accessed
+	cmzn_fieldmodulenotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_fieldmodulenotifier(cmzn_fieldmodule *fieldmodule);
+
+	~cmzn_fieldmodulenotifier();
+
+	static void fieldmanager_callback(struct MANAGER_MESSAGE(Computed_field) *message,
+		void *fieldmodulenotifier_void);
+
+public:
+
+	/** private: external code must use cmzn_fieldmodule_create_notifier */
+	static cmzn_fieldmodulenotifier *create(cmzn_fieldmodule *fieldmodule)
+	{
+		if (fieldmodule)
+			return new cmzn_fieldmodulenotifier(fieldmodule);
+		return 0;
+	}
+
+	cmzn_fieldmodulenotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_fieldmodulenotifier* &notifier);
+
+	int setCallback(cmzn_fieldmodulenotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void regionDestroyed();
+
+	void notify(cmzn_fieldmoduleevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+
 /***************************************************************************//**
  * Creates field module object needed to create fields in supplied region.
  * Internally: Also used to set new field default arguments prior to create.
