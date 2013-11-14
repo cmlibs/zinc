@@ -222,7 +222,7 @@ Local functions
  * MANAGER_CHANGE_DEPENDENCY. Examples uses include field, scenefilter.
  */
 #define DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION( object_type ) \
-static inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(object_type) *manager) \
+inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(object_type) *manager) \
 { \
 	USE_PARAMETER(manager); \
 }
@@ -234,7 +234,7 @@ static inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(objec
  * Example uses include field, tessellation.
  */
 #define DECLARE_DEFAULT_MANAGER_EXTRACT_CHANGE_DETAIL_FUNCTION( object_type ) \
-static inline void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_type *object) \
+inline void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_type *object) \
 { \
 	USE_PARAMETER(object); \
 	return 0; \
@@ -246,7 +246,7 @@ static inline void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_ty
  * Example uses include field, tessellation.
  */
 #define DECLARE_DEFAULT_MANAGER_CLEANUP_CHANGE_DETAIL_FUNCTION( object_type ) \
-static inline void MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(void **change_detail_address) \
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(void **change_detail_address) \
 { \
 	USE_PARAMETER(change_detail_address); \
 }
