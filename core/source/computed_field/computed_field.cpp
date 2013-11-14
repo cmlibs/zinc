@@ -151,7 +151,7 @@ Module functions
 */
 
 /** override to set change status of fields which depend on changed fields */
-static inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
+inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
 	struct MANAGER(Computed_field) *manager)
 {
 	cmzn_set_cmzn_field *all_fields = reinterpret_cast<cmzn_set_cmzn_field *>(manager->object_list);
@@ -162,13 +162,13 @@ static inline void MANAGER_UPDATE_DEPENDENCIES(Computed_field)(
 	}
 }
 
-static inline struct cmzn_field_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Computed_field)(
+inline struct cmzn_field_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(Computed_field)(
 	struct Computed_field *field)
 {
 	return field->core->extract_change_detail();
 }
 
-static inline void MANAGER_CLEANUP_CHANGE_DETAIL(Computed_field)(
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(Computed_field)(
 	cmzn_field_change_detail **change_detail_address)
 {
 	delete *change_detail_address;
