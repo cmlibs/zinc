@@ -22,6 +22,7 @@ affecting other parts of the program.
 #define MANAGER_PRIVATE_H
 
 #include "general/manager.h"
+#include <vector>
 
 /*
 Macros
@@ -43,26 +44,134 @@ Local types
 #define MANAGER_CALLBACK_ITEM( object_type ) \
 	MANAGER_CALLBACK_ITEM_(object_type)
 
+#define MANAGER_EXTRACT_CHANGE_DETAIL_( object_type )  manager_extract_change_detail_ ## object_type
+#define MANAGER_EXTRACT_CHANGE_DETAIL( object_type )  MANAGER_EXTRACT_CHANGE_DETAIL_(object_type)
+
+#define MANAGER_CLEANUP_CHANGE_DETAIL_( object_type )  manager_cleanup_change_detail_ ## object_type
+#define MANAGER_CLEANUP_CHANGE_DETAIL( object_type )  MANAGER_CLEANUP_CHANGE_DETAIL_(object_type)
+
 #define FULL_DECLARE_MANAGER_TYPE_WITH_OWNER( object_type , owner_type , change_detail_type ) \
+change_detail_type MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_type *object); \
+void MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(change_detail_type *change_detail_address); \
 struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) \
-/*************************************************************************//** \
+/** \
  * Internal record of a single managed object change. \
  */ \
 { \
 	struct object_type *object; \
 	int change; /* bits set from enum MANAGER_CHANGE(object_type) */ \
 	change_detail_type detail; /* optional details of sub-object changes */ \
+\
+	MANAGER_MESSAGE_OBJECT_CHANGE(object_type)() : \
+		object(0), \
+		change(MANAGER_CHANGE_NONE(object_type)), \
+		detail(0) \
+	{ \
+	} \
+\
+	MANAGER_MESSAGE_OBJECT_CHANGE(object_type)(struct object_type *objectIn) : \
+		object(ACCESS(object_type)(objectIn)), \
+		change(object->manager_change_status), \
+		detail(MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(object)) \
+	{ \
+	} \
+\
+	~MANAGER_MESSAGE_OBJECT_CHANGE(object_type)() \
+	{ \
+		MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(&(this->detail)); \
+		DEACCESS(object_type)(&(this->object)); \
+	} \
 }; \
 \
 struct MANAGER_MESSAGE(object_type) \
-/*************************************************************************//** \
+/** \
  * A message that will be sent when one of more of the objects being managed \
- * has added, removed or changed. \
+ * has been added, removed or changed. \
  */ \
 { \
 	int change_summary; /* bitwise OR of all object changes */ \
-	int number_of_changed_objects; /* size of following array */ \
-	struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_changes; \
+	std::vector<MANAGER_MESSAGE_OBJECT_CHANGE(object_type)*> object_changes; \
+	int access_count; \
+\
+private: \
+	MANAGER_MESSAGE(object_type)() : \
+		change_summary(MANAGER_CHANGE_NONE(object_type)), \
+		access_count(1) \
+	{ \
+	} \
+\
+	~MANAGER_MESSAGE(object_type)() \
+	{ \
+		for (std::vector<MANAGER_MESSAGE_OBJECT_CHANGE(object_type)*>::iterator iter = object_changes.begin(); \
+			iter != object_changes.end(); ++iter) \
+		{ \
+			MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change = *iter; \
+			delete object_change; \
+		} \
+	} \
+\
+public: \
+	static struct MANAGER_MESSAGE(object_type) *create() \
+	{ \
+		return new MANAGER_MESSAGE(object_type)(); \
+	} \
+\
+	struct MANAGER_MESSAGE(object_type) *access() \
+	{ \
+		++(this->access_count); \
+		return this; \
+	} \
+\
+	static void deaccess(struct MANAGER_MESSAGE(object_type) *&message) \
+	{ \
+		if (message) \
+		{ \
+			--(message->access_count); \
+			if (message->access_count <= 0) \
+				delete message; \
+			message = 0; \
+		} \
+	} \
+\
+	void addObjectChange(struct object_type *object) \
+	{ \
+		if (object) \
+			this->object_changes.push_back(new MANAGER_MESSAGE_OBJECT_CHANGE(object_type)(object)); \
+	} \
+\
+	int getObjectChangeFlags(struct object_type *object) \
+	{ \
+		size_t number_of_changed_objects = this->object_changes.size(); \
+		struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+		for (size_t i = 0; i < number_of_changed_objects; ++i) \
+		{ \
+			object_change = this->object_changes[i]; \
+			if (object == object_change->object) \
+				return (object_change->change); \
+		} \
+		return MANAGER_CHANGE_NONE(object_type); \
+	} \
+\
+	int getObjectChangeFlagsAndDetail(struct object_type *object, const change_detail_type *detail_address) \
+	{ \
+		if (detail_address) \
+		{ \
+			size_t number_of_changed_objects = this->object_changes.size(); \
+			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+			for (size_t i = 0; i < number_of_changed_objects; ++i) \
+			{ \
+				object_change = this->object_changes[i]; \
+				if (object == object_change->object) \
+				{ \
+					*detail_address = object_change->detail; \
+					return (object_change->change); \
+				} \
+			} \
+			*detail_address = 0; \
+		} \
+		return MANAGER_CHANGE_NONE(object_type); \
+	} \
+\
 }; /* MANAGER_MESSAGE(object_type) */ \
 \
 struct MANAGER_CALLBACK_ITEM(object_type) \
@@ -118,9 +227,6 @@ static inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(objec
 	USE_PARAMETER(manager); \
 }
 
-#define MANAGER_EXTRACT_CHANGE_DETAIL_( object_type )  manager_extract_change_detail_ ## object_type
-#define MANAGER_EXTRACT_CHANGE_DETAIL( object_type )  MANAGER_EXTRACT_CHANGE_DETAIL_(object_type)
-
 /**
  * Default function for no per-object change detail. Does nothing.
  * Override to extract change details from object, if any.
@@ -133,9 +239,6 @@ static inline void * MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(struct object_ty
 	USE_PARAMETER(object); \
 	return 0; \
 }
-
-#define MANAGER_CLEANUP_CHANGE_DETAIL_( object_type )  manager_cleanup_change_detail_ ## object_type
-#define MANAGER_CLEANUP_CHANGE_DETAIL( object_type )  MANAGER_CLEANUP_CHANGE_DETAIL_(object_type)
 
 /**
  * Default function for no per-object change detail. Does nothing.
@@ -164,82 +267,48 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 	ENTER(MANAGER_UPDATE(object_type)); \
 	if (manager) \
 	{ \
-		int number_of_changed_objects, number_of_removed_objects; \
-		\
-		number_of_changed_objects = \
-			NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
-		number_of_removed_objects = \
-			NUMBER_IN_LIST(object_type)(manager->removed_object_list); \
+		int number_of_changed_objects = NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
+		int number_of_removed_objects = NUMBER_IN_LIST(object_type)(manager->removed_object_list); \
 		if (number_of_changed_objects || number_of_removed_objects) \
 		{ \
-			int i; \
-			struct MANAGER_CALLBACK_ITEM(object_type) *item; \
-			struct MANAGER_MESSAGE(object_type) message; \
-			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
-			\
+			/* update with dependency changes */ \
 			MANAGER_UPDATE_DEPENDENCIES(object_type)(manager); \
-			/* update count with dependency changes */ \
-			number_of_changed_objects = \
-				NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
-			/* prepare message, transferring change details from objects to it */ \
-			if (ALLOCATE(message.object_changes, \
-				struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type), \
-					number_of_changed_objects + number_of_removed_objects)) \
+			number_of_changed_objects = NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
+			struct MANAGER_MESSAGE(object_type) *message = MANAGER_MESSAGE(object_type)::create(); \
+			if (message) \
 			{ \
-				message.change_summary = MANAGER_CHANGE_NONE(object_type); \
-				message.number_of_changed_objects = \
-					number_of_changed_objects + number_of_removed_objects; \
-				object_change = message.object_changes; \
-				for (i = 0; i < number_of_changed_objects; i++) \
+				for (int i = 0; i < number_of_changed_objects; i++) \
 				{ \
-					object_change->object = ACCESS(object_type)( \
-						FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-							(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
-							manager->changed_object_list)); \
-					object_change->change = object_change->object->manager_change_status; \
-					object_change->object->manager_change_status = \
-						MANAGER_CHANGE_NONE(object_type); \
-					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
-						manager->changed_object_list); \
-					object_change->detail = MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(object_change->object); \
-					message.change_summary |= object_change->change; \
-					object_change++; \
+					struct object_type *object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+						(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, manager->changed_object_list); \
+					message->addObjectChange(object); \
+					message->change_summary |= object->manager_change_status; \
+					object->manager_change_status = MANAGER_CHANGE_NONE(object_type); \
+					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->changed_object_list); \
 				} \
-				for (i = 0; i < number_of_removed_objects; i++) \
+				for (int i = 0; i < number_of_removed_objects; i++) \
 				{ \
-					object_change->object = ACCESS(object_type)( \
-						FIRST_OBJECT_IN_LIST_THAT(object_type)( \
-							(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, \
-							manager->removed_object_list)); \
-					object_change->change = object_change->object->manager_change_status; \
-					REMOVE_OBJECT_FROM_LIST(object_type)(object_change->object, \
-						manager->removed_object_list); \
-					object_change->detail = MANAGER_EXTRACT_CHANGE_DETAIL(object_type)(object_change->object); \
-					message.change_summary |= object_change->change; \
-					object_change++; \
+					struct object_type *object = FIRST_OBJECT_IN_LIST_THAT(object_type)( \
+						(LIST_CONDITIONAL_FUNCTION(object_type) *)NULL, (void *)NULL, manager->removed_object_list); \
+					message->addObjectChange(object); \
+					message->change_summary |= object->manager_change_status; \
+					object->manager_change_status = MANAGER_CHANGE_NONE(object_type); \
+					REMOVE_OBJECT_FROM_LIST(object_type)(object, manager->removed_object_list); \
 				} \
 				/* send message to clients */ \
-				item = manager->callback_list; \
+				struct MANAGER_CALLBACK_ITEM(object_type) *item = manager->callback_list; \
 				while (item) \
 				{ \
-					(item->callback)(&message, item->user_data); \
+					(item->callback)(message, item->user_data); \
 					item = item->next; \
 				} \
-				/* clean up message */ \
-				object_change = message.object_changes; \
-				for (i = message.number_of_changed_objects; i > 0; i--) \
-				{ \
-					MANAGER_CLEANUP_CHANGE_DETAIL(object_type)(&(object_change->detail)); \
-					DEACCESS(object_type)(&(object_change->object)); \
-					object_change++; \
-				} \
-				DEALLOCATE(message.object_changes); \
 			} \
 			else \
 			{ \
 				display_message(ERROR_MESSAGE, \
 					"MANAGER_UPDATE(" #object_type ").  Could not build message"); \
 			} \
+			message->deaccess(message); \
 		} \
 	} \
 	else \
@@ -1260,58 +1329,53 @@ PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type) \
 	return (return_code); \
 } /* MANAGER_END_CACHE(object_type) */
 
+#define DECLARE_MANAGER_MESSAGE_ACCESS_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_MESSAGE_ACCESS_FUNCTION( object_type )  \
+{ \
+	if (message) \
+		return message->access(); \
+	return 0; \
+}
+
+#define DECLARE_MANAGER_MESSAGE_DEACCESS_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_MESSAGE_DEACCESS_FUNCTION( object_type )  \
+{ \
+	if (message_address) \
+		MANAGER_MESSAGE(object_type)::deaccess(*message_address); \
+}
+
 #define DECLARE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
 { \
 	if (message) \
-	{ \
 		return (message->change_summary); \
-	} \
 	return (MANAGER_CHANGE_NONE(object_type)); \
 }
 
 #define DECLARE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type) \
 { \
-	if (message && object) \
-	{ \
-		int i; \
-		struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
-		\
-		object_change = message->object_changes; \
-		for (i = message->number_of_changed_objects; 0 < i; i--) \
-		{ \
-			if (object == object_change->object) \
-			{ \
-				return (object_change->change); \
-			} \
-			object_change++; \
-		} \
-	} \
-	return (MANAGER_CHANGE_NONE(object_type)); \
+	if (message) \
+		return message->getObjectChangeFlags(object); \
+	return MANAGER_CHANGE_NONE(object_type); \
 }
 
 #define DECLARE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type) \
 { \
-	int i; \
-	struct LIST(object_type) *object_list; \
-	struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
-	\
-	object_list = (struct LIST(object_type) *)NULL; \
+	struct LIST(object_type) *object_list = 0; \
 	if (message) \
 	{ \
 		if (message->change_summary & change_mask) \
 		{ \
 			object_list = CREATE(LIST(object_type))(); \
-			object_change = message->object_changes; \
-			for (i = message->number_of_changed_objects; 0 < i; i--) \
+			size_t number_of_changed_objects = message->object_changes.size(); \
+			struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+			for (size_t i = 0; i < number_of_changed_objects; ++i) \
 			{ \
+				object_change = message->object_changes[i]; \
 				if (object_change->change & change_mask) \
-				{ \
 					ADD_OBJECT_TO_LIST(object_type)(object_change->object, object_list); \
-				} \
-				object_change++; \
 			} \
 		} \
 	} \
@@ -1321,25 +1385,19 @@ PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type) \
 #define DECLARE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_MESSAGE_HAS_CHANGED_OBJECT_THAT_FUNCTION(object_type) \
 { \
-	int i, return_code; \
-	struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
-	\
-	return_code = 0; \
 	if (message && conditional_function) \
 	{ \
-		object_change = message->object_changes; \
-		for (i = message->number_of_changed_objects; 0 < i; i--) \
+		size_t number_of_changed_objects = message->object_changes.size(); \
+		struct MANAGER_MESSAGE_OBJECT_CHANGE(object_type) *object_change; \
+		for (size_t i = 0; i < number_of_changed_objects; ++i) \
 		{ \
+			object_change = message->object_changes[i]; \
 			if ((object_change->change & change_mask) && \
 				(conditional_function)(object_change->object, user_data)) \
-			{ \
-				return_code = 1; \
-				break; \
-			} \
-			object_change++; \
+				return 1; \
 		} \
 	} \
-	return (return_code); \
+	return 0; \
 }
 
 #define MANAGER_GET_OWNER_(object_type)  manager_get_owner_ ## object_type
@@ -1443,6 +1501,8 @@ DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
 DECLARE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type,object_manager) \
 DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 DECLARE_MANAGER_END_CACHE_FUNCTION(object_type) \
+DECLARE_MANAGER_MESSAGE_ACCESS_FUNCTION(object_type) \
+DECLARE_MANAGER_MESSAGE_DEACCESS_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type) \

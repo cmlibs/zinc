@@ -193,7 +193,7 @@ public:
 		return Fielditerator(cmzn_fieldmodule_create_fielditerator(id));
 	}
 
-	Fieldmodulenotifier createNotifier();
+	Fieldmodulenotifier createFieldmodulenotifier();
 
 	Elementbasis createElementbasis(int dimension, enum Elementbasis::FunctionType functionType)
 	{
@@ -485,7 +485,12 @@ public:
 
 	ChangeFlags getChangeFlags() const
 	{
-		return static_cast<ChangeFlag>(cmzn_fieldmoduleevent_get_change_flags(id));
+		return cmzn_fieldmoduleevent_get_change_flags(id);
+	}
+
+	ChangeFlags getFieldChangeFlags(Field& field) const
+	{
+		return cmzn_fieldmoduleevent_get_field_change_flags(id, field.getId());
 	}
 
 };
@@ -585,9 +590,9 @@ inline Fieldmodule Field::getFieldmodule()
 	return Fieldmodule(*this);
 }
 
-inline Fieldmodulenotifier Fieldmodule::createNotifier()
+inline Fieldmodulenotifier Fieldmodule::createFieldmodulenotifier()
 {
-	return Fieldmodulenotifier(cmzn_fieldmodule_create_notifier(id));
+	return Fieldmodulenotifier(cmzn_fieldmodule_create_fieldmodulenotifier(id));
 }
 
 }  // namespace Zinc
