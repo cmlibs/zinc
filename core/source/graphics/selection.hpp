@@ -57,9 +57,6 @@ private:
 
 	~cmzn_selectionnotifier();
 
-	static void fieldmanager_callback(struct MANAGER_MESSAGE(Computed_field) *message,
-		void *selectionnotifier_void);
-
 public:
 
 	/** private: external code must use cmzn_scene_create_selectionnotifier */

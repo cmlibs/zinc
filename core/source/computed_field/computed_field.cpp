@@ -3216,27 +3216,11 @@ int Computed_field_manager_message_get_object_change_and_detail(
 	struct MANAGER_MESSAGE(Computed_field) *message, struct Computed_field *field,
 	const struct cmzn_field_change_detail **change_detail_address)
 {
-	if (message && field && change_detail_address)
-	{
-		int i;
-		struct MANAGER_MESSAGE_OBJECT_CHANGE(Computed_field) *object_change;
-
-		object_change = message->object_changes;
-		for (i = message->number_of_changed_objects; 0 < i; i--)
-		{
-			if (field == object_change->object)
-			{
-				*change_detail_address = object_change->detail;
-				return (object_change->change);
-			}
-			object_change++;
-		}
-	}
+	if (message)
+		return message->getObjectChangeFlagsAndDetail(field, change_detail_address);
 	if (change_detail_address)
-	{
-		*change_detail_address = NULL;
-	}
-	return (MANAGER_CHANGE_NONE(Computed_field));
+		*change_detail_address = 0;
+	return MANAGER_CHANGE_NONE(Computed_field);
 }
 
 class cmzn_field_coordinate_system_type_conversion

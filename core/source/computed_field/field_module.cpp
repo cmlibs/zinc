@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : field_module.cpp
  *
  * Internal implementation of field module api.
@@ -59,7 +59,7 @@
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"
 
-/***************************************************************************//**
+/**
  * Object to pass into field create functions, supplying region field is to
  * go into and other default parameters.
  */
@@ -343,7 +343,7 @@ cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 	return Computed_field_manager_create_iterator(manager);
 }
 
-cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_notifier(
+cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(
 	cmzn_fieldmodule_id fieldmodule)
 {
 	return cmzn_fieldmodulenotifier::create(fieldmodule);
@@ -455,10 +455,10 @@ void cmzn_fieldmodulenotifier::regionDestroyed()
 	this->region = 0;
 	if (this->function)
 	{
-		cmzn_fieldmoduleevent_id event = new cmzn_fieldmoduleevent();
-		event->changeFlags = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL;
+		cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create();
+		event->setChangeFlags(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL);
 		(this->function)(event, this->user_data);
-		cmzn_fieldmoduleevent_destroy(&event);
+		cmzn_fieldmoduleevent::deaccess(event);
 		this->clearCallback();
 	}
 }
@@ -515,5 +515,15 @@ int cmzn_fieldmoduleevent_destroy(cmzn_fieldmoduleevent_id *event_address)
 
 cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_change_flags(cmzn_fieldmoduleevent_id event)
 {
-	return event->changeFlags;
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE;
+}
+
+cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
+	cmzn_fieldmoduleevent_id event, cmzn_field_id field)
+{
+	if (event)
+		return event->getFieldChangeFlags(field);
+	return CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE;
 }

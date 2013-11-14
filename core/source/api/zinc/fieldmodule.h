@@ -119,6 +119,17 @@ ZINC_API cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 	cmzn_fieldmodule_id fieldmodule);
 
 /**
+ * Create a notifier for getting callbacks for changes to the fields and related
+ * objects in the field module.
+ *
+ * @param fieldmodule  Handle to the field module to get notifications for.
+ * @return  On success, handle to field module notifier, otherwise NULL.
+ * Up to caller to destroy handle.
+ */
+ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(
+	cmzn_fieldmodule_id fieldmodule);
+
+/**
  * Defines, for all elements of all meshes in field module, face elements of
  * dimension one lower in the associated face mesh, and all their faces
  * recursively down to 1 dimensional lines.
@@ -136,17 +147,6 @@ ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule);
  * @return  Accessed handle to owning region for field module.
  */
 ZINC_API cmzn_region_id cmzn_fieldmodule_get_region(cmzn_fieldmodule_id fieldmodule);
-
-/**
- * Create a notifier for getting callbacks for changes to the field and related
- * objects in the field module.
- *
- * @param fieldmodule  Handle to the field module to get notifications for.
- * @return  On success, handle to field module notifier, otherwise NULL.
- * Up to caller to destroy handle.
- */
-ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_notifier(
-	cmzn_fieldmodule_id fieldmodule);
 
 /**
  * Returns a new reference to the field module notifier with reference count
@@ -230,6 +230,19 @@ ZINC_API int cmzn_fieldmoduleevent_destroy(cmzn_fieldmoduleevent_id *event_addre
  */
 ZINC_API cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_change_flags(
 	cmzn_fieldmoduleevent_id event);
+
+/**
+ * Get logical OR of flags indicating how the field has changed.
+ * @see cmzn_fieldmoduleevent_change_flag
+ *
+ * @param event  Handle to the field module event to query.
+ * @param field  The field to query about.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_fieldmoduleevent_change_flag values. Returns
+ * CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE in case of invalid arguments.
+ */
+ZINC_API cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
+	cmzn_fieldmoduleevent_id event, cmzn_field_id field);
 
 #ifdef __cplusplus
 }

@@ -492,8 +492,6 @@ Module functions
 ----------------
 */
 
-namespace {
-
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_tessellation)
 
 static inline cmzn_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_tessellation)(
@@ -513,8 +511,6 @@ DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_tessellation)
 DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_tessellation)
 
 DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_tessellation)
-
-} /* anonymous namespace */
 
 /*
 Global functions
@@ -571,26 +567,10 @@ int cmzn_tessellation_manager_message_get_object_change_and_detail(
 	struct MANAGER_MESSAGE(cmzn_tessellation) *message, cmzn_tessellation *tessellation,
 	const cmzn_tessellation_change_detail **change_detail_address)
 {
-	if (message && tessellation && change_detail_address)
-	{
-		int i;
-		struct MANAGER_MESSAGE_OBJECT_CHANGE(cmzn_tessellation) *object_change;
-
-		object_change = message->object_changes;
-		for (i = message->number_of_changed_objects; 0 < i; i--)
-		{
-			if (tessellation == object_change->object)
-			{
-				*change_detail_address = object_change->detail;
-				return (object_change->change);
-			}
-			object_change++;
-		}
-	}
+	if (message)
+		return message->getObjectChangeFlagsAndDetail(tessellation, change_detail_address);
 	if (change_detail_address)
-	{
 		*change_detail_address = 0;
-	}
 	return (MANAGER_CHANGE_NONE(cmzn_tessellation));
 }
 

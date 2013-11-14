@@ -463,6 +463,21 @@ DESCRIPTION : \
 Performs a global update. \
 ==============================================================================*/
 
+#define MANAGER_MESSAGE_ACCESS_( object_type ) manager_message_access_ ## object_type
+#define MANAGER_MESSAGE_ACCESS( object_type ) MANAGER_MESSAGE_ACCESS_(object_type)
+
+/** Increment reference count on the message */
+#define PROTOTYPE_MANAGER_MESSAGE_ACCESS_FUNCTION( object_type ) \
+struct MANAGER_MESSAGE(object_type) *MANAGER_MESSAGE_ACCESS(object_type)( \
+	struct MANAGER_MESSAGE(object_type) *message) \
+
+#define MANAGER_MESSAGE_DEACCESS_( object_type ) manager_message_deaccess_ ## object_type
+#define MANAGER_MESSAGE_DEACCESS( object_type ) MANAGER_MESSAGE_DEACCESS_(object_type)
+
+/** Decrement reference count on the message, set to NULL */
+#define PROTOTYPE_MANAGER_MESSAGE_DEACCESS_FUNCTION( object_type ) \
+void MANAGER_MESSAGE_DEACCESS(object_type)( \
+	struct MANAGER_MESSAGE(object_type) **message_address) \
 
 #define MANAGER_MESSAGE_GET_CHANGE_SUMMARY_( object_type ) \
 	manager_message_get_change_summary_ ## object_type
@@ -677,6 +692,8 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MESSAGE_ACCESS_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_MESSAGE_DEACCESS_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_GET_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_LIST_FUNCTION(object_type); \

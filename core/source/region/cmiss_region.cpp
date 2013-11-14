@@ -110,14 +110,15 @@ static void cmzn_region_Computed_field_change(
 
 		if (0 < region->notifier_list->size())
 		{
-			cmzn_fieldmoduleevent_id event = new cmzn_fieldmoduleevent();
-			event->changeFlags = change_summary;
+			cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create();
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
 			for (cmzn_fieldmodulenotifier_list::iterator iter = region->notifier_list->begin();
 				iter != region->notifier_list->end(); ++iter)
 			{
 				(*iter)->notify(event);
 			}
-			cmzn_fieldmoduleevent_destroy(&event);
+			cmzn_fieldmoduleevent::deaccess(event);
 		}
 
 		if (change_summary & (MANAGER_CHANGE_RESULT(Computed_field) |
