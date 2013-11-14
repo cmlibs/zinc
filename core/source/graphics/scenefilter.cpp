@@ -26,7 +26,7 @@
 
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_scenefilter, cmzn_scenefiltermodule, struct cmzn_scenefilter_change_detail *);
 
-static inline void MANAGER_UPDATE_DEPENDENCIES(cmzn_scenefilter)(
+inline void MANAGER_UPDATE_DEPENDENCIES(cmzn_scenefilter)(
 	struct MANAGER(cmzn_scenefilter) *manager)
 {
 	cmzn_set_cmzn_scenefilter *all_filters = reinterpret_cast<cmzn_set_cmzn_scenefilter *>(manager->object_list);
@@ -37,13 +37,13 @@ static inline void MANAGER_UPDATE_DEPENDENCIES(cmzn_scenefilter)(
 	}
 }
 
-static inline struct cmzn_scenefilter_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_scenefilter)(
+inline struct cmzn_scenefilter_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_scenefilter)(
 	cmzn_scenefilter *filter)
 {
 	return filter->extract_change_detail();
 }
 
-static inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_scenefilter)(
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_scenefilter)(
 	cmzn_scenefilter_change_detail **change_detail_address)
 {
 	delete *change_detail_address;

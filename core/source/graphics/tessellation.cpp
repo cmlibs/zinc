@@ -494,13 +494,13 @@ Module functions
 
 DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_tessellation)
 
-static inline cmzn_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_tessellation)(
+inline cmzn_tessellation_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_tessellation)(
 	struct cmzn_tessellation *tessellation)
 {
 	return tessellation->extractChangeDetail();
 }
 
-static inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_tessellation)(
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_tessellation)(
 	cmzn_tessellation_change_detail **change_detail_address)
 {
 	delete *change_detail_address;
