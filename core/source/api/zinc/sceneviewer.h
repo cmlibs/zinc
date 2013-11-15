@@ -560,20 +560,6 @@ ZINC_API int cmzn_sceneviewer_get_frame_pixels(cmzn_sceneviewer_id  sceneviewer,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 
-/**
- * Add the callback <function> with <user_data> to scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_add_transform_callback(
-	cmzn_sceneviewer_id sceneviewer,
-	cmzn_sceneviewer_callback function,void *user_data);
-
-/**
- * Removes the callback calling <function> with <user_data> from
- * scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_remove_transform_callback(
-	cmzn_sceneviewer_id sceneviewer,
-	cmzn_sceneviewer_callback function,void *user_data);
 
 /**
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
@@ -594,28 +580,6 @@ ZINC_API int cmzn_sceneviewer_remove_transform_callback(
  */
 ZINC_API int cmzn_sceneviewer_process_sceneviewerinput(cmzn_sceneviewer_id sceneviewer,
 	cmzn_sceneviewerinput_id input_data);
-
-/**
- * Adds callback <function> that will be activated each time input is received
- * by the scene viewer.
- * If <add_first> is true (non zero) then this callback will be added to the
- * front of the list.
- * When a callback event is generated the list is processed as long as each
- * callback function returns true, so to stop processing and not call any more
- * of the callbacks registered after your handler then return false.
- */
-ZINC_API int cmzn_sceneviewer_add_input_callback(
-	cmzn_sceneviewer_id sceneviewer,
-	cmzn_sceneviewerinput_callback function,
-	void *user_data, int add_first);
-
-/**
- * Remove the input callback <function> with <user_data> from scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_remove_input_callback(
-	cmzn_sceneviewer_id sceneviewer,
-	cmzn_sceneviewerinput_callback function,
-	void *user_data);
 
 /**
  * Set the scene for the scene viewer.
@@ -645,22 +609,6 @@ ZINC_API cmzn_scenefilter_id cmzn_sceneviewer_get_scenefilter(
  */
 ZINC_API int cmzn_sceneviewer_set_scenefilter(cmzn_sceneviewer_id sceneviewer,
 	cmzn_scenefilter_id filter);
-
-/**
- * This callback will be notified when a repaint is required by a windowless mode
- * sceneviewer, so that the host application can do the redraw.
- */
-ZINC_API int cmzn_sceneviewer_add_repaint_required_callback(
-	cmzn_sceneviewer_id sceneviewer,
-	cmzn_sceneviewer_callback function,void *user_data);
-
-/**
- * Removes the callback calling <function> with <user_data> from
- * scene viewer.
- */
-ZINC_API int cmzn_sceneviewer_remove_repaint_required_callback(
-	cmzn_sceneviewer_id sceneviewer,
-	cmzn_sceneviewer_callback function,void *user_data);
 
 /**
  * Returns a count of the number of scene viewer redraws.
@@ -759,6 +707,100 @@ ZINC_API int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id scenev
  */
 ZINC_API int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id sceneviewer,
 	int layers);
+
+
+/**
+ * Create a notifier for getting callbacks for changes to the scene viewer..
+ *
+ * @param sceneviewer  Handle to the scene viewer to get notifications for.
+ * @return  On success, handle to scene viewer notifier, otherwise NULL.
+ * Up to caller to destroy handle.
+ */
+ZINC_API cmzn_sceneviewernotifier_id cmzn_sceneviewer_create_sceneviewernotifier(
+	cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Returns a new reference to the scene viewer notifier with reference count
+ * incremented. Caller is responsible for destroying the new reference.
+ *
+ * @param notifier  The scene viewer notifier to obtain a new reference to.
+ * @return  Handle to scene viewer notifier with incremented reference count.
+ */
+ZINC_API cmzn_sceneviewernotifier_id cmzn_sceneviewernotifier_access(
+	cmzn_sceneviewernotifier_id notifier);
+
+/**
+ * Destroys reference to the scene viewer notifier and sets it to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param notifier_address  Address of scene viewer notifier handle to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_sceneviewernotifier_destroy(cmzn_sceneviewernotifier_id *notifier_address);
+
+/**
+ * Stop and clear scene viewer callback. This will stop the callback and also
+ * remove the callback function from the sceneviewer notifier.
+ *
+ * @param notifier  Handle to the sceneviewer notifier.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewernotifier_clear_callback(cmzn_sceneviewernotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the sceneviewer notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_sceneviewernotifier_callback_function
+ * @param notifier  Handle to the sceneviewer notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewernotifier_set_callback(cmzn_sceneviewernotifier_id notifier,
+	cmzn_sceneviewernotifier_callback_function function, void *user_data_in);
+
+/**
+ * Return the user data set by user when calling cmzn_sceneviewernotifier_set_callback
+ *
+ * @see cmzn_sceneviewernotifier_set_callback
+ * @param notifier  Handle to the scene viewer notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_sceneviewernotifier_get_callback_user_data(
+ cmzn_sceneviewernotifier_id notifier);
+
+/**
+* Returns a new reference to the sceneviewer event with reference count incremented.
+* Caller is responsible for destroying the new reference.
+*
+* @param event  The scene viewer event to obtain a new reference to.
+* @return  New scene viewer notifier handle with incremented reference count.
+*/
+ZINC_API cmzn_sceneviewerevent_id cmzn_sceneviewerevent_access(
+	cmzn_sceneviewerevent_id event);
+
+/**
+ * Destroys this handle to the sceneviewer event and sets it to NULL.
+ * Internally this just decrements the reference count.
+ * Note: Do not destroy the event argument passed to the user callback function.
+ *
+ * @param event_address  Address of scene viewer event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewerevent_destroy(cmzn_sceneviewerevent_id *event_address);
+
+/**
+ * Get logical OR of flags indicating how fields in the scene viewer have changed.
+ * @see cmzn_sceneviewerevent_change_flag
+ *
+ * @param event  Handle to the scene viewer event.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_sceneviewerevent_change_flag values.
+ */
+ZINC_API cmzn_sceneviewerevent_change_flags cmzn_sceneviewerevent_get_change_flags(
+	cmzn_sceneviewerevent_id event);
 
 #ifdef __cplusplus
 }

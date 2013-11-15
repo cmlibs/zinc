@@ -26,12 +26,9 @@ namespace {
 const char computed_field_scene_viewer_projection_type_string[] = "window_projection";
 
 void Computed_field_scene_viewer_projection_scene_viewer_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
+	cmzn_sceneviewerevent_id event, void *field_void);
 
-void Computed_field_scene_viewer_projection_scene_viewer_destroy_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void);
-
-void Computed_field_scene_viewer_projection_transformation_callback(
+void Computed_field_scene_projection_transformation_callback(
 	cmzn_scene_id scene, gtMatrix *matrix, void *field_void);
 
 void Computed_field_scene_viewer_top_scene_change_callback(
@@ -53,10 +50,7 @@ public:
 	enum cmzn_scenecoordinatesystem to_coordinate_system;
 	int change_required;
 	cmzn_scene_id current_scene;
-
-	/* This flag indicates if the field has registered for callbacks with the
-		scene_viewer */
-	int scene_viewer_callback_flag;
+	cmzn_sceneviewernotifier_id sceneviewernotifier;
 	int transformation_callback_flag;
 
 	Computed_field_scene_viewer_projection(
@@ -70,9 +64,9 @@ public:
 		from_coordinate_system(from_coordinate_system),
 		to_coordinate_system(to_coordinate_system),
 		change_required(1),
-		current_scene(NULL)
+		current_scene(NULL),
+		sceneviewernotifier(0)
 	{
-		scene_viewer_callback_flag = 0;
 		transformation_callback_flag = 0;
 		projection_matrix = (double*)NULL;
 	}
@@ -81,12 +75,7 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (Scene_viewer_add_destroy_callback(scene_viewer,
-				Computed_field_scene_viewer_projection_scene_viewer_destroy_callback,
-				(void *)parent))
-			{
-				return true;
-			}
+			return true;
 		}
 		return false;
 	}
@@ -152,11 +141,12 @@ DESCRIPTION :
 			return_code = 1;
 			/* make sure we are getting scene viewer callbacks once the
 				 projection matrix exists */
-			if (!scene_viewer_callback_flag)
+			if (!sceneviewernotifier)
 			{
-				Scene_viewer_add_transform_callback(scene_viewer,
-					Computed_field_scene_viewer_projection_scene_viewer_callback,
-				 		(void *)field);
+				sceneviewernotifier = cmzn_sceneviewer_create_sceneviewernotifier(scene_viewer);
+				cmzn_sceneviewernotifier_set_callback(sceneviewernotifier,
+					Computed_field_scene_viewer_projection_scene_viewer_callback, (void *)field);
+
 			}
 			if ((from_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL) ||
 				(to_coordinate_system == CMZN_SCENECOORDINATESYSTEM_LOCAL))
@@ -433,23 +423,15 @@ Clear the type specific data used by this type.
 		{
 			DEALLOCATE(current_local_transformation);
 		}
-		if (scene_viewer_callback_flag)
+
+		if (sceneviewernotifier)
 		{
-		 	Scene_viewer_remove_transform_callback(scene_viewer,
-		 	  Computed_field_scene_viewer_projection_scene_viewer_callback,
-		 	  (void *)field);
-			scene_viewer_callback_flag = 0;
+			cmzn_sceneviewernotifier_destroy(&sceneviewernotifier);
 		}
 		remove_transformation_callback();
 		if (projection_matrix)
 		{
 			DEALLOCATE(projection_matrix);
-		}
-		if (scene_viewer)
-		{
-			Scene_viewer_remove_destroy_callback(scene_viewer,
-				Computed_field_scene_viewer_projection_scene_viewer_destroy_callback,
-				(void *)field);
 		}
 		if (current_scene)
 		{
@@ -718,7 +700,7 @@ void Computed_field_scene_viewer_projection::add_transformation_callback()
 			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
 			transformation_callback_flag = cmzn_scene_add_total_transformation_callback(
 				scene, current_scene,
-				Computed_field_scene_viewer_projection_transformation_callback,
+				Computed_field_scene_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
 			cmzn_fieldmodule_destroy(&field_module);
 		}
@@ -736,7 +718,7 @@ void Computed_field_scene_viewer_projection::remove_transformation_callback()
 			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
 			struct cmzn_scene *scene = cmzn_region_get_scene_private(region);
 			cmzn_scene_remove_total_transformation_callback(scene,
-				current_scene,	Computed_field_scene_viewer_projection_transformation_callback,
+				current_scene,	Computed_field_scene_projection_transformation_callback,
 				Computed_field_scene_viewer_top_scene_change_callback, (void *)field);
 			cmzn_fieldmodule_destroy(&field_module);
 			transformation_callback_flag = 0;
@@ -763,7 +745,7 @@ void Computed_field_scene_viewer_projection::update_current_scene()
 }
 
 void Computed_field_scene_viewer_projection_scene_viewer_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
+	cmzn_sceneviewerevent_id event, void *field_void)
 /*******************************************************************************
 LAST MODIFIED : 25 August 2006
 
@@ -775,75 +757,45 @@ that the computed field has changed.
 	Computed_field* field;
 	Computed_field_scene_viewer_projection* core;
 
-	USE_PARAMETER(dummy_void);
-	ENTER(Computed_field_scene_viewer_projection_scene_viewer_callback);
-	if (scene_viewer && (field = (Computed_field *)field_void) &&
+	if (event && (field = (Computed_field *)field_void) &&
 		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
 	{
-		core->update_current_scene();
-		if (!core->change_required)
+		cmzn_sceneviewerevent_change_flags changeFlags =
+			cmzn_sceneviewerevent_get_change_flags(event);
+		if (changeFlags & CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM)
 		{
+			core->update_current_scene();
+			if (!core->change_required)
+			{
+				if (field->manager)
+				{
+					Computed_field_dependency_changed(field);
+				}
+				core->change_required = 1;
+			}
+		}
+		if (changeFlags & CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL)
+		{
+			if (core->sceneviewernotifier)
+			{
+				cmzn_sceneviewernotifier_destroy(&core->sceneviewernotifier);
+			}
+			if (core->graphics_window_name)
+			{
+				DEALLOCATE(core->graphics_window_name);
+			}
+			core->pane_number = 0;
+			core->scene_viewer = (struct Scene_viewer *)NULL;
 			if (field->manager)
 			{
-				Computed_field_dependency_changed(field);
+				Computed_field_changed(field);
 			}
-			core->change_required = 1;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection_scene_viewer_callback.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
+
 } /* Computed_field_scene_viewer_projection_scene_viewer_callback */
 
-void Computed_field_scene_viewer_projection_scene_viewer_destroy_callback(
-	struct Scene_viewer *scene_viewer, void *dummy_void, void *field_void)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Clear the scene viewer reference when it is no longer valid.
-==============================================================================*/
-{
-	Computed_field* field;
-	Computed_field_scene_viewer_projection* core;
-
-	USE_PARAMETER(dummy_void);
-	ENTER(Computed_field_scene_viewer_projection_scene_viewer_destroy_callback);
-	if (scene_viewer && (field = (Computed_field *)field_void) &&
-		(core = dynamic_cast<Computed_field_scene_viewer_projection*>(field->core)))
-	{
-		if (core->scene_viewer_callback_flag)
-		{
-			Scene_viewer_remove_transform_callback(scene_viewer,
-			  Computed_field_scene_viewer_projection_scene_viewer_callback,
-			  (void *)field);
-			core->scene_viewer_callback_flag = 0;
-		}
-		if (core->graphics_window_name)
-		{
-			DEALLOCATE(core->graphics_window_name);
-		}
-		core->pane_number = 0;
-		core->scene_viewer = (struct Scene_viewer *)NULL;
-		if (field->manager)
-		{
-			Computed_field_changed(field);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection_scene_viewer_callback.  "
-			"Invalid arguments.");
-	}
-	LEAVE;
-} /* Computed_field_scene_viewer_projection_scene_viewer_callback */
-
-void Computed_field_scene_viewer_projection_transformation_callback(
+void Computed_field_scene_projection_transformation_callback(
 	cmzn_scene_id scene, gtMatrix *matrix,
 	void *field_void)
 /*******************************************************************************
@@ -873,10 +825,10 @@ that the computed field has changed.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection_transformation_callback.  "
+			"Computed_field_scene_projection_transformation_callback.  "
 			"Invalid arguments.");
 	}
-} /* Computed_field_scene_viewer_projection_scene_viewer_callback */
+}
 
 void Computed_field_scene_viewer_top_scene_change_callback(
 	cmzn_scene_id scene, cmzn_scene_id top_scene, void *field_void)
@@ -903,7 +855,7 @@ void Computed_field_scene_viewer_top_scene_change_callback(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection_transformation_callback.  "
+			"Computed_field_scene_viewer_top_scene_change_callback.  "
 			"Invalid arguments.");
 	}
 }

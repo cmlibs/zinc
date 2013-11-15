@@ -19,6 +19,166 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Sceneviewerevent
+{
+protected:
+	cmzn_sceneviewerevent_id id;
+
+public:
+
+	Sceneviewerevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Sceneviewerevent(cmzn_sceneviewerevent_id in_sceneviewer_event_id) :
+		id(in_sceneviewer_event_id)
+	{  }
+
+	Sceneviewerevent(const Sceneviewerevent& sceneviewerEvent) :
+		id(cmzn_sceneviewerevent_access(sceneviewerEvent.id))
+	{  }
+
+	enum ChangeFlag
+	{
+		CHANGE_FLAG_NONE = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_REPAINT_REQUIRED = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED,
+		CHANGE_FLAG_TRANSFORM = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM,
+		CHANGE_FLAG_FINAL = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL
+	};
+
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 * @see getChangeFlags
+	 */
+	typedef int ChangeFlags;
+
+	Sceneviewerevent& operator=(const Sceneviewerevent& sceneviewerEvent)
+	{
+		cmzn_sceneviewerevent_id temp_id = cmzn_sceneviewerevent_access(sceneviewerEvent.id);
+		if (0 != id)
+		{
+			cmzn_sceneviewerevent_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Sceneviewerevent()
+	{
+		if (0 != id)
+		{
+			cmzn_sceneviewerevent_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_sceneviewerevent_id getId()
+	{
+		return id;
+	}
+
+	ChangeFlags getChangeFlags() const
+	{
+		return static_cast<ChangeFlag>(cmzn_sceneviewerevent_get_change_flags(id));
+	}
+
+};
+
+/**
+ * Base class functor for notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Sceneviewerevent&) to handle callback.
+ * @see Sceneviewernotifier::setCallback()
+ */
+class Sceneviewercallback
+{
+friend class Sceneviewernotifier;
+private:
+	Sceneviewercallback(Sceneviewercallback&); // not implemented
+	Sceneviewercallback& operator=(Sceneviewercallback&); // not implemented
+
+	static void C_callback(cmzn_sceneviewerevent_id sceneviewerevent_id, void *callbackVoid)
+	{
+		Sceneviewerevent sceneviewerevent(cmzn_sceneviewerevent_access(sceneviewerevent_id));
+		Sceneviewercallback *callback = reinterpret_cast<Sceneviewercallback *>(callbackVoid);
+		(*callback)(sceneviewerevent);
+	}
+
+  virtual void operator()(const Sceneviewerevent &sceneviewerevent) = 0;
+
+protected:
+	Sceneviewercallback()
+	{ }
+
+public:
+	virtual ~Sceneviewercallback()
+	{ }
+};
+
+class Sceneviewernotifier
+{
+protected:
+	cmzn_sceneviewernotifier_id id;
+
+public:
+
+	Sceneviewernotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Sceneviewernotifier(cmzn_sceneviewernotifier_id in_sceneviewernotifier_id) :
+		id(in_sceneviewernotifier_id)
+	{  }
+
+	Sceneviewernotifier(const Sceneviewernotifier& sceneviewerNotifier) :
+		id(cmzn_sceneviewernotifier_access(sceneviewerNotifier.id))
+	{  }
+
+	Sceneviewernotifier& operator=(const Sceneviewernotifier& sceneviewerNotifier)
+	{
+		cmzn_sceneviewernotifier_id temp_id = cmzn_sceneviewernotifier_access(sceneviewerNotifier.id);
+		if (0 != id)
+		{
+			cmzn_sceneviewernotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Sceneviewernotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_sceneviewernotifier_destroy(&id);
+		}
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	cmzn_sceneviewernotifier_id getId()
+	{
+		return id;
+	}
+
+	int setCallback(Sceneviewercallback& callback)
+	{
+		return cmzn_sceneviewernotifier_set_callback(
+			id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_sceneviewernotifier_clear_callback(id);
+	}
+};
+
 class Sceneviewer
 {
 protected:
@@ -375,6 +535,11 @@ public:
 	int setNearClippingPlane(double nearClippingPlane)
 	{
 		return cmzn_sceneviewer_set_near_clipping_plane(id, nearClippingPlane);
+	}
+
+	Sceneviewernotifier createSceneviewernotifier()
+	{
+		return Sceneviewernotifier(cmzn_sceneviewer_create_sceneviewernotifier(id));
 	}
 
 };

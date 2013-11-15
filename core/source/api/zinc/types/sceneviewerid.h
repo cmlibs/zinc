@@ -17,14 +17,6 @@ typedef struct cmzn_sceneviewermodule * cmzn_sceneviewermodule_id;
 struct cmzn_sceneviewer;
 typedef struct cmzn_sceneviewer *cmzn_sceneviewer_id;
 
-/* The cmzn_sceneviewerinput describes the input event */
-typedef int (*cmzn_sceneviewerinput_callback)(
-	cmzn_sceneviewer_id sceneviewer,
-	struct cmzn_sceneviewerinput *, void *user_data);
-
-typedef void (*cmzn_sceneviewer_callback)(cmzn_sceneviewer_id sceneviewer,
-	void *callback_data, void *user_data);
-
 /**
  * Scene viewer GL blending mode.
  */
@@ -157,5 +149,37 @@ enum cmzn_sceneviewer_viewport_mode
 		/*!< the intended viewing volume is made as large as possible in the physical
 		 *   viewport, and the aspect ratio may be changed. */
 };
+
+/**
+ * Manages individual user notification of changes with a scene viewer.
+ */
+struct cmzn_sceneviewernotifier;
+typedef struct cmzn_sceneviewernotifier *cmzn_sceneviewernotifier_id;
+
+/**
+ * Information about changes to fields and other objects in the scene viewer.
+ */
+struct cmzn_sceneviewerevent;
+typedef struct cmzn_sceneviewerevent *cmzn_sceneviewerevent_id;
+
+typedef void (*cmzn_sceneviewernotifier_callback_function)(
+	cmzn_sceneviewerevent_id event, void *client_data);
+
+/**
+ * Bit flags summarising changes to fields in the field module.
+ */
+enum cmzn_sceneviewerevent_change_flag
+{
+	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE = 0,
+		/*!< object not changed */
+	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED = 1,
+		/*!< repaint required evenet */
+	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM = 2,
+		/*!< sceneviewer receive input */
+	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL = 4
+		/*!< sceneviewer is currently being destroyed */
+};
+
+typedef int cmzn_sceneviewerevent_change_flags;
 
 #endif

@@ -56,6 +56,7 @@ November 97 Created from rendering part of Drawing.
 #include "interaction/interactive_event.h"
 #include "graphics/render_gl.h"
 #include "graphics/scene_coordinate_system.hpp"
+#include <algorithm>
 
 #define USE_LAYERZ
 #if defined (USE_LAYERZ)
@@ -73,12 +74,6 @@ Module types
 
 FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
 	struct cmzn_sceneviewermodule *, void *);
-
-FULL_DECLARE_CMZN_CALLBACK_TYPES(Scene_viewer_callback, \
-	struct Scene_viewer *, void *);
-
-//-- FULL_DECLARE_CMZN_CALLBACK_TYPES(Scene_viewer_input_callback,
-//-- 	struct Scene_viewer *, struct Graphics_buffer_input *);
 
 /*
 Module functions
@@ -193,6 +188,21 @@ int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sc
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
+
+void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer, int changeFlags)
+{
+	if (0 < sceneviewer->notifier_list->size())
+	{
+		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
+		event->changeFlags = changeFlags;
+		for (cmzn_sceneviewernotifier_list::iterator iter = sceneviewer->notifier_list->begin();
+			iter != sceneviewer->notifier_list->end(); ++iter)
+		{
+			(*iter)->notify(event);
+		}
+		cmzn_sceneviewerevent_destroy(&event);
+	}
 }
 
 struct Scene_viewer_rendering_data
@@ -382,24 +392,11 @@ DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(cmzn_sceneviewermodule_callback, void)
 DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_sceneviewermodule_callback, \
 	struct cmzn_sceneviewermodule *,void *)
 
-DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_callback, void)
-
-DEFINE_CMZN_CALLBACK_FUNCTIONS(Scene_viewer_callback, \
-	struct Scene_viewer *,void *)
-
 //-- DEFINE_CMZN_CALLBACK_MODULE_FUNCTIONS(Scene_viewer_input_callback, int)
 
 //-- DEFINE_CMZN_CALLBACK_FUNCTIONS(Scene_viewer_input_callback,
 //-- 	struct Scene_viewer *,struct Graphics_buffer_input *)
 
-void Scene_viewer_trigger_transform_callback(struct Scene_viewer *scene_viewer)
-{
-	if (scene_viewer)
-	{
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(scene_viewer->transform_callback_list,
-			scene_viewer, NULL);
-	}
-}
 
 static int Scene_viewer_render_background_texture(
 	struct Scene_viewer *scene_viewer,int viewport_width,int viewport_height,
@@ -2387,8 +2384,8 @@ static void Scene_viewer_image_field_change(
 		{
 			REACCESS(Texture)(&(image_texture->texture),
 			cmzn_field_image_get_texture(image_texture->field));
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				image_texture->scene_viewer->repaint_required_callback_list, image_texture->scene_viewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(image_texture->scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 	}
 	else
@@ -2526,28 +2523,8 @@ Creates a cmzn_sceneviewermodule.
 	return (sceneviewermodule);
 } /* CREATE(cmzn_sceneviewermodule) */
 
-static void Scene_viewer_destroy_remove_from_package(
-	struct Scene_viewer *scene_viewer,
-	void *dummy_void, void *package_void)
-/*******************************************************************************
-LAST MODIFIED : 19 April 2007
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct cmzn_sceneviewermodule *package;
-
-	USE_PARAMETER(dummy_void);
-	if (scene_viewer && (package = (struct cmzn_sceneviewermodule *)package_void))
-	{
-		REMOVE_OBJECT_FROM_LIST(Scene_viewer)(scene_viewer,
-			package->scene_viewer_list);
-		cmzn_sceneviewer_destroy(&scene_viewer);
-	}
-}
-
-static int Scene_viewer_destroy_from_package(
-	struct Scene_viewer *scene_viewer, void *package_void)
+static int Scene_viewer_destroy_from_module(
+	struct Scene_viewer *scene_viewer, void *module_void)
 /*******************************************************************************
 LAST MODIFIED : 19 April 2007
 
@@ -2555,13 +2532,14 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int return_code;
-	struct cmzn_sceneviewermodule *package;
+	struct cmzn_sceneviewermodule *module;
 
-	ENTER(Scene_viewer_destroy_from_package);
-	if (scene_viewer && (package = (struct cmzn_sceneviewermodule *)package_void))
+	if (scene_viewer && (module = (struct cmzn_sceneviewermodule *)module_void))
 	{
-		Scene_viewer_remove_destroy_callback(scene_viewer,
-			Scene_viewer_destroy_remove_from_package, package);
+		/* destroy function will also remove scene viewer from module.
+		 * Removing the pointer to module here to prevent the list being modified.
+		 */
+		scene_viewer->module = 0;
 		cmzn_sceneviewer_destroy(&scene_viewer);
 	}
 	return_code = 1;
@@ -2609,9 +2587,9 @@ Destroys the sceneviewermodule.
 			or deaccessed by the list (so not destroyed when delisted).
 			The owners of these scene viewers
 			should by virtue of having destroyed the command data and
-			therefore this package no longer reference these scene viewers or
+			therefore this module no longer reference these scene viewers or
 			they should register for destroy callbacks. */
-		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_package,
+		FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(Scene_viewer_destroy_from_module,
 			sceneviewermodule, sceneviewermodule->scene_viewer_list);
 		DESTROY(LIST(Scene_viewer))(&sceneviewermodule->scene_viewer_list);
 		DESTROY(Graphics_buffer_package)(&sceneviewermodule->graphics_buffer_package);
@@ -2919,6 +2897,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->transform_flag=0;
 				scene_viewer->stereo_eye_spacing=0.25;
 				scene_viewer->swap_buffers=0;
+				scene_viewer->notifier_list = new cmzn_sceneviewernotifier_list();
 				if (default_light)
 				{
 					ACCESS(Light)(default_light);
@@ -2981,6 +2960,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->update_pixel_image=0;
 				scene_viewer->pixel_data = (char *)NULL;
 				scene_viewer->awaken=0;
+				scene_viewer->module = 0;
 				for (i = 0 ; i < MAX_CLIP_PLANES ; i++)
 				{
 					scene_viewer->clip_planes_enable[i] = 0;
@@ -2996,31 +2976,7 @@ performed in idle time so that multiple redraws are avoided.
 #endif /* defined (WIN32_SYSTEM) */
 				scene_viewer->frame_count = 0;
 
-				scene_viewer->repaint_required_callback_list=
-					CREATE(LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)))();
-
-				scene_viewer->destroy_callback_list =
-					CREATE(LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)))();
-
-				scene_viewer->transform_callback_list=
-					CREATE(LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)))();
-
 				scene_viewer->scene = 0;
-
-				/* add callbacks to the graphics buffer */
-				//-- Graphics_buffer_add_initialise_callback(graphics_buffer,
-				//-- 	Scene_viewer_initialise_callback, scene_viewer);
-				//-- Graphics_buffer_add_resize_callback(graphics_buffer,
-				//-- 	Scene_viewer_resize_callback, scene_viewer);
-				//-- Graphics_buffer_add_expose_callback(graphics_buffer,
-				//-- 	Scene_viewer_expose_callback, scene_viewer);
-				//-- Graphics_buffer_add_input_callback(graphics_buffer,
-				//-- 	Scene_viewer_graphics_buffer_input_callback, scene_viewer);
-				//-- graphics_buffer->add_initialise_callback(Scene_viewer_initialise_callback, scene_viewer);
-				//-- graphics_buffer->add_resize_callback(Scene_viewer_resize_callback, scene_viewer);
-				//-- graphics_buffer->add_expose_callback(Scene_viewer_expose_callback, scene_viewer);
-				//-- graphics_buffer->add_input_callback(Scene_viewer_graphics_buffer_input_callback, scene_viewer);
-
 				Scene_viewer_awaken(scene_viewer);
 				//-- scene_viewer->graphics_buffer->buffer_awaken();//-- Graphics_buffer_awaken(scene_viewer->graphics_buffer);
 			}
@@ -3061,14 +3017,16 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		Scene_viewer_sleep(scene_viewer);
 		Scene_viewer_image_texture_set_field(&(scene_viewer->image_texture),
 			NULL);
-		/* send the destroy callbacks */
-		if (scene_viewer->destroy_callback_list)
+		for (cmzn_sceneviewernotifier_list::iterator iter = scene_viewer->notifier_list->begin();
+			iter != scene_viewer->notifier_list->end(); ++iter)
 		{
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->destroy_callback_list,scene_viewer,NULL);
-			DESTROY( LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)))(
-				&scene_viewer->destroy_callback_list);
+			cmzn_sceneviewernotifier *notifier = *iter;
+			notifier->sceneviewerDestroyed();
+			cmzn_sceneviewernotifier::deaccess(notifier);
 		}
+		delete scene_viewer->notifier_list;
+		scene_viewer->notifier_list = 0;
+		/* send the destroy callbacks */
 
 		/* dispose of our data structure */
 		DEACCESS(Light_model)(&(scene_viewer->light_model));
@@ -3079,16 +3037,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		{
 			order_independent_finalise(
 				&scene_viewer->order_independent_transparency_data);
-		}
-		if (scene_viewer->repaint_required_callback_list)
-		{
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)))(
-				&scene_viewer->repaint_required_callback_list);
-		}
-		if (scene_viewer->transform_callback_list)
-		{
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)))(
-				&scene_viewer->transform_callback_list);
 		}
 		/* must destroy the widget */
 		DEACCESS(Graphics_buffer)(&scene_viewer->graphics_buffer);
@@ -3148,13 +3096,12 @@ int DEACCESS(Scene_viewer)(struct Scene_viewer **scene_viewer_address)
 
 DECLARE_LIST_FUNCTIONS(Scene_viewer)
 
-struct Scene_viewer *create_Scene_viewer_from_package(
+struct Scene_viewer *create_Scene_viewer_from_module(
 	struct Graphics_buffer *graphics_buffer,
 	struct cmzn_sceneviewermodule *sceneviewermodule)
 {
 	struct Scene_viewer *scene_viewer;
 
-	ENTER(create_Scene_viewer_from_package);
 	if (graphics_buffer && sceneviewermodule)
 	{
 		cmzn_scenefilter_id filter = cmzn_scenefiltermodule_get_default_scenefilter(
@@ -3167,26 +3114,15 @@ struct Scene_viewer *create_Scene_viewer_from_package(
 		cmzn_scenefilter_destroy(&filter);
 		if (scene_viewer)
 		{
-			/* Add this scene_viewer to the package list */
+			/* Add this scene_viewer to the module list */
 			ADD_OBJECT_TO_LIST(Scene_viewer)(cmzn_sceneviewer_access(scene_viewer),
 				sceneviewermodule->scene_viewer_list);
-
-			/* Register a callback so that if the scene_viewer is destroyed
-				then it is removed from the list */
-			Scene_viewer_add_destroy_callback(scene_viewer,
-				Scene_viewer_destroy_remove_from_package,
-				sceneviewermodule);
 		}
+		scene_viewer->module = sceneviewermodule;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"create_Scene_viewer_from_package.  Invalid argument(s)");
-		scene_viewer = (struct Scene_viewer *)NULL;
-	}
-	LEAVE;
 
 	return (scene_viewer);
-} /* create_Scene_viewer_from_package */
+} /* create_Scene_viewer_from_module */
 
 cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	cmzn_sceneviewermodule_id sceneviewermodule,
@@ -3236,7 +3172,7 @@ cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 			cmzn_sceneviewermodule_get_graphics_buffer_package(sceneviewermodule),
 			GRAPHICS_BUFFER_ONSCREEN_TYPE,
 			graphics_buffer_buffering_mode, graphics_buffer_stereo_mode);
-		scene_viewer = CREATE(Scene_viewer_from_package)(graphics_buffer,
+		scene_viewer = create_Scene_viewer_from_module(graphics_buffer,
 			sceneviewermodule);
 		DEACCESS(Graphics_buffer)(&graphics_buffer);
 	}
@@ -3531,7 +3467,8 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->lookatx -= dx;
 							scene_viewer->lookaty -= dy;
 							scene_viewer->lookatz -= dz;
-							Scene_viewer_trigger_transform_callback(scene_viewer);
+							cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 							view_changed=1;
 						} break;
 						case SV_DRAG_ZOOM:
@@ -3615,12 +3552,9 @@ Converts mouse button-press and motion events into viewing transformations in
 					}
 					if (view_changed)
 					{
-						Scene_viewer_trigger_transform_callback(scene_viewer);
-						CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-							scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
-						/* send the callbacks */
-						//-- CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-						//-- 	scene_viewer->sync_callback_list,scene_viewer,NULL);
+						cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+							CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+							CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 					}
 					scene_viewer->previous_pointer_x=pointer_x;
 					scene_viewer->previous_pointer_y=pointer_y;
@@ -3925,8 +3859,8 @@ Sets the background_colour of the scene_viewer.
 		scene_viewer->background_colour.red=background_colour->red;
 		scene_viewer->background_colour.green=background_colour->green;
 		scene_viewer->background_colour.blue=background_colour->blue;
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code = CMZN_OK;
 	}
 	else
@@ -4607,9 +4541,9 @@ Sets the view direction and orientation of the Scene_viewer.
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
-			Scene_viewer_trigger_transform_callback(scene_viewer);
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			return_code=1;
 		}
 		else
@@ -4671,9 +4605,9 @@ the up vector is orthogonal to the view direction - so projection is not skew.
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
-			Scene_viewer_trigger_transform_callback(scene_viewer);
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			return_code=1;
 		}
 		else
@@ -4816,7 +4750,8 @@ consecutive across rows, eg:
 						modelview_matrix[i*4+j];
 				}
 			}
-			Scene_viewer_trigger_transform_callback(scene_viewer);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 			return_code=1;
 		}
 		else
@@ -4895,7 +4830,8 @@ are used to position the intended viewing volume in user coordinates.
 			scene_viewer->NDC_top=NDC_top;
 			scene_viewer->NDC_width=NDC_width;
 			scene_viewer->NDC_height=NDC_height;
-			Scene_viewer_trigger_transform_callback(scene_viewer);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 			return_code=1;
 		}
 		else
@@ -4963,9 +4899,9 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 		if (projection_mode != scene_viewer->projection_mode)
 		{
 			scene_viewer->projection_mode=projection_mode;
-			Scene_viewer_trigger_transform_callback(scene_viewer);
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return_code=1;
 	}
@@ -5047,7 +4983,8 @@ consecutive across rows, eg:
 					scene_viewer->projection_matrix[i*4+j] = projection_matrix[j*4+i];
 				}
 			}
-			Scene_viewer_trigger_transform_callback(scene_viewer);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 			return_code=1;
 		}
 		else
@@ -5083,8 +5020,8 @@ int cmzn_sceneviewer_set_translation_rate(cmzn_sceneviewer_id sceneviewer,
 		if (translation_rate != sceneviewer->translate_rate)
 		{
 			sceneviewer->translate_rate = translation_rate;
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
 	}
@@ -5106,8 +5043,8 @@ int cmzn_sceneviewer_set_tumble_rate(cmzn_sceneviewer_id sceneviewer,
 		if (tumble_rate != sceneviewer->tumble_rate)
 		{
 			sceneviewer->tumble_rate = tumble_rate;
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
 	}
@@ -5129,8 +5066,8 @@ int cmzn_sceneviewer_set_zoom_rate(cmzn_sceneviewer_id sceneviewer,
 		if (zoom_rate != sceneviewer->zoom_rate)
 		{
 			sceneviewer->zoom_rate = zoom_rate;
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
 	}
@@ -5170,8 +5107,8 @@ int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
 			if (scene_viewer->transparency_mode!=transparency_mode)
 			{
 				scene_viewer->transparency_mode=transparency_mode;
-				CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
 	}
@@ -5199,8 +5136,8 @@ int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id scene_viewer,
 			scene_viewer->transparency_layers = transparency_layers;
 			if (scene_viewer->transparency_mode==CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT)
 			{
-				CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
 		return CMZN_OK;
@@ -5252,9 +5189,9 @@ int cmzn_sceneviewer_set_view_angle(cmzn_sceneviewer_id sceneviewer,
 		sceneviewer->right  = centre_x + width *size_ratio;
 		sceneviewer->bottom = centre_y - height*size_ratio;
 		sceneviewer->top    = centre_y + height*size_ratio;
-		Scene_viewer_trigger_transform_callback(sceneviewer);
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -5422,9 +5359,9 @@ eye_distance*0.99 in front of it.
 		}
 		scene_viewer->far_plane_fly_debt = 0.0;
 		scene_viewer->near_plane_fly_debt = 0.0;
-		Scene_viewer_trigger_transform_callback(scene_viewer);
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code=1;
 	}
 	else
@@ -5613,9 +5550,9 @@ rendering a higher resolution image in parts.
 			scene_viewer->near_plane_fly_debt = 0.0;
 			scene_viewer->far_plane=far_plane;
 			scene_viewer->far_plane_fly_debt = 0.0;
-			Scene_viewer_trigger_transform_callback(scene_viewer);
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			return_code=1;
 		}
 		else
@@ -5703,7 +5640,8 @@ pixels per unit enables zooming to be achieved.
 		scene_viewer->user_viewport_top=viewport_top;
 		scene_viewer->user_viewport_pixels_per_unit_x=viewport_pixels_per_unit_x;
 		scene_viewer->user_viewport_pixels_per_unit_y=viewport_pixels_per_unit_y;
-		Scene_viewer_trigger_transform_callback(scene_viewer);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code=1;
 	}
 	else
@@ -5737,8 +5675,8 @@ int cmzn_sceneviewer_set_antialias_sampling(cmzn_sceneviewer_id sceneviewer,
 		if (number_of_samples != sceneviewer->antialias)
 		{
 			sceneviewer->antialias = number_of_samples;
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
 	}
@@ -5789,8 +5727,8 @@ depth of field 0 == infinite.
 	{
 		scene_viewer->depth_of_field = depth_of_field;
 		scene_viewer->focal_depth = focal_depth;
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 	}
 	else
 	{
@@ -5832,8 +5770,8 @@ int cmzn_sceneviewer_set_blending_mode(cmzn_sceneviewer_id sceneviewer,
 #endif /* defined (GL_VERSION_1_4) */
 		}
 		sceneviewer->blending_mode = blending_mode;
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -5855,8 +5793,8 @@ int cmzn_sceneviewer_set_perturb_lines_flag(cmzn_sceneviewer_id sceneviewer,
 		if (value != sceneviewer->perturb_lines)
 		{
 			sceneviewer->perturb_lines = value;
-			CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-				sceneviewer->repaint_required_callback_list, sceneviewer, NULL);
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
 	}
@@ -5907,7 +5845,8 @@ Sets the width and height of the Scene_viewers drawing area.
 	{
 		Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
 		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
-		Scene_viewer_trigger_transform_callback(scene_viewer);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code = 1;
 	}
 	else
@@ -6023,7 +5962,8 @@ not already a unit vector, it will be made one by this function.
 		scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
 		scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
 		scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
-		Scene_viewer_trigger_transform_callback(scene_viewer);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code=1;
 	}
 	else
@@ -6413,7 +6353,8 @@ Scales of the absolute image while keeping the same centre point.
 			(width/scene_viewer->user_viewport_pixels_per_unit_x);
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*
 			(height/scene_viewer->user_viewport_pixels_per_unit_y);
-		Scene_viewer_trigger_transform_callback(scene_viewer);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code=1;
 	}
 	else
@@ -6426,148 +6367,6 @@ Scales of the absolute image while keeping the same centre point.
 
 	return (return_code);
 } /* Scene_viewer_viewport_zoom */
-
-int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 19 February 2002
-
-DESCRIPTION :
-Adds a callback to the <scene_viewer> that is called back before the scene
-viewer is destroyed.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_add_destroy_callback);
-	if (scene_viewer&&function)
-	{
-		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_callback)(
-			scene_viewer->destroy_callback_list,function,user_data))
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_add_destroy_callback.  Could not add callback");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_add_destroy_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_add_destroy_callback */
-
-int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 19 February 2002
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(Scene_viewer_remove_destroy_callback);
-	if (scene_viewer&&function)
-	{
-		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_callback)(
-			scene_viewer->destroy_callback_list,function,user_data))
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_remove_destroy_callback.  Could not remove callback");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_remove_destroy_callback.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_remove_destroy_callback */
-
-int Scene_viewer_add_repaint_required_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 20 September 2007
-
-DESCRIPTION :
-This callback will be notified when a repaint is required by a windowless mode
-scene_viewer, so that the host application can do the redraw.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_add_repaint_required_callback);
-	if (scene_viewer&&function)
-	{
-		return_code =
-			CMZN_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_callback)(
-				scene_viewer->repaint_required_callback_list,function,user_data);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_add_repaint_required_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_add_repaint_required_callback */
-
-int Scene_viewer_remove_repaint_required_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function, void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 20 September 2007
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_remove_repaint_required_callback);
-	if (scene_viewer&&function)
-	{
-		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list,function,user_data))
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_remove_repaint_required_callback.  Could not remove callback");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_remove_repaint_required_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_remove_repaint_required_callback */
 
 /**
  * Returns a string label for the <blending_mode>.
@@ -6820,8 +6619,8 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 	{
 		return_code = Scene_viewer_image_texture_set_field(
 			&(scene_viewer->image_texture), image_field);
-		CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 	}
 	else
 	{
@@ -6841,12 +6640,21 @@ Closes the scene_viewer.
 ==============================================================================*/
 {
 	/* The normal destroy will call the Scene_viewer_module callback
-		to remove it from the package */
+		to remove it from the module */
 	int return_code = 0;
-	if (scene_viewer_id_address)
+	cmzn_sceneviewer_id sceneviewer = 0;
+	if (scene_viewer_id_address &&
+		(0 != (sceneviewer = (cmzn_sceneviewer_id)(*scene_viewer_id_address))))
 	{
-		(*scene_viewer_id_address)->access_count--;
-		if ((*scene_viewer_id_address)->access_count == 0)
+		sceneviewer->access_count--;
+		if ((sceneviewer->access_count == 1) && sceneviewer->module)
+		{
+			REMOVE_OBJECT_FROM_LIST(Scene_viewer)(sceneviewer,
+				sceneviewer->module->scene_viewer_list);
+			sceneviewer->module = 0;
+			sceneviewer->access_count--;
+		}
+		if (sceneviewer->access_count <= 0)
 		{
 			return_code = DESTROY(Scene_viewer)(scene_viewer_id_address);
 		}
@@ -6944,7 +6752,8 @@ int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
 		(CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE == viewport_mode)))
 	{
 		sceneviewer->viewport_mode = viewport_mode;
-		Scene_viewer_trigger_transform_callback(sceneviewer);
+		cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -7288,76 +7097,6 @@ int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	return return_code;
 }
 
-int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code;
-
-	if (scene_viewer&&function)
-	{
-		if (CMZN_CALLBACK_LIST_ADD_CALLBACK(Scene_viewer_callback)(
-			scene_viewer->transform_callback_list,function,user_data))
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_add_transform_callback.  Could not add callback");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_add_transform_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Scene_viewer_add_transform_callback */
-
-int Scene_viewer_remove_transform_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 5 July 2000
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
-{
-	int return_code;
-
-	if (scene_viewer&&function)
-	{
-		if (CMZN_CALLBACK_LIST_REMOVE_CALLBACK(Scene_viewer_callback)(
-			scene_viewer->transform_callback_list,function,user_data))
-		{
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_remove_transform_callback.  Could not remove callback");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_remove_transform_callback.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* Scene_viewer_remove_transform_callback */
-
 /// new APIs
 cmzn_scenefilter_id cmzn_sceneviewer_get_scenefilter(cmzn_sceneviewer_id scene_viewer)
 {
@@ -7426,8 +7165,8 @@ int cmzn_sceneviewer_light_change(struct Scene_viewer *scene_viewer,	void *messa
 			{
 				if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
 				{
-					CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-						scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+					cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 				}
 				DESTROY_LIST(Light)(&changed_light_list);
 			}
@@ -7452,8 +7191,8 @@ int cmzn_sceneviewer_light_model_change(struct Scene_viewer *scene_viewer,	void 
 				scene_viewer->light_model);
 			if (change & MANAGER_CHANGE_RESULT(Light_model))
 			{
-				CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
 	}
@@ -7549,8 +7288,8 @@ int cmzn_sceneviewer_set_scene(cmzn_sceneviewer_id scene_viewer,
 			{
 				cmzn_scene_add_callback(scene_viewer->scene,
 					cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
-				CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-					scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
 		return CMZN_OK;
@@ -7562,9 +7301,165 @@ int Scene_viewer_scene_change(cmzn_sceneviewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{
-		return CMZN_CALLBACK_LIST_CALL(Scene_viewer_callback)(
-			scene_viewer->repaint_required_callback_list, scene_viewer, NULL);
+		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
+}
 
+int cmzn_sceneviewerevent::deaccess(cmzn_sceneviewerevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void cmzn_sceneviewer_add_sceneviewernotifier(cmzn_sceneviewer *sceneviewer,
+	cmzn_sceneviewernotifier *notifier)
+{
+	if (sceneviewer && notifier)
+		sceneviewer->notifier_list->push_back(notifier->access());
+}
+
+void cmzn_sceneviewer_remove_sceneviewernotifier(cmzn_sceneviewer *sceneviewer,
+	cmzn_sceneviewernotifier *notifier)
+{
+	if (sceneviewer && notifier)
+	{
+		cmzn_sceneviewernotifier_list::iterator iter = std::find(
+			sceneviewer->notifier_list->begin(), sceneviewer->notifier_list->end(),
+			notifier);
+		if (iter != sceneviewer->notifier_list->end())
+		{
+			cmzn_sceneviewernotifier::deaccess(notifier);
+			sceneviewer->notifier_list->erase(iter);
+		}
+	}
+}
+
+cmzn_sceneviewernotifier::cmzn_sceneviewernotifier(cmzn_sceneviewer *sceneviewerIn) :
+	sceneviewer(sceneviewerIn),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	cmzn_sceneviewer_add_sceneviewernotifier(sceneviewer, this);
+}
+
+cmzn_sceneviewernotifier::~cmzn_sceneviewernotifier()
+{
+}
+
+int cmzn_sceneviewernotifier::deaccess(cmzn_sceneviewernotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->sceneviewer)
+			cmzn_sceneviewer_remove_sceneviewernotifier(notifier->sceneviewer, notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewernotifier::setCallback(cmzn_sceneviewernotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_sceneviewernotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_sceneviewernotifier::sceneviewerDestroyed()
+{
+	this->sceneviewer = 0;
+	if (this->function)
+	{
+		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
+		event->changeFlags = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL;
+		(this->function)(event, this->user_data);
+		cmzn_sceneviewerevent_destroy(&event);
+		this->clearCallback();
+	}
+}
+
+cmzn_sceneviewernotifier_id cmzn_sceneviewer_create_sceneviewernotifier(
+	cmzn_sceneviewer_id sceneviewer)
+{
+	return cmzn_sceneviewernotifier::create(sceneviewer);
+}
+
+
+int cmzn_sceneviewernotifier_clear_callback(cmzn_sceneviewernotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_sceneviewernotifier_set_callback(cmzn_sceneviewernotifier_id notifier,
+	cmzn_sceneviewernotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_sceneviewernotifier_get_callback_user_data(
+ cmzn_sceneviewernotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_sceneviewernotifier_id cmzn_sceneviewernotifier_access(
+	cmzn_sceneviewernotifier_id notifier)
+{
+	return notifier->access();
+}
+
+int cmzn_sceneviewernotifier_destroy(cmzn_sceneviewernotifier_id *notifier_address)
+{
+	return cmzn_sceneviewernotifier::deaccess(*notifier_address);
+}
+
+cmzn_sceneviewerevent_id cmzn_sceneviewerevent_access(
+	cmzn_sceneviewerevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_sceneviewerevent_destroy(cmzn_sceneviewerevent_id *event_address)
+{
+	return cmzn_sceneviewerevent::deaccess(*event_address);
+}
+
+cmzn_sceneviewerevent_change_flags cmzn_sceneviewerevent_get_change_flags(
+	cmzn_sceneviewerevent_id event)
+{
+	return event->changeFlags;
 }
