@@ -31,10 +31,88 @@ translating and zooming with mouse button press and motion events.
 #include "graphics/colour.h"
 #include "graphics/light.h"
 #include "graphics/light_model.h"
+#include <list>
 
 struct Graphics_buffer;
 #define Graphics_buffer_input cmzn_sceneviewerinput
 #define Graphics_buffer_input_event_type cmzn_sceneviewerinput_event_type
+
+struct cmzn_sceneviewerevent
+{
+	cmzn_sceneviewerevent_change_flags changeFlags;
+	int access_count;
+
+	cmzn_sceneviewerevent() :
+		changeFlags(CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE),
+		access_count(1)
+	{
+	}
+
+	~cmzn_sceneviewerevent()
+	{
+	}
+
+	cmzn_sceneviewerevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_sceneviewerevent* &event);
+
+};
+
+struct cmzn_sceneviewernotifier
+{
+private:
+	cmzn_sceneviewer_id sceneviewer; // owning region: not accessed
+	cmzn_sceneviewernotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_sceneviewernotifier(cmzn_sceneviewer *sceneviewer);
+
+	~cmzn_sceneviewernotifier();
+
+public:
+
+	/** private: external code must use cmzn_sceneviewer_create_sceneviewernotifier */
+	static cmzn_sceneviewernotifier *create(cmzn_sceneviewer *sceneviewer)
+	{
+		if (sceneviewer)
+			return new cmzn_sceneviewernotifier(sceneviewer);
+		return 0;
+	}
+
+	cmzn_sceneviewernotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_sceneviewernotifier* &notifier);
+
+	int setCallback(cmzn_sceneviewernotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void sceneviewerDestroyed();
+
+	void notify(cmzn_sceneviewerevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+typedef std::list<cmzn_sceneviewernotifier *> cmzn_sceneviewernotifier_list;
 
 /*
 struct Scene;
@@ -66,12 +144,6 @@ and the functions given their public names.
 #define Scene_viewer_get_viewing_volume cmzn_sceneviewer_get_viewing_volume
 #define Scene_viewer_set_viewing_volume cmzn_sceneviewer_set_viewing_volume
 #define Scene_viewer_set_background_texture_info cmzn_sceneviewer_set_background_texture_info
-#define Scene_viewer_add_transform_callback cmzn_sceneviewer_add_transform_callback
-#define Scene_viewer_remove_transform_callback cmzn_sceneviewer_remove_transform_callback
-#define Scene_viewer_add_input_callback cmzn_sceneviewer_add_input_callback
-#define Scene_viewer_remove_input_callback cmzn_sceneviewer_remove_input_callback
-#define Scene_viewer_add_repaint_required_callback cmzn_sceneviewer_add_repaint_required_callback
-#define Scene_viewer_remove_repaint_required_callback cmzn_sceneviewer_remove_repaint_required_callback
 #define Scene_viewer_get_frame_count cmzn_sceneviewer_get_frame_count
 
 /*
@@ -314,21 +386,14 @@ DESCRIPTION :
 	/* Keeps a counter of the frame redraws */
 	unsigned int frame_count;
 	Scene_viewer_image_texture image_texture;
-	/* The host application should register these callbacks
-		and respond with a full repaint. */
-	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *repaint_required_callback_list;
-	/* list of callbacks requested by other objects when scene viewer destroyed */
-	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *destroy_callback_list;
-	struct LIST(CMZN_CALLBACK_ITEM(Scene_viewer_callback)) *transform_callback_list;
 	cmzn_scenefilter_id filter;
 	cmzn_scene_id scene;
+	cmzn_sceneviewernotifier_list *notifier_list;
+	cmzn_sceneviewermodule *module;
 }; /* struct Scene_viewer */
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
 	struct cmzn_sceneviewermodule *, void *, void);
-
-DECLARE_CMZN_CALLBACK_TYPES(Scene_viewer_callback, \
-	struct Scene_viewer *, void *, void);
 
 DECLARE_LIST_TYPES(Scene_viewer);
 PROTOTYPE_LIST_FUNCTIONS(Scene_viewer);
@@ -782,26 +847,6 @@ consecutive across rows, eg:
 [w']   | m12 m13 m14 m15 | [w]
 ==============================================================================*/
 
-int Scene_viewer_add_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 19 February 2002
-
-DESCRIPTION :
-Adds a callback to the <scene_viewer> that is called back before the scene
-viewer is destroyed.
-==============================================================================*/
-
-int Scene_viewer_remove_destroy_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 19 February 2002
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from
-<scene_viewer>.
-==============================================================================*/
-
 int Scene_viewer_get_horizontal_view_angle(struct Scene_viewer *scene_viewer,
 	double *horizontal_view_angle);
 /*******************************************************************************
@@ -1227,12 +1272,9 @@ Render_graphics_opengl *Scene_viewer_rendering_data_get_renderer(
 int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	struct Graphics_buffer_input *input);
 
-int Scene_viewer_add_transform_callback(struct Scene_viewer *scene_viewer,
-	CMZN_CALLBACK_FUNCTION(Scene_viewer_callback) *function,void *user_data);
-
 int Scene_viewer_scene_change(cmzn_sceneviewer_id scene_viewer);
 
-struct Scene_viewer *create_Scene_viewer_from_package(
+struct Scene_viewer *create_Scene_viewer_from_module(
 	struct Graphics_buffer *graphics_buffer,
 	struct cmzn_sceneviewermodule *sceneviewermodule);
 
