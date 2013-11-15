@@ -313,3 +313,38 @@ TEST(ZincSceneviewer, get_set)
 	EXPECT_EQ(OK, sv.setNearClippingPlane(100.0));
 	ASSERT_DOUBLE_EQ(100.0, value = sv.getNearClippingPlane());
 }
+
+class mySceneviewercallback : public Sceneviewercallback
+{
+private:
+
+	virtual void operator()(const Sceneviewerevent &sceneviewerevent)
+	{
+		EXPECT_EQ((Sceneviewerevent::CHANGE_FLAG_REPAINT_REQUIRED  | Sceneviewerevent::CHANGE_FLAG_TRANSFORM),
+			sceneviewerevent.getChangeFlags());
+	}
+
+public:
+	mySceneviewercallback() : Sceneviewercallback()
+	{
+	}
+};
+
+TEST(ZincSceneviewer, callback)
+{
+	ZincTestSetupCpp zinc;
+
+	Sceneviewermodule svm = zinc.context.getSceneviewermodule();
+	Sceneviewer sv = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DOUBLE, Sceneviewer::STEREO_MODE_DEFAULT);
+	double eyeValuesIn3[] = {-3, 7, 5};
+	double lookatValuesIn3[] = {9, -11, 13};
+	double upVectorValuesIn3[] = {13, 1, 2.5};
+	Sceneviewernotifier sceneviewernotifier = sv.createSceneviewernotifier();
+	EXPECT_TRUE(sceneviewernotifier.isValid());
+	mySceneviewercallback thisNotifier;
+	sceneviewernotifier.setCallback(thisNotifier);
+	int result = 0;
+	EXPECT_EQ(CMZN_OK, result = sv.setLookatParametersNonSkew(eyeValuesIn3, lookatValuesIn3, upVectorValuesIn3));
+	EXPECT_EQ(CMZN_OK, result = sceneviewernotifier.clearCallback());
+}
+
