@@ -3100,7 +3100,7 @@ struct Scene_viewer *create_Scene_viewer_from_module(
 	struct Graphics_buffer *graphics_buffer,
 	struct cmzn_sceneviewermodule *sceneviewermodule)
 {
-	struct Scene_viewer *scene_viewer;
+	struct Scene_viewer *scene_viewer = 0;
 
 	if (graphics_buffer && sceneviewermodule)
 	{
@@ -3132,7 +3132,7 @@ cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	enum Graphics_buffer_buffering_mode graphics_buffer_buffering_mode;
 	enum Graphics_buffer_stereo_mode graphics_buffer_stereo_mode;
 	struct Graphics_buffer *graphics_buffer;
-	struct cmzn_sceneviewer *scene_viewer;
+	struct cmzn_sceneviewer *scene_viewer = 0;
 
 	if (sceneviewermodule)
 	{
