@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <zinc/zincconfigure.h>
 #include <zinc/core.h>
 #include <zinc/field.h>
 #include <zinc/fieldconstant.h>

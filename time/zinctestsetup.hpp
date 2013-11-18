@@ -3,7 +3,6 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/zincconfigure.h>
 #include <zinc/status.h>
 #include <zinc/context.h>
 #include <zinc/region.h>

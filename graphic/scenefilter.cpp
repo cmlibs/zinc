@@ -1,7 +1,6 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/zincconfigure.h>
 #include <zinc/status.h>
 #include <zinc/core.h>
 #include <zinc/graphics.h>

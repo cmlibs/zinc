@@ -1,6 +1,5 @@
 #include <gtest/gtest.h>
 
-#include <zinc/zincconfigure.h>
 #include <zinc/field.h>
 #include <zinc/fieldarithmeticoperators.h>
 #include <zinc/fieldcache.h>
