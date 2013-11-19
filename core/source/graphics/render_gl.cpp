@@ -665,7 +665,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 					}
 					for (i=0;i<number_of_points;i++)
 					{
-						if ((names) && highlight_functor)
+						if ((object_name < 0) && ((names) && highlight_functor))
 						{
 							name_selected = highlight_functor->call(*name);
 						}
@@ -758,7 +758,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 					/* cannot put glLoadName between glBegin and glEnd */
 					for (i=0;i<number_of_points;i++)
 					{
-						if ((names) && highlight_functor)
+						if ((object_name < 0) && (names) && highlight_functor)
 						{
 							name_selected = highlight_functor->call(*name);
 						}
@@ -857,7 +857,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 					/* cannot put glLoadName between glBegin and glEnd */
 					for (i=0;i<number_of_points;i++)
 					{
-						if ((names) && highlight_functor)
+						if ((object_name < 0) && (names) && highlight_functor)
 						{
 							name_selected = highlight_functor->call(*name);
 						}
@@ -974,7 +974,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 							Graphics_object_get_glyph_labels_function(glyph);
 						for (i = 0; i < number_of_points; i++)
 						{
-							if ((names) && highlight_functor)
+							if ((object_name < 0) && (names) && highlight_functor)
 							{
 								name_selected = highlight_functor->call(*name);
 							}
@@ -1079,7 +1079,7 @@ static int draw_glyphsetGL(GT_glyph_set *glyph_set,
 						}
 						for (i=0;i<number_of_points;i++)
 						{
-							if ((names) && highlight_functor)
+							if ((object_name < 0) && (names) && highlight_functor)
 							{
 								name_selected = highlight_functor->call(*name);
 							}
