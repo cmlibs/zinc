@@ -817,7 +817,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		} break;
 		case ANALYZE_FILE_FORMAT:
 		{
-			enumerator_string = "img";
+			enumerator_string = "analyze";
 		} break;
 		default:
 		{
