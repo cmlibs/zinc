@@ -568,9 +568,9 @@ int AnalyzeImageHandler::getQuantumFormat() const
 void AnalyzeImageHandler::setFileEndian()
 {
 	if (testFileEndianSystemEndianMatch())
-		bigEndian = (systemEndianTest() == BIG_ENDIAN);
+		bigEndian = (systemEndianTest() == EndianBig);
 	else
-		bigEndian = (systemEndianTest() != BIG_ENDIAN);
+		bigEndian = (systemEndianTest() != EndianBig);
 }
 
 void AnalyzeImageHandler::readImageData()
@@ -724,7 +724,7 @@ float halffloat2float(uint16_t input)
 
 	if( checkieee ) { // 1st call, so check for IEEE754, Endian, and word size
 		ip = (uint32_t *) &one;
-		if (systemEndianTest() != BIG_ENDIAN)
+		if (systemEndianTest() != EndianBig)
 		{
 			ByteSwap<uint32_t>(ip);
 		}
