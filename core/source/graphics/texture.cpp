@@ -521,6 +521,10 @@ DESCRIPTION :
 			{
 				*type=GL_UNSIGNED_SHORT;
 			} break;
+			case 4:
+			{
+				*type=GL_FLOAT;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
