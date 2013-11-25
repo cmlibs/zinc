@@ -123,7 +123,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 					height = analyze.getHeight();
 					sprintf(magick_image_info->filename, "%s%s",
 						file_name_prefix, file_name);
-					int filename_len = strlen(magick_image_info->filename);
+					size_t filename_len = strlen(magick_image_info->filename);
 					// We have to change the file suffix of the Analyze header file
 					// because 'hdr' is already known to ImageMagick.
 					magick_image_info->filename[filename_len-3] = 'a';
@@ -635,13 +635,15 @@ void AnalyzeImageHandler::readImageData()
 				hdr.dime.glmin = min;
 			} break;
 			case ANALYZE_DT_SIGNED_INT:
+			{
 				hdr.dime.glmax = 2147483647;
 				hdr.dime.glmin = -2147483648;
-				break;
+			} break;
 			case ANALYZE_DT_BINARY:
+			{
 				hdr.dime.glmax = 1;
 				hdr.dime.glmin = 0;
-				break;
+			} break;
 			case ANALYZE_DT_UNSIGNED_CHAR:
 			case ANALYZE_DT_RGB:
 			{
