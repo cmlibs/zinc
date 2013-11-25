@@ -13,9 +13,12 @@ Utilities for handling images.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #if !defined (IMAGE_UTILITIES_H)
 #define IMAGE_UTILITIES_H
+
+#include "zinc/zincconfigure.h"
 #include "general/enumerator.h"
 #include "general/object.h"
 
+typedef struct _Image Image;
 /*
 Global types
 ------------
@@ -59,6 +62,7 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	RGB_FILE_FORMAT = SGI_FILE_FORMAT,  /* denotes the SGI RGB format */
 	TIFF_FILE_FORMAT,
 	YUV_FILE_FORMAT,
+	ANALYZE_FILE_FORMAT,
 	/* following used to indicate that the format has not been specified */
 	UNKNOWN_IMAGE_FILE_FORMAT
 }; /* enum Image_file_format */
@@ -96,26 +100,73 @@ enum Image_storage_compression
 	IMAGE_STORAGE_COMPRESSION_ZIP
 }; /* enum Image_storage_compression */
 
-struct Cmgui_image_information;
-/*******************************************************************************
-LAST MODIFIED : 18 February 2002
+/**
+ * Image information memory block structure.
+ */
+struct Cmgui_image_information_memory_block
+{
+		void *buffer;
+		unsigned int length;
+		int memory_block_is_imagemagick_blob;
+};
 
-DESCRIPTION :
-Private structure for describing a Cmgui_image to read in.
-Lists one or more file names to be read in, with hints for width, height and
-interlace_type for raw rgb/yuv image formats.
-If more than one file_name is included, they must have consistent width, height
-and other attributes.
-Must be created and passed to Cmgui_image_read.
-==============================================================================*/
+/**
+ * Create an image information memory block structure.
+ *
+ * @return An allocated image information memory block, must be DEALLOCATE'd.
+ */
+struct Cmgui_image_information_memory_block *
+		Cmgui_image_information_memory_block_create(void);
 
-struct Cmgui_image;
-/*******************************************************************************
-LAST MODIFIED : 13 February 2002
+/**
+ * Structure for describing information needed to read or create a
+ * Cmgui_image. Note not all members are needed for each task; file names are
+ * needed for reading files, but only certain raw file types need width, height
+ * and other information to be specified before they can be read.
+ * If more than one file_name is included, they must have consistent width, height
+ * and other attributes.
+ * For creating a blank Cmgui_image, file names are ignored but most other
+ * parameters are used to set the image dimensions and colour depth.
+ */
+struct Cmgui_image_information
+{
+		int valid; /* will be set to zero if not set up properly */
+		int number_of_file_names;
+		char **file_names;
+		/* following can be used to override format inferred from file extension */
+		enum Image_file_format image_file_format;
+		int height, number_of_bytes_per_component, number_of_components, width;
+		enum Raw_image_storage raw_image_storage;
+		int background_number_of_fill_bytes;
+		unsigned char *background_fill_bytes;
+		struct IO_stream_package *io_stream_package;
+		double quality;
+		/* A flag to indicate that a Cmgui_image_write will write to the memory_block. */
+		int write_to_memory_block;
+		/* Flag to indicate that the memory_block memory is from an Imagemagick Blob
+		 * to deallocate with structure */
+		int number_of_memory_blocks;
+		struct Cmgui_image_information_memory_block **memory_blocks;
+		enum Image_storage_compression compression;
+};
 
-DESCRIPTION :
-Private structure for storing 2-D images.
-==============================================================================*/
+/**
+ * Structure for storing 2D images.
+ */
+struct Cmgui_image
+{
+#if defined (USE_IMAGEMAGICK)
+		/* Image magick images are stored in bottom-to-top format */
+		Image *magick_image;
+#else /* defined (USE_IMAGEMAGICK) */
+		/* simple image_array storage is from top-to-bottom */
+		unsigned char **image_arrays;
+#endif /* defined (USE_IMAGEMAGICK) */
+		int width, height;
+		int number_of_components;
+		int number_of_bytes_per_component;
+		int number_of_images;
+};
 
 /*
 Global functions
@@ -215,31 +266,34 @@ Frees the memory use by the Cmgui_image_information and sets
 <*cmgui_image_information_address> to NULL.
 ==============================================================================*/
 
+/**
+ * Get the image file format of the Cmgui image.
+ *
+ * @param cmgui_image_information
+ * @return The image format, set to UNKNOWN_IMAGE_FILE_FORMAT if not known.
+ */
+enum Image_file_format Cmgui_image_information_get_image_file_format(
+	struct Cmgui_image_information *cmgui_image_information);
+
+/**
+ * Adds the <file_name> to the end of the list in <cmgui_image_information>.
+ * Clears 'valid' flag if fails.
+ */
 int Cmgui_image_information_add_file_name(
 	struct Cmgui_image_information *cmgui_image_information, char *file_name);
-/*******************************************************************************
-LAST MODIFIED : 27 February 2002
 
-DESCRIPTION :
-Adds the <file_name> to the end of the list in <cmgui_image_information>.
-Clears 'valid' flag if fails.
-==============================================================================*/
-
+/**
+ * Adds a series of file names based on the <file_name_template> to the
+ * <cmgui_image_information>. The numbers from <start_file_number> to
+ * <stop_file_number> with <file_number_increment> are substituted for the first
+ * instance of <file_number_pattern> in <file_name_template>.
+ * The number appears with leading zeros up to the length of <file_number_pattern>.
+ * Clears 'valid' flag if fails.
+ */
 int Cmgui_image_information_set_file_name_series(
 	struct Cmgui_image_information *cmgui_image_information,
 	char *file_name_template, char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment);
-/*******************************************************************************
-LAST MODIFIED : 18 February 2002
-
-DESCRIPTION :
-Adds a series of file names based on the <file_name_template> to the
-<cmgui_image_information>. The numbers from <start_file_number> to
-<stop_file_number> with <file_number_increment> are substituted for the first
-instance of <file_number_pattern> in <file_name_template>.
-The number appears with leading zeros up to the length of <file_number_pattern>.
-Clears 'valid' flag if fails.
-==============================================================================*/
 
 int Cmgui_image_information_set_file_name(
 	struct Cmgui_image_information *cmgui_image_information,
@@ -311,7 +365,7 @@ DESCRIPTION :
 Sets the <raw_image_storage> of <cmgui_image>.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Sets the <width> recorded with the <cmgui_image_information>.
  * Used to specify the width for raw file formats read with Cmgui_image_read.
  * Clears 'valid' flag of cmgui_image_information if not correctly set.
@@ -319,7 +373,7 @@ Sets the <raw_image_storage> of <cmgui_image>.
 int Cmgui_image_information_set_width(
 	struct Cmgui_image_information *cmgui_image_information, int width);
 
-/***************************************************************************//**
+/**
  * Sets the specific type of binary data compression to be used when
  * associated with the cmgui_image_information.
  */
@@ -341,17 +395,17 @@ Used to specify the io_stream_package for raw file formats read with Cmgui_image
 Clears 'valid' flag of cmgui_image_information if not correctly set.
 ==============================================================================*/
 
-/*****************************************************************************//**
-Sets the quality for lossy compression in cmgui_image_information.
-@param cmgui_image_information  The information object.
-@param quality 0.0 is the least quality with greatest lossy compression and
-1.0 is the greatest quality which is the minimum lossy compression.
-*/
+/**
+ * Sets the quality for lossy compression in cmgui_image_information.
+ * @param cmgui_image_information  The information object.
+ * @param quality 0.0 is the least quality with greatest lossy compression and
+ * 1.0 is the greatest quality which is the minimum lossy compression.
+ */
 int Cmgui_image_information_set_quality(
 	struct Cmgui_image_information *cmgui_image_information,
 	double quality);
 
-/*****************************************************************************//**
+/**
  * Specifies that this storage_information will read from a memory_block
  * instead of reading from a file.
  *
@@ -364,7 +418,7 @@ int Cmgui_image_information_add_memory_block(
 	struct Cmgui_image_information *storage_information,
 	void *memory_block, unsigned int memory_block_length);
 
-/*****************************************************************************//**
+/**
  * Specifies that this storage_information will write to a memory_block
  * instead of writing to file.  Once read the new memory block can be
  * retrieved with #Cmgui_image_information_get_memory_block.
@@ -375,7 +429,7 @@ int Cmgui_image_information_add_memory_block(
 int Cmgui_image_information_set_write_to_memory_block(
 	struct Cmgui_image_information *storage_information);
 
-/*****************************************************************************//**
+/**
  * Retrieve a memory block that has been written to when the storage_information
  * specified #Cmgui_image_information_set_write_to_memory_block.
  *
@@ -391,13 +445,20 @@ int Cmgui_image_information_get_memory_blocks(
 	struct Cmgui_image_information *storage_information, int *number_of_memory_blocks,
 	void ***memory_blocks, unsigned int **memory_block_lengths);
 
-int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2002
+/**
+ * Allocates memory for a Cmgui_image.  Use DESTROY(Cmgui_image) to free
+ * memory.
+ *
+ * @return An allocated Cmgui_image on success, 0 on failure.
+ */
+struct Cmgui_image *CREATE(Cmgui_image)(void);
 
-DESCRIPTION :
-Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
-==============================================================================*/
+/**
+ * Frees the memory use by the Cmgui_image and sets <*cmgui_image_address> to NULL.
+ *
+ * @return CMISS_OK on success, anything else on failure.
+ */
+int DESTROY(Cmgui_image)(struct Cmgui_image **cmgui_image_address);
 
 int Cmgui_image_append(struct Cmgui_image *cmgui_image,
 	struct Cmgui_image **second_cmgui_image_address);
@@ -587,5 +648,27 @@ Returns the next defined property name for this image.  Reset to
 the start of the list with Cmgui_image_reset_property_iterator.
 When the end of the list is reached returns NULL.
 ==============================================================================*/
+
+#if defined (USE_IMAGEMAGICK)
+/**
+ * @brief get_magick_image_number_of_consistent_images
+ * @param magick_image
+ * @return
+ */
+int get_magick_image_number_of_consistent_images(Image *magick_image);
+
+/**
+ * @brief get_magick_image_parameters
+ * @param magick_image
+ * @param width
+ * @param height
+ * @param number_of_components
+ * @param number_of_bytes_per_component
+ * @param do_IsGrey_test
+ * @return
+ */
+int get_magick_image_parameters(Image *magick_image, int *width,
+	int *height, int *number_of_components, int *number_of_bytes_per_component, int do_IsGrey_test);
+#endif
 
 #endif /* !defined (IMAGE_UTILITIES_H) */
