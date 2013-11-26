@@ -2882,7 +2882,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->top=1.0;
 				scene_viewer->near_plane=0.1;
 				scene_viewer->far_plane=1000.0;
-				scene_viewer->projection_mode=SCENE_VIEWER_PARALLEL;
+				scene_viewer->projection_mode=SCENE_VIEWER_PERSPECTIVE;
 				scene_viewer->far_plane_fly_debt = 0.0;
 				scene_viewer->near_plane_fly_debt = 0.0;
 				scene_viewer->translate_rate=1.0;
@@ -3306,11 +3306,11 @@ Converts mouse button-press and motion events into viewing transformations in
 							{
 								if (input->modifiers & INTERACTIVE_EVENT_MODIFIER_SHIFT)
 								{
-									scene_viewer->drag_mode=SV_DRAG_FLY;
+									scene_viewer->drag_mode = SV_DRAG_ZOOM;
 								}
 								else
 								{
-									scene_viewer->drag_mode = SV_DRAG_ZOOM;
+									scene_viewer->drag_mode=SV_DRAG_FLY;
 								}
 							}
 						} break;
