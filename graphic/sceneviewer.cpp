@@ -211,10 +211,10 @@ TEST(cmzn_sceneviewer, get_set)
 	EXPECT_EQ(CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE, viewport_mode);
 
 	cmzn_sceneviewer_projection_mode projection_mode = cmzn_sceneviewer_get_projection_mode(sv);
-	EXPECT_EQ(CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL, projection_mode);
-	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_projection_mode(sv, CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE));
-	projection_mode = cmzn_sceneviewer_get_projection_mode(sv);
 	EXPECT_EQ(CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE, projection_mode);
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_projection_mode(sv, CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL));
+	projection_mode = cmzn_sceneviewer_get_projection_mode(sv);
+	EXPECT_EQ(CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL, projection_mode);
 
 	cmzn_sceneviewer_blending_mode blending_mode = cmzn_sceneviewer_get_blending_mode(sv);
 	EXPECT_EQ(CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL, blending_mode);
@@ -272,10 +272,10 @@ TEST(ZincSceneviewer, get_set)
 	EXPECT_TRUE(sv.isValid());
 
 	Sceneviewer::ProjectionMode projectionMode = sv.getProjectionMode();
-	EXPECT_EQ(Sceneviewer::PROJECTION_MODE_PARALLEL, projectionMode);
-	EXPECT_EQ(OK, sv.setProjectionMode(Sceneviewer::PROJECTION_MODE_PERSPECTIVE));
-	projectionMode = sv.getProjectionMode();
 	EXPECT_EQ(Sceneviewer::PROJECTION_MODE_PERSPECTIVE, projectionMode);
+	EXPECT_EQ(OK, sv.setProjectionMode(Sceneviewer::PROJECTION_MODE_PARALLEL));
+	projectionMode = sv.getProjectionMode();
+	EXPECT_EQ(Sceneviewer::PROJECTION_MODE_PARALLEL, projectionMode);
 
 	double value;
 	ASSERT_DOUBLE_EQ(1.2309594173407747, value = sv.getViewAngle());
