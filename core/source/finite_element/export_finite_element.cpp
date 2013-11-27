@@ -2311,37 +2311,41 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		return_code = 1;
 		FE_field_order_info *field_order_info = CREATE(FE_field_order_info)();
-		if (write_fields_mode == FE_WRITE_ALL_FIELDS)
+
+		if (write_fields_mode != FE_WRITE_NO_FIELDS)
 		{
-			// get list of all fields in default alphabetical order
-			return_code = FE_region_for_each_FE_field(fe_region,
-				FE_field_add_to_FE_field_order_info, (void *)field_order_info);
-			FE_field_order_info_prioritise_indexer_fields(field_order_info);
-		}
-		else if ((0 < number_of_field_names) && field_names && field_names_counter)
-		{
-			for (int i = 0; (i < number_of_field_names) && return_code; i++)
+			if (write_fields_mode == FE_WRITE_ALL_FIELDS)
 			{
-				if (field_names[i])
+				// get list of all fields in default alphabetical order
+				return_code = FE_region_for_each_FE_field(fe_region,
+					FE_field_add_to_FE_field_order_info, (void *)field_order_info);
+				FE_field_order_info_prioritise_indexer_fields(field_order_info);
+			}
+			else if ((0 < number_of_field_names) && field_names && field_names_counter)
+			{
+				for (int i = 0; (i < number_of_field_names) && return_code; i++)
 				{
-					struct FE_field *fe_field = FE_region_get_FE_field_from_name(fe_region, field_names[i]);
-					if (fe_field)
+					if (field_names[i])
 					{
-						++(field_names_counter[i]);
-						return_code = add_FE_field_order_info_field(field_order_info, fe_field);
+						struct FE_field *fe_field = FE_region_get_FE_field_from_name(fe_region, field_names[i]);
+						if (fe_field)
+						{
+							++(field_names_counter[i]);
+							return_code = add_FE_field_order_info_field(field_order_info, fe_field);
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "write_cmzn_region_content.  NULL field name");
+						return_code = 0;
 					}
 				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "write_cmzn_region_content.  NULL field name");
-					return_code = 0;
-				}
 			}
-		}
-		else if (0 < number_of_field_names)
-		{
-			display_message(ERROR_MESSAGE, "write_cmzn_region_content.  Missing field names array");
-			return_code = 0;
+			else if (0 < number_of_field_names)
+			{
+				display_message(ERROR_MESSAGE, "write_cmzn_region_content.  Missing field names array");
+				return_code = 0;
+			}
 		}
 
 		if (return_code)
