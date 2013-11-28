@@ -139,7 +139,6 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 					int number_of_components = analyze.getNumberOfComponents();
 					int number_of_bits_per_component = analyze.getComponentDepth();
 					magick_image_info->colorspace = GRAYColorspace;
-					magick_image->matte = MagickFalse;
 					if (3 == number_of_components)
 					{
 						magick_image_info->colorspace = RGBColorspace;
@@ -160,15 +159,12 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 						magick_image_info->type = GrayscaleType;
 						if (analyze.isBigEndian())
 						{
-							printf("big endian\n");
 							magick_image_info->endian = MSBEndian;
 						}
 						else
-							{
-							printf("little endian - %d and %d\n", number_of_bits_per_component, number_of_components);
+						{
 							magick_image_info->endian = LSBEndian;
-							}
-
+						}
 						for (int i = 0; (i < analyze.getDepth()) && return_code; i++)
 						{
 							struct Cmgui_image_information_memory_block memory_block = analyze.getImageMemoryBlock(i);
