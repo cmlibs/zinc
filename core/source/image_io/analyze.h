@@ -60,7 +60,7 @@ public:
 	struct Cmgui_image_information_memory_block getImageMemoryBlock(int index);
 	int getGlMax() const;
 	int getGlMin() const;
-	int getQuantumFormat() const;
+	const char *getQuantumFormat() const;
 	bool isBigEndian() const { return bigEndian; }
 
 	/**

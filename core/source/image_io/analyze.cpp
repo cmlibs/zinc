@@ -84,6 +84,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 		cmgui_image_information->memory_blocks))
 	{
 		cmgui_image = CREATE(Cmgui_image)();
+
 		int return_code = 1;
 		GetExceptionInfo(&magick_exception);
 		magick_image_info = CloneImageInfo((ImageInfo *) NULL);
@@ -138,6 +139,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 					int number_of_components = analyze.getNumberOfComponents();
 					int number_of_bits_per_component = analyze.getComponentDepth();
 					magick_image_info->colorspace = GRAYColorspace;
+					magick_image->matte = MagickFalse;
 					if (3 == number_of_components)
 					{
 						magick_image_info->colorspace = RGBColorspace;
@@ -152,24 +154,24 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 						SetImageOption(magick_image_info, "quantum:maximum", tmp100);
 						snprintf(tmp100, 99, "%d", analyze.getGlMin());
 						SetImageOption(magick_image_info, "quantum:minimum", tmp100);
-						snprintf(tmp100, 99, "%d", analyze.getQuantumFormat());
+						snprintf(tmp100, 99, "%sx ", analyze.getQuantumFormat());
 						SetImageOption(magick_image_info, "quantum:format", tmp100);
+						magick_image_info->depth = number_of_bits_per_component;
+						magick_image_info->type = GrayscaleType;
 						if (analyze.isBigEndian())
+						{
+							printf("big endian\n");
 							magick_image_info->endian = MSBEndian;
+						}
 						else
+							{
+							printf("little endian - %d and %d\n", number_of_bits_per_component, number_of_components);
 							magick_image_info->endian = LSBEndian;
+							}
 
 						for (int i = 0; (i < analyze.getDepth()) && return_code; i++)
 						{
 							struct Cmgui_image_information_memory_block memory_block = analyze.getImageMemoryBlock(i);
-							SetImageInfoBlob(magick_image_info,
-								memory_block.buffer,
-								memory_block.length);
-							SetImageInfo(magick_image_info, MagickFalse, &magick_exception);
-							magick_image_info->depth = number_of_bits_per_component;
-							//magick_image_info->colorspace = GRAYColorspace;
-							//--magick_image_info->endian = MSBEndian;
-							//magick_image_info->type = GrayscaleType;
 
 							magick_image = BlobToImage(magick_image_info,
 								memory_block.buffer,
@@ -233,6 +235,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 					&cmgui_image->width, &cmgui_image->height,
 					&cmgui_image->number_of_components,
 					&cmgui_image->number_of_bytes_per_component, 1);
+
 			}
 			else
 			{
@@ -540,27 +543,27 @@ int AnalyzeImageHandler::getGlMin() const
 	return hdr.dime.glmin;
 }
 
-int AnalyzeImageHandler::getQuantumFormat() const
+const char * AnalyzeImageHandler::getQuantumFormat() const
 {
-	int format = 0; // Undefined
+	const char * format = 0; // Undefined
 	switch (hdr.dime.datatype)
 	{
 	case ANALYZE_DT_FLOAT:
 	case ANALYZE_DT_COMPLEX:
 	case ANALYZE_DT_DOUBLE:
-		format = 1;
+		format = "FloatingPoint";
 		break;
 	case ANALYZE_DT_SIGNED_SHORT:
 	case ANALYZE_DT_SIGNED_INT:
-		format = 2;
+		format = "Signed";
 		break;
 	case ANALYZE_DT_BINARY:
 	case ANALYZE_DT_UNSIGNED_CHAR:
 	case ANALYZE_DT_RGB:
-		format = 3;
+		format = "Unsigned";
 		break;
 	default:
-		format = 0;
+		format = "Undefined";
 	}
 	return format;
 }
