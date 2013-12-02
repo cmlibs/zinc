@@ -153,7 +153,7 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 						SetImageOption(magick_image_info, "quantum:maximum", tmp100);
 						snprintf(tmp100, 99, "%d", analyze.getGlMin());
 						SetImageOption(magick_image_info, "quantum:minimum", tmp100);
-						snprintf(tmp100, 99, "%sx ", analyze.getQuantumFormat());
+						snprintf(tmp100, 99, "%s", analyze.getQuantumFormat());
 						SetImageOption(magick_image_info, "quantum:format", tmp100);
 						magick_image_info->depth = number_of_bits_per_component;
 						magick_image_info->type = GrayscaleType;
