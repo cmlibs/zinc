@@ -3507,37 +3507,15 @@ Converts mouse button-press and motion events into viewing transformations in
 								a[1] = scene_viewer->eyey-scene_viewer->lookaty;
 								a[2] = scene_viewer->eyez-scene_viewer->lookatz;
 
-								delta_y = 2 * (scene_viewer->previous_pointer_y-pointer_y);
+								delta_y = scene_viewer->previous_pointer_y-pointer_y;
 								double dist = norm3(a);
-								double dy = delta_y/((double)height);
+								double dy = 1.5 * delta_y/((double)height);
 								if ((dist + dy*dist) > 0.01)
 								{
 									normalize3(a);
 									scene_viewer->eyex += (a[0]*dy*dist);
 									scene_viewer->eyey += (a[1]*dy*dist);
 									scene_viewer->eyez += (a[2]*dy*dist);
-									if (0.0001 < (scene_viewer->far_plane + dy*dist))
-									{
-										if (scene_viewer->far_plane_fly_debt != 0.0)
-										{
-											if (scene_viewer->far_plane + scene_viewer->far_plane_fly_debt - dy*dist> 0.0)
-											{
-												if (scene_viewer->far_plane_fly_debt > 0.0)
-												{
-													scene_viewer->far_plane += scene_viewer->far_plane_fly_debt;
-												}
-											}
-											scene_viewer->far_plane_fly_debt = 0.0;
-										}
-										else
-										{
-											scene_viewer->far_plane += dy*dist;
-										}
-									}
-									else
-									{
-										scene_viewer->far_plane_fly_debt += dy*dist;
-									}
 									if (0.0001 < (scene_viewer->near_plane + dy*dist))
 									{
 										if (scene_viewer->near_plane_fly_debt != 0.0)
@@ -3549,25 +3527,19 @@ Converts mouse button-press and motion events into viewing transformations in
 											if (scene_viewer->near_plane_fly_debt > 0.0)
 											{
 												scene_viewer->near_plane += scene_viewer->near_plane_fly_debt;
+												scene_viewer->far_plane += scene_viewer->near_plane_fly_debt;
 												scene_viewer->near_plane_fly_debt = 0.0;
 											}
 										}
 										else
 										{
 											scene_viewer->near_plane += dy*dist;
+											scene_viewer->far_plane += dy*dist;
 										}
 									}
 									else
 									{
-										if (scene_viewer->near_plane > 0.0001)
-										{
-											scene_viewer->near_plane_fly_debt = dy*dist + (scene_viewer->near_plane - 0.0001);
-											scene_viewer->near_plane = 0.0001;
-										}
-										else
-										{
-											scene_viewer->near_plane_fly_debt += dy*dist;
-										}
+										scene_viewer->near_plane_fly_debt += dy*dist;
 									}
 									cmzn_sceneviewer_set_view_angle(scene_viewer, angle);
 									view_changed = 1;
