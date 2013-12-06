@@ -34,6 +34,9 @@ namespace {
 		int dimension;  // Should match the dimension of the source field,
 						// kept here just to help with iterating through array
 		int *sizes; // Resolution in each direction of <dimension>
+		double *lookup_coordinates_min, *lookup_coordinates_max;
+		double *input_coordinates_min, *input_coordinates_max;
+		double *lookup_coordinates_diff, *input_coordinates_sum;
 
 		Computed_field_image_resample(int dimension, int *sizes_in) :
 			Computed_field_core(), dimension(dimension)
@@ -44,14 +47,188 @@ namespace {
 			{
 				sizes[i] = sizes_in[i];
 			}
+			lookup_coordinates_min = new double[dimension];
+			for (i = 0 ; i < dimension ; i++)
+			{
+				lookup_coordinates_min[i] = 0.0;
+			}
+			lookup_coordinates_max = new double[dimension];
+			for (i = 0 ; i < dimension ; i++)
+			{
+				lookup_coordinates_max[i] = 1.0;
+			}
+			lookup_coordinates_diff = new double[dimension];
+			updateLookupCoordinatesDiff();
+			input_coordinates_min = new double[dimension];
+			for (i = 0 ; i < dimension ; i++)
+			{
+				input_coordinates_min[i] = 0.0;
+			}
+			input_coordinates_max = new double[dimension];
+			for (i = 0 ; i < dimension ; i++)
+			{
+				input_coordinates_max[i] = 1.0;
+			}
+			input_coordinates_sum = new double[dimension];
+			updateInputCoordinatesSum();
 		}
 
 		~Computed_field_image_resample()
 		{
 			if (sizes)
 			{
-				delete sizes;
+				delete[] sizes;
 			}
+			if (lookup_coordinates_min)
+			{
+				delete[] lookup_coordinates_min;
+			}
+			if (lookup_coordinates_max)
+			{
+				delete[] lookup_coordinates_max;
+			}
+			if (lookup_coordinates_diff)
+			{
+				delete[] lookup_coordinates_diff;
+			}
+			if (input_coordinates_min)
+			{
+				delete[] input_coordinates_min;
+			}
+			if (input_coordinates_max)
+			{
+				delete[] input_coordinates_max;
+			}
+			if (input_coordinates_sum)
+			{
+				delete[] input_coordinates_sum;
+			}
+		}
+
+		void updateLookupCoordinatesDiff()
+		{
+			for (int i = 0 ; i < dimension ; i++)
+			{
+				lookup_coordinates_diff[i] =
+					lookup_coordinates_max[i] - lookup_coordinates_min[i];
+			}
+		}
+
+		void updateInputCoordinatesSum()
+		{
+			for (int i = 0 ; i < dimension ; i++)
+			{
+				input_coordinates_sum[i] =
+					input_coordinates_min[i] + input_coordinates_max[i];
+			}
+		}
+
+		int set_lookup_coordinates_minimum(int numberOfValues, const double *lookupCoordinatesMinimumIn)
+		{
+			if (numberOfValues > 0 && lookupCoordinatesMinimumIn)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					lookup_coordinates_min[i] = lookupCoordinatesMinimumIn[i];
+				}
+				updateLookupCoordinatesDiff();
+				return CMZN_OK;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int set_lookup_coordinates_maximum(int numberOfValues, const double *lookupCoordinatesMaximumIn)
+		{
+			if (numberOfValues > 0 && lookupCoordinatesMaximumIn)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					lookup_coordinates_max[i] = lookupCoordinatesMaximumIn[i];
+				}
+				updateLookupCoordinatesDiff();
+				return CMZN_OK;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int set_input_coordinates_minimum(int numberOfValues, const double *inputCoordinatesMinimumIn)
+		{
+			if (numberOfValues > 0 && inputCoordinatesMinimumIn)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					input_coordinates_min[i] = inputCoordinatesMinimumIn[i];
+				}
+				updateInputCoordinatesSum();
+				return CMZN_OK;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int set_input_coordinates_maximum(int numberOfValues, const double *inputCoordinatesMaximumIn)
+		{
+			if (numberOfValues > 0 && inputCoordinatesMaximumIn)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					input_coordinates_max[i] = inputCoordinatesMaximumIn[i];
+				}
+				updateInputCoordinatesSum();
+				return CMZN_OK;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int get_lookup_coordinates_minimum(int numberOfValues, double *lookupCoordinatesMinimumOut)
+		{
+			if (numberOfValues > 0 && lookupCoordinatesMinimumOut)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					lookupCoordinatesMinimumOut[i] = lookup_coordinates_min[i];
+				}
+				return dimension;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int get_lookup_coordinates_maximum(int numberOfValues, double *lookupCoordinatesMaximumOut)
+		{
+			if (numberOfValues > 0 && lookupCoordinatesMaximumOut)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					lookupCoordinatesMaximumOut[i] = lookup_coordinates_max[i];
+				}
+				return dimension;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int get_input_coordinates_minimum(int numberOfValues, double *inputCoordinatesMinimumOut)
+		{
+			if (numberOfValues > 0 && inputCoordinatesMinimumOut)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					inputCoordinatesMinimumOut[i] = input_coordinates_min[i];
+				}
+				return dimension;
+			}
+			return CMZN_ERROR_ARGUMENT;
+		}
+
+		int get_input_coordinates_maximum(int numberOfValues, double *inputCoordinatesMaximumOut)
+		{
+			if (numberOfValues > 0 && inputCoordinatesMaximumOut)
+			{
+				for (int i = 0; (i < numberOfValues) && (i < dimension); i++)
+				{
+					inputCoordinatesMaximumOut[i] = input_coordinates_min[i];
+				}
+				return dimension;
+			}
+			return CMZN_ERROR_ARGUMENT;
 		}
 
 	private:
@@ -101,6 +278,22 @@ Compare the type specific data.
 				{
 					return_code = 0;
 				}
+				if (lookup_coordinates_min[i] != other->lookup_coordinates_min[i])
+				{
+					return_code = 0;
+				}
+				if (lookup_coordinates_max[i] != other->lookup_coordinates_max[i])
+				{
+					return_code = 0;
+				}
+				if (input_coordinates_min[i] != other->input_coordinates_min[i])
+				{
+					return_code = 0;
+				}
+				if (input_coordinates_max[i] != other->input_coordinates_max[i])
+				{
+					return_code = 0;
+				}
 				i++;
 			}
 		}
@@ -116,12 +309,67 @@ Compare the type specific data.
 
 int Computed_field_image_resample::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
-	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	RealFieldValueCache *sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
-	if (sourceCache)
+	RealFieldValueCache *sourceCache = 0;
+	Field_coordinate_location* coordinate_location = NULL;
+	if ((coordinate_location =	dynamic_cast<Field_coordinate_location*>(cache.getLocation())))
 	{
-		valueCache.copyValues(*sourceCache);
-		return 1;
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
+		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		field_cache->setTime(cache.getTime());
+		int numberOfValues= coordinate_location->get_number_of_values();
+		FE_value *cacheValues = coordinate_location->get_values();
+		FE_value *pixelValues = new double[numberOfValues];
+		for (int i = 0 ; i < dimension; i++)
+		{
+			if (numberOfValues > i)
+			{
+				double cacheValue = cacheValues[i];
+				if (cacheValue < input_coordinates_min[i])
+				{
+					cacheValue = input_coordinates_min[i];
+				}
+				else if (cacheValue > input_coordinates_max[i])
+				{
+					cacheValue = input_coordinates_max[i];
+				}
+				pixelValues[i] = lookup_coordinates_min[i] + (lookup_coordinates_diff[i] *
+					(cacheValue - input_coordinates_min[i]) / input_coordinates_sum[i]);
+			}
+			else
+			{
+				pixelValues[i] = (lookup_coordinates_max[i] + lookup_coordinates_min[i]) / 2.0;
+			}
+		}
+		if (numberOfValues > dimension)
+		{
+			for (int i = dimension ; i < numberOfValues; i++)
+			{
+				pixelValues[i] = cacheValues[i];
+			}
+		}
+		int return_code = 0;
+		field_cache->setFieldReal(coordinate_location->get_reference_field(), numberOfValues, pixelValues);
+		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(*field_cache));
+		if (sourceCache)
+		{
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			valueCache.copyValues(*sourceCache);
+			return_code = 1;
+		}
+		delete[] pixelValues;
+		cmzn_fieldcache_destroy(&field_cache);
+		cmzn_fieldmodule_destroy(&field_module);
+		return return_code;
+	}
+	else
+	{
+		sourceCache = RealFieldValueCache::cast(getSourceField(0)->evaluate(cache));
+		if (sourceCache)
+		{
+			RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
+			valueCache.copyValues(*sourceCache);
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -195,6 +443,34 @@ DESCRIPTION :
 				" %d", sizes[i]);
 		}
 		display_message(INFORMATION_MESSAGE,
+			"    input_coordinates_min :");
+		for (i = 0 ; i < dimension ; i++)
+		{
+			display_message(INFORMATION_MESSAGE,
+				" %g", input_coordinates_min[i]);
+		}
+		display_message(INFORMATION_MESSAGE,
+			"    input_coordinates_max :");
+		for (i = 0 ; i < dimension ; i++)
+		{
+			display_message(INFORMATION_MESSAGE,
+				" %g", input_coordinates_max[i]);
+		}
+		display_message(INFORMATION_MESSAGE,
+			"    lookup_coordinates_min :");
+		for (i = 0 ; i < dimension ; i++)
+		{
+			display_message(INFORMATION_MESSAGE,
+				" %g", lookup_coordinates_min[i]);
+		}
+		display_message(INFORMATION_MESSAGE,
+			"    lookup_coordinates_max :");
+		for (i = 0 ; i < dimension ; i++)
+		{
+			display_message(INFORMATION_MESSAGE,
+				" %g", lookup_coordinates_max[i]);
+		}
+		display_message(INFORMATION_MESSAGE,
 			"\n");
 		return_code = 1;
 	}
@@ -241,6 +517,30 @@ Returns allocated command string for reproducing field.
 			sprintf(temp_string, " %d", sizes[i]);
 			append_string(&command_string, temp_string, &error);
 		}
+		append_string(&command_string, " input_coordinates_min ", &error);
+		for (i = 0 ; i < dimension ; i++)
+		{
+			sprintf(temp_string, " %g", input_coordinates_min[i]);
+			append_string(&command_string, temp_string, &error);
+		}
+		append_string(&command_string, " input_coordinates_max ", &error);
+		for (i = 0 ; i < dimension ; i++)
+		{
+			sprintf(temp_string, " %g", input_coordinates_max[i]);
+			append_string(&command_string, temp_string, &error);
+		}
+		append_string(&command_string, " lookup_coordinates_min ", &error);
+		for (i = 0 ; i < dimension ; i++)
+		{
+			sprintf(temp_string, " %g", lookup_coordinates_min[i]);
+			append_string(&command_string, temp_string, &error);
+		}
+		append_string(&command_string, " lookup_coordinates_max ", &error);
+		for (i = 0 ; i < dimension ; i++)
+		{
+			sprintf(temp_string, " %g", lookup_coordinates_max[i]);
+			append_string(&command_string, temp_string, &error);
+		}
 	}
 	else
 	{
@@ -253,6 +553,13 @@ Returns allocated command string for reproducing field.
 } /* Computed_field_image_resample::get_command_string */
 
 } //namespace
+
+inline Computed_field_image_resample *Computed_field_image_resample_core_cast(
+	cmzn_field_image_resample *image_resample_field)
+{
+	return (static_cast<Computed_field_image_resample*>(
+		reinterpret_cast<Computed_field*>(image_resample_field)->core));
+}
 
 Computed_field *cmzn_fieldmodule_create_field_image_resample(
 	struct cmzn_fieldmodule *field_module,
@@ -337,3 +644,124 @@ If the field is of type COMPUTED_FIELD_IMAGE_RESAMPLE, the function returns the 
 	return (return_code);
 } /* cmzn_field_get_type_image_resample */
 
+cmzn_field_image_resample_id cmzn_field_cast_image_resample(cmzn_field_id field)
+{
+	if (field && (dynamic_cast<Computed_field_image_resample*>(field->core)))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_image_resample_id>(field));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+int cmzn_field_image_resample_destroy(cmzn_field_image_resample_id *image_resample_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(image_resample_address));
+}
+
+int cmzn_field_image_resample_set_input_coordinates_minimum(cmzn_field_image_resample_id image_resample,
+	int dimension, const double *input_coordinates_minimum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->set_input_coordinates_minimum(
+			dimension, input_coordinates_minimum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_set_input_coordinates_maximum(cmzn_field_image_resample_id image_resample,
+	int dimension, const double *input_coordinates_maximum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->set_input_coordinates_maximum(
+			dimension, input_coordinates_maximum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_set_lookup_coordinates_minimum(cmzn_field_image_resample_id image_resample,
+	int dimension, const double *lookup_coordinates_minimum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->set_lookup_coordinates_minimum(
+			dimension, lookup_coordinates_minimum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_set_lookup_coordinates_maximum(cmzn_field_image_resample_id image_resample,
+	int dimension, const double *lookup_coordinates_maximum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->set_lookup_coordinates_maximum(
+			dimension, lookup_coordinates_maximum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_get_input_coordinates_minimum(cmzn_field_image_resample_id image_resample,
+	int dimension, double *input_coordinates_minimum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->get_input_coordinates_minimum(
+			dimension, input_coordinates_minimum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_get_input_coordinates_maximum(cmzn_field_image_resample_id image_resample,
+	int dimension, double *input_coordinates_maximum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->get_input_coordinates_maximum(
+			dimension, input_coordinates_maximum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_get_lookup_coordinates_minimum(cmzn_field_image_resample_id image_resample,
+	int dimension, double *lookup_coordinates_minimum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->get_lookup_coordinates_minimum(
+			dimension, lookup_coordinates_minimum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_image_resample_get_lookup_coordinates_maximum(cmzn_field_image_resample_id image_resample,
+	int dimension, double *lookup_coordinates_maximum)
+{
+	if (image_resample)
+	{
+		Computed_field_image_resample *image_resample_core =
+			Computed_field_image_resample_core_cast(image_resample);
+		return image_resample_core->get_lookup_coordinates_maximum(
+			dimension, lookup_coordinates_maximum);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
