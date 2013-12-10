@@ -3,6 +3,7 @@
 #include <zinc/field.h>
 #include <zinc/fieldcache.h>
 #include <zinc/fieldconstant.h>
+#include <zinc/fieldfiniteelement.h>
 #include <zinc/fieldvectoroperators.h>
 #include <zinc/status.h>
 
@@ -57,35 +58,36 @@ TEST(cmzn_fieldmodulenotifier, change_callback)
 	const double value1 = 2.0;
 	cmzn_field_id joe = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &value1);
 	EXPECT_NE((cmzn_field_id)0, joe);
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_name(joe, "joe"));
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_IDENTIFIER, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_IDENTIFIER, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 	double value2 = 4.5;
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(joe, cache, 1, &value2));
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEFINITION, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_managed(joe, true));
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_METADATA, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_DEFINITION, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	cmzn_field_id fred = cmzn_fieldmodule_create_field_magnitude(zinc.fm, joe);
 	EXPECT_NE((cmzn_field_id)0, fred);
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, fred));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_NONE, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, joe));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, fred));
+	EXPECT_EQ(Field::CHANGE_FLAG_NONE, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, joe));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(joe, cache, 1, &value1));
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEFINITION | CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEPENDENCY,
-		result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_DEFINITION, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, joe));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_DEPENDENCY, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, fred));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT,
+		result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT,
+		result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, joe));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_FULL_RESULT, result = cmzn_fieldmoduleevent_get_field_change_flags(recordChange.lastEvent, fred));
 
 	EXPECT_EQ(CMZN_OK, cmzn_field_set_managed(joe, false));
 	cmzn_field_destroy(&joe);
 	cmzn_field_destroy(&fred);
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_REMOVE, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_REMOVE, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	cmzn_fieldcache_destroy(&cache);
 	EXPECT_EQ(CMZN_OK, result = cmzn_fieldmodulenotifier_clear_callback(notifier));
@@ -110,11 +112,11 @@ TEST(cmzn_fieldmodulenotifier, destroy_region_final_callback)
 		fieldmoduleCallback, static_cast<void*>(&recordChange)));
 
 	cmzn_region_remove_child(zinc.root_region, region);
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_NONE, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	cmzn_fieldmodule_destroy(&fm);
 	cmzn_region_destroy(&region);
-	EXPECT_EQ(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL, result = cmzn_fieldmoduleevent_get_change_flags(recordChange.lastEvent));
+	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_FINAL, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_fieldmodulenotifier_destroy(&notifier));
 }
@@ -147,36 +149,124 @@ TEST(ZincFieldmodulenotifier, changeCallback)
 	const double value1 = 2.0;
 	Field joe = zinc.fm.createFieldConstant(1, &value1);
 	EXPECT_TRUE(joe.isValid());
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
 
 	EXPECT_EQ(CMZN_OK, result = joe.setName("joe"));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_IDENTIFIER, result = recordChange.lastEvent.getChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_IDENTIFIER, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	double value2 = 4.5;
 	EXPECT_EQ(CMZN_OK, result = joe.assignReal(cache, 1, &value2));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_DEFINITION, result = recordChange.lastEvent.getChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_DEFINITION | Field::CHANGE_FLAG_FULL_RESULT,
+		result = recordChange.lastEvent.getSummaryFieldChangeFlags());
 
 	EXPECT_EQ(CMZN_OK, result = joe.setManaged(true));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_METADATA, result = recordChange.lastEvent.getChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_DEFINITION, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
 
 	Field fred = zinc.fm.createFieldMagnitude(joe);
 	EXPECT_TRUE(fred.isValid());
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getChangeFlags());
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getFieldChangeFlags(fred));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_NONE, result = recordChange.lastEvent.getFieldChangeFlags(joe));
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD, result = recordChange.lastEvent.getFieldChangeFlags(fred));
+	EXPECT_EQ(Field::CHANGE_FLAG_NONE, result = recordChange.lastEvent.getFieldChangeFlags(joe));
 
 	EXPECT_EQ(CMZN_OK, result = joe.assignReal(cache, 1, &value1));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_DEFINITION | Fieldmoduleevent::CHANGE_FLAG_DEPENDENCY,
-		result = recordChange.lastEvent.getChangeFlags());
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_DEFINITION, result = recordChange.lastEvent.getFieldChangeFlags(joe));
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_DEPENDENCY, result = recordChange.lastEvent.getFieldChangeFlags(fred));
+	EXPECT_EQ(Field::CHANGE_FLAG_DEFINITION | Field::CHANGE_FLAG_FULL_RESULT,
+		result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_DEFINITION | Field::CHANGE_FLAG_FULL_RESULT,
+		result = recordChange.lastEvent.getFieldChangeFlags(joe));
+	EXPECT_EQ(Field::CHANGE_FLAG_FULL_RESULT, result = recordChange.lastEvent.getFieldChangeFlags(fred));
 
 	EXPECT_EQ(CMZN_OK, result = joe.setManaged(false));
 	Field noField;
 	joe = noField;
 	fred = noField;
-	EXPECT_EQ(Fieldmoduleevent::CHANGE_FLAG_REMOVE, result = recordChange.lastEvent.getChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_REMOVE, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+
+	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());
+}
+
+void createNodesWithCoordinates(cmzn_fieldmodule_id fm)
+{
+	int result;
+	cmzn_fieldmodule_begin_change(fm);
+	cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element(fm, /*number_of_components*/3);
+	EXPECT_NE(static_cast<cmzn_field_id>(0), field);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_name(field, "coordinates"));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_type_coordinate(field, true));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_managed(field, true));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_component_name(field, 1, "x"));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_component_name(field, 2, "y"));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_component_name(field, 3, "z"));
+
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
+	cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
+	EXPECT_NE(static_cast<cmzn_nodetemplate_id>(0), nodetemplate);
+	EXPECT_EQ(CMZN_OK, result = cmzn_nodetemplate_define_field(nodetemplate, field));
+	double nodeCoordinates[4][3] =
+	{
+		{ 0.0, 0.0, 0.0 },
+		{ 1.0, 0.0, 0.0 },
+		{ 0.0, 1.0, 0.0 },
+		{ 1.0, 1.0, 0.0 }
+	};
+	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fm);
+	for (int i = 1; i <= 4; ++i)
+	{
+		cmzn_node_id node = cmzn_nodeset_create_node(nodeset, i, nodetemplate);
+		EXPECT_NE(static_cast<cmzn_node_id>(0), node);
+		EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_node(cache, node));
+		EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(field, cache, 3, nodeCoordinates[i - 1]));
+		EXPECT_EQ(CMZN_OK, result = cmzn_node_destroy(&node));
+	}
+	cmzn_fieldcache_destroy(&cache);
+	cmzn_nodetemplate_destroy(&nodetemplate);
+	cmzn_nodeset_destroy(&nodeset);
+
+	cmzn_field_destroy(&field);
+	cmzn_fieldmodule_end_change(fm);
+}
+
+TEST(ZincFieldmodulenotifier, partial_nodeset_change)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(recordChange));
+
+	createNodesWithCoordinates(zinc.fm.getId());
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD | Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Node node1 = nodeset.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+	Node node2 = nodeset.findNodeByIdentifier(2);
+	EXPECT_TRUE(node2.isValid());
+	Nodesetchanges nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodeset);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	// following could change with internal logic:
+	EXPECT_EQ(16, result = nodesetchanges.getNumberOfChanges());
+	EXPECT_EQ(Node::CHANGE_FLAG_ADD | Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getSummaryNodeChangeFlags());
+	EXPECT_EQ(Node::CHANGE_FLAG_ADD | Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node2));
+	EXPECT_EQ(Node::CHANGE_FLAG_ADD | Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node1));
+
+	Field field = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(field.isValid());
+
+	double newCoordinates[3] = { 1.5, 0.2, 0.3 };
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_EQ(CMZN_OK, result = cache.setNode(node2));
+	EXPECT_EQ(CMZN_OK, result = field.assignReal(cache, 3, newCoordinates));
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+
+	nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodeset);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(1, result = nodesetchanges.getNumberOfChanges());
+ 	EXPECT_EQ(Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getSummaryNodeChangeFlags());
+	EXPECT_EQ(Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node2));
+	EXPECT_EQ(Node::CHANGE_FLAG_NONE, result = nodesetchanges.getNodeChangeFlags(node1));
 
 	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());
 }

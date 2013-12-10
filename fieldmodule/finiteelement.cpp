@@ -56,7 +56,7 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_STREQ("y", componentName);
 	cmzn_deallocate(componentName);
 
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
 	EXPECT_NE(static_cast<cmzn_nodetemplate_id>(0), nodetemplate);
@@ -160,7 +160,7 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_STREQ("y", componentName);
 	cmzn_deallocate(componentName);
 
-	Nodeset nodeset = zinc.fm.findNodesetByDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 	Nodetemplate nodetemplate = nodeset.createNodetemplate();
 	EXPECT_TRUE(nodetemplate.isValid());
@@ -278,7 +278,7 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	EXPECT_EQ(OK, result = coordinateField.setName("coordinates"));
 	EXPECT_EQ(OK, result = coordinateField.setTypeCoordinate(true));
 
-	Nodeset nodeset = zinc.fm.findNodesetByDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 
 	Nodetemplate nodeTemplate = nodeset.createNodetemplate();

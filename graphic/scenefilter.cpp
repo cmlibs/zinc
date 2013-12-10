@@ -149,9 +149,9 @@ TEST(cmzn_scenefilter_api, valid_args)
 	EXPECT_FALSE(cmzn_scenefilter_is_managed(graphics_type_filter1));
 	cmzn_scenefilter_id graphics_type_filter2 = cmzn_scenefiltermodule_create_scenefilter_graphics_type(sfm, CMZN_GRAPHICS_TYPE_LINES);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), graphics_type_filter2);
-	cmzn_scenefilter_id domain_type_filter1 = cmzn_scenefiltermodule_create_scenefilter_domain_type(sfm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_scenefilter_id domain_type_filter1 = cmzn_scenefiltermodule_create_scenefilter_field_domain_type(sfm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), domain_type_filter1);
-	cmzn_scenefilter_id domain_type_filter2 = cmzn_scenefiltermodule_create_scenefilter_domain_type(sfm, CMZN_FIELD_DOMAIN_TYPE_MESH1D);
+	cmzn_scenefilter_id domain_type_filter2 = cmzn_scenefiltermodule_create_scenefilter_field_domain_type(sfm, CMZN_FIELD_DOMAIN_TYPE_MESH1D);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), domain_type_filter2);
 
 	cmzn_graphics_id graphics = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_LINES);
@@ -275,9 +275,9 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 	EXPECT_TRUE(graphics_type_filter1.isValid());
 	Scenefilter graphics_type_filter2 = sfm.createScenefilterGraphicsType(Graphics::TYPE_LINES);
 	EXPECT_TRUE(graphics_type_filter2.isValid());
-	Scenefilter domain_type_filter1 = sfm.createScenefilterDomainType(Field::DOMAIN_TYPE_NODES);
+	Scenefilter domain_type_filter1 = sfm.createScenefilterFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(domain_type_filter1.isValid());
-	Scenefilter domain_type_filter2 = sfm.createScenefilterDomainType(Field::DOMAIN_TYPE_MESH1D);
+	Scenefilter domain_type_filter2 = sfm.createScenefilterFieldDomainType(Field::DOMAIN_TYPE_MESH1D);
 	EXPECT_TRUE(domain_type_filter2.isValid());
 
 	Graphics graphics = zinc.scene.createGraphics(Graphics::TYPE_LINES);

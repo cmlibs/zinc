@@ -3,6 +3,7 @@
 
 #include <zinc/core.h>
 #include <zinc/context.h>
+#include <zinc/element.h>
 #include <zinc/field.h>
 #include <zinc/fieldcache.h>
 #include <zinc/fieldmodule.h>
@@ -77,11 +78,19 @@ TEST(issue3614, read_embedded_nodes)
 
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(zinc.fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1003);
 	EXPECT_NE(static_cast<cmzn_node_id>(0), node);
-	cmzn_fieldcache_set_node(cache, node);
+	result = cmzn_fieldcache_set_node(cache, node);
+	EXPECT_EQ(CMZN_OK, result);
+	double xi[2];
+	cmzn_element_id temp_element = cmzn_field_evaluate_mesh_location(hostLocation, cache, 2, xi);
+	EXPECT_EQ(1, cmzn_element_get_identifier(temp_element));
+	ASSERT_DOUBLE_EQ(0.25, xi[0]);
+	ASSERT_DOUBLE_EQ(0.75, xi[1]);
+	cmzn_element_destroy(&temp_element);
+
 	double x[3] = { 0.0, 0.0, 0.0 };
 	result = cmzn_field_evaluate_real(hostCoordinates, cache, 3, x);
 	EXPECT_EQ(CMZN_OK, result);

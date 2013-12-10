@@ -45,7 +45,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), outputCoordinateField);
 	EXPECT_EQ(CMZN_OK, cmzn_field_set_name(outputCoordinateField, "coordinates"));
 	EXPECT_EQ(CMZN_OK, cmzn_field_set_managed(outputCoordinateField, true));
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(outputFm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(outputFm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 
 	EXPECT_EQ(CMZN_OK, cmzn_scene_convert_to_point_cloud(zinc.scene,
@@ -84,7 +84,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setName("coordinates"));
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setManaged(true));
 	// put output into a node group
-	Nodeset masterNodeset = outputFm.findNodesetByDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodeset masterNodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(masterNodeset.isValid());
 	FieldNodeGroup nodeGroupField = outputFm.createFieldNodeGroup(masterNodeset);
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setName("bob"));
@@ -123,7 +123,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), outputCoordinateField);
 	EXPECT_EQ(CMZN_OK, cmzn_field_set_name(outputCoordinateField, "coordinates"));
 	EXPECT_EQ(CMZN_OK, cmzn_field_set_managed(outputCoordinateField, true));
-	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(outputFm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(outputFm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
 
 	EXPECT_EQ(CMZN_OK, cmzn_scene_convert_to_point_cloud(zinc.scene,
@@ -161,7 +161,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points_cpp)
 	EXPECT_TRUE(outputCoordinateField.isValid());
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setName("coordinates"));
 	EXPECT_EQ(CMZN_OK, outputCoordinateField.setManaged(true));
-	Nodeset nodeset = outputFm.findNodesetByDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodeset nodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 
 	Scenefilter noFilter;

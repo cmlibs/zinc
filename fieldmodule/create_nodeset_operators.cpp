@@ -30,7 +30,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_minimum, invalid_args)
 	cmzn_field_id f1 = cmzn_fieldmodule_create_field_nodeset_minimum(fm, 0, 0);
 	EXPECT_EQ(0, f1);
 
-	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_nodeset_minimum(fm, 0, ns);
@@ -71,7 +71,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_minimum, valid_args)
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 
-	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_nodeset_minimum(fm, f1, ns);
@@ -109,7 +109,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_maximum, invalid_args)
 	cmzn_field_id f1 = cmzn_fieldmodule_create_field_nodeset_maximum(fm, 0, 0);
 	EXPECT_EQ(0, f1);
 
-	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_nodeset_maximum(fm, 0, ns);
@@ -149,7 +149,7 @@ TEST(cmzn_fieldmodule_create_field_nodeset_maximum, valid_args)
 
 	cmzn_field_id f1 = cmzn_fieldmodule_find_field_by_name(fm, "coordinates");
 
-	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodeset_id ns = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), ns);
 
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_nodeset_maximum(fm, f1, ns);
