@@ -19,6 +19,7 @@
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
+#include "finite_element/finite_element_region_private.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "node/node_operations.h"
 #include "general/message.h"
@@ -138,15 +139,15 @@ public:
 struct cmzn_nodetemplate
 {
 private:
-	FE_region *fe_region;
+	FE_nodeset *fe_nodeset;
 	FE_node *template_node;
 	std::vector<cmzn_node_field*> fields;
 	std::vector<FE_field*> undefine_fields; // ACCESSed
 	int access_count;
 
 public:
-	cmzn_nodetemplate(FE_region *fe_region) :
-		fe_region(ACCESS(FE_region)(fe_region)),
+	cmzn_nodetemplate(FE_nodeset *fe_nodeset_in) :
+		fe_nodeset(fe_nodeset_in->access()),
 		template_node(NULL),
 		access_count(1)
 	{
@@ -192,7 +193,7 @@ public:
 	{
 		if (!checkValidFieldForDefine(field))
 			return 0;
-		if (!FE_region_contains_FE_node(fe_region, node))
+		if (!fe_nodeset->containsNode(node))
 			return 0;
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
@@ -326,12 +327,7 @@ public:
 		int return_code = 1;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		FE_region *compare_fe_region = fe_region;
-		if (FE_region_is_data_FE_region(fe_region))
-		{
-			 FE_region_get_immediate_master_FE_region(fe_region, &compare_fe_region);
-		}
-		if (FE_field_get_FE_region(fe_field) != compare_fe_region)
+		if (FE_field_get_FE_region(fe_field) != this->fe_nodeset->get_FE_region())
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_nodetemplate_undefine_field.  Field is from another region");
@@ -364,7 +360,7 @@ public:
 		if (template_node)
 			return 1;
 		template_node = ACCESS(FE_node)(
-			CREATE(FE_node)(0, fe_region, (struct FE_node *)NULL));
+			CREATE(FE_node)(0, this->fe_nodeset, (struct FE_node *)NULL));
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
 			if (!fields[i]->defineAtNode(template_node))
@@ -401,7 +397,7 @@ public:
 				}
 			}
 			if ((0 < fields.size() &&
-				!FE_region_merge_FE_node_existing(fe_region, node, template_node)))
+				(CMZN_OK != this->fe_nodeset->merge_FE_node_existing(node, template_node))))
 			{
 				return_code = 0;
 			}
@@ -429,7 +425,7 @@ private:
 			DEACCESS(FE_field)(&(undefine_fields[i]));
 		}
 		REACCESS(FE_node)(&template_node, NULL);
-		DEACCESS(FE_region)(&fe_region);
+		FE_nodeset::deaccess(fe_nodeset);
 	}
 
 	cmzn_node_field *getNodeField(FE_field *fe_field)
@@ -486,12 +482,7 @@ private:
 		{
 			FE_field *fe_field = 0;
 			Computed_field_get_type_finite_element(field, &fe_field);
-			FE_region *compare_fe_region = fe_region;
-			if (FE_region_is_data_FE_region(fe_region))
-			{
-				 FE_region_get_immediate_master_FE_region(fe_region, &compare_fe_region);
-			}
-			if (FE_field_get_FE_region(fe_field) != compare_fe_region)
+			if (FE_field_get_FE_region(fe_field) != this->fe_nodeset->get_FE_region())
 			{
 				display_message(ERROR_MESSAGE,
 					"cmzn_nodetemplate_define_field.  "
@@ -555,13 +546,12 @@ private:
 struct cmzn_nodeset
 {
 protected:
-	FE_region *fe_region;
+	FE_nodeset *fe_nodeset;
 	cmzn_field_node_group_id group;
 	int access_count;
 
 	cmzn_nodeset(cmzn_field_node_group_id group) :
-		fe_region(ACCESS(FE_region)(
-			Computed_field_node_group_core_cast(group)->getMasterNodeset()->fe_region)),
+		fe_nodeset(Computed_field_node_group_core_cast(group)->getMasterNodeset()->fe_nodeset->access()),
 		group(group),
 		access_count(1)
 	{
@@ -570,8 +560,8 @@ protected:
 	}
 
 public:
-	cmzn_nodeset(FE_region *fe_region_in) :
-		fe_region(ACCESS(FE_region)(fe_region_in)),
+	cmzn_nodeset(FE_nodeset *fe_nodeset_in) :
+		fe_nodeset(fe_nodeset_in->access()),
 		group(0),
 		access_count(1)
 	{
@@ -598,7 +588,7 @@ public:
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->containsObject(node);
-		return (0 != FE_region_contains_FE_node(fe_region, node));
+		return this->fe_nodeset->containsNode(node);
 	}
 
 	cmzn_node_id createNode(int identifier,
@@ -608,8 +598,7 @@ public:
 		if (node_template->validate())
 		{
 			cmzn_node_id template_node = node_template->getTemplateNode();
-			node = ACCESS(FE_node)(FE_region_create_FE_node_copy(
-				fe_region, identifier, template_node));
+			node = ACCESS(FE_node)(this->fe_nodeset->create_FE_node_copy(identifier, template_node));
 			if (group)
 				Computed_field_node_group_core_cast(group)->addObject(node);
 		}
@@ -623,16 +612,19 @@ public:
 
 	cmzn_nodetemplate_id createNodetemplate()
 	{
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return new cmzn_nodetemplate(master_fe_region);
+		return new cmzn_nodetemplate(this->fe_nodeset);
 	}
 
 	cmzn_nodeiterator_id createIterator()
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->createIterator();
-		return FE_region_create_nodeiterator(fe_region);
+		return this->fe_nodeset->createNodeiterator();
+	}
+
+	struct LIST(FE_node) *createRelatedNodeList()
+	{
+		return this->fe_nodeset->createRelatedNodeList();
 	}
 
 	int destroyAllNodes()
@@ -642,21 +634,13 @@ public:
 
 	int destroyNode(cmzn_node_id node)
 	{
-		if (containsNode(node))
-		{
-			FE_region *master_fe_region = fe_region;
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-			return FE_region_remove_FE_node(master_fe_region, node);
-		}
-		return 0;
+		return this->fe_nodeset->remove_FE_node(node);
 	}
 
 	int destroyNodesConditional(cmzn_field_id conditional_field)
 	{
 		struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		int return_code = FE_region_remove_FE_node_list(master_fe_region, node_list);
+		int return_code = this->fe_nodeset->remove_FE_node_list(node_list);
 		DESTROY(LIST(FE_node))(&node_list);
 		return return_code;
 	}
@@ -665,35 +649,30 @@ public:
 	{
 		cmzn_node_id node = 0;
 		if (group)
-		{
 			node = Computed_field_node_group_core_cast(group)->findNodeByIdentifier(identifier);
-		}
 		else
-		{
-			node = FE_region_get_FE_node_from_identifier(fe_region, identifier);
-		}
+			node = this->fe_nodeset->get_FE_node_from_identifier(identifier);
 		if (node)
 			ACCESS(FE_node)(node);
 		return node;
 	}
 
-	FE_region *getFeRegion() const { return fe_region; }
+	FE_nodeset *getFeNodeset()
+	{
+		return this->fe_nodeset;
+	}
+
+	FE_region *getFeRegion() const { return fe_nodeset->get_FE_region(); }
 
 	char *getName()
 	{
 		char *name = 0;
 		if (group)
-		{
 			name = cmzn_field_get_name(cmzn_field_node_group_base_cast(group));
-		}
-		else if (FE_region_is_data_FE_region(fe_region))
-		{
+		else if (this->fe_nodeset->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
 			name = duplicate_string("datapoints");
-		}
 		else
-		{
 			name = duplicate_string("nodes");
-		}
 		return name;
 	}
 
@@ -701,17 +680,14 @@ public:
 	{
 		if (!isGroup())
 			return access();
-		FE_region *master_fe_region = fe_region;
-		if (FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region) && master_fe_region)
-			return new cmzn_nodeset(master_fe_region);
-		return 0;
+		return new cmzn_nodeset(this->fe_nodeset);
 	}
 
 	int getSize() const
 	{
 		if (group)
 			return Computed_field_node_group_core_cast(group)->getSize();
-		return FE_region_get_number_of_FE_nodes(fe_region);
+		return this->fe_nodeset->get_number_of_FE_nodes();
 	}
 
 	int isGroup()
@@ -721,7 +697,7 @@ public:
 
 	bool match(cmzn_nodeset& other_nodeset)
 	{
-		return ((fe_region == other_nodeset.fe_region) &&
+		return ((fe_nodeset == other_nodeset.fe_nodeset) &&
 			(group == other_nodeset.group));
 	}
 
@@ -730,21 +706,21 @@ protected:
 	{
 		if (group)
 			cmzn_field_node_group_destroy(&group);
-		DEACCESS(FE_region)(&fe_region);
+		FE_nodeset::deaccess(fe_nodeset);
 	}
 
 	struct LIST(FE_node) *createNodeListWithCondition(cmzn_field_id conditional_field)
 	{
-		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
+		cmzn_region_id region = FE_region_get_cmzn_region(fe_nodeset->get_FE_region());
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		cmzn_nodeiterator_id iterator = createIterator();
+		cmzn_nodeiterator_id iterator = this->createIterator();
 		cmzn_node_id node = 0;
-		struct LIST(FE_node) *node_list = FE_region_create_related_node_list(fe_region);
+		struct LIST(FE_node) *node_list = this->createRelatedNodeList();
 		while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
 		{
-			cmzn_fieldcache_set_node(cache, node);
-			if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, cache))
+			if ((!conditional_field) || ((CMZN_OK == cmzn_fieldcache_set_node(cache, node)) &&
+					cmzn_field_evaluate_boolean(conditional_field, cache)))
 				ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
 		}
 		cmzn_nodeiterator_destroy(&iterator);
@@ -801,28 +777,15 @@ Global functions
 ----------------
 */
 
-cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_domain_type(
+cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 	cmzn_fieldmodule_id field_module, enum cmzn_field_domain_type domain_type)
 {
-	cmzn_nodeset_id nodeset = 0;
-	if (field_module)
-	{
-		cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
-		FE_region *fe_region = 0;
-		if (CMZN_FIELD_DOMAIN_TYPE_NODES == domain_type)
-		{
-			fe_region = cmzn_region_get_FE_region(region);
-		}
-		else if (CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == domain_type)
-		{
-			fe_region = FE_region_get_data_FE_region(cmzn_region_get_FE_region(region));
-		}
-		if (fe_region)
-		{
-			nodeset = new cmzn_nodeset(fe_region);
-		}
-	}
-	return nodeset;
+	cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
+	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+		cmzn_region_get_FE_region(region), domain_type);
+	if (fe_nodeset)
+		return new cmzn_nodeset(fe_nodeset);
+	return 0;
 }
 
 cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
@@ -846,11 +809,11 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
 		{
 			if (0 == strcmp(nodeset_name, "nodes"))
 			{
-				nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
+				nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			}
 			else if (0 == strcmp(nodeset_name, "datapoints"))
 			{
-				nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
+				nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 			}
 		}
 	}
@@ -935,7 +898,7 @@ int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id node)
 {
 	if (nodeset && node)
 		nodeset->destroyNode(node);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
@@ -1028,7 +991,14 @@ cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset(
 struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		return FE_region_create_related_node_list(nodeset->getFeRegion());
+		return nodeset->createRelatedNodeList();
+	return 0;
+}
+
+FE_nodeset *cmzn_nodeset_get_FE_nodeset_internal(cmzn_nodeset_id nodeset)
+{
+	if (nodeset)
+		return nodeset->getFeNodeset();
 	return 0;
 }
 
@@ -1046,18 +1016,11 @@ cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset)
 	return 0;
 }
 
-cmzn_region_id cmzn_nodeset_get_master_region_internal(cmzn_nodeset_id nodeset)
+bool cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		return FE_region_get_master_cmzn_region(nodeset->getFeRegion());
-	return 0;
-}
-
-int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset)
-{
-	if (nodeset)
-		return FE_region_is_data_FE_region(nodeset->getFeRegion());
-	return 0;
+		return (nodeset->getFeNodeset()->getFieldDomainType() == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
+	return false;
 }
 
 cmzn_nodeset_group_id cmzn_fieldmodule_create_field_nodeset_group_from_name_internal(
@@ -1249,4 +1212,78 @@ char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label label)
 {
 	const char *label_string = cmzn_node_value_label_conversion::to_string(label);
 	return (label_string ? duplicate_string(label_string) : 0);
+}
+
+cmzn_nodesetchanges::cmzn_nodesetchanges(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn) :
+	event(eventIn->access()),
+	changeLog(event->getFeRegionChanges()->getNodeChanges(
+		cmzn_nodeset_get_FE_nodeset_internal(nodesetIn)->getFieldDomainType())),
+	access_count(1)
+{
+		
+}
+
+cmzn_nodesetchanges::~cmzn_nodesetchanges()
+{
+	cmzn_fieldmoduleevent::deaccess(this->event);
+}
+
+cmzn_nodesetchanges *cmzn_nodesetchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn)
+{
+	if (eventIn && nodesetIn &&
+		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_nodeset_get_FE_region_internal(nodesetIn)))
+		return new cmzn_nodesetchanges(eventIn, nodesetIn);
+	return 0;
+}
+
+int cmzn_nodesetchanges::deaccess(cmzn_nodesetchanges* &nodesetchanges)
+{
+	if (nodesetchanges)
+	{
+		--(nodesetchanges->access_count);
+		if (nodesetchanges->access_count <= 0)
+			delete nodesetchanges;
+		nodesetchanges = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_nodesetchanges_id cmzn_nodesetchanges_access(
+	cmzn_nodesetchanges_id nodesetchanges)
+{
+	if (nodesetchanges)
+		return nodesetchanges->access();
+	return 0;
+}
+
+int cmzn_nodesetchanges_destroy(cmzn_nodesetchanges_id *nodesetchanges_address)
+{
+	if (nodesetchanges_address)
+		return cmzn_nodesetchanges::deaccess(*nodesetchanges_address);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_node_change_flags cmzn_nodesetchanges_get_node_change_flags(
+	cmzn_nodesetchanges_id nodesetchanges, cmzn_node_id node)
+{
+	if (nodesetchanges && node)
+		return nodesetchanges->getNodeChangeFlags(node);
+	return CMZN_NODE_CHANGE_FLAG_NONE;
+}
+
+int cmzn_nodesetchanges_get_number_of_changes(
+	cmzn_nodesetchanges_id nodesetchanges)
+{
+	if (nodesetchanges)
+		return nodesetchanges->getNumberOfChanges();
+	return 0;
+}
+
+cmzn_node_change_flags cmzn_nodesetchanges_get_summary_node_change_flags(
+	cmzn_nodesetchanges_id nodesetchanges)
+{
+	if (nodesetchanges)
+		return nodesetchanges->getSummaryNodeChangeFlags();
+	return CMZN_NODE_CHANGE_FLAG_NONE;
 }

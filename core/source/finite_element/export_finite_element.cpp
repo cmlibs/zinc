@@ -2360,7 +2360,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				write_nodes_data.time = time;
 				if (write_data)
 				{
-					cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
+					cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 						CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 					if (group)
 					{
@@ -2389,7 +2389,7 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 				if (write_nodes)
 				{
 					write_nodes_data.last_node = (struct FE_node *)NULL;
-					cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
+					cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 						CMZN_FIELD_DOMAIN_TYPE_NODES);
 					if (group)
 					{

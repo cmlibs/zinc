@@ -201,9 +201,9 @@ public:
 			id, dimension, static_cast<cmzn_elementbasis_function_type>(functionType)));
 	}
 
-	Nodeset findNodesetByDomainType(Field::DomainType domainType)
+	Nodeset findNodesetByFieldDomainType(Field::DomainType domainType)
 	{
-		return Nodeset(cmzn_fieldmodule_find_nodeset_by_domain_type(id,
+		return Nodeset(cmzn_fieldmodule_find_nodeset_by_field_domain_type(id,
 			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 
@@ -437,25 +437,6 @@ public:
 		id(cmzn_fieldmoduleevent_access(fieldmoduleEvent.id))
 	{  }
 
-	enum ChangeFlag
-	{
-		CHANGE_FLAG_NONE = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE,
-		CHANGE_FLAG_ADD = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_ADD,
-		CHANGE_FLAG_REMOVE = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_REMOVE,
-		CHANGE_FLAG_IDENTIFIER = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_IDENTIFIER,
-		CHANGE_FLAG_DEFINITION = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEFINITION,
-		CHANGE_FLAG_DEPENDENCY = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_DEPENDENCY,
-		CHANGE_FLAG_METADATA = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_METADATA,
-		CHANGE_FLAG_FINAL = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL,
-		CHANGE_FLAG_RESULT = CMZN_FIELDMODULEEVENT_CHANGE_FLAG_RESULT
-	};
-
-	/**
-	 * Type for passing logical OR of #ChangeFlag
-	 * @see getChangeFlags
-	 */
-	typedef int ChangeFlags;
-
 	Fieldmoduleevent& operator=(const Fieldmoduleevent& fieldmoduleEvent)
 	{
 		cmzn_fieldmoduleevent_id temp_id = cmzn_fieldmoduleevent_access(fieldmoduleEvent.id);
@@ -483,14 +464,19 @@ public:
 		return id;
 	}
 
-	ChangeFlags getChangeFlags() const
-	{
-		return cmzn_fieldmoduleevent_get_change_flags(id);
-	}
-
-	ChangeFlags getFieldChangeFlags(Field& field) const
+	Field::ChangeFlags getFieldChangeFlags(Field& field) const
 	{
 		return cmzn_fieldmoduleevent_get_field_change_flags(id, field.getId());
+	}
+
+	Nodesetchanges getNodesetchanges(Nodeset& nodeset) const
+	{
+		return Nodesetchanges(cmzn_fieldmoduleevent_get_nodesetchanges(id, nodeset.getId()));
+	}
+
+	Field::ChangeFlags getSummaryFieldChangeFlags() const
+	{
+		return cmzn_fieldmoduleevent_get_summary_field_change_flags(id);
 	}
 
 };

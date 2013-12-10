@@ -273,10 +273,11 @@ table needs to be used when curve->parameter_table is NULL.
 				return_code=1;
 				node_no=1;
 				node_number_increment=curve->value_nodes_per_element-1;
+				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 				for (i=0;(i<=number_of_elements)&&return_code;i++)
 				{
-					if ((node=FE_region_get_FE_node_from_identifier(curve->fe_region,
-						node_no))&&
+					if ((node = fe_nodeset->get_FE_node_from_identifier(node_no)) &&
 						cc_get_node_field_values(node,curve->parameter_field,
 							FE_NODAL_VALUE,&parameter))
 					{
@@ -1262,9 +1263,11 @@ value will be zero in its initial state.
 				}
 				if (return_code)
 				{
+					FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+						curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 					/* curve must access template_node */
 					curve->template_node = ACCESS(FE_node)(CREATE(FE_node)(
-						/*node_identifier*/0,curve->fe_region,(struct FE_node *)NULL));
+						/*node_identifier*/0,fe_nodeset,(struct FE_node *)NULL));
 					if (NULL != curve->template_node)
 					{
 						node_field_creator = CREATE(FE_node_field_creator)(
@@ -2174,7 +2177,7 @@ expected to make the element have a finite size.
 				/* first element: all new nodes from curve->template_node */
 				for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
 				{
-					node = CREATE(FE_node)(i+1, (struct FE_region *)NULL,
+					node = CREATE(FE_node)(i+1, (FE_nodeset *)NULL,
 						curve->template_node);
 					if (NULL != node)
 					{
@@ -2206,7 +2209,7 @@ expected to make the element have a finite size.
 					node_no=get_FE_node_identifier(node_to_copy);
 					for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 					{
-						node = CREATE(FE_node)(node_no+i, (struct FE_region *)NULL, node_to_copy);
+						node = CREATE(FE_node)(node_no+i, (FE_nodeset *)NULL, node_to_copy);
 						if (NULL != node)
 						{
 							if (!set_FE_element_node(element,i,node))
@@ -2232,11 +2235,13 @@ expected to make the element have a finite size.
 					 and add copies of it for remainder of nodes. Set first node of
 					 element_at_pos to last new node for continuity. Renumber subsequent
 					 nodes and elements to keep sequential */
+				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 				if ((existing_element=FE_region_get_FE_element_from_identifier
 					(curve->fe_region, 1, element_no))&&
 					get_FE_element_node(existing_element,0,&node_to_copy)&&
 					(node_no=get_FE_node_identifier(node_to_copy))&&
-					(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region)))
+					(number_of_nodes = fe_nodeset->get_number_of_FE_nodes()))
 				{
 					/* increment numbers of elements to follow */
 					for (i=number_of_elements;(i>=element_no)&&return_code;i--)
@@ -2252,12 +2257,13 @@ expected to make the element have a finite size.
 						}
 					}
 					/* increment numbers of nodes to follow - not node_no though! */
+					FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+						curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 					node_no_increment=curve->value_nodes_per_element-1;
 					for (i=number_of_nodes;(i>node_no)&&return_code;i--)
 					{
-						if (!FE_region_change_FE_node_identifier(curve->fe_region,
-							FE_region_get_FE_node_from_identifier(
-							curve->fe_region, i), i+node_no_increment))
+						if (!fe_nodeset->change_FE_node_identifier(
+							fe_nodeset->get_FE_node_from_identifier(i), i+node_no_increment))
 						{
 							return_code=0;
 						}
@@ -2270,7 +2276,7 @@ expected to make the element have a finite size.
 					/* create copies of this node for rest of new element */
 					for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 					{
-						node = CREATE(FE_node)(node_no+i, (struct FE_region *)NULL, node_to_copy);
+						node = CREATE(FE_node)(node_no+i, (FE_nodeset *)NULL, node_to_copy);
 						if (NULL != node)
 						{
 							if (!set_FE_element_node(element,i,node))
@@ -2294,15 +2300,16 @@ expected to make the element have a finite size.
 					}
 				}
 			}
-			/* make sure new nodes are in manager */
+			/* make sure new nodes are in nodeset */
+			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+				curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
 			{
 				if (get_FE_element_node(element,i,&node))
 				{
-					if (!FE_region_get_FE_node_from_identifier(curve->fe_region,
-						get_FE_node_identifier(node)))
+					if (!fe_nodeset->get_FE_node_from_identifier(get_FE_node_identifier(node)))
 					{
-						if (!FE_region_merge_FE_node(curve->fe_region, node))
+						if (!fe_nodeset->merge_FE_node(node))
 						{
 							return_code=0;
 						}
@@ -2367,11 +2374,14 @@ at the other end of the element being deleted.
 	struct FE_element *element_to_delete,*existing_element,*left_element,
 		*right_element;
 	struct FE_node *left_node,*right_node;
+	FE_nodeset *fe_nodeset;
 
 	ENTER(Curve_delete_element);
-	if (curve&&
+	if (curve &&
+		(0 != (fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+		curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES))) &&
 		(number_of_elements=FE_region_get_number_of_FE_elements_of_dimension(curve->fe_region, 1))&&
-		(number_of_nodes=FE_region_get_number_of_FE_nodes(curve->fe_region))&&
+		(number_of_nodes = fe_nodeset->get_number_of_FE_nodes())&&
 		(0<element_no)&&(element_no <= number_of_elements))
 	{
 		return_code=1;
@@ -2468,12 +2478,14 @@ at the other end of the element being deleted.
 			if (return_code)
 			{
 				/* remove the element and nodes */
+				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 				if (FE_region_remove_FE_element(curve->fe_region, element_to_delete))
 				{
 					for (i=first_node_to_delete;(i<=last_node_to_delete)&&return_code;i++)
 					{
-						if (!FE_region_remove_FE_node(curve->fe_region,
-							FE_region_get_FE_node_from_identifier(curve->fe_region, i)))
+						if (CMZN_OK != fe_nodeset->remove_FE_node(
+							fe_nodeset->get_FE_node_from_identifier(i)))
 						{
 							return_code=0;
 						}
@@ -2499,12 +2511,13 @@ at the other end of the element being deleted.
 				}
 			}
 			/* decrement numbers of nodes to follow */
+			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+				curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			node_no_decrement=(last_node_to_delete-first_node_to_delete)+1;
 			for (i=last_node_to_delete+1;(i<=number_of_nodes)&&return_code;i++)
 			{
-				if (!FE_region_change_FE_node_identifier(curve->fe_region,
-					FE_region_get_FE_node_from_identifier(curve->fe_region,
-				   i),i-node_no_decrement))
+				if (!fe_nodeset->change_FE_node_identifier(
+					fe_nodeset->get_FE_node_from_identifier(i), i - node_no_decrement))
 				{
 					return_code=0;
 				}

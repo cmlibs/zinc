@@ -936,7 +936,7 @@ the <field_order_info>.
 } /* read_FE_field_values */
 
 static int read_FE_node_field(struct IO_stream *input_file,
-	struct FE_region *fe_region, struct FE_node *node,
+	FE_nodeset *fe_nodeset, struct FE_node *node,
 	struct FE_import_time_index *time_index, struct FE_field **field_address)
 /*******************************************************************************
 LAST MODIFIED : 27 March 2003
@@ -961,9 +961,9 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	{
 		*field_address = (struct FE_field *)NULL;
 	}
-	if (input_file && fe_region && node && field_address)
+	if (input_file && fe_nodeset && node && field_address)
 	{
-		if (NULL != (field = read_FE_field(input_file, fe_region)))
+		if (NULL != (field = read_FE_field(input_file, fe_nodeset->get_FE_region())))
 		{
 			ACCESS(FE_field)(field);
 			merged_fe_field = (struct FE_field *)NULL;
@@ -1177,7 +1177,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 			if (return_code)
 			{
 				/* first try to retrieve matching field from fe_region */
-				if (!(merged_fe_field = FE_region_merge_FE_field(fe_region, field)))
+				if (!(merged_fe_field = FE_region_merge_FE_field(fe_nodeset->get_FE_region(), field)))
 				{
 					location = IO_stream_get_location_string(input_file);
 					display_message(ERROR_MESSAGE,"read_FE_node_field.  "
@@ -1193,7 +1193,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				if (time_index)
 				{
 					if (!(fe_time_sequence = FE_region_get_FE_time_sequence_matching_series(
-						fe_region, 1, &(time_index->time))))
+						fe_nodeset->get_FE_region(), 1, &(time_index->time))))
 					{
 						display_message(ERROR_MESSAGE,
 							"read_FE_node_field.  Could not get time version");
@@ -1244,7 +1244,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 } /* read_FE_node_field */
 
 static struct FE_node *read_FE_node_field_info(struct IO_stream *input_file,
-	struct FE_region *fe_region, struct FE_field_order_info **field_order_info,
+	FE_nodeset *fe_nodeset, struct FE_field_order_info **field_order_info,
 	struct FE_import_time_index *time_index)
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
@@ -1263,7 +1263,7 @@ from a previous call to this function.
 
 	ENTER(read_FE_node_field_info);
 	node = (struct FE_node *)NULL;
-	if (input_file && fe_region && field_order_info)
+	if (input_file && fe_nodeset && field_order_info)
 	{
 		if (*field_order_info)
 		{
@@ -1271,7 +1271,7 @@ from a previous call to this function.
 			*field_order_info = (struct FE_field_order_info *)NULL;
 		}
 		/* create a node to store the field information in */
-		if (NULL != (node = CREATE(FE_node)(0, fe_region, (struct FE_node *)NULL)))
+		if (NULL != (node = CREATE(FE_node)(0, fe_nodeset, (struct FE_node *)NULL)))
 		{
 			return_code = 1;
 			if ((1 == IO_stream_scan(input_file, "Fields=%d", &number_of_fields)) &&
@@ -1282,7 +1282,7 @@ from a previous call to this function.
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					field = (struct FE_field *)NULL;
-					if (read_FE_node_field(input_file, fe_region, node, time_index,
+					if (read_FE_node_field(input_file, fe_nodeset, node, time_index,
 						&field))
 					{
 						if (!add_FE_field_order_info_field(*field_order_info, field))
@@ -1337,7 +1337,7 @@ from a previous call to this function.
  * @param group  Optional group to put node into.
  */
 static struct FE_node *read_FE_node(struct IO_stream *input_file,
-	struct FE_node *template_node, struct FE_region *fe_region,
+	struct FE_node *template_node, FE_nodeset *fe_nodeset,
 	cmzn_region_id root_region, cmzn_region_id region,
 	struct FE_field_order_info *field_order_info,
 	struct FE_import_time_index *time_index)
@@ -1351,14 +1351,14 @@ static struct FE_node *read_FE_node(struct IO_stream *input_file,
 
 	ENTER(read_FE_node);
 	node = (struct FE_node *)NULL;
-	if (input_file && template_node && fe_region && region &&
+	if (input_file && template_node && fe_nodeset && region &&
 		field_order_info)
 	{
 		if (1 == IO_stream_scan(input_file, "ode :%d", &node_number))
 		{
 			return_code = 1;
 			/* create node based on template node; read and fill in contents */
-			if (NULL != (node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+			if (NULL != (node = CREATE(FE_node)(node_number, (FE_nodeset *)0,
 				template_node)))
 			{
 				number_of_fields =
@@ -2817,7 +2817,7 @@ from a previous call to this function.
 
 static struct FE_element *read_FE_element(struct IO_stream *input_file,
 	struct FE_element *template_element, struct FE_region *fe_region,
-	struct FE_field_order_info *field_order_info)
+	FE_nodeset *fe_nodeset, struct FE_field_order_info *field_order_info)
 /*******************************************************************************
 LAST MODIFIED : 27 May 2003
 
@@ -3130,8 +3130,7 @@ in a grid field.
 								if (1 == IO_stream_scan(input_file, "%d", &node_number))
 								{
 									/* get or create node with node_number */
-									if (NULL != (node = FE_region_get_or_create_FE_node_with_identifier(
-										fe_region, node_number)))
+									if (NULL != (node = fe_nodeset->get_or_create_FE_node_with_identifier(node_number)))
 									{
 										if (!set_FE_element_node(element, i, node))
 										{
@@ -3314,6 +3313,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 		cmzn_nodeset_group_id nodeset_group = 0;
 		cmzn_mesh_group_id mesh_group = 0;
 		struct FE_region *fe_region = 0;
+		FE_nodeset *fe_nodeset = 0;
 		field_order_info = (struct FE_field_order_info *)NULL;
 		template_node = (struct FE_node *)NULL;
 		template_element = (struct FE_element *)NULL;
@@ -3340,6 +3340,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							cmzn_field_group_destroy(&group);
 						}
 						fe_region = (struct FE_region *)NULL;
+						fe_nodeset = 0;
 						/* Use a %1[:] so that a successful read will return 1 */
 						int valid_token = 0;
 						if ('R' == first_character_in_token)
@@ -3480,11 +3481,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 						if (region)
 						{
 							fe_region = cmzn_region_get_FE_region(region);
-							if (use_data_meta_flag)
-							{
-								fe_region = FE_region_get_data_FE_region(fe_region);
-							}
-							template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
+							fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
+								use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
+							template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_nodeset, (struct FE_node *)NULL));
 							field_order_info = CREATE(FE_field_order_info)();
 						}
 						cmzn_nodeset_group_destroy(&nodeset_group);
@@ -3520,12 +3519,17 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 									template_element = CREATE(FE_element)(&element_identifier,
 										element_shape, fe_region, (struct FE_element *)NULL);
 									ACCESS(FE_element)(template_element);
+									use_data_meta_flag = 0;
+									// elements have nodes not datapoints:
+									fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
+										CMZN_FIELD_DOMAIN_TYPE_NODES);
 								}
 								else
 								{
 									/* create the initial template node for no fields */
-									template_node = CREATE(FE_node)(0, fe_region,
-										(struct FE_node *)NULL);
+									fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
+										use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
+									template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_nodeset, (struct FE_node *)NULL));
 									ACCESS(FE_node)(template_node);
 								}
 								/* clear field_order_info */
@@ -3576,19 +3580,13 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							if (region)
 							{
 								fe_region = cmzn_region_get_FE_region(region);
-								if (use_data_meta_flag)
-								{
-									fe_region = FE_region_get_data_FE_region(fe_region);
-								}
+								fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
+									use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 								if (template_node)
-								{
 									DEACCESS(FE_node)(&template_node);
-								}
-								template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_region, (struct FE_node *)NULL));
+								template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_nodeset, (struct FE_node *)NULL));
 								if (field_order_info)
-								{
 									DESTROY(FE_field_order_info)(&field_order_info);
-								}
 								field_order_info = CREATE(FE_field_order_info)();
 								cmzn_nodeset_group_destroy(&nodeset_group);
 							}
@@ -3633,7 +3631,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							{
 								/* read new node field information and field_order_info */
 								if (NULL != (template_node = read_FE_node_field_info(input_file,
-									fe_region, &field_order_info, time_index)))
+									fe_nodeset, &field_order_info, time_index)))
 								{
 									ACCESS(FE_node)(template_node);
 								}
@@ -3664,18 +3662,18 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							/* ensure we have node field information */
 							if (template_node)
 							{
-								FE_node *tmp_node = read_FE_node(input_file, template_node, fe_region,
+								FE_node *tmp_node = read_FE_node(input_file, template_node, fe_nodeset,
 									root_region, region, field_order_info, time_index);
 								if (tmp_node)
 								{
 									ACCESS(FE_node)(tmp_node);
-									FE_node *node = FE_region_merge_FE_node(fe_region, tmp_node);
+									FE_node *node = fe_nodeset->merge_FE_node(tmp_node);
 									if (node)
 									{
 										if (group && (!nodeset_group))
 										{
 											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-											cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
+											cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 												use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
 											if (!node_group)
@@ -3732,7 +3730,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 							if (template_element)
 							{
 								FE_element *tmp_element = read_FE_element(input_file, template_element,
-									fe_region, field_order_info);
+									fe_region, fe_nodeset, field_order_info);
 								if (tmp_element)
 								{
 									ACCESS(FE_element)(tmp_element);

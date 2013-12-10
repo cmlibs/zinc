@@ -16,8 +16,6 @@ finite element fields defined on or interpolated over them.
 #define FINITE_ELEMENT_REGION_H
 
 #include "finite_element/finite_element.h"
-#include "general/any_object.h"
-#include "general/any_object_prototype.h"
 #include "general/callback.h"
 #include "general/change_log.h"
 #include "general/object.h"
@@ -28,43 +26,195 @@ Global types
 ------------
 */
 
+/**
+ * A set of nodes/datapoints in the FE_region.
+ */
+class FE_nodeset
+{
+	FE_region *fe_region; // not accessed
+	cmzn_field_domain_type domainType;
+	struct LIST(FE_node) *nodeList;
+	struct LIST(FE_node_field_info) *node_field_info_list;
+	struct FE_node_field_info *last_fe_node_field_info;
+	// nodes added, removed or otherwise changed
+	struct CHANGE_LOG(FE_node) *fe_node_changes;
+	int next_fe_node_identifier_cache;
+	int access_count;
+
+	FE_nodeset(FE_region *fe_region);
+
+	~FE_nodeset();
+
+public:
+
+	static FE_nodeset *create(FE_region *fe_region)
+	{
+		if (fe_region)
+			return new FE_nodeset(fe_region);
+		return 0;
+	}
+
+	FE_nodeset *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static void deaccess(FE_nodeset *&nodeset)
+	{
+		if (nodeset)
+		{
+			--(nodeset->access_count);
+			if (nodeset->access_count <= 0)
+				delete nodeset;
+			nodeset = 0;
+		}
+	}
+
+	void createChangeLog();
+
+	struct CHANGE_LOG(FE_node) *extractChangeLog();
+
+	struct CHANGE_LOG(FE_node) *getChangeLog()
+	{
+		return this->fe_node_changes;
+	}
+
+	bool containsNode(FE_node *node);
+
+	struct LIST(FE_node) *createRelatedNodeList();
+
+	void detach_from_FE_region();
+
+	struct FE_node_field_info *get_FE_node_field_info(int number_of_values,
+		struct LIST(FE_node_field) *fe_node_field_list);
+	int get_FE_node_field_info_adding_new_field(
+		struct FE_node_field_info **node_field_info_address,
+		struct FE_node_field *new_node_field, int new_number_of_values);
+	struct FE_node_field_info *clone_FE_node_field_info(
+		struct FE_node_field_info *fe_node_field_info);
+	int remove_FE_node_field_info(struct FE_node_field_info *fe_node_field_info);
+
+	FE_region *get_FE_region()
+	{
+		return this->fe_region;
+	}
+
+	struct LIST(FE_node) *getNodeList()
+	{
+		return this->nodeList;
+	}
+
+	cmzn_field_domain_type getFieldDomainType() const
+	{
+		return this->domainType;
+	}
+
+	void setFieldDomainType(cmzn_field_domain_type domainTypeIn)
+	{
+		this->domainType = domainTypeIn;
+	}
+
+	void nodeChange(FE_node *node, CHANGE_LOG_CHANGE(FE_node) change, FE_node *field_info_node);
+	void nodeFieldChange(FE_node *node, FE_field *fe_field);
+	void nodeIdentifierChange(FE_node *node);
+	void nodeRemovedChange(FE_node *node);
+
+	void clear();
+	int change_FE_node_identifier(struct FE_node *node, int new_identifier);
+	FE_node *get_FE_node_from_identifier(int identifier);
+	FE_node *get_or_create_FE_node_with_identifier(int identifier);
+	int get_next_FE_node_identifier(int start_identifier);
+	int undefine_FE_field_in_FE_node_list(struct FE_field *fe_field,
+		struct LIST(FE_node) *fe_node_list, int *number_in_elements_address);
+	struct FE_node *create_FE_node_copy(int identifier, struct FE_node *source);
+	struct FE_node *merge_FE_node(struct FE_node *node);
+	int merge_FE_node_existing(struct FE_node *destination, struct FE_node *source);
+	int for_each_FE_node(LIST_ITERATOR_FUNCTION(FE_node) iterator_function, void *user_data);
+	cmzn_nodeiterator_id createNodeiterator();
+	int remove_FE_node(struct FE_node *node);
+	int remove_FE_node_list(struct LIST(FE_node) *node_list);
+	int get_last_FE_node_identifier();
+	int get_number_of_FE_nodes();
+	bool FE_field_has_multiple_times(struct FE_field *fe_field);
+	void list_btree_statistics();
+	bool is_FE_field_in_use(struct FE_field *fe_field);
+	bool canMerge(FE_nodeset &source);
+	int merge(FE_nodeset &source, FE_region *target_root_fe_region);
+};
+
+/**
+ * Internal object containing finite element fields, nodes, elements, datapoints.
+ */
 struct FE_region;
 
-struct FE_region_changes
-/*******************************************************************************
-LAST MODIFIED : 5 February 2003
-
-DESCRIPTION :
-Structure sent out with FE_region change callbacks describing the changes that
-have taken place. <fe_field_changes> lists all the FE_fields added, removed and
-modified in the region since the last callback. <node_changes> and
-<element_changes> similarly list changes to nodes and elements, except that
-the changes are limited to the fields listed in the <fe_field_changes>.
-==============================================================================*/
+/**
+ * Structure describing FE_region field, node and element changes, for passing
+ * back to owner region.
+ */
+class FE_region_changes
 {
+	struct CHANGE_LOG(FE_node) *fe_node_changes[2];
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
-	struct CHANGE_LOG(FE_node) *fe_node_changes;
 	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-}; /* struct FE_region_changes */
+	int access_count;
 
-DECLARE_CMZN_CALLBACK_TYPES(FE_region_change, \
-	struct FE_region *, struct FE_region_changes *, void);
+	FE_region_changes(struct FE_region *fe_region);
+	~FE_region_changes();
+
+public:
+
+	static FE_region_changes *create(struct FE_region *fe_region)
+	{
+		if (fe_region)
+			return new FE_region_changes(fe_region);
+		return 0;
+	}
+
+	FE_region_changes *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static void deaccess(FE_region_changes *&changes)
+	{
+		if (changes)
+		{
+			--(changes->access_count);
+			if (changes->access_count <= 0)
+				delete changes;
+			changes = 0;
+		}
+	}
+
+	struct CHANGE_LOG(FE_element) *getElementChanges(int dimension)
+	{
+		if ((1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+			return this->fe_element_changes[dimension - 1];
+		return 0;
+	}
+
+	struct CHANGE_LOG(FE_field) *getFieldChanges()
+	{
+		return this->fe_field_changes;
+	}
+
+	struct CHANGE_LOG(FE_node) *getNodeChanges(cmzn_field_domain_type domainType)
+	{
+		if (CMZN_FIELD_DOMAIN_TYPE_NODES == domainType)
+			return this->fe_node_changes[0];
+		if (CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == domainType)
+			return this->fe_node_changes[1];
+		return 0;
+	}
+
+};
 
 /*
 Global macros
 -------------
 */
-
-/* Need these macros to help the text_choose_from_fe_region macros. */
-#define FE_region_changes_get_FE_field_changes(changes) changes->fe_field_changes
-#define FE_region_changes_get_FE_node_changes(changes) changes->fe_node_changes
-
-/***************************************************************************//**
- * Obtain changes to elements of a particular dimension.
- * @param dimension  The element dimension, 1..MAXIMUM_ELEMENT_XI_DIMENSIONS(3)
- */
-struct CHANGE_LOG(FE_element) *FE_region_changes_get_FE_element_changes(
-	struct FE_region_changes *changes, int dimension);
 
 #define FE_region_FE_object_method_class( object_type ) FE_region_FE_object_method_class_FE_ ## object_type \
 
@@ -130,111 +280,56 @@ Global functions
 ----------------
 */
 
-struct FE_region *CREATE(FE_region)(struct FE_region *master_fe_region,
-	struct MANAGER(FE_basis) *basis_manager,
+/**
+ * Creates a struct FE_region owning sets of nodes, elements and datapoints.
+ * If <basis_manager> or <element_shape_list> are not supplied then new ones
+ * are created for this region.
+ */
+struct FE_region *FE_region_create(struct MANAGER(FE_basis) *basis_manager,
 	struct LIST(FE_element_shape) *element_shape_list);
-/*******************************************************************************
-LAST MODIFIED : 8 August 2006
-
-DESCRIPTION :
-Creates a struct FE_region.
-If <master_fe_region> is supplied, the <basis_manager> and <element_shape_list>
-are ignored and along with all fields, nodes and elements the FE_region may address,
-will belong to the master region, and this FE_region will be merely a container
-for nodes and elements.
-If <master_fe_region> is not supplied, the FE_region will own all its own nodes,
-elements and fields.  If <basis_manager> or <element_shape_list> are not
-supplied then a default empty object will be created for this region.  (Allowing
-them to be specified allows sharing across regions).
-==============================================================================*/
-
-int DESTROY(FE_region)(struct FE_region **fe_region_address);
-/*******************************************************************************
-LAST MODIFIED : 19 October 2002
-
-DESCRIPTION :
-Frees the memory for the FE_region and sets <*fe_region_address> to NULL.
-==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_region);
 
-PROTOTYPE_ANY_OBJECT(FE_region);
-
-/***************************************************************************//**
- * Gets the data FE_region for <fe_region>, which has an additional set
- * of discrete data objects, just like nodes, which we call "data". Data points
- * in the data_FE_region share the same fields as <fe_region>.
- * @return  Data region or NULL with error if fe_region is itself a data region.
+/**
+ * Increments the change counter in <region>. No update callbacks will occur until
+ * change counter is restored to zero by calls to FE_region_end_change.
  */
-struct FE_region *FE_region_get_data_FE_region(struct FE_region *fe_region);
-
-/***************************************************************************//**
- * @return  1 if fe_region is a data FE_region, 0 if not.
- */
-int FE_region_is_data_FE_region(struct FE_region *fe_region);
-
 int FE_region_begin_change(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 10 December 2002
 
-DESCRIPTION :
-Increments the change counter in <region>. No update callbacks will occur until
-change counter is restored to zero by calls to FE_region_end_change.
-Automatically calls the same function for any master_FE_region.
-==============================================================================*/
-
+/**
+ * Decrements the change counter in <region>. No update callbacks occur until
+ * the change counter is restored to zero by this function.
+ */
 int FE_region_end_change(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 10 December 2002
 
-DESCRIPTION :
-Decrements the change counter in <region>. No update callbacks occur until the
-change counter is restored to zero by this function.
-Automatically calls the same function for any master_FE_region.
-==============================================================================*/
+/**
+ * Removes all the fields, nodes and elements from <fe_region>.
+ * Note this function uses FE_region_begin/end_change so it sends a single change
+ * message if not already in the middle of changes.
+ */
+int FE_region_clear(struct FE_region *fe_region);
 
-int FE_region_add_callback(struct FE_region *fe_region,
-	CMZN_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 10 December 2002
+/**
+ * Internal function for getting pointer to element change log.
+ * Warning; do not hold beyond immediate function as logs are constantly
+ * recreated.
+ */
+struct CHANGE_LOG(FE_element) *FE_region_get_FE_element_changes(
+	struct FE_region *fe_region, int dimension);
 
-DESCRIPTION :
-Adds a callback to <region> so that when it changes <function> is called with
-<user_data>. <function> has 3 arguments, a struct FE_region *, a
-struct FE_region_changes * and the void *user_data.
-==============================================================================*/
+/**
+ * Internal function for getting pointer to field change log.
+ * Warning; do not hold beyond immediate function as logs are constantly
+ * recreated.
+ */
+struct CHANGE_LOG(FE_field) *FE_region_get_FE_field_changes(
+	struct FE_region *fe_region);
 
-int FE_region_remove_callback(struct FE_region *fe_region,
-	CMZN_CALLBACK_FUNCTION(FE_region_change) *function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 10 December 2002
-
-DESCRIPTION :
-Removes the callback calling <function> with <user_data> from <region>.
-==============================================================================*/
-
-int FE_region_clear(struct FE_region *fe_region, int destroy_in_master);
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Removes all the fields, nodes and elements from <fe_region>.
-If <fe_region> has a master FE_region, its fields, nodes and elements will
-still be owned by the master, unless <destroy_in_master> is set, which causes
-the nodes and elements in this <fe_region> to definitely be destroyed.
-Note this function uses FE_region_begin/end_change so it sends a single change
-message if not already in the middle of changes.
-???RC This could be made faster.
-==============================================================================*/
-
+/**
+ * @return  Non-accessed field of that name, or 0 without error if not found.
+ */
 struct FE_field *FE_region_get_FE_field_from_name(struct FE_region *fe_region,
 	const char *field_name);
-/*******************************************************************************
-LAST MODIFIED : 15 October 2002
-
-DESCRIPTION :
-Returns the field of <field_name> in <fe_region>, or NULL without error if none.
-==============================================================================*/
 
 /***************************************************************************//**
  * Safely change the name of field in fe_region to new_name, and inform clients.
@@ -249,43 +344,32 @@ Returns the field of <field_name> in <fe_region>, or NULL without error if none.
 int FE_region_set_FE_field_name(struct FE_region *fe_region,
 	struct FE_field *field, const char *new_name);
 
-int FE_region_contains_FE_field(struct FE_region *fe_region,
+/**
+ * @returns  Boolean true if field is in/from fe_region, otherwise false.
+ */
+bool FE_region_contains_FE_field(struct FE_region *fe_region,
 	struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 10 March 2003
 
-DESCRIPTION :
-Returns true if <field> is in <fe_region>.
-==============================================================================*/
-
+/**
+ * Returns the first field in <fe_region> that satisfies <conditional_function>
+ * with <user_data_void>.
+ * A NULL <conditional_function> returns the first FE_field in <fe_region>, if any.
+ * @return  Non-accessed field, or 0 if not found.
+ */
 struct FE_field *FE_region_get_first_FE_field_that(struct FE_region *fe_region,
 	LIST_CONDITIONAL_FUNCTION(FE_field) *conditional_function,
 	void *user_data_void);
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
 
-DESCRIPTION :
-Returns the first field in <fe_region> that satisfies <conditional_function>
-with <user_data_void>.
-A NULL <conditional_function> returns the first FE_field in <fe_region>, if any.
-==============================================================================*/
-
+/**
+ * Calls <iterator_function> with <user_data> for each FE_field in <region>.
+ */
 int FE_region_for_each_FE_field(struct FE_region *fe_region,
 	LIST_ITERATOR_FUNCTION(FE_field) iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
 
-DESCRIPTION :
-Calls <iterator_function> with <user_data> for each FE_field in <region>.
-==============================================================================*/
-
+/**
+ * Returns the number of FE_fields in <fe_region>.
+ */
 int FE_region_get_number_of_FE_fields(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 10 January 2003
-
-DESCRIPTION :
-Returns the number of FE_fields in <fe_region>.
-==============================================================================*/
 
 /***************************************************************************//**
  * Returns an FE_field with the given <name> merged into <fe_region> and with
@@ -332,14 +416,11 @@ the existing FE_field and it is returned.
 A NULL value is returned on any error.
 ==============================================================================*/
 
-int FE_region_is_FE_field_in_use(struct FE_region *fe_region,
+/**
+ * Returns true if field is defined on any nodes or element in fe_region.
+ */
+bool FE_region_is_FE_field_in_use(struct FE_region *fe_region,
 	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Returns true if <FE_field> is defined on any nodes and element in <fe_region>.
-==============================================================================*/
 
 int FE_region_remove_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field);
@@ -365,357 +446,38 @@ User data structure passed to set_FE_field_conditional_FE_region.
 	struct FE_region *fe_region;
 }; /* struct Set_FE_field_conditional_FE_region_data */
 
+/**
+ * Returns true if field is defined with multiple times on any node or element.
+ */
 int FE_region_FE_field_has_multiple_times(struct FE_region *fe_region,
 	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
 
-DESCRIPTION :
-Returns true if <fe_field> is defined with multiple times on any node or element
-in the ultimate master FE_region of <fe_region>.
-==============================================================================*/
-
-int FE_region_get_default_coordinate_FE_field(struct FE_region *fe_region,
-	struct FE_field **fe_field);
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Returns an <fe_field> which the <fe_region> considers to be its default
-coordinate field or returns 0 and sets *<fe_field> to NULL if it has no
-"coordinate" fields.
-==============================================================================*/
-
-int FE_region_change_FE_node_identifier(struct FE_region *fe_region,
-	struct FE_node *node, int new_identifier);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Gets <fe_region>, or its master_fe_region if it has one, to change the
-identifier of <node> to <new_identifier>. Fails if the identifier is already
-in use by an node in the same ultimate master FE_region.
-???RC Needs recoding if FE_node changed from using indexed list.
-==============================================================================*/
-
-struct FE_node *FE_region_get_FE_node_from_identifier(
-	struct FE_region *fe_region, int identifier);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Returns the node of number <identifier> in <fe_region>, or NULL without error
-if no such node found.
-==============================================================================*/
-
-struct FE_node *FE_region_get_or_create_FE_node_with_identifier(
-	struct FE_region *fe_region, int identifier);
-/*******************************************************************************
-LAST MODIFIED : 27 May 2003
-
-DESCRIPTION :
-Convenience function returning an existing node with <identifier> from
-<fe_region> or any of its ancestors. If none is found, a new node with the
-given <identifier> is created.
-If the returned node is not already in <fe_region> it is merged before return.
-It is expected that the calling function has wrapped calls to this function
-with FE_region_begin/end_change.
-==============================================================================*/
-
-int FE_region_get_next_FE_node_identifier(struct FE_region *fe_region,
-	int start_identifier);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2003
-
-DESCRIPTION :
-Returns the next unused node identifier for <fe_region> starting from
-<start_identifier>. Search is performed on the ultimate master FE_region for
-<fe_region> since they share the same FE_node namespace.
-==============================================================================*/
-
-int FE_region_contains_FE_node(struct FE_region *fe_region,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 9 December 2002
-
-DESCRIPTION :
-Returns true if <node> is in <fe_region>.
-==============================================================================*/
-
-int FE_region_contains_FE_node_conditional(struct FE_node *node,
-	void *fe_region_void);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-FE_node conditional function version of FE_region_contains_FE_node.
-Returns true if <node> is in <fe_region>.
-==============================================================================*/
-
-int FE_region_or_data_FE_region_contains_FE_node(struct FE_region *fe_region,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 26 April 2005
-
-DESCRIPTION :
-Returns true if <node> is in <fe_region> or if the <fe_region> has a
-data_FE_region attached to it in that attached region.
-==============================================================================*/
-
-int FE_node_is_not_in_FE_region(struct FE_node *node, void *fe_region_void);
-/*******************************************************************************
-LAST MODIFIED : 3 April 2003
-
-DESCRIPTION :
-Returns true if <node> is not in <fe_region>.
-==============================================================================*/
-
-int FE_region_define_FE_field_at_FE_node(struct FE_region *fe_region,
-	struct FE_node *node, struct FE_field *fe_field,
-	struct FE_time_sequence *fe_time_sequence,
-	struct FE_node_field_creator *node_field_creator);
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Checks <fe_region> contains <node>. If <fe_field> is already defined on it,
-returns successfully, otherwise defines the field at the node using optional
-<fe_time_sequence> and <node_field_creator>. Change messages are broadcast for
-the ultimate master FE_region of <fe_region>.
-Should place multiple calls to this function between begin_change/end_change.
-==============================================================================*/
-
-int FE_region_undefine_FE_field_at_FE_node(struct FE_region *fe_region,
-	struct FE_node *node, struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Checks <fe_region> contains <node>. If <fe_field> is not defined on it,
-returns successfully, otherwise undefines the field at the node. Change messages
-are broadcast for the ultimate master FE_region of <fe_region>.
-Should place multiple calls to this function between begin_change/end_change.
-Note it is more efficient to use FE_region_undefine_FE_field_in_FE_node_list
-for more than one node.
-==============================================================================*/
-
-int FE_region_undefine_FE_field_in_FE_node_list(struct FE_region *fe_region,
-	struct FE_field *fe_field, struct LIST(FE_node) *fe_node_list,
-	int *number_in_elements_address);
-/*******************************************************************************
-LAST MODIFIED : 29 April 2003
-
-DESCRIPTION :
-Makes sure <fe_field> is not defined at any nodes in <fe_node_list> from
-<fe_region>, unless that field at the node is in interpolated over an element
-from <fe_region>.
-Should wrap call to this function between begin_change/end_change.
-<fe_node_list> is unchanged by this function.
-On return, the integer at <number_in_elements_address> will be set to the
-number of nodes for which <fe_field> could not be undefined because they are
-used by element fields of <fe_field>.
-==============================================================================*/
-
-/***************************************************************************//**
- * Checks the source node is compatible with region & that there is no
- * existing node of supplied identifier, then creates node of that
- * identifier as a copy of source and adds it to the fe_region.
- *
- * @param identifier  Non-negative integer identifier of new node, or negative
- * to automatically generate (starting at 1). Fails if supplied identifier
- * already used by an existing node.
- * @return  New node (non-accessed), or NULL if failed.
+/**
+ * Returns an <fe_field> which the <fe_region> considers to be its default
+ * coordinate field. Generally the first field with the type_coordinate flag
+ * set found alphabetically.
  */
-struct FE_node *FE_region_create_FE_node_copy(struct FE_region *fe_region,
-	int identifier, struct FE_node *source);
-
-/***************************************************************************//**
- * For group FE_region only. Checks node is from master region and adds it
- * to this region if not already in it.
- *
- * @return  1 if node added, otherwise 0.
- */
-int FE_region_add_FE_node(struct FE_region *fe_region, struct FE_node *node);
-
-struct FE_node *FE_region_merge_FE_node(struct FE_region *fe_region,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Checks <node> is compatible with <fe_region> and any existing FE_node
-using the same identifier, then merges it into <fe_region>.
-If no FE_node of the same identifier exists in FE_region, <node> is added
-to <fe_region> and returned by this function, otherwise changes are merged into
-the existing FE_node and it is returned.
-During the merge, any new fields from <node> are added to the existing node of
-the same identifier. Where those fields are already defined on the existing
-node, the existing structure is maintained, but the new values are added from
-<node>. Fails if fields are not consistent in numbers of versions and
-derivatives etc.
-A NULL value is returned on any error.
-==============================================================================*/
-
-/***************************************************************************//**
- * Merges field changes from source into destination node. Checks both
- * elements are compatible with the same master region / fe_region, and adds
- * destination to fe_region if it is not the master.
- *
- * @return  1 on success, 0 on error.
- */
-int FE_region_merge_FE_node_existing(struct FE_region *fe_region,
-	struct FE_node *destination, struct FE_node *source);
-
-int FE_region_merge_FE_node_iterator(struct FE_node *node,
-	void *fe_region_void);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-FE_node iterator version of FE_region_merge_FE_node.
-==============================================================================*/
-
-struct FE_node *FE_region_get_first_FE_node_that(struct FE_region *fe_region,
-	LIST_CONDITIONAL_FUNCTION(FE_node) *conditional_function,
-	void *user_data_void);
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
-
-DESCRIPTION :
-Returns the first node in <fe_region> that satisfies <conditional_function>
-with <user_data_void>.
-A NULL <conditional_function> returns the first FE_node in <fe_region>, if any.
-==============================================================================*/
-
-int FE_region_for_each_FE_node(struct FE_region *fe_region,
-	LIST_ITERATOR_FUNCTION(FE_node) iterator_function, void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Calls <iterator_function> with <user_data> for each FE_node in <region>.
-==============================================================================*/
-
-int FE_region_for_each_FE_node_conditional(struct FE_region *fe_region,
-	LIST_CONDITIONAL_FUNCTION(FE_node) conditional_function,
-	void *conditional_user_data,
-	LIST_ITERATOR_FUNCTION(FE_node) iterator_function,
-	void *iterator_user_data);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-For each FE_node in <fe_region> satisfying <conditional_function> with
-<conditional_user_data>, calls <iterator_function> with it and
-<iterator_user_data> as arguments.
-==============================================================================*/
-
-/***************************************************************************//**
- * Create a node iterator object for iterating through the nodes in the
- * fe_region which are ordered from lowest to highest identifier. The iterator
- * initially points at the position before the first node.
- *
- * @param fe_region  The region whose nodes are to be iterated over.
- * @return  Handle to node_iterator at position before first, or NULL if error.
- */
-cmzn_nodeiterator_id FE_region_create_nodeiterator(
+struct FE_field *FE_region_get_default_coordinate_FE_field(
 	struct FE_region *fe_region);
 
-int FE_region_remove_FE_node(struct FE_region *fe_region,
-	struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-Removes <node> from <fe_region>.
-Nodes can only be removed if not in use by elements in <fe_region>.
-Should enclose call between FE_region_begin_change and FE_region_end_change to
-minimise messages.
-Note it is more efficient to use FE_region_remove_FE_node_list for more than
-one node.
-==============================================================================*/
-
-int FE_region_remove_FE_node_list(struct FE_region *fe_region,
-	struct LIST(FE_node) *node_list);
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Attempts to removes all the nodes in <node_list> from <fe_region>.
-Nodes can only be removed if not in use by elements in <fe_region>.
-Should enclose call between FE_region_begin_change and FE_region_end_change to
-minimise messages.
-On return, <node_list> will contain all the nodes that are still in
-<fe_region> after the call.
-A true return code is only obtained if all nodes from <node_list> are removed.
-==============================================================================*/
-
-int FE_region_get_number_of_FE_nodes(struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns the number of FE_nodes in <fe_region>.
-==============================================================================*/
-
-int FE_region_get_last_FE_node_identifier(struct FE_region *fe_region);
-
-struct FE_node *FE_region_node_string_to_FE_node(
-	struct FE_region *fe_region, const char *node_string);
-/*******************************************************************************
-LAST MODIFIED : 20 March 2003
-
-DESCRIPTION :
-Returns the node from <fe_region> whose number is in the string <name>.
-==============================================================================*/
-
+/**
+ * Returns the FE_basis_manager used for bases in this <fe_region>.
+ */
 struct MANAGER(FE_basis) *FE_region_get_basis_manager(
 	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns the FE_basis_manager used for bases in this <fe_region>.
-==============================================================================*/
-
-int FE_region_get_immediate_master_FE_region(struct FE_region *fe_region,
-	struct FE_region **master_fe_region_address);
-/*******************************************************************************
-LAST MODIFIED : 18 February 2003
-
-DESCRIPTION :
-Returns the master_fe_region for this <fe_region>, which is NULL if the region
-has its own namespace for fields, nodes and elements.
-Function is not recursive; returns only the master FE_region for <fe_region>
-without enquiring for that of its master.
-See also FE_region_get_ultimate_master_FE_region.
-==============================================================================*/
 
 struct LIST(FE_field) *FE_region_get_FE_field_list(struct FE_region *fe_region);
 
-int FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region,
-	struct FE_region **master_fe_region_address);
-/*******************************************************************************
-LAST MODIFIED : 18 February 2003
-
-DESCRIPTION :
-Returns the FE_region that the fields, nodes and elements of <fe_region>
-ultimately belong to. <fe_region> is returned if it has no immediate master.
-==============================================================================*/
-
+/**
+ * Returns the LIST of FE_element_shapes used for elements in this <fe_region>.
+ */
 struct LIST(FE_element_shape) *FE_region_get_FE_element_shape_list(
 	struct FE_region *fe_region);
-/*******************************************************************************
-LAST MODIFIED : 7 July 2003
 
-DESCRIPTION :
-Returns the LIST of FE_element_shapes used for elements in this <fe_region>.
-==============================================================================*/
-
-/***************************************************************************//**
- * Gets <fe_region>, or its master_fe_region if it has one, to change the
- * identifier of <element> to <new_identifier>. Fails if the identifier is
- * already in use by an element of the same dimension in the master FE_region.
+/**
+ * Gets <fe_region> to change the identifier of <element> to <new_identifier>.
+ * Fails if the identifier is already in use by an element of the same dimension
+ * in the FE_region.
  */
 int FE_region_change_FE_element_identifier(struct FE_region *fe_region,
 	struct FE_element *element, int new_identifier);
@@ -756,6 +518,12 @@ struct FE_element *FE_region_get_top_level_FE_element_from_identifier(
 struct FE_element *FE_region_get_or_create_FE_element_with_identifier(
 	struct FE_region *fe_region, int dimension, int identifier,
 	struct FE_element_shape *element_shape);
+
+/**
+ * @return  Non-accessed fe_nodeset or 0 if not found.
+ */
+FE_nodeset *FE_region_find_FE_nodeset_by_field_domain_type(
+	struct FE_region *fe_region, enum cmzn_field_domain_type domain_type);
 
 /**
  * Find handle to the mesh scale factor set of the given name, if any.
@@ -838,21 +606,17 @@ DESCRIPTION :
 Returns true if <element> is not in <fe_region>.
 ==============================================================================*/
 
+/**
+ * Checks <fe_region> contains <element>. If <fe_field> is already defined on it,
+ * returns successfully, otherwise defines the field at the element using the
+ * <components>.
+ * Should place multiple calls to this function between begin_change/end_change.
+ */
 int FE_region_define_FE_field_at_element(struct FE_region *fe_region,
 	struct FE_element *element, struct FE_field *fe_field,
 	struct FE_element_field_component **components);
-/*******************************************************************************
-LAST MODIFIED : 6 March 2003
 
-DESCRIPTION :
-Checks <fe_region> contains <element>. If <fe_field> is already defined on it,
-returns successfully, otherwise defines the field at the element using the
-<components>. Change messages are broadcast for the ultimate master FE_region
-of <fe_region>.
-Should place multiple calls to this function between begin_change/end_change.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Checks the source element is compatible with region & that there is no
  * existing element of supplied identifier, then creates element of that
  * identifier as a copy of source and adds it to the fe_region.
@@ -866,16 +630,7 @@ Should place multiple calls to this function between begin_change/end_change.
 struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 	int identifier, struct FE_element *source);
 
-/***************************************************************************//**
- * For group FE_region only. Checks element is from master region and adds it
- * to this region if not already in it.
- *
- * @return  1 if element added, otherwise 0.
- */
-int FE_region_add_FE_element(struct FE_region *fe_region,
-	struct FE_element *element);
-
-/***************************************************************************//**
+/**
  * Checks <element> is compatible with <fe_region> and any existing FE_element
  * using the same identifier, then merges it into <fe_region>.
  * If no FE_element of the same identifier exists in FE_region, <element> is
@@ -892,7 +647,7 @@ int FE_region_add_FE_element(struct FE_region *fe_region,
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element);
 
-/***************************************************************************//**
+/**
  * Merges field changes from source into destination element. Checks both
  * elements are compatible with the same master region / fe_region, and adds
  * destination to fe_region if it is not the master.
@@ -957,40 +712,32 @@ against.
  */
 int FE_region_define_faces(struct FE_region *fe_region);
 
+/**
+ * Removes <element> and all its faces that are not shared with other elements
+ * from <fe_region>.
+ * FE_region_begin/end_change are called internally to reduce change messages to
+ * one per call. User should place calls to the begin/end_change functions
+ * around multiple calls to this function.
+ * Can only remove faces and lines if there are no parents in this fe_region.
+ * This function is recursive.
+ */
 int FE_region_remove_FE_element(struct FE_region *fe_region,
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
 
-DESCRIPTION :
-Removes <element> and all its faces that are not shared with other elements
-from <fe_region>.
-FE_region_begin/end_change are called internally to reduce change messages to
-one per call. User should place calls to the begin/end_change functions around
-multiple calls to this function.
-Can only remove faces and lines if there is no master_fe_region or no parents
-in this fe_region.
-This function is recursive.
-==============================================================================*/
-
+/**
+ * Attempts to removes all the elements in <element_list>, and all their faces
+ * that are not shared with other elements from <fe_region>.
+ * FE_region_begin/end_change are called internally to reduce change messages to
+ * one per call. User should place calls to the begin/end_change functions
+ * around multiple calls to this function.
+ * Can only remove faces and lines if there are no parents in this fe_region.
+ * On return, <element_list> will contain all the elements that are still in
+ * <fe_region> after the call.
+ * A true return code is only obtained if all elements from <element_list> are
+ * removed.
+ */
 int FE_region_remove_FE_element_list(struct FE_region *fe_region,
 	struct LIST(FE_element) *element_list);
-/*******************************************************************************
-LAST MODIFIED : 14 May 2003
-
-DESCRIPTION :
-Attempts to removes all the elements in <element_list>, and all their faces that
-are not shared with other elements from <fe_region>.
-FE_region_begin/end_change are called internally to reduce change messages to
-one per call. User should place calls to the begin/end_change functions around
-multiple calls to this function.
-Can only remove faces and lines if there is no master_fe_region or no parents
-in this fe_region.
-On return, <element_list> will contain all the elements that are still in
-<fe_region> after the call.
-A true return code is only obtained if all elements from <element_list> are
-removed.
-==============================================================================*/
 
 int FE_region_element_or_parent_has_field(struct FE_region *fe_region,
 	struct FE_element *element, struct FE_field *field);
@@ -1092,71 +839,51 @@ struct FE_element *FE_region_element_string_to_FE_element(
 struct FE_element *FE_region_any_element_string_to_FE_element(
 	struct FE_region *fe_region, const char *name);
 
+/**
+ * Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
+ */
 int FE_region_smooth_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field, FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
 
-DESCRIPTION :
-Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
-==============================================================================*/
-
+/**
+ * Finds or creates a struct FE_time_sequence in <fe_region> with the given
+ * <number_of_times> and <times>.
+ */
 struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
 	struct FE_region *fe_region, int number_of_times, const FE_value *times);
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
 
-DESCRIPTION :
-Finds or creates a struct FE_time_sequence in <fe_region> with the given
-<number_of_times> and <times>.
-==============================================================================*/
-
+/**
+ * Finds or creates a struct FE_time_sequence in <fe_region> which has the list
+ * of times formed by merging the two time_sequences supplied.
+ */
 struct FE_time_sequence *FE_region_get_FE_time_sequence_merging_two_time_series(
 	struct FE_region *fe_region, struct FE_time_sequence *time_sequence_one,
 	struct FE_time_sequence *time_sequence_two);
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
 
-DESCRIPTION :
-Finds or creates a struct FE_time_sequence in <fe_region> which has the list of
-times formed by merging the two time_sequences supplied.
-==============================================================================*/
-
+/**
+ * Finds or creates a struct FE_basis in <fe_region> with the given basis_type.
+ */
 struct FE_basis *FE_region_get_FE_basis_matching_basis_type(
 	struct FE_region *fe_region, int *basis_type);
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
 
-DESCRIPTION :
-Finds or creates a struct FE_basis in <fe_region> with the given <basis_type>.
-Recursive if fe_region has a master_fe_region.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Sets the owning cmiss_region for this fe_region. Can also clear it.
  * Private - only for use by cmzn_region on construction and destruction!
  */
 void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
 	struct cmzn_region *cmiss_region);
 
-/***************************************************************************//**
- * @return  The cmzn_region containing this fe_region.
+/**
+ * @return  The cmzn_region containing this fe_region. Not accessed.
  */
 struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region);
-
-/***************************************************************************//**
- * @return  The master cmzn_region containing this fe_region.
- */
-struct cmzn_region *FE_region_get_master_cmzn_region(struct FE_region *fe_region);
-
-struct FE_region *FE_region_get_ultimate_master_FE_region(struct FE_region *fe_region);
 
 /***************************************************************************//**
  * Returns true if definitions of fields, nodes and elements in
  * <source_fe_region> are compatible with those in <target_fe_region>, such that
  * FE_region_merge should succeed. Neither region is modified.
  */
-int FE_region_can_merge(struct FE_region *target_fe_region,
+bool FE_region_can_merge(struct FE_region *target_fe_region,
 	struct FE_region *source_fe_region);
 
 /***************************************************************************//**
@@ -1173,8 +900,6 @@ int FE_region_merge(struct FE_region *target_fe_region,
 
 struct LIST(FE_element) *FE_region_create_related_element_list_for_dimension(
 	struct FE_region *fe_region, int dimension);
-
-struct LIST(FE_node) *FE_region_create_related_node_list(struct FE_region *fe_region);
 
 /***************************************************************************//**
  * List statistics about btree structures storing a region's nodes and elements.

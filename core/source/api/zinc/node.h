@@ -48,14 +48,14 @@ ZINC_API enum cmzn_node_value_label cmzn_node_value_label_enum_from_string(
 ZINC_API char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label type);
 
 /**
- * Get a handle to a nodeset by its domain type, either
+ * Get a handle to a nodeset by its field domain type, either
  * CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
  *
  * @param field_module  The field module the nodeset belongs to.
  * @param domain_type  CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
  * @return  Handle to the nodeset, or 0 if error.
  */
-ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_domain_type(
+ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 	cmzn_fieldmodule_id field_module, enum cmzn_field_domain_type domain_type);
 
 /**
@@ -90,7 +90,7 @@ ZINC_API cmzn_nodeset_id cmzn_nodeset_access(cmzn_nodeset_id nodeset);
  * Internally this just decrements the reference count.
  *
  * @param nodeset_address  Address of handle to the nodeset to destroy.
- *  @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_nodeset_destroy(cmzn_nodeset_id *nodeset_address);
 
@@ -513,6 +513,55 @@ ZINC_API int cmzn_node_set_identifier(cmzn_node_id node, int identifier);
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_template);
+
+/**
+ * Returns a new handle to the nodeset changes with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param nodesetchanges  The nodeset changes to obtain a new reference to.
+ * @return  New nodeset changes handle with incremented reference count.
+ */
+ZINC_API cmzn_nodesetchanges_id cmzn_nodesetchanges_access(
+	cmzn_nodesetchanges_id nodesetchanges);
+
+/**
+ * Destroys this handle to the nodesetchanges and sets it to NULL.
+ * Internally this just decrements the reference count.
+ *
+ * @param nodesetchanges_address  Address of handle to the nodeset changes to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_nodesetchanges_destroy(cmzn_nodesetchanges_id *nodesetchanges_address);
+
+/**
+ * Returns if and how a node has changed in the nodeset changes.
+ *
+ * @param nodesetchanges  The nodeset changes to query.
+ * @param node  The node to query about.
+ * @return  Logical OR of change bit flags. See #cmzn_node_change_flag.
+ */
+ZINC_API cmzn_node_change_flags cmzn_nodesetchanges_get_node_change_flags(
+	cmzn_nodesetchanges_id nodesetchanges, cmzn_node_id node);
+
+/**
+ * Returns the number of changes to nodes in the nodeset changes. Note this
+ * can be larger than the number of nodes in the nodeset if multiple changes are
+ * made to the same nodes, or nodes are removed.
+ *
+ * @param nodesetchanges  The nodeset changes to query.
+ * @return  The number of changes to nodes.
+ */
+ZINC_API int cmzn_nodesetchanges_get_number_of_changes(
+	cmzn_nodesetchanges_id nodesetchanges);
+
+/**
+ * Returns logical OR of change flags for all nodes in the nodeset changes.
+ *
+ * @param nodesetchanges  The nodeset changes to query.
+ * @return  Logical OR of change bit flags. See #cmzn_node_change_flag.
+ */
+ZINC_API cmzn_node_change_flags cmzn_nodesetchanges_get_summary_node_change_flags(
+	cmzn_nodesetchanges_id nodesetchanges);
 
 #ifdef __cplusplus
 }

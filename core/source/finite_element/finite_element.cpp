@@ -273,11 +273,11 @@ struct FE_node_field_info
 	/* the size of the data in node->values->storage */
 	int values_storage_size;
 
-  /* list of the node fields */
-  struct LIST(FE_node_field) *node_field_list;
+	/* list of the node fields */
+	struct LIST(FE_node_field) *node_field_list;
 
-	/* the FE_region this FE_node_field_info and all nodes using it belong to */
-  struct FE_region *fe_region;
+	/* the FE_nodeset this FE_node_field_info and all nodes using it belong to */
+	FE_nodeset *fe_nodeset;
 
 	/* the number of structures that point to this node field information.  The
 		node field information cannot be destroyed while this is greater than 0 */
@@ -4224,31 +4224,14 @@ It is an error if an equivalent FE_field is not found.
 } /* FE_node_field_list_clone_with_FE_field_list */
 
 struct FE_node_field_info *CREATE(FE_node_field_info)(
-	struct FE_region *fe_region, struct LIST(FE_node_field) *fe_node_field_list,
+	FE_nodeset *fe_nodeset, struct LIST(FE_node_field) *fe_node_field_list,
 	int number_of_values)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_node_field_info with a pointer to <fe_region> and a copy of
-the <fe_node_field_list>.
-Fails if more than one FE_node_field in the list references the same field.
-If <fe_node_field_list> is omitted, an empty list is assumed.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is added to the list of
-FE_node_field_info in the FE_region and is therefore owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
 {
 	struct FE_node_field_info *fe_node_field_info;
 
 	ENTER(CREATE(FE_node_field_info));
 	fe_node_field_info = (struct FE_node_field_info *)NULL;
-	if (fe_region)
+	if (fe_nodeset)
 	{
 		if (ALLOCATE(fe_node_field_info, struct FE_node_field_info, 1))
 		{
@@ -4256,10 +4239,10 @@ common object.
 			fe_node_field_info->number_of_values = number_of_values;
 			fe_node_field_info->values_storage_size = 0;
 			fe_node_field_info->node_field_list = CREATE_LIST(FE_node_field)();
-			/* maintain pointer to the the FE_region this information belongs to.
-				 It is not ACCESSed since FE_region is the owning object and it
-				 would prevent the FE_region from being destroyed. */
-			fe_node_field_info->fe_region = fe_region;
+			/* maintain pointer to the the FE_nodeset this information belongs to.
+				 It is not ACCESSed since FE_nodeset is the owning object and it
+				 would prevent the FE_nodeset from being destroyed. */
+			fe_node_field_info->fe_nodeset = fe_nodeset;
 			fe_node_field_info->access_count = 0;
 			if (fe_node_field_info->node_field_list && ((!fe_node_field_list) ||
 					COPY_LIST(FE_node_field)(fe_node_field_info->node_field_list,
@@ -4336,22 +4319,14 @@ for the information and sets <*node_field_info_address> to NULL.
 
 DECLARE_ACCESS_OBJECT_FUNCTION(FE_node_field_info)
 
+/**
+ * Special version of DEACCESS which if access_count reaches 1 removes the
+ * info from the list held by its fe_nodeset member.
+ */
 PROTOTYPE_DEACCESS_OBJECT_FUNCTION(FE_node_field_info)
-/*******************************************************************************
-LAST MODIFIED : 29 January 2003
-
-DESCRIPTION :
-Special version of DEACCESS which if the FE_node_field_info access_count reaches
-1 and it has an fe_region member, calls FE_region_remove_FE_node_field_info.
-Since the FE_region accesses the info once, this indicates no other object is
-using it so it should be flushed from the FE_region. When the owning FE_region
-deaccesses the info, it is destroyed in this function.
-==============================================================================*/
 {
 	int return_code;
 	struct FE_node_field_info *object;
-
-	ENTER(DEACCESS(FE_node_field_info));
 	if (object_address && (object = *object_address))
 	{
 		(object->access_count)--;
@@ -4360,10 +4335,9 @@ deaccesses the info, it is destroyed in this function.
 		{
 			if (1 == object->access_count)
 			{
-				if (object->fe_region)
+				if (object->fe_nodeset)
 				{
-					return_code =
-						FE_region_remove_FE_node_field_info(object->fe_region, object);
+					return_code = object->fe_nodeset->remove_FE_node_field_info(object);
 				}
 			}
 			else
@@ -4377,100 +4351,36 @@ deaccesses the info, it is destroyed in this function.
 	{
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DEACCESS(FE_node_field_info) */
+}
 
 PROTOTYPE_REACCESS_OBJECT_FUNCTION(FE_node_field_info)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Special version of REACCESS which if the FE_node_field_info access_count reaches
-1 and it has an fe_region member, calls FE_region_remove_FE_node_field_info.
-Since the FE_region accesses the info once, this indicates no other object is
-using it so it should be flushed from the FE_region. When the owning FE_region
-deaccesses the info, it is destroyed in this function.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_node_field_info *current_object;
-
-	ENTER(REACCESS(FE_node_field_info));
+	if (new_object)
+		++(new_object->access_count);
 	if (object_address)
 	{
-		return_code = 1;
-		if (new_object)
-		{
-			/* access the new object */
-			(new_object->access_count)++;
-		}
-		if (NULL != (current_object = *object_address))
-		{
-			/* deaccess the current object */
-			(current_object->access_count)--;
-			if (current_object->access_count <= 1)
-			{
-				if (1 == current_object->access_count)
-				{
-					if (current_object->fe_region)
-					{
-						return_code = FE_region_remove_FE_node_field_info(
-							current_object->fe_region, current_object);
-					}
-				}
-				else
-				{
-					return_code = DESTROY(FE_node_field_info)(object_address);
-				}
-			}
-		}
-		/* point to the new object */
+		if (*object_address)
+			DEACCESS(FE_node_field_info)(object_address);
 		*object_address = new_object;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"REACCESS(FE_node_field_info).  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* REACCESS(FE_node_field_info) */
+	return 0;
+}
 
 DECLARE_LIST_FUNCTIONS(FE_node_field_info)
 
-int FE_node_field_info_clear_FE_region(
+int FE_node_field_info_clear_FE_nodeset(
 	struct FE_node_field_info *node_field_info, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <node_field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_node_field_info_clear_FE_region);
 	USE_PARAMETER(dummy_void);
 	if (node_field_info)
 	{
-		node_field_info->fe_region = (struct FE_region *)NULL;
-		return_code = 1;
+		node_field_info->fe_nodeset = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_field_info_clear_FE_region.  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_field_info_clear_FE_region */
+	return 0;
+}
 
 int FE_node_field_info_has_FE_field(
 	struct FE_node_field_info *node_field_info, void *fe_field_void)
@@ -11093,20 +11003,7 @@ int FE_node_field_creator_has_derivative(
 }
 
 struct FE_node *CREATE(FE_node)(int cm_node_identifier,
-	struct FE_region *fe_region, struct FE_node *template_node)
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Creates and returns a node with the specified <cm_node_identifier>.
-If <fe_region> is supplied a blank node with the given identifier but no fields
-is returned. If <template_node> is supplied, a copy of it, including all fields
-and values but with the new identifier, is returned.
-Exactly one of <fe_region> or <template_node> must be supplied.
-The new node is set to belong to the ultimate master FE_region of <fe_region>
-if supplied, or to the same master FE_region as <template_node> if supplied.
-Note that <cm_node_identifier> must be non-negative.
-==============================================================================*/
+	FE_nodeset *fe_nodeset, struct FE_node *template_node)
 {
 	int return_code;
 	struct FE_node *node;
@@ -11114,7 +11011,7 @@ Note that <cm_node_identifier> must be non-negative.
 	ENTER(CREATE(FE_node));
 	node = (struct FE_node *)NULL;
 	if ((0 <= cm_node_identifier) &&
-		(((!fe_region) && template_node) || (fe_region && (!template_node))))
+		(((!fe_nodeset) && template_node) || (fe_nodeset && (!template_node))))
 	{
 		if (ALLOCATE(node, struct FE_node, 1))
 		{
@@ -11149,11 +11046,10 @@ Note that <cm_node_identifier> must be non-negative.
 			else
 			{
 				if (!(node->fields = ACCESS(FE_node_field_info)(
-					FE_region_get_FE_node_field_info(fe_region,
-						/*number_of_values*/0, (struct LIST(FE_node_field) *)NULL))))
+					fe_nodeset->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)0))))
 				{
 					display_message(ERROR_MESSAGE,
-						"CREATE(FE_node).  FE_region could not supply node field info");
+						"CREATE(FE_node).  FE_nodeset could not supply node field info");
 					return_code = 0;
 				}
 			}
@@ -11354,23 +11250,16 @@ the copy is set to the current <value_storage_size>, and both it and the
 
 struct FE_node *FE_node_copy_with_FE_field_list(struct FE_node *node,
 	struct LIST(FE_field) *fe_field_list)
-/*******************************************************************************
-LAST MODIFIED : 6 March 2003
-
-DESCRIPTION :
-Creates a copy of <node> containing only FE_node_fields from <node> which have
-their FE_field listed in <fe_field_list>.
-==============================================================================*/
 {
 	struct FE_node *copy_node;
 	struct FE_node_field_copy_with_FE_field_list_data copy_data;
 	struct FE_node_field_info *fe_node_field_info;
-	struct FE_region *fe_region;
+	FE_nodeset *fe_nodeset;
 	Value_storage *values_storage;
 
 	ENTER(FE_node_copy_with_FE_field_list);
 	copy_node = (struct FE_node *)NULL;
-	if (node && node->fields && (fe_region = node->fields->fe_region) &&
+	if (node && node->fields && (fe_nodeset = node->fields->fe_nodeset) &&
 		fe_field_list)
 	{
 		copy_data.number_of_values = 0;
@@ -11390,10 +11279,10 @@ their FE_field listed in <fe_field_list>.
 						/*optimised_merge*/0)))
 			{
 				/* create a node field info for the combined list */
-				if (NULL != (fe_node_field_info = FE_region_get_FE_node_field_info(
-					fe_region, copy_data.number_of_values, copy_data.node_field_list)))
+				if (NULL != (fe_node_field_info = fe_nodeset->get_FE_node_field_info(
+					copy_data.number_of_values, copy_data.node_field_list)))
 				{
-					if (NULL != (copy_node = CREATE(FE_node)(node->cm_node_identifier, fe_region,
+					if (NULL != (copy_node = CREATE(FE_node)(node->cm_node_identifier, fe_nodeset,
 						(struct FE_node *)NULL)))
 					{
 						/* fill in the fields and values storage */
@@ -11474,33 +11363,29 @@ Up to the calling routine to deallocate the returned char string!
 	return (return_code);
 } /* GET_NAME(FE_node) */
 
-int FE_region_get_FE_node_field_info_adding_new_times(
-	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address,
+/**
+ * Updates the pointer to <node_field_info_address> to point to a node_field info
+ * which appends to the fields in <node_field_info_address> one <new_node_field>.
+ * The node_field_info returned in <node_field_info_address> will be for the
+ * <new_number_of_values>.
+ * The <fe_nodeset> maintains an internal list of these structures so they can be
+ * shared between nodes.  This function allows a fast path when adding a single
+ * field.  If the node_field passed in is only referenced by one external object
+ * then it is assumed that this function can modify it rather than copying.  If
+ * there are more references then the object is copied and then modified.
+ * This function handles the access and deaccess of the <node_field_info_address>
+ * as if it is just updating then there is nothing to do.
+ */
+int FE_nodeset_get_FE_node_field_info_adding_new_times(
+	FE_nodeset *fe_nodeset, struct FE_node_field_info **node_field_info_address,
 	struct FE_node_field *new_node_field)
-/*******************************************************************************
-LAST MODIFIED : 13 December 2005
-
-DESCRIPTION :
-Updates the pointer to <node_field_info_address> to point to a node_field info
-which appends to the fields in <node_field_info_address> one <new_node_field>.
-The node_field_info returned in <node_field_info_address> will be for the
-<new_number_of_values>.
-The <fe_region> maintains an internal list of these structures so they can be
-shared between nodes.  This function allows a fast path when adding a single
-field.  If the node_field passed in is only referenced by one external object
-then it is assumed that this function can modify it rather than copying.  If
-there are more references then the object is copied and then modified.
-This function handles the access and deaccess of the <node_field_info_address>
-as if it is just updating then there is nothing to do.
-==============================================================================*/
 {
 	int return_code;
 	struct FE_node_field *node_field, *node_field_copy;
 	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
 	struct LIST(FE_node_field) *node_field_list;
 
-	ENTER(FE_region_get_FE_node_field_info_adding_new_times);
-	if (fe_region && node_field_info_address &&
+	if (fe_nodeset && node_field_info_address &&
 		(existing_node_field_info = *node_field_info_address))
 	{
 		return_code = 1;
@@ -11545,8 +11430,8 @@ as if it is just updating then there is nothing to do.
 						FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
 						ADD_OBJECT_TO_LIST(FE_node_field)(node_field_copy, node_field_list);
 						/* create the new node information, number_of_values has not changed */
-						if (NULL != (new_node_field_info = FE_region_get_FE_node_field_info(
-							fe_region, existing_node_field_info->number_of_values, node_field_list)))
+						if (0 != (new_node_field_info = fe_nodeset->get_FE_node_field_info(
+							existing_node_field_info->number_of_values, node_field_list)))
 						{
 							REACCESS(FE_node_field_info)(node_field_info_address,
 								new_node_field_info);
@@ -11559,20 +11444,18 @@ as if it is just updating then there is nothing to do.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_region_get_FE_node_field_info_adding_new_times.  Field not already defined.");
+				"FE_nodeset_get_FE_node_field_info_adding_new_times.  Field not already defined.");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_get_FE_node_field_info_adding_new_field.  Invalid argument(s)");
+			"FE_nodeset_get_FE_node_field_info_adding_new_times.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_region_get_FE_node_field_info_adding_new_field */
+}
 
 int define_FE_field_at_node(struct FE_node *node, struct FE_field *field,
 	struct FE_time_sequence *fe_time_sequence,
@@ -11605,7 +11488,8 @@ Defines a field at a node (does not assign values)
 	return_code = 0;
 	if (node && field && (fe_region = FE_field_get_FE_region(field)) &&
 		(node_field_info = node->fields) &&
-		(node_field_info->fe_region == fe_region) &&
+		(node_field_info->fe_nodeset) &&
+		(node_field_info->fe_nodeset->get_FE_region() == fe_region) &&
 		(component_number_of_derivatives =
 			fe_node_field_creator->numbers_of_derivatives) &&
 		(component_number_of_versions =
@@ -11687,8 +11571,8 @@ Defines a field at a node (does not assign values)
 								/* get the node_field_info for the new list */
 								merged_node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 									field, new_node_field_list);
-								FE_region_get_FE_node_field_info_adding_new_times(
-									node_field_info->fe_region, &node->fields,
+								FE_nodeset_get_FE_node_field_info_adding_new_times(
+									node_field_info->fe_nodeset, &node->fields,
 									merged_node_field);
 								new_node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
 									field, node->fields->node_field_list);
@@ -11763,8 +11647,8 @@ Defines a field at a node (does not assign values)
 				{
 					existing_values_storage_size = node_field_info->values_storage_size;
 					total_number_of_values = node_field_info->number_of_values + number_of_values;
-					if (FE_region_get_FE_node_field_info_adding_new_field(fe_region,
-							&node_field_info, node_field, total_number_of_values))
+					if (node_field_info->fe_nodeset->get_FE_node_field_info_adding_new_field(
+						&node_field_info, node_field, total_number_of_values))
 					{
 						if (GENERAL_FE_FIELD == field->fe_field_type)
 						{
@@ -11923,7 +11807,7 @@ Defines a field at a node (does not assign values)
 						}
 						if (return_code)
 						{
-							/* Already handled the accessing in FE_region_get_FE_node_field_info_adding_new_field */
+							/* already handled the accessing in FE_nodeset::get_FE_node_field_info_adding_new_field */
 							node->fields = node_field_info;
 						}
 						else
@@ -12108,16 +11992,6 @@ defined on it, ensures those nodes contributing to <fe_field> are not in the
 } /* FE_element_ensure_FE_field_nodes_are_not_in_list */
 
 int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 28 April 2003
-
-DESCRIPTION :
-Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
-then removes values storage for it and shifts values storage for all subsequent
-fields down.
-Note: Must ensure that the node field is not in-use by any elements before it
-is undefined!
-==============================================================================*/
 {
 	int bytes_to_copy,field_number_of_values,return_code;
 	struct FE_node_field *node_field;
@@ -12126,10 +12000,10 @@ is undefined!
 	struct FE_region *fe_region;
 	Value_storage *values_storage;
 
-	ENTER(undefine_FE_field_at_node);
 	if (node && field && (fe_region = FE_field_get_FE_region(field)) &&
 		(existing_node_field_info = node->fields) &&
-		(existing_node_field_info->fe_region == fe_region))
+		(existing_node_field_info->fe_nodeset) &&
+		(existing_node_field_info->fe_nodeset->get_FE_region() == fe_region))
 	{
 		/* check if the field is already defined at the node */
 		if (NULL != (node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
@@ -12158,7 +12032,7 @@ is undefined!
 				existing_node_field_info->node_field_list))
 			{
 				/* create the new node information */
-				if (NULL != (new_node_field_info = FE_region_get_FE_node_field_info(fe_region,
+				if (NULL != (new_node_field_info = existing_node_field_info->fe_nodeset->get_FE_node_field_info(
 					existing_node_field_info->number_of_values - field_number_of_values,
 					exclusion_data.node_field_list)))
 				{
@@ -12218,7 +12092,7 @@ is undefined!
 	LEAVE;
 
 	return (return_code);
-} /* undefine_FE_field_at_node */
+}
 
 int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
 	int number_of_derivatives, enum FE_nodal_value_type *derivative_value_types)
@@ -12369,7 +12243,6 @@ int for_each_FE_field_at_node_alphabetical_indexer_priority(
 	struct FE_field *field;
 	struct FE_field_order_info *field_order_info;
 	struct FE_node_field *node_field;
-	struct FE_region *fe_region;
 
 	ENTER(for_each_FE_field_at_node_alphabetical_indexer_priority);
 	return_code = 0;
@@ -12377,7 +12250,7 @@ int for_each_FE_field_at_node_alphabetical_indexer_priority(
 	{
 		// get list of all fields in default alphabetical order
 		field_order_info = CREATE(FE_field_order_info)();
-		fe_region = node->fields->fe_region;
+		FE_region *fe_region = node->fields->fe_nodeset->get_FE_region();
 		return_code = FE_region_for_each_FE_field(fe_region,
 			FE_field_add_to_FE_field_order_info, (void *)field_order_info);
 		FE_field_order_info_prioritise_indexer_fields(field_order_info);
@@ -12520,31 +12393,12 @@ Private function only to be called by FE_region when merging FE_regions!
 	return (return_code);
 } /* FE_node_set_FE_node_field_info */
 
-struct FE_region *FE_node_get_FE_region(struct FE_node *node)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Returns the FE_region that <node> belongs to.
-==============================================================================*/
+FE_nodeset *FE_node_get_FE_nodeset(struct FE_node *node)
 {
-	struct FE_region *fe_region;
-
-	ENTER(FE_node_get_FE_node_field_info);
 	if (node && node->fields)
-	{
-		fe_region = node->fields->fe_region;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_get_FE_region.  Invalid argument(s)");
-		fe_region = (struct FE_region *)NULL;
-	}
-	LEAVE;
-
-	return (fe_region);
-} /* FE_node_get_FE_region */
+		return node->fields->fe_nodeset;
+	return 0;
+}
 
 int FE_node_to_node_string(struct FE_node *node, char **string_address)
 /*****************************************************************************
@@ -12933,10 +12787,9 @@ and <component_number> at the <node>. \
 				*((value_type *)values_storage) = value; \
 				return_code=1; \
 			} \
-		 if (return_code) \
-		 { \
-				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field); \
-			} \
+			/* avoid notifying changes to non-managed nodes */ \
+			if (return_code && node->fields->fe_nodeset->containsNode(node)) \
+				node->fields->fe_nodeset->nodeFieldChange(node, field); \
 		} \
 		else \
 		{	 \
@@ -13002,16 +12855,14 @@ it should only be used temporarily. \
 				*value = (value_type *)values_storage; \
 				return_code=1; \
 			} \
-		 if (return_code) \
-		 { \
-				/* Check this node is being managed by the region it belongs to (All nodes \
-					are created with respect to some region but they are not necessarily merged \
-					into it yet. */ \
+			/* avoid notifying changes to non-managed nodes */ \
+			if (return_code && node->fields->fe_nodeset->containsNode(node)) \
+			{ \
 				/* Notify the clients that this node is changed, even though it hasn't \
-					changed yet.  If users of the this function have used begin_cache and \
+					changed yet.  If users of this function have used begin_cache and \
 					end cache around their routines then the correct notifications will happen \
 					once the end cache is done */ \
-				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field); \
+				node->fields->fe_nodeset->nodeFieldChange(node, field); \
 			} \
 		} \
 		else \
@@ -13198,7 +13049,9 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 					}
 					values_storage += sizeof(FE_value);
 				}
-				FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field);
+				/* avoid notifying changes to non-managed nodes */
+				if (node->fields->fe_nodeset->containsNode(node))
+					node->fields->fe_nodeset->nodeFieldChange(node, field);
 				return_code=1;
 			}
 			else
@@ -13223,43 +13076,6 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 
 	return (return_code);
 } /* set_FE_nodal_element_xi_value */
-
-int FE_node_conditional_iterator(struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-If <node> satisfies the <conditional_function> with <conditional_user_data>,
-calls <iterator_function> with it and the <iterator_user_data>.
-<data_void> points at a struct FE_node_conditional_iterator_data.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_node_conditional_iterator_data *data;
-
-	ENTER(FE_node_conditional_iterator);
-	if (node && (data = (struct FE_node_conditional_iterator_data *)data_void) &&
-		data->conditional_function && data->iterator_function)
-	{
-		if ((data->conditional_function)(node, data->conditional_user_data))
-		{
-			return_code = (data->iterator_function)(node, data->iterator_user_data);
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_conditional_iterator.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_conditional_iterator */
 
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void)
 /*******************************************************************************
@@ -13560,12 +13376,11 @@ in the <changed_element_list>, or in any elements using nodes from the
 	return (return_code);
 } /* FE_node_is_embedded_in_changed_element */
 
-int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
-	struct LIST(FE_field) *field_list, struct FE_region *fe_region)
+int FE_nodeset_clear_embedded_locations(FE_nodeset *fe_nodeset,
+	struct LIST(FE_field) *field_list)
 {
-	if (!field_list || !node_list)
+	if (!field_list || !fe_nodeset)
 		return 0;
-	cmzn_set_cmzn_node *nodes = reinterpret_cast<cmzn_set_cmzn_node*>(node_list);
 	cmzn_set_FE_field *fields = reinterpret_cast<cmzn_set_FE_field*>(field_list);
 	FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
 	for (cmzn_set_FE_field::iterator field_iter = fields->begin(); field_iter != fields->end(); ++field_iter)
@@ -13574,16 +13389,17 @@ int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
 		if ((ELEMENT_XI_VALUE == field->value_type) &&
 			(GENERAL_FE_FIELD == field->fe_field_type))
 		{
-			cmzn_nodeiterator node_iter(nodes);
+			cmzn_nodeiterator *node_iter = fe_nodeset->createNodeiterator();
 			cmzn_node_id node = 0;
-			while (0 != (node = node_iter.next_non_access()))
+			while (0 != (node = node_iter->next_non_access()))
 			{
-				if (node->fields && (node->fields->fe_region == fe_region))
-				{
+				// don't clear embedded locations on nodes now owned by a different nodeset
+				// as happens when merging from a separate region
+				if (node->fields->fe_nodeset == fe_nodeset)
 					set_FE_nodal_element_xi_value(node, field, /*component_number*/0,
 						/*version*/0, FE_NODAL_VALUE, (struct FE_element *)0, xi);
-				}
 			}
+			cmzn_nodeiterator_destroy(&node_iter);
 		}
 	}
 	return 1;
@@ -14207,7 +14023,9 @@ at the <node>. <string> may be NULL.
 				{
 					strcpy(the_string,string);
 					*string_address=the_string;
-					FE_region_notify_FE_node_field_change(node->fields->fe_region, node, field);
+					/* avoid notifying changes to non-managed nodes */
+					if (node->fields->fe_nodeset->containsNode(node))
+						node->fields->fe_nodeset->nodeFieldChange(node, field);
 					return_code=1;
 				}
 				else
@@ -15243,31 +15061,20 @@ fe_field is found.  The fe_field found is returned as fe_field_void.
 } /* FE_node_find_default_coordinate_field_iterator */
 
 int merge_FE_node(struct FE_node *destination, struct FE_node *source)
-/*******************************************************************************
-LAST MODIFIED : 24 February 2003
-
-DESCRIPTION :
-Merges the fields from <source> into <destination>. Existing fields in the
-<destination> keep the same node field description as before with new field
-storage following them. Where existing fields in <destination> are passed in
-<source>, values from <source> take precedence, but the node field structure
-remains unchanged.
-Function is atomic; <destination> is unchanged if <source> cannot be merged.
-==============================================================================*/
 {
 	int number_of_values, values_storage_size, return_code;
 	struct FE_node_field_info *destination_fields, *fe_node_field_info,
 		*source_fields;
-	struct FE_region *fe_region;
+	FE_nodeset *fe_nodeset;
 	struct LIST(FE_node_field) *node_field_list;
 	struct Merge_FE_node_field_into_list_data merge_data;
 	Value_storage *values_storage;
 
 	ENTER(merge_FE_node);
 	if (destination && (destination_fields = destination->fields) &&
-		(fe_region = destination_fields->fe_region) &&
+		(fe_nodeset = destination_fields->fe_nodeset) &&
 		source && (source_fields = source->fields) &&
-		(source_fields->fe_region == fe_region))
+		(source_fields->fe_nodeset == fe_nodeset))
 	{
 		return_code = 1;
 		/* construct a node field list containing the fields from destination */
@@ -15314,8 +15121,8 @@ Function is atomic; <destination> is unchanged if <source> cannot be merged.
 									node_field_list, source, /*optimised_merge*/1)))
 						{
 							/* create a node field info for the combined list */
-							if (NULL != (fe_node_field_info = FE_region_get_FE_node_field_info(
-								fe_region, number_of_values, node_field_list)))
+							if (0 != (fe_node_field_info =
+								fe_nodeset->get_FE_node_field_info(number_of_values, node_field_list)))
 							{
 								/* clean up old destination values_storage */
 								if (destination->values_storage)
@@ -25037,10 +24844,11 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 	if (element && fe_element_change_log && fe_node_change_log)
 	{
 		if (CHANGE_LOG_QUERY(FE_element)(fe_element_change_log[dimension - 1],
-			element, &element_change) && (element_change & (
+			element, &element_change) && element_change & (
 				CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element) |
+				CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element) |
 				CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element) |
-				CHANGE_LOG_OBJECT_REMOVED(FE_element))))
+				CHANGE_LOG_OBJECT_REMOVED(FE_element)))
 		{
 			return_code = 1;
 		}
@@ -25056,6 +24864,7 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 						CHANGE_LOG_QUERY(FE_node)(fe_node_change_log, node, &node_change) &&
 						(node_change & (
 							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_node) |
+							CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node) |
 							CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))))
 					{
 						return_code = 1;
@@ -33591,15 +33400,8 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 
 int cmzn_node_set_identifier(cmzn_node_id node, int identifier)
 {
-	if (node && node->fields &&(identifier > 0))
-	{
-		FE_region *fe_region = node->fields->fe_region;
-		FE_region_begin_change(fe_region);
-		int return_code = FE_region_change_FE_node_identifier(fe_region,
-			node, identifier);
-		FE_region_end_change(fe_region);
-		return return_code;
-	}
+	if (node && node->fields && (identifier >= 0))
+		return node->fields->fe_nodeset->change_FE_node_identifier(node, identifier);
 	return CMZN_ERROR_ARGUMENT;
 }
 

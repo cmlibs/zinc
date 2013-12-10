@@ -29,15 +29,15 @@ Global types
 ------------
 */
 
-struct FE_region;
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
+/**
+ * FE_node has pointer to owning FE_nodeset in share field info.
+ */
+class FE_nodeset;
 
-DESCRIPTION :
-FE_field, FE_node and FE_element maintain pointers to the FE_region that "owns"
-them. Only the FE_field has a direct pointer; the other two include it via their
-field_info structure.
-==============================================================================*/
+/**
+ * FE_field and FE_element haves pointers to owning FE_region in shared field info.
+ */
+struct FE_region;
 
 struct cmzn_mesh_scale_factor_set;
 /** Handle to a set of scale factors for a mesh.
@@ -543,43 +543,33 @@ int FE_node_field_creator_has_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type);
 
+/**
+ * Creates and returns a node with the specified <cm_node_identifier>.
+ * If <fe_nodeset> is supplied a blank node with the given identifier but no
+ * fields is returned. If <template_node> is supplied, a copy of it,
+ * including all fields and values but with the new identifier, is returned.
+ * Exactly one of <fe_nodeset> or <template_node> must be supplied and either
+ * directly or indirectly sets the owning nodeset for the new node.
+ * Note that <cm_node_identifier> must be non-negative.
+ */
 struct FE_node *CREATE(FE_node)(int cm_node_identifier,
-	struct FE_region *fe_region, struct FE_node *template_node);
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
+	FE_nodeset *fe_nodeset, struct FE_node *template_node);
 
-DESCRIPTION :
-Creates and returns a node with the specified <cm_node_identifier>.
-If <fe_region> is supplied a blank node with the given identifier but no fields
-is returned. If <template_node> is supplied, a copy of it, including all fields
-and values but with the new identifier, is returned.
-Exactly one of <fe_region> or <template_node> must be supplied.
-The new node is set to belong to the ultimate master FE_region of <fe_region>
-if supplied, or to the same master FE_region as <template_node> if supplied.
-Note that <cm_node_identifier> must be non-negative.
-==============================================================================*/
-
+/**
+ * Frees the memory for the node, sets <*node_address> to NULL.
+ */
 int DESTROY(FE_node)(struct FE_node **node_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the node, sets <*node_address> to NULL.
-==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_node);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node);
 
+/**
+ * Creates a copy of <node> containing only FE_node_fields from <node> which
+ * have their FE_field listed in <fe_field_list>.
+ */
 struct FE_node *FE_node_copy_with_FE_field_list(struct FE_node *node,
 	struct LIST(FE_field) *fe_field_list);
-/*******************************************************************************
-LAST MODIFIED : 6 March 2003
-
-DESCRIPTION :
-Creates a copy of <node> containing only FE_node_fields from <node> which have
-their FE_field listed in <fe_field_list>.
-==============================================================================*/
 
 int define_FE_field_at_node(struct FE_node *node,struct FE_field *field,
 	struct FE_time_sequence *fe_time_seqence,
@@ -614,17 +604,14 @@ defined on it, ensures those nodes contributing to <fe_field> are not in the
 <fe_node_list>.
 ==============================================================================*/
 
+/**
+ * Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
+ * then removes values storage for it and shifts values storage for all subsequent
+ * fields down.
+ * Note: Must ensure that the node field is not in-use by any elements before it
+ * is undefined!
+ */
 int undefine_FE_field_at_node(struct FE_node *node,struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 13 September 2000
-
-DESCRIPTION :
-Removes definition of <field> at <node>. If field is of type GENERAL_FE_FIELD
-then removes values storage for it and shifts values storage for all subsequent
-fields down.
-Note: Must ensure that the node field is not in-use by any elements before it
-is undefined!
-==============================================================================*/
 
 int define_FE_field_at_node_simple(struct FE_node *node, struct FE_field *field,
 	int number_of_derivatives, enum FE_nodal_value_type *derivative_value_types);
@@ -681,13 +668,10 @@ Returns true if any single field defined at <node> has values stored with
 the field.
 ==============================================================================*/
 
-struct FE_region *FE_node_get_FE_region(struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns the FE_region that <node> belongs to.
-==============================================================================*/
+/**
+ * Returns the FE_nodeset that <node> belongs to.
+ */
+FE_nodeset *FE_node_get_FE_nodeset(struct FE_node *node);
 
 int FE_node_to_node_string(struct FE_node *node, char **string_address);
 /*****************************************************************************
@@ -811,31 +795,6 @@ Sets a particular element_xi_value (<version>, <type>) for the field <component>
 should.
 ==============================================================================*/
 
-struct FE_node_conditional_iterator_data
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-Data for passing to FE_node_conditional_iterator function.
-==============================================================================*/
-{
-	LIST_CONDITIONAL_FUNCTION(FE_node) *conditional_function;
-	void *conditional_user_data;
-	LIST_ITERATOR_FUNCTION(FE_node) *iterator_function;
-	void *iterator_user_data;
-}; /* struct FE_node_conditional_iterator_data */
-
-int FE_node_conditional_iterator(struct FE_node *node,
-	void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-If <node> satisfies the <conditional_function> with <conditional_user_data>,
-calls <iterator_function> with it and the <iterator_user_data>.
-<data_void> points at a struct FE_node_conditional_iterator_data.
-==============================================================================*/
-
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void);
 /*******************************************************************************
 LAST MODIFIED : 4 July 2000
@@ -948,15 +907,15 @@ in the <changed_element_list>, or in any elements using nodes from the
 <changed_node_list>, both passed in the <data_void>.
 ==============================================================================*/
 
-/*******************************************************************************
- * Clears any embedded locations from nodes in node_list for fields in
+/**
+ * Clears any embedded locations from nodes in nodeset for fields in
  * field_list. This is to avoid circular dependencies which prevent clean-up.
- * @param fe_region  Only clears embedded locations if node belongs to this
- * fe_region. Handles case where nodes are transferred to global region on
- * import so we don't want to clear their embedded locations.
+ * Note to handle merging from a separate region where both the source and
+ * target region reference the same nodes, only embedded locations in nodes
+ * belonging to the supplied nodeset are cleared.
  */
-int FE_node_list_clear_embedded_locations(struct LIST(FE_node) *node_list,
-	struct LIST(FE_field) *field_list, struct FE_region *fe_region);
+int FE_nodeset_clear_embedded_locations(FE_nodeset *nodeset,
+	struct LIST(FE_field) *field_list);
 
 struct FE_node_can_be_merged_data
 /*******************************************************************************
@@ -1281,20 +1240,6 @@ LAST MODIFIED : 30 November 2001
 DESCRIPTION :
 An FE_node iterator that returns 1 when an appropriate default_coordinate
 fe_field is found.  The fe_field found is returned as fe_field_void.
-==============================================================================*/
-
-int merge_FE_node(struct FE_node *destination, struct FE_node *source);
-/*******************************************************************************
-LAST MODIFIED : 23 October 2002
-
-DESCRIPTION :
-Merges the fields from <source> into <destination>. Existing fields in the
-<destination> keep the same node field description as before with new field
-storage following them. Where existing fields in <destination> are passed in
-<source>, values from <source> take precedence, but the node field structure
-remains unchanged.
-Function is atomic; <destination> is unchanged if <source> cannot be merged.
-???RC Move to finite_element_private.h?
 ==============================================================================*/
 
 /***************************************************************************//**

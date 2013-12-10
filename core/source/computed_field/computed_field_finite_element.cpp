@@ -22,7 +22,6 @@ Implements a number of basic component wise operations on computed fields.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
-#include "finite_element/finite_element_region_private.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -322,6 +321,24 @@ private:
 
 	int get_native_discretization_in_element(
 		struct FE_element *element,int *number_in_xi);
+
+	virtual int check_dependency()
+	{
+		if (field)
+		{
+			// propagate changes from FE_field
+			FE_region *fe_region = FE_field_get_FE_region(this->fe_field);
+			CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(fe_region);
+			int change = 0;
+			CHANGE_LOG_QUERY(FE_field)(fe_field_changes, this->fe_field, &change);
+			if (change & CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))
+				field->setChangedPrivate(MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+			else if (change & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field))
+				field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+			return field->manager_change_status;
+		}
+		return MANAGER_CHANGE_NONE(Computed_field);
+	}
 
 	virtual bool is_non_linear() const
 	{
@@ -1278,8 +1295,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh)
 {
 	Computed_field *field = NULL;
-	if (field_module && mesh && (cmzn_mesh_get_master_region_internal(mesh) ==
-		cmzn_fieldmodule_get_master_region_internal(field_module)))
+	if (field_module && mesh && (cmzn_mesh_get_region_internal(mesh) ==
+		cmzn_fieldmodule_get_region_internal(field_module)))
 	{
 		field = cmzn_fieldmodule_create_field_finite_element_internal(
 			field_module, ELEMENT_XI_VALUE, /*number_of_components*/1);
@@ -2253,6 +2270,32 @@ private:
 	virtual bool is_defined_at_location(cmzn_fieldcache& cache);
 
 	int has_numerical_components();
+
+	virtual int check_dependency()
+	{
+		if (field)
+		{
+			if (0 == (field->manager_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+			{
+				// any change to result of source field is a full change to the embedded field
+				int source_change_status = getSourceField(0)->core->check_dependency();
+				if (source_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+				else
+				{
+					// propagate full or partial result from mesh location field
+					source_change_status = getSourceField(1)->core->check_dependency();
+					if (source_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field))
+						field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+					else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
+						field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+				}
+			}
+			return field->manager_change_status;
+		}
+		return MANAGER_CHANGE_NONE(Computed_field);
+	}
+
 };
 
 Computed_field_core* Computed_field_embedded::copy()
@@ -2616,8 +2659,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
 		Computed_field_has_numerical_components(source_field, NULL) &&
 		Computed_field_has_numerical_components(mesh_field, NULL) &&
 		(number_of_mesh_field_components >= cmzn_mesh_get_dimension(mesh)) &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_mesh_get_master_region_internal(mesh)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_mesh_get_region_internal(mesh)))
 	{
 		cmzn_field_id source_fields[2];
 		source_fields[0] = source_field;
@@ -3331,137 +3374,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_basis_derivative(
 	}
 	return (field);
 }
-
-/***************************************************************************//**
- * Ensures there is an up-to-date computed field wrapper for <fe_field>.
- * @param fe_field  Field to wrap.
- * @param field_change_data_void FE_field_to_Computed_field_change_data.
- */
-int FE_field_to_Computed_field_change(struct FE_field *fe_field,
-	int change, void *region_void)
-{
-	int return_code = 1;
-	cmzn_region_id region = reinterpret_cast<cmzn_region_id>(region_void);
-	if (fe_field && region)
-	{
-		if (change &
-			(CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-			 CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
-			 CHANGE_LOG_OBJECT_ADDED(FE_field)))
-		{
-			char *field_name = NULL;
-			GET_NAME(FE_field)(fe_field, &field_name);
-			int update_wrapper = (change != CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field));
-			cmzn_field_id existing_wrapper = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
-				field_name, cmzn_region_get_Computed_field_manager(region));
-			if (existing_wrapper && !Computed_field_wraps_fe_field(existing_wrapper, (void *)fe_field))
-			{
-				existing_wrapper = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-					Computed_field_wraps_fe_field, (void *)fe_field,
-					cmzn_region_get_Computed_field_manager(region));
-				update_wrapper = 1;
-			}
-			if (update_wrapper)
-			{
-				cmzn_fieldmodule *field_module = cmzn_fieldmodule_create(region);
-				if (existing_wrapper)
-				{
-					cmzn_fieldmodule_set_replace_field(field_module, existing_wrapper);
-				}
-				else
-				{
-					cmzn_fieldmodule_set_field_name(field_module, field_name);
-					struct Coordinate_system *coordinate_system = get_FE_field_coordinate_system(fe_field);
-					if (coordinate_system)
-					{
-						cmzn_fieldmodule_set_coordinate_system(field_module, *coordinate_system);
-					}
-				}
-				cmzn_field_id field = Computed_field_create_finite_element_internal(field_module, fe_field);
-				cmzn_field_set_managed(field, true);
-				cmzn_field_destroy(&field);
-				cmzn_fieldmodule_destroy(&field_module);
-				char *new_field_name = NULL;
-				GET_NAME(FE_field)(fe_field, &new_field_name);
-				if (strcmp(new_field_name, field_name))
-				{
-					display_message(WARNING_MESSAGE, "Renamed finite element field %s to %s as another field is already using that name.",
-						field_name, new_field_name);
-				}
-				DEALLOCATE(new_field_name);
-			}
-			DEALLOCATE(field_name);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_field_to_Computed_field_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-void cmzn_region_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes, void *cmiss_region_void)
-{
-	ENTER(cmzn_region_FE_region_change);
-	cmzn_region *cmiss_region = reinterpret_cast<cmzn_region *>(cmiss_region_void);
-	if (fe_region && changes && cmiss_region)
-	{
-		int field_change_summary;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
-			&field_change_summary);
-		int check_field_wrappers = field_change_summary & (
-			CHANGE_LOG_OBJECT_ADDED(FE_field) |
-			CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-			CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field));
-		int add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
-		int add_xi_field = FE_region_need_add_xi_field(fe_region);
-		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
-		{
-			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(cmiss_region);
-			cmzn_fieldmodule_begin_change(field_module);
-
-			if (check_field_wrappers)
-			{
-				CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(changes->fe_field_changes,
-					FE_field_to_Computed_field_change, (void *)cmiss_region);
-			}
-			if (add_cmiss_number_field)
-			{
-				const char *cmiss_number_field_name = "cmiss_number";
-				cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(field_module, cmiss_number_field_name);
-				if (!field)
-				{
-					field = Computed_field_create_cmiss_number(field_module);
-					cmzn_field_set_name(field, cmiss_number_field_name);
-					cmzn_field_set_managed(field, true);
-				}
-				cmzn_field_destroy(&field);
-			}
-			if (add_xi_field)
-			{
-				cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(field_module);
-				cmzn_field_destroy(&xi_field);
-			}
-			cmzn_fieldmodule_end_change(field_module);
-			cmzn_fieldmodule_destroy(&field_module);
-		}
-		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
-		{
-			/* Currently we do nothing as the computed field wrapper is destroyed
-				before the FE_field is removed from the manager.  This is not necessary
-				and this response could be to delete the wrapper. */
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_FE_region_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* cmzn_region_FE_region_change */
 
 int Computed_field_contains_changed_FE_field(
 	struct Computed_field *field, void *fe_field_change_log_void)

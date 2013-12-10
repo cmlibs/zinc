@@ -42,7 +42,19 @@ public:
 	{
 	}
 
-	void get_coordinates(ZnReal *coord1, ZnReal *coord2, ZnReal *coord3) const;
+	void get_coordinates(ZnReal *coord1, ZnReal *coord2, ZnReal *coord3) const
+	{
+		*coord1 = coordinates[0];
+		*coord2 = coordinates[1];
+		*coord3 = coordinates[2];
+	}
+
+	void get_coordinates(double outValues3[3]) const
+	{
+		outValues3[0] = coordinates[0];
+		outValues3[1] = coordinates[1];
+		outValues3[2] = coordinates[2];
+	}
 
 	void set_identifier(int in_identifier)
 	{

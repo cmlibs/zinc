@@ -702,7 +702,7 @@ int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 		if (value != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(cmzn_tessellation)(tessellation,
-				MANAGER_CHANGE_NOT_RESULT(cmzn_tessellation));
+				MANAGER_CHANGE_DEFINITION(cmzn_tessellation));
 		}
 		return CMZN_OK;
 	}

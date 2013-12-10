@@ -13,6 +13,7 @@
 #include "zinc/fieldgroup.h"
 #include "zinc/graphics.h"
 #include "zinc/types/scenefilterid.h"
+#include "zinc/types/fieldmoduleid.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_to_graphics_object.h"
@@ -204,7 +205,6 @@ struct cmzn_graphics_to_graphics_object_data
 	struct cmzn_region *region;
 	cmzn_fieldmodule_id field_module;
 	struct FE_region *fe_region;
-	struct FE_region *data_fe_region;
 	// master mesh being converted into graphics:
 	cmzn_mesh_id master_mesh;
 	// different from master mesh if iterating over group; can ignore subgroup_field if set:
@@ -231,9 +231,9 @@ struct cmzn_graphics_to_graphics_object_data
 	int top_level_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 };
 
-struct cmzn_graphics_Computed_field_change_data
+struct cmzn_graphics_field_change_data
 {
-	struct LIST(Computed_field) *changed_field_list;
+	cmzn_fieldmoduleevent *event;
 	bool selection_changed;
 };
 
@@ -526,34 +526,12 @@ int cmzn_graphics_time_change(
 int cmzn_graphics_update_time_behaviour(
 	struct cmzn_graphics *graphics, void *update_time_behaviour_void);
 
-int cmzn_graphics_FE_region_change(
-	struct cmzn_graphics *graphics, void *data_void);
-
-int cmzn_graphics_data_FE_region_change(
-	struct cmzn_graphics *graphics, void *data_void);
-
-int cmzn_graphics_Computed_field_change(
-	struct cmzn_graphics *graphics, void *change_data_void);
-
-
-struct cmzn_graphics_FE_region_change_data
-{
-	/* changes to fields with summary */
-	int fe_field_change_summary;
-	struct CHANGE_LOG(FE_field) *fe_field_changes;
-	/* changes to nodes with summary and number_of_changes */
-	int fe_node_change_summary;
-	int number_of_fe_node_changes;
-	struct CHANGE_LOG(FE_node) *fe_node_changes;
-	/* changes to elements with summary and number_of_changes */
-	int fe_element_change_summary[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int number_of_fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	FE_value time;
-	/* the FE_region the settings apply to */
-	struct FE_region *fe_region;
-	int element_type;
-}; /* struct cmzn_graphics_FE_region_change_data */
+/**
+ * Pass fieldmoduleevent and selection change to graphics
+ * @param change_data_void  A struct cmzn_graphics_field_change_data.
+ */
+int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
+	void *change_data_void);
 
 /**
  * Inform graphics of changes in the glyph manager. Marks graphics for redraw if

@@ -203,13 +203,11 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int i, number_of_elements, number_of_values, return_code;
 	struct FE_element *element_with_identifier;
 	struct FE_element_values_number *element_values;
-	struct FE_region *master_fe_region;
 
 	ENTER(FE_region_change_element_identifiers);
 	if (fe_region)
 	{
 		return_code = 1;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 		number_of_elements = FE_region_get_number_of_FE_elements_of_dimension(
 			fe_region, dimension);
 		if ((0 < number_of_elements) && return_code)
@@ -316,11 +314,11 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 				if (return_code)
 				{
 					/* check none of the new numbers are in use by other elements
-					 in the master_fe_region */
+					 in the fe_region */
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						element_with_identifier = FE_region_get_FE_element_from_identifier(
-							master_fe_region, dimension, element_values[i].new_number);
+							fe_region, dimension, element_values[i].new_number);
 						if ((element_with_identifier) &&
 							(!FE_region_contains_FE_element(fe_region,
 								element_with_identifier)))
@@ -363,16 +361,13 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 									{
 										++next_spare_element_number;
 									}
-									if (!FE_region_change_FE_element_identifier(
-										master_fe_region,
-										element_with_identifier,
-										next_spare_element_number))
+									if (!FE_region_change_FE_element_identifier(fe_region,
+										element_with_identifier, next_spare_element_number))
 									{
 										return_code = 0;
 									}
 								}
-								if (!FE_region_change_FE_element_identifier(
-									master_fe_region,
+								if (!FE_region_change_FE_element_identifier(fe_region,
 									element_values[i].element, element_values[i].new_number))
 								{
 									display_message(ERROR_MESSAGE,
@@ -407,10 +402,11 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 		display_message(ERROR_MESSAGE,
 			"FE_region_change_element_identifiers.  Invalid argument(s)");
 		return_code = 0;
-	}LEAVE;
+	}
+	LEAVE;
 
 	return (return_code);
-} /* FE_region_change_element_identifiers */
+}
 
 /***************************************************************************//**
  * Create an element list from the elements in mesh optionally restricted to
@@ -615,11 +611,11 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 
 	int return_code = 0;
 	cmzn_region_id nodeset_region = cmzn_nodeset_get_region_internal(gauss_points_nodeset);
-	cmzn_region_id master_region = cmzn_mesh_get_master_region_internal(mesh);
+	cmzn_region_id master_region = cmzn_mesh_get_region_internal(mesh);
 	cmzn_field_id gauss_location_field_base = cmzn_field_stored_mesh_location_base_cast(gauss_location_field);
 	cmzn_field_id gauss_weight_field_base = cmzn_field_finite_element_base_cast(gauss_weight_field);
 	if (mesh && (1 <= order) && (order <= 4) && gauss_points_nodeset && (first_identifier >= 0) &&
-		(cmzn_nodeset_get_master_region_internal(gauss_points_nodeset) == master_region) &&
+		(cmzn_nodeset_get_region_internal(gauss_points_nodeset) == master_region) &&
 		gauss_location_field && gauss_weight_field &&
 		(cmzn_field_get_number_of_components(gauss_location_field_base) == 1))
 	{

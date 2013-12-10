@@ -38,6 +38,7 @@
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
+#include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
 #include "finite_element/finite_element_region.h"
@@ -452,7 +453,7 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
 			dimension = 3;
 			if (graphics->scene)
 			{
-				dimension = FE_region_get_highest_dimension(graphics->scene->fe_region);
+				dimension = FE_region_get_highest_dimension(cmzn_region_get_FE_region(graphics->scene->region));
 				if (0 >= dimension)
 					dimension = 3;
 			}
@@ -1518,7 +1519,7 @@ int cmzn_graphics_is_from_region_hierarchical(struct cmzn_graphics *graphics, st
 	ENTER(cmzn_graphics_is_from_region_hierarchical);
 	if (graphics && region)
 	{
-		struct cmzn_region *scene_region = cmzn_scene_get_region(graphics->scene);
+		struct cmzn_region *scene_region = cmzn_scene_get_region_internal(graphics->scene);
 		if ((scene_region == region) ||
 			(cmzn_region_contains_subregion(region, scene_region)))
 		{
@@ -2826,7 +2827,7 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 						case CMZN_FIELD_DOMAIN_TYPE_NODES:
 						{
 							cmzn_nodeset_id nodeset =
-								cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, graphics->domain_type);
+								cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, graphics->domain_type);
 							functor = create_highlight_functor_nodeset(group_field, nodeset);
 							cmzn_nodeset_destroy(&nodeset);
 						} break;
@@ -2996,15 +2997,11 @@ int cmzn_graphics_to_graphics_object(
 	GLfloat time;
 	enum GT_object_type graphics_object_type;
 	int return_code;
-	struct FE_region *fe_region;
 
 	ENTER(cmzn_graphics_to_graphics_object);
 	struct cmzn_graphics_to_graphics_object_data *graphics_to_object_data =
 		reinterpret_cast<struct cmzn_graphics_to_graphics_object_data *>(graphics_to_object_data_void);
-	if (graphics && graphics_to_object_data &&
-		(((CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS == graphics->domain_type) &&
-			(fe_region = graphics_to_object_data->data_fe_region)) ||
-			(fe_region = graphics_to_object_data->fe_region)))
+	if (graphics && graphics_to_object_data)
 	{
 		int dimension = cmzn_graphics_get_domain_dimension(graphics);
 		/* all primitives added at time 0.0 */
@@ -3237,7 +3234,7 @@ int cmzn_graphics_to_graphics_object(
 										graphics->graphics_object, time,
 										(GT_object_primitive_object_name_conditional_function *)NULL,
 										(void *)NULL);
-									cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(
+									cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 										graphics_to_object_data->field_module, graphics->domain_type);
 									cmzn_nodeset_id iteration_nodeset = 0;
 									if (graphics->subgroup_field)
@@ -3651,152 +3648,241 @@ int cmzn_graphics_execute_visible_graphics(
 	return (return_code);
 } /* cmzn_graphics_execute_visible_graphics */
 
-static int cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
-	struct cmzn_graphics *graphics,
-	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
-	void *user_data)
+namespace {
+
+/**
+ * If any field used by graphics has fully changed (CHANGE_FLAG_DEFINITION or
+ * CHANGE_FLAG_DEPENDENCY) set, return the change status immediately to trigger
+ * a full rebuild of graphics.
+ * Otherwise return whether a partial rebuild is needed or no change.
+ */
+cmzn_field_change_flags cmzn_graphics_get_most_significant_field_change(
+	cmzn_graphics *graphics, cmzn_fieldmoduleevent *event)
 {
-	int return_code;
-
-	ENTER(cmzn_graphics_Computed_field_or_ancestor_satisfies_condition);
-	if (graphics && conditional_function)
+	cmzn_field_change_flags change = CMZN_FIELD_CHANGE_FLAG_NONE;
+	const cmzn_field_change_flags fullChange =
+		(CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT);
+	cmzn_field_change_flags fieldChange;
+	if (graphics->coordinate_field)
 	{
-		return_code = 0;
-		/* compare geometry graphics */
-		/* for all graphics types */
-		if ((graphics->coordinate_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->coordinate_field, conditional_function, user_data)) ||
-			(graphics->subgroup_field &&
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphics->subgroup_field, conditional_function, user_data))) ||
-			(graphics->tessellation_field && 
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphics->tessellation_field, conditional_function, user_data))))
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->coordinate_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (graphics->data_field)
+	{
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->data_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (graphics->subgroup_field)
+	{
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->subgroup_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (graphics->tessellation_field)
+	{
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->tessellation_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (graphics->texture_coordinate_field)
+	{
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->texture_coordinate_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (graphics->line_orientation_scale_field)
+	{
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->line_orientation_scale_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (graphics->isoscalar_field)
+	{
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->isoscalar_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
+	}
+	if (CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type)
+	{
+		if (graphics->point_orientation_scale_field)
 		{
-			return_code = 1;
+			fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->point_orientation_scale_field);
+			change |= fieldChange;
+			if (change & fullChange)
+				return change;
 		}
-		/* currently for surfaces only */
-		else if (graphics->texture_coordinate_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->texture_coordinate_field, conditional_function, user_data))
+		if (graphics->signed_scale_field)
 		{
-			return_code = 1;
+			fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->signed_scale_field);
+			change |= fieldChange;
+			if (change & fullChange)
+				return change;
 		}
-		/* line attributes */
-		else if (((CMZN_GRAPHICS_TYPE_LINES==graphics->graphics_type) ||
-			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
-			graphics->line_orientation_scale_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->line_orientation_scale_field, conditional_function, user_data))
+		if (graphics->label_field)
 		{
-			return_code = 1;
+			fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->label_field);
+			change |= fieldChange;
+			if (change & fullChange)
+				return change;
 		}
-		/* for contours only */
-		else if ((CMZN_GRAPHICS_TYPE_CONTOURS == graphics->graphics_type) &&
-			(graphics->isoscalar_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->isoscalar_field, conditional_function, user_data)))
+		if (graphics->label_density_field)
 		{
-			return_code = 1;
-		}
-		/* point attributes */
-		else if ((CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) &&
-			((graphics->point_orientation_scale_field &&
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphics->point_orientation_scale_field, conditional_function, user_data)))||
-			(graphics->signed_scale_field &&
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphics->signed_scale_field, conditional_function, user_data))) ||
-			(graphics->label_field &&
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphics->label_field, conditional_function, user_data))) ||
-			(graphics->label_density_field &&
-				(Computed_field_or_ancestor_satisfies_condition(
-					graphics->label_density_field, conditional_function, user_data)))))
-		{
-			return_code = 1;
-		}
-		/* for graphics using a sampling density field only */
-		else if (((CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type) ||
-			(CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type)) &&
-			(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON == graphics->sampling_mode) &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->sample_density_field, conditional_function, user_data))
-		{
-			return_code = 1;
-		}
-		/* for streamlines only */
-		else if ((CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type) &&
-			graphics->stream_vector_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->stream_vector_field, conditional_function, user_data))
-		{
-			return_code = 1;
-		}
-		/* appearance graphics for all graphics types */
-		else if (graphics->data_field &&
-			Computed_field_or_ancestor_satisfies_condition(
-				graphics->data_field, conditional_function, user_data))
-		{
-			return_code = 1;
+			fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->label_density_field);
+			change |= fieldChange;
+			if (change & fullChange)
+				return change;
 		}
 	}
-	else
+	if (graphics->sample_density_field)
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_Computed_field_or_ancestor_satisfies_condition.  "
-			"Invalid argument(s)");
-		return_code = 0;
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->sample_density_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_graphics_Computed_field_or_ancestor_satisfies_condition */
-
-static int cmzn_graphics_uses_changed_FE_field(
-	struct cmzn_graphics *graphics,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log)
-{
-	if (graphics && fe_field_change_log)
+	if (graphics->stream_vector_field)
 	{
-		return cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
-			graphics, Computed_field_contains_changed_FE_field, (void *)fe_field_change_log);
+		fieldChange = cmzn_fieldmoduleevent_get_field_change_flags(event, graphics->stream_vector_field);
+		change |= fieldChange;
+		if (change & fullChange)
+			return change;
 	}
-	return 0;
+	return change;
 }
 
-int cmzn_graphics_Computed_field_change(
-	struct cmzn_graphics *graphics, void *change_data_void)
+/** data for passing to FE_element_as_graphics_name_has_changed */
+struct FE_element_as_graphics_name_has_changed_data
 {
-	int return_code = 1;
-	struct cmzn_graphics_Computed_field_change_data *change_data;
+	FE_region *fe_region;
+	int domainDimension;
+	struct CHANGE_LOG(FE_element) *elementChanges[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	struct CHANGE_LOG(FE_node) *nodeChanges;
+};
 
-	ENTER(cmzn_graphics_Computed_field_change);
-	if (graphics && (change_data =
-		(struct cmzn_graphics_Computed_field_change_data *)change_data_void))
+/**
+ * @param data_void  Pointer to struct FE_element_as_graphics_name_has_changed_data.
+ * @return  1 if element has changed according to event.
+ */
+int FE_element_as_graphics_name_has_changed(int elementIdentifier, void *data_void)
+{
+	FE_element_as_graphics_name_has_changed_data *data =
+		reinterpret_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
+	FE_element *element = FE_region_get_FE_element_from_identifier(data->fe_region, data->domainDimension, elementIdentifier);
+	// won't find element if it has been removed
+	if (element)
+		FE_element_or_parent_changed(element, data->elementChanges, data->nodeChanges);
+	return 1;
+}
+
+} // namespace anonymous
+
+int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
+	void *change_data_void)
+{
+	cmzn_graphics_field_change_data *change_data =
+		reinterpret_cast<cmzn_graphics_field_change_data *>(change_data_void);
+	if (change_data->selection_changed && (CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
+		cmzn_graphics_update_selected(graphics, (void *)NULL);
+	if (0 == graphics->graphics_object)
 	{
-		if (change_data->changed_field_list && cmzn_graphics_Computed_field_or_ancestor_satisfies_condition(
-			graphics, Computed_field_is_in_list, (void *)change_data->changed_field_list))
+		cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
+		return 1;
+	}
+	cmzn_field_change_flags fieldChange =
+		cmzn_graphics_get_most_significant_field_change(graphics, change_data->event);
+	const int domainDimension = cmzn_graphics_get_domain_dimension(graphics);
+	// following code assumes there are always feRegionChanges
+	FE_region_changes *feRegionChanges = change_data->event->getFeRegionChanges();
+	if (0 == domainDimension)
+	{
+		// node/data points: currently always rebuilt from scratch
+		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_RESULT)
 		{
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			return 1;
 		}
-		if (change_data->selection_changed && graphics->graphics_object &&
-			(CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type))
+		// rebuild all if identifiers changed, for correct picking and can't edit graphics object
+		struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
+		// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
+		if (nodeChanges)
 		{
-			cmzn_graphics_update_selected(graphics, (void *)NULL);
+			int nodeChangeSummary = 0;
+			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(nodeChanges, &nodeChangeSummary);
+			if (nodeChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))
+			{
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
+			}
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_Computed_field_change.  Invalid argument(s)");
-		return_code = 0;
+		if (fieldChange & (CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT))
+		{
+			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			return 1;
+		}
+		// rebuild all if identifiers changed, for correct picking and can't edit graphics object
+		struct CHANGE_LOG(FE_element) *elementChanges = feRegionChanges->getElementChanges(domainDimension);
+		int elementChangeSummary = 0;
+		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(elementChanges, &elementChangeSummary);
+		if (elementChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
+		{
+			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+			return 1;
+		}
+		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
+		{
+			int numberNodeChanges = 0;
+			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
+			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(nodeChanges, &numberNodeChanges);
+			// must check equal and higher dimension element changes due to field inheritance
+			bool tooManyElementChanges = false;
+			for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+			{
+				int number = 0;
+				CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(feRegionChanges->getElementChanges(dim), &number);
+				if (number*2 > FE_region_get_number_of_FE_elements_of_dimension(
+					cmzn_region_get_FE_region(graphics->scene->region), dim))
+				{
+					tooManyElementChanges = true;
+					break;
+				}
+			}
+			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+				cmzn_region_get_FE_region(graphics->scene->region), CMZN_FIELD_DOMAIN_TYPE_NODES);
+			// if too many node or element changes, just rebuild all
+			if (tooManyElementChanges ||
+				(numberNodeChanges*2 > fe_nodeset->get_number_of_FE_nodes()))
+			{
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
+			}
+			FE_element_as_graphics_name_has_changed_data data;
+			data.fe_region = cmzn_region_get_FE_region(graphics->scene->region);
+			data.domainDimension = domainDimension;
+			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
+			data.nodeChanges = nodeChanges;
+			/* partial rebuild for few node/element field changes */
+			GT_object_remove_primitives_at_time(graphics->graphics_object,
+				/*time*/(GLfloat)0, FE_element_as_graphics_name_has_changed,
+				static_cast<void*>(&data));
+			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
+		}
 	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_graphics_Computed_field_change */
+	return 1;
+}
 
 int cmzn_graphics_get_visible_graphics_object_range(
 	struct cmzn_graphics *graphics,void *graphics_range_void)
@@ -4166,199 +4252,6 @@ int cmzn_graphics_has_name(struct cmzn_graphics *graphics,
 
 	return (return_code);
 } /* cmzn_graphics_has_name */
-
-static int FE_element_as_graphics_name_is_removed_or_modified(
-	int graphics_name, void *data_void)
-{
-	int return_code;
-	struct CM_element_information cm;
-	struct FE_element *element;
-	struct cmzn_graphics_FE_region_change_data *data;
-
-	ENTER(FE_element_as_graphics_name_is_removed_or_modified);
-	return_code = 0;
-	if (NULL != (data = (struct cmzn_graphics_FE_region_change_data *)data_void))
-	{
-		cm.number = graphics_name;
-		if (data->element_type == 1)
-		{
-			cm.type = CM_LINE;
-		}
-		else if (data->element_type == 2)
-		{
-			cm.type = CM_FACE;
-		}
-		else
-		{
-			cm.type = CM_ELEMENT;
-		}
-		if (NULL != (element = FE_region_get_FE_element_from_identifier_deprecated(data->fe_region,
-					&cm)))
-		{
-			return_code = FE_element_or_parent_changed(element,
-				data->fe_element_changes, data->fe_node_changes);
-		}
-		else
-		{
-			/* must have been removed or never in FE_region */
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_as_graphics_name_is_removed_or_modified.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_as_graphics_name_is_removed_or_modified */
-
-int cmzn_graphics_FE_region_change(
-	struct cmzn_graphics *graphics, void *data_void)
-{
-	int fe_field_related_object_change, return_code;
-	struct cmzn_graphics_FE_region_change_data *data;
-
-	ENTER(cmzn_graphics_FE_region_change);
-	if (graphics &&
-		(data = (struct cmzn_graphics_FE_region_change_data *)data_void))
-	{
-		if (graphics->graphics_object)
-		{
-			// CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS is handled by cmzn_graphics_data_FE_region_change
-			if (graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_NODES)
-			{
-				/* must always rebuild if identifiers changed */
-				if ((data->fe_node_change_summary &
-					CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node)) ||
-					(cmzn_graphics_uses_changed_FE_field(graphics,
-						data->fe_field_changes) && (
-							(data->fe_field_change_summary & (
-								CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))) ||
-							((data->fe_field_change_summary &
-								CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) &&
-								(0 < data->number_of_fe_node_changes)))))
-				{
-					/* currently node points are always rebuilt from scratch */
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-				}
-			}
-			else if (0 < cmzn_graphics_get_domain_dimension(graphics))
-			{
-				fe_field_related_object_change =
-					CHANGE_LOG_OBJECT_UNCHANGED(FE_field);
-				/* must always rebuild if identifiers changed */
-				bool element_identifier_change = false;
-				int number_of_element_changes_all_dimensions = 0;
-				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-				{
-					if (data->fe_element_change_summary[dim] &
-						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
-					{
-						element_identifier_change = true;
-					}
-					number_of_element_changes_all_dimensions +=
-						data->number_of_fe_element_changes[dim];
-				}
-				if (element_identifier_change ||
-					(cmzn_graphics_uses_changed_FE_field(graphics,
-						data->fe_field_changes) && (
-							(data->fe_field_change_summary & (
-								CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |
-								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field))) ||
-							(fe_field_related_object_change = (
-								(data->fe_field_change_summary &
-									CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)) && (
-								(0 < data->number_of_fe_node_changes) ||
-								(0 < number_of_element_changes_all_dimensions)))))))
-				{
-					if (fe_field_related_object_change && (
-						((data->number_of_fe_node_changes*2) <
-							FE_region_get_number_of_FE_nodes(data->fe_region)) &&
-						((number_of_element_changes_all_dimensions*4) <
-							FE_region_get_number_of_FE_elements_all_dimensions(data->fe_region))))
-					{
-						data->element_type = cmzn_graphics_get_domain_dimension(graphics);
-						/* partial rebuild for few node/element field changes */
-						GT_object_remove_primitives_at_time(graphics->graphics_object,
-							(GLfloat)data->time, FE_element_as_graphics_name_is_removed_or_modified,
-							data_void);
-						cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
-					}
-					else
-					{
-						/* full rebuild for changed identifiers, FE_field definition
-								changes or many node/element field changes */
-						cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-					}
-				}
-			}
-		}
-		else
-		{
-			/* Graphics have definitely changed as they have not been built yet */
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_FE_region_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_graphics_FE_region_change */
-
-int cmzn_graphics_data_FE_region_change(
-	struct cmzn_graphics *graphics, void *data_void)
-{
-	int return_code;
-	struct cmzn_graphics_FE_region_change_data *data;
-
-	ENTER(cmzn_graphics_data_FE_region_change);
-	if (graphics &&
-		(data = (struct cmzn_graphics_FE_region_change_data *)data_void))
-	{
-		if (graphics->graphics_object)
-		{
-			if (graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS)
-			{
-				// must ensure changes to fields on host elements/nodes force
-				// data_points to be rebuilt if using embedded fields referencing them:
-				if (((0 < data->number_of_fe_node_changes) ||
-					(data->fe_field_change_summary & (
-						CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) |
-						CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))) &&
-					cmzn_graphics_uses_changed_FE_field(graphics,
-						data->fe_field_changes))
-				{
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-				}
-			}
-		}
-		else
-		{
-			/* Graphics have definitely changed as they have not been built yet */
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_REDRAW);
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_data_FE_region_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_graphics_data_FE_region_change */
 
 /**
  * cmzn_graphics list conditional function returning 1 iff the two

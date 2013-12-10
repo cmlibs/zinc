@@ -15,13 +15,6 @@
 #include "graphics/auxiliary_graphics_types.h"
 #include "triangle_mesh.hpp"
 
-void Triangle_vertex::get_coordinates(ZnReal *coord1, ZnReal *coord2, ZnReal *coord3) const
-{
-	*coord1 = coordinates[0];
-	*coord2 = coordinates[1];
-	*coord3 = coordinates[2];
-}
-
 void Triangle_vertex::list() const
 {
 	

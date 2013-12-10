@@ -644,8 +644,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_nodeset_get_master_region_internal(nodeset)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_nodeset_get_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -663,8 +663,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_nodeset_get_master_region_internal(nodeset)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_nodeset_get_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -682,8 +682,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_nodeset_get_master_region_internal(nodeset)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_nodeset_get_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -701,8 +701,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_nodeset_get_master_region_internal(nodeset)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_nodeset_get_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -720,8 +720,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_nodeset_get_master_region_internal(nodeset)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_nodeset_get_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -739,8 +739,8 @@ cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
 {
 	cmzn_field_id field = 0;
 	if (source_field && source_field->isNumerical() && nodeset &&
-		(cmzn_fieldmodule_get_master_region_internal(field_module) ==
-			cmzn_nodeset_get_master_region_internal(nodeset)))
+		(cmzn_fieldmodule_get_region_internal(field_module) ==
+			cmzn_nodeset_get_region_internal(nodeset)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,

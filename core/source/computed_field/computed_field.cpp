@@ -1099,37 +1099,12 @@ int Computed_field_dependency_changed(struct Computed_field *field)
 	if (field)
 	{
 		return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_DEPENDENCY(Computed_field));
+			MANAGER_CHANGE_FULL_RESULT(Computed_field));
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_dependency_changed.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Computed_field_dependency_change_private(struct Computed_field *field)
-{
-	int return_code;
-
-	ENTER(Computed_field_dependency_change_private);
-	if (field)
-	{
-		if (field->manager_change_status == MANAGER_CHANGE_NONE(Computed_field))
-		{
-			ADD_OBJECT_TO_LIST(Computed_field)(field, field->manager->changed_object_list);
-		}
-		field->manager_change_status |= MANAGER_CHANGE_DEPENDENCY(Computed_field);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_dependency_change_private.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -1228,26 +1203,6 @@ bool Computed_field_core::is_defined_at_location(cmzn_fieldcache& cache)
 	return true;
 }
 
-int Computed_field_is_in_list(struct Computed_field *field,
-	void *field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Computed_field conditional/iterator function returning true if <field> is in the
-computed <field_list>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Computed_field_is_in_list);
-	return_code = IS_OBJECT_IN_LIST(Computed_field)(field,
-		(struct LIST(Computed_field) *)field_list_void);
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_is_in_list */
-
 int Computed_field_has_string_value_type(struct Computed_field *field,
 	void *dummy_void)
 {
@@ -1288,48 +1243,6 @@ Returns 1 if any of the source fields have multiple times.
 
 	return (return_code);
 } /* Computed_field_default_has_multiple_times */
-
-int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
-	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 14 August 2006
-
-DESCRIPTION :
-Returns true if <field> satisfies <conditional_function> with <user_data>. If
-not, recursively calls this function for each of its source fields until one
-satisfies the function for a true result, or all have failed for false.
-==============================================================================*/
-{
-	int i, return_code;
-
-	ENTER(Computed_field_or_ancestor_satisfies_condition);
-	if (field && conditional_function)
-	{
-		if ((conditional_function)(field, user_data))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-			for (i = 0; (i < field->number_of_source_fields) && (!return_code); i++)
-			{
-				return_code = Computed_field_or_ancestor_satisfies_condition(
-					field->source_fields[i], conditional_function, user_data);
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_or_ancestor_satisfies_condition.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_or_ancestor_satisfies_condition */
 
 int Computed_field_for_each_ancestor(struct Computed_field *field,
 	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data)
@@ -2701,24 +2614,34 @@ int Computed_field_core::get_domain( struct LIST(Computed_field) *domain_field_l
 	return return_code;
 }
 
+void Computed_field::setChangedPrivate(MANAGER_CHANGE(Computed_field) change)
+{
+	if (this->manager_change_status == MANAGER_CHANGE_NONE(Computed_field))
+		ADD_OBJECT_TO_LIST(Computed_field)(this, this->manager->changed_object_list);
+	this->manager_change_status |= change;
+}
+
 int Computed_field_core::check_dependency()
 {
 	if (field)
 	{
-		if (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field))
+		if (0 == (field->manager_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
 		{
-			return 1;
-		}
-		for (int i = 0; i < field->number_of_source_fields; i++)
-		{
-			if (field->source_fields[i]->core->check_dependency())
+			for (int i = 0; i < field->number_of_source_fields; i++)
 			{
-				Computed_field_dependency_change_private(field);
-				return 1;
+				int source_change_status = field->source_fields[i]->core->check_dependency();
+				if (source_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field))
+				{
+					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+					break;
+				}
+				else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
+					field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
 			}
 		}
+		return field->manager_change_status;
 	}
-	return 0;
+	return MANAGER_CHANGE_NONE(Computed_field);
 }
 
 bool Computed_field_core::is_non_linear() const
@@ -2856,7 +2779,7 @@ int cmzn_field_set_managed(cmzn_field_id field, bool value)
 		if (value != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(Computed_field)(
-				field, MANAGER_CHANGE_NOT_RESULT(Computed_field));
+				field, MANAGER_CHANGE_DEFINITION(Computed_field));
 		}
 		return CMZN_OK;
 	}
@@ -3107,7 +3030,7 @@ int cmzn_field_set_type_coordinate(cmzn_field_id field, bool value)
 		const bool newValue = field->core->isTypeCoordinate();
 		if (newValue != oldValue)
 		{
-			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_NOT_RESULT(Computed_field));
+			MANAGED_OBJECT_CHANGE(Computed_field)(field, MANAGER_CHANGE_DEFINITION(Computed_field));
 		}
 		return result;
 	}

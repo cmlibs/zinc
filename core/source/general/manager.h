@@ -57,30 +57,30 @@ struct MANAGER(object_type)
 #define MANAGER_CHANGE_IDENTIFIER( object_type ) \
 	MANAGER_CHANGE_IDENTIFIER_(object_type)
 
-#define MANAGER_CHANGE_OBJECT_( object_type ) \
-	manager_change_object_ ## object_type
-#define MANAGER_CHANGE_OBJECT( object_type ) \
-	MANAGER_CHANGE_OBJECT_(object_type)
+#define MANAGER_CHANGE_DEFINITION_( object_type ) \
+	manager_change_definition_ ## object_type
+#define MANAGER_CHANGE_DEFINITION( object_type ) \
+	MANAGER_CHANGE_DEFINITION_(object_type)
 
 #define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_( object_type ) \
 	manager_change_object_not_identifier_ ## object_type
 #define MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER( object_type ) \
 	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER_(object_type)
 
-#define MANAGER_CHANGE_DEPENDENCY_( object_type ) \
-	manager_change_dependency_ ## object_type
-#define MANAGER_CHANGE_DEPENDENCY( object_type ) \
-	MANAGER_CHANGE_DEPENDENCY_(object_type)
+#define MANAGER_CHANGE_FULL_RESULT_( object_type ) \
+	manager_change_full_result_ ## object_type
+#define MANAGER_CHANGE_FULL_RESULT( object_type ) \
+	MANAGER_CHANGE_FULL_RESULT_(object_type)
+
+#define MANAGER_CHANGE_PARTIAL_RESULT_( object_type ) \
+	manager_change_partial_result_ ## object_type
+#define MANAGER_CHANGE_PARTIAL_RESULT( object_type ) \
+	MANAGER_CHANGE_PARTIAL_RESULT_(object_type)
 
 #define MANAGER_CHANGE_RESULT_( object_type ) \
 	manager_change_result_ ## object_type
 #define MANAGER_CHANGE_RESULT( object_type ) \
 	MANAGER_CHANGE_RESULT_(object_type)
-
-#define MANAGER_CHANGE_NOT_RESULT_( object_type ) \
-	manager_change_not_result_ ## object_type
-#define MANAGER_CHANGE_NOT_RESULT( object_type ) \
-	MANAGER_CHANGE_NOT_RESULT_(object_type)
 
 #define DECLARE_MANAGER_CHANGE_TYPE( object_type ) \
 enum MANAGER_CHANGE(object_type) \
@@ -102,22 +102,24 @@ enum MANAGER_CHANGE(object_type) \
 	MANAGER_CHANGE_IDENTIFIER(object_type) = 4, \
 	/*!< object identifier changed in the manager */ \
 	\
-	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) = 8, \
+	MANAGER_CHANGE_DEFINITION(object_type) = 8, \
 	/*!< object contents but not identifier changed in the manager */ \
 	\
-	MANAGER_CHANGE_OBJECT(object_type) = 12, \
-	/*!< object contents and identifier changed in the manager */ \
+	MANAGER_CHANGE_FULL_RESULT(object_type) = 16, \
+	/*!< full change to the resulting output of the object */ \
 	\
-	MANAGER_CHANGE_DEPENDENCY(object_type) = 16, \
+	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) = ( \
+		MANAGER_CHANGE_DEFINITION(object_type) | \
+		MANAGER_CHANGE_FULL_RESULT(object_type)), \
+	/*!< object contents but not identifier changed in the manager, affecting result */ \
+	\
+	MANAGER_CHANGE_PARTIAL_RESULT(object_type) = 32, \
 	/*!< object is a dependency of another object that has changed */ \
 	\
 	MANAGER_CHANGE_RESULT(object_type) = ( \
-		MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) | \
-		MANAGER_CHANGE_DEPENDENCY(object_type)), \
+		MANAGER_CHANGE_FULL_RESULT(object_type) | \
+		MANAGER_CHANGE_PARTIAL_RESULT(object_type)), \
 	/*!< bitwise OR of object change flags affecting result */ \
-	\
-	MANAGER_CHANGE_NOT_RESULT(object_type) = 32, \
-	/*!< object contents not affecting result changed; excludes identifier */ \
 }
 
 #define MANAGER_MESSAGE_( object_type )  manager_message_ ## object_type
@@ -431,12 +433,13 @@ Calls <iterator> for each object  being managed by the <manager>. \
  
 #define PROTOTYPE_MANAGED_OBJECT_CHANGE_FUNCTION( object_type ) \
 int MANAGED_OBJECT_CHANGE(object_type)(struct object_type *object, \
-	enum MANAGER_CHANGE(object_type) change) \
+	int change) \
 /*************************************************************************//** \
  * Call after changing a managed object to record the change. \
  * If change cache is off, sends manager message to clients. \
  * Does nothing if the object is not managed. \
  * Do not use to set ADD or REMOVE changes. \
+ * @param change  Logical OR of enum MANAGER_CHANGE(object_type) values.
  */
 
 #define MANAGER_BEGIN_CACHE_( object_type )  manager_begin_cache_ ## object_type
@@ -462,6 +465,16 @@ LAST MODIFIED : 28 September 1995 \
 DESCRIPTION : \
 Performs a global update. \
 ==============================================================================*/
+
+#define MANAGER_EXTERNAL_CHANGE_( object_type ) manager_force_update ## object_type
+#define MANAGER_EXTERNAL_CHANGE( object_type ) MANAGER_EXTERNAL_CHANGE_(object_type)
+
+/**
+ * Forces a global update when change cache is [next] zero so dependency checks
+ * on external objects can be made by individual managed objects.
+ */
+#define PROTOTYPE_MANAGER_EXTERNAL_CHANGE_FUNCTION( object_type ) \
+void MANAGER_EXTERNAL_CHANGE(object_type)(struct MANAGER(object_type) *manager)
 
 #define MANAGER_MESSAGE_ACCESS_( object_type ) manager_message_access_ ## object_type
 #define MANAGER_MESSAGE_ACCESS( object_type ) MANAGER_MESSAGE_ACCESS_(object_type)
@@ -606,9 +619,10 @@ public: \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_add = MANAGER_CHANGE_ADD(object_type); \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_remove = MANAGER_CHANGE_REMOVE(object_type); \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_identifier = MANAGER_CHANGE_IDENTIFIER(object_type); \
-	static const enum MANAGER_CHANGE(object_type) Manager_change_object = MANAGER_CHANGE_OBJECT(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_definition = MANAGER_CHANGE_DEFINITION(object_type); \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_object_not_identifier = MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type); \
-	static const enum MANAGER_CHANGE(object_type) Manager_change_dependency = MANAGER_CHANGE_DEPENDENCY(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_full_result = MANAGER_CHANGE_FULL_RESULT(object_type); \
+	static const enum MANAGER_CHANGE(object_type) Manager_change_partial_result = MANAGER_CHANGE_PARTIAL_RESULT(object_type); \
 	static const enum MANAGER_CHANGE(object_type) Manager_change_result = MANAGER_CHANGE_RESULT(object_type); \
 \
 	MANAGER(object_type) *manager; \
@@ -692,6 +706,7 @@ PROTOTYPE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type); \
 PROTOTYPE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_BEGIN_CACHE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type); \
+PROTOTYPE_MANAGER_EXTERNAL_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_ACCESS_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_DEACCESS_FUNCTION(object_type); \
 PROTOTYPE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type); \

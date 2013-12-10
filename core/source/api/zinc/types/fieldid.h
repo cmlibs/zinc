@@ -18,6 +18,43 @@ struct cmzn_fielditerator;
 typedef struct cmzn_fielditerator * cmzn_fielditerator_id;
 
 /**
+ * Bit flags summarising changes to a field or fields in a fieldmodule.
+ */
+enum cmzn_field_change_flag
+{
+	CMZN_FIELD_CHANGE_FLAG_NONE = 0,
+		/*!< field(s) not changed */
+	CMZN_FIELD_CHANGE_FLAG_ADD = 1,
+		/*!< one or more fields added */
+	CMZN_FIELD_CHANGE_FLAG_REMOVE = 2,
+		/*!< one or more fields removed */
+	CMZN_FIELD_CHANGE_FLAG_IDENTIFIER = 4,
+		/*!< field identifier changed */
+	CMZN_FIELD_CHANGE_FLAG_DEFINITION = 8,
+		/*!< change to field attributes other than identifier.
+		 * If change affects result, CMZN_FIELD_CHANGE_FLAG_FULL_RESULT
+		 * will also be set; metadata changes do not flag result as changed. */
+	CMZN_FIELD_CHANGE_FLAG_FULL_RESULT = 16,
+		/*!< all resultant values of field changed, by its definition changing
+		 * or by change to a field or other object it depends on. */
+	CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT = 32,
+		/*!< change to field values on subset of domain: nodes, elements etc.
+		 * If this flag is set but not CHANGE_FLAG_FULL_RESULT then nodeset and mesh
+		 * changes describe where on the domain its values have changed. */
+	CMZN_FIELD_CHANGE_FLAG_RESULT =
+		CMZN_FIELD_CHANGE_FLAG_FULL_RESULT |
+		CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT,
+		/*!< convenient value representing any change affecting result */
+	CMZN_FIELD_CHANGE_FLAG_FINAL = 32768
+		/*!< final notification: owning field module i.e. region has been destroyed */
+};
+
+/**
+ * Type for passing logical OR of #cmzn_field_change_flag
+ */
+typedef int cmzn_field_change_flags;
+
+/**
  * Field attribute describing the type of space that its values are to be
  * interpreted in. Although it is usually set for all fields (default is
  * rectangular cartesian, RC), the attribute is only relevant when field is

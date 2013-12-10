@@ -2212,7 +2212,7 @@ int cmzn_spectrum_set_managed(cmzn_spectrum_id spectrum,  bool value)
 		spectrum->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, MANAGER_CHANGE_NOT_RESULT(Spectrum));
+			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, MANAGER_CHANGE_DEFINITION(Spectrum));
 		}
 		return CMZN_OK;
 	}

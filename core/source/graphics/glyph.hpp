@@ -106,7 +106,7 @@ public:
 		if (isManagedFlagIn != this->isManagedFlag)
 		{
 			this->isManagedFlag = isManagedFlagIn;
-			MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_NOT_RESULT(cmzn_glyph));
+			MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_DEFINITION(cmzn_glyph));
 		}
 	}
 

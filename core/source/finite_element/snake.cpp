@@ -855,6 +855,8 @@ int create_FE_element_snake_from_data_points(
 		if (return_code)
 		{
 			FE_region_begin_change(fe_region);
+			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+				fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 #if defined (DEBUG_CODE)
 			/*???debug*/
 			for (n = 0; n < number_of_components; n++)
@@ -875,7 +877,7 @@ int create_FE_element_snake_from_data_points(
 				}
 				/* create a template node suitable for 1-D Hermite interpolation of the
 					 coordinate_field */
-				if (NULL != (template_node = CREATE(FE_node)(/*node_number*/0, fe_region,
+				if (NULL != (template_node = CREATE(FE_node)(/*node_number*/0, fe_nodeset,
 					/*template_node*/(struct FE_node *)NULL)))
 				{
 					for (n = 0 ; return_code && (n < number_of_fe_fields) ; n++)
@@ -899,9 +901,8 @@ int create_FE_element_snake_from_data_points(
 				for (j = 0; (j <= number_of_elements) && return_code; j++)
 				{
 					/* get next unused node number from fe_region */
-					node_number = FE_region_get_next_FE_node_identifier(fe_region,
-						node_number);
-					if (NULL != (nodes[j] = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+					node_number = fe_nodeset->get_next_FE_node_identifier(node_number);
+					if (NULL != (nodes[j] = CREATE(FE_node)(node_number, (FE_nodeset *)0,
 						template_node)))
 					{
 						/* set the coordinate and derivatives */
@@ -928,7 +929,7 @@ int create_FE_element_snake_from_data_points(
 						}
 						if (return_code)
 						{
-							if (FE_region_merge_FE_node(fe_region, nodes[j]))
+							if (fe_nodeset->merge_FE_node(nodes[j]))
 							{
 								if (nodeset_group)
 								{

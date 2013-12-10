@@ -11,10 +11,11 @@
 #ifndef CMZN_FIELDMODULE_H__
 #define CMZN_FIELDMODULE_H__
 
-#include "types/regionid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
+#include "types/nodeid.h"
+#include "types/regionid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -222,27 +223,38 @@ ZINC_API int cmzn_fieldmoduleevent_destroy(cmzn_fieldmoduleevent_id *event_addre
 
 /**
  * Get logical OR of flags indicating how fields in the field module have changed.
- * @see cmzn_fieldmoduleevent_change_flag
+ * @see cmzn_field_change_flag
  *
  * @param event  Handle to the field module event.
  * @return  The change flags summarising the change: logical OR of
- * enum cmzn_fieldmoduleevent_change_flag values.
+ * enum cmzn_field_change_flag values.
  */
-ZINC_API cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_change_flags(
+ZINC_API cmzn_field_change_flags cmzn_fieldmoduleevent_get_summary_field_change_flags(
 	cmzn_fieldmoduleevent_id event);
 
 /**
  * Get logical OR of flags indicating how the field has changed.
- * @see cmzn_fieldmoduleevent_change_flag
+ * @see cmzn_field_change_flag
  *
  * @param event  Handle to the field module event to query.
  * @param field  The field to query about.
  * @return  The change flags summarising the change: logical OR of
- * enum cmzn_fieldmoduleevent_change_flag values. Returns
- * CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE in case of invalid arguments.
+ * enum cmzn_field_change_flag values. Returns
+ * CMZN_FIELD_CHANGE_FLAG_NONE in case of invalid arguments.
  */
-ZINC_API cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
+ZINC_API cmzn_field_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
 	cmzn_fieldmoduleevent_id event, cmzn_field_id field);
+
+/**
+ * Get object describing changes to nodes in a nodeset including nodes involved
+ * in partial change to field.
+ *
+ * @param event  Handle to the field module event to query.
+ * @param nodeset  The nodeset to get change information for.
+ * @return  Handle to the nodeset changes object. Up to caller to destroy.
+ */
+ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
+	cmzn_fieldmoduleevent_id event, cmzn_nodeset_id nodeset);
 
 #ifdef __cplusplus
 }

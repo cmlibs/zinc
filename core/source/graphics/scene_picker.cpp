@@ -206,14 +206,14 @@ Region_node_map cmzn_scenepicker::getPickedRegionSortedNodes(
 					{
 						if (picked_scene)
 						{
-							cmzn_region *region = cmzn_scene_get_region(picked_scene);
+							cmzn_region *region = cmzn_scene_get_region_internal(picked_scene);
 							if (existing_scene != picked_scene)
 							{
 								existing_scene = picked_scene;
 								cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 								if (nodeset)
 									cmzn_nodeset_destroy(&nodeset);
-								nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
+								nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 									(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 								cmzn_fieldmodule_destroy(&field_module);
 							}
@@ -270,7 +270,7 @@ Region_element_map cmzn_scenepicker::getPickedRegionSortedElements()
 					{
 						if (picked_scene)
 						{
-							cmzn_region *region = cmzn_scene_get_region(picked_scene);
+							cmzn_region *region = cmzn_scene_get_region_internal(picked_scene);
 							int element_type = cmzn_graphics_get_domain_dimension(graphics);
 							if ((existing_scene != picked_scene) ||
 								(current_element_type != element_type))
@@ -443,7 +443,7 @@ cmzn_element_id cmzn_scenepicker::getNearestElement()
 						{
 							if (picked_scene)
 							{
-								cmzn_region *region = cmzn_scene_get_region(picked_scene);
+								cmzn_region *region = cmzn_scene_get_region_internal(picked_scene);
 								int element_type = cmzn_graphics_get_domain_dimension(graphics);
 								if ((existing_scene != picked_scene) ||
 									(current_element_type != element_type))
@@ -525,11 +525,11 @@ cmzn_node_id cmzn_scenepicker::getNearestNode(enum cmzn_scenepicker_object_type 
 								if (existing_scene != picked_scene)
 								{
 									existing_scene = picked_scene;
-									cmzn_region *region = cmzn_scene_get_region(picked_scene);
+									cmzn_region *region = cmzn_scene_get_region_internal(picked_scene);
 									cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 									if (nodeset)
 										cmzn_nodeset_destroy(&nodeset);
-									nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
+									nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 										(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 									cmzn_fieldmodule_destroy(&field_module);
 								}
@@ -733,7 +733,7 @@ int cmzn_scenepicker::addPickedNodesToGroup(cmzn_field_group_id group,
 					if (selection_group)
 					{
 						cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(sub_region);
-						cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module,
+						cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 							(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 						if (master_nodeset)
 						{

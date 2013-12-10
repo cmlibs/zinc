@@ -3910,7 +3910,7 @@ static void Material_image_field_change(
 			REACCESS(Texture)(&(image_texture->texture),
 			cmzn_field_image_get_texture(image_texture->field));
 			MANAGED_OBJECT_CHANGE(Graphical_material)(image_texture->material,
-				MANAGER_CHANGE_DEPENDENCY(Graphical_material));
+				MANAGER_CHANGE_FULL_RESULT(Graphical_material));
 			if (image_texture->material->manager)
 				MANAGER_END_CACHE(Graphical_material)(image_texture->material->manager);
 		}
@@ -6463,7 +6463,7 @@ int cmzn_material_set_managed(cmzn_material_id material, bool value)
 		material->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Graphical_material)(material, MANAGER_CHANGE_NOT_RESULT(Graphical_material));
+			MANAGED_OBJECT_CHANGE(Graphical_material)(material, MANAGER_CHANGE_DEFINITION(Graphical_material));
 		}
 		return CMZN_OK;
 	}

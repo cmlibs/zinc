@@ -591,14 +591,12 @@ public:
 				break;
 			}
 		}
-		FE_region *master_FE_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_FE_region);
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		FE_field *fe_field = NULL;
 		if (finite_element_field)
 		{
 			Computed_field_get_type_finite_element(field, &fe_field);
-			if (FE_field_get_FE_region(fe_field) != master_FE_region)
+			if (FE_field_get_FE_region(fe_field) != fe_region)
 			{
 				display_message(ERROR_MESSAGE,
 					"cmzn_elementtemplate_define_field_simple_nodal.  "
@@ -880,9 +878,7 @@ public:
 
 	cmzn_elementtemplate_id createElementtemplate()
 	{
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return new cmzn_elementtemplate(master_fe_region, dimension);
+		return new cmzn_elementtemplate(fe_region, dimension);
 	}
 
 	cmzn_elementiterator_id createIterator()
@@ -900,20 +896,14 @@ public:
 	int destroyElement(cmzn_element_id element)
 	{
 		if (containsElement(element))
-		{
-			FE_region *master_fe_region = fe_region;
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-			return FE_region_remove_FE_element(master_fe_region, element);
-		}
+			return FE_region_remove_FE_element(fe_region, element);
 		return 0;
 	}
 
 	int destroyElementsConditional(cmzn_field_id conditional_field)
 	{
 		struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		int return_code = FE_region_remove_FE_element_list(master_fe_region, element_list);
+		int return_code = FE_region_remove_FE_element_list(fe_region, element_list);
 		DESTROY(LIST(FE_element))(&element_list);
 		return return_code;
 	}
@@ -937,13 +927,6 @@ public:
 	int getDimension() const { return dimension; }
 
 	FE_region *getFeRegion() const { return fe_region; }
-
-	FE_region *getMasterFeRegion() const
-	{
-		FE_region *master_fe_region = fe_region;
-		FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
-		return master_fe_region;
-	}
 
 	cmzn_mesh_scale_factor_set *findMeshScaleFactorSetByName(const char *name)
 	{
@@ -986,7 +969,7 @@ public:
 	{
 		if (!isGroup())
 			return access();
-		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
+		cmzn_region_id region = FE_region_get_cmzn_region(fe_region);
 		if (region)
 			return new cmzn_mesh(region, dimension);
 		return 0;
@@ -1021,7 +1004,7 @@ protected:
 
 	struct LIST(FE_element) *createElementListWithCondition(cmzn_field_id conditional_field)
 	{
-		cmzn_region_id region = FE_region_get_master_cmzn_region(fe_region);
+		cmzn_region_id region = FE_region_get_cmzn_region(fe_region);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_elementiterator_id iterator = createIterator();
@@ -1094,7 +1077,7 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 {
 	if (field_module && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		cmzn_region *region = cmzn_fieldmodule_get_master_region_internal(field_module);
+		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (fe_region)
 		{
@@ -1276,7 +1259,7 @@ cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
 	if (mesh && (1 == order) && (1 <= term) && (term <= mesh->getDimension()))
-		return new cmzn_differentialoperator(mesh->getMasterFeRegion(), mesh->getDimension(), term);
+		return new cmzn_differentialoperator(mesh->getFeRegion(), mesh->getDimension(), term);
 	return 0;
 }
 
@@ -1397,13 +1380,6 @@ cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh)
 	if (!mesh)
 		return 0;
 	return FE_region_get_cmzn_region(mesh->getFeRegion());
-}
-
-cmzn_region_id cmzn_mesh_get_master_region_internal(cmzn_mesh_id mesh)
-{
-	if (!mesh)
-		return 0;
-	return FE_region_get_master_cmzn_region(mesh->getFeRegion());
 }
 
 cmzn_elementbasis_id cmzn_elementbasis_access(

@@ -60,9 +60,4 @@ FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh);
  */
 cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh);
 
-/** Internal use only.
- * @return non-accessed master region for this mesh.
- */
-cmzn_region_id cmzn_mesh_get_master_region_internal(cmzn_mesh_id mesh);
-
 #endif /* !defined (CMZN_ELEMENT_PRIVATE_HPP) */

@@ -55,6 +55,7 @@ struct Convert_finite_elements_data
 	int maximum_number_of_components;
 	FE_value *temporary_values;
 	struct FE_region *destination_fe_region;
+	FE_nodeset *destination_fe_nodeset;
 	int mode_dimension;
 	int subelement_count;
 	FE_value delta_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -78,7 +79,9 @@ struct Convert_finite_elements_data
 		temporary_values((FE_value *)NULL),
 		mode_dimension(0),
 		node_number(1),
-		element_number(1)
+		element_number(1),
+		destination_fe_region(0),
+		destination_fe_nodeset(0)
 	{
 		if (CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT == mode)
 		{
@@ -183,12 +186,11 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 				{{0.0, 0.0}, {1.0, 0.0}, {0.0, 1.0}, {1.0, 1.0}};
 			for (i = 0 ; return_code && (i < HERMITE_2D_NUMBER_OF_NODES) ; i++)
 			{
-				node_number = FE_region_get_next_FE_node_identifier(
-					destination_fe_region, node_number);
-				if ((nodes[i] = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+				node_number = destination_fe_nodeset->get_next_FE_node_identifier(node_number);
+				if ((nodes[i] = CREATE(FE_node)(node_number, (FE_nodeset *)NULL,
 						template_node)))
 				{
-					if (!FE_region_merge_FE_node(destination_fe_region, nodes[i]))
+					if (!destination_fe_nodeset->merge_FE_node(nodes[i]))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_element_convert_element.  "
@@ -336,15 +338,14 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 							}
 							else
 							{
-								node_number = FE_region_get_next_FE_node_identifier(
-									destination_fe_region, node_number);
-								node = CREATE(FE_node)(node_number, (struct FE_region *)NULL,
+								node_number = destination_fe_nodeset->get_next_FE_node_identifier(node_number);
+								node = CREATE(FE_node)(node_number, (FE_nodeset *)NULL,
 									template_node);
 								if (node)
 								{
 									set_FE_nodal_field_FE_value_values(destination_fe_fields[j],
 										node, values, &number_of_values);
-									if (FE_region_merge_FE_node(destination_fe_region, node))
+									if (destination_fe_nodeset->merge_FE_node(node))
 									{
 										nodes[i] = node;
 										addNode(values, node);
@@ -528,6 +529,8 @@ int finite_element_conversion(struct cmzn_region *source_region,
 		struct Convert_finite_elements_data data(source_region, mode, refinement, tolerance);
 		data.maximum_number_of_components = 0; /* Initialised by iterator */
 		data.destination_fe_region = destination_fe_region;
+		data.destination_fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+			destination_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 		data.field_array = field_array;
 
 		// Create new FE_fields in destination region matching input computed fields
@@ -599,7 +602,7 @@ int finite_element_conversion(struct cmzn_region *source_region,
 				if (return_code)
 				{
 					/* Make template node defining all the fields in the field list */
-					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, destination_fe_region,
+					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, data.destination_fe_nodeset,
 							/*template_node*/(struct FE_node *)NULL)))
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
@@ -664,7 +667,7 @@ int finite_element_conversion(struct cmzn_region *source_region,
 				if (return_code)
 				{
 					/* Make template node defining all the fields in the field list */
-					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, destination_fe_region,
+					if ((data.template_node = CREATE(FE_node)(/*node_number*/0, data.destination_fe_nodeset,
 							/*template_node*/(struct FE_node *)NULL)))
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)

@@ -176,7 +176,7 @@ enum cmzn_sceneviewerevent_change_flag
 		/*!< repaint required evenet */
 	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM = 2,
 		/*!< sceneviewer receive input */
-	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL = 4
+	CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL = 32768
 		/*!< sceneviewer is currently being destroyed */
 };
 
