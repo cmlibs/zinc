@@ -474,7 +474,7 @@ public:
 				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
 				{
 					const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
-					int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+					REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
 						FE_element_is_not_in_FE_region, (void *)fe_region, object_list);
 					const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
 					if (new_size != old_size)
@@ -701,7 +701,7 @@ public:
 				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node))
 				{
 					const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
-					int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_nodeset,
+					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_nodeset,
 						(void *)fe_nodeset, object_list);
 					const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
 					if (new_size != old_size)

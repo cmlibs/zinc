@@ -105,7 +105,7 @@ public:
 		return this;
 	}
 
-	static int cmzn_nodesetchanges::deaccess(cmzn_nodesetchanges* &nodesetchanges);
+	static int deaccess(cmzn_nodesetchanges* &nodesetchanges);
 
 	cmzn_node_change_flags getNodeChangeFlags(cmzn_node *node)
 	{
