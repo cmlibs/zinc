@@ -71,7 +71,7 @@ struct Render_to_finite_elements_data
 		field_cache(cmzn_fieldmodule_create_fieldcache(field_module)),
 		render_mode(render_mode),
 		coordinate_field(coordinate_field),
-		master_nodeset(cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES)),
+		master_nodeset(cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES)),
 		nodeset(0),
 		master_mesh_1d(cmzn_fieldmodule_find_mesh_by_dimension(field_module, 1)),
 		mesh_1d(0),

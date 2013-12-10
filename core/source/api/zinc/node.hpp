@@ -41,6 +41,24 @@ public:
 		id(cmzn_node_access(node.id))
 	{ }
 
+	/**
+	 * Node change bit flags returned by Nodesetchanges query functions.
+	 */
+	enum ChangeFlag
+	{
+		CHANGE_FLAG_NONE = CMZN_NODE_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_ADD = CMZN_NODE_CHANGE_FLAG_ADD,
+		CHANGE_FLAG_REMOVE = CMZN_NODE_CHANGE_FLAG_REMOVE,
+		CHANGE_FLAG_IDENTIFIER = CMZN_NODE_CHANGE_FLAG_IDENTIFIER,
+		CHANGE_FLAG_DEFINITION = CMZN_NODE_CHANGE_FLAG_DEFINITION,
+		CHANGE_FLAG_FIELD = CMZN_NODE_CHANGE_FLAG_FIELD
+	};
+	
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 */
+	typedef int ChangeFlags;
+
 	enum ValueLabel
 	{
 		VALUE_LABEL_INVALID = CMZN_NODE_VALUE_LABEL_INVALID,
@@ -379,6 +397,62 @@ public:
 			reinterpret_cast<cmzn_nodeset_group_id>(id), conditionalField.getId());
 	}
 
+};
+
+class Nodesetchanges
+{
+private:
+
+	cmzn_nodesetchanges_id id;
+
+public:
+
+	Nodesetchanges() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Nodesetchanges(cmzn_nodesetchanges_id nodesetchanges_id) :
+		id(nodesetchanges_id)
+	{ }
+
+	Nodesetchanges(const Nodesetchanges& nodesetchanges) :
+		id(cmzn_nodesetchanges_access(nodesetchanges.id))
+	{ }
+
+	Nodesetchanges& operator=(const Nodesetchanges& nodesetchanges)
+	{
+		cmzn_nodesetchanges_id temp_id = cmzn_nodesetchanges_access(nodesetchanges.id);
+		if (0 != id)
+			cmzn_nodesetchanges_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Nodesetchanges()
+	{
+		if (0 != id)
+			cmzn_nodesetchanges_destroy(&id);
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Node::ChangeFlags getNodeChangeFlags(Node &node)
+	{
+		return cmzn_nodesetchanges_get_node_change_flags(id, node.getId());
+	}
+
+	int getNumberOfChanges()
+	{
+		return cmzn_nodesetchanges_get_number_of_changes(id);
+	}
+
+	Node::ChangeFlags getSummaryNodeChangeFlags()
+	{
+		return cmzn_nodesetchanges_get_summary_node_change_flags(id);
+	}
 };
 
 inline int Node::merge(Nodetemplate nodeTemplate)

@@ -131,7 +131,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	}
 	else
 	{
-		cmzn_region_id region = cmzn_mesh_get_master_region_internal(master_mesh);
+		cmzn_region_id region = cmzn_mesh_get_region_internal(master_mesh);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_element_field_is_true_iterator_data data = { cache, conditional_field };
@@ -261,7 +261,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	}
 	else
 	{
-		cmzn_region_id region = cmzn_nodeset_get_master_region_internal(master_nodeset);
+		cmzn_region_id region = cmzn_nodeset_get_region_internal(master_nodeset);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_node_field_is_true_iterator_data data = { cache, conditional_field };
@@ -439,8 +439,8 @@ Computed_field *cmzn_fieldmodule_create_field_node_group(cmzn_fieldmodule_id fie
 
 	ENTER(cmzn_fieldmodule_create_field_node_group);
 	field = (Computed_field *)NULL;
-	if (field_module && nodeset && (cmzn_nodeset_get_master_region_internal(nodeset) ==
-		cmzn_fieldmodule_get_master_region_internal(field_module)))
+	if (field_module && nodeset && (cmzn_nodeset_get_region_internal(nodeset) ==
+		cmzn_fieldmodule_get_region_internal(field_module)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,
@@ -485,8 +485,8 @@ Computed_field *cmzn_fieldmodule_create_field_element_group(cmzn_fieldmodule_id 
 
 	ENTER(cmzn_fieldmodule_create_field_element_group);
 	field = (Computed_field *)NULL;
-	if (field_module && mesh && (cmzn_mesh_get_master_region_internal(mesh) ==
-		cmzn_fieldmodule_get_master_region_internal(field_module)))
+	if (field_module && mesh && (cmzn_mesh_get_region_internal(mesh) ==
+		cmzn_fieldmodule_get_region_internal(field_module)))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/false, 1,

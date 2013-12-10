@@ -32,15 +32,6 @@ public:
 
 namespace {
 
-void Computed_field_nodal_lookup_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes, void *computed_field_void);
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-If the node we are looking at changes generate a computed field change message.
-==============================================================================*/
-
 const char computed_field_nodal_lookup_type_string[] = "nodal_lookup";
 
 class Computed_field_nodal_lookup : public Computed_field_core
@@ -58,19 +49,10 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) ==
-				FE_node_get_FE_region(lookup_node))
-			{
-				FE_region *fe_region = FE_node_get_FE_region(lookup_node);
-				if (!FE_region_contains_FE_node(fe_region, lookup_node))
-					fe_region = FE_region_get_data_FE_region(fe_region);
-				if (FE_region_add_callback(fe_region,
-					Computed_field_nodal_lookup_FE_region_change,
-					(void *)parent))
-				{
-					return true;
-				}
-			}
+			FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
+			FE_region *fe_region = fe_nodeset->get_FE_region();
+			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) == fe_region)
+				return true;
 		}
 		return false;
 	}
@@ -104,36 +86,19 @@ private:
 
 	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
-	int has_multiple_times();
+	int has_multiple_times()
+	{
+		return 1;
+	}
+
+	virtual int check_dependency();
+
 };
 
 Computed_field_nodal_lookup::~Computed_field_nodal_lookup()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
 {
-
-	ENTER(Computed_field_nodal_lookup::~Computed_field_nodal_lookup);
-	if (field)
-	{
-		FE_region *fe_region = FE_node_get_FE_region(lookup_node);
-		if (!FE_region_contains_FE_node(fe_region, lookup_node))
-			fe_region = FE_region_get_data_FE_region(fe_region);
-		FE_region_remove_callback(fe_region,
-			Computed_field_nodal_lookup_FE_region_change, (void *)field);
-		DEACCESS(FE_node)(&lookup_node);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodal_lookup::~Computed_field_nodal_lookup.  Invalid argument(s)");
-	}
-	LEAVE;
-
-} /* Computed_field_nodal_lookup::~Computed_field_nodal_lookup */
+	DEACCESS(FE_node)(&lookup_node);
+}
 
 Computed_field_core* Computed_field_nodal_lookup::copy()
 /*******************************************************************************
@@ -216,15 +181,9 @@ int Computed_field_nodal_lookup::list()
 		display_message(INFORMATION_MESSAGE,
 			"    node : %d\n",
 			get_FE_node_identifier(lookup_node));
-		FE_region *fe_region = FE_node_get_FE_region(lookup_node);
-		if (FE_region_contains_FE_node(fe_region, lookup_node))
-		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: nodes\n");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: datapoints\n");
-		}
+		FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(lookup_node);
+		display_message(INFORMATION_MESSAGE, "    nodeset: %s\n",
+			(CMZN_FIELD_DOMAIN_TYPE_NODES == fe_nodeset->getFieldDomainType()) ? "nodes\n" : "datapoints\n");
 		return_code = 1;
 	}
 	else
@@ -263,8 +222,8 @@ Returns allocated command string for reproducing field.
 			append_string(&command_string, field_name, &error);
 			DEALLOCATE(field_name);
 		}
-		FE_region *fe_region = FE_node_get_FE_region(lookup_node);
-		if (FE_region_contains_FE_node(fe_region, lookup_node))
+		FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(lookup_node);
+		if (CMZN_FIELD_DOMAIN_TYPE_NODES == fe_nodeset->getFieldDomainType())
 		{
 			append_string(&command_string, " nodeset nodes ", &error);
 		}
@@ -288,69 +247,29 @@ Returns allocated command string for reproducing field.
 	return (command_string);
 } /* Computed_field_nodal_lookup::get_command_string */
 
-int Computed_field_nodal_lookup::has_multiple_times ()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-Always has multiple times.
-==============================================================================*/
+int Computed_field_nodal_lookup::check_dependency()
 {
-	int return_code;
-
-	ENTER(Computed_field_nodal_lookup::has_multiple_times);
 	if (field)
 	{
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_nodal_lookup::has_multiple_times.  "
-			"Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_time_value::has_multiple_times */
-
-void Computed_field_nodal_lookup_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes, void *computed_field_void)
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-If the node we are looking at changes generate a computed field change message.
-==============================================================================*/
-{
-	Computed_field *field;
-	Computed_field_nodal_lookup *core;
-	int node_change;
-
-	ENTER(Computed_field_FE_region_change);
-	USE_PARAMETER(fe_region);
-	if (changes && (field = (struct Computed_field *)computed_field_void) &&
-		(core = dynamic_cast<Computed_field_nodal_lookup*>(field->core)))
-	{
-		/* I'm not sure if we could also check if we depend on an FE_field change
-			and so reduce the total number of changes? */
-		if (field->manager && CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
-				core->lookup_node, &node_change))
+		if (0 == (field->manager_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
 		{
-			if (node_change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			int source_change_status = field->source_fields[0]->core->check_dependency();
+			if (source_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field))
+				field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+			else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
 			{
-				Computed_field_dependency_changed(field);
+				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->lookup_node);
+				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
+				int change = 0;
+				CHANGE_LOG_QUERY(FE_node)(fe_node_changes, this->lookup_node, &change);
+				if (change & CHANGE_LOG_OBJECT_CHANGED(FE_node))
+					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}
+		return field->manager_change_status;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_FE_region_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_FE_region_change */
+	return MANAGER_CHANGE_NONE(Computed_field);
+}
 
 } //namespace
 
@@ -360,7 +279,8 @@ struct Computed_field *Computed_field_create_nodal_lookup(
 {
 	Computed_field *field = NULL;
 	if (source_field && source_field->isNumerical() && lookup_node &&
-		(FE_node_get_FE_region(lookup_node) == cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
+		(FE_node_get_FE_nodeset(lookup_node)->get_FE_region() ==
+			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
@@ -406,15 +326,6 @@ int Computed_field_get_type_nodal_lookup(struct Computed_field *field,
 
 namespace {
 
-void Computed_field_quaternion_SLERP_FE_region_change(struct FE_region *fe_region,
-	 struct FE_region_changes *changes, void *computed_field_void);
-/*******************************************************************************
-LAST MODIFIED : 10 Oct 2007
-
-DESCRIPTION :
-If the node we are looking at changes generate a computed field change message.
-==============================================================================*/
-
 const char computed_field_quaternion_SLERP_type_string[] = "quaternion_SLERP";
 
 class Computed_field_quaternion_SLERP : public Computed_field_core
@@ -433,15 +344,10 @@ public:
 	{
 		if (Computed_field_core::attach_to_field(parent))
 		{
-			FE_region *fe_region = FE_node_get_FE_region(nodal_lookup_node);
-			if (!FE_region_contains_FE_node(fe_region, nodal_lookup_node))
-				fe_region = FE_region_get_data_FE_region(fe_region);
-			if (FE_region_add_callback(fe_region,
-				Computed_field_quaternion_SLERP_FE_region_change,
-				(void *)parent))
-			{
+			FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
+			FE_region *fe_region = fe_nodeset->get_FE_region();
+			if (cmzn_region_get_FE_region(Computed_field_get_region(parent->source_fields[0])) == fe_region)
 				return true;
-			}
 		}
 		return false;
 	}
@@ -476,39 +382,19 @@ private:
 
 	char* get_command_string();
 
-	int has_multiple_times();
+	int has_multiple_times()
+	{
+		return 1;
+	}
+
+	virtual int check_dependency();
+
 };
 
 Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP()
-/*******************************************************************************
-LAST MODIFIED : 10 October 2007
-
-DESCRIPTION :
-Clear the type specific data used by this type.
-==============================================================================*/
 {
-	ENTER(Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP);
-	if (field)
-	{
-		FE_region *fe_region = FE_node_get_FE_region(nodal_lookup_node);
-		if (!FE_region_contains_FE_node(fe_region, nodal_lookup_node))
-			fe_region = FE_region_get_data_FE_region(fe_region);
-		FE_region_remove_callback(fe_region,
-			Computed_field_quaternion_SLERP_FE_region_change,
-			(void *)field);
-		if (nodal_lookup_node)
-		{
-			DEACCESS(FE_node)(&(nodal_lookup_node));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_quaternion_SLERP::~Computed_field_quaternion_SLERP.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_quaternionSLERP::~Computed_field_quaternion_SLERP */
+	DEACCESS(FE_node)(&(nodal_lookup_node));
+}
 
 Computed_field_core* Computed_field_quaternion_SLERP::copy()
 /*******************************************************************************
@@ -638,15 +524,9 @@ DESCRIPTION :
 		display_message(INFORMATION_MESSAGE,
 			"    node : %d\n",
 			get_FE_node_identifier(nodal_lookup_node));
-		FE_region *fe_region = FE_node_get_FE_region(nodal_lookup_node);
-		if (FE_region_contains_FE_node(fe_region, nodal_lookup_node))
-		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: nodes	\n");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE, "    nodeset: datapoints \n");
-		}
+		FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(nodal_lookup_node);
+		display_message(INFORMATION_MESSAGE, "    nodeset: %s\n",
+			(CMZN_FIELD_DOMAIN_TYPE_NODES == fe_nodeset->getFieldDomainType()) ? "nodes\n" : "datapoints\n");
 		return_code = 1;
 	}
 	else
@@ -685,8 +565,8 @@ Returns allocated command string for reproducing field. Includes type.
 			 append_string(&command_string, field_name, &error);
 			 DEALLOCATE(field_name);
 		}
-		FE_region *fe_region = FE_node_get_FE_region(nodal_lookup_node);
-		if (FE_region_contains_FE_node(fe_region, nodal_lookup_node))
+		FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(nodal_lookup_node);
+		if (CMZN_FIELD_DOMAIN_TYPE_NODES == fe_nodeset->getFieldDomainType())
 		{
 			append_string(&command_string, " nodeset nodes ", &error);
 		}
@@ -711,69 +591,29 @@ Returns allocated command string for reproducing field. Includes type.
 	return (command_string);
 } /* Computed_field_quaternion_SLERP::get_command_string */
 
-int Computed_field_quaternion_SLERP::has_multiple_times()
-/*******************************************************************************
-LAST MODIFIED : 10 Oct 2007
-
-DESCRIPTION :
-Always has multiple times.
-==============================================================================*/
+int Computed_field_quaternion_SLERP::check_dependency()
 {
-	int return_code;
-
-	ENTER(Computed_field_quaternion_SLERP::has_multiple_times);
 	if (field)
 	{
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			 "Computed_field_quaternion_SLERP::has_multiple_times.  "
-			 "Invalid arguments.");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Computed_field_quaternion_SLERP::has_multiple_times */
-
-void Computed_field_quaternion_SLERP_FE_region_change(struct FE_region *fe_region,
-	 struct FE_region_changes *changes, void *computed_field_void)
-/*******************************************************************************
-LAST MODIFIED : 10 Oct 2007
-
-DESCRIPTION :
-If the node we are looking at changes generate a computed field change message.
-==============================================================================*/
-{
-	Computed_field *field;
-	Computed_field_quaternion_SLERP *core;
-	int node_change;
-
-	ENTER(Computed_field_FE_region_change);
-	USE_PARAMETER(fe_region);
-	if (changes && (field = (struct Computed_field *)computed_field_void) &&
-		(core = dynamic_cast<Computed_field_quaternion_SLERP*>(field->core)))
-	{
-		/* I'm not sure if we could also check if we depend on an FE_field change
-			and so reduce the total number of changes? */
-		if (field->manager && CHANGE_LOG_QUERY(FE_node)(changes->fe_node_changes,
-				core->nodal_lookup_node, &node_change))
+		if (0 == (field->manager_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
 		{
-			if (node_change | CHANGE_LOG_OBJECT_CHANGED(FE_node))
+			int source_change_status = field->source_fields[0]->core->check_dependency();
+			if (source_change_status & MANAGER_CHANGE_FULL_RESULT(Computed_field))
+				field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+			else if (source_change_status & MANAGER_CHANGE_PARTIAL_RESULT(Computed_field))
 			{
-				Computed_field_dependency_changed(field);
+				FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(this->nodal_lookup_node);
+				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
+				int change = 0;
+				CHANGE_LOG_QUERY(FE_node)(fe_node_changes, this->nodal_lookup_node, &change);
+				if (change & CHANGE_LOG_OBJECT_CHANGED(FE_node))
+					field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 			}
 		}
+		return field->manager_change_status;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_FE_region_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* Computed_field_FE_region_change */
+	return MANAGER_CHANGE_NONE(Computed_field);
+}
 
 } //namespace
 
@@ -788,7 +628,8 @@ struct Computed_field *Computed_field_create_quaternion_SLERP(
 {
 	Computed_field *field = NULL;
 	if (source_field && (4 == source_field->number_of_components) &&
-		quaternion_SLERP_node && (FE_node_get_FE_region(quaternion_SLERP_node) ==
+		quaternion_SLERP_node &&
+			(FE_node_get_FE_nodeset(quaternion_SLERP_node)->get_FE_region() ==
 			cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(field_module))))
 	{
 		field = Computed_field_create_generic(field_module,

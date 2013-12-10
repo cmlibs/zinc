@@ -47,4 +47,32 @@
 		CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3 = 8 /*!< triple cross derivative w.r.t. arc lengths S1,S2,S3 */
 	};
 
+	struct cmzn_nodesetchanges;
+	/** Handle to object describing changes to a nodeset in a fieldmoduleevent */
+	typedef struct cmzn_nodesetchanges *cmzn_nodesetchanges_id;
+
+	/**
+	 * Bit flags summarising changes to a node or nodes in a nodeset.
+	 */
+	enum cmzn_node_change_flag
+	{
+		CMZN_NODE_CHANGE_FLAG_NONE = 0,
+			/*!< node(s) not changed */
+		CMZN_NODE_CHANGE_FLAG_ADD = 1,
+			/*!< node(s) added */
+		CMZN_NODE_CHANGE_FLAG_REMOVE = 2,
+			/*!< node(s) removed */
+		CMZN_NODE_CHANGE_FLAG_IDENTIFIER = 4,
+			/*!< node(s') identifier changed */
+		CMZN_NODE_CHANGE_FLAG_DEFINITION = 8,
+			/*!< node(s') definition other than identifier changed; currently none */
+		CMZN_NODE_CHANGE_FLAG_FIELD = 16
+			/*!< change to field values mapped to node(s) */
+	};
+	
+	/**
+	 * Type for passing logical OR of #cmzn_node_change_flag
+	 */
+	typedef int cmzn_node_change_flags;
+
 #endif

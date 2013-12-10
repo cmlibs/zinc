@@ -868,7 +868,7 @@ int export_to_stl(char *file_name, cmzn_scene_id scene, cmzn_scenefilter_id filt
 	if (file_name && scene)
 	{
 		build_Scene(scene, filter);
-		char *solid_name = cmzn_region_get_name(cmzn_scene_get_region(scene));
+		char *solid_name = cmzn_region_get_name(cmzn_scene_get_region_internal(scene));
 		Stl_context stl_context(file_name, solid_name);
 		if (stl_context.is_valid())
 		{

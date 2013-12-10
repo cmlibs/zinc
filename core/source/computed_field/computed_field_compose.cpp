@@ -267,8 +267,8 @@ Computed_field *Computed_field_create_compose(cmzn_fieldmodule *field_module,
 		find_element_xi_field && find_element_xi_field->isNumerical() &&
 		calculate_values_field && calculate_values_field->isNumerical() &&
 		search_mesh &&
-		(cmzn_mesh_get_master_region_internal(search_mesh) ==
-			cmzn_fieldmodule_get_master_region_internal(field_module)))
+		(cmzn_mesh_get_region_internal(search_mesh) ==
+			cmzn_fieldmodule_get_region_internal(field_module)))
 	{
 		if (texture_coordinate_field->number_of_components ==
 			find_element_xi_field->number_of_components)

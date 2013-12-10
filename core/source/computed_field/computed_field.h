@@ -122,7 +122,7 @@ cmzn_field_id cmzn_fielditerator_next_non_access(
 
 PROTOTYPE_MANAGER_COPY_FUNCTIONS(Computed_field,name,const char *);
 PROTOTYPE_MANAGER_FUNCTIONS(Computed_field);
-PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(Computed_field,name,const char *);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(Computed_field,name,const char *);
 
 /***************************************************************************//**
  * Returns true if <field> can be calculated in <element>. If the field depends
@@ -164,34 +164,12 @@ int Computed_field_is_defined_at_node(struct Computed_field *field,
 int Computed_field_is_defined_at_node_conditional(struct Computed_field *field,
 	void *node_void);
 
-int Computed_field_is_in_list(struct Computed_field *field,
-	void *field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 5 February 2003
-
-DESCRIPTION :
-Computed_field conditional/iterator function returning true if <field> is in the
-computed <field_list>.
-==============================================================================*/
-
 /***************************************************************************//**
  * List conditional function returning true if field value type is
  * CMZN_FIELD_VALUE_TYPE_STRING.
  */
 int Computed_field_has_string_value_type(struct Computed_field *field,
 	void *dummy_void);
-
-int Computed_field_or_ancestor_satisfies_condition(struct Computed_field *field,
-	LIST_CONDITIONAL_FUNCTION(Computed_field) *conditional_function,
-	void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 5 February 2003
-
-DESCRIPTION :
-Returns true if <field> satisfies <conditional_function> with <user_data>. If
-not, recursively calls this function for each of its source fields until one
-satisfies the function for a true result, or all have failed for false.
-==============================================================================*/
 
 int Computed_field_for_each_ancestor(struct Computed_field *field,
 	LIST_ITERATOR_FUNCTION(Computed_field) *iterator_function, void *user_data);

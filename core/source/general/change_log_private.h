@@ -546,23 +546,11 @@ Tells the <change_log> that <object> has undergone the <change>. \
 							} \
 							else \
 							{ \
+								/* REMOVED bit only ever set on its own */ \
 								entry->change = CHANGE_LOG_OBJECT_REMOVED(object_type); \
 							} \
 						} break; \
-						case CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(object_type): \
-						case CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(object_type): \
-						case CHANGE_LOG_OBJECT_CHANGED(object_type): \
-						case CHANGE_LOG_RELATED_OBJECT_CHANGED(object_type): \
-						{ \
-							/* no change if object added or removed */ \
-							if ((entry->change != CHANGE_LOG_OBJECT_ADDED(object_type)) && \
-								(entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type))) \
-							{ \
-								/* bitwise OR */ \
-								entry->change |= change; \
-							} \
-						} break; \
-						default: \
+						case CHANGE_LOG_OBJECT_UNCHANGED(object_type): \
 						{ \
 							/* don't want this to be called with UNCHANGED so that case is \
 								 handled here too */ \
@@ -570,7 +558,16 @@ Tells the <change_log> that <object> has undergone the <change>. \
 								"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
 								").  Invalid change type"); \
 							return_code = 0; \
-						} \
+						} break; \
+						default: /* all other bit combinations */ \
+						{ \
+							/* no change if object removed */ \
+							if (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type)) \
+							{ \
+								/* bitwise OR */ \
+								entry->change |= change; \
+							} \
+						} break; \
 					} \
 				} \
 				else \

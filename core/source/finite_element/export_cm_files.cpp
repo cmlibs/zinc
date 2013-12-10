@@ -785,7 +785,9 @@ Writes text for an <ipbase_file> to support <field>.
 		cm_node_data.maximum_number_of_derivatives = 0;
 		cm_node_data.ipnode_file = ipnode_file;
 		cm_node_data.ipmap_file = ipmap_file;
-		if (0 != (return_code = FE_region_for_each_FE_node(region,
+		FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+			region, CMZN_FIELD_DOMAIN_TYPE_NODES);
+		if (0 != (return_code = fe_nodeset->for_each_FE_node(
 			FE_node_write_cm_check_node_values, (void *)&cm_node_data)))
 		{
 			for (i = 0 ; i < cm_node_data.number_of_components ; i++)
@@ -821,8 +823,7 @@ Writes text for an <ipbase_file> to support <field>.
 					i + 1, cm_node_data.number_of_derivatives[i]);
 			}
 
-			return_code = FE_region_for_each_FE_node(region,
-				write_cm_FE_node, (void *)&cm_node_data);
+			return_code = fe_nodeset->for_each_FE_node(write_cm_FE_node, (void *)&cm_node_data);
 
 			if (ipmap_file)
 			{
@@ -833,7 +834,7 @@ Writes text for an <ipbase_file> to support <field>.
 				fprintf(ipmap_file, " The number of nodes with special mappings is [    1]: %d\n",
 					cm_node_data.number_of_nodes_with_versions);
 
-				return_code = FE_region_for_each_FE_node(region,
+				return_code = fe_nodeset->for_each_FE_node(
 					write_cm_FE_nodal_mapping, (void *)&cm_node_data);
 			}
 		}

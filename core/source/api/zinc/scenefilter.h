@@ -58,14 +58,15 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_visibilit
 	cmzn_scenefiltermodule_id filtermodule);
 
 /**
- * Creates a scene filter which matches any graphics with given domain type.
+ * Creates a scene filter which matches any graphics with given field domain type.
  *
  * @param filtermodule  The module to create the filter in.
- * @param domain_type  The domain type to be matched by this filter.
+ * @param domain_type  The field domain type graphics attribute to be matched by
+ * this filter.
  * @return  Handle to the new filter, or NULL on failure. Up to caller to
  * destroy the returned handle.
  */
-ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_domain_type(
+ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_field_domain_type(
 	cmzn_scenefiltermodule_id filtermodule,
 	enum cmzn_field_domain_type domain_type);
 

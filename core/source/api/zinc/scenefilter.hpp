@@ -213,9 +213,9 @@ public:
 		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_visibility_flags(id));
 	}
 
-	Scenefilter createScenefilterDomainType(Field::DomainType domainType)
+	Scenefilter createScenefilterFieldDomainType(Field::DomainType domainType)
 	{
-		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_domain_type(id,
+		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_field_domain_type(id,
 			static_cast<cmzn_field_domain_type>(domainType)));
 	}
 

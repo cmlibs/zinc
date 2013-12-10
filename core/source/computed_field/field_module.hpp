@@ -14,31 +14,26 @@
 #include "zinc/fieldmodule.h"
 #include "computed_field/computed_field.h"
 
+class FE_region_changes;
+
 struct cmzn_fieldmoduleevent
 {
 private:
-	cmzn_fieldmoduleevent_change_flags changeFlags;
+	cmzn_region *region;
+	cmzn_field_change_flags changeFlags;
 	struct MANAGER_MESSAGE(Computed_field) *managerMessage;
+	FE_region_changes *feRegionChanges;
 	int access_count;
 
-	cmzn_fieldmoduleevent() :
-		changeFlags(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE),
-		managerMessage(0),
-		access_count(1)
-	{
-	}
-
-	~cmzn_fieldmoduleevent()
-	{
-		if (managerMessage)
-			MANAGER_MESSAGE_DEACCESS(Computed_field)(&(this->managerMessage));
-	}
+	cmzn_fieldmoduleevent(cmzn_region *regionIn);
+	~cmzn_fieldmoduleevent();
 
 public:
 
-	static cmzn_fieldmoduleevent *create()
+	/** @param regionIn  Owning region; can be NULL for FINAL event */
+	static cmzn_fieldmoduleevent *create(cmzn_region *regionIn)
 	{
-		return new cmzn_fieldmoduleevent;
+		return new cmzn_fieldmoduleevent(regionIn);
 	}
 
 	cmzn_fieldmoduleevent *access()
@@ -49,21 +44,26 @@ public:
 
 	static int deaccess(cmzn_fieldmoduleevent* &event);
 
-	cmzn_fieldmoduleevent_change_flags getChangeFlags() const
+	cmzn_field_change_flags getChangeFlags() const
 	{
 		return this->changeFlags;
 	}
 
-	void setChangeFlags(cmzn_fieldmoduleevent_change_flags changeFlagsIn)
+	void setChangeFlags(cmzn_field_change_flags changeFlagsIn)
 	{
 		this->changeFlags = changeFlagsIn;
 	}
 
-	cmzn_fieldmoduleevent_change_flags getFieldChangeFlags(cmzn_field *field) const
+	cmzn_field_change_flags getFieldChangeFlags(cmzn_field *field) const
 	{
 		if (field && this->managerMessage)
 			return MANAGER_MESSAGE_GET_OBJECT_CHANGE(Computed_field)(this->managerMessage, field);
-		return CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE;
+		return CMZN_FIELD_CHANGE_FLAG_NONE;
+	}
+
+	struct MANAGER_MESSAGE(Computed_field) *getManagerMessage()
+	{
+		return this->managerMessage;
 	}
 
 	void setManagerMessage(struct MANAGER_MESSAGE(Computed_field) *managerMessageIn)
@@ -71,6 +71,17 @@ public:
 		this->managerMessage = MANAGER_MESSAGE_ACCESS(Computed_field)(managerMessageIn);
 	}
 
+	void setFeRegionChanges(FE_region_changes *changes);
+
+	FE_region_changes *getFeRegionChanges()
+	{
+		return this->feRegionChanges;
+	}
+
+	cmzn_region *getRegion()
+	{
+		return this->region;
+	}
 };
 
 struct cmzn_fieldmodulenotifier
@@ -147,15 +158,6 @@ int cmzn_fieldmodule_contains_field(cmzn_fieldmodule_id field_module,
  * @return  Non-accessed handle to owning region for field_module.
  */
 struct cmzn_region *cmzn_fieldmodule_get_region_internal(
-	struct cmzn_fieldmodule *field_module);
-
-/**
- * Get non-accessed pointer to master region for this field_module.
- *
- * @param field_module  The field module to query.
- * @return  Non-accessed handle to master region for field_module.
- */
-struct cmzn_region *cmzn_fieldmodule_get_master_region_internal(
 	struct cmzn_fieldmodule *field_module);
 
 /**

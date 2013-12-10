@@ -197,26 +197,20 @@ uses FE_time_sequences in <fe_time_sequence_package>.
 It is an error if an equivalent FE_field is not found.
 ==============================================================================*/
 
+/**
+ * Creates a struct FE_node_field_info with a pointer to <fe_nodeset>
+ * and a copy of the <fe_node_field_list>.
+ * Fails if more than one FE_node_field in the list references the same field.
+ * If <fe_node_field_list> is omitted, an empty list is assumed.
+ * Note:
+ * This should only be called by FE_nodeset functions. The returned object is
+ * added to the list of FE_node_field_info in the FE_nodeset and 'owned by it'.
+ * It maintains a non-ACCESSed pointer to its owning FE_nodeset which the
+ * FE_nodeset will clear before it is destroyed.
+ */
 struct FE_node_field_info *CREATE(FE_node_field_info)(
-	struct FE_region *fe_region, struct LIST(FE_node_field) *fe_node_field_list,
+	FE_nodeset *fe_nodeset, struct LIST(FE_node_field) *fe_node_field_list,
 	int number_of_values);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_node_field_info with a pointer to <fe_region> and a copy of
-the <fe_node_field_list>.
-Fails if more than one FE_node_field in the list references the same field.
-If <fe_node_field_list> is omitted, an empty list is assumed.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is added to the list of
-FE_node_field_info in the FE_region and is therefore owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
 
 int DESTROY(FE_node_field_info)(
 	struct FE_node_field_info **node_field_info_address);
@@ -232,15 +226,12 @@ PROTOTYPE_OBJECT_FUNCTIONS(FE_node_field_info);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_node_field_info);
 
-int FE_node_field_info_clear_FE_region(
+/**
+ * Clears the pointer to FE_nodeset in <node_field_info>.
+ * Private function only to be called by ~FE_nodeset.
+ */
+int FE_node_field_info_clear_FE_nodeset(
 	struct FE_node_field_info *node_field_info, void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <node_field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
 
 int FE_node_field_info_has_FE_field(
 	struct FE_node_field_info *node_field_info, void *fe_field_void);
@@ -364,6 +355,16 @@ Note it is very important that the old and the new FE_node_field_info structures
 describe the same data layout in the nodal values_storage!
 Private function only to be called by FE_region when merging FE_regions!
 ==============================================================================*/
+
+/**
+ * Merges the fields from <source> into <destination>. Existing fields in the
+ * <destination> keep the same node field description as before with new field
+ * storage following them. Where existing fields in <destination> are passed in
+ * <source>, values from <source> take precedence, but the node field structure
+ * remains unchanged.
+ * Function is atomic; <destination> is unchanged if <source> cannot be merged.
+ */
+int merge_FE_node(struct FE_node *destination, struct FE_node *source);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element_field);
 

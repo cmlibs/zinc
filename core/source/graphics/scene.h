@@ -34,20 +34,15 @@ DESCRIPTION :
 Structure for maintaining a graphical scene of region.
 ==============================================================================*/
 {
-	/* the [FE] region being drawn */
+	/* the region being drawn */
 	struct cmzn_region *region;
-	struct FE_region *fe_region;
-	struct FE_region *data_fe_region;
-	int fe_region_callback_set, data_fe_region_callback_set;
+	cmzn_fieldmodulenotifier *fieldmodulenotifier;
 	/* settings shared by whole scene */
 	/* default coordinate field for graphics drawn with settings below */
 	struct Computed_field *default_coordinate_field;
 	/* list of objects interested in changes to the cmzn_scene */
 	struct cmzn_scene_callback_data *update_callback_list;
-	/* managers for updating graphics in response to global changes */
-	struct MANAGER(Computed_field) *computed_field_manager;
 	struct LIST(cmzn_graphics) *list_of_graphics;
-	void *computed_field_manager_callback_id;
 	/* level of cache in effect */
 	int cache;
 	int changed; /**< true if scene has changed and haven't updated clients */
@@ -250,9 +245,9 @@ int for_each_graphics_in_cmzn_scene(struct cmzn_scene *scene,
 		void *user_data),	void *user_data);
 
 /***************************************************************************//**
- * Get region of scene
+ * Get region of scene. Not accessed.
  */
-struct cmzn_region *cmzn_scene_get_region(struct cmzn_scene *scene);
+struct cmzn_region *cmzn_scene_get_region_internal(struct cmzn_scene *scene);
 
 /***************************************************************************//**
  *Copies the cmzn_scene contents from source to destination, keeping any
@@ -283,16 +278,6 @@ int cmzn_scene_set_transformation(struct cmzn_scene *scene,
 
 int cmzn_scene_get_transformation(struct cmzn_scene *scene,
 	gtMatrix *transformation);
-
-/***************************************************************************//**
- * This function will remove field manager and its callback to the scene.
- *
- * @param scene  pointer to the scene.
- *
- * @return Return 1 if successfully remove field manager and its callback
- *    from scene otherwise 0.
- */
-int cmzn_scene_remove_field_manager_and_callback(struct cmzn_scene *scene);
 
 /***************************************************************************//**
  * This function will deaccess any computed fields being used by the scene

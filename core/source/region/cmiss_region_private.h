@@ -83,4 +83,14 @@ void cmzn_region_add_fieldmodulenotifier(cmzn_region *region,
 void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
 	cmzn_fieldmodulenotifier *notifier);
 
+/**
+ * Callback for changes to FE_region attached to region.
+ * Updates definitions of Computed_field wrappers for changed FE_fields in the
+ * region.
+ * Ensures region has cmiss_number and xi fields, at the appropriate time.
+ * Triggers computed field changes if not already changed.
+ * @private  Should only be called from finite_element_region.cpp
+ */
+void cmzn_region_FE_region_change(cmzn_region *region);
+
 #endif /* !defined (CMZN_REGION_PRIVATE_H) */

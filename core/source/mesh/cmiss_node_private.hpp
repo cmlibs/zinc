@@ -13,8 +13,12 @@
 #define CMZN_NODE_PRIVATE_HPP
 
 #include "zinc/node.h"
+#include "finite_element/finite_element.h"
+#include "general/list.h"
 
+struct cmzn_fieldmoduleevent;
 struct FE_region;
+class FE_nodeset;
 
 /***************************************************************************//**
  * Ensures all nodes of the supplied element are in this nodeset_group.
@@ -49,7 +53,13 @@ int cmzn_nodeset_group_remove_element_nodes(
 struct LIST(FE_node) *cmzn_nodeset_create_node_list_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
- * @return non-accessed fe_region for this nodeset. Different for datapoints.
+ * @return non-accessed fe_nodeset for this nodeset. Note this is the master
+ * list of all nodes, even if called on a nodeset_group.
+ */
+FE_nodeset *cmzn_nodeset_get_FE_nodeset_internal(cmzn_nodeset_id nodeset);
+
+/** Internal use only
+ * @return non-accessed fe_region for this nodeset.
  */
 FE_region *cmzn_nodeset_get_FE_region_internal(cmzn_nodeset_id nodeset);
 
@@ -59,14 +69,9 @@ FE_region *cmzn_nodeset_get_FE_region_internal(cmzn_nodeset_id nodeset);
 cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
- * @return non-accessed master region for this nodeset.
+ * @return  True if nodeset represents data points.
  */
-cmzn_region_id cmzn_nodeset_get_master_region_internal(cmzn_nodeset_id nodeset);
-
-/** Internal use only
- * @return  1 if nodeset represents data points.
- */
-int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
+bool cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
 
 /***************************************************************************//**
  * If the name is of the form GROUP_NAME.NODESET_NAME. Create a nodeset group.
@@ -79,5 +84,49 @@ int cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
  */
 cmzn_nodeset_group_id cmzn_fieldmodule_create_field_nodeset_group_from_name_internal(
 	cmzn_fieldmodule_id field_module, const char *nodeset_group_name);
+
+struct cmzn_nodesetchanges
+{
+private:
+	cmzn_fieldmoduleevent *event; // accessed
+	CHANGE_LOG(FE_node) *changeLog; // just copied from event for correct nodeset
+	int access_count;
+
+	cmzn_nodesetchanges(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn);
+	~cmzn_nodesetchanges();
+
+public:
+
+	static cmzn_nodesetchanges *create(cmzn_fieldmoduleevent *eventIn, cmzn_nodeset *nodesetIn);
+
+	cmzn_nodesetchanges *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int cmzn_nodesetchanges::deaccess(cmzn_nodesetchanges* &nodesetchanges);
+
+	cmzn_node_change_flags getNodeChangeFlags(cmzn_node *node)
+	{
+		int change = 0;
+		CHANGE_LOG_QUERY(FE_node)(this->changeLog, node, &change);
+		return change;
+	}
+
+	int getNumberOfChanges()
+	{
+		int number = 0;
+		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(this->changeLog, &number);
+		return number;
+	}
+
+	cmzn_node_change_flags getSummaryNodeChangeFlags()
+	{
+		int change = 0;
+		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(this->changeLog, &change);
+		return change;
+	}
+};
 
 #endif /* !defined (CMZN_NODE_PRIVATE_HPP) */

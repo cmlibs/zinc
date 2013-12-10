@@ -741,10 +741,11 @@ basis type, however every element type will be converted to a cubic.
 						 /*number_of_components*/3);
 				if (node_field_creator != NULL)
 				{
+					FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(get_data->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 					for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
 					{
 						get_data->nodes[i] = CREATE(FE_node)(/*node_number*/0,
-							 get_data->fe_region, (struct FE_node *)NULL);
+							fe_nodeset, (struct FE_node *)NULL);
 						if (get_data->nodes[i] != NULL)
 						{
 							ACCESS(FE_node)(get_data->nodes[i]);
@@ -1079,16 +1080,15 @@ Write bicubic elements to an IGES file.
 			iges_entity_info_data.element=(struct FE_element *)NULL;
 			iges_entity_info_data.extra_line_number = 999000; /* Start somewhere random although
 														  we will still check that it doesn't conflict */
-		 for (i = 0 ; i < NUMBER_OF_NODES ; i++)
-		 {
+			for (i = 0 ; i < NUMBER_OF_NODES ; i++)
+			{
 				iges_entity_info_data.nodes[i]=(struct FE_node *)NULL;
 			}
 #if defined (NEW_CODE)
-		 FE_region_get_default_coordinate_FE_field(
-				fe_region,&(iges_entity_info_data.fe_field));
+			iges_entity_info_data.fe_field = FE_region_get_default_coordinate_FE_field(fe_region);
 			FE_region_for_each_FE_element(fe_region, get_iges_entity_info,
 				&iges_entity_info_data);
-		 USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
+			USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
 #endif /* defined (NEW_CODE) */
 			FE_region_for_each_FE_element(fe_region, get_iges_entity_as_cubic_from_any_2D_element,
 				&iges_entity_info_data);

@@ -15,6 +15,7 @@ privileged finite_element modules.
 #if !defined (FINITE_ELEMENT_REGION_PRIVATE_H)
 #define FINITE_ELEMENT_REGION_PRIVATE_H
 
+#include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region.h"
 
 /*
@@ -35,30 +36,6 @@ a non-ACCESSed pointer to <fe_region> so fields can determine which FE_region
 they belong to.
 ==============================================================================*/
 
-struct FE_node_field_info *FE_region_get_FE_node_field_info(
-	struct FE_region *fe_region,
-	int number_of_values,	struct LIST(FE_node_field) *fe_node_field_list);
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Returns a struct FE_node_field_info for the supplied <fe_node_field_list> with
-<number_of_values>. The <fe_region> maintains an internal list of these
-structures so they can be shared between nodes.
-If <node_field_list> is omitted, an empty list is assumed.
-==============================================================================*/
-
-int FE_region_remove_FE_node_field_info(struct FE_region *fe_region,
-	struct FE_node_field_info *fe_node_field_info);
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Provided EXCLUSIVELY for the use of DEACCESS and REACCESS functions.
-Called when the access_count of <fe_node_field_info> drops to 1 so that
-<fe_region> can destroy FE_node_field_info not in use.
-==============================================================================*/
-
 struct FE_element_field_info *FE_region_get_FE_element_field_info(
 	struct FE_region *fe_region,
 	struct LIST(FE_element_field) *fe_element_field_list);
@@ -72,26 +49,6 @@ shared between elements.
 If <element_field_list> is omitted, an empty list is assumed.
 ==============================================================================*/
 
-int FE_region_get_FE_node_field_info_adding_new_field(
-	struct FE_region *fe_region, struct FE_node_field_info **node_field_info_address, 
-	struct FE_node_field *new_node_field, int new_number_of_values);
-/*******************************************************************************
-LAST MODIFIED : 24 August 2005
-
-DESCRIPTION :
-Updates the pointer to <node_field_info_address> to point to a node_field info
-which appends to the fields in <node_field_info_address> one <new_node_field>.
-The node_field_info returned in <node_field_info_address> will be for the
-<new_number_of_values>.
-The <fe_region> maintains an internal list of these structures so they can be 
-shared between nodes.  This function allows a fast path when adding a single 
-field.  If the node_field passed in is only referenced by one external object
-then it is assumed that this function can modify it rather than copying.  If 
-there are more references then the object is copied and then modified.
-This function handles the access and deaccess of the <node_field_info_address>
-as if it is just updating then there is nothing to do.
-==============================================================================*/
-
 int FE_region_remove_FE_element_field_info(struct FE_region *fe_region,
 	struct FE_element_field_info *fe_element_field_info);
 /*******************************************************************************
@@ -103,31 +60,15 @@ Called when the access_count of <fe_element_field_info> drops to 1 so that
 <fe_region> can destroy FE_element_field_info not in use.
 ==============================================================================*/
 
-int FE_region_notify_FE_node_field_change(struct FE_region *fe_region,
-	struct FE_node *node, struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2005
-
-DESCRIPTION :
-Tells the <fe_region> to notify any interested clients that the <node> has
-been modified only for <fe_field>.  This is intended to be called by 
-<finite_element.c> only as any external code will call through the modify
-functions in <finite_element.c>.
-==============================================================================*/
-
-int FE_region_notify_FE_element_field_change(struct FE_region *fe_region,
+/**
+ * Tells the <fe_region> to notify any interested clients that the <element> has
+ * been modified only for <fe_field>.  This is intended to be called from
+ * finite_element.cpp only.
+ */
+void FE_region_notify_FE_element_field_change(struct FE_region *fe_region,
 	struct FE_element *element, struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2005
 
-DESCRIPTION :
-Tells the <fe_region> to notify any interested clients that the <element> has
-been modified only for <fe_field>.  This is intended to be called by 
-<finite_element.c> only as any external code will call through the modify
-functions in <finite_element.c>.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Private function for use by computed_field_finite_element field wrapping
  * code, to be called in response to region changes - tells it whether it to
  * create a cmiss_number field. Informs only once and requires the existence
@@ -136,9 +77,9 @@ functions in <finite_element.c>.
  * @param fe_region the finite_element region to check for.
  * @return true if cmiss_number field needs to be made, 0 if not
  */
-int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region);
+bool FE_region_need_add_cmiss_number_field(struct FE_region *fe_region);
 
-/***************************************************************************//**
+/**
  * Private function for use by computed_field_finite_element field wrapping
  * code, to be called in response to region changes - tells it whether to
  * create an xi coordinates field. Informs only once - if any elements exist.
@@ -146,9 +87,9 @@ int FE_region_need_add_cmiss_number_field(struct FE_region *fe_region);
  * @param fe_region the finite_element region to check for.
  * @return true if cmiss_number field needs to be made, 0 if not
  */
-int FE_region_need_add_xi_field(struct FE_region *fe_region);
+bool FE_region_need_add_xi_field(struct FE_region *fe_region);
 
-/***************************************************************************//**
+/**
  * Obtain private member.
  */
 struct LIST(FE_element_field_info) *FE_region_get_FE_element_field_info_list_private(

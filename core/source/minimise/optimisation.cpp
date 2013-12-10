@@ -190,7 +190,7 @@ int Minimisation::construct_dof_arrays()
 			// should only have one independent field
 			FE_field *fe_field;
 			Computed_field_get_type_finite_element(independentField, &fe_field);
-			cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
+			cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 			cmzn_node_id node = 0;
 			while ((0 != (node = cmzn_nodeiterator_next_non_access(iterator))) && return_code)

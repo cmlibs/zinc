@@ -20,6 +20,14 @@ Implements computed fields which interface to finite element fields.
 Global functions
 ----------------
 */
+
+/**
+ * internal-only constructor for creating wrapper field for an FE_field
+ * Call only from cmzn_region_FE_region_change
+ */
+cmzn_field *Computed_field_create_finite_element_internal(
+	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field);
+
 int Computed_field_is_type_finite_element(struct Computed_field *field);
 /*******************************************************************************
 LAST MODIFIED : 18 July 2000
@@ -160,31 +168,7 @@ DESCRIPTION :
 struct Computed_field *Computed_field_create_xi_coordinates(
 	struct cmzn_fieldmodule *field_module);
 
-int Computed_field_is_type_node_value(struct Computed_field *field);
-/*******************************************************************************
-LAST MODIFIED : 19 July 2000
-
-DESCRIPTION :
-==============================================================================*/
-
 struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 	 struct Computed_field *computed_field, struct FE_node *node);
-/*******************************************************************************
-LAST MODIFIED : 9 Oct 2007
-
-DESCRIPTION :
-==============================================================================*/
-
-struct FE_region_changes;
-
-/***************************************************************************//**
- * Callback for changes to FE_region attached to a cmiss_region.
- * Updates definitions of Computed_field wrappers for changed FE_fields in the
- * region.
- * Also ensures region has cmiss_number and xi fields, at the appropriate time.
- * @private  Should only be called from cmiss_region.cpp!
- */
-void cmzn_region_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes, void *cmiss_region_void);
 
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */

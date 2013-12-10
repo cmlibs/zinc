@@ -450,7 +450,7 @@ int Computed_field_group::check_subobject_group_dependency(Computed_field_core *
 	/* check_dependency method is not sufficient to determine a subobject group has changed or not for a group */
 	if (subobject_group->check_dependency_for_group_special())
 	{
-		Computed_field_dependency_change_private(field);
+		field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
 		const cmzn_field_subobject_group_change_detail *subobject_group_change_detail =
 			dynamic_cast<const cmzn_field_subobject_group_change_detail *>(source_core->get_change_detail());
 		if (subobject_group_change_detail)
@@ -481,9 +481,9 @@ int Computed_field_group::check_dependency()
 			check_subobject_group_dependency(subobject_group_field->core);
 			++it;
 		}
-		return (field->manager_change_status & MANAGER_CHANGE_RESULT(Computed_field));
+		return field->manager_change_status;
 	}
-	return 0;
+	return MANAGER_CHANGE_NONE(Computed_field);
 }
 
 void Computed_field_group::propagate_hierarchical_field_changes(
@@ -704,7 +704,7 @@ cmzn_field_node_group_id Computed_field_group::create_node_group(cmzn_nodeset_id
 {
 	if (contains_all)
 		return 0;
-	if (cmzn_nodeset_get_master_region_internal(nodeset) != region)
+	if (cmzn_nodeset_get_region_internal(nodeset) != region)
 		return 0;
 	cmzn_field_node_group_id node_group = get_node_group(nodeset);
 	if (node_group)
@@ -722,7 +722,7 @@ cmzn_field_node_group_id Computed_field_group::create_node_group(cmzn_nodeset_id
 		char *name = get_standard_node_group_name(master_nodeset);
 		cmzn_field_set_name(node_group_field, name);
 		DEALLOCATE(name);
-		int use_data = cmzn_nodeset_is_data_internal(master_nodeset);
+		bool use_data = cmzn_nodeset_is_data_internal(master_nodeset);
 		if (use_data)
 		{
 			local_data_group = cmzn_field_access(node_group_field);
@@ -743,10 +743,10 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 {
 	if (contains_all)
 		return 0;
-	if (cmzn_nodeset_get_master_region_internal(nodeset) != region)
+	if (cmzn_nodeset_get_region_internal(nodeset) != region)
 		return 0;
 	cmzn_field_node_group_id node_group = NULL;
-	int use_data = cmzn_nodeset_is_data_internal(nodeset);
+	bool use_data = cmzn_nodeset_is_data_internal(nodeset);
 	if (!use_data && local_node_group)
 	{
 		node_group = cmzn_field_cast_node_group(local_node_group);
@@ -806,7 +806,7 @@ cmzn_field_element_group_id Computed_field_group::create_element_group(cmzn_mesh
 {
 	if (contains_all)
 		return 0;
-	if (cmzn_mesh_get_master_region_internal(mesh) != region)
+	if (cmzn_mesh_get_region_internal(mesh) != region)
 		return 0;
 	cmzn_field_element_group_id element_group = get_element_group(mesh);
 	if (element_group)
@@ -838,7 +838,7 @@ cmzn_field_element_group_id Computed_field_group::get_element_group(cmzn_mesh_id
 {
 	if (contains_all)
 		return 0;
-	if (cmzn_mesh_get_master_region_internal(mesh) != region)
+	if (cmzn_mesh_get_region_internal(mesh) != region)
 		return 0;
 	cmzn_field_element_group_id element_group = NULL;
 	int dimension = cmzn_mesh_get_dimension(mesh);

@@ -329,8 +329,21 @@ public:
 	/* override if field is a domain */
 	virtual int get_domain( struct LIST(Computed_field) *domain_field_list ) const;
 
-	// override for customised response to propagating field changes to dependencies
-	// @return  1 if field has changed directly or via dependency
+	/**
+	 * Propagate changes to the result of this field depending on changes to its
+	 * source fields and external/subjects e.g. nodes/elements.
+	 * Standard behaviour:
+	 * If current change status has MANAGER_CHANGE_FULL_RESULT set,
+	 * then return this value immediately.
+	 * If any source field has MANAGER_CHANGE_FULL_RESULT set then set this
+	 * flag on current field and return it.
+	 * If none of the above apply then if any source field has
+	 * MANAGER_CHANGE_PARTIAL_RESULT set, then set and return this value.
+	 * In all other cases return current change status of field.
+	 * Override for customised dependencies on fields, external or sub-objects.
+	 * @return  MANAGER_CHANGE_FULL_RESULT, MANAGER_CHANGE_PARTIAL_RESULT or
+	 * MANAGER_CHANGE_NONE.
+	 */
 	virtual int check_dependency();
 
 	// override if field knows its function is non-linear over its domain
@@ -567,6 +580,14 @@ DESCRIPTION :
 		return 0;
 	}
 
+	/**
+	 * Private function for setting the change status flag and adding
+	 * to the manager's changed object list without sending manager updates.
+	 * Should only be called by Computed_field_core-defined check_dependency methods.
+	 * @param change  A change status flag, one of OBJECT_NOT_IDENTIFIER, DEPENDENCY
+	 * or PARTIAL.
+	 */
+	void setChangedPrivate(MANAGER_CHANGE(Computed_field) change);
 
 }; /* struct Computed_field */
 
@@ -747,14 +768,6 @@ int Computed_field_changed(struct Computed_field *field);
  * @param field  The field whose dependencies have changed.
  */
 int Computed_field_dependency_changed(struct Computed_field *field);
-
-/***************************************************************************//**
- * Private function for setting the dependency change flag and adding to the
- * manager's changed object list without sending manager updates.
- * Should only be called by code invoked by MANAGER_UPDATE().
- * @return  1 on success, 0 on failure.
- */
-int Computed_field_dependency_change_private(struct Computed_field *field);
 
 Computed_field_simple_package *Computed_field_package_get_simple_package(
 	struct Computed_field_package *computed_field_package);

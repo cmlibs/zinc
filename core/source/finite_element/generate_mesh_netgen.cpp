@@ -17,6 +17,11 @@ the volume mesh, CMGUI will visualize them to the user.
 #include <stddef.h>
 #include <stdlib.h>
 #include <math.h>
+#include "zinc/element.h"
+#include "zinc/fieldcache.h"
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldfiniteelement.h"
+#include "zinc/node.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/generate_mesh_netgen.h"
@@ -26,6 +31,7 @@ the volume mesh, CMGUI will visualize them to the user.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "graphics/triangle_mesh.hpp"
+#include "mesh/cmiss_node_private.hpp"
 
 
 namespace nglib {
@@ -227,10 +233,8 @@ int release_netgen_parameters(struct Generate_netgen_parameters *para)
 	return return_code;
 }
 
-int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
+int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 {
-	ENTER(generate_mesh_netgen);
-
 	Generate_netgen_parameters *generate_netgen_para = static_cast<Generate_netgen_parameters *>(netgen_para_void);
 	Triangle_mesh *trimesh=generate_netgen_para->trimesh;
 	int return_code;
@@ -298,85 +302,96 @@ int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void)
 		return 0;
 	}
 
-	FE_region_begin_change(fe_region);
+	cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+	cmzn_fieldmodule_begin_change(fieldmodule);
 
-	/* create a 3-D coordinate field*/
-	FE_field *coordinate_field = FE_field_create_coordinate_3d(fe_region,(char*)"coordinate");
+	/* create a 3-D coordinate field */
+	cmzn_field_id coordinate_field = cmzn_fieldmodule_find_field_by_name(fieldmodule, "coordinates");
+	if (coordinate_field)
+	{
+		cmzn_field_finite_element_id fe_field = cmzn_field_cast_finite_element(coordinate_field);
+		if ((!fe_field) ||
+			(3 != cmzn_field_get_number_of_components(coordinate_field)) ||
+			(!cmzn_field_is_type_coordinate(coordinate_field)) ||
+			(CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN !=
+				cmzn_field_get_coordinate_system_type(coordinate_field)))
+		{
+			cmzn_field_destroy(&coordinate_field);
+		}
+		cmzn_field_finite_element_destroy(&fe_field);
+	}
+	if (!coordinate_field)
+	{
+		coordinate_field = cmzn_fieldmodule_create_field_finite_element(fieldmodule, 3);
+		cmzn_field_set_name(coordinate_field, "coordinates");
+		cmzn_field_set_component_name(coordinate_field, 1, "x");
+		cmzn_field_set_component_name(coordinate_field, 2, "y");
+		cmzn_field_set_component_name(coordinate_field, 3, "z");
+		cmzn_field_set_managed(coordinate_field, true);
+		cmzn_field_set_type_coordinate(coordinate_field, true);
+	}
 
-	/* create and fill nodes*/
-	struct FE_node *template_node = CREATE(FE_node)(
-		/*cm_node_identifier*/1, fe_region, /*template_node*/NULL);
-	return_code = define_FE_field_at_node_simple(
-		template_node, coordinate_field, /*number_of_derivatives*/0, /*derivative_value_types*/NULL);
+	/* create and fill nodes */
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
+	cmzn_nodetemplate_define_field(nodetemplate, coordinate_field);
+	cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 
+	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
 	const int number_of_nodes = Ng_GetNP(mesh);
-	FE_value coordinates[3];
-	double coor_tmp[3];
-	int initial_identifier = FE_region_get_last_FE_node_identifier(fe_region)+1;
+	double coordinates[3];
+	int initial_identifier = fe_nodeset->get_last_FE_node_identifier() + 1;
 	int i;
 	for (i = 0; i < number_of_nodes; i++)
 	{
-		Ng_GetPoint (mesh, i+1/*index in netgen starts from 1*/, coor_tmp);
-		coordinates[0] = coor_tmp[0];
-		coordinates[1] = coor_tmp[1];
-		coordinates[2] = coor_tmp[2];
-		int identifier = i + initial_identifier;
-		struct FE_node *node = CREATE(FE_node)(identifier, /*fe_region*/NULL, template_node);
-		FE_region_merge_FE_node(fe_region, node);
-		ACCESS(FE_node)(node);
-		int number_of_values_confirmed;
-		return_code=set_FE_nodal_field_FE_value_values(
-			coordinate_field, node, coordinates, &number_of_values_confirmed);
-		DEACCESS(FE_node)(&node);
+		Ng_GetPoint (mesh, i+1/*index in netgen starts from 1*/, coordinates);
+		cmzn_node_id node = cmzn_nodeset_create_node(nodeset, initial_identifier + i, nodetemplate);
+		cmzn_fieldcache_set_node(fieldcache, node);
+		cmzn_field_assign_real(coordinate_field, fieldcache, 3, coordinates);
+		cmzn_node_destroy(&node);
 	}
-	DESTROY(FE_node)(&template_node);
+	cmzn_fieldcache_destroy(&fieldcache);
+	cmzn_nodetemplate_destroy(&nodetemplate);
 
-	/* establish mode which automates creation of shared faces*/
-	FE_region_begin_define_faces(fe_region, /*all dimensions*/-1);
+	// establish mode which automates creation of shared faces
+	FE_region_begin_define_faces(cmzn_region_get_FE_region(region), /*all dimensions*/-1);
 
-	struct CM_element_information element_identifier;
-	FE_element *element;
-	FE_element *template_element;
-	/* create a tetrahedron with linear simplex field*/
-	template_element = FE_element_create_with_simplex_shape(fe_region, /*dimension*/3);
-	set_FE_element_number_of_nodes(template_element, 4);
-	FE_element_define_field_simple(template_element, coordinate_field, LINEAR_SIMPLEX);
+	cmzn_mesh_id cmesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
+	cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(cmesh);
+	cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON);
+	cmzn_elementtemplate_set_number_of_nodes(elementtemplate, 4);
+	cmzn_elementbasis_id elementbasis = cmzn_fieldmodule_create_elementbasis(fieldmodule, 3,
+		CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
+	int local_node_indexes[4] = { 1, 2, 3, 4 };
+	cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, coordinate_field, /*component_number*/-1,
+		elementbasis, 4, local_node_indexes);
 
 	const int number_of_elements = Ng_GetNE(mesh);
 	int nodal_idx[4];   
 	for (i = 0 ; i < number_of_elements; i++)
 	{
 		Ng_GetVolumeElement (mesh, i+1, nodal_idx);
-		element_identifier.type = CM_ELEMENT;
-		element_identifier.number = FE_region_get_next_FE_element_identifier(fe_region, /*dimension*/3, i + 1);
-		element = CREATE(FE_element)(&element_identifier, (struct FE_element_shape *)NULL,
-			(struct FE_region *)NULL, template_element);
-		ACCESS(FE_element)(element);
 		/* netgen tet node order gives a left handed element coordinate system,
-		hence swap node indices 2 and 3 */
-		return_code=set_FE_element_node(element, 0, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[0]));
-		return_code=set_FE_element_node(element, 1, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[1]));
-		return_code=set_FE_element_node(element, 2, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[3]));
-		return_code=set_FE_element_node(element, 3, FE_region_get_FE_node_from_identifier(fe_region,nodal_idx[2]));
-		FE_region_merge_FE_element_and_faces_and_nodes(fe_region, element);
-		DEACCESS(FE_element)(&element);
+		 * hence swap node indices 2 and 3 */
+		cmzn_elementtemplate_set_node(elementtemplate, 1, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[0] + initial_identifier - 1));
+		cmzn_elementtemplate_set_node(elementtemplate, 2, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[1] + initial_identifier - 1));
+		cmzn_elementtemplate_set_node(elementtemplate, 3, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[3] + initial_identifier - 1));
+		cmzn_elementtemplate_set_node(elementtemplate, 4, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[2] + initial_identifier - 1));
+		cmzn_mesh_define_element(cmesh, /*identifier*/-1, elementtemplate);
 	}
-	DEACCESS(FE_element)(&template_element);            
+	cmzn_elementbasis_destroy(&elementbasis);
+	cmzn_elementtemplate_destroy(&elementtemplate);
+	cmzn_mesh_destroy(&cmesh);
 
+	cmzn_nodeset_destroy(&nodeset);
+	cmzn_field_destroy(&coordinate_field);
 
-	/* must remember to end define faces mode*/
-	FE_region_end_define_faces(fe_region);
+	FE_region_end_define_faces(cmzn_region_get_FE_region(region));
 
-
-	DEACCESS(FE_field)(&coordinate_field);
-
-	FE_region_end_change(fe_region);
+	cmzn_fieldmodule_end_change(fieldmodule);
 
 	if (mesh)
 		Ng_DeleteMesh (mesh); 
 	Ng_Exit();
-	LEAVE;
 	return return_code;
-} /* generate_mesh_netgen */
-
-
+}

@@ -847,7 +847,7 @@ cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_visibility_flags(
 	return 0;
 }
 
-cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_domain_type(
+cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_field_domain_type(
 	cmzn_scenefiltermodule_id scenefiltermodule,
 	enum cmzn_field_domain_type domain_type)
 {
@@ -1082,7 +1082,7 @@ int cmzn_scenefilter_set_managed(cmzn_scenefilter_id filter,
 		if (value != old_value)
 		{
 			MANAGED_OBJECT_CHANGE(cmzn_scenefilter)(filter,
-				MANAGER_CHANGE_NOT_RESULT(cmzn_scenefilter));
+				MANAGER_CHANGE_DEFINITION(cmzn_scenefilter));
 		}
 		return CMZN_OK;
 	}

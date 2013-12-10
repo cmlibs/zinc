@@ -214,12 +214,10 @@ private:
 
 	virtual int check_dependency()
 	{
-		int return_code = Computed_field_core::check_dependency();
-		if (return_code && texture_is_evaluated_from_source_field())
-		{
-			need_evaluate_texture = true;
-		}
-		return return_code;
+		int change = Computed_field_core::check_dependency();
+		if ((change & MANAGER_CHANGE_RESULT(Computed_field)) && texture_is_evaluated_from_source_field())
+			this->need_evaluate_texture = true;
+		return change;
 	}
 };
 

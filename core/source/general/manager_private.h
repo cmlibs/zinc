@@ -185,10 +185,10 @@ struct MANAGER_CALLBACK_ITEM(object_type) \
 	struct MANAGER_CALLBACK_ITEM(object_type) *next; \
 }; /* struct MANAGER_CALLBACK_ITEM(object_type) */ \
 \
-DECLARE_MANAGER_TYPE(object_type) \
-/*************************************************************************//** \
+/** \
  * The structure for the manager. \
  */ \
+DECLARE_MANAGER_TYPE(object_type) \
 { \
 	/* the list of objects in the manager */ \
 	struct LIST(object_type) *object_list; \
@@ -201,6 +201,7 @@ DECLARE_MANAGER_TYPE(object_type) \
 	struct LIST(object_type) *removed_object_list; \
 	/* pointer to owning object which exists for lifetime of this manager, if any */ \
 	owner_type *owner; \
+	bool external_change; \
 	/* flag indicating whether caching is on */ \
 	int cache; \
 }; /* struct MANAGER(object_type) */
@@ -219,7 +220,7 @@ Local functions
 /**
  * Called before manager messages are sent out.
  * Override if objects depend on one another so dependent objects are marked as
- * MANAGER_CHANGE_DEPENDENCY. Examples uses include field, scenefilter.
+ * MANAGER_CHANGE_FULL_RESULT. Examples uses include field, scenefilter.
  */
 #define DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION( object_type ) \
 inline void MANAGER_UPDATE_DEPENDENCIES(object_type)(struct MANAGER(object_type) *manager) \
@@ -261,18 +262,16 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
  * the manager's changed_object_list and removed_object_list, if any. \
  * Change information is copied out of the manager and objects before the \
  * message is sent. \
- * Note Computed_field has a custom implementation which must be compatible. \
  */ \
 { \
-	ENTER(MANAGER_UPDATE(object_type)); \
 	if (manager) \
 	{ \
 		int number_of_changed_objects = NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
 		int number_of_removed_objects = NUMBER_IN_LIST(object_type)(manager->removed_object_list); \
-		if (number_of_changed_objects || number_of_removed_objects) \
+		if (number_of_changed_objects || number_of_removed_objects || manager->external_change) \
 		{ \
-			/* update with dependency changes */ \
 			MANAGER_UPDATE_DEPENDENCIES(object_type)(manager); \
+			manager->external_change = false; \
 			number_of_changed_objects = NUMBER_IN_LIST(object_type)(manager->changed_object_list); \
 			struct MANAGER_MESSAGE(object_type) *message = MANAGER_MESSAGE(object_type)::create(); \
 			if (message) \
@@ -316,8 +315,7 @@ static void MANAGER_UPDATE(object_type)(struct MANAGER(object_type) *manager) \
 		display_message(ERROR_MESSAGE, \
 			"MANAGER_UPDATE(" #object_type ").  Invalid argument(s)"); \
 	} \
-	LEAVE; \
-} /* MANAGER_UPDATE(object_type) */
+}
 
 #define MANAGER_FIND_CLIENT( object_type )  manager_find_client ## object_type
 
@@ -409,7 +407,7 @@ Remove the reference to the manager from the object \
    USE_PARAMETER(dummy_user_data); \
 	if (object) \
 	{ \
-      object->object_manager = (struct MANAGER(object_type) *)NULL; \
+		object->object_manager = (struct MANAGER(object_type) *)NULL; \
 		return_code = 1; \
 	} \
 	else \
@@ -443,6 +441,7 @@ PROTOTYPE_CREATE_MANAGER_FUNCTION(object_type) \
 			manager->callback_list = \
 				(struct MANAGER_CALLBACK_ITEM(object_type) *)NULL; \
 			manager->locked = 0; \
+			manager->external_change = false; \
 			manager->cache = 0; \
 		} \
 		else \
@@ -800,7 +799,8 @@ PROTOTYPE_MANAGER_MODIFY_FUNCTION(object_type,identifier_field_name) \
 						if (return_code) \
 						{ \
 							MANAGED_OBJECT_CHANGE(object_type)(object, \
-								MANAGER_CHANGE_OBJECT(object_type)); \
+								MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(object_type) | \
+								MANAGER_CHANGE_IDENTIFIER(object_type)); \
 						} \
 					} \
 					else \
@@ -1329,6 +1329,17 @@ PROTOTYPE_MANAGER_END_CACHE_FUNCTION(object_type) \
 	return (return_code); \
 } /* MANAGER_END_CACHE(object_type) */
 
+#define DECLARE_MANAGER_EXTERNAL_CHANGE_FUNCTION( object_type ) \
+PROTOTYPE_MANAGER_EXTERNAL_CHANGE_FUNCTION( object_type ) \
+{ \
+	if (manager) \
+	{ \
+		manager->external_change = true; \
+		if (!manager->cache) \
+			MANAGER_UPDATE(object_type)(manager); \
+	} \
+}
+
 #define DECLARE_MANAGER_MESSAGE_ACCESS_FUNCTION( object_type ) \
 PROTOTYPE_MANAGER_MESSAGE_ACCESS_FUNCTION( object_type )  \
 { \
@@ -1501,6 +1512,7 @@ DECLARE_FOR_EACH_OBJECT_IN_MANAGER_FUNCTION(object_type) \
 DECLARE_MANAGED_OBJECT_CHANGE_FUNCTION(object_type,object_manager) \
 DECLARE_MANAGER_BEGIN_CACHE_FUNCTION(object_type) \
 DECLARE_MANAGER_END_CACHE_FUNCTION(object_type) \
+DECLARE_MANAGER_EXTERNAL_CHANGE_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_ACCESS_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_DEACCESS_FUNCTION(object_type) \
 DECLARE_MANAGER_MESSAGE_GET_CHANGE_SUMMARY_FUNCTION(object_type) \

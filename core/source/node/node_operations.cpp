@@ -19,6 +19,7 @@ cannot reside in finite element modules.
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "general/debug.h"
+#include "mesh/cmiss_node_private.hpp"
 #include "node/node_operations.h"
 #include "general/message.h"
 
@@ -26,70 +27,6 @@ cannot reside in finite element modules.
 Global functions
 ----------------
 */
-
-struct FE_node_fe_region_selection_ranges_condition_data
-/*******************************************************************************
-LAST MODIFIED : 15 May 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	struct FE_region *fe_region;
-	struct Multi_range *node_ranges;
-	cmzn_fieldcache_id field_cache;
-	struct Computed_field *group_field;
-	struct Computed_field *conditional_field;
-	struct LIST(FE_node) *node_list;
-}; /* struct FE_node_fe_region_selection_ranges_condition_data */
-
-static int FE_node_add_if_selection_ranges_condition(struct FE_node *node,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2006
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int return_code, selected;
-	struct FE_node_fe_region_selection_ranges_condition_data *data;
-
-	ENTER(FE_node_fe_region_ranges_condition);
-	if (node && 
-		(data = (struct FE_node_fe_region_selection_ranges_condition_data *)data_void))
-	{
-		return_code = 1;
-		selected = 1;
-		if (selected && data->node_ranges)
-		{
-			selected = FE_node_is_in_Multi_range(node, data->node_ranges);
-		}
-		if (selected)
-		{
-			if (data->group_field || data->conditional_field)
-			{
-				cmzn_fieldcache_set_node(data->field_cache, node);
-				if ((data->group_field && !cmzn_field_evaluate_boolean(data->group_field, data->field_cache)) ||
-					(data->conditional_field && !cmzn_field_evaluate_boolean(data->conditional_field, data->field_cache)))
-				{
-					selected = 0;
-				}
-			}
-		}
-		if (selected)
-		{
-			return_code = ADD_OBJECT_TO_LIST(FE_node)(node, data->node_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_node_set_FE_node_field_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_node_set_FE_node_field_info */
 
 struct FE_node_values_number
 /*******************************************************************************
@@ -195,45 +132,28 @@ static int FE_node_and_values_to_array(struct FE_node *node,
 	return (return_code);
 } /* FE_node_and_values_to_array */
 
-int FE_region_change_node_identifiers(struct FE_region *fe_region,
-	int node_offset, struct Computed_field *sort_by_field, FE_value time,
-	cmzn_field_node_group_id node_group)
-/*******************************************************************************
-LAST MODIFIED : 18 February 2003
-
-DESCRIPTION :
-Changes the identifiers of all nodes in <fe_region>.
-If <sort_by_field> is NULL, adds <node_offset> to the identifiers.
-If <sort_by_field> is specified, it is evaluated for all nodes
-in <fe_region> and they are sorted by it - changing fastest with the first
-component and keeping the current order where the field has the same values.
-Checks for and fails if attempting to give any of the nodes in <fe_region> an
-identifier already used by a node in the same master FE_region.
-Calls to this function should be enclosed in FE_region_begin_change/end_change.
-Note function avoids iterating through FE_region node lists as this is not
-allowed during identifier changes.
-==============================================================================*/
+int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
+	int node_offset, cmzn_field_id sort_by_field, FE_value time)
 {
 	int i, next_spare_node_number, number_of_nodes, number_of_values, return_code;
 	struct FE_node *node_with_identifier;
 	struct FE_node_and_values_to_array_data array_data;
 	struct FE_node_values_number *node_values;
-	struct FE_region *master_fe_region;
 
-	ENTER(FE_region_change_node_identifiers);
-	if (fe_region)
+	if (nodeset)
 	{
+		FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+		FE_region *fe_region = fe_nodeset->get_FE_region();
+		FE_region_begin_change(fe_region);
 		return_code = 1;
-		number_of_nodes = FE_region_get_number_of_FE_nodes(fe_region);
+		number_of_nodes = cmzn_nodeset_get_size(nodeset);
 		if (0 < number_of_nodes)
 		{
 			cmzn_fieldmodule_id field_module;
 			cmzn_fieldcache_id field_cache;
-			FE_region_get_ultimate_master_FE_region(fe_region, &master_fe_region);
 			if (sort_by_field)
 			{
-				number_of_values =
-					Computed_field_get_number_of_components(sort_by_field);
+				number_of_values = cmzn_field_get_number_of_components(sort_by_field);
 			}
 			else
 			{
@@ -254,7 +174,7 @@ allowed during identifier changes.
 						if (!ALLOCATE(node_values[i].values, FE_value, number_of_values))
 						{
 							display_message(ERROR_MESSAGE,
-								"FE_region_change_node_identifiers.  "
+								"cmzn_nodeset_change_node_identifiers.  "
 								"Not enough memory");
 							return_code = 0;
 						}
@@ -270,11 +190,10 @@ allowed during identifier changes.
 					array_data.node_values = node_values;
 					array_data.sort_by_field = sort_by_field;
 					array_data.number_of_values = number_of_values;
-					if (!FE_region_for_each_FE_node(fe_region,
-						FE_node_and_values_to_array, (void *)&array_data))
+					if (!fe_nodeset->for_each_FE_node(FE_node_and_values_to_array, (void *)&array_data))
 					{
 						display_message(ERROR_MESSAGE,
-							"FE_region_change_node_identifiers.  "
+							"cmzn_nodeset_change_node_identifiers.  "
 							"Could not build node/field values array");
 						return_code = 0;
 					}
@@ -310,7 +229,7 @@ allowed during identifier changes.
 						if (0 >= node_values[i].new_number)
 						{
 							display_message(ERROR_MESSAGE,
-								"FE_region_change_node_identifiers.  "
+								"cmzn_nodeset_change_node_identifiers.  "
 								"node_offset would give negative node numbers");
 							return_code = 0;
 						}
@@ -318,7 +237,7 @@ allowed during identifier changes.
 							(node_values[i].new_number <= node_values[i - 1].new_number))
 						{
 							display_message(ERROR_MESSAGE,
-								"FE_region_change_node_identifiers.  "
+								"cmzn_nodeset_change_node_identifiers.  "
 								"Node numbers are not strictly increasing");
 							return_code = 0;
 						}
@@ -329,13 +248,13 @@ allowed during identifier changes.
 					/* check no new numbers are in use by nodes not in node_group */
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
-						if ((node_with_identifier = FE_region_get_FE_node_from_identifier(
-							master_fe_region, node_values[i].new_number)) &&
-							(!FE_region_contains_FE_node(fe_region, node_with_identifier)))
+						if ((node_with_identifier = fe_nodeset->get_FE_node_from_identifier(
+							node_values[i].new_number)) &&
+							(!cmzn_nodeset_contains_node(nodeset, node_with_identifier)))
 						{
 							display_message(ERROR_MESSAGE,
-								"FE_region_change_node_identifiers.  "
-								"Node using new number exists in master region");
+								"cmzn_nodeset_change_node_identifiers.  "
+								"Node using new number exists in master nodeset");
 							return_code = 0;
 						}
 					}
@@ -347,46 +266,36 @@ allowed during identifier changes.
 						 which already have the same number as the new_number */
 					next_spare_node_number =
 						node_values[number_of_nodes - 1].new_number + 1;
-					cmzn_nodeset_group_id nodeset = cmzn_field_node_group_get_nodeset(node_group);
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
-						node_with_identifier = FE_region_get_FE_node_from_identifier(
-							fe_region, node_values[i].new_number);
 						/* only modify if node doesn't already have correct identifier */
-						if (node_with_identifier != node_values[i].node)
+						if (cmzn_nodeset_contains_node(nodeset, node_values[i].node) &&
+							(node_values[i].node != (node_with_identifier =
+								fe_nodeset->get_FE_node_from_identifier(node_values[i].new_number))))
 						{
-							if ((nodeset == NULL) || (((node_with_identifier == NULL) ||
-								cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodeset),
-									node_with_identifier)) &&
-								(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodeset),
-									node_values[i].node))))
+							if (node_with_identifier) 
 							{
-								if (node_with_identifier)
+								while ((struct FE_node *)NULL !=
+									fe_nodeset->get_FE_node_from_identifier(next_spare_node_number))
 								{
-									while ((struct FE_node *)NULL !=
-										FE_region_get_FE_node_from_identifier(fe_region,
-											next_spare_node_number))
-									{
-										next_spare_node_number++;
-									}
-									if (!FE_region_change_FE_node_identifier(master_fe_region,
-										node_with_identifier, next_spare_node_number))
-									{
-										return_code = 0;
-									}
+									next_spare_node_number++;
 								}
-								if (!FE_region_change_FE_node_identifier(master_fe_region,
-									node_values[i].node, node_values[i].new_number))
+								if (!fe_nodeset->change_FE_node_identifier(
+									node_with_identifier, next_spare_node_number))
 								{
-									display_message(ERROR_MESSAGE,
-										"FE_region_change_node_identifiers.  "
-										"Could not change node identifier");
 									return_code = 0;
 								}
 							}
+							if (!fe_nodeset->change_FE_node_identifier(
+								node_values[i].node, node_values[i].new_number))
+							{
+								display_message(ERROR_MESSAGE,
+									"cmzn_nodeset_change_node_identifiers.  "
+									"Could not change node identifier");
+								return_code = 0;
+							}
 						}
 					}
-					cmzn_nodeset_group_destroy(&nodeset);
 				}
 				for (i = 0; i < number_of_nodes; i++)
 				{
@@ -400,140 +309,91 @@ allowed during identifier changes.
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_region_change_node_identifiers.  Not enough memory");
+					"cmzn_nodeset_change_node_identifiers.  Not enough memory");
 				return_code = 0;
 			}
 		}
+		FE_region_end_change(fe_region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_change_node_identifiers.  Invalid argument(s)");
+			"cmzn_nodeset_change_node_identifiers.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_region_change_node_identifiers */
+}
 
-struct LIST(FE_node) *
-	FE_node_list_from_region_and_selection_group(
-		struct cmzn_region *region, struct Multi_range *node_ranges,
-		struct Computed_field *group_field, struct Computed_field *conditional_field,
-		FE_value time, int use_data)
+struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
+	cmzn_nodeset *nodeset, struct Multi_range *node_ranges,
+	cmzn_field *conditional_field, FE_value time)
 {
-	int i, node_number, nodes_in_region, nodes_in_ranges = 0,
-		number_of_ranges = 0, return_code, start, stop;
-	struct FE_node *node;
-	struct FE_node_fe_region_selection_ranges_condition_data data;
-	struct FE_region *fe_region = NULL;
-
-	ENTER(FE_node_list_from_region_selection_ranges_condition);
-	data.node_list = (struct LIST(FE_node) *)NULL;
-	if (region)
+	struct LIST(FE_node) *node_list = 0;
+	if (nodeset)
 	{
-		fe_region = cmzn_region_get_FE_region(region);
-		if (use_data)
-			fe_region=FE_region_get_data_FE_region(fe_region);
-	}
-	if (fe_region)
-	{
-		data.node_list = CREATE(LIST(FE_node))();
-		if (NULL != data.node_list)
+		FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
+		node_list = fe_nodeset->createRelatedNodeList();
+		if (0 != node_list)
 		{
-			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-			data.field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-			cmzn_fieldcache_set_time(data.field_cache, time);
-			nodes_in_region = FE_region_get_number_of_FE_nodes(fe_region);
-			if (node_ranges)
+			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(
+				FE_region_get_cmzn_region(fe_nodeset->get_FE_region()));
+			cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
+			cmzn_fieldcache_set_time(fieldcache, time);
+			int nodes_in_region = fe_nodeset->get_number_of_FE_nodes();
+			int nodes_in_ranges = node_ranges ? Multi_range_get_total_number_in_ranges(node_ranges) : 0;
+			if (node_ranges && (nodes_in_ranges < nodes_in_region))
 			{
-				nodes_in_ranges = Multi_range_get_total_number_in_ranges(node_ranges);
-			}
-			data.fe_region = fe_region;
-			/* Seems odd to specify an empty node_ranges but I have
-				maintained the previous behaviour */
-			if (node_ranges &&
-				(0 < (number_of_ranges = Multi_range_get_number_of_ranges(node_ranges))))
-			{
-				data.node_ranges = node_ranges;
-			}
-			else
-			{
-				data.node_ranges = (struct Multi_range *)NULL;
-			}
-			data.conditional_field = conditional_field;
-			data.group_field = group_field;
-
-			if (data.node_ranges
-				&& (nodes_in_ranges < nodes_in_region))
-			{
-				return_code = 1;
-				for (i = 0 ; i < number_of_ranges ; i++)
+				int number_of_ranges = Multi_range_get_number_of_ranges(node_ranges);
+				for (int i = 0 ; i < number_of_ranges ; i++)
 				{
+					int start, stop;
 					Multi_range_get_range(node_ranges, i, &start, &stop);
-					for (node_number = start ; node_number <= stop ; node_number++)
+					for (int node_number = start ; node_number <= stop ; node_number++)
 					{
-						node = FE_region_get_FE_node_from_identifier(fe_region, node_number);
-						if (node != NULL)
+						cmzn_node *node = fe_nodeset->get_FE_node_from_identifier(node_number);
+						if (node)
 						{
-							int selected = 1;
-							if (group_field || conditional_field)
+							bool selected = true;
+							if (conditional_field)
 							{
-								cmzn_fieldcache_set_node(data.field_cache, node);
-								if ((group_field && !cmzn_field_evaluate_boolean(group_field, data.field_cache)) ||
-									(conditional_field && !cmzn_field_evaluate_boolean(conditional_field, data.field_cache)))
-								{
-									selected = 0;
-								}
+								cmzn_fieldcache_set_node(fieldcache, node);
+								if (!cmzn_field_evaluate_boolean(conditional_field, fieldcache))
+									selected = false;
 							}
 							if (selected)
-							{
-								ADD_OBJECT_TO_LIST(FE_node)(node, data.node_list);
-							}
+								ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
 						}
 					}
 				}
 			}
 			else
 			{
-				return_code =  FE_region_for_each_FE_node(fe_region,
-					FE_node_add_if_selection_ranges_condition, (void *)&data);
+				cmzn_nodeiterator *iter = fe_nodeset->createNodeiterator();
+				cmzn_node *node;
+				while (node = cmzn_nodeiterator_next_non_access(iter))
+				{
+					bool selected = true;
+					if (node_ranges && !FE_node_is_in_Multi_range(node, node_ranges))
+						selected = false;
+					else if (conditional_field)
+					{
+						cmzn_fieldcache_set_node(fieldcache, node);
+						if (!cmzn_field_evaluate_boolean(conditional_field, fieldcache))
+							selected = false;
+					}
+					if (selected)
+						ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
+				}
+				cmzn_nodeiterator_destroy(&iter);
 			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_node_list_from_region_and_selection_group.  "
-					"Error building list");
-				DESTROY(LIST(FE_node))(&data.node_list);
-			}
-			cmzn_fieldcache_destroy(&data.field_cache);
-			cmzn_fieldmodule_destroy(&field_module);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_list_from_region_and_selection_group.  "
-				"Could not create list");
+			cmzn_fieldcache_destroy(&fieldcache);
+			cmzn_fieldmodule_destroy(&fieldmodule);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_node_list_from_region_and_selection_group.  "
-			"Invalid argument(s)");
+			"cmzn_nodeset_create_node_list_ranges_conditional.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (data.node_list);
-} /* FE_node_list_from_region_and_selection_group */
-
-struct LIST(FE_node) *
-	FE_node_list_from_ranges(
-		struct FE_region *fe_region, struct Multi_range *node_ranges,
-		struct Computed_field *conditional_field, FE_value time)
-{
-	return FE_node_list_from_region_and_selection_group(
-		FE_region_get_cmzn_region(fe_region), node_ranges,
-		/*group_field*/(cmzn_field_id)0, conditional_field,
-		time, FE_region_is_data_FE_region(fe_region));
+	return (node_list);
 }

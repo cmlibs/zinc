@@ -62,7 +62,7 @@ public:
 	int access_count;
 
 	cmzn_optimisation(cmzn_fieldmodule_id field_module) :
-		fieldModule(cmzn_region_get_fieldmodule(cmzn_fieldmodule_get_master_region_internal(field_module))),
+		fieldModule(cmzn_region_get_fieldmodule(cmzn_fieldmodule_get_region_internal(field_module))),
 		access_count(1)
 	{
 		// initialise to default values

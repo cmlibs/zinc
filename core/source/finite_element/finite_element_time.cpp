@@ -872,7 +872,7 @@ If no equivalent fe_time_sequence is found one is created and returned.
 
 	ENTER(get_FE_time_sequence_matching_time_series);
 	fe_time_sequence=(struct FE_time_sequence *)NULL;
-	if (fe_time&&fe_time->fe_time_sequence_manager&&number_of_times&&times)
+	if (fe_time&&fe_time->fe_time_sequence_manager&&(0 < number_of_times)&&times)
 	{
 		/* Create a FE_time_sequence into which we will poke a reference to this
 			number of times and times array so that we can look for another one the

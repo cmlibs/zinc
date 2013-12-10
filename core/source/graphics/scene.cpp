@@ -14,6 +14,7 @@ FILE : scene.cpp
 #include <stdio.h>
 #include <math.h>
 #include "zinc/core.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "zinc/glyph.h"
 #include "zinc/graphics.h"
 #include "zinc/material.h"
@@ -26,7 +27,7 @@ FILE : scene.cpp
 #include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
-#include "zinc/fieldsubobjectgroup.h"
+#include "computed_field/field_module.hpp"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphics.h"
@@ -210,14 +211,12 @@ static int cmzn_scene_void_detach_from_cmzn_region(void *scene_void)
 struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 	struct cmzn_graphics_module *graphics_module)
 {
-	struct FE_region *fe_region, *data_fe_region;
+	struct FE_region *fe_region;
 	struct cmzn_scene *scene;
 
 	ENTER(CREATE(cmzn_scene));
-	data_fe_region = NULL;
 	if (cmiss_region && (fe_region = cmzn_region_get_FE_region(cmiss_region)))
 	{
-		data_fe_region = FE_region_get_data_FE_region(fe_region);
 		if (ALLOCATE(scene, struct cmzn_scene, 1))
 		{
 			scene->list_of_graphics = NULL;
@@ -225,10 +224,7 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 					CREATE(LIST(cmzn_graphics))()))
 			{
 				scene->region = cmiss_region;
-				scene->fe_region = ACCESS(FE_region)(fe_region);
-				scene->data_fe_region = ACCESS(FE_region)(data_fe_region);
-				scene->fe_region_callback_set = 0;
-				scene->data_fe_region_callback_set = 0;
+				scene->fieldmodulenotifier = 0;
 
 				/* legacy general settings used as defaults for new graphics */
 				scene->element_divisions = NULL;
@@ -238,10 +234,6 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 				scene->visibility_flag = true;
 				scene->update_callback_list=
 					(struct cmzn_scene_callback_data *)NULL;
-				/* managers and callback ids */
-				scene->computed_field_manager=cmzn_region_get_Computed_field_manager(
-					 cmiss_region);
-				scene->computed_field_manager_callback_id=(void *)NULL;
 				scene->transformation = (gtMatrix *)NULL;
 				scene->graphics_module =	graphics_module;
 				scene->time_notifier = NULL;
@@ -294,13 +286,11 @@ cmzn_field_id cmzn_scene_guess_coordinate_field(
 	cmzn_field_id coordinate_field = 0;
 	// could be smarter here:
 	USE_PARAMETER(domain_type);
-	/* if we don't have a computed_field_manager, we are working on an
-	   "editor copy" which does not update graphics; the
-	   default_coordinate_field will have been supplied by the global object */
-	if (scene && scene->computed_field_manager)
+	if (scene && scene->region)
 	{
 		coordinate_field = FIRST_OBJECT_IN_MANAGER_THAT(Computed_field)(
-			Computed_field_is_coordinate_field, (void *)NULL, scene->computed_field_manager);
+			Computed_field_is_coordinate_field, (void *)NULL,
+			cmzn_region_get_Computed_field_manager(scene->region));
 	}
 	return coordinate_field;
 }
@@ -343,114 +333,21 @@ int cmzn_scene_set_default_coordinate_field(
 	return (return_code);
 }
 
-static void cmzn_scene_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes, void *scene_void)
+namespace {
+
+/** field module event callback */
+void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_void)
 {
-	struct cmzn_scene *scene;
-	struct cmzn_graphics_FE_region_change_data data;
-
-	ENTER(cmzn_scene_FE_region_change);
-	if (fe_region && changes &&
-		(scene = (struct cmzn_scene *)scene_void))
+	cmzn_scene *scene = reinterpret_cast<cmzn_scene *>(scene_void);
+	if (event && scene)
 	{
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
-			&data.fe_field_change_summary);
-		data.fe_field_changes = changes->fe_field_changes;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changes->fe_node_changes,
-			&data.fe_node_change_summary);
-		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(changes->fe_node_changes,
-			&data.number_of_fe_node_changes);
-		data.fe_node_changes = changes->fe_node_changes;
-		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-		{
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim],
-				&(data.fe_element_change_summary[dim]));
-			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(changes->fe_element_changes[dim],
-				&(data.number_of_fe_element_changes[dim]));
-			data.fe_element_changes[dim] = changes->fe_element_changes[dim];
-		}
-		/*???RC Is there a better way of getting time to here? */
-		data.time = 0;
-		data.fe_region = fe_region;
-		cmzn_scene_begin_change(scene);
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-			cmzn_graphics_FE_region_change, (void *)&data,
-			scene->list_of_graphics);
-		cmzn_scene_end_change(scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_FE_region_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* cmzn_scene_FE_region_change */
-static void cmzn_scene_data_FE_region_change(struct FE_region *fe_region,
-	struct FE_region_changes *changes, void *scene_void)
-{
-	struct cmzn_scene *scene;
-	struct cmzn_graphics_FE_region_change_data data;
-
-	ENTER(cmzn_scene_data_FE_region_change);
-	if (fe_region && changes &&
-		(scene = (struct cmzn_scene *)scene_void))
-	{
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(changes->fe_field_changes,
-			&data.fe_field_change_summary);
-		data.fe_field_changes = changes->fe_field_changes;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changes->fe_node_changes,
-			&data.fe_node_change_summary);
-		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(changes->fe_node_changes,
-			&data.number_of_fe_node_changes);
-		data.fe_node_changes = changes->fe_node_changes;
-		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-		{
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(changes->fe_element_changes[dim],
-				&(data.fe_element_change_summary[dim]));
-			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(changes->fe_element_changes[dim],
-				&(data.number_of_fe_element_changes[dim]));
-			data.fe_element_changes[dim] = changes->fe_element_changes[dim];
-		}
-		/*???RC Is there a better way of getting time to here? */
-		if (scene->time_notifier)
-		{
-			data.time = cmzn_timenotifier_get_time(scene->time_notifier);
-		}
-		else
-		{
-			data.time = 0;
-		}
-
-		data.fe_region = fe_region;
-		cmzn_scene_begin_change(scene);
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-			cmzn_graphics_data_FE_region_change, (void *)&data,
-			scene->list_of_graphics);
-		cmzn_scene_end_change(scene);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_data_FE_region_change.  Invalid argument(s)");
-	}
-	LEAVE;
-} /* cmzn_scene_data_FE_region_change */
-
-static void cmzn_scene_Computed_field_change(
-	struct MANAGER_MESSAGE(Computed_field) *message,void *scene_void)
-{
-	cmzn_scene *scene = reinterpret_cast<cmzn_scene*>(scene_void);
-	if (message && scene)
-	{
-		struct cmzn_graphics_Computed_field_change_data change_data;
 		bool local_selection_changed = false;
-		change_data.changed_field_list = MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(
-			message, MANAGER_CHANGE_RESULT(Computed_field));
 		if (scene->selection_group)
 		{
+			struct MANAGER_MESSAGE(Computed_field) *managerMessage = event->getManagerMessage();
 			const cmzn_field_change_detail *base_change_detail = 0;
 			int change_flags = Computed_field_manager_message_get_object_change_and_detail(
-				message, cmzn_field_group_base_cast(scene->selection_group), &base_change_detail);
+				managerMessage, cmzn_field_group_base_cast(scene->selection_group), &base_change_detail);
 			if (change_flags & (
 				(MANAGER_CHANGE_RESULT(Computed_field) | MANAGER_CHANGE_ADD(Computed_field))))
 			{
@@ -494,49 +391,34 @@ static void cmzn_scene_Computed_field_change(
 				}
 			}
 		}
-		if (change_data.changed_field_list || local_selection_changed)
+		int changeSummary = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
+		if ((changeSummary & CMZN_FIELD_CHANGE_FLAG_RESULT) || local_selection_changed)
 		{
-			change_data.selection_changed = local_selection_changed;
 			cmzn_scene_begin_change(scene);
-			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_Computed_field_change,
+			struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
+			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
 				(void *)&change_data, scene->list_of_graphics);
 			cmzn_scene_end_change(scene);
-			if (change_data.changed_field_list)
-				DESTROY(LIST(Computed_field))(&change_data.changed_field_list);
 		}
 	}
 }
+
+} // anonymous namespace
 
 int cmzn_region_attach_scene(struct cmzn_region *region,
 	struct cmzn_scene *scene)
 {
 	int return_code;
-	struct Any_object *any_object;
-
-	ENTER(cmzn_region_attach_scene);
-
-	if (NULL != (any_object = CREATE(ANY_OBJECT(cmzn_scene))(scene)) &&
-		cmzn_region_private_attach_any_object(region, any_object))
+	struct Any_object *any_object = CREATE(ANY_OBJECT(cmzn_scene))(scene);
+	if ((0 != any_object) && cmzn_region_private_attach_any_object(region, any_object))
 	{
 		cmzn_region_add_callback(scene->region,
 			cmzn_scene_region_change, (void *)scene);
-		scene->fe_region_callback_set =
-			FE_region_add_callback(scene->fe_region,
-				cmzn_scene_FE_region_change, (void *)scene);
-		if (scene->data_fe_region)
-		{
-			scene->data_fe_region_callback_set =
-				FE_region_add_callback(scene->data_fe_region,
-					cmzn_scene_data_FE_region_change, (void *)scene);
-		}
-		/* request callbacks from any managers supplied */
-		if (scene->computed_field_manager)
-		{
-			scene->computed_field_manager_callback_id=
-				MANAGER_REGISTER(Computed_field)(
-					cmzn_scene_Computed_field_change,(void *)scene,
-					scene->computed_field_manager);
-		}
+		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(scene->region);
+		scene->fieldmodulenotifier = cmzn_fieldmodule_create_fieldmodulenotifier(fieldmodule);
+		cmzn_fieldmodulenotifier_set_callback(scene->fieldmodulenotifier,
+			cmzn_fieldmoduleevent_to_scene, static_cast<void*>(scene));
+		cmzn_fieldmodule_destroy(&fieldmodule);
 		Any_object_set_cleanup_function(any_object,
 			cmzn_scene_void_detach_from_cmzn_region);
 		return_code = 1;
@@ -866,19 +748,16 @@ static int cmzn_scene_build_graphics_objects(
 	{
 		if ((cmzn_scene_get_number_of_graphics(scene) > 0))
 		{
-			// use begin/end cache to avoid field manager messages being sent when
-			// field wrappers are created and destroyed
-			MANAGER_BEGIN_CACHE(Computed_field)(scene->computed_field_manager);
 			graphics_to_object_data.name_prefix = name_prefix;
 			graphics_to_object_data.rc_coordinate_field = (struct Computed_field *) NULL;
-			graphics_to_object_data.wrapper_orientation_scale_field
-				= (struct Computed_field *) NULL;
+			graphics_to_object_data.wrapper_orientation_scale_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.wrapper_stream_vector_field = (struct Computed_field *) NULL;
 			graphics_to_object_data.region = scene->region;
 			graphics_to_object_data.field_module = cmzn_region_get_fieldmodule(scene->region);
+			// cache changes to avoid reporting add/remove temporary wrapper fields
+			cmzn_fieldmodule_begin_change(graphics_to_object_data.field_module);
 			graphics_to_object_data.field_cache = cmzn_fieldmodule_create_fieldcache(graphics_to_object_data.field_module);
-			graphics_to_object_data.fe_region = scene->fe_region;
-			graphics_to_object_data.data_fe_region = scene->data_fe_region;
+			graphics_to_object_data.fe_region = cmzn_region_get_FE_region(scene->region);
 			graphics_to_object_data.master_mesh = 0;
 			graphics_to_object_data.iteration_mesh = 0;
 			graphics_to_object_data.scenefilter = scenefilter;
@@ -889,12 +768,12 @@ static int cmzn_scene_build_graphics_objects(
 			return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 				cmzn_graphics_to_graphics_object, (void *) &graphics_to_object_data,
 				scene->list_of_graphics);
-			MANAGER_END_CACHE(Computed_field)(scene->computed_field_manager);
 			if (graphics_to_object_data.selection_group_field)
 			{
 				cmzn_field_destroy(&graphics_to_object_data.selection_group_field);
 			}
 			cmzn_fieldcache_destroy(&graphics_to_object_data.field_cache);
+			cmzn_fieldmodule_end_change(graphics_to_object_data.field_module);
 			cmzn_fieldmodule_destroy(&graphics_to_object_data.field_module);
 		}
 	}
@@ -1781,8 +1660,7 @@ int cmzn_scenes_match(struct cmzn_scene *scene1,
 	if (scene1 && scene2)
 	{
 		number_of_graphics = NUMBER_IN_LIST(cmzn_graphics)(scene1->list_of_graphics);
-		if ((scene1->fe_region == scene2->fe_region) &&
-			(scene1->data_fe_region == scene2->data_fe_region) &&
+		if ((scene1->region == scene2->region) &&
 			(number_of_graphics == NUMBER_IN_LIST(cmzn_graphics)(scene2->list_of_graphics)))
 		{
 			return_code = 1;
@@ -1976,12 +1854,12 @@ struct cmzn_graphics *cmzn_scene_get_graphics_at_position(
 	return (graphics);
 } /* get_graphics_at_position_in_cmzn_scene */
 
-struct cmzn_region *cmzn_scene_get_region(
+struct cmzn_region *cmzn_scene_get_region_internal(
 	struct cmzn_scene *scene)
 {
 	struct cmzn_region *region;
 
-	ENTER(cmzn_scene_get_region);
+	ENTER(cmzn_scene_get_region_internal);
 	if (scene)
 	{
 		region=scene->region;
@@ -1989,7 +1867,7 @@ struct cmzn_region *cmzn_scene_get_region(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_scene_get_region.  Invalid arguments");
+			"cmzn_scene_get_region_internal.  Invalid arguments");
 		region=(struct cmzn_region *)NULL;
 	}
 	LEAVE;
@@ -2608,15 +2486,7 @@ void cmzn_scene_detach_from_owner(cmzn_scene_id scene)
 			delete scene->selectionnotifier_list;
 			scene->selectionnotifier_list = 0;
 		}
-		if (scene->computed_field_manager &&
-			scene->computed_field_manager_callback_id)
-		{
-			MANAGER_DEREGISTER(Computed_field)(
-				scene->computed_field_manager_callback_id,
-				scene->computed_field_manager);
-			scene->computed_field_manager_callback_id = 0;
-			scene->computed_field_manager = 0;
-		}
+		cmzn_fieldmodulenotifier_destroy(&scene->fieldmodulenotifier);
 		cmzn_scene_remove_time_dependent_transformation(scene);
 		if (scene->transformation_callback_list)
 		{
@@ -2627,26 +2497,6 @@ void cmzn_scene_detach_from_owner(cmzn_scene_id scene)
 		{
 			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)))(
 				&(scene->top_region_change_callback_list));
-		}
-		if (scene->fe_region_callback_set)
-		{
-			FE_region_remove_callback(scene->fe_region,
-				cmzn_scene_FE_region_change, (void *)scene);
-			scene->fe_region_callback_set = 0;
-		}
-		if (scene->data_fe_region && scene->data_fe_region_callback_set)
-		{
-			FE_region_remove_callback(scene->data_fe_region,
-				cmzn_scene_data_FE_region_change, (void *)scene);
-			scene->data_fe_region_callback_set = 0;
-		}
-		if (scene->data_fe_region)
-		{
-			DEACCESS(FE_region)(&(scene->data_fe_region));
-		}
-		if (scene->fe_region)
-		{
-			DEACCESS(FE_region)(&(scene->fe_region));
 		}
 		struct cmzn_scene_callback_data *callback_data, *next;
 		callback_data = scene->update_callback_list;
@@ -2862,7 +2712,7 @@ int cmzn_scene_change_selection_from_node_list(cmzn_scene_id scene,
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
 		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_group_id selection_group = cmzn_scene_get_or_create_selection_group(scene);
-		cmzn_nodeset_id temp_nodeset = cmzn_fieldmodule_find_nodeset_by_domain_type(
+		cmzn_nodeset_id temp_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 			field_module, use_data ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(selection_group, temp_nodeset);
 		if (!node_group)
@@ -2992,22 +2842,6 @@ int cmzn_scene_remove_selection_from_element_list_of_dimension(cmzn_scene_id sce
 	{
 		cmzn_scene_flush_tree_selections(scene);
 		return_code = 1;
-	}
-	return return_code;
-}
-
-int cmzn_scene_remove_field_manager_and_callback(struct cmzn_scene *scene)
-{
-	int return_code = 0;
-	if (scene->computed_field_manager &&
-			scene->computed_field_manager_callback_id)
-	{
-			MANAGER_DEREGISTER(Computed_field)(
-				scene->computed_field_manager_callback_id,
-				scene->computed_field_manager);
-			scene->computed_field_manager_callback_id = NULL;
-			scene->computed_field_manager = NULL;
-			return_code = 1;
 	}
 	return return_code;
 }
@@ -3468,7 +3302,7 @@ int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
 	int return_code = 1;
 	if (child_scene && scene)
 	{
-		struct cmzn_region *child_region = cmzn_scene_get_region(child_scene);
+		struct cmzn_region *child_region = cmzn_scene_get_region_internal(child_scene);
 		struct cmzn_region *parent = cmzn_region_get_parent_internal(child_region);
 
 		if ((scene != child_scene) || parent)
@@ -3502,7 +3336,7 @@ int cmzn_scene_remove_total_transformation_callback(struct cmzn_scene *child_sce
 	int return_code = 1;
 	if (scene && child_scene)
 	{
-		struct cmzn_region *child_region = cmzn_scene_get_region(child_scene);
+		struct cmzn_region *child_region = cmzn_scene_get_region_internal(child_scene);
 		struct cmzn_region *parent = cmzn_region_get_parent_internal(child_region);
 
 		if ((child_scene != scene) || parent)
@@ -3560,7 +3394,7 @@ gtMatrix *cmzn_scene_get_total_transformation(
 
 	if (scene && top_scene)
 	{
-		struct cmzn_region *region = cmzn_scene_get_region(scene);
+		struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
 		struct cmzn_region *parent = cmzn_region_get_parent_internal(region);
 
 		if ((top_scene != scene) || parent)

@@ -74,15 +74,14 @@ int set_netgen_parameters_maxh(struct Generate_netgen_parameters *para, double m
 /***************************************************************************//**
  * Calls generate_mesh_netgen for invoking netgen and will visualize the 3D mesh automatically.
  * 
- * @param fe_region  Pointer to finite element which must be initialised to contain the
- *   meshing object. It will not change in this call.
+ * @param region  The region to create the mesh in.
  * @param netgen_para_void  Pointer to parameters for the specification of meshing. It comes with 
  *   such information:pointer to the triangular surface mesh, parameters to control the quality of
  *   volume mesh 
- * @return  1 if meshsing is successful
+ * @return  1 if meshing is successful
  *   0 if meshing is failed
  */
-int generate_mesh_netgen(struct FE_region *fe_region, void *netgen_para_void);
+int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void);
 
 /***************************************************************************//**
  * Calls set_netgen_parameters_meshsize_filename for setting mesh size file name

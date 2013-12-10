@@ -286,14 +286,10 @@ public:
 			dimension(cmzn_mesh_get_dimension(master_mesh)),
 			object_list(cmzn_mesh_create_element_list_internal(master_mesh))
 		{
-			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
-			FE_region_add_callback(fe_region, Computed_field_element_group::fe_region_change, (void *)this);
 		}
 
 		~Computed_field_element_group()
 		{
-			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
-			FE_region_remove_callback(fe_region, Computed_field_element_group::fe_region_change, (void *)this);
 			DESTROY(LIST(FE_element))(&object_list);
 			cmzn_mesh_destroy(&master_mesh);
 		}
@@ -465,42 +461,31 @@ public:
 			Computed_field_changed(field);
 		}
 
-		/** remove objects from the group if they are in the supplied list */
-		int removeObjectsNotInFeRegion(struct FE_region *fe_region)
+		/** remove elements that have been removed from master mesh */
+		virtual int check_dependency()
 		{
-			const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
-			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-				FE_element_is_not_in_FE_region, (void *)fe_region, object_list);
-			const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
-			if (new_size != old_size)
+			if (field)
 			{
-				change_detail.changeRemove();
-				update();
-			}
-			return return_code;
-		}
-
-		/***************************************************************************//**
-		 * Callback from <fe_region> with its <changes>. Remove any destroyed elements.
-		 */
-		static void fe_region_change(struct FE_region *fe_region,
-			struct FE_region_changes *changes, void *element_group_void)
-		{
-			Computed_field_element_group *element_group =
-				reinterpret_cast<Computed_field_element_group *>(element_group_void);
-			if (fe_region && changes && element_group)
-			{
-				int fe_element_change_summary;
-				if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(
-					changes->fe_element_changes[element_group->dimension - 1], &fe_element_change_summary))
+				FE_region *fe_region = cmzn_mesh_get_FE_region_internal(this->master_mesh);
+				CHANGE_LOG(FE_element) *fe_element_changes =
+					FE_region_get_FE_element_changes(fe_region, this->dimension);
+				int change_summary = 0;
+				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(fe_element_changes, &change_summary);
+				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
 				{
-					/* remove elements removed from this fe_region */
-					if (fe_element_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
+					const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
+					int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+						FE_element_is_not_in_FE_region, (void *)fe_region, object_list);
+					const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
+					if (new_size != old_size)
 					{
-						element_group->removeObjectsNotInFeRegion(fe_region);
+						change_detail.changeRemove();
+						field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
 					}
 				}
+				return field->manager_change_status;
 			}
+			return MANAGER_CHANGE_NONE(Computed_field);
 		}
 
 		bool isElementCompatible(cmzn_element_id element)
@@ -539,14 +524,10 @@ public:
 			master_nodeset(cmzn_nodeset_get_master(nodeset)),
 			object_list(cmzn_nodeset_create_node_list_internal(master_nodeset))
 		{
-			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
-			FE_region_add_callback(fe_region, Computed_field_node_group::fe_region_change, (void *)this);
 		}
 
 		~Computed_field_node_group()
 		{
-			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
-			FE_region_remove_callback(fe_region, Computed_field_node_group::fe_region_change, (void *)this);
 			DESTROY(LIST(FE_node))(&object_list);
 			cmzn_nodeset_destroy(&master_nodeset);
 		}
@@ -703,50 +684,40 @@ public:
 			Computed_field_changed(field);
 		}
 
-		/** remove objects from the group if they are in the supplied list */
-		int removeObjectsNotInFeRegion(struct FE_region *fe_region)
+		static int FE_node_is_not_in_FE_nodeset(struct FE_node *node, void *fe_nodeset_void)
 		{
-			const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
-			int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-				FE_node_is_not_in_FE_region, (void *)fe_region, object_list);
-			const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
-			if (new_size != old_size)
-			{
-				change_detail.changeRemove();
-				update();
-			}
-			return return_code;
+			return !(reinterpret_cast<FE_nodeset*>(fe_nodeset_void)->containsNode(node));
 		}
 
-		/***************************************************************************//**
-		 * Callback from <fe_region> with its <changes>. Remove any destroyed nodes.
-		 */
-		static void fe_region_change(struct FE_region *fe_region,
-			struct FE_region_changes *changes, void *node_group_void)
+		/** remove nodes that have been removed from master nodeset */
+		virtual int check_dependency()
 		{
-			Computed_field_node_group *node_group =
-				reinterpret_cast<Computed_field_node_group *>(node_group_void);
-			if (fe_region && changes && node_group)
+			if (field)
 			{
-				int fe_node_change_summary;
-				if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changes->fe_node_changes, &fe_node_change_summary))
+				FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(this->master_nodeset);
+				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
+				int change_summary = 0;
+				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(fe_node_changes, &change_summary);
+				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node))
 				{
-					/* remove nodes removed from this fe_region */
-					if (fe_node_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node))
+					const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
+					int return_code = REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_nodeset,
+						(void *)fe_nodeset, object_list);
+					const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
+					if (new_size != old_size)
 					{
-						node_group->removeObjectsNotInFeRegion(fe_region);
+						change_detail.changeRemove();
+						field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
 					}
 				}
+				return field->manager_change_status;
 			}
+			return MANAGER_CHANGE_NONE(Computed_field);
 		}
 
 		bool isNodeCompatible(cmzn_node_id node)
 		{
-			FE_region *fe_region = cmzn_nodeset_get_FE_region_internal(master_nodeset);
-			FE_region *node_fe_region = FE_node_get_FE_region(node);
-			if (FE_region_is_data_FE_region(fe_region))
-				node_fe_region = FE_region_get_data_FE_region(node_fe_region);
-			return (node_fe_region == fe_region);
+			return (FE_node_get_FE_nodeset(node) == cmzn_nodeset_get_FE_nodeset_internal(this->master_nodeset));
 		}
 
 		bool isParentElementCompatible(cmzn_element_id element)

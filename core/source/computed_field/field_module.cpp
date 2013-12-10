@@ -35,6 +35,7 @@
 #include "image_processing/computed_field_image_resample.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element_region.h"
+#include "mesh/cmiss_node_private.hpp"
 #if defined (USE_ITK)
 #include "image_processing/computed_field_threshold_image_filter.h"
 #include "image_processing/computed_field_binary_threshold_image_filter.h"
@@ -58,6 +59,28 @@
 #include "computed_field/computed_field_matrix_operators.hpp"
 #include "computed_field/computed_field_nodeset_operators.hpp"
 #include "computed_field/computed_field_vector_operators.hpp"
+
+cmzn_fieldmoduleevent::cmzn_fieldmoduleevent(cmzn_region *regionIn) :
+	region(cmzn_region_access(regionIn)),
+	changeFlags(CMZN_FIELD_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	feRegionChanges(0),
+	access_count(1)
+{
+}
+
+cmzn_fieldmoduleevent::~cmzn_fieldmoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(Computed_field)(&(this->managerMessage));
+	FE_region_changes::deaccess(this->feRegionChanges);
+	cmzn_region_destroy(&this->region);
+}
+
+void cmzn_fieldmoduleevent::setFeRegionChanges(FE_region_changes *changes)
+{
+	this->feRegionChanges = changes->access();
+}
 
 /**
  * Object to pass into field create functions, supplying region field is to
@@ -189,7 +212,7 @@ int cmzn_fieldmodule_contains_field(cmzn_fieldmodule_id field_module,
 {
 	if (field_module && field)
 	{
-		return (cmzn_fieldmodule_get_master_region_internal(field_module) ==
+		return (cmzn_fieldmodule_get_region_internal(field_module) ==
 			Computed_field_get_region(field));
 	}
 	return 0;
@@ -199,28 +222,15 @@ struct cmzn_region *cmzn_fieldmodule_get_region_internal(
 	struct cmzn_fieldmodule *field_module)
 {
 	if (field_module)
-	{
 		return field_module->region;
-	}
-	return NULL;
-}
-
-struct cmzn_region *cmzn_fieldmodule_get_master_region_internal(
-	struct cmzn_fieldmodule *field_module)
-{
-	if (!field_module)
-		return 0;
-	cmzn_region_id region = field_module->region;
-	return region;
+	return 0;
 }
 
 struct cmzn_region *cmzn_fieldmodule_get_region(
 	struct cmzn_fieldmodule *field_module)
 {
 	if (field_module)
-	{
 		return ACCESS(cmzn_region)(field_module->region);
-	}
 	return NULL;
 }
 
@@ -455,8 +465,8 @@ void cmzn_fieldmodulenotifier::regionDestroyed()
 	this->region = 0;
 	if (this->function)
 	{
-		cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create();
-		event->setChangeFlags(CMZN_FIELDMODULEEVENT_CHANGE_FLAG_FINAL);
+		cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(static_cast<cmzn_region*>(0));
+		event->setChangeFlags(CMZN_FIELD_CHANGE_FLAG_FINAL);
 		(this->function)(event, this->user_data);
 		cmzn_fieldmoduleevent::deaccess(event);
 		this->clearCallback();
@@ -513,17 +523,23 @@ int cmzn_fieldmoduleevent_destroy(cmzn_fieldmoduleevent_id *event_address)
 	return cmzn_fieldmoduleevent::deaccess(*event_address);
 }
 
-cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_change_flags(cmzn_fieldmoduleevent_id event)
+cmzn_field_change_flags cmzn_fieldmoduleevent_get_summary_field_change_flags(cmzn_fieldmoduleevent_id event)
 {
 	if (event)
 		return event->getChangeFlags();
-	return CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE;
+	return CMZN_FIELD_CHANGE_FLAG_NONE;
 }
 
-cmzn_fieldmoduleevent_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
+cmzn_field_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
 	cmzn_fieldmoduleevent_id event, cmzn_field_id field)
 {
 	if (event)
 		return event->getFieldChangeFlags(field);
-	return CMZN_FIELDMODULEEVENT_CHANGE_FLAG_NONE;
+	return CMZN_FIELD_CHANGE_FLAG_NONE;
+}
+
+ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
+	cmzn_fieldmoduleevent_id event, cmzn_nodeset_id nodeset)
+{
+	return cmzn_nodesetchanges::create(event, nodeset);
 }
