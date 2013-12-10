@@ -370,7 +370,7 @@ struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
 			{
 				cmzn_nodeiterator *iter = fe_nodeset->createNodeiterator();
 				cmzn_node *node;
-				while (node = cmzn_nodeiterator_next_non_access(iter))
+				while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 				{
 					bool selected = true;
 					if (node_ranges && !FE_node_is_in_Multi_range(node, node_ranges))
