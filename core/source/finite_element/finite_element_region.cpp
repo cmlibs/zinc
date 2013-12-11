@@ -605,14 +605,14 @@ Module functions
 FE_region::FE_region(struct MANAGER(FE_basis) *basisManagerIn,
 		struct LIST(FE_element_shape) *elementShapeListIn) :
 	cmiss_region(0),
+	fe_time(CREATE(FE_time_sequence_package)()),
+	fe_field_list(CREATE(LIST(FE_field))()),
 	fe_field_info(0),
+	fe_element_field_info_list(CREATE(LIST(FE_element_field_info))()),
 	basis_manager(basisManagerIn ? basisManagerIn : CREATE(MANAGER(FE_basis))()),
 	ownsBasisManager(basisManagerIn ? false : true),
 	element_shape_list(elementShapeListIn ? elementShapeListIn : CREATE(LIST(FE_element_shape))()),
 	ownsElementShapeList(elementShapeListIn ? false : true),
-	fe_time(CREATE(FE_time_sequence_package)()),
-	fe_field_list(CREATE(LIST(FE_field))()),
-	fe_element_field_info_list(CREATE(LIST(FE_element_field_info))()),
 	change_level(0),
 	fe_field_changes(0),
 	last_fe_element_field_info(0),
@@ -2680,7 +2680,6 @@ int FE_region_merge_FE_element_existing(struct FE_region *fe_region,
 		int source_dimension = get_FE_element_dimension(source);
 		if (source_dimension == dimension)
 		{
-			struct LIST(FE_element) *element_list = fe_region->get_element_list(dimension);
 			if ((FE_element_get_FE_region(destination) == fe_region) &&
 				(FE_element_get_FE_region(source) == fe_region))
 			{
