@@ -1739,7 +1739,6 @@ void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
 static int FE_field_to_Computed_field_change(struct FE_field *fe_field,
 	int change, void *fieldmodule_void)
 {
-	int return_code = 1;
 	cmzn_fieldmodule *fieldmodule = reinterpret_cast<cmzn_fieldmodule*>(fieldmodule_void);
 	if (change & (CHANGE_LOG_OBJECT_ADDED(FE_field) |
 		CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_field) |

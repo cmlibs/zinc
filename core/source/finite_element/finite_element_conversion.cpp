@@ -75,13 +75,17 @@ struct Convert_finite_elements_data
 		nearby_nodes(CREATE(LIST(Octree_object))()),
 		template_node((struct FE_node *)NULL),
 		template_element((struct FE_element *)NULL),
+		number_of_fields(0),
+		field_array(0),
 		destination_fe_fields(NULL),
+		maximum_number_of_components(0),
 		temporary_values((FE_value *)NULL),
-		mode_dimension(0),
-		node_number(1),
-		element_number(1),
 		destination_fe_region(0),
-		destination_fe_nodeset(0)
+		destination_fe_nodeset(0),
+		mode_dimension(0),
+		subelement_count(1),
+		node_number(1),
+		element_number(1)
 	{
 		if (CONVERT_TO_FINITE_ELEMENTS_HERMITE_2D_PRODUCT == mode)
 		{
@@ -92,7 +96,6 @@ struct Convert_finite_elements_data
 		{
 			mode_dimension = 3;
 		}
-		subelement_count = 1;
 		for (int i = 0; i < mode_dimension; i++)
 		{
 			subelement_count *= refinement.count[i];
