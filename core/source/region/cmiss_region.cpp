@@ -347,8 +347,9 @@ static void cmzn_region_detach_fields(struct cmzn_region *region)
 	{
 		MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
 		region->field_manager_callback_id = 0;
-		DESTROY(MANAGER(Computed_field))(&(region->field_manager));
+		// clear region pointer otherwise get updates when finite element fields destroyed
 		FE_region_set_cmzn_region_private(region->fe_region, (cmzn_region *)0);
+		DESTROY(MANAGER(Computed_field))(&(region->field_manager));
 		DEACCESS(FE_region)(&region->fe_region);
 	}
 }
