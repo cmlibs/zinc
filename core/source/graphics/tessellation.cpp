@@ -724,7 +724,7 @@ int cmzn_tessellation_set_name(struct cmzn_tessellation *tessellation, const cha
 	int return_code;
 
 	ENTER(cmzn_tessellation_set_name);
-	if (tessellation && is_standard_object_name(name))
+	if (tessellation && name)
 	{
 		return_code = 1;
 		cmzn_set_cmzn_tessellation *manager_tessellation_list = 0;

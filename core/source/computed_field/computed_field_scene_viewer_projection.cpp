@@ -12,6 +12,7 @@
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_image.h"
 #include "computed_field/computed_field_set.h"
+#include "computed_field/field_module.hpp"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"

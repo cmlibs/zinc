@@ -846,39 +846,26 @@ char *cmzn_region_get_name(struct cmzn_region *region)
 
 int cmzn_region_set_name(struct cmzn_region *region, const char *name)
 {
-	int return_code = 0;
 	if (region && name)
 	{
-		if (is_standard_object_name(name))
+		if ((0 == region->name) || (0 != strcmp(region->name, name)))
 		{
-			return_code = 1;
-			if ((NULL == region->name) || strcmp(region->name, name))
+			if ((0 == region->parent) ||
+				(0 == cmzn_region_find_child_by_name_internal(region->parent, name)))
 			{
-				if ((NULL == region->parent) ||
-					(NULL == cmzn_region_find_child_by_name_internal(region->parent, name)))
-				{
-					char *temp_name = duplicate_string(name);
-					if (region->name)
-					{
-						DEALLOCATE(region->name);
-					}
-					region->name = temp_name;
-					region->changes.name_changed = 1;
-					cmzn_region_update(region);
-				}
-				else
-				{
-					return_code = 0; // name is in use by sibling
-				}
+				char *temp_name = duplicate_string(name);
+				if (region->name)
+					DEALLOCATE(region->name);
+				region->name = temp_name;
+				region->changes.name_changed = 1;
+				cmzn_region_update(region);
 			}
+			else
+				return CMZN_ERROR_ARGUMENT; // name is in use by sibling
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_region_set_name.  Invalid region name '%s'", name);
-		}
+		return CMZN_OK;
 	}
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_region_get_root_region_path(void)

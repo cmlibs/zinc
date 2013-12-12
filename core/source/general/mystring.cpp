@@ -930,59 +930,6 @@ same length.
 	return (return_code);
 } /* fuzzy_string_compare_same_length */
 
-int is_standard_object_name(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 12 May 2003
-
-DESCRIPTION :
-Returns true if <name> is a valid name for an object.
-Names may start with a letter and contain only alphanumeric characters,
-underscore '_' or spaces and may not end in a space.
-???RC OK, it's allowed to start with a number and have dots in it, since
-CM already has group names called 1..945.
-==============================================================================*/
-{
-	int i, length, return_code;
-
-	ENTER(is_standard_object_name);
-	if (name)
-	{
-		if (isalnum(name[0]))
-		{
-			return_code = 1;
-			length = strlen(name);
-			for (i = 1; (i < length) && return_code; i++)
-			{
-				if (name[i] == ' ')
-				{
-					if (i == (length - 1))
-					{
-						return_code = 0;
-					}
-				}
-				else if ((name[i] != '_') && (name[i] != '.') && (name[i] != ':') &&
-					(!isalnum(name[i])))
-				{
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"is_standard_object_name.  Missing name");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* is_standard_object_name */
-
 int make_valid_token(char **token_address)
 /*******************************************************************************
 LAST MODIFIED : 10 January 2001

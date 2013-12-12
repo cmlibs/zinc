@@ -17,6 +17,7 @@
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/field_module.hpp"
 #include "zinc/fieldgroup.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/scene.h"

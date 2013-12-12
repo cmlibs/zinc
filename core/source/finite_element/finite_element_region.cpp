@@ -1440,7 +1440,7 @@ int FE_region_set_FE_field_name(struct FE_region *fe_region,
 	int return_code;
 
 	ENTER(FE_region_set_FE_field_name);
-	if (fe_region && field && is_standard_object_name(new_name))
+	if (fe_region && field && new_name)
 	{
 		if (FE_region_contains_FE_field(fe_region, field))
 		{

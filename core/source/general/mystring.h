@@ -163,17 +163,6 @@ Same as fuzzy_string_compare except that the two reduced strings must be the
 same length.
 ==============================================================================*/
 
-int is_standard_object_name(const char *name);
-/*******************************************************************************
-LAST MODIFIED : 29 April 2003
-
-DESCRIPTION :
-Returns true if <name> is a valid name for an object. This is similar but less
-strict than is_standard_identifier_name: Names may start with a letter and
-contain only alphanumeric characters, underscore '_' or spaces and may not end
-in a space.
-==============================================================================*/
-
 int make_valid_token(char **token_address);
 /*******************************************************************************
 LAST MODIFIED : 21 December 1998
