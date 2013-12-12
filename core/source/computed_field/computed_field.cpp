@@ -1064,7 +1064,8 @@ Computed_field *Computed_field_create_generic(
 		// replace_field, name etc. must not be used for further field creates, so clear
 		cmzn_fieldmodule_set_replace_field(fieldmodule, 0);
 		cmzn_fieldmodule_set_field_name(fieldmodule, 0);
-		Coordinate_system coordinate_system = { RECTANGULAR_CARTESIAN, 0 };
+		Coordinate_system coordinate_system;
+		coordinate_system.type = RECTANGULAR_CARTESIAN;
 		cmzn_fieldmodule_set_coordinate_system(fieldmodule, coordinate_system);
 	}
 	return (field);
