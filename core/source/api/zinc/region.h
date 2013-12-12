@@ -110,15 +110,13 @@ ZINC_API int cmzn_region_end_hierarchical_change(cmzn_region_id region);
 ZINC_API char *cmzn_region_get_name(cmzn_region_id region);
 
 /**
- * Sets the name of the region.
- * A valid region name must start with an alphanumeric character, contain only
- * alphanumeric characters, spaces ' ', dots '.', colons ':' or underscores '_',
- * and may not finish with a space.
- * Fails if the new name is already in use by another region in the same parent.
+ * Sets the name of the region. Any name is valid as long as it is unique in the
+ * parent region, however use of forward slash characters '/' in names is
+ * discouraged since it prevent regions being found by paths.
  *
  * @param region  The region to be named.
  * @param name  The new name for the region.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_region_set_name(cmzn_region_id region, const char *name);
 

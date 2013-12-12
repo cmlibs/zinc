@@ -214,7 +214,7 @@ ZINC_API int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
 ZINC_API char *cmzn_tessellation_get_name(cmzn_tessellation_id tessellation);
 
 /**
- * Set/change name for <tessellation>.
+ * Set/change name for tessellation. Must be unique in the tessellation module.
  *
  * @param tessellation  The handle to zinc tessellation.
  * @param name  name to be set to the tessellation

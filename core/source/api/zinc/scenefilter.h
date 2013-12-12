@@ -243,7 +243,7 @@ ZINC_API bool cmzn_scenefilter_evaluate_graphics(cmzn_scenefilter_id filter,
 ZINC_API char *cmzn_scenefilter_get_name(cmzn_scenefilter_id filter);
 
 /**
- * Set name of the scene filter
+ * Set name of the scene filter. Must be unique in the scene filter module.
  *
  * @param filter  The filter to modify.
  * @param name  name to be set to the scene filter

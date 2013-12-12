@@ -604,11 +604,11 @@ int Computed_field_get_domain( struct Computed_field *field,
  */
 int Computed_field_is_non_linear(struct Computed_field *field);
 
-/***************************************************************************//**
- * @return  Allocated field name unused by any other field in field_module.
+/**
+ * @return  Allocated field name unused by any other field in field module.
  */
 char *cmzn_fieldmodule_get_unique_field_name(
-	struct cmzn_fieldmodule *field_module);
+	struct cmzn_fieldmodule *fieldmodule);
 
 /***************************************************************************//**
  * Returns true if field is not a source field of other.

@@ -12,6 +12,7 @@
 #include <cstdio>
 #include "zinc/field.h"
 #include "computed_field/computed_field_find_xi.h"
+#include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"

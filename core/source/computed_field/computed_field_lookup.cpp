@@ -15,6 +15,7 @@ Defines fields for looking up values at given locations.
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/field_module.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "region/cmiss_region.h"

@@ -29,17 +29,17 @@ Types used only internally to computed fields.
 /**
  * Argument to field modifier functions supplying region, default name,
  * coordinate system etc.
- * Previously had other parameters, but now just wraps the field_module.
+ * Previously had other parameters, but now just wraps the field module.
  */
 class Computed_field_modify_data
 {
 private:
-	cmzn_fieldmodule *field_module;
+	cmzn_fieldmodule *fieldmodule;
 
 public:
 	Computed_field_modify_data(
-		struct cmzn_fieldmodule *field_module) :
-		field_module(field_module)
+		struct cmzn_fieldmodule *fieldmodule) :
+		fieldmodule(fieldmodule)
 	{
 	}
 
@@ -49,7 +49,7 @@ public:
 
 	cmzn_fieldmodule *get_field_module()
 	{
-		return field_module;
+		return fieldmodule;
 	}
 
 	/**
@@ -700,13 +700,13 @@ int cmzn_field_set_cache_index_private(cmzn_field_id field, int cache_index);
 int Computed_field_add_to_manager_private(struct Computed_field *field,
 	struct MANAGER(Computed_field) *manager);
 
-/***************************************************************************//**
+/**
  * Creates a new computed field with the supplied content and for the region
- * specified by the field_module.
+ * specified by the field module.
  *
- * @param field_module  Specifies region to add field to default parameters.
+ * @param fieldmodule  Specifies region to add field to default parameters.
  * @param check_source_field_regions  If set to true, require all source fields
- * to be from the same region as the field_module. If false skip this checks.
+ * to be from the same region as the field module. If false skip this checks.
  * @param number_of_components  Number of components the new field will have.
  * @param number_of_source_fields  Size of source_fields array.
  * @param source_fields  Array of source fields for the new field.
@@ -717,7 +717,7 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
  * @return  Newly created field, or NULL on failure.
  */
 Computed_field *Computed_field_create_generic(
-	cmzn_fieldmodule *field_module, bool check_source_field_regions,
+	cmzn_fieldmodule *fieldmodule, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
@@ -807,7 +807,7 @@ int Computed_field_set_coordinate_system_from_sources(
 	struct Computed_field *field);
 
 int Computed_field_broadcast_field_components(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field **field_one, struct Computed_field **field_two);
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -824,100 +824,6 @@ If the two fields are non scalar and have different numbers of components then
 nothing is done, although other shape broadcast operations could be proposed
 for matrix operations.
 ==============================================================================*/
-
-/***************************************************************************//**
- * Creates field module object needed to create fields in supplied region.
- * Internally: Also used to set new field default arguments prior to create.
- *
- * @param region  The owning region.
- * @return  Field module for the supplied region.
- */
-struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region);
-
-/***************************************************************************//**
- * Internal, non-accessing version of cmzn_fieldmodule_get_region.
- *
- * @param field_module  The field module to query.
- * @return  Non-accessed handle to owning region for field_module.
- */
-struct cmzn_region *cmzn_fieldmodule_get_region_internal(
-	struct cmzn_fieldmodule *field_module);
-
-/***************************************************************************//**
- * Sets the name (or name stem if non-unique) of the next field to be created
- * with this field_module.
- *
- * @param field_module  The field module to create fields in.
- * @param field_name  Field name or name stem.
- * @return  Non-zero on success, 0 on failure.
- */
-int cmzn_fieldmodule_set_field_name(struct cmzn_fieldmodule *field_module,
-	const char *field_name);
-
-/***************************************************************************//**
- * Gets a copy of the field name/stem set in this field_module.
- * Up to caller to DEALLOCATE.
- *
- * @param field_module  The field module to create fields in.
- * @return  Allocated copy of the name, or NULL if none.
- */
-char *cmzn_fieldmodule_get_field_name(
-	struct cmzn_fieldmodule *field_module);
-
-/***************************************************************************//**
- * Sets the coordinate system to be used for subsequent fields created with
- * this field module.
- *
- * @param field_module  The field module to create fields in.
- * @param coordinate_system  The coordinate system to set.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_fieldmodule_set_coordinate_system(
-	struct cmzn_fieldmodule *field_module,
-	struct Coordinate_system coordinate_system);
-
-/***************************************************************************//**
- * Returns the default coordinate system set in the field_module.
- *
- * @param field_module  The field module to create fields in.
- * @return  Copy of default coordinate system.
- */
-struct Coordinate_system cmzn_fieldmodule_get_coordinate_system(
-	struct cmzn_fieldmodule *field_module);
-
-/***************************************************************************//**
- * Returns true if the default coordinate system has been explicitly set.
- *
- * @param field_module  The field module to create fields in.
- * @return  1 if coordinate system set, 0 if never set.
- */
-int cmzn_fieldmodule_coordinate_system_is_set(
-	struct cmzn_fieldmodule *field_module);
-
-/***************************************************************************//**
- * Sets the replace_field that will be redefined by the next field
- * created with the field module. Cleared after next field create call.
- * Field name and coordinate system defaults are taken from supplied field.
- *
- * @param field_module  The field module to create fields in.
- * @param replace_field  Existing field to be overwritten on next create. Can
- * be NULL to clear.
- * @return  1 on success, 0 on failure.
- */
-int cmzn_fieldmodule_set_replace_field(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *replace_field);
-
-/***************************************************************************//**
- * Gets the replace_field, if any, that will be redefined by the next field
- * created with the field module. Cleared after next field create call.
- *
- * @param field_module  The field module to create fields in.
- * @return  Existing field to be replaced which caller must deaccess, or NULL
- * if none.
- */
-struct Computed_field *cmzn_fieldmodule_get_replace_field(
-	struct cmzn_fieldmodule *field_module);
 
 /**
  * For each hierarchical field in manager, propagates changes from sub-region

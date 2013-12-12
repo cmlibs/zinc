@@ -992,7 +992,7 @@ int cmzn_scenefilter_set_name(cmzn_scenefilter_id scenefilter, const char *name)
 	int return_code;
 
 	ENTER(cmzn_scenefilter_set_name);
-	if (scenefilter && is_standard_object_name(name))
+	if (scenefilter && name)
 	{
 		return_code = 1;
 		cmzn_set_cmzn_scenefilter *manager_scenefilter_list = 0;

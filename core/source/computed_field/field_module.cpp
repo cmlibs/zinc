@@ -99,18 +99,18 @@ struct cmzn_fieldmodule
 struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region)
 {
 	ENTER(cmzn_fieldmodule_create);
-	cmzn_fieldmodule *field_module = NULL;
+	cmzn_fieldmodule *fieldmodule = NULL;
 	if (region)
 	{
-		ALLOCATE(field_module, struct cmzn_fieldmodule, sizeof(struct cmzn_fieldmodule));
-		if (field_module)
+		ALLOCATE(fieldmodule, struct cmzn_fieldmodule, sizeof(struct cmzn_fieldmodule));
+		if (fieldmodule)
 		{
-			field_module->region = ACCESS(cmzn_region)(region);
-			field_module->field_name = (char *)NULL;
-			field_module->replace_field = (Computed_field *)NULL;
-			field_module->coordinate_system.type = RECTANGULAR_CARTESIAN;
-			field_module->coordinate_system_override = 0;
-			field_module->access_count = 1;
+			fieldmodule->region = ACCESS(cmzn_region)(region);
+			fieldmodule->field_name = (char *)NULL;
+			fieldmodule->replace_field = (Computed_field *)NULL;
+			fieldmodule->coordinate_system.type = RECTANGULAR_CARTESIAN;
+			fieldmodule->coordinate_system_override = 0;
+			fieldmodule->access_count = 1;
 		}
 	}
 	else
@@ -119,55 +119,44 @@ struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region)
 	}
 	LEAVE;
 
-	return (field_module);
+	return (fieldmodule);
 };
 
-struct cmzn_fieldmodule *cmzn_fieldmodule_access(struct cmzn_fieldmodule *field_module)
+struct cmzn_fieldmodule *cmzn_fieldmodule_access(struct cmzn_fieldmodule *fieldmodule)
 {
-	if (field_module)
+	if (fieldmodule)
 	{
-		field_module->access_count++;
+		fieldmodule->access_count++;
 	}
-	return field_module;
+	return fieldmodule;
 }
 
 int cmzn_fieldmodule_destroy(
-	struct cmzn_fieldmodule **field_module_address)
+	struct cmzn_fieldmodule **fieldmodule_address)
 {
-	int return_code;
-	struct cmzn_fieldmodule *field_module;
-
-	ENTER(cmzn_fieldmodule_destroy);
-	if (field_module_address && (NULL != (field_module = *field_module_address)))
+	struct cmzn_fieldmodule *fieldmodule;
+	if (fieldmodule_address && (NULL != (fieldmodule = *fieldmodule_address)))
 	{
-		field_module->access_count--;
-		if (0 == field_module->access_count)
+		fieldmodule->access_count--;
+		if (0 == fieldmodule->access_count)
 		{
-			DEACCESS(cmzn_region)(&field_module->region);
-			DEALLOCATE(field_module->field_name)
-			REACCESS(Computed_field)(&field_module->replace_field, NULL);
-			DEALLOCATE(*field_module_address);
+			DEACCESS(cmzn_region)(&fieldmodule->region);
+			DEALLOCATE(fieldmodule->field_name)
+			REACCESS(Computed_field)(&fieldmodule->replace_field, NULL);
+			DEALLOCATE(*fieldmodule_address);
 		}
-		*field_module_address = NULL;
-		return_code = 1;
+		*fieldmodule_address = 0;
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_destroy.  Missing field module");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_fieldmodule_destroy */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 char *cmzn_fieldmodule_get_unique_field_name(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
 	struct MANAGER(Computed_field) *manager;
-	if (field_module &&
-		(manager = cmzn_region_get_Computed_field_manager(field_module->region)))
+	if (fieldmodule &&
+		(manager = cmzn_region_get_Computed_field_manager(fieldmodule->region)))
 	{
 		return Computed_field_manager_get_unique_field_name(manager);
 	}
@@ -180,14 +169,14 @@ char *cmzn_fieldmodule_get_unique_field_name(
 }
 
 struct Computed_field *cmzn_fieldmodule_find_field_by_name(
-	struct cmzn_fieldmodule *field_module, const char *field_name)
+	struct cmzn_fieldmodule *fieldmodule, const char *field_name)
 {
 	struct Computed_field *field;
 	struct MANAGER(Computed_field) *manager;
 
 	ENTER(cmzn_fieldmodule_find_field_by_name);
-	if (field_module && field_name &&
-		(manager = cmzn_region_get_Computed_field_manager(field_module->region)))
+	if (fieldmodule && field_name &&
+		(manager = cmzn_region_get_Computed_field_manager(fieldmodule->region)))
 	{
 		field = FIND_BY_IDENTIFIER_IN_MANAGER(Computed_field,name)(
 			(char *)field_name, manager);
@@ -207,78 +196,74 @@ struct Computed_field *cmzn_fieldmodule_find_field_by_name(
 	return (field);
 }
 
-int cmzn_fieldmodule_contains_field(cmzn_fieldmodule_id field_module,
+bool cmzn_fieldmodule_contains_field(cmzn_fieldmodule_id fieldmodule,
 	cmzn_field_id field)
 {
-	if (field_module && field)
-	{
-		return (cmzn_fieldmodule_get_region_internal(field_module) ==
-			Computed_field_get_region(field));
-	}
-	return 0;
+	return (cmzn_fieldmodule_get_region_internal(fieldmodule) ==
+		Computed_field_get_region(field));
 }
 
 struct cmzn_region *cmzn_fieldmodule_get_region_internal(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (field_module)
-		return field_module->region;
+	if (fieldmodule)
+		return fieldmodule->region;
 	return 0;
 }
 
 struct cmzn_region *cmzn_fieldmodule_get_region(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (field_module)
-		return ACCESS(cmzn_region)(field_module->region);
+	if (fieldmodule)
+		return ACCESS(cmzn_region)(fieldmodule->region);
 	return NULL;
 }
 
 int cmzn_fieldmodule_set_field_name(
-	struct cmzn_fieldmodule *field_module, const char *field_name)
+	struct cmzn_fieldmodule *fieldmodule, const char *field_name)
 {
 	int return_code = 0;
-	if (field_module)
+	if (fieldmodule)
 	{
-		if (field_module->field_name)
+		if (fieldmodule->field_name)
 		{
-			DEALLOCATE(field_module->field_name);
+			DEALLOCATE(fieldmodule->field_name);
 		}
-		field_module->field_name = field_name ? duplicate_string(field_name) : NULL;
+		fieldmodule->field_name = field_name ? duplicate_string(field_name) : NULL;
 		return_code = 1;
 	}
 	return (return_code);
 }
 
 char *cmzn_fieldmodule_get_field_name(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (field_module && field_module->field_name)
+	if (fieldmodule && fieldmodule->field_name)
 	{
-		return duplicate_string(field_module->field_name);
+		return duplicate_string(fieldmodule->field_name);
 	}
 	return NULL;
 }
 
 int cmzn_fieldmodule_set_coordinate_system(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Coordinate_system coordinate_system)
 {
-	if (field_module)
+	if (fieldmodule)
 	{
-		field_module->coordinate_system = coordinate_system;
-		field_module->coordinate_system_override = 1;
+		fieldmodule->coordinate_system = coordinate_system;
+		fieldmodule->coordinate_system_override = 1;
 		return 1;
 	}
 	return 0;
 }
 
 struct Coordinate_system cmzn_fieldmodule_get_coordinate_system(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (field_module)
+	if (fieldmodule)
 	{
-		return field_module->coordinate_system;
+		return fieldmodule->coordinate_system;
 	}
 	// return dummy
 	struct Coordinate_system coordinate_system;
@@ -287,39 +272,39 @@ struct Coordinate_system cmzn_fieldmodule_get_coordinate_system(
 }
 
 int cmzn_fieldmodule_coordinate_system_is_set(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
-	if (field_module)
+	if (fieldmodule)
 	{
-		return field_module->coordinate_system_override;
+		return fieldmodule->coordinate_system_override;
 	}
 	return 0;
 }
 
 int cmzn_fieldmodule_set_replace_field(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field *replace_field)
 {
 	int return_code;
 
-	if (field_module && ((NULL == replace_field) ||
-		(field_module->region == Computed_field_get_region(replace_field))))
+	if (fieldmodule && ((NULL == replace_field) ||
+		(fieldmodule->region == Computed_field_get_region(replace_field))))
 	{
-		REACCESS(Computed_field)(&field_module->replace_field, replace_field);
+		REACCESS(Computed_field)(&fieldmodule->replace_field, replace_field);
 		if (replace_field)
 		{
 			// copy settings from replace_field to be new defaults
 			char *field_name = NULL;
 			if (GET_NAME(Computed_field)(replace_field, &field_name))
 			{
-				if (field_module->field_name)
+				if (fieldmodule->field_name)
 				{
-					DEALLOCATE(field_module->field_name);
+					DEALLOCATE(fieldmodule->field_name);
 				}
-				field_module->field_name = field_name;
+				fieldmodule->field_name = field_name;
 			}
-			field_module->coordinate_system = replace_field->coordinate_system;
-			field_module->coordinate_system_override = 1;
+			fieldmodule->coordinate_system = replace_field->coordinate_system;
+			fieldmodule->coordinate_system_override = 1;
 		}
 		return_code = 1;
 	}
@@ -334,22 +319,22 @@ int cmzn_fieldmodule_set_replace_field(
 }
 
 struct Computed_field *cmzn_fieldmodule_get_replace_field(
-	struct cmzn_fieldmodule *field_module)
+	struct cmzn_fieldmodule *fieldmodule)
 {
 	Computed_field *replace_field = NULL;
-	if (field_module)
+	if (fieldmodule)
 	{
-		replace_field = field_module->replace_field;
+		replace_field = fieldmodule->replace_field;
 	}
 	return (replace_field);
 }
 
 cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
-	cmzn_fieldmodule_id field_module)
+	cmzn_fieldmodule_id fieldmodule)
 {
-	if (!field_module)
+	if (!fieldmodule)
 		return 0;
-	MANAGER(Computed_field) *manager = cmzn_region_get_Computed_field_manager(field_module->region);
+	MANAGER(Computed_field) *manager = cmzn_region_get_Computed_field_manager(fieldmodule->region);
 	return Computed_field_manager_create_iterator(manager);
 }
 
@@ -360,20 +345,20 @@ cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(
 }
 
 cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
-	cmzn_fieldmodule_id field_module, int number_of_times, const double *times)
+	cmzn_fieldmodule_id fieldmodule, int number_of_times, const double *times)
 {
-	if (!field_module)
+	if (!fieldmodule)
 		return NULL;
 	FE_time_sequence *fe_timesequence = FE_region_get_FE_time_sequence_matching_series(
-			cmzn_region_get_FE_region(field_module->region), number_of_times, times);
+			cmzn_region_get_FE_region(fieldmodule->region), number_of_times, times);
 	ACCESS(FE_time_sequence)(fe_timesequence);
 	return reinterpret_cast<cmzn_timesequence_id>(fe_timesequence);
 }
 
-cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id field_module)
+cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id fieldmodule)
 {
 	cmzn_field_id xi_field = 0;
-	if (field_module)
+	if (fieldmodule)
 	{
 		const char *default_xi_field_name = "xi";
 		char xi_field_name[10];
@@ -381,7 +366,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id field_
 		int i = 2;
 		while (true)
 		{
-			xi_field = cmzn_fieldmodule_find_field_by_name(field_module, xi_field_name);
+			xi_field = cmzn_fieldmodule_find_field_by_name(fieldmodule, xi_field_name);
 			if (xi_field)
 			{
 				if (Computed_field_is_type_xi_coordinates(xi_field, (void *)NULL))
@@ -392,7 +377,7 @@ cmzn_field_id cmzn_fieldmodule_get_or_create_xi_field(cmzn_fieldmodule_id field_
 			}
 			else
 			{
-				xi_field = Computed_field_create_xi_coordinates(field_module);
+				xi_field = Computed_field_create_xi_coordinates(fieldmodule);
 				cmzn_field_set_name(xi_field, xi_field_name);
 				cmzn_field_set_managed(xi_field, true);
 				break;

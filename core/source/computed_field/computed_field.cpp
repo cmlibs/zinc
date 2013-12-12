@@ -124,6 +124,7 @@ like the number of components.
 #include "computed_field/computed_field_set.h"
 #include "computed_field/differential_operator.hpp"
 #include "computed_field/field_cache.hpp"
+#include "computed_field/field_module.hpp"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_discretization.h"
@@ -914,16 +915,14 @@ int Computed_field_add_to_manager_private(struct Computed_field *field,
 }
 
 Computed_field *Computed_field_create_generic(
-	cmzn_fieldmodule *field_module, bool check_source_field_regions,
+	cmzn_fieldmodule *fieldmodule, bool check_source_field_regions,
 	int number_of_components,
 	int number_of_source_fields, Computed_field **source_fields,
 	int number_of_source_values, const double *source_values,
 	Computed_field_core *field_core)
 {
-	Computed_field *field = NULL;
-
-	ENTER(Computed_field_create_generic);
-	if ((NULL != field_module) && (0 < number_of_components) &&
+	Computed_field *field = 0;
+	if ((NULL != fieldmodule) && (0 < number_of_components) &&
 		((0 == number_of_source_fields) ||
 			((0 < number_of_source_fields) && (NULL != source_fields))) &&
 		((0 == number_of_source_values) ||
@@ -931,7 +930,7 @@ Computed_field *Computed_field_create_generic(
 		(NULL != field_core))
 	{
 		int return_code = 1;
-		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
+		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 		for (int i = 0; i < number_of_source_fields; i++)
 		{
 			if (NULL != source_fields[i])
@@ -953,7 +952,7 @@ Computed_field *Computed_field_create_generic(
 		}
 		if (return_code)
 		{
-			char *field_name = cmzn_fieldmodule_get_field_name(field_module);
+			char *field_name = cmzn_fieldmodule_get_field_name(fieldmodule);
 			field = CREATE(Computed_field)(field_name ? field_name : "");
 			if (field_name)
 			{
@@ -1010,15 +1009,15 @@ Computed_field *Computed_field_create_generic(
 					// coordinate system of new field to that of a source field:
 					field_core->inherit_source_field_attributes();
 					// default coordinate system can also be overridden:
-					if (cmzn_fieldmodule_coordinate_system_is_set(field_module))
+					if (cmzn_fieldmodule_coordinate_system_is_set(fieldmodule))
 					{
 						struct Coordinate_system coordinate_system =
-							cmzn_fieldmodule_get_coordinate_system(field_module);
+							cmzn_fieldmodule_get_coordinate_system(fieldmodule);
 						Computed_field_set_coordinate_system(field, &coordinate_system);
 					}
 
 					Computed_field *replace_field =
-						cmzn_fieldmodule_get_replace_field(field_module);
+						cmzn_fieldmodule_get_replace_field(fieldmodule);
 					if (replace_field)
 					{
 						if (replace_field->core->not_in_use() ||
@@ -1060,13 +1059,14 @@ Computed_field *Computed_field_create_generic(
 		display_message(ERROR_MESSAGE,
 			"Computed_field_create_generic.  Invalid argument(s)");
 	}
-	if (field_module)
+	if (fieldmodule)
 	{
-		// replace_field must not be used for further field creates, so clear
-		cmzn_fieldmodule_set_replace_field(field_module, NULL);
+		// replace_field, name etc. must not be used for further field creates, so clear
+		cmzn_fieldmodule_set_replace_field(fieldmodule, 0);
+		cmzn_fieldmodule_set_field_name(fieldmodule, 0);
+		Coordinate_system coordinate_system = { RECTANGULAR_CARTESIAN, 0 };
+		cmzn_fieldmodule_set_coordinate_system(fieldmodule, coordinate_system);
 	}
-	LEAVE;
-
 	return (field);
 }
 
@@ -1142,12 +1142,12 @@ int Computed_field_is_defined_in_element(struct Computed_field *field,
 	int return_code = 0;
 	if (field && element)
 	{
-		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
-		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(field);
+		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 		cmzn_fieldcache_set_element(field_cache, element);
 		return_code = cmzn_field_is_defined_at_location(field, field_cache);
 		cmzn_fieldcache_destroy(&field_cache);
-		cmzn_fieldmodule_destroy(&field_module);
+		cmzn_fieldmodule_destroy(&fieldmodule);
 	}
 	return return_code;
 }
@@ -1164,12 +1164,12 @@ int Computed_field_is_defined_at_node(struct Computed_field *field,
 	int return_code = 0;
 	if (field && node)
 	{
-		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
-		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(field);
+		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 		cmzn_fieldcache_set_node(field_cache, node);
 		return_code = cmzn_field_is_defined_at_location(field, field_cache);
 		cmzn_fieldcache_destroy(&field_cache);
-		cmzn_fieldmodule_destroy(&field_module);
+		cmzn_fieldmodule_destroy(&fieldmodule);
 	}
 	return return_code;
 }
@@ -2660,7 +2660,7 @@ bool Computed_field_core::is_non_linear() const
 }
 
 int Computed_field_broadcast_field_components(
-	struct cmzn_fieldmodule *field_module,
+	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field **field_one, struct Computed_field **field_two)
 /*******************************************************************************
 LAST MODIFIED : 31 March 2008
@@ -2723,7 +2723,7 @@ for matrix operations.
 				}
 				// use temporary field module for broadcast wrapper since needs different defaults
 				cmzn_fieldmodule *temp_field_module =
-					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(field_module));
+					cmzn_fieldmodule_create(cmzn_fieldmodule_get_region_internal(fieldmodule));
 				// wrapper field has same name stem as wrapped field
 				cmzn_fieldmodule_set_field_name(temp_field_module, (**field_to_wrap)->name);
 				broadcast_wrapper = Computed_field_create_composite(temp_field_module,
@@ -2915,7 +2915,8 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 	int return_code;
 
 	ENTER(cmzn_field_set_name);
-	if (field && is_standard_object_name(name))
+	// GRC temp disable '-'
+	if (field && name && (0 == strchr(name, '-')))
 	{
 		return_code = 1;
 		cmzn_set_cmzn_field *manager_field_list = 0;
@@ -3065,12 +3066,12 @@ struct cmzn_region *Computed_field_get_region(struct Computed_field *field)
 
 Computed_field *Computed_field_modify_data::get_field()
 {
-	return cmzn_fieldmodule_get_replace_field(field_module);
+	return cmzn_fieldmodule_get_replace_field(fieldmodule);
 };
 
 cmzn_region *Computed_field_modify_data::get_region()
 {
-	return cmzn_fieldmodule_get_region_internal(field_module);
+	return cmzn_fieldmodule_get_region_internal(fieldmodule);
 };
 
 MANAGER(Computed_field) *Computed_field_modify_data::get_field_manager()
