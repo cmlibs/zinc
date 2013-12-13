@@ -19,7 +19,9 @@ public:
 		FIELDMODULE_REGION_INPUT_RESOURCE = 8,
 		FIELDMODULE_EMBEDDING_ISSUE3614_RESOURCE = 9,
 		TESTIMAGE_GRAY_JPG_RESOURCE = 10,
-		FIELDIMAGE_BLOCKCOLOURS_RESOURCE = 11
+		FIELDIMAGE_BLOCKCOLOURS_RESOURCE = 11,
+		HEART_EXNODE_GZ = 12,
+		HEART_EXELEM_GZ = 13
 	};
 
 	TestResources()
@@ -73,6 +75,14 @@ public:
 		if (resourceName == TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)
 		{
 			return "@FIELDIMAGE_BLOCKCOLOURS_RESOURCE@";
+		}
+		if (resourceName == TestResources::HEART_EXNODE_GZ)
+		{
+			return "@HEART_EXNODE_GZ@";
+		}
+		if (resourceName == TestResources::HEART_EXELEM_GZ)
+		{
+			return "@HEART_EXELEM_GZ@";
 		}
 		return 0;
 	}

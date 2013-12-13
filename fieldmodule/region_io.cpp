@@ -15,6 +15,11 @@
 
 #include "zinctestsetup.hpp"
 
+#include <string>       // std::string
+#include <iostream>     // std::cout, std::ostream, std::hex
+#include <sstream>
+#include <fstream>
+
 #include "test_resources.h"
 
 TEST(region_file_input, invalid_args)
@@ -319,4 +324,54 @@ TEST(element_dimension_file, invalid_args)
 	cmzn_region_destroy(&cube_region);
 	cmzn_region_destroy(&root_region);
 	cmzn_context_destroy(&context);
+}
+
+TEST(region_stream_gzip_input, invalid_args)
+{
+	cmzn_context_id context = cmzn_context_create("test");
+	cmzn_region_id root_region = cmzn_context_get_default_region(context);
+
+	std::ifstream exnodeFile(TestResources::getLocation(TestResources::HEART_EXNODE_GZ), std::ifstream::binary);
+	std::ifstream exelemFile(TestResources::getLocation(TestResources::HEART_EXELEM_GZ), std::ifstream::binary);
+	if (exnodeFile.is_open() && exelemFile.is_open())
+	{
+		exnodeFile.seekg (0, exnodeFile.end);
+		int exnodeSize = exnodeFile.tellg();
+		char *memblock_exnode = new char [exnodeSize];
+		exnodeFile.seekg (0, exnodeFile.beg);
+		exnodeFile.read (memblock_exnode, exnodeSize);
+		exnodeFile.close();
+		exelemFile.seekg (0, exelemFile.end);
+		int exelemSize = exelemFile.tellg();
+		char * memblock_exelem = new char [exelemSize];
+		exelemFile.seekg (0, exelemFile.beg);
+		exelemFile.read (memblock_exelem, exelemSize);
+		exelemFile.close();
+		cmzn_streaminformation_id si = cmzn_region_create_streaminformation(
+			root_region);
+		cmzn_streamresource_id sr_exnode = cmzn_streaminformation_create_streamresource_memory_buffer(
+			si, (void *)memblock_exnode, exnodeSize);
+		cmzn_streamresource_id sr_exelem = cmzn_streaminformation_create_streamresource_memory_buffer(
+			si, (void *)memblock_exelem, exelemSize);
+		cmzn_streaminformation_set_data_compression_type(si, CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP);
+		cmzn_streaminformation_region_id si_region = cmzn_streaminformation_cast_region(
+			si);
+		int result = cmzn_region_read(root_region, si_region);
+		EXPECT_EQ(CMZN_OK, result);
+		cmzn_streamresource_destroy(&sr_exnode);
+		cmzn_streamresource_destroy(&sr_exelem);
+		cmzn_streaminformation_region_destroy(&si_region);
+		cmzn_streaminformation_destroy(&si);
+
+		if (memblock_exnode)
+			delete[] memblock_exnode;
+		if (memblock_exelem)
+			delete[] memblock_exelem;
+	}
+
+
+
+	cmzn_region_destroy(&root_region);
+	cmzn_context_destroy(&context);
+
 }
