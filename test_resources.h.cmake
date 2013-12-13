@@ -21,7 +21,8 @@ public:
 		TESTIMAGE_GRAY_JPG_RESOURCE = 10,
 		FIELDIMAGE_BLOCKCOLOURS_RESOURCE = 11,
 		HEART_EXNODE_GZ = 12,
-		HEART_EXELEM_GZ = 13
+		HEART_EXELEM_GZ = 13,
+		FIELDMODULE_TWO_CUBES_RESOURCE = 14
 	};
 
 	TestResources()
@@ -83,6 +84,10 @@ public:
 		if (resourceName == TestResources::HEART_EXELEM_GZ)
 		{
 			return "@HEART_EXELEM_GZ@";
+		}
+		if (resourceName == TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)
+		{
+			return "@FIELDMODULE_TWO_CUBES_RESOURCE@";
 		}
 		return 0;
 	}

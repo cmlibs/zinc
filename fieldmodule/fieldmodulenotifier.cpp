@@ -13,6 +13,7 @@
 #include <zinc/fieldvectoroperators.hpp>
 #include <zinc/status.hpp>
 
+#include "test_resources.h"
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -267,6 +268,126 @@ TEST(ZincFieldmodulenotifier, partial_nodeset_change)
  	EXPECT_EQ(Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getSummaryNodeChangeFlags());
 	EXPECT_EQ(Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node2));
 	EXPECT_EQ(Node::CHANGE_FLAG_NONE, result = nodesetchanges.getNodeChangeFlags(node1));
+
+	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());
+}
+
+TEST(ZincFieldmodulenotifier, partial_mesh_change)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackRecordChange recordChange;
+	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(recordChange));
+
+	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+	EXPECT_EQ(Field::CHANGE_FLAG_ADD | Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Node node1 = nodeset.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+	Node node2 = nodeset.findNodeByIdentifier(2);
+	EXPECT_TRUE(node2.isValid());
+
+	Field field = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(field.isValid());
+
+	double newCoordinates[3] = { 1.0, 0.3, 1.5 };
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_EQ(CMZN_OK, result = cache.setNode(node1));
+	EXPECT_EQ(CMZN_OK, result = field.assignReal(cache, 3, newCoordinates));
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
+	EXPECT_EQ(Field::CHANGE_FLAG_PARTIAL_RESULT, result = recordChange.lastEvent.getFieldChangeFlags(field));
+
+	Nodesetchanges nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodeset);
+	EXPECT_TRUE(nodesetchanges.isValid());
+	EXPECT_EQ(1, result = nodesetchanges.getNumberOfChanges());
+ 	EXPECT_EQ(Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getSummaryNodeChangeFlags());
+	EXPECT_EQ(Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node1));
+	EXPECT_EQ(Node::CHANGE_FLAG_NONE, result = nodesetchanges.getNodeChangeFlags(node2));
+
+	Mesh mesh3 = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3.isValid());
+	Meshchanges mesh3changes = recordChange.lastEvent.getMeshchanges(mesh3);
+	EXPECT_TRUE(mesh3changes.isValid());
+	EXPECT_EQ(Element::CHANGE_FLAG_FIELD, result = mesh3changes.getSummaryElementChangeFlags());
+	Element::ChangeFlags elementResults[2] =
+	{
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE
+	};
+	EXPECT_EQ(2, mesh3.getSize());
+	for (int el = 1; el <= 2; ++el)
+	{
+		Element element = mesh3.findElementByIdentifier(el);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(elementResults[el - 1], mesh3changes.getElementChangeFlags(element));
+	}
+
+	Mesh mesh2 = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2.isValid());
+	Meshchanges mesh2changes = recordChange.lastEvent.getMeshchanges(mesh2);
+	EXPECT_TRUE(mesh2changes.isValid());
+	EXPECT_EQ(Element::CHANGE_FLAG_FIELD, result = mesh2changes.getSummaryElementChangeFlags());
+	Element::ChangeFlags faceResults[11] =
+	{
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE
+	};
+	EXPECT_EQ(11, mesh2.getSize());
+	for (int fa = 1; fa <= 11; ++fa)
+	{
+		Element face = mesh2.findElementByIdentifier(fa);
+		EXPECT_TRUE(face.isValid());
+		EXPECT_EQ(faceResults[fa - 1], mesh2changes.getElementChangeFlags(face));
+	}
+
+	Mesh mesh1 = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1.isValid());
+	Meshchanges mesh1changes = recordChange.lastEvent.getMeshchanges(mesh1);
+	EXPECT_TRUE(mesh1changes.isValid());
+	EXPECT_EQ(Element::CHANGE_FLAG_FIELD, result = mesh1changes.getSummaryElementChangeFlags());
+	Element::ChangeFlags lineResults[20] =
+	{
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_FIELD,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE,
+		Element::CHANGE_FLAG_NONE
+	};
+	EXPECT_EQ(20, mesh1.getSize());
+	for (int li = 1; li <= 20; ++li)
+	{
+		Element line = mesh1.findElementByIdentifier(li);
+		EXPECT_TRUE(line.isValid());
+		EXPECT_EQ(lineResults[li - 1], mesh1changes.getElementChangeFlags(line));
+	}
 
 	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());
 }
