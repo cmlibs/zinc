@@ -242,6 +242,60 @@ ZINC_API int cmzn_streamresource_memory_get_buffer_copy(
 	cmzn_streamresource_memory_id resource, void **memory_buffer_references,
 	unsigned int *memory_buffer_sizes);
 
+/**
+ * Get the specified data compression for a specified streamresource in
+ * streaminformation.
+ *
+ * @param streaminformation  Handle to the cmzn_streaminformation.
+ * @param resource  Handle to the cmzn_streamresource.
+ * @return  enum for specified data_compression_type for stream resource,
+ * 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID if failed or unset
+ */
+ZINC_API enum cmzn_streaminformation_data_compression_type
+	cmzn_streaminformation_get_resource_data_compression_type(
+	cmzn_streaminformation_id streaminformation, cmzn_streamresource_id resource);
+
+/**
+ * Specify the data compression of this streamresource and it will override the one
+ * specified in the owning streaminformation.
+ *
+ * @param streaminformation  Handle to the cmzn_streaminformation.
+ * @param resource  Handle to the cmzn_streamresource.
+ * @param data_compression_type  enum to indicate the compression used in the resources
+ *	in the streaminformation
+ *
+ * @return   status CMZN_OK if domain types successfully set, any other value if
+ *   failed or domain data_compression_type not valid or unable to be set for this
+ * 	cmzn_streaminformation_resource.
+ */
+ZINC_API int cmzn_streaminformation_set_resource_data_compression_type(
+	cmzn_streaminformation_id streaminformation,	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_data_compression_type data_compression_type);
+
+/**
+ * Get the specified data compression for the stream resources in streaminformation.
+ *
+ * @param streaminformation  Handle to the cmzn_streaminformation.
+ * @return  enum for specified data_compression_type for stream resource,
+ * 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID if failed or unset
+ */
+ZINC_API enum cmzn_streaminformation_data_compression_type cmzn_streaminformation_get_data_compression_type(
+	cmzn_streaminformation_id streaminformation);
+
+/**
+ * Specify the data compression of the streamresource in the streaminformation.
+ *
+ * @param streaminformation  Handle to the cmzn_streaminformation.
+ * @param data_compression_type  enum to indicate the compression used in the resources
+ *	in the streaminformation
+ * @return   status CMZN_OK if data compression successfully set, any other value if
+ *   failed or data_compression_type type is not valid or unable to be set for this
+ *   cmzn_streaminformation.
+ */
+ZINC_API int cmzn_streaminformation_set_data_compression_type(
+	cmzn_streaminformation_id streaminformation,
+	enum cmzn_streaminformation_data_compression_type data_compression_type);
+
 #ifdef __cplusplus
 }
 #endif

@@ -34,11 +34,16 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 		const cmzn_stream_properties_list streams_list = streaminformation_image->getResourcesList();
 		if (!(streams_list.empty()))
 		{
+			cmzn_streaminformation_id streaminformation = cmzn_streaminformation_image_base_cast(
+				streaminformation_image);
+			enum cmzn_streaminformation_data_compression_type data_compression_type =
+				cmzn_streaminformation_get_data_compression_type(streaminformation);
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
 			int fileStream = 0;
 			int memoryStream = 0;
+
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
 				stream_properties = *iter;
@@ -101,7 +106,7 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 				struct Cmgui_image *cmgui_image = 0;
 				if (Cmgui_image_information_get_image_file_format(image_information) == ANALYZE_FILE_FORMAT)
 				{
-					cmgui_image = Cmgui_image_read_analyze(image_information);
+					cmgui_image = Cmgui_image_read_analyze(image_information, data_compression_type);
 				}
 				else
 				{
@@ -235,8 +240,6 @@ int cmzn_field_image_write(cmzn_field_image_id image_field,
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE, "cmzn_field_image_write. Cannot write to both file and memory in "
-								"one stream information");
 							return_code = 0;
 						}
 						DEALLOCATE(file_name);
@@ -247,8 +250,6 @@ int cmzn_field_image_write(cmzn_field_image_id image_field,
 				{
 					if (fileStream)
 					{
-						display_message(ERROR_MESSAGE, "cmzn_field_image_write. Stream information "
-							"contains incorrect stream");
 						return_code = 0;
 					}
 					else

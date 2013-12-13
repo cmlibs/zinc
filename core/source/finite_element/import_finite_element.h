@@ -16,6 +16,7 @@
 #include "finite_element/finite_element_region.h"
 #include "general/io_stream.h"
 #include "region/cmiss_region.h"
+#include "zinc/types/streamid.h"
 
 /*
 Global types
@@ -74,6 +75,7 @@ int read_exdata_file(struct cmzn_region *region,
  */
 int read_exregion_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct FE_import_time_index *time_index, int useData);
+	struct FE_import_time_index *time_index, int useData,
+	enum cmzn_streaminformation_data_compression_type data_compression_type);
 
 #endif /* !defined (IMPORT_FINITE_ELEMENT_H) */

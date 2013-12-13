@@ -33,10 +33,14 @@
  * the terms of any one of the MPL, the GPL or the LGPL.
  *
  * ***** END LICENSE BLOCK ***** */
+#include <sstream>
+#include <fstream>
 #include <stdint.h>
-
+#include <zlib.h>
+#include <bzlib.h>
+#include "general/debug.h"
 #include "analyze.h"
-
+#include "zinc/types/streamid.h"
 #include "general/image_utilities.h"
 #include "general/mystring.h"
 #include "general/debug.h"
@@ -66,8 +70,213 @@
  */
 float halffloat2float(uint16_t source);
 
+int open_gzip_stream(void *buffer, unsigned int length, char **bufferOut)
+{
+	if (buffer && length > 0 && bufferOut)
+	{
+	   int ret;
+	   z_stream strm;
+		int buffer_chunk_size = 10000;
+	   strm.zalloc = Z_NULL;
+	   strm.zfree = Z_NULL;
+	   strm.opaque = Z_NULL;
+	   strm.avail_in = 0;
+	   strm.next_in = Z_NULL;
+	   ret = inflateInit2(&strm, MAX_WBITS+16);
+
+	   if (ret != Z_OK)
+	   	return 0;
+	   int remaining = length;
+	   char *output_buffer = 0;
+	   int data_length = buffer_chunk_size;
+	   ALLOCATE(output_buffer, char, buffer_chunk_size);
+	   int characters_read = 0;
+   	int return_code = 1;
+	   do
+	   {
+	   	strm.avail_in = buffer_chunk_size;
+	   	strm.next_in = ((Bytef *)buffer + length - remaining);
+	   	remaining -= buffer_chunk_size;
+	   	/* run inflate() on input until output buffer not full */
+	   	do
+	   	{
+	   		char *new_data = 0;
+	   		if (characters_read + buffer_chunk_size > data_length)
+	   		{
+	   			if (REALLOCATE(new_data, output_buffer, char, data_length + buffer_chunk_size))
+	   			{
+	   				output_buffer = new_data;
+	   				data_length += buffer_chunk_size;
+	   			}
+	   		}
+	   		strm.avail_out = buffer_chunk_size;
+	   		strm.next_out = (Bytef *)output_buffer + characters_read;
+	   		ret = inflate(&strm, Z_NO_FLUSH);
+	   		int read_characters_here = buffer_chunk_size - strm.avail_out;
+	   		if ((ret != Z_STREAM_END ) &&	(ret != Z_OK))
+	   		{
+	   			return_code = 0;
+	   		}
+	   		characters_read += read_characters_here;
+	   	} while (strm.avail_out == 0 && return_code == 1);
+	   } while (remaining > 0 && return_code == 1);
+	   /* done when inflate() says it's done */
+	   inflateEnd(&strm);
+	   if (data_length != characters_read)
+		{
+			REALLOCATE(output_buffer, output_buffer, char, characters_read);
+		}
+	   if (return_code == 0)
+	   {
+	   	characters_read = 0;
+	   	DEALLOCATE(output_buffer);
+	   	output_buffer = 0;
+	   }
+		*bufferOut =  output_buffer;
+	   return characters_read;
+	}
+	return 0;
+}
+
+
+int open_bzip2_stream(void *buffer, unsigned int length, char **bufferOut)
+{
+	if (buffer && length > 0 && bufferOut)
+	{
+	   int ret = 0;
+	   bz_stream bz2_memory_stream;
+		int buffer_chunk_size = 10000;
+		bz2_memory_stream.next_in = (char *)NULL;
+		bz2_memory_stream.avail_in = 0;
+		bz2_memory_stream.total_in_lo32 = 0;
+		bz2_memory_stream.total_in_hi32 = 0;
+		bz2_memory_stream.next_out = (char *)NULL;
+		bz2_memory_stream.avail_out = 0;
+		bz2_memory_stream.total_out_lo32 = 0;
+		bz2_memory_stream.total_out_hi32 = 0;
+		bz2_memory_stream.state = NULL;
+		bz2_memory_stream.bzalloc = NULL;
+		bz2_memory_stream.bzfree = NULL;
+		bz2_memory_stream.opaque = NULL;
+		if (BZ_OK != BZ2_bzDecompressInit(&bz2_memory_stream,
+			/*debug*/0, /*small_memory*/0))
+		{
+			return 0;
+		}
+	   int remaining = length;
+	   char *output_buffer = 0;
+	   int data_length = buffer_chunk_size;
+	   ALLOCATE(output_buffer, char, buffer_chunk_size);
+	   int characters_read = 0;
+   	int return_code = 1;
+	   do
+	   {
+	   	bz2_memory_stream.avail_in = buffer_chunk_size;
+	   	bz2_memory_stream.next_in = ((char *)buffer + length - remaining);
+	   	remaining -= buffer_chunk_size;
+	   	/* run inflate() on input until output buffer not full */
+	   	do
+	   	{
+	   		char *new_data = 0;
+	   		if (characters_read + buffer_chunk_size > data_length)
+	   		{
+	   			if (REALLOCATE(new_data, output_buffer, char, data_length + buffer_chunk_size))
+	   			{
+	   				output_buffer = new_data;
+	   				data_length += buffer_chunk_size;
+	   			}
+	   		}
+	   		bz2_memory_stream.avail_out = buffer_chunk_size;
+	   		bz2_memory_stream.next_out = output_buffer + characters_read;
+	   		ret = BZ2_bzDecompress(&bz2_memory_stream);
+	   		int read_characters_here = buffer_chunk_size - bz2_memory_stream.avail_out;
+	   		if ((ret != BZ_STREAM_END ) &&	(ret != BZ_OK))
+	   		{
+	   			return_code = 0;
+	   		}
+	   		characters_read += read_characters_here;
+	   	} while (bz2_memory_stream.avail_out == 0 && return_code == 1);
+	   } while (remaining > 0 && return_code == 1);
+	   BZ2_bzDecompressEnd(&bz2_memory_stream);
+	   if (data_length != characters_read)
+		{
+			REALLOCATE(output_buffer, output_buffer, char, characters_read);
+		}
+	   if (return_code == 0)
+	   {
+	   	characters_read = 0;
+	   	DEALLOCATE(output_buffer);
+	   	output_buffer = 0;
+	   }
+		*bufferOut =  output_buffer;
+	   return characters_read;
+	}
+	return 0;
+}
+
+struct Analyze_stream
+{
+	char *hdr_name;
+	int hdr_size;
+	char *hdr_buffer;
+	int img_size;
+	char *img_buffer;
+	char *img_name;
+};
+
+int octal_string_to_int(char *current_char, unsigned int size)
+{
+    unsigned int output = 0;
+    while(size > 0){
+        output = output * 8 + *current_char - '0';
+        current_char++;
+        size--;
+    }
+    return output;
+}
+
+void from_tar_to_analyze_stream(Analyze_stream *stream, char *buffer, int size)
+{
+//	tar header looks like this
+//	location  size  field
+//	0         100   File name
+//	100       8     File mode
+//	108       8     Owner's numeric user ID
+//	116       8     Group's numeric user ID
+//	124       12    File size in bytes
+//	136       12    Last modification time in numeric Unix time format
+//	148       8     Checksum for header block
+//	156       1     Link indicator (file type)
+//	157       100   Name of linked file
+	int current_file_location = 0;
+	int size_of_file = 0;
+	char *current_file_name = 0;
+	do
+	{
+		size_of_file = octal_string_to_int(
+			&buffer[current_file_location+124], 11);
+		current_file_name = &buffer[current_file_location];
+		current_file_location += 512;
+		if (strstr(current_file_name, "hdr"))
+		{
+			stream->hdr_name = current_file_name;
+			stream->hdr_size = size_of_file;
+			stream->hdr_buffer = &buffer[current_file_location];
+		}
+		else if (strstr(current_file_name, "img"))
+		{
+			stream->img_name = current_file_name;
+			stream->img_size = size_of_file;
+			stream->img_buffer = &buffer[current_file_location];
+		}
+		current_file_location = current_file_location +
+			(((size_of_file - 1) / 512) + 1) * 512;
+	} while (current_file_location + 512 <= size);
+}
+
 struct Cmgui_image *Cmgui_image_read_analyze(
-		struct Cmgui_image_information *cmgui_image_information)
+		struct Cmgui_image_information *cmgui_image_information,
+		enum cmzn_streaminformation_data_compression_type data_compression_type)
 {
 	struct Cmgui_image *cmgui_image = 0;
 #if defined (USE_IMAGEMAGICK)
@@ -114,8 +323,64 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 				/* Just use a dummy file_name */
 				file_name = "memory";
 			}
-			AnalyzeImageHandler analyze = AnalyzeImageHandler(file_name);
-			if (analyze.readHeader())
+			AnalyzeStreamsType streamstype = ANALYZE_STREAMS_TYPE_FILE;
+			Analyze_stream analyze_stream;
+			analyze_stream.hdr_size = 0;
+			analyze_stream.hdr_buffer = 0;
+			analyze_stream.hdr_name = 0;
+			analyze_stream.img_size = 0;
+			analyze_stream.img_buffer = 0;
+			analyze_stream.img_name = 0;
+			char *uncompressed_bytes = 0;
+			int uncompressed_length = 0;
+			if (data_compression_type == CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP ||
+				data_compression_type == CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2)
+			{
+				if (cmgui_image_information->memory_blocks &&
+					cmgui_image_information->memory_blocks[i])
+				{
+					if (data_compression_type == CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP)
+						uncompressed_length = open_gzip_stream(cmgui_image_information->memory_blocks[i]->buffer,
+							cmgui_image_information->memory_blocks[i]->length, &uncompressed_bytes);
+					else if (data_compression_type == CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2)
+						uncompressed_length = open_bzip2_stream(cmgui_image_information->memory_blocks[i]->buffer,
+							cmgui_image_information->memory_blocks[i]->length, &uncompressed_bytes);
+				}
+				else if (file_name)
+				{
+					std::ifstream analyzeFileStream(file_name, std::ifstream::binary);
+					if (analyzeFileStream.is_open())
+					{
+						analyzeFileStream.seekg (0, analyzeFileStream.end);
+						int fileSize = analyzeFileStream.tellg();
+						char *memblock = new char [fileSize];
+						analyzeFileStream.seekg (0, analyzeFileStream.beg);
+						analyzeFileStream.read (memblock, fileSize);
+						analyzeFileStream.close();
+						if (data_compression_type == CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP)
+							uncompressed_length = open_gzip_stream(memblock, fileSize, &uncompressed_bytes);
+						else if (data_compression_type == CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2)
+							uncompressed_length = open_bzip2_stream(memblock, fileSize, &uncompressed_bytes);
+						delete[] memblock;
+					}
+				}
+				if (uncompressed_length > 0 && uncompressed_bytes)
+				{
+					from_tar_to_analyze_stream(&analyze_stream,
+						uncompressed_bytes, uncompressed_length);
+					file_name = analyze_stream.hdr_name;
+					if (analyze_stream.img_buffer && analyze_stream.hdr_buffer)
+					{
+						streamstype = ANALYZE_STREAMS_TYPE_MEMORY;
+					}
+				}
+			}
+
+			AnalyzeImageHandler analyze = AnalyzeImageHandler(streamstype);
+			if ((streamstype == ANALYZE_STREAMS_TYPE_FILE && analyze.setFilename(file_name) &&
+				analyze.readHeader()) ||
+				(streamstype == ANALYZE_STREAMS_TYPE_MEMORY && analyze_stream.hdr_buffer &&
+					analyze.readHeader(analyze_stream.hdr_buffer)))
 			{
 				int numberOfDimensions = analyze.getNumberOfDimensions();
 				if (numberOfDimensions == 3)
@@ -147,7 +412,11 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 						number_of_bits_per_component == 16 ||
 						number_of_bits_per_component == 32)
 					{
-						analyze.readImageData();
+						if (streamstype == ANALYZE_STREAMS_TYPE_FILE)
+							analyze.readImageData();
+						else if (streamstype == ANALYZE_STREAMS_TYPE_MEMORY)
+							analyze.readImageData(analyze_stream.img_buffer,
+								analyze_stream.img_size);
 
 						snprintf(tmp100, 99, "%d", analyze.getGlMax());
 						SetImageOption(magick_image_info, "quantum:maximum", tmp100);
@@ -216,6 +485,8 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 				display_message(ERROR_MESSAGE, "Analyze image handler not able to open file '%s'", file_name);
 				return_code = 0;
 			}
+			if (uncompressed_bytes)
+				DEALLOCATE(uncompressed_bytes);
 		}
 		magick_image_info->size = (char *)NULL;
 		/* restore original size for ImageMagick to clean up */
@@ -231,7 +502,6 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 					&cmgui_image->width, &cmgui_image->height,
 					&cmgui_image->number_of_components,
 					&cmgui_image->number_of_bytes_per_component, 1);
-
 			}
 			else
 			{
@@ -273,10 +543,11 @@ enum EndianEnum systemEndianTest()
 	return EndianBig;
 }
 
-AnalyzeImageHandler::AnalyzeImageHandler(const char *filename)
-	: filename(duplicate_string(filename))
+AnalyzeImageHandler::AnalyzeImageHandler(enum AnalyzeStreamsType streamsTypeIn)
+	: filename(0)
 	, bigEndian(false)
 	, data(0)
+	, streamsType(streamsTypeIn)
 {
 }
 
@@ -285,8 +556,13 @@ AnalyzeImageHandler::~AnalyzeImageHandler()
 	if (filename)
 		DEALLOCATE(filename);
 
-	if (data)
+	if (data && streamsType != ANALYZE_STREAMS_TYPE_MEMORY)
 		DEALLOCATE(data);
+}
+
+bool AnalyzeImageHandler::setFilename(const char *filenameIn)
+{
+	return (0 != (filename = duplicate_string(filenameIn)));
 }
 
 bool AnalyzeImageHandler::testFileEndianSystemEndianMatch()
@@ -572,31 +848,8 @@ void AnalyzeImageHandler::setFileEndian()
 		bigEndian = (systemEndianTest() != EndianBig);
 }
 
-void AnalyzeImageHandler::readImageData()
+void AnalyzeImageHandler::readImageInternal(unsigned int sz)
 {
-	char *data_filename = duplicate_string(filename);
-	size_t len = strlen(data_filename);
-	data_filename[len-3] = 'i';
-	data_filename[len-2] = 'm';
-	data_filename[len-1] = 'g';
-#if PRINT_ANALYZE_INFO
-	printf("filename = %s\n", data_filename);
-#endif
-	FILE *file = fopen(data_filename, "rb");
-	fseek(file, 0L, SEEK_END);
-	size_t sz = ftell(file);
-	//You can then seek back to the beginning:
-
-	fseek(file, 0L, SEEK_SET);
-#if PRINT_ANALYZE_INFO
-	printf("image data size = %ld\n", sz);
-#endif
-	if (data)
-		DEALLOCATE(data);
-
-	int bytes = getComponentDepth()/4;
-	ALLOCATE(data, char, bytes*sz);
-	fread(data, sizeof(char), bytes*sz, file);
 	if (hdr.dime.glmax == 0.0 && hdr.dime.glmin == 0.0)
 	{
 		switch (hdr.dime.datatype)
@@ -662,6 +915,44 @@ void AnalyzeImageHandler::readImageData()
 	}
 }
 
+void AnalyzeImageHandler::readImageData(void *imgBuffer, int buffer_length)
+{
+	if (data && streamsType != ANALYZE_STREAMS_TYPE_MEMORY)
+		DEALLOCATE(data);
+	data = imgBuffer;
+	int bytes = getComponentDepth()/4;
+	size_t sz = buffer_length / bytes;
+	readImageInternal(sz);
+}
+
+void AnalyzeImageHandler::readImageData()
+{
+	char *data_filename = duplicate_string(filename);
+	size_t len = strlen(data_filename);
+	data_filename[len-3] = 'i';
+	data_filename[len-2] = 'm';
+	data_filename[len-1] = 'g';
+#if PRINT_ANALYZE_INFO
+	printf("filename = %s\n", data_filename);
+#endif
+	FILE *file = fopen(data_filename, "rb");
+	fseek(file, 0L, SEEK_END);
+	size_t sz = ftell(file);
+	//You can then seek back to the beginning:
+
+	fseek(file, 0L, SEEK_SET);
+#if PRINT_ANALYZE_INFO
+	printf("image data size = %ld\n", sz);
+#endif
+	if (data && streamsType != ANALYZE_STREAMS_TYPE_MEMORY)
+		DEALLOCATE(data);
+
+	int bytes = getComponentDepth()/4;
+	ALLOCATE(data, char, bytes*sz);
+	fread(data, sizeof(char), bytes*sz, file);
+	readImageInternal(sz);
+}
+
 int AnalyzeImageHandler::getOrientation() const
 {
 	int orientation = hdr.hist.orient;
@@ -673,6 +964,38 @@ int AnalyzeImageHandler::getOrientation() const
 	return orientation;
 }
 
+void AnalyzeImageHandler::readHeaderInternal()
+{
+	setFileEndian(); // Set this before swapping bytes.
+	swapBytesIfEndianessDifferent();
+#if PRINT_ANALYZE_INFO
+	printf("right now - %d\n", hdr.hk.sizeof_hdr);
+	printf("right now - %d\n", hdr.hk.extents);
+	printf("dimensions = [%d, %d, %d, %d, %d]\n", hdr.dime.dim[0], hdr.dime.dim[1], hdr.dime.dim[2], hdr.dime.dim[3], hdr.dime.dim[4]);
+#endif
+	determineDimensions();
+#if PRINT_ANALYZE_INFO
+	printf("type = %s [%d, %d]\n", hdr.hk.data_type, hdr.dime.datatype, hdr.dime.bitpix);
+	printf("voxel offset = %f\n", hdr.dime.vox_offset);
+	printf("glmax, glmin = [%d, %d]\n", hdr.dime.glmax, hdr.dime.glmin);
+	printf("calmax, calmin = [%.2f, %.2f]\n", hdr.dime.cal_max, hdr.dime.cal_min);
+	printf("omax, omin, smax, smin = [%d, %d], [%d, %d]\n", hdr.hist.omax, hdr.hist.omin, hdr.hist.smax, hdr.hist.smin);
+	printf("orient = %d\n", hdr.hist.orient);
+#endif
+}
+
+bool AnalyzeImageHandler::readHeader(void *hdrbuffer)
+{
+	bool success = false;
+	if (hdrbuffer)
+	{
+		success = true;
+		memcpy(&hdr, hdrbuffer, sizeof(hdr));
+		readHeaderInternal();
+	}
+	return success;
+}
+
 bool AnalyzeImageHandler::readHeader()
 {
 	bool success = false;
@@ -682,22 +1005,7 @@ bool AnalyzeImageHandler::readHeader()
 		success = true;
 		fread(&hdr, sizeof(hdr), 1, file);
 		fclose(file);
-		setFileEndian(); // Set this before swapping bytes.
-		swapBytesIfEndianessDifferent();
-#if PRINT_ANALYZE_INFO
-		printf("right now - %d\n", hdr.hk.sizeof_hdr);
-		printf("right now - %d\n", hdr.hk.extents);
-		printf("dimensions = [%d, %d, %d, %d, %d]\n", hdr.dime.dim[0], hdr.dime.dim[1], hdr.dime.dim[2], hdr.dime.dim[3], hdr.dime.dim[4]);
-#endif
-		determineDimensions();
-#if PRINT_ANALYZE_INFO
-		printf("type = %s [%d, %d]\n", hdr.hk.data_type, hdr.dime.datatype, hdr.dime.bitpix);
-		printf("voxel offset = %f\n", hdr.dime.vox_offset);
-		printf("glmax, glmin = [%d, %d]\n", hdr.dime.glmax, hdr.dime.glmin);
-		printf("calmax, calmin = [%.2f, %.2f]\n", hdr.dime.cal_max, hdr.dime.cal_min);
-		printf("omax, omin, smax, smin = [%d, %d], [%d, %d]\n", hdr.hist.omax, hdr.hist.omin, hdr.hist.smax, hdr.hist.smin);
-		printf("orient = %d\n", hdr.hist.orient);
-#endif
+		readHeaderInternal();
 	}
 
 	return success;

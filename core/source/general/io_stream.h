@@ -16,7 +16,7 @@ streams.
 #define IO_STREAM_H
 
 #include "general/object.h"
-
+#include "zinc/types/streamid.h"
 /*
 Global types
 ------------
@@ -37,6 +37,9 @@ LAST MODIFIED : 4 August 2004
 
 DESCRIPTION :
 ==============================================================================*/
+
+int IO_stream_open_for_read_compression_specified(struct IO_stream *stream, const char *stream_uri,
+	enum cmzn_streaminformation_data_compression_type data_compression_type);
 
 int IO_stream_package_define_memory_block(struct IO_stream_package *stream_class,
 	const char *block_name, const void *memory_block, const int memory_block_length);

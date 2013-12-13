@@ -125,6 +125,15 @@ public:
 		id(cmzn_streaminformation_access(streamInformation.id))
 	{  }
 
+	enum DataCompressionType
+	{
+		DATA_COMPRESSION_TYPE_INVALID = 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID,
+		DATA_COMPRESSION_TYPE_DEFAULT = CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT,
+		DATA_COMPRESSION_TYPE_NONE = CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE,
+		DATA_COMPRESSION_TYPE_GZIP = CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP,
+		DATA_COMPRESSION_TYPE_BZ2 = CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2
+	};
+
 	Streaminformation& operator=(const Streaminformation& streamInformation)
 	{
 		cmzn_streaminformation_id temp_id = cmzn_streaminformation_access(streamInformation.id);
@@ -171,6 +180,34 @@ public:
 	{
 		return StreamresourceMemory(reinterpret_cast<cmzn_streamresource_memory_id>(
 			cmzn_streaminformation_create_streamresource_memory_buffer(id, buffer, buffer_length)));
+	}
+
+	enum DataCompressionType getResourceDataCompressionType(Streamresource resource)
+	{
+		return static_cast<DataCompressionType>(
+			cmzn_streaminformation_get_resource_data_compression_type(
+				reinterpret_cast<cmzn_streaminformation_id>(id), resource.getId()));
+	}
+
+	int setResourceDataCompressionType(Streamresource resource, DataCompressionType dataCompressionType)
+	{
+		return cmzn_streaminformation_set_resource_data_compression_type(
+			reinterpret_cast<cmzn_streaminformation_id>(id), resource.getId(),
+			static_cast<cmzn_streaminformation_data_compression_type>(dataCompressionType));
+	}
+
+	enum DataCompressionType getDataCompressionType()
+	{
+		return static_cast<DataCompressionType>(
+			cmzn_streaminformation_get_data_compression_type(
+				reinterpret_cast<cmzn_streaminformation_id>(id)));
+	}
+
+	int setDataCompressionType(DataCompressionType dataCompressionType)
+	{
+		return cmzn_streaminformation_set_data_compression_type(
+			reinterpret_cast<cmzn_streaminformation_id>(id),
+			static_cast<cmzn_streaminformation_data_compression_type>(dataCompressionType));
 	}
 
 };

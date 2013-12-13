@@ -168,3 +168,40 @@ cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory_buffe
 	}
 	return NULL;
 }
+
+enum cmzn_streaminformation_data_compression_type cmzn_streaminformation_get_resource_data_compression_type(
+	cmzn_streaminformation_id streaminformation, cmzn_streamresource_id resource)
+{
+	if (streaminformation && resource)
+	{
+		return streaminformation->getResourceDataCompression(resource);
+	}
+	return CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID;
+}
+
+int cmzn_streaminformation_set_resource_data_compression_type(
+	cmzn_streaminformation_id streaminformation,	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_data_compression_type data_compression_type)
+{
+	if (streaminformation && resource)
+		return streaminformation->setResourceDataCompression(resource, data_compression_type);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+enum cmzn_streaminformation_data_compression_type cmzn_streaminformation_get_data_compression_type(
+	cmzn_streaminformation_id streaminformation)
+{
+	if (streaminformation)
+	{
+		return streaminformation->getDataCompression();
+	}
+	return CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID;
+}
+
+int cmzn_streaminformation_set_data_compression_type(cmzn_streaminformation_id streaminformation,
+	enum cmzn_streaminformation_data_compression_type data_compression_type)
+{
+	if (streaminformation)
+		return streaminformation->setDataCompression(data_compression_type);
+	return CMZN_ERROR_ARGUMENT;
+}

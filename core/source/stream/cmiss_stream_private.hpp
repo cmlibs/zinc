@@ -16,6 +16,7 @@
 #include <list>
 #include <stdio.h>
 #include <string.h>
+#include "zinc/status.h"
 #include "zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
@@ -161,7 +162,8 @@ struct cmzn_resource_properties
 public:
 
 	cmzn_resource_properties(cmzn_streamresource_id resource_in) : resource(
-		cmzn_streamresource_access(resource_in))
+		cmzn_streamresource_access(resource_in)),
+		data_compression_type(CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT)
 	{
 	}
 
@@ -177,8 +179,20 @@ public:
 		return NULL;
 	}
 
+	enum cmzn_streaminformation_data_compression_type getDataCompression()
+	{
+		return data_compression_type;
+	}
+
+	int setDataCompression(enum cmzn_streaminformation_data_compression_type data_compression_type_in)
+	{
+		data_compression_type = data_compression_type_in;
+		return 1;
+	}
+
 protected:
 	cmzn_streamresource_id resource;
+	enum cmzn_streaminformation_data_compression_type data_compression_type;
 };
 
 typedef std::list<cmzn_resource_properties *> cmzn_stream_properties_list;
@@ -189,7 +203,8 @@ struct cmzn_streaminformation
 public:
 
 	cmzn_streaminformation() :
-		access_count(1)
+		access_count(1),
+		data_compression_type(CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT)
 	{
 	}
 
@@ -309,9 +324,49 @@ public:
 		return 0;
 	}
 
+	enum cmzn_streaminformation_data_compression_type getResourceDataCompression(
+		cmzn_streamresource_id resource)
+	{
+		if (resource)
+		{
+			cmzn_resource_properties *resource_properties =	findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->getDataCompression();
+			}
+		}
+		return CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID;
+	}
+
+	int setResourceDataCompression(cmzn_streamresource_id resource,
+		enum cmzn_streaminformation_data_compression_type data_compression_type_in)
+	{
+		if (resource)
+		{
+			cmzn_resource_properties *resource_properties =	findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->setDataCompression(data_compression_type_in);
+			}
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	enum cmzn_streaminformation_data_compression_type getDataCompression()
+	{
+		return data_compression_type;
+	}
+
+	int setDataCompression(enum cmzn_streaminformation_data_compression_type data_compression_type_in)
+	{
+		data_compression_type = data_compression_type_in;
+		return 1;
+	}
+
 protected:
 	int access_count;
 	cmzn_stream_properties_list resources_list;
+	enum cmzn_streaminformation_data_compression_type data_compression_type;
 }; /* struct cmzn_streaminformation */
 
 #endif /* CMZN_STREAM_PRIVATE_HPP */
