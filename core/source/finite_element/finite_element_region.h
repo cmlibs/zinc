@@ -209,6 +209,8 @@ public:
 		return 0;
 	}
 
+	bool elementOrParentChanged(FE_element *element);
+
 };
 
 /*

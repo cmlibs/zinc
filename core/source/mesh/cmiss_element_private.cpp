@@ -1817,3 +1817,88 @@ int cmzn_mesh_scale_factor_set_set_name(
 		return scale_factor_set->setName(name);
 	return 0;
 }
+
+cmzn_meshchanges::cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn) :
+	event(eventIn->access()),
+	changeLog(event->getFeRegionChanges()->getElementChanges(meshIn->getDimension())),
+	access_count(1)
+{
+}
+
+cmzn_meshchanges::~cmzn_meshchanges()
+{
+	cmzn_fieldmoduleevent::deaccess(this->event);
+}
+
+cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
+{
+	if (eventIn && meshIn &&
+		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_mesh_get_FE_region_internal(meshIn)))
+		return new cmzn_meshchanges(eventIn, meshIn);
+	return 0;
+}
+
+int cmzn_meshchanges::deaccess(cmzn_meshchanges* &meshchanges)
+{
+	if (meshchanges)
+	{
+		--(meshchanges->access_count);
+		if (meshchanges->access_count <= 0)
+			delete meshchanges;
+		meshchanges = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_element_change_flags cmzn_meshchanges::getElementChangeFlags(cmzn_element *element)
+{
+	int change = CMZN_ELEMENT_CHANGE_FLAG_NONE;
+	if (element)
+	{
+		CHANGE_LOG_QUERY(FE_element)(this->changeLog, element, &change);
+		if (0 == (change & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element)) &&
+				this->event->getFeRegionChanges()->elementOrParentChanged(element))
+			change |= CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element);
+	}
+	return change;
+}
+
+cmzn_meshchanges_id cmzn_meshchanges_access(
+	cmzn_meshchanges_id meshchanges)
+{
+	if (meshchanges)
+		return meshchanges->access();
+	return 0;
+}
+
+int cmzn_meshchanges_destroy(cmzn_meshchanges_id *meshchanges_address)
+{
+	if (meshchanges_address)
+		return cmzn_meshchanges::deaccess(*meshchanges_address);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_element_change_flags cmzn_meshchanges_get_element_change_flags(
+	cmzn_meshchanges_id meshchanges, cmzn_element_id element)
+{
+	if (meshchanges)
+		return meshchanges->getElementChangeFlags(element);
+	return CMZN_ELEMENT_CHANGE_FLAG_NONE;
+}
+
+int cmzn_meshchanges_get_number_of_changes(
+	cmzn_meshchanges_id meshchanges)
+{
+	if (meshchanges)
+		return meshchanges->getNumberOfChanges();
+	return 0;
+}
+
+cmzn_element_change_flags cmzn_meshchanges_get_summary_element_change_flags(
+	cmzn_meshchanges_id meshchanges)
+{
+	if (meshchanges)
+		return meshchanges->getSummaryElementChangeFlags();
+	return CMZN_ELEMENT_CHANGE_FLAG_NONE;
+}

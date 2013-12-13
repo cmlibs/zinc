@@ -440,17 +440,8 @@ Clears all entries/flags in the change_log. \
 
 #define DECLARE_CHANGE_LOG_ALL_CHANGE_FUNCTION( object_type ) \
 PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 20 February 2003 \
-\
-DESCRIPTION : \
-Tells <change_log> that all objects it monitors have undergone the <change>. \
-Not to be used when max_changes is negative. \
-============================================================================*/ \
 { \
 	int return_code; \
-\
-	ENTER(CHANGE_LOG_ALL_CHANGE(object_type)); \
 	if (change_log && (0 <= change_log->max_changes)) \
 	{ \
 		change_log->change_summary |= change; \
@@ -478,10 +469,16 @@ Not to be used when max_changes is negative. \
 			"CHANGE_LOG_ALL_CHANGE(" #object_type ").  Invalid argument(s)"); \
 		return_code = 0; \
 	} \
-	LEAVE; \
-\
 	return (return_code); \
-} /* CHANGE_LOG_ALL_CHANGE(object_type) */
+}
+
+#define DECLARE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION( object_type ) \
+PROTOTYPE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION(object_type) \
+{ \
+	if (change_log) \
+		return (0 != change_log->all_change); \
+	return false; \
+}
 
 #define DECLARE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION( object_type ) \
 PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type) \
@@ -909,6 +906,13 @@ which has an additional middle argument of the object's change status. \
 	return (return_code); \
 } /* CHANGE_LOG_FOR_EACH_OBJECT(object_type) */
 
+#define DECLARE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION( object_type ) \
+PROTOTYPE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION(object_type) \
+{ \
+	if (change_log) \
+		change_log->change_summary |= CHANGE_LOG_RELATED_OBJECT_CHANGED(object_type); \
+}
+
 #define FULL_DECLARE_CHANGE_LOG_TYPES( object_type ) \
 FULL_DECLARE_CHANGE_LOG_ENTRY_TYPE(object_type); \
 FULL_DECLARE_CHANGE_LOG_TYPE(object_type)
@@ -933,11 +937,13 @@ DECLARE_CREATE_CHANGE_LOG_FUNCTION(object_type) \
 DECLARE_DESTROY_CHANGE_LOG_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_CLEAR_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type) \
+DECLARE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_QUERY_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_MERGE_FUNCTION(object_type) \
-DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type)
+DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type) \
+DECLARE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION(object_type)
 
 #endif /* !defined (CHANGE_LOG_PRIVATE_H) */

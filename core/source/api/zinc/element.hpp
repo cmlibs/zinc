@@ -146,6 +146,24 @@ public:
 		return (0 != id);
 	}
 
+	/**
+	 * Element change bit flags returned by Meshchanges query functions.
+	 */
+	enum ChangeFlag
+	{
+		CHANGE_FLAG_NONE = CMZN_ELEMENT_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_ADD = CMZN_ELEMENT_CHANGE_FLAG_ADD,
+		CHANGE_FLAG_REMOVE = CMZN_ELEMENT_CHANGE_FLAG_REMOVE,
+		CHANGE_FLAG_IDENTIFIER = CMZN_ELEMENT_CHANGE_FLAG_IDENTIFIER,
+		CHANGE_FLAG_DEFINITION = CMZN_ELEMENT_CHANGE_FLAG_DEFINITION,
+		CHANGE_FLAG_FIELD = CMZN_ELEMENT_CHANGE_FLAG_FIELD
+	};
+	
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 */
+	typedef int ChangeFlags;
+
 	enum FaceType
 	{
 		FACE_TYPE_INVALID = CMZN_ELEMENT_FACE_TYPE_INVALID,
@@ -528,6 +546,62 @@ public:
 			reinterpret_cast<cmzn_mesh_group_id>(id), conditionalField.getId());
 	}
 
+};
+
+class Meshchanges
+{
+private:
+
+	cmzn_meshchanges_id id;
+
+public:
+
+	Meshchanges() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Meshchanges(cmzn_meshchanges_id meshchanges_id) :
+		id(meshchanges_id)
+	{ }
+
+	Meshchanges(const Meshchanges& meshchanges) :
+		id(cmzn_meshchanges_access(meshchanges.id))
+	{ }
+
+	Meshchanges& operator=(const Meshchanges& meshchanges)
+	{
+		cmzn_meshchanges_id temp_id = cmzn_meshchanges_access(meshchanges.id);
+		if (0 != id)
+			cmzn_meshchanges_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Meshchanges()
+	{
+		if (0 != id)
+			cmzn_meshchanges_destroy(&id);
+	}
+
+	bool isValid()
+	{
+		return (0 != id);
+	}
+
+	Element::ChangeFlags getElementChangeFlags(Element &element)
+	{
+		return cmzn_meshchanges_get_element_change_flags(id, element.getId());
+	}
+
+	int getNumberOfChanges()
+	{
+		return cmzn_meshchanges_get_number_of_changes(id);
+	}
+
+	Element::ChangeFlags getSummaryElementChangeFlags()
+	{
+		return cmzn_meshchanges_get_summary_element_change_flags(id);
+	}
 };
 
 inline int Element::merge(Elementtemplate& elementTemplate)

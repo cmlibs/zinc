@@ -167,22 +167,26 @@ DESCRIPTION : \
 Clears all entries/flags in the change_log. \
 ==============================================================================*/
 
-#define CHANGE_LOG_ALL_CHANGE_( object_type ) \
-	change_log_all_change_ ## object_type
-#define CHANGE_LOG_ALL_CHANGE( object_type ) \
-	CHANGE_LOG_ALL_CHANGE_(object_type)
+#define CHANGE_LOG_ALL_CHANGE_( object_type ) change_log_all_change_ ## object_type
+#define CHANGE_LOG_ALL_CHANGE( object_type ) CHANGE_LOG_ALL_CHANGE_(object_type)
 
 #define PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION( object_type ) \
+/** \
+ * Tells <change_log> that all objects it monitors have undergone the <change>. \
+ * Not to be used when max_changes is negative. \
+ */ \
 int CHANGE_LOG_ALL_CHANGE(object_type)( \
-	struct CHANGE_LOG(object_type) *change_log, \
-	int change) \
-/***************************************************************************** \
-LAST MODIFIED : 17 February 2003 \
-\
-DESCRIPTION : \
-Tells <change_log> that all objects it monitors have undergone the <change>. \
-Not to be used when max_changes is negative. \
-==============================================================================*/
+	struct CHANGE_LOG(object_type) *change_log, int change)
+	
+#define CHANGE_LOG_IS_ALL_CHANGE_( object_type ) change_log_is_all_change_ ## object_type
+#define CHANGE_LOG_IS_ALL_CHANGE( object_type ) CHANGE_LOG_IS_ALL_CHANGE_(object_type)
+
+#define PROTOTYPE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION( object_type ) \
+/** \
+ * @return  True if all_change flag is set, otherwise false. \
+ */ \
+bool CHANGE_LOG_IS_ALL_CHANGE(object_type)( \
+	struct CHANGE_LOG(object_type) *change_log)
 
 #define CHANGE_LOG_OBJECT_CHANGE_( object_type ) \
 	change_log_object_change_ ## object_type
@@ -293,6 +297,19 @@ Note the special format of the CHANGE_LOG_ITERATOR_FUNCTION(object_type), \
 which has an additional middle argument of the object's change status. \
 ==============================================================================*/
 
+#define CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_( object_type ) \
+	change_log_propagate_parent_change_summary_ ## object_type
+#define CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY( object_type ) \
+	CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_(object_type)
+
+#define PROTOTYPE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION( object_type ) \
+/** \
+ * Set the RELATED_OBJECT_CHANGE flag in change summary. \
+ * Use to propagate node/parent element changes that fields inherit. \
+ */ \
+void CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY(object_type)( \
+	struct CHANGE_LOG(object_type) *change_log)
+
 #define DECLARE_CHANGE_LOG_TYPES( object_type ) \
 DECLARE_CHANGE_LOG_TYPE(object_type); \
 DECLARE_CHANGE_LOG_CHANGE_TYPE(object_type); \
@@ -304,11 +321,13 @@ PROTOTYPE_CREATE_CHANGE_LOG_FUNCTION(object_type); \
 PROTOTYPE_DESTROY_CHANGE_LOG_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_CLEAR_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type); \
+PROTOTYPE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION(object_type); \
-PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type)
+PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type); \
+PROTOTYPE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION(object_type) \
 
 #endif
