@@ -128,6 +128,8 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 	/* IO_STREAM_GZIP_FILE_TYPE */
 	gzFile *gzip_file_handle;
+	z_stream gzStream;
+	int last_gzip_return;
 #endif /* defined (HAVE_ZLIB) */
 
 #if defined (HAVE_BZLIB)
@@ -444,6 +446,7 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 			/* IO_STREAM_GZIP_FILE_TYPE */
 			io_stream->gzip_file_handle = (gzFile *)NULL;
+			io_stream->last_gzip_return = Z_OK;
 #endif /* defined (HAVE_ZLIB) */
 
 #if defined (HAVE_BZLIB)
@@ -480,6 +483,159 @@ DESCRIPTION :
 	return (io_stream);
 } /* CREATE(IO_stream) */
 
+int IO_stream_open_for_read_compression_specified(struct IO_stream *stream, const char *stream_uri,
+	enum cmzn_streaminformation_data_compression_type data_compression_type)
+{
+	const char *filename, *colon;
+	char *uri_type;
+	int file_uri_specifier, return_code;
+
+	ENTER(IO_stream_open);
+
+	return_code = 0;
+	if (stream && stream_uri)
+	{
+		if (!strncmp("memory:", stream_uri, 7))
+		{
+			stream->memory_block = FIND_BY_IDENTIFIER_IN_LIST(IO_memory_block,name)(stream_uri + 7,
+				stream->stream_class->memory_block_list);
+			if (NULL != stream->memory_block)
+			{
+				return_code = 1;
+				ACCESS(IO_memory_block)(stream->memory_block);
+				if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP == data_compression_type)
+				{
+					stream->type = IO_STREAM_GZIP_MEMORY_TYPE;
+					stream->gzStream.zalloc = Z_NULL;
+					stream->gzStream.zfree = Z_NULL;
+					stream->gzStream.opaque = Z_NULL;
+					stream->gzStream.avail_in = 0;
+					stream->gzStream.next_in = Z_NULL;
+					int ret = inflateInit2(&stream->gzStream, MAX_WBITS+16);
+				   if (ret != Z_OK)
+				   	return_code = 0;
+				}
+				else if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2 == data_compression_type)
+				{
+#if defined (HAVE_BZLIB)
+					stream->type = IO_STREAM_BZ2_MEMORY_TYPE;
+					ALLOCATE(stream->bz2_memory_stream, bz_stream, 1);
+					stream->bz2_memory_stream->next_in = (char *)NULL;
+					stream->bz2_memory_stream->avail_in = 0;
+					stream->bz2_memory_stream->total_in_lo32 = 0;
+					stream->bz2_memory_stream->total_in_hi32 = 0;
+					stream->bz2_memory_stream->next_out = (char *)NULL;
+					stream->bz2_memory_stream->avail_out = 0;
+					stream->bz2_memory_stream->total_out_lo32 = 0;
+					stream->bz2_memory_stream->total_out_hi32 = 0;
+					stream->bz2_memory_stream->state = NULL;
+					stream->bz2_memory_stream->bzalloc = NULL;
+					stream->bz2_memory_stream->bzfree = NULL;
+					stream->bz2_memory_stream->opaque = NULL;
+					if (BZ_OK != BZ2_bzDecompressInit(stream->bz2_memory_stream,
+						/*debug*/0, /*small_memory*/0))
+					{
+						return_code = 0;
+					}
+#else /* defined (HAVE_BZLIB) */
+					return_code = 0;
+#endif /* defined (HAVE_BZLIB) */
+				}
+				else
+				{
+					stream->type = IO_STREAM_MEMORY_TYPE;
+				}
+#if defined IO_STREAM_SPEED_UP_SSCANF
+				/* If we are going to modify the buffer for the workaround then
+						we will need to copy in buffer chunks */
+				stream->buffer_chunk_size = 131072;
+				stream->buffer_chunks = 10;
+				stream->buffer_lookahead = 100;
+#endif /* defined IO_STREAM_SPEED_UP_SSCANF */
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		else
+		{
+			/* Look for a colon operator, fail if not file: or d: etc. */
+			int dos_file_uri_specifier = (stream_uri[1] == ':');
+			file_uri_specifier = !strncmp("file:", stream_uri, 5);
+			if (file_uri_specifier || dos_file_uri_specifier || (!(colon = strchr(stream_uri, ':'))))
+			{
+				if (file_uri_specifier)
+				{
+					filename = stream_uri + 6;
+				}
+				else
+				{
+					filename = stream_uri;
+				}
+#if defined (HAVE_ZLIB)
+				if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP == data_compression_type)
+				{
+					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					if (NULL != stream->gzip_file_handle)
+					{
+						stream->type = IO_STREAM_GZIP_FILE_TYPE;
+						stream->buffer_chunk_size = 131072;
+						stream->buffer_chunks = 10;
+#if defined IO_STREAM_SPEED_UP_SSCANF
+						stream->buffer_lookahead = 100;
+#endif /* defined IO_STREAM_SPEED_UP_SSCANF */
+						return_code = 1;
+					}
+				}
+				else
+#endif /* defined (HAVE_ZLIB) */
+#if defined (HAVE_BZLIB)
+					if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2 == data_compression_type)
+					{
+						stream->bz2_file_handle = BZ2_bzopen(filename, "rb");
+						if (NULL != stream->bz2_file_handle)
+						{
+							stream->type = IO_STREAM_BZ2_FILE_TYPE;
+							stream->buffer_chunk_size = 131072;
+							stream->buffer_chunks = 10;
+#if defined IO_STREAM_SPEED_UP_SSCANF
+							stream->buffer_lookahead = 100;
+#endif /* defined IO_STREAM_SPEED_UP_SSCANF */
+							return_code = 1;
+						}
+					}
+					else
+#endif /* defined (HAVE_BZLIB) */
+					{
+						stream->file_handle = fopen(filename, "r");
+						if (NULL != stream->file_handle)
+						{
+							stream->type = IO_STREAM_FILE_TYPE;
+							return_code = 1;
+						}
+					}
+			}
+			else
+			{
+				uri_type = duplicate_string(stream_uri);
+				uri_type[colon - stream_uri + 1] = 0;
+				return_code = 0;
+			}
+		}
+		if (IO_STREAM_UNKNOWN_TYPE != stream->type)
+		{
+			stream->uri = duplicate_string(stream_uri);
+		}
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return (return_code);
+}
+
 int IO_stream_open_for_read(struct IO_stream *stream, const char *stream_uri)
 /*******************************************************************************
 LAST MODIFIED : 23 March 2007
@@ -507,6 +663,14 @@ DESCRIPTION :
 				if (!strncmp(".gz", stream_uri + strlen(stream_uri) - 3, 3))
 				{
 					stream->type = IO_STREAM_GZIP_MEMORY_TYPE;
+					stream->gzStream.zalloc = Z_NULL;
+					stream->gzStream.zfree = Z_NULL;
+					stream->gzStream.opaque = Z_NULL;
+					stream->gzStream.avail_in = 0;
+					stream->gzStream.next_in = Z_NULL;
+					int ret = inflateInit2(&stream->gzStream, MAX_WBITS+16);
+				   if (ret != Z_OK)
+				   	return_code = 0;
 				}
 				else if (!strncmp(".bz2", stream_uri + strlen(stream_uri) - 4, 4))
 				{
@@ -665,6 +829,7 @@ DESCRIPTION :
 			/* Unfortunately if we are going to modify the buffer then we need to
 				copy it */
 #endif /* defined (IO_STREAM_SPEED_UP_SSCANF) */
+		case IO_STREAM_GZIP_MEMORY_TYPE:
 		case IO_STREAM_BZ2_MEMORY_TYPE:
 		{
 			if (!stream->buffer)
@@ -716,7 +881,36 @@ DESCRIPTION :
 							stream->buffer_chunk_size);
 
 					} break;
-#endif /* defined (HAVE_BZLIB) */
+					case IO_STREAM_GZIP_MEMORY_TYPE:
+					{
+						if (stream->last_gzip_return == Z_STREAM_END)
+						{
+							read_characters = 0;
+						}
+						else
+						{
+							int read_characters_here = 0;
+							stream->gzStream.avail_in = stream->memory_block->data_length -
+								stream->memory_block_index;
+							stream->gzStream.next_in =	((Bytef *)stream->memory_block->memory_ptr) +
+								stream->memory_block_index;
+							do
+							{
+								stream->gzStream.next_out =
+									(Bytef *)stream->buffer + stream->buffer_valid_index + read_characters;
+								stream->gzStream.avail_out = stream->buffer_chunk_size;
+								stream->last_gzip_return = inflate(&stream->gzStream, Z_NO_FLUSH);
+								read_characters_here = stream->buffer_chunk_size -	stream->gzStream.avail_out;
+								if ((stream->last_gzip_return != Z_STREAM_END ) &&	(stream->last_gzip_return != Z_OK))
+								{
+									return_code = 0;
+								}
+								read_characters += read_characters_here;
+							} while (return_code && stream->gzStream.avail_out == 0);
+							stream->memory_block_index = stream->memory_block->data_length;
+						}
+					} break;
+#endif /* defined (HAVE_ZLIB) */
 #if defined (IO_STREAM_SPEED_UP_SSCANF)
 					case IO_STREAM_MEMORY_TYPE:
 					{
@@ -833,6 +1027,7 @@ DESCRIPTION :
 				return_code = 0;
 			} break;
 			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				IO_stream_read_to_internal_buffer(stream);
@@ -894,6 +1089,7 @@ Equivalent to a standard C fscanf or sscanf on the stream.
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
 			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				IO_stream_read_to_internal_buffer(stream);
@@ -1125,6 +1321,7 @@ Equivalent to a standard C fgetc on the stream.
 			} break;
 			case IO_STREAM_MEMORY_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
@@ -1177,6 +1374,7 @@ parameters so the stream is first).
 			case IO_STREAM_MEMORY_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				eof = 0;
@@ -1259,6 +1457,7 @@ string.  It uses fscanf:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
 			case IO_STREAM_MEMORY_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				format_len=strlen(format);
@@ -1451,6 +1650,7 @@ DESCRIPTION :
 			case IO_STREAM_FILE_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				total_read = 0;
@@ -1484,6 +1684,20 @@ DESCRIPTION :
 							{
 								bytes_read = gzread(stream->gzip_file_handle, stream->data + total_read,
 									read_to_memory_chunk);
+							} break;
+							case IO_STREAM_GZIP_MEMORY_TYPE:
+							{
+								stream->gzStream.avail_in = stream->memory_block->data_length -
+									stream->memory_block_index;
+								stream->gzStream.next_in =	((Bytef *)stream->memory_block->memory_ptr) +
+									stream->memory_block_index;
+								stream->gzStream.next_out =
+									(Bytef *)stream->data + total_read;
+								stream->gzStream.avail_out = read_to_memory_chunk;
+								inflate(&stream->gzStream, Z_NO_FLUSH);
+								bytes_read = read_to_memory_chunk -	stream->gzStream.avail_out;
+								stream->memory_block_index += stream->memory_block->data_length -
+									stream->gzStream.avail_in;
 							} break;
 #endif /* defined (HAVE_ZLIB) */
 #if defined (HAVE_BZLIB)
@@ -1576,6 +1790,7 @@ DESCRIPTION :
 			case IO_STREAM_FILE_TYPE:
 			case IO_STREAM_GZIP_FILE_TYPE:
 			case IO_STREAM_BZ2_FILE_TYPE:
+			case IO_STREAM_GZIP_MEMORY_TYPE:
 			case IO_STREAM_BZ2_MEMORY_TYPE:
 			{
 				if (stream->data)
@@ -1730,6 +1945,16 @@ DESCRIPTION :
 			case IO_STREAM_GZIP_FILE_TYPE:
 			{
 				gzclose(stream->gzip_file_handle);
+				stream->type = IO_STREAM_UNKNOWN_TYPE;
+				return_code = 1;
+			} break;
+			case IO_STREAM_GZIP_MEMORY_TYPE:
+			{
+				if (stream->memory_block)
+				{
+					DEACCESS(IO_memory_block)(&stream->memory_block);
+				}
+				inflateEnd(&stream->gzStream);
 				stream->type = IO_STREAM_UNKNOWN_TYPE;
 				return_code = 1;
 			} break;

@@ -1086,7 +1086,6 @@ int cmzn_field_image_set_texture(cmzn_field_image_id image_field,
 {
 	int return_code;
 
-	ENTER(cmzn_field_image_read);
 	if (image_field && texture)
 	{
 		Computed_field_image *image_core =
@@ -1104,10 +1103,9 @@ int cmzn_field_image_set_texture(cmzn_field_image_id image_field,
 			"cmzn_field_image_read.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* cmzn_field_image_read */
+}
 
 int list_image_field(struct Computed_field *field,void *dummy_void)
 {

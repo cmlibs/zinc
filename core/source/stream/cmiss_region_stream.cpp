@@ -23,7 +23,8 @@
 namespace {
 
 int cmzn_region_read_from_memory(struct cmzn_region *region, const void *memory_buffer,
-	const unsigned int memory_buffer_size, struct FE_import_time_index *time_index, int useData)
+	const unsigned int memory_buffer_size, struct FE_import_time_index *time_index, int useData,
+	enum cmzn_streaminformation_data_compression_type data_compression_type)
 {
 	const char block_name[] = "dataBlock";
 	const char block_name_uri[] = "memory:dataBlock";
@@ -39,7 +40,8 @@ int cmzn_region_read_from_memory(struct cmzn_region *region, const void *memory_
 		IO_stream_package_define_memory_block(io_stream_package,
 			block_name, memory_buffer, memory_buffer_size);
 		input_stream = CREATE(IO_stream)(io_stream_package);
-		IO_stream_open_for_read(input_stream, block_name_uri);
+		IO_stream_open_for_read_compression_specified(input_stream, block_name_uri,
+			data_compression_type);
 		if (!useData)
 		{
 			return_code = read_exregion_file(region, input_stream, time_index);
@@ -62,7 +64,8 @@ int cmzn_region_read_from_memory(struct cmzn_region *region, const void *memory_
 /** attempts to determine type of file: EX or FieldML */
 int cmzn_region_read_field_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct FE_import_time_index *time_index, int useData)
+	struct FE_import_time_index *time_index, int useData,
+	enum cmzn_streaminformation_data_compression_type data_compression_type)
 {
 	int return_code = 0;
 	if (is_FieldML_file(file_name))
@@ -76,7 +79,7 @@ int cmzn_region_read_field_file_of_name(struct cmzn_region *region, const char *
 	else
 	{
 		return_code = read_exregion_file_of_name(region, file_name, io_stream_package, time_index,
-			useData);
+			useData, data_compression_type);
 	}
 	return return_code;
 }
@@ -92,6 +95,8 @@ int cmzn_region_read(cmzn_region_id region,
 	if (region && streaminformation_region &&
 		(cmzn_streaminformation_region_get_region_private(streaminformation_region) == region))
 	{
+		enum cmzn_streaminformation_data_compression_type data_compression_type =
+			CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE;
 		const cmzn_stream_properties_list streams_list = streaminformation_region->getResourcesList();
 		struct IO_stream_package *io_stream_package = CREATE(IO_stream_package)();
 		struct cmzn_region *temp_region = cmzn_region_create_region(region);
@@ -110,6 +115,7 @@ int cmzn_region_read(cmzn_region_id region,
 			}
 			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
 			{
+				data_compression_type = CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE;
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
 				if (cmzn_streaminformation_region_has_resource_attribute(
@@ -122,6 +128,13 @@ int cmzn_region_read(cmzn_region_id region,
 				else
 				{
 					stream_time_index = time_index;
+				}
+				cmzn_streaminformation_id streaminformation = cmzn_streaminformation_region_base_cast(
+					streaminformation_region);
+				data_compression_type = cmzn_streaminformation_get_resource_data_compression_type(streaminformation, stream);
+				if (data_compression_type ==	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT)
+				{
+					data_compression_type = cmzn_streaminformation_get_data_compression_type(streaminformation);
 				}
 				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
 				cmzn_streamresource_memory_id memory_resource = NULL;
@@ -140,7 +153,7 @@ int cmzn_region_read(cmzn_region_id region,
 					if (file_name)
 					{
 						if (!cmzn_region_read_field_file_of_name(temp_region, file_name, io_stream_package, stream_time_index,
-							readData))
+							readData, data_compression_type))
 						{
 							return_code = 0;
 							display_message(ERROR_MESSAGE, "cmzn_region_read. Cannot read file %s", file_name);
@@ -155,7 +168,7 @@ int cmzn_region_read(cmzn_region_id region,
 					if (memory_block)
 					{
 						if (!cmzn_region_read_from_memory(temp_region, memory_block, buffer_size, stream_time_index,
-							readData))
+							readData, data_compression_type))
 						{
 							return_code = 0;
 							display_message(ERROR_MESSAGE, "cmzn_region_read. Cannot read memory");
@@ -589,4 +602,3 @@ char *cmzn_streaminformation_region_attribute_enum_to_string(
 	}
 	return string;
 }
-

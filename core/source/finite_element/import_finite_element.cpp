@@ -3891,7 +3891,8 @@ int read_exdata_file(struct cmzn_region *region,
 
 int read_exregion_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
-	struct FE_import_time_index *time_index, int useData)
+	struct FE_import_time_index *time_index, int useData,
+	enum cmzn_streaminformation_data_compression_type data_compression_type)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2008
 
@@ -3908,7 +3909,7 @@ Up to the calling function to check and merge the returned cmiss_region.
 	if (region && file_name)
 	{
 		input_file = CREATE(IO_stream)(io_stream_package);
-		if (IO_stream_open_for_read(input_file, file_name))
+		if (IO_stream_open_for_read_compression_specified(input_file, file_name, data_compression_type))
 		{
 			return_code = read_exregion_file_private(region, input_file, time_index,
 				useData);

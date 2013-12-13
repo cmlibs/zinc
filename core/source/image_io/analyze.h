@@ -37,20 +37,29 @@
 #define IMAGE_IO_ANALYZE_H_
 
 #include "zinc/zincconfigure.h"
-
+#include "zinc/types/streamid.h"
 #include "analyze_header.h"
 
 struct Cmgui_image_information;
 struct Cmgui_image;
 
+enum AnalyzeStreamsType
+{
+	ANALYZE_STREAMS_TYPE_INVALID= 0,
+	ANALYZE_STREAMS_TYPE_FILE = 1,
+	ANALYZE_STREAMS_TYPE_MEMORY = 2,
+};
+
 class AnalyzeImageHandler
 {
 public:
-	explicit AnalyzeImageHandler(const char *filename);
+	explicit AnalyzeImageHandler(enum AnalyzeStreamsType);
 	~AnalyzeImageHandler();
 
 	bool readHeader();
+	bool readHeader(void *hdrBuffer);
 	void readImageData();
+	void readImageData(void *imgBuffer, int buffer_length);
 	int getNumberOfDimensions();
 	int getWidth();
 	int getHeight();
@@ -62,6 +71,7 @@ public:
 	int getGlMin() const;
 	const char *getQuantumFormat() const;
 	bool isBigEndian() const { return bigEndian; }
+	bool setFilename(const char *filenameIn);
 
 	/**
 	 * @brief getOrientation
@@ -80,6 +90,8 @@ private:
 	int determineDimensions();
 	bool testFileEndianSystemEndianMatch();
 	void swapBytesIfEndianessDifferent();
+	void readHeaderInternal();
+	void readImageInternal(unsigned int sz);
 
 	const char *filename;
 	bool bigEndian;
@@ -88,6 +100,7 @@ private:
 	int height;
 	struct dsr hdr;
 	void *data;
+	enum AnalyzeStreamsType streamsType;
 };
 
 /**
@@ -98,6 +111,7 @@ private:
  * @return A Cmgui_image structure if successful, 0 otherwise.
  */
 struct Cmgui_image *Cmgui_image_read_analyze(
-	struct Cmgui_image_information *cmgui_image_information);
+	struct Cmgui_image_information *cmgui_image_information,
+	enum cmzn_streaminformation_data_compression_type data_compression_type);
 
 #endif /* IMAGE_IO_ANALYZE_H_ */
