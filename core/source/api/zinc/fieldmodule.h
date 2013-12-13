@@ -11,6 +11,7 @@
 #ifndef CMZN_FIELDMODULE_H__
 #define CMZN_FIELDMODULE_H__
 
+#include "types/elementid.h"
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
@@ -244,6 +245,21 @@ ZINC_API cmzn_field_change_flags cmzn_fieldmoduleevent_get_summary_field_change_
  */
 ZINC_API cmzn_field_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
 	cmzn_fieldmoduleevent_id event, cmzn_field_id field);
+
+/**
+ * Get object describing changes to elements in a mesh including elements
+ * involved in partial change to fields.
+ * Note that changes to nodes are propagated to elements referencing them, and
+ * changes to parent elements are propagated to their faces. The logic for this
+ * is conservative e.g. it assumes all fields use all nodes, so you may
+ * sometimes get false notification of changes.
+ *
+ * @param event  Handle to the field module event to query.
+ * @param mesh  The mesh to get change information for.
+ * @return  Handle to the mesh changes object. Up to caller to destroy.
+ */
+ZINC_API cmzn_meshchanges_id cmzn_fieldmoduleevent_get_meshchanges(
+	cmzn_fieldmoduleevent_id event, cmzn_mesh_id mesh);
 
 /**
  * Get object describing changes to nodes in a nodeset including nodes involved

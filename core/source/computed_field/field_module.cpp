@@ -35,6 +35,7 @@
 #include "image_processing/computed_field_image_resample.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element_region.h"
+#include "mesh/cmiss_element_private.hpp"
 #include "mesh/cmiss_node_private.hpp"
 #if defined (USE_ITK)
 #include "image_processing/computed_field_threshold_image_filter.h"
@@ -523,7 +524,13 @@ cmzn_field_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
 	return CMZN_FIELD_CHANGE_FLAG_NONE;
 }
 
-ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
+cmzn_meshchanges_id cmzn_fieldmoduleevent_get_meshchanges(
+	cmzn_fieldmoduleevent_id event, cmzn_mesh_id mesh)
+{
+	return cmzn_meshchanges::create(event, mesh);
+}
+
+cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
 	cmzn_fieldmoduleevent_id event, cmzn_nodeset_id nodeset)
 {
 	return cmzn_nodesetchanges::create(event, nodeset);

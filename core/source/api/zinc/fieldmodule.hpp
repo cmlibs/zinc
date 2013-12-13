@@ -469,6 +469,11 @@ public:
 		return cmzn_fieldmoduleevent_get_field_change_flags(id, field.getId());
 	}
 
+	Meshchanges getMeshchanges(Mesh& mesh) const
+	{
+		return Meshchanges(cmzn_fieldmoduleevent_get_meshchanges(id, mesh.getId()));
+	}
+
 	Nodesetchanges getNodesetchanges(Nodeset& nodeset) const
 	{
 		return Nodesetchanges(cmzn_fieldmoduleevent_get_nodesetchanges(id, nodeset.getId()));

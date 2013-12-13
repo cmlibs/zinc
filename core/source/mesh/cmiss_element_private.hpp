@@ -60,4 +60,44 @@ FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh);
  */
 cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh);
 
+struct cmzn_meshchanges
+{
+private:
+	cmzn_fieldmoduleevent *event; // accessed
+	CHANGE_LOG(cmzn_element) *changeLog; // just copied from event for correct mesh
+	int access_count;
+
+	cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn);
+	~cmzn_meshchanges();
+
+public:
+
+	static cmzn_meshchanges *create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn);
+
+	cmzn_meshchanges *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_meshchanges* &meshchanges);
+
+	/** Also checks related changes to parent elements and nodes */
+	cmzn_element_change_flags getElementChangeFlags(cmzn_element *element);
+
+	int getNumberOfChanges()
+	{
+		int number = 0;
+		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(this->changeLog, &number);
+		return number;
+	}
+
+	cmzn_element_change_flags getSummaryElementChangeFlags()
+	{
+		int change = 0;
+		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(this->changeLog, &change);
+		return change;
+	}
+};
+
 #endif /* !defined (CMZN_ELEMENT_PRIVATE_HPP) */

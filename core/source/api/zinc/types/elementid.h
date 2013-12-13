@@ -98,4 +98,32 @@ enum cmzn_element_point_sampling_mode
 		/*!< One point at a specified location in the element chart. */
 };
 
+	struct cmzn_meshchanges;
+	/** Handle to object describing changes to a mesh in a fieldmoduleevent */
+	typedef struct cmzn_meshchanges *cmzn_meshchanges_id;
+
+	/**
+	 * Bit flags summarising changes to an element or elements in a mesh.
+	 */
+	enum cmzn_element_change_flag
+	{
+		CMZN_ELEMENT_CHANGE_FLAG_NONE = 0,
+			/*!< element(s) not changed */
+		CMZN_ELEMENT_CHANGE_FLAG_ADD = 1,
+			/*!< element(s) added */
+		CMZN_ELEMENT_CHANGE_FLAG_REMOVE = 2,
+			/*!< element(s) removed */
+		CMZN_ELEMENT_CHANGE_FLAG_IDENTIFIER = 4,
+			/*!< element(s') identifier changed */
+		CMZN_ELEMENT_CHANGE_FLAG_DEFINITION = 8,
+			/*!< element(s') definition other than identifier changed e.g. shape */
+		CMZN_ELEMENT_CHANGE_FLAG_FIELD = 16
+			/*!< change to field values mapped to element(s) */
+	};
+	
+	/**
+	 * Type for passing logical OR of #cmzn_element_change_flag
+	 */
+	typedef int cmzn_element_change_flags;
+
 #endif

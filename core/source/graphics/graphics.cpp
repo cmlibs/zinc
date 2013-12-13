@@ -3827,7 +3827,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 	}
 	else
 	{
-		if (fieldChange & (CMZN_FIELD_CHANGE_FLAG_DEFINITION | CMZN_FIELD_CHANGE_FLAG_FULL_RESULT))
+		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_FULL_RESULT)
 		{
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 			return 1;
@@ -3843,6 +3843,11 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 		}
 		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
 		{
+			if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)
+			{
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
+			}
 			int numberNodeChanges = 0;
 			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
 			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(nodeChanges, &numberNodeChanges);
