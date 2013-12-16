@@ -146,6 +146,8 @@ struct FE_region
 
 FE_nodeset::~FE_nodeset()
 {
+	DESTROY(CHANGE_LOG(FE_node))(&this->fe_node_changes);
+	this->last_fe_node_field_info = 0;
 	DESTROY(LIST(FE_node))(&(this->nodeList));
 	FOR_EACH_OBJECT_IN_LIST(FE_node_field_info)(
 		FE_node_field_info_clear_FE_nodeset, (void *)NULL,
@@ -155,6 +157,8 @@ FE_nodeset::~FE_nodeset()
 
 void FE_nodeset::createChangeLog()
 {
+	if (this->fe_node_changes)
+		DESTROY(CHANGE_LOG(FE_node))(&this->fe_node_changes);
 	this->fe_node_changes = CREATE(CHANGE_LOG(FE_node))(this->nodeList, /*max_changes*/1000);
 	this->last_fe_node_field_info = 0;
 }
@@ -162,6 +166,7 @@ void FE_nodeset::createChangeLog()
 struct CHANGE_LOG(FE_node) *FE_nodeset::extractChangeLog()
 {
 	struct CHANGE_LOG(FE_node) *changes = this->fe_node_changes;
+	this->fe_node_changes = 0;
 	this->createChangeLog();
 	return changes;
 }
