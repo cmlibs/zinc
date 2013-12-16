@@ -1290,9 +1290,10 @@ int cmzn_field_assign_mesh_location(cmzn_field_id field,
 		MeshLocationFieldValueCache *valueCache = MeshLocationFieldValueCache::cast(field->getValueCache(*cache));
 		valueCache->setMeshLocation(element, chart_coordinates);
 		enum FieldAssignmentResult result = field->assign(*cache, *valueCache);
-		return (result != FIELD_ASSIGNMENT_RESULT_FAIL);
+		if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
+			return CMZN_OK;
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // External API
@@ -1305,9 +1306,10 @@ int cmzn_field_assign_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 		RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*cache));
 		valueCache->setValues(values);
 		enum FieldAssignmentResult result = field->assign(*cache, *valueCache);
-		return (result != FIELD_ASSIGNMENT_RESULT_FAIL);
+		if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
+			return CMZN_OK;
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // External API
@@ -1320,9 +1322,10 @@ int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id cache,
 		StringFieldValueCache *valueCache = StringFieldValueCache::cast(field->getValueCache(*cache));
 		valueCache->setString(string_value);
 		enum FieldAssignmentResult result = field->assign(*cache, *valueCache);
-		return (result != FIELD_ASSIGNMENT_RESULT_FAIL);
+		if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
+			return CMZN_OK;
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // Internal function
@@ -1403,7 +1406,7 @@ int cmzn_field_evaluate_real(cmzn_field_id field, cmzn_fieldcache_id cache,
 			return CMZN_OK;
 		}
 	}
-	return !CMZN_OK;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // Internal API
@@ -1436,7 +1439,7 @@ int cmzn_field_evaluate_real_with_derivatives(cmzn_field_id field,
 			}
 		}
 	}
-	return !CMZN_OK;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 // External API
@@ -1487,7 +1490,7 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 			}
 		}
 	}
-	return !CMZN_OK;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_field_is_defined_at_location(cmzn_field_id field,

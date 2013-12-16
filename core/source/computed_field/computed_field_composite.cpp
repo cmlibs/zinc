@@ -246,7 +246,8 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 		  (source_field_number<field->number_of_source_fields);
 		  source_field_number++)
 	{
-		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(field->evaluate(cache));
+		Computed_field *sourceField = this->getSourceField(source_field_number);
+		RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 		if (!sourceValueCache)
 			return FIELD_ASSIGNMENT_RESULT_FAIL;
 		for (int i=0;i<field->number_of_components;i++)
@@ -256,7 +257,7 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 				sourceValueCache->values[source_value_numbers[i]] = valueCache.values[i];
 			}
 		}
-		enum FieldAssignmentResult thisResult = field->assign(cache, *sourceValueCache);
+		enum FieldAssignmentResult thisResult = sourceField->assign(cache, *sourceValueCache);
 		if (thisResult == FIELD_ASSIGNMENT_RESULT_FAIL)
 			return FIELD_ASSIGNMENT_RESULT_FAIL;
 		if ((result == FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET) &&
