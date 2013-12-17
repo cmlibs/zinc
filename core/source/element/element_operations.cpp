@@ -499,7 +499,7 @@ struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
 	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 	cmzn_field_id use_conditional_field = 0;
 	if (group_field && conditional_field)
-		use_conditional_field = cmzn_fieldmodule_create_field_or(field_module, group_field, conditional_field);
+		use_conditional_field = cmzn_fieldmodule_create_field_and(field_module, group_field, conditional_field);
 	else if (group_field)
 		use_conditional_field = cmzn_field_access(group_field);
 	else if (conditional_field)
