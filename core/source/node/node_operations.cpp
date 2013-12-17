@@ -339,9 +339,9 @@ struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
 				FE_region_get_cmzn_region(fe_nodeset->get_FE_region()));
 			cmzn_fieldcache_id fieldcache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 			cmzn_fieldcache_set_time(fieldcache, time);
-			int nodes_in_region = fe_nodeset->get_number_of_FE_nodes();
+			int nodesetSize = cmzn_nodeset_get_size(nodeset);
 			int nodes_in_ranges = node_ranges ? Multi_range_get_total_number_in_ranges(node_ranges) : 0;
-			if (node_ranges && (nodes_in_ranges < nodes_in_region))
+			if (node_ranges && ((nodes_in_ranges*2) < nodesetSize))
 			{
 				int number_of_ranges = Multi_range_get_number_of_ranges(node_ranges);
 				for (int i = 0 ; i < number_of_ranges ; i++)
@@ -350,7 +350,7 @@ struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
 					Multi_range_get_range(node_ranges, i, &start, &stop);
 					for (int node_number = start ; node_number <= stop ; node_number++)
 					{
-						cmzn_node *node = fe_nodeset->get_FE_node_from_identifier(node_number);
+						cmzn_node *node = cmzn_nodeset_find_node_by_identifier(nodeset, node_number);
 						if (node)
 						{
 							bool selected = true;
@@ -362,13 +362,14 @@ struct LIST(FE_node) *cmzn_nodeset_create_node_list_ranges_conditional(
 							}
 							if (selected)
 								ADD_OBJECT_TO_LIST(FE_node)(node, node_list);
+							cmzn_node_destroy(&node);
 						}
 					}
 				}
 			}
 			else
 			{
-				cmzn_nodeiterator *iter = fe_nodeset->createNodeiterator();
+				cmzn_nodeiterator *iter = cmzn_nodeset_create_nodeiterator(nodeset);
 				cmzn_node *node;
 				while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 				{
