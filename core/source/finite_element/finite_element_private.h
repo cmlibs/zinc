@@ -200,8 +200,8 @@ It is an error if an equivalent FE_field is not found.
 /**
  * Creates a struct FE_node_field_info with a pointer to <fe_nodeset>
  * and a copy of the <fe_node_field_list>.
- * Fails if more than one FE_node_field in the list references the same field.
  * If <fe_node_field_list> is omitted, an empty list is assumed.
+ * Returned object has an access count of 1.
  * Note:
  * This should only be called by FE_nodeset functions. The returned object is
  * added to the list of FE_node_field_info in the FE_nodeset and 'owned by it'.
@@ -211,16 +211,6 @@ It is an error if an equivalent FE_field is not found.
 struct FE_node_field_info *CREATE(FE_node_field_info)(
 	FE_nodeset *fe_nodeset, struct LIST(FE_node_field) *fe_node_field_list,
 	int number_of_values);
-
-int DESTROY(FE_node_field_info)(
-	struct FE_node_field_info **node_field_info_address);
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Destroys the FE_node_field_info at *<node_field_info_address>. Frees the memory
-for the information and sets <*node_field_info_address> to NULL.
-==============================================================================*/
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_node_field_info);
 
