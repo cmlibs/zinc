@@ -75,7 +75,7 @@ ZINC_API char *cmzn_elementbasis_function_type_enum_to_string(
 /**
  * Creates an element_basis object for describing element basis functions.
  *
- * @param field_module  Handle to a field module. Note the returned basis can be
+ * @param fieldmodule  Handle to a field module. Note the returned basis can be
  * used to define fields in any field module of the region tree.
  * @param dimension  The dimension of element chart the basis is for.
  * @param function_type  The basis function type to use in each dimension
@@ -83,7 +83,7 @@ ZINC_API char *cmzn_elementbasis_function_type_enum_to_string(
  * @return  Handle to element_basis, or NULL if error.
  */
 ZINC_API cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
-	cmzn_fieldmodule_id field_module, int dimension,
+	cmzn_fieldmodule_id fieldmodule, int dimension,
 	enum cmzn_elementbasis_function_type function_type);
 
 /**
@@ -91,12 +91,12 @@ ZINC_API cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
  * limited to 1 mesh of each dimension from 1 to 3. These meshes have default
  * names of "mesh_Nd", where "N" is the dimension.
  *
- * @param field_module  The field module the mesh belongs to.
+ * @param fieldmodule  The field module the mesh belongs to.
  * @param dimension  The dimension of the mesh from 1 to 3.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
 ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
-	cmzn_fieldmodule_id field_module, int dimension);
+	cmzn_fieldmodule_id fieldmodule, int dimension);
 
 /**
  * Get a handle to a finite element mesh from its name. A mesh is the container
@@ -108,12 +108,12 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
  * Note that the default names for element group fields created from a group
  * is GROUP_NAME.MESH_NAME, with mesh names as above.
  *
- * @param field_module  The field module the mesh belongs to.
+ * @param fieldmodule  The field module the mesh belongs to.
  * @param name  The name of the finite element mesh.
  * @return  Handle to the finite element mesh, or NULL if error.
  */
 ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
-	cmzn_fieldmodule_id field_module, const char *mesh_name);
+	cmzn_fieldmodule_id fieldmodule, const char *mesh_name);
 
 /**
  * Returns a new handle to the mesh with reference count incremented.

@@ -3801,89 +3801,91 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 	cmzn_field_change_flags fieldChange =
 		cmzn_graphics_get_most_significant_field_change(graphics, change_data->event);
 	const int domainDimension = cmzn_graphics_get_domain_dimension(graphics);
-	// following code assumes there are always feRegionChanges
 	FE_region_changes *feRegionChanges = change_data->event->getFeRegionChanges();
-	if (0 == domainDimension)
+	if (feRegionChanges)
 	{
-		// node/data points: currently always rebuilt from scratch
-		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_RESULT)
+		if (0 == domainDimension)
 		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-			return 1;
-		}
-		// rebuild all if identifiers changed, for correct picking and can't edit graphics object
-		struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
-		// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
-		if (nodeChanges)
-		{
-			int nodeChangeSummary = 0;
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(nodeChanges, &nodeChangeSummary);
-			if (nodeChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))
+			// node/data points: currently always rebuilt from scratch
+			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_RESULT)
 			{
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-		}
-	}
-	else
-	{
-		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_FULL_RESULT)
-		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-			return 1;
-		}
-		// rebuild all if identifiers changed, for correct picking and can't edit graphics object
-		struct CHANGE_LOG(FE_element) *elementChanges = feRegionChanges->getElementChanges(domainDimension);
-		int elementChangeSummary = 0;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(elementChanges, &elementChangeSummary);
-		if (elementChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
-		{
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-			return 1;
-		}
-		if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
-		{
-			if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)
+			// rebuild all if identifiers changed, for correct picking and can't edit graphics object
+			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
+			// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
+			if (nodeChanges)
 			{
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-				return 1;
-			}
-			int numberNodeChanges = 0;
-			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
-			CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(nodeChanges, &numberNodeChanges);
-			// must check equal and higher dimension element changes due to field inheritance
-			bool tooManyElementChanges = false;
-			for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
-			{
-				int number = 0;
-				CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(feRegionChanges->getElementChanges(dim), &number);
-				if (number*2 > FE_region_get_number_of_FE_elements_of_dimension(
-					cmzn_region_get_FE_region(graphics->scene->region), dim))
+				int nodeChangeSummary = 0;
+				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(nodeChanges, &nodeChangeSummary);
+				if (nodeChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))
 				{
-					tooManyElementChanges = true;
-					break;
+					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+					return 1;
 				}
 			}
-			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-				cmzn_region_get_FE_region(graphics->scene->region), CMZN_FIELD_DOMAIN_TYPE_NODES);
-			// if too many node or element changes, just rebuild all
-			if (tooManyElementChanges ||
-				(numberNodeChanges*2 > fe_nodeset->get_number_of_FE_nodes()))
+		}
+		else
+		{
+			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_FULL_RESULT)
 			{
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-			FE_element_as_graphics_name_has_changed_data data;
-			data.fe_region = cmzn_region_get_FE_region(graphics->scene->region);
-			data.domainDimension = domainDimension;
-			for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-				data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
-			data.nodeChanges = nodeChanges;
-			/* partial rebuild for few node/element field changes */
-			GT_object_remove_primitives_at_time(graphics->graphics_object,
-				/*time*/(GLfloat)0, FE_element_as_graphics_name_has_changed,
-				static_cast<void*>(&data));
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
+			// rebuild all if identifiers changed, for correct picking and can't edit graphics object
+			struct CHANGE_LOG(FE_element) *elementChanges = feRegionChanges->getElementChanges(domainDimension);
+			int elementChangeSummary = 0;
+			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(elementChanges, &elementChangeSummary);
+			if (elementChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
+			{
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+				return 1;
+			}
+			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
+			{
+				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)
+				{
+					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+					return 1;
+				}
+				int numberNodeChanges = 0;
+				struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
+				CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(nodeChanges, &numberNodeChanges);
+				// must check equal and higher dimension element changes due to field inheritance
+				bool tooManyElementChanges = false;
+				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
+				{
+					int number = 0;
+					CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(feRegionChanges->getElementChanges(dim), &number);
+					if (number*2 > FE_region_get_number_of_FE_elements_of_dimension(
+						cmzn_region_get_FE_region(graphics->scene->region), dim))
+					{
+						tooManyElementChanges = true;
+						break;
+					}
+				}
+				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+					cmzn_region_get_FE_region(graphics->scene->region), CMZN_FIELD_DOMAIN_TYPE_NODES);
+				// if too many node or element changes, just rebuild all
+				if (tooManyElementChanges ||
+					(numberNodeChanges*2 > fe_nodeset->get_number_of_FE_nodes()))
+				{
+					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+					return 1;
+				}
+				FE_element_as_graphics_name_has_changed_data data;
+				data.fe_region = cmzn_region_get_FE_region(graphics->scene->region);
+				data.domainDimension = domainDimension;
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+					data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
+				data.nodeChanges = nodeChanges;
+				/* partial rebuild for few node/element field changes */
+				GT_object_remove_primitives_at_time(graphics->graphics_object,
+					/*time*/(GLfloat)0, FE_element_as_graphics_name_has_changed,
+					static_cast<void*>(&data));
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
+			}
 		}
 	}
 	return 1;

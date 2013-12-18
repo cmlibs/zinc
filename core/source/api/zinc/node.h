@@ -51,12 +51,12 @@ ZINC_API char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label t
  * Get a handle to a nodeset by its field domain type, either
  * CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
  *
- * @param field_module  The field module the nodeset belongs to.
+ * @param fieldmodule  The field module the nodeset belongs to.
  * @param domain_type  CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
  * @return  Handle to the nodeset, or 0 if error.
  */
 ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
-	cmzn_fieldmodule_id field_module, enum cmzn_field_domain_type domain_type);
+	cmzn_fieldmodule_id fieldmodule, enum cmzn_field_domain_type domain_type);
 
 /**
  * Get a handle to a nodeset from its name in the field module. A nodeset is the
@@ -69,12 +69,12 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
  * Note that the default names for node group fields created from a group
  * is GROUP_NAME.NODESET_NAME, with nodeset names as above.
  *
- * @param field_module  The field module the nodeset belongs to.
+ * @param fieldmodule  The field module the nodeset belongs to.
  * @param name  The name of the nodeset.
  * @return  Handle to the nodeset, or 0 if error.
  */
 ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
-	cmzn_fieldmodule_id field_module, const char *nodeset_name);
+	cmzn_fieldmodule_id fieldmodule, const char *nodeset_name);
 
 /**
  * Returns a new handle to the nodeset with reference count incremented.
