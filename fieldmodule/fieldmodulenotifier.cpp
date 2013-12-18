@@ -105,6 +105,11 @@ TEST(cmzn_fieldmodulenotifier, destroy_region_final_callback)
 	EXPECT_NE(static_cast<cmzn_region_id>(0), region);
 	cmzn_fieldmodule_id fm = cmzn_region_get_fieldmodule(region);
 
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fm, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	EXPECT_NE(static_cast<cmzn_nodeset_id>(0), nodeset);
+	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(fm, 3);
+	EXPECT_NE(static_cast<cmzn_mesh_id>(0), mesh);
+
 	cmzn_fieldmodulenotifier_id notifier = cmzn_fieldmodule_create_fieldmodulenotifier(fm);
 	EXPECT_NE(static_cast<cmzn_fieldmodulenotifier_id>(0), notifier);
 
@@ -119,7 +124,15 @@ TEST(cmzn_fieldmodulenotifier, destroy_region_final_callback)
 	cmzn_region_destroy(&region);
 	EXPECT_EQ(CMZN_FIELD_CHANGE_FLAG_FINAL, result = cmzn_fieldmoduleevent_get_summary_field_change_flags(recordChange.lastEvent));
 
+	// check no nodeset or mesh changes with final notification:
+	cmzn_nodesetchanges_id nodesetchanges = cmzn_fieldmoduleevent_get_nodesetchanges(recordChange.lastEvent, nodeset);
+	EXPECT_EQ(static_cast<cmzn_nodesetchanges_id>(0), nodesetchanges);
+	cmzn_meshchanges_id meshchanges = cmzn_fieldmoduleevent_get_meshchanges(recordChange.lastEvent, mesh);
+	EXPECT_EQ(static_cast<cmzn_meshchanges_id>(0), meshchanges);
+
 	EXPECT_EQ(CMZN_OK, result = cmzn_fieldmodulenotifier_destroy(&notifier));
+	cmzn_nodeset_destroy(&nodeset);
+	cmzn_mesh_destroy(&mesh);
 }
 
 class FieldmodulecallbackRecordChange : public Fieldmodulecallback
