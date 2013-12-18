@@ -1005,8 +1005,8 @@ protected:
 	struct LIST(FE_element) *createElementListWithCondition(cmzn_field_id conditional_field)
 	{
 		cmzn_region_id region = FE_region_get_cmzn_region(fe_region);
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 		cmzn_elementiterator_id iterator = createIterator();
 		cmzn_element_id element = 0;
 		struct LIST(FE_element) *element_list =
@@ -1019,7 +1019,7 @@ protected:
 		}
 		cmzn_elementiterator_destroy(&iterator);
 		cmzn_fieldcache_destroy(&cache);
-		cmzn_fieldmodule_destroy(&field_module);
+		cmzn_fieldmodule_destroy(&fieldmodule);
 		return element_list;
 	}
 
@@ -1072,12 +1072,12 @@ Global functions
 */
 
 cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
-	cmzn_fieldmodule_id field_module, int dimension,
+	cmzn_fieldmodule_id fieldmodule, int dimension,
 	enum cmzn_elementbasis_function_type function_type)
 {
-	if (field_module && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (fieldmodule && (0 < dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		cmzn_region *region = cmzn_fieldmodule_get_region_internal(field_module);
+		cmzn_region *region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 		FE_region *fe_region = cmzn_region_get_FE_region(region);
 		if (fe_region)
 		{
@@ -1088,23 +1088,23 @@ cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 }
 
 cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
-	cmzn_fieldmodule_id field_module, int dimension)
+	cmzn_fieldmodule_id fieldmodule, int dimension)
 {
 	cmzn_mesh_id mesh = NULL;
-	if (field_module && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		mesh = new cmzn_mesh(cmzn_fieldmodule_get_region_internal(field_module), dimension);
+		mesh = new cmzn_mesh(cmzn_fieldmodule_get_region_internal(fieldmodule), dimension);
 	}
 	return mesh;
 }
 
 cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
-	cmzn_fieldmodule_id field_module, const char *mesh_name)
+	cmzn_fieldmodule_id fieldmodule, const char *mesh_name)
 {
 	cmzn_mesh_id mesh = 0;
-	if (field_module && mesh_name)
+	if (fieldmodule && mesh_name)
 	{
-		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(field_module, mesh_name);
+		cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, mesh_name);
 		if (field)
 		{
 			cmzn_field_element_group_id element_group_field = cmzn_field_cast_element_group(field);
@@ -1117,7 +1117,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 		}
 		else
 		{
-			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(field_module);
+			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 			int mesh_dimension = 0;
 			if      (0 == strcmp(mesh_name, "mesh3d"))
 				mesh_dimension = 3;
@@ -1832,7 +1832,7 @@ cmzn_meshchanges::~cmzn_meshchanges()
 
 cmzn_meshchanges *cmzn_meshchanges::create(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn)
 {
-	if (eventIn && meshIn &&
+	if (eventIn && (eventIn->getFeRegionChanges()) && meshIn && 
 		(cmzn_region_get_FE_region(eventIn->getRegion()) == cmzn_mesh_get_FE_region_internal(meshIn)))
 		return new cmzn_meshchanges(eventIn, meshIn);
 	return 0;
