@@ -4227,10 +4227,7 @@ struct FE_node_field_info *CREATE(FE_node_field_info)(
 	FE_nodeset *fe_nodeset, struct LIST(FE_node_field) *fe_node_field_list,
 	int number_of_values)
 {
-	struct FE_node_field_info *fe_node_field_info;
-
-	ENTER(CREATE(FE_node_field_info));
-	fe_node_field_info = (struct FE_node_field_info *)NULL;
+	struct FE_node_field_info *fe_node_field_info = 0;
 	if (fe_nodeset)
 	{
 		if (ALLOCATE(fe_node_field_info, struct FE_node_field_info, 1))
@@ -4243,7 +4240,7 @@ struct FE_node_field_info *CREATE(FE_node_field_info)(
 				 It is not ACCESSed since FE_nodeset is the owning object and it
 				 would prevent the FE_nodeset from being destroyed. */
 			fe_node_field_info->fe_nodeset = fe_nodeset;
-			fe_node_field_info->access_count = 0;
+			fe_node_field_info->access_count = 1;
 			if (fe_node_field_info->node_field_list && ((!fe_node_field_list) ||
 					COPY_LIST(FE_node_field)(fe_node_field_info->node_field_list,
 							fe_node_field_list)))
@@ -4256,7 +4253,7 @@ struct FE_node_field_info *CREATE(FE_node_field_info)(
 			{
 				display_message(ERROR_MESSAGE,
 					"CREATE(FE_node_field_info).  Unable to build node field list");
-				DESTROY(FE_node_field_info)(&fe_node_field_info);
+				DEACCESS(FE_node_field_info)(&fe_node_field_info);
 				fe_node_field_info = (struct FE_node_field_info *)NULL;
 			}
 		}
@@ -4271,25 +4268,18 @@ struct FE_node_field_info *CREATE(FE_node_field_info)(
 		display_message(ERROR_MESSAGE,
 			"CREATE(FE_node_field_info).  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (fe_node_field_info);
-} /* CREATE(FE_node_field_info) */
+}
 
+/**
+ * Destroys the FE_node_field_info at *<node_field_info_address>. Frees the
+ * memory for the information and sets <*node_field_info_address> to NULL.
+ */
 int DESTROY(FE_node_field_info)(
 	struct FE_node_field_info **node_field_info_address)
-/*******************************************************************************
-LAST MODIFIED : 19 February 2003
-
-DESCRIPTION :
-Destroys the FE_node_field_info at *<node_field_info_address>. Frees the memory
-for the information and sets <*node_field_info_address> to NULL.
-==============================================================================*/
 {
 	int return_code;
 	struct FE_node_field_info *node_field_info;
-
-	ENTER(DESTROY(FE_node_field_info));
 	if (node_field_info_address && (node_field_info = *node_field_info_address))
 	{
 		if (0 == node_field_info->access_count)
@@ -4312,10 +4302,8 @@ for the information and sets <*node_field_info_address> to NULL.
 			"DESTROY(FE_node_field_info).  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DESTROY(FE_node_field_info) */
+}
 
 DECLARE_ACCESS_OBJECT_FUNCTION(FE_node_field_info)
 
@@ -11045,8 +11033,8 @@ struct FE_node *CREATE(FE_node)(int cm_node_identifier,
 			}
 			else
 			{
-				if (!(node->fields = ACCESS(FE_node_field_info)(
-					fe_nodeset->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)0))))
+				node->fields = fe_nodeset->get_FE_node_field_info(/*number_of_values*/0, (struct LIST(FE_node_field) *)0);
+				if (0 == node->fields)
 				{
 					display_message(ERROR_MESSAGE,
 						"CREATE(FE_node).  FE_nodeset could not supply node field info");
@@ -11253,7 +11241,6 @@ struct FE_node *FE_node_copy_with_FE_field_list(struct FE_node *node,
 {
 	struct FE_node *copy_node;
 	struct FE_node_field_copy_with_FE_field_list_data copy_data;
-	struct FE_node_field_info *fe_node_field_info;
 	FE_nodeset *fe_nodeset;
 	Value_storage *values_storage;
 
@@ -11279,17 +11266,19 @@ struct FE_node *FE_node_copy_with_FE_field_list(struct FE_node *node,
 						/*optimised_merge*/0)))
 			{
 				/* create a node field info for the combined list */
-				if (NULL != (fe_node_field_info = fe_nodeset->get_FE_node_field_info(
-					copy_data.number_of_values, copy_data.node_field_list)))
+				struct FE_node_field_info *fe_node_field_info = fe_nodeset->get_FE_node_field_info(
+					copy_data.number_of_values, copy_data.node_field_list);
+				if (0 != fe_node_field_info)
 				{
-					if (NULL != (copy_node = CREATE(FE_node)(node->cm_node_identifier, fe_nodeset,
-						(struct FE_node *)NULL)))
+					copy_node = CREATE(FE_node)(node->cm_node_identifier, fe_nodeset,
+						(struct FE_node *)NULL);
+					if (NULL != copy_node)
 					{
 						/* fill in the fields and values storage */
-						REACCESS(FE_node_field_info)(&(copy_node->fields),
-							fe_node_field_info);
+						REACCESS(FE_node_field_info)(&(copy_node->fields), fe_node_field_info);
 						copy_node->values_storage = values_storage;
 					}
+					DEACCESS(FE_node_field_info)(&fe_node_field_info);
 				}
 				else
 				{
@@ -11382,7 +11371,7 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 {
 	int return_code;
 	struct FE_node_field *node_field, *node_field_copy;
-	struct FE_node_field_info *existing_node_field_info, *new_node_field_info;
+	struct FE_node_field_info *existing_node_field_info;
 	struct LIST(FE_node_field) *node_field_list;
 
 	if (fe_nodeset && node_field_info_address &&
@@ -11430,11 +11419,13 @@ int FE_nodeset_get_FE_node_field_info_adding_new_times(
 						FE_node_field_set_FE_time_sequence(node_field_copy, new_node_field->time_sequence);
 						ADD_OBJECT_TO_LIST(FE_node_field)(node_field_copy, node_field_list);
 						/* create the new node information, number_of_values has not changed */
-						if (0 != (new_node_field_info = fe_nodeset->get_FE_node_field_info(
-							existing_node_field_info->number_of_values, node_field_list)))
+						struct FE_node_field_info *new_node_field_info = fe_nodeset->get_FE_node_field_info(
+							existing_node_field_info->number_of_values, node_field_list);
+						if (0 != new_node_field_info)
 						{
-							REACCESS(FE_node_field_info)(node_field_info_address,
-								new_node_field_info);
+							if (*node_field_info_address)
+								DEACCESS(FE_node_field_info)(node_field_info_address);
+							*node_field_info_address = new_node_field_info;
 						}
 					}
 				}
@@ -11996,7 +11987,7 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 	int bytes_to_copy,field_number_of_values,return_code;
 	struct FE_node_field *node_field;
 	struct FE_node_field_add_to_list_with_exclusion_data exclusion_data;
-	struct FE_node_field_info *existing_node_field_info,*new_node_field_info;
+	struct FE_node_field_info *existing_node_field_info;
 	struct FE_region *fe_region;
 	Value_storage *values_storage;
 
@@ -12031,10 +12022,11 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 				FE_node_field_add_to_list_with_exclusion, (void *)&exclusion_data,
 				existing_node_field_info->node_field_list))
 			{
-				/* create the new node information */
-				if (NULL != (new_node_field_info = existing_node_field_info->fe_nodeset->get_FE_node_field_info(
-					existing_node_field_info->number_of_values - field_number_of_values,
-					exclusion_data.node_field_list)))
+				struct FE_node_field_info *new_node_field_info =
+					existing_node_field_info->fe_nodeset->get_FE_node_field_info(
+						existing_node_field_info->number_of_values - field_number_of_values,
+						exclusion_data.node_field_list);
+				if (0 != new_node_field_info)
 				{
 					if (0 < exclusion_data.value_exclusion_length)
 					{
@@ -12057,7 +12049,8 @@ int undefine_FE_field_at_node(struct FE_node *node, struct FE_field *field)
 							node->values_storage=values_storage;
 						}
 					}
-					REACCESS(FE_node_field_info)(&(node->fields),new_node_field_info);
+					DEACCESS(FE_node_field_info)(&(node->fields));
+					node->fields = new_node_field_info;
 					return_code=1;
 				}
 				else
@@ -15063,8 +15056,7 @@ fe_field is found.  The fe_field found is returned as fe_field_void.
 int merge_FE_node(struct FE_node *destination, struct FE_node *source)
 {
 	int number_of_values, values_storage_size, return_code;
-	struct FE_node_field_info *destination_fields, *fe_node_field_info,
-		*source_fields;
+	struct FE_node_field_info *destination_fields, *source_fields;
 	FE_nodeset *fe_nodeset;
 	struct LIST(FE_node_field) *node_field_list;
 	struct Merge_FE_node_field_into_list_data merge_data;
@@ -15121,8 +15113,9 @@ int merge_FE_node(struct FE_node *destination, struct FE_node *source)
 									node_field_list, source, /*optimised_merge*/1)))
 						{
 							/* create a node field info for the combined list */
-							if (0 != (fe_node_field_info =
-								fe_nodeset->get_FE_node_field_info(number_of_values, node_field_list)))
+							struct FE_node_field_info *fe_node_field_info =
+								fe_nodeset->get_FE_node_field_info(number_of_values, node_field_list);
+							if (0 != fe_node_field_info)
 							{
 								/* clean up old destination values_storage */
 								if (destination->values_storage)
@@ -15137,8 +15130,8 @@ int merge_FE_node(struct FE_node *destination, struct FE_node *source)
 									DEALLOCATE(destination->values_storage);
 								}
 								/* insert new fields and values_storage */
-								REACCESS(FE_node_field_info)(&(destination->fields),
-									fe_node_field_info);
+								DEACCESS(FE_node_field_info)(&(destination->fields));
+								destination->fields = fe_node_field_info;
 								destination->values_storage = values_storage;
 							}
 							else

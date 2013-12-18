@@ -193,58 +193,54 @@ struct FE_node_field_info *FE_nodeset::get_FE_node_field_info(
 {
 	int existing_number_of_values;
 	struct FE_node_field_info *fe_node_field_info = 0;
-	if (this->fe_region)
+	struct FE_node_field_info *existing_fe_node_field_info;
+	if (fe_node_field_list)
 	{
-		struct FE_node_field_info *existing_fe_node_field_info;
-		if (fe_node_field_list)
+		existing_fe_node_field_info =
+			FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
+				FE_node_field_info_has_matching_FE_node_field_list,
+				(void *)fe_node_field_list, this->node_field_info_list);
+	}
+	else
+	{
+		existing_fe_node_field_info =
+			FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
+				FE_node_field_info_has_empty_FE_node_field_list, (void *)NULL,
+				this->node_field_info_list);
+	}
+	if (existing_fe_node_field_info)
+	{
+		existing_number_of_values =
+			FE_node_field_info_get_number_of_values(existing_fe_node_field_info);
+		if (number_of_values == existing_number_of_values)
 		{
-			existing_fe_node_field_info =
-				FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-					FE_node_field_info_has_matching_FE_node_field_list,
-					(void *)fe_node_field_list, this->node_field_info_list);
+			fe_node_field_info = ACCESS(FE_node_field_info)(existing_fe_node_field_info);
 		}
 		else
 		{
-			existing_fe_node_field_info =
-				FIRST_OBJECT_IN_LIST_THAT(FE_node_field_info)(
-					FE_node_field_info_has_empty_FE_node_field_list, (void *)NULL,
-					this->node_field_info_list);
+			display_message(ERROR_MESSAGE, "FE_nodeset::get_FE_node_field_info.  "
+				"Existing node field information has %d values, not %d requested",
+				existing_number_of_values, number_of_values);
 		}
-		if (existing_fe_node_field_info)
+	}
+	else
+	{
+		fe_node_field_info = CREATE(FE_node_field_info)(this,
+			fe_node_field_list, number_of_values);
+		if (fe_node_field_info)
 		{
-			existing_number_of_values =
-				FE_node_field_info_get_number_of_values(existing_fe_node_field_info);
-			if (number_of_values == existing_number_of_values)
+			if (!ADD_OBJECT_TO_LIST(FE_node_field_info)(fe_node_field_info,
+				this->node_field_info_list))
 			{
-				fe_node_field_info = ACCESS(FE_node_field_info)(existing_fe_node_field_info);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "FE_nodeset::get_FE_node_field_info.  "
-					"Existing node field information has %d values, not %d requested",
-					existing_number_of_values, number_of_values);
+				display_message(ERROR_MESSAGE,
+					"FE_nodeset::get_FE_node_field_info.  Could not add to FE_region");
+				DEACCESS(FE_node_field_info)(&fe_node_field_info);
 			}
 		}
 		else
 		{
-			fe_node_field_info = CREATE(FE_node_field_info)(this,
-				fe_node_field_list, number_of_values);
-			if (fe_node_field_info)
-			{
-				if (!ADD_OBJECT_TO_LIST(FE_node_field_info)(fe_node_field_info,
-					this->node_field_info_list))
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_nodeset::get_FE_node_field_info.  Could not add to FE_region");
-					DESTROY(FE_node_field_info)(&fe_node_field_info);
-					fe_node_field_info = (struct FE_node_field_info *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "FE_nodeset::get_FE_node_field_info.  "
-					"Could not create node field information");
-			}
+			display_message(ERROR_MESSAGE, "FE_nodeset::get_FE_node_field_info.  "
+				"Could not create node field information");
 		}
 	}
 	return (fe_node_field_info);
@@ -303,7 +299,9 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
 					new_node_field_info = this->get_FE_node_field_info(new_number_of_values, node_field_list);
 					if (new_node_field_info)
 					{
-						REACCESS(FE_node_field_info)(node_field_info_address, new_node_field_info);
+						if (*node_field_info_address)
+							DEACCESS(FE_node_field_info)(node_field_info_address);
+						*node_field_info_address = new_node_field_info;
 					}
 				}
 			}
@@ -323,6 +321,7 @@ int FE_nodeset::get_FE_node_field_info_adding_new_field(
  * Returns a clone of <fe_node_field_info> that belongs to nodeset and
  * uses equivalent FE_fields and FE_time_sequences from <fe_region>.
  * Used to merge nodes from other FE_regions into this nodeset.
+ * Returned object has an incremented access count that the caller takes over.
  * It is an error if an equivalent/same name FE_field is not found in nodeset.
  */
 struct FE_node_field_info *FE_nodeset::clone_FE_node_field_info(
@@ -4014,14 +4013,12 @@ into <node> an appropriate node field info from <fe_region>.
 		number_of_versions, return_code, value_number, version_number;
 	struct FE_element *element, *global_element;
 	struct FE_field *field;
-	struct FE_node_field_info *current_node_field_info,
-		**matching_node_field_info, *node_field_info;
+	struct FE_node_field_info *current_node_field_info;
 	struct FE_node_merge_into_FE_nodeset_data *data;
 	//struct FE_region *fe_region;
 	FE_nodeset *fe_nodeset;
 
 	ENTER(FE_node_merge_into_FE_nodeset);
-
 	if (node &&
 		(0 != (current_node_field_info = FE_node_get_FE_node_field_info(node))) &&
 		(data = (struct FE_node_merge_into_FE_nodeset_data *)data_void) &&
@@ -4029,13 +4026,13 @@ into <node> an appropriate node field info from <fe_region>.
 	{
 		/* 1. Convert node to use a new FE_node_field_info from this FE_region */
 		/* fast path: check if the node_field_info has already been assimilated */
-		matching_node_field_info = data->matching_node_field_info;
-		node_field_info = (struct FE_node_field_info *)NULL;
+		struct FE_node_field_info **matching_node_field_info = data->matching_node_field_info;
+		struct FE_node_field_info *node_field_info = 0;
 		for (i = 0; (i < data->number_of_matching_node_field_info); i++)
 		{
 			if (*matching_node_field_info == current_node_field_info)
 			{
-				node_field_info = *(matching_node_field_info + 1);
+				node_field_info = ACCESS(FE_node_field_info)(*(matching_node_field_info + 1));
 				break;
 			}
 			matching_node_field_info += 2;
@@ -4150,6 +4147,7 @@ into <node> an appropriate node field info from <fe_region>.
 			{
 				return_code = 0;
 			}
+			DEACCESS(FE_node_field_info)(&node_field_info);
 		}
 		else
 		{
