@@ -1493,12 +1493,12 @@ int cmzn_field_evaluate_derivative(cmzn_field_id field,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_field_is_defined_at_location(cmzn_field_id field,
+bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 	cmzn_fieldcache_id cache)
 {
 	if (cmzn_fieldcache_check(field, cache))
 		return field->core->is_defined_at_location(*cache);
-	return 0;
+	return false;
 }
 
 int Computed_field_get_native_discretization_in_element(

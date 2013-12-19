@@ -2489,9 +2489,7 @@ int cmzn_graphics_to_point_object_at_time(
 		if (graphics->coordinate_field)
 		{
 			if (CMZN_OK != cmzn_field_evaluate_real(graphics->coordinate_field, graphics_to_object_data->field_cache, 3, coordinates))
-			{
 				return 0;
-			}
 		}
 		FE_value a[3], b[3], c[3], size[3];
 		FE_value orientationScale[9];

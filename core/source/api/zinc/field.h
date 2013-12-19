@@ -366,9 +366,9 @@ ZINC_API enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id fiel
  *
  * @param field  The field to query.
  * @param cache  Store of location to check and intermediate field values.
- * @return  1 if defined, 0 if not or failed.
+ * @return  True if defined, false if not defined or error.
  */
-ZINC_API int cmzn_field_is_defined_at_location(cmzn_field_id field,
+ZINC_API bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 	cmzn_fieldcache_id cache);
 
 /**

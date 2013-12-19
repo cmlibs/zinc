@@ -146,7 +146,7 @@ Calculates the coordinates and length from the first node.
 		cmzn_fieldcache_set_node(accumulate_data->field_cache, node);
 		if (return_code)
 		{
-			if (cmzn_field_evaluate_real(coordinate_field, accumulate_data->field_cache, number_of_components, coordinates))
+			if ((CMZN_OK == cmzn_field_evaluate_real(coordinate_field, accumulate_data->field_cache, number_of_components, coordinates)))
 			{
 				if (0 == node_number)
 				{
@@ -178,7 +178,7 @@ Calculates the coordinates and length from the first node.
 		}
 		if (return_code && accumulate_data->weight_field)
 		{
-			if (!cmzn_field_evaluate_real(accumulate_data->weight_field,
+			if (CMZN_OK != cmzn_field_evaluate_real(accumulate_data->weight_field,
 				accumulate_data->field_cache, /*number_of_values*/1, &accumulate_data->weights[node_number]))
 			{
 				display_message(ERROR_MESSAGE, "FE_node_accumulate_length.  "

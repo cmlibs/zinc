@@ -150,9 +150,9 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 						&number_of_xi_points, &xi_points))
 			{
 				if (!(array_data->element_values->values &&
-					cmzn_fieldcache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points) &&
-					cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
-						cmzn_field_get_number_of_components(array_data->sort_by_field), array_data->element_values->values)))
+					(CMZN_OK == cmzn_fieldcache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points)) &&
+					(CMZN_OK == cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
+						cmzn_field_get_number_of_components(array_data->sort_by_field), array_data->element_values->values))))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_element_and_values_to_array.  "

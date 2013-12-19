@@ -150,7 +150,7 @@ value for each component of the field.
 		integrate_Computed_field_over_element_data_void)&&(field=data->field)&&
 		(scheme=data->scheme)&&(values=data->values)&&(result=data->result))
 	{
-		if (cmzn_fieldcache_set_element(data->field_cache, element) &&
+		if ((CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
 			cmzn_field_is_defined_at_location(field, data->field_cache))
 		{
 			if (Integration_scheme_get_dimension(scheme,&dimension)&&
@@ -162,8 +162,8 @@ value for each component of the field.
 				return_code=1;
 				while (return_code&&(i>0))
 				{
-					if (cmzn_fieldcache_set_mesh_location(data->field_cache, element, dimension, abscissa) &&
-						cmzn_field_evaluate_real(field, data->field_cache, number_of_components, values))
+					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache, element, dimension, abscissa)) &&
+						(CMZN_OK == cmzn_field_evaluate_real(field, data->field_cache, number_of_components, values)))
 					{
 						for (j=0;j<number_of_components;j++)
 						{

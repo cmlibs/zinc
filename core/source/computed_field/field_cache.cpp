@@ -118,7 +118,7 @@ int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const
 	// to support the xi field which has 3 components regardless of dimensions, do not
 	// check (numberOfValues >= field->number_of_components), just pad with zeros
 	if (!(field && field->isNumerical() && (numberOfValues > 0) && values))
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	RealFieldValueCache *valueCache = RealFieldValueCache::cast(field->getValueCache(*this));
 	for (int i = 0; i < field->number_of_components; i++)
 	{
@@ -131,7 +131,7 @@ int cmzn_fieldcache::setFieldReal(cmzn_field_id field, int numberOfValues, const
 	// still need to create Field_coordinate_location because image processing fields dynamic cast to recognise
 	delete location;
 	location = new Field_coordinate_location(field, numberOfValues, values, time);
-	return 1;
+	return CMZN_OK;
 }
 
 int cmzn_fieldcache::setFieldRealWithDerivatives(cmzn_field_id field, int numberOfValues, const double *values,
@@ -189,9 +189,9 @@ int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address)
 int cmzn_fieldcache_set_time(cmzn_fieldcache_id cache, double time)
 {
 	if (!cache)
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	cache->setTime(time);
-	return 1;
+	return CMZN_OK;
 }
 
 int cmzn_fieldcache_set_element(cmzn_fieldcache_id cache,
@@ -208,9 +208,9 @@ int cmzn_fieldcache_set_mesh_location_with_parent(
 	cmzn_element_id top_level_element)
 {
 	if (!(cache && element && (number_of_chart_coordinates >= cmzn_element_get_dimension(element))))
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	cache->setMeshLocation(element, chart_coordinates, top_level_element);
-	return 1;
+	return CMZN_OK;
 }
 
 int cmzn_fieldcache_set_mesh_location(cmzn_fieldcache_id cache,
@@ -224,16 +224,15 @@ int cmzn_fieldcache_set_mesh_location(cmzn_fieldcache_id cache,
 int cmzn_fieldcache_set_node(cmzn_fieldcache_id cache, cmzn_node_id node)
 {
 	if (!(cache && node))
-		return 0;
-	cache->setNode(node);
-	return 1;
+		return CMZN_ERROR_ARGUMENT;
+	return cache->setNode(node);
 }
 
 int cmzn_fieldcache_set_field_real(cmzn_fieldcache_id cache,
 	cmzn_field_id reference_field, int number_of_values, const double *values)
 {
 	if (!cache)
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	return cache->setFieldReal(reference_field, number_of_values, values);
 }
 

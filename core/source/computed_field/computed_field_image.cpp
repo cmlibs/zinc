@@ -1283,7 +1283,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 					{
 						/* Try to use a pixel coordinate first */
 						cmzn_fieldcache_set_field_real(field_cache, texture_coordinate_field, number_of_texture_coordinate_components, values);
-						if (cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
+						if (CMZN_OK == cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
 						{
 							if (!spectrum)
 							{
@@ -1341,8 +1341,8 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 									printf("  xi = %10g %10g %10g\n", xi[0], xi[1], xi[2]);
 								}
 #endif /* defined (DEBUG_CODE) */
-								if (cmzn_fieldcache_set_mesh_location(field_cache, element, mesh_dimension, xi) &&
-									cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values))
+								if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, mesh_dimension, xi)) &&
+									(CMZN_OK == cmzn_field_evaluate_real(field, field_cache, number_of_data_components, data_values)))
 								{
 									if (!spectrum)
 									{

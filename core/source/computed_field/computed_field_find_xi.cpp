@@ -107,9 +107,9 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 				iterations = 0;
 				while ((!converged) && return_code)
 				{
-					if (cmzn_fieldcache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi) &&
-						cmzn_field_evaluate_real_with_derivatives(data->field, data->field_cache,
-							data->number_of_values, values, number_of_xi, derivatives))
+					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache, element, number_of_xi, data->xi)) &&
+						(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(data->field, data->field_cache,
+							data->number_of_values, values, number_of_xi, derivatives)))
 					{
 						/* least-squares approach: make the derivatives / right hand side
 							vector into square system to solve for delta-Xi */

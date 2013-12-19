@@ -2235,7 +2235,7 @@ int cmzn_scene_trigger_time_dependent_transformation(cmzn_scene_id scene, double
 			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(scene->region);
 			cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 			cmzn_fieldcache_set_time(field_cache, current_time);
-			if (cmzn_field_evaluate_real(scene->transformation_field,
+			if (CMZN_OK == cmzn_field_evaluate_real(scene->transformation_field,
 				field_cache, /*number_of_values*/16, values))
 			{
 				int i, j, k;

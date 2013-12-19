@@ -1292,7 +1292,7 @@ int Computed_field_gradient::evaluate(cmzn_fieldcache& cache, FieldValueCache& i
 					}
 					/* Set the coordinate field values in cache only and evaluate the source field */
 					extraCache.setAssignInCacheOnly(true);
-					if (cmzn_field_assign_real(coordinate_field, &extraCache,
+					if (CMZN_OK == cmzn_field_assign_real(coordinate_field, &extraCache,
 						coordinate_number_of_components, coordinate_values))
 					{
 						RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(source_field->evaluate(extraCache));

@@ -155,23 +155,23 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 			FE_value_triple fe_value_label_density;
 
 			/* evaluate the fields at the cache location */
-			int all_fields_defined = cmzn_field_evaluate_real(coordinate_field,
-				field_cache, /*number_of_values*/3, coordinates);
+			bool all_fields_defined = (CMZN_OK == cmzn_field_evaluate_real(coordinate_field,
+				field_cache, /*number_of_values*/3, coordinates));
 			if (all_fields_defined && orientation_scale_field)
 			{
-				all_fields_defined = cmzn_field_evaluate_real(orientation_scale_field,
-					field_cache, /*number_of_values*/9, orientation_scale);
+				all_fields_defined = (CMZN_OK == cmzn_field_evaluate_real(orientation_scale_field,
+					field_cache, /*number_of_values*/9, orientation_scale));
 			}
 			if (all_fields_defined && variable_scale_field)
 			{
-				all_fields_defined = cmzn_field_evaluate_real(variable_scale_field,
-					field_cache, /*number_of_values*/3, variable_scale);
+				all_fields_defined = (CMZN_OK == cmzn_field_evaluate_real(variable_scale_field,
+					field_cache, /*number_of_values*/3, variable_scale));
 			}
 			if (all_fields_defined && data_field)
 			{
-				all_fields_defined = cmzn_field_evaluate_real(data_field,
+				all_fields_defined = (CMZN_OK == cmzn_field_evaluate_real(data_field,
 					field_cache, glyph_set_data->n_data_components,
-					glyph_set_data->data_values);
+					glyph_set_data->data_values));
 			}
 			if (all_fields_defined && label_field)
 			{
@@ -179,8 +179,8 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 					field_cache);
 				if (label_density_field)
 				{
-					all_fields_defined = cmzn_field_evaluate_real(label_density_field,
-						field_cache, /*number_of_values*/3, fe_value_label_density);
+					all_fields_defined = (CMZN_OK == cmzn_field_evaluate_real(label_density_field,
+						field_cache, /*number_of_values*/3, fe_value_label_density));
 				}
 			}
 			if (all_fields_defined)
@@ -294,12 +294,12 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 							}
 							/* Set the offset coordinates in the field cache field and evaluate the label field there */
 							cmzn_fieldcache_set_assign_in_cache(field_cache, 1);
-							if (!cmzn_field_assign_real(coordinate_field, field_cache,
+							if (CMZN_OK != cmzn_field_assign_real(coordinate_field, field_cache,
 								/*number_of_values*/glyph_set_data->label_bounds_dimension, vector))
 							{
 								return_code = 0;
 							}
-							if (!cmzn_field_evaluate_real(glyph_set_data->label_bounds_field,
+							if (CMZN_OK != cmzn_field_evaluate_real(glyph_set_data->label_bounds_field,
 								field_cache, nComponents, fieldValues))
 							{
 								return_code = 0;
@@ -1009,14 +1009,14 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 		{
 			xi=((FE_value)i)/distance;
 			/* evaluate the fields */
-			return_code = cmzn_fieldcache_set_mesh_location_with_parent(
-				field_cache, element, /*dimension*/1, &xi, top_level_element);
-			if (return_code && cmzn_field_evaluate_real(coordinate_field,
-					field_cache, coordinate_dimension, coordinates) &&
-				((!data_field) || cmzn_field_evaluate_real(data_field,
-					field_cache, number_of_data_values, data_buffer)) &&
-				((!texture_coordinate_field) || cmzn_field_evaluate_real(texture_coordinate_field,
-					field_cache, texture_coordinate_dimension, texture_coordinates)))
+			return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
+				field_cache, element, /*dimension*/1, &xi, top_level_element));
+			if (return_code && (CMZN_OK == cmzn_field_evaluate_real(coordinate_field,
+					field_cache, coordinate_dimension, coordinates)) &&
+				((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field,
+					field_cache, number_of_data_values, data_buffer))) &&
+				((!texture_coordinate_field) || (CMZN_OK == cmzn_field_evaluate_real(texture_coordinate_field,
+					field_cache, texture_coordinate_dimension, texture_coordinates))))
 			{
 				GLfloat floatField[3];
 				CAST_TO_OTHER(floatField,coordinates,GLfloat,3);
@@ -1153,19 +1153,19 @@ struct GT_surface *create_cylinder_from_FE_element(
 			{
 				xi=(ZnReal)i/(ZnReal)number_of_segments_along;
 				/* evaluate the fields */
-				if (cmzn_fieldcache_set_mesh_location_with_parent(
-						field_cache, element, /*dimension*/1, &xi, top_level_element) &&
-					cmzn_field_evaluate_derivative(coordinate_field,
-						d_dxi, field_cache, coordinate_dimension, derivative_xi) &&
-					cmzn_field_evaluate_real(coordinate_field, field_cache,
-						coordinate_dimension, coordinates) &&
-					((!data_field) || cmzn_field_evaluate_real(data_field,
-						field_cache, n_data_components, feData)) &&
+				if ((CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
+						field_cache, element, /*dimension*/1, &xi, top_level_element)) &&
+					(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field,
+						d_dxi, field_cache, coordinate_dimension, derivative_xi)) &&
+					(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache,
+						coordinate_dimension, coordinates)) &&
+					((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field,
+						field_cache, n_data_components, feData))) &&
 					((!orientation_scale_field) || (
-						cmzn_field_evaluate_derivative(orientation_scale_field, d_dxi, field_cache, 1, &diameter_derivative) &&
-						cmzn_field_evaluate_real(orientation_scale_field, field_cache, 1, &diameter_value))) &&
-					((!texture_coordinate_field) || cmzn_field_evaluate_real(texture_coordinate_field, field_cache,
-						texture_coordinate_dimension, tex_coordinates)))
+						(CMZN_OK == cmzn_field_evaluate_derivative(orientation_scale_field, d_dxi, field_cache, 1, &diameter_derivative)) &&
+						(CMZN_OK == cmzn_field_evaluate_real(orientation_scale_field, field_cache, 1, &diameter_value)))) &&
+					((!texture_coordinate_field) || (CMZN_OK == cmzn_field_evaluate_real(texture_coordinate_field, field_cache,
+						texture_coordinate_dimension, tex_coordinates))))
 				{
 					/* store the coordinates in the point */
 					(*point)[0]=(ZnReal)coordinates[0];
@@ -1924,21 +1924,21 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			cmzn_fieldcache_set_time(field_cache, time);
 			while ((i<number_of_points)&&surface)
 			{
-				return_code = cmzn_fieldcache_set_mesh_location_with_parent(
-					field_cache, element, /*dimension*/2, xi, top_level_element);
+				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
+					field_cache, element, /*dimension*/2, xi, top_level_element));
 				/* evaluate the fields */
-				if (!(cmzn_field_evaluate_derivative(coordinate_field,
-						d_dxi1, field_cache, coordinate_dimension, derivative_xi1) &&
-					cmzn_field_evaluate_derivative(coordinate_field,
-						d_dxi2, field_cache, coordinate_dimension, derivative_xi2) &&
-					cmzn_field_evaluate_real(coordinate_field, field_cache,
+				if ((CMZN_OK != cmzn_field_evaluate_derivative(coordinate_field,
+						d_dxi1, field_cache, coordinate_dimension, derivative_xi1)) ||
+					(CMZN_OK != cmzn_field_evaluate_derivative(coordinate_field,
+						d_dxi2, field_cache, coordinate_dimension, derivative_xi2)) ||
+					(CMZN_OK != cmzn_field_evaluate_real(coordinate_field, field_cache,
 						coordinate_dimension, coordinates)))
 				{
 					return_code = 0;
 				}
 				if (data_field)
 				{
-					if (!cmzn_field_evaluate_real(data_field, field_cache, n_data_components, feData))
+					if (CMZN_OK != cmzn_field_evaluate_real(data_field, field_cache, n_data_components, feData))
 					{
 						return_code = 0;
 					}
@@ -1947,12 +1947,12 @@ struct GT_surface *create_GT_surface_from_FE_element(
 				{
 					if (calculate_tangent_points)
 					{
-						if (!(cmzn_field_evaluate_derivative(texture_coordinate_field,
-								d_dxi1, field_cache, texture_coordinate_dimension, texture_derivative_xi1) &&
-							cmzn_field_evaluate_derivative(texture_coordinate_field,
-								d_dxi2, field_cache, texture_coordinate_dimension, texture_derivative_xi2) &&
-							cmzn_field_evaluate_real(texture_coordinate_field, field_cache,
-								texture_coordinate_dimension, texture_values)))
+						if ((CMZN_OK != cmzn_field_evaluate_derivative(texture_coordinate_field,
+								d_dxi1, field_cache, texture_coordinate_dimension, texture_derivative_xi1) ||
+							(CMZN_OK != cmzn_field_evaluate_derivative(texture_coordinate_field,
+								d_dxi2, field_cache, texture_coordinate_dimension, texture_derivative_xi2)) ||
+							(CMZN_OK != cmzn_field_evaluate_real(texture_coordinate_field, field_cache,
+								texture_coordinate_dimension, texture_values))))
 						{
 							calculate_tangent_points = 0;
 							display_message(WARNING_MESSAGE,
@@ -1962,8 +1962,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 					}
 					if (!calculate_tangent_points)  /* Do this if just unset above as well as else */
 					{
-						return_code = cmzn_field_evaluate_real(texture_coordinate_field,
-							field_cache, texture_coordinate_dimension, texture_values);
+						return_code = (CMZN_OK == cmzn_field_evaluate_real(texture_coordinate_field,
+							field_cache, texture_coordinate_dimension, texture_values)) ? 1 : 0;
 					}
 				}
 				if (return_code)
@@ -2544,15 +2544,17 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 							 orientation_scale field very often requires the evaluation of the
 							 same coordinate_field with derivatives, meaning that values for
 							 the coordinate_field will already be cached = more efficient. */
-						if (cmzn_fieldcache_set_mesh_location_with_parent(
-							field_cache, element, element_dimension, xi, top_level_element) &&
+						if ((CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
+							field_cache, element, element_dimension, xi, top_level_element)) &&
 							((!orientation_scale_field) ||
-								cmzn_field_evaluate_real(orientation_scale_field, field_cache, number_of_orientation_scale_components, orientation_scale)) &&
+								(CMZN_OK == cmzn_field_evaluate_real(orientation_scale_field, field_cache,
+									number_of_orientation_scale_components, orientation_scale))) &&
 							((!variable_scale_field) ||
-								cmzn_field_evaluate_real(variable_scale_field, field_cache, number_of_variable_scale_components, variable_scale)) &&
-							cmzn_field_evaluate_real(coordinate_field, field_cache, /*number_of_components*/3, coordinates) &&
+								(CMZN_OK == cmzn_field_evaluate_real(variable_scale_field, field_cache,
+									number_of_variable_scale_components, variable_scale))) &&
+							(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache, /*number_of_components*/3, coordinates)) &&
 							((!data_field) ||
-								cmzn_field_evaluate_real(data_field, field_cache, n_data_components, feData)) &&
+								(CMZN_OK == cmzn_field_evaluate_real(data_field, field_cache, n_data_components, feData))) &&
 							((!label_field) ||
 								(0 != (*label = cmzn_field_evaluate_string(label_field, field_cache)))) &&
 							make_glyph_orientation_scale_axes(
