@@ -181,7 +181,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 			}
 			if (data->group_field)
 			{
-				if (cmzn_fieldcache_set_element(data->field_cache, element) &&
+				if ((CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
 					cmzn_field_evaluate_boolean(data->group_field, data->field_cache))
 				{
 					element_selected = 1;
@@ -246,7 +246,7 @@ int cmzn_element_assign_grid_field_from_source_sub(
 			{
 				data->selected_count++;
 				if (destination_field_is_grid_based &&
-					cmzn_fieldcache_set_element(data->field_cache, element) &&
+					(CMZN_OK == cmzn_fieldcache_set_element(data->field_cache, element)) &&
 					cmzn_field_is_defined_at_location(data->source_field, data->field_cache) &&
 					ALLOCATE(values, FE_value, number_of_components))
 				{
@@ -271,10 +271,10 @@ int cmzn_element_assign_grid_field_from_source_sub(
 											 /*density_field*/(struct Computed_field *)NULL,
 											 grid_point_number, xi))
 									{
-										if (cmzn_fieldcache_set_mesh_location(data->field_cache,
-												element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
-											cmzn_field_evaluate_real(data->source_field,
-												data->field_cache, number_of_components, values))
+										if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(data->field_cache,
+												element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+											(CMZN_OK == cmzn_field_evaluate_real(data->source_field,
+												data->field_cache, number_of_components, values)))
 										{
 											cmzn_field_assign_real(data->destination_field,
 												data->field_cache, number_of_components, values);

@@ -110,8 +110,8 @@ static int FE_node_and_values_to_array(struct FE_node *node,
 		array_data->node_values->node = node;
 		if (array_data->sort_by_field)
 		{
-			if (!(array_data->node_values->values &&
-				cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
+			if ((0 == array_data->node_values->values) ||
+				(CMZN_OK != cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
 					array_data->number_of_values, array_data->node_values->values)))
 			{
 				display_message(ERROR_MESSAGE, "FE_node_and_values_to_array.  "

@@ -939,10 +939,10 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 				for (j=0;(j<adjusted_number_of_points_in_xi2)&&return_code;j++)
 				{
 					xi[1]=(FE_value)j / distance2;
-					if (cmzn_fieldcache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element) &&
-						cmzn_field_evaluate_real(coordinate_field, field_cache, 3, coordinates) &&
-						cmzn_field_evaluate_real(isoscalar_field, field_cache, 1, scalar) &&
-						((!data_field) || cmzn_field_evaluate_real(data_field, field_cache, n_data_components, datum)))
+					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(field_cache, element, 2, xi, top_level_element)) &&
+						(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache, 3, coordinates)) &&
+						(CMZN_OK == cmzn_field_evaluate_real(isoscalar_field, field_cache, 1, scalar)) &&
+						((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field, field_cache, n_data_components, datum))))
 					{
 						(*point)[0]=GLfloat(coordinates[0]);
 						(*point)[1]=GLfloat(coordinates[1]);

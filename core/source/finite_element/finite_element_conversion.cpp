@@ -222,9 +222,9 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[i][d]*delta_xi[d];
 					}
-					if (cmzn_fieldcache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
-						cmzn_field_evaluate_real_with_derivatives(cfield, source_field_cache, number_of_components, values,
-							mode_dimension, derivatives))
+					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi)) &&
+						(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(cfield, source_field_cache, number_of_components, values,
+							mode_dimension, derivatives)))
 					{
 						/* Reorder the separate lists of values and derivatives into
 							a single mixed list */
@@ -328,8 +328,8 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					{
 						source_xi[d] = base_xi[d] + destination_xi[i][d]*delta_xi[d];
 					}
-					if (cmzn_fieldcache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi) &&
-						cmzn_field_evaluate_real(cfield, source_field_cache, number_of_components, values))
+					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(source_field_cache, element, mode_dimension, source_xi)) &&
+						(CMZN_OK == cmzn_field_evaluate_real(cfield, source_field_cache, number_of_components, values)))
 					{
 						if (j==0)
 						{

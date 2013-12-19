@@ -1381,10 +1381,10 @@ If field and element_point_ranges not identically grid-based, clear
 				 /*density_field*/(struct Computed_field *)NULL,
 				 set_grid_values_data->source_element_point_number, xi)
 			&& ALLOCATE(values, FE_value, number_of_components)
-			&& cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
-				source_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)
-			&& cmzn_field_evaluate_real(field, set_grid_values_data->field_cache,
-				number_of_components, values))
+			&& (CMZN_OK == cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
+				source_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi))
+			&& (CMZN_OK == cmzn_field_evaluate_real(field, set_grid_values_data->field_cache,
+				number_of_components, values)))
 		{
 			start = 0;
 			stop = 0;
@@ -1403,9 +1403,9 @@ If field and element_point_ranges not identically grid-based, clear
 							 /*coordinate_field*/(struct Computed_field *)NULL,
 							 /*density_field*/(struct Computed_field *)NULL,
 							 grid_point_number, xi) &&
-						cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
-							destination_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
-						cmzn_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values))
+						(CMZN_OK == cmzn_fieldcache_set_mesh_location(set_grid_values_data->field_cache,
+							destination_element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+						(CMZN_OK == cmzn_field_assign_real(field, set_grid_values_data->field_cache, number_of_components, values)))
 					{
 						set_grid_values_data->number_of_points_set++;
 					}

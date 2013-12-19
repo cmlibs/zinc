@@ -1118,10 +1118,10 @@ array is enlarged if necessary and the new points added at random locations.
 					Computed_field_get_number_of_components(coordinate_field))) ||
 					(2 == number_of_coordinate_components) ||
 					(3 == number_of_coordinate_components)) &&
-				cmzn_fieldcache_set_mesh_location(field_cache, element, 1, &xi_centre) &&
-				cmzn_field_evaluate_real_with_derivatives(coordinate_field,
-					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/1, jacobian) &&
-				cmzn_field_evaluate_real(density_field, field_cache, 1, &density))
+				(CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 1, &xi_centre)) &&
+				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
+					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/1, jacobian)) &&
+				(CMZN_OK == cmzn_field_evaluate_real(density_field, field_cache, 1, &density)))
 			{
 				/* calculate the volume from the jacobian and dxi */
 				a[0] = (jacobian[0]);
@@ -1282,10 +1282,10 @@ array is enlarged if necessary and the new points added at random locations.
 				((2 == (number_of_coordinate_components =
 					Computed_field_get_number_of_components(coordinate_field))) ||
 					(3 == number_of_coordinate_components)) &&
-				cmzn_fieldcache_set_mesh_location(field_cache, element, 2, centre_xi) &&
-				cmzn_field_evaluate_real_with_derivatives(coordinate_field,
-					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/2, jacobian) &&
-				cmzn_field_evaluate_real(density_field, field_cache, 1, &density))
+				(CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 2, centre_xi)) &&
+				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
+					field_cache, number_of_coordinate_components, coordinates, /*number_of_derivatives*/2, jacobian)) &&
+				(CMZN_OK == cmzn_field_evaluate_real(density_field, field_cache, 1, &density)))
 			{
 				/* calculate the volume from the jacobian and dxi */
 				a[0] = (double)(jacobian[0]);
@@ -1480,10 +1480,10 @@ array is enlarged if necessary and the new points added at random locations.
 			if (coordinate_field && Computed_field_has_up_to_3_numerical_components(
 				coordinate_field,	(void *)NULL) &&
 				(3 == Computed_field_get_number_of_components(coordinate_field)) &&
-				cmzn_fieldcache_set_mesh_location(field_cache, element, 3, centre_xi) &&
-				cmzn_field_evaluate_real_with_derivatives(coordinate_field,
-					field_cache, 3, coordinates, /*number_of_derivatives*/3, jacobian) &&
-				cmzn_field_evaluate_real(density_field, field_cache, 1, &density))
+				(CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 3, centre_xi)) &&
+				(CMZN_OK == cmzn_field_evaluate_real_with_derivatives(coordinate_field,
+					field_cache, 3, coordinates, /*number_of_derivatives*/3, jacobian)) &&
+				(CMZN_OK == cmzn_field_evaluate_real(density_field, field_cache, 1, &density)))
 			{
 				/* calculate the volume from the jacobian and dxi */
 				a[0] = (jacobian[0]);

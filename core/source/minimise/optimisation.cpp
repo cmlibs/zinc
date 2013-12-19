@@ -337,7 +337,7 @@ int Minimisation::evaluate_objective_function(FE_value *valueAddress)
 		iter != objectiveFields.end(); ++iter)
 	{
 		ObjectiveFieldData *objective = *iter;
-		if (!cmzn_field_evaluate_real(objective->field, field_cache,
+		if (CMZN_OK != cmzn_field_evaluate_real(objective->field, field_cache,
 			objective->numComponents, objectiveValues + offset))
 		{
 			display_message(ERROR_MESSAGE, "Failed to evaluate objective field %s", objective->field->name);
@@ -462,7 +462,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 		if (objective->numTerms > 0)
 			return_code = objective->field->evaluate_sum_square_terms(*(minimisation->field_cache), bufferSize, buffer);
 		else
-			return_code = cmzn_field_evaluate_real(objective->field, minimisation->field_cache, objective->bufferSize, objective->buffer);
+			return_code = (CMZN_OK == cmzn_field_evaluate_real(objective->field, minimisation->field_cache, objective->bufferSize, objective->buffer));
 		if (!return_code)
 		{
 			// GRC: should record failure properly

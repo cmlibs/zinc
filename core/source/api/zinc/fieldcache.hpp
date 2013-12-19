@@ -141,7 +141,7 @@ inline int Field::evaluateDerivative(Differentialoperator& differentialOperator,
 
 inline bool Field::isDefinedAtLocation(Fieldcache& cache)
 {
-	return (0 != cmzn_field_is_defined_at_location(id, cache.getId()));
+	return cmzn_field_is_defined_at_location(id, cache.getId());
 }
 
 }  // namespace Zinc

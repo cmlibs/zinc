@@ -214,7 +214,7 @@ public:
 		delete location;
 		location = new Field_element_xi_location(element, chart_coordinates, time, top_level_element);
 		locationChanged();
-		return 1;
+		return CMZN_OK;
 	}
 
 	int setNode(cmzn_node_id node)
@@ -223,7 +223,7 @@ public:
 		delete location;
 		location = new Field_node_location(node, time);
 		locationChanged();
-		return 1;
+		return CMZN_OK;
 	}
 
 	int setFieldReal(cmzn_field_id field, int numberOfValues, const double *values);

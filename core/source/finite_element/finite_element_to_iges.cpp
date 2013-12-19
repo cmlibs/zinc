@@ -825,10 +825,10 @@ basis type, however every element type will be converted to a cubic.
 				{
 					xi[0] = (ZnReal)j / 3.0;
 					xi[1] = (ZnReal)i / 3.0;
-					if (cmzn_fieldcache_set_mesh_location(get_data->field_cache,
-							element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi) &&
-						cmzn_field_evaluate_real(get_data->field,
-							get_data->field_cache, number_of_components, values))
+					if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(get_data->field_cache,
+							element, MAXIMUM_ELEMENT_XI_DIMENSIONS, xi)) &&
+						(CMZN_OK == cmzn_field_evaluate_real(get_data->field,
+							get_data->field_cache, number_of_components, values)))
 					{
 						if (!set_FE_nodal_field_FE_value_values(get_data->fe_field,
 							get_data->nodes[i * 4 + j], values, &number_of_values))

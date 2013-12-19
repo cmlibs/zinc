@@ -1678,8 +1678,8 @@ int Isosurface_builder::sweep()
 			for (int i = mod_number_in_xi1; i >= 0; i--)
 			{
 				xi[0] = i*delta_xi1;
-				if (cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi) &&
-					cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value))
+				if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, 3, xi)) &&
+					(CMZN_OK == cmzn_field_evaluate_real(scalar_field, field_cache, 1, &scalar_FE_value)))
 				{
 					scalar_value = static_cast<double>(scalar_FE_value);
 					set_scalar(i, j, k, scalar_value);
@@ -1788,10 +1788,10 @@ bool Isosurface_builder::reverse_winding()
 		cmzn_differentialoperator_id d_dxi1 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 1);
 		cmzn_differentialoperator_id d_dxi2 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 2);
 		cmzn_differentialoperator_id d_dxi3 = cmzn_mesh_get_chart_differentialoperator(mesh, /*order*/1, 3);
-		if (cmzn_fieldcache_set_mesh_location(field_cache, element, /*dimension*/3, xi_points[0]) &&
-			cmzn_field_evaluate_derivative(coordinate_field, d_dxi1, field_cache, 3, winding_coordinate_derivative1) &&
-			cmzn_field_evaluate_derivative(coordinate_field, d_dxi2, field_cache, 3, winding_coordinate_derivative2) &&
-			cmzn_field_evaluate_derivative(coordinate_field, d_dxi3, field_cache, 3, winding_coordinate_derivative3))
+		if ((CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, element, /*dimension*/3, xi_points[0])) &&
+			(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field, d_dxi1, field_cache, 3, winding_coordinate_derivative1)) &&
+			(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field, d_dxi2, field_cache, 3, winding_coordinate_derivative2)) &&
+			(CMZN_OK == cmzn_field_evaluate_derivative(coordinate_field, d_dxi3, field_cache, 3, winding_coordinate_derivative3)))
 		{
 			cross_product_FE_value_vector3(winding_coordinate_derivative1, winding_coordinate_derivative2, result);
 			if ((result[0] * winding_coordinate_derivative3[0] +
