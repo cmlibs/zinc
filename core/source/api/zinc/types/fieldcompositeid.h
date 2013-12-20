@@ -11,8 +11,8 @@
 #ifndef CMZN_FIELDCOMPOSITEID_H__
 #define CMZN_FIELDCOMPOSITEID_H__
 
-/** Handle to a composite type cmzn_field */
-	struct cmzn_field_composite;
-	typedef struct cmzn_field_composite *cmzn_field_composite_id;
+/** Handle to a component type cmzn_field */
+	struct cmzn_field_component;
+	typedef struct cmzn_field_component *cmzn_field_component_id;
 
 #endif

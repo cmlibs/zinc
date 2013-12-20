@@ -541,7 +541,7 @@ Returns allocated command string for reproducing field. Includes type.
 } /* Computed_field_composite::get_command_string */
 
 inline Computed_field_composite *Computed_field_composite_core_cast(
-	cmzn_field_composite_id composite_field)
+	cmzn_field_component_id composite_field)
 {
 	return (static_cast<Computed_field_composite*>(
 		reinterpret_cast<Computed_field*>(composite_field)->core));
@@ -1111,12 +1111,12 @@ struct Computed_field *Computed_field_create_concatenate(
 	return(field);
 }
 
-cmzn_field_composite *cmzn_field_cast_composite(cmzn_field_id field)
+cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 {
 	if (field && dynamic_cast<Computed_field_composite*>(field->core))
 	{
 		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_composite_id>(field));
+		return (reinterpret_cast<cmzn_field_component_id>(field));
 	}
 	else
 	{
@@ -1124,12 +1124,12 @@ cmzn_field_composite *cmzn_field_cast_composite(cmzn_field_id field)
 	}
 }
 
-int cmzn_field_composite_set_component_index(cmzn_field_composite_id composite, int component_index)
+int cmzn_field_component_set_component_index(cmzn_field_component_id component, int component_index)
 {
-	if (composite)
+	if (component)
 	{
 		Computed_field_composite *composite_core =
-			Computed_field_composite_core_cast(composite);
+			Computed_field_composite_core_cast(component);
 		if (composite_core)
 		{
 			return composite_core->setComponentIndex(component_index - 1);
@@ -1138,8 +1138,8 @@ int cmzn_field_composite_set_component_index(cmzn_field_composite_id composite, 
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_field_composite_destroy(cmzn_field_composite_id *composite_address)
+int cmzn_field_component_destroy(cmzn_field_component_id *component_address)
 {
 	return cmzn_field_destroy(
-		reinterpret_cast<cmzn_field_id *>(composite_address));
+		reinterpret_cast<cmzn_field_id *>(component_address));
 }
