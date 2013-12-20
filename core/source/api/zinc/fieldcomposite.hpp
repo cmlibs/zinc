@@ -53,8 +53,8 @@ public:
 
 	int setComponentIndex(int componentIndex)
 	{
-		return cmzn_field_composite_set_component_index(
-			reinterpret_cast<cmzn_field_composite_id>(id), componentIndex);
+		return cmzn_field_component_set_component_index(
+			reinterpret_cast<cmzn_field_component_id>(id), componentIndex);
 	}
 
 };
