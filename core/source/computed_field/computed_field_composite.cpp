@@ -80,6 +80,25 @@ public:
 
 	char *get_source_string(int commands);
 
+	int setComponentIndex(int component_index)
+	{
+		if (field->number_of_components == 1 && component_index > -1)
+		{
+			int number_of_source_components = Computed_field_get_number_of_components(getSourceField(0));
+			if (number_of_source_components > component_index)
+			{
+				if (source_value_numbers[0] != component_index)
+				{
+					source_value_numbers[0] = component_index;
+					field->clearCaches();
+					Computed_field_changed(field);
+				}
+				return CMZN_OK;
+			}
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
 private:
 
 	Computed_field_core* copy()
@@ -520,6 +539,13 @@ Returns allocated command string for reproducing field. Includes type.
 
 	return (command_string);
 } /* Computed_field_composite::get_command_string */
+
+inline Computed_field_composite *Computed_field_composite_core_cast(
+	cmzn_field_composite_id composite_field)
+{
+	return (static_cast<Computed_field_composite*>(
+		reinterpret_cast<Computed_field*>(composite_field)->core));
+}
 
 } //namespace
 
@@ -1085,3 +1111,35 @@ struct Computed_field *Computed_field_create_concatenate(
 	return(field);
 }
 
+cmzn_field_composite *cmzn_field_cast_composite(cmzn_field_id field)
+{
+	if (field && dynamic_cast<Computed_field_composite*>(field->core))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_composite_id>(field));
+	}
+	else
+	{
+		return (NULL);
+	}
+}
+
+int cmzn_field_composite_set_component_index(cmzn_field_composite_id composite, int component_index)
+{
+	if (composite)
+	{
+		Computed_field_composite *composite_core =
+			Computed_field_composite_core_cast(composite);
+		if (composite_core)
+		{
+			return composite_core->setComponentIndex(component_index - 1);
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_composite_destroy(cmzn_field_composite_id *composite_address)
+{
+	return cmzn_field_destroy(
+		reinterpret_cast<cmzn_field_id *>(composite_address));
+}
