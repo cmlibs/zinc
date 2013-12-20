@@ -77,7 +77,6 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	int override_visual_id;
-	//-- wxGLContext* wxSharedContext;
 };
 
 

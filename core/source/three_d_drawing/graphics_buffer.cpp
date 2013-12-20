@@ -131,7 +131,6 @@ it to share graphics contexts.
 	if (ALLOCATE(package, struct Graphics_buffer_package, 1))
 	{
 		package->override_visual_id = 0;
-		//-- package->wxSharedContext = (wxGLContext*)NULL;
 	}
 	else
 	{
