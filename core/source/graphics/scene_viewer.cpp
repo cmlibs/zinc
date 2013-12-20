@@ -3185,7 +3185,7 @@ cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	}
 
 	return (scene_viewer);
-} /* create_cmzn_sceneviewer_wx */
+}
 
 int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	struct Graphics_buffer_input *input)

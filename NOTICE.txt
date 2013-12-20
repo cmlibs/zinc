@@ -22,10 +22,6 @@ Copyright (c) 2000 Glenn Randers-Pehrso
 libxml2
 Copyright (C) 1998-2002 Daniel Veillard.
 
-wxWidgets
-Copyright (C) 1998-2009 Julian Smart, Robert Roebling et al
-http://wxwidgets.org/
-
 ITK
 Copyright (c) 1999-2003 Insight Software Consortium
 
