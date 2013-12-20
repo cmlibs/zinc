@@ -71,6 +71,32 @@ TEST(zincFieldModule_createComponent, valid_args)
 	EXPECT_EQ(values[component_index - 1], value);
 }
 
+TEST(zincFieldComponent_setComponentIndex, valid_args)
+{
+	ZincTestSetupCpp zinc;
+
+	const double values[] = { 2.0, 4.0, 6.0 };
+	int component_index = 2;
+	FieldConstant f1 = zinc.fm.createFieldConstant(3, values);
+	EXPECT_TRUE(f1.isValid());
+
+	FieldComponent f2 = zinc.fm.createFieldComponent(f1, component_index);
+	EXPECT_TRUE(f2.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	double value = 0.0;
+	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 1, &value));
+	EXPECT_EQ(values[component_index - 1], value);
+
+	component_index = 3;
+
+	EXPECT_EQ(CMZN_OK, f2.setComponentIndex(component_index));
+
+	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 1, &value));
+	EXPECT_EQ(values[component_index - 1], value);
+}
+
+
 TEST(zincFieldModule_createComponent, invalid_args)
 {
 	ZincTestSetupCpp zinc;
