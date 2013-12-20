@@ -15,6 +15,7 @@ The public interface to the cmzn_fields that perform arithmetic operations.
 #define CMZN_FIELDCOMPOSITE_H__
 
 #include "types/fieldid.h"
+#include "types/fieldcompositeid.h"
 #include "types/fieldmoduleid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -59,6 +60,54 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_component(cmzn_fieldmodule_
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodule_id field_module,
 	int number_of_source_fields, cmzn_field_id *source_fields);
+
+/**
+ * If the field is of composite type, then this function returns the composite specific
+ * representation, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived field reference.
+ *
+ * @param field  The generic field to be cast.
+ * @return  composite specific representation if the input field is of this type,
+ * otherwise NULL.
+ */
+ZINC_API cmzn_field_composite_id cmzn_field_cast_composite(cmzn_field_id field);
+
+/**
+ * Cast composite field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the composite argument.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_composite_base_cast(composite_field), "bob");
+ *
+ * @param composite  Handle to the composite field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_composite_base_cast(cmzn_field_composite_id composite)
+{
+	return (cmzn_field_id)(composite);
+}
+
+/**
+ * Modify the field to return the component with the given index of the source field.
+ *
+ * @param composite  Handle to composite field to modify, this composite field must be
+ *  single component with a source field.
+ * @param component_index  The component index from 1 to number of components.
+ * @return  Status CMZN_OK if component index is successfully set, any other value on failure.
+ */
+ZINC_API int cmzn_field_composite_set_component_index(cmzn_field_composite_id composite,
+	int component_index);
+
+/**
+ * Destroys this reference to the composite field (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param composite_address  Address of handle to the composite field.
+ * @return  Status CMZN_OK if successfully destroyed the composite handle,
+ * 		any other value on failure.
+ */
+ZINC_API int cmzn_field_composite_destroy(cmzn_field_composite_id *composite_address);
 
 #ifdef __cplusplus
 }

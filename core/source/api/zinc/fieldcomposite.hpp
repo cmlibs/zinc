@@ -51,7 +51,11 @@ public:
 	FieldComponent() : Field(0)
 	{	}
 
-
+	int setComponentIndex(int componentIndex)
+	{
+		return cmzn_field_composite_set_component_index(
+			reinterpret_cast<cmzn_field_composite_id>(id), componentIndex);
+	}
 
 };
 
