@@ -18,10 +18,9 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class Fieldcache;
-
 class Element;
-
+class Fieldcache;
+class FieldComponent;
 class Fieldmodule;
 
 class Field
@@ -234,6 +233,7 @@ public:
 
 	bool isDefinedAtLocation(Fieldcache& cache);
 
+	inline FieldComponent castComponent();
 };
 
 inline bool operator==(const Field& a, const Field& b)

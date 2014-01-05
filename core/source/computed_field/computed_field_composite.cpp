@@ -1115,13 +1115,14 @@ cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 {
 	if (field && dynamic_cast<Computed_field_composite*>(field->core))
 	{
-		cmzn_field_access(field);
-		return (reinterpret_cast<cmzn_field_component_id>(field));
+		// ensure composite field is just a single component of source field
+		if ((1 == field->number_of_components) && (1 == field->number_of_source_fields))
+		{
+			cmzn_field_access(field);
+			return (reinterpret_cast<cmzn_field_component_id>(field));
+		}
 	}
-	else
-	{
-		return (NULL);
-	}
+	return 0;
 }
 
 int cmzn_field_component_set_component_index(cmzn_field_component_id component, int component_index)

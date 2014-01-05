@@ -51,6 +51,11 @@ public:
 	FieldComponent() : Field(0)
 	{	}
 
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldComponent(cmzn_field_component_id field_component_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_component_id))
+	{	}
+
 	int setComponentIndex(int componentIndex)
 	{
 		return cmzn_field_component_set_component_index(
@@ -85,6 +90,11 @@ inline FieldComponent Fieldmodule::createFieldComponent(Field& sourceField, int 
 {
 	return FieldComponent(cmzn_fieldmodule_create_field_component(id,
 		sourceField.getId(), componentIndex));
+}
+
+inline FieldComponent Field::castComponent()
+{
+	return FieldComponent(cmzn_field_cast_component(id));
 }
 
 inline FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, Field *sourceFields)
