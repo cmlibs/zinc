@@ -31,8 +31,15 @@ TEST(cmzn_fieldmodule_create_field_component, valid_args)
 	cmzn_field_id f1 = cmzn_fieldmodule_create_field_constant(zinc.fm, 3, values);
 	EXPECT_NE((cmzn_field_id)0, f1);
 
+	cmzn_field_component_id notComponent = cmzn_field_cast_component(f1);
+	EXPECT_EQ((cmzn_field_component_id)0, notComponent);
+
 	cmzn_field_id f2 = cmzn_fieldmodule_create_field_component(zinc.fm, f1, component_index);
 	EXPECT_NE((cmzn_field_id)0, f2);
+
+	cmzn_field_component_id isComponent = cmzn_field_cast_component(f2);
+	EXPECT_NE((cmzn_field_component_id)0, isComponent);
+	cmzn_field_component_destroy(&isComponent);
 
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 	double value = 0.0;
@@ -69,8 +76,14 @@ TEST(zincFieldModule_createComponent, valid_args)
 	FieldConstant f1 = zinc.fm.createFieldConstant(3, values);
 	EXPECT_TRUE(f1.isValid());
 
+	FieldComponent notComponent = f1.castComponent();
+	EXPECT_FALSE(notComponent.isValid());
+
 	FieldComponent f2 = zinc.fm.createFieldComponent(f1, component_index);
 	EXPECT_TRUE(f2.isValid());
+
+	FieldComponent isComponent = f2.castComponent();
+	EXPECT_TRUE(isComponent.isValid());
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	double value = 0.0;
