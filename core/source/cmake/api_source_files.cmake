@@ -55,11 +55,13 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timesequence.h)
 
 SET( API_TYPES_HDRS
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/cinline.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/contextid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/differentialoperatorid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/elementid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldaliasid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldcacheid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldcompositeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldfiniteelementid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldid.h
@@ -67,23 +69,25 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldimageprocessingid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldmoduleid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldsubobjectgroupid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/glyphid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/graphicsid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/materialid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/nodeid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/optimisationid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/regionid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenecoordinatesystem.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenefilterid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenepickerid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneviewerid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneviewerinputid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/selectionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/spectrumid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/streamid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/tessellationid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timenotifierid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timekeeperid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timenotifierid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/timesequenceid.h )
 
 IF( USE_OPENCASCADE )
