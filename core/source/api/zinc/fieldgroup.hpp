@@ -24,13 +24,6 @@ namespace Zinc
 
 class FieldGroup : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldGroup(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldGroup Fieldmodule::createFieldGroup();
-
 public:
 
 	FieldGroup() : Field(0)
@@ -39,10 +32,6 @@ public:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldGroup(cmzn_field_group_id field_group_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_group_id))
-	{	}
-
-	FieldGroup(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_group(field.getId())))
 	{	}
 
 	bool isEmpty()
@@ -159,7 +148,13 @@ public:
 
 inline FieldGroup Fieldmodule::createFieldGroup()
 {
-	return FieldGroup(cmzn_fieldmodule_create_field_group(id));
+	return FieldGroup(reinterpret_cast<cmzn_field_group_id>(
+		cmzn_fieldmodule_create_field_group(id)));
+}
+
+inline FieldGroup Field::castGroup()
+{
+	return FieldGroup(cmzn_field_cast_group(id));
 }
 
 }  // namespace Zinc

@@ -18,6 +18,9 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class GlyphAxes;
+class GlyphColourBar;
+
 class Glyph
 {
 protected:
@@ -126,13 +129,14 @@ public:
 	{
 		return cmzn_glyph_set_managed(id, static_cast<int>(value));
 	}
+
+	inline GlyphAxes castAxes();
+	inline GlyphColourBar castColourBar();
 };
 
 class GlyphAxes : public Glyph
 {
 private:
-	explicit GlyphAxes(cmzn_glyph_id glyph_id) : Glyph(glyph_id) {}
-
 	inline cmzn_glyph_axes_id getDerivedId()
 	{
 		return reinterpret_cast<cmzn_glyph_axes_id>(id);
@@ -143,10 +147,6 @@ public:
 
 	explicit GlyphAxes(cmzn_glyph_axes_id axes_id)
 		: Glyph(reinterpret_cast<cmzn_glyph_id>(axes_id))
-	{}
-
-	GlyphAxes(Glyph& glyph)
-		: Glyph(reinterpret_cast<cmzn_glyph_id>(cmzn_glyph_cast_axes(glyph.getId())))
 	{}
 
 	double getAxisWidth() 
@@ -181,11 +181,14 @@ public:
 
 };
 
+inline GlyphAxes Glyph::castAxes()
+{
+	return GlyphAxes(cmzn_glyph_cast_axes(id));
+}
+
 class GlyphColourBar : public Glyph
 {
 private:
-	explicit GlyphColourBar(cmzn_glyph_id glyph_id) : Glyph(glyph_id) {}
-
 	inline cmzn_glyph_colour_bar_id getDerivedId()
 	{
 		return reinterpret_cast<cmzn_glyph_colour_bar_id>(id);
@@ -196,10 +199,6 @@ public:
 
 	explicit GlyphColourBar(cmzn_glyph_colour_bar_id colour_bar_id)
 		: Glyph(reinterpret_cast<cmzn_glyph_id>(colour_bar_id))
-	{}
-
-	GlyphColourBar(Glyph& glyph)
-		: Glyph(reinterpret_cast<cmzn_glyph_id>(cmzn_glyph_cast_colour_bar(glyph.getId())))
 	{}
 
 	int getAxis(int valuesCount, double *valuesOut)
@@ -283,6 +282,11 @@ public:
 	}
 
 };
+
+inline GlyphColourBar Glyph::castColourBar()
+{
+	return GlyphColourBar(cmzn_glyph_cast_colour_bar(id));
+}
 
 class Glyphmodule
 {

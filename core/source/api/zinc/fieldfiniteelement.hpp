@@ -21,23 +21,15 @@ namespace Zinc
 
 class FieldFiniteElement : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldFiniteElement(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldFiniteElement Fieldmodule::createFieldFiniteElement(
-		int numberOfComponents);
-
 public:
 
 	FieldFiniteElement() : Field(0)
 	{ }
 
-	FieldFiniteElement(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_finite_element(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldFiniteElement(cmzn_field_finite_element_id field_finite_element_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_finite_element_id))
 	{	}
-
 };
 
 class FieldEmbedded : public Field
@@ -59,21 +51,14 @@ public:
 
 class FieldFindMeshLocation : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldFindMeshLocation(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldFindMeshLocation Fieldmodule::createFieldFindMeshLocation(
-		Field& sourceField, Field& meshField, Mesh& mesh);
-
 public:
 
 	FieldFindMeshLocation() : Field(0)
 	{ }
 
-	FieldFindMeshLocation(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_find_mesh_location(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldFindMeshLocation(cmzn_field_find_mesh_location_id field_find_mesh_location_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_find_mesh_location_id))
 	{	}
 
 	enum SearchMode
@@ -122,48 +107,39 @@ public:
 
 class FieldStoredMeshLocation : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStoredMeshLocation(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(Mesh& mesh);
-
 public:
 
 	FieldStoredMeshLocation() : Field(0)
 	{ }
 
-	FieldStoredMeshLocation(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(
-			cmzn_field_cast_stored_mesh_location(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStoredMeshLocation(cmzn_field_stored_mesh_location_id field_stored_mesh_location_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_stored_mesh_location_id))
 	{	}
 };
 
 class FieldStoredString : public Field
 {
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldStoredString(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldStoredString Fieldmodule::createFieldStoredString();
-
 public:
 
 	FieldStoredString() : Field(0)
 	{ }
 
-	FieldStoredString(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(
-			cmzn_field_cast_stored_string(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldStoredString(cmzn_field_stored_string_id field_stored_string_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_stored_string_id))
 	{	}
 };
 
 inline FieldFiniteElement Fieldmodule::createFieldFiniteElement(int numberOfComponents)
 {
-	return FieldFiniteElement(cmzn_fieldmodule_create_field_finite_element(id,
-		numberOfComponents));
+	return FieldFiniteElement(reinterpret_cast<cmzn_field_finite_element_id>(
+		cmzn_fieldmodule_create_field_finite_element(id,numberOfComponents)));
+}
+
+inline FieldFiniteElement Field::castFiniteElement()
+{
+	return FieldFiniteElement(cmzn_field_cast_finite_element(id));
 }
 
 inline FieldEmbedded Fieldmodule::createFieldEmbedded(Field& sourceField, Field& embeddedLocationField)
@@ -175,8 +151,13 @@ inline FieldEmbedded Fieldmodule::createFieldEmbedded(Field& sourceField, Field&
 inline FieldFindMeshLocation Fieldmodule::createFieldFindMeshLocation(
 	Field& sourceField, Field& meshField, Mesh& mesh)
 {
-	return FieldFindMeshLocation(cmzn_fieldmodule_create_field_find_mesh_location(id,
-		sourceField.getId(), meshField.getId(), mesh.getId()));
+	return FieldFindMeshLocation(reinterpret_cast<cmzn_field_find_mesh_location_id>(
+		cmzn_fieldmodule_create_field_find_mesh_location(id, sourceField.getId(), meshField.getId(), mesh.getId())));
+}
+
+inline FieldFindMeshLocation Field::castFindMeshLocation()
+{
+	return FieldFindMeshLocation(cmzn_field_cast_find_mesh_location(id));
 }
 
 inline FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
@@ -189,13 +170,24 @@ inline FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
 
 inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(Mesh& mesh)
 {
-	return FieldStoredMeshLocation(cmzn_fieldmodule_create_field_stored_mesh_location(id,
-		mesh.getId()));
+	return FieldStoredMeshLocation(reinterpret_cast<cmzn_field_stored_mesh_location_id>(
+		cmzn_fieldmodule_create_field_stored_mesh_location(id, mesh.getId())));
+}
+
+inline FieldStoredMeshLocation Field::castStoredMeshLocation()
+{
+	return FieldStoredMeshLocation(cmzn_field_cast_stored_mesh_location(id));
 }
 
 inline FieldStoredString Fieldmodule::createFieldStoredString()
 {
-	return FieldStoredString(cmzn_fieldmodule_create_field_stored_string(id));
+	return FieldStoredString(reinterpret_cast<cmzn_field_stored_string_id>(
+		cmzn_fieldmodule_create_field_stored_string(id)));
+}
+
+inline FieldStoredString Field::castStoredString()
+{
+	return FieldStoredString(cmzn_field_cast_stored_string(id));
 }
 
 }  // namespace Zinc

@@ -109,12 +109,6 @@ public:
 class FieldImage : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldImage(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldImage Fieldmodule::createFieldImage();
-	friend FieldImage Fieldmodule::createFieldImageFromSource(Field& sourceField);
 
 	inline cmzn_field_image_id getDerivedId()
 	{
@@ -129,11 +123,6 @@ public:
 	// takes ownership of C handle, responsibility for destroying it
 	explicit FieldImage(cmzn_field_image_id field_image_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_image_id))
-	{	}
-
-	// casting constructor: must check isValid()
-	FieldImage(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_image(field.getId())))
 	{	}
 
 	enum CombineMode
@@ -333,12 +322,19 @@ public:
 
 inline FieldImage Fieldmodule::createFieldImage()
 {
-	return FieldImage(cmzn_fieldmodule_create_field_image(id));
+	return FieldImage(reinterpret_cast<cmzn_field_image_id>(
+		cmzn_fieldmodule_create_field_image(id)));
 }
 
 inline FieldImage Fieldmodule::createFieldImageFromSource(Field& sourceField)
 {
-	return FieldImage(cmzn_fieldmodule_create_field_image_from_source(id, sourceField.getId()));
+	return FieldImage(reinterpret_cast<cmzn_field_image_id>(
+		cmzn_fieldmodule_create_field_image_from_source(id, sourceField.getId())));
+}
+
+inline FieldImage Field::castImage()
+{
+	return FieldImage(cmzn_field_cast_image(id));
 }
 
 } // namespace Zinc

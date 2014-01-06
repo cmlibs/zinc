@@ -56,21 +56,14 @@ public:
 
 class FieldImagefilterBinaryThreshold : public Field
 {
-
-private:
-	explicit FieldImagefilterBinaryThreshold(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldImagefilterBinaryThreshold
-		Fieldmodule::createFieldImagefilterBinaryThreshold(Field& sourceField);
-
 public:
 
 	FieldImagefilterBinaryThreshold() : Field(0)
 	{	}
 
-	FieldImagefilterBinaryThreshold(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_binary_threshold(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImagefilterBinaryThreshold(cmzn_field_imagefilter_binary_threshold_id field_imagefilter_binary_threshold_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_binary_threshold_id))
 	{	}
 
 	double getLowerThreshold()
@@ -160,22 +153,14 @@ public:
 
 class FieldImagefilterDiscreteGaussian : public Field
 {
-
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldImagefilterDiscreteGaussian(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldImagefilterDiscreteGaussian
-		Fieldmodule::createFieldImagefilterDiscreteGaussian(Field& sourceField);
-
 public:
 
 	FieldImagefilterDiscreteGaussian() : Field(0)
 	{	}
 
-	FieldImagefilterDiscreteGaussian(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_discrete_gaussian(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImagefilterDiscreteGaussian(cmzn_field_imagefilter_discrete_gaussian_id field_imagefilter_discrete_gaussian_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_discrete_gaussian_id))
 	{	}
 
 	double getVariance()
@@ -208,21 +193,14 @@ public:
 
 class FieldImagefilterHistogram : public Field
 {
-
-private:
-	explicit FieldImagefilterHistogram(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldImagefilterHistogram
-		Fieldmodule::createFieldImagefilterHistogram(Field& sourceField);
-
 public:
 
 	FieldImagefilterHistogram() : Field(0)
 	{	}
 
-	FieldImagefilterHistogram(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_histogram(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImagefilterHistogram(cmzn_field_imagefilter_histogram_id field_imagefilter_histogram_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_histogram_id))
 	{	}
 
 	int getComputeMinimumValues(int valuesCount, double *valuesOut)
@@ -267,7 +245,7 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	int getMarginalScale()
+	double getMarginalScale()
 	{
 		return cmzn_field_imagefilter_histogram_get_marginal_scale(
 			reinterpret_cast<cmzn_field_imagefilter_histogram_id>(id));
@@ -362,21 +340,14 @@ public:
 
 class FieldImagefilterThreshold : public Field
 {
-
-private:
-	explicit FieldImagefilterThreshold(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldImagefilterThreshold
-		Fieldmodule::createFieldImagefilterThreshold(Field& sourceField);
-
 public:
 
 	FieldImagefilterThreshold() : Field(0)
 	{	}
 
-	FieldImagefilterThreshold(Field& field) :
-		Field(reinterpret_cast<cmzn_field_id>(cmzn_field_cast_imagefilter_threshold(field.getId())))
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldImagefilterThreshold(cmzn_field_imagefilter_threshold_id field_imagefilter_threshold_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_imagefilter_threshold_id))
 	{	}
 
 	enum Condition
@@ -459,9 +430,13 @@ inline FieldImagefilterBinaryErode
 inline FieldImagefilterBinaryThreshold
 	Fieldmodule::createFieldImagefilterBinaryThreshold(Field& sourceField)
 {
-	return FieldImagefilterBinaryThreshold(
-		cmzn_fieldmodule_create_field_imagefilter_binary_threshold(
-			id, sourceField.getId()));
+	return FieldImagefilterBinaryThreshold(reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(
+		cmzn_fieldmodule_create_field_imagefilter_binary_threshold(id, sourceField.getId())));
+}
+
+inline FieldImagefilterBinaryThreshold Field::castImagefilterBinaryThreshold()
+{
+	return FieldImagefilterBinaryThreshold(cmzn_field_cast_imagefilter_binary_threshold(id));
 }
 
 inline FieldImagefilterCannyEdgeDetection
@@ -496,8 +471,13 @@ inline FieldImagefilterCurvatureAnisotropicDiffusion
 inline FieldImagefilterDiscreteGaussian
 	Fieldmodule::createFieldImagefilterDiscreteGaussian(Field& sourceField)
 {
-	return FieldImagefilterDiscreteGaussian(
-		cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(id, sourceField.getId()));
+	return FieldImagefilterDiscreteGaussian(reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(
+		cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(id, sourceField.getId())));
+}
+
+inline FieldImagefilterDiscreteGaussian Field::castImagefilterDiscreteGaussian()
+{
+	return FieldImagefilterDiscreteGaussian(cmzn_field_cast_imagefilter_discrete_gaussian(id));
 }
 
 inline FieldImagefilterGradientMagnitudeRecursiveGaussian
@@ -512,8 +492,13 @@ inline FieldImagefilterGradientMagnitudeRecursiveGaussian
 inline FieldImagefilterHistogram
 	Fieldmodule::createFieldImagefilterHistogram(Field& sourceField)
 {
-	return FieldImagefilterHistogram(cmzn_fieldmodule_create_field_imagefilter_histogram(
-			id, sourceField.getId()));
+	return FieldImagefilterHistogram(reinterpret_cast<cmzn_field_imagefilter_histogram_id>(
+		cmzn_fieldmodule_create_field_imagefilter_histogram(id, sourceField.getId())));
+}
+
+inline FieldImagefilterHistogram Field::castImagefilterHistogram()
+{
+	return FieldImagefilterHistogram(cmzn_field_cast_imagefilter_histogram(id));
 }
 
 inline FieldImagefilterRescaleIntensity
@@ -544,9 +529,14 @@ inline FieldImagefilterSigmoid
 inline FieldImagefilterThreshold
 	Fieldmodule::createFieldImagefilterThreshold(Field& sourceField)
 {
-	return FieldImagefilterThreshold(
+	return FieldImagefilterThreshold(reinterpret_cast<cmzn_field_imagefilter_threshold_id>(
 		cmzn_fieldmodule_create_field_imagefilter_threshold(
-			id, sourceField.getId()));
+			id, sourceField.getId())));
+}
+
+inline FieldImagefilterThreshold Field::castImagefilterThreshold()
+{
+	return FieldImagefilterThreshold(cmzn_field_cast_imagefilter_threshold(id));
 }
 
 }  // namespace Zinc
