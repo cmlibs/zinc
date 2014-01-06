@@ -260,7 +260,7 @@ void cmzn_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material) 
 	}
 }
 
-cmzn_glyph_axes_id cmzn_glyphmodule_create_axes(
+cmzn_glyph_id cmzn_glyphmodule_create_glyph_axes(
 	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id axis_glyph,
 	double axis_width)
 {

@@ -346,14 +346,16 @@ public:
 		return cmzn_glyphmodule_end_change(id);
 	}
 
-	GlyphAxes createAxes(Glyph& axisGlyph, double axisWidth)
+	GlyphAxes createGlyphAxes(Glyph& axisGlyph, double axisWidth)
 	{
-		return GlyphAxes(cmzn_glyphmodule_create_axes(id, axisGlyph.getId(), axisWidth));
+		return GlyphAxes(reinterpret_cast<cmzn_glyph_axes_id>(
+			cmzn_glyphmodule_create_glyph_axes(id, axisGlyph.getId(), axisWidth)));
 	}
 
-	GlyphColourBar createColourBar(Spectrum& spectrum)
+	GlyphColourBar createGlyphColourBar(Spectrum& spectrum)
 	{
-		return GlyphColourBar(cmzn_glyphmodule_create_colour_bar(id, spectrum.getId()));
+		return GlyphColourBar(reinterpret_cast<cmzn_glyph_colour_bar_id>(
+			cmzn_glyphmodule_create_glyph_colour_bar(id, spectrum.getId())));
 	}
 
 	int defineStandardGlyphs()
