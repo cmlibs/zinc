@@ -21,6 +21,18 @@ namespace Zinc
 class Element;
 class Fieldcache;
 class FieldComponent;
+class FieldElementGroup;
+class FieldFindMeshLocation;
+class FieldFiniteElement;
+class FieldGroup;
+class FieldImage;
+class FieldImagefilterBinaryThreshold;
+class FieldImagefilterDiscreteGaussian;
+class FieldImagefilterHistogram;
+class FieldImagefilterThreshold;
+class FieldNodeGroup;
+class FieldStoredMeshLocation;
+class FieldStoredString;
 class Fieldmodule;
 
 class Field
@@ -233,7 +245,20 @@ public:
 
 	bool isDefinedAtLocation(Fieldcache& cache);
 
+	// casting functions: must check isValid()
 	inline FieldComponent castComponent();
+	inline FieldElementGroup castElementGroup();
+	inline FieldFindMeshLocation castFindMeshLocation();
+	inline FieldFiniteElement castFiniteElement();
+	inline FieldGroup castGroup();
+	inline FieldImage castImage();
+	inline FieldImagefilterBinaryThreshold castImagefilterBinaryThreshold();
+	inline FieldImagefilterDiscreteGaussian castImagefilterDiscreteGaussian();
+	inline FieldImagefilterHistogram castImagefilterHistogram();
+	inline FieldImagefilterThreshold castImagefilterThreshold();
+	inline FieldNodeGroup castNodeGroup();
+	inline FieldStoredMeshLocation castStoredMeshLocation();
+	inline FieldStoredString castStoredString();
 };
 
 inline bool operator==(const Field& a, const Field& b)

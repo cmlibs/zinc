@@ -18,6 +18,8 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class ScenefilterOperator;
+
 class Scenefilter
 {
 protected:
@@ -100,21 +102,21 @@ public:
 	{
 		return cmzn_scenefilter_set_name(id, name);
 	}
+
+	inline ScenefilterOperator castOperator();
 };
 
 class ScenefilterOperator : public Scenefilter
 {
 public:
 
+	ScenefilterOperator() : Scenefilter()
+	{	}
+
 	// takes ownership of C handle, responsibility for destroying it
 	explicit ScenefilterOperator(cmzn_scenefilter_operator_id operator_filter_id) :
 		Scenefilter(reinterpret_cast<cmzn_scenefilter_id>(operator_filter_id))
 	{ }
-
-	ScenefilterOperator(Scenefilter& scenefilter) :
-		Scenefilter(reinterpret_cast<cmzn_scenefilter_id>(
-			cmzn_scenefilter_cast_operator(scenefilter.getId())))
-	{	}
 
 	int appendOperand(Scenefilter& operand)
 	{
@@ -158,6 +160,11 @@ public:
 			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId());
 	}
 };
+
+inline ScenefilterOperator Scenefilter::castOperator()
+{
+	return ScenefilterOperator(cmzn_scenefilter_cast_operator(id));
+}
 
 class Scenefiltermodule
 {
