@@ -641,7 +641,7 @@ void cmzn_glyph_colour_bar::spectrumChange(struct MANAGER_MESSAGE(Spectrum) *mes
 	}
 }
 
-cmzn_glyph_colour_bar_id cmzn_glyphmodule_create_colour_bar(
+cmzn_glyph_id cmzn_glyphmodule_create_glyph_colour_bar(
 	cmzn_glyphmodule_id glyphmodule, cmzn_spectrum_id spectrum)
 {
 	if (glyphmodule)

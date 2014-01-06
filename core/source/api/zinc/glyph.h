@@ -225,7 +225,7 @@ ZINC_API int cmzn_glyph_set_name(cmzn_glyph_id glyph, const char *name);
  * glyph 'axis', 0.25 for glyph 'arrow_solid'. Must be non-negative.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_glyph_axes_id cmzn_glyphmodule_create_axes(
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_glyph_axes(
 	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id axis_glyph,
 	double axis_width);
 
@@ -336,7 +336,7 @@ ZINC_API int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
  * @param spectrum  The spectrum to be displayed on the colour bar.
  * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_glyph_colour_bar_id cmzn_glyphmodule_create_colour_bar(
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_glyph_colour_bar(
 	cmzn_glyphmodule_id glyphmodule, cmzn_spectrum_id spectrum);
 
 /**
