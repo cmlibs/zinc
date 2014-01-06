@@ -8,7 +8,6 @@
 
 #include <gtest/gtest.h>
 
-#include <zinc/context.h>
 #include <zinc/core.h>
 #include <zinc/field.h>
 #include <zinc/fieldcache.h>
@@ -18,10 +17,15 @@
 #include <zinc/fieldimageprocessing.h>
 #include <zinc/fieldmodule.h>
 #include <zinc/region.h>
-#include <zinc/status.h>
 #include <zinc/stream.h>
 
+#include <zinc/field.hpp>
+#include <zinc/fieldimage.hpp>
+#include <zinc/fieldimageprocessing.hpp>
+#include <zinc/fieldmodule.hpp>
+
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 #include "test_resources.h"
 
 TEST(cmzn_fieldmodule_create_field_imagefilter_connected_threshold, invalid_args)
@@ -167,4 +171,39 @@ TEST(cmzn_field_imagefilter_threshold, api)
 	cmzn_field_destroy(&f1);
 	cmzn_field_destroy(&f2);
 	cmzn_field_image_destroy(&im);
+}
+
+TEST(ZincFieldImagefilterThreshold, api)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	FieldImage im = zinc.fm.createFieldImage();
+	EXPECT_TRUE(im.isValid());
+	EXPECT_EQ(CMZN_OK, result = im.readFile(TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE)));
+
+	FieldImagefilterThreshold th = zinc.fm.createFieldImagefilterThreshold(im);
+	EXPECT_TRUE(th.isValid());
+
+	// test casting
+	FieldImagefilterThreshold tmp = th.castImagefilterThreshold();
+	EXPECT_TRUE(tmp.isValid());
+
+	FieldImagefilterThreshold::Condition condition;
+	EXPECT_EQ(FieldImagefilterThreshold::CONDITION_BELOW, condition = th.getCondition());
+	EXPECT_EQ(CMZN_OK, result = th.setCondition(FieldImagefilterThreshold::CONDITION_OUTSIDE));
+	EXPECT_EQ(FieldImagefilterThreshold::CONDITION_OUTSIDE, condition = th.getCondition());
+
+	double value;
+	ASSERT_DOUBLE_EQ(0.0, value = th.getOutsideValue());
+	EXPECT_EQ(CMZN_OK, result = th.setOutsideValue(1.0));
+	ASSERT_DOUBLE_EQ(1.0, value = th.getOutsideValue());
+
+	ASSERT_DOUBLE_EQ(0.5, value = th.getLowerThreshold());
+	EXPECT_EQ(CMZN_OK, result = th.setLowerThreshold(0.2));
+	ASSERT_DOUBLE_EQ(0.2, value = th.getLowerThreshold());
+
+	ASSERT_DOUBLE_EQ(0.5, value = th.getUpperThreshold());
+	EXPECT_EQ(CMZN_OK, result = th.setUpperThreshold(0.8));
+	ASSERT_DOUBLE_EQ(0.8, value = th.getUpperThreshold());
 }

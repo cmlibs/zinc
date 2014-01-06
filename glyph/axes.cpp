@@ -64,7 +64,8 @@ TEST(ZincGlyphAxes, cast)
 
 	Glyph glyph = zinc.glyphmodule.findGlyphByName("axes");
 	EXPECT_TRUE(glyph.isValid());
-	GlyphAxes axes = glyph;
+
+	GlyphAxes axes = glyph.castAxes();
 	EXPECT_TRUE(axes.isValid());
 
 	double axisWidth = axes.getAxisWidth();

@@ -98,7 +98,7 @@ TEST(cmzn_glyph_colour_bar, cast_cpp)
 	Glyph glyph = zinc.glyphmodule.createColourBar(zinc.defaultSpectrum);
 	EXPECT_TRUE(glyph.isValid());
 
-	GlyphColourBar colourBar(glyph);
+	GlyphColourBar colourBar = glyph.castColourBar();
 	EXPECT_TRUE(colourBar.isValid());
 
 	// try any base class API

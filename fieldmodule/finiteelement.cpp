@@ -43,6 +43,10 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_type_coordinate(field, true));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_managed(field, true));
 
+	cmzn_field_finite_element_id feField = cmzn_field_cast_finite_element(field);
+	EXPECT_NE(static_cast<cmzn_field_finite_element_id>(0), feField);
+	cmzn_field_finite_element_destroy(&feField);
+
 	char *componentName = cmzn_field_get_component_name(field, 1);
 	EXPECT_STREQ("1", componentName);
 	cmzn_deallocate(componentName);
@@ -145,6 +149,10 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_EQ(CMZN_OK, result = field.setName("coordinates"));
 	EXPECT_EQ(CMZN_OK, result = field.setTypeCoordinate(true));
 	EXPECT_EQ(CMZN_OK, result = field.setManaged(true));
+
+	Field tmp = field;
+	FieldFiniteElement feField = tmp.castFiniteElement();
+	EXPECT_TRUE(feField.isValid());
 
 	char *componentName = field.getComponentName(1);
 	EXPECT_STREQ("1", componentName);

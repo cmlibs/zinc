@@ -69,13 +69,23 @@ TEST(cmzn_scenefiltermodule_api, valid_args)
 
 	cmzn_scenefilter_destroy(&filter);
 
+	cmzn_scenefilter_operator_id filterOperator;
+
 	filter = cmzn_scenefiltermodule_create_scenefilter_operator_and(sfm);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), filter);
+
+	filterOperator = cmzn_scenefilter_cast_operator(filter);
+	EXPECT_NE(static_cast<cmzn_scenefilter_operator *>(0), filterOperator);
+	cmzn_scenefilter_operator_destroy(&filterOperator);
 
 	cmzn_scenefilter_destroy(&filter);
 
 	filter = cmzn_scenefiltermodule_create_scenefilter_operator_or(sfm);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), filter);
+
+	filterOperator = cmzn_scenefilter_cast_operator(filter);
+	EXPECT_NE(static_cast<cmzn_scenefilter_operator *>(0), filterOperator);
+	cmzn_scenefilter_operator_destroy(&filterOperator);
 
 	cmzn_scenefilter_destroy(&filter);
 
@@ -122,11 +132,17 @@ TEST(cmzn_scenefiltermodule_api, valid_args_cpp)
 	filter = sfm.createScenefilterRegion(zinc.root_region);
 	EXPECT_TRUE(filter.isValid());
 
+	ScenefilterOperator filterOperator;
+
 	filter = sfm.createScenefilterOperatorAnd();
 	EXPECT_TRUE(filter.isValid());
+	filterOperator = filter.castOperator();
+	EXPECT_TRUE(filterOperator.isValid());
 
 	filter = sfm.createScenefilterOperatorOr();
 	EXPECT_TRUE(filter.isValid());
+	filterOperator = filter.castOperator();
+	EXPECT_TRUE(filterOperator.isValid());
 }
 
 TEST(cmzn_scenefilter_api, valid_args)

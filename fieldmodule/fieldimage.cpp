@@ -121,6 +121,10 @@ TEST(ZincFieldImage, create_evaluate)
 	FieldImage im = zinc.fm.createFieldImage();
 	EXPECT_TRUE(im.isValid());
 
+	// test casting
+	FieldImage castImage = im.castImage();
+	EXPECT_TRUE(castImage.isValid());
+
 	int result;
 	EXPECT_EQ(OK, result = im.readFile(TestResources::getLocation(TestResources::FIELDIMAGE_BLOCKCOLOURS_RESOURCE)));
 	int numberOfComponents = im.getNumberOfComponents();

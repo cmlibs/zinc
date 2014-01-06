@@ -320,6 +320,11 @@ TEST(ZincSelectionnotifier, changeCallback)
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
+
+	// test casting
+	FieldGroup castGroup = group.castGroup();
+	EXPECT_TRUE(castGroup.isValid());
+
 	EXPECT_EQ(OK, result = zinc.scene.setSelectionGroup(group));
 	FieldGroup temp = zinc.scene.getSelectionGroup();
 	EXPECT_EQ(group, temp);
