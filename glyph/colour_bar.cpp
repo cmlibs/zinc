@@ -57,50 +57,26 @@ public:
 	}
 };
 
-TEST(cmzn_glyph_colour_bar, create)
+TEST(cmzn_glyph_colour_bar, create_cast)
 {
 	ZincTestSetupSpectrum zinc;
-
-	cmzn_glyph_colour_bar_id colourBar = cmzn_glyphmodule_create_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum);
-	EXPECT_NE(static_cast<cmzn_glyph_colour_bar *>(0), colourBar);
-
-	cmzn_glyph_colour_bar_destroy(&colourBar);
-}
-
-TEST(cmzn_glyph_colour_bar, create_cpp)
-{
-	ZincTestSetupSpectrumCpp zinc;
-
-	GlyphColourBar colourBar = zinc.glyphmodule.createColourBar(zinc.defaultSpectrum);
-	EXPECT_TRUE(colourBar.isValid());
-}
-
-TEST(cmzn_glyph_colour_bar, cast)
-{
-	ZincTestSetupSpectrum zinc;
-
-	cmzn_glyph_id glyph = cmzn_glyph_colour_bar_base_cast(cmzn_glyphmodule_create_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum));
-	EXPECT_NE(static_cast<cmzn_glyph *>(0), glyph);
-
+	cmzn_glyph_id glyph = cmzn_glyphmodule_create_glyph_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum);
+	EXPECT_NE(static_cast<cmzn_glyph_id>(0), glyph);
 	cmzn_glyph_colour_bar_id colourBar = cmzn_glyph_cast_colour_bar(glyph);
 	EXPECT_EQ(reinterpret_cast<cmzn_glyph_colour_bar *>(glyph), colourBar);
-
 	EXPECT_EQ(glyph, cmzn_glyph_colour_bar_base_cast(colourBar));
-
 	cmzn_glyph_colour_bar_destroy(&colourBar);
 	cmzn_glyph_destroy(&glyph);
 }
 
-TEST(cmzn_glyph_colour_bar, cast_cpp)
+TEST(ZincGlyphColourBar, create_cast)
 {
 	ZincTestSetupSpectrumCpp zinc;
 
-	Glyph glyph = zinc.glyphmodule.createColourBar(zinc.defaultSpectrum);
+	Glyph glyph = zinc.glyphmodule.createGlyphColourBar(zinc.defaultSpectrum);
 	EXPECT_TRUE(glyph.isValid());
-
 	GlyphColourBar colourBar = glyph.castColourBar();
 	EXPECT_TRUE(colourBar.isValid());
-
 	// try any base class API
 	EXPECT_EQ(CMZN_OK, colourBar.setManaged(true));
 }
@@ -110,17 +86,20 @@ TEST(cmzn_glyph_colour_bar, valid_attributes)
 	ZincTestSetupSpectrum zinc;
 	int result;
 
-	cmzn_glyph_colour_bar_id colourBar = cmzn_glyphmodule_create_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum);
-	EXPECT_NE(static_cast<cmzn_glyph_colour_bar *>(0), colourBar);
+	cmzn_glyph_id glyph = cmzn_glyphmodule_create_glyph_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum);
+	EXPECT_NE(static_cast<cmzn_glyph*>(0), glyph);
 
 	const char *nameIn = "Bob";
-	char *name = cmzn_glyph_get_name(cmzn_glyph_colour_bar_base_cast(colourBar));
+	char *name = cmzn_glyph_get_name(glyph);
 	EXPECT_NE(static_cast<char *>(0), name);
 	cmzn_deallocate(name);
-	EXPECT_EQ(CMZN_OK, result = cmzn_glyph_set_name(cmzn_glyph_colour_bar_base_cast(colourBar), nameIn));
-	name = cmzn_glyph_get_name(cmzn_glyph_colour_bar_base_cast(colourBar));
+	EXPECT_EQ(CMZN_OK, result = cmzn_glyph_set_name(glyph, nameIn));
+	name = cmzn_glyph_get_name(glyph);
 	EXPECT_STREQ(nameIn, name);
 	cmzn_deallocate(name);
+
+	cmzn_glyph_colour_bar_id colourBar = cmzn_glyph_cast_colour_bar(glyph);
+	EXPECT_NE(static_cast<cmzn_glyph_colour_bar *>(0), colourBar);
 
 	double value;
 	double valuesOut[3];
@@ -195,14 +174,15 @@ TEST(cmzn_glyph_colour_bar, valid_attributes)
 	EXPECT_EQ(tickLengthIn, value = cmzn_glyph_colour_bar_get_tick_length(colourBar));
 
 	cmzn_glyph_colour_bar_destroy(&colourBar);
+	cmzn_glyph_destroy(&glyph);
 }
 
-TEST(cmzn_glyph_colour_bar, valid_attributes_cpp)
+TEST(ZincGlyphColourBar, valid_attributes)
 {
 	ZincTestSetupSpectrumCpp zinc;
 	int result;
 
-	GlyphColourBar colourBar = zinc.glyphmodule.createColourBar(zinc.defaultSpectrum);
+	GlyphColourBar colourBar = zinc.glyphmodule.createGlyphColourBar(zinc.defaultSpectrum);
 	EXPECT_TRUE(colourBar.isValid());
 
 	const char *nameIn = "Bob";
@@ -291,20 +271,22 @@ TEST(cmzn_glyph_colour_bar, invalid_attributes)
 	ZincTestSetupSpectrum zinc;
 	int result;
 
-	cmzn_glyph_colour_bar_id noGlyphmoduleColourBar = cmzn_glyphmodule_create_colour_bar(static_cast<cmzn_glyphmodule_id>(0), zinc.defaultSpectrum);
-	EXPECT_EQ(static_cast<cmzn_glyph_colour_bar *>(0), noGlyphmoduleColourBar);
+	cmzn_glyph_id noGlyphmoduleColourBar = cmzn_glyphmodule_create_glyph_colour_bar(static_cast<cmzn_glyphmodule_id>(0), zinc.defaultSpectrum);
+	EXPECT_EQ(static_cast<cmzn_glyph*>(0), noGlyphmoduleColourBar);
 
-	cmzn_glyph_colour_bar_id noSpectrumColourBar = cmzn_glyphmodule_create_colour_bar(zinc.glyphmodule, static_cast<cmzn_spectrum_id>(0));
-	EXPECT_EQ(static_cast<cmzn_glyph_colour_bar *>(0), noSpectrumColourBar);
+	cmzn_glyph_id noSpectrumColourBar = cmzn_glyphmodule_create_glyph_colour_bar(zinc.glyphmodule, static_cast<cmzn_spectrum_id>(0));
+	EXPECT_EQ(static_cast<cmzn_glyph*>(0), noSpectrumColourBar);
 
-	cmzn_glyph_colour_bar_id colourBar = cmzn_glyphmodule_create_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum);
-	EXPECT_NE(static_cast<cmzn_glyph_colour_bar *>(0), colourBar);
-
+	cmzn_glyph_id glyph = cmzn_glyphmodule_create_glyph_colour_bar(zinc.glyphmodule, zinc.defaultSpectrum);
+	EXPECT_NE(static_cast<cmzn_glyph*>(0), glyph);
 	const char *nameIn = "Bob";
 	char *name = cmzn_glyph_get_name(static_cast<cmzn_glyph_id>(0));
 	EXPECT_EQ(static_cast<char *>(0), name);
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_glyph_set_name(static_cast<cmzn_glyph_id>(0), nameIn));
-	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_glyph_set_name(cmzn_glyph_colour_bar_base_cast(colourBar), static_cast<const char *>(0)));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_glyph_set_name(glyph, static_cast<const char *>(0)));
+
+	cmzn_glyph_colour_bar_id colourBar = cmzn_glyph_cast_colour_bar(glyph);
+	EXPECT_NE(static_cast<cmzn_glyph_colour_bar *>(0), colourBar);
 
 	double value;
 	double valuesOut[3];
@@ -359,18 +341,19 @@ TEST(cmzn_glyph_colour_bar, invalid_attributes)
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_glyph_colour_bar_set_tick_length(colourBar, -1.0));
 
 	cmzn_glyph_colour_bar_destroy(&colourBar);
+	cmzn_glyph_destroy(&glyph);
 }
 
-TEST(cmzn_glyph_colour_bar, invalid_attributes_cpp)
+TEST(ZincGlyphColourBar, invalid_attributes)
 {
 	ZincTestSetupSpectrumCpp zinc;
 	int result;
 
 	Spectrum noSpectrum;
-	GlyphColourBar noSpectrumColourBar = zinc.glyphmodule.createColourBar(noSpectrum);
+	GlyphColourBar noSpectrumColourBar = zinc.glyphmodule.createGlyphColourBar(noSpectrum);
 	EXPECT_FALSE(noSpectrumColourBar.isValid());
 
-	GlyphColourBar colourBar = zinc.glyphmodule.createColourBar(zinc.defaultSpectrum);
+	GlyphColourBar colourBar = zinc.glyphmodule.createGlyphColourBar(zinc.defaultSpectrum);
 	EXPECT_TRUE(colourBar.isValid());
 
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = colourBar.setName(0));

@@ -23,11 +23,11 @@ TEST(cmzn_glyph_axes, create)
 
 	cmzn_glyph_id axisGlyph = cmzn_glyphmodule_find_glyph_by_type(zinc.glyphmodule, CMZN_GLYPH_SHAPE_TYPE_AXIS);
 	EXPECT_NE(static_cast<cmzn_glyph *>(0), axisGlyph);
-	cmzn_glyph_axes_id axes = cmzn_glyphmodule_create_axes(zinc.glyphmodule, axisGlyph, 0.1);
-	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
+	cmzn_glyph_id axes = cmzn_glyphmodule_create_glyph_axes(zinc.glyphmodule, axisGlyph, 0.1);
+	EXPECT_NE(static_cast<cmzn_glyph_id>(0), axes);
 
+	cmzn_glyph_destroy(&axes);
 	cmzn_glyph_destroy(&axisGlyph);
-	cmzn_glyph_axes_destroy(&axes);
 }
 
 TEST(ZincGlyphAxes, create)
@@ -36,7 +36,7 @@ TEST(ZincGlyphAxes, create)
 
 	Glyph axisGlyph = zinc.glyphmodule.findGlyphByShapeType(Glyph::SHAPE_TYPE_AXIS);
 	EXPECT_TRUE(axisGlyph.isValid());
-	GlyphAxes axes = zinc.glyphmodule.createAxes(axisGlyph, 0.1);
+	GlyphAxes axes = zinc.glyphmodule.createGlyphAxes(axisGlyph, 0.1);
 	EXPECT_TRUE(axes.isValid());
 }
 
@@ -81,7 +81,8 @@ TEST(cmzn_glyph_axes, valid_attributes)
 
 	cmzn_glyph_id axisGlyph = cmzn_glyphmodule_find_glyph_by_name(zinc.glyphmodule, "axis");
 	EXPECT_NE(static_cast<cmzn_glyph *>(0), axisGlyph);
-	cmzn_glyph_axes_id axes = cmzn_glyphmodule_create_axes(zinc.glyphmodule, axisGlyph, 0.1);
+	cmzn_glyph_id glyph = cmzn_glyphmodule_create_glyph_axes(zinc.glyphmodule, axisGlyph, 0.1);
+	cmzn_glyph_axes_id axes = cmzn_glyph_cast_axes(glyph);
 	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
 
 	double axisWidth = cmzn_glyph_axes_get_axis_width(axes);
@@ -115,8 +116,9 @@ TEST(cmzn_glyph_axes, valid_attributes)
 
 	cmzn_material_destroy(&red);
 	cmzn_materialmodule_destroy(&materialModule);
-	cmzn_glyph_destroy(&axisGlyph);
 	cmzn_glyph_axes_destroy(&axes);
+	cmzn_glyph_destroy(&glyph);
+	cmzn_glyph_destroy(&axisGlyph);
 }
 
 TEST(ZincGlyphAxes, valid_attributes)
@@ -125,7 +127,7 @@ TEST(ZincGlyphAxes, valid_attributes)
 
 	Glyph axisGlyph = zinc.glyphmodule.findGlyphByName("axis");
 	EXPECT_TRUE(axisGlyph.isValid());
-	GlyphAxes axes = zinc.glyphmodule.createAxes(axisGlyph, 0.1);
+	GlyphAxes axes = zinc.glyphmodule.createGlyphAxes(axisGlyph, 0.1);
 	EXPECT_TRUE(axes.isValid());
 
 	double axisWidth = axes.getAxisWidth();
@@ -163,10 +165,11 @@ TEST(cmzn_glyph_axes, invalid_attributes)
 
 	cmzn_glyph_id axisGlyph = cmzn_glyphmodule_find_glyph_by_name(zinc.glyphmodule, "axis");
 	EXPECT_NE(static_cast<cmzn_glyph *>(0), axisGlyph);
-	EXPECT_EQ(static_cast<cmzn_glyph_axes *>(0), cmzn_glyphmodule_create_axes(0, axisGlyph, 0.1));
-	EXPECT_EQ(static_cast<cmzn_glyph_axes *>(0), cmzn_glyphmodule_create_axes(zinc.glyphmodule, 0, 0.1));
-	EXPECT_EQ(static_cast<cmzn_glyph_axes *>(0), cmzn_glyphmodule_create_axes(zinc.glyphmodule, axisGlyph, -0.1));
-	cmzn_glyph_axes_id axes = cmzn_glyphmodule_create_axes(zinc.glyphmodule, axisGlyph, 0.1);
+	EXPECT_EQ(static_cast<cmzn_glyph *>(0), cmzn_glyphmodule_create_glyph_axes(0, axisGlyph, 0.1));
+	EXPECT_EQ(static_cast<cmzn_glyph *>(0), cmzn_glyphmodule_create_glyph_axes(zinc.glyphmodule, 0, 0.1));
+	EXPECT_EQ(static_cast<cmzn_glyph *>(0), cmzn_glyphmodule_create_glyph_axes(zinc.glyphmodule, axisGlyph, -0.1));
+	cmzn_glyph_id glyph = cmzn_glyphmodule_create_glyph_axes(zinc.glyphmodule, axisGlyph, 0.1);
+	cmzn_glyph_axes_id axes = cmzn_glyph_cast_axes(glyph);
 	EXPECT_NE(static_cast<cmzn_glyph_axes *>(0), axes);
 
 	double axisWidth = cmzn_glyph_axes_get_axis_width(0);
@@ -198,8 +201,9 @@ TEST(cmzn_glyph_axes, invalid_attributes)
 
 	cmzn_material_destroy(&red);
 	cmzn_materialmodule_destroy(&materialModule);
-	cmzn_glyph_destroy(&axisGlyph);
 	cmzn_glyph_axes_destroy(&axes);
+	cmzn_glyph_destroy(&glyph);
+	cmzn_glyph_destroy(&axisGlyph);
 }
 
 TEST(ZincGlyphAxes, invalid_attributes)
@@ -210,11 +214,11 @@ TEST(ZincGlyphAxes, invalid_attributes)
 	EXPECT_TRUE(axisGlyph.isValid());
 	Glyph noGlyph;
 	GlyphAxes axes;
-	axes = zinc.glyphmodule.createAxes(noGlyph, 0.1);
+	axes = zinc.glyphmodule.createGlyphAxes(noGlyph, 0.1);
 	EXPECT_FALSE(axes.isValid());
-	axes = zinc.glyphmodule.createAxes(axisGlyph, -0.1);
+	axes = zinc.glyphmodule.createGlyphAxes(axisGlyph, -0.1);
 	EXPECT_FALSE(axes.isValid());
-	axes = zinc.glyphmodule.createAxes(axisGlyph, 0.1);
+	axes = zinc.glyphmodule.createGlyphAxes(axisGlyph, 0.1);
 	EXPECT_TRUE(axes.isValid());
 
 	GlyphAxes noAxes;
