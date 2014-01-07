@@ -621,4 +621,6 @@ int cmzn_graphics_set_scene_for_list_private(
 
 int cmzn_graphics_update_selected(struct cmzn_graphics *graphics, void *dummy_void);
 
+void cmzn_graphics_flag_glyph_has_changed(struct cmzn_graphics *graphics);
+
 #endif

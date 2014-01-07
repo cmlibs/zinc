@@ -6764,3 +6764,12 @@ int cmzn_graphicssamplingattributes_set_element_point_sampling_mode(
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
+
+void cmzn_graphics_flag_glyph_has_changed(struct cmzn_graphics *graphics)
+{
+	if (graphics)
+	{
+		cmzn_graphics_update_graphics_object_trivial_glyph(graphics);
+		cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
+	}
+}
