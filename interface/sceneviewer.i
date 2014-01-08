@@ -56,7 +56,7 @@ static void callbackToPython(cmzn_sceneviewerevent_id sceneviewernotifier_event,
     OpenCMISS::Zinc::Sceneviewerevent *sceneviewerevent = new OpenCMISS::Zinc::Sceneviewerevent(
     cmzn_sceneviewerevent_access(sceneviewernotifier_event));
     PyObject *obj = SWIG_NewPointerObj(SWIG_as_voidptr(sceneviewerevent), SWIGTYPE_p_OpenCMISS__Zinc__Sceneviewerevent, 1);
-    arglist = Py_BuildValue("N", obj);
+    arglist = Py_BuildValue("(N)", obj);
     result = PyObject_CallObject(my_callback, arglist);
     Py_DECREF(arglist);
     if (result)
