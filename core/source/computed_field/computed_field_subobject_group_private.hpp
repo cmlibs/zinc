@@ -282,7 +282,7 @@ public:
 		Computed_field_element_group(cmzn_mesh_id mesh) :
 			Computed_field_subobject_group(),
 			// don't want element_groups based on group region FE_region so get master:
-			master_mesh(cmzn_mesh_get_master(mesh)),
+			master_mesh(cmzn_mesh_get_master_mesh(mesh)),
 			dimension(cmzn_mesh_get_dimension(master_mesh)),
 			object_list(cmzn_mesh_create_element_list_internal(master_mesh))
 		{
@@ -521,7 +521,7 @@ public:
 		Computed_field_node_group(cmzn_nodeset_id nodeset) :
 			Computed_field_subobject_group(),
 			// don't want node_groups based on group region FE_region so get master:
-			master_nodeset(cmzn_nodeset_get_master(nodeset)),
+			master_nodeset(cmzn_nodeset_get_master_nodeset(nodeset)),
 			object_list(cmzn_nodeset_create_node_list_internal(master_nodeset))
 		{
 		}

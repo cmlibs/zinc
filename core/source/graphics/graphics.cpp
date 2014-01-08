@@ -2690,7 +2690,7 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_cad_primitive(
 		cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
 
 		//cmzn_field_id cad_primitive_group_field = cmzn_field_group_get_cad_primitive_group(sub_group, cad_topology_domain);
-		cmzn_field_id cad_primitive_subgroup_field = cmzn_field_group_get_subobject_group_for_domain(sub_group,
+		cmzn_field_id cad_primitive_subgroup_field = cmzn_field_group_get_subobject_group_field_for_domain_field(sub_group,
 			reinterpret_cast<cmzn_field_id>(cad_topology_domain));
 		cmzn_field_cad_primitive_group_template_id cad_primitive_group = NULL;
 		if (cad_primitive_subgroup_field)
@@ -2735,7 +2735,7 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_element(
 	  }
 	  else
 	  {
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(sub_group, mesh);
+		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(sub_group, mesh);
 			if (element_group)
 			{
 				Computed_field_element_group *group_core =
@@ -2769,7 +2769,7 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
 	  }
 	  else
 	  {
-		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(sub_group, nodeset);
+		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(sub_group, nodeset);
 		if (node_group)
 		{
 			Computed_field_node_group *group_core =
@@ -2907,11 +2907,11 @@ int cmzn_graphics_get_iteration_domain(cmzn_graphics_id graphics,
 			cmzn_field_group_id group = cmzn_field_cast_group(graphics->subgroup_field);
 			if (group)
 			{
-				cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, graphics_to_object_data->master_mesh);
+				cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, graphics_to_object_data->master_mesh);
 				if (element_group)
 				{
 					graphics_to_object_data->iteration_mesh =
-						cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group));
+						cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
 					cmzn_field_element_group_destroy(&element_group);
 				}
 				cmzn_field_group_destroy(&group);
@@ -2922,8 +2922,8 @@ int cmzn_graphics_get_iteration_domain(cmzn_graphics_id graphics,
 				if (element_group)
 				{
 					// check group is for same master mesh
-					graphics_to_object_data->iteration_mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group));
-					cmzn_mesh_id temp_master_mesh = cmzn_mesh_get_master(graphics_to_object_data->iteration_mesh);
+					graphics_to_object_data->iteration_mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
+					cmzn_mesh_id temp_master_mesh = cmzn_mesh_get_master_mesh(graphics_to_object_data->iteration_mesh);
 					if (!cmzn_mesh_match(graphics_to_object_data->master_mesh, temp_master_mesh))
 					{
 						cmzn_mesh_destroy(&graphics_to_object_data->iteration_mesh);
@@ -3240,11 +3240,11 @@ int cmzn_graphics_to_graphics_object(
 										cmzn_field_group_id group = cmzn_field_cast_group(graphics->subgroup_field);
 										if (group)
 										{
-											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, master_nodeset);
+											cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
 											if (node_group)
 											{
 												iteration_nodeset =
-													cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
+													cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 												cmzn_field_node_group_destroy(&node_group);
 											}
 											cmzn_field_group_destroy(&group);
@@ -3255,8 +3255,8 @@ int cmzn_graphics_to_graphics_object(
 											if (node_group)
 											{
 												// check group is for same master nodeset
-												iteration_nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
-												cmzn_nodeset_id temp_master_nodeset = cmzn_nodeset_get_master(iteration_nodeset);
+												iteration_nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+												cmzn_nodeset_id temp_master_nodeset = cmzn_nodeset_get_master_nodeset(iteration_nodeset);
 												if (!cmzn_nodeset_match(master_nodeset, temp_master_nodeset))
 												{
 													cmzn_nodeset_destroy(&iteration_nodeset);
@@ -6405,16 +6405,16 @@ enum cmzn_glyph_shape_type cmzn_graphicspointattributes_get_glyph_shape_type(
 
 int cmzn_graphicspointattributes_set_glyph_shape_type(
 	cmzn_graphicspointattributes_id point_attributes,
-	enum cmzn_glyph_shape_type glyph_type)
+	enum cmzn_glyph_shape_type glyph_shape_type)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(point_attributes);
-	if (graphics && (CMZN_GLYPH_SHAPE_TYPE_INVALID != glyph_type))
+	if (graphics && (CMZN_GLYPH_SHAPE_TYPE_INVALID != glyph_shape_type))
 	{
 		cmzn_graphics_module* graphics_module = cmzn_scene_get_graphics_module(graphics->scene);
 		cmzn_glyphmodule_id glyphmodule = cmzn_graphics_module_get_glyphmodule(graphics_module);
-		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_type);
-		if (glyph || (glyph_type == CMZN_GLYPH_SHAPE_TYPE_NONE))
+		cmzn_glyph_id glyph = glyphmodule->findGlyphByType(glyph_shape_type);
+		if (glyph || (glyph_shape_type == CMZN_GLYPH_SHAPE_TYPE_NONE))
 		{
 			return_code = cmzn_graphicspointattributes_set_glyph(point_attributes, glyph);
 		}

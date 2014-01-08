@@ -800,7 +800,7 @@ cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
 			cmzn_field_node_group_id node_group_field = cmzn_field_cast_node_group(field);
 			if (node_group_field)
 			{
-				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group_field));
+				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group_field));
 				cmzn_field_node_group_destroy(&node_group_field);
 			}
 			cmzn_field_destroy(&field);
@@ -909,7 +909,7 @@ int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
 	return 0;
 }
 
-cmzn_nodeset_id cmzn_nodeset_get_master(cmzn_nodeset_id nodeset)
+cmzn_nodeset_id cmzn_nodeset_get_master_nodeset(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return nodeset->getMaster();
@@ -980,7 +980,7 @@ int cmzn_nodeset_group_remove_element_nodes(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset(
+cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	cmzn_field_node_group_id node_group)
 {
 	if (node_group)
@@ -1045,8 +1045,8 @@ cmzn_nodeset_group_id cmzn_fieldmodule_create_field_nodeset_group_from_name_inte
 				cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_name(fieldmodule, nodeset_name);
 				cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, group_name);
 				cmzn_field_group_id group = cmzn_field_cast_group(field);
-				cmzn_field_node_group_id node_group = cmzn_field_group_create_node_group(group, master_nodeset);
-				nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
+				cmzn_field_node_group_id node_group = cmzn_field_group_create_field_node_group(group, master_nodeset);
+				nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
 				cmzn_field_node_group_destroy(&node_group);
 				cmzn_field_group_destroy(&group);
 				cmzn_field_destroy(&field);

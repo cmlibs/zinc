@@ -337,9 +337,9 @@ public:
 		return Node(cmzn_nodeset_find_node_by_identifier(id, identifier));
 	}
 
-	Nodeset getMaster()
+	Nodeset getMasterNodeset()
 	{
-		return Nodeset(cmzn_nodeset_get_master(id));
+		return Nodeset(cmzn_nodeset_get_master_nodeset(id));
 	}
 
 	char *getName()

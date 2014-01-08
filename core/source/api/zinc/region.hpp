@@ -42,50 +42,50 @@ public:
 		return reinterpret_cast<cmzn_streaminformation_region_id>(id);
 	}
 
-	enum RegionAttribute
+	enum Attribute
 	{
-		REGION_ATTRIBUTE_INVALID = CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID ,
-		REGION_ATTRIBUTE_TIME = CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME
+		ATTRIBUTE_INVALID = CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID,
+		ATTRIBUTE_TIME = CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME
 	};
 
-	int hasRegionAttribute(RegionAttribute attribute)
+	int hasAttribute(Attribute attribute)
 	{
 		return cmzn_streaminformation_region_has_attribute(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	double getRegionAttributeReal(RegionAttribute attribute)
+	double getAttributeReal(Attribute attribute)
 	{
 		return cmzn_streaminformation_region_get_attribute_real(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	int setRegionAttributeReal(RegionAttribute attribute, double value)
+	int setAttributeReal(Attribute attribute, double value)
 	{
 		return cmzn_streaminformation_region_set_attribute_real(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	int hasRegionResourceAttribute(Streamresource resource, RegionAttribute attribute)
+	int hasResourceAttribute(Streamresource resource, Attribute attribute)
 	{
 		return cmzn_streaminformation_region_has_resource_attribute(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	double getRegionResourceAttributeReal(Streamresource resource,
-		RegionAttribute attribute)
+	double getResourceAttributeReal(Streamresource resource,
+		Attribute attribute)
 	{
 		return cmzn_streaminformation_region_get_resource_attribute_real(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	int setRegionResourceAttributeReal(Streamresource resource,
-		RegionAttribute attribute, double value)
+	int setResourceAttributeReal(Streamresource resource,
+		Attribute attribute, double value)
 	{
 		return cmzn_streaminformation_region_set_resource_attribute_real(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
@@ -107,6 +107,11 @@ public:
 	}
 
 };
+
+inline StreaminformationRegion Streaminformation::castRegion()
+{
+	return StreaminformationRegion(cmzn_streaminformation_cast_region(id));
+}
 
 class Scene;
 

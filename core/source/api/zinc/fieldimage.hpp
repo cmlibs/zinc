@@ -106,6 +106,11 @@ public:
 
 };
 
+inline StreaminformationImage Streaminformation::castImage()
+{
+	return StreaminformationImage(cmzn_streaminformation_cast_image(id));
+}
+
 class FieldImage : public Field
 {
 private:

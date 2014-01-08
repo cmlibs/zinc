@@ -1943,7 +1943,7 @@ cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
 	return glyph;
 }
 
-cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_type(
+cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_glyph_shape_type(
 	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_shape_type glyph_type)
 {
 	cmzn_glyph *glyph = 0;

@@ -1549,17 +1549,17 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 				{
 					cmzn_field_domain_type nodeset_domain_type = i ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES;
 					cmzn_nodeset_id source_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(source_field_module, nodeset_domain_type);
-					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_node_group(source_group, source_nodeset);
+					cmzn_field_node_group_id source_node_group = cmzn_field_group_get_field_node_group(source_group, source_nodeset);
 					if (source_node_group)
 					{
-						cmzn_nodeset_group_id source_nodeset_group = cmzn_field_node_group_get_nodeset(source_node_group);
+						cmzn_nodeset_group_id source_nodeset_group = cmzn_field_node_group_get_nodeset_group(source_node_group);
 						cmzn_nodeset_id target_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(target_field_module, nodeset_domain_type);
-						cmzn_field_node_group_id target_node_group = cmzn_field_group_get_node_group(target_group, target_nodeset);
+						cmzn_field_node_group_id target_node_group = cmzn_field_group_get_field_node_group(target_group, target_nodeset);
 						if (!target_node_group)
 						{
-							target_node_group = cmzn_field_group_create_node_group(target_group, target_nodeset);
+							target_node_group = cmzn_field_group_create_field_node_group(target_group, target_nodeset);
 						}
-						cmzn_nodeset_group_id target_nodeset_group = cmzn_field_node_group_get_nodeset(target_node_group);
+						cmzn_nodeset_group_id target_nodeset_group = cmzn_field_node_group_get_nodeset_group(target_node_group);
 
 						cmzn_nodeiterator_id node_iter = cmzn_nodeset_create_nodeiterator(cmzn_nodeset_group_base_cast(source_nodeset_group));
 						cmzn_node_id source_node = 0;
@@ -1588,17 +1588,17 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 				for (int dimension = 3; 0 < dimension; --dimension)
 				{
 					cmzn_mesh_id source_mesh = cmzn_fieldmodule_find_mesh_by_dimension(source_field_module, dimension);
-					cmzn_field_element_group_id source_element_group = cmzn_field_group_get_element_group(source_group, source_mesh);
+					cmzn_field_element_group_id source_element_group = cmzn_field_group_get_field_element_group(source_group, source_mesh);
 					if (source_element_group)
 					{
-						cmzn_mesh_group_id source_mesh_group = cmzn_field_element_group_get_mesh(source_element_group);
+						cmzn_mesh_group_id source_mesh_group = cmzn_field_element_group_get_mesh_group(source_element_group);
 						cmzn_mesh_id target_mesh = cmzn_fieldmodule_find_mesh_by_dimension(target_field_module, dimension);
-						cmzn_field_element_group_id target_element_group = cmzn_field_group_get_element_group(target_group, target_mesh);
+						cmzn_field_element_group_id target_element_group = cmzn_field_group_get_field_element_group(target_group, target_mesh);
 						if (!target_element_group)
 						{
-							target_element_group = cmzn_field_group_create_element_group(target_group, target_mesh);
+							target_element_group = cmzn_field_group_create_field_element_group(target_group, target_mesh);
 						}
-						cmzn_mesh_group_id target_mesh_group = cmzn_field_element_group_get_mesh(target_element_group);
+						cmzn_mesh_group_id target_mesh_group = cmzn_field_element_group_get_mesh_group(target_element_group);
 
 						cmzn_elementiterator_id element_iter = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(source_mesh_group));
 						cmzn_element_id source_element = 0;

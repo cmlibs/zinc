@@ -10,11 +10,10 @@
 #define CMZN_SCENE_HPP__
 
 #include "zinc/scene.h"
-#include "zinc/fieldgroup.hpp"
+#include "zinc/field.hpp"
 #include "zinc/graphics.hpp"
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
-
 
 namespace OpenCMISS
 {
@@ -162,15 +161,14 @@ public:
 		return cmzn_scene_get_number_of_graphics(id);
 	}
 
-	FieldGroup getSelectionGroup()
+	Field getSelectionField()
 	{
-		return FieldGroup(cmzn_scene_get_selection_group(id));
+		return Field(cmzn_scene_get_selection_field(id));
 	}
 
-	int setSelectionGroup(FieldGroup& fieldGroup)
+	int setSelectionField(Field& selectionField)
 	{
-		return cmzn_scene_set_selection_group(id,
-			(cmzn_field_group_id)(fieldGroup.getId()));
+		return cmzn_scene_set_selection_field(id, selectionField.getId());
 	}
 
 	int getSpectrumDataRange(Scenefilter& filter, Spectrum& spectrum,

@@ -106,6 +106,9 @@ public:
 
 };
 
+class StreaminformationImage;
+class StreaminformationRegion;
+
 class Streaminformation
 {
 protected:
@@ -209,6 +212,9 @@ public:
 			reinterpret_cast<cmzn_streaminformation_id>(id),
 			static_cast<cmzn_streaminformation_data_compression_type>(dataCompressionType));
 	}
+
+	inline StreaminformationImage castImage();
+	inline StreaminformationRegion castRegion();
 
 };
 

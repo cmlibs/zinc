@@ -80,7 +80,7 @@ ZINC_API int cmzn_field_node_group_destroy(cmzn_field_node_group_id *node_group_
  * @param node_group  Handle to node group field.
  * @return  Handle to nodeset group. Caller is responsible for destroying this.
  */
-ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset(
+ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	cmzn_field_node_group_id node_group);
 
 /***************************************************************************//**
@@ -137,7 +137,7 @@ ZINC_API int cmzn_field_element_group_destroy(cmzn_field_element_group_id *eleme
  * @param element_group  Handle to element group field.
  * @return  Handle to mesh group. Caller is responsible for destroying this.
  */
-ZINC_API cmzn_mesh_group_id cmzn_field_element_group_get_mesh(
+ZINC_API cmzn_mesh_group_id cmzn_field_element_group_get_mesh_group(
 	cmzn_field_element_group_id element_group);
 
 #ifdef __cplusplus

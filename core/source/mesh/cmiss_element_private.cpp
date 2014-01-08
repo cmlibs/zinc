@@ -1110,7 +1110,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 			cmzn_field_element_group_id element_group_field = cmzn_field_cast_element_group(field);
 			if (element_group_field)
 			{
-				mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group_field));
+				mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_field));
 				cmzn_field_element_group_destroy(&element_group_field);
 			}
 			cmzn_field_destroy(&field);
@@ -1270,7 +1270,7 @@ int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
 	return 0;
 }
 
-cmzn_mesh_id cmzn_mesh_get_master(cmzn_mesh_id mesh)
+cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh)
 {
 	if (mesh)
 		return mesh->getMaster();
@@ -1353,7 +1353,7 @@ int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group, cmzn_ele
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_mesh_group_id cmzn_field_element_group_get_mesh(
+cmzn_mesh_group_id cmzn_field_element_group_get_mesh_group(
 	cmzn_field_element_group_id element_group)
 {
 	if (element_group)

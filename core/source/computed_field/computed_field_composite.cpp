@@ -80,6 +80,15 @@ public:
 
 	char *get_source_string(int commands);
 
+	// for component field only. Component index starts at 0.
+	int getComponentIndex()
+	{
+		if (field->number_of_components == 1)
+			return this->source_value_numbers[0];
+		return 0;
+	}
+
+	// for component field only. Component index starts at 0.
 	int setComponentIndex(int component_index)
 	{
 		if (field->number_of_components == 1 && component_index > -1)
@@ -1121,6 +1130,17 @@ cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 			cmzn_field_access(field);
 			return (reinterpret_cast<cmzn_field_component_id>(field));
 		}
+	}
+	return 0;
+}
+
+int cmzn_field_component_get_component_index(cmzn_field_component_id component)
+{
+	if (component)
+	{
+		Computed_field_composite *composite_core = Computed_field_composite_core_cast(component);
+		if (composite_core)
+			return composite_core->getComponentIndex() + 1;
 	}
 	return 0;
 }

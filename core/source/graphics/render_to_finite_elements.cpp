@@ -88,7 +88,7 @@ struct Render_to_finite_elements_data
 	{
 		if (group)
 		{
-			cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, master_nodeset);
+			cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
 			if (nodeset_in && (RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode))
 			{
 				nodeset = cmzn_nodeset_access(nodeset_in);
@@ -96,19 +96,19 @@ struct Render_to_finite_elements_data
 			else
 			{
 				if (!node_group)
-					node_group = cmzn_field_group_create_node_group(group, master_nodeset);
-				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
+					node_group = cmzn_field_group_create_field_node_group(group, master_nodeset);
+				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 				cmzn_field_node_group_destroy(&node_group);
 			}
-			cmzn_field_element_group_id element_group_1d = cmzn_field_group_get_element_group(group, master_mesh_1d);
+			cmzn_field_element_group_id element_group_1d = cmzn_field_group_get_field_element_group(group, master_mesh_1d);
 			if (!element_group_1d)
-				element_group_1d = cmzn_field_group_create_element_group(group, master_mesh_1d);
-			mesh_1d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group_1d));
+				element_group_1d = cmzn_field_group_create_field_element_group(group, master_mesh_1d);
+			mesh_1d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_1d));
 			cmzn_field_element_group_destroy(&element_group_1d);
-			cmzn_field_element_group_id element_group_2d = cmzn_field_group_get_element_group(group, master_mesh_2d);
+			cmzn_field_element_group_id element_group_2d = cmzn_field_group_get_field_element_group(group, master_mesh_2d);
 			if (!element_group_2d)
-				element_group_2d = cmzn_field_group_create_element_group(group, master_mesh_2d);
-			mesh_2d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group_2d));
+				element_group_2d = cmzn_field_group_create_field_element_group(group, master_mesh_2d);
+			mesh_2d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_2d));
 			cmzn_field_element_group_destroy(&element_group_2d);
 		}
 		else

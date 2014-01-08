@@ -38,14 +38,6 @@ public:
 
 class FieldComponent : public Field
 {
-
-private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldComponent(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
-	friend FieldComponent Fieldmodule::createFieldComponent(Field& sourceField, int componentIndex);
-
 public:
 
 	FieldComponent() : Field(0)
@@ -56,10 +48,19 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_component_id))
 	{	}
 
+	inline cmzn_field_component_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_field_component_id>(id);
+	}
+
+	int getComponentIndex()
+	{
+		return cmzn_field_component_get_component_index(getDerivedId());
+	}
+
 	int setComponentIndex(int componentIndex)
 	{
-		return cmzn_field_component_set_component_index(
-			reinterpret_cast<cmzn_field_component_id>(id), componentIndex);
+		return cmzn_field_component_set_component_index(getDerivedId(), componentIndex);
 	}
 
 };
@@ -88,8 +89,8 @@ inline FieldIdentity Fieldmodule::createFieldIdentity(Field& sourceField)
 
 inline FieldComponent Fieldmodule::createFieldComponent(Field& sourceField, int componentIndex)
 {
-	return FieldComponent(cmzn_fieldmodule_create_field_component(id,
-		sourceField.getId(), componentIndex));
+	return FieldComponent(reinterpret_cast<cmzn_field_component_id>(
+		cmzn_fieldmodule_create_field_component(id, sourceField.getId(), componentIndex)));
 }
 
 inline FieldComponent Field::castComponent()

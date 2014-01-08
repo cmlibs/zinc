@@ -2364,9 +2364,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS);
 					if (group)
 					{
-						cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
+						cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
 						cmzn_nodeset_destroy(&nodeset);
-						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
+						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 						cmzn_field_node_group_destroy(&node_group);
 					}
 					if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
@@ -2393,9 +2393,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						CMZN_FIELD_DOMAIN_TYPE_NODES);
 					if (group)
 					{
-						cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
+						cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
 						cmzn_nodeset_destroy(&nodeset);
-						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset(node_group));
+						nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 						cmzn_field_node_group_destroy(&node_group);
 					}
 					if (nodeset && (cmzn_nodeset_get_size(nodeset) > 0))
@@ -2444,9 +2444,9 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
 						cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 						if (group)
 						{
-							cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, mesh);
+							cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
 							cmzn_mesh_destroy(&mesh);
-							mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh(element_group));
+							mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
 							cmzn_field_element_group_destroy(&element_group);
 						}
 						if (mesh)
@@ -2602,7 +2602,7 @@ static int write_cmzn_region(ostream *output_file,
 			{
 				cmzn_field_group_id child_group = 0;
 				if ((!group) ||
-					(0 != (child_group = cmzn_field_group_get_subregion_group(group, child_region))))
+					(0 != (child_group = cmzn_field_group_get_subregion_field_group(group, child_region))))
 				{
 					return_code = write_cmzn_region(output_file,
 						child_region, child_group, root_region,

@@ -487,9 +487,9 @@ public:
 		return cmzn_mesh_get_dimension(id);
 	}
 
-	Mesh getMaster()
+	Mesh getMasterMesh()
 	{
-		return Mesh(cmzn_mesh_get_master(id));
+		return Mesh(cmzn_mesh_get_master_mesh(id));
 	}
 
 	char *getName()

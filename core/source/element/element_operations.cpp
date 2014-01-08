@@ -338,7 +338,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					 group which already have the same number as the new_number */
 					int next_spare_element_number =
 						element_values[number_of_elements - 1].new_number + 1;
-					cmzn_mesh_group_id mesh = cmzn_field_element_group_get_mesh(element_group);
+					cmzn_mesh_group_id mesh = cmzn_field_element_group_get_mesh_group(element_group);
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
 						element_with_identifier = FE_region_get_FE_element_from_identifier(
@@ -653,7 +653,7 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 		cmzn_element_id element = 0;
 		int id = first_identifier;
 		bool first_unknown_shape = true;
-		cmzn_nodeset_id master_gauss_points_nodeset = cmzn_nodeset_get_master(gauss_points_nodeset);
+		cmzn_nodeset_id master_gauss_points_nodeset = cmzn_nodeset_get_master_nodeset(gauss_points_nodeset);
 		while ((0 != (element = cmzn_elementiterator_next_non_access(iterator))) && return_code)
 		{
 			cmzn_element_shape_type shape_type = cmzn_element_get_shape_type(element);

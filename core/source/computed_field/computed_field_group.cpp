@@ -715,7 +715,7 @@ cmzn_field_node_group_id Computed_field_group::create_node_group(cmzn_nodeset_id
 	}
 	else
 	{
-		cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master(nodeset);
+		cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_id node_group_field = cmzn_fieldmodule_create_field_node_group(field_module, master_nodeset);
@@ -759,7 +759,7 @@ cmzn_field_node_group_id Computed_field_group::get_node_group(cmzn_nodeset_id no
 	if (!node_group)
 	{
 		// find by name & check it is for same master nodeset (must avoid group regions)
-		cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master(nodeset);
+		cmzn_nodeset_id master_nodeset = cmzn_nodeset_get_master_nodeset(nodeset);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		char *name = get_standard_node_group_name(master_nodeset);
 		cmzn_field_id node_group_field = cmzn_fieldmodule_find_field_by_name(field_module, name);
@@ -817,7 +817,7 @@ cmzn_field_element_group_id Computed_field_group::create_element_group(cmzn_mesh
 	}
 	else
 	{
-		cmzn_mesh_id master_mesh = cmzn_mesh_get_master(mesh);
+		cmzn_mesh_id master_mesh = cmzn_mesh_get_master_mesh(mesh);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_field_id element_group_field = cmzn_fieldmodule_create_field_element_group(field_module, master_mesh);
@@ -850,7 +850,7 @@ cmzn_field_element_group_id Computed_field_group::get_element_group(cmzn_mesh_id
 	else
 	{
 		// find by name & check it is for same master mesh (must avoid group regions)
-		cmzn_mesh_id master_mesh = cmzn_mesh_get_master(mesh);
+		cmzn_mesh_id master_mesh = cmzn_mesh_get_master_mesh(mesh);
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 		char *name = get_standard_element_group_name(master_mesh);
 		cmzn_field_id element_group_field = cmzn_fieldmodule_find_field_by_name(field_module, name);
@@ -1056,7 +1056,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 	if (!use_data && local_node_group)
 	{
 		cmzn_field_node_group_id node_group = cmzn_field_cast_node_group(local_node_group);
-		cmzn_nodeset_group_id nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
+		cmzn_nodeset_group_id nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
 		return_code = cmzn_nodeset_group_remove_all_nodes(nodeset_group);
 		cmzn_nodeset_group_destroy(&nodeset_group);
 		check_subobject_group_dependency(local_node_group->core);
@@ -1066,7 +1066,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 	if (use_data && local_data_group)
 	{
 		cmzn_field_node_group_id data_group = cmzn_field_cast_node_group(local_data_group);
-		cmzn_nodeset_group_id nodeset_group = cmzn_field_node_group_get_nodeset(data_group);
+		cmzn_nodeset_group_id nodeset_group = cmzn_field_node_group_get_nodeset_group(data_group);
 		return_code = cmzn_nodeset_group_remove_all_nodes(nodeset_group);
 		cmzn_nodeset_group_destroy(&nodeset_group);
 		check_subobject_group_dependency(local_data_group->core);
@@ -1184,7 +1184,7 @@ cmzn_field_group *cmzn_field_cast_group(cmzn_field_id field)
 	}
 }
 
-cmzn_field_node_group_id cmzn_field_group_create_node_group(cmzn_field_group_id group, cmzn_nodeset_id nodeset)
+cmzn_field_node_group_id cmzn_field_group_create_field_node_group(cmzn_field_group_id group, cmzn_nodeset_id nodeset)
 {
 	cmzn_field_node_group_id field = NULL;
 	if (group && nodeset)
@@ -1200,7 +1200,7 @@ cmzn_field_node_group_id cmzn_field_group_create_node_group(cmzn_field_group_id 
 	return field;
 }
 
-cmzn_field_node_group_id cmzn_field_group_get_node_group(cmzn_field_group_id group, cmzn_nodeset_id nodeset)
+cmzn_field_node_group_id cmzn_field_group_get_field_node_group(cmzn_field_group_id group, cmzn_nodeset_id nodeset)
 {
 	cmzn_field_node_group_id field = NULL;
 	if (group && nodeset)
@@ -1216,7 +1216,7 @@ cmzn_field_node_group_id cmzn_field_group_get_node_group(cmzn_field_group_id gro
 	return field;
 }
 
-cmzn_field_element_group_id cmzn_field_group_create_element_group(cmzn_field_group_id group,
+cmzn_field_element_group_id cmzn_field_group_create_field_element_group(cmzn_field_group_id group,
 	cmzn_mesh_id mesh)
 {
 	cmzn_field_element_group_id field = NULL;
@@ -1233,7 +1233,7 @@ cmzn_field_element_group_id cmzn_field_group_create_element_group(cmzn_field_gro
 	return field;
 }
 
-cmzn_field_element_group_id cmzn_field_group_get_element_group(cmzn_field_group_id group,
+cmzn_field_element_group_id cmzn_field_group_get_field_element_group(cmzn_field_group_id group,
 	cmzn_mesh_id mesh)
 {
 	cmzn_field_element_group_id field = NULL;
@@ -1311,7 +1311,7 @@ int cmzn_field_group_clear_region_tree_cad_primitive(cmzn_field_group_id group)
 
 #endif /* defined (USE_OPENCASCADE) */
 
-cmzn_field_group_id cmzn_field_group_get_subregion_group(
+cmzn_field_group_id cmzn_field_group_get_subregion_field_group(
 	cmzn_field_group_id group, cmzn_region_id subregion)
 {
 	cmzn_field_group_id subgroup = NULL;
@@ -1327,7 +1327,7 @@ cmzn_field_group_id cmzn_field_group_get_subregion_group(
 	return subgroup;
 }
 
-cmzn_field_group_id cmzn_field_group_create_subregion_group(
+cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 	cmzn_field_group_id group, cmzn_region_id subregion)
 {
 	cmzn_field_group_id subgroup = NULL;
@@ -1402,7 +1402,7 @@ int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group)
 	return return_code;
 }
 
-cmzn_field_id cmzn_field_group_get_subobject_group_for_domain(cmzn_field_group_id group, cmzn_field_id domain)
+cmzn_field_id cmzn_field_group_get_subobject_group_field_for_domain_field(cmzn_field_group_id group, cmzn_field_id domain)
 {
 	Computed_field *field = NULL;
 
@@ -1606,7 +1606,7 @@ int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_region_id reg
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_field_group_id cmzn_field_group_get_first_non_empty_group(
+cmzn_field_group_id cmzn_field_group_get_first_non_empty_subregion_field_group(
 	cmzn_field_group_id group)
 {
 	if (group)
