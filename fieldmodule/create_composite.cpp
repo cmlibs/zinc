@@ -108,6 +108,9 @@ TEST(zincFieldComponent_setComponentIndex, valid_args)
 	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 1, &value));
 	EXPECT_EQ(values[component_index - 1], value);
 
+	int temp_component_index = f2.getComponentIndex();
+	EXPECT_EQ(component_index, temp_component_index);
+
 	component_index = 3;
 
 	EXPECT_EQ(CMZN_OK, f2.setComponentIndex(component_index));
@@ -115,7 +118,6 @@ TEST(zincFieldComponent_setComponentIndex, valid_args)
 	EXPECT_EQ(CMZN_OK, f2.evaluateReal(cache, 1, &value));
 	EXPECT_EQ(values[component_index - 1], value);
 }
-
 
 TEST(zincFieldModule_createComponent, invalid_args)
 {

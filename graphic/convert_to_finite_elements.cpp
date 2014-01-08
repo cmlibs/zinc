@@ -26,6 +26,7 @@
 #include "zinc/field.hpp"
 #include "zinc/fieldmodule.hpp"
 #include "zinc/fieldfiniteelement.hpp"
+#include "zinc/fieldsubobjectgroup.hpp"
 #include "zinc/node.hpp"
 #include "zinc/region.hpp"
 
@@ -96,7 +97,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	FieldNodeGroup nodeGroupField = outputFm.createFieldNodeGroup(masterNodeset);
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setName("bob"));
 	EXPECT_EQ(CMZN_OK, nodeGroupField.setManaged(true));
-	NodesetGroup nodeset = nodeGroupField.getNodeset();
+	NodesetGroup nodeset = nodeGroupField.getNodesetGroup();
 	EXPECT_TRUE(nodeset.isValid());
 
 	Scenefilter noFilter;
