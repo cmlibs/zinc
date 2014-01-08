@@ -131,7 +131,7 @@ ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
  * @return  Handle to a glyph with that type, or 0 if not found.
  * Up to caller to destroy returned handle.
  */
-ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_type(
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_glyph_shape_type(
 	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_shape_type glyph_type);
 
 /**

@@ -645,10 +645,10 @@ int cmzn_scenepicker::addPickedElementsToGroup(cmzn_field_group_id group)
 					sub_region = pos->first;
 					if (sub_region)
 					{
-						selection_group = cmzn_field_group_get_subregion_group(group, sub_region);
+						selection_group = cmzn_field_group_get_subregion_field_group(group, sub_region);
 						if (!selection_group)
 						{
-							selection_group = cmzn_field_group_create_subregion_group(group, sub_region);
+							selection_group = cmzn_field_group_create_subregion_field_group(group, sub_region);
 						}
 					}
 				}
@@ -663,12 +663,12 @@ int cmzn_scenepicker::addPickedElementsToGroup(cmzn_field_group_id group)
 							cmzn_mesh_id temp_mesh =
 								cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
 							cmzn_field_element_group_id element_group =
-								cmzn_field_group_get_element_group(selection_group, temp_mesh);
+								cmzn_field_group_get_field_element_group(selection_group, temp_mesh);
 							if (!element_group)
 							{
-								element_group = cmzn_field_group_create_element_group(selection_group, temp_mesh);
+								element_group = cmzn_field_group_create_field_element_group(selection_group, temp_mesh);
 							}
-							mesh_group[dimension - 1] = cmzn_field_element_group_get_mesh(element_group);
+							mesh_group[dimension - 1] = cmzn_field_element_group_get_mesh_group(element_group);
 							cmzn_field_element_group_destroy(&element_group);
 							cmzn_mesh_destroy(&temp_mesh);
 						}
@@ -724,10 +724,10 @@ int cmzn_scenepicker::addPickedNodesToGroup(cmzn_field_group_id group,
 					sub_region = pos->first;
 					if (sub_region)
 					{
-						selection_group = cmzn_field_group_get_subregion_group(group, sub_region);
+						selection_group = cmzn_field_group_get_subregion_field_group(group, sub_region);
 						if (!selection_group)
 						{
-							selection_group = cmzn_field_group_create_subregion_group(group, sub_region);
+							selection_group = cmzn_field_group_create_subregion_field_group(group, sub_region);
 						}
 					}
 					if (selection_group)
@@ -737,13 +737,13 @@ int cmzn_scenepicker::addPickedNodesToGroup(cmzn_field_group_id group,
 							(type == CMZN_SCENEPICKER_OBJECT_DATA) ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
 						if (master_nodeset)
 						{
-							cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(
+							cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(
 								selection_group, master_nodeset);
 							if (!node_group)
 							{
-								node_group = cmzn_field_group_create_node_group(selection_group, master_nodeset);
+								node_group = cmzn_field_group_create_field_node_group(selection_group, master_nodeset);
 							}
-							nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
+							nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
 							cmzn_field_node_group_destroy(&node_group);
 							cmzn_nodeset_destroy(&master_nodeset);
 						}

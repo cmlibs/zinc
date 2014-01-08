@@ -199,7 +199,7 @@ ZINC_API int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_regi
  * @param subregion  Handle to region to create a subgroup for.
  * @return  Handle to new, empty sub-group field on success, NULL on failure.
  */
-ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_group(
+ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 	cmzn_field_group_id group, cmzn_region_id subregion);
 
 /**
@@ -211,7 +211,7 @@ ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_group(
  * @param subregion  Handle to region to get the subgroup for.
  * @return  Handle to sub-group field or NULL if none.
  */
-ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_group(cmzn_field_group_id group,
+ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_field_group_id group,
 	cmzn_region_id subregion);
 
 /**
@@ -226,7 +226,7 @@ ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_group(cmzn_field_gro
  * If not already a master nodeset, the master is obtained from it.
  * @return  Handle to new node group field, or NULL on failure.
  */
-ZINC_API cmzn_field_node_group_id cmzn_field_group_create_node_group(
+ZINC_API cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
 	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /**
@@ -239,7 +239,7 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_create_node_group(
  * If not already a master nodeset, the master is obtained from it.
  * @return  Handle to node group field, or NULL if none.
  */
-ZINC_API cmzn_field_node_group_id cmzn_field_group_get_node_group(
+ZINC_API cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
 	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /**
@@ -254,7 +254,7 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_get_node_group(
  * If not already a master mesh, the master is obtained from it.
  * @return  Handle to new element group field, or NULL on failure.
  */
-ZINC_API cmzn_field_element_group_id cmzn_field_group_create_element_group(
+ZINC_API cmzn_field_element_group_id cmzn_field_group_create_field_element_group(
 	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /**
@@ -267,7 +267,7 @@ ZINC_API cmzn_field_element_group_id cmzn_field_group_create_element_group(
  * If not already a master mesh, the master is obtained from it.
  * @return  Handle to element group field, or NULL if none.
  */
-ZINC_API cmzn_field_element_group_id cmzn_field_group_get_element_group(
+ZINC_API cmzn_field_element_group_id cmzn_field_group_get_field_element_group(
 	cmzn_field_group_id group, cmzn_mesh_id mesh);
 
 /**
@@ -277,7 +277,8 @@ ZINC_API cmzn_field_element_group_id cmzn_field_group_get_element_group(
  * @param domain the domain field
  * @returns the subgroup field for the specified domain, NULL otherwise
  */
-ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_for_domain(cmzn_field_group_id group, cmzn_field_id domain);
+ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_field_for_domain_field(
+	cmzn_field_group_id group, cmzn_field_id domain);
 
 /**
  * Return the first non-empty subregion group in the group tree including itself.
@@ -285,7 +286,7 @@ ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_for_domain(cmzn_fiel
  * @param group  the group field
  * @returns  the first non-empty subregion group field, NULL otherwise.
  */
-ZINC_API cmzn_field_group_id cmzn_field_group_get_first_non_empty_group(
+ZINC_API cmzn_field_group_id cmzn_field_group_get_first_non_empty_subregion_field_group(
 	cmzn_field_group_id group);
 
 #ifdef __cplusplus

@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : material.h
  */
 /* OpenCMISS-Zinc Library
@@ -10,7 +10,7 @@
 #ifndef CMZN_MATERIAL_H__
 #define CMZN_MATERIAL_H__
 
-#include "types/fieldimageid.h"
+#include "types/fieldid.h"
 #include "types/materialid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -127,7 +127,7 @@ ZINC_API int cmzn_materialmodule_set_default_selected_material(
 	cmzn_materialmodule_id materialmodule,
 	cmzn_material_id material);
 
-/***************************************************************************//**
+/**
  * Define a list of standard cmgui materials and store them as they are managed
  * by graphics module.
  *
@@ -138,7 +138,7 @@ ZINC_API int cmzn_materialmodule_set_default_selected_material(
 ZINC_API int cmzn_materialmodule_define_standard_materials(
 	cmzn_materialmodule_id materialmodule);
 
-/***************************************************************************//**
+/**
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.
  *
@@ -148,7 +148,7 @@ ZINC_API int cmzn_materialmodule_define_standard_materials(
 ZINC_API enum cmzn_material_attribute
 	cmzn_material_attribute_enum_from_string(const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
@@ -183,7 +183,7 @@ ZINC_API bool cmzn_material_is_managed(cmzn_material_id material);
 ZINC_API int cmzn_material_set_managed(cmzn_material_id material,
 	bool value);
 
-/***************************************************************************//**
+/**
  * Access the material, increase the access count of the material by one.
  *
  * @param material  handle to the "to be access" zinc material.
@@ -191,7 +191,7 @@ ZINC_API int cmzn_material_set_managed(cmzn_material_id material,
  */
 ZINC_API cmzn_material_id cmzn_material_access(cmzn_material_id material);
 
-/***************************************************************************//**
+/**
  * Destroys this reference to the material (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
@@ -202,7 +202,7 @@ ZINC_API cmzn_material_id cmzn_material_access(cmzn_material_id material);
  */
 ZINC_API int cmzn_material_destroy(cmzn_material_id *material);
 
-/***************************************************************************//**
+/**
  * Get a real value of an attribute of the material.
  *
  * @param material  Handle to the zinc material.
@@ -212,7 +212,7 @@ ZINC_API int cmzn_material_destroy(cmzn_material_id *material);
 ZINC_API double cmzn_material_get_attribute_real(cmzn_material_id material,
 	enum cmzn_material_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Set a real value for an attribute of the material.
  *
  * @param material  Handle to the zinc material.
@@ -224,7 +224,7 @@ ZINC_API double cmzn_material_get_attribute_real(cmzn_material_id material,
 ZINC_API int cmzn_material_set_attribute_real(cmzn_material_id material,
 	enum cmzn_material_attribute attribute, double value);
 
-/***************************************************************************//**
+/**
  * Get a 3 components vectors of an attribute of the material.
  * <values> should be allocated with enough space for 3 components.
  *
@@ -235,7 +235,7 @@ ZINC_API int cmzn_material_set_attribute_real(cmzn_material_id material,
 ZINC_API int cmzn_material_get_attribute_real3(cmzn_material_id material,
 	enum cmzn_material_attribute attribute, double *values);
 
-/***************************************************************************//**
+/**
  * Set a 3 components vectors of an attribute for the material.
  * <values> should be a vectors with 3 components containg valid values.
  *
@@ -247,7 +247,7 @@ ZINC_API int cmzn_material_get_attribute_real3(cmzn_material_id material,
 ZINC_API int cmzn_material_set_attribute_real3(cmzn_material_id material,
 	enum cmzn_material_attribute attribute, const double *values);
 
-/***************************************************************************//**
+/**
  * Return an allocated string containing material name.
  *
  * @param material  handle to the zinc material.
@@ -256,7 +256,7 @@ ZINC_API int cmzn_material_set_attribute_real3(cmzn_material_id material,
  */
 ZINC_API char *cmzn_material_get_name(cmzn_material_id material);
 
-/***************************************************************************//**
+/**
  * Set/change name for <material>.
  *
  * @param material  The handle to the zinc material.
@@ -267,33 +267,31 @@ ZINC_API char *cmzn_material_get_name(cmzn_material_id material);
 ZINC_API int cmzn_material_set_name(
 	cmzn_material_id material, const char *name);
 
-/***************************************************************************//**
- * Set a field containing an image for a cmzn_material.
- * This image will be displayed with the material as the corresponding texture.
- * This function read in a general field but it may not work properly if
- * the field passing in is not an image field.
+/**
+ * Get field containing an image used for texturing the material.
  *
- * @param material  handle to the zinc material.
- * @param field  handle to a general zinc field.
- * @param image_number  integer to identify which image field to be set in
- * 		material.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param material  The material to query.
+ * @param texture_number  The number of the texture to get, from 1 to 4.
+ * @return  Handle to field which caller is responsible for destroying, or NULL
+ * if none or error.
  */
-ZINC_API int cmzn_material_set_image_field(cmzn_material_id material,
-	int image_number, cmzn_field_image_id image_field);
+ZINC_API cmzn_field_id cmzn_material_get_texture_field(
+	cmzn_material_id material, int texture_number);
 
-/***************************************************************************//**
- * Get the field containing an image from a cmzn_material which is
- * used as a texture when displaying. The target image field is specified by the
- * identifier.
+/**
+ * Set field containing an image used for texturing the material.
+ * Up to 4 textures can be used with a material.
  *
- * @param material  handle to the zinc material.
- * @param image_number  integer to identify which image field to get in material.
- * @return  field if a field has been sett for the material, otherwise NULL.
- * 		This also incremenet the access count of the field by 1;
+ * @param material  The material to modify.
+ * @param texture_number  The number of the texture to set, from 1 to 4.
+ * Texture 1 is used for texture mapping with the legacy OpenGL shader model.
+ * Custom material shaders can use any of the textures explicitly.
+ * @param texture_field  The field supplying the texture image. Must be of type
+ * field_image.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API cmzn_field_image_id cmzn_material_get_image_field(
-	cmzn_material_id material, int image_number);
+ZINC_API int cmzn_material_set_texture_field(cmzn_material_id material,
+	int texture_number, cmzn_field_id texture_field);
 
 #ifdef __cplusplus
 }

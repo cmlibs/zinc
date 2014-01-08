@@ -89,10 +89,17 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_component_base_cast(cmzn_field_component_
 }
 
 /**
+ * Get the component number of the source field returned by this field.
+ *
+ * @param component  Handle to component field to query.
+ * @return  The component number from 1 to number of components, or 0 on error.
+ */
+ZINC_API int cmzn_field_component_get_component_index(cmzn_field_component_id component);
+
+/**
  * Modify the field to return the component with the given index of the source field.
  *
- * @param component  Handle to component field to modify, this component field must be
- *  single component with a source field.
+ * @param component  Handle to component field to modify.
  * @param component_index  The component index from 1 to number of components.
  * @return  Status CMZN_OK if component index is successfully set, any other value on failure.
  */

@@ -96,51 +96,51 @@ public:
 			region.getId());
 	}
 
-	FieldGroup createFieldSubregionGroup(Region& region)
+	FieldGroup createSubregionFieldGroup(Region& region)
 	{
-		return FieldGroup(cmzn_field_group_create_subregion_group(
+		return FieldGroup(cmzn_field_group_create_subregion_field_group(
 			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
-	FieldGroup getSubregionGroup(Region& region)
+	FieldGroup getSubregionFieldGroup(Region& region)
 	{
-		return FieldGroup(cmzn_field_group_get_subregion_group(
+		return FieldGroup(cmzn_field_group_get_subregion_field_group(
 			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
 	FieldNodeGroup createFieldNodeGroup(Nodeset& nodeset)
 	{
-		return FieldNodeGroup(cmzn_field_group_create_node_group(
+		return FieldNodeGroup(cmzn_field_group_create_field_node_group(
 			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
-	FieldNodeGroup getNodeGroup(Nodeset& nodeset)
+	FieldNodeGroup getFieldNodeGroup(Nodeset& nodeset)
 	{
-		return FieldNodeGroup(cmzn_field_group_get_node_group(
+		return FieldNodeGroup(cmzn_field_group_get_field_node_group(
 			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
 	FieldElementGroup createFieldElementGroup(Mesh& mesh)
 	{
-		return FieldElementGroup(cmzn_field_group_create_element_group(
+		return FieldElementGroup(cmzn_field_group_create_field_element_group(
 			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
-	FieldElementGroup getElementGroup(Mesh& mesh)
+	FieldElementGroup getFieldElementGroup(Mesh& mesh)
 	{
-		return FieldElementGroup(cmzn_field_group_get_element_group(
+		return FieldElementGroup(cmzn_field_group_get_field_element_group(
 			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
-	Field getSubobjectGroupforDomain(Field& domainField)
+	Field getSubobjectGroupFieldforDomainField(Field& domainField)
 	{
-		return Field(cmzn_field_group_get_subobject_group_for_domain(
+		return Field(cmzn_field_group_get_subobject_group_field_for_domain_field(
 			reinterpret_cast<cmzn_field_group_id>(id), domainField.getId()));
 	}
 
-	FieldGroup getFirstNonEmptyGroup()
+	FieldGroup getFirstNonEmptySubregionFieldGroup()
 	{
-		return FieldGroup(cmzn_field_group_get_first_non_empty_group(
+		return FieldGroup(cmzn_field_group_get_first_non_empty_subregion_field_group(
 			reinterpret_cast<cmzn_field_group_id>(id)));
 	}
 

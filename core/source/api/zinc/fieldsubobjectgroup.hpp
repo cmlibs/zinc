@@ -32,9 +32,9 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_element_group_id))
 	{ }
 
-	MeshGroup getMesh()
+	MeshGroup getMeshGroup()
 	{
-		return MeshGroup(cmzn_field_element_group_get_mesh(
+		return MeshGroup(cmzn_field_element_group_get_mesh_group(
 			reinterpret_cast<cmzn_field_element_group_id>(id)));
 	}
 };
@@ -51,9 +51,9 @@ public:
 		Field(reinterpret_cast<cmzn_field_id>(field_node_group_id))
 	{ }
 
-	NodesetGroup getNodeset()
+	NodesetGroup getNodesetGroup()
 	{
-		return NodesetGroup(cmzn_field_node_group_get_nodeset(
+		return NodesetGroup(cmzn_field_node_group_get_nodeset_group(
 			reinterpret_cast<cmzn_field_node_group_id>(id)));
 	}
 };

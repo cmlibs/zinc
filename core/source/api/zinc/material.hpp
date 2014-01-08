@@ -122,13 +122,14 @@ public:
 		return cmzn_material_set_name(id, name);
 	}
 
-	int setImageField(int imageNumber, Field &imageField)
+	Field getTextureField(int textureNumber)
 	{
-		cmzn_field_image_id field_image = cmzn_field_cast_image(imageField.getId());
-		int result = cmzn_material_set_image_field(id, imageNumber, field_image);
-		cmzn_field_image_destroy(&field_image);
+		return Field(cmzn_material_get_texture_field(id, textureNumber));
+	}
 
-		return result;
+	int setTextureField(int textureNumber, Field &textureField)
+	{
+		return cmzn_material_set_texture_field(id, textureNumber, textureField.getId());
 	}
 
 };

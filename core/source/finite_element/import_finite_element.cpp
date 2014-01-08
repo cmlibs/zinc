@@ -3675,12 +3675,12 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 											cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module,
 												use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
-											cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, nodeset);
+											cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
 											if (!node_group)
 											{
-												node_group = cmzn_field_group_create_node_group(group, nodeset);
+												node_group = cmzn_field_group_create_field_node_group(group, nodeset);
 											}
-											nodeset_group = cmzn_field_node_group_get_nodeset(node_group);
+											nodeset_group = cmzn_field_node_group_get_nodeset_group(node_group);
 											cmzn_field_node_group_destroy(&node_group);
 											cmzn_nodeset_destroy(&nodeset);
 											cmzn_fieldmodule_destroy(&field_module);
@@ -3742,12 +3742,12 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 											cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
 											cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module,
 												get_FE_element_dimension(template_element));
-											cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, mesh);
+											cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
 											if (!element_group)
 											{
-												element_group = cmzn_field_group_create_element_group(group, mesh);
+												element_group = cmzn_field_group_create_field_element_group(group, mesh);
 											}
-											mesh_group = cmzn_field_element_group_get_mesh(element_group);
+											mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
 											cmzn_field_element_group_destroy(&element_group);
 											cmzn_mesh_destroy(&mesh);
 											cmzn_fieldmodule_destroy(&field_module);

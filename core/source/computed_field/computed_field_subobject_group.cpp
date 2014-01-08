@@ -92,7 +92,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	cmzn_field_group_id group = cmzn_field_cast_group(conditional_field);
 	if (group)
 	{
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_element_group(group, master_mesh);
+		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, master_mesh);
 		cmzn_field_group_destroy(&group);
 		if (!element_group)
 			return CMZN_OK;
@@ -222,7 +222,7 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 	cmzn_field_group_id group = cmzn_field_cast_group(conditional_field);
 	if (group)
 	{
-		cmzn_field_node_group_id node_group = cmzn_field_group_get_node_group(group, master_nodeset);
+		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
 		cmzn_field_group_destroy(&group);
 		if (!node_group)
 			return CMZN_OK;

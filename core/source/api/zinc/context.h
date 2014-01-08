@@ -84,16 +84,6 @@ ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
 ZINC_API cmzn_timekeeper_id cmzn_context_get_default_timekeeper(
 	cmzn_context_id context);
 
-/***************************************************************************//**
- * Process idle event in cmgui. Use this function to update idle event in cmgui
- * (such as redrawing the scene viewer) if a main loop is provided for cmgui.
- * This function does not trigger any time event.
- *
- * @param context  Handle to a context object.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_context_process_idle_event(cmzn_context_id context);
-
 /**
  * Returns a handle to a scene viewer module
  * User interface must be enabled before this function can be called successfully.

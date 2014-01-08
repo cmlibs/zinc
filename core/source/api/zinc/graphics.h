@@ -1181,12 +1181,12 @@ ZINC_API enum cmzn_glyph_shape_type cmzn_graphicspointattributes_get_glyph_shape
  * If no glyph exists with the type identifier, the glyph is unchanged.
  *
  * @param point_attributes  The point attributes to modify.
- * @param glyph_type  The glyph type identifier.
+ * @param glyph_shape_type  The glyph shape type identifier.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphicspointattributes_set_glyph_shape_type(
 	cmzn_graphicspointattributes_id point_attributes,
-	enum cmzn_glyph_shape_type glyph_type);
+	enum cmzn_glyph_shape_type glyph_shape_type);
 
 /**
  * Gets the label field from the graphics point attributes.

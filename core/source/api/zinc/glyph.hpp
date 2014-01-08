@@ -368,9 +368,9 @@ public:
 		return Glyph(cmzn_glyphmodule_find_glyph_by_name(id, name));
 	}
 
-	Glyph findGlyphByShapeType(Glyph::ShapeType glyphShapeType)
+	Glyph findGlyphByGlyphShapeType(Glyph::ShapeType glyphShapeType)
 	{
-		return Glyph(cmzn_glyphmodule_find_glyph_by_type(id, static_cast<cmzn_glyph_shape_type>(glyphShapeType)));
+		return Glyph(cmzn_glyphmodule_find_glyph_by_glyph_shape_type(id, static_cast<cmzn_glyph_shape_type>(glyphShapeType)));
 	}
 
 	Glyph getDefaultPointGlyph()

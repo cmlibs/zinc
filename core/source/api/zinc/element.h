@@ -276,7 +276,7 @@ ZINC_API int cmzn_mesh_get_dimension(cmzn_mesh_id mesh);
  * @return  Handle to the master mesh. Caller is responsible for destroying
  * the returned handle.
  */
-ZINC_API cmzn_mesh_id cmzn_mesh_get_master(cmzn_mesh_id mesh);
+ZINC_API cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh);
 
 /**
  * Return the name of the mesh.

@@ -3961,7 +3961,6 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 				image_texture->field = field;
 				cmzn_field_access(cmzn_field_image_base_cast(image_texture->field));
 				image_texture->texture = ACCESS(Texture)(cmzn_field_image_get_texture(image_texture->field));
-				return_code = 1;
 			}
 		}
 	}
@@ -3971,7 +3970,6 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 			 "Material_image_texture_set_field.  Missing Material_image_texture");
 		return_code = 0;
 	}
-
 	return return_code;
 }
 
@@ -4688,55 +4686,6 @@ Returns the flag set for per_pixel_lighting.
 	return (return_code);
 }
 
-cmzn_field_image_id  cmzn_material_get_image_field(cmzn_material_id material,
-	int image_number)
-{
-	cmzn_field_image_id image_field = NULL;
-
-	ENTER(cmzn_material_get_image_field);
-	if (material)
-	{
-		switch(image_number)
-		{
-			case 1:
-			{
-				image_field = material->image_texture.field;
-			} break;
-			case 2:
-			{
-				image_field = material->second_image_texture.field;
-			} break;
-			case 3:
-			{
-				image_field = material->third_image_texture.field;
-			} break;
-			case 4:
-			{
-				image_field = material->fourth_image_texture.field;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_material_get_image_field.  Invalid image field has been specified");
-				image_field = NULL;
-			} break;
-		}
-		if (image_field)
-		{
-			cmzn_field_access(cmzn_field_image_base_cast(image_field));
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_material_get_image_field.  Missing material");
-		image_field=NULL;
-	}
-	LEAVE;
-
-	return (image_field);
-} /* cmzn_material_get_fourth_image_field */
-
 struct Texture *Graphical_material_get_texture(
 	struct Graphical_material *material)
 /*******************************************************************************
@@ -4920,52 +4869,72 @@ Returns the spectrum member of the material.
 	return (spectrum);
 } /* Graphical_material_get_colour_lookup_spectrum */
 
-int cmzn_material_set_image_field(cmzn_material_id material,
-		int image_number, cmzn_field_image_id field)
+cmzn_field_id cmzn_material_get_texture_field(cmzn_material_id material,
+	int texture_number)
 {
-	int return_code = 1;
-	ENTER(cmzn_material_set_image_field);
 	if (material)
 	{
-		switch(image_number)
+		cmzn_field_image_id texture_field = 0;
+		switch (texture_number)
 		{
 			case 1:
-			{
-				return_code = Material_image_texture_set_field(&(material->image_texture), field);
-			} break;
+				texture_field = material->image_texture.field;
+				break;
 			case 2:
-			{
-				return_code = Material_image_texture_set_field(&(material->second_image_texture), field);
-			} break;
+				texture_field = material->second_image_texture.field;
+				break;
 			case 3:
-			{
-				return_code = Material_image_texture_set_field(&(material->third_image_texture), field);
-			} break;
+				texture_field = material->third_image_texture.field;
+				break;
 			case 4:
-			{
-				return_code = Material_image_texture_set_field(&(material->fourth_image_texture), field);
-			} break;
+				texture_field = material->fourth_image_texture.field;
+				break;
 			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_material_set_image_field.  Invalid image field has been specified");
-			} break;
+				break;
 		}
-		if (return_code)
-		{
-			material->compile_status = GRAPHICS_NOT_COMPILED;
-			Graphical_material_changed(material);
-		}
+		if (texture_field)
+			return cmzn_field_access(cmzn_field_image_base_cast(texture_field));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_material_set_image_field.  Missing material");
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* cmzn_material_set_image_field */
+int cmzn_material_set_texture_field(cmzn_material_id material,
+	int texture_number, cmzn_field_id texture_field)
+{
+	cmzn_field_image_id image_field = cmzn_field_cast_image(texture_field);
+	if (material && ((0 == texture_field) || image_field))
+	{
+		Material_image_texture *image_texture = 0;
+		switch (texture_number)
+		{
+			case 1:
+				image_texture = &(material->image_texture);
+				break;
+			case 2:
+				image_texture = &(material->second_image_texture);
+				break;
+			case 3:
+				image_texture = &(material->third_image_texture);
+				break;
+			case 4:
+				image_texture = &(material->fourth_image_texture);
+				break;
+			default:
+				break;
+		}
+		if (image_texture)
+		{
+			if (image_texture->field != image_field)
+			{
+				Material_image_texture_set_field(image_texture, image_field);
+				material->compile_status = GRAPHICS_NOT_COMPILED;
+				Graphical_material_changed(material);
+			}
+			return CMZN_OK;
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int set_material_program_type_texture_mode(struct Graphical_material *material_to_be_modified,
 	 int *type, int return_code)

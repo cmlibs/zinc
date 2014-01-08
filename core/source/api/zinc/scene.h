@@ -232,29 +232,27 @@ ZINC_API cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 
 /**
- * Get the selection group for the scene, if any.
+ * Get the selection field for the scene, if any.
  *
  * @param scene  The scene to query.
- * @return  Handle to selection group or NULL if none or error. Up to caller to
+ * @return  Handle to selection field or NULL if none or error. Up to caller to
  * destroy returned handle.
  */
-ZINC_API cmzn_field_group_id cmzn_scene_get_selection_group(cmzn_scene_id scene);
+ZINC_API cmzn_field_id cmzn_scene_get_selection_field(cmzn_scene_id scene);
 
 /**
- * Set the specified selection field to be the highlighting and selection group
- * of the specified scene. This function will also set the selection field
- * for all of its subregion scenes if the a corresponding subregion selection
- * group is found in the selection field, otherwise the selection group of
- * the child scene will be set to NULL;
- * Selection field set in the scene using this function will not have its
- * access count increased.
+ * Set the field giving selection and highlighting in the scene.
+ * Currently restricted to 'field_group' type fields.
+ * This function will also set the selection field for all of its subregion
+ * scenes if the a corresponding subregion field_group exists, otherwise the
+ * selection group of the child scene will be set to NULL.
  *
  * @param scene  The scene to modify.
  * @param selection_field  Group field to be used as the selection.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_scene_set_selection_group(cmzn_scene_id scene,
-	cmzn_field_group_id selection_field);
+ZINC_API int cmzn_scene_set_selection_field(cmzn_scene_id scene,
+	cmzn_field_id selection_field);
 
 /**
  * Get the range of graphics data field values rendered with the spectrum.

@@ -194,7 +194,7 @@ ZINC_API cmzn_node_id cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_id nodes
  * @return  Handle to the master nodeset. Caller is responsible for destroying
  * the returned handle.
  */
-ZINC_API cmzn_nodeset_id cmzn_nodeset_get_master(cmzn_nodeset_id nodeset);
+ZINC_API cmzn_nodeset_id cmzn_nodeset_get_master_nodeset(cmzn_nodeset_id nodeset);
 
 /**
  * Return the name of the nodeset.

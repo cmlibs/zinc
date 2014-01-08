@@ -141,7 +141,7 @@ public:
 		return (cmzn_optimisation_add_independent_field(id, field.getId()));
 	}
 
-	int removeIndepdentField(Field& field)
+	int removeIndependentField(Field& field)
 	{
 		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
 	}
