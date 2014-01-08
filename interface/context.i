@@ -13,9 +13,8 @@
 
 %module(package="opencmiss.zinc") context
 
-%import "scene.i"
+%import "region.i"
 %import "sceneviewer.i"
-%import "field.i"
 
 %{
 #include "zinc/context.hpp"

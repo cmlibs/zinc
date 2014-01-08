@@ -1,6 +1,6 @@
 /**
  * region.i
- * 
+ *
  * Swig interface file for Zinc region API.
  */
 /*
@@ -16,6 +16,7 @@
 %include "pyzincstringhandling.i"
 
 %import "fieldmodule.i"
+%import "stream.i"
 
 %{
 #include "zinc/fieldimage.hpp"

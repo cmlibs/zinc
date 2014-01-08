@@ -12,7 +12,7 @@
 
 %module(package="opencmiss.zinc") stream
 
-%import "field.i"
+%import "fieldmodule.i"
 
 %include "pyzincstringhandling.i"
 
@@ -22,6 +22,4 @@
 #include "zinc/region.hpp"
 %}
 
-%include "zinc/fieldimage.hpp"
-%include "zinc/region.hpp"
 %include "zinc/stream.hpp"
