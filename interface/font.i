@@ -12,6 +12,8 @@
 
 %module(package="opencmiss.zinc") font
 
+%include "pyzincstringhandling.i"
+
 %import "graphics.i"
 
 %{

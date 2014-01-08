@@ -13,6 +13,7 @@
 %module(package="opencmiss.zinc") element
 
 %include "integervaluesarraytypemap.i"
+%include "pyzincstringhandling.i"
 
 %import "field.i"
 %import "node.i"

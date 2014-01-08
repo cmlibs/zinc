@@ -16,6 +16,7 @@
 %include "fieldarraytypemap.i"
 %include "doublevaluesarraytypemap.i"
 %include "fieldoperators.i"
+%include "pyzincstringhandling.i"
 
 %import "differentialoperator.i"
 %import "element.i"

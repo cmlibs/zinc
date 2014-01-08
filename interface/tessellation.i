@@ -13,6 +13,7 @@
 %module(package="opencmiss.zinc") tessellation
 
 %include "integervaluesarraytypemap.i"
+%include "pyzincstringhandling.i"
 
 %{
 #include "zinc/tessellation.hpp"

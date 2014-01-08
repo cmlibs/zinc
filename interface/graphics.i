@@ -13,6 +13,7 @@
 %module(package="opencmiss.zinc") graphics
 %include "doublevaluesarraytypemap.i"
 %include "integervaluesarraytypemap.i"
+%include "pyzincstringhandling.i"
 
 %import "field.i"
 %import "tessellation.i"

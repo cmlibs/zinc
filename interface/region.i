@@ -13,6 +13,8 @@
 
 %module(package="opencmiss.zinc") region
 
+%include "pyzincstringhandling.i"
+
 %import "fieldmodule.i"
 
 %{

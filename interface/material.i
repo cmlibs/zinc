@@ -14,6 +14,7 @@
 %module(package="opencmiss.zinc") material
 
 %include "doublevaluesarraytypemap.i"
+%include "pyzincstringhandling.i"
 
 %import "field.i"
 %import "font.i"

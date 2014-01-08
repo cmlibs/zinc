@@ -11,11 +11,8 @@
  */
 
 %module(package="opencmiss.zinc") stream
-%typemap(in) (const void *buffer, unsigned int buffer_length)
-{
-	$1 = PyString_AsString($input);   /* char *str */
-	$2 = PyString_Size($input);       /* int len   */
-}
+
+%include "pyzincstringhandling.i"
 
 %{
 #include "zinc/stream.hpp"

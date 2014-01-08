@@ -39,6 +39,7 @@
 %include "doublevaluesarraytypemap.i"
 %include "integervaluesarraytypemap.i"
 %include "fieldarraytypemap.i"
+%include "pyzincstringhandling.i"
 
 %import "scenecoordinatesystem.i"
 %import "timesequence.i"

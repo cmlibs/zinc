@@ -12,6 +12,8 @@
 
 %module(package="opencmiss.zinc") node
 
+%include "pyzincstringhandling.i"
+
 %import "field.i"
 
 %{

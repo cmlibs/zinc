@@ -12,6 +12,8 @@
 
 %module(package="opencmiss.zinc") spectrum
 
+%include "pyzincstringhandling.i"
+
 %{
 #include "zinc/spectrum.hpp"
 %}
