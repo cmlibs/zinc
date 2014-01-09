@@ -49,8 +49,7 @@ ZINC_API cmzn_timenotifier_id cmzn_timenotifier_access(
  * Internally this just decrements the reference count.
  *
  * @param timenotifier_address  The address to the handle to time notifier
- * @return  Status CMZN_OK if successfully destroy(deaccess) the time notifier,
- * any other value on failure.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_address);
 
@@ -106,36 +105,71 @@ ZINC_API int cmzn_timenotifier_clear_callback(cmzn_timenotifier_id timenotifier)
 ZINC_API double cmzn_timenotifier_get_time(cmzn_timenotifier_id timenotifier);
 
 /**
+ * If the timenotifier is of regular type, then this function returns the derived
+ * type, otherwise it returns NULL.
+ * Caller is responsible for destroying the returned derived handle.
+ *
+ * @param timenotifier  The base timenotifier to be cast.
+ * @return  Handle to regular timenotifier if the input timenotifier is of this type,
+ * otherwise NULL.
+ */
+ZINC_API cmzn_timenotifier_regular_id cmzn_timenotifier_cast_regular(
+	cmzn_timenotifier_id timenotifier);
+
+/**
+ * Cast regular timenotifier back to its base timenotifier and return the timenotifier.
+ * IMPORTANT NOTE: Returned timenotifier does not have incremented reference count and
+ * must not be destroyed. Use cmzn_timenotifier_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the argument.
+ *
+ * @param timenotifier_regular  Handle to the timenotifier regular to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
+ */
+ZINC_C_INLINE cmzn_timenotifier_id cmzn_timenotifier_regular_base_cast(
+	cmzn_timenotifier_regular_id timenotifier_regular)
+{
+	return (cmzn_timenotifier_id)(timenotifier_regular);
+}
+
+/**
+ * Destroys this reference to the regular timenotifier (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param regular_timenotifier_address  Address of handle to the regular timenotifier.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_timenotifier_regular_destroy(
+	cmzn_timenotifier_regular_id *timenotifier_regular_address);
+
+/**
  * This controls the rate which the time depedent object is called back.
  * The default value is 10 which means time notifier will receive 10 callbacks
  * per unit of time in the time keeper.
  * i.e. If the speed of time keeper is set to be 1 and the update frequency of
  * time notifier is set to be 10, the actual interval between each callbacks is:
- * (1/speed of time keeper)/(udpate frequency) which is 0.1s.
- * Note that the time notifier does not promised to receive callback exactly
+ * (1/speed of time keeper)/(update frequency) which is 0.1s.
+ * Note that the time notifier does not promise to receive callback exactly
  * 0.1s after the previous callback.
  *
- * @param timenotifier  Handle to time notifier.
+ * @param timenotifier_regular  Handle to regular time notifier.
  * @param frequency  The number of times which time notifier will receive
- *    callback per unit of time in the time keeper.
- * @return  Status CMZN_OK if successfully set the update frequency to the value
- * provided, any other value on failure.
+ * callback per unit of time in the time keeper. Must be positive.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_timenotifier_regular_set_frequency(cmzn_timenotifier_id timenotifier,
-	double frequency);
+ZINC_API int cmzn_timenotifier_regular_set_frequency(
+	cmzn_timenotifier_regular_id timenotifier_regular, double frequency);
 
 /**
- * This controls the exact time which the time notifier receive callbacks.
- * Time offset will set the notifier to receive callback when
- * time_offset + original callback time is reached. i.e
+ * Sets the offset of times when a regular time notifier notifies clients.
+ * Notification occurs at the given time_offset and every mulitple of 1/freqency
+ * away from the offset.
  *
- * @param timenotifier  Handle to time notifier.
- * @param offset  This set the time that notifier will receive callback.
- * @return  Status CMZN_OK if successfully set the update frequency to the value
- * provided, any other value on failure.
+ * @param timenotifier_regular  Handle to regular time notifier.
+ * @param time_offset  This set the time that notifier will receive callback.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_timenotifier_regular_set_offset(cmzn_timenotifier_id timenotifier,
-	double time_offset);
+ZINC_API int cmzn_timenotifier_regular_set_offset(
+	cmzn_timenotifier_regular_id timenotifier_regular, double time_offset);
 
 /**
 * Returns a new reference to the timenotifier event with reference count incremented.

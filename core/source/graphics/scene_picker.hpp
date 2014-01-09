@@ -19,16 +19,11 @@
 #include "zinc/types/scenepickerid.h"
 #include "zinc/types/sceneviewerid.h"
 
-
-typedef std::multimap<cmzn_region *, cmzn_element_id> Region_element_map;
-typedef std::multimap<cmzn_region *, cmzn_node_id> Region_node_map;
-
 enum cmzn_scenepicker_object_type
 {
 	CMZN_SCENEPICKER_OBJECT_ANY = 0,
 	CMZN_SCENEPICKER_OBJECT_NODE = 1,
-	CMZN_SCENEPICKER_OBJECT_ELEMENT = 2,
-	CMZN_SCENEPICKER_OBJECT_DATA = 3
+	CMZN_SCENEPICKER_OBJECT_ELEMENT = 2
 };
 
 struct cmzn_scenepicker
@@ -48,10 +43,6 @@ private:
 	void updateViewerRectangle();
 
 	int pickObjects();
-
-	Region_node_map getPickedRegionSortedNodes(enum cmzn_scenepicker_object_type type);
-
-	Region_element_map getPickedRegionSortedElements();
 
 	void reset();
 
@@ -83,7 +74,7 @@ public:
 
 	cmzn_element_id getNearestElement();
 
-	cmzn_node_id getNearestNode(enum cmzn_scenepicker_object_type type);
+	cmzn_node_id getNearestNode();
 
 	cmzn_graphics_id getNearestGraphics(enum cmzn_scenepicker_object_type type);
 
@@ -93,10 +84,9 @@ public:
 		return this;
 	}
 
-	int addPickedElementsToGroup(cmzn_field_group_id group);
+	int addPickedElementsToFieldGroup(cmzn_field_group_id group);
 
-	int addPickedNodesToGroup(cmzn_field_group_id group,
-		enum cmzn_scenepicker_object_type type);
+	int addPickedNodesToFieldGroup(cmzn_field_group_id group);
 
 };
 
@@ -106,12 +96,5 @@ cmzn_scenepicker_id cmzn_scenepicker_create(cmzn_scenefiltermodule_id filter_mod
 
 int cmzn_scenepicker_set_interaction_volume(cmzn_scenepicker_id scenepicker,
 	struct Interaction_volume *interaction_volume);
-
-int cmzn_scenepicker_add_picked_data_to_group(cmzn_scenepicker_id scenepicker,
-	cmzn_field_group_id group);
-
-cmzn_graphics_id cmzn_scenepicker_get_nearest_data_graphics(cmzn_scenepicker_id scenepicker);
-
-cmzn_node_id cmzn_scenepicker_get_nearest_data(cmzn_scenepicker_id scenepicker);
 
 #endif /* (SCENE_PICKER_HPP) */

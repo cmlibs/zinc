@@ -161,6 +161,11 @@ public:
 		return cmzn_scene_get_number_of_graphics(id);
 	}
 
+	Scenefiltermodule getScenefiltermodule()
+	{
+		return Scenefiltermodule(cmzn_scene_get_scenefiltermodule(id));
+	}
+
 	Field getSelectionField()
 	{
 		return Field(cmzn_scene_get_selection_field(id));

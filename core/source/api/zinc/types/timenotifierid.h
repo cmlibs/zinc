@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : timenotifierid.h
  *
  */
@@ -11,7 +11,7 @@
 #ifndef CMZN_TIMENOTIFIERID_H__
 #define CMZN_TIMENOTIFIERID_H__
 
-/***************************************************************************//**
+/**
  * A handle to zinc time notifier. This notifier provides a concept of time to
  * Cmgui, it will notify its client when time has changed if a callback is setup
  * for this notifier. time notifier normally receives its callback from a
@@ -22,5 +22,11 @@
 
 	struct cmzn_timenotifierevent;
 	typedef struct cmzn_timenotifierevent * cmzn_timenotifierevent_id;
+
+/**
+ * A derived timenotifier type which requests notifications at regular intervals.
+ */
+struct cmzn_timenotifier_regular;
+typedef struct cmzn_timenotifier_regular *cmzn_timenotifier_regular_id;
 
 #endif

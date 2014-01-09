@@ -427,18 +427,16 @@ public:
 		return cmzn_sceneviewer_set_up_vector(id, upVectorValuesIn3);
 	}
 
-	int getLookatParameters(double *eyeValuesOut3,double *lookatValuesOut3,double *upVectorValuesOut3)
+	int getLookatParameters(double *eyeValuesOut3, double *lookatValuesOut3, double *upVectorValuesOut3)
 	{
-		return cmzn_sceneviewer_get_lookat_parameters(id, &eyeValuesOut3[0], &eyeValuesOut3[1], &eyeValuesOut3[2],
-			&lookatValuesOut3[0], &lookatValuesOut3[1], &lookatValuesOut3[2],
-			&upVectorValuesOut3[0], &upVectorValuesOut3[1], &upVectorValuesOut3[2]);
+		return cmzn_sceneviewer_get_lookat_parameters(id,
+			eyeValuesOut3, lookatValuesOut3, upVectorValuesOut3);
 	}
 
 	int setLookatParametersNonSkew(double const *eyeValuesIn3, double const *lookatValuesIn3, double const *upVectorValuesIn3)
 	{
-		return cmzn_sceneviewer_set_lookat_parameters_non_skew(id, eyeValuesIn3[0], eyeValuesIn3[1], eyeValuesIn3[2],
-			lookatValuesIn3[0], lookatValuesIn3[1], lookatValuesIn3[2],
-			upVectorValuesIn3[0], upVectorValuesIn3[1], upVectorValuesIn3[2]);
+		return cmzn_sceneviewer_set_lookat_parameters_non_skew(id,
+			eyeValuesIn3, lookatValuesIn3, upVectorValuesIn3);
 	}
 
 	int getViewingVolume(double *left,double *right,double *bottom,double *top,

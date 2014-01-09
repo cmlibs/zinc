@@ -4378,14 +4378,14 @@ Sets the Scene_viewer light_model.
 } /* Scene_viewer_set_light_model */
 
 int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
-	double const *eye)
+	double const *eyeValuesIn3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (scene_viewer && eye)
+	if (scene_viewer && eyeValuesIn3)
 	{
-		scene_viewer->eyex = eye[0];
-		scene_viewer->eyey = eye[1];
-		scene_viewer->eyez = eye[2];
+		scene_viewer->eyex = eyeValuesIn3[0];
+		scene_viewer->eyey = eyeValuesIn3[1];
+		scene_viewer->eyez = eyeValuesIn3[2];
 		return_code = CMZN_OK;
 	}
 
@@ -4393,29 +4393,28 @@ int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
 }
 
 int cmzn_sceneviewer_get_eye_position(cmzn_sceneviewer_id scene_viewer,
-	double *eye)
+	double *eyeValuesOut3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (scene_viewer && eye)
+	if (scene_viewer && eyeValuesOut3)
 	{
-		eye[0] = scene_viewer->eyex;
-		eye[1] = scene_viewer->eyey;
-		eye[2] = scene_viewer->eyez;
+		eyeValuesOut3[0] = scene_viewer->eyex;
+		eyeValuesOut3[1] = scene_viewer->eyey;
+		eyeValuesOut3[2] = scene_viewer->eyez;
 		return_code = CMZN_OK;
 	}
-
 	return return_code;
 }
 
 int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id scene_viewer,
-	double const *lookat)
+	double const *lookatValuesIn3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (scene_viewer && lookat)
+	if (scene_viewer && lookatValuesIn3)
 	{
-		scene_viewer->lookatx = lookat[0];
-		scene_viewer->lookaty = lookat[1];
-		scene_viewer->lookatz = lookat[2];
+		scene_viewer->lookatx = lookatValuesIn3[0];
+		scene_viewer->lookaty = lookatValuesIn3[1];
+		scene_viewer->lookatz = lookatValuesIn3[2];
 		return_code = CMZN_OK;
 	}
 
@@ -4423,14 +4422,14 @@ int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id scene_viewer,
 }
 
 int cmzn_sceneviewer_get_lookat_position(cmzn_sceneviewer_id scene_viewer,
-	double *lookat)
+	double *lookatValuesOut3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (scene_viewer && lookat)
+	if (scene_viewer && lookatValuesOut3)
 	{
-		lookat[0] = scene_viewer->lookatx;
-		lookat[1] = scene_viewer->lookaty;
-		lookat[2] = scene_viewer->lookatz;
+		lookatValuesOut3[0] = scene_viewer->lookatx;
+		lookatValuesOut3[1] = scene_viewer->lookaty;
+		lookatValuesOut3[2] = scene_viewer->lookatz;
 		return_code = CMZN_OK;
 	}
 
@@ -4438,12 +4437,12 @@ int cmzn_sceneviewer_get_lookat_position(cmzn_sceneviewer_id scene_viewer,
 }
 
 int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id scene_viewer,
-	double const *upVector)
+	double const *upVectorValuesIn3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (scene_viewer && upVector)
+	if (scene_viewer && upVectorValuesIn3)
 	{
-		double upVectorUnit[] = {upVector[0], upVector[1], upVector[2]};
+		double upVectorUnit[] = {upVectorValuesIn3[0], upVectorValuesIn3[1], upVectorValuesIn3[2]};
 		normalize3(upVectorUnit);
 		scene_viewer->upx = upVectorUnit[0];
 		scene_viewer->upy = upVectorUnit[1];
@@ -4455,66 +4454,44 @@ int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id scene_viewer,
 }
 
 int cmzn_sceneviewer_get_up_vector(cmzn_sceneviewer_id scene_viewer,
-	double *upVector)
+	double *upVectorValuesOut3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (scene_viewer && upVector)
+	if (scene_viewer && upVectorValuesOut3)
 	{
-		upVector[0] = scene_viewer->upx;
-		upVector[1] = scene_viewer->upy;
-		upVector[2] = scene_viewer->upz;
+		upVectorValuesOut3[0] = scene_viewer->upx;
+		upVectorValuesOut3[1] = scene_viewer->upy;
+		upVectorValuesOut3[2] = scene_viewer->upz;
 		return_code = CMZN_OK;
 	}
 
 	return return_code;
 }
 
-int cmzn_sceneviewer_get_lookat_parameters(struct Scene_viewer *scene_viewer,
-	double *eyex,double *eyey,double *eyez,
-	double *lookatx,double *lookaty,double *lookatz,
-	double *upx,double *upy,double *upz)
-/*******************************************************************************
-LAST MODIFIED : 21 November 1997
-
-DESCRIPTION :
-Gets the view direction and orientation of the Scene_viewer.
-==============================================================================*/
+int cmzn_sceneviewer_get_lookat_parameters(
+	cmzn_sceneviewer_id sceneviewer, double *eyeValuesOut3,
+	double *lookatValuesOut3, double *upVectorValuesOut3)
 {
-	int return_code;
-
-	if (scene_viewer&&eyex&&eyey&&eyez&&lookatx&&lookaty&&lookatz&&upx&&upy&&upz)
+	if (sceneviewer && eyeValuesOut3 && lookatValuesOut3 && upVectorValuesOut3)
 	{
-		*eyex=scene_viewer->eyex;
-		*eyey=scene_viewer->eyey;
-		*eyez=scene_viewer->eyez;
-		*lookatx=scene_viewer->lookatx;
-		*lookaty=scene_viewer->lookaty;
-		*lookatz=scene_viewer->lookatz;
-		*upx=scene_viewer->upx;
-		*upy=scene_viewer->upy;
-		*upz=scene_viewer->upz;
-		return_code=1;
+		eyeValuesOut3[0] = sceneviewer->eyex;
+		eyeValuesOut3[1] = sceneviewer->eyey;
+		eyeValuesOut3[2] = sceneviewer->eyez;
+		lookatValuesOut3[0] = sceneviewer->lookatx;
+		lookatValuesOut3[1] = sceneviewer->lookaty;
+		lookatValuesOut3[2] = sceneviewer->lookatz;
+		upVectorValuesOut3[0] = sceneviewer->upx;
+		upVectorValuesOut3[1] = sceneviewer->upy;
+		upVectorValuesOut3[2] = sceneviewer->upz;
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewer_get_lookat_parameters.  Invalid argument(s)");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_get_lookat_parameters */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 	double eyex,double eyey,double eyez,
 	double lookatx,double lookaty,double lookatz,
 	double upx,double upy,double upz)
-/*******************************************************************************
-LAST MODIFIED : 11 August 1998
-
-DESCRIPTION :
-Sets the view direction and orientation of the Scene_viewer.
-==============================================================================*/
 {
 	int return_code;
 	double upv[3],viewv[3];
@@ -4563,70 +4540,51 @@ Sets the view direction and orientation of the Scene_viewer.
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_set_lookat_parameters */
+}
 
 int cmzn_sceneviewer_set_lookat_parameters_non_skew(
-	struct Scene_viewer *scene_viewer,double eyex,double eyey,double eyez,
-	double lookatx,double lookaty,double lookatz,
-	double upx,double upy,double upz)
-/*******************************************************************************
-LAST MODIFIED : 7 October 1998
-
-DESCRIPTION :
-Normal function for controlling Scene_viewer_set_lookat_parameters that ensures
-the up vector is orthogonal to the view direction - so projection is not skew.
-==============================================================================*/
+	cmzn_sceneviewer_id sceneviewer, double const *eyeValuesIn3,
+	double const *lookatValuesIn3, double const *upVectorValuesIn3)
 {
-	int return_code;
 	double tempv[3],upv[3],viewv[3];
-
-	if (scene_viewer)
+	if (sceneviewer)
 	{
-		upv[0]=upx;
-		upv[1]=upy;
-		upv[2]=upz;
-		viewv[0]=lookatx-eyex;
-		viewv[1]=lookaty-eyey;
-		viewv[2]=lookatz-eyez;
+		for (int i = 0; i < 3; ++i)
+		{
+			upv[i] = upVectorValuesIn3[i];
+			viewv[i] = lookatValuesIn3[i] - eyeValuesIn3[i];
+		}
 		if ((0.0<normalize3(upv))&&(0.0<normalize3(viewv))&&
 			(fabs(dot_product3(upv,viewv))<0.999))
 		{
-			scene_viewer->eyex=eyex;
-			scene_viewer->eyey=eyey;
-			scene_viewer->eyez=eyez;
-			scene_viewer->lookatx=lookatx;
-			scene_viewer->lookaty=lookaty;
-			scene_viewer->lookatz=lookatz;
+			sceneviewer->eyex = eyeValuesIn3[0];
+			sceneviewer->eyey = eyeValuesIn3[1];
+			sceneviewer->eyez = eyeValuesIn3[2];
+			sceneviewer->lookatx = lookatValuesIn3[0];
+			sceneviewer->lookaty = lookatValuesIn3[1];
+			sceneviewer->lookatz = lookatValuesIn3[2];
 			/* set only unit up-vector */
 			/* make sure up vector is orthogonal to view direction */
 			cross_product3(upv,viewv,tempv);
 			cross_product3(viewv,tempv,upv);
 			normalize3(upv);
-			scene_viewer->upx=upv[0];
-			scene_viewer->upy=upv[1];
-			scene_viewer->upz=upv[2];
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			sceneviewer->upx=upv[0];
+			sceneviewer->upy=upv[1];
+			sceneviewer->upz=upv[2];
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-			return_code=1;
+			return CMZN_OK;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_sceneviewer_set_lookat_parameters_non_skew.  "
 				"Up and view directions zero or colinear");
-			return_code=0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewer_set_lookat_parameters_non_skew.  Missing scene_viewer");
-		return_code=0;
-	}
-
-	return (return_code);
-} /* cmzn_sceneviewer_set_lookat_parameters_non_skew */
+	return CMZN_ERROR_ARGUMENT;
+}
 
 double Scene_viewer_get_stereo_eye_spacing(struct Scene_viewer *scene_viewer)
 /*******************************************************************************

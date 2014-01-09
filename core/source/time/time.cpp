@@ -204,30 +204,12 @@ int Time_object_set_name(struct Time_object *time, const char *name)
 	return (return_code);
 } /* Time_object_set_name */
 
-double cmzn_timenotifier_get_time(struct Time_object *time)
-/*******************************************************************************
-LAST MODIFIED : 29 September 1998
-
-DESCRIPTION :
-==============================================================================*/
+double cmzn_timenotifier_get_time(cmzn_timenotifier_id timenotifier)
 {
-	double return_code;
-
-	ENTER(cmzn_timenotifier_get_time);
-	if (time)
-	{
-		return_code = time->current_time;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_timenotifier_get_time. Invalid time object");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* cmzn_timenotifier_get_time */
+	if (timenotifier)
+		return timenotifier->current_time;
+	return 0.0;
+}
 
 int Time_object_check_valid_callback_time(struct Time_object *time_object,
 	double time,enum Time_keeper_play_direction play_direction)
@@ -432,73 +414,45 @@ through the timekeeper.
 	return (return_code);
 } /* Time_object_set_current_time_privileged */
 
-int cmzn_timenotifier_regular_set_frequency(struct Time_object *time, double frequency)
-/*******************************************************************************
-LAST MODIFIED : 25 November 1999
-
-DESCRIPTION :
-This controls the rate per second which the time depedent object is called back
-when in play mode.
-==============================================================================*/
+cmzn_timenotifier_regular_id cmzn_timenotifier_cast_regular(
+	cmzn_timenotifier_id timenotifier)
 {
-	int return_code;
-
-	ENTER(Time_object_regular_set_update_frequency);
-	if (time)
+	if (timenotifier && (TIME_OBJECT_REGULAR == timenotifier->type))
 	{
-		if (time->type == TIME_OBJECT_REGULAR)
-		{
-			time->update_frequency = frequency;
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_timenotifier_regular_set_frequency. Change of frequency is not allowed"
-				"for this time object/notifier type");
-			return_code = 0;
-		}
+		cmzn_timenotifier_access(timenotifier);
+		return reinterpret_cast<cmzn_timenotifier_regular_id>(timenotifier);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_timenotifier_regular_set_frequency. Invalid time object");
-		return_code=0;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* Time_object_set_update_frequency */
-
-int cmzn_timenotifier_regular_set_offset(struct Time_object *time,double time_offset)
+int cmzn_timenotifier_regular_destroy(
+	cmzn_timenotifier_regular_id *timenotifier_regular_address)
 {
-	int return_code;
+	return cmzn_timenotifier_destroy(reinterpret_cast<cmzn_timenotifier_id *>(timenotifier_regular_address));
+}
 
-	ENTER(cmzn_timenotifier_regular_set_offset);
-	if (time)
+int cmzn_timenotifier_regular_set_frequency(
+	cmzn_timenotifier_regular_id timenotifier_regular, double frequency)
+{
+	if (timenotifier_regular && (frequency > 0.0))
 	{
-		if (time->type == TIME_OBJECT_REGULAR)
-		{
-			time->time_offset = time_offset;
-			return_code = 1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_timenotifier_regular_set_offset. Change of time offset is not allowed"
-				"for this time object/notifier type");
-			return_code = 0;
-		}
+		cmzn_timenotifier *timenotifier = reinterpret_cast<cmzn_timenotifier*>(timenotifier_regular);
+		timenotifier->update_frequency = frequency;
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Time_object_set_offset. Invalid time object");
-		return_code=0;
-	}
-	LEAVE;
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	return (return_code);
+int cmzn_timenotifier_regular_set_offset(
+	cmzn_timenotifier_regular_id timenotifier_regular, double time_offset)
+{
+	if (timenotifier_regular)
+	{
+		cmzn_timenotifier *timenotifier = reinterpret_cast<cmzn_timenotifier*>(timenotifier_regular);
+		timenotifier->time_offset = time_offset;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int Time_object_set_next_time_function(struct Time_object *time,
@@ -639,16 +593,10 @@ cmzn_timenotifier_id cmzn_timenotifier_access(cmzn_timenotifier_id timenotifier)
 
 int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_address)
 {
-	int return_code;
-
 	if (timenotifier_address && *timenotifier_address)
 	{
-		return_code = DEACCESS(Time_object)(timenotifier_address);
+		DEACCESS(Time_object)(timenotifier_address);
+		return CMZN_OK;
 	}
-	else
-	{
-		return_code = 0;
-	}
-
-	return return_code;
+	return CMZN_ERROR_ARGUMENT;
 }
