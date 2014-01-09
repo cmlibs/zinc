@@ -210,17 +210,13 @@ TEST(cmzn_scenefilter_api, valid_args)
 	cmzn_scenefilter_operator_insert_operand_before(and_operator, filter, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = cmzn_scenefilter_operator_set_operand_active(and_operator, filter, 1);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(CMZN_OK, result = cmzn_scenefilter_operator_set_operand_active(and_operator, filter, false));
+	EXPECT_FALSE(cmzn_scenefilter_operator_is_operand_active(and_operator, filter));
+	EXPECT_EQ(CMZN_OK, result = cmzn_scenefilter_operator_set_operand_active(and_operator, filter, true));
+	EXPECT_TRUE(cmzn_scenefilter_operator_is_operand_active(and_operator, filter));
 
-	result = cmzn_scenefilter_operator_is_operand_active(and_operator, filter);
-	EXPECT_EQ(1, result);
-
-	result = cmzn_scenefilter_operator_set_operand_active(and_operator, graphics_type_filter1, 1);
-	EXPECT_EQ(1, result);
-
-	result = cmzn_scenefilter_operator_is_operand_active(and_operator, graphics_type_filter1);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(CMZN_OK, result = cmzn_scenefilter_operator_set_operand_active(and_operator, graphics_type_filter1, true));
+	EXPECT_TRUE(cmzn_scenefilter_operator_is_operand_active(and_operator, graphics_type_filter1));
 
 	cmzn_scenefilter_id temp_filter = cmzn_scenefilter_operator_get_first_operand(
 		and_operator);
@@ -330,17 +326,13 @@ TEST(cmzn_scenefilter_api, valid_args_cpp)
 	result = and_operator.insertOperandBefore(filter, graphics_type_filter1);
 	EXPECT_EQ(1, result);
 
-	result = and_operator.setOperandActive(filter, 1);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(OK, result = and_operator.setOperandActive(filter, false));
+	EXPECT_FALSE(and_operator.isOperandActive(filter));
+	EXPECT_EQ(OK, result = and_operator.setOperandActive(filter, true));
+	EXPECT_TRUE(and_operator.isOperandActive(filter));
 
-	result = and_operator.isOperandActive(filter);
-	EXPECT_EQ(1, result);
-
-	result = and_operator.setOperandActive(graphics_type_filter1, 1);
-	EXPECT_EQ(1, result);
-
-	result = and_operator.isOperandActive(graphics_type_filter1);
-	EXPECT_EQ(1, result);
+	EXPECT_EQ(OK, result = and_operator.setOperandActive(graphics_type_filter1, true));
+	EXPECT_TRUE(and_operator.isOperandActive(graphics_type_filter1));
 
 	Scenefilter temp_filter = and_operator.getFirstOperand();
 	result = (filter.getId() == temp_filter.getId());

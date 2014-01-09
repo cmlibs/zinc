@@ -92,10 +92,10 @@ TEST(cmzn_scenepicker_api, valid_args)
 	graphic = cmzn_scenepicker_get_nearest_graphics(scene_picker);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	result = cmzn_scenepicker_add_picked_elements_to_group(scene_picker, fieldGroup);
+	result = cmzn_scenepicker_add_picked_elements_to_field_group(scene_picker, fieldGroup);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
-	result = cmzn_scenepicker_add_picked_nodes_to_group(scene_picker, fieldGroup);
+	result = cmzn_scenepicker_add_picked_nodes_to_field_group(scene_picker, fieldGroup);
 	EXPECT_EQ(static_cast<cmzn_graphics *>(0), graphic);
 
 	cmzn_scenefilter_destroy(&sf);
@@ -168,9 +168,9 @@ TEST(cmzn_scenepicker_api, valid_args_cpp)
 	graphic = scenePicker.getNearestGraphics();
 	EXPECT_FALSE(graphic.isValid());
 
-	result = scenePicker.addPickedElementsToGroup(fieldGroup);
+	result = scenePicker.addPickedElementsToFieldGroup(fieldGroup);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = scenePicker.addPickedNodesToGroup(fieldGroup);
+	result = scenePicker.addPickedNodesToFieldGroup(fieldGroup);
 	EXPECT_EQ(CMZN_OK, result);
 }

@@ -99,6 +99,50 @@ TEST(cmzn_sceneviewer_api, get_background_rgb)
 	cmzn_sceneviewermodule_destroy(&svm);
 }
 
+TEST(cmzn_sceneviewer, lookat_parameters)
+{
+	ZincTestSetup z;
+	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
+	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
+
+	double eyeOut[3], lookatOut[3], upvectorOut[3];
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_get_lookat_parameters(sv, eyeOut, lookatOut, upvectorOut));
+	const double eyeIn[] = { -5.0, -5.0, 0.0 };
+	const double lookatIn[] = { 2.0, 2.0, 0.0 };
+	const double upvectorIn[] = { 0.0, 0.0, 5.0 };
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_lookat_parameters_non_skew(sv, eyeIn, lookatIn, upvectorIn));
+	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_get_lookat_parameters(sv, eyeOut, lookatOut, upvectorOut));
+	for (int i = 0; i < 3; ++i)
+	{
+		ASSERT_DOUBLE_EQ(eyeIn[i], eyeOut[i]);
+		ASSERT_DOUBLE_EQ(lookatIn[i], lookatOut[i]);
+		ASSERT_DOUBLE_EQ(upvectorIn[i] / 5.0, upvectorOut[i]);
+	}
+	cmzn_sceneviewer_destroy(&sv);
+	cmzn_sceneviewermodule_destroy(&svm);
+}
+
+TEST(ZincSceneviewer, LookatParameters)
+{
+	ZincTestSetupCpp z;
+	Sceneviewermodule svm = z.context.getSceneviewermodule();
+	Sceneviewer sv = svm.createSceneviewer(Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
+
+	double eyeOut[3], lookatOut[3], upvectorOut[3];
+	EXPECT_EQ(CMZN_OK, sv.getLookatParameters(eyeOut, lookatOut, upvectorOut));
+	const double eyeIn[] = { -5.0, -5.0, 0.0 };
+	const double lookatIn[] = { 2.0, 2.0, 0.0 };
+	const double upvectorIn[] = { 0.0, 0.0, 5.0 };
+	EXPECT_EQ(CMZN_OK, sv.setLookatParametersNonSkew(eyeIn, lookatIn, upvectorIn));
+	EXPECT_EQ(CMZN_OK, sv.getLookatParameters(eyeOut, lookatOut, upvectorOut));
+	for (int i = 0; i < 3; ++i)
+	{
+		ASSERT_DOUBLE_EQ(eyeIn[i], eyeOut[i]);
+		ASSERT_DOUBLE_EQ(lookatIn[i], lookatOut[i]);
+		ASSERT_DOUBLE_EQ(upvectorIn[i] / 5.0, upvectorOut[i]);
+	}
+}
+
 TEST(cmzn_sceneviewer_api, eye_position_invalid_args)
 {
 	ZincTestSetup z;

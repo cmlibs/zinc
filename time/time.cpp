@@ -59,20 +59,17 @@ TEST(cmzn_timekeeper, api)
 	cmzn_timekeeper_destroy(&timekeeper);
 }
 
-class myTimenotifier : public Timenotifiercallback
+class TimenotifiercallbackRecordEvent : public Timenotifiercallback
 {
-private:
-	Timekeeper timekeeper;
+public:
+	Timenotifierevent lastEvent;
+
+	TimenotifiercallbackRecordEvent()
+	{ }
 
 	virtual void operator()(const Timenotifierevent &event)
 	{
-		EXPECT_EQ(timekeeper.getTime(), event.getTime());
-	}
-
-public:
-	myTimenotifier(Timekeeper timekeeper_in)
-	{
-		timekeeper = timekeeper_in;
+		this->lastEvent = event;
 	}
 };
 
@@ -94,9 +91,20 @@ TEST(ZincTimekeeper, api)
 	Timenotifier timenotifier = timekeeper.createTimenotifierRegular(
 		/*update_frequency*/10, /*time_offset*/0.0);
 	EXPECT_TRUE(timenotifier.isValid());
-	myTimenotifier thisNotifier(timekeeper);
-	timenotifier.setCallback(thisNotifier);
+	// test cast
+	TimenotifierRegular timenotifierRegular = timenotifier.castRegular();
+	EXPECT_TRUE(timenotifierRegular.isValid());
+	TimenotifiercallbackRecordEvent thisCallback;
+	timenotifier.setCallback(thisCallback);
+	EXPECT_FALSE(thisCallback.lastEvent.isValid());
 	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(3.5));
+	EXPECT_TRUE(thisCallback.lastEvent.isValid());
+	ASSERT_DOUBLE_EQ(3.5, thisCallback.lastEvent.getTime());
+
+	timenotifierRegular.setOffset(5.0);
+	timenotifierRegular.setFrequency(1.01);
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(3.99));
+	ASSERT_DOUBLE_EQ(3.99, thisCallback.lastEvent.getTime());
+
 	EXPECT_EQ(CMZN_OK, result = timenotifier.clearCallback());
-	// timenotifier callbacks not yet implemented in C++
 }
