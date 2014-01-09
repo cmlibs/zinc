@@ -74,80 +74,99 @@ ZINC_API int cmzn_sceneviewer_set_interact_mode(cmzn_sceneviewer_id sceneviewer,
  * Set the eye position of the scene viewer.
  *
  * @param sceneviewer  Handle to the scene viewer.
- * @param eye  Array of three values containing the new eye position.
+ * @param eyeValuesIn3  Array of three values containing the new eye position.
  * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id sceneviewer,
-	double const *eye);
+	double const *eyeValuesIn3);
 
 /**
  * Get the eye position of the scene viewer.
  *
  * @param  sceneviewer  Handle to the scene viewer.
- * @param  eye  Array of size 3 to hold the values of the eye position.
+ * @param  eyeValuesOut3  Array of size 3 to hold the values of the eye position.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_get_eye_position(cmzn_sceneviewer_id sceneviewer,
-	double *eye);
+	double *eyeValuesOut3);
 
 /**
  * Set the lookat position of the scene viewer.
  *
  * @param sceneviewer  Handle to the scene viewer.
- * @param lookat  Array of three values containing the new lookat position.
+ * @param lookatValuesIn3  Array of three values containing the new lookat position.
  * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id sceneviewer,
-	double const *lookat);
+	double const *lookatValuesIn3);
 
 /**
  * Get the lookat position of the scene viewer.
  *
- * @param  sceneviewer  Handle to the scene viewer.
- * @param  lookat  Array of size 3 to hold the values of the lookat position.
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param lookatValuesOut3  Array of size 3 to hold the values of the lookat position.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_get_lookat_position(cmzn_sceneviewer_id sceneviewer,
-	double *lookat);
+	double *lookatValuesOut3);
 
 /**
- * Set the up vector of the scene viewer.
+ * Set the up vector of the scene viewer. Internally this is always converted
+ * into a unit vector.
  *
  * @param sceneviewer  Handle to the scene viewer.
- * @param upVector  Array of three values containing the new up vector.
+ * @param upVectorValuesIn3  Array of three values containing the new up vector.
  * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id sceneviewer,
-	double const *upVector);
+	double const *upVectorValuesIn3);
 
 /**
  * Get the up vector of the scene viewer.
  *
  * @param  sceneviewer  Handle to the scene viewer.
- * @param  upVector  Array of size 3 to hold the values of the up vector.
+ * @param  upVectorValuesOut3  Array of size 3 to hold the values of the up vector.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_get_up_vector(cmzn_sceneviewer_id sceneviewer,
-	double *upVector);
+	double *upVectorValuesOut3);
 
 /**
- * Gets the view direction and orientation of the scene viewer.
+ * Gets the 3 main viewing parameters of the scene viewer: eye point, lookat
+ * point and up vector in a single call.
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @param eyeValuesOut3  Array of size 3 to receive the coordinates of the point
+ * you are looking from.
+ * @param lookatValuesOut3  Array of size 3 to receive the coordinates of the
+ * point you are looking at, often also called the interest point.
+ * @param upVectorValuesOut3  Array of size 3 to receive the vector giving the
+ * up orientation in the scene viewer.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_sceneviewer_get_lookat_parameters(
-	cmzn_sceneviewer_id sceneviewer,
-	double *eyex,double *eyey,double *eyez,
-	double *lookatx,double *lookaty,double *lookatz,
-	double *upx,double *upy,double *upz);
+	cmzn_sceneviewer_id sceneviewer, double *eyeValuesOut3,
+	double *lookatValuesOut3, double *upVectorValuesOut3);
 
 /**
- * Normal function for controlling Scene_viewer_set_lookat_parameters that ensures
- * the up vector is orthogonal to the view direction - so projection is not skew.
+ * Sets the 3 main viewing parameters of the scene viewer: eye point, lookat
+ * point and up vector in a single call. This function ensures the up vector
+ * is orthogonal to the view direction so the projection is not skew.
  *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param eyeValuesIn3  The 3 coordinates of the point you are looking from.
+ * It is an error if this is at the same as the lookat point.
+ * @param lookatValuesIn3  The 3 coordinates of the point you are looking at,
+ * often also called the interest point.
+ * @param upVectorValuesIn3  A vector which gives the up orientation in the
+ * scene viewer. It is an error if this vector is colinear with the view
+ * direction line from the eye to the lookat point. This vector is
+ * automatically converted to a unit vector orthogonal to the view direction.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_sceneviewer_set_lookat_parameters_non_skew(
-	cmzn_sceneviewer_id sceneviewer,double eyex,double eyey,double eyez,
-	double lookatx,double lookaty,double lookatz,
-	double upx,double upy,double upz);
+	cmzn_sceneviewer_id sceneviewer, double const *eyeValuesIn3,
+	double const *lookatValuesIn3, double const *upVectorValuesIn3);
 
 /**
  * Gets the distance from the eye_point to the near clipping plane in the scene viewer.

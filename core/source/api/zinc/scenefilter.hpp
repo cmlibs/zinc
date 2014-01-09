@@ -118,46 +118,44 @@ public:
 		Scenefilter(reinterpret_cast<cmzn_scenefilter_id>(operator_filter_id))
 	{ }
 
+	cmzn_scenefilter_operator_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_scenefilter_operator_id>(id);
+	}
+
 	int appendOperand(Scenefilter& operand)
 	{
-		return cmzn_scenefilter_operator_append_operand(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId());
+		return cmzn_scenefilter_operator_append_operand(getDerivedId(), operand.getId());
 	}
 
 	Scenefilter getFirstOperand()
 	{
-		return Scenefilter(cmzn_scenefilter_operator_get_first_operand(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id)));
+		return Scenefilter(cmzn_scenefilter_operator_get_first_operand(getDerivedId()));
 	}
 
 	Scenefilter getNextOperand(Scenefilter& refOperand)
 	{
-		return Scenefilter(cmzn_scenefilter_operator_get_next_operand(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id), refOperand.getId()));
+		return Scenefilter(cmzn_scenefilter_operator_get_next_operand(getDerivedId(), refOperand.getId()));
 	}
 
-	int isOperandActive(Scenefilter& operand)
+	bool isOperandActive(Scenefilter& operand)
 	{
-		return cmzn_scenefilter_operator_is_operand_active(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId());
+		return cmzn_scenefilter_operator_is_operand_active(getDerivedId(), operand.getId());
 	}
 
-	int setOperandActive(Scenefilter& operand, int isActive)
+	int setOperandActive(Scenefilter& operand, bool isActive)
 	{
-		return cmzn_scenefilter_operator_set_operand_active(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId(), isActive);
+		return cmzn_scenefilter_operator_set_operand_active(getDerivedId(), operand.getId(), isActive);
 	}
 
 	int insertOperandBefore(Scenefilter& operand, Scenefilter& refOperand)
 	{
-		return cmzn_scenefilter_operator_insert_operand_before(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId(), refOperand.getId());
+		return cmzn_scenefilter_operator_insert_operand_before(getDerivedId(), operand.getId(), refOperand.getId());
 	}
 
 	int removeOperand(Scenefilter& operand)
 	{
-		return cmzn_scenefilter_operator_remove_operand(
-			reinterpret_cast<cmzn_scenefilter_operator_id>(id), operand.getId());
+		return cmzn_scenefilter_operator_remove_operand(getDerivedId(), operand.getId());
 	}
 };
 

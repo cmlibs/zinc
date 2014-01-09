@@ -65,10 +65,10 @@ public:
 		return id;
 	}
 
-	Timenotifier createTimenotifierRegular(double updateFrequency, double timeOffset)
+	TimenotifierRegular createTimenotifierRegular(double updateFrequency, double timeOffset)
 	{
-		return Timenotifier(cmzn_timekeeper_create_timenotifier_regular(
-			id, updateFrequency, timeOffset));
+		return TimenotifierRegular(reinterpret_cast<cmzn_timenotifier_regular_id>(
+			cmzn_timekeeper_create_timenotifier_regular(id, updateFrequency, timeOffset)));
 	}
 
 	double getMaximumTime()

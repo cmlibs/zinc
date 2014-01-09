@@ -232,6 +232,15 @@ ZINC_API cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 
 /**
+* Get the scene filter module which stores scenefilter objects for filtering
+* contents of the scene with scenepicker and sceneviewer etc.
+*
+* @param scene  Handle to the scene.
+* @return  Handle to the scene filter module, or 0 on error. Up to caller to destroy.
+*/
+cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(cmzn_scene_id scene);
+
+/**
  * Get the selection field for the scene, if any.
  *
  * @param scene  The scene to query.

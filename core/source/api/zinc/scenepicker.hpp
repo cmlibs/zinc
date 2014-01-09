@@ -105,15 +105,15 @@ public:
 		return Graphics(cmzn_scenepicker_get_nearest_graphics(id));
 	}
 
-	int addPickedElementsToGroup(FieldGroup& fieldGroup)
+	int addPickedElementsToFieldGroup(FieldGroup& fieldGroup)
 	{
-		return cmzn_scenepicker_add_picked_elements_to_group(id,
+		return cmzn_scenepicker_add_picked_elements_to_field_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 
-	int addPickedNodesToGroup(FieldGroup& fieldGroup)
+	int addPickedNodesToFieldGroup(FieldGroup& fieldGroup)
 	{
-		return cmzn_scenepicker_add_picked_nodes_to_group(id,
+		return cmzn_scenepicker_add_picked_nodes_to_field_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 

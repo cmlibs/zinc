@@ -211,31 +211,27 @@ public:
 		return operand;
 	}
 
-	int getOperandIsActive(cmzn_scenefilter_id operand)
+	bool getOperandIsActive(cmzn_scenefilter_id operand)
 	{
-		int return_code = 0;
 		OperandList::iterator pos = find_operand(operand);
 		if (pos != operands.end())
-		{
-			return_code = (*pos)->isActive;
-		}
-		return return_code;
+			return (*pos)->isActive;
+		return false;
 	}
 
-	int setOperandIsActive(cmzn_scenefilter_id operand, int is_active)
+	int setOperandIsActive(cmzn_scenefilter_id operand, bool is_active)
 	{
-		int return_code = 0;
 		OperandList::iterator pos = find_operand(operand);
 		if (pos != operands.end())
 		{
-			if (((*pos)->isActive != (is_active != 0)))
+			if ((*pos)->isActive != is_active)
 			{
-				(*pos)->isActive = (is_active != 0);
+				(*pos)->isActive = is_active;
 				changed(MANAGER_CHANGE_RESULT(cmzn_scenefilter));
 			}
-			return_code = 1;
+			return CMZN_OK;
 		}
-		return return_code;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	int insertOperandBefore(cmzn_scenefilter_id operand, cmzn_scenefilter_id ref_operand)
@@ -1159,28 +1155,22 @@ cmzn_scenefilter_id cmzn_scenefilter_operator_get_next_operand(
 	return operand;
 }
 
-int cmzn_scenefilter_operator_is_operand_active(
+bool cmzn_scenefilter_operator_is_operand_active(
 	cmzn_scenefilter_operator_id operator_filter,
 	cmzn_scenefilter_id operand)
 {
-	int return_code = 0;
 	if (operator_filter && operand)
-	{
-		return_code = operator_filter->getOperandIsActive(operand);
-	}
-	return return_code;
+		return operator_filter->getOperandIsActive(operand);
+	return false;
 }
 
 int cmzn_scenefilter_operator_set_operand_active(
 	cmzn_scenefilter_operator_id operator_filter,
-	cmzn_scenefilter_id operand, int is_active)
+	cmzn_scenefilter_id operand, bool is_active)
 {
-	int return_code = 0;
 	if (operator_filter && operand)
-	{
-		return_code = operator_filter->setOperandIsActive(operand, is_active);
-	}
-	return return_code;
+		return operator_filter->setOperandIsActive(operand, is_active);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_scenefilter_operator_insert_operand_before(

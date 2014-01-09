@@ -2623,6 +2623,13 @@ int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_scenefiltermodule(scene->graphics_module);
+	return 0;
+}
+
 cmzn_field_id cmzn_scene_get_selection_field(cmzn_scene_id scene)
 {
 	if (scene && (scene->selection_group))

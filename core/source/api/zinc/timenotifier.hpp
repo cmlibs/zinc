@@ -96,6 +96,8 @@ public:
 	{ }
 };
 
+class TimenotifierRegular;
+
 class Timenotifier
 {
 protected:
@@ -149,16 +151,6 @@ public:
 		return cmzn_timenotifier_get_time(id);
 	}
 
-	int setFrequency(double frequency)
-	{
-		return cmzn_timenotifier_regular_set_frequency(id, frequency);
-	}
-
-	int setOffset(double timeOffset)
-	{
-		return cmzn_timenotifier_regular_set_offset(id, timeOffset);
-	}
-
 	int setCallback(Timenotifiercallback& callback)
 	{
 		return cmzn_timenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
@@ -169,7 +161,43 @@ public:
 		return cmzn_timenotifier_clear_callback(id);
 	}
 
+	inline TimenotifierRegular castRegular();
 };
+
+class TimenotifierRegular : public Timenotifier
+{
+public:
+
+	TimenotifierRegular() : Timenotifier()
+	{	}
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit TimenotifierRegular(cmzn_timenotifier_regular_id timenotifier_regular_id) :
+		Timenotifier(reinterpret_cast<cmzn_timenotifier_id>(timenotifier_regular_id))
+	{ }
+
+	cmzn_timenotifier_regular_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_timenotifier_regular_id>(id);
+	}
+
+	int setFrequency(double frequency)
+	{
+		return cmzn_timenotifier_regular_set_frequency(getDerivedId(), frequency);
+	}
+
+	int setOffset(double timeOffset)
+	{
+		return cmzn_timenotifier_regular_set_offset(getDerivedId(), timeOffset);
+	}
+
+};
+
+inline TimenotifierRegular Timenotifier::castRegular()
+{
+	return TimenotifierRegular(cmzn_timenotifier_cast_regular(id));
+}
+
 
 }  // namespace Zinc
 }

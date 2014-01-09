@@ -153,26 +153,26 @@ ZINC_API cmzn_graphics_id cmzn_scenepicker_get_nearest_graphics(
 
 /**
  * Picked nodes belong to group field's owning region tree will
- * be addeed to group.
+ * be added to group.
  * Additional subregion fields will be created when required.
  *
  * @param scenepicker  The scene picker to pick the nearest node.
  * @param group  nodes will be added to this group field
  * @return Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_scenepicker_add_picked_nodes_to_group(
+ZINC_API int cmzn_scenepicker_add_picked_nodes_to_field_group(
 	cmzn_scenepicker_id scenepicker, cmzn_field_group_id group);
 
 /**
  * Picked elements belong to group field's owning region tree will
- * be addeed to group.
+ * be added to group.
  * Additional subregion fields will be created when required.
  *
  * @param scenepicker  The scene picker to pick the nearest element.
  * @param group  elements will be added to this group field
  * @return Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_scenepicker_add_picked_elements_to_group(
+ZINC_API int cmzn_scenepicker_add_picked_elements_to_field_group(
 	cmzn_scenepicker_id scenepicker, cmzn_field_group_id group);
 
 #ifdef __cplusplus
