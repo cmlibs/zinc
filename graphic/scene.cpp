@@ -143,7 +143,8 @@ TEST(ZincScene, getSpectrumDataRange)
 	EXPECT_TRUE(offsetField.isValid());
 	Field yField = zinc.fm.createFieldComponent(coordinateField, 2);
 	EXPECT_TRUE(yField.isValid());
-	Field offsetYField = zinc.fm.createFieldAdd(yField, offsetField);
+	// test operator overloading for addition:
+	Field offsetYField = yField + offsetField;
 	EXPECT_TRUE(offsetYField.isValid());
 	Field sourceFields[] = { magnitudeField, offsetYField };
 	Field dataField = zinc.fm.createFieldConcatenate(2, sourceFields);

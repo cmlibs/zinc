@@ -8,27 +8,25 @@
 
 #include <gtest/gtest.h>
 
+#include "zinctestsetup.hpp"
 #include <zinc/core.h>
-#include <zinc/context.h>
 #include <zinc/element.h>
 #include <zinc/field.h>
-#include <zinc/fieldmodule.h>
+#include <zinc/fieldcache.h>
 #include <zinc/fieldfiniteelement.h>
 #include <zinc/node.h>
-#include <zinc/region.h>
-#include <zinc/status.h>
 #include <zinc/stream.h>
 
+#include "zinctestsetupcpp.hpp"
 #include <zinc/context.hpp>
 #include <zinc/element.hpp>
 #include <zinc/field.hpp>
+#include <zinc/fieldcache.hpp>
 #include <zinc/fieldmodule.hpp>
 #include <zinc/fieldfiniteelement.hpp>
 #include <zinc/node.hpp>
 #include <zinc/region.hpp>
 #include <zinc/status.hpp>
-#include "zinctestsetup.hpp"
-#include "zinctestsetupcpp.hpp"
 
 #include "test_resources.h"
 

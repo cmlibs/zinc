@@ -9,16 +9,15 @@
 #include <gtest/gtest.h>
 
 #include <zinc/core.h>
-#include <zinc/context.h>
 #include <zinc/region.h>
-#include <zinc/fieldmodule.h>
+#include <zinc/fieldcache.h>
 #include <zinc/field.h>
 #include <zinc/fieldvectoroperators.h>
 #include <zinc/fieldconstant.h>
-#include <zinc/status.h>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include <zinc/fieldcache.hpp>
 #include "zinc/fieldconstant.hpp"
 #include "zinc/fieldvectoroperators.hpp"
 

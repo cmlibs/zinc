@@ -8,19 +8,18 @@
 
 #include <gtest/gtest.h>
 
+#include "zinctestsetup.hpp"
 #include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/region.h>
-#include <zinc/fieldmodule.h>
 #include <zinc/field.h>
+#include <zinc/fieldcache.h>
 #include <zinc/fieldcomposite.h>
 #include <zinc/fieldconstant.h>
-#include <zinc/status.h>
 
-#include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
-#include "zinc/fieldconstant.hpp"
-#include "zinc/fieldcomposite.hpp"
+#include <zinc/field.hpp>
+#include <zinc/fieldcache.hpp>
+#include <zinc/fieldcomposite.hpp>
+#include <zinc/fieldconstant.hpp>
 
 TEST(cmzn_fieldmodule_create_field_component, valid_args)
 {
