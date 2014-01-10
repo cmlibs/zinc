@@ -19,7 +19,6 @@
 %import "stream.i"
 
 %{
-#include "zinc/fieldimage.hpp"
 #include "zinc/region.hpp"
 #include "zinc/scene.hpp"
 %}

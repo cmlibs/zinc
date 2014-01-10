@@ -45,10 +45,12 @@
 %import "timesequence.i"
 %import "optimisation.i"
 %import "field.i"
+%import "fieldcache.i"
 
 %{
 #include "zinc/fieldalias.hpp"
 #include "zinc/fieldarithmeticoperators.hpp"
+#include "zinc/fieldcache.hpp"
 #include "zinc/fieldcomposite.hpp"
 #include "zinc/fieldconditional.hpp"
 #include "zinc/fieldconstant.hpp"
@@ -68,6 +70,7 @@
 #include "zinc/fieldtrigonometry.hpp"
 #include "zinc/fieldvectoroperators.hpp"
 #include "zinc/fieldmodule.hpp"
+#include "zinc/optimisation.hpp"
 
 static void fieldmoduleCallbackToPython(cmzn_fieldmoduleevent_id fieldmoduleevent, void *user_data)
 {
