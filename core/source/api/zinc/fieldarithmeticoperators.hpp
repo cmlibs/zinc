@@ -36,8 +36,7 @@ public:
 
 inline FieldAdd operator+(Field& operand1, Field& operand2)
 {
-	Fieldmodule fieldModule(operand1);
-	return fieldModule.createFieldAdd(operand1, operand2);
+	return operand1.getFieldmodule().createFieldAdd(operand1, operand2);
 }
 
 class FieldPower : public Field
@@ -74,8 +73,7 @@ public:
 
 inline FieldMultiply operator*(Field& operand1, Field& operand2)
 {
-   Fieldmodule fieldModule(operand1);
-	return fieldModule.createFieldMultiply(operand1, operand2);
+	return operand1.getFieldmodule().createFieldMultiply(operand1, operand2);
 }
 
 class FieldDivide : public Field
@@ -96,8 +94,7 @@ public:
 
 inline FieldDivide operator/(Field& operand1, Field& operand2)
 {
-   Fieldmodule fieldModule(operand1);
-	return fieldModule.createFieldDivide(operand1, operand2);
+	return operand1.getFieldmodule().createFieldDivide(operand1, operand2);
 }
 
 class FieldSubtract : public Field
@@ -118,8 +115,7 @@ public:
 
 inline FieldSubtract operator-(Field& operand1, Field& operand2)
 {
-   Fieldmodule fieldModule(operand1);
-	return fieldModule.createFieldSubtract(operand1, operand2);
+	return operand1.getFieldmodule().createFieldSubtract(operand1, operand2);
 }
 
 class FieldLog : public Field
@@ -140,8 +136,7 @@ public:
 
 inline FieldLog log(Field& sourceField)
 {
-	Fieldmodule fieldModule(sourceField);
-	return fieldModule.createFieldLog(sourceField);
+	return sourceField.getFieldmodule().createFieldLog(sourceField);
 }
 
 class FieldSqrt : public Field
@@ -162,8 +157,7 @@ public:
 
 inline FieldSqrt sqrt(Field& sourceField)
 {
-	Fieldmodule fieldModule(sourceField);
-	return fieldModule.createFieldSqrt(sourceField);
+	return sourceField.getFieldmodule().createFieldSqrt(sourceField);
 }
 
 class FieldExp : public Field
@@ -184,8 +178,7 @@ public:
 
 inline FieldExp exp(Field& sourceField)
 {
-	Fieldmodule fieldModule(sourceField);
-	return fieldModule.createFieldExp(sourceField);
+	return sourceField.getFieldmodule().createFieldExp(sourceField);
 }
 
 class FieldAbs : public Field
@@ -206,8 +199,7 @@ public:
 
 inline FieldAbs abs(Field& sourceField)
 {
-	Fieldmodule fieldModule(sourceField);
-	return fieldModule.createFieldAbs(sourceField);
+	return sourceField.getFieldmodule().createFieldAbs(sourceField);
 }
 
 /* inline Fieldmodule factory methods */
