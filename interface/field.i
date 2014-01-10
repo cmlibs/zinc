@@ -47,6 +47,7 @@
 #include "zinc/fieldtime.hpp"
 #include "zinc/fieldtrigonometry.hpp"
 #include "zinc/field.hpp"
+#include "zinc/fieldcache.hpp"
 #include "zinc/fieldmodule.hpp"
 %}
 
