@@ -37,8 +37,7 @@ public:
 
 inline FieldAnd operator&&(Field& operand1, Field& operand2)
 {
-    Fieldmodule fieldModule(operand1);
-    return fieldModule.createFieldAnd(operand1, operand2);
+	return operand1.getFieldmodule().createFieldAnd(operand1, operand2);
 }
 
 class FieldEqualTo : public Field
@@ -77,8 +76,7 @@ public:
 
 inline FieldGreaterThan operator>(Field& operand1, Field& operand2)
 {
-    Fieldmodule fieldModule(operand1);
-    return fieldModule.createFieldGreaterThan(operand1, operand2);
+	return operand1.getFieldmodule().createFieldGreaterThan(operand1, operand2);
 }
 
 class FieldLessThan : public Field
@@ -99,8 +97,7 @@ public:
 
 inline FieldLessThan operator<(Field& operand1, Field& operand2)
 {
-    Fieldmodule fieldModule(operand1);
-    return fieldModule.createFieldLessThan(operand1, operand2);
+	return operand1.getFieldmodule().createFieldLessThan(operand1, operand2);
 }
 
 class FieldOr : public Field
@@ -122,8 +119,7 @@ public:
 
 inline FieldOr operator||(Field& operand1, Field& operand2)
 {
-    Fieldmodule fieldModule(operand1);
-    return fieldModule.createFieldOr(operand1, operand2);
+	return operand1.getFieldmodule().createFieldOr(operand1, operand2);
 }
 
 class FieldNot : public Field
@@ -144,8 +140,7 @@ public:
 
 inline FieldNot operator!(Field& operand)
 {
-    Fieldmodule fieldModule(operand);
-    return fieldModule.createFieldNot(operand);
+	return operand.getFieldmodule().createFieldNot(operand);
 }
 
 class FieldXor : public Field

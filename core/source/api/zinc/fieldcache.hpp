@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldcache.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -10,9 +10,11 @@
 #ifndef CMZN_FIELDCACHE_HPP__
 #define CMZN_FIELDCACHE_HPP__
 
-#include "zinc/fieldcache.h"
-#include "zinc/field.hpp"
+#include "zinc/differentialoperator.hpp"
 #include "zinc/element.hpp"
+#include "zinc/field.h"
+#include "zinc/fieldcache.h"
+#include "zinc/fieldmodule.hpp"
 #include "zinc/node.hpp"
 
 namespace OpenCMISS
@@ -97,6 +99,11 @@ public:
 		return cmzn_fieldcache_set_time(id, time);
 	}
 };
+
+inline Fieldcache Fieldmodule::createFieldcache()
+{
+	return Fieldcache(cmzn_fieldmodule_create_fieldcache(id));
+}
 
 inline int Field::assignMeshLocation(Fieldcache& cache, Element element,
 	int coordinatesCount, const double *coordinatesIn)

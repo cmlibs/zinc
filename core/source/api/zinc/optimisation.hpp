@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : optimisation.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -10,7 +10,7 @@
 #define CMZN_OPTIMISATION_HPP__
 
 #include "zinc/optimisation.h"
-#include "zinc/field.hpp"
+#include "zinc/fieldmodule.hpp"
 
 namespace OpenCMISS
 {
@@ -177,6 +177,11 @@ public:
 	}
 
 };
+
+inline Optimisation Fieldmodule::createOptimisation()
+{
+	return Optimisation(cmzn_fieldmodule_create_optimisation(id));
+}
 
 }  // namespace Zinc
 }

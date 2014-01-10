@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : field.hpp
  *
  */
@@ -11,13 +11,13 @@
 #define CMZN_FIELD_HPP__
 
 #include "zinc/field.h"
-#include "zinc/differentialoperator.hpp"
 
 namespace OpenCMISS
 {
 namespace Zinc
 {
 
+class Differentialoperator;
 class Element;
 class Fieldcache;
 class FieldComponent;

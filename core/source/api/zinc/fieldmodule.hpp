@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldmodule.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -11,10 +11,8 @@
 
 #include "zinc/fieldmodule.h"
 #include "zinc/field.hpp"
-#include "zinc/fieldcache.hpp"
 #include "zinc/element.hpp"
 #include "zinc/node.hpp"
-#include "zinc/optimisation.hpp"
 #include "zinc/timesequence.hpp"
 #include "zinc/types/scenecoordinatesystem.hpp"
 
@@ -23,6 +21,7 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Fieldcache;
 class Fieldmodulenotifier;
 class FieldAlias;
 class FieldAdd;
@@ -130,10 +129,6 @@ public:
 		id(cmzn_fieldmodule_access(fieldModule.id))
 	{ }
 
-	Fieldmodule(Field& field) :
-		id(cmzn_field_get_fieldmodule(field.getId()))
-	{ }
-
 	Fieldmodule& operator=(const Fieldmodule& fieldModule)
 	{
 		cmzn_fieldmodule_id temp_id = cmzn_fieldmodule_access(fieldModule.id);
@@ -183,10 +178,7 @@ public:
 		return Field(cmzn_fieldmodule_find_field_by_name(id, fieldName));
 	}
 
-	Fieldcache createFieldcache()
-	{
-		return Fieldcache(cmzn_fieldmodule_create_fieldcache(id));
-	}
+	inline Fieldcache createFieldcache();
 
 	Fielditerator createFielditerator()
 	{
@@ -229,10 +221,7 @@ public:
 			id, timesCount, timesIn));
 	}
 
-	Optimisation createOptimisation()
-	{
-		return Optimisation(cmzn_fieldmodule_create_optimisation(id));
-	}
+	inline Optimisation createOptimisation();
 
 	FieldAlias createFieldAlias(Field& sourceField);
 
@@ -578,7 +567,7 @@ public:
 
 inline Fieldmodule Field::getFieldmodule()
 {
-	return Fieldmodule(*this);
+	return Fieldmodule(cmzn_field_get_fieldmodule(id));
 }
 
 inline Fieldmodulenotifier Fieldmodule::createFieldmodulenotifier()
