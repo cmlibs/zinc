@@ -224,26 +224,26 @@ public:
 		return static_cast<ValueType>(cmzn_field_get_value_type(id));
 	}
 
-	Fieldmodule getFieldmodule();
+	inline Fieldmodule getFieldmodule();
 
-	int assignMeshLocation(Fieldcache& cache, Element element,
+	inline int assignMeshLocation(Fieldcache& cache, Element element,
 		int coordinatesCount, const double *coordinatesIn);
 
-	int assignReal(Fieldcache& cache, int valuesCount, const double *valuesIn);
+	inline int assignReal(Fieldcache& cache, int valuesCount, const double *valuesIn);
 
-	int assignString(Fieldcache& cache, const char *stringValue);
+	inline int assignString(Fieldcache& cache, const char *stringValue);
 
-	Element evaluateMeshLocation(Fieldcache& cache, int coordinatesCount,
+	inline Element evaluateMeshLocation(Fieldcache& cache, int coordinatesCount,
 		double *coordinatesOut);
 
-	int evaluateReal(Fieldcache& cache, int valuesCount, double *valuesOut);
+	inline int evaluateReal(Fieldcache& cache, int valuesCount, double *valuesOut);
 
-	char *evaluateString(Fieldcache& cache);
+	inline char *evaluateString(Fieldcache& cache);
 
-	int evaluateDerivative(Differentialoperator& differentialOperator,
+	inline int evaluateDerivative(Differentialoperator& differentialOperator,
 		Fieldcache& cache, int valuesCount, double *valuesOut);
 
-	bool isDefinedAtLocation(Fieldcache& cache);
+	inline bool isDefinedAtLocation(Fieldcache& cache);
 
 	// casting functions: must check isValid()
 	inline FieldComponent castComponent();
