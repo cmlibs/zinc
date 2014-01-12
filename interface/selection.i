@@ -36,6 +36,8 @@
     }
 }
 
+%ignore OpenCMISS::Zinc::Selectionnotifier::clearCallback();
+
 %{
 #include "zinc/selection.hpp"
 

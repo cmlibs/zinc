@@ -36,6 +36,8 @@
     }
 }
 
+%ignore OpenCMISS::Zinc::Fieldmodulenotifier::clearCallback();
+
 %include "doublevaluesarraytypemap.i"
 %include "integervaluesarraytypemap.i"
 %include "fieldarraytypemap.i"

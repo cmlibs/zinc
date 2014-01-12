@@ -15,38 +15,32 @@
 {
 	OpenCMISS::Zinc::FieldAdd operator+(OpenCMISS::Zinc::Field& operand)
 	{
-    	OpenCMISS::Zinc::Fieldmodule fieldModule(*($self));
-    	return fieldModule.createFieldAdd(*($self), operand);
+    	return ($self)->getFieldmodule().createFieldAdd(*($self), operand);
 	}
 	
 	OpenCMISS::Zinc::FieldSubtract operator-(OpenCMISS::Zinc::Field& operand)
 	{
-    	OpenCMISS::Zinc::Fieldmodule fieldModule(*($self));
-    	return fieldModule.createFieldSubtract(*($self), operand);
+    	return ($self)->getFieldmodule().createFieldSubtract(*($self), operand);
 	}
 	
 	OpenCMISS::Zinc::FieldMultiply operator*(OpenCMISS::Zinc::Field& operand)
 	{
-	    OpenCMISS::Zinc::Fieldmodule fieldModule(*($self));
- 		return fieldModule.createFieldMultiply(*($self), operand);
+	    return ($self)->getFieldmodule().createFieldMultiply(*($self), operand);
 	}
 	
 	OpenCMISS::Zinc::FieldDivide operator/(OpenCMISS::Zinc::Field& operand)
 	{
-	    OpenCMISS::Zinc::Fieldmodule fieldModule(*($self));
- 		return fieldModule.createFieldDivide(*($self), operand);
+	    return ($self)->getFieldmodule().createFieldDivide(*($self), operand);
 	}
 
 	OpenCMISS::Zinc::FieldGreaterThan operator>(OpenCMISS::Zinc::Field& operand)
 	{
-    	OpenCMISS::Zinc::Fieldmodule fieldModule(*($self));
-    	return fieldModule.createFieldGreaterThan(*($self), operand);
+    	return ($self)->getFieldmodule().createFieldGreaterThan(*($self), operand);
 	}
 
 	OpenCMISS::Zinc::FieldLessThan operator<(OpenCMISS::Zinc::Field& operand)
 	{
-    	OpenCMISS::Zinc::Fieldmodule fieldModule(*($self));
-    	return fieldModule.createFieldLessThan(*($self), operand);
+    	return ($self)->getFieldmodule().createFieldLessThan(*($self), operand);
 	}
 
 };

@@ -43,6 +43,8 @@
 
 }
 
+%ignore OpenCMISS::Zinc::Sceneviewernotifier::clearCallback();
+
 %{
 #include "zinc/sceneviewer.hpp"
 

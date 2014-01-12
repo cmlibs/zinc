@@ -10,9 +10,10 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-#include "zinc/core.h"
 
-%typemap(newfree) char * "free($1);";
+%typemap(newfree) char * {
+free($1);
+}
 
 %newobject *::getName(); 
 

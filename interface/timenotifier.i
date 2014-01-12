@@ -36,6 +36,8 @@
     }
 }
 
+%ignore OpenCMISS::Zinc::Timenotifier::clearCallback();
+
 %{
 #include "zinc/timenotifier.hpp"
 
