@@ -13,6 +13,7 @@
 #include "zinc/field.hpp"
 #include "zinc/element.hpp"
 #include "zinc/node.hpp"
+#include "zinc/region.hpp"
 #include "zinc/timesequence.hpp"
 #include "zinc/types/scenecoordinatesystem.hpp"
 
@@ -215,7 +216,7 @@ public:
 		return Mesh(cmzn_fieldmodule_find_mesh_by_name(id, meshName));
 	}
 
-	Timesequence getMatchingTimesequence(int timesCount, const double *timesIn)
+	inline Timesequence getMatchingTimesequence(int timesCount, const double *timesIn)
 	{
 		return Timesequence(cmzn_fieldmodule_get_matching_timesequence(
 			id, timesCount, timesIn));
@@ -564,6 +565,11 @@ public:
 		return cmzn_fieldmodulenotifier_clear_callback(id);
 	}
 };
+
+inline Fieldmodule Region::getFieldmodule()
+{
+	return Fieldmodule(cmzn_region_get_fieldmodule(id));
+}
 
 inline Fieldmodule Field::getFieldmodule()
 {

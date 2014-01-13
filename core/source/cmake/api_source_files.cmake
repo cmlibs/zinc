@@ -49,6 +49,8 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/spectrum.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/status.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/stream.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamimage.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamregion.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/tessellation.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timenotifier.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timekeeper.h

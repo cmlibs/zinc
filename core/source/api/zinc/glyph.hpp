@@ -10,6 +10,7 @@
 #define CMZN_GLYPH_HPP__
 
 #include "zinc/glyph.h"
+#include "zinc/context.hpp"
 #include "zinc/material.hpp"
 #include "zinc/spectrum.hpp"
 
@@ -384,6 +385,11 @@ public:
 	}
 
 };
+
+inline Glyphmodule Context::getGlyphmodule()
+{
+	return Glyphmodule(cmzn_context_get_glyphmodule(id));
+}
 
 }  // namespace Zinc
 }

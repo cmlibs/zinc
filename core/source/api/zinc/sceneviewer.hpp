@@ -10,14 +10,16 @@
 #define CMZN_SCENEVIEWER_HPP__
 
 #include "zinc/sceneviewer.h"
+#include "zinc/context.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/scenefilter.hpp"
-#include "zinc/sceneviewerinput.hpp"
 
 namespace OpenCMISS
 {
 namespace Zinc
 {
+
+class Sceneviewerinput;
 
 class Sceneviewerevent
 {
@@ -315,15 +317,9 @@ public:
 		return cmzn_sceneviewer_set_viewport_size(id, width, height);
 	}
 
-	Sceneviewerinput createSceneviewerinput()
-	{
-		return Sceneviewerinput(cmzn_sceneviewer_create_sceneviewerinput(id));
-	}
+	inline Sceneviewerinput createSceneviewerinput();
 
-	int processSceneviewerinput(Sceneviewerinput& input)
-	{
-		return cmzn_sceneviewer_process_sceneviewerinput(id, input.getId());
-	}
+	inline int processSceneviewerinput(Sceneviewerinput& input);
 
 	int getAntialiasSampling()
 	{
@@ -598,6 +594,11 @@ public:
 	}
 
 };
+
+inline Sceneviewermodule Context::getSceneviewermodule()
+{
+	return Sceneviewermodule(cmzn_context_get_sceneviewermodule(id));
+}
 
 }  // namespace Zinc
 }

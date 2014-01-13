@@ -10,13 +10,12 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include "zinc/region.h"
+#include "zinc/streamregion.h"
 #include "field_io/read_fieldml.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-//#include "finite_element/finite_element_region.h"
 #include "region/cmiss_region.h"
 #include "stream/cmiss_region_stream.hpp"
 
