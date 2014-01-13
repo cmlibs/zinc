@@ -15,7 +15,6 @@
 
 %include "pyzincstringhandling.i"
 
-%import "field.i"
 %import "stream.i"
 
 %{
