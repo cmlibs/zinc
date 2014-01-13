@@ -19,6 +19,7 @@
 #include <zinc/region.h>
 #include <zinc/status.h>
 #include <zinc/stream.h>
+#include <zinc/streamregion.h>
 
 #include "zinctestsetup.hpp"
 

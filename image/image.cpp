@@ -19,6 +19,7 @@
 #include <zinc/fieldconstant.h>
 #include <zinc/fieldimage.h>
 #include <zinc/stream.h>
+#include <zinc/streamimage.h>
 
 #include "test_resources.h"
 #include "zinctestsetup.hpp"

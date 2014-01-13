@@ -18,12 +18,14 @@
 #include <zinc/region.h>
 #include <zinc/status.h>
 #include <zinc/stream.h>
+#include <zinc/streamregion.h>
 
 #include <zinc/context.hpp>
 #include <zinc/element.hpp>
 #include <zinc/node.hpp>
 #include <zinc/status.hpp>
 #include <zinc/stream.hpp>
+#include <zinc/streamregion.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
