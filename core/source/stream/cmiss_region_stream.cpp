@@ -202,7 +202,7 @@ int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
 	if (region && file_name)
 	{
 		cmzn_streaminformation_id streaminformation =
-			cmzn_region_create_streaminformation(region);
+			cmzn_region_create_streaminformation_region(region);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
 		cmzn_streaminformation_region_id streaminformation_region =
@@ -348,7 +348,7 @@ int cmzn_region_write_file(cmzn_region_id region, const char *file_name)
 	if (region && file_name)
 	{
 		cmzn_streaminformation_id streaminformation =
-			cmzn_region_create_streaminformation(region);
+			cmzn_region_create_streaminformation_region(region);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
 		cmzn_streaminformation_region_id streaminformation_region =
@@ -361,7 +361,7 @@ int cmzn_region_write_file(cmzn_region_id region, const char *file_name)
 	return return_code;
 }
 
-cmzn_streaminformation_id cmzn_region_create_streaminformation(struct cmzn_region *region)
+cmzn_streaminformation_id cmzn_region_create_streaminformation_region(struct cmzn_region *region)
 {
 	if (region)
 	{

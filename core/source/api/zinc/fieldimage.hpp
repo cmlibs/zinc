@@ -31,7 +31,7 @@ private:
 
 public:
 
-	FieldImage() : Field(0)
+	FieldImage() : Field()
 	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
@@ -219,7 +219,7 @@ public:
 		return cmzn_field_image_get_property(getDerivedId(), property);
 	}
 
-	inline StreaminformationImage createStreaminformation();
+	inline StreaminformationImage createStreaminformationImage();
 
 };
 

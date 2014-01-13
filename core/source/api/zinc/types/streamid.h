@@ -20,12 +20,8 @@
  * Once stream is created, user can create different types of stream resources
  * and associate specific data/settings for reading and writing.
  * There are two derived types of this objects.
- *
- * #see cmzn_streamresource_id
- * #see cmzn_streaminformation_image_id
- * #see cmzn_streaminformation_region_id
- * #see cmzn_field_image_create_streaminformation
- * #see cmzn_region_create_streaminformation
+ * #see cmzn_field_image_create_streaminformation_image
+ * #see cmzn_region_create_streaminformation_region
  * #see cmzn_streaminformation_cast_image
  * #see cmzn_streaminformation_cast_region
  */

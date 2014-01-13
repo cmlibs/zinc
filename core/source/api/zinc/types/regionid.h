@@ -22,10 +22,8 @@ typedef struct cmzn_region * cmzn_region_id;
  * User can use this derived type to set number of informations associate with
  * images inputs and outputs. See region.h for more information.
  *
- * #see cmzn_streaminformation_id
- * #see cmzn_field_image_create_streaminformation
- * #see cmzn_streaminformation_cast_image
- * #see cmzn_streaminformation_image_base_cast
+ * #see cmzn_region_create_streaminformation_region
+ * #see cmzn_streaminformation_cast_region
  */
 struct cmzn_streaminformation_region;
 typedef struct cmzn_streaminformation_region * cmzn_streaminformation_region_id;

@@ -189,7 +189,7 @@ int cmzn_field_image_read_file(cmzn_field_image_id image_field, const char *file
 	if (image_field && file_name)
 	{
 		cmzn_streaminformation_id streaminformation =
-			cmzn_field_image_create_streaminformation(image_field);
+			cmzn_field_image_create_streaminformation_image(image_field);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
 		cmzn_streaminformation_image_id streaminformation_image =
@@ -339,7 +339,7 @@ int cmzn_field_image_write_file(cmzn_field_image_id image_field, const char *fil
 	if (image_field && file_name)
 	{
 		cmzn_streaminformation_id streaminformation =
-			cmzn_field_image_create_streaminformation(image_field);
+			cmzn_field_image_create_streaminformation_image(image_field);
 		cmzn_streamresource_id resource = cmzn_streaminformation_create_streamresource_file(
 			streaminformation, file_name);
 		cmzn_streaminformation_image_id streaminformation_image =
@@ -352,7 +352,7 @@ int cmzn_field_image_write_file(cmzn_field_image_id image_field, const char *fil
 	return return_code;
 }
 
-cmzn_streaminformation_id cmzn_field_image_create_streaminformation(
+cmzn_streaminformation_id cmzn_field_image_create_streaminformation_image(
 	cmzn_field_image_id image_field)
 {
 	if (image_field)

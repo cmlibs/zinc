@@ -53,7 +53,7 @@ ZINC_API char *cmzn_streaminformation_region_attribute_enum_to_string(
  *
  * @return The created object.
  */
-ZINC_API cmzn_streaminformation_id cmzn_region_create_streaminformation(
+ZINC_API cmzn_streaminformation_id cmzn_region_create_streaminformation_region(
 	cmzn_region_id region);
 
 /**
