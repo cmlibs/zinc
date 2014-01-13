@@ -25,10 +25,8 @@ typedef struct cmzn_field_image *cmzn_field_image_id;
  * User can use this derived type to set number of informations associate with
  * images inputs and outputs. See fieldimage.h for more information.
  *
- * #see cmzn_streaminformation_id
- * #see cmzn_field_image_create_streaminformation
+ * #see cmzn_field_image_create_streaminformation_image
  * #see cmzn_streaminformation_cast_image
- * #see cmzn_streaminformation_image_base_cast
  */
 struct cmzn_streaminformation_image;
 typedef struct cmzn_streaminformation_image *cmzn_streaminformation_image_id;

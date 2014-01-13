@@ -178,7 +178,7 @@ public:
 
 	Scene getScene();
 
-	inline StreaminformationRegion createStreaminformation();
+	inline StreaminformationRegion createStreaminformationRegion();
 
 	inline int read(StreaminformationRegion& streaminformationRegion);
 

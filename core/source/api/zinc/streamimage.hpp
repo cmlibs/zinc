@@ -26,6 +26,8 @@ private:
 	{ }
 
 public:
+	StreaminformationImage() : Streaminformation()
+	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit StreaminformationImage(cmzn_streaminformation_image_id streaminformation_image_id) :
@@ -109,11 +111,11 @@ inline StreaminformationImage Streaminformation::castImage()
 	return StreaminformationImage(cmzn_streaminformation_cast_image(id));
 }
 
-inline StreaminformationImage FieldImage::createStreaminformation()
+inline StreaminformationImage FieldImage::createStreaminformationImage()
 {
   return StreaminformationImage(
     reinterpret_cast<cmzn_streaminformation_image_id>(
-      cmzn_field_image_create_streaminformation(getDerivedId())));
+      cmzn_field_image_create_streaminformation_image(getDerivedId())));
 }
 
 inline int FieldImage::read(StreaminformationImage& streaminformationImage)

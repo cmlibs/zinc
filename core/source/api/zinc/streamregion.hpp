@@ -27,6 +27,8 @@ class StreaminformationRegion : public Streaminformation
 	{  }
 
 public:
+	StreaminformationRegion() : Streaminformation()
+	{ }
 
 	// takes ownership of C handle, responsibility for destroying it
 	explicit StreaminformationRegion(cmzn_streaminformation_region_id streaminformation_region_id) :
@@ -114,10 +116,10 @@ inline StreaminformationRegion Streaminformation::castRegion()
 	return StreaminformationRegion(cmzn_streaminformation_cast_region(id));
 }
 
-inline StreaminformationRegion Region::createStreaminformation()
+inline StreaminformationRegion Region::createStreaminformationRegion()
 {
 	return StreaminformationRegion(reinterpret_cast<cmzn_streaminformation_region_id>(
-		cmzn_region_create_streaminformation(id)));
+		cmzn_region_create_streaminformation_region(id)));
 }
 
 inline int Region::read(StreaminformationRegion& streaminformationRegion)

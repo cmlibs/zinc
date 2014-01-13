@@ -85,7 +85,7 @@ ZINC_API char *cmzn_streaminformation_image_attribute_enum_to_string(
  * Creates a cmzn_streaminformation_image object.
  * @return The created object.
  */
-ZINC_API cmzn_streaminformation_id cmzn_field_image_create_streaminformation(
+ZINC_API cmzn_streaminformation_id cmzn_field_image_create_streaminformation_image(
 	cmzn_field_image_id image_field);
 
 /**
