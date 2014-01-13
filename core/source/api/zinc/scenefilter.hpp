@@ -9,9 +9,10 @@
 #ifndef CMZN_SCENEFILTER_HPP__
 #define CMZN_SCENEFILTER_HPP__
 
+#include "zinc/scenefilter.h"
+#include "zinc/context.hpp"
 #include "zinc/graphics.hpp"
 #include "zinc/region.hpp"
-#include "zinc/scenefilter.h"
 
 namespace OpenCMISS
 {
@@ -278,6 +279,11 @@ public:
 		return cmzn_scenefiltermodule_set_default_scenefilter(id, filter.getId());
 	}
 };
+
+inline Scenefiltermodule Context::getScenefiltermodule()
+{
+	return Scenefiltermodule(cmzn_context_get_scenefiltermodule(id));
+}
 
 }  // namespace Zinc
 }

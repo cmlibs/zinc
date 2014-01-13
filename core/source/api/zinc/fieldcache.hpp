@@ -10,10 +10,10 @@
 #ifndef CMZN_FIELDCACHE_HPP__
 #define CMZN_FIELDCACHE_HPP__
 
-#include "zinc/differentialoperator.hpp"
-#include "zinc/element.hpp"
 #include "zinc/field.h"
 #include "zinc/fieldcache.h"
+#include "zinc/differentialoperator.hpp"
+#include "zinc/element.hpp"
 #include "zinc/fieldmodule.hpp"
 #include "zinc/node.hpp"
 

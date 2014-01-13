@@ -10,6 +10,7 @@
 #define CMZN_SCENEVIEWERINPUT_HPP__
 
 #include "zinc/sceneviewerinput.h"
+#include "zinc/sceneviewer.hpp"
 
 namespace OpenCMISS
 {
@@ -119,6 +120,16 @@ public:
 	}
 
 };
+
+inline Sceneviewerinput Sceneviewer::createSceneviewerinput()
+{
+	return Sceneviewerinput(cmzn_sceneviewer_create_sceneviewerinput(id));
+}
+
+inline int Sceneviewer::processSceneviewerinput(Sceneviewerinput& input)
+{
+	return cmzn_sceneviewer_process_sceneviewerinput(id, input.getId());
+}
 
 }  // namespace Zinc
 }

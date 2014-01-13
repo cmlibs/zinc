@@ -11,19 +11,20 @@
 #define CMZN_CONTEXT_HPP__
 
 #include "zinc/context.h"
-#include "zinc/font.hpp"
-#include "zinc/glyph.hpp"
-#include "zinc/material.hpp"
-#include "zinc/region.hpp"
-#include "zinc/sceneviewer.hpp"
-#include "zinc/spectrum.hpp"
-#include "zinc/tessellation.hpp"
-#include "zinc/timekeeper.hpp"
 
 namespace OpenCMISS
 {
 namespace Zinc
 {
+class Fontmodule;
+class Glyphmodule;
+class Materialmodule;
+class Region;
+class Scenefiltermodule;
+class Sceneviewermodule;
+class Spectrummodule;
+class Tessellationmodule;
+class Timekeeper;
 
 class Context
 {
@@ -78,55 +79,25 @@ public:
 		return id;
 	}
 
-	Region getDefaultRegion()
-	{
-		return Region(cmzn_context_get_default_region(id));
-	}
+	inline Fontmodule getFontmodule();
 
-	Region createRegion()
-	{
-		return Region(cmzn_context_create_region(id));
-	}
+	inline Glyphmodule getGlyphmodule();
 
-	Timekeeper getDefaultTimekeeper()
-	{
-		return Timekeeper(cmzn_context_get_default_timekeeper(id));
-	}
+	inline Materialmodule getMaterialmodule();
 
-	Sceneviewermodule getSceneviewermodule()
-	{
-		return Sceneviewermodule(cmzn_context_get_sceneviewermodule(id));
-	}
+	inline Region createRegion();
 
-	Glyphmodule getGlyphmodule()
-	{
-		return Glyphmodule(cmzn_context_get_glyphmodule(id));
-	}
+	inline Region getDefaultRegion();
 
-	Materialmodule getMaterialmodule()
-	{
-		return Materialmodule(cmzn_context_get_materialmodule(id));
-	}
+	inline Scenefiltermodule getScenefiltermodule();
 
-	Scenefiltermodule getScenefiltermodule()
-	{
-		return Scenefiltermodule(cmzn_context_get_scenefiltermodule(id));
-	}
+	inline Sceneviewermodule getSceneviewermodule();
 
-	Spectrummodule getSpectrummodule()
-	{
-		return Spectrummodule(cmzn_context_get_spectrummodule(id));
-	}
+	inline Spectrummodule getSpectrummodule();
 
-	Fontmodule getFontmodule()
-	{
-		return Fontmodule(cmzn_context_get_fontmodule(id));
-	}
+	inline Tessellationmodule getTessellationmodule();
 
-	Tessellationmodule getTessellationmodule()
-	{
-		return Tessellationmodule(cmzn_context_get_tessellationmodule(id));
-	}
+	inline Timekeeper getDefaultTimekeeper();
 
 };
 

@@ -10,6 +10,7 @@
 #define CMZN_FONT_HPP__
 
 #include "zinc/font.h"
+#include "zinc/context.hpp"
 
 namespace OpenCMISS
 {
@@ -223,6 +224,11 @@ public:
 		return cmzn_fontmodule_set_default_font(id, font.getId());
 	}
 };
+
+inline Fontmodule Context::getFontmodule()
+{
+	return Fontmodule(cmzn_context_get_fontmodule(id));
+}
 
 } // namespace Zinc
 }

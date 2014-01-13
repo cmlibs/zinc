@@ -10,6 +10,7 @@
 #define CMZN_SPECTRUM_HPP__
 
 #include "zinc/spectrum.h"
+#include "zinc/context.hpp"
 
 namespace OpenCMISS
 {
@@ -473,6 +474,11 @@ public:
 		return cmzn_spectrummodule_set_default_spectrum(id, spectrum.getId());
 	}
 };
+
+inline Spectrummodule Context::getSpectrummodule()
+{
+	return Spectrummodule(cmzn_context_get_spectrummodule(id));
+}
 
 } // namespace Zinc
 }

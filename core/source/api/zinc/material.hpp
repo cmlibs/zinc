@@ -10,7 +10,7 @@
 #define CMZN_MATERIAL_HPP__
 
 #include "zinc/material.h"
-#include "zinc/fieldimage.h"
+#include "zinc/context.hpp"
 #include "zinc/field.hpp"
 
 namespace OpenCMISS
@@ -228,6 +228,11 @@ public:
 		return cmzn_materialmodule_set_default_selected_material(id, material.getId());
 	}
 };
+
+inline Materialmodule Context::getMaterialmodule()
+{
+	return Materialmodule(cmzn_context_get_materialmodule(id));
+}
 
 } // namespace cmzn
 }

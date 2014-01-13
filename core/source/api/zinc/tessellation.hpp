@@ -10,6 +10,7 @@
 #define CMZN_TESSELLATION_HPP__
 
 #include "zinc/tessellation.h"
+#include "zinc/context.hpp"
 
 namespace OpenCMISS
 {
@@ -205,6 +206,11 @@ public:
 		return cmzn_tessellationmodule_set_default_points_tessellation(id, tessellation.getId());
 	}
 };
+
+inline Tessellationmodule Context::getTessellationmodule()
+{
+	return Tessellationmodule(cmzn_context_get_tessellationmodule(id));
+}
 
 }  // namespace Zinc
 }

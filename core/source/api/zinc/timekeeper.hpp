@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : timekeeper.hpp
  */
 /* OpenCMISS-Zinc Library
@@ -10,12 +10,15 @@
 #define CMZN_TIMEKEEPER_HPP__
 
 #include "zinc/timekeeper.h"
-#include "zinc/timenotifier.hpp"
+#include "zinc/context.hpp"
 
 namespace OpenCMISS
 {
 namespace Zinc
 {
+
+class Timenotifier;
+class TimenotifierRegular;
 
 class Timekeeper
 {
@@ -65,11 +68,7 @@ public:
 		return id;
 	}
 
-	TimenotifierRegular createTimenotifierRegular(double updateFrequency, double timeOffset)
-	{
-		return TimenotifierRegular(reinterpret_cast<cmzn_timenotifier_regular_id>(
-			cmzn_timekeeper_create_timenotifier_regular(id, updateFrequency, timeOffset)));
-	}
+	inline TimenotifierRegular createTimenotifierRegular(double updateFrequency, double timeOffset);
 
 	double getMaximumTime()
 	{
@@ -102,6 +101,11 @@ public:
 	}
 
 };
+
+inline Timekeeper Context::getDefaultTimekeeper()
+{
+	return Timekeeper(cmzn_context_get_default_timekeeper(id));
+}
 
 }  // namespace Zinc
 }
