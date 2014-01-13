@@ -13,11 +13,28 @@
 
 %module(package="opencmiss.zinc") context
 
+
+%import "font.i"
+%import "glyph.i"
+%import "material.i"
 %import "region.i"
+%import "scenefilter.i"
 %import "sceneviewer.i"
+%import "spectrum.i"
+%import "tessellation.i"
+%import "timekeeper.i"
 
 %{
 #include "zinc/context.hpp"
+#include "zinc/font.hpp"
+#include "zinc/glyph.hpp"
+#include "zinc/material.hpp"
+#include "zinc/region.hpp"
+#include "zinc/scenefilter.hpp"
+#include "zinc/sceneviewer.hpp"
+#include "zinc/spectrum.hpp"
+#include "zinc/tessellation.hpp"
+#include "zinc/timekeeper.hpp"
 %}
 
 %include "zinc/context.hpp"

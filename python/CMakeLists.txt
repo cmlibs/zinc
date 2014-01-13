@@ -65,30 +65,32 @@ SET(CMAKE_SWIG_FLAGS -w381 -w382 -w361 -w362 ${PYTHONLIBS_SWIG_FLAGS})
 
 SET(INTERFACE_SRCS
 	../interface/context.i
-	../interface/region.i
-	../interface/fieldmodule.i
-	../interface/material.i
-	../interface/field.i
-	../interface/stream.i
-	../interface/element.i
-	../interface/node.i
 	../interface/differentialoperator.i
+	../interface/element.i
+	../interface/field.i
+	../interface/fieldmodule.i
 	../interface/fieldcache.i
-	../interface/tessellation.i
+	../interface/font.i
 	../interface/glyph.i
 	../interface/graphics.i
-	../interface/selection.i
-	../interface/font.i
+	../interface/material.i
+	../interface/optimisation.i
+	../interface/node.i
 	../interface/scene.i
 	../interface/scenecoordinatesystem.i
 	../interface/scenefilter.i
 	../interface/scenepicker.i
 	../interface/sceneviewer.i
+	../interface/selection.i
 	../interface/spectrum.i
+	../interface/region.i
 	../interface/status.i
-	../interface/optimisation.i
-	../interface/timenotifier.i
+	../interface/stream.i
+	../interface/streamimage.i
+	../interface/streamregion.i
+	../interface/tessellation.i
 	../interface/timekeeper.i
+	../interface/timenotifier.i
 	../interface/timesequence.i)
 
 SET_SOURCE_FILES_PROPERTIES(${INTERFACE_SRCS} PROPERTIES CPLUSPLUS ON)

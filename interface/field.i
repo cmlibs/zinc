@@ -20,7 +20,7 @@
 
 %import "differentialoperator.i"
 %import "element.i"
-%import "stream.i"
+%import "streamimage.i"
 %import "fieldmodule.i"
 %import "fieldcache.i"
 %import "region.i"
@@ -49,6 +49,7 @@
 #include "zinc/field.hpp"
 #include "zinc/fieldcache.hpp"
 #include "zinc/fieldmodule.hpp"
+#include "zinc/streamimage.hpp"
 %}
 
 %include "zinc/field.hpp"

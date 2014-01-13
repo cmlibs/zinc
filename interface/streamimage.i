@@ -1,6 +1,7 @@
 /**
- * timekeeper.i
- * 
+ * streamimage.i
+ *
+ * Swig interface file for Zinc image stream API.
  */
 /*
  * OpenCMISS-Zinc Library
@@ -10,14 +11,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-%module(package="opencmiss.zinc") timekeeper
+%module(package="opencmiss.zinc") streamimage
 
-%import "timenotifier.i"
+%include "pyzincstringhandling.i"
+
+%import "field.i"
+%import "stream.i"
 
 %{
-#include "zinc/timekeeper.hpp"
-#include "zinc/timenotifier.hpp"
+#include "zinc/streamimage.hpp"
 %}
 
-%include "zinc/timekeeper.hpp"
-
+%include "zinc/streamimage.hpp"

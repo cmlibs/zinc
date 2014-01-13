@@ -1,7 +1,7 @@
 /**
  * region.i
  *
- * Swig interface file for Zinc region API.
+ * Swig interface file for Zinc region stream API.
  */
 /*
  * OpenCMISS-Zinc Library
@@ -11,20 +11,16 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-%module(package="opencmiss.zinc") region
+%module(package="opencmiss.zinc") streamregion
 
 %include "pyzincstringhandling.i"
 
-%import "fieldmodule.i"
-%import "scene.i"
-%import "streamregion.i"
+%import "field.i"
+%import "region.i"
+%import "stream.i"
 
 %{
-#include "zinc/fieldmodule.hpp"
-#include "zinc/region.hpp"
-#include "zinc/scene.hpp"
 #include "zinc/streamregion.hpp"
 %}
 
-%include "zinc/region.hpp"
-
+%include "zinc/streamregion.hpp"
