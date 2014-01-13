@@ -47,7 +47,7 @@ TEST(cmzn_fieldmodule_create_image, read_png)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation_image(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
@@ -68,7 +68,7 @@ TEST(ZincFieldImage, read_png)
 	FieldImage im = zinc.fm.createFieldImage();
 	EXPECT_TRUE(im.isValid());
 
-	StreaminformationImage si = im.createStreaminformation();
+	StreaminformationImage si = im.createStreaminformationImage();
 	EXPECT_TRUE(si.isValid());
 
 	Streamresource sr = si.createStreamresourceFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
@@ -87,7 +87,7 @@ TEST(cmzn_fieldmodule_create_image, analyze_bigendian)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation_image(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 	cmzn_streaminformation_image_id sii = cmzn_streaminformation_cast_image(si);
 	EXPECT_EQ(CMZN_OK, cmzn_streaminformation_image_set_file_format(sii, CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE));
@@ -114,7 +114,7 @@ TEST(cmzn_fieldmodule_create_image, analyze_lung)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation_image(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 	cmzn_streaminformation_image_id sii = cmzn_streaminformation_cast_image(si);
 	EXPECT_EQ(CMZN_OK, cmzn_streaminformation_image_set_file_format(sii, CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE));

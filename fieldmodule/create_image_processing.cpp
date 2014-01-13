@@ -52,7 +52,7 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion, 
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation_image(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::TESTIMAGE_GRAY_JPG_RESOURCE));
@@ -103,7 +103,7 @@ TEST(cmzn_fieldmodule_create_field_imagefilter_connected_threshold, valid_args)
 	EXPECT_NE(static_cast<cmzn_field_id>(0), f1);
 
 	cmzn_field_image_id im = cmzn_field_cast_image(f1);
-	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation(im);
+	cmzn_streaminformation_id si = cmzn_field_image_create_streaminformation_image(im);
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
 	cmzn_streaminformation_image_id si_image = cmzn_streaminformation_cast_image(si);

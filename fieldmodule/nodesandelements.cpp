@@ -37,7 +37,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	ZincTestSetup zinc;
 
 	cmzn_region_id cube_region = cmzn_region_create_child(zinc.root_region, "cube");
-	cmzn_streaminformation_id cube_si = cmzn_region_create_streaminformation(
+	cmzn_streaminformation_id cube_si = cmzn_region_create_streaminformation_region(
 		cube_region);
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), cube_si);
 
@@ -91,7 +91,7 @@ TEST(ZincNodesElements, setIdentifier)
 	ZincTestSetupCpp zinc;
 
 	Region cubeRegion = zinc.root_region.createChild("cube");
-	StreaminformationRegion cubeSi = cubeRegion.createStreaminformation();
+	StreaminformationRegion cubeSi = cubeRegion.createStreaminformationRegion();
 	EXPECT_TRUE(cubeSi.isValid());
 
 	Streamresource cubeSr = cubeSi.createStreamresourceFile(
