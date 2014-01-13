@@ -768,11 +768,11 @@ that the computed field has changed.
 			core->update_current_scene();
 			if (!core->change_required)
 			{
+				core->change_required = 1;
 				if (field->manager)
 				{
 					Computed_field_dependency_changed(field);
 				}
-				core->change_required = 1;
 			}
 		}
 		if (changeFlags & CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_FINAL)
