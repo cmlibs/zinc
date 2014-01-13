@@ -47,6 +47,7 @@
 
 %{
 #include "zinc/sceneviewer.hpp"
+#include "zinc/sceneviewerinput.hpp"
 
 static void callbackToPython(cmzn_sceneviewerevent_id sceneviewernotifier_event, void *user_data)
 {
@@ -66,6 +67,5 @@ static void callbackToPython(cmzn_sceneviewerevent_id sceneviewernotifier_event,
 }
 %}
 
-%include "zinc/sceneviewerinput.hpp"
 %include "zinc/sceneviewer.hpp"
 

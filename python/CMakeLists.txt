@@ -81,6 +81,7 @@ SET(INTERFACE_SRCS
 	../interface/scenefilter.i
 	../interface/scenepicker.i
 	../interface/sceneviewer.i
+	../interface/sceneviewerinput.i
 	../interface/selection.i
 	../interface/spectrum.i
 	../interface/region.i
