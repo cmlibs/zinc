@@ -18,11 +18,13 @@
 #include <zinc/fieldmodule.h>
 #include <zinc/region.h>
 #include <zinc/stream.h>
+#include <zinc/streamimage.h>
 
 #include <zinc/field.hpp>
 #include <zinc/fieldimage.hpp>
 #include <zinc/fieldimageprocessing.hpp>
 #include <zinc/fieldmodule.hpp>
+#include <zinc/streamimage.hpp>
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"

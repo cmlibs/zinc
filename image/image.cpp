@@ -8,12 +8,9 @@
 
 #include <gtest/gtest.h>
 
+#include "zinctestsetup.hpp"
 #include <zinc/zincconfigure.h>
-#include <zinc/status.h>
 #include <zinc/core.h>
-#include <zinc/context.h>
-#include <zinc/region.h>
-#include <zinc/fieldmodule.h>
 #include <zinc/field.h>
 #include <zinc/fieldconditional.h>
 #include <zinc/fieldconstant.h>
@@ -21,8 +18,12 @@
 #include <zinc/stream.h>
 #include <zinc/streamimage.h>
 
+#include "zinctestsetupcpp.hpp"
+#include <zinc/fieldimage.hpp>
+#include <zinc/stream.hpp>
+#include <zinc/streamimage.hpp>
+
 #include "test_resources.h"
-#include "zinctestsetup.hpp"
 
 TEST(cmzn_fieldmodule_create_image, invalid_args)
 {
@@ -50,13 +51,30 @@ TEST(cmzn_fieldmodule_create_image, read_png)
 	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), si);
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
-
-	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, cmzn_streaminformation_cast_image(si)));
+	cmzn_streaminformation_image_id sii = cmzn_streaminformation_cast_image(si);
+	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, sii));
+	cmzn_streaminformation_image_destroy(&sii);
 
 	cmzn_streamresource_destroy(&sr);
 	cmzn_streaminformation_destroy(&si);
 	cmzn_field_image_destroy(&im);
 	cmzn_field_destroy(&f1);
+}
+
+TEST(ZincFieldImage, read_png)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldImage im = zinc.fm.createFieldImage();
+	EXPECT_TRUE(im.isValid());
+
+	StreaminformationImage si = im.createStreaminformation();
+	EXPECT_TRUE(si.isValid());
+
+	Streamresource sr = si.createStreamresourceFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE));
+	EXPECT_TRUE(sr.isValid());
+
+	EXPECT_EQ(OK, im.read(si));
 }
 
 TEST(cmzn_fieldmodule_create_image, analyze_bigendian)
@@ -76,7 +94,7 @@ TEST(cmzn_fieldmodule_create_image, analyze_bigendian)
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_ANALYZE_BIGENDIAN_RESOURCE));
 
-	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, cmzn_streaminformation_cast_image(si)));
+	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, sii));
 
 	cmzn_streaminformation_image_destroy(&sii);
 	cmzn_streamresource_destroy(&sr);
@@ -103,7 +121,7 @@ TEST(cmzn_fieldmodule_create_image, analyze_lung)
 
 	cmzn_streamresource_id sr = cmzn_streaminformation_create_streamresource_file(si, TestResources::getLocation(TestResources::IMAGE_ANALYZE_LITTLEENDIAN_RESOURCE));
 
-	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, cmzn_streaminformation_cast_image(si)));
+	EXPECT_EQ(CMZN_OK, cmzn_field_image_read(im, sii));
 
 	cmzn_streaminformation_image_destroy(&sii);
 	cmzn_streamresource_destroy(&sr);
