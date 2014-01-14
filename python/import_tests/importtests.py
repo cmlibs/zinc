@@ -5,7 +5,7 @@ class ImportTestCase(unittest.TestCase):
     def testImportContext(self):
         from opencmiss.zinc import context
 
-    def testImportDifferentialOperator(self):
+    def testImportDifferentialoperator(self):
         from opencmiss.zinc import differentialoperator
     
     def testImportElement(self):
@@ -14,7 +14,7 @@ class ImportTestCase(unittest.TestCase):
     def testImportField(self):
         from opencmiss.zinc import field
     
-    def testImportFieldCache(self):
+    def testImportFieldcache(self):
         from opencmiss.zinc import fieldcache
     
     def testImportFieldmodule(self):
@@ -38,14 +38,17 @@ class ImportTestCase(unittest.TestCase):
     def testImportScene(self):
         from opencmiss.zinc import scene
     
-    def testImportSceneCoordinateSystem(self):
+    def testImportScenecoordinatesystem(self):
         from opencmiss.zinc import scenecoordinatesystem
         
-    def testImportSceneFilter(self):
+    def testImportScenefilter(self):
         from opencmiss.zinc import scenefilter
     
-    def testImportSceneViewer(self):
+    def testImportSceneviewer(self):
         from opencmiss.zinc import sceneviewer
+    
+    def testImportSceneviewerinput(self):
+        from opencmiss.zinc import sceneviewerinput
     
     def testImportSelection(self):
         from opencmiss.zinc import selection
@@ -62,13 +65,13 @@ class ImportTestCase(unittest.TestCase):
     def testImportTessellation(self):
         from opencmiss.zinc import tessellation
     
-    def testImportTimeKeeper(self):
+    def testImportTimekeeper(self):
         from opencmiss.zinc import timekeeper
     
-    def testImportTimeNotifier(self):
+    def testImportTimenotifier(self):
         from opencmiss.zinc import timenotifier
     
-    def testImportTimeSequence(self):
+    def testImportTimesequence(self):
         from opencmiss.zinc import timesequence
     
 

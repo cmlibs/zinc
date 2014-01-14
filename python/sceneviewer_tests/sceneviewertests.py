@@ -6,7 +6,8 @@ Created on Aug 31, 2013
 import unittest
 
 from opencmiss.zinc.context import Context
-from opencmiss.zinc.sceneviewer import Sceneviewer, Sceneviewerinput
+from opencmiss.zinc.sceneviewer import Sceneviewer
+from opencmiss.zinc.sceneviewerinput import Sceneviewerinput
 from opencmiss.zinc import status
 
 class SceneviewerTestCase(unittest.TestCase):
