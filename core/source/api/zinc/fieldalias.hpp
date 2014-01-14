@@ -26,7 +26,7 @@ private:
 	explicit FieldAlias(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldAlias Fieldmodule::createFieldAlias(Field &sourceField);
+	friend FieldAlias Fieldmodule::createFieldAlias(const Field& sourceField);
 
 public:
 
@@ -35,7 +35,7 @@ public:
 
 };
 
-inline FieldAlias Fieldmodule::createFieldAlias(Field &sourceField)
+inline FieldAlias Fieldmodule::createFieldAlias(const Field& sourceField)
 {
 	return FieldAlias(cmzn_fieldmodule_create_field_alias(id, sourceField.getId()));
 }

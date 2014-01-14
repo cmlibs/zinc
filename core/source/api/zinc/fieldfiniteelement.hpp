@@ -39,8 +39,8 @@ private:
 	explicit FieldEmbedded(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldEmbedded Fieldmodule::createFieldEmbedded(Field& sourceField,
-		Field& embeddedLocationField);
+	friend FieldEmbedded Fieldmodule::createFieldEmbedded(const Field& sourceField,
+		const Field& embeddedLocationField);
 
 public:
 
@@ -95,7 +95,7 @@ private:
 	explicit FieldNodeValue(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
+	friend FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField,
 		Node::ValueLabel nodeValueLabel, int versionNumber);
 
 public:
@@ -142,14 +142,14 @@ inline FieldFiniteElement Field::castFiniteElement()
 	return FieldFiniteElement(cmzn_field_cast_finite_element(id));
 }
 
-inline FieldEmbedded Fieldmodule::createFieldEmbedded(Field& sourceField, Field& embeddedLocationField)
+inline FieldEmbedded Fieldmodule::createFieldEmbedded(const Field& sourceField, const Field& embeddedLocationField)
 {
 	return FieldEmbedded(cmzn_fieldmodule_create_field_embedded(id,
 		sourceField.getId(), embeddedLocationField.getId()));
 }
 
 inline FieldFindMeshLocation Fieldmodule::createFieldFindMeshLocation(
-	Field& sourceField, Field& meshField, Mesh& mesh)
+	const Field& sourceField, const Field& meshField, const Mesh& mesh)
 {
 	return FieldFindMeshLocation(reinterpret_cast<cmzn_field_find_mesh_location_id>(
 		cmzn_fieldmodule_create_field_find_mesh_location(id, sourceField.getId(), meshField.getId(), mesh.getId())));
@@ -160,7 +160,7 @@ inline FieldFindMeshLocation Field::castFindMeshLocation()
 	return FieldFindMeshLocation(cmzn_field_cast_find_mesh_location(id));
 }
 
-inline FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
+inline FieldNodeValue Fieldmodule::createFieldNodeValue(const Field& sourceField,
 	Node::ValueLabel nodeValueLabel, int versionNumber)
 {
 	return FieldNodeValue(cmzn_fieldmodule_create_field_node_value(id,
@@ -168,7 +168,7 @@ inline FieldNodeValue Fieldmodule::createFieldNodeValue(Field& sourceField,
 		versionNumber));
 }
 
-inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(Mesh& mesh)
+inline FieldStoredMeshLocation Fieldmodule::createFieldStoredMeshLocation(const Mesh& mesh)
 {
 	return FieldStoredMeshLocation(reinterpret_cast<cmzn_field_stored_mesh_location_id>(
 		cmzn_fieldmodule_create_field_stored_mesh_location(id, mesh.getId())));

@@ -65,8 +65,7 @@ public:
 		return (0 != id);
 	}
 
-	// needed for casting constructors: see SceneImage(Scene&)
-	cmzn_scene_id getId()
+	cmzn_scene_id getId() const
 	{
 		return id;
 	}
@@ -81,8 +80,8 @@ public:
 		return cmzn_scene_end_change(id);
 	}
 
-	int convertToPointCloud(Scenefilter& filter, Nodeset& nodeset,
-		Field& coordinateField, double lineDensity, double lineDensityScaleFactor,
+	int convertToPointCloud(const Scenefilter& filter, const Nodeset& nodeset,
+		const Field& coordinateField, double lineDensity, double lineDensityScaleFactor,
 		double surfaceDensity, double surfaceDensityScaleFactor)
 	{
 		return cmzn_scene_convert_to_point_cloud(id, filter.getId(),
@@ -146,12 +145,12 @@ public:
 		return Graphics(cmzn_scene_get_first_graphics(id));
 	}
 
-	Graphics getNextGraphics(Graphics& refGraphics)
+	Graphics getNextGraphics(const Graphics& refGraphics)
 	{
 		return Graphics(cmzn_scene_get_next_graphics(id, refGraphics.getId()));
 	}
 
-	Graphics getPreviousGraphics(Graphics& refGraphics)
+	Graphics getPreviousGraphics(const Graphics& refGraphics)
 	{
 		return Graphics(cmzn_scene_get_previous_graphics(id, refGraphics.getId()));
 	}
@@ -171,12 +170,12 @@ public:
 		return Field(cmzn_scene_get_selection_field(id));
 	}
 
-	int setSelectionField(Field& selectionField)
+	int setSelectionField(const Field& selectionField)
 	{
 		return cmzn_scene_set_selection_field(id, selectionField.getId());
 	}
 
-	int getSpectrumDataRange(Scenefilter& filter, Spectrum& spectrum,
+	int getSpectrumDataRange(const Scenefilter& filter, const Spectrum& spectrum,
 		int valuesCount, double *minimumValuesOut, double *maximumValuesOut)
 	{
 		return cmzn_scene_get_spectrum_data_range(id, filter.getId(),
@@ -193,7 +192,7 @@ public:
 		return cmzn_scene_set_visibility_flag(id, visibilityFlag);
 	}
 
-	int moveGraphicsBefore(Graphics& graphics, Graphics& refGraphics)
+	int moveGraphicsBefore(const Graphics& graphics, const Graphics& refGraphics)
 	{
 		return cmzn_scene_move_graphics_before(id, graphics.getId(), refGraphics.getId());
 	}
@@ -203,7 +202,7 @@ public:
 		return cmzn_scene_remove_all_graphics(id);
 	}
 
-	int removeGraphics(Graphics& graphics)
+	int removeGraphics(const Graphics& graphics)
 	{
 		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}

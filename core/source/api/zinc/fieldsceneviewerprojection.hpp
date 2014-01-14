@@ -28,7 +28,7 @@ private:
 	{	}
 
 	friend FieldSceneviewerProjection Fieldmodule::createFieldSceneviewerProjection(
-		Sceneviewer& sceneviewer, Scenecoordinatesystem fromCoordinateSystem,
+		const Sceneviewer& sceneviewer, Scenecoordinatesystem fromCoordinateSystem,
 		Scenecoordinatesystem toCoordinateSystem);
 
 public:
@@ -39,7 +39,7 @@ public:
 };
 
 inline FieldSceneviewerProjection Fieldmodule::createFieldSceneviewerProjection(
-	Sceneviewer& sceneviewer, Scenecoordinatesystem fromCoordinateSystem,
+	const Sceneviewer& sceneviewer, Scenecoordinatesystem fromCoordinateSystem,
 			Scenecoordinatesystem toCoordinateSystem)
 {
 	return FieldSceneviewerProjection(cmzn_fieldmodule_create_field_sceneviewer_projection(id,

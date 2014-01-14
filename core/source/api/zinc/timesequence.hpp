@@ -61,7 +61,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_timesequence_id getId()
+	cmzn_timesequence_id getId() const
 	{
 		return id;
 	}

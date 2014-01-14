@@ -64,7 +64,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_region_id getId()
+	cmzn_region_id getId() const
 	{
 		return id;
 	}
@@ -146,12 +146,12 @@ public:
 		return cmzn_region_append_child(id, newChild.id);
 	}
 
-	int insertChildBefore(Region& newChild, Region& refChild)
+	int insertChildBefore(const Region& newChild, const Region& refChild)
 	{
 		return cmzn_region_insert_child_before(id, newChild.id, refChild.id);
 	}
 
-	int removeChild(Region& oldChild)
+	int removeChild(const Region& oldChild)
 	{
 		return cmzn_region_remove_child(id, oldChild.id);
 	}
@@ -166,7 +166,7 @@ public:
 		return Region(cmzn_region_find_subregion_at_path(id, path));
 	}
 
-	bool containsSubregion(Region& subregion)
+	bool containsSubregion(const Region& subregion)
 	{
 		return cmzn_region_contains_subregion(id, subregion.id);
 	}
@@ -180,9 +180,9 @@ public:
 
 	inline StreaminformationRegion createStreaminformationRegion();
 
-	inline int read(StreaminformationRegion& streaminformationRegion);
+	inline int read(const StreaminformationRegion& streaminformationRegion);
 
-	inline int write(StreaminformationRegion& streaminformationRegion);
+	inline int write(const StreaminformationRegion& streaminformationRegion);
 
 };
 

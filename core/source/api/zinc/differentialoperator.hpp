@@ -54,7 +54,7 @@ public:
 		}
 	}
 
-	cmzn_differentialoperator_id getId()
+	cmzn_differentialoperator_id getId() const
 	{
 		return id;
 	}

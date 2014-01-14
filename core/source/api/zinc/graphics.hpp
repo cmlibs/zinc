@@ -96,7 +96,7 @@ public:
 		TYPE_STREAMLINES = CMZN_GRAPHICS_TYPE_STREAMLINES
 	};
 
-	cmzn_graphics_id getId()
+	cmzn_graphics_id getId() const
 	{
 		return id;
 	}
@@ -106,7 +106,7 @@ public:
 		return Field(cmzn_graphics_get_coordinate_field(id));
 	}
 
-	int setCoordinateField(Field& coordinateField)
+	int setCoordinateField(const Field& coordinateField)
 	{
 		return cmzn_graphics_set_coordinate_field(id, coordinateField.getId());
 	}
@@ -116,7 +116,7 @@ public:
 		return Field(cmzn_graphics_get_data_field(id));
 	}
 
-	int setDataField(Field& dataField)
+	int setDataField(const Field& dataField)
 	{
 		return cmzn_graphics_set_data_field(id, dataField.getId());
 	}
@@ -167,7 +167,7 @@ public:
 		return Field(cmzn_graphics_get_subgroup_field(id));
 	}
 
-	int setSubgroupField(Field& subgroupField)
+	int setSubgroupField(const Field& subgroupField)
 	{
 		return cmzn_graphics_set_subgroup_field(id, subgroupField.getId());
 	}
@@ -177,7 +177,7 @@ public:
 		return Field(cmzn_graphics_get_texture_coordinate_field(id));
 	}
 
-	int setTextureCoordinateField(Field& textureCoordinateField)
+	int setTextureCoordinateField(const Field& textureCoordinateField)
 	{
 		return cmzn_graphics_set_texture_coordinate_field(id, textureCoordinateField.getId());
 	}
@@ -187,7 +187,7 @@ public:
 		return Material(cmzn_graphics_get_material(id));
 	}
 
-	int setMaterial(Material& material)
+	int setMaterial(const Material& material)
 	{
 		return cmzn_graphics_set_material(id, material.getId());
 	}
@@ -203,7 +203,7 @@ public:
 		return Material(cmzn_graphics_get_selected_material(id));
 	}
 
-	int setSelectedMaterial(Material& material)
+	int setSelectedMaterial(const Material& material)
 	{
 		return cmzn_graphics_set_selected_material(id, material.getId());
 	}
@@ -213,7 +213,7 @@ public:
 		return Spectrum(cmzn_graphics_get_spectrum(id));
 	}
 
-	int setSpectrum(Spectrum& spectrum)
+	int setSpectrum(const Spectrum& spectrum)
 	{
 		return cmzn_graphics_set_spectrum(id, spectrum.getId());
 	}
@@ -223,7 +223,7 @@ public:
 		return Tessellation(cmzn_graphics_get_tessellation(id));
 	}
 
-	int setTessellation(Tessellation& tessellation)
+	int setTessellation(const Tessellation& tessellation)
 	{
 		return cmzn_graphics_set_tessellation(id, tessellation.getId());
 	}
@@ -233,7 +233,7 @@ public:
 		return Field(cmzn_graphics_get_tessellation_field(id));
 	}
 
-	int setTessellationField(Field& tessellationField)
+	int setTessellationField(const Field& tessellationField)
 	{
 		return cmzn_graphics_set_tessellation_field(id, tessellationField.getId());
 	}
@@ -313,7 +313,7 @@ public:
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(contours_id))
 	{}
 
-	GraphicsContours(Graphics& graphics)
+	GraphicsContours(const Graphics& graphics)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_contours(graphics.getId())))
 	{}
 
@@ -322,7 +322,7 @@ public:
 		return Field(cmzn_graphics_contours_get_isoscalar_field(reinterpret_cast<cmzn_graphics_contours_id>(id)));
 	}
 
-	int setIsoscalarField(Field& field)
+	int setIsoscalarField(const Field& field)
 	{
 		return cmzn_graphics_contours_set_isoscalar_field(reinterpret_cast<cmzn_graphics_contours_id>(id), field.getId());
 	}
@@ -378,7 +378,7 @@ public:
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(lines_id))
 	{}
 
-	GraphicsLines(Graphics& graphics)
+	GraphicsLines(const Graphics& graphics)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_lines(graphics.getId())))
 	{}
 };
@@ -396,7 +396,7 @@ public:
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(points_id))
 	{}
 
-	GraphicsPoints(Graphics& graphics)
+	GraphicsPoints(const Graphics& graphics)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_points(graphics.getId())))
 	{}
 };
@@ -414,7 +414,7 @@ public:
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(streamlines_id))
 	{}
 
-	GraphicsStreamlines(Graphics& graphics)
+	GraphicsStreamlines(const Graphics& graphics)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_streamlines(graphics.getId())))
 	{}
 
@@ -430,7 +430,7 @@ public:
 		return Field(cmzn_graphics_streamlines_get_stream_vector_field(reinterpret_cast<cmzn_graphics_streamlines_id>(id)));
 	}
 
-	int setStreamVectorField(Field& field)
+	int setStreamVectorField(const Field& field)
 	{
 		return cmzn_graphics_streamlines_set_stream_vector_field(reinterpret_cast<cmzn_graphics_streamlines_id>(id), field.getId());
 	}
@@ -472,7 +472,7 @@ public:
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(surfaces_id))
 	{}
 
-	GraphicsSurfaces(Graphics& graphics)
+	GraphicsSurfaces(const Graphics& graphics)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_surfaces(graphics.getId())))
 	{}
 };
@@ -527,7 +527,7 @@ public:
 		return Field(cmzn_graphicslineattributes_get_orientation_scale_field(id));
 	}
 
-	int setOrientationScaleField(Field& orientationScaleField)
+	int setOrientationScaleField(const Field& orientationScaleField)
 	{
 		return cmzn_graphicslineattributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
@@ -600,7 +600,7 @@ public:
 		return Font(cmzn_graphicspointattributes_get_font(id));
 	}
 
-	int setFont(Font& font)
+	int setFont(const Font& font)
 	{
 		return cmzn_graphicspointattributes_set_font(id, font.getId());
 	}
@@ -610,7 +610,7 @@ public:
 		return Glyph(cmzn_graphicspointattributes_get_glyph(id));
 	}
 
-	int setGlyph(Glyph& glyph)
+	int setGlyph(const Glyph& glyph)
 	{
 		return cmzn_graphicspointattributes_set_glyph(id, glyph.getId());
 	}
@@ -652,7 +652,7 @@ public:
 		return Field(cmzn_graphicspointattributes_get_label_field(id));
 	}
 
-	int setLabelField(Field& labelField)
+	int setLabelField(const Field& labelField)
 	{
 		return cmzn_graphicspointattributes_set_label_field(id, labelField.getId());
 	}
@@ -682,7 +682,7 @@ public:
 		return Field(cmzn_graphicspointattributes_get_orientation_scale_field(id));
 	}
 
-	int setOrientationScaleField(Field& orientationScaleField)
+	int setOrientationScaleField(const Field& orientationScaleField)
 	{
 		return cmzn_graphicspointattributes_set_orientation_scale_field(id, orientationScaleField.getId());
 	}
@@ -702,7 +702,7 @@ public:
 		return Field(cmzn_graphicspointattributes_get_signed_scale_field(id));
 	}
 
-	int setSignedScaleField(Field& signedScaleField)
+	int setSignedScaleField(const Field& signedScaleField)
 	{
 		return cmzn_graphicspointattributes_set_signed_scale_field(id, signedScaleField.getId());
 	}
@@ -745,7 +745,7 @@ public:
 		return Field(cmzn_graphicssamplingattributes_get_density_field(id));
 	}
 
-	int setDensityField(Field& densityField)
+	int setDensityField(const Field& densityField)
 	{
 		return cmzn_graphicssamplingattributes_set_density_field(id, densityField.getId());
 	}

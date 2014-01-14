@@ -25,8 +25,8 @@ private:
 	explicit FieldTimeLookup(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldTimeLookup Fieldmodule::createFieldTimeLookup(Field& sourceField,
-		Field& timeField);
+	friend FieldTimeLookup Fieldmodule::createFieldTimeLookup(const Field& sourceField,
+		const Field& timeField);
 
 public:
 
@@ -42,7 +42,7 @@ private:
 	explicit FieldTimeValue(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldTimeValue Fieldmodule::createFieldTimeValue(Timekeeper& timeKeeper);
+	friend FieldTimeValue Fieldmodule::createFieldTimeValue(const Timekeeper& timeKeeper);
 
 public:
 
@@ -51,13 +51,13 @@ public:
 
 };
 
-inline FieldTimeLookup Fieldmodule::createFieldTimeLookup(Field& sourceField, Field& timeField)
+inline FieldTimeLookup Fieldmodule::createFieldTimeLookup(const Field& sourceField, const Field& timeField)
 {
 	return FieldTimeLookup(cmzn_fieldmodule_create_field_time_lookup(id,
 		sourceField.getId(), timeField.getId()));
 }
 
-inline FieldTimeValue Fieldmodule::createFieldTimeValue(Timekeeper& timeKeeper)
+inline FieldTimeValue Fieldmodule::createFieldTimeValue(const Timekeeper& timeKeeper)
 {
 	return FieldTimeValue(cmzn_fieldmodule_create_field_time_value(id, timeKeeper.getId()));
 }

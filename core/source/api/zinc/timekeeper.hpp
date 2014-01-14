@@ -63,7 +63,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_timekeeper_id getId()
+	cmzn_timekeeper_id getId() const
 	{
 		return id;
 	}

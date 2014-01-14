@@ -150,14 +150,14 @@ public:
 			valuesCount, valuesIn);
 	}
 
-	inline int read(StreaminformationImage& streaminformationImage);
+	inline int read(const StreaminformationImage& streaminformationImage);
 
 	int readFile(const char *fileName)
 	{
 		return cmzn_field_image_read_file(getDerivedId(), fileName);
 	}
 
-	inline int write(StreaminformationImage& streaminformationImage);
+	inline int write(const StreaminformationImage& streaminformationImage);
 
 	CombineMode getCombineMode()
 	{
@@ -175,7 +175,7 @@ public:
 		return Field(cmzn_field_image_get_domain_field(getDerivedId()));
 	}
 
-	int setDomainField(Field& domainField)
+	int setDomainField(const Field& domainField)
 	{
 		return cmzn_field_image_set_domain_field(getDerivedId(), domainField.getId());
 	}
@@ -229,7 +229,7 @@ inline FieldImage Fieldmodule::createFieldImage()
 		cmzn_fieldmodule_create_field_image(id)));
 }
 
-inline FieldImage Fieldmodule::createFieldImageFromSource(Field& sourceField)
+inline FieldImage Fieldmodule::createFieldImageFromSource(const Field& sourceField)
 {
 	return FieldImage(reinterpret_cast<cmzn_field_image_id>(
 		cmzn_fieldmodule_create_field_image_from_source(id, sourceField.getId())));

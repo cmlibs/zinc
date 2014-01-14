@@ -21,11 +21,6 @@ namespace Zinc
 
 class StreaminformationRegion : public Streaminformation
 {
-	// takes ownership of C-style reference
-	explicit StreaminformationRegion(Streaminformation& streamInformation) :
-		Streaminformation(streamInformation)
-	{  }
-
 public:
 	StreaminformationRegion() : Streaminformation()
 	{ }
@@ -40,7 +35,7 @@ public:
 		return (0 != reinterpret_cast<cmzn_streaminformation_region_id>(id));
 	}
 
-	cmzn_streaminformation_region_id getId()
+	cmzn_streaminformation_region_id getId() const
 	{
 		return reinterpret_cast<cmzn_streaminformation_region_id>(id);
 	}
@@ -72,14 +67,14 @@ public:
 			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	int hasResourceAttribute(Streamresource resource, Attribute attribute)
+	int hasResourceAttribute(const Streamresource& resource, Attribute attribute)
 	{
 		return cmzn_streaminformation_region_has_resource_attribute(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	double getResourceAttributeReal(Streamresource resource,
+	double getResourceAttributeReal(const Streamresource& resource,
 		Attribute attribute)
 	{
 		return cmzn_streaminformation_region_get_resource_attribute_real(
@@ -87,7 +82,7 @@ public:
 			static_cast<cmzn_streaminformation_region_attribute>(attribute));
 	}
 
-	int setResourceAttributeReal(Streamresource resource,
+	int setResourceAttributeReal(const Streamresource& resource,
 		Attribute attribute, double value)
 	{
 		return cmzn_streaminformation_region_set_resource_attribute_real(
@@ -95,14 +90,14 @@ public:
 			static_cast<cmzn_streaminformation_region_attribute>(attribute), value);
 	}
 
-	Field::DomainTypes getResourceDomainTypes(Streamresource resource)
+	Field::DomainTypes getResourceDomainTypes(const Streamresource& resource)
 	{
 		return static_cast<Field::DomainTypes>(
 			cmzn_streaminformation_region_get_resource_domain_types(
 				reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId()));
 	}
 
-	int setResourceDomainTypes(Streamresource resource, Field::DomainTypes domainTypes)
+	int setResourceDomainTypes(const Streamresource& resource, Field::DomainTypes domainTypes)
 	{
 		return cmzn_streaminformation_region_set_resource_domain_types(
 			reinterpret_cast<cmzn_streaminformation_region_id>(id), resource.getId(),
@@ -122,12 +117,12 @@ inline StreaminformationRegion Region::createStreaminformationRegion()
 		cmzn_region_create_streaminformation_region(id)));
 }
 
-inline int Region::read(StreaminformationRegion& streaminformationRegion)
+inline int Region::read(const StreaminformationRegion& streaminformationRegion)
 {
 	return cmzn_region_read(id, streaminformationRegion.getId());
 }
 
-inline int Region::write(StreaminformationRegion& streaminformationRegion)
+inline int Region::write(const StreaminformationRegion& streaminformationRegion)
 {
 	return cmzn_region_write(id, streaminformationRegion.getId());
 }

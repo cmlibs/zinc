@@ -11,6 +11,7 @@
 
 #include "zinc/fieldnodesetoperators.h"
 #include "zinc/field.hpp"
+#include "zinc/fieldmodule.hpp"
 #include "zinc/node.hpp"
 
 namespace OpenCMISS
@@ -25,7 +26,7 @@ private:
 	explicit FieldNodesetSum(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetSum Fieldmodule::createFieldNodesetSum(Field& sourceField, Nodeset& nodeset);
+	friend FieldNodesetSum Fieldmodule::createFieldNodesetSum(const Field& sourceField, const Nodeset& nodeset);
 
 public:
 
@@ -41,8 +42,8 @@ private:
 	explicit FieldNodesetMean(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNodesetMean Fieldmodule::createFieldNodesetMean(Field& sourceField,
-		Nodeset& nodeset);
+	friend FieldNodesetMean Fieldmodule::createFieldNodesetMean(const Field& sourceField,
+		const Nodeset& nodeset);
 
 public:
 
@@ -59,7 +60,7 @@ private:
 	{	}
 
 	friend FieldNodesetSumSquares Fieldmodule::createFieldNodesetSumSquares(
-		Field& sourceField, Nodeset& nodeset);
+		const Field& sourceField, const Nodeset& nodeset);
 
 public:
 
@@ -76,7 +77,7 @@ private:
 	{	}
 
 	friend FieldNodesetMeanSquares Fieldmodule::createFieldNodesetMeanSquares(
-		Field& sourceField, Nodeset& nodeset);
+		const Field& sourceField, const Nodeset& nodeset);
 
 public:
 
@@ -93,7 +94,7 @@ private:
 	{	}
 
 	friend FieldNodesetMinimum Fieldmodule::createFieldNodesetMinimum(
-		Field& sourceField, Nodeset& nodeset);
+		const Field& sourceField, const Nodeset& nodeset);
 
 public:
 
@@ -110,7 +111,7 @@ private:
 	{	}
 
 	friend FieldNodesetMaximum Fieldmodule::createFieldNodesetMaximum(
-		Field& sourceField, Nodeset& nodeset);
+		const Field& sourceField, const Nodeset& nodeset);
 
 public:
 
@@ -119,41 +120,41 @@ public:
 
 };
 
-inline FieldNodesetSum Fieldmodule::createFieldNodesetSum(Field& sourceField, Nodeset& nodeset)
+inline FieldNodesetSum Fieldmodule::createFieldNodesetSum(const Field& sourceField, const Nodeset& nodeset)
 {
 	return FieldNodesetSum(cmzn_fieldmodule_create_field_nodeset_sum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
-inline FieldNodesetMean Fieldmodule::createFieldNodesetMean(Field& sourceField, Nodeset& nodeset)
+inline FieldNodesetMean Fieldmodule::createFieldNodesetMean(const Field& sourceField, const Nodeset& nodeset)
 {
 	return FieldNodesetMean(cmzn_fieldmodule_create_field_nodeset_mean(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetSumSquares Fieldmodule::createFieldNodesetSumSquares(
-	Field& sourceField, Nodeset& nodeset)
+	const Field& sourceField, const Nodeset& nodeset)
 {
 	return FieldNodesetSumSquares(cmzn_fieldmodule_create_field_nodeset_sum_squares(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMeanSquares Fieldmodule::createFieldNodesetMeanSquares(
-	Field& sourceField, Nodeset& nodeset)
+	const Field& sourceField, const Nodeset& nodeset)
 {
 	return FieldNodesetMeanSquares(cmzn_fieldmodule_create_field_nodeset_mean_squares(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMinimum Fieldmodule::createFieldNodesetMinimum(
-	Field& sourceField, Nodeset& nodeset)
+	const Field& sourceField, const Nodeset& nodeset)
 {
 	return FieldNodesetMinimum(cmzn_fieldmodule_create_field_nodeset_minimum(id,
 		sourceField.getId(), nodeset.getId()));
 }
 
 inline FieldNodesetMaximum Fieldmodule::createFieldNodesetMaximum(
-	Field& sourceField, Nodeset& nodeset)
+	const Field& sourceField, const Nodeset& nodeset)
 {
 	return FieldNodesetMaximum(cmzn_fieldmodule_create_field_nodeset_maximum(id,
 		sourceField.getId(), nodeset.getId()));

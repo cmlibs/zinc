@@ -64,7 +64,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_scenefilter_id getId()
+	cmzn_scenefilter_id getId() const
 	{
 		return id;
 	}
@@ -79,7 +79,7 @@ public:
 		return cmzn_scenefilter_set_managed(id, value);
 	}
 
-	bool evaluateGraphics(Graphics& graphics)
+	bool evaluateGraphics(const Graphics& graphics)
 	{
 		return cmzn_scenefilter_evaluate_graphics(id, graphics.getId());
 	}
@@ -124,7 +124,7 @@ public:
 		return reinterpret_cast<cmzn_scenefilter_operator_id>(id);
 	}
 
-	int appendOperand(Scenefilter& operand)
+	int appendOperand(const Scenefilter& operand)
 	{
 		return cmzn_scenefilter_operator_append_operand(getDerivedId(), operand.getId());
 	}
@@ -134,27 +134,27 @@ public:
 		return Scenefilter(cmzn_scenefilter_operator_get_first_operand(getDerivedId()));
 	}
 
-	Scenefilter getNextOperand(Scenefilter& refOperand)
+	Scenefilter getNextOperand(const Scenefilter& refOperand)
 	{
 		return Scenefilter(cmzn_scenefilter_operator_get_next_operand(getDerivedId(), refOperand.getId()));
 	}
 
-	bool isOperandActive(Scenefilter& operand)
+	bool isOperandActive(const Scenefilter& operand)
 	{
 		return cmzn_scenefilter_operator_is_operand_active(getDerivedId(), operand.getId());
 	}
 
-	int setOperandActive(Scenefilter& operand, bool isActive)
+	int setOperandActive(const Scenefilter& operand, bool isActive)
 	{
 		return cmzn_scenefilter_operator_set_operand_active(getDerivedId(), operand.getId(), isActive);
 	}
 
-	int insertOperandBefore(Scenefilter& operand, Scenefilter& refOperand)
+	int insertOperandBefore(const Scenefilter& operand, const Scenefilter& refOperand)
 	{
 		return cmzn_scenefilter_operator_insert_operand_before(getDerivedId(), operand.getId(), refOperand.getId());
 	}
 
-	int removeOperand(Scenefilter& operand)
+	int removeOperand(const Scenefilter& operand)
 	{
 		return cmzn_scenefilter_operator_remove_operand(getDerivedId(), operand.getId());
 	}
@@ -209,7 +209,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_scenefiltermodule_id getId()
+	cmzn_scenefiltermodule_id getId() const
 	{
 		return id;
 	}
@@ -236,7 +236,7 @@ public:
 			static_cast<cmzn_graphics_type>(graphicsType)));
 	}
 
-	Scenefilter createScenefilterRegion(Region& matchRegion)
+	Scenefilter createScenefilterRegion(const Region& matchRegion)
 	{
 		return Scenefilter(cmzn_scenefiltermodule_create_scenefilter_region(
 			id, matchRegion.getId()));
@@ -274,7 +274,7 @@ public:
 		return Scenefilter(cmzn_scenefiltermodule_get_default_scenefilter(id));
 	}
 
-	int setDefaultScenefilter(Scenefilter &filter)
+	int setDefaultScenefilter(const Scenefilter& filter)
 	{
 		return cmzn_scenefiltermodule_set_default_scenefilter(id, filter.getId());
 	}

@@ -65,7 +65,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_glyph_id getId()
+	cmzn_glyph_id getId() const
 	{
 		return id;
 	}
@@ -175,7 +175,7 @@ public:
 		return Material(cmzn_glyph_axes_get_axis_material(getDerivedId(), axisNumber));
 	}
 
-	int setAxisMaterial(int axisNumber, Material material)
+	int setAxisMaterial(int axisNumber, const Material& material)
 	{
 		return cmzn_glyph_axes_set_axis_material(getDerivedId(), axisNumber, material.getId());
 	}
@@ -247,7 +247,7 @@ public:
 		return Material(cmzn_glyph_colour_bar_get_label_material(getDerivedId()));
 	}
 
-	int setLabelMaterial(Material& material)
+	int setLabelMaterial(const Material& material)
 	{
 		return cmzn_glyph_colour_bar_set_label_material(getDerivedId(), material.getId());
 	}
@@ -332,7 +332,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_glyphmodule_id getId()
+	cmzn_glyphmodule_id getId() const
 	{
 		return id;
 	}
@@ -347,13 +347,13 @@ public:
 		return cmzn_glyphmodule_end_change(id);
 	}
 
-	GlyphAxes createGlyphAxes(Glyph& axisGlyph, double axisWidth)
+	GlyphAxes createGlyphAxes(const Glyph& axisGlyph, double axisWidth)
 	{
 		return GlyphAxes(reinterpret_cast<cmzn_glyph_axes_id>(
 			cmzn_glyphmodule_create_glyph_axes(id, axisGlyph.getId(), axisWidth)));
 	}
 
-	GlyphColourBar createGlyphColourBar(Spectrum& spectrum)
+	GlyphColourBar createGlyphColourBar(const Spectrum& spectrum)
 	{
 		return GlyphColourBar(reinterpret_cast<cmzn_glyph_colour_bar_id>(
 			cmzn_glyphmodule_create_glyph_colour_bar(id, spectrum.getId())));
@@ -379,7 +379,7 @@ public:
 		return Glyph(cmzn_glyphmodule_get_default_point_glyph(id));
 	}
 
-	int setDefaultPointGlyph(Glyph& glyph)
+	int setDefaultPointGlyph(const Glyph& glyph)
 	{
 		return cmzn_glyphmodule_set_default_point_glyph(id, glyph.getId());
 	}

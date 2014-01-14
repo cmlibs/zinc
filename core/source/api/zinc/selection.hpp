@@ -73,7 +73,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_selectionevent_id getId()
+	cmzn_selectionevent_id getId() const
 	{
 		return id;
 	}
@@ -95,8 +95,8 @@ class Selectioncallback
 {
 friend class Selectionnotifier;
 private:
-	Selectioncallback(Selectioncallback&); // not implemented
-	Selectioncallback& operator=(Selectioncallback&); // not implemented
+	Selectioncallback(const Selectioncallback&); // not implemented
+	Selectioncallback& operator=(const Selectioncallback&); // not implemented
 
 	static void C_callback(cmzn_selectionevent_id selectionevent_id, void *callbackVoid)
 	{
@@ -159,7 +159,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_selectionnotifier_id getId()
+	cmzn_selectionnotifier_id getId() const
 	{
 		return id;
 	}

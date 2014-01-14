@@ -94,7 +94,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_sceneviewerinput_id getId()
+	cmzn_sceneviewerinput_id getId() const
 	{
 		return id;
 	}
@@ -126,7 +126,7 @@ inline Sceneviewerinput Sceneviewer::createSceneviewerinput()
 	return Sceneviewerinput(cmzn_sceneviewer_create_sceneviewerinput(id));
 }
 
-inline int Sceneviewer::processSceneviewerinput(Sceneviewerinput& input)
+inline int Sceneviewer::processSceneviewerinput(const Sceneviewerinput& input)
 {
 	return cmzn_sceneviewer_process_sceneviewerinput(id, input.getId());
 }

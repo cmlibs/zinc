@@ -26,7 +26,7 @@ private:
 	{	}
 
 	friend FieldImagefilterBinaryDilate
-		Fieldmodule::createFieldImagefilterBinaryDilate(Field& sourceField,
+		Fieldmodule::createFieldImagefilterBinaryDilate(const Field& sourceField,
 			int radius, double dilate_value);
 
 public:
@@ -44,7 +44,7 @@ private:
 	{	}
 
 	friend FieldImagefilterBinaryErode
-		Fieldmodule::createFieldImagefilterBinaryErode(Field& sourceField,
+		Fieldmodule::createFieldImagefilterBinaryErode(const Field& sourceField,
 			int radius, double erode_value);
 
 public:
@@ -102,7 +102,7 @@ private:
 	{	}
 
 	friend FieldImagefilterCannyEdgeDetection
-		Fieldmodule::createFieldImagefilterCannyEdgeDetection(Field& sourceField,
+		Fieldmodule::createFieldImagefilterCannyEdgeDetection(const Field& sourceField,
 			double variance, double maximumError, double upperThreshold, double lowerThreshold);
 
 public:
@@ -121,7 +121,7 @@ private:
 	{	}
 
 	friend FieldImagefilterConnectedThreshold
-		Fieldmodule::createFieldImagefilterConnectedThreshold(Field& sourceField,
+		Fieldmodule::createFieldImagefilterConnectedThreshold(const Field& sourceField,
 			  double lowerThreshold, double upperThreshold, double replaceValue,
 			  int dimension, int seedPointsCount, const double *seedPoints);
 
@@ -141,7 +141,7 @@ private:
 	{	}
 
 	friend FieldImagefilterCurvatureAnisotropicDiffusion
-		Fieldmodule::createFieldImagefilterCurvatureAnisotropicDiffusion(Field& sourceField,
+		Fieldmodule::createFieldImagefilterCurvatureAnisotropicDiffusion(const Field& sourceField,
 			double timeStep, double conductance, int numIterations);
 
 public:
@@ -269,7 +269,7 @@ private:
 	{	}
 
 	friend FieldImagefilterGradientMagnitudeRecursiveGaussian
-		Fieldmodule::createFieldImagefilterGradientMagnitudeRecursiveGaussian(Field& sourceField,
+		Fieldmodule::createFieldImagefilterGradientMagnitudeRecursiveGaussian(const Field& sourceField,
 			double sigma);
 
 public:
@@ -288,7 +288,7 @@ private:
 	{	}
 
 	friend FieldImagefilterRescaleIntensity
-		Fieldmodule::createFieldImagefilterRescaleIntensity(Field& sourceField,
+		Fieldmodule::createFieldImagefilterRescaleIntensity(const Field& sourceField,
 			double outputMin, double outputMax);
 
 public:
@@ -308,7 +308,7 @@ private:
 	{	}
 
 	friend FieldImagefilterMean
-		Fieldmodule::createFieldImagefilterMean(Field& sourceField,
+		Fieldmodule::createFieldImagefilterMean(const Field& sourceField,
 			int valuesCount,const int *radiusSizesIn);
 
 public:
@@ -327,7 +327,7 @@ private:
 	{	}
 
 	friend FieldImagefilterSigmoid
-		Fieldmodule::createFieldImagefilterSigmoid(Field& sourceField,
+		Fieldmodule::createFieldImagefilterSigmoid(const Field& sourceField,
 			double min, double max,	double alpha, double beta);
 
 public:
@@ -410,7 +410,7 @@ public:
 };
 
 inline FieldImagefilterBinaryDilate
-	Fieldmodule::createFieldImagefilterBinaryDilate(Field& sourceField,
+	Fieldmodule::createFieldImagefilterBinaryDilate(const Field& sourceField,
 		int radius, double dilate_value)
 {
 	return FieldImagefilterBinaryDilate(
@@ -419,7 +419,7 @@ inline FieldImagefilterBinaryDilate
 }
 
 inline FieldImagefilterBinaryErode
-	Fieldmodule::createFieldImagefilterBinaryErode(Field& sourceField,
+	Fieldmodule::createFieldImagefilterBinaryErode(const Field& sourceField,
 		int radius, double erode_value)
 {
 	return FieldImagefilterBinaryErode(
@@ -428,7 +428,7 @@ inline FieldImagefilterBinaryErode
 }
 
 inline FieldImagefilterBinaryThreshold
-	Fieldmodule::createFieldImagefilterBinaryThreshold(Field& sourceField)
+	Fieldmodule::createFieldImagefilterBinaryThreshold(const Field& sourceField)
 {
 	return FieldImagefilterBinaryThreshold(reinterpret_cast<cmzn_field_imagefilter_binary_threshold_id>(
 		cmzn_fieldmodule_create_field_imagefilter_binary_threshold(id, sourceField.getId())));
@@ -440,7 +440,7 @@ inline FieldImagefilterBinaryThreshold Field::castImagefilterBinaryThreshold()
 }
 
 inline FieldImagefilterCannyEdgeDetection
-	Fieldmodule::createFieldImagefilterCannyEdgeDetection(Field& sourceField,
+	Fieldmodule::createFieldImagefilterCannyEdgeDetection(const Field& sourceField,
 		double variance, double maximumError, double upperThreshold, double lowerThreshold)
 {
 	return FieldImagefilterCannyEdgeDetection(
@@ -450,7 +450,7 @@ inline FieldImagefilterCannyEdgeDetection
 }
 
 inline FieldImagefilterConnectedThreshold
-	Fieldmodule::createFieldImagefilterConnectedThreshold(Field& sourceField,
+	Fieldmodule::createFieldImagefilterConnectedThreshold(const Field& sourceField,
 		  double lowerThreshold, double upperThreshold, double replaceValue,
 		  int dimension, int seedPointsCount, const double *seedPoints)
 {
@@ -460,7 +460,7 @@ inline FieldImagefilterConnectedThreshold
 }
 
 inline FieldImagefilterCurvatureAnisotropicDiffusion
-	Fieldmodule::createFieldImagefilterCurvatureAnisotropicDiffusion(Field& sourceField,
+	Fieldmodule::createFieldImagefilterCurvatureAnisotropicDiffusion(const Field& sourceField,
 		double timeStep, double conductance, int numIterations)
 {
 	return FieldImagefilterCurvatureAnisotropicDiffusion(
@@ -469,7 +469,7 @@ inline FieldImagefilterCurvatureAnisotropicDiffusion
 }
 
 inline FieldImagefilterDiscreteGaussian
-	Fieldmodule::createFieldImagefilterDiscreteGaussian(Field& sourceField)
+	Fieldmodule::createFieldImagefilterDiscreteGaussian(const Field& sourceField)
 {
 	return FieldImagefilterDiscreteGaussian(reinterpret_cast<cmzn_field_imagefilter_discrete_gaussian_id>(
 		cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(id, sourceField.getId())));
@@ -481,7 +481,7 @@ inline FieldImagefilterDiscreteGaussian Field::castImagefilterDiscreteGaussian()
 }
 
 inline FieldImagefilterGradientMagnitudeRecursiveGaussian
-	Fieldmodule::createFieldImagefilterGradientMagnitudeRecursiveGaussian(Field& sourceField,
+	Fieldmodule::createFieldImagefilterGradientMagnitudeRecursiveGaussian(const Field& sourceField,
 		double sigma)
 {
 	return FieldImagefilterGradientMagnitudeRecursiveGaussian(
@@ -490,7 +490,7 @@ inline FieldImagefilterGradientMagnitudeRecursiveGaussian
 }
 
 inline FieldImagefilterHistogram
-	Fieldmodule::createFieldImagefilterHistogram(Field& sourceField)
+	Fieldmodule::createFieldImagefilterHistogram(const Field& sourceField)
 {
 	return FieldImagefilterHistogram(reinterpret_cast<cmzn_field_imagefilter_histogram_id>(
 		cmzn_fieldmodule_create_field_imagefilter_histogram(id, sourceField.getId())));
@@ -502,7 +502,7 @@ inline FieldImagefilterHistogram Field::castImagefilterHistogram()
 }
 
 inline FieldImagefilterRescaleIntensity
-	Fieldmodule::createFieldImagefilterRescaleIntensity(Field& sourceField,
+	Fieldmodule::createFieldImagefilterRescaleIntensity(const Field& sourceField,
 		double outputMin, double outputMax)
 {
 	return FieldImagefilterRescaleIntensity(
@@ -510,7 +510,7 @@ inline FieldImagefilterRescaleIntensity
 			sourceField.getId(), outputMin, outputMax));
 }
 
-inline FieldImagefilterMean Fieldmodule::createFieldImagefilterMean(Field& sourceField,
+inline FieldImagefilterMean Fieldmodule::createFieldImagefilterMean(const Field& sourceField,
 	int valuesCount, const int *radiusSizesIn)
 {
 	return FieldImagefilterMean(cmzn_fieldmodule_create_field_imagefilter_mean(
@@ -518,7 +518,7 @@ inline FieldImagefilterMean Fieldmodule::createFieldImagefilterMean(Field& sourc
 }
 
 inline FieldImagefilterSigmoid
-	Fieldmodule::createFieldImagefilterSigmoid(Field& sourceField,
+	Fieldmodule::createFieldImagefilterSigmoid(const Field& sourceField,
 		double min, double max,	double alpha, double beta)
 {
 	return FieldImagefilterSigmoid(
@@ -527,7 +527,7 @@ inline FieldImagefilterSigmoid
 }
 
 inline FieldImagefilterThreshold
-	Fieldmodule::createFieldImagefilterThreshold(Field& sourceField)
+	Fieldmodule::createFieldImagefilterThreshold(const Field& sourceField)
 {
 	return FieldImagefilterThreshold(reinterpret_cast<cmzn_field_imagefilter_threshold_id>(
 		cmzn_fieldmodule_create_field_imagefilter_threshold(

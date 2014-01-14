@@ -59,7 +59,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_streamresource_id getId()
+	cmzn_streamresource_id getId() const
 	{
 		return id;
 	}
@@ -71,7 +71,7 @@ class StreamresourceFile : public Streamresource
 
 public:
 
-	StreamresourceFile(Streamresource& streamResource) :
+	StreamresourceFile(const Streamresource& streamResource) :
 		Streamresource(reinterpret_cast<cmzn_streamresource_id>(
 			cmzn_streamresource_cast_file(streamResource.getId())))
 	{  }
@@ -94,7 +94,7 @@ class StreamresourceMemory : public Streamresource
 
 public:
 
-	StreamresourceMemory(Streamresource& streamResource) :
+	StreamresourceMemory(const Streamresource& streamResource) :
 		Streamresource(reinterpret_cast<cmzn_streamresource_id>(
 			cmzn_streamresource_cast_memory(streamResource.getId())))
 	{  }
@@ -161,7 +161,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_streaminformation_id getId()
+	cmzn_streaminformation_id getId() const
 	{
 		return id;
 	}
@@ -185,14 +185,14 @@ public:
 			cmzn_streaminformation_create_streamresource_memory_buffer(id, buffer, buffer_length)));
 	}
 
-	enum DataCompressionType getResourceDataCompressionType(Streamresource resource)
+	enum DataCompressionType getResourceDataCompressionType(const Streamresource& resource)
 	{
 		return static_cast<DataCompressionType>(
 			cmzn_streaminformation_get_resource_data_compression_type(
 				reinterpret_cast<cmzn_streaminformation_id>(id), resource.getId()));
 	}
 
-	int setResourceDataCompressionType(Streamresource resource, DataCompressionType dataCompressionType)
+	int setResourceDataCompressionType(const Streamresource& resource, DataCompressionType dataCompressionType)
 	{
 		return cmzn_streaminformation_set_resource_data_compression_type(
 			reinterpret_cast<cmzn_streaminformation_id>(id), resource.getId(),

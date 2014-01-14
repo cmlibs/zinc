@@ -26,10 +26,10 @@ private:
 	{	}
 
 	friend FieldCrossProduct Fieldmodule::createFieldCrossProduct(int fieldsCount,
-		Field *sourceFields);
+		const Field *sourceFields);
 
 	friend FieldCrossProduct Fieldmodule::createFieldCrossProduct(
-		Field& sourceField1, Field& sourceField2);
+		const Field& sourceField1, const Field& sourceField2);
 
 public:
 
@@ -45,8 +45,8 @@ private:
 	explicit FieldDotProduct(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldDotProduct Fieldmodule::createFieldDotProduct(Field& sourceField1,
-		Field& sourceField2);
+	friend FieldDotProduct Fieldmodule::createFieldDotProduct(const Field& sourceField1,
+		const Field& sourceField2);
 
 public:
 
@@ -62,7 +62,7 @@ private:
 	explicit FieldMagnitude(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldMagnitude Fieldmodule::createFieldMagnitude(Field& sourceField);
+	friend FieldMagnitude Fieldmodule::createFieldMagnitude(const Field& sourceField);
 
 public:
 
@@ -78,7 +78,7 @@ private:
 	explicit FieldNormalise(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldNormalise Fieldmodule::createFieldNormalise(Field& sourceField);
+	friend FieldNormalise Fieldmodule::createFieldNormalise(const Field& sourceField);
 
 public:
 
@@ -94,7 +94,7 @@ private:
 	explicit FieldSumComponents(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldSumComponents Fieldmodule::createFieldSumComponents(Field& sourceField);
+	friend FieldSumComponents Fieldmodule::createFieldSumComponents(const Field& sourceField);
 
 public:
 
@@ -103,7 +103,7 @@ public:
 
 };
 
-inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(int fieldsCount, Field *sourceFields)
+inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(int fieldsCount, const Field *sourceFields)
 {
 	cmzn_field_id field = 0;
 	if (fieldsCount > 0)
@@ -119,29 +119,29 @@ inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(int fieldsCount, F
 	return FieldCrossProduct(field);
 }
 
-inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(Field& sourceField1, Field& sourceField2)
+inline FieldCrossProduct Fieldmodule::createFieldCrossProduct(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldCrossProduct(cmzn_fieldmodule_create_field_cross_product_3d(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
-inline FieldDotProduct Fieldmodule::createFieldDotProduct(Field& sourceField1, Field& sourceField2)
+inline FieldDotProduct Fieldmodule::createFieldDotProduct(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldDotProduct(cmzn_fieldmodule_create_field_dot_product(id, sourceField1.getId(),
 		sourceField2.getId()));
 }
 
-inline FieldMagnitude Fieldmodule::createFieldMagnitude(Field& sourceField)
+inline FieldMagnitude Fieldmodule::createFieldMagnitude(const Field& sourceField)
 {
 	return FieldMagnitude(cmzn_fieldmodule_create_field_magnitude(id, sourceField.getId()));
 }
 
-inline FieldNormalise Fieldmodule::createFieldNormalise(Field& sourceField)
+inline FieldNormalise Fieldmodule::createFieldNormalise(const Field& sourceField)
 {
 	return FieldNormalise(cmzn_fieldmodule_create_field_normalise(id, sourceField.getId()));
 }
 
-inline FieldSumComponents Fieldmodule::createFieldSumComponents(Field& sourceField)
+inline FieldSumComponents Fieldmodule::createFieldSumComponents(const Field& sourceField)
 {
 	return FieldSumComponents(cmzn_fieldmodule_create_field_sum_components(id,
 		sourceField.getId()));
