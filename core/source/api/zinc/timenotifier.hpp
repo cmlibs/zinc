@@ -60,7 +60,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_timenotifierevent_id getId()
+	cmzn_timenotifierevent_id getId() const
 	{
 		return id;
 	}
@@ -76,8 +76,8 @@ class Timenotifiercallback
 {
 friend class Timenotifier;
 private:
-	Timenotifiercallback(Timenotifiercallback&); // not implemented
-	Timenotifiercallback& operator=(Timenotifiercallback&); // not implemented
+	Timenotifiercallback(const Timenotifiercallback&); // not implemented
+	Timenotifiercallback& operator=(const Timenotifiercallback&); // not implemented
 
 	static void C_callback(cmzn_timenotifierevent_id timenotifierevent_id, void *callbackVoid)
 	{
@@ -142,7 +142,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_timenotifier_id getId()
+	cmzn_timenotifier_id getId() const
 	{
 		return id;
 	}

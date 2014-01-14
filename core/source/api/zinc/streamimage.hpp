@@ -20,11 +20,6 @@ namespace Zinc
 
 class StreaminformationImage : public Streaminformation
 {
-private:
-	StreaminformationImage(Streaminformation& streamInformation) :
-		Streaminformation(streamInformation)
-	{ }
-
 public:
 	StreaminformationImage() : Streaminformation()
 	{ }
@@ -39,7 +34,7 @@ public:
 		return (0 != reinterpret_cast<cmzn_streaminformation_image_id>(id));
 	}
 
-	cmzn_streaminformation_image_id getId()
+	cmzn_streaminformation_image_id getId() const
 	{
 		return reinterpret_cast<cmzn_streaminformation_image_id>(id);
 	}
@@ -118,12 +113,12 @@ inline StreaminformationImage FieldImage::createStreaminformationImage()
       cmzn_field_image_create_streaminformation_image(getDerivedId())));
 }
 
-inline int FieldImage::read(StreaminformationImage& streaminformationImage)
+inline int FieldImage::read(const StreaminformationImage& streaminformationImage)
 {
   return cmzn_field_image_read(getDerivedId(), streaminformationImage.getId());
 }
 
-inline int FieldImage::write(StreaminformationImage& streaminformationImage)
+inline int FieldImage::write(const StreaminformationImage& streaminformationImage)
 {
   return cmzn_field_image_write(getDerivedId(), streaminformationImage.getId());
 }

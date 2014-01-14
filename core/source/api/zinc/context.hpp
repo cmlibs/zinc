@@ -74,7 +74,7 @@ public:
 		return *this;
 	}
 
-	cmzn_context_id getId()
+	cmzn_context_id getId() const
 	{
 		return id;
 	}

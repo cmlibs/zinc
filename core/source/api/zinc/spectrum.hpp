@@ -91,7 +91,7 @@ public:
 		COLOUR_MAPPING_TYPE_WHITE_TO_GREEN = CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN
 	};
 
-	cmzn_spectrumcomponent_id getId()
+	cmzn_spectrumcomponent_id getId() const
 	{
 		return id;
 	}
@@ -300,7 +300,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_spectrum_id getId()
+	cmzn_spectrum_id getId() const
 	{
 		return id;
 	}
@@ -350,26 +350,26 @@ public:
 		return Spectrumcomponent(cmzn_spectrum_get_first_spectrumcomponent(id));
 	}
 
-	Spectrumcomponent getNextSpectrumcomponent(Spectrumcomponent& refComponent)
+	Spectrumcomponent getNextSpectrumcomponent(const Spectrumcomponent& refComponent)
 	{
 		return Spectrumcomponent(
 			cmzn_spectrum_get_next_spectrumcomponent(id, refComponent.getId()));
 	}
 
-	Spectrumcomponent getPreviousSpectrumcomponent(Spectrumcomponent& refComponent)
+	Spectrumcomponent getPreviousSpectrumcomponent(const Spectrumcomponent& refComponent)
 	{
 		return Spectrumcomponent(
 			cmzn_spectrum_get_previous_spectrumcomponent(id, refComponent.getId()));
 	}
 
-	int moveSpectrumcomponentBefore(Spectrumcomponent& component,
-		Spectrumcomponent& refComponent)
+	int moveSpectrumcomponentBefore(const Spectrumcomponent& component,
+		const Spectrumcomponent& refComponent)
 	{
 		return cmzn_spectrum_move_spectrumcomponent_before(id, component.getId(),
 			refComponent.getId());
 	}
 
-	int removeSpectrumcomponent(Spectrumcomponent component)
+	int removeSpectrumcomponent(const Spectrumcomponent& component)
 	{
 		return cmzn_spectrum_remove_spectrumcomponent(id, component.getId());
 	}
@@ -439,7 +439,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_spectrummodule_id getId()
+	cmzn_spectrummodule_id getId() const
 	{
 		return id;
 	}
@@ -469,7 +469,7 @@ public:
 		return Spectrum(cmzn_spectrummodule_get_default_spectrum(id));
 	}
 
-	int setDefaultSpectrum(Spectrum &spectrum)
+	int setDefaultSpectrum(const Spectrum& spectrum)
 	{
 		return cmzn_spectrummodule_set_default_spectrum(id, spectrum.getId());
 	}

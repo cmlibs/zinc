@@ -26,7 +26,7 @@ private:
 	{ }
 
 	friend FieldCoordinateTransformation Fieldmodule::createFieldCoordinateTransformation(
-		Field& sourceField);
+		const Field& sourceField);
 public:
 
 	FieldCoordinateTransformation() : Field(0)
@@ -42,7 +42,7 @@ private:
 	{ }
 
 	friend FieldVectorCoordinateTransformation Fieldmodule::createFieldVectorCoordinateTransformation(
-		Field& vectorField, Field& coordinateField);
+		const Field& vectorField, const Field& coordinateField);
 
 public:
 
@@ -52,14 +52,14 @@ public:
 };
 
 inline FieldCoordinateTransformation Fieldmodule::createFieldCoordinateTransformation(
-	Field& sourceField)
+	const Field& sourceField)
 {
 	return FieldCoordinateTransformation(cmzn_fieldmodule_create_field_coordinate_transformation(
 		id, sourceField.getId()));
 }
 
 inline FieldVectorCoordinateTransformation Fieldmodule::createFieldVectorCoordinateTransformation(
-	Field& vectorField, Field& coordinateField)
+	const Field& vectorField, const Field& coordinateField)
 {
 	return FieldVectorCoordinateTransformation(cmzn_fieldmodule_create_field_vector_coordinate_transformation(id,
 		vectorField.getId(), coordinateField.getId()));

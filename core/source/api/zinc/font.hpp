@@ -68,7 +68,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_font_id getId()
+	cmzn_font_id getId() const
 	{
 		return id;
 	}
@@ -189,7 +189,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_fontmodule_id getId()
+	cmzn_fontmodule_id getId() const
 	{
 		return id;
 	}
@@ -219,7 +219,7 @@ public:
 		return Font(cmzn_fontmodule_get_default_font(id));
 	}
 
-	int setDefaultFont(Font &font)
+	int setDefaultFont(const Font& font)
 	{
 		return cmzn_fontmodule_set_default_font(id, font.getId());
 	}

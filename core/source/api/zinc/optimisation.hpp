@@ -86,7 +86,7 @@ public:
 		ATTRIBUTE_TRUST_REGION_SIZE = CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE
 	};
 
-	cmzn_optimisation_id getId()
+	cmzn_optimisation_id getId() const
 	{
 		return id;
 	}
@@ -131,17 +131,17 @@ public:
 		return Field(cmzn_optimisation_get_first_independent_field(id));
 	}
 
-	Field getNextIndependentField(Field& refField)
+	Field getNextIndependentField(const Field& refField)
 	{
 		return Field(cmzn_optimisation_get_next_independent_field(id, refField.getId()));
 	}
 
-	int addIndependentField(Field& field)
+	int addIndependentField(const Field& field)
 	{
 		return (cmzn_optimisation_add_independent_field(id, field.getId()));
 	}
 
-	int removeIndependentField(Field& field)
+	int removeIndependentField(const Field& field)
 	{
 		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
 	}
@@ -151,17 +151,17 @@ public:
 		return Field(cmzn_optimisation_get_first_objective_field(id));
 	}
 
-	Field getNextObjectiveField(Field& refField)
+	Field getNextObjectiveField(const Field& refField)
 	{
 		return Field(cmzn_optimisation_get_next_objective_field(id, refField.getId()));
 	}
 
-	int addObjectiveField(Field& field)
+	int addObjectiveField(const Field& field)
 	{
 		return (cmzn_optimisation_add_objective_field(id, field.getId()));
 	}
 
-	int removeObjectiveField(Field& field)
+	int removeObjectiveField(const Field& field)
 	{
 		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
 	}

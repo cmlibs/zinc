@@ -27,7 +27,7 @@ private:
 	explicit FieldIdentity(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldIdentity Fieldmodule::createFieldIdentity(Field& sourceField);
+	friend FieldIdentity Fieldmodule::createFieldIdentity(const Field& sourceField);
 
 public:
 
@@ -73,7 +73,7 @@ private:
 	explicit FieldConcatenate(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, Field *sourceFields);
+	friend FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, const Field *sourceFields);
 
 public:
 
@@ -82,12 +82,12 @@ public:
 
 };
 
-inline FieldIdentity Fieldmodule::createFieldIdentity(Field& sourceField)
+inline FieldIdentity Fieldmodule::createFieldIdentity(const Field& sourceField)
 {
 	return FieldIdentity(cmzn_fieldmodule_create_field_identity(id, sourceField.getId()));
 }
 
-inline FieldComponent Fieldmodule::createFieldComponent(Field& sourceField, int componentIndex)
+inline FieldComponent Fieldmodule::createFieldComponent(const Field& sourceField, int componentIndex)
 {
 	return FieldComponent(reinterpret_cast<cmzn_field_component_id>(
 		cmzn_fieldmodule_create_field_component(id, sourceField.getId(), componentIndex)));
@@ -98,7 +98,7 @@ inline FieldComponent Field::castComponent()
 	return FieldComponent(cmzn_field_cast_component(id));
 }
 
-inline FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, Field *sourceFields)
+inline FieldConcatenate Fieldmodule::createFieldConcatenate(int fieldsCount, const Field *sourceFields)
 {
 	cmzn_field_id concatenateField = 0;
 	if (fieldsCount > 0)

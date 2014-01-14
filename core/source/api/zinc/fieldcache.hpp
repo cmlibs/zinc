@@ -65,31 +65,31 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_fieldcache_id getId()
+	cmzn_fieldcache_id getId() const
 	{
 		return id;
 	}
 
-	int setElement(Element& element)
+	int setElement(const Element& element)
 	{
 		return cmzn_fieldcache_set_element(id, element.getId());
 	}
 
-	int setMeshLocation(Element& element, int coordinatesCount,
+	int setMeshLocation(const Element& element, int coordinatesCount,
 		const double *coordinatesIn)
 	{
 		return cmzn_fieldcache_set_mesh_location(id, element.getId(),
 			coordinatesCount, coordinatesIn);
 	}
 
-	int setFieldReal(Field& referenceField, int valuesCount,
+	int setFieldReal(const Field& referenceField, int valuesCount,
 		const double *valuesIn)
 	{
 		return cmzn_fieldcache_set_field_real(id,
 			referenceField.getId(), valuesCount, valuesIn);
 	}
 
-	int setNode(Node& node)
+	int setNode(const Node& node)
 	{
 		return cmzn_fieldcache_set_node(id, node.getId());
 	}
@@ -105,48 +105,48 @@ inline Fieldcache Fieldmodule::createFieldcache()
 	return Fieldcache(cmzn_fieldmodule_create_fieldcache(id));
 }
 
-inline int Field::assignMeshLocation(Fieldcache& cache, Element element,
+inline int Field::assignMeshLocation(const Fieldcache& cache, const Element& element,
 	int coordinatesCount, const double *coordinatesIn)
 {
 	return cmzn_field_assign_mesh_location(id, cache.getId(), element.getId(),
 		coordinatesCount, coordinatesIn);
 }
 
-inline int Field::assignReal(Fieldcache& cache,	int valuesCount, const double *valuesIn)
+inline int Field::assignReal(const Fieldcache& cache,	int valuesCount, const double *valuesIn)
 {
 	return cmzn_field_assign_real(id, cache.getId(), valuesCount, valuesIn);
 }
 
-inline int Field::assignString(Fieldcache& cache, const char *stringValue)
+inline int Field::assignString(const Fieldcache& cache, const char *stringValue)
 {
 	return cmzn_field_assign_string(id, cache.getId(), stringValue);
 }
 
-inline Element Field::evaluateMeshLocation(Fieldcache& cache, int coordinatesCount,
+inline Element Field::evaluateMeshLocation(const Fieldcache& cache, int coordinatesCount,
 	double *coordinatesOut)
 {
 	return Element(cmzn_field_evaluate_mesh_location(id,
 		cache.getId(), coordinatesCount, coordinatesOut));
 }
 
-inline int Field::evaluateReal(Fieldcache& cache, int valuesCount, double *valuesOut)
+inline int Field::evaluateReal(const Fieldcache& cache, int valuesCount, double *valuesOut)
 {
 	return cmzn_field_evaluate_real(id, cache.getId(), valuesCount, valuesOut);
 }
 
-inline char *Field::evaluateString(Fieldcache& cache)
+inline char *Field::evaluateString(const Fieldcache& cache)
 {
 	return cmzn_field_evaluate_string(id, cache.getId());
 }
 
-inline int Field::evaluateDerivative(Differentialoperator& differentialOperator,
-	Fieldcache& cache, int valuesCount, double *valuesOut)
+inline int Field::evaluateDerivative(const Differentialoperator& differentialOperator,
+	const Fieldcache& cache, int valuesCount, double *valuesOut)
 {
 	return cmzn_field_evaluate_derivative(id, differentialOperator.getId(),
 		cache.getId(), valuesCount, valuesOut);
 }
 
-inline bool Field::isDefinedAtLocation(Fieldcache& cache)
+inline bool Field::isDefinedAtLocation(const Fieldcache& cache)
 {
 	return cmzn_field_is_defined_at_location(id, cache.getId());
 }

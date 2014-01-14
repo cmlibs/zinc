@@ -62,7 +62,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_material_id getId()
+	cmzn_material_id getId() const
 	{
 		return id;
 	}
@@ -127,7 +127,7 @@ public:
 		return Field(cmzn_material_get_texture_field(id, textureNumber));
 	}
 
-	int setTextureField(int textureNumber, Field &textureField)
+	int setTextureField(int textureNumber, const Field& textureField)
 	{
 		return cmzn_material_set_texture_field(id, textureNumber, textureField.getId());
 	}
@@ -178,7 +178,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_materialmodule_id getId()
+	cmzn_materialmodule_id getId() const
 	{
 		return id;
 	}
@@ -213,7 +213,7 @@ public:
 		return Material(cmzn_materialmodule_get_default_material(id));
 	}
 
-	int setDefaultMaterial(Material &material)
+	int setDefaultMaterial(const Material& material)
 	{
 		return cmzn_materialmodule_set_default_material(id, material.getId());
 	}
@@ -223,7 +223,7 @@ public:
 		return Material(cmzn_materialmodule_get_default_selected_material(id));
 	}
 
-	int setDefaultSelectedMaterial(Material &material)
+	int setDefaultSelectedMaterial(const Material& material)
 	{
 		return cmzn_materialmodule_set_default_selected_material(id, material.getId());
 	}

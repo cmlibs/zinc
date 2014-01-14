@@ -96,7 +96,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_node_id getId()
+	cmzn_node_id getId() const
 	{
 		return id;
 	}
@@ -111,7 +111,7 @@ public:
 		return cmzn_node_set_identifier(id, identifier);
 	}
 
-	int merge(Nodetemplate nodeTemplate);
+	int merge(const Nodetemplate& nodeTemplate);
 
 };
 
@@ -164,36 +164,36 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_nodetemplate_id getId()
+	cmzn_nodetemplate_id getId() const
 	{
 		return id;
 	}
 
-	int defineField(Field& field)
+	int defineField(const Field& field)
 	{
 		return cmzn_nodetemplate_define_field(id, field.getId());
 	}
 
-	int setTimesequence(Field& field, Timesequence& timesequence)
+	int setTimesequence(const Field& field, const Timesequence& timesequence)
 	{
 		return cmzn_nodetemplate_set_timesequence(id, field.getId(), timesequence.getId());
 	}
 
-	int getValueNumberOfVersions(Field& field, int componentNumber,
+	int getValueNumberOfVersions(const Field& field, int componentNumber,
 		Node::ValueLabel valueLabel)
 	{
 		return cmzn_nodetemplate_get_value_number_of_versions(id, field.getId(),
 			componentNumber, static_cast<cmzn_node_value_label>(valueLabel));
 	}
 
-	int setValueNumberOfVersions(Field& field, int componentNumber,
+	int setValueNumberOfVersions(const Field& field, int componentNumber,
 		Node::ValueLabel valueLabel, int numberOfVersions)
 	{
 		return cmzn_nodetemplate_set_value_number_of_versions(id, field.getId(),
 			componentNumber, static_cast<cmzn_node_value_label>(valueLabel), numberOfVersions);
 	}
 
-	int undefineField(Field& field)
+	int undefineField(const Field& field)
 	{
 		return cmzn_nodetemplate_undefine_field(id, field.getId());
 	}
@@ -292,12 +292,12 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_nodeset_id getId()
+	cmzn_nodeset_id getId() const
 	{
 		return id;
 	}
 
-	bool containsNode(Node& node)
+	bool containsNode(const Node& node)
 	{
 		return cmzn_nodeset_contains_node(id, node.getId());
 	}
@@ -307,7 +307,7 @@ public:
 		return Nodetemplate(cmzn_nodeset_create_nodetemplate(id));
 	}
 
-	Node createNode(int identifier, Nodetemplate& nodeTemplate)
+	Node createNode(int identifier, const Nodetemplate& nodeTemplate)
 	{
 		return Node(cmzn_nodeset_create_node(id, identifier, nodeTemplate.getId()));
 	}
@@ -322,12 +322,12 @@ public:
 		return cmzn_nodeset_destroy_all_nodes(id);
 	}
 
-	int destroyNode(Node& node)
+	int destroyNode(const Node& node)
 	{
 		return cmzn_nodeset_destroy_node(id, node.getId());
 	}
 
-	int destroyNodesConditional(Field& conditionalField)
+	int destroyNodesConditional(const Field& conditionalField)
 	{
 		return cmzn_nodeset_destroy_nodes_conditional(id, conditionalField.getId());
 	}
@@ -352,7 +352,7 @@ public:
 		return cmzn_nodeset_get_size(id);
 	}
 
-	bool match(Nodeset& nodeset)
+	bool match(const Nodeset& nodeset)
 	{
 		return cmzn_nodeset_match(id, nodeset.id);
 	}
@@ -368,12 +368,12 @@ public:
 	explicit NodesetGroup(cmzn_nodeset_group_id nodeset_id) : Nodeset(reinterpret_cast<cmzn_nodeset_id>(nodeset_id))
 	{ }
 
-	cmzn_nodeset_group_id getId()
+	cmzn_nodeset_group_id getId() const
 	{
 		return (cmzn_nodeset_group_id)(id);
 	}
 
-	int addNode(Node& node)
+	int addNode(const Node& node)
 	{
 		return cmzn_nodeset_group_add_node(
 			reinterpret_cast<cmzn_nodeset_group_id>(id), node.getId());
@@ -385,13 +385,13 @@ public:
 			reinterpret_cast<cmzn_nodeset_group_id>(id));
 	}
 
-	int removeNode(Node& node)
+	int removeNode(const Node& node)
 	{
 		return cmzn_nodeset_group_remove_node(reinterpret_cast<cmzn_nodeset_group_id>(id),
 			node.getId());
 	}
 
-	int removeNodesConditional(Field& conditionalField)
+	int removeNodesConditional(const Field& conditionalField)
 	{
 		return cmzn_nodeset_group_remove_nodes_conditional(
 			reinterpret_cast<cmzn_nodeset_group_id>(id), conditionalField.getId());
@@ -439,7 +439,7 @@ public:
 		return (0 != id);
 	}
 
-	Node::ChangeFlags getNodeChangeFlags(Node &node)
+	Node::ChangeFlags getNodeChangeFlags(const Node& node)
 	{
 		return cmzn_nodesetchanges_get_node_change_flags(id, node.getId());
 	}
@@ -455,7 +455,7 @@ public:
 	}
 };
 
-inline int Node::merge(Nodetemplate nodeTemplate)
+inline int Node::merge(const Nodetemplate& nodeTemplate)
 {
 	return cmzn_node_merge(id, nodeTemplate.getId());
 }

@@ -25,7 +25,7 @@ private:
 	explicit FieldAdd(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldAdd Fieldmodule::createFieldAdd(Field& sourceField1, Field& sourceField2);
+	friend FieldAdd Fieldmodule::createFieldAdd(const Field& sourceField1, const Field& sourceField2);
 
 public:
 
@@ -34,7 +34,7 @@ public:
 
 };
 
-inline FieldAdd operator+(Field& operand1, Field& operand2)
+inline FieldAdd operator+(const Field& operand1, const Field& operand2)
 {
 	return operand1.getFieldmodule().createFieldAdd(operand1, operand2);
 }
@@ -46,7 +46,7 @@ private:
 	explicit FieldPower(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldPower Fieldmodule::createFieldPower(Field& sourceField1, Field& sourceField2);
+	friend FieldPower Fieldmodule::createFieldPower(const Field& sourceField1, const Field& sourceField2);
 
 public:
 
@@ -62,7 +62,7 @@ private:
 	explicit FieldMultiply(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldMultiply Fieldmodule::createFieldMultiply(Field& sourceField1, Field& sourceField2);
+	friend FieldMultiply Fieldmodule::createFieldMultiply(const Field& sourceField1, const Field& sourceField2);
 
 public:
 
@@ -71,7 +71,7 @@ public:
 
 };
 
-inline FieldMultiply operator*(Field& operand1, Field& operand2)
+inline FieldMultiply operator*(const Field& operand1, const Field& operand2)
 {
 	return operand1.getFieldmodule().createFieldMultiply(operand1, operand2);
 }
@@ -83,7 +83,7 @@ private:
 	explicit FieldDivide(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldDivide Fieldmodule::createFieldDivide(Field& sourceField1, Field& sourceField2);
+	friend FieldDivide Fieldmodule::createFieldDivide(const Field& sourceField1, const Field& sourceField2);
 
 public:
 
@@ -92,7 +92,7 @@ public:
 
 };
 
-inline FieldDivide operator/(Field& operand1, Field& operand2)
+inline FieldDivide operator/(const Field& operand1, const Field& operand2)
 {
 	return operand1.getFieldmodule().createFieldDivide(operand1, operand2);
 }
@@ -104,7 +104,7 @@ private:
 	explicit FieldSubtract(cmzn_field_id field_id) : Field(field_id)
 	{ }
 
-	friend FieldSubtract Fieldmodule::createFieldSubtract(Field& sourceField1, Field& sourceField2);
+	friend FieldSubtract Fieldmodule::createFieldSubtract(const Field& sourceField1, const Field& sourceField2);
 
 public:
 
@@ -113,7 +113,7 @@ public:
 
 };
 
-inline FieldSubtract operator-(Field& operand1, Field& operand2)
+inline FieldSubtract operator-(const Field& operand1, const Field& operand2)
 {
 	return operand1.getFieldmodule().createFieldSubtract(operand1, operand2);
 }
@@ -125,7 +125,7 @@ private:
 	explicit FieldLog(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldLog Fieldmodule::createFieldLog(Field& sourceField);
+	friend FieldLog Fieldmodule::createFieldLog(const Field& sourceField);
 
 public:
 
@@ -134,7 +134,7 @@ public:
 
 };
 
-inline FieldLog log(Field& sourceField)
+inline FieldLog log(const Field& sourceField)
 {
 	return sourceField.getFieldmodule().createFieldLog(sourceField);
 }
@@ -146,7 +146,7 @@ private:
 	explicit FieldSqrt(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldSqrt Fieldmodule::createFieldSqrt(Field& sourceField);
+	friend FieldSqrt Fieldmodule::createFieldSqrt(const Field& sourceField);
 
 public:
 
@@ -155,7 +155,7 @@ public:
 
 };
 
-inline FieldSqrt sqrt(Field& sourceField)
+inline FieldSqrt sqrt(const Field& sourceField)
 {
 	return sourceField.getFieldmodule().createFieldSqrt(sourceField);
 }
@@ -167,7 +167,7 @@ private:
 	explicit FieldExp(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldExp Fieldmodule::createFieldExp(Field& sourceField);
+	friend FieldExp Fieldmodule::createFieldExp(const Field& sourceField);
 
 public:
 
@@ -176,7 +176,7 @@ public:
 
 };
 
-inline FieldExp exp(Field& sourceField)
+inline FieldExp exp(const Field& sourceField)
 {
 	return sourceField.getFieldmodule().createFieldExp(sourceField);
 }
@@ -188,7 +188,7 @@ private:
 	explicit FieldAbs(cmzn_field_id field_id) : Field(field_id)
 	{	}
 
-	friend FieldAbs Fieldmodule::createFieldAbs(Field& sourceField);
+	friend FieldAbs Fieldmodule::createFieldAbs(const Field& sourceField);
 
 public:
 
@@ -197,59 +197,59 @@ public:
 
 };
 
-inline FieldAbs abs(Field& sourceField)
+inline FieldAbs abs(const Field& sourceField)
 {
 	return sourceField.getFieldmodule().createFieldAbs(sourceField);
 }
 
 /* inline Fieldmodule factory methods */
 
-inline FieldAdd Fieldmodule::createFieldAdd(Field& sourceField1, Field& sourceField2)
+inline FieldAdd Fieldmodule::createFieldAdd(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldAdd(cmzn_fieldmodule_create_field_add(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldPower Fieldmodule::createFieldPower(Field& sourceField1, Field& sourceField2)
+inline FieldPower Fieldmodule::createFieldPower(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldPower(cmzn_fieldmodule_create_field_power(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldMultiply Fieldmodule::createFieldMultiply(Field& sourceField1, Field& sourceField2)
+inline FieldMultiply Fieldmodule::createFieldMultiply(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldMultiply(cmzn_fieldmodule_create_field_multiply(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldDivide Fieldmodule::createFieldDivide(Field& sourceField1, Field& sourceField2)
+inline FieldDivide Fieldmodule::createFieldDivide(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldDivide(cmzn_fieldmodule_create_field_divide(id,
 			sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldSubtract Fieldmodule::createFieldSubtract(Field& sourceField1, Field& sourceField2)
+inline FieldSubtract Fieldmodule::createFieldSubtract(const Field& sourceField1, const Field& sourceField2)
 {
 	return FieldSubtract(cmzn_fieldmodule_create_field_subtract(id,
 		sourceField1.getId(), sourceField2.getId()));
 }
 
-inline FieldLog Fieldmodule::createFieldLog(Field& sourceField)
+inline FieldLog Fieldmodule::createFieldLog(const Field& sourceField)
 {
 	return FieldLog(cmzn_fieldmodule_create_field_log(id, sourceField.getId()));
 }
 
-inline FieldSqrt Fieldmodule::createFieldSqrt(Field& sourceField)
+inline FieldSqrt Fieldmodule::createFieldSqrt(const Field& sourceField)
 {
 	return FieldSqrt(cmzn_fieldmodule_create_field_sqrt(id, sourceField.getId()));
 }
 
-inline FieldExp Fieldmodule::createFieldExp(Field& sourceField)
+inline FieldExp Fieldmodule::createFieldExp(const Field& sourceField)
 {
 	return FieldExp(cmzn_fieldmodule_create_field_exp(id, sourceField.getId()));
 }
 
-inline FieldAbs Fieldmodule::createFieldAbs(Field& sourceField)
+inline FieldAbs Fieldmodule::createFieldAbs(const Field& sourceField)
 {
 	return FieldAbs(cmzn_fieldmodule_create_field_abs(id, sourceField.getId()));
 }

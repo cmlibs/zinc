@@ -78,61 +78,61 @@ public:
 			reinterpret_cast<cmzn_field_group_id>(id));
 	}
 
-	int addRegion(Region& region)
+	int addRegion(const Region& region)
 	{
 		return cmzn_field_group_add_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());
 	}
 
-	int removeRegion(Region& region)
+	int removeRegion(const Region& region)
 	{
 		return cmzn_field_group_remove_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());
 	}
 
-	bool containsRegion(Region& region)
+	bool containsRegion(const Region& region)
 	{
 		return cmzn_field_group_contains_region(reinterpret_cast<cmzn_field_group_id>(id),
 			region.getId());
 	}
 
-	FieldGroup createSubregionFieldGroup(Region& region)
+	FieldGroup createSubregionFieldGroup(const Region& region)
 	{
 		return FieldGroup(cmzn_field_group_create_subregion_field_group(
 			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
-	FieldGroup getSubregionFieldGroup(Region& region)
+	FieldGroup getSubregionFieldGroup(const Region& region)
 	{
 		return FieldGroup(cmzn_field_group_get_subregion_field_group(
 			reinterpret_cast<cmzn_field_group_id>(id), region.getId()));
 	}
 
-	FieldNodeGroup createFieldNodeGroup(Nodeset& nodeset)
+	FieldNodeGroup createFieldNodeGroup(const Nodeset& nodeset)
 	{
 		return FieldNodeGroup(cmzn_field_group_create_field_node_group(
 			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
-	FieldNodeGroup getFieldNodeGroup(Nodeset& nodeset)
+	FieldNodeGroup getFieldNodeGroup(const Nodeset& nodeset)
 	{
 		return FieldNodeGroup(cmzn_field_group_get_field_node_group(
 			reinterpret_cast<cmzn_field_group_id>(id), nodeset.getId()));
 	}
 
-	FieldElementGroup createFieldElementGroup(Mesh& mesh)
+	FieldElementGroup createFieldElementGroup(const Mesh& mesh)
 	{
 		return FieldElementGroup(cmzn_field_group_create_field_element_group(
 			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
-	FieldElementGroup getFieldElementGroup(Mesh& mesh)
+	FieldElementGroup getFieldElementGroup(const Mesh& mesh)
 	{
 		return FieldElementGroup(cmzn_field_group_get_field_element_group(
 			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
-	Field getSubobjectGroupFieldforDomainField(Field& domainField)
+	Field getSubobjectGroupFieldforDomainField(const Field& domainField)
 	{
 		return Field(cmzn_field_group_get_subobject_group_field_for_domain_field(
 			reinterpret_cast<cmzn_field_group_id>(id), domainField.getId()));

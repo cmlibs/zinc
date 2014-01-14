@@ -76,7 +76,7 @@ public:
 		FUNCTION_TYPE_CUBIC_HERMITE = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE
 	};
 
-	cmzn_elementbasis_id getId()
+	cmzn_elementbasis_id getId() const
 	{
 		return id;
 	}
@@ -209,7 +209,7 @@ public:
 		POINT_SAMPLING_MODE_SET_LOCATION = CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION
 	};
 
-	cmzn_element_id getId()
+	cmzn_element_id getId() const
 	{
 		return id;
 	}
@@ -234,7 +234,7 @@ public:
 		return static_cast<ShapeType>(cmzn_element_get_shape_type(id));
 	}
 
-	int merge(Elementtemplate& elementTemplate);
+	int merge(const Elementtemplate& elementTemplate);
 
 };
 
@@ -287,7 +287,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_elementtemplate_id getId()
+	cmzn_elementtemplate_id getId() const
 	{
 		return id;
 	}
@@ -313,8 +313,8 @@ public:
 		return cmzn_elementtemplate_set_number_of_nodes(id, numberOfNodes);
 	}
 
-	int defineFieldSimpleNodal(Field& field, int componentNumber,
-		Elementbasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
+	int defineFieldSimpleNodal(const Field& field, int componentNumber,
+		const Elementbasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
 	{
 		return cmzn_elementtemplate_define_field_simple_nodal(
 			id, field.getId(),  componentNumber, basis.getId(),
@@ -326,7 +326,7 @@ public:
 		return Node(cmzn_elementtemplate_get_node(id, localNodeIndex));
 	}
 
-	int setNode(int localNodeIndex, Node& node)
+	int setNode(int localNodeIndex, const Node& node)
 	{
 		return cmzn_elementtemplate_set_node(id, localNodeIndex, node.getId());
 	}
@@ -425,12 +425,12 @@ public:
 		return *this;
 	}
 
-	cmzn_mesh_id getId()
+	cmzn_mesh_id getId() const
 	{
 		return id;
 	}
 
-	bool containsElement(Element& element)
+	bool containsElement(const Element& element)
 	{
 		return cmzn_mesh_contains_element(id, element.getId());
 	}
@@ -440,7 +440,7 @@ public:
 		return Elementtemplate(cmzn_mesh_create_elementtemplate(id));
 	}
 
-	Element createElement(int identifier, Elementtemplate& elementTemplate)
+	Element createElement(int identifier, const Elementtemplate& elementTemplate)
 	{
 		return Element(cmzn_mesh_create_element(id, identifier, elementTemplate.getId()));
 	}
@@ -450,7 +450,7 @@ public:
 		return Elementiterator(cmzn_mesh_create_elementiterator(id));
 	}
 
-	int defineElement(int identifier, Elementtemplate& elementTemplate)
+	int defineElement(int identifier, const Elementtemplate& elementTemplate)
 	{
 		return cmzn_mesh_define_element(id, identifier, elementTemplate.getId());
 	}
@@ -460,12 +460,12 @@ public:
 		return cmzn_mesh_destroy_all_elements(id);
 	}
 
-	int destroyElement(Element& element)
+	int destroyElement(const Element& element)
 	{
 		 return cmzn_mesh_destroy_element(id, element.getId());
 	}
 
-	int destroyElementsConditional(Field& conditionalField)
+	int destroyElementsConditional(const Field& conditionalField)
 	{
 		return cmzn_mesh_destroy_elements_conditional(id,
 			conditionalField.getId());
@@ -502,7 +502,7 @@ public:
 		return cmzn_mesh_get_size(id);
 	}
 
-	bool match(Mesh& mesh)
+	bool match(const Mesh& mesh)
 	{
 		return cmzn_mesh_match(id, mesh.id);
 	}
@@ -518,12 +518,12 @@ public:
 	explicit MeshGroup(cmzn_mesh_group_id mesh_id) : Mesh(reinterpret_cast<cmzn_mesh_id>(mesh_id))
 	{ }
 
-	cmzn_mesh_group_id getId()
+	cmzn_mesh_group_id getId() const
 	{
 		return (cmzn_mesh_group_id)(id);
 	}
 
-	int addElement(Element& element)
+	int addElement(const Element& element)
 	{
 		return cmzn_mesh_group_add_element(
 			reinterpret_cast<cmzn_mesh_group_id>(id), element.getId());
@@ -534,13 +534,13 @@ public:
 		return cmzn_mesh_group_remove_all_elements(reinterpret_cast<cmzn_mesh_group_id>(id));
 	}
 
-	int removeElement(Element& element)
+	int removeElement(const Element& element)
 	{
 		return cmzn_mesh_group_remove_element(reinterpret_cast<cmzn_mesh_group_id>(id),
 			element.getId());
 	}
 
-	int removeElementsConditional(Field& conditionalField)
+	int removeElementsConditional(const Field& conditionalField)
 	{
 		return cmzn_mesh_group_remove_elements_conditional(
 			reinterpret_cast<cmzn_mesh_group_id>(id), conditionalField.getId());
@@ -588,7 +588,7 @@ public:
 		return (0 != id);
 	}
 
-	Element::ChangeFlags getElementChangeFlags(Element &element)
+	Element::ChangeFlags getElementChangeFlags(const Element& element)
 	{
 		return cmzn_meshchanges_get_element_change_flags(id, element.getId());
 	}
@@ -604,7 +604,7 @@ public:
 	}
 };
 
-inline int Element::merge(Elementtemplate& elementTemplate)
+inline int Element::merge(const Elementtemplate& elementTemplate)
 {
 	return cmzn_element_merge(id, elementTemplate.getId());
 }

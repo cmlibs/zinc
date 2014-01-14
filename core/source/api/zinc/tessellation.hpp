@@ -60,7 +60,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_tessellation_id getId()
+	cmzn_tessellation_id getId() const
 	{
 		return id;
 	}
@@ -161,7 +161,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_tessellationmodule_id getId()
+	cmzn_tessellationmodule_id getId() const
 	{
 		return id;
 	}
@@ -191,7 +191,7 @@ public:
 		return Tessellation(cmzn_tessellationmodule_get_default_tessellation(id));
 	}
 
-	int setDefaultTessellation(Tessellation &tessellation)
+	int setDefaultTessellation(const Tessellation& tessellation)
 	{
 		return cmzn_tessellationmodule_set_default_tessellation(id, tessellation.getId());
 	}
@@ -201,7 +201,7 @@ public:
 		return Tessellation(cmzn_tessellationmodule_get_default_points_tessellation(id));
 	}
 
-	int setDefaultPointsTessellation(Tessellation &tessellation)
+	int setDefaultPointsTessellation(const Tessellation& tessellation)
 	{
 		return cmzn_tessellationmodule_set_default_points_tessellation(id, tessellation.getId());
 	}

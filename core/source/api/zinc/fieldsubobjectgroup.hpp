@@ -58,7 +58,7 @@ public:
 	}
 };
 
-inline FieldElementGroup Fieldmodule::createFieldElementGroup(Mesh& mesh)
+inline FieldElementGroup Fieldmodule::createFieldElementGroup(const Mesh& mesh)
 {
 	return FieldElementGroup(reinterpret_cast<cmzn_field_element_group_id>(
 		cmzn_fieldmodule_create_field_element_group(id, mesh.getId())));
@@ -69,7 +69,7 @@ inline FieldElementGroup Field::castElementGroup()
 	return FieldElementGroup(cmzn_field_cast_element_group(id));
 }
 
-inline FieldNodeGroup Fieldmodule::createFieldNodeGroup(Nodeset& nodeset)
+inline FieldNodeGroup Fieldmodule::createFieldNodeGroup(const Nodeset& nodeset)
 {
 	return FieldNodeGroup(reinterpret_cast<cmzn_field_node_group_id>(
 		cmzn_fieldmodule_create_field_node_group(id, nodeset.getId())));

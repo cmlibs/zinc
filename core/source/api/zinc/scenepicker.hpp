@@ -66,12 +66,12 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_scenepicker_id getId()
+	cmzn_scenepicker_id getId() const
 	{
 		return id;
 	}
 
-	int setSceneviewerRectangle(Sceneviewer& sceneviewer, Scenecoordinatesystem coordinateSystem, double x1,
+	int setSceneviewerRectangle(const Sceneviewer& sceneviewer, Scenecoordinatesystem coordinateSystem, double x1,
 		double y1, double x2, double y2)
 	{
 		return cmzn_scenepicker_set_sceneviewer_rectangle(
@@ -105,13 +105,13 @@ public:
 		return Graphics(cmzn_scenepicker_get_nearest_graphics(id));
 	}
 
-	int addPickedElementsToFieldGroup(FieldGroup& fieldGroup)
+	int addPickedElementsToFieldGroup(const FieldGroup& fieldGroup)
 	{
 		return cmzn_scenepicker_add_picked_elements_to_field_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
 	}
 
-	int addPickedNodesToFieldGroup(FieldGroup& fieldGroup)
+	int addPickedNodesToFieldGroup(const FieldGroup& fieldGroup)
 	{
 		return cmzn_scenepicker_add_picked_nodes_to_field_group(id,
 			(reinterpret_cast<cmzn_field_group_id>(fieldGroup.getId())));
@@ -122,7 +122,7 @@ public:
 		return Scene(cmzn_scenepicker_get_scene(id));
 	}
 
-	int setScene(Scene& scene)
+	int setScene(const Scene& scene)
 	{
 		return cmzn_scenepicker_set_scene(id, scene.getId());
 	}
@@ -132,7 +132,7 @@ public:
 		return Scenefilter(cmzn_scenepicker_get_scenefilter(id));
 	}
 
-	int setScenefilter(Scenefilter& filter)
+	int setScenefilter(const Scenefilter& filter)
 	{
 		return cmzn_scenepicker_set_scenefilter(id, filter.getId());
 	}

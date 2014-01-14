@@ -78,7 +78,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_field_id getId()
+	cmzn_field_id getId() const
 	{
 		return id;
 	}
@@ -224,26 +224,26 @@ public:
 		return static_cast<ValueType>(cmzn_field_get_value_type(id));
 	}
 
-	inline Fieldmodule getFieldmodule();
+	inline Fieldmodule getFieldmodule() const;
 
-	inline int assignMeshLocation(Fieldcache& cache, Element element,
+	inline int assignMeshLocation(const Fieldcache& cache, const Element& element,
 		int coordinatesCount, const double *coordinatesIn);
 
-	inline int assignReal(Fieldcache& cache, int valuesCount, const double *valuesIn);
+	inline int assignReal(const Fieldcache& cache, int valuesCount, const double *valuesIn);
 
-	inline int assignString(Fieldcache& cache, const char *stringValue);
+	inline int assignString(const Fieldcache& cache, const char *stringValue);
 
-	inline Element evaluateMeshLocation(Fieldcache& cache, int coordinatesCount,
+	inline Element evaluateMeshLocation(const Fieldcache& cache, int coordinatesCount,
 		double *coordinatesOut);
 
-	inline int evaluateReal(Fieldcache& cache, int valuesCount, double *valuesOut);
+	inline int evaluateReal(const Fieldcache& cache, int valuesCount, double *valuesOut);
 
-	inline char *evaluateString(Fieldcache& cache);
+	inline char *evaluateString(const Fieldcache& cache);
 
-	inline int evaluateDerivative(Differentialoperator& differentialOperator,
-		Fieldcache& cache, int valuesCount, double *valuesOut);
+	inline int evaluateDerivative(const Differentialoperator& differentialOperator,
+		const Fieldcache& cache, int valuesCount, double *valuesOut);
 
-	inline bool isDefinedAtLocation(Fieldcache& cache);
+	inline bool isDefinedAtLocation(const Fieldcache& cache);
 
 	// casting functions: must check isValid()
 	inline FieldComponent castComponent();

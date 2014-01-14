@@ -78,7 +78,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_sceneviewerevent_id getId()
+	cmzn_sceneviewerevent_id getId() const
 	{
 		return id;
 	}
@@ -100,8 +100,8 @@ class Sceneviewercallback
 {
 friend class Sceneviewernotifier;
 private:
-	Sceneviewercallback(Sceneviewercallback&); // not implemented
-	Sceneviewercallback& operator=(Sceneviewercallback&); // not implemented
+	Sceneviewercallback(const Sceneviewercallback&); // not implemented
+	Sceneviewercallback& operator=(const Sceneviewercallback&); // not implemented
 
 	static void C_callback(cmzn_sceneviewerevent_id sceneviewerevent_id, void *callbackVoid)
 	{
@@ -164,7 +164,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_sceneviewernotifier_id getId()
+	cmzn_sceneviewernotifier_id getId() const
 	{
 		return id;
 	}
@@ -272,7 +272,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_sceneviewer_id getId()
+	cmzn_sceneviewer_id getId() const
 	{
 		return id;
 	}
@@ -282,7 +282,7 @@ public:
 		return cmzn_sceneviewer_render_scene(id);
 	}
 
-	int setScene(Scene scene)
+	int setScene(const Scene& scene)
 	{
 		return cmzn_sceneviewer_set_scene(id, scene.getId());
 	}
@@ -292,7 +292,7 @@ public:
 		return Scene(cmzn_sceneviewer_get_scene(id));
 	}
 
-	int setScenefilter(Scenefilter scenefilter)
+	int setScenefilter(const Scenefilter& scenefilter)
 	{
 		return cmzn_sceneviewer_set_scenefilter(id, scenefilter.getId());
 	}
@@ -319,7 +319,7 @@ public:
 
 	inline Sceneviewerinput createSceneviewerinput();
 
-	inline int processSceneviewerinput(Sceneviewerinput& input);
+	inline int processSceneviewerinput(const Sceneviewerinput& input);
 
 	int getAntialiasSampling()
 	{
@@ -581,7 +581,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_sceneviewermodule_id getId()
+	cmzn_sceneviewermodule_id getId() const
 	{
 		return id;
 	}
