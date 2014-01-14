@@ -871,35 +871,64 @@ int cmzn_tessellation_set_refinement_factors(cmzn_tessellation_id tessellation,
 }
 
 cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
-	cmzn_tessellationmodule_id tessellationModule,
+	cmzn_tessellationmodule_id tessellationmodule,
 	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
-	cmzn_tessellation_id defaultTessellation)
+	cmzn_tessellation_id baseTessellation, bool unitRefinement)
 {
 	cmzn_tessellation_id tessellation = 0;
-	if (tessellationModule && ((0 == elementDivisionsCount) ||
-		((0 < elementDivisionsCount && elementDivisions))) && defaultTessellation)
+	if (tessellationmodule && ((0 == elementDivisionsCount) ||
+		(((0 < elementDivisionsCount) && elementDivisions))))
 	{
+		int useElementDivisionsCount = elementDivisionsCount;
+		int* useElementDivisions = elementDivisions;
+		int useRefinementFactorsCount = 0;
+		int *useRefinementFactors = 0;
+		if (baseTessellation)
+		{
+			int baseElementDivisionsCount = cmzn_tessellation_get_minimum_divisions(baseTessellation, 0, 0);
+			useElementDivisionsCount = (elementDivisionsCount > baseElementDivisionsCount) ?
+				elementDivisionsCount : baseElementDivisionsCount;
+			useElementDivisions = new int[useElementDivisionsCount];
+			cmzn_tessellation_get_minimum_divisions(baseTessellation, useElementDivisionsCount, useElementDivisions);
+			for (int i = 0; i < elementDivisionsCount; ++i)
+				useElementDivisions[i] *= elementDivisions[i];
+			if (!unitRefinement)
+			{
+				useRefinementFactorsCount = cmzn_tessellation_get_refinement_factors(baseTessellation, 0, 0);
+				useRefinementFactors = new int[useRefinementFactorsCount];
+				cmzn_tessellation_get_refinement_factors(baseTessellation, useRefinementFactorsCount, useRefinementFactors);
+			}
+		}
 		cmzn_set_cmzn_tessellation *all_tessellations =
-			reinterpret_cast<cmzn_set_cmzn_tessellation *>(tessellationModule->getManager()->object_list);
+			reinterpret_cast<cmzn_set_cmzn_tessellation *>(tessellationmodule->getManager()->object_list);
 		for (cmzn_set_cmzn_tessellation::iterator iter = all_tessellations->begin();
 			iter != all_tessellations->end(); ++iter)
 		{
 			cmzn_tessellation_id tempTessellation = *iter;
 			bool match = (0 == circleDivisions) || (tempTessellation->circleDivisions == circleDivisions);
-			if (match && (0 < elementDivisionsCount))
+			if (match && (0 < useElementDivisionsCount))
 			{
-				int count = elementDivisionsCount;
+				int count = useElementDivisionsCount;
+				if (count < useRefinementFactorsCount)
+					count = useRefinementFactorsCount;
 				if (count < tempTessellation->minimum_divisions_size)
 					count = tempTessellation->minimum_divisions_size;
 				if (count < tempTessellation->refinement_factors_size)
 					count = tempTessellation->refinement_factors_size;
-				int value = 0;
+				int divisionsValue = 1;
+				int refinementValue = 1;
 				for (int i = 0; i < count; i++)
 				{
-					if (i < elementDivisionsCount)
-						value = elementDivisions[i];
-					if ((tempTessellation->get_minimum_divisions_value(i) != value) ||
-						(tempTessellation->get_refinement_factors_value(i) != 1))
+					if (i < useElementDivisionsCount)
+						divisionsValue = useElementDivisions[i];
+					if (tempTessellation->get_minimum_divisions_value(i) != divisionsValue)
+					{
+						match = false;
+						break;
+					}
+					if (i < useRefinementFactorsCount)
+						refinementValue = useRefinementFactors[i];
+					if (tempTessellation->get_refinement_factors_value(i) != refinementValue)
 					{
 						match = false;
 						break;
@@ -914,21 +943,26 @@ cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
 		}
 		if (!tessellation)
 		{
-			tessellationModule->beginChange();
-			tessellation = tessellationModule->createTessellation();
-			*tessellation = *defaultTessellation;
-			if (0 < elementDivisionsCount)
+			tessellationmodule->beginChange();
+			tessellation = tessellationmodule->createTessellation();
+			if (baseTessellation)
+				*tessellation = *baseTessellation;
+			if (0 < useElementDivisionsCount)
+				tessellation->set_minimum_divisions(useElementDivisionsCount, useElementDivisions);
+			if (unitRefinement)
 			{
-				tessellation->set_minimum_divisions(elementDivisionsCount, elementDivisions);
 				const int one = 1;
 				tessellation->set_refinement_factors(1, &one);
 			}
 			if (0 != circleDivisions)
-			{
 				tessellation->setCircleDivisions(circleDivisions);
-			}
-			tessellationModule->endChange();
-		}	
+			tessellationmodule->endChange();
+		}
+		if (baseTessellation)
+		{
+			delete[] useElementDivisions;
+			delete[] useRefinementFactors;
+		}
 	}
 	return tessellation;
 }

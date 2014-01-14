@@ -664,7 +664,7 @@ int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
 					use_element_discretization ? scene->element_divisions_size : 0,
 					use_element_discretization ? scene->element_divisions : 0,
 					use_circle_discretization ? scene->circle_discretization : 0,
-					currentTessellation);
+					currentTessellation, /*unitRefinement*/true);
 			cmzn_graphics_set_tessellation(graphics, tessellation);
 			cmzn_tessellation_destroy(&tessellation);
 			cmzn_tessellation_destroy(&currentTessellation);
