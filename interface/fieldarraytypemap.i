@@ -11,7 +11,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.
  */
 
-%typemap(in) (int fieldsCount, OpenCMISS::Zinc::Field *sourceFields)
+%typemap(in) (int fieldsCount, const OpenCMISS::Zinc::Field *sourceFields)
 {
 	if (PyList_Check($input))
 	{
@@ -40,12 +40,12 @@
 	}
 }
 
-%typemap(freearg) (int fieldsCount, OpenCMISS::Zinc::Field *sourceFields)
+%typemap(freearg) (int fieldsCount, const OpenCMISS::Zinc::Field *sourceFields)
 {
 	delete[] $2;
 }
 
-%typemap(typecheck) (int fieldsCount, OpenCMISS::Zinc::Field *sourceFields)
+%typemap(typecheck) (int fieldsCount, const OpenCMISS::Zinc::Field *sourceFields)
 {
 	$1 = PyList_Check($input) ? 1 : 0;
 }
