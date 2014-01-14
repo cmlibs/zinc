@@ -113,8 +113,7 @@ TEST(cmzn_graphics_streamlines, stream_vector_field_cpp)
 	tempStreamVectorField = st.getStreamVectorField();
 	EXPECT_EQ(streamVectorField.getId(), tempStreamVectorField.getId());
 
-	Field noField;
-	EXPECT_EQ(CMZN_OK, st.setStreamVectorField(noField));
+	EXPECT_EQ(CMZN_OK, st.setStreamVectorField(Field()));
 	tempStreamVectorField = st.getStreamVectorField();
 	EXPECT_FALSE(tempStreamVectorField.isValid());
 }

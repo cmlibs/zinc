@@ -312,8 +312,7 @@ TEST(ZincScene, graphics_list)
 	ASSERT_FALSE(gr.isValid());
 
 	// move to end of list
-	Graphics noGraphics;
-	ASSERT_EQ(CMZN_OK, result = zinc.scene.moveGraphicsBefore(surfaces, noGraphics));
+	ASSERT_EQ(CMZN_OK, result = zinc.scene.moveGraphicsBefore(surfaces, Graphics()));
 
 	gr = zinc.scene.getFirstGraphics();
 	ASSERT_EQ(lines.getId(), gr.getId());
@@ -334,7 +333,7 @@ TEST(ZincScene, graphics_list)
 	ASSERT_FALSE(gr.isValid());
 
 	// can't re-add points graphics that has been removed
-	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = result = zinc.scene.moveGraphicsBefore(points, noGraphics));
+	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = zinc.scene.moveGraphicsBefore(points, Graphics()));
 
 	ASSERT_EQ(CMZN_OK, result = zinc.scene.removeAllGraphics());
 }

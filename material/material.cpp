@@ -297,14 +297,13 @@ TEST(ZincMaterial, unmanage)
 	EXPECT_EQ(CMZN_OK, result = material.setManaged(true));
 
 	// clear material so no local reference held
-	Material noMaterial;
-	material = noMaterial;
+	material = Material();
 	EXPECT_FALSE(material.isValid());
 
 	material = materialmodule.findMaterialByName(name);
 	EXPECT_TRUE(material.isValid());
 	EXPECT_EQ(CMZN_OK, result = material.setManaged(false));
-	material = noMaterial;
+	material = Material();
 
 	// material should be removed
 	material = materialmodule.findMaterialByName(name);

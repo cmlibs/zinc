@@ -199,9 +199,8 @@ TEST(ZincFieldmodulenotifier, changeCallback)
 	EXPECT_EQ(Field::CHANGE_FLAG_FULL_RESULT, result = recordChange.lastEvent.getFieldChangeFlags(fred));
 
 	EXPECT_EQ(CMZN_OK, result = joe.setManaged(false));
-	Field noField;
-	joe = noField;
-	fred = noField;
+	joe = Field();
+	fred = Field();
 	EXPECT_EQ(Field::CHANGE_FLAG_REMOVE, result = recordChange.lastEvent.getSummaryFieldChangeFlags());
 
 	EXPECT_EQ(CMZN_OK, result = notifier.clearCallback());

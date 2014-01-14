@@ -212,9 +212,8 @@ TEST(ZincGlyphAxes, invalid_attributes)
 
 	Glyph axisGlyph = zinc.glyphmodule.findGlyphByName("axis");
 	EXPECT_TRUE(axisGlyph.isValid());
-	Glyph noGlyph;
 	GlyphAxes axes;
-	axes = zinc.glyphmodule.createGlyphAxes(noGlyph, 0.1);
+	axes = zinc.glyphmodule.createGlyphAxes(Glyph(), 0.1);
 	EXPECT_FALSE(axes.isValid());
 	axes = zinc.glyphmodule.createGlyphAxes(axisGlyph, -0.1);
 	EXPECT_FALSE(axes.isValid());

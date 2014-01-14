@@ -100,8 +100,7 @@ TEST(cmzn_scene_convert_to_point_cloud, surface_points_cpp)
 	NodesetGroup nodeset = nodeGroupField.getNodesetGroup();
 	EXPECT_TRUE(nodeset.isValid());
 
-	Scenefilter noFilter;
-	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(noFilter,
+	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(Scenefilter(),
 		nodeset, outputCoordinateField,
 		/*lineDensity*/0.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/100.0, /*surfaceDensityScaleFactor*/0.0));
@@ -172,8 +171,7 @@ TEST(cmzn_scene_convert_to_point_cloud, line_points_cpp)
 	Nodeset nodeset = outputFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 
-	Scenefilter noFilter;
-	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(noFilter,
+	EXPECT_EQ(CMZN_OK, zinc.scene.convertToPointCloud(Scenefilter(),
 		nodeset, outputCoordinateField,
 		/*lineDensity*/50.0, /*lineDensityScaleFactor*/0.0,
 		/*surfaceDensity*/0.0, /*surfaceDensityScaleFactor*/0.0));

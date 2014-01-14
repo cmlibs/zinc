@@ -112,9 +112,8 @@ TEST(cmzn_tessellationmodule_api, valid_args_cpp)
 
 	// following should destroy default tessellation as not managed and not used
 	// otherwise it isn't possible to create a tessellation named "default" below
-	Tessellation noTessellation;
-	tessellation = noTessellation;
-	result = tm.setDefaultTessellation(noTessellation);
+	tessellation = Tessellation();
+	result = tm.setDefaultTessellation(tessellation);
 	EXPECT_EQ(CMZN_OK, result);
 
 	tessellation = tm.getDefaultPointsTessellation();

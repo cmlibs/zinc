@@ -127,8 +127,7 @@ TEST(zincFieldModule_createComponent, invalid_args)
 	FieldConstant f1 = zinc.fm.createFieldConstant(3, values);
 	EXPECT_TRUE(f1.isValid());
 
-	Field noField;
-	EXPECT_FALSE(zinc.fm.createFieldComponent(noField, component_index).isValid());
+	EXPECT_FALSE(zinc.fm.createFieldComponent(Field(), component_index).isValid());
 	EXPECT_FALSE(zinc.fm.createFieldComponent(f1, 0).isValid());
 	EXPECT_FALSE(zinc.fm.createFieldComponent(f1, 4).isValid());
 }

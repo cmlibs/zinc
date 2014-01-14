@@ -229,8 +229,7 @@ TEST(cmzn_graphics_api, material_cpp)
 	tempMaterial = gr.getMaterial();
 	EXPECT_EQ(material.getId(), tempMaterial.getId());
 
-	Material noMaterial;
-	EXPECT_EQ(ERROR_ARGUMENT, gr.setMaterial(noMaterial));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setMaterial(Material()));
 }
 
 TEST(cmzn_graphics, render_line_width)
@@ -392,8 +391,7 @@ TEST(cmzn_graphics_api, selected_material_cpp)
 	tempSelectedMaterial = gr.getSelectedMaterial();
 	EXPECT_EQ(selectedMaterial.getId(), tempSelectedMaterial.getId());
 
-	Material noMaterial;
-	EXPECT_EQ(ERROR_ARGUMENT, gr.setSelectedMaterial(noMaterial));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setSelectedMaterial(Material()));
 }
 
 TEST(cmzn_graphics, name)
@@ -437,7 +435,7 @@ TEST(ZincGraphics, name)
 	EXPECT_STREQ(nameBob, name);
 	cmzn_deallocate(name);
 
-	ASSERT_EQ(OK, result = result = gr.setName(static_cast<char *>(0)));
+	ASSERT_EQ(OK, result = gr.setName(static_cast<char *>(0)));
 	name = gr.getName();
 	EXPECT_STREQ(static_cast<char *>(0), name);
 }
@@ -588,8 +586,7 @@ TEST(cmzn_graphics_api, tessellation_cpp)
 	EXPECT_EQ(tessellation.getId(), tempTessellation.getId());
 
 	// can't remove tessellation
-	Tessellation noTessellation;
-	EXPECT_EQ(ERROR_ARGUMENT, gr.setTessellation(noTessellation));
+	EXPECT_EQ(ERROR_ARGUMENT, gr.setTessellation(Tessellation()));
 }
 
 TEST(cmzn_graphics_api, tessellation_field)
@@ -1010,8 +1007,7 @@ TEST(cmzn_graphics_api, point_attributes_label_cpp)
 	Font font = pointattr.getFont();
 	EXPECT_TRUE(font.isValid());
 
-	Font noFont;
-	EXPECT_EQ(OK, pointattr.setFont(noFont)); // clear font
+	EXPECT_EQ(OK, pointattr.setFont(Font())); // clear font
 	EXPECT_FALSE(pointattr.getFont().isValid());
 
 	EXPECT_EQ(OK, pointattr.setFont(font));

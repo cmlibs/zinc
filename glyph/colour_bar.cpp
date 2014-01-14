@@ -236,8 +236,7 @@ TEST(ZincGlyphColourBar, valid_attributes)
 	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelMaterial(defaultMaterial));
 	tempMaterial = colourBar.getLabelMaterial();
 	EXPECT_EQ(defaultMaterial.getId(), tempMaterial.getId());
-	Material noMaterial;
-	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelMaterial(noMaterial));
+	EXPECT_EQ(CMZN_OK, result = colourBar.setLabelMaterial(Material()));
 	tempMaterial = colourBar.getLabelMaterial();
 	EXPECT_FALSE(tempMaterial.isValid());
 
@@ -349,8 +348,7 @@ TEST(ZincGlyphColourBar, invalid_attributes)
 	ZincTestSetupSpectrumCpp zinc;
 	int result;
 
-	Spectrum noSpectrum;
-	GlyphColourBar noSpectrumColourBar = zinc.glyphmodule.createGlyphColourBar(noSpectrum);
+	GlyphColourBar noSpectrumColourBar = zinc.glyphmodule.createGlyphColourBar(Spectrum());
 	EXPECT_FALSE(noSpectrumColourBar.isValid());
 
 	GlyphColourBar colourBar = zinc.glyphmodule.createGlyphColourBar(zinc.defaultSpectrum);

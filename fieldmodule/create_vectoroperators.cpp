@@ -190,7 +190,6 @@ TEST(zincFieldSumComponents, create_evaluate)
 	ASSERT_DOUBLE_EQ(12.0, value);
 
 	// test invalid arguments
-	Field noField;
-	FieldSumComponents f3 = zinc.fm.createFieldSumComponents(noField);
+	FieldSumComponents f3 = zinc.fm.createFieldSumComponents(Field());
 	EXPECT_FALSE(f3.isValid());
 }
