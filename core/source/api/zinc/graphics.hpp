@@ -65,7 +65,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -498,7 +498,7 @@ public:
 		cmzn_graphicslineattributes_destroy(&id);
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -580,7 +580,7 @@ public:
 		cmzn_graphicspointattributes_destroy(&id);
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -735,7 +735,7 @@ public:
 		cmzn_graphicssamplingattributes_destroy(&id);
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}

@@ -63,7 +63,7 @@ public:
 		TYPEFACE_TYPE_OPENSANS = CMZN_FONT_TYPEFACE_TYPE_OPENSANS
 	};
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -184,7 +184,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}

@@ -30,9 +30,9 @@ public:
 		Streaminformation(reinterpret_cast<cmzn_streaminformation_id>(streaminformation_region_id))
 	{ }
 
-	bool isValid()
+	bool isValid() const
 	{
-		return (0 != reinterpret_cast<cmzn_streaminformation_region_id>(id));
+		return (0 != id);
 	}
 
 	cmzn_streaminformation_region_id getId() const
