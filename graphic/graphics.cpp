@@ -521,6 +521,9 @@ TEST(cmzn_graphics_api, subgroup_field_cpp)
 	EXPECT_TRUE(subgroupField.isValid());
 	EXPECT_EQ(OK, gr.setSubgroupField(subgroupField));
 
+	// test compilation of constness allows return field to be passed in again:
+	EXPECT_EQ(OK, gr.setSubgroupField(gr.getSubgroupField()));
+
 	// subgroup field must be scalar
 	double values2[] = { 1.0, 2.0 };
 	Field badSubgroupField = zinc.fm.createFieldConstant(2, values2);
@@ -531,8 +534,7 @@ TEST(cmzn_graphics_api, subgroup_field_cpp)
 	tempSubgroupField = gr.getSubgroupField();
 	EXPECT_EQ(subgroupField.getId(), tempSubgroupField.getId());
 
-	Field noField;
-	EXPECT_EQ(OK, gr.setSubgroupField(noField)); // clear subgroup field
+	EXPECT_EQ(OK, gr.setSubgroupField(Field())); // clear subgroup field
 	tempSubgroupField = gr.getSubgroupField();
 	EXPECT_FALSE(tempSubgroupField.isValid());
 }
@@ -633,8 +635,7 @@ TEST(cmzn_graphics_api, tessellation_field_cpp)
 	tempTessellationField = gr.getTessellationField();
 	EXPECT_EQ(tessellationField.getId(), tempTessellationField.getId());
 
-	Field noField;
-	EXPECT_EQ(OK, gr.setTessellationField(noField)); // clear tessellation field
+	EXPECT_EQ(OK, gr.setTessellationField(Field())); // clear tessellation field
 	tempTessellationField = gr.getTessellationField();
 	EXPECT_FALSE(tempTessellationField.isValid());
 }
@@ -699,8 +700,7 @@ TEST(cmzn_graphics_api, texture_coordinate_field_cpp)
 	tempTextureCoordinateField = gr.getTextureCoordinateField();
 	EXPECT_EQ(textureCoordinateField.getId(), tempTextureCoordinateField.getId());
 
-	Field noField;
-	EXPECT_EQ(OK, gr.setTextureCoordinateField(noField)); // clear texture coordinate field
+	EXPECT_EQ(OK, gr.setTextureCoordinateField(Field())); // clear texture coordinate field
 	tempTextureCoordinateField = gr.getTextureCoordinateField();
 	EXPECT_FALSE(tempTextureCoordinateField.isValid());
 }
@@ -860,15 +860,14 @@ TEST(cmzn_graphics_api, point_attributes_glyph_cpp)
 	EXPECT_EQ(OK, pointattr.setOrientationScaleField(field));
 	tempField = pointattr.getOrientationScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
-	Field noField;
-	EXPECT_EQ(OK, pointattr.setOrientationScaleField(noField)); // clear field
+	EXPECT_EQ(OK, pointattr.setOrientationScaleField(Field())); // clear field
 	EXPECT_FALSE(pointattr.getOrientationScaleField().isValid());
 
 	EXPECT_FALSE(pointattr.getSignedScaleField().isValid());
 	EXPECT_EQ(OK, pointattr.setSignedScaleField(field));
 	tempField = pointattr.getSignedScaleField();
 	EXPECT_EQ(tempField.getId(), field.getId());
-	EXPECT_EQ(OK, pointattr.setSignedScaleField(noField)); // clear field
+	EXPECT_EQ(OK, pointattr.setSignedScaleField(Field())); // clear field
 	EXPECT_FALSE(pointattr.getSignedScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
@@ -993,8 +992,7 @@ TEST(cmzn_graphics_api, point_attributes_label_cpp)
 	Field tempLabelField = pointattr.getLabelField();
 	EXPECT_EQ(tempLabelField.getId(), labelField.getId());
 
-	Field noField;
-	EXPECT_EQ(OK, pointattr.setLabelField(noField)); // clear label field
+	EXPECT_EQ(OK, pointattr.setLabelField(Field())); // clear label field
 	EXPECT_FALSE(pointattr.getLabelField().isValid());
 
 	double outputValues[3];
@@ -1153,8 +1151,7 @@ TEST(cmzn_graphics_api, line_attributes_cpp)
 	Field tempOrientationScaleField = lineattr.getOrientationScaleField();
 	EXPECT_EQ(tempOrientationScaleField.getId(), orientationScaleField.getId());
 
-	Field noField;
-	EXPECT_EQ(OK, lineattr.setOrientationScaleField(noField)); // clear field
+	EXPECT_EQ(OK, lineattr.setOrientationScaleField(Field())); // clear field
 	EXPECT_FALSE(lineattr.getOrientationScaleField().isValid());
 
 	const double values[] = { 0.5, 1.2 };
@@ -1280,8 +1277,7 @@ TEST(cmzn_graphics_api, sampling_attributes_cpp)
 	tempField = sampling.getDensityField();
 	EXPECT_EQ(densityField.getId(), tempField.getId());
 
-	Field noField;
-	EXPECT_EQ(OK, sampling.setDensityField(noField));
+	EXPECT_EQ(OK, sampling.setDensityField(Field()));
 	tempField = sampling.getDensityField();
 	EXPECT_FALSE(tempField.isValid());
 
