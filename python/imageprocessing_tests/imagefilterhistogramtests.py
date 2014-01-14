@@ -22,7 +22,7 @@ class ImagefilterHistogramTestsCase(unittest.TestCase):
     def testFieldImagefilterHistogramCreate(self):
         self.assertRaises(TypeError, self.field_module.createFieldImagefilterHistogram, [1])
         imageField = self.field_module.createFieldImage()
-        si = imageField.createStreaminformation()
+        si = imageField.createStreaminformationImage()
         sr = si.createStreamresourceFile('resource/testimage_gray.jpg')
         imageField.read(si);   
         f = self.field_module.createFieldImagefilterHistogram(imageField)

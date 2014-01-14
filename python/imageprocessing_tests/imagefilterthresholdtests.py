@@ -22,7 +22,7 @@ class ImagefilterThresholdTestsCase(unittest.TestCase):
     def testFieldImagefilterThresholdCreate(self):
         self.assertRaises(TypeError, self.field_module.createFieldImagefilterThreshold, [1])
         imageField = self.field_module.createFieldImage()
-        si = imageField.createStreaminformation()
+        si = imageField.createStreaminformationImage()
         sr = si.createStreamresourceFile('resource/testimage_gray.jpg')
         imageField.read(si);   
         f = self.field_module.createFieldImagefilterThreshold(imageField)
