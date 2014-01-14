@@ -29,9 +29,9 @@ public:
 		Streaminformation(reinterpret_cast<cmzn_streaminformation_id>(streaminformation_image_id))
 	{ }
 
-	bool isValid()
+	bool isValid() const
 	{
-		return (0 != reinterpret_cast<cmzn_streaminformation_image_id>(id));
+		return (0 != id);
 	}
 
 	cmzn_streaminformation_image_id getId() const

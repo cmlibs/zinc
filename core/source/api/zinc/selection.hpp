@@ -68,7 +68,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -154,7 +154,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}

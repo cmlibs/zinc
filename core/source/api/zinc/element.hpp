@@ -59,7 +59,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -141,7 +141,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -282,7 +282,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -371,7 +371,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -409,7 +409,7 @@ public:
 		}
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
@@ -583,7 +583,7 @@ public:
 			cmzn_meshchanges_destroy(&id);
 	}
 
-	bool isValid()
+	bool isValid() const
 	{
 		return (0 != id);
 	}
