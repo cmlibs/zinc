@@ -222,6 +222,11 @@ public:
 			id, timesCount, timesIn));
 	}
 
+	inline Region getRegion() const
+	{
+		return Region(cmzn_fieldmodule_get_region(id));
+	}
+
 	inline Optimisation createOptimisation();
 
 	inline FieldAlias createFieldAlias(const Field& sourceField);
