@@ -24,6 +24,11 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class GraphicsContours;
+class GraphicsLines;
+class GraphicsPoints;
+class GraphicsStreamlines;
+class GraphicsSurfaces;
 class Graphicslineattributes;
 class Graphicspointattributes;
 class Graphicsamplingattributes;
@@ -298,6 +303,12 @@ public:
 	{
 		return cmzn_graphics_set_exterior(id, exterior);
 	}
+
+	inline GraphicsContours castContours();
+	inline GraphicsLines castLines();
+	inline GraphicsPoints castPoints();
+	inline GraphicsStreamlines castStreamlines();
+	inline GraphicsSurfaces castSurfaces();
 };
 
 class GraphicsContours : public Graphics
@@ -311,10 +322,6 @@ public:
 
 	explicit GraphicsContours(cmzn_graphics_contours_id contours_id)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(contours_id))
-	{}
-
-	GraphicsContours(const Graphics& graphics)
-		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_contours(graphics.getId())))
 	{}
 
 	Field getIsoscalarField()
@@ -377,10 +384,6 @@ public:
 	explicit GraphicsLines(cmzn_graphics_lines_id lines_id)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(lines_id))
 	{}
-
-	GraphicsLines(const Graphics& graphics)
-		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_lines(graphics.getId())))
-	{}
 };
 
 class GraphicsPoints : public Graphics
@@ -395,10 +398,6 @@ public:
 	explicit GraphicsPoints(cmzn_graphics_points_id points_id)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(points_id))
 	{}
-
-	GraphicsPoints(const Graphics& graphics)
-		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_points(graphics.getId())))
-	{}
 };
 
 class GraphicsStreamlines : public Graphics
@@ -412,10 +411,6 @@ public:
 
 	explicit GraphicsStreamlines(cmzn_graphics_streamlines_id streamlines_id)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(streamlines_id))
-	{}
-
-	GraphicsStreamlines(const Graphics& graphics)
-		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_streamlines(graphics.getId())))
 	{}
 
 	enum TrackDirection
@@ -471,11 +466,32 @@ public:
 	explicit GraphicsSurfaces(cmzn_graphics_surfaces_id surfaces_id)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(surfaces_id))
 	{}
-
-	GraphicsSurfaces(const Graphics& graphics)
-		: Graphics(reinterpret_cast<cmzn_graphics_id>(cmzn_graphics_cast_surfaces(graphics.getId())))
-	{}
 };
+
+inline GraphicsContours Graphics::castContours()
+{
+	return GraphicsContours(cmzn_graphics_cast_contours(id));
+}
+
+inline GraphicsLines Graphics::castLines()
+{
+	return GraphicsLines(cmzn_graphics_cast_lines(id));
+}
+
+inline GraphicsPoints Graphics::castPoints()
+{
+	return GraphicsPoints(cmzn_graphics_cast_points(id));
+}
+
+inline GraphicsStreamlines Graphics::castStreamlines()
+{
+	return GraphicsStreamlines(cmzn_graphics_cast_streamlines(id));
+}
+
+inline GraphicsSurfaces Graphics::castSurfaces()
+{
+	return GraphicsSurfaces(cmzn_graphics_cast_surfaces(id));
+}
 
 class Graphicslineattributes
 {
