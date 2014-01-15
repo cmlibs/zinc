@@ -31,7 +31,7 @@ class GraphicsStreamlines;
 class GraphicsSurfaces;
 class Graphicslineattributes;
 class Graphicspointattributes;
-class Graphicsamplingattributes;
+class Graphicssamplingattributes;
 
 class Graphics
 {
@@ -201,7 +201,7 @@ public:
 
 	Graphicspointattributes getGraphicspointattributes();
 
-	Graphicsamplingattributes getGraphicsamplingattributes();
+	Graphicssamplingattributes getGraphicssamplingattributes();
 
 	Material getSelectedMaterial()
 	{
@@ -509,6 +509,15 @@ public:
 		id(cmzn_graphicslineattributes_access(lineAttributes.id))
 	{}
 
+	Graphicslineattributes& operator=(const Graphicslineattributes& graphicslineattributes)
+	{
+		cmzn_graphicslineattributes_id temp_id = cmzn_graphicslineattributes_access(graphicslineattributes.id);
+		if (0 != id)
+			cmzn_graphicslineattributes_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
 	~Graphicslineattributes()
 	{
 		cmzn_graphicslineattributes_destroy(&id);
@@ -590,6 +599,15 @@ public:
 	Graphicspointattributes(const Graphicspointattributes& pointAttributes) :
 		id(cmzn_graphicspointattributes_access(pointAttributes.id))
 		{}
+
+	Graphicspointattributes& operator=(const Graphicspointattributes& graphicspointattributes)
+	{
+		cmzn_graphicspointattributes_id temp_id = cmzn_graphicspointattributes_access(graphicspointattributes.id);
+		if (0 != id)
+			cmzn_graphicspointattributes_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
 
 	~Graphicspointattributes()
 	{
@@ -730,7 +748,7 @@ inline Graphicspointattributes Graphics::getGraphicspointattributes()
 	return Graphicspointattributes(cmzn_graphics_get_graphicspointattributes(id));
 }
 
-class Graphicsamplingattributes
+class Graphicssamplingattributes
 {
 protected:
 	cmzn_graphicssamplingattributes_id id;
@@ -738,15 +756,24 @@ protected:
 public:
 
 	// takes ownership of C handle, responsibility for destroying it
-	explicit Graphicsamplingattributes(cmzn_graphicssamplingattributes_id sampling_attributes_id) :
+	explicit Graphicssamplingattributes(cmzn_graphicssamplingattributes_id sampling_attributes_id) :
 		id(sampling_attributes_id)
 	  {}
 
-	Graphicsamplingattributes(const Graphicsamplingattributes& samplingAttributes) :
+	Graphicssamplingattributes(const Graphicssamplingattributes& samplingAttributes) :
 		id(cmzn_graphicssamplingattributes_access(samplingAttributes.id))
 		{}
 
-	~Graphicsamplingattributes()
+	Graphicssamplingattributes& operator=(const Graphicssamplingattributes& graphicssamplingattributes)
+	{
+		cmzn_graphicssamplingattributes_id temp_id = cmzn_graphicssamplingattributes_access(graphicssamplingattributes.id);
+		if (0 != id)
+			cmzn_graphicssamplingattributes_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Graphicssamplingattributes()
 	{
 		cmzn_graphicssamplingattributes_destroy(&id);
 	}
@@ -789,9 +816,9 @@ public:
 
 };
 
-inline Graphicsamplingattributes Graphics::getGraphicsamplingattributes()
+inline Graphicssamplingattributes Graphics::getGraphicssamplingattributes()
 {
-	return Graphicsamplingattributes(cmzn_graphics_get_graphicssamplingattributes(id));
+	return Graphicssamplingattributes(cmzn_graphics_get_graphicssamplingattributes(id));
 }
 
 } // namespace Zinc

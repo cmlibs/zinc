@@ -38,7 +38,6 @@ public:
 
 	Optimisation& operator=(const Optimisation& optimisation)
 	{
-
 		cmzn_optimisation_id temp_id = cmzn_optimisation_access(optimisation.id);
 		if (0 != id)
 		{

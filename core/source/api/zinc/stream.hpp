@@ -38,9 +38,9 @@ public:
 	Streamresource(const Streamresource& streamResource) : id(cmzn_streamresource_access(streamResource.id))
 	{  }
 
-	Streamresource& operator=(const Streamresource& streamInformation)
+	Streamresource& operator=(const Streamresource& streamResource)
 	{
-		cmzn_streamresource_id temp_id = cmzn_streamresource_access(streamInformation.id);
+		cmzn_streamresource_id temp_id = cmzn_streamresource_access(streamResource.id);
 		if (0 != id)
 		{
 			cmzn_streamresource_destroy(&id);
