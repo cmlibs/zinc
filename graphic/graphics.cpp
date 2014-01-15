@@ -1256,7 +1256,7 @@ TEST(cmzn_graphics_api, sampling_attributes_cpp)
 	GraphicsStreamlines gr = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(gr.isValid());
 
-	Graphicsamplingattributes sampling = gr.getGraphicsamplingattributes();
+	Graphicssamplingattributes sampling = gr.getGraphicssamplingattributes();
 	EXPECT_TRUE(sampling.isValid());
 
 	EXPECT_EQ(Element::POINT_SAMPLING_MODE_CELL_CENTRES, sampling.getElementPointSamplingMode());
