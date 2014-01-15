@@ -249,7 +249,7 @@ struct cmzn_region *cmzn_region_find_child_by_name_internal(
 	return (child);
 }
 
-/***************************************************************************//**
+/**
  * Internal-only implementation of cmzn_region_find_subregion_at_path which
  * does not ACCESS the returned reference.
  * @see cmzn_region_find_subregion_at_path
@@ -265,9 +265,7 @@ struct cmzn_region *cmzn_region_find_subregion_at_path_internal(
 		char *child_name = path_copy;
 		/* skip leading separator */
 		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
-		{
-			child_name++;
-		}
+			++child_name;
 		char *child_name_end;
 		while (subregion && (child_name_end =
 			strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR)))
@@ -278,12 +276,9 @@ struct cmzn_region *cmzn_region_find_subregion_at_path_internal(
 		}
 		/* already found the subregion if there was a single trailing separator */
 		if (subregion && (child_name[0] != '\0'))
-		{
 			subregion = cmzn_region_find_child_by_name_internal(subregion, child_name);
-		}
 		DEALLOCATE(path_copy);
 	}
-
 	return (subregion);
 }
 
@@ -538,43 +533,30 @@ struct cmzn_region *cmzn_region_create_subregion(
 	struct cmzn_region *top_region, const char *path)
 {
 	// Fails if a subregion exists at that path already
-	struct cmzn_region *region = cmzn_region_find_child_by_name(top_region, path);
+	cmzn_region *region = cmzn_region_find_subregion_at_path_internal(top_region, path);
 	if (region)
-	{
-		cmzn_region_destroy(&region);
-		return NULL;
-	}
+		return 0;
 	if (top_region && path)
 	{
 		region = ACCESS(cmzn_region)(top_region);
 		char *path_copy = duplicate_string(path);
 		char *child_name = path_copy;
 		if (child_name[0] == CMZN_REGION_PATH_SEPARATOR_CHAR)
-		{
 			child_name++;
-		}
 		while (region && child_name && (child_name[0] != '\0'))
 		{
 			char *child_name_end = strchr(child_name, CMZN_REGION_PATH_SEPARATOR_CHAR);
 			if (child_name_end)
-			{
 				*child_name_end = '\0';
-			}
 			cmzn_region *child_region = cmzn_region_find_child_by_name(region, child_name);
 			if (!child_region)
-			{
 				child_region = cmzn_region_create_child(region, child_name);
-			}
 			REACCESS(cmzn_region)(&region, child_region);
 			DEACCESS(cmzn_region)(&child_region);
 			if (child_name_end)
-			{
 				child_name = child_name_end + 1;
-			}
 			else
-			{
-				child_name = (char *)NULL;
-			}
+				child_name = (char *)0;
 		}
 		DEALLOCATE(path_copy);
 	}
@@ -1135,9 +1117,7 @@ struct cmzn_region *cmzn_region_find_subregion_at_path(
 	cmzn_region *subregion =
 		cmzn_region_find_subregion_at_path_internal(region, path);
 	if (subregion)
-	{
 		ACCESS(cmzn_region)(subregion);
-	}
 	return (subregion);
 }
 
