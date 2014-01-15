@@ -17,6 +17,9 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class StreamresourceFile;
+class StreamresourceMemory;
+
 class Streamresource
 {
 protected:
@@ -64,16 +67,16 @@ public:
 		return id;
 	}
 
+	inline StreamresourceFile castFile();
+	inline StreamresourceMemory castMemory();
+
 };
 
 class StreamresourceFile : public Streamresource
 {
-
 public:
 
-	StreamresourceFile(const Streamresource& streamResource) :
-		Streamresource(reinterpret_cast<cmzn_streamresource_id>(
-			cmzn_streamresource_cast_file(streamResource.getId())))
+	StreamresourceFile() : Streamresource()
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
@@ -91,12 +94,9 @@ public:
 
 class StreamresourceMemory : public Streamresource
 {
-
 public:
 
-	StreamresourceMemory(const Streamresource& streamResource) :
-		Streamresource(reinterpret_cast<cmzn_streamresource_id>(
-			cmzn_streamresource_cast_memory(streamResource.getId())))
+	StreamresourceMemory() : Streamresource()
 	{  }
 
 	// takes ownership of C handle, responsibility for destroying it
@@ -105,6 +105,16 @@ public:
 	{ }
 
 };
+
+inline StreamresourceFile Streamresource::castFile()
+{
+	return StreamresourceFile(cmzn_streamresource_cast_file(id));
+}
+
+inline StreamresourceMemory Streamresource::castMemory()
+{
+	return StreamresourceMemory(cmzn_streamresource_cast_memory(id));
+}
 
 class StreaminformationImage;
 class StreaminformationRegion;

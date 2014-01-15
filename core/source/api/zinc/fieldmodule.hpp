@@ -22,8 +22,6 @@ namespace OpenCMISS
 namespace Zinc
 {
 
-class Fieldcache;
-class Fieldmodulenotifier;
 class FieldAlias;
 class FieldAdd;
 class FieldPower;
@@ -106,6 +104,8 @@ class FieldImagefilterRescaleIntensity;
 class FieldImagefilterSigmoid;
 class FieldImagefilterThreshold;
 class FieldSceneviewerProjection;
+class Fieldcache;
+class Fieldmodulenotifier;
 class Timekeeper;
 class Optimisation;
 class Sceneviewer;
