@@ -56,11 +56,12 @@ TEST(cmzn_graphics_streamlines, cast_cpp)
 	Graphics gr = zinc.scene.createGraphics(Graphics::TYPE_STREAMLINES);
 	EXPECT_TRUE(gr.isValid());
 
-	GraphicsStreamlines st(gr);
+	EXPECT_FALSE(gr.castContours().isValid());
+	EXPECT_FALSE(gr.castLines().isValid());
+	EXPECT_FALSE(gr.castPoints().isValid());
+	EXPECT_FALSE(gr.castSurfaces().isValid());
+	GraphicsStreamlines st = gr.castStreamlines();
 	EXPECT_TRUE(st.isValid());
-
-	GraphicsPoints po(gr);
-	EXPECT_FALSE(po.isValid());
 
 	// try any base class API
 	Material material = st.getMaterial();

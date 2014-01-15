@@ -98,6 +98,10 @@ TEST(ZincNodesElements, setIdentifier)
 		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
 	EXPECT_TRUE(cubeSr.isValid());
 
+	// test casting of stream resources
+	EXPECT_TRUE(cubeSr.castFile().isValid());
+	EXPECT_FALSE(cubeSr.castMemory().isValid());
+
 	int result;
 	EXPECT_EQ(OK, result = cubeRegion.read(cubeSi));
 
