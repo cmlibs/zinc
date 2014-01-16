@@ -62,8 +62,16 @@ TEST(nodes_elements_identifier, set_identifier)
 	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(cubeFm, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	EXPECT_NE(static_cast<cmzn_nodeset *>(0), nodeset);
 
+	cmzn_fieldmodule_id tmpFm = cmzn_nodeset_get_fieldmodule(nodeset);
+	EXPECT_TRUE(cmzn_fieldmodule_match(cubeFm, tmpFm));
+	cmzn_fieldmodule_destroy(&tmpFm);
+
 	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
 	EXPECT_NE(static_cast<cmzn_node *>(0), node);
+
+	cmzn_nodeset_id tmpNodeset = cmzn_node_get_nodeset(node);
+	EXPECT_TRUE(cmzn_nodeset_match(nodeset, tmpNodeset));
+	cmzn_nodeset_destroy(&tmpNodeset);
 
 	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_node_set_identifier(node, 3));
 	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node, 9));
@@ -71,8 +79,16 @@ TEST(nodes_elements_identifier, set_identifier)
 	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(cubeFm, 3);
 	EXPECT_NE(static_cast<cmzn_mesh *>(0), mesh);
 
+	tmpFm = cmzn_mesh_get_fieldmodule(mesh);
+	EXPECT_TRUE(cmzn_fieldmodule_match(cubeFm, tmpFm));
+	cmzn_fieldmodule_destroy(&tmpFm);
+
 	cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, 1);
 	EXPECT_NE(static_cast<cmzn_element *>(0), element);
+
+	cmzn_mesh_id tmpMesh = cmzn_element_get_mesh(element);
+	EXPECT_TRUE(cmzn_mesh_match(mesh, tmpMesh));
+	cmzn_mesh_destroy(&tmpMesh);
 
 	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_element_set_identifier(element, 1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element, 2));
@@ -111,8 +127,12 @@ TEST(ZincNodesElements, setIdentifier)
 	Nodeset nodeset = cubeFm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_TRUE(nodeset.isValid());
 
+	EXPECT_EQ(cubeFm, nodeset.getFieldmodule());
+
 	Node node = nodeset.findNodeByIdentifier(1);
 	EXPECT_TRUE(node.isValid());
+
+	EXPECT_EQ(nodeset, node.getNodeset());
 
 	EXPECT_EQ(ERROR_GENERAL, result = node.setIdentifier(3));
 	EXPECT_EQ(OK, result = node.setIdentifier(9));
@@ -120,8 +140,12 @@ TEST(ZincNodesElements, setIdentifier)
 	Mesh mesh = cubeFm.findMeshByDimension(3);
 	EXPECT_TRUE(mesh.isValid());
 
+	EXPECT_EQ(cubeFm, mesh.getFieldmodule());
+
 	Element element = mesh.findElementByIdentifier(1);
 	EXPECT_TRUE(element.isValid());
+
+	EXPECT_EQ(mesh, element.getMesh());
 
 	EXPECT_EQ(ERROR_GENERAL, result = element.setIdentifier(1));
 	EXPECT_EQ(OK, result = element.setIdentifier(2));

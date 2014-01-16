@@ -310,6 +310,28 @@ TEST(ZincGraphics, RenderPointSize)
 	ASSERT_EQ(inSize, outSize = gr.getRenderPointSize());
 }
 
+TEST(cmzn_graphics, get_scene)
+{
+	ZincTestSetup zinc;
+
+	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_SURFACES);
+	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
+	cmzn_scene_id scene = cmzn_graphics_get_scene(gr);
+	EXPECT_EQ(zinc.scene, scene);
+	cmzn_scene_destroy(&scene);
+	cmzn_graphics_destroy(&gr);
+}
+
+TEST(ZincGraphics, getScene)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphics gr = zinc.scene.createGraphicsSurfaces();
+	EXPECT_TRUE(gr.isValid());
+	Scene scene = gr.getScene();
+	EXPECT_EQ(zinc.scene, scene);
+}
+
 TEST(cmzn_graphics, select_mode)
 {
 	ZincTestSetup zinc;

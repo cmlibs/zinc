@@ -72,6 +72,22 @@ public:
 	}
 };
 
+TEST(cmzn_scene, get_region)
+{
+	ZincTestSetup zinc;
+
+	cmzn_region_id region = cmzn_scene_get_region(zinc.scene);
+	EXPECT_EQ(zinc.root_region, region);
+	cmzn_region_destroy(&region);
+}
+
+TEST(ZincScene, getRegion)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(zinc.root_region, zinc.scene.getRegion());
+}
+
 TEST(cmzn_scene, get_spectrum_data_range)
 {
 	ZincTestSetupSpectrum zinc;

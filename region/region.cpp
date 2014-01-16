@@ -137,4 +137,6 @@ TEST(ZincRegion, Fieldmodule_getRegion)
 
 	Region region = zinc.fm.getRegion();
 	EXPECT_EQ(zinc.root_region, region);
+	Fieldmodule fm = region.getFieldmodule();
+	EXPECT_EQ(zinc.fm, fm);
 }
