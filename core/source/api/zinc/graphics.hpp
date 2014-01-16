@@ -32,6 +32,7 @@ class GraphicsSurfaces;
 class Graphicslineattributes;
 class Graphicspointattributes;
 class Graphicssamplingattributes;
+class Scene;
 
 class Graphics
 {
@@ -156,6 +157,8 @@ public:
 		return cmzn_graphics_set_render_polygon_mode(id,
 			static_cast<cmzn_graphics_render_polygon_mode>(renderPolygonMode));
 	}
+
+	inline Scene getScene();
 
 	enum SelectMode getSelectMode()
 	{

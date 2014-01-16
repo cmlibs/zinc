@@ -37,7 +37,6 @@ class Fieldmodule;
 
 class Field
 {
-friend bool operator==(const Field& field1, const Field& field2);
 protected:
 
 	cmzn_field_id id;
@@ -263,7 +262,7 @@ public:
 
 inline bool operator==(const Field& a, const Field& b)
 {
-	return a.id == b.id;
+	return a.getId() == b.getId();
 }
 
 class Fielditerator

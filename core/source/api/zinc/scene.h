@@ -232,6 +232,14 @@ ZINC_API cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 
 /**
+ * Gets the region this scene visualises.
+ *
+ * @param scene  The scene to query.
+ * @return  Handle to the region for this scene. Up to caller to destroy.
+ */
+ZINC_API cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene);
+
+/**
 * Get the scene filter module which stores scenefilter objects for filtering
 * contents of the scene with scenepicker and sceneviewer etc.
 *

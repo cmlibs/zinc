@@ -18,8 +18,6 @@ namespace Zinc
 
 class Timesequence
 {
-friend bool operator==(const Timesequence& a, const Timesequence& b);
-
 protected:
 	cmzn_timesequence_id id;
 
@@ -85,7 +83,7 @@ public:
 
 inline bool operator==(const Timesequence& a, const Timesequence& b)
 {
-	return a.id == b.id;
+	return a.getId() == b.getId();
 }
 
 }  // namespace Zinc

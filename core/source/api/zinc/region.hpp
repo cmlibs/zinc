@@ -23,8 +23,6 @@ class StreaminformationRegion;
 
 class Region
 {
-friend bool operator==(const Region& a, const Region& b);
-
 protected:
 	cmzn_region_id id;
 
@@ -104,7 +102,7 @@ public:
 		return Region(cmzn_region_create_region(id));
 	}
 
-	inline Fieldmodule getFieldmodule();
+	inline Fieldmodule getFieldmodule() const;
 
 	int readFile(const char *fileName)
 	{
@@ -176,7 +174,7 @@ public:
 		return cmzn_region_write_file(id, fileName);
 	}
 
-	Scene getScene();
+	inline Scene getScene();
 
 	inline StreaminformationRegion createStreaminformationRegion();
 
@@ -188,7 +186,7 @@ public:
 
 inline bool operator==(const Region& a, const Region& b)
 {
-	return a.id == b.id;
+	return a.getId() == b.getId();
 }
 
 inline Region Context::getDefaultRegion()

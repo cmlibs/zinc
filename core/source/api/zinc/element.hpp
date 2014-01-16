@@ -109,12 +109,12 @@ public:
 
 };
 
+class Fieldmodule;
+class Mesh;
 class Elementtemplate;
 
 class Element
 {
-friend bool operator==(const Element& a, const Element& b);
-
 private:
 
 	cmzn_element_id id;
@@ -229,6 +229,8 @@ public:
 		return cmzn_element_set_identifier(id, identifier);
 	}
 
+	inline Mesh getMesh() const;
+
 	enum ShapeType getShapeType()
 	{
 		return static_cast<ShapeType>(cmzn_element_get_shape_type(id));
@@ -240,7 +242,7 @@ public:
 
 inline bool operator==(const Element& a, const Element& b)
 {
-	return a.id == b.id;
+	return a.getId() == b.getId();
 }
 
 class Elementtemplate
@@ -487,6 +489,8 @@ public:
 		return cmzn_mesh_get_dimension(id);
 	}
 
+	inline Fieldmodule Mesh::getFieldmodule() const;
+
 	Mesh getMasterMesh()
 	{
 		return Mesh(cmzn_mesh_get_master_mesh(id));
@@ -502,12 +506,17 @@ public:
 		return cmzn_mesh_get_size(id);
 	}
 
-	bool match(const Mesh& mesh)
-	{
-		return cmzn_mesh_match(id, mesh.id);
-	}
-
 };
+
+inline bool operator==(const Mesh& a, const Mesh& b)
+{
+	return cmzn_mesh_match(a.getId(), b.getId());
+}
+
+inline Mesh Element::getMesh() const
+{
+	return Mesh(cmzn_element_get_mesh(id));
+}
 
 class MeshGroup  : public Mesh
 {

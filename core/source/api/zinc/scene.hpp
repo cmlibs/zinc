@@ -160,6 +160,11 @@ public:
 		return cmzn_scene_get_number_of_graphics(id);
 	}
 
+	inline Region getRegion() const
+	{
+		return Region(cmzn_scene_get_region(id));
+	}
+
 	Scenefiltermodule getScenefiltermodule()
 	{
 		return Scenefiltermodule(cmzn_scene_get_scenefiltermodule(id));
@@ -211,9 +216,19 @@ public:
 
 };
 
+inline bool operator==(const Scene& a, const Scene& b)
+{
+	return a.getId() == b.getId();
+}
+
 inline Scene Region::getScene()
 {
 	return Scene(cmzn_region_get_scene(id));
+}
+
+inline Scene Graphics::getScene()
+{
+	return Scene(cmzn_graphics_get_scene(id));
 }
 
 } // namespace Zinc

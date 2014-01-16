@@ -1379,6 +1379,13 @@ bool cmzn_graphics_selects_elements(struct cmzn_graphics *graphics)
 		(0 < cmzn_graphics_get_domain_dimension(graphics));
 }
 
+cmzn_scene_id cmzn_graphics_get_scene(cmzn_graphics_id graphics)
+{
+	if (graphics)
+		return ACCESS(cmzn_scene)(graphics->scene);
+	return 0;
+}
+
 enum cmzn_scenecoordinatesystem cmzn_graphics_get_scenecoordinatesystem(
 	struct cmzn_graphics *graphics)
 {

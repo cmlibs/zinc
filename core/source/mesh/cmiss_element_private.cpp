@@ -1270,6 +1270,16 @@ int cmzn_mesh_get_dimension(cmzn_mesh_id mesh)
 	return 0;
 }
 
+cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh)
+{
+	if (mesh)
+	{
+		cmzn_region *region = FE_region_get_cmzn_region(mesh->getFeRegion());
+		return cmzn_fieldmodule_create(region);
+	}
+	return 0;
+}
+
 cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh)
 {
 	if (mesh)
@@ -1631,6 +1641,17 @@ int cmzn_element_get_identifier(struct cmzn_element *element)
 		return_code = cm.number;
 	}
 	return (return_code);
+}
+
+cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
+{
+	if (element)
+	{
+		cmzn_region *region = FE_region_get_cmzn_region(FE_element_get_FE_region(element));
+		if (region)
+			return new cmzn_mesh(region, get_FE_element_dimension(element));
+	}
+	return 0;
 }
 
 enum cmzn_element_shape_type cmzn_element_get_shape_type(

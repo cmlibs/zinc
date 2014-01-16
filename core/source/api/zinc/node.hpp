@@ -18,12 +18,12 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Fieldmodule;
+class Nodeset;
 class Nodetemplate;
 
 class Node
 {
-friend bool operator==(const Node& a, const Node& b);
-
 private:
 
 	cmzn_node_id id;
@@ -111,13 +111,15 @@ public:
 		return cmzn_node_set_identifier(id, identifier);
 	}
 
+	inline Nodeset getNodeset() const;
+
 	int merge(const Nodetemplate& nodeTemplate);
 
 };
 
 inline bool operator==(const Node& a, const Node& b)
 {
-	return a.id == b.id;
+	return a.getId() == b.getId();
 }
 
 class Nodetemplate
@@ -337,6 +339,8 @@ public:
 		return Node(cmzn_nodeset_find_node_by_identifier(id, identifier));
 	}
 
+	inline Fieldmodule getFieldmodule() const;
+
 	Nodeset getMasterNodeset()
 	{
 		return Nodeset(cmzn_nodeset_get_master_nodeset(id));
@@ -352,12 +356,17 @@ public:
 		return cmzn_nodeset_get_size(id);
 	}
 
-	bool match(const Nodeset& nodeset)
-	{
-		return cmzn_nodeset_match(id, nodeset.id);
-	}
-
 };
+
+inline bool operator==(const Nodeset& a, const Nodeset& b)
+{
+	return cmzn_nodeset_match(a.getId(), b.getId());
+}
+
+inline Nodeset Node::getNodeset() const
+{
+	return Nodeset(cmzn_node_get_nodeset(id));
+}
 
 class NodesetGroup  : public Nodeset
 {

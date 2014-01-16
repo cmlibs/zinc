@@ -187,6 +187,14 @@ ZINC_API cmzn_node_id cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_id nodes
 	int identifier);
 
 /**
+ * Returns handle to field module for region this nodeset belongs to.
+ *
+ * @param nodeset  The nodeset from which to obtain the field module.
+ * @return  Handle to field module object. Up to caller to destroy.
+ */
+ZINC_API cmzn_fieldmodule_id cmzn_nodeset_get_fieldmodule(cmzn_nodeset_id nodeset);
+
+/**
  * Get the master nodeset which owns the nodes for this nodeset. Can be the
  * same as the supplied nodeset if it is a master.
  *
@@ -504,6 +512,14 @@ ZINC_API int cmzn_node_get_identifier(cmzn_node_id node);
  * 	any other value on fail.
  */
 ZINC_API int cmzn_node_set_identifier(cmzn_node_id node, int identifier);
+
+/**
+ * Get the nodeset which owns this node.
+ *
+ * @param node  The node to query.
+ * @return  Handle to the owning nodeset, or 0 if error. Up to caller to destroy.
+ */
+ZINC_API cmzn_nodeset_id cmzn_node_get_nodeset(cmzn_node_id node);
 
 /**
  * Modifies the node to define fields as described in the node_template.

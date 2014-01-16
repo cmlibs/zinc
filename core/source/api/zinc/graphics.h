@@ -19,6 +19,7 @@
 #include "types/graphicsid.h"
 #include "types/fontid.h"
 #include "types/materialid.h"
+#include "types/sceneid.h"
 #include "types/scenecoordinatesystem.h"
 #include "types/spectrumid.h"
 #include "types/tessellationid.h"
@@ -403,6 +404,15 @@ ZINC_API enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_gr
  */
 ZINC_API int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics,
 	enum cmzn_element_face_type face_type);
+
+/**
+ * Return accessed handle to the scene owning this graphics.
+ *
+ * @param graphics  The graphics to query.
+ * @return  Handle to scene owning graphics, or 0 if none. Up to caller
+ * to destroy.
+ */
+ZINC_API cmzn_scene_id cmzn_graphics_get_scene(cmzn_graphics_id graphics);
 
 /**
  * Get the scene coordinate system in which to render the coordinates of graphics.
