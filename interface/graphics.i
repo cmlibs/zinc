@@ -24,6 +24,7 @@
 %import "font.i"
 
 %{
+#include "zinc/fieldmodule.hpp"
 #include "zinc/graphics.hpp"
 #include "zinc/scene.hpp"
 %}
