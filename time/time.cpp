@@ -28,7 +28,9 @@ TEST(cmzn_timekeeper, api)
 {
 	ZincTestSetup zinc;
 
-	cmzn_timekeeper_id timekeeper = cmzn_context_get_default_timekeeper(zinc.context);
+	cmzn_timekeepermodule_id tkm = cmzn_context_get_timekeepermodule(zinc.context);
+	EXPECT_NE(static_cast<cmzn_timekeepermodule_id>(0), tkm);
+	cmzn_timekeeper_id timekeeper = cmzn_timekeepermodule_get_default_timekeeper(tkm);
 	EXPECT_NE(static_cast<cmzn_timekeeper_id>(0), timekeeper);
 
 	int result;
@@ -57,6 +59,7 @@ TEST(cmzn_timekeeper, api)
 
 	cmzn_timenotifier_destroy(&timenotifier);
 	cmzn_timekeeper_destroy(&timekeeper);
+	cmzn_timekeepermodule_destroy(&tkm);
 }
 
 class TimenotifiercallbackRecordEvent : public Timenotifiercallback
@@ -77,7 +80,9 @@ TEST(ZincTimekeeper, api)
 {
 	ZincTestSetupCpp zinc;
 
-	Timekeeper timekeeper = zinc.context.getDefaultTimekeeper();
+	Timekeepermodule tkm = zinc.context.getTimekeepermodule();
+	EXPECT_TRUE(tkm.isValid());
+	Timekeeper timekeeper = tkm.getDefaultTimekeeper();
 	EXPECT_TRUE(timekeeper.isValid());
 
 	int result;
