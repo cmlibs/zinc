@@ -22,6 +22,37 @@ extern "C" {
 #endif
 
 /**
+* Returns a new reference to the timekeeper module with reference count
+* incremented. Caller is responsible for destroying the new reference.
+*
+* @param timekeepermodule  The timekeeper module to obtain a new reference to.
+* @return  timekeeper module with incremented reference count.
+*/
+ZINC_API cmzn_timekeepermodule_id cmzn_timekeepermodule_access(
+	cmzn_timekeepermodule_id timekeepermodule);
+
+/**
+* Destroys this reference to the timekeeper module (and sets it to NULL).
+* Internally this just decrements the reference count.
+*
+* @param timekeepermodule_address  Address of handle to timekeeper module
+*   to destroy.
+* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+*/
+ZINC_API int cmzn_timekeepermodule_destroy(
+	cmzn_timekeepermodule_id *timekeepermodule_address);
+
+/**
+* Get the default timekeeper, if any.
+*
+* @param timekeepermodule  timekeeper module to query.
+* @return  Handle to the default timekeeper, or 0 if none.
+* 	Up to caller to destroy returned handle.
+*/
+ZINC_API cmzn_timekeeper_id cmzn_timekeepermodule_get_default_timekeeper(
+	cmzn_timekeepermodule_id timekeepermodule);
+
+/**
  * Access the timekeeper, increase the access count of the time keeper by one.
  *
  * @param timekeeper  handle to the "to be access" zinc timekeeper.

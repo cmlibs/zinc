@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : timekeeperid.h
  *
  */
@@ -10,7 +10,8 @@
 
 #ifndef CMZN_TIMEKEEPERID_H__
 #define CMZN_TIMEKEEPERID_H__
-/***************************************************************************//**
+
+/**
  * A handle to a time keeper.
  * Time keeper maintains a current time which can be automatically advanced
  * with the system clock to drive animation. It sends callbacks to time notifiers
@@ -18,5 +19,8 @@
  */
 	struct cmzn_timekeeper;
 	typedef struct cmzn_timekeeper *cmzn_timekeeper_id;
+
+	struct cmzn_timekeepermodule;
+	typedef struct cmzn_timekeepermodule * cmzn_timekeepermodule_id;
 
 #endif

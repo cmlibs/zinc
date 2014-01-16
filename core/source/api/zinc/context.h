@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * context.h
  *
  * API to access the main root structure of cmgui.
@@ -27,7 +27,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Create a new cmgui context with an id <id>.
  *
  * @param id  The identifier given to the new context.
@@ -35,7 +35,7 @@ extern "C" {
  */
 ZINC_API cmzn_context_id cmzn_context_create(const char *id);
 
-/*******************************************************************************
+/**
  * Returns a new reference to the context with reference count incremented.
  * Caller is responsible for destroying the new reference.
  *
@@ -44,7 +44,7 @@ ZINC_API cmzn_context_id cmzn_context_create(const char *id);
  */
 ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
 
-/***************************************************************************//**
+/**
  * Destroy a context.
  *
  * @param context_address  The address to the handle of the context
@@ -53,7 +53,7 @@ ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
  */
 ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
 
-/***************************************************************************//**
+/**
  * Returns the default region in the context.
  *
  * @param context  Handle to a context object.
@@ -62,7 +62,7 @@ ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
  */
 ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context);
 
-/***************************************************************************//**
+/**
  * Create a new region and return a reference to it. Use this function to create
  * a region forming the root of an independent region tree. To create regions
  * for addition to an existing region tree, use cmzn_region_create_region.
@@ -73,15 +73,43 @@ ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context)
  */
 ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
 
-/***************************************************************************//**
- * Returns the handle to time keeper and also increments the access count of
- * the returned time keeper by one.
- * User interface must be enabled before this function can be called successfully.
+/**
+* Get the font module which stores font object.
+*
+* @param context  The context to request the module from.
+* @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+*/
+ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
+	cmzn_context_id context);
+
+/**
+ * Get the glyph module which stores static graphics for visualising points,
+ * vectors, axes etc. Note on startup no glyphs are defined and glyph module
+ * functions need to be called to set up standard glyphs.
  *
- * @param context  Handle to a context object.
- * @return  The time keeper if successfully called otherwise NULL.
+ * @param context  The context to request the module from.
+ * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_timekeeper_id cmzn_context_get_default_timekeeper(
+ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
+	cmzn_context_id context);
+
+/**
+ * Return the material module in context.
+ *
+ * @param context  The context to request module from.
+ * @return  the material pacakage in context if successfully called,
+ *    otherwise NULL.
+ */
+ZINC_API cmzn_materialmodule_id cmzn_context_get_materialmodule(
+	cmzn_context_id context);
+
+/**
+ * Get the scene filter module which stores scenefilter objects.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the context filter module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
 	cmzn_context_id context);
 
 /**
@@ -94,62 +122,32 @@ ZINC_API cmzn_timekeeper_id cmzn_context_get_default_timekeeper(
 ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
 	cmzn_context_id context);
 
-
-/***************************************************************************//**
- * Return the material module in context.
+/**
+ * Get the spectrum module which stores spectrum objects.
  *
- * @param context  The context to request module from.
- * @return  the material pacakage in context if successfully called,
- *    otherwise NULL.
+ * @param context  The context to request the module from.
+ * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_materialmodule_id cmzn_context_get_materialmodule(
-	cmzn_context_id context);
-
-/**
-* Get the scene filter module which stores scenefilter objects.
-*
-* @param context  The context to request the module from.
-* @return  Handle to the context filter module, or 0 on error. Up to caller to destroy.
-*/
-ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
-	cmzn_context_id context);
-
-/**
-* Get the font module which stores font object.
-*
-* @param context  The context to request the module from.
-* @return  Handle to the font module, or 0 on error. Up to caller to destroy.
-*/
-ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
-	cmzn_context_id context);
-
-/**
-* Get the tessellation module which stores tessellation objects.
-*
-* @param context  The context to request the module from.
-* @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
-*/
-ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
-	cmzn_context_id context);
-
-/**
-* Get the spectrum module which stores spectrum objects.
-*
-* @param context  The context to request the module from.
-* @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
-*/
 ZINC_API cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
 	cmzn_context_id context);
 
 /**
- * Get the glyph module which stores static graphics for visualising points,
- * vectors, axes etc. Note on startup no glyphs are defined and glyph module
- * functions need to be called to set up standard glyphs.
+ * Get the tessellation module which stores tessellation objects.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
  */
-ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
+ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
+	cmzn_context_id context);
+
+/**
+ * Get the timekeeper module which stores objects for synchronising time
+ * across zinc objects.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the timekeeper module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(
 	cmzn_context_id context);
 
 #ifdef __cplusplus

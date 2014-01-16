@@ -101,8 +101,9 @@ struct cmzn_font *cmzn_graphics_module_get_default_font(
 struct Light_model_module *cmzn_graphics_module_get_light_model_module(
 	struct cmzn_graphics_module *graphics_module);
 
-struct cmzn_timekeeper *cmzn_graphics_module_get_timekeeper_internal(
-	struct cmzn_graphics_module *module);
+/** @return  Non-accessed timekeepermodule */
+cmzn_timekeepermodule *cmzn_graphics_module_get_timekeepermodule_internal(
+	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
  * Add a region with a scene created by this graphics module object

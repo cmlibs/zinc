@@ -12,6 +12,7 @@
 #include "zinc/scene.h"
 #include "zinc/field.hpp"
 #include "zinc/graphics.hpp"
+#include "zinc/region.hpp"
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
 
