@@ -413,6 +413,11 @@ public:
 		Scenecoordinatesystem toCoordinateSystem);
 };
 
+inline bool operator==(const Fieldmodule& a, const Fieldmodule& b)
+{
+	return cmzn_fieldmodule_match(a.getId(), b.getId());
+}
+
 class Fieldmoduleevent
 {
 protected:
@@ -571,7 +576,7 @@ public:
 	}
 };
 
-inline Fieldmodule Region::getFieldmodule()
+inline Fieldmodule Region::getFieldmodule() const
 {
 	return Fieldmodule(cmzn_region_get_fieldmodule(id));
 }
@@ -579,6 +584,16 @@ inline Fieldmodule Region::getFieldmodule()
 inline Fieldmodule Field::getFieldmodule() const
 {
 	return Fieldmodule(cmzn_field_get_fieldmodule(id));
+}
+
+inline Fieldmodule Mesh::getFieldmodule() const
+{
+	return Fieldmodule(cmzn_mesh_get_fieldmodule(id));
+}
+
+inline Fieldmodule Nodeset::getFieldmodule() const
+{
+	return Fieldmodule(cmzn_nodeset_get_fieldmodule(id));
 }
 
 inline Fieldmodulenotifier Fieldmodule::createFieldmodulenotifier()

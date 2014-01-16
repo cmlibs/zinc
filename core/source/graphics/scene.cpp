@@ -1856,22 +1856,16 @@ struct cmzn_graphics *cmzn_scene_get_graphics_at_position(
 struct cmzn_region *cmzn_scene_get_region_internal(
 	struct cmzn_scene *scene)
 {
-	struct cmzn_region *region;
-
-	ENTER(cmzn_scene_get_region_internal);
 	if (scene)
-	{
-		region=scene->region;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_get_region_internal.  Invalid arguments");
-		region=(struct cmzn_region *)NULL;
-	}
-	LEAVE;
+		return scene->region;
+	return 0;
+}
 
-	return (region);
+cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene)
+{
+	if (scene)
+		return ACCESS(cmzn_region)(scene->region);
+	return 0;
 }
 
 int cmzn_scene_modify(struct cmzn_scene *destination,

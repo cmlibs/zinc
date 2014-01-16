@@ -909,6 +909,16 @@ int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
 	return 0;
 }
 
+cmzn_fieldmodule_id cmzn_nodeset_get_fieldmodule(cmzn_nodeset_id nodeset)
+{
+	if (nodeset)
+	{
+		cmzn_region *region = FE_region_get_cmzn_region(nodeset->getFeRegion());
+		return cmzn_fieldmodule_create(region);
+	}
+	return 0;
+}
+
 cmzn_nodeset_id cmzn_nodeset_get_master_nodeset(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
@@ -1154,6 +1164,14 @@ int cmzn_node_destroy(cmzn_node_id *node_address)
 int cmzn_node_get_identifier(cmzn_node_id node)
 {
 	return get_FE_node_identifier(node);
+}
+
+cmzn_nodeset_id cmzn_node_get_nodeset(cmzn_node_id node)
+{
+	FE_nodeset *fe_nodeset = FE_node_get_FE_nodeset(node);
+	if (fe_nodeset)
+		return new cmzn_nodeset(fe_nodeset);
+	return 0;
 }
 
 int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_template)

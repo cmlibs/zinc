@@ -220,6 +220,14 @@ struct cmzn_region *cmzn_fieldmodule_get_region(
 	return NULL;
 }
 
+bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
+	cmzn_fieldmodule_id fieldmodule2)
+{
+	if (fieldmodule1 && fieldmodule2)
+		return (fieldmodule1->region == fieldmodule2->region);
+	return false;
+}
+
 int cmzn_fieldmodule_set_field_name(
 	struct cmzn_fieldmodule *fieldmodule, const char *field_name)
 {

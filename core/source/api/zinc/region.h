@@ -243,7 +243,7 @@ ZINC_API cmzn_region_id cmzn_region_find_subregion_at_path(cmzn_region_id region
  * to field factory create methods.
  *
  * @param region  The region from which to obtain the field module.
- * @return  Field module object.
+ * @return  Handle to field module object. Up to caller to destroy.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
 

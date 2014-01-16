@@ -151,6 +151,16 @@ ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule);
 ZINC_API cmzn_region_id cmzn_fieldmodule_get_region(cmzn_fieldmodule_id fieldmodule);
 
 /**
+ * Check if two field module handles refer to the same region.
+ *
+ * @param fieldmodule1  The first field module to match.
+ * @param fieldmodule2  The second field module to match.
+ * @return  Boolean true if the two field modules match, false if not.
+ */
+ZINC_API bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
+	cmzn_fieldmodule_id fieldmodule2);
+
+/**
  * Returns a new reference to the field module notifier with reference count
  * incremented. Caller is responsible for destroying the new reference.
  *

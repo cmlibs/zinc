@@ -269,6 +269,14 @@ ZINC_API cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 ZINC_API int cmzn_mesh_get_dimension(cmzn_mesh_id mesh);
 
 /**
+ * Returns handle to field module for region this mesh belongs to.
+ *
+ * @param mesh  The mesh from which to obtain the field module.
+ * @return  Handle to field module object. Up to caller to destroy.
+ */
+ZINC_API cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh);
+
+/**
  * Get the master mesh which owns the elements for this mesh. Can be the
  * same as the supplied mesh if it is a master.
  *
@@ -656,6 +664,14 @@ ZINC_API int cmzn_element_get_identifier(cmzn_element_id element);
  * 	any other value on fail.
  */
 ZINC_API int cmzn_element_set_identifier(cmzn_element_id element, int identifier);
+
+/**
+ * Get the mesh which owns this element.
+ *
+ * @param element  The element to query.
+ * @return  Handle to the owning mesh, or 0 if error. Up to caller to destroy.
+ */
+ZINC_API cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element);
 
 /**
  * Gets the shape type of the element. Note that legacy meshes may return an
