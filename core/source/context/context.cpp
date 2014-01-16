@@ -37,10 +37,9 @@ struct Context *cmzn_context_create(const char *id)
 		context->element_point_ranges_selection = NULL;
 		context->io_stream_package = NULL;
 		context->curve_manager = NULL;
-		context->timekeeper = 0;
+		context->timekeepermodule = cmzn_timekeepermodule::create();
 		context->access_count = 1;
 	}
-
 	return context;
 }
 
@@ -86,10 +85,7 @@ int cmzn_context_destroy(struct Context **context_address)
 			{
 				DESTROY(IO_stream_package)(&context->io_stream_package);
 			}
-			if (context->timekeeper)
-			{
-				cmzn_timekeeper_destroy(&(context->timekeeper));
-			}
+			cmzn_timekeepermodule::deaccess(context->timekeepermodule);
 			DEALLOCATE(*context_address);
 		}
 		*context_address = NULL;
@@ -255,23 +251,11 @@ struct IO_stream_package *cmzn_context_get_default_IO_stream_package(
 	return io_stream_package;
 }
 
-struct cmzn_timekeeper *cmzn_context_get_default_timekeeper(struct Context *context)
+cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(cmzn_context_id context)
 {
-	cmzn_timekeeper *timekeeper = 0;
-	if (context)
-	{
-		if (!context->timekeeper)
-		{
-			context->timekeeper = new cmzn_timekeeper();
-		}
-		timekeeper = cmzn_timekeeper_access(context->timekeeper);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_get_default_timekeeper.  Missing context");
-	}
-	return timekeeper;
+	if (context && context->timekeepermodule)
+		return context->timekeepermodule->access();
+	return 0;
 }
 
 struct MANAGER(Curve) *cmzn_context_get_default_curve_manager(

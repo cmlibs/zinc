@@ -2420,27 +2420,24 @@ static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 		return_code = 1;
 		/* Ensure the Scene object has a time object if and only if the
 			graphics object has more than one time */
-		if(cmzn_scene_has_multiple_times(scene))
+		if (cmzn_scene_has_multiple_times(scene))
 		{
 			time = cmzn_scene_get_time_notifier(scene);
-			if(!time)
+			if (!time)
 			{
+				cmzn_timekeepermodule *timekeepermodule =
+					cmzn_graphics_module_get_timekeepermodule_internal(scene->graphics_module);
+				cmzn_timekeeper *timekeeper = timekeepermodule ? timekeepermodule->getDefaultTimekeeper() : 0;
 				time = Time_object_create_regular(/*update_frequency*/10.0,
 					/*time_offset*/0.0);
 				cmzn_scene_set_time_notifier(scene, time);
-				struct cmzn_timekeeper *time_keeper = cmzn_graphics_module_get_timekeeper_internal(
-					scene->graphics_module);
-				if(time_keeper)
-				{
-					time_keeper->addTimeObject(time);
-					DEACCESS(cmzn_timekeeper)(&time_keeper);
-				}
+				if (timekeeper)
+					timekeeper->addTimeObject(time);
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"cmzn_scene_update_time_behaviour.  "
-						"Missing time keeper ");
-					return_code =0;
+						"cmzn_scene_update_time_behaviour.  Missing default timekeeper");
+					return_code = 0;
 				}
 				cmzn_timenotifier_destroy(&time);
 			}

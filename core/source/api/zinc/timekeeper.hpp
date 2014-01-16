@@ -102,9 +102,61 @@ public:
 
 };
 
-inline Timekeeper Context::getDefaultTimekeeper()
+class Timekeepermodule
 {
-	return Timekeeper(cmzn_context_get_default_timekeeper(id));
+protected:
+	cmzn_timekeepermodule_id id;
+
+public:
+
+	Timekeepermodule() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Timekeepermodule(cmzn_timekeepermodule_id in_timekeepermodule_id) :
+		id(in_timekeepermodule_id)
+	{  }
+
+	Timekeepermodule(const Timekeepermodule& timekeeperModule) :
+		id(cmzn_timekeepermodule_access(timekeeperModule.id))
+	{  }
+
+	Timekeepermodule& operator=(const Timekeepermodule& timekeeperModule)
+	{
+		cmzn_timekeepermodule_id temp_id = cmzn_timekeepermodule_access(
+			timekeeperModule.id);
+		if (0 != id)
+			cmzn_timekeepermodule_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Timekeepermodule()
+	{
+		if (0 != id)
+			cmzn_timekeepermodule_destroy(&id);
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_timekeepermodule_id getId() const
+	{
+		return id;
+	}
+
+	Timekeeper getDefaultTimekeeper()
+	{
+		return Timekeeper(cmzn_timekeepermodule_get_default_timekeeper(id));
+	}
+
+};
+
+inline Timekeepermodule Context::getTimekeepermodule()
+{
+	return Timekeepermodule(cmzn_context_get_timekeepermodule(id));
 }
 
 }  // namespace Zinc

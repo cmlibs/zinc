@@ -12,6 +12,8 @@
 #ifndef TIME_KEEPER_HPP
 #define TIME_KEEPER_HPP
 
+#include "zinc/status.h"
+#include "zinc/timekeeper.h"
 #include "general/mystring.h"
 #include "general/object.h"
 #include "general/debug.h"
@@ -87,6 +89,58 @@ enum Time_keeper_play_direction
 {
 	TIME_KEEPER_PLAY_FORWARD,
 	TIME_KEEPER_PLAY_BACKWARD
+};
+
+/** Designed for supporting multiple timekeepers in future.
+ * Currently only holds default timekeeper
+ */
+struct cmzn_timekeepermodule
+{
+private:
+	cmzn_timekeeper *default_timekeeper;
+	int access_count;
+
+	cmzn_timekeepermodule() :
+		default_timekeeper(new cmzn_timekeeper()),
+		access_count(1)
+	{
+	}
+
+	~cmzn_timekeepermodule()
+	{
+		cmzn_timekeeper::deaccess(&(this->default_timekeeper));
+	}
+
+public:
+
+	static cmzn_timekeepermodule *create()
+	{
+		return new cmzn_timekeepermodule();
+	}
+
+	cmzn_timekeepermodule *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_timekeepermodule* &timekeepermodule)
+	{
+		if (timekeepermodule)
+		{
+			--(timekeepermodule->access_count);
+			if (timekeepermodule->access_count <= 0)
+				delete timekeepermodule;
+			timekeepermodule = 0;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	cmzn_timekeeper *getDefaultTimekeeper()
+	{
+		return this->default_timekeeper;
+	}
 };
 
 #endif

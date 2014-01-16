@@ -330,3 +330,26 @@ int cmzn_timekeeper_set_time(cmzn_timekeeper_id timekeeper, double time)
 		return timekeeper->setTime(time);
 	return CMZN_ERROR_ARGUMENT;
 }
+
+cmzn_timekeepermodule_id cmzn_timekeepermodule_access(
+	cmzn_timekeepermodule_id timekeepermodule)
+{
+	if (timekeepermodule)
+		return timekeepermodule->access();
+	return 0;
+}
+
+int cmzn_timekeepermodule_destroy(cmzn_timekeepermodule_id *timekeepermodule_address)
+{
+	if (timekeepermodule_address)
+		return cmzn_timekeepermodule::deaccess(*timekeepermodule_address);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_timekeeper_id cmzn_timekeepermodule_get_default_timekeeper(
+	cmzn_timekeepermodule_id timekeepermodule)
+{
+	if (timekeepermodule)
+		return timekeepermodule->getDefaultTimekeeper()->access();
+	return 0;
+}

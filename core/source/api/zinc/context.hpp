@@ -24,7 +24,7 @@ class Scenefiltermodule;
 class Sceneviewermodule;
 class Spectrummodule;
 class Tessellationmodule;
-class Timekeeper;
+class Timekeepermodule;
 
 class Context
 {
@@ -79,15 +79,15 @@ public:
 		return id;
 	}
 
+	inline Region createRegion();
+
+	inline Region getDefaultRegion();
+
 	inline Fontmodule getFontmodule();
 
 	inline Glyphmodule getGlyphmodule();
 
 	inline Materialmodule getMaterialmodule();
-
-	inline Region createRegion();
-
-	inline Region getDefaultRegion();
 
 	inline Scenefiltermodule getScenefiltermodule();
 
@@ -97,7 +97,7 @@ public:
 
 	inline Tessellationmodule getTessellationmodule();
 
-	inline Timekeeper getDefaultTimekeeper();
+	inline Timekeepermodule getTimekeepermodule();
 
 };
 
