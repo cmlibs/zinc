@@ -25,7 +25,7 @@
 
 %{
 #include "zinc/graphics.hpp"
-#include "zinc/fieldconditional.hpp"
+#include "zinc/scene.hpp"
 %}
 
 %include "zinc/graphics.hpp"
