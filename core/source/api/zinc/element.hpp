@@ -489,7 +489,7 @@ public:
 		return cmzn_mesh_get_dimension(id);
 	}
 
-	inline Fieldmodule Mesh::getFieldmodule() const;
+	inline Fieldmodule getFieldmodule() const;
 
 	Mesh getMasterMesh()
 	{
