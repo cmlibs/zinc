@@ -16,6 +16,8 @@
 #include <zinc/fieldvectoroperators.h>
 #include <zinc/graphics.h>
 #include <zinc/region.h>
+#include <zinc/scenefilter.h>
+#include <zinc/sceneviewer.h>
 #include <zinc/spectrum.h>
 
 #include <zinc/fieldarithmeticoperators.hpp>
@@ -24,6 +26,7 @@
 #include <zinc/fieldvectoroperators.hpp>
 #include <zinc/graphics.hpp>
 #include "zinc/scenefilter.hpp"
+#include "zinc/sceneviewer.hpp"
 #include "zinc/spectrum.hpp"
 
 #include "test_resources.h"
@@ -71,6 +74,57 @@ public:
 	{
 	}
 };
+
+TEST(cmzn_scene, get_modules)
+{
+	ZincTestSetup zinc;
+
+	cmzn_fontmodule_id fontmodule = cmzn_scene_get_fontmodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_fontmodule_id>(0), fontmodule);
+	cmzn_fontmodule_destroy(&fontmodule);
+
+	cmzn_glyphmodule_id glyphmodule = cmzn_scene_get_glyphmodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_glyphmodule_id>(0), glyphmodule);
+	cmzn_glyphmodule_destroy(&glyphmodule);
+
+	cmzn_materialmodule_id materialmodule = cmzn_scene_get_materialmodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_materialmodule_id>(0), materialmodule);
+	cmzn_materialmodule_destroy(&materialmodule);
+
+	cmzn_scenefiltermodule_id scenefiltermodule = cmzn_scene_get_scenefiltermodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_scenefiltermodule_id>(0), scenefiltermodule);
+	cmzn_scenefiltermodule_destroy(&scenefiltermodule);
+
+	cmzn_sceneviewermodule_id sceneviewermodule = cmzn_scene_get_sceneviewermodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_sceneviewermodule_id>(0), sceneviewermodule);
+	cmzn_sceneviewermodule_destroy(&sceneviewermodule);
+
+	cmzn_spectrummodule_id spectrummodule = cmzn_scene_get_spectrummodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_spectrummodule_id>(0), spectrummodule);
+	cmzn_spectrummodule_destroy(&spectrummodule);
+
+	cmzn_tessellationmodule_id tessellationmodule = cmzn_scene_get_tessellationmodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_tessellationmodule_id>(0), tessellationmodule);
+	cmzn_tessellationmodule_destroy(&tessellationmodule);
+
+	cmzn_timekeepermodule_id timekeepermodule = cmzn_scene_get_timekeepermodule(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_timekeepermodule_id>(0), timekeepermodule);
+	cmzn_timekeepermodule_destroy(&timekeepermodule);
+}
+
+TEST(ZincScene, getModules)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_TRUE(zinc.scene.getFontmodule().isValid());
+	EXPECT_TRUE(zinc.scene.getGlyphmodule().isValid());
+	EXPECT_TRUE(zinc.scene.getMaterialmodule().isValid());
+	EXPECT_TRUE(zinc.scene.getScenefiltermodule().isValid());
+	EXPECT_TRUE(zinc.scene.getSceneviewermodule().isValid());
+	EXPECT_TRUE(zinc.scene.getSpectrummodule().isValid());
+	EXPECT_TRUE(zinc.scene.getTessellationmodule().isValid());
+	EXPECT_TRUE(zinc.scene.getTimekeepermodule().isValid());
+}
 
 TEST(cmzn_scene, get_region)
 {
