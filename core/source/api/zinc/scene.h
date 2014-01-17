@@ -13,15 +13,20 @@
 #define CMZN_SCENE_H__
 
 #include "types/fieldid.h"
-#include "types/fieldgroupid.h"
+#include "types/fontid.h"
+#include "types/glyphid.h"
 #include "types/graphicsid.h"
-#include "types/scenefilterid.h"
+#include "types/materialid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
+#include "types/scenefilterid.h"
+#include "types/sceneviewerid.h"
 #include "types/sceneid.h"
 #include "types/scenepickerid.h"
 #include "types/selectionid.h"
 #include "types/spectrumid.h"
+#include "types/tessellationid.h"
+#include "types/timekeeperid.h"
 
 #include "zinc/zincsharedobject.h"
 
@@ -240,13 +245,88 @@ ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 ZINC_API cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene);
 
 /**
-* Get the scene filter module which stores scenefilter objects for filtering
-* contents of the scene with scenepicker and sceneviewer etc.
-*
-* @param scene  Handle to the scene.
-* @return  Handle to the scene filter module, or 0 on error. Up to caller to destroy.
-*/
-ZINC_API cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(cmzn_scene_id scene);
+ * Get the font module which manages fonts for rendering text in graphics.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_fontmodule_id cmzn_scene_get_fontmodule(cmzn_scene_id scene);
+
+/**
+ * Get the glyph module which stores static graphics for visualising points,
+ * vectors, axes etc. Note on startup no glyphs are defined and glyph module
+ * functions need to be called to define standard glyphs.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_glyphmodule_id cmzn_scene_get_glyphmodule(cmzn_scene_id scene);
+
+/**
+ * Return the material module which manages materials used to colour, texture
+ * and shade graphics. Note on startup only materials "default" and
+ * "default_selected" are defined, as white and red, respectively. Additional
+ * standard and custom materials can be defined using material module functions.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the material module, or NULL on error. Up to caller to
+ * destroy.
+ */
+ZINC_API cmzn_materialmodule_id cmzn_scene_get_materialmodule(
+	cmzn_scene_id scene);
+
+/**
+ * Get the scene filter module which manages scenefilter objects for filtering
+ * contents of scenes with scenepicker and sceneviewer etc.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the scene filter module, or 0 on error. Up to caller to
+ * destroy.
+ */
+ZINC_API cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(
+	cmzn_scene_id scene);
+
+/**
+ * Returns a handle to a sceneviewer module which manages sceneviewer objects
+ * for rendering 3-D scenes into rectangular windows or canvases using OpenGL.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the sceneviewer module, or 0 on error. Up to caller to
+ * destroy.
+ */
+ZINC_API cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(
+	cmzn_scene_id scene);
+
+/**
+ * Get the spectrum module which manages spectrum objects controlling how
+ * graphics data fields are converted into colours.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the spectrum module, or 0 on error. Up to caller to
+ * destroy.
+ */
+ZINC_API cmzn_spectrummodule_id cmzn_scene_get_spectrummodule(
+	cmzn_scene_id scene);
+
+/**
+ * Get the tessellation module which manages objects controlling how curves are
+ * approximated by line segments in graphics.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_tessellationmodule_id cmzn_scene_get_tessellationmodule(
+	cmzn_scene_id scene);
+
+/**
+ * Get the timekeeper module which manages objects for synchronising time across
+ * zinc objects.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the timekeeper module, or 0 on error. Up to caller to destroy.
+ */
+ZINC_API cmzn_timekeepermodule_id cmzn_scene_get_timekeepermodule(
+	cmzn_scene_id scene);
 
 /**
  * Get the selection field for the scene, if any.

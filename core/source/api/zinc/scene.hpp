@@ -15,6 +15,7 @@
 #include "zinc/region.hpp"
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
+#include "zinc/timekeeper.hpp"
 
 namespace OpenCMISS
 {
@@ -166,9 +167,41 @@ public:
 		return Region(cmzn_scene_get_region(id));
 	}
 
-	Scenefiltermodule getScenefiltermodule()
+	inline Fontmodule getFontmodule()
+	{
+		return Fontmodule(cmzn_scene_get_fontmodule(id));
+	}
+
+	inline Glyphmodule getGlyphmodule()
+	{
+		return Glyphmodule(cmzn_scene_get_glyphmodule(id));
+	}
+
+	inline Materialmodule getMaterialmodule()
+	{
+		return Materialmodule(cmzn_scene_get_materialmodule(id));
+	}
+
+	inline Scenefiltermodule getScenefiltermodule()
 	{
 		return Scenefiltermodule(cmzn_scene_get_scenefiltermodule(id));
+	}
+
+	inline Sceneviewermodule getSceneviewermodule();
+
+	inline Spectrummodule getSpectrummodule()
+	{
+		return Spectrummodule(cmzn_scene_get_spectrummodule(id));
+	}
+
+	inline Tessellationmodule getTessellationmodule()
+	{
+		return Tessellationmodule(cmzn_scene_get_tessellationmodule(id));
+	}
+
+	inline Timekeepermodule getTimekeepermodule()
+	{
+		return Timekeepermodule(cmzn_scene_get_timekeepermodule(id));
 	}
 
 	Field getSelectionField()

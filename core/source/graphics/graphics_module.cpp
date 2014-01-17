@@ -33,21 +33,21 @@
 struct cmzn_graphics_module
 {
 	/* attribute managers and defaults: */
-	struct cmzn_glyphmodule *glyphmodule;
-	void *glyph_manager_callback_id;
-	struct cmzn_materialmodule *materialmodule;
-	void *material_manager_callback_id;
-	Light_module *light_module;
-	cmzn_spectrummodule_id spectrummodule;
-	void *spectrum_manager_callback_id;
 	cmzn_fontmodule_id fontmodule;
 	void *font_manager_callback_id;
-	cmzn_sceneviewermodule_id sceneviewermodule;
+	struct cmzn_glyphmodule *glyphmodule;
+	void *glyph_manager_callback_id;
+	Light_module *light_module;
 	Light_model_module *light_model_module;
-	cmzn_timekeepermodule *timekeepermodule;
+	cmzn_materialmodule *materialmodule;
+	void *material_manager_callback_id;
+	cmzn_scenefiltermodule *scenefiltermodule;
+	cmzn_sceneviewermodule_id sceneviewermodule;
+	cmzn_spectrummodule_id spectrummodule;
+	void *spectrum_manager_callback_id;
 	cmzn_tessellationmodule_id tessellationmodule;
-	struct cmzn_scenefiltermodule *scenefiltermodule;
 	void *tessellation_manager_callback_id;
+	cmzn_timekeepermodule *timekeepermodule;
 	int access_count;
 	std::list<cmzn_region*> *member_regions_list;
 };
@@ -531,11 +531,11 @@ cmzn_tessellationmodule_id cmzn_graphics_module_get_tessellationmodule(
 	return 0;
 }
 
-cmzn_timekeepermodule *cmzn_graphics_module_get_timekeepermodule_internal(
+cmzn_timekeepermodule *cmzn_graphics_module_get_timekeepermodule(
 	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->timekeepermodule)
-		return graphics_module->timekeepermodule;
+		return graphics_module->timekeepermodule->access();
 	return 0;
 }
 

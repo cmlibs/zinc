@@ -2425,8 +2425,7 @@ static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 			time = cmzn_scene_get_time_notifier(scene);
 			if (!time)
 			{
-				cmzn_timekeepermodule *timekeepermodule =
-					cmzn_graphics_module_get_timekeepermodule_internal(scene->graphics_module);
+				cmzn_timekeepermodule *timekeepermodule = cmzn_scene_get_timekeepermodule(scene);
 				cmzn_timekeeper *timekeeper = timekeepermodule ? timekeepermodule->getDefaultTimekeeper() : 0;
 				time = Time_object_create_regular(/*update_frequency*/10.0,
 					/*time_offset*/0.0);
@@ -2440,6 +2439,7 @@ static int cmzn_scene_update_time_behaviour(struct cmzn_scene *scene)
 					return_code = 0;
 				}
 				cmzn_timenotifier_destroy(&time);
+				cmzn_timekeepermodule_destroy(&timekeepermodule);
 			}
 		}
 		else
@@ -2614,10 +2614,59 @@ int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_fontmodule_id cmzn_scene_get_fontmodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_fontmodule(scene->graphics_module);
+	return 0;
+}
+
+cmzn_glyphmodule_id cmzn_scene_get_glyphmodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_glyphmodule(scene->graphics_module);
+	return 0;
+}
+
+cmzn_materialmodule_id cmzn_scene_get_materialmodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_materialmodule(scene->graphics_module);
+	return 0;
+}
+
 cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(cmzn_scene_id scene)
 {
 	if (scene)
 		return cmzn_graphics_module_get_scenefiltermodule(scene->graphics_module);
+	return 0;
+}
+
+cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_sceneviewermodule(scene->graphics_module);
+	return 0;
+}
+
+cmzn_spectrummodule_id cmzn_scene_get_spectrummodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_spectrummodule(scene->graphics_module);
+	return 0;
+}
+
+cmzn_tessellationmodule_id cmzn_scene_get_tessellationmodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_tessellationmodule(scene->graphics_module);
+	return 0;
+}
+
+cmzn_timekeepermodule_id cmzn_scene_get_timekeepermodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_timekeepermodule(scene->graphics_module);
 	return 0;
 }
 
