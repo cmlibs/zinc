@@ -600,6 +600,11 @@ inline Sceneviewermodule Context::getSceneviewermodule()
 	return Sceneviewermodule(cmzn_context_get_sceneviewermodule(id));
 }
 
+inline Sceneviewermodule Scene::getSceneviewermodule()
+{
+	return Sceneviewermodule(cmzn_scene_get_sceneviewermodule(id));
+}
+
 }  // namespace Zinc
 }
 

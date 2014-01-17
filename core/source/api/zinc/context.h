@@ -74,18 +74,18 @@ ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context)
 ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
 
 /**
-* Get the font module which stores font object.
-*
-* @param context  The context to request the module from.
-* @return  Handle to the font module, or 0 on error. Up to caller to destroy.
-*/
+ * Get the font module which manages fonts for rendering text in graphics.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+ */
 ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
 	cmzn_context_id context);
 
 /**
  * Get the glyph module which stores static graphics for visualising points,
  * vectors, axes etc. Note on startup no glyphs are defined and glyph module
- * functions need to be called to set up standard glyphs.
+ * functions need to be called to define standard glyphs.
  *
  * @param context  The context to request the module from.
  * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
@@ -94,36 +94,43 @@ ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
 	cmzn_context_id context);
 
 /**
- * Return the material module in context.
+ * Return the material module which manages materials used to colour, texture
+ * and shade graphics. Note on startup only materials "default" and
+ * "default_selected" are defined, as white and red, respectively. Additional
+ * standard and custom materials can be defined using material module functions.
  *
- * @param context  The context to request module from.
- * @return  the material pacakage in context if successfully called,
- *    otherwise NULL.
+ * @param context  The context to request the module from.
+ * @return  Handle to the material module, or 0 on error. Up to caller to
+ * destroy.
  */
 ZINC_API cmzn_materialmodule_id cmzn_context_get_materialmodule(
 	cmzn_context_id context);
 
 /**
- * Get the scene filter module which stores scenefilter objects.
+ * Get the scene filter module which manages scenefilter objects for filtering
+ * contents of scenes with scenepicker and sceneviewer etc.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the context filter module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the scene filter module, or 0 on error. Up to caller to
+ * destroy.
  */
 ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
 	cmzn_context_id context);
 
 /**
- * Returns a handle to a scene viewer module
- * User interface must be enabled before this function can be called successfully.
+ * Returns a handle to a sceneviewer module which manages sceneviewer objects
+ * for rendering 3-D scenes into rectangular windows or canvases using OpenGL.
  *
- * @param context  Handle to a context object.
- * @return The scene viewer module if successfully called, otherwise NULL.
+ * @param context  The context to request the module from.
+ * @return  Handle to the sceneviewer module, or 0 on error. Up to caller to
+ * destroy.
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
 	cmzn_context_id context);
 
 /**
- * Get the spectrum module which stores spectrum objects.
+ * Get the spectrum module which manages spectrum objects controlling how
+ * graphics data fields are converted into colours.
  *
  * @param context  The context to request the module from.
  * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
@@ -132,7 +139,8 @@ ZINC_API cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
 	cmzn_context_id context);
 
 /**
- * Get the tessellation module which stores tessellation objects.
+ * Get the tessellation module which manages objects controlling how curves are
+ * approximated by line segments in graphics.
  *
  * @param context  The context to request the module from.
  * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
@@ -141,8 +149,8 @@ ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
 	cmzn_context_id context);
 
 /**
- * Get the timekeeper module which stores objects for synchronising time
- * across zinc objects.
+ * Get the timekeeper module which manages objects for synchronising time across
+ * zinc objects.
  *
  * @param context  The context to request the module from.
  * @return  Handle to the timekeeper module, or 0 on error. Up to caller to destroy.

@@ -73,7 +73,7 @@ struct Light_module *cmzn_graphics_module_get_light_module(
 	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
- * Return the specrtrum manager in graphics module.
+ * Return the spectrum manager in graphics module.
  *
  * @param graphics_module  Pointer to a Graphics_module object.
  * @return  the spectrum manager in graphics module if successfully called,
@@ -101,8 +101,14 @@ struct cmzn_font *cmzn_graphics_module_get_default_font(
 struct Light_model_module *cmzn_graphics_module_get_light_model_module(
 	struct cmzn_graphics_module *graphics_module);
 
-/** @return  Non-accessed timekeepermodule */
-cmzn_timekeepermodule *cmzn_graphics_module_get_timekeepermodule_internal(
+/**
+ * Return the timekeeper module in graphics module.
+ *
+ * @param graphics_module  Pointer to a Graphics_module object.
+ * @return  the timekeeper module in graphics module if successfully called,
+ *    otherwise NULL. Up to caller to destroy.
+ */
+cmzn_timekeepermodule *cmzn_graphics_module_get_timekeepermodule(
 	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**
@@ -150,8 +156,7 @@ void cmzn_graphics_module_remove_external_callback_dependency(
 
 
 /**
- * Returns a handle to a scene viewer module
- * User interface must be enabled before this function can be called successfully.
+ * Returns a handle to the scene viewer module.
  *
  * @param graphics_module  The graphics module to request the module from.
  * @return The scene viewer module if successfully called, otherwise NULL.
