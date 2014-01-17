@@ -3559,17 +3559,18 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 						}
 						cmzn_mesh_group_destroy(&mesh_group);
 					} break;
-					case '!': /* ! Comment ignored to end of line */
+					case '!': /* !# directive, otherwise ! Comment ignored to end of line */
 					{
 						char *comment = NULL;
-
+						// directive !#nodeset nodes|datapoints
+						// sets which nodeset to read nodes into
 						if (1 == IO_stream_scan(input_file,"#nodese%1[t]",test_string))
 						{
-							if (1 ==  IO_stream_scan(input_file," datapoint%1[s]", test_string))
+							if (1 == IO_stream_scan(input_file," datapoint%1[s]", test_string))
 							{
 								use_data_meta_flag = 1;
 							}
-							else if (1 ==  IO_stream_scan(input_file," node%1[s]", test_string))
+							else if (1 == IO_stream_scan(input_file," node%1[s]", test_string))
 							{
 								use_data_meta_flag = 0;
 							}
@@ -3591,11 +3592,9 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 								cmzn_nodeset_group_destroy(&nodeset_group);
 							}
 						}
-						else
-						{
-							IO_stream_read_string(input_file, "[^\n\r]", &comment);
-							DEALLOCATE(comment);
-						}
+						// ignore to end of line for comment AND directive, in case we extend directive
+						IO_stream_read_string(input_file, "[^\n\r]", &comment);
+						DEALLOCATE(comment);
 					} break;
 					case '#': /* #Scale factor sets, #Nodes, or #Fields */
 					{
