@@ -411,7 +411,7 @@ for node and element fields.
 	enum Value_type value_type = UNKNOWN_VALUE;
 	FE_value focus;
 	int element_xi_mesh_dimension = 0;
-	int i, number_of_components, number_of_indexed_values, return_code;
+	int number_of_components, number_of_indexed_values, return_code;
 	struct Coordinate_system coordinate_system;
 	struct FE_field *field, *indexer_field = NULL, *temp_indexer_field;
 
@@ -430,11 +430,9 @@ for node and element fields.
 			{
 				IO_stream_scan(input_file, ", ");
 				/* remove trailing blanks off field name */
-				i = strlen(field_name);
+				size_t i = strlen(field_name);
 				while ((0 < i) && (isspace(field_name[i - 1])))
-				{
-					i--;
-				}
+					--i;
 				field_name[i] = '\0';
 				if (0 == i)
 				{
@@ -949,7 +947,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 	char *component_name, *derivative_type_name, *location, *nodal_value_type_string,
 		*rest_of_line;
 	enum FE_field_type fe_field_type;
-	int component_number, end_of_names, end_of_string, i, number_of_components,
+	int component_number, end_of_names, end_of_string, number_of_components,
 		number_of_derivatives, number_of_versions, return_code, temp_int;
 	struct FE_field *field, *merged_fe_field;
 	struct FE_node_field_creator *node_field_creator;
@@ -987,11 +985,9 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 				if (IO_stream_read_string(input_file, "[^.]", &component_name))
 				{
 					/* strip trailing blanks from component name */
-					i = strlen(component_name);
+					size_t i = strlen(component_name);
 					while ((0 < i) && (isspace(component_name[i - 1])))
-					{
-						i--;
-					}
+						--i;
 					component_name[i] = '\0';
 					return_code = (0 < i) && set_FE_field_component_name(field,
 						component_number, component_name);
@@ -1017,7 +1013,7 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 								}
 								if (0 < number_of_derivatives)
 								{
-									i = number_of_derivatives;
+									int i = number_of_derivatives;
 									/* optional derivative names will be in brackets */
 									if ('(' == *derivative_type_name)
 									{
@@ -2153,11 +2149,9 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 					if (IO_stream_read_string(input_file, "[^.]", &component_name))
 					{
 						/* strip trailing blanks from component name */
-						i = strlen(component_name);
+						size_t i = strlen(component_name);
 						while ((0 < i) && (isspace(component_name[i - 1])))
-						{
-							i--;
-						}
+							--i;
 						component_name[i] = '\0';
 						return_code = (0 < i) && set_FE_field_component_name(field,
 							component_number, component_name);
@@ -3564,32 +3558,47 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 						char *comment = NULL;
 						// directive !#nodeset nodes|datapoints
 						// sets which nodeset to read nodes into
-						if (1 == IO_stream_scan(input_file,"#nodese%1[t]",test_string))
+						if (1 == IO_stream_scan(input_file,"#nodese%1[t] ",test_string))
 						{
-							if (1 == IO_stream_scan(input_file," datapoint%1[s]", test_string))
+							char *nodesetName = 0;
+							if (IO_stream_read_string(input_file, "[^,\n\r]", &nodesetName))
 							{
-								use_data_meta_flag = 1;
-							}
-							else if (1 == IO_stream_scan(input_file," node%1[s]", test_string))
-							{
-								use_data_meta_flag = 0;
+								// remove trailing whitespace off name
+								size_t i = strlen(nodesetName);
+								while ((0 < i) && (isspace(nodesetName[i - 1])))
+									--i;
+								nodesetName[i] = '\0';
+								if (0 == strcmp("datapoints", nodesetName))
+									use_data_meta_flag = 1;
+								else if (0 == strcmp("nodes", nodesetName))
+									use_data_meta_flag = 0;
+								else
+								{
+									display_message(WARNING_MESSAGE, "Unrecognised nodeset name '%s', assuming %s",
+										nodesetName, use_data ? "datapoints" : "nodes");
+									use_data_meta_flag = use_data;
+								}
+								DEALLOCATE(nodesetName);
+								if (region)
+								{
+									fe_region = cmzn_region_get_FE_region(region);
+									fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
+										use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
+									if (template_node)
+										DEACCESS(FE_node)(&template_node);
+									template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_nodeset, (struct FE_node *)NULL));
+									if (field_order_info)
+										DESTROY(FE_field_order_info)(&field_order_info);
+									field_order_info = CREATE(FE_field_order_info)();
+									cmzn_nodeset_group_destroy(&nodeset_group);
+								}
 							}
 							else
 							{
-								use_data_meta_flag = use_data;
-							}
-							if (region)
-							{
-								fe_region = cmzn_region_get_FE_region(region);
-								fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
-									use_data_meta_flag ? CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS : CMZN_FIELD_DOMAIN_TYPE_NODES);
-								if (template_node)
-									DEACCESS(FE_node)(&template_node);
-								template_node = ACCESS(FE_node)(CREATE(FE_node)(1, fe_nodeset, (struct FE_node *)NULL));
-								if (field_order_info)
-									DESTROY(FE_field_order_info)(&field_order_info);
-								field_order_info = CREATE(FE_field_order_info)();
-								cmzn_nodeset_group_destroy(&nodeset_group);
+								location = IO_stream_get_location_string(input_file);
+								display_message(ERROR_MESSAGE, "Error reading nodeset name at location %s", location);
+								DEALLOCATE(location);
+								return_code = 0;
 							}
 						}
 						// ignore to end of line for comment AND directive, in case we extend directive
