@@ -17,9 +17,9 @@
 %import "selection.i"
 
 %{
-#include "zinc/fieldgroup.hpp"
-#include "zinc/scenepicker.hpp"
 #include "zinc/scene.hpp"
+#include "zinc/scenepicker.hpp"
+#include "zinc/sceneviewer.hpp"
 %}
 
 %include "zinc/scene.hpp"
