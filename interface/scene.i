@@ -15,6 +15,7 @@
 %import "graphics.i"
 %import "scenefilter.i"
 %import "selection.i"
+%import "timekeeper.i"
 
 %{
 #include "zinc/scene.hpp"

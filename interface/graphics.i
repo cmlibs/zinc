@@ -16,12 +16,12 @@
 %include "pyzincstringhandling.i"
 
 %import "field.i"
-%import "tessellation.i"
+%import "font.i"
 %import "glyph.i"
 %import "material.i"
 %import "scenecoordinatesystem.i"
 %import "spectrum.i"
-%import "font.i"
+%import "tessellation.i"
 
 %{
 #include "zinc/fieldmodule.hpp"
