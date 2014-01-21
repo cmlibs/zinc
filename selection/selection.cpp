@@ -385,9 +385,9 @@ TEST(cmzn_fieldgroup, add_remove_nodes)
 	// test contains/add
 	cmzn_nodeset_group_id nodesetGroup = cmzn_field_node_group_get_nodeset_group(nodeGroup);
 	EXPECT_NE(static_cast<cmzn_nodeset_group_id>(0), nodesetGroup);
-	EXPECT_EQ(false, cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node));
+	EXPECT_FALSE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node));
 	EXPECT_EQ(CMZN_OK, cmzn_nodeset_group_add_node(nodesetGroup, node));
-	EXPECT_EQ(true, cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node));
+	EXPECT_TRUE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node));
 
 	// test child group created properly, and that we find non-empty subgroup
 	cmzn_field_group_id childGroup = 0;
@@ -405,7 +405,7 @@ TEST(cmzn_fieldgroup, add_remove_nodes)
 
 	// test remove/contains
 	EXPECT_EQ(CMZN_OK, cmzn_nodeset_group_remove_node(nodesetGroup, node));
-	EXPECT_EQ(false, cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node));
+	EXPECT_FALSE(cmzn_nodeset_contains_node(cmzn_nodeset_group_base_cast(nodesetGroup), node));
 
 	// test for empty groups
 	EXPECT_EQ(static_cast<cmzn_field_group_id>(0), nonEmptyGroup = cmzn_field_group_get_first_non_empty_subregion_field_group(group));
@@ -506,9 +506,9 @@ TEST(cmzn_fieldgroup, add_remove_elements)
 	// test contains/add
 	cmzn_mesh_group_id meshGroup = cmzn_field_element_group_get_mesh_group(elementGroup);
 	EXPECT_NE(static_cast<cmzn_mesh_group_id>(0), meshGroup);
-	EXPECT_EQ(false, cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(meshGroup), element));
+	EXPECT_FALSE(cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(meshGroup), element));
 	EXPECT_EQ(CMZN_OK, cmzn_mesh_group_add_element(meshGroup, element));
-	EXPECT_EQ(true, cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(meshGroup), element));
+	EXPECT_TRUE(cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(meshGroup), element));
 
 	// test child group created properly, and that we find non-empty subgroup
 	cmzn_field_group_id childGroup = 0;
@@ -526,7 +526,7 @@ TEST(cmzn_fieldgroup, add_remove_elements)
 
 	// test remove/contains
 	EXPECT_EQ(CMZN_OK, cmzn_mesh_group_remove_element(meshGroup, element));
-	EXPECT_EQ(false, cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(meshGroup), element));
+	EXPECT_FALSE(cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(meshGroup), element));
 
 	// test for empty groups
 	EXPECT_EQ(static_cast<cmzn_field_group_id>(0), nonEmptyGroup = cmzn_field_group_get_first_non_empty_subregion_field_group(group));
