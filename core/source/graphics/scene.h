@@ -293,7 +293,7 @@ PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scene);
 
 PROTOTYPE_ANY_OBJECT(cmzn_scene);
 
-cmzn_field_group_id cmzn_scene_get_or_create_selection_group(cmzn_scene_id scene);
+
 
 /***************************************************************************//**
  * Remove selection groups from scene tree if they are empty.
@@ -336,12 +336,6 @@ int list_cmzn_scene_transformation_commands(struct cmzn_scene *scene,
 	void *command_prefix_void);
 
 int list_cmzn_scene_transformation(struct cmzn_scene *scene);
-
-int cmzn_scene_add_selection_from_node_list(cmzn_scene_id scene,
-	struct LIST(FE_node) *node_list, int use_data);
-
-int cmzn_scene_remove_selection_from_node_list(cmzn_scene_id scene,
-	struct LIST(FE_node) *node_list, int use_data);
 
 int cmzn_scene_add_selection_from_element_list_of_dimension(cmzn_scene_id scene,
 	struct LIST(FE_element) *element_list, int dimension);
