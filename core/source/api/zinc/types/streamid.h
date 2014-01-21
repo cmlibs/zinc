@@ -80,31 +80,34 @@ typedef struct cmzn_streamresource_memory *cmzn_streamresource_memory_id;
 
 enum cmzn_streaminformation_data_compression_type
 {
-	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID= 0,
-	/*!< default data compression
-	 * The default is no compression in streaminformation.
-	 * For streamresource, the DATA_COMPRESSION_TYPE set on the owning
-	 * streaminfromation will be used.
-	 */
+	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID = 0,
 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT = 1,
-	/*!< No data compression
-	 * This specifies the resource(s) to not have any type of compression
+	/*!< default data compression
+	 * This is the default compression for streamresource.
+	 * When compression type for streamresource is set to default,
+	 * the DATA_COMPRESSION_TYPE set on the owning
+	 * streaminformation will be used. This type cannot be set
+	 * for streaminformation.
 	 */
 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE = 2,
+	/*!< No data compression
+	 * This is the default compression for streaminformation.
+	 * This specifies the resource(s) to not have any type of compression.
+	 */
+	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP = 3,
 	/*!< Gzip data compression
 	 * This specifies the resource(s) is compressed using gzip. This mode
 	 * is supported in all region resource(s) and analyze image format.
 	 * Analyze image format expects the resource(s) in a gzip compressed tar
 	 * containing an analyze header file and analyze image file.
 	 */
-	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP = 3,
+	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2 = 4,
 	/*!< Bzip2 data compression
 	 * This specifies the resource(s) is compressed using bzip2. This mode
 	 * is supported in all region resource(s)and analyze image format.
 	 * Analyze image format expects the resource(s) in a bzip2 compressed tar
 	 * containing analyze header file and analyze image file.
 	 */
-	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_BZIP2 = 4,
 };
 
 #endif
