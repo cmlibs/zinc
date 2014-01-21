@@ -373,7 +373,7 @@ cmzn_node_id cmzn_scenepicker::getNearestNode()
 			/* select_buffer[0] = number_of_names
 			 * select_buffer[1] = nearest
 			 * select_buffer[2] = furthest
-			 *cmzn_scene_get_child_of_position select_buffer[3] = scene
+			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
 			 * select_buffer[5] = element number
 			 * select_buffer[6] = point number
