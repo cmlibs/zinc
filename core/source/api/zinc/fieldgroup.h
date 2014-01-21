@@ -216,8 +216,11 @@ ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_fie
 
 /**
  * Create and return a handle to a node group field compatible with the supplied
- * nodeset, i.e. able to contain nodes from its master nodeset. The node group
- * field is registered as a sub-object group for this group.
+ * nodeset, i.e. able to contain nodes from its master nodeset.
+ * The node group field is registered as a sub-object group for this group.
+ * The nodeset can be from the group's own region or any subregion of it.
+ * Subregion groups for any intermediate and the final nodeset-owning regions
+ * are automatically created to contain the node group, if needed.
  * Fails if a compatible node group field already exists.
  * Caller is responsible for destroying the returned field handle.
  *
@@ -231,7 +234,8 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
 
 /**
  * Find and return handle to the sub-object node group compatible with the
- * specified nodeset, if one exists for the group.
+ * specified nodeset, if one exists for the group. The nodeset can be from
+ * the group's own region or any subregion of it.
  * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to query.
@@ -246,6 +250,9 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
  * Create and return a handle to an element group field compatible with the
  * supplied mesh, i.e. able to contain elements from its master mesh. The
  * element group field is registered as a sub-object group for this group.
+ * The mesh can be from the group's own region or any subregion of it.
+ * Subregion groups for any intermediate and the final mesh-owning regions are
+ * automatically created to contain the element group, if needed.
  * Fails if a compatible element group field already exists.
  * Caller is responsible for destroying the returned field handle.
  *
@@ -260,6 +267,7 @@ ZINC_API cmzn_field_element_group_id cmzn_field_group_create_field_element_group
 /**
  * Find and return handle to the sub-object element group compatible with the
  * specified mesh, if one exists for the group.
+ * The mesh can be from the group's own region or any subregion of it. 
  * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to query.
