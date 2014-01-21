@@ -204,7 +204,7 @@ public:
 
 	cmzn_streaminformation() :
 		access_count(1),
-		data_compression_type(CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT)
+		data_compression_type(CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE)
 	{
 	}
 
@@ -359,8 +359,11 @@ public:
 
 	int setDataCompression(enum cmzn_streaminformation_data_compression_type data_compression_type_in)
 	{
-		data_compression_type = data_compression_type_in;
-		return 1;
+		if (data_compression_type_in != CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT)
+			data_compression_type = data_compression_type_in;
+		else
+			return CMZN_ERROR_ARGUMENT;
+		return CMZN_OK;
 	}
 
 protected:
