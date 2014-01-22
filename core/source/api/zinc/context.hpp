@@ -81,7 +81,7 @@ public:
 
 	int getVersion(int *versionOut3)
 	{
-		return cmzn_context_get_version(id, versionOut);
+		return cmzn_context_get_version(id, versionOut3);
 	}
 
 	int getRevision()
