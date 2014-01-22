@@ -152,7 +152,7 @@ char *cmzn_context_get_version_string(cmzn_context_id context)
 		char *version_string = new char[1000];
 		sprintf(version_string, "%d.%d.%d.r%s",
 			ZINC_MAJOR_VERSION, ZINC_MINOR_VERSION, ZINC_PATCH_VERSION, ZINC_REVISION);
-		if (ZINC_RELEASE == false)
+		if (0 == strcmp(ZINC_BUILD_TYPE, "debug"))
 		{
 			sprintf(version_string, "%s.Debug",	version_string);
 		}
