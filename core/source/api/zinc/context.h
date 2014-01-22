@@ -185,7 +185,8 @@ ZINC_API int cmzn_context_get_revision(cmzn_context_id context);
  * in the revision, and (.Debug) indicates this binary is not optimised.
  *
  * @param context  Handle to the context.
- * @return  version string on success, 0 on failure.
+ * @return  on success : allocated string containing version details. Up to caller to
+ * free using cmzn_deallocate().
  */
 ZINC_API char *cmzn_context_get_version_string(cmzn_context_id context);
 
