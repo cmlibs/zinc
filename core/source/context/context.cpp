@@ -9,7 +9,9 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <stdlib.h>
 #include "zinc/fieldgroup.h"
+#include "configure/version.h"
 #include "context/context.h"
 #include "curve/curve.h"
 #include "general/debug.h"
@@ -118,6 +120,48 @@ struct Context *cmzn_context_access(struct Context *context)
 			"cmzn_context_access.  Missing context");
 	}
 	return context;
+}
+
+int cmzn_context_get_version(cmzn_context_id context, int *version_out)
+{
+	if (context && version_out)
+	{
+		version_out[0] = ZINC_MAJOR_VERSION;
+		version_out[1] = ZINC_MINOR_VERSION;
+		version_out[2] = ZINC_PATCH_VERSION;
+		return CMZN_OK;
+	}
+
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_context_get_revision(cmzn_context_id context)
+{
+	if (context)
+	{
+		return atoi(ZINC_REVISION);
+	}
+
+	return 0;
+}
+
+char *cmzn_context_get_version_string(cmzn_context_id context)
+{
+	if (context)
+	{
+		char *version_string = new char[1000];
+		sprintf(version_string, "%d.%d.%d.r%s",
+			ZINC_MAJOR_VERSION, ZINC_MINOR_VERSION, ZINC_PATCH_VERSION, ZINC_REVISION);
+		if (ZINC_RELEASE == false)
+		{
+			sprintf(version_string, "%s.Debug",	version_string);
+		}
+		char *output_string = duplicate_string(version_string);
+		delete[] version_string;
+		return output_string;
+	}
+
+	return 0;
 }
 
 struct cmzn_region *cmzn_context_get_default_region(struct Context *context)

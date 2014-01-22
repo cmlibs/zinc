@@ -79,6 +79,21 @@ public:
 		return id;
 	}
 
+	int getVersion(int *versionOut)
+	{
+		return cmzn_context_get_version(id, versionOut);
+	}
+
+	int getRevision()
+	{
+		return cmzn_context_get_revision(id);
+	}
+
+	char *getVersionString()
+	{
+		return cmzn_context_get_version_string(id);
+	}
+
 	inline Region createRegion();
 
 	inline Region getDefaultRegion();
