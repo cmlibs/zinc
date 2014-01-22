@@ -79,7 +79,7 @@ public:
 		return id;
 	}
 
-	int getVersion(int *versionOut)
+	int getVersion(int *versionOut3)
 	{
 		return cmzn_context_get_version(id, versionOut);
 	}
