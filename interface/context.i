@@ -13,7 +13,6 @@
 
 %module(package="opencmiss.zinc") context
 
-
 %import "font.i"
 %import "glyph.i"
 %import "material.i"
@@ -23,6 +22,7 @@
 %import "spectrum.i"
 %import "tessellation.i"
 %import "timekeeper.i"
+%include "integervaluesarraytypemap.i"
 
 %{
 #include "zinc/context.hpp"

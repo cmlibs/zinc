@@ -129,3 +129,51 @@
 %typemap(in) (int valuesCount, const int *radiusSizesIn) = (int valuesCount, const int *valuesIn);
 %typemap(in) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
 %typemap(freearg) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
+
+
+// array getter in-handler expects an integer array size only
+// and allocates array to accept output; see argout-handler
+%typemap(in, numinputs=0) ( int *valuesOut3)
+{
+	$1 = new int[3];
+};
+
+%typemap(argout)(int *valuesOut3)
+{
+	/* Applying out array of size 3 typemap */
+	PyObject *o;
+	o = PyList_New(3);
+	for (int i = 0 ; i < 3; i++)
+	{
+		PyList_SET_ITEM(o, i, PyInt_FromLong($1[i])); // steals reference
+	}
+	if ((!$result) || ($result == Py_None))
+	{
+		$result = o;
+	}
+	else
+	{
+		// note: code considers that tuples are supposed to be immutable
+		// should only modify if you have only reference to them!
+		if (!PyTuple_Check($result))
+		{
+			PyObject *previousResult = $result;
+			$result = PyTuple_New(2);
+			PyTuple_SET_ITEM($result, 0, previousResult); // steals reference
+			PyTuple_SET_ITEM($result, 1, o); // steals reference
+		}
+		else
+		{
+			PyObject *previousResult = $result;
+			PyObject *addResult = PyTuple_New(1);
+			PyTuple_SET_ITEM(addResult, 0, o); // steals reference
+			$result = PySequence_Concat(previousResult, addResult);
+			Py_DECREF(previousResult);
+			Py_DECREF(addResult);
+		}
+	}
+	delete[] $1;
+};
+
+%apply (int *valuesOut3) { (int *versionOut) };
+
