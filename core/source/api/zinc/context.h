@@ -158,6 +158,37 @@ ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
 ZINC_API cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(
 	cmzn_context_id context);
 
+/**
+ * Get the version number of this Zinc library. It will return the major version,
+ * minor version and patch version in a 3 component integer array.
+ *
+ * @param context  Handle to the context.
+ * @param version_out  Array of size 3 to hold the values of the version number,
+ * 	they are the major version, minor version and patch version respectively.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_context_get_version(cmzn_context_id context, int *version_out);
+
+/**
+ * Get the revision number of this Zinc library.
+ *
+ * @param context  Handle to the context.
+ * @return  Revision of this Zinc library on success, 0 on failure.
+ */
+ZINC_API int cmzn_context_get_revision(cmzn_context_id context);
+
+/**
+ * Get the version string of this Zinc library. The version string will
+ * be output in the following format
+ * "[major version].[minor version].[patch version].r[revision(M)](.Debug)"
+ * (M) indicates this binary contains local modifications that are not included
+ * in the revision, and (.Debug) indicates this binary is not optimised.
+ *
+ * @param context  Handle to the context.
+ * @return  version string on success, 0 on failure.
+ */
+ZINC_API char *cmzn_context_get_version_string(cmzn_context_id context);
+
 #ifdef __cplusplus
 }
 #endif
