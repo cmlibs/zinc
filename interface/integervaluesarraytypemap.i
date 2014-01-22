@@ -175,5 +175,5 @@
 	delete[] $1;
 };
 
-%apply (int *valuesOut3) { (int *versionOut) };
+%apply (int *valuesOut3) { (int *versionOut3) };
 
