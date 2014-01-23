@@ -28,6 +28,7 @@ SET(TESTIMAGE_GRAY_JPG_RESOURCE "${CMAKE_CURRENT_SOURCE_DIR}/resources/testimage
 # Any tests to include must append the test name
 # to the API_TESTS list.  Any source files for the
 # test must be set to <test name>_SRC.
+INCLUDE(context/tests.cmake)
 INCLUDE(fieldmodule/tests.cmake)
 INCLUDE(glyph/tests.cmake)
 INCLUDE(graphics/tests.cmake)
