@@ -82,8 +82,6 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenefilterid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/scenepickerid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneviewerid.h
-	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/sceneviewerinputid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/selectionid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/spectrumid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/streamid.h
