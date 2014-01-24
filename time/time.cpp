@@ -110,6 +110,68 @@ TEST(ZincTimekeeper, api)
 	timenotifierRegular.setFrequency(1.01);
 	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(3.99));
 	ASSERT_DOUBLE_EQ(3.99, thisCallback.lastEvent.getTime());
-
 	EXPECT_EQ(CMZN_OK, result = timenotifier.clearCallback());
+}
+
+TEST(ZincTimekeeper, getNextCallback)
+{
+	ZincTestSetupCpp zinc;
+
+	Timekeepermodule tkm = zinc.context.getTimekeepermodule();
+	EXPECT_TRUE(tkm.isValid());
+	Timekeeper timekeeper = tkm.getDefaultTimekeeper();
+	EXPECT_TRUE(timekeeper.isValid());
+
+	int result;
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setMinimumTime(-5.0));
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setMaximumTime(10.0));
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(0.0));
+
+	Timenotifier timenotifier = timekeeper.createTimenotifierRegular(
+		/*update_frequency*/10, /*time_offset*/0.03);
+	EXPECT_TRUE(timenotifier.isValid());
+
+	Timenotifier timenotifier2 = timekeeper.createTimenotifierRegular(
+		/*update_frequency*/20, /*time_offset*/0.02);
+	EXPECT_TRUE(timenotifier2.isValid());
+
+	ASSERT_DOUBLE_EQ(0.02, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.03, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.02, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(0.02));
+	ASSERT_DOUBLE_EQ(0.03, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.03, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.07, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(0.03));
+	ASSERT_DOUBLE_EQ(0.07, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.13, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.07, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(0.07));
+	ASSERT_DOUBLE_EQ(0.12, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.13, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(0.12, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(9.99));
+	ASSERT_DOUBLE_EQ(-4.98, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(10.03, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+	ASSERT_DOUBLE_EQ(10.02, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_FORWARD));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(0.00));
+	ASSERT_DOUBLE_EQ(-0.03, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+	ASSERT_DOUBLE_EQ(-0.07, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+	ASSERT_DOUBLE_EQ(-0.03, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(-2.50));
+	ASSERT_DOUBLE_EQ(-2.53, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+	ASSERT_DOUBLE_EQ(-2.57, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+	ASSERT_DOUBLE_EQ(-2.53, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+
+	EXPECT_EQ(CMZN_OK, result = timekeeper.setTime(-5.0));
+	ASSERT_DOUBLE_EQ(9.97, timekeeper.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+	ASSERT_DOUBLE_EQ(-5.07, timenotifier.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+	ASSERT_DOUBLE_EQ(-5.03, timenotifier2.getNextCallbackTime(Timekeeper::PLAY_DIRECTION_REVERSE));
+
 }
