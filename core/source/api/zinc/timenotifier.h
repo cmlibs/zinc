@@ -12,6 +12,7 @@
 #ifndef CMZN_TIMENOTIFIER_H__
 #define CMZN_TIMENOTIFIER_H__
 
+#include "types/timekeeperid.h"
 #include "types/timenotifierid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -86,7 +87,6 @@ ZINC_API void *cmzn_timenotifier_get_callback_user_data(cmzn_timenotifier_id tim
 ZINC_API int cmzn_timenotifier_set_callback(cmzn_timenotifier_id timenotifier,
 	cmzn_timenotifier_callback function, void *user_data_in);
 
-
 /**
  * Stop and clear selection callback. This will stop the callback and also
  * remove the callback function from the selection notifier.
@@ -103,6 +103,21 @@ ZINC_API int cmzn_timenotifier_clear_callback(cmzn_timenotifier_id timenotifier)
  * @return  Current time or 0 if invalid argument.
  */
 ZINC_API double cmzn_timenotifier_get_time(cmzn_timenotifier_id timenotifier);
+
+/**
+ * Gets the next callback time required by this notifier. This function does
+ * not take the maximum and minimum of the timekeeper into consideration.
+ *
+ * @see cmzn_timekeeper_get_next_callback_time
+ *
+ * @param timenotifier  The timenotifier to get next callback time for.
+ *
+ * @param direction  Enumeration indicating rather next forward/reverse time will be calculated.
+ * @return  next callback time on success.
+ */
+ZINC_API double cmzn_timenotifier_get_next_callback_time(
+	cmzn_timenotifier_id timenotifier,
+	enum cmzn_timekeeper_play_direction play_direction);
 
 /**
  * If the timenotifier is of regular type, then this function returns the derived
@@ -142,12 +157,12 @@ ZINC_API int cmzn_timenotifier_regular_destroy(
 	cmzn_timenotifier_regular_id *timenotifier_regular_address);
 
 /**
- * This controls the rate which the time depedent object is called back.
+ * This controls the rate which the time dependent object is called back.
  * The default value is 10 which means time notifier will receive 10 callbacks
  * per unit of time in the time keeper.
- * i.e. If the speed of time keeper is set to be 1 and the update frequency of
+ * i.e. If  the update frequency of
  * time notifier is set to be 10, the actual interval between each callbacks is:
- * (1/speed of time keeper)/(update frequency) which is 0.1s.
+ * 1/(update frequency) which is 0.1s.
  * Note that the time notifier does not promise to receive callback exactly
  * 0.1s after the previous callback.
  *

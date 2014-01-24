@@ -58,6 +58,13 @@ public:
 		}
 	}
 
+	enum PlayDirection
+	{
+		PLAY_DIRECTION_INVALID = CMZN_TIMEKEEPER_PLAY_DIRECTION_INVALID,
+		PLAY_DIRECTION_FORWARD = CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD,
+		PLAY_DIRECTION_REVERSE = CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE
+	};
+
 	bool isValid() const
 	{
 		return (0 != id);
@@ -98,6 +105,12 @@ public:
 	int setTime(double time)
 	{
 		return cmzn_timekeeper_set_time(id, time);
+	}
+
+	double getNextCallbackTime(enum PlayDirection playDirection)
+	{
+		return cmzn_timekeeper_get_next_callback_time(id,
+			static_cast<cmzn_timekeeper_play_direction>(playDirection));
 	}
 
 };

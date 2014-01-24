@@ -132,11 +132,30 @@ ZINC_API double cmzn_timekeeper_get_time(cmzn_timekeeper_id timekeeper);
  * Sets the current time in the timekeeper. Timenotifiers are informed of the
  * time change.
  *
- * @param timenotifier  The timekeeper to modify.
+ * @param timekeeper  The timekeeper to modify.
  * @param time  The new current time.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_timekeeper_set_time(cmzn_timekeeper_id timekeeper, double time);
+
+/**
+ * Gets the next callback time required by any of the time notifiers in the
+ * timekeeper. This function takes the minimum and maximum time into consideration.
+ * If the direction of playback is forward and next callback time exceeds the maximum time,
+ * the next callback time will be timekeeper_minimum + (callback_time - timekeeper_maximum).
+ * If the direction of playback is reverse and next callback time is smaller than the
+ * minimum time, the next callback time will be timekeeper_maximum +
+ * (timekeeper_minimum - callback_time).
+ *
+ * @see cmzn_timenotifier_get_next_callback_time
+ *
+ * @param timekeeper  The timekeeper to get next callback time.
+ *
+ * @param direction  Enumeration indicating rather next forward/reverse time will be calculated.
+ * @return  next callback time on success.
+ */
+ZINC_API double cmzn_timekeeper_get_next_callback_time(cmzn_timekeeper_id timekeeper,
+	enum cmzn_timekeeper_play_direction direction);
 
 #ifdef __cplusplus
 }

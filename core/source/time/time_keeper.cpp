@@ -34,7 +34,6 @@ cmzn_timekeeper::cmzn_timekeeper():
 	time(0.0),
 	time_object_info_list(NULL),
 	minimum(0.0), maximum(0.0),
-	speed(0.0),
 	access_count(1)
 {
 }
@@ -221,6 +220,55 @@ int cmzn_timekeeper::setTime(double new_time)
 	return CMZN_OK;
 }
 
+double cmzn_timekeeper::getNextCallbackTime(enum cmzn_timekeeper_play_direction direction)
+{
+	struct Time_object_info *object_info;
+
+	object_info = time_object_info_list;
+	double next_callback_time = 0.0, closet_callback_time = 0.0;
+	int closet_time_set = 0;
+	while (object_info)
+	{
+		next_callback_time = cmzn_timenotifier_get_next_callback_time(object_info->time_object,
+			direction);
+		if (closet_time_set == 0)
+		{
+			closet_time_set = 1;
+			closet_callback_time = next_callback_time;
+		}
+		else
+		{
+			if (direction == CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD)
+			{
+				if ((closet_callback_time - time) >  (next_callback_time - time))
+				{
+					closet_callback_time = next_callback_time;
+				}
+			}
+			else if (direction == CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE)
+			{
+				if ((time - closet_callback_time) >  (time - next_callback_time))
+				{
+					closet_callback_time = next_callback_time;
+				}
+			}
+		}
+		object_info = object_info->next;
+	}
+	if ((direction == CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD) &&
+		(closet_callback_time > maximum))
+	{
+		closet_callback_time = minimum + closet_callback_time - maximum;
+	}
+	else if ((direction == CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE) &&
+		(closet_callback_time < minimum))
+	{
+		closet_callback_time = maximum - (minimum - closet_callback_time);
+	}
+
+	return closet_callback_time;
+}
+
 int cmzn_timekeeper::hasTimeObject()
 {
 	 if (time_object_info_list)
@@ -323,6 +371,15 @@ double cmzn_timekeeper_get_time(cmzn_timekeeper_id timekeeper)
 		return timekeeper->getTime();
 	return 0;
 }
+
+double cmzn_timekeeper_get_next_callback_time(cmzn_timekeeper_id timekeeper,
+	enum cmzn_timekeeper_play_direction direction)
+{
+	if (timekeeper)
+		return timekeeper->getNextCallbackTime(direction);
+	return 0.0;
+}
+
 
 int cmzn_timekeeper_set_time(cmzn_timekeeper_id timekeeper, double time)
 {

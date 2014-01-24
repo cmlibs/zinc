@@ -162,6 +162,12 @@ public:
 		return cmzn_timenotifier_clear_callback(id);
 	}
 
+	double getNextCallbackTime(enum Timekeeper::PlayDirection playDirection)
+	{
+		return cmzn_timenotifier_get_next_callback_time(
+			id, static_cast<cmzn_timekeeper_play_direction>(playDirection));
+	}
+
 	inline TimenotifierRegular castRegular();
 };
 
