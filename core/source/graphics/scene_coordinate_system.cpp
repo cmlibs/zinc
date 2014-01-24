@@ -99,16 +99,16 @@ int cmzn_scenecoordinatesystem_get_viewport(
 		// do nothing
 		break;
 	case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-		*left = 0.0;
-		*right = (double)(int)(viewport_width + 0.5);
-		*bottom = 0.0;
-		*top = (double)(int)(viewport_height + 0.5);
+		*left = -0.5;
+		*right = (double)(int)(viewport_width - 0.5);
+		*bottom = -0.5;
+		*top = (double)(int)(viewport_height - 0.5);
 		break;
 	case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT:
-		*left = 0.0;
-		*right = (double)(int)(viewport_width + 0.5);
-		*bottom = (double)(int)(-viewport_height - 0.5);
-		*top = 0.0;
+		*left = -0.5;
+		*right = (double)(int)(viewport_width - 0.5);
+		*bottom = (double)(int)(-viewport_height + 0.5);
+		*top = 0.5;
 		break;
 	default:
 		if (viewport_width > viewport_height)

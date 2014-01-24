@@ -55,11 +55,11 @@ enum cmzn_scenecoordinatesystem
 	 * -1 to +1 from far to near, and from -1 to +1 from left-to-right and
 	 * bottom-to-top in largest square that fits in top of window.*/
 	CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT = 9,
-	/*!< Window coordinate system in pixel units with 0,0 at bottom, left of
+	/*!< Window coordinate system in pixel units with 0,0 at centre of the
 	 * bottom-left pixel in display window, and depth ranging from far = -1 to
 	 * near = +1.*/
 	CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT = 10
-	/*!< Window coordinate system in pixel units with 0,0 at top, left of
+	/*!< Window coordinate system in pixel units with 0,0 at centre of the
 	 * top-left pixel in display window, and depth ranging from far = -1 to
 	 * near = +1. Y coordinates are negative going down the window. */
 };
