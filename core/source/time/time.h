@@ -49,7 +49,7 @@ struct cmzn_timenotifierevent
 };
 
 typedef double (*Time_object_next_time_function)(double time_after,
-	enum Time_keeper_play_direction play_direction, void *user_data);
+	enum cmzn_timekeeper_play_direction play_direction, void *user_data);
 
 PROTOTYPE_OBJECT_FUNCTIONS(Time_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(Time_object);
@@ -82,10 +82,10 @@ int Time_object_set_name(struct Time_object *time, const char *name);
  * @return  1 if the specified time is a valid callback time, otherwise 0.
  */
 int Time_object_check_valid_callback_time(struct Time_object *time_object,
-	double time,enum Time_keeper_play_direction play_direction);
+	double time,enum cmzn_timekeeper_play_direction play_direction);
 
-double Time_object_get_next_callback_time(struct Time_object *time,
-	double time_after,enum Time_keeper_play_direction play_direction);
+double cmzn_timenotifier_get_next_callback_time(cmzn_timenotifier_id timenotifier,
+	double curren_time, enum cmzn_timekeeper_play_direction play_direction);
 /*******************************************************************************
 LAST MODIFIED : 9 December 1998
 
@@ -134,5 +134,9 @@ LAST MODIFIED : 29 September 1998
 
 DESCRIPTION :
 ==============================================================================*/
+
+double cmzn_timenotifier_get_next_callback_time_private(
+	cmzn_timenotifier_id timenotifier, double curren_time,
+	enum cmzn_timekeeper_play_direction play_direction);
 
 #endif /* !defined (TIME_TIME_H) */

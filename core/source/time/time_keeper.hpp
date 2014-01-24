@@ -37,7 +37,7 @@ private:
 	const char *name;
 	double time;
 	struct Time_object_info *time_object_info_list;
-	double minimum, maximum, speed;
+	double minimum, maximum;
 
 public:
 
@@ -83,12 +83,8 @@ public:
 	struct Time_object_info *getObjectInfo();
 
 	void setTimeQuiet(double new_time);
-};
 
-enum Time_keeper_play_direction
-{
-	TIME_KEEPER_PLAY_FORWARD,
-	TIME_KEEPER_PLAY_BACKWARD
+	double getNextCallbackTime(cmzn_timekeeper_play_direction direction);
 };
 
 /** Designed for supporting multiple timekeepers in future.

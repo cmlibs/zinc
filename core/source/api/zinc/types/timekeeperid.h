@@ -11,6 +11,13 @@
 #ifndef CMZN_TIMEKEEPERID_H__
 #define CMZN_TIMEKEEPERID_H__
 
+enum cmzn_timekeeper_play_direction
+{
+	CMZN_TIMEKEEPER_PLAY_DIRECTION_INVALID = 0,
+	CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD = 1,
+	CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE = 2
+};
+
 /**
  * A handle to a time keeper.
  * Time keeper maintains a current time which can be automatically advanced

@@ -212,11 +212,10 @@ double cmzn_timenotifier_get_time(cmzn_timenotifier_id timenotifier)
 }
 
 int Time_object_check_valid_callback_time(struct Time_object *time_object,
-	double time,enum Time_keeper_play_direction play_direction)
+	double time,enum cmzn_timekeeper_play_direction play_direction)
 {
 	int return_code = 0;
 
-	ENTER(Time_object_check_valid_callback_time);
 	if (time_object)
 	{
 		switch(time_object->type)
@@ -225,7 +224,7 @@ int Time_object_check_valid_callback_time(struct Time_object *time_object,
 			{
 				switch(play_direction)
 				{
-					case TIME_KEEPER_PLAY_FORWARD:
+					case CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD:
 					{
 						/* minus the current time by a faction of the update frequency
 							 then workout the closest callback time */
@@ -237,7 +236,7 @@ int Time_object_check_valid_callback_time(struct Time_object *time_object,
 							return_code = 1;
 						}
 					} break;
-					case TIME_KEEPER_PLAY_BACKWARD:
+					case CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE:
 					{
 						/* add the current time by a faction of the update frequency
 							 then workout the closest callback time */
@@ -251,8 +250,6 @@ int Time_object_check_valid_callback_time(struct Time_object *time_object,
 					} break;
 					default:
 					{
-						display_message(ERROR_MESSAGE,
-							"Time_object_check_valid_callback_time.  Unknown play direction");
 						return_code=0;
 					} break;
 				}
@@ -270,7 +267,7 @@ int Time_object_check_valid_callback_time(struct Time_object *time_object,
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"Time_object_get_next_callback_time.  type TIME_OBJECT_NEXT_TIME_FUNCTION but no function");
+						"Time_object_check_valid_callback_time.  type TIME_OBJECT_NEXT_TIME_FUNCTION but no function");
 					return_code=0;
 				}
 			} break;
@@ -278,63 +275,52 @@ int Time_object_check_valid_callback_time(struct Time_object *time_object,
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Time_object_check_valid_callback_time.  Invalid time object");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 }
-double Time_object_get_next_callback_time(struct Time_object *time,
-	double time_after, enum Time_keeper_play_direction play_direction)
-/*******************************************************************************
-LAST MODIFIED : 9 December 1998
 
-DESCRIPTION :
-==============================================================================*/
+double cmzn_timenotifier_get_next_callback_time_private(cmzn_timenotifier_id timenotifier,
+	double curren_time, enum cmzn_timekeeper_play_direction play_direction)
 {
 	double return_code;
 
-	ENTER(Time_object_get_next_callback_time);
-
-	if (time)
+	if (timenotifier)
 	{
-		switch(time->type)
+		switch(timenotifier->type)
 		{
 			default:
 			{
 				switch(play_direction)
 				{
-					case TIME_KEEPER_PLAY_FORWARD:
+					case CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD:
 					{
-						return_code = time->time_offset + (1.0 +
-							floor((time_after - time->time_offset) * time->update_frequency)) / time->update_frequency;
+						return_code = timenotifier->time_offset + (1.0 +
+							floor((curren_time - timenotifier->time_offset) *
+								timenotifier->update_frequency)) / timenotifier->update_frequency;
 					} break;
-					case TIME_KEEPER_PLAY_BACKWARD:
+					case CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE:
 					{
-						return_code = time->time_offset + (-1.0 +
-							ceil((time_after -  time->time_offset) * time->update_frequency)) / time->update_frequency;
+						return_code = timenotifier->time_offset + (-1.0 +
+							ceil((curren_time -  timenotifier->time_offset) * timenotifier->update_frequency)) /
+							timenotifier->update_frequency;
 					} break;
 					default:
 					{
-						display_message(ERROR_MESSAGE,
-							"Time_object_get_next_callback_time.  Unknown play direction");
 						return_code=0;
 					} break;
 				}
 			} break;
 			case TIME_OBJECT_NEXT_TIME_FUNCTION:
 			{
-				if(time->next_time_function)
+				if(timenotifier->next_time_function)
 				{
-					return_code = (time->next_time_function)(time_after, play_direction,
-						time->next_time_user_data);
+					return_code = (timenotifier->next_time_function)(curren_time, play_direction,
+						timenotifier->next_time_user_data);
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"Time_object_get_next_callback_time.  type TIME_OBJECT_NEXT_TIME_FUNCTION but no function");
 					return_code=0;
 				}
 			} break;
@@ -342,14 +328,23 @@ DESCRIPTION :
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Time_object_get_next_callback_time.  Invalid time object");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* Time_object_get_next_callback_time */
+}
+
+double cmzn_timenotifier_get_next_callback_time(cmzn_timenotifier_id timenotifier,
+	enum cmzn_timekeeper_play_direction play_direction)
+{
+	if (timenotifier)
+	{
+		return cmzn_timenotifier_get_next_callback_time_private(timenotifier,
+			timenotifier->current_time, play_direction);
+	}
+	return 0.0;
+}
+
 
 int Time_object_set_current_time_privileged(struct Time_object *time,
 	double new_time)
