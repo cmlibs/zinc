@@ -571,7 +571,6 @@ private:
 	FE_element *element;
 	cmzn_fieldcache_id field_cache;
 	cmzn_mesh_id mesh;
-	FE_value time;
 	int number_in_xi1, number_in_xi2, number_in_xi3, number_of_polygon_vertices;
 	const Iso_surface_specification& specification;
 	FE_value delta_xi1, delta_xi2, delta_xi3;
@@ -590,8 +589,7 @@ private:
 	Iso_mesh *last_mesh;
 
 public:
-	Isosurface_builder(FE_element *element, cmzn_fieldcache_id field_cache,
-		cmzn_mesh_id mesh, FE_value time,
+	Isosurface_builder(FE_element *element, cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh,
 		int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
 		const Iso_surface_specification& specification);
 
@@ -714,13 +712,11 @@ private:
 };
 
 Isosurface_builder::Isosurface_builder(FE_element *element, cmzn_fieldcache_id field_cache,
-	cmzn_mesh_id mesh, FE_value time,
-	int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
+	cmzn_mesh_id mesh, int requested_number_in_xi1, int requested_number_in_xi2, int requested_number_in_xi3,
 	const Iso_surface_specification& specification) :
 		element(element),
 		field_cache(field_cache),
 		mesh(mesh),
-		time(time),
 		number_in_xi1(requested_number_in_xi1),
 		number_in_xi2(requested_number_in_xi2),
 		number_in_xi3(requested_number_in_xi3),
@@ -734,7 +730,6 @@ Isosurface_builder::Isosurface_builder(FE_element *element, cmzn_fieldcache_id f
 		number_of_data_components(specification.number_of_data_components),
 		last_mesh_number(-1)
 {
-	cmzn_fieldcache_set_time(field_cache, time);
 	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
 	FE_element_shape *element_shape = NULL;
 	get_FE_element_shape(element, &element_shape);
@@ -2036,19 +2031,17 @@ int Iso_surface_specification_destroy(
 }
 
 int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
-	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh,
-	FE_value time, int *number_in_xi,
+	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh, int *number_in_xi,
 	struct Iso_surface_specification *specification,
 	struct GT_object *graphics_object, enum cmzn_graphics_render_polygon_mode render_polygon_mode)
 {
-	ENTER(create_iso_surfaces_from_FE_element_new);
 	int return_code = 0;
 	if ((NULL != element) && field_cache && mesh && (3 == get_FE_element_dimension(element)) &&
 		(NULL != number_in_xi) &&
 		(0 < number_in_xi[0]) && (0 < number_in_xi[1]) && (0 < number_in_xi[2]) &&
 		(NULL != specification) && (NULL != graphics_object))
 	{
-		Isosurface_builder iso_builder(element, field_cache, mesh, time,
+		Isosurface_builder iso_builder(element, field_cache, mesh,
 			number_in_xi[0], number_in_xi[1], number_in_xi[2], *specification);
 		return_code = iso_builder.sweep();
 		if (return_code)
@@ -2061,7 +2054,5 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 		display_message(ERROR_MESSAGE,
 			"create_iso_surfaces_from_FE_element_new.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* create_iso_surfaces_from_FE_element_new */
+}

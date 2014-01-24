@@ -186,6 +186,16 @@ int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address)
 	return cmzn_fieldcache::deaccess(*cache_address);
 }
 
+int cmzn_fieldcache_clear_location(cmzn_fieldcache_id cache)
+{
+	if (cache)
+	{
+		cache->clearLocation();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_fieldcache_set_time(cmzn_fieldcache_id cache, double time)
 {
 	if (!cache)

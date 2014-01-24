@@ -103,6 +103,8 @@ Function returns the axes as unit vectors with their magnitudes in the <size>
 array. This is always possible if there is a scalar (or zero scalar), but where
 zero vectors are either read or calculated from the <orientation_scale_values>,
 these are simply returned, since no valid direction can be produced.
+@param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
+to be set in the field_cache if needed.
 ==============================================================================*/
 
 struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
@@ -158,7 +160,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Computed_field *coordinate_field,
 	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
-	FE_value time, struct Computed_field *orientation_scale_field,
+	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct cmzn_font *font, struct Computed_field *label_field,
@@ -193,7 +195,8 @@ Notes:
  * Adds vertex values to the supplied vertex array to create a line representing
  * the 1-D finite element.
  *
- * @param field_cache  Cache for field location and working values.
+ * @param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
+ * to be set in the field_cache if needed.
  * @param element The element that primitives will be generated for.
  * @param vertex_array The array which this primitive will be added to.
  * @param coordinate_field The required position coordinate field.  It is assumed
@@ -207,14 +210,13 @@ Notes:
  * segments in the created primitive.
  * @param top_level_element Optional element may be provided as a clue to Computed_fields
  * to say which parent element they should be evaluated on as necessary.
- * @param time The time used for evaluating the various fields.
  */
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *vertex_array,
 	struct Computed_field *coordinate_field, struct Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	struct Computed_field *texture_coordinate_field,
-	unsigned int number_of_segments, struct FE_element *top_level_element, FE_value time);
+	unsigned int number_of_segments, struct FE_element *top_level_element);
 
 /***************************************************************************//**
  * Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
@@ -231,6 +233,8 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
  * texture coordinate around the cylinders is always from 0 to 1.
  * Notes:
  * - the coordinate field is assumed to be rectangular cartesian.
+ * @param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
+ * to be set in the field_cache if needed.
  */
 struct GT_surface *create_cylinder_from_FE_element(
 	struct FE_element *element, cmzn_fieldcache_id field_cache,
@@ -239,8 +243,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
-	FE_value time);
+	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode);
 
 /****************************************************************************//**
  * Sorts out how standard, polygon and simplex elements are segmented, based on
@@ -267,6 +270,8 @@ int get_surface_element_segmentation(struct FE_element *element,
  * colouration by a spectrum.
  * The optional <top_level_element> may be provided as a clue to Computed_fields
  * to say which parent element they should be evaluated on as necessary.
+ * @param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
+ * to be set in the field_cache if needed.
  * @param surface_mesh  2-D surface mesh being converted to surface graphics.
 */
 struct GT_surface *create_GT_surface_from_FE_element(
@@ -277,6 +282,6 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum cmzn_graphics_render_polygon_mode render_polygon_mode, FE_value time);
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode);
 
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */

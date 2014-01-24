@@ -59,7 +59,7 @@ Used with iterators for building glyph sets from nodes.
 	int number_of_points; // accumulate number of points with mandatory fields defined
 	char **label;
 	ZnReal *label_bounds;
-	FE_value base_size[3], offset[3], *data_values, *label_bounds_vector, scale_factors[3], time;
+	FE_value base_size[3], offset[3], *data_values, *label_bounds_vector, scale_factors[3];
 	GLfloat *data;
 	int graphics_name, *label_bounds_bit_pattern, label_bounds_components, label_bounds_dimension,
 		label_bounds_values, n_data_components, *name;
@@ -699,7 +699,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	struct Computed_field *coordinate_field, struct GT_object *glyph,
 	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
-	FE_value time, struct Computed_field *orientation_scale_field,
+	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
 	struct cmzn_font *font, struct Computed_field *label_field,
@@ -860,7 +860,6 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					glyph_set_data.label_density_field = label_density_field;
 					glyph_set_data.subgroup_field = subgroup_field;
 					glyph_set_data.name = names;
-					glyph_set_data.time = time;
 					glyph_set_data.label_bounds_bit_pattern = label_bounds_bit_pattern;
 					glyph_set_data.label_bounds_components = label_bounds_components;
 					glyph_set_data.label_bounds_dimension = label_bounds_dimension;
@@ -871,8 +870,6 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 					glyph_set_data.group_field = group_field;
 					glyph_set_data.select_mode = select_mode;
 
-					// all fields evaluated at same time so set once
-					cmzn_fieldcache_set_time(field_cache, time);
 					cmzn_nodeiterator_id iterator = cmzn_nodeset_create_nodeiterator(nodeset);
 					cmzn_node_id node = 0;
 					while (return_code && (0 != (node = cmzn_nodeiterator_next_non_access(iterator))))
@@ -961,7 +958,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	Computed_field *coordinate_field, Computed_field *data_field,
 	int number_of_data_values, FE_value *data_buffer,
 	Computed_field *texture_coordinate_field,
-	unsigned int number_of_segments, FE_element *top_level_element, FE_value time)
+	unsigned int number_of_segments, FE_element *top_level_element)
 {
 	FE_value distance, xi;
 	int graphics_name, return_code;
@@ -1004,7 +1001,6 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 
 		distance=(FE_value)number_of_segments;
-		cmzn_fieldcache_set_time(field_cache, time);
 		for (i = 0; (i <= number_of_segments); i++)
 		{
 			xi=((FE_value)i)/distance;
@@ -1078,8 +1074,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
 	int number_of_segments_along,int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
-	FE_value time)
+	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode)
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
@@ -1147,7 +1142,6 @@ struct GT_surface *create_cylinder_from_FE_element(
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
-			cmzn_fieldcache_set_time(field_cache, time);
 			FE_value *feData = new FE_value[n_data_components];
 			for (i=0;(i<=number_of_segments_along)&&surface;i++)
 			{
@@ -1717,7 +1711,7 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,char reverse_normals,
 	struct FE_element *top_level_element,
-	enum cmzn_graphics_render_polygon_mode render_polygon_mode, FE_value time)
+	enum cmzn_graphics_render_polygon_mode render_polygon_mode)
 {
 	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
@@ -1921,7 +1915,6 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			i=0;
 			return_code = 1;
 			FE_value *xi = xi_points;
-			cmzn_fieldcache_set_time(field_cache, time);
 			while ((i<number_of_points)&&surface)
 			{
 				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(

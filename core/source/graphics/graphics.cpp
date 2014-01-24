@@ -604,8 +604,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphics_to_object_data->number_of_data_values,
 									graphics_to_object_data->data_copy_buffer,
 									graphics->texture_coordinate_field,
-									number_in_xi[0], top_level_element,
-									graphics_to_object_data->time);
+									number_in_xi[0], top_level_element);
 							}
 						}
 						else
@@ -632,8 +631,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										number_in_xi[0],
 										cmzn_tessellation_get_circle_divisions(graphics->tessellation),
 										graphics->texture_coordinate_field,
-										top_level_element, graphics->render_polygon_mode,
-										graphics_to_object_data->time)))
+										top_level_element, graphics->render_polygon_mode)))
 								{
 									if (!GT_OBJECT_ADD(GT_surface)(
 										graphics->graphics_object, time, surface))
@@ -677,8 +675,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphics_to_object_data->rc_coordinate_field,
 									graphics->texture_coordinate_field, graphics->data_field,
 									number_in_xi[0], number_in_xi[1],
-									/*reverse_normals*/0, top_level_element,graphics->render_polygon_mode,
-									graphics_to_object_data->time)))
+									/*reverse_normals*/0, top_level_element,graphics->render_polygon_mode)))
 							{
 								if (!GT_OBJECT_ADD(GT_surface)(
 									graphics->graphics_object, time, surface))
@@ -733,8 +730,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										{
 											return_code = create_iso_surfaces_from_FE_element_new(element,
 												graphics_to_object_data->field_cache,
-												graphics_to_object_data->master_mesh,
-												graphics_to_object_data->time, number_in_xi,
+												graphics_to_object_data->master_mesh, number_in_xi,
 												graphics_to_object_data->iso_surface_specification,
 												graphics->graphics_object,
 												graphics->render_polygon_mode);
@@ -836,7 +832,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 					} break;
 					case CMZN_GRAPHICS_TYPE_POINTS:
 					{
-						cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 						glyph_set = (struct GT_glyph_set *)NULL;
 						if (graphics_to_object_data->existing_graphics)
 						{
@@ -2481,17 +2476,15 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 	return graphics_string;
 } /* cmzn_graphics_string */
 
-int cmzn_graphics_to_point_object_at_time(
-	struct cmzn_graphics *graphics,
+int cmzn_graphics_to_point(struct cmzn_graphics *graphics,
 	struct cmzn_graphics_to_graphics_object_data *graphics_to_object_data,
 	GLfloat graphics_object_primitive_time)
 {
 	int return_code = 1;
 	struct GT_glyph_set *glyph_set;
-	ENTER(cmzn_graphics_to_point_object_at_time);
+	ENTER(cmzn_graphics_to_point);
 	if (graphics && graphics_to_object_data)
 	{
-		cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 		FE_value coordinates[3] = { 0.0, 0.0, 0.0 };
 		if (graphics->coordinate_field)
 		{
@@ -2607,7 +2600,7 @@ int cmzn_graphics_to_point_object_at_time(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_to_point_object_at_time.  Invalid argument(s)");
+			"cmzn_graphics_to_point.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
@@ -3019,6 +3012,8 @@ int cmzn_graphics_to_graphics_object(
 		{
 			if (graphics->graphics_changed)
 			{
+				cmzn_fieldcache_clear_location(graphics_to_object_data->field_cache);
+				cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 				Computed_field *coordinate_field = graphics->coordinate_field;
 				if (coordinate_field ||
 					(graphics->domain_type == CMZN_FIELD_DOMAIN_TYPE_POINT))
@@ -3288,7 +3283,6 @@ int cmzn_graphics_to_graphics_object(
 											graphics_to_object_data->rc_coordinate_field,
 											graphics_to_object_data->glyph_gt_object, graphics->glyph_repeat_mode,
 											graphics->point_base_size, graphics->point_offset, graphics->point_scale_factors,
-											graphics_to_object_data->time,
 											graphics_to_object_data->wrapper_orientation_scale_field,
 											graphics->signed_scale_field, graphics->data_field,
 											graphics->font, graphics->label_field, graphics->label_offset,
@@ -3311,7 +3305,7 @@ int cmzn_graphics_to_graphics_object(
 								} break;
 								case CMZN_FIELD_DOMAIN_TYPE_POINT:
 								{
-									cmzn_graphics_to_point_object_at_time(
+									cmzn_graphics_to_point(
 										graphics, graphics_to_object_data, /*graphics_object_primitive_time*/time);
 								} break;
 								default: // ELEMENTS
@@ -3410,7 +3404,6 @@ int cmzn_graphics_to_graphics_object(
 							} break;
 							case CMZN_GRAPHICS_TYPE_CONTOURS:
 							{
-								cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 								if (0 < graphics->number_of_isovalues)
 								{
 									if (g_SURFACE == GT_object_get_type(graphics->graphics_object))
@@ -3455,7 +3448,6 @@ int cmzn_graphics_to_graphics_object(
 							} break;
 							case CMZN_GRAPHICS_TYPE_STREAMLINES:
 							{
-								cmzn_fieldcache_set_time(graphics_to_object_data->field_cache, graphics_to_object_data->time);
 								// must always regenerate ALL streamlines since they can cross into other elements
 								if (graphics_to_object_data->existing_graphics)
 								{
