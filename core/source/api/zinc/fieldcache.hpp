@@ -70,6 +70,11 @@ public:
 		return id;
 	}
 
+	int clearLocation()
+	{
+		return cmzn_fieldcache_clear_location(id);
+	}
+
 	int setElement(const Element& element)
 	{
 		return cmzn_fieldcache_set_element(id, element.getId());

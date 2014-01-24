@@ -41,6 +41,18 @@ ZINC_API cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache);
 ZINC_API int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address);
 
 /**
+ * Clears domain locations held in the field cache. Call this function before
+ * evaluating fields in a different domain (e.g. nodes <-> elements <-> point)
+ * to ensure false field values at the last domain location are not returned.
+ * Note that all domain locations are cleared by this function including time
+ * which is reset to 0.0, so these need to be set again if needed.
+ *
+ * @param cache  The field cache to clear the location in.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_fieldcache_clear_location(cmzn_fieldcache_id cache);
+
+/**
  * Prescribes an element location without specifying chart coordinates. Suitable
  * only for evaluating fields that are constant across the element.
  * Note: replaces any other spatial location in cache (e.g. node.) but time

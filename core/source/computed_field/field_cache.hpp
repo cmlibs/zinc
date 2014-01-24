@@ -178,6 +178,11 @@ public:
 		return region;
 	}
 
+	void clearLocation()
+	{
+		setLocation(new Field_time_location());
+	}
+
 	FE_value getTime()
 	{
 		return location->get_time();
