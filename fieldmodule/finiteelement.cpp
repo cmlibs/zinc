@@ -75,8 +75,8 @@ TEST(cmzn_field_finite_element, create)
 	{
 		0.0, 0.0,
 		1.0, 0.0,
-		0.0, 1.0,
-		1.0, 1.0
+		0.0, 2.0,
+		1.0, 2.0
 	};
 	cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(zinc.fm);
 	EXPECT_NE(static_cast<cmzn_fieldcache_id>(0), cache);
@@ -89,7 +89,6 @@ TEST(cmzn_field_finite_element, create)
 		EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(field, cache, 2, nodeCoordinates + (i - 1)*2));
 		EXPECT_EQ(CMZN_OK, result = cmzn_node_destroy(&node));
 	}
-	cmzn_fieldcache_destroy(&cache);
 	cmzn_nodetemplate_destroy(&nodetemplate);
 
 	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(zinc.fm, 2);
@@ -116,7 +115,6 @@ TEST(cmzn_field_finite_element, create)
 	}
 	cmzn_element_id element = cmzn_mesh_create_element(mesh, -1, elementtemplate);
 	EXPECT_NE(static_cast<cmzn_element_id>(0), element);
-	cmzn_element_destroy(&element);
 	
 	EXPECT_EQ(4, result = cmzn_nodeset_get_size(nodeset));
 	EXPECT_EQ(1, result = cmzn_mesh_get_size(mesh));
@@ -127,8 +125,17 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_EQ(4, result = cmzn_mesh_get_size(lineMesh));
 	cmzn_mesh_destroy(&lineMesh);
 
-	//EXPECT_EQ(CMZN_OK, result = cmzn_region_write_file(zinc.root_region, "km.exelem"));
+	// test evaluation of field in element
+	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_clear_location(cache));
+	const double xi[2] = { 0.25, 0.75 };
+	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_mesh_location(cache, element, 2, xi));
+	double output[2];
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(field, cache, 2, output));
+	ASSERT_DOUBLE_EQ(0.25, output[0]);
+	ASSERT_DOUBLE_EQ(1.5, output[1]);
 
+	cmzn_element_destroy(&element);
+	cmzn_fieldcache_destroy(&cache);
 	EXPECT_EQ(CMZN_OK, result = cmzn_elementbasis_destroy(&basis));
 	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_destroy(&elementtemplate));
 
@@ -144,9 +151,9 @@ TEST(ZincFieldFiniteElement, create)
 
 	FieldFiniteElement field = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/2);
 	EXPECT_TRUE(field.isValid());
-	EXPECT_EQ(CMZN_OK, result = field.setName("coordinates"));
-	EXPECT_EQ(CMZN_OK, result = field.setTypeCoordinate(true));
-	EXPECT_EQ(CMZN_OK, result = field.setManaged(true));
+	EXPECT_EQ(OK, result = field.setName("coordinates"));
+	EXPECT_EQ(OK, result = field.setTypeCoordinate(true));
+	EXPECT_EQ(OK, result = field.setManaged(true));
 
 	Field tmp = field;
 	FieldFiniteElement feField = tmp.castFiniteElement();
@@ -158,8 +165,8 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_EQ(2, result = field.getNumberOfComponents());
 	EXPECT_TRUE(field.isManaged());
 
-	EXPECT_EQ(CMZN_OK, result = field.setComponentName(1, "x"));
-	EXPECT_EQ(CMZN_OK, result = field.setComponentName(2, "y"));
+	EXPECT_EQ(OK, result = field.setComponentName(1, "x"));
+	EXPECT_EQ(OK, result = field.setComponentName(2, "y"));
 	Field noField;
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = noField.setComponentName(1, "A"));
 	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = field.setComponentName(0, "A"));
@@ -177,14 +184,14 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_TRUE(nodeset.isValid());
 	Nodetemplate nodetemplate = nodeset.createNodetemplate();
 	EXPECT_TRUE(nodetemplate.isValid());
-	EXPECT_EQ(CMZN_OK, result = nodetemplate.defineField(field));
+	EXPECT_EQ(OK, result = nodetemplate.defineField(field));
 
 	double nodeCoordinates[8] =
 	{
 		0.0, 0.0,
 		1.0, 0.0,
-		0.0, 1.0,
-		1.0, 1.0
+		0.0, 2.0,
+		1.0, 2.0
 	};
 	Fieldcache cache = zinc.fm.createFieldcache();
 	EXPECT_TRUE(cache.isValid());
@@ -193,21 +200,21 @@ TEST(ZincFieldFiniteElement, create)
 		Node node = nodeset.createNode(-1, nodetemplate);
 		EXPECT_TRUE(node.isValid());
 		EXPECT_EQ(i, result = node.getIdentifier());
-		EXPECT_EQ(CMZN_OK, result = cache.setNode(node));
-		EXPECT_EQ(CMZN_OK, result = field.assignReal(cache, 2, nodeCoordinates + (i - 1)*2));
+		EXPECT_EQ(OK, result = cache.setNode(node));
+		EXPECT_EQ(OK, result = field.assignReal(cache, 2, nodeCoordinates + (i - 1)*2));
 	}
 
 	Mesh mesh = zinc.fm.findMeshByDimension(2);
 	EXPECT_TRUE(mesh.isValid());
 	Elementtemplate elementtemplate = mesh.createElementtemplate();
 	EXPECT_TRUE(elementtemplate.isValid());
-	EXPECT_EQ(CMZN_OK, result = elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
-	EXPECT_EQ(CMZN_OK, result = elementtemplate.setNumberOfNodes(4));
+	EXPECT_EQ(OK, result = elementtemplate.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(OK, result = elementtemplate.setNumberOfNodes(4));
 
 	Elementbasis basis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
 	EXPECT_TRUE(basis.isValid());
 	int localNodeIndexes[4] = { 1, 2, 3, 4 };
-	EXPECT_EQ(CMZN_OK, result = elementtemplate.defineFieldSimpleNodal(
+	EXPECT_EQ(OK, result = elementtemplate.defineFieldSimpleNodal(
 		field, /*component_number*/-1, basis, 4, localNodeIndexes));
 
 	// for complex reasons you need to set the element nodes
@@ -216,7 +223,7 @@ TEST(ZincFieldFiniteElement, create)
 	{
 		Node node = nodeset.findNodeByIdentifier(i);
 		EXPECT_TRUE(node.isValid());
-		EXPECT_EQ(CMZN_OK, result = elementtemplate.setNode(i, node));
+		EXPECT_EQ(OK, result = elementtemplate.setNode(i, node));
 	}
 	Element element = mesh.createElement(-1, elementtemplate);
 	EXPECT_TRUE(element.isValid());
@@ -224,12 +231,19 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_EQ(4, result = nodeset.getSize());
 	EXPECT_EQ(1, result = mesh.getSize());
 
-	EXPECT_EQ(CMZN_OK, result = zinc.fm.defineAllFaces());
+	EXPECT_EQ(OK, result = zinc.fm.defineAllFaces());
 	Mesh lineMesh = zinc.fm.findMeshByDimension(1);
 	EXPECT_TRUE(lineMesh.isValid());
 	EXPECT_EQ(4, result = lineMesh.getSize());
 
-	//EXPECT_EQ(CMZN_OK, result = zinc.root_region.writeFile("km2.exelem"));
+	// test evaluation of field in element
+	EXPECT_EQ(OK, result = cache.clearLocation());
+	const double xi[2] = { 0.25, 0.75 };
+	EXPECT_EQ(OK, result = cache.setMeshLocation(element, 2, xi));
+	double output[2];
+	EXPECT_EQ(OK, result = field.evaluateReal(cache, 2, output));
+	ASSERT_DOUBLE_EQ(0.25, output[0]);
+	ASSERT_DOUBLE_EQ(1.5, output[1]);
 }
 
 TEST(cmzn_field_finite_element, create_prolate_spheroidal)
