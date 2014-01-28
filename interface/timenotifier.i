@@ -38,6 +38,8 @@
 
 %ignore OpenCMISS::Zinc::Timenotifier::clearCallback();
 
+%import "timekeeper.i"
+
 %{
 #include "zinc/timenotifier.hpp"
 
