@@ -18,46 +18,46 @@
 class cmzn_scenecoordinatesystem_conversion
 {
 public:
-    static const char *to_string(enum cmzn_scenecoordinatesystem system)
-    {
-        const char *enum_string = 0;
-        switch (system)
-        {
-        case CMZN_SCENECOORDINATESYSTEM_LOCAL:
-            enum_string = "LOCAL";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_WORLD:
-            enum_string = "WORLD";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FILL:
-            enum_string = "NORMALISED_WINDOW_FILL";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
-            enum_string = "NORMALISED_WINDOW_FIT_CENTRE";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT:
-            enum_string = "NORMALISED_WINDOW_FIT_LEFT";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
-            enum_string = "NORMALISED_WINDOW_FIT_RIGHT";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
-            enum_string = "NORMALISED_WINDOW_FIT_BOTTOM";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_TOP:
-            enum_string = "NORMALISED_WINDOW_FIT_TOP";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
-            enum_string = "WINDOW_PIXEL_BOTTOM_LEFT";
-            break;
-        case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT:
-            enum_string = "WINDOW_PIXEL_TOP_LEFT";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum cmzn_scenecoordinatesystem system)
+	{
+		const char *enum_string = 0;
+		switch (system)
+		{
+		case CMZN_SCENECOORDINATESYSTEM_LOCAL:
+			enum_string = "LOCAL";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_WORLD:
+			enum_string = "WORLD";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FILL:
+			enum_string = "NORMALISED_WINDOW_FILL";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_CENTRE:
+			enum_string = "NORMALISED_WINDOW_FIT_CENTRE";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_LEFT:
+			enum_string = "NORMALISED_WINDOW_FIT_LEFT";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_RIGHT:
+			enum_string = "NORMALISED_WINDOW_FIT_RIGHT";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_BOTTOM:
+			enum_string = "NORMALISED_WINDOW_FIT_BOTTOM";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FIT_TOP:
+			enum_string = "NORMALISED_WINDOW_FIT_TOP";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_BOTTOM_LEFT:
+			enum_string = "WINDOW_PIXEL_BOTTOM_LEFT";
+			break;
+		case CMZN_SCENECOORDINATESYSTEM_WINDOW_PIXEL_TOP_LEFT:
+			enum_string = "WINDOW_PIXEL_TOP_LEFT";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum cmzn_scenecoordinatesystem	cmzn_scenecoordinatesystem_enum_from_string(

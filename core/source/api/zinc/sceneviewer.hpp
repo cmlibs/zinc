@@ -110,7 +110,7 @@ private:
 		(*callback)(sceneviewerevent);
 	}
 
-  virtual void operator()(const Sceneviewerevent &sceneviewerevent) = 0;
+	virtual void operator()(const Sceneviewerevent &sceneviewerevent) = 0;
 
 protected:
 	Sceneviewercallback()

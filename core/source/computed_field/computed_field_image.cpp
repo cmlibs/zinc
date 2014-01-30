@@ -1043,7 +1043,7 @@ int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id image,
 	cmzn_texture *texture = cmzn_field_image_get_texture(image);
 	if (texture && cmzn_field_image_texture_can_be_modified(image))
 	{
-		return cmzn_texture_set_texture_coordinate_sizes(texture,	valuesCount, valuesIn);
+		return cmzn_texture_set_texture_coordinate_sizes(texture, valuesCount, valuesIn);
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
