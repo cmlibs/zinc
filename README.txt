@@ -1,15 +1,13 @@
-README
-======
+README: OpenCMISS-Zinc Library
 
-This software is part of OpenCMISS.
-It is released under the GNU Lesser General Public License or LGPL
+The OpenCMISS-Zinc library (Zinc) provides a complete API for creating software to interact with and visualise complex finite element models and image-based fields.  The strengths of the library are in field storage, including many finite element basis types, a mathematical field abstraction layer including image processing, and high quality 3D visualisation using OpenGL.
 
-Further information and help pages are available at
+This software was originally developed at The University of Auckland and Copyright is held by Auckland UniServices Ltd. and other contributors.  See file COPYRIGHT.txt in the same folder.
+
+Zinc is released under the Mozilla Public License v2.0. See file LICENSE.txt in the same folder.
+
+Zinc is currently built and tested on Windows, Max OSX and Linux.  Developer and release binaries are available for download.
+
+Further information, downloads, examples and help pages are available at:
 http://www.physiomeproject.org/software/zinclibrary/
-
-This software was originally developed at The University of Auckland and 
-the Copyright held by Auckland UniServices Ltd.
-
-The Zinc library provides a complete API for creating software to interact with and visualise complex finite element models.  The strengths of this development are in field storage, including many finite element basis types, 3D visualisation and a mathematical field abstraction layer. 
-
-
+http://www.opencmiss.org/zinc/

@@ -1,79 +1,67 @@
-/* OpenCMISS-Zinc Library
-*
-* This Source Code Form is subject to the terms of the Mozilla Public
-* License, v. 2.0. If a copy of the MPL was not distributed with this
-* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+CHANGE LOG: OpenCMISS-Zinc Library
 
 v3.0.0
 
 API Changes:
-3079 Change namespace from zinc {} to OpenCMISS{ Zinc { } }.
-3260 Move all enums into types/*id files.
-3260 Removed interacetive tool from external APIs.
-3260 Removed all execute commands APIs.
-3360 Added isValid APIs for all c++ classes.
+3079 As part of branding as OpenCMISS-Zinc Library and elinate name clashes, change C++ API namespace from zinc:: to OpenCMISS::Zinc::, and C API prefix from Cmiss_ to cmzn_.
+3260 Move all enums into types/*id files. Removed interactive tool from external APIs. Removed all legacy Cmgui 'execute command' APIs. Replaced with direct APIs.
+3360 Added isValid APIs for all C++ classes.
+3361 Renamed iso_surfaces to contours.
+3406 Change component field to use first component index = 1 (was 0).
 3554 Removed rendition and merged its functions into scene, scene now is the
 	graphical presentation of a region.
-3627 Replaced get/set attribute with direct APIs.
+3574 Fix inconsistent API header names between C and C++.
+3580 Dedicated APIs for get/set is_managed status replaced general attribute APIs.
+3627 Replaced generic get/set_attribute functions with direct APIs.
 3661 Removed graphics module APIs and moved the graphics related modules getter APIs to
-	context and scene object.
-3662 Changed API to use full type names in create and other functions, 
-	and multi-word type names are compounded into a single word e.g. 
+	context and scene.
+3662 Standardise API type names and enumerations in C and C++ APIs. Includes using full type names in create and other functions,	and multi-word type names are compounded into a single word e.g. 
 	field_cache -> fieldcache (FieldCache -> Fieldcache in C++).
 3668 Changed default projection mode to be perspective. Fly zoom mode is now the default right button drag behaviour. 
-3678 Added functions in image resample field to specify input coordinates bounds and texture lookup coordinates, using 
-	this field will provide a work around to get image filter working on images with texture coordinates outside of the 0 to 1 range.
 
 Added Features:
 455 Added stream APIs to support compressed files.
 2107 Added glyph APIs, custom glyphs can now be created from glyph module and set on point graphics.
+3185 Improved region import/export APIs to support datapoints import and domain specific exports.
 3260 Added setTextureField and setTextureCoordinateField APIs to materials.
+3359 Implemented UI-independent OpenType fonts.
 3360 Added field, scene filter and glyph cast-to-derived-type methods to C++ API.
-3361 Completed graphics APIs, added graphics point attributes APIs for editing point graphics,
-	added graphic line attributes APIs for editing line attirbutes.
+3361 Completed graphics APIs, added graphics point attributes APIs for editing point graphics, added graphic line attributes APIs for editing line attributes. Points graphics type with separate field domain type (supersedes use_element_type) to replace point, node_points, data_points, element_points. Improved efficiency of changing spectrum.
 3362 Added timekeeper module to support adding multiple timekeepers in future.
-3425 Added field module notifier and field module event query for individual field changes.
-3425 Added mesh changes object and API for enquiring about changes to elements from a field module event.
-3454 Sceneviewerinput which handle inputs into libZinc scene viewer which is
-	useful for transformation and zooming.
-	3498 Adding analyze image format handling.
+3425 Added field module notifier and field module event query for individual field changes. Added nodeset/mesh changes objects and API for enquiring about changes to nodes/elements from a field module event.
+3454 Sceneviewerinput which handle inputs into libZinc scene viewer which is useful for transformation and zooming.
+3492 Improved image field APIs.
+3498 Adding analyze image format handling.
 3528 Reintroduced timekeepers and timenotifier (previously known as time object).
-3530 Adding API for Cmiss_field_module_create_field_{derivative,curl,divergence,gradient}.
-3532 Adding new API to be able to compute nodeset minimum and nodeset maximum.
+3530 Adding API for creating derivative fields (derivative, curl, divergence, gradient).
+3532 Adding new API to be able to compute nodeset minimum and maximum.
 3550 Added scene picker which can be used for picking objects from scene with provided information.
-3550 Added graphics type scenefilter. 
+3550 Added scene filter by graphics type.
 3581 Added tessellation module for managing tessellation objects.
 3583 Added font module for managing font objects.
 3586 Added spectrum module for managing spectrum objects.
 3589 Added material module for managing material objects.
 3597 Added scenefilter module for managing scenefilter objects.
 3609 Added scene API to render graphics to a point cloud.
-3611 Added more image processing APIs to c++ interface.
+3611 Added more image processing APIs to C++ interface.
 3630 Added scene API to get spectrum data range.
-3639 Added APIs to set get and set wrap mode of image field.
-3646 Added Cmiss_node_set_identifier_and Cmiss_element_set_identifier APIs.
-3647 Added new yellow, magenta, cyan, orange, brown, grey25, grey50 and grey75 materials.
+3636 Greatly improved spectrum APIs.
+3639 Added APIs to get and set wrap mode of image field.
+3640 Improved Sceneviewer APIs.
+3646 Added set identifier methods to node and element.
+3647 Added new yellow, magenta, cyan, orange, brown, grey25, grey50 and grey75 default materials.
+3678 Added functions in image resample field to specify input coordinates bounds and texture lookup coordinates, allowing image processing on images with texture coordinates outside of the 0 to 1 range.
 3687 Added three new context APIs - get version, get_revision and get_version_string.
 
 Bugs fixed:
-Fixed several bugs causing occasional crashes.
-3347 Fixed incorrect error message when creating a material
-
-Improvements:
-3185 Improved region import/export APIs to support datapoints import and domain specific exports.
-3359 Reworked fonts.
-3361 Improved efficiency of changing spectrum
-3361 Points graphic type with separate field domain type (supersedes use_element_type) to 
-	replace point, node_points, data_points, element_points.
-3492 Improved FieldImage APIs.
-3580 dedicated APIs for get/set is_managed replacing general attribute APIs.
-3636 Greatly improved spectrum APIs.
-3640 Improved Sceneviewer APIs.
+Fixed several bugs causing occasional crashes and memory leaks.
+3347 Fixed incorrect error message when creating a material.
 
 Miscellaneous:
-3361 Renamed iso_surfaces to contours.
-3406 Change component field to use first component index = 1 (was 0)
-3558 Updated license block to MPL2.0.
+3079 Brand as OpenCMISS-Zinc Library.
+3359 Separate Zinc Library from Cmgui source.
+3439 Build Zinc using cmake, build and test with buildbot.
+3558 Updated source code license to MPL2.0.
 
 v2.9.0
 
