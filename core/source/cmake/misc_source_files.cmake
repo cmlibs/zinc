@@ -6,7 +6,7 @@
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 # Defines COMFILE_SRCS, CURVE_SRCS, ELEMENT_SRCS, EMOTER_SRCS, FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS,
-# FINITE_ELEMENT_SRCS (definition includes the previous two), INTERACTION_SRCS, IO_DEVICES_SRCS, NODE_SRCS,
+# FINITE_ELEMENT_SRCS (definition includes the previous two), INTERACTION_SRCS, IO_DEVICES_SRCS, LICENSE_HDRS, NODE_SRCS,
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
 
 SET( CURVE_SRCS source/curve/curve.cpp )
@@ -52,6 +52,8 @@ SET( IMAGE_IO_HDRS
 	source/image_io/analyze.h
 	source/image_io/analyze_header.h )
 
+SET( LICENSE_HDRS source/license.h )
+
 SET( MESH_SRCS
 	source/mesh/cmiss_element_private.cpp
 	source/mesh/cmiss_node_private.cpp )
@@ -91,5 +93,3 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	#SET( THREE_D_DRAWING_SRCS ${THREE_D_DRAWING_SRCS} source/general/photogrammetry.cpp )
 	SET( THREE_D_DRAWING_HDRS ${THREE_D_DRAWING_HDRS} source/three_d_drawing/abstract_graphics_buffer.h )
 ENDIF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
-
-#SET( USER_INTERFACE_HDRS source/user_interface/event_dispatcher.h )
