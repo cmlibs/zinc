@@ -63,6 +63,17 @@ public:
 	virtual int Graphics_object_execute(GT_object *graphics_object) = 0;
 
 	/***************************************************************************//**
+	 * Compile the Graphics.
+	 */
+	virtual int Graphics_compile(cmzn_graphics *graphics) = 0;
+
+	/***************************************************************************//**
+	 * Execute the Graphics.
+	 */
+	virtual int Graphics_execute(cmzn_graphics *graphics) = 0;
+
+
+	/***************************************************************************//**
 	 * Render the Graphics_object.  Typically as the graphics_object is temporary
 	 * this method suggests to renderers that compile and then render that this object
 	 * should instead render now.
@@ -284,6 +295,16 @@ public:
 	 * By default this renderer only builds.
 	 */
 	virtual int Graphics_object_execute(GT_object * /*graphics_object*/)
+	{
+		return 1;
+	}
+
+	virtual int Graphics_compile(cmzn_graphics *)
+	{
+		return 1;
+	}
+
+	virtual int Graphics_execute(cmzn_graphics *)
 	{
 		return 1;
 	}

@@ -623,4 +623,9 @@ int cmzn_graphics_update_selected(struct cmzn_graphics *graphics, void *dummy_vo
 
 void cmzn_graphics_flag_glyph_has_changed(struct cmzn_graphics *graphics);
 
+int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics, void *renderer_void);
+
+int cmzn_graphics_remove_renderer_highlight_functor(struct cmzn_graphics *graphics,
+	void *renderer_void);
+
 #endif

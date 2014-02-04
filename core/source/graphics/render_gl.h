@@ -13,6 +13,8 @@
 #include "graphics/render.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 
+struct cmzn_graphics;
+
 class Render_graphics_opengl : public Render_graphics_compile_members
 {
 public:
@@ -70,6 +72,8 @@ public:
 	 * @see Render_graphics::Graphics_object_compile
 	 */
 	virtual int Graphics_object_compile(GT_object *graphics_object);
+
+	virtual int Graphics_compile(cmzn_graphics *graphics);
 
 	/***************************************************************************//**
 	 * @see Render_graphics::Material_compile

@@ -35,18 +35,29 @@ public:
 	/***************************************************************************//**
 	 * Execute the Graphics_object.
 	 */
-	virtual int Graphics_object_execute(GT_object *graphics_object)
+	virtual int Graphics_object_execute(GT_object *)
 	{
-		USE_PARAMETER(graphics_object);
 		return 1;
 	}
 
 	/***************************************************************************//**
 	 * Compile the Graphics_object.
 	 */
-	virtual int Graphics_object_compile(GT_object *graphics_object)
+	virtual int Graphics_compile(cmzn_graphics *)
 	{
-		USE_PARAMETER(graphics_object);
+		return 1;
+	}
+
+	virtual int Graphics_execute(cmzn_graphics *)
+	{
+		return 1;
+	}
+
+	/***************************************************************************//**
+	 * Compile the Graphics_object.
+	 */
+	virtual int Graphics_object_compile(GT_object *)
+	{
 		return 1;
 	}
 

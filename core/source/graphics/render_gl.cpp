@@ -19,6 +19,7 @@ GL rendering calls - API specific.
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/glyph.hpp"
+#include "graphics/graphics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/light_model.h"
 #include "graphics/mcubes.h"
@@ -90,6 +91,12 @@ int Render_graphics_opengl::Graphics_object_compile(GT_object *graphics_object)
 	return Graphics_object_compile_members_opengl(graphics_object, this);
 }
 
+int Render_graphics_opengl::Graphics_compile(cmzn_graphics *graphics)
+{
+	return Graphics_object_compile_members_opengl(cmzn_graphics_get_graphics_object(
+		graphics), this);
+}
+
 int Render_graphics_opengl::Material_compile(Graphical_material *material)
 {
 	return Material_compile_members_opengl(material, this);
@@ -125,6 +132,14 @@ public:
 
 	  int Graphics_object_execute(GT_object *graphics_object)
 	  {
+		  return Graphics_object_render_opengl(graphics_object, this,
+			  GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
+	  }
+
+	  int Graphics_execute(cmzn_graphics *graphics)
+	  {
+		  GT_object *graphics_object = cmzn_graphics_get_graphics_object(
+			  graphics);
 		  return Graphics_object_render_opengl(graphics_object, this,
 			  GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND);
 	  }
@@ -300,6 +315,17 @@ public:
 			  GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
 	  }
 
+	  int Graphics_execute(cmzn_graphics *graphics)
+	  {
+		  GT_object *graphics_object = cmzn_graphics_get_graphics_object(
+			  graphics);
+		  cmzn_graphics_set_renderer_highlight_functor(graphics, (void *)this);
+		  int return_code = Graphics_object_render_opengl(graphics_object, this,
+			  GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS);
+		  cmzn_graphics_remove_renderer_highlight_functor(graphics, (void *)this);
+		  return return_code;
+	  }
+
 	  /**
 		 * Execute the Graphics_object.
 		 */
@@ -335,12 +361,32 @@ public:
 	  }
 
 	  /**
+		 * Compile the Graphics.
+		 */
+	  int Graphics_compile(cmzn_graphics *graphics)
+	  {
+		  return Graphics_object_compile(cmzn_graphics_get_graphics_object(
+			  graphics));
+	  }
+
+	  /**
 		 * Execute the Graphics_object.
 		 */
 	  int Graphics_object_execute(GT_object *graphics_object)
 	  {
 		  return Graphics_object_render_opengl(graphics_object, this,
 			  GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+	  }
+
+	  int Graphics_execute(cmzn_graphics *graphics)
+	  {
+		  GT_object *graphics_object = cmzn_graphics_get_graphics_object(
+			  graphics);
+		  cmzn_graphics_set_renderer_highlight_functor(graphics, (void *)this);
+		  int return_code = Graphics_object_render_opengl(graphics_object, this,
+			  GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT);
+		  cmzn_graphics_remove_renderer_highlight_functor(graphics, (void *)this);
+		  return return_code;
 	  }
 
 	  /**
@@ -371,6 +417,13 @@ public:
 
 	  int Graphics_object_compile(GT_object *graphics_object)
 	  {
+		  return Render_graphics_opengl_glbeginend::Graphics_object_compile(graphics_object) &&
+			  Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
+	  }
+
+	  int Graphics_compile(cmzn_graphics *graphics)
+	  {
+		  struct GT_object *graphics_object = cmzn_graphics_get_graphics_object(graphics);
 		  return Render_graphics_opengl_glbeginend::Graphics_object_compile(graphics_object) &&
 			  Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
 	  }
@@ -431,8 +484,34 @@ public:
 		  return (return_code);
 	  }
 
+	  int Graphics_compile(cmzn_graphics *graphics)
+	  {
+		  int return_code;
+
+		  GT_object *graphics_object = cmzn_graphics_get_graphics_object(graphics);
+		  cmzn_graphics_set_renderer_highlight_functor(graphics, (void *)this);
+		  return_code = Render_immediate::Graphics_object_compile(graphics_object);
+		  if (return_code)
+		  {
+			  Callback_member_callback< GT_object*, Render_graphics_opengl_display_list,
+				  int (Render_graphics_opengl_display_list::*)(GT_object*) >
+				  execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
+				  &Render_graphics_opengl_display_list::Graphics_object_execute_parent);
+			  return_code = ::Graphics_object_compile_opengl_display_list(graphics_object,
+				  &execute_method, this);
+		  }
+		  cmzn_graphics_remove_renderer_highlight_functor(graphics, (void *)this);
+		  return (return_code);
+	  }
+
 	  int Graphics_object_execute(GT_object *graphics_object)
 	  {
+		  return ::Graphics_object_execute_opengl_display_list(graphics_object, this);
+	  }
+
+	  int Graphics_execute(cmzn_graphics *graphics)
+	  {
+		  GT_object *graphics_object = cmzn_graphics_get_graphics_object(graphics);
 		  return ::Graphics_object_execute_opengl_display_list(graphics_object, this);
 	  }
 
@@ -4388,7 +4467,6 @@ struct GT_object *graphics_object,
 	int graphics_object_no,return_code;
 	struct GT_object *graphics_object_item;
 
-	ENTER(execute_GT_object);
 	if (graphics_object)
 	{
 		return_code=1;
@@ -4453,7 +4531,6 @@ struct GT_object *graphics_object,
 		display_message(ERROR_MESSAGE,"execute_GT_object.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* execute_GT_object */
