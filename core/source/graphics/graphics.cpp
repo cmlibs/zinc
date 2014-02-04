@@ -2789,9 +2789,10 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
 }
 
 int cmzn_graphics_remove_renderer_highlight_functor(struct cmzn_graphics *graphics,
-	Render_graphics *renderer)
+	void *renderer_void)
 {
-	if (graphics && renderer)
+	Render_graphics *renderer = 0;
+	if (graphics && (NULL != (renderer = (Render_graphics *)renderer_void)))
 	{
 		renderer->set_highlight_functor(NULL);
 		return 1;
@@ -2799,93 +2800,95 @@ int cmzn_graphics_remove_renderer_highlight_functor(struct cmzn_graphics *graphi
 	return 0;
 }
 
-int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics, Render_graphics *renderer)
+int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
+	void *renderer_void)
 {
 	int return_code = 0;
 
-		if (graphics && renderer && graphics->scene)
+	Render_graphics *renderer = 0;
+	if (graphics && (NULL != (renderer = (Render_graphics *)renderer_void)) && graphics->scene)
+	{
+		cmzn_field_id group_field =
+			cmzn_scene_get_selection_group_private_for_highlighting(graphics->scene);
+		cmzn_fieldmodule_id field_module = NULL;
+		if (group_field &&
+			(NULL != (field_module = cmzn_field_get_fieldmodule(group_field))))
 		{
-			cmzn_field_id group_field =
-				cmzn_scene_get_selection_group_private_for_highlighting(graphics->scene);
-			cmzn_fieldmodule_id field_module = NULL;
-			if (group_field &&
-				(NULL != (field_module = cmzn_field_get_fieldmodule(group_field))))
+			if ((CMZN_GRAPHICS_SELECT_MODE_ON == graphics->select_mode) ||
+				(CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode))
 			{
-				if ((CMZN_GRAPHICS_SELECT_MODE_ON == graphics->select_mode) ||
-					(CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode))
+				SubObjectGroupHighlightFunctor *functor = 0;
+				switch (graphics->domain_type)
 				{
-					SubObjectGroupHighlightFunctor *functor = 0;
-					switch (graphics->domain_type)
-					{
-						case CMZN_FIELD_DOMAIN_TYPE_POINT:
-						{
-							// no functor
-						} break;
-						case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
-						case CMZN_FIELD_DOMAIN_TYPE_NODES:
-						{
-							cmzn_nodeset_id nodeset =
-								cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, graphics->domain_type);
-							functor = create_highlight_functor_nodeset(group_field, nodeset);
-							cmzn_nodeset_destroy(&nodeset);
-						} break;
-						case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
-						case CMZN_FIELD_DOMAIN_TYPE_MESH2D:
-						case CMZN_FIELD_DOMAIN_TYPE_MESH3D:
-						case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
-						{
+				case CMZN_FIELD_DOMAIN_TYPE_POINT:
+				{
+					// no functor
+				} break;
+				case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
+				case CMZN_FIELD_DOMAIN_TYPE_NODES:
+				{
+					cmzn_nodeset_id nodeset =
+						cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, graphics->domain_type);
+					functor = create_highlight_functor_nodeset(group_field, nodeset);
+					cmzn_nodeset_destroy(&nodeset);
+				} break;
+				case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
+				case CMZN_FIELD_DOMAIN_TYPE_MESH2D:
+				case CMZN_FIELD_DOMAIN_TYPE_MESH3D:
+				case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
+				{
 #if defined(USE_OPENCASCADE)
-							if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_SURFACES)
-							{
-								// test here for domain of object coordinate_field
-								// if it is a cad_geometry do something about it
-								struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
-								int return_code = Computed_field_get_domain( graphics->coordinate_field, domain_field_list );
-								if ( return_code )
-								{
-									// so test for topology domain
-									struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
-										( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
-									if ( cad_topology_field )
-									{
-										cmzn_field_cad_topology_id cad_topology_domain =
-											cmzn_field_cast_cad_topology(cad_topology_field);
-										functor = create_highlight_functor_cad_primitive(
-											group_field, cad_topology_domain);
-									}
-								}
-								if ( domain_field_list )
-									DESTROY_LIST(Computed_field)(&domain_field_list);
-							}
-							if (!functor)
-							{
-#endif // defined(USE_OPENCASCADE)
-							if (graphics->graphics_type != CMZN_GRAPHICS_TYPE_STREAMLINES)
-							{
-								int dimension = cmzn_graphics_get_domain_dimension(graphics);
-								cmzn_mesh_id temp_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
-								functor = create_highlight_functor_element(group_field, temp_mesh);
-								cmzn_mesh_destroy(&temp_mesh);
-							}
-#if defined(USE_OPENCASCADE)
-							}
-#endif // defined(USE_OPENCASCADE)
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"cmzn_graphics_set_renderer_highlight_functor.  Unknown domain type");
-						} break;
-					}
-					if (!(renderer->set_highlight_functor(functor)) && functor)
+					if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_SURFACES)
 					{
-						delete functor;
+						// test here for domain of object coordinate_field
+						// if it is a cad_geometry do something about it
+						struct LIST(Computed_field) *domain_field_list = CREATE_LIST(Computed_field)();
+						int return_code = Computed_field_get_domain( graphics->coordinate_field, domain_field_list );
+						if ( return_code )
+						{
+							// so test for topology domain
+							struct Computed_field *cad_topology_field = FIRST_OBJECT_IN_LIST_THAT(Computed_field)
+											( cmzn_field_is_type_cad_topology, (void *)NULL, domain_field_list );
+							if ( cad_topology_field )
+							{
+								cmzn_field_cad_topology_id cad_topology_domain =
+									cmzn_field_cast_cad_topology(cad_topology_field);
+								functor = create_highlight_functor_cad_primitive(
+									group_field, cad_topology_domain);
+							}
+						}
+						if ( domain_field_list )
+							DESTROY_LIST(Computed_field)(&domain_field_list);
 					}
+					if (!functor)
+					{
+#endif // defined(USE_OPENCASCADE)
+						if (graphics->graphics_type != CMZN_GRAPHICS_TYPE_STREAMLINES)
+						{
+							int dimension = cmzn_graphics_get_domain_dimension(graphics);
+							cmzn_mesh_id temp_mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
+							functor = create_highlight_functor_element(group_field, temp_mesh);
+							cmzn_mesh_destroy(&temp_mesh);
+						}
+#if defined(USE_OPENCASCADE)
+					}
+#endif // defined(USE_OPENCASCADE)
+				} break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"cmzn_graphics_set_renderer_highlight_functor.  Unknown domain type");
+				} break;
 				}
-				cmzn_fieldmodule_destroy(&field_module);
+				if (!(renderer->set_highlight_functor(functor)) && functor)
+				{
+					delete functor;
+				}
 			}
-			return_code = 1;
+			cmzn_fieldmodule_destroy(&field_module);
 		}
+		return_code = 1;
+	}
 
 	return return_code;
 }
@@ -3575,7 +3578,6 @@ int cmzn_graphics_compile_visible_graphics(
 	int return_code = 1;
 	Render_graphics *renderer;
 
-	ENTER(cmzn_graphics_compile_visible_graphics);
 	if (graphics && (renderer = static_cast<Render_graphics *>(renderer_void)))
 	{
 		return_code = 1;
@@ -3584,9 +3586,7 @@ int cmzn_graphics_compile_visible_graphics(
 			cmzn_scenefilter_id filter = renderer->getScenefilter();
 			if ((0 == filter) || (cmzn_scenefilter_evaluate_graphics(filter, graphics)))
 			{
-				cmzn_graphics_set_renderer_highlight_functor(graphics, renderer);
-				return_code = renderer->Graphics_object_compile(graphics->graphics_object);
-				cmzn_graphics_remove_renderer_highlight_functor(graphics, renderer);
+				return_code = renderer->Graphics_compile(graphics);
 			}
 		}
 	}
@@ -3597,7 +3597,6 @@ int cmzn_graphics_compile_visible_graphics(
 			"Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* cmzn_graphics_compile_visible_graphics */
@@ -3626,7 +3625,7 @@ int cmzn_graphics_execute_visible_graphics(
 						/* use position in list as name for GL picking */
 						glLoadName((GLuint)graphics->position);
 #endif /* defined (OPENGL_API) */
-						return_code = renderer->Graphics_object_execute(graphics->graphics_object);
+						return_code = renderer->Graphics_execute(graphics);
 						renderer->end_coordinate_system(graphics->coordinate_system);
 					}
 				}
