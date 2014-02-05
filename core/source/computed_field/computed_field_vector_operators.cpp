@@ -638,6 +638,8 @@ int Computed_field_dot_product::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		int number_of_xi = cache.getRequestedDerivatives();
 		if (number_of_xi && source1Cache->derivatives_valid && source2Cache->derivatives_valid)
 		{
+			for (int j=0;j<number_of_xi;j++)
+				valueCache.derivatives[j] = 0.0;
 			FE_value *temp=source1Cache->values;
 			FE_value *temp2=source2Cache->derivatives;
 			for (int i=0;i < vector_number_of_components;i++)
