@@ -6,7 +6,7 @@ This software was originally developed at The University of Auckland and Copyrig
 
 Zinc is released under the Mozilla Public License v2.0. See file LICENSE.txt in the same folder.
 
-Zinc is currently built and tested on Windows, Max OSX and Linux.  Developer and release binaries are available for download.
+Zinc is currently built and tested on Windows, Max OS X and Linux.  Developer and release binaries are available for download.
 
 Further information, downloads, examples and help pages are available at:
 http://www.physiomeproject.org/software/zinclibrary/
