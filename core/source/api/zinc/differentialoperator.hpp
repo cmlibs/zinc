@@ -54,6 +54,11 @@ public:
 		}
 	}
 
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
 	cmzn_differentialoperator_id getId() const
 	{
 		return id;
