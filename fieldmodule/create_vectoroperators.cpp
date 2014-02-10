@@ -17,9 +17,13 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+#include <zinc/differentialoperator.hpp>
 #include <zinc/fieldcache.hpp>
 #include "zinc/fieldconstant.hpp"
+#include "zinc/fieldfiniteelement.hpp"
 #include "zinc/fieldvectoroperators.hpp"
+
+#include "test_resources.h"
 
 TEST(cmzn_field_cross_product, create_evaluate_2d)
 {
@@ -146,6 +150,55 @@ TEST(zincFieldCrossProduct, create_evaluate_3d)
 	EXPECT_FALSE(zinc.fm.createFieldCrossProduct(noField, f2).isValid());
 	EXPECT_FALSE(zinc.fm.createFieldCrossProduct(f1, noField).isValid());
 	EXPECT_FALSE(zinc.fm.createFieldCrossProduct(f1, noField).isValid());
+}
+
+
+// Issue 3694: Dot product field derivatives were not calculated correctly
+// due to values not being initialised before components were added to them.
+TEST(cmzn_field_dot_product, issue_3694_dot_product_derivatives)
+{
+	ZincTestSetupCpp zinc;
+
+	EXPECT_EQ(CMZN_OK, zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh.isValid());
+	Differentialoperator d_dxi1 = mesh.getChartDifferentialoperator(1, 1);
+	EXPECT_TRUE(d_dxi1.isValid());
+	Differentialoperator d_dxi2 = mesh.getChartDifferentialoperator(1, 2);
+	EXPECT_TRUE(d_dxi2.isValid());
+	Differentialoperator d_dxi3 = mesh.getChartDifferentialoperator(1, 3);
+	EXPECT_TRUE(d_dxi3.isValid());
+
+	const double constVectorValues[3] = { 1.0, 0.5, 0.0 };
+	Field constVector = zinc.fm.createFieldConstant(3, constVectorValues);
+	EXPECT_TRUE(constVector.isValid());
+
+	FieldDotProduct dotproduct = zinc.fm.createFieldDotProduct(coordinates, constVector);
+	EXPECT_TRUE(dotproduct.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	const double xi[3] = { 0.75, 0.5, 0.0 };
+	int result;
+	EXPECT_EQ(OK, result = cache.setMeshLocation(element, 3, xi));
+
+	double outValue;
+	EXPECT_EQ(OK, result = dotproduct.evaluateReal(cache, 1, &outValue));
+	ASSERT_DOUBLE_EQ(1.0, outValue);
+
+	double outDerivative1, outDerivative2, outDerivative3;
+	EXPECT_EQ(OK, result = dotproduct.evaluateDerivative(d_dxi1, cache, 1, &outDerivative1));
+	ASSERT_DOUBLE_EQ(1.0, outDerivative1);
+	EXPECT_EQ(OK, result = dotproduct.evaluateDerivative(d_dxi2, cache, 1, &outDerivative2));
+	ASSERT_DOUBLE_EQ(0.5, outDerivative2);
+	EXPECT_EQ(OK, result = dotproduct.evaluateDerivative(d_dxi3, cache, 1, &outDerivative3));
+	ASSERT_DOUBLE_EQ(0.0, outDerivative3);
 }
 
 TEST(cmzn_field_sum_components, create_evaluate)
