@@ -778,7 +778,7 @@ Actually preforms the rendering pass.
 		struct Material_order_independent_transparency material_data;
 
 		material_data.layer = 0;
-
+		material_data.renderer = Scene_viewer_rendering_data_get_renderer(rendering_data);
 		cmzn_scene_id scene = cmzn_sceneviewer_get_scene(data->scene_viewer);
 		cmzn_scene_for_each_material(scene,
 			compile_Graphical_material_for_order_independent_transparency,
