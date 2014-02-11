@@ -56,6 +56,9 @@ Added Features:
 Bugs fixed:
 Fixed several bugs causing occasional crashes and memory leaks.
 3347 Fixed incorrect error message when creating a material.
+3677 Fixed a bug causing libzinc unable to render selected elements/nodes 
+	with selected material when display_lists is off.
+3694 Fixed evaluation of derivatives for dot_product field.
 
 Miscellaneous:
 3079 Brand as OpenCMISS-Zinc Library.
