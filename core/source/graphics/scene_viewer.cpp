@@ -192,8 +192,9 @@ int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sc
 
 void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer, int changeFlags)
 {
-	if (0 < sceneviewer->notifier_list->size())
+	if ((sceneviewer->callbacksTriggering == false) && (0 < sceneviewer->notifier_list->size()))
 	{
+		sceneviewer->callbacksTriggering = true;
 		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
 		event->changeFlags = changeFlags;
 		for (cmzn_sceneviewernotifier_list::iterator iter = sceneviewer->notifier_list->begin();
@@ -201,6 +202,7 @@ void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer,
 		{
 			(*iter)->notify(event);
 		}
+		sceneviewer->callbacksTriggering = false;
 		cmzn_sceneviewerevent_destroy(&event);
 	}
 }
@@ -2898,6 +2900,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->stereo_eye_spacing=0.25;
 				scene_viewer->swap_buffers=0;
 				scene_viewer->notifier_list = new cmzn_sceneviewernotifier_list();
+				scene_viewer->callbacksTriggering=false;
 				if (default_light)
 				{
 					ACCESS(Light)(default_light);

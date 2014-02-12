@@ -390,6 +390,8 @@ DESCRIPTION :
 	cmzn_scene_id scene;
 	cmzn_sceneviewernotifier_list *notifier_list;
 	cmzn_sceneviewermodule *module;
+	/* triggering callbacks */
+	bool callbacksTriggering;
 }; /* struct Scene_viewer */
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
