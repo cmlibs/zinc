@@ -503,7 +503,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	FE_value initial_xi[3];
 	GLfloat time;
 	int element_dimension = 1, element_graphics_name,
-		element_selected, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code,
 		*top_level_xi_point_numbers,
 		use_element_dimension, *use_number_in_xi;
@@ -553,9 +553,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				(CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == graphics->select_mode))
 			{
 				if (graphics_to_object_data->selection_group_field)
-				{
 					name_selected = cmzn_field_evaluate_boolean(graphics_to_object_data->selection_group_field, graphics_to_object_data->field_cache);
-				}
 				draw_element = ((name_selected && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode)) ||
 					((!name_selected) && (CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED != graphics->select_mode)));
 			}
@@ -890,11 +888,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 										element_point_ranges_identifier.number_in_xi[i] =
 											use_number_in_xi[i];
 									}
-									element_selected = 0;
-									if (graphics_to_object_data->selection_group_field)
-									{
-										element_selected = cmzn_field_evaluate_boolean(graphics_to_object_data->selection_group_field, graphics_to_object_data->field_cache);
-									}
 									/* NOT an error if no glyph_set produced == empty selection */
 									if ((0 < number_of_xi_points) &&
 										NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
@@ -909,7 +902,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											graphics->signed_scale_field, graphics->data_field,
 											graphics->font, graphics->label_field, graphics->label_offset,
 											graphics->label_text,
-											graphics->select_mode, element_selected, ranges,
+											graphics->select_mode, name_selected, ranges,
 											top_level_xi_point_numbers)))
 									{
 										/* set auxiliary_object_name for glyph_set to
