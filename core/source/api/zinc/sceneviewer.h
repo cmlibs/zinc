@@ -61,6 +61,33 @@ ZINC_API enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(
 	cmzn_sceneviewer_id sceneviewer);
 
 /**
+ * Use this function with cmzn_sceneviewer_end_change.
+ *
+ * Use this function before making multiple changes on the sceneviewer, this
+ * will stop sceneviewer from executing any immediate changes made.
+ * After multiple changes have been made, use
+ * cmzn_sceneviewer_end_change to execute all changes made previously in sceneviewer
+ * at once.
+ *
+ * @param sceneviewer  The handle to the sceneviewer.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_begin_change(cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Use this function with cmzn_sceneviewer_begin_change.
+ *
+ * Use cmzn_sceneviewer_begin_change before making multiple changes on the
+ * sceneviewer, it will stop sceneviewer from executing any immediate changes made.
+ * After multiple changes have been made, use this function to execute all changes
+ * made previously in sceneviewer at once.
+ *
+ * @param scene  The handle to the sceneviewer.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_end_change(cmzn_sceneviewer_id sceneviewer);
+
+/**
  * Sets the mouse and keyboard interaction mode of the scene viewer.
  * @see cmzn_sceneviewer_interact_mode
  *
