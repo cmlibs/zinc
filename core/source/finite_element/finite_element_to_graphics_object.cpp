@@ -1228,6 +1228,15 @@ struct GT_surface *create_cylinder_from_FE_element(
 			}
 			delete[] feData;
 
+			// get a representative size for declaring coordinate derivatives to be zero
+			previous_point = points;
+			point = points + (number_of_segments_around + 1);
+			derivative_xi[0] = (*point)[0] - (*previous_point)[0];
+			derivative_xi[1] = (*point)[1] - (*previous_point)[1];
+			derivative_xi[2] = (*point)[2] - (*previous_point)[2];
+			const FE_value zero_dS_dxi = 1.0E-6*(FE_value)number_of_segments_along*
+				sqrt(derivative_xi[0]*derivative_xi[0] + derivative_xi[1]*derivative_xi[1] + derivative_xi[2]*derivative_xi[2]);
+
 			if (surface)
 			{
 				/* Calculate the normals at the first and last points as we must line
@@ -1244,7 +1253,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 					/* if the derivative is zero, use the change in location between
 						 this and the nearest point along the element so that the normal
 						 will at least remain normal to the axis of the cylinder */
-					if (0.0 == dS_dxi)
+					if (dS_dxi <= zero_dS_dxi)
 					{
 						if (0 == i)
 						{
