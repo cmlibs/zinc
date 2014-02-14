@@ -192,18 +192,72 @@ int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sc
 
 void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer, int changeFlags)
 {
-	if ((sceneviewer->callbacksTriggering == false) && (0 < sceneviewer->notifier_list->size()))
+	if (0 < sceneviewer->notifier_list->size())
 	{
-		sceneviewer->callbacksTriggering = true;
+		cmzn_sceneviewernotifier_list notifier_list(*(sceneviewer->notifier_list));
 		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
 		event->changeFlags = changeFlags;
-		for (cmzn_sceneviewernotifier_list::iterator iter = sceneviewer->notifier_list->begin();
-			iter != sceneviewer->notifier_list->end(); ++iter)
+		for (cmzn_sceneviewernotifier_list::iterator iter = notifier_list.begin();
+			iter != notifier_list.end(); ++iter)
 		{
 			(*iter)->notify(event);
 		}
-		sceneviewer->callbacksTriggering = false;
 		cmzn_sceneviewerevent_destroy(&event);
+	}
+}
+
+void cmzn_sceneviewer_request_changes(cmzn_sceneviewer_id sceneviewer, int changeFlags)
+{
+	if (sceneviewer)
+	{
+		sceneviewer->changes |= changeFlags;
+		if (sceneviewer->cache <= 0 && (sceneviewer->changes != 0))
+		{
+			int changes = sceneviewer->changes;
+			sceneviewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
+			cmzn_sceneviewer_begin_change(sceneviewer);
+			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+				changes);
+			cmzn_sceneviewer_end_change(sceneviewer);
+		}
+	}
+}
+
+
+int cmzn_sceneviewer_begin_change(cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+	{
+		/* increment cache to allow nesting */
+		(sceneviewer->cache)++;
+		return 1;
+	}
+	else
+	{
+		return 0;
+	}
+}
+
+int cmzn_sceneviewer_end_change(cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+	{
+		/* decrement cache to allow nesting */
+		(sceneviewer->cache)--;
+		/* once cache has run out, inform clients of any changes */
+		if (0 == sceneviewer->cache)
+		{
+			if (sceneviewer->changes)
+			{
+				cmzn_sceneviewer_request_changes(sceneviewer,
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE);
+			}
+		}
+		return 1;
+	}
+	else
+	{
+		return 0;
 	}
 }
 
@@ -2386,7 +2440,7 @@ static void Scene_viewer_image_field_change(
 		{
 			REACCESS(Texture)(&(image_texture->texture),
 			cmzn_field_image_get_texture(image_texture->field));
-			cmzn_sceneviewer_trigger_notifier_callback(image_texture->scene_viewer,
+			cmzn_sceneviewer_request_changes(image_texture->scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 	}
@@ -2900,7 +2954,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->stereo_eye_spacing=0.25;
 				scene_viewer->swap_buffers=0;
 				scene_viewer->notifier_list = new cmzn_sceneviewernotifier_list();
-				scene_viewer->callbacksTriggering=false;
+				scene_viewer->cache = 0;
+				scene_viewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
 				if (default_light)
 				{
 					ACCESS(Light)(default_light);
@@ -3470,7 +3525,7 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->lookatx -= dx;
 							scene_viewer->lookaty -= dy;
 							scene_viewer->lookatz -= dz;
-							cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+							cmzn_sceneviewer_request_changes(scene_viewer,
 								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 							view_changed=1;
 						} break;
@@ -3555,7 +3610,7 @@ Converts mouse button-press and motion events into viewing transformations in
 					}
 					if (view_changed)
 					{
-						cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+						cmzn_sceneviewer_request_changes(scene_viewer,
 							CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 							CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 					}
@@ -3862,7 +3917,7 @@ Sets the background_colour of the scene_viewer.
 		scene_viewer->background_colour.red=background_colour->red;
 		scene_viewer->background_colour.green=background_colour->green;
 		scene_viewer->background_colour.blue=background_colour->blue;
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code = CMZN_OK;
 	}
@@ -4521,7 +4576,7 @@ int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 			scene_viewer->upx=upv[0];
 			scene_viewer->upy=upv[1];
 			scene_viewer->upz=upv[2];
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			cmzn_sceneviewer_request_changes(scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			return_code=1;
@@ -4574,7 +4629,7 @@ int cmzn_sceneviewer_set_lookat_parameters_non_skew(
 			sceneviewer->upx=upv[0];
 			sceneviewer->upy=upv[1];
 			sceneviewer->upz=upv[2];
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			return CMZN_OK;
@@ -4711,7 +4766,7 @@ consecutive across rows, eg:
 						modelview_matrix[i*4+j];
 				}
 			}
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			cmzn_sceneviewer_request_changes(scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 			return_code=1;
 		}
@@ -4791,7 +4846,7 @@ are used to position the intended viewing volume in user coordinates.
 			scene_viewer->NDC_top=NDC_top;
 			scene_viewer->NDC_width=NDC_width;
 			scene_viewer->NDC_height=NDC_height;
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			cmzn_sceneviewer_request_changes(scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 			return_code=1;
 		}
@@ -4860,7 +4915,7 @@ Sets the projection mode - parallel/perspective/custom - of the Scene_viewer.
 		if (projection_mode != scene_viewer->projection_mode)
 		{
 			scene_viewer->projection_mode=projection_mode;
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			cmzn_sceneviewer_request_changes(scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
@@ -4944,7 +4999,7 @@ consecutive across rows, eg:
 					scene_viewer->projection_matrix[i*4+j] = projection_matrix[j*4+i];
 				}
 			}
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			cmzn_sceneviewer_request_changes(scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 			return_code=1;
 		}
@@ -4981,7 +5036,7 @@ int cmzn_sceneviewer_set_translation_rate(cmzn_sceneviewer_id sceneviewer,
 		if (translation_rate != sceneviewer->translate_rate)
 		{
 			sceneviewer->translate_rate = translation_rate;
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
@@ -5004,7 +5059,7 @@ int cmzn_sceneviewer_set_tumble_rate(cmzn_sceneviewer_id sceneviewer,
 		if (tumble_rate != sceneviewer->tumble_rate)
 		{
 			sceneviewer->tumble_rate = tumble_rate;
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
@@ -5027,7 +5082,7 @@ int cmzn_sceneviewer_set_zoom_rate(cmzn_sceneviewer_id sceneviewer,
 		if (zoom_rate != sceneviewer->zoom_rate)
 		{
 			sceneviewer->zoom_rate = zoom_rate;
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
@@ -5068,7 +5123,7 @@ int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scene_viewer,
 			if (scene_viewer->transparency_mode!=transparency_mode)
 			{
 				scene_viewer->transparency_mode=transparency_mode;
-				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				cmzn_sceneviewer_request_changes(scene_viewer,
 					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
@@ -5097,7 +5152,7 @@ int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id scene_viewer,
 			scene_viewer->transparency_layers = transparency_layers;
 			if (scene_viewer->transparency_mode==CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT)
 			{
-				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				cmzn_sceneviewer_request_changes(scene_viewer,
 					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
@@ -5150,7 +5205,7 @@ int cmzn_sceneviewer_set_view_angle(cmzn_sceneviewer_id sceneviewer,
 		sceneviewer->right  = centre_x + width *size_ratio;
 		sceneviewer->bottom = centre_y - height*size_ratio;
 		sceneviewer->top    = centre_y + height*size_ratio;
-		cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+		cmzn_sceneviewer_request_changes(sceneviewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return CMZN_OK;
@@ -5320,7 +5375,7 @@ eye_distance*0.99 in front of it.
 		}
 		scene_viewer->far_plane_fly_debt = 0.0;
 		scene_viewer->near_plane_fly_debt = 0.0;
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code=1;
@@ -5511,7 +5566,7 @@ rendering a higher resolution image in parts.
 			scene_viewer->near_plane_fly_debt = 0.0;
 			scene_viewer->far_plane=far_plane;
 			scene_viewer->far_plane_fly_debt = 0.0;
-			cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+			cmzn_sceneviewer_request_changes(scene_viewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			return_code=1;
@@ -5601,7 +5656,7 @@ pixels per unit enables zooming to be achieved.
 		scene_viewer->user_viewport_top=viewport_top;
 		scene_viewer->user_viewport_pixels_per_unit_x=viewport_pixels_per_unit_x;
 		scene_viewer->user_viewport_pixels_per_unit_y=viewport_pixels_per_unit_y;
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code=1;
 	}
@@ -5636,7 +5691,7 @@ int cmzn_sceneviewer_set_antialias_sampling(cmzn_sceneviewer_id sceneviewer,
 		if (number_of_samples != sceneviewer->antialias)
 		{
 			sceneviewer->antialias = number_of_samples;
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
@@ -5688,7 +5743,7 @@ depth of field 0 == infinite.
 	{
 		scene_viewer->depth_of_field = depth_of_field;
 		scene_viewer->focal_depth = focal_depth;
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 	}
 	else
@@ -5731,7 +5786,7 @@ int cmzn_sceneviewer_set_blending_mode(cmzn_sceneviewer_id sceneviewer,
 #endif /* defined (GL_VERSION_1_4) */
 		}
 		sceneviewer->blending_mode = blending_mode;
-		cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+		cmzn_sceneviewer_request_changes(sceneviewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return CMZN_OK;
 	}
@@ -5754,7 +5809,7 @@ int cmzn_sceneviewer_set_perturb_lines_flag(cmzn_sceneviewer_id sceneviewer,
 		if (value != sceneviewer->perturb_lines)
 		{
 			sceneviewer->perturb_lines = value;
-			cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
@@ -5806,7 +5861,7 @@ Sets the width and height of the Scene_viewers drawing area.
 	{
 		Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
 		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code = 1;
 	}
@@ -5923,7 +5978,7 @@ not already a unit vector, it will be made one by this function.
 		scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
 		scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
 		scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code=1;
 	}
@@ -6314,7 +6369,7 @@ Scales of the absolute image while keeping the same centre point.
 			(width/scene_viewer->user_viewport_pixels_per_unit_x);
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*
 			(height/scene_viewer->user_viewport_pixels_per_unit_y);
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code=1;
 	}
@@ -6580,7 +6635,7 @@ int Scene_viewer_set_background_image_field(struct Scene_viewer *scene_viewer,
 	{
 		return_code = Scene_viewer_image_texture_set_field(
 			&(scene_viewer->image_texture), image_field);
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 	}
 	else
@@ -6713,7 +6768,7 @@ int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
 		(CMZN_SCENEVIEWER_VIEWPORT_MODE_DISTORTING_RELATIVE == viewport_mode)))
 	{
 		sceneviewer->viewport_mode = viewport_mode;
-		cmzn_sceneviewer_trigger_notifier_callback(sceneviewer,
+		cmzn_sceneviewer_request_changes(sceneviewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return CMZN_OK;
 	}
@@ -7126,7 +7181,7 @@ int cmzn_sceneviewer_light_change(struct Scene_viewer *scene_viewer,	void *messa
 			{
 				if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
 				{
-					cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+					cmzn_sceneviewer_request_changes(scene_viewer,
 						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 				}
 				DESTROY_LIST(Light)(&changed_light_list);
@@ -7152,7 +7207,7 @@ int cmzn_sceneviewer_light_model_change(struct Scene_viewer *scene_viewer,	void 
 				scene_viewer->light_model);
 			if (change & MANAGER_CHANGE_RESULT(Light_model))
 			{
-				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				cmzn_sceneviewer_request_changes(scene_viewer,
 					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
@@ -7249,7 +7304,7 @@ int cmzn_sceneviewer_set_scene(cmzn_sceneviewer_id scene_viewer,
 			{
 				cmzn_scene_add_callback(scene_viewer->scene,
 					cmzn_scene_notify_scene_viewer_callback, (void *)scene_viewer);
-				cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+				cmzn_sceneviewer_request_changes(scene_viewer,
 					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 			}
 		}
@@ -7262,7 +7317,7 @@ int Scene_viewer_scene_change(cmzn_sceneviewer_id scene_viewer)
 {
 	if (scene_viewer)
 	{
-		cmzn_sceneviewer_trigger_notifier_callback(scene_viewer,
+		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return CMZN_OK;
 	}

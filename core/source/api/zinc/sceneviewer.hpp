@@ -277,6 +277,16 @@ public:
 		return id;
 	}
 
+	int beginChange()
+	{
+		return cmzn_sceneviewer_begin_change(id);
+	}
+
+	int endChange()
+	{
+		return cmzn_sceneviewer_end_change(id);
+	}
+
 	int renderScene()
 	{
 		return cmzn_sceneviewer_render_scene(id);
