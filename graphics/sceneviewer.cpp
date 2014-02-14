@@ -395,7 +395,11 @@ TEST(ZincSceneviewer, callback)
 	mySceneviewercallback thisNotifier;
 	sceneviewernotifier.setCallback(thisNotifier);
 	int result = 0;
+	double rate = sv.getTranslationRate();
+	EXPECT_EQ(CMZN_OK, result = sv.beginChange());
+	EXPECT_EQ(CMZN_OK, result = sv.setTranslationRate(rate * 0.99));
 	EXPECT_EQ(CMZN_OK, result = sv.setLookatParametersNonSkew(eyeValuesIn3, lookatValuesIn3, upVectorValuesIn3));
+	EXPECT_EQ(CMZN_OK, result = sv.endChange());
 	EXPECT_EQ(CMZN_OK, result = sceneviewernotifier.clearCallback());
 }
 
