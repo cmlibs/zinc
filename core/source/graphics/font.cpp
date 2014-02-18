@@ -889,10 +889,7 @@ int cmzn_font_set_point_size(cmzn_font_id font, int point_size)
 cmzn_font_id cmzn_font_access(cmzn_font_id font)
 {
 	if (font)
-	{
-		font->access_count++;
-	}
-
+		++(font->access_count);
 	return font;
 }
 

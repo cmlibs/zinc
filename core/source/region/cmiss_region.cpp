@@ -1420,13 +1420,9 @@ struct cmzn_fieldmodule *cmzn_region_get_fieldmodule(struct cmzn_region *region)
 
 cmzn_region_id cmzn_region_access(cmzn_region_id region)
 {
-	cmzn_region_id accessed_region = 0;
 	if (region)
-	{
-		accessed_region = (ACCESS(cmzn_region)(region));
-	}
-
-	return accessed_region;
+		return ACCESS(cmzn_region)(region);
+	return 0;
 }
 
 int cmzn_region_destroy(cmzn_region_id *region)

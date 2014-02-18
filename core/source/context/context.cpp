@@ -111,14 +111,7 @@ int cmzn_context_destroy(struct Context **context_address)
 struct Context *cmzn_context_access(struct Context *context)
 {
 	if (context)
-	{
-		context->access_count++;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_context_access.  Missing context");
-	}
+		++(context->access_count);
 	return context;
 }
 

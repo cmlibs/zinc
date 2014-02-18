@@ -110,7 +110,9 @@ int cmzn_selectionnotifier_clear_callback(cmzn_selectionnotifier_id selectionnot
 cmzn_selectionnotifier_id cmzn_selectionnotifier_access(
 	cmzn_selectionnotifier_id selectionnotifier)
 {
-	return selectionnotifier->access();
+	if (selectionnotifier)
+		return selectionnotifier->access();
+	return 0;
 }
 
 int cmzn_selectionnotifier_destroy(cmzn_selectionnotifier_id *selectionnotifier_address)

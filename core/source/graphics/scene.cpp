@@ -2736,7 +2736,9 @@ int cmzn_scene_detach_fields(struct cmzn_scene *scene)
 
 cmzn_scene *cmzn_scene_access(cmzn_scene_id scene)
 {
-	return (ACCESS(cmzn_scene)(scene));
+	if (scene)
+		return ACCESS(cmzn_scene)(scene);
+	return 0;
 }
 
 int list_cmzn_scene_transformation_commands(struct cmzn_scene *scene,
