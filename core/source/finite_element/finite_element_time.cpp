@@ -1184,8 +1184,10 @@ int FE_time_sequence_is_in_use(struct FE_time_sequence *fe_time_sequence)
 cmzn_timesequence_id cmzn_timesequence_access(
 	cmzn_timesequence_id timesequence)
 {
-	return (cmzn_timesequence_id)(ACCESS(FE_time_sequence)(
-		(struct FE_time_sequence *)timesequence));
+	if (timesequence)
+		return (cmzn_timesequence_id)(ACCESS(FE_time_sequence)(
+			(struct FE_time_sequence *)timesequence));
+	return 0;
 }
 
 int cmzn_timesequence_destroy(cmzn_timesequence_id *timesequence_address)

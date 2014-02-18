@@ -70,7 +70,6 @@ cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->access();
-
 	return 0;
 }
 

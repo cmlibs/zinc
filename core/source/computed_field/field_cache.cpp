@@ -176,7 +176,9 @@ cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(cmzn_fieldmodule_id field_
 
 cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache)
 {
-	return cache->access();
+	if (cache)
+		return cache->access();
+	return 0;
 }
 
 int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address)

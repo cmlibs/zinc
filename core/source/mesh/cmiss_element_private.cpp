@@ -1136,7 +1136,9 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 
 cmzn_mesh_id cmzn_mesh_access(cmzn_mesh_id mesh)
 {
-	return mesh->access();
+	if (mesh)
+		return mesh->access();
+	return 0;
 }
 
 int cmzn_mesh_destroy(cmzn_mesh_id *mesh_address)
@@ -1397,7 +1399,6 @@ cmzn_elementbasis_id cmzn_elementbasis_access(
 {
 	if (element_basis)
 		return element_basis->access();
-
 	return 0;
 }
 
@@ -1550,7 +1551,9 @@ int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
 
 cmzn_element_id cmzn_element_access(cmzn_element_id element)
 {
-	return ACCESS(FE_element)(element);
+	if (element)
+		return ACCESS(FE_element)(element);
+	return 0;
 }
 
 int cmzn_element_destroy(cmzn_element_id *element_address)

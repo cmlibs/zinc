@@ -15,7 +15,9 @@
 cmzn_differentialoperator_id cmzn_differentialoperator_access(
 	cmzn_differentialoperator_id differential_operator)
 {
-	return differential_operator->access();
+	if (differential_operator)
+		return differential_operator->access();
+	return 0;
 }
 
 int cmzn_differentialoperator_destroy(

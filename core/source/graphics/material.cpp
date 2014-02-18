@@ -6376,12 +6376,8 @@ int cmzn_material_set_texture(
 
 struct Graphical_material *cmzn_material_access(struct Graphical_material *material)
 {
-	ENTER(cmzn_material_access);
 	if (material)
-	{
-		material->access_count++;
-	}
-
+		++(material->access_count);
 	return material;
 }
 

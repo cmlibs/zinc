@@ -126,9 +126,7 @@ struct cmzn_fieldmodule *cmzn_fieldmodule_create(struct cmzn_region *region)
 struct cmzn_fieldmodule *cmzn_fieldmodule_access(struct cmzn_fieldmodule *fieldmodule)
 {
 	if (fieldmodule)
-	{
-		fieldmodule->access_count++;
-	}
+		++(fieldmodule->access_count);
 	return fieldmodule;
 }
 
@@ -496,7 +494,9 @@ void *cmzn_fieldmodulenotifier_get_callback_user_data(
 cmzn_fieldmodulenotifier_id cmzn_fieldmodulenotifier_access(
 	cmzn_fieldmodulenotifier_id notifier)
 {
-	return notifier->access();
+	if (notifier)
+		return notifier->access();
+	return 0;
 }
 
 int cmzn_fieldmodulenotifier_destroy(cmzn_fieldmodulenotifier_id *notifier_address)

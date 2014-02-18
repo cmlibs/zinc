@@ -326,10 +326,8 @@ cmzn_timenotifier_id cmzn_timekeeper_create_timenotifier_regular(
 cmzn_timekeeper_id cmzn_timekeeper_access(cmzn_timekeeper_id timekeeper)
 {
 	if (timekeeper)
-	{
 		return timekeeper->access();
-	}
-	return NULL;
+	return 0;
 }
 
 int cmzn_timekeeper_destroy(cmzn_timekeeper_id *timekeeper_address)

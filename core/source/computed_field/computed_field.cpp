@@ -435,13 +435,9 @@ PROTOTYPE_REACCESS_OBJECT_FUNCTION(Computed_field)
 
 cmzn_field_id cmzn_field_access(cmzn_field_id field)
 {
-	cmzn_field_id accessed_field = 0;
 	if (field)
-	{
-		accessed_field = (ACCESS(Computed_field)(field));
-	}
-
-	return accessed_field;
+		return ACCESS(Computed_field)(field);
+	return 0;
 }
 
 int cmzn_field_destroy(cmzn_field_id *field_address)
@@ -517,7 +513,9 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(Computed_field,name,cons
 
 cmzn_fielditerator_id cmzn_fielditerator_access(cmzn_fielditerator_id iterator)
 {
-	return iterator->access();
+	if (iterator)
+		return iterator->access();
+	return 0;
 }
 
 int cmzn_fielditerator_destroy(cmzn_fielditerator_id *iterator_address)

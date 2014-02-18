@@ -15226,7 +15226,9 @@ DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_node,cmzn_nodeiterator)
 
 cmzn_nodeiterator_id cmzn_nodeiterator_access(cmzn_nodeiterator_id node_iterator)
 {
-	return node_iterator->access();
+	if (node_iterator)
+		return node_iterator->access();
+	return 0;
 }
 
 int cmzn_nodeiterator_destroy(cmzn_nodeiterator_id *node_iterator_address)
@@ -21538,7 +21540,9 @@ DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,cmzn_elementitera
 
 cmzn_elementiterator_id cmzn_elementiterator_access(cmzn_elementiterator_id element_iterator)
 {
-	return element_iterator->access();
+	if (element_iterator)
+		return element_iterator->access();
+	return 0;
 }
 
 int cmzn_elementiterator_destroy(cmzn_elementiterator_id *element_iterator_address)

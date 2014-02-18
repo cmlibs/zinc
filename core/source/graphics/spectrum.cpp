@@ -2158,13 +2158,9 @@ char *cmzn_spectrum_get_name(cmzn_spectrum_id spectrum)
 
 cmzn_spectrum_id cmzn_spectrum_access(cmzn_spectrum_id spectrum)
 {
-	ENTER(cmzn_spectrum_destroy);
 	if (spectrum)
-	{
 		return ACCESS(Spectrum)(spectrum);
-	}
-
-	return NULL;
+	return 0;
 }
 
 int cmzn_spectrum_destroy(cmzn_spectrum_id *spectrum_address)

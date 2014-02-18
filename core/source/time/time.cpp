@@ -572,18 +572,9 @@ int cmzn_timenotifier_clear_callback(cmzn_timenotifier_id timenotifier)
 
 cmzn_timenotifier_id cmzn_timenotifier_access(cmzn_timenotifier_id timenotifier)
 {
-	cmzn_timenotifier_id local_timenotifier;
-
 	if (timenotifier)
-	{
-		local_timenotifier = ACCESS(Time_object)(timenotifier);
-	}
-	else
-	{
-		local_timenotifier = 0;
-	}
-
-	return local_timenotifier;
+		return ACCESS(Time_object)(timenotifier);
+	return 0;
 }
 
 int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_address)

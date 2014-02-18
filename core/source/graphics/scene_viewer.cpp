@@ -107,16 +107,8 @@ cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_v
 cmzn_sceneviewerinput_id cmzn_sceneviewerinput_access(cmzn_sceneviewerinput_id input)
 {
 	if (input)
-	{
-		input->access_count++;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewerinput_access.  Invalid argument(s)");
-	}
-
-	return (input);
+		++(input->access_count);
+	return input;
 }
 
 int cmzn_sceneviewerinput_destroy(cmzn_sceneviewerinput_id *address_input)
@@ -2680,10 +2672,7 @@ Destroys the sceneviewermodule.
 cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_id sceneviewermodule)
 {
 	if (sceneviewermodule)
-	{
-		sceneviewermodule->access_count++;
-	}
-
+		++(sceneviewermodule->access_count);
 	return sceneviewermodule;
 }
 
@@ -3138,10 +3127,7 @@ DESCRIPTION :
 cmzn_sceneviewer_id cmzn_sceneviewer_access(cmzn_sceneviewer_id scene_viewer)
 {
 	if (scene_viewer)
-	{
-		scene_viewer->access_count++;
-	}
-
+		++(scene_viewer->access_count);
 	return scene_viewer;
 }
 
@@ -7453,7 +7439,9 @@ void *cmzn_sceneviewernotifier_get_callback_user_data(
 cmzn_sceneviewernotifier_id cmzn_sceneviewernotifier_access(
 	cmzn_sceneviewernotifier_id notifier)
 {
-	return notifier->access();
+	if (notifier)
+		return notifier->access();
+	return 0;
 }
 
 int cmzn_sceneviewernotifier_destroy(cmzn_sceneviewernotifier_id *notifier_address)

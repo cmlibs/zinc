@@ -18,10 +18,8 @@
 cmzn_streamresource_id cmzn_streamresource_access(cmzn_streamresource_id resource)
 {
 	if (resource)
-	{
 		return resource->access();
-	}
-	return NULL;
+	return 0;
 }
 
 int cmzn_streamresource_destroy(cmzn_streamresource_id *resource_address)
@@ -120,10 +118,8 @@ cmzn_streaminformation_id cmzn_streaminformation_access(
 	cmzn_streaminformation_id streaminformation)
 {
 	if (streaminformation)
-	{
 		return streaminformation->access();
-	}
-	return NULL;
+	return 0;
 }
 
 int cmzn_streaminformation_destroy(cmzn_streaminformation_id *streaminformation_address)
