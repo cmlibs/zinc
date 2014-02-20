@@ -237,13 +237,10 @@ ZINC_API double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_i
  *
  * @see cmzn_field_iamge_set_texture coordinate_sizes
  * @param image  The image to query.
- * @param valuesCount  The size of the sizes array to fill. Values
- * for dimensions beyond the size have the value of 1.
+ * @param valuesCount  The size of the sizes array to fill. Up to 3 values can
+ * be requested corresponding to width, height, depth. 
  * @param valuesOut  Array to receive texture coordinate sizes.
- * @return  The actual dimension of texture coordinates that have been
- * explicitly set. This can be
- * more than the number requested, so a second call may be needed with a
- * larger array. Returns 0 on error.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT;
  */
 ZINC_API int cmzn_field_image_get_texture_coordinate_sizes(cmzn_field_image_id image,
 	int valuesCount, double *valuesOut);
@@ -252,7 +249,7 @@ ZINC_API int cmzn_field_image_get_texture_coordinate_sizes(cmzn_field_image_id i
  * Set the texture coordinate width of the image.
  *
  * @param image  handle to the image field.
- * @param width  physical width to be set for the image
+ * @param width  Positive physical width to be set for the image.
  *
  * @return CMISS_OK if set correctly, any other value otherwise.
  */
@@ -262,7 +259,7 @@ ZINC_API int cmzn_field_image_set_texture_coordinate_width(cmzn_field_image_id i
  * Set the texture coordinate height of the image.
  *
  * @param image  handle to the image field.
- * @param height  physical height to be set for the image
+ * @param height  Positive physical height to be set for the image.
  *
  * @return CMISS_OK if set correctly, any other value otherwise.
  */
@@ -272,7 +269,7 @@ ZINC_API int cmzn_field_image_set_texture_coordinate_height(cmzn_field_image_id 
  * Set the texture coordinate depth of the image.
  *
  * @param image   handle to the image field.
- * @param depth  physical depth to be set for the image
+ * @param depth  Positive physical depth to be set for the image.
  *
  * @return CMISS_OK if set correctly, any other value otherwise.
  */
@@ -283,9 +280,9 @@ ZINC_API int cmzn_field_image_set_texture_coordinate_depth(cmzn_field_image_id i
  *
  * @see cmzn_field_iamge_set_texture coordinate_sizes
  * @param image  The image to query.
- * @param valuesCount  The size of the sizes array to fill. Values
- * for dimensions beyond the size have the value of 1.
- * @param sizesOut  Array to receive texture coordinate sizes.
+ * @param valuesCount  The size of the sizes array to fill. Up to 3 values can
+ * be set corresponding to width, height, depth. 
+ * @param valuesIn  Array containing texture coordinate sizes.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id image,

@@ -39,16 +39,16 @@ enum cmzn_field_image_combine_mode
 {
 	CMZN_FIELD_IMAGE_COMBINE_MODE_INVALID = 0,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND = 1,
-		/*!< default combine mode */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_DECAL = 2,
+		/*!< default combine mode */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_MODULATE = 3,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_ADD = 4,
 	CMZN_FIELD_IMAGE_COMBINE_MODE_ADD_SIGNED = 5,
 		/*!< Add the value and subtract 0.5 so the texture value
-			 effectively ranges from -0.5 to 0.5 */
+		  effectively ranges from -0.5 to 0.5 */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_MODULATE_SCALE_4 = 6,
 		/*!< Multiply and then scale by 4, so that we can
-			 scale down or up */
+		  scale down or up */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_BLEND_SCALE_4 = 7,
 		/*!< Same as blend with a 4 * scaling */
 	CMZN_FIELD_IMAGE_COMBINE_MODE_SUBTRACT = 8,
@@ -96,16 +96,16 @@ enum cmzn_field_image_wrap_mode
 		/*!< Clamp to a blend of the pixel edge and border colour */
 	CMZN_FIELD_IMAGE_WRAP_MODE_REPEAT = 2,
 		/*!< Default wrap mode. Repeat texture cylically in multiples of the
-			 texture coordinate range */
+		  texture coordinate range */
 	CMZN_FIELD_IMAGE_WRAP_MODE_EDGE_CLAMP = 3,
 		/*!< Always ignore the border, texels at or near the edge of the texure are
-			 used for texturing */
+		  used for texturing */
 	CMZN_FIELD_IMAGE_WRAP_MODE_BORDER_CLAMP = 4,
 		/*!< Clamp to the border colour when outside the texture coordinate range. */
 	CMZN_FIELD_IMAGE_WRAP_MODE_MIRROR_REPEAT = 5
 		/*!< Repeat but mirror every second multiple of the texture coordinates
-			 range. Texture may appear up-right in coordinate range[0,1] but
-			 upside-down in coordinate range[1,2] */
+		  range. Texture may appear up-right in coordinate range[0,1] but
+		  upside-down in coordinate range[1,2] */
 };
 
 /**
