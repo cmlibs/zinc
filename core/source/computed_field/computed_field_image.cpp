@@ -1080,7 +1080,6 @@ int Computed_field_is_image_type(struct Computed_field *field,
 	return (return_code);
 } /* Computed_field_has_string_value_type */
 
-
 int cmzn_field_image_set_texture(cmzn_field_image_id image_field,
 		struct Texture *texture)
 {
@@ -1088,8 +1087,7 @@ int cmzn_field_image_set_texture(cmzn_field_image_id image_field,
 
 	if (image_field && texture)
 	{
-		Computed_field_image *image_core =
-			Computed_field_image_core_cast(image_field);
+		Computed_field_image *image_core = Computed_field_image_core_cast(image_field);
 		return_code = image_core->set_texture(texture);
 		if (!return_code)
 		{

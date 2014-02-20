@@ -151,6 +151,18 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 					}
 					if (return_code)
 					{
+						// copy attributes from old texture
+						Texture *old_texture = cmzn_field_image_get_texture(image_field);
+						if (old_texture)
+						{
+							Texture_set_combine_mode(texture, Texture_get_combine_mode(old_texture));
+							Texture_set_filter_mode(texture, Texture_get_filter_mode(old_texture));
+							Texture_set_compression_mode(texture, Texture_get_compression_mode(old_texture));
+							Texture_set_wrap_mode(texture, Texture_get_wrap_mode(old_texture));
+							double sizes[3];
+							cmzn_texture_get_texture_coordinate_sizes(old_texture, 3, sizes);
+							cmzn_texture_set_texture_coordinate_sizes(texture, 3, sizes);
+						}
 						return_code = cmzn_field_image_set_texture(image_field, texture);
 						DESTROY(Texture)(&texture);
 					}

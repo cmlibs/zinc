@@ -109,7 +109,7 @@ The properties of a graphical texture.
 		 ie. 2 if it has one texel depth, 1 if it has one texel height */
 	int dimension;
 	/* the range of texture coordinates in model units */
-	GLfloat depth, height, width;
+	double depth, height, width;
 	/* image distortion parameters in the physical size of the image, where 0,0
 		 refers to the left, bottom corner and width, height is the right, top.
 		 Only pure radial distortion in physical space is supported. Note that these
@@ -669,41 +669,20 @@ GL_EXT_texture_object extension.
 	{
 		return_code=1;
 #if defined (OPENGL_API)
-		if (texture->width)
-		{
-			texture_coordinate_transform[0][0] = texture->original_width_texels/
-				(texture->width_texels*texture->width);
-		}
-		else
-		{
-			texture_coordinate_transform[0][0] = 1.0;
-		}
+		texture_coordinate_transform[0][0] = texture->original_width_texels/
+			(texture->width_texels*texture->width);
 		texture_coordinate_transform[1][0]=0.;
 		texture_coordinate_transform[2][0]=0.;
 		texture_coordinate_transform[3][0]=0.;
 		texture_coordinate_transform[0][1]=0.;
-		if (texture->height)
-		{
-			texture_coordinate_transform[1][1] = texture->original_height_texels/
-				(texture->height_texels*texture->height);
-		}
-		else
-		{
-			texture_coordinate_transform[1][1] = 1.0;
-		}
+		texture_coordinate_transform[1][1] = texture->original_height_texels/
+			(texture->height_texels*texture->height);
 		texture_coordinate_transform[2][1]=0.;
 		texture_coordinate_transform[3][1]=0.;
 		texture_coordinate_transform[0][2]=0.;
 		texture_coordinate_transform[1][2]=0.;
-		if (texture->depth)
-		{
-			texture_coordinate_transform[2][2] = texture->original_depth_texels/
-				(texture->depth_texels*texture->depth);
-		}
-		else
-		{
-			texture_coordinate_transform[2][2] = 1.0;
-		}
+		texture_coordinate_transform[2][2] = texture->original_depth_texels/
+			(texture->depth_texels*texture->depth);
 		texture_coordinate_transform[3][2]=0.;
 		texture_coordinate_transform[0][3]=0.;
 		texture_coordinate_transform[1][3]=0.;
@@ -1081,7 +1060,8 @@ LAST MODIFIED : 19 November 2007
 
 DESCRIPTION :
 Queries the graphics hardware to determine how much the texture size must be
-reduced to fit the available space. Returns the reduction factors <reductions> which must be an array equal in size to the dimension of the texture.
+reduced to fit the available space. Returns the reduction factors <reductions>
+which must be an array equal in size to the dimension of the texture.
 The function returns 0 if the texture cannot be loaded at all, 1 if no
 reduction is required, 2 if the texture can be loaded if reduced according
 to the <reductions> or 3 if the texture can be loaded if broken into multiple
@@ -1380,14 +1360,14 @@ tiles (and <texture_tiling> wasn't NULL.
 					(*texture_tiling)->tile_size[0] =
 						texture->width_texels/(*texture_tiling)->texture_tiles[0];
 					(*texture_tiling)->tile_coordinate_range[0] =
-						texture->width /(GLfloat)(*texture_tiling)->texture_tiles[0]
-						* ((GLfloat)texture->width_texels /
-						(GLfloat)texture->original_width_texels);
+						texture->width /(double)(*texture_tiling)->texture_tiles[0]
+						* ((double)texture->width_texels /
+						(double)texture->original_width_texels);
 					(*texture_tiling)->coordinate_scaling[0] =
 						(*texture_tiling)->texture_tiles[0];
 					while (((*texture_tiling)->texture_tiles[0] > 1) &&
-						(ceil((GLfloat)texture->width_texels/
-						(GLfloat)((*texture_tiling)->tile_size[0] - 2 * (*texture_tiling)->overlap))
+						(ceil((double)texture->width_texels/
+						(double)((*texture_tiling)->tile_size[0] - 2 * (*texture_tiling)->overlap))
 						> (*texture_tiling)->texture_tiles[0]))
 					{
 						(*texture_tiling)->texture_tiles[0]++;
@@ -1400,14 +1380,14 @@ tiles (and <texture_tiling> wasn't NULL.
 					(*texture_tiling)->tile_size[1] =
 						texture->height_texels/(*texture_tiling)->texture_tiles[1];
 					(*texture_tiling)->tile_coordinate_range[1] =
-						texture->height/(GLfloat)(*texture_tiling)->texture_tiles[1]
-						* ((GLfloat)texture->height_texels /
-						(GLfloat)texture->original_height_texels);
+						texture->height/(double)(*texture_tiling)->texture_tiles[1]
+						* ((double)texture->height_texels /
+						(double)texture->original_height_texels);
 					(*texture_tiling)->coordinate_scaling[1] =
 						(*texture_tiling)->texture_tiles[1];
 					while (((*texture_tiling)->texture_tiles[1] > 1) &&
-						(ceil((GLfloat)texture->height_texels/
-						(GLfloat)((*texture_tiling)->tile_size[1] - 2 * (*texture_tiling)->overlap))
+						(ceil((double)texture->height_texels/
+						(double)((*texture_tiling)->tile_size[1] - 2 * (*texture_tiling)->overlap))
 						> (*texture_tiling)->texture_tiles[1]))
 					{
 						(*texture_tiling)->texture_tiles[1]++;
@@ -1420,14 +1400,14 @@ tiles (and <texture_tiling> wasn't NULL.
 					(*texture_tiling)->tile_size[2] =
 						texture->depth_texels/(*texture_tiling)->texture_tiles[2];
 					(*texture_tiling)->tile_coordinate_range[2] =
-						texture->depth/(GLfloat)(*texture_tiling)->texture_tiles[2]
-						* ((GLfloat)texture->depth_texels /
-						(GLfloat)texture->original_depth_texels);
+						texture->depth/(double)(*texture_tiling)->texture_tiles[2]
+						* ((double)texture->depth_texels /
+						(double)texture->original_depth_texels);
 					(*texture_tiling)->coordinate_scaling[2] =
 						(*texture_tiling)->texture_tiles[2];
 					while (((*texture_tiling)->texture_tiles[2] > 1) &&
-						(ceil((GLfloat)texture->depth_texels/
-						(GLfloat)((*texture_tiling)->tile_size[2] - 2 * (*texture_tiling)->overlap))
+						(ceil((double)texture->depth_texels/
+						(double)((*texture_tiling)->tile_size[2] - 2 * (*texture_tiling)->overlap))
 						>= (*texture_tiling)->texture_tiles[2]))
 					{
 						(*texture_tiling)->texture_tiles[2]++;
@@ -2876,48 +2856,6 @@ Directly outputs the commands setting up the <texture>.
 } /* direct_render_Texture */
 #endif /* defined (OPENGL_API) */
 
-static int Texture_update_default_physical_size(struct Texture *texture)
-/*******************************************************************************
-LAST MODIFIED : 13 July 2006
-
-DESCRIPTION :
-If the texture has a pixel dimension of greater than 1 in any particular
-dimension then the corresponding default physical size is changed from
-the initial 0 to 1.
-==============================================================================*/
-{
-	int return_code = 0;
-
-	ENTER(Texture_update_default_physical_size);
-	if (texture)
-	{
-		if (texture->dimension > 1)
-		{
-			if ((texture->dimension > 2) && (texture->depth == 0))
-			{
-				texture->depth = 1;
-			}
-			if (texture->height == 0)
-			{
-				texture->height = 1;
-			}
-		}
-		if ((texture->width_texels > 1) && (texture->width == 0))
-		{
-			texture->width = 1;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "Texture_update_default_physical_size.  "
-			"Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Texture_update_default_physical_size */
-
 #if defined (SGI_MOVIE_FILE)
 static int Texture_refresh(struct Texture *texture)
 /*******************************************************************************
@@ -3358,9 +3296,9 @@ of all textures.
 		{
 			/* texture defaults to 1-D since it is a single texel */
 			texture->dimension = 1;
-			texture->depth=0.;
-			texture->height=0.;
-			texture->width=0.;
+			texture->depth = 1.0;
+			texture->height = 1.0;
+			texture->width = 1.0;
 			/* assign image description fields */
 			texture->image_file_name = (char *)NULL;
 			/* file number pattern and ranges for 3-D textures */
@@ -4231,7 +4169,6 @@ Crop and other parameters are cleared.
 			texture->crop_bottom_margin = 0;
 			texture->crop_width = 0;
 			texture->crop_height = 0;
-			Texture_update_default_physical_size(texture);
 			/* display list needs to be compiled again */
 			texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			return_code = 1;
@@ -4494,7 +4431,6 @@ positive. Cropping is not available in the depth direction.
 				texture->crop_bottom_margin = crop_bottom;
 				texture->crop_width = crop_width;
 				texture->crop_height = crop_height;
-				Texture_update_default_physical_size(texture);
 				/* display list needs to be compiled again */
 				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 				return_code = 1;
@@ -4709,7 +4645,6 @@ Adds <cmgui_image> into <texture> making a 3D image from 2D images.
 				texture->width_texels = texture_width;
 				texture->height_texels = texture_height;
 				texture->depth_texels = texture_depth;
-				Texture_update_default_physical_size(texture);
 				/* display list needs to be compiled again */
 				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 				return_code = 1;
@@ -5073,44 +5008,26 @@ is constant from the half texel location to the edge.
 			case TEXTURE_CLAMP_WRAP:
 			case TEXTURE_CLAMP_EDGE_WRAP:
 			{
-				if ((x < 0.0) || (0.0 == texture->width))
-				{
+				if (x < 0.0)
 					x = 0.0;
-				}
 				else if (x > texture->width)
-				{
 					x = texture->original_width_texels;
-				}
 				else
-				{
 					x *= ((ZnReal)texture->original_width_texels / texture->width);
-				}
 
-				if ((y < 0.0) || (0.0 == texture->height))
-				{
+				if (y < 0.0)
 					y = 0.0;
-				}
 				else if (y > texture->height)
-				{
 					y = texture->original_height_texels;
-				}
 				else
-				{
 					y *= ((ZnReal)texture->original_height_texels / texture->height);
-				}
 
-				if ((z < 0.0) || (0.0 == texture->depth))
-				{
+				if (z < 0.0)
 					z = 0.0;
-				}
 				else if (z > texture->depth)
-				{
 					z = texture->original_depth_texels;
-				}
 				else
-				{
 					z *= ((ZnReal)texture->original_depth_texels / texture->depth);
-				}
 			} break;
 			case TEXTURE_CLAMP_BORDER_WRAP:
 			{
@@ -5124,48 +5041,30 @@ is constant from the half texel location to the edge.
 					x = 0.0;
 					in_border = 1;
 				}
-				else if (0.0 == texture->width)
-				{
-					x = 0.0;
-				}
 				else
-				{
 					x *= ((double)texture->original_width_texels / texture->width);
-				}
+
 				if ((y < 0)||(y > texture->height))
 				{
 					y = 0.0;
 					in_border = 1;
 				}
-				else if (0.0 == texture->height)
-				{
-					y = 0.0;
-				}
 				else
-				{
 					y *= ((double)texture->original_height_texels / texture->height);
-				}
+
 				if ((z < 0)||(z > texture->depth))
 				{
 					z = 0.0;
 					in_border = 1;
 				}
-				else if (0.0 == texture->depth)
-				{
-					z = 0.0;
-				}
 				else
-				{
 					z *= ((double)texture->original_depth_texels / texture->depth);
-				}
 			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
 				/* make x, y and z range from 0.0 to 1.0 over full texture size */
-				if ((texture->width_texels == 0.0) || (texture->width == 0.0))
-				{
+				if (texture->width_texels == 0)
 					x = 0.0;
-				}
 				else
 				{
 					x *= ((double)texture->original_width_texels /
@@ -5174,10 +5073,8 @@ is constant from the half texel location to the edge.
 					x *= (double)(texture->width_texels);
 				}
 
-				if ((texture->height_texels == 0.0) || (texture->height == 0.0))
-				{
+				if (texture->height_texels == 0)
 					y = 0.0;
-				}
 				else
 				{
 					y *= ((double)texture->original_height_texels /
@@ -5186,10 +5083,8 @@ is constant from the half texel location to the edge.
 					y *= (double)(texture->height_texels);
 				}
 
-				if ((texture->depth_texels == 0.0) || (texture->depth == 0.0))
-				{
+				if (texture->depth_texels == 0)
 					z = 0.0;
-				}
 				else
 				{
 					z *= ((double)texture->original_depth_texels /
@@ -5902,7 +5797,7 @@ real image data and not padding to make image sizes up to powers of 2.
 	int return_code;
 
 	ENTER(Texture_set_physical_size);
-	if (texture)
+	if (texture && (0.0 < width) && (0.0 < height) && (0.0 < depth))
 	{
 		if ((width != texture->width) || (height != texture->height) ||
 			(depth != texture->depth))
@@ -5929,10 +5824,7 @@ real image data and not padding to make image sizes up to powers of 2.
 int cmzn_texture_get_texture_coordinate_sizes(cmzn_texture_id texture,
 	int dimension, double *sizesOut)
 /*******************************************************************************
-LAST MODIFIED : 26 May 2007
-
-DESCRIPTION :
-Returns the texture coordinates sizes of the texture.
+Gets the texture coordinates sizes of the texture.
 This is the same as the physical size above.  When rendered the
 texture will be rendered mapping the texture coordinates [0,0,0] to the bottom
 left of the texture and
@@ -5940,7 +5832,7 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 {
-	if (texture)
+	if (texture && (0 < dimension) && (sizesOut))
 	{
 		for (int i = 0; i < dimension; i++)
 		{
@@ -5951,9 +5843,9 @@ the top right of the texture.
 			else if (i == 2)
 				sizesOut[i] = texture->depth;
 		}
-		return texture->dimension;
+		return CMZN_OK;
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_texture_set_texture_coordinate_sizes(cmzn_texture_id texture,
@@ -5970,37 +5862,36 @@ left of the texture and
 the top right of the texture.
 ==============================================================================*/
 {
-	if (texture)
+	if (texture && (dimension > 0) && (sizes))
 	{
-		if (dimension > 0)
+		for (int i = 0; i < dimension; ++i)
+			if (sizes[i] <= 0.0)
+				return CMZN_ERROR_ARGUMENT;
+		if (texture->width != sizes[0])
 		{
-			if (texture->width != sizes[0])
+			texture->width = sizes[0];
+			texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
+		}
+		if (dimension > 1)
+		{
+			if (texture->height != sizes[1])
 			{
-				texture->width = sizes[0];
+				texture->height = sizes[1];
 				texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
 			}
-			if (dimension > 1)
+			if (dimension > 2)
 			{
-				if (texture->height != sizes[1])
+				if (texture->depth != sizes[2])
 				{
-					texture->height = sizes[1];
+					texture->depth = sizes[2];
 					texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
-				}
-				if (dimension > 2)
-				{
-					if (texture->depth != sizes[2])
-					{
-						texture->depth = sizes[2];
-						texture->display_list_current = TEXTURE_COMPILE_STATE_NOT_COMPILED;
-					}
 				}
 			}
 		}
 		return CMZN_OK;
 	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* Texture_set_texture_coordinate_sizes */
+}
 
 int Texture_get_distortion_info(struct Texture *texture,
 	ZnReal *distortion_centre_x,ZnReal *distortion_centre_y,
@@ -6925,33 +6816,12 @@ by vertex programs.
 			(Graphics_library_check_extension(GL_ARB_vertex_program) &&
 				Graphics_library_check_extension(GL_ARB_fragment_program)))
 		{
-			if (texture->width)
-			{
-				texture_scaling[0] = texture->original_width_texels/
-					(texture->width_texels*texture->width);
-			}
-			else
-			{
-				texture_scaling[0] = 1.0;
-			}
-			if (texture->height)
-			{
-				texture_scaling[1] = texture->original_height_texels/
-					(texture->height_texels*texture->height);
-			}
-			else
-			{
-				texture_scaling[1] = 1.0;
-			}
-			if (texture->depth)
-			{
-				texture_scaling[2] = texture->original_depth_texels/
-					(texture->depth_texels*texture->depth);
-			}
-			else
-			{
-				texture_scaling[2] = 1.0;
-			}
+			texture_scaling[0] = texture->original_width_texels/
+				(texture->width_texels*texture->width);
+			texture_scaling[1] = texture->original_height_texels/
+				(texture->height_texels*texture->height);
+			texture_scaling[2] = texture->original_depth_texels/
+				(texture->depth_texels*texture->depth);
 			texture_scaling[3] = 1.0;
 
 			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
