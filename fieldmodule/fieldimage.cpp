@@ -67,12 +67,12 @@ TEST(cmzn_field_image, create_evaluate)
 	double height = cmzn_field_image_get_texture_coordinate_height(im);
 	ASSERT_DOUBLE_EQ(1.0, height);
 	double depth = cmzn_field_image_get_texture_coordinate_depth(im);
-	ASSERT_DOUBLE_EQ(0.0, depth);
+	ASSERT_DOUBLE_EQ(1.0, depth);
 	double double_sizes[3];
 	cmzn_field_image_get_texture_coordinate_sizes(im, 3, &double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
-	ASSERT_DOUBLE_EQ(0.0, double_sizes[2]);
+	ASSERT_DOUBLE_EQ(1.0, double_sizes[2]);
 
 	// test setting domain field and evaluation of image_from_source
 
@@ -159,12 +159,12 @@ TEST(ZincFieldImage, create_evaluate)
 	double height = im.getTextureCoordinateHeight();
 	ASSERT_DOUBLE_EQ(1.0, height);
 	double depth = im.getTextureCoordinateDepth();
-	ASSERT_DOUBLE_EQ(0.0, depth);
+	ASSERT_DOUBLE_EQ(1.0, depth);
 	double double_sizes[3];
 	im.getTextureCoordinateSizes(3, &double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[0]);
 	ASSERT_DOUBLE_EQ(1.0, double_sizes[1]);
-	ASSERT_DOUBLE_EQ(0.0, double_sizes[2]);
+	ASSERT_DOUBLE_EQ(1.0, double_sizes[2]);
 
 	// test setting domain field and evaluation of imageFromSource
 
