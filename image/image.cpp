@@ -77,6 +77,62 @@ TEST(ZincFieldImage, read_png)
 	EXPECT_EQ(OK, im.read(si));
 }
 
+// Issue 3707: Image filter, wrap and other modes should not be reset after
+// reading an image file.
+TEST(ZincFieldImage, issue_3707_keep_attributes_after_read_image)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	FieldImage im = zinc.fm.createFieldImage();
+	EXPECT_TRUE(im.isValid());
+
+	// Check default attributes and set to non-default
+
+	FieldImage::CombineMode combineMode;
+	EXPECT_EQ(FieldImage::COMBINE_MODE_DECAL, combineMode = im.getCombineMode());
+	EXPECT_EQ(OK, result = im.setCombineMode(FieldImage::COMBINE_MODE_BLEND));
+	EXPECT_EQ(FieldImage::COMBINE_MODE_BLEND, combineMode = im.getCombineMode());
+
+	FieldImage::FilterMode filterMode;
+	EXPECT_EQ(FieldImage::FILTER_MODE_NEAREST, filterMode = im.getFilterMode());
+	EXPECT_EQ(OK, result = im.setFilterMode(FieldImage::FILTER_MODE_LINEAR));
+	EXPECT_EQ(FieldImage::FILTER_MODE_LINEAR, filterMode = im.getFilterMode());
+
+	FieldImage::HardwareCompressionMode hardwareCompressionMode;
+	EXPECT_EQ(FieldImage::HARDWARE_COMPRESSION_MODE_UNCOMPRESSED, hardwareCompressionMode = im.getHardwareCompressionMode());
+	EXPECT_EQ(OK, result = im.setHardwareCompressionMode(FieldImage::HARDWARE_COMPRESSION_MODE_AUTOMATIC));
+	EXPECT_EQ(FieldImage::HARDWARE_COMPRESSION_MODE_AUTOMATIC, hardwareCompressionMode = im.getHardwareCompressionMode());
+
+	FieldImage::WrapMode wrapMode;
+	EXPECT_EQ(FieldImage::WRAP_MODE_REPEAT, wrapMode = im.getWrapMode());
+	EXPECT_EQ(OK, result = im.setWrapMode(FieldImage::WRAP_MODE_CLAMP));
+	EXPECT_EQ(FieldImage::WRAP_MODE_CLAMP, wrapMode = im.getWrapMode());
+
+	double width, height, depth;
+	ASSERT_DOUBLE_EQ(1.0, width = im.getTextureCoordinateWidth());
+	EXPECT_EQ(OK, im.setTextureCoordinateWidth(5.5));
+	ASSERT_DOUBLE_EQ(5.5, width = im.getTextureCoordinateWidth());
+	ASSERT_DOUBLE_EQ(1.0, height = im.getTextureCoordinateHeight());
+	EXPECT_EQ(OK, im.setTextureCoordinateHeight(6.7));
+	ASSERT_DOUBLE_EQ(6.7, height = im.getTextureCoordinateHeight());
+	ASSERT_DOUBLE_EQ(1.0, depth = im.getTextureCoordinateDepth());
+	EXPECT_EQ(OK, im.setTextureCoordinateDepth(2.2));
+	ASSERT_DOUBLE_EQ(2.2, depth = im.getTextureCoordinateDepth());
+
+	EXPECT_EQ(OK, im.readFile(TestResources::getLocation(TestResources::IMAGE_PNG_RESOURCE)));
+
+	// Check attributes kept their non-default values
+
+	EXPECT_EQ(FieldImage::COMBINE_MODE_BLEND, combineMode = im.getCombineMode());
+	EXPECT_EQ(FieldImage::FILTER_MODE_LINEAR, filterMode = im.getFilterMode());
+	EXPECT_EQ(FieldImage::HARDWARE_COMPRESSION_MODE_AUTOMATIC, hardwareCompressionMode = im.getHardwareCompressionMode());
+	EXPECT_EQ(FieldImage::WRAP_MODE_CLAMP, wrapMode = im.getWrapMode());
+	ASSERT_DOUBLE_EQ(5.5, width = im.getTextureCoordinateWidth());
+	ASSERT_DOUBLE_EQ(6.7, height = im.getTextureCoordinateHeight());
+	ASSERT_DOUBLE_EQ(2.2, depth = im.getTextureCoordinateDepth());
+}
+
 TEST(cmzn_fieldmodule_create_image, analyze_bigendian)
 {
 	ZincTestSetup zinc;
