@@ -1186,12 +1186,14 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 	int mesh_dimension = cmzn_mesh_get_dimension(search_mesh);
 	cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 	cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+	Texture_get_physical_size(texture, &texture_width, &texture_height, &texture_depth);
 	if (image_depth > 1)
 	{
 		dimension = 3;
 	}
 	else
 	{
+		texture_depth = 0.0;
 		if (image_height > 1)
 		{
 			dimension = 2;
@@ -1199,6 +1201,7 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 		else
 		{
 			dimension = 1;
+			texture_height = 0.0;
 		}
 	}
 	number_of_data_components =
@@ -1212,8 +1215,6 @@ int Set_cmiss_field_value_to_texture(struct cmzn_field *field, struct cmzn_field
 			"Set_cmiss_field_value_to_texture.  Invalid number of texture coordinate components");
 		return 0;
 	}
-	Texture_get_physical_size(texture, &texture_width, &texture_height,
-		&texture_depth);
 	/* allocate space for a single image plane */
 	image_width_bytes = image_width*bytes_per_pixel;
 	if (number_of_bytes_per_component == 2)
