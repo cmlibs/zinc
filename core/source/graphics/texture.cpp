@@ -5008,21 +5008,21 @@ is constant from the half texel location to the edge.
 			case TEXTURE_CLAMP_WRAP:
 			case TEXTURE_CLAMP_EDGE_WRAP:
 			{
-				if (x < 0.0)
+				if ((x < 0.0) || (texture->original_width_texels <= 1))
 					x = 0.0;
 				else if (x > texture->width)
 					x = texture->original_width_texels;
 				else
 					x *= ((ZnReal)texture->original_width_texels / texture->width);
 
-				if (y < 0.0)
+				if ((y < 0.0) || (texture->original_height_texels <= 1))
 					y = 0.0;
 				else if (y > texture->height)
 					y = texture->original_height_texels;
 				else
 					y *= ((ZnReal)texture->original_height_texels / texture->height);
 
-				if (z < 0.0)
+				if ((z < 0.0) || (texture->original_depth_texels <= 1))
 					z = 0.0;
 				else if (z > texture->depth)
 					z = texture->original_depth_texels;
@@ -5041,6 +5041,8 @@ is constant from the half texel location to the edge.
 					x = 0.0;
 					in_border = 1;
 				}
+				else if (texture->original_width_texels <= 1)
+					x = 0.0;
 				else
 					x *= ((double)texture->original_width_texels / texture->width);
 
@@ -5049,6 +5051,8 @@ is constant from the half texel location to the edge.
 					y = 0.0;
 					in_border = 1;
 				}
+				else if (texture->original_height_texels <= 1)
+					y = 0.0;
 				else
 					y *= ((double)texture->original_height_texels / texture->height);
 
@@ -5057,13 +5061,15 @@ is constant from the half texel location to the edge.
 					z = 0.0;
 					in_border = 1;
 				}
+				else if (texture->original_depth_texels <= 1)
+					z = 0.0;
 				else
 					z *= ((double)texture->original_depth_texels / texture->depth);
 			} break;
 			case TEXTURE_REPEAT_WRAP:
 			{
 				/* make x, y and z range from 0.0 to 1.0 over full texture size */
-				if (texture->width_texels == 0)
+				if (texture->original_width_texels <= 1)
 					x = 0.0;
 				else
 				{
@@ -5073,7 +5079,7 @@ is constant from the half texel location to the edge.
 					x *= (double)(texture->width_texels);
 				}
 
-				if (texture->height_texels == 0)
+				if (texture->original_height_texels <= 1)
 					y = 0.0;
 				else
 				{
@@ -5083,7 +5089,7 @@ is constant from the half texel location to the edge.
 					y *= (double)(texture->height_texels);
 				}
 
-				if (texture->depth_texels == 0)
+				if (texture->original_depth_texels <= 1)
 					z = 0.0;
 				else
 				{
@@ -6816,12 +6822,24 @@ by vertex programs.
 			(Graphics_library_check_extension(GL_ARB_vertex_program) &&
 				Graphics_library_check_extension(GL_ARB_fragment_program)))
 		{
-			texture_scaling[0] = texture->original_width_texels/
-				(texture->width_texels*texture->width);
-			texture_scaling[1] = texture->original_height_texels/
-				(texture->height_texels*texture->height);
-			texture_scaling[2] = texture->original_depth_texels/
-				(texture->depth_texels*texture->depth);
+			if (texture->original_width_texels > 1)
+				texture_scaling[0] = texture->original_width_texels/
+					(texture->width_texels*texture->width);
+			else
+				texture_scaling[0] = 1.0;
+
+			if (texture->original_height_texels > 1)
+				texture_scaling[1] = texture->original_height_texels/
+					(texture->height_texels*texture->height);
+			else
+				texture_scaling[1] = 1.0;
+
+			if (texture->original_depth_texels > 1)
+				texture_scaling[2] = texture->original_depth_texels/
+					(texture->depth_texels*texture->depth);
+			else
+				texture_scaling[2] = 1.0;
+
 			texture_scaling[3] = 1.0;
 
 			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
