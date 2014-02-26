@@ -7,6 +7,6 @@ __path__ = extend_path(__path__, __name__)
 ")
 FILE(WRITE "${CMAKE_CURRENT_BINARY_DIR}/${ZINC_PYTHON_MODULE}/__init__.py" "
 # Zinc Python package initialisation file.
-__version__ = \"${ZINC_VERSION}\"
+__version__ = \"${ZINC_VERSION}${ZINC_DEVELOPER_VERSION}\"
 
 ")
