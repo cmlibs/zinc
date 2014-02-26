@@ -546,11 +546,6 @@ EXPORT( TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} FILE "${PROJECT_BINA
 # Register the Zinc project with the CMake database
 EXPORT( PACKAGE ${ZINC_BASE_NAME} )
 
-# Create a directory install command so intermediate directories have the correct permissions
-# Workaround for issue 3700
-INSTALL( DIRECTORY "" DESTINATION "${ZINC_INSTALL_CMAKE_DIR}"
-	DIRECTORY_PERMISSIONS GROUP_READ PATTERN "*" EXCLUDE )
-
 # Install ZincLibraryDepends.cmake to the install destination
 INSTALL( EXPORT ${ZINC_LIBRARY_DEPENDS_GROUP} DESTINATION "${ZINC_INSTALL_CMAKE_DIR}" )
 
