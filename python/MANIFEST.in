@@ -1,1 +1,1 @@
-include opencmiss/zinc/*.so opencmiss/zinc/*.pyd
+include ${OPENCMISS_PYTHON_PACKAGE}/${ZINC_PYTHON_PACKAGE}/*.so ${OPENCMISS_PYTHON_PACKAGE}/${ZINC_PYTHON_PACKAGE}/*.pyd ${OPENCMISS_PYTHON_PACKAGE}/${ZINC_PYTHON_PACKAGE}/*zinc*.[so|dll]*
