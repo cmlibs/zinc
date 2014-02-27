@@ -58,7 +58,8 @@ ZINC_API cmzn_field_id cmzn_graphics_get_coordinate_field(
 	cmzn_graphics_id graphics);
 
 /**
- * Sets the field supplying coordinates for the graphics.
+ * Sets the field supplying coordinates for the graphics. Non rectangular-
+ * Cartesian coordinates are automatically converted to RC for the graphics.
  *
  * @param graphics  The graphics to modify.
  * @param coordinate_field  The field to use as the coordinate field. May have
