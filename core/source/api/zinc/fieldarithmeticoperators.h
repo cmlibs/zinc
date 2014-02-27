@@ -77,14 +77,14 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_add(cmzn_fieldmodule_id fie
 	cmzn_field_id source_field_two);
 
 /**
- * Creates a field where the which subtracts the components of source_field_two
+ * Creates a field which gives the result of subtracting source_field_two
  * from source_field_one.
  * Automatic scalar broadcast will apply, see field.h.
  *
  * @param field_module  Region field module which will own new field.
- * @param source_field_one First input field
- * @param source_field_two Second input field
- * @return Newly created field
+ * @param source_field_one  First input field
+ * @param source_field_two  Second input field
+ * @return  Newly created field
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
