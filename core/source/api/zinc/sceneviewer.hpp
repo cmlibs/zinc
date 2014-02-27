@@ -312,16 +312,6 @@ public:
 		return Scenefilter(cmzn_sceneviewer_get_scenefilter(id));
 	}
 
-	int setGraphicsBufferWidth(int width)
-	{
-		return cmzn_sceneviewer_set_graphics_buffer_width(id, width);
-	}
-
-	int setGraphicsBufferHeight(int height)
-	{
-		return cmzn_sceneviewer_set_graphics_buffer_height(id, height);
-	}
-
 	int setViewportSize(int width, int height)
 	{
 		return cmzn_sceneviewer_set_viewport_size(id, width, height);

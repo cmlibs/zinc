@@ -5275,40 +5275,6 @@ For PARALLEL and PERSPECTIVE projection modes only.
 	return (return_code);
 } /* Scene_viewer_get_vertical_view_angle */
 
-int cmzn_sceneviewer_set_graphics_buffer_width(cmzn_sceneviewer_id scene_viewer,
-	unsigned int width)
-{
-	int return_code = 0;
-
-	if (scene_viewer)
-	{
-		return_code = Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewer_set_graphics_buffer_width.  Invalid argument(s)");
-	}
-	return return_code;
-}
-
-int cmzn_sceneviewer_set_graphics_buffer_height(cmzn_sceneviewer_id scene_viewer,
-	unsigned int height)
-{
-	int return_code = 0;
-
-	if (scene_viewer)
-	{
-		return_code = Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_sceneviewer_set_graphics_buffer_height.  Invalid argument(s)");
-	}
-	return return_code;
-}
-
 int Scene_viewer_set_view_simple(struct Scene_viewer *scene_viewer,
 	double centre_x,double centre_y,double centre_z,double radius,
 	double view_angle,double clip_distance)

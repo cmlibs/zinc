@@ -322,18 +322,6 @@ ZINC_API int cmzn_sceneviewer_set_view_angle(cmzn_sceneviewer_id sceneviewer,
 	double view_angle);
 
 /**
- * Set the width of the graphics buffer.
- */
-ZINC_API int cmzn_sceneviewer_set_graphics_buffer_width(cmzn_sceneviewer_id sceneviewer,
-	unsigned int width);
-
-/**
- * Set the height of the graphics buffer.
- */
-ZINC_API int cmzn_sceneviewer_set_graphics_buffer_height(cmzn_sceneviewer_id sceneviewer,
-	unsigned int height);
-
-/**
  * Gets the number of jitter samples used to antialias the scene viewer.
  *
  * @param sceneviewer  The scene viewer to query.
