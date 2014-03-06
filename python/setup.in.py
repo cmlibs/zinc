@@ -25,7 +25,7 @@ setup(
 	author='H. Sorby',
 	author_email='h.sorby@auckland.ac.nz',
 	packages=['opencmiss', 'opencmiss.zinc'],
-	package_data={'opencmiss.zinc': ['@ZINC_SHARED_OBJECT_GLOB@', '@ZINC_LIBRARY_NAME@']},
+	package_data={'opencmiss.zinc': ['@ZINC_SHARED_OBJECT_GLOB@']},
 	platforms=['any'],
 	url='http://pypi.python.org/pypi/PyZinc/',
 	license='LICENSE.txt',
