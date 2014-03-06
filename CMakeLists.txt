@@ -30,9 +30,9 @@ PRN_MSG("svn repo revision is '${ZINC_REVISION}'")
 
 # Set ZINC_RELEASE to TRUE when building a release binary, most othertimes it should
 # be set to FALSE.  The ZINC_RELEASE flag effects the name of the created library.
-SET( ZINC_RELEASE FALSE )
-SET( ZINC_MAJOR_VERSION "2" )
-SET( ZINC_MINOR_VERSION "99" )
+SET( ZINC_RELEASE TRUE )
+SET( ZINC_MAJOR_VERSION "3" )
+SET( ZINC_MINOR_VERSION "0" )
 SET( ZINC_PATCH_VERSION "0" )
 
 SET( ZINC_MAJOR_VERSION_STRING "\"${ZINC_MAJOR_VERSION}\"" )
