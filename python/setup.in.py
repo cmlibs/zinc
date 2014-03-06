@@ -7,12 +7,18 @@ mathematical operators.
 """
 
 classifiers = """\
-Development Status :: 3 - Alpha
+Development Status :: 5 - Production/Stable
 Intended Audience :: Developers
 Intended Audience :: Education
+Intended Audience :: Science/Research
+License :: OSI Approved :: Mozilla Public License 2.0 (MPL 2.0)
 Programming Language :: Python
 Operating System :: Microsoft :: Windows
 Operating System :: Unix
+Operating System :: MacOS :: MacOS X
+Topic :: Scientific/Engineering :: Medical Science Apps.
+Topic :: Scientific/Engineering :: Visualization
+Topic :: Software Development :: Libraries :: Python Modules
 """
 
 from distutils.core import setup
