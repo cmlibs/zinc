@@ -11,20 +11,44 @@
 #ifndef CMZN_GLYPHID_H__
 #define CMZN_GLYPHID_H__
 
+/**
+ * Module managing all glyphs. Note that no glyphs exist on start-up, so
+ * most users will need to define standard glyphs early in their program, and
+ * after defining standard materials to pick up coloured standard glyphs.
+ * @see cmzn_glyphmodule_define_standard_glyphs
+ */
 struct cmzn_glyphmodule;
 typedef struct cmzn_glyphmodule *cmzn_glyphmodule_id;
 
+/**
+ * A glyph is a static graphics object used to visualise a point in space, e.g.
+ * point, line, sphere, axes etc.
+ * Note that the appearance of some glyphs depend on attributes of point
+ * graphics used to draw them: circular glyphs (sphere, cylinder etc.) use the 
+ * circle divisions of the tessellation object, axes with labels use the font.
+ * Derived glyph types implement custom axes and spectrum colour bar.
+ */
 struct cmzn_glyph;
 typedef struct cmzn_glyph *cmzn_glyph_id;
 
+/**
+ * A specialised glyph type which renders 3-D axes with arbitrary labels and
+ * selected glyph repeated on 3 axes.
+ */
 struct cmzn_glyph_axes;
 typedef struct cmzn_glyph_axes *cmzn_glyph_axes_id;
 
+/**
+ * A specialised glyph type which draws a cylindrical colour bar showing the
+ * colours and range of a spectrum with controllable size, scale ticks and label
+ * etc. The colour bar automatically updates to show changes to the spectrum.
+ */
 struct cmzn_glyph_colour_bar;
 typedef struct cmzn_glyph_colour_bar *cmzn_glyph_colour_bar_id;
 
 /**
- * An enum defining how glyphs are repeatedly display at points.
+ * An enum defining how glyphs are repeatedly displayed at points.
+ * @see cmzn_graphicspointattributes
  */
 enum cmzn_glyph_repeat_mode
 {
@@ -53,7 +77,8 @@ enum cmzn_glyph_repeat_mode
 };
 
 /**
- * An enum defining the type of graphics glyph.
+ * An enumeration defining standard glyph shapes which can be used as an
+ * alternative means to specify the glyph used in graphics.
  */
 enum cmzn_glyph_shape_type
 {

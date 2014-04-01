@@ -8,26 +8,40 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-/** Handle to a finite element mesh. */
 #ifndef CMZN_ELEMENTID_H__
 #define CMZN_ELEMENTID_H__
 
+/**
+ * A finite element mesh consisting of a set of elements of fixed dimension.
+ * Note that Zinc elements are not iso-parametric, meaning each field must
+ * be individually defined on them, specifying the basis and parameter mapping.
+ */
 struct cmzn_mesh;
 typedef struct cmzn_mesh *cmzn_mesh_id;
 
+/**
+ * A specialised mesh consisting of a subset of elements from a master mesh.
+ */
 struct cmzn_mesh_group;
 typedef struct cmzn_mesh_group *cmzn_mesh_group_id;
 
-/** Handle to a template for creating or defining fields over an element. */
+/**
+ * A description of element shape and field definitions (incl. basis, parameter
+ * mappings), used as a template for creating new elements in a mesh, or merging
+ * into an element to define additional fields on it.
+ */
 struct cmzn_elementtemplate;
 typedef struct cmzn_elementtemplate *cmzn_elementtemplate_id;
 
+/**
+ * A single finite element from a mesh. Represents a local coordinate chart
+ * of prescribed shape/bounds, over which fields can be defined.
+ */
 struct cmzn_element;
-/** Handle to a single finite element object from a mesh */
 typedef struct cmzn_element *cmzn_element_id;
 
 /**
- * An enum for selecting the faces of elements.
+ * An enumeration for selecting the faces of elements.
  */
 enum cmzn_element_face_type
 {
@@ -42,7 +56,7 @@ enum cmzn_element_face_type
 };
 
 /**
- * Common element shapes.
+ * Common element shape enumeration.
  */
 enum cmzn_element_shape_type
 {
@@ -57,11 +71,16 @@ enum cmzn_element_shape_type
 	CMZN_ELEMENT_SHAPE_TYPE_WEDGE23 = 8      /**< 3-D: 0 <= xi2,xi3; xi2+xi3 <= 1; 0 <= xi1 <= 1 */
 };
 
+/**
+ * An iterator for looping through all the elements in a mesh.
+ */
 struct cmzn_elementiterator;
 typedef struct cmzn_elementiterator * cmzn_elementiterator_id;
 
+/**
+ * A set of basis functions that can apply over an element of a given dimension.
+ */
 struct cmzn_elementbasis;
-/** Handle to an element basis function definition */
 typedef struct cmzn_elementbasis *cmzn_elementbasis_id;
 
 /**
@@ -98,32 +117,34 @@ enum cmzn_element_point_sampling_mode
 		/*!< One point at a specified location in the element chart. */
 };
 
-	struct cmzn_meshchanges;
-	/** Handle to object describing changes to a mesh in a fieldmoduleevent */
-	typedef struct cmzn_meshchanges *cmzn_meshchanges_id;
+/**
+ * Object describing changes to a mesh in a fieldmoduleevent
+ */
+struct cmzn_meshchanges;
+typedef struct cmzn_meshchanges *cmzn_meshchanges_id;
 
-	/**
-	 * Bit flags summarising changes to an element or elements in a mesh.
-	 */
-	enum cmzn_element_change_flag
-	{
-		CMZN_ELEMENT_CHANGE_FLAG_NONE = 0,
-			/*!< element(s) not changed */
-		CMZN_ELEMENT_CHANGE_FLAG_ADD = 1,
-			/*!< element(s) added */
-		CMZN_ELEMENT_CHANGE_FLAG_REMOVE = 2,
-			/*!< element(s) removed */
-		CMZN_ELEMENT_CHANGE_FLAG_IDENTIFIER = 4,
-			/*!< element(s') identifier changed */
-		CMZN_ELEMENT_CHANGE_FLAG_DEFINITION = 8,
-			/*!< element(s') definition other than identifier changed e.g. shape */
-		CMZN_ELEMENT_CHANGE_FLAG_FIELD = 16
-			/*!< change to field values mapped to element(s) */
-	};
+/**
+ * Bit flags summarising changes to an element or elements in a mesh.
+ */
+enum cmzn_element_change_flag
+{
+	CMZN_ELEMENT_CHANGE_FLAG_NONE = 0,
+		/*!< element(s) not changed */
+	CMZN_ELEMENT_CHANGE_FLAG_ADD = 1,
+		/*!< element(s) added */
+	CMZN_ELEMENT_CHANGE_FLAG_REMOVE = 2,
+		/*!< element(s) removed */
+	CMZN_ELEMENT_CHANGE_FLAG_IDENTIFIER = 4,
+		/*!< element(s') identifier changed */
+	CMZN_ELEMENT_CHANGE_FLAG_DEFINITION = 8,
+		/*!< element(s') definition other than identifier changed e.g. shape */
+	CMZN_ELEMENT_CHANGE_FLAG_FIELD = 16
+		/*!< change to field values mapped to element(s) */
+};
 	
-	/**
-	 * Type for passing logical OR of #cmzn_element_change_flag
-	 */
-	typedef int cmzn_element_change_flags;
+/**
+ * Type for passing logical OR of #cmzn_element_change_flag
+ */
+typedef int cmzn_element_change_flags;
 
 #endif

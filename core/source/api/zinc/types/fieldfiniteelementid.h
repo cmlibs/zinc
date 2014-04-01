@@ -11,25 +11,37 @@
 #ifndef CMZN_FIELDFINITEELEMENTID_H__
 #define CMZN_FIELDFINITEELEMENTID_H__
 
-/** Handle to a finite_element type cmzn_field */
+/**
+ * A real-valued field with a specified number of components defined by
+ * interpolation with an element basis over elements of a mesh, and/or with
+ * parameters including direct field values stored at nodes.
+ */
 struct cmzn_field_finite_element;
 typedef struct cmzn_field_finite_element *cmzn_field_finite_element_id;
 #define CMZN_FIELD_FINITE_ELEMENT_ID_DEFINED
 
-/** Handle to a find_mesh_location type cmzn_field */
+/**
+ * A field that computes the location in a mesh at which a field equals or is
+ * nearest to values prescribed by another field.
+ */
 struct cmzn_field_find_mesh_location;
 typedef struct cmzn_field_find_mesh_location *cmzn_field_find_mesh_location_id;
 
-/** Handle to a stored_mesh_location type cmzn_field */
+/**
+ * A field storing locations within a mesh (element + local coordinates), able
+ * to be defined at nodes.
+ */
 struct cmzn_field_stored_mesh_location;
 typedef struct cmzn_field_stored_mesh_location *cmzn_field_stored_mesh_location_id;
 
-/** Handle to a stored_string type cmzn_field */
+/**
+ * A field storing strings, able to be defined at nodes.
+ */
 struct cmzn_field_stored_string_location;
 typedef struct cmzn_field_stored_string *cmzn_field_stored_string_id;
 
 /**
- * Enumeration controlling whether find_mesh_location returns location of exact
+ * Enumeration controlling whether find mesh location returns location of exact
  * field value match, or nearest value.
  */
 enum cmzn_field_find_mesh_location_search_mode

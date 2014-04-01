@@ -11,7 +11,11 @@
 #ifndef CMZN_SCENEPICKERID_H__
 #define CMZN_SCENEPICKERID_H__
 
-	struct cmzn_scenepicker;
-	typedef struct cmzn_scenepicker * cmzn_scenepicker_id;
+/**
+ * Utility object for picking graphics and model objects (nodes/elements) from
+ * the 3-D graphics in a scene tree.
+ */
+struct cmzn_scenepicker;
+typedef struct cmzn_scenepicker * cmzn_scenepicker_id;
 
 #endif

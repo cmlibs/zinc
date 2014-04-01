@@ -11,8 +11,10 @@
 #ifndef CMZN_FIELDCOMPOSITEID_H__
 #define CMZN_FIELDCOMPOSITEID_H__
 
-/** Handle to a component type cmzn_field */
-	struct cmzn_field_component;
-	typedef struct cmzn_field_component *cmzn_field_component_id;
+/**
+ * A field returning a single component of a source field as a scalar.
+ */
+struct cmzn_field_component;
+typedef struct cmzn_field_component *cmzn_field_component_id;
 
 #endif

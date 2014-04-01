@@ -11,9 +11,17 @@
 #ifndef CMZN_SELECTIONID_H__
 #define CMZN_SELECTIONID_H__
 
+/**
+ * Manages individual user notification of changes to the selection group in a
+ * scene.
+ */
 struct cmzn_selectionnotifier;
 typedef struct cmzn_selectionnotifier * cmzn_selectionnotifier_id;
 
+/**
+ * Information about changes to the selection group in the scene, sent with
+ * each callback from the selection notifier.
+ */
 struct cmzn_selectionevent;
 typedef struct cmzn_selectionevent * cmzn_selectionevent_id;
 

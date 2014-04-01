@@ -12,25 +12,25 @@
 #define CMZN_FIELDIMAGEPROCESSINGID_H__
 
 /**
- * The image field specific handle to a zinc binary threshold field.
+ * Image processing derived field type performing the ITK binary threshold filter.
  */
 struct cmzn_field_imagefilter_binary_threshold;
 typedef struct cmzn_field_imagefilter_binary_threshold * cmzn_field_imagefilter_binary_threshold_id;
 
 /**
- * The image field specific handle to a zinc discrete gaussian field.
+ * Image processing derived field type performing the ITK discrete gaussian filter.
  */
 struct cmzn_field_imagefilter_discrete_gaussian;
 typedef struct cmzn_field_imagefilter_discrete_gaussian * cmzn_field_imagefilter_discrete_gaussian_id;
 
 /**
- * The image field specific handle to a zinc threshold field.
+ * Image processing derived field type performing the ITK threshold filter.
  */
 struct cmzn_field_imagefilter_threshold;
 typedef struct cmzn_field_imagefilter_threshold * cmzn_field_imagefilter_threshold_id;
 
 /**
- * The image field specific handle to a zinc histogram field.
+ * Image processing derived field type performing the ITK histogram field.
  */
 struct cmzn_field_imagefilter_histogram;
 typedef struct cmzn_field_imagefilter_histogram * cmzn_field_imagefilter_histogram_id;

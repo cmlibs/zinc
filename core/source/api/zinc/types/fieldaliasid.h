@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : fieldaliasid.h
  *
  */
@@ -9,10 +9,14 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef CMZN_FIELDALIASID_H__
-/*****************************************************************************//**
- * The image field specific handle to a image cmzn_field.
+#define CMZN_FIELDALIASID_H__
+
+/**
+ * A specialised field type creating a local alias for a field from another
+ * region. Currently only non-spatially-varying fields can be successfully used
+ * from an alias field.
  */
-	struct cmzn_field_alias;
-	typedef struct cmzn_field_alias *cmzn_field_alias_id;
-	#define CMZN_FIELDALIASID_H__
+struct cmzn_field_alias;
+typedef struct cmzn_field_alias *cmzn_field_alias_id;
+
 #endif /* CMZN_FIELD_ALIAS_ID_H */

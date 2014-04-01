@@ -11,15 +11,33 @@
 #ifndef CMZN_SPECTRUMID_H__
 #define CMZN_SPECTRUMID_H__
 
+/**
+ * A spectrumcomponent object maps a single component of a data field to one of
+ * several colour ramps, rainbow, alpha ramp, contour bands or a step function.
+ * A spectrum may blend multiple components to give the overall colouring.
+ * @see cmzn_spectrum_id
+ */
 struct cmzn_spectrumcomponent;
 typedef struct cmzn_spectrumcomponent *cmzn_spectrumcomponent_id;
 
+/**
+ * A Zinc Spectrum maps values of graphics data fields to colours. It consists
+ * of a list of spectrumcomponent objects which combine to give the overall
+ * colouring.
+ * @see cmzn_spectrumcomponent_id
+ */
 struct cmzn_spectrum;
 typedef struct cmzn_spectrum *cmzn_spectrum_id;
 
+/**
+ * Module managing all spectrums.
+ */
 struct cmzn_spectrummodule;
 typedef struct cmzn_spectrummodule *cmzn_spectrummodule_id;
 
+/**
+ * Controls the mapping of field value to colour in a spectrum component.
+ */
 enum cmzn_spectrumcomponent_scale_type
 {
 	CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID = 0,
@@ -33,7 +51,7 @@ enum cmzn_spectrumcomponent_scale_type
 
 /**
  * Colour mapping mode for specctrum component. Appearances of these mappings
- * can ne alterd by the various APIs provided in spectrum and spectrum components
+ * can be altered by the various APIs provided in spectrum and spectrum components
  * APIs.
  */
 enum cmzn_spectrumcomponent_colour_mapping_type

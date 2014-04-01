@@ -12,15 +12,10 @@
 #define CMZN_SCENEID_H__
 
 /**
- * A handle to zinc scene, zinc scene contains a top region to display
- * scene of itself and all of its child regions, it also store a a
- * collections of objects that make up a 3-D graphical model - lights,
- * materials, primitives, etc. Also contains interface rouitines for having
- * these converted to display lists and assembled into a single display list.
- * This single display list, however it is up to others - ie. the Scene_viewer
- * to display.
+ * Container/manager for the graphics making up the visualisation of the
+ * region's domains and fields.
  */
-	struct cmzn_scene;
-	typedef struct cmzn_scene * cmzn_scene_id;
+struct cmzn_scene;
+typedef struct cmzn_scene * cmzn_scene_id;
 
 #endif

@@ -11,7 +11,12 @@
 #ifndef CMZN_DIFFERENTIALOPERATORID_H__
 #define CMZN_DIFFERENTIALOPERATORID_H__
 
-	struct cmzn_differentialoperator;
-	typedef struct cmzn_differentialoperator *cmzn_differentialoperator_id;
+/**
+ * Describes the derivative of a field to evaluate. For example, del/del_xi1.
+ * @see cmzn_mesh_get_chart_differentialoperator
+ * @see cmzn_field_evaluate_derivative
+ */
+struct cmzn_differentialoperator;
+typedef struct cmzn_differentialoperator *cmzn_differentialoperator_id;
 
 #endif
