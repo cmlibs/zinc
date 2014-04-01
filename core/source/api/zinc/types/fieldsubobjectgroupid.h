@@ -9,12 +9,24 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #ifndef CMZN_FIELDSUBOBJECTGROUPID_H__
-	#define CMZN_FIELDSUBOBJECTGROUPID_H__
+#define CMZN_FIELDSUBOBJECTGROUPID_H__
 
-	struct cmzn_field_node_group;
-	typedef struct cmzn_field_node_group *cmzn_field_node_group_id;
+/**
+ * A field which defines a subset of nodes from a master nodeset, by returning
+ * true/1 on nodes in the group, false/0 otherwise. From this field one must
+ * obtain the nodeset group object to work with the resulting subset: to
+ * add/remove nodes, create a node iterator etc.
+ */
+struct cmzn_field_node_group;
+typedef struct cmzn_field_node_group *cmzn_field_node_group_id;
 
-	struct cmzn_field_element_group;
-	typedef struct cmzn_field_element_group *cmzn_field_element_group_id;
+/**
+ * A field which defines a subset of elements from a master mesh, by returning
+ * true/1 on elements in the group, false/0 otherwise. From this field one must
+ * obtain the mesh group object to work with the resulting subset: to
+ * add/remove elements, create an element iterator etc.
+ */
+struct cmzn_field_element_group;
+typedef struct cmzn_field_element_group *cmzn_field_element_group_id;
 
 #endif

@@ -11,23 +11,30 @@
 #ifndef CMZN_REGIONID_H__
 #define CMZN_REGIONID_H__
 
+/**
+ * A region represents a block of a hierarchical model. It owns a local set of
+ * domains and fields describing the model (each accessed from its fieldmodule),
+ * and a scene for building graphics to visualise the model.
+ * Each region has any number of uniquely named child regions, allowing
+ * tree-like models to be constructed.
+ */
 struct cmzn_region;
 typedef struct cmzn_region * cmzn_region_id;
 
 /**
- * A handle to zinc stream information region. Stream information region is a
- * derived type of cmzn_streaminformation_id.
- * User can create and get a handle to stream information region with functions
- * provided with cmzn_region.
- * User can use this derived type to set number of informations associate with
- * images inputs and outputs. See region.h for more information.
+ * A region-specific stream information object, used to specify one or more
+ * model files/resources for a region to read from or write to, with attributes
+ * specified for them either globally or per-resource.
  *
- * #see cmzn_region_create_streaminformation_region
- * #see cmzn_streaminformation_cast_region
+ * @see cmzn_region_create_streaminformation_region
  */
 struct cmzn_streaminformation_region;
 typedef struct cmzn_streaminformation_region * cmzn_streaminformation_region_id;
 
+/**
+ * Enumeration of attributes that can be set by generic stream information region
+ * methods.
+ */
 enum cmzn_streaminformation_region_attribute
 {
 	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID = 0,

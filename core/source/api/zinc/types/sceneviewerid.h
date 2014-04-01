@@ -11,9 +11,22 @@
 #ifndef CMZN_SCENEVIEWERID_H__
 #define CMZN_SCENEVIEWERID_H__
 
+/**
+ * Module object for creating and managing scene viewers.
+ */
 struct cmzn_sceneviewermodule;
 typedef struct cmzn_sceneviewermodule * cmzn_sceneviewermodule_id;
 
+/**
+ * The Zinc sceneviewer is responsible for rendering the graphical Scene using
+ * OpenGL. It has methods to set its top scene and scene filter, and to get and
+ * set attributes controlling the view orientation, field of view, clipping
+ * planes and more.
+ * The client is responsible for creating the OpenGL-capable canvas with a
+ * sceneviewer, informing the sceneviewer of its size including on resize
+ * events, making the OpenGL context current and invoking the render scene
+ * method of the sceneviewer.
+ */
 struct cmzn_sceneviewer;
 typedef struct cmzn_sceneviewer *cmzn_sceneviewer_id;
 
@@ -157,7 +170,8 @@ struct cmzn_sceneviewernotifier;
 typedef struct cmzn_sceneviewernotifier *cmzn_sceneviewernotifier_id;
 
 /**
- * Information about changes to fields and other objects in the scene viewer.
+ * Information about changes to fields and other objects in the scene viewer,
+ * sent with each callback from the sceneviewer notifier.
  */
 struct cmzn_sceneviewerevent;
 typedef struct cmzn_sceneviewerevent *cmzn_sceneviewerevent_id;
@@ -180,6 +194,9 @@ enum cmzn_sceneviewerevent_change_flag
 		/*!< sceneviewer is currently being destroyed */
 };
 
+/**
+ * Type for passing logical OR of #cmzn_sceneviewerevent_change_flag
+ */
 typedef int cmzn_sceneviewerevent_change_flags;
 
 #endif

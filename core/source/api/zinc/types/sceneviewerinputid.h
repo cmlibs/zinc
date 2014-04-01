@@ -11,6 +11,11 @@
 #ifndef CMZN_SCENEVIEWERINPUTID_H__
 #define CMZN_SCENEVIEWERINPUTID_H__
 
+/**
+ * Describes a mouse event for processing by the sceneviewer to produce viewer
+ * transformations: tumble, pan, zoom.
+ * @see cmzn_sceneviewer_process_sceneviewerinput
+ */
 struct cmzn_sceneviewerinput;
 typedef struct cmzn_sceneviewerinput *cmzn_sceneviewerinput_id;
 

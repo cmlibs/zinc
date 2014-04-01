@@ -48,11 +48,11 @@ ZINC_API int cmzn_streaminformation_destroy(
  * Corresponding read/write functions with the stream information will attempt to
  * read/write file with the same name.
  *
- * #see cmzn_field_image_write
- * #see cmzn_region_write
- * #see cmzn_field_image_read
- * #see cmzn_region_read
- * #see cmzn_streamresource_cast_file
+ * @see cmzn_field_image_write
+ * @see cmzn_region_write
+ * @see cmzn_field_image_read
+ * @see cmzn_region_read
+ * @see cmzn_streamresource_cast_file
  *
  * @param streaminformation  Stream information which will contains the new
  * stream resource.
@@ -68,9 +68,11 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_fil
  * with the stream information in the future. To input an memory buffer for
  * reading please see cmzn_streaminformation_create_streamresource_memory_buffer.
  *
- * #see cmzn_field_image_write
- * #see cmzn_region_write
- * #see cmzn_streamresource_cast_memory
+ * @see cmzn_field_image_write
+ * @see cmzn_region_write
+ * @see cmzn_field_image_read
+ * @see cmzn_region_read
+ * @see cmzn_streamresource_cast_memory
  *
  * @param streaminformation  Stream information which will contains the new
  * stream resource.
@@ -84,9 +86,11 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_mem
  * the pointer can then be read into a zinc object. This function does not
  * copy the buffer, user is responsible for the life time of the buffer. Please
  * make sure the buffer is valid when reading the stream information.
- * #see cmzn_field_image_read
- * #see cmzn_region_read
- * #see cmzn_streamresource_cast_memory
+ * @see cmzn_field_image_write
+ * @see cmzn_region_write
+ * @see cmzn_field_image_read
+ * @see cmzn_region_read
+ * @see cmzn_streamresource_cast_memory
  *
  * @param streaminformation  Stream information which will contains the new
  * stream resource.
@@ -168,8 +172,8 @@ ZINC_API char *cmzn_streamresource_file_get_name(cmzn_streamresource_file_id res
  * the file specific representation, otherwise it returns NULL.
  * Caller is responsible for destroying the returned derived reference.
  *
- * #see cmzn_streamresource_memory_get_buffer
- * #see cmzn_streamresource_memory_get_buffer_copy
+ * @see cmzn_streamresource_memory_get_buffer
+ * @see cmzn_streamresource_memory_get_buffer_copy
  *
  * @param resource  The generic streamresource to be cast.
  * @return  streamresource_memory specific representation if the input
@@ -208,8 +212,8 @@ ZINC_C_INLINE cmzn_streamresource_id cmzn_streamresource_memory_base_cast(
 /**
  * Return the memory block currently in the stream resource object.
  *
- * #see cmzn_region_write
- * #see cmzn_field_image_write
+ * @see cmzn_region_write
+ * @see cmzn_field_image_write
  *
  * @param resource  The cmzn_streamresource_memory object.
  * @param memory_buffer_reference  Will be set to point to the allocated
@@ -227,9 +231,9 @@ ZINC_API int cmzn_streamresource_memory_get_buffer(cmzn_streamresource_memory_id
  * User must call cmzn_deallocate to release memory from the returned buffer
  * when they are no longer needed.
  *
- * #see cmzn_region_write
- * #see cmzn_field_image_write
- * #see cmzn_deallocate
+ * @see cmzn_region_write
+ * @see cmzn_field_image_write
+ * @see cmzn_deallocate
  *
  * @param resource  The cmzn_streamresource_memory object.
  * @param memory_buffer_reference  Will be set to point to the allocated

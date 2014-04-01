@@ -11,10 +11,21 @@
 #ifndef CMZN_TESSELLATIONID_H__
 #define CMZN_TESSELLATIONID_H__
 
-	struct cmzn_tessellationmodule;
-	typedef struct cmzn_tessellationmodule * cmzn_tessellationmodule_id;
+/**
+ * Module managing all tessellation objects. It maintains separate default
+ * tessellations for points and continuous graphics, the default points
+ * tessellation having only 1 point in each direction.
+ */
+struct cmzn_tessellationmodule;
+typedef struct cmzn_tessellationmodule * cmzn_tessellationmodule_id;
 
-	struct cmzn_tessellation;
-	typedef struct cmzn_tessellation * cmzn_tessellation_id;
+/**
+ * The tessellation controls the number of polygons or line segments used to
+ * draw element surfaces and lines, and circular forms in graphics; the density
+ * of point sampling and the piecewise linear approximation of elements
+ * generally.
+ */
+struct cmzn_tessellation;
+typedef struct cmzn_tessellation * cmzn_tessellation_id;
 
 #endif

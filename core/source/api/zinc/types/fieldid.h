@@ -11,9 +11,18 @@
 #ifndef CMZN_FIELDID_H__
 #define CMZN_FIELDID_H__
 
+/**
+ * Base field type: an abstraction of a mathematical field, a function giving
+ * values at locations in a domain (mesh, nodeset, over time).
+ * Instances of derived field types give the actual expression in terms of
+ * other fields or locations in the domain, all from the same region.
+ */
 struct cmzn_field;
 typedef struct cmzn_field *cmzn_field_id;
 
+/**
+ * An iterator for looping through all the fields in a fieldmodule.
+ */
 struct cmzn_fielditerator;
 typedef struct cmzn_fielditerator * cmzn_fielditerator_id;
 
@@ -77,7 +86,7 @@ enum cmzn_field_coordinate_system_type
 };
 
 /**
- * An enum specifying the field domain (without domain objects)
+ * An enumeration specifying the field domain (without domain objects)
  * Also used as bit flags.
  */
 enum cmzn_field_domain_type

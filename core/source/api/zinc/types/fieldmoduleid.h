@@ -24,7 +24,8 @@ struct cmzn_fieldmodulenotifier;
 typedef struct cmzn_fieldmodulenotifier *cmzn_fieldmodulenotifier_id;
 
 /**
- * Information about changes to fields and other objects in the field module.
+ * Information about changes to fields and other objects in the field module,
+ * sent with each callback from the fieldmodule notifier.
  */
 struct cmzn_fieldmoduleevent;
 typedef struct cmzn_fieldmoduleevent *cmzn_fieldmoduleevent_id;

@@ -11,8 +11,15 @@
 #ifndef CMZN_FIELDGROUPID_H__
 #define CMZN_FIELDGROUPID_H__
 
-/** Handle to a finite_element type cmzn_field */
-	struct cmzn_field_group;
-	typedef struct cmzn_field_group *cmzn_field_group_id;
+/**
+ * A generic group field type able to record which local subobjects are in the
+ * group (recorded by attached node group and element group fields), or whether
+ * the entire local region is in the group. This field returns true/1 at domain
+ * locations in the group, false/0 otherwise.
+ * The group field also maintains links to child groups in child regions, for
+ * building subsets of entire region trees.
+ */
+struct cmzn_field_group;
+typedef struct cmzn_field_group *cmzn_field_group_id;
 
 #endif

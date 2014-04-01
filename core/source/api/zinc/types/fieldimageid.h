@@ -12,28 +12,27 @@
 #define CMZN_FIELDIMAGEID_H__
 
 /**
- * The image field specific handle to a image cmzn_field.
+ * An image-based field giving the pixel colour/intensity values as a function
+ * of its domain texture coordinates, interpolated between pixels according to
+ * the filter mode. 2-D and 3-D images are supported.
+ * Graphics materials can have image fields attached to perform texturing.
  */
 struct cmzn_field_image;
 typedef struct cmzn_field_image *cmzn_field_image_id;
 
 /**
- * A handle to zinc stream information image. Stream information image is a
- * derived type of cmzn_streaminformation_id.
- * User can create and get a handle to stream information image with functions
- * provided with cmzn_field_image.
- * User can use this derived type to set number of informations associate with
- * images inputs and outputs. See fieldimage.h for more information.
+ * An image-specific stream information object, used to specify one or more
+ * image files/resources for an image field to read from or write to, with any
+ * attributes specified for them such as format, size etc.
  *
- * #see cmzn_field_image_create_streaminformation_image
- * #see cmzn_streaminformation_cast_image
+ * @see cmzn_field_image_create_streaminformation_image
  */
 struct cmzn_streaminformation_image;
 typedef struct cmzn_streaminformation_image *cmzn_streaminformation_image_id;
 
 /**
  * Describes the blending of the texture with the texture constant colour and
- * the underlying fragment colour
+ * the underlying material/fragment colour.
  */
 enum cmzn_field_image_combine_mode
 {
@@ -59,7 +58,8 @@ enum cmzn_field_image_combine_mode
 };
 
 /**
- * Specfiy how the graphics hardware rasterises the texture onto the screen.
+ * Specifies how the graphics hardware rasterises the texture onto the screen,
+ * mainly its interpolation mode.
  */
 enum cmzn_field_image_filter_mode
 {
@@ -73,16 +73,17 @@ enum cmzn_field_image_filter_mode
 };
 
 /**
- * Whether the texture is compressed.  Could add specific compression formats that
- * are explictly requested from the hardware.
+ * Whether the image is compressed when used for texturing.
+ *
+ * @future  Could add hardware/driver specific compression formats.
  */
 enum cmzn_field_image_hardware_compression_mode
 {
 	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_INVALID = 0,
 	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_UNCOMPRESSED = 1,
-		/* default hardware compression mode */
+		/*!< No compression. The default hardware compression mode */
 	CMZN_FIELD_IMAGE_HARDWARE_COMPRESSION_MODE_AUTOMATIC = 2
-		/*!< Allow the hardware to choose the compression */
+		/*!< allow the hardware to choose the compression */
 };
 
 /**
@@ -144,7 +145,10 @@ enum cmzn_streaminformation_image_pixel_format
 	CMZN_STREAMINFORMATION_IMAGE_PIXEL_FORMAT_BGR = 6
 };
 
-
+/**
+ * Enumeration of attributes that can be set by generic stream information image
+ * methods.
+ */
 enum cmzn_streaminformation_image_attribute
 {
 	CMZN_STREAMINFORMATION_IMAGE_ATTRIBUTE_RAW_WIDTH_PIXELS = 1,

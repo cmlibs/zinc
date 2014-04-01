@@ -13,12 +13,18 @@
 
 #include "zinc/zincsharedobject.h"
 
+/**
+ * Enumeration of available font typefaces.
+ */
 enum cmzn_font_typeface_type
 {
 	CMZN_FONT_TYPEFACE_TYPE_INVALID = 0,
 	CMZN_FONT_TYPEFACE_TYPE_OPENSANS = 1
 };
 
+/**
+ * How a font is rendered in graphics.
+ */
 enum cmzn_font_render_type
 {
 	CMZN_FONT_RENDER_TYPE_INVALID = 0,
@@ -29,15 +35,23 @@ enum cmzn_font_render_type
 	CMZN_FONT_RENDER_TYPE_EXTRUDE = 5,
 };
 
+/**
+ * Font object incorporating typeface, size and other attributes for rendering
+ * text in graphics.
+ */
 struct cmzn_font;
 typedef struct cmzn_font *cmzn_font_id;
 
+/**
+ * Module managing all fonts.
+ */
 struct cmzn_fontmodule;
 typedef struct cmzn_fontmodule *cmzn_fontmodule_id;
 
 #ifdef __cplusplus
 extern "C" {
 #endif
+
 /**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.

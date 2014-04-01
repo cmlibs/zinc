@@ -12,35 +12,57 @@
 #define CMZN_GRAPHICSID_H__
 
 /**
- * A handle to zinc graphics, a visualisation of fields using an algorithm
- * i.e. points, lines, surfaces, contours and streamlines.
- * These graphics can be customised through a number of set functions.
+ * Base graphics type: produces 3-D graphics visualising domains and fields from
+ * the owning scene's region. Derived types (points, lines, surfaces, contours
+ * and streamlines) specify the algorithm used to create the graphics and
+ * may have additional type-specific attributes.
  */
 struct cmzn_graphics;
 typedef struct cmzn_graphics * cmzn_graphics_id;
 
 /**
- * The contours derived type specific handle to a cmzn_graphics.
+ * The contours derived graphics type. Produces graphics visualising where the
+ * 'iso-scalar' field equals fixed values: iso-surfaces on 3-D domains,
+ * iso-lines on 2-D domains.
  */
 struct cmzn_graphics_contours;
 typedef struct cmzn_graphics_contours *cmzn_graphics_contours_id;
 
 /**
- * The lines derived type specific handle to a cmzn_graphics.
- * Used to visualise 1-D elements and lines/faces of elements.
+ * Lines visualise 1-D elements in the model, including lines/faces of
+ * higher-dimensional elements (if read in or defined via the field module).
+ * These can be displayed as lines or extruded circles, as specified by the
+ * graphics line attributes.
+ * @see cmzn_graphicslineattributes_id
  */
 struct cmzn_graphics_lines;
 typedef struct cmzn_graphics_points *cmzn_graphics_lines_id;
 
 /**
- * The points derived type specific handle to a cmzn_graphics.
- * Used to visualise single points, nodes, data and element points.
+ * Points graphics visualise discrete locations in the model with oriented and
+ * scaled glyphs and text labels as specified by the graphics point attributes.
+ * Points can be generated on any field DomainType. For mesh domains, points are
+ * sampled in elements according to the graphics sampling attributes and
+ * tessellation. The single point domain is used to draw a single glyph such as
+ * axes or colour bar (and is the only case not requiring a coordinate field as
+ * it defaults to the origin).
+ * @see cmzn_graphicspointattributes_id
+ * @see cmzn_graphicssamplingattributes_id
  */
 struct cmzn_graphics_points;
 typedef struct cmzn_graphics_points *cmzn_graphics_points_id;
 
 /**
- * The streamlines derived type specific handle to a cmzn_graphics.
+ * Streamlines visualise the path of a fluid particle tracking along a vector
+ * field. 2-D and 3-D mesh domains are supported. Seed points for streamlines
+ * are sampled from elements according to the graphics sampling attributes and
+ * tessellation. Streamlines are drawn as lines, scalable ribbons or extruded
+ * circles or squares, as specified by the graphics line attributes. The curl of
+ * the stream vector field, or fibre sheet and normal, are visualised by the
+ * rotation or lateral orientation of the streamline when viewed with non-line
+ * shapes.
+ * @see cmzn_graphicssamplingattributes_id
+ * @see cmzn_graphicslineattributes_id
  */
 struct cmzn_graphics_streamlines;
 typedef struct cmzn_graphics_streamlines *cmzn_graphics_streamlines_id;
@@ -57,8 +79,8 @@ enum cmzn_graphics_streamlines_track_direction
 };
 
 /**
- * The surfaces derived type specific handle to a cmzn_graphics.
- * Used to visualise 2-D elements and faces.
+ * Surfaces visualise 2-D elements in the model, including faces of 3-D
+ * elements (if read in or defined via the field module).
  */
 struct cmzn_graphics_surfaces;
 typedef struct cmzn_graphics_surfaces *cmzn_graphics_surfaces_id;
@@ -99,15 +121,17 @@ enum cmzn_graphics_select_mode
 };
 
 /**
- * A handle to attributes specifying how points are visualised in a
- * cmzn_graphics including glyph, scaling, labels and font.
+ * Attributes object specifying how points are visualised in the graphics
+ * including glyph, scaling, labels and font.
+ * @see cmzn_graphics_get_graphicspointattributes
  */
 struct cmzn_graphicspointattributes;
 typedef struct cmzn_graphicspointattributes * cmzn_graphicspointattributes_id;
 
 /**
- * A handle to attributes specifying how lines are visualised in a
- * cmzn_graphics including section profile and scaling.
+ * Attributes object specifying how lines are visualised in the graphics
+ * including shape/profile and scaling.
+ * @see cmzn_graphics_get_graphicslineattributes
  */
 struct cmzn_graphicslineattributes;
 typedef struct cmzn_graphicslineattributes * cmzn_graphicslineattributes_id;
@@ -125,8 +149,9 @@ enum cmzn_graphicslineattributes_shape_type
 };
 
 /**
- * A handle to graphics attributes specifying how points are sampled in elements,
+ * Graphics attributes object specifying how points are sampled in elements,
  * including sampling mode, density, etc.
+ * @see cmzn_graphics_get_graphicssamplingattributes
  */
 struct cmzn_graphicssamplingattributes;
 typedef struct cmzn_graphicssamplingattributes * cmzn_graphicssamplingattributes_id;
