@@ -49,21 +49,20 @@ ZINC_API char *cmzn_streaminformation_region_attribute_enum_to_string(
 /**
  * Creates a stream information object for specifying files/resources and options
  * for reading and writing field data to/from this region and child regions.
- * @see cmzn_streaminformation_id
  *
- * @return The created object.
+ * @return  Handle to new stream information, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_streaminformation_id cmzn_region_create_streaminformation_region(
 	cmzn_region_id region);
 
 /**
  * If the streaminformation is of region type, then this function returns
- * the region specific representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived reference.
+ * the region specific handle.
+ * Caller is responsible for destroying the returned derived handle.
  *
- * @param streaminformation  The generic streaminformation to be cast.
- * @return  region specific representation if the input streaminformation is
- * of this type, otherwise NULL.
+ * @param streaminformation  Handle to streaminformation to cast.
+ * @return  Handle to derived stream information region, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_streaminformation_region_id cmzn_streaminformation_cast_region(
 	cmzn_streaminformation_id streaminformation);

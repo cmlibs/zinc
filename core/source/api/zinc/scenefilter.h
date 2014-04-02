@@ -35,8 +35,8 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_scenefiltermodule_access(
 	cmzn_scenefiltermodule_id filtermodule);
 
 /**
- * Destroys this reference to the scene filter module (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the scene filter module (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param filtermodule_address  Address of handle to scene filter module
  * to destroy.
@@ -186,7 +186,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefilter_access(cmzn_scenefilter_id filter)
 
 /**
  * Destroys this handle to the filter (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param filter_address  The address to the handle of the filter
  *    to be destroyed.
@@ -271,7 +271,7 @@ ZINC_API int cmzn_scenefilter_set_inverse(cmzn_scenefilter_id filter,
 /**
  * If the filter is of operator and or or type, then this function returns the
  * operator representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived filter reference.
+ * Caller is responsible for destroying the returned derived filter handle.
  *
  * @param filter  The generic filter to be cast.
  * @return  Handle to derived scene filter operator, or NULL/invalid handle if
@@ -298,8 +298,8 @@ ZINC_C_INLINE cmzn_scenefilter_id cmzn_scenefilter_operator_base_cast(
 }
 
 /**
- * Destroys this reference to the operator filter (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the operator filter (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param operator_filter_address  Address of handle to the operator filter.
  * @return  Status CMZN_OK on success, any other value on failure.

@@ -1,5 +1,5 @@
 /**
- * scenepicker.h
+ * @file scenepicker.h
  *
  * Public interface to the cmzn_scene picker which represents a tool for
  * graphics primitives picking.
@@ -40,8 +40,8 @@ ZINC_API cmzn_scenepicker_id cmzn_scenepicker_access(
 	cmzn_scenepicker_id scenepicker);
 
 /**
- * Destroys this reference to the scenepicker (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the scenepicker (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param scenepicker_address  The address to the handle of the scenepicker
  *    to be destroyed.

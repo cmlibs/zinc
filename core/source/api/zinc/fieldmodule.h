@@ -39,10 +39,10 @@ Global functions
 ZINC_API cmzn_fieldmodule_id cmzn_fieldmodule_access(cmzn_fieldmodule_id fieldmodule);
 
 /**
- * Destroys reference to the field module and sets pointer/handle to NULL.
- * Internally this just decrements the reference count.
+ * Destroys handle to the field module and sets pointer/handle to NULL.
+ * Internally this decrements the reference count.
  *
- * @param fieldmodule_address  Address of field module reference.
+ * @param fieldmodule_address  Address of field module handle.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_fieldmodule_destroy(cmzn_fieldmodule_id *fieldmodule_address);
@@ -147,18 +147,18 @@ ZINC_API bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
 	cmzn_fieldmodule_id fieldmodule2);
 
 /**
- * Returns a new reference to the field module notifier with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the field module notifier with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
- * @param notifier  The field module notifier to obtain a new reference to.
+ * @param notifier  The field module notifier to obtain a new handle to.
  * @return  New handle to field module notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodulenotifier_access(
 	cmzn_fieldmodulenotifier_id notifier);
 
 /**
- * Destroys reference to the field module notifier and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Destroys handle to the field module notifier and sets it to NULL.
+ * Internally this decrements the reference count.
  *
  * @param notifier_address  Address of field module notifier handle to destroy.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
@@ -199,10 +199,10 @@ ZINC_API void *cmzn_fieldmodulenotifier_get_callback_user_data(
  cmzn_fieldmodulenotifier_id notifier); 
 
 /**
- * Returns a new reference to the fieldmodule event with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the fieldmodule event with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param event  The field module event to obtain a new reference to.
+ * @param event  The field module event to obtain a new handle to.
  * @return  New handle to field module event, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmoduleevent_id cmzn_fieldmoduleevent_access(
@@ -210,7 +210,7 @@ ZINC_API cmzn_fieldmoduleevent_id cmzn_fieldmoduleevent_access(
 
 /**
  * Destroys this handle to the fieldmodule event and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  * Note: Do not destroy the event argument passed to the user callback function.
  *
  * @param event_address  Address of field module event handle to destroy.

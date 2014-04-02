@@ -32,17 +32,17 @@ Global functions
 */
 
 /**
- * Returns a new reference to the scene viewer with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the scene viewer with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param sceneviewer  The scene viewer to obtain a new reference to.
- * @return  New scene viewer reference with incremented reference count.
+ * @param sceneviewer  The scene viewer to obtain a new handle to.
+ * @return  New handle to sceneviewer, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewer_id cmzn_sceneviewer_access(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Destroys this reference to the scene viewer (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the scene viewer (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param sceneviewer_address  The address to the handle of the scene viewer
  *    to be destroyed.
@@ -616,18 +616,30 @@ ZINC_API int cmzn_sceneviewer_process_sceneviewerinput(cmzn_sceneviewer_id scene
 	cmzn_sceneviewerinput_id input_data);
 
 /**
- * Set the scene for the scene viewer.
+ * Set the top scene for the scene viewer. Only graphics for this scene and
+ * its descendents, filtered by the scene filter, are displayed.
+ * @see cmzn_sceneviewer_set_scenefilter
+ *
+ * @param sceneviewer  The sceneviewer to modify.
+ * @param scene  The top scene to display.
+ * @return  Status CMZN_OK on success, any other value if failed.
  */
 ZINC_API int cmzn_sceneviewer_set_scene(cmzn_sceneviewer_id sceneviewer,
 	cmzn_scene_id scene);
 
+/**
+ * Get the top scene for the scene viewer.
+ *
+ * @param sceneviewer  The sceneviewer to query.
+ * @return  Handle to scene, or NULL/invalid handle if none or failed.
+ */
 ZINC_API cmzn_scene_id cmzn_sceneviewer_get_scene(cmzn_sceneviewer_id sceneviewer);
 
 /**
  * Get the filter currently used in scene viewer.
  *
  * @param sceneviewer  scene viewer to get the filters from.
- * @return  filter if successful, otherwise NULL.
+ * @return  Handle to scene filter, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_scenefilter_id cmzn_sceneviewer_get_scenefilter(
 	cmzn_sceneviewer_id sceneviewer);
@@ -656,7 +668,7 @@ ZINC_API unsigned int cmzn_sceneviewer_get_frame_count(cmzn_sceneviewer_id scene
  * @param sceneviewermodule  Handle to a scene viewer module object.
  * @param buffer_mode  The buffering mode in use for the OpenGL context.
  * @param stereo_mode  The stereo mode in use for the OpenGL context.
- * @return  A handle to a scene viewer if successfully created otherwise 0.
+ * @return  Handle to new sceneviewer, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	cmzn_sceneviewermodule_id sceneviewermodule,
@@ -664,11 +676,11 @@ ZINC_API cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	enum cmzn_sceneviewer_stereo_mode stereo_mode);
 
 /**
- * Returns a new reference to the scene viewer module with the reference counter
- * incremented.  The caller is responsible for destroying the new reference.
+ * Returns a new handle to the scene viewer module with the reference counter
+ * incremented.  The caller is responsible for destroying the new handle.
  *
  * @param sceneviewermodule  The scene viewer module to obtain a reference to.
- * @return  New scene viewer module reference with incremented reference count.
+ * @return  New handle to sceneviewer module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_id sceneviewermodule);
 
@@ -742,30 +754,29 @@ ZINC_API int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id scenev
 ZINC_API int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id sceneviewer,
 	int layers);
 
-
 /**
  * Create a notifier for getting callbacks for changes to the scene viewer..
  *
  * @param sceneviewer  Handle to the scene viewer to get notifications for.
- * @return  On success, handle to scene viewer notifier, otherwise NULL.
- * Up to caller to destroy handle.
+ * @return  Handle to new sceneviewer notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewernotifier_id cmzn_sceneviewer_create_sceneviewernotifier(
 	cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Returns a new reference to the scene viewer notifier with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the scene viewer notifier with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
- * @param notifier  The scene viewer notifier to obtain a new reference to.
+ * @param notifier  The scene viewer notifier to obtain a new handle to.
  * @return  Handle to scene viewer notifier with incremented reference count.
+ * @return  New handle to sceneviewer notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewernotifier_id cmzn_sceneviewernotifier_access(
 	cmzn_sceneviewernotifier_id notifier);
 
 /**
- * Destroys reference to the scene viewer notifier and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Destroys handle to the scene viewer notifier and sets it to NULL.
+ * Internally this decrements the reference count.
  *
  * @param notifier_address  Address of scene viewer notifier handle to destroy.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
@@ -806,18 +817,18 @@ ZINC_API void *cmzn_sceneviewernotifier_get_callback_user_data(
  cmzn_sceneviewernotifier_id notifier);
 
 /**
-* Returns a new reference to the sceneviewer event with reference count incremented.
-* Caller is responsible for destroying the new reference.
-*
-* @param event  The scene viewer event to obtain a new reference to.
-* @return  New scene viewer notifier handle with incremented reference count.
-*/
+ * Returns a new handle to the sceneviewer event with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param event  The scene viewer event to obtain a new handle to.
+ * @return  New handle to sceneviewer event, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_sceneviewerevent_id cmzn_sceneviewerevent_access(
 	cmzn_sceneviewerevent_id event);
 
 /**
  * Destroys this handle to the sceneviewer event and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  * Note: Do not destroy the event argument passed to the user callback function.
  *
  * @param event_address  Address of scene viewer event handle to destroy.

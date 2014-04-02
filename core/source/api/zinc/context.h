@@ -36,10 +36,10 @@ extern "C" {
 ZINC_API cmzn_context_id cmzn_context_create(const char *id);
 
 /**
- * Returns a new reference to the context with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the context with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param context  The context to obtain a new reference to.
+ * @param context  The context to obtain a new handle to.
  * @return  New handle to context, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
@@ -62,7 +62,7 @@ ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
 ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context);
 
 /**
- * Create a new region and return a reference to it. Use this function to create
+ * Create a new region and return a handle to it. Use this function to create
  * a region forming the root of an independent region tree. To create regions
  * for addition to an existing region tree, use cmzn_region_create_region.
  *

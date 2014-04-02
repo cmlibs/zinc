@@ -136,7 +136,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 /**
  * If the image_field is of type image field then this function returns
  * the image_field specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new image filter reference.
+ * Caller is responsible for destroying the new derived image field handle.
  *
  * @param image_field  The image field to be cast.
  * @return  Handle to derived image field, or NULL/invalid handle if wrong type or failed.
@@ -160,8 +160,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_image_base_cast(cmzn_field_image_id image
 }
 
 /**
- * Destroys this reference to the image field (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the image field (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param image_address  Address of handle to the image field.
  * @return  Status CMZN_OK if successfully destroyed the image handle,
@@ -299,7 +299,7 @@ ZINC_API int cmzn_field_image_set_texture_coordinate_sizes(cmzn_field_image_id i
  * @param image_field The image field.
  * @param streaminformationImage Derived information about the supplied
  * formatted image data. At a minimum it should specify either a filename
- * or a memory block reference.
+ * or a memory resource.
  * @return  Status CMZN_OK if the operation is successful, any other value on
  * failure.
  */

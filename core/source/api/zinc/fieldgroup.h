@@ -42,7 +42,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id f
 /**
  * If the field is of group type, then this function returns the group specific
  * representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived field reference.
+ * Caller is responsible for destroying the returned derived field handle.
  *
  * @param field  The generic field to be cast.
  * @return  Handle to derived group field, or NULL/invalid handle if wrong type or failed.
@@ -66,8 +66,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_group_base_cast(cmzn_field_group_id group
 }
 
 /**
- * Destroys this reference to the group field (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the group field (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param group_address  Address of handle to the group field.
  * @return  Status CMZN_OK if successfully destroyed the group handle,

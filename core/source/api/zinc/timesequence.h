@@ -29,27 +29,29 @@ extern "C" {
  * @param number_of_times  The size of the times array.
  * @param times  Array of times. Note later times must not be less than earlier
  * times.
- * @return  The time sequence matching the times array, or 0 if failed.
- * Up to caller to destroy the returned handle.
+ * @return  Handle to time sequence matching times array, or NULL/invalid handle
+ * on failure.
  */
 ZINC_API cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 	cmzn_fieldmodule_id field_module, int number_of_times, const double *times);
 
 /**
- * Returns a new reference to the time sequence with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the time sequence with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
- * @param timesequence  The time sequence to obtain a new reference to.
+ * @param timesequence  Handle to time sequence.
  * @return  New time sequence reference with incremented reference count.
+ * @return  New handle to time sequence matching the times array, or
+ * NULL/invalid handle on failure.
  */
 ZINC_API cmzn_timesequence_id cmzn_timesequence_access(
 	cmzn_timesequence_id timesequence);
 
 /**
- * Destroys reference to the time sequence and sets pointer/handle to NULL.
- * Internally this just decrements the reference count.
+ * Destroys handle to the time sequence and sets pointer/handle to NULL.
+ * Internally this decrements the reference count.
  *
- * @param timesequence_address  Address of time sequence reference.
+ * @param timesequence_address  Address of time sequence handle.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_timesequence_destroy(cmzn_timesequence_id *timesequence_address);

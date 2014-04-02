@@ -62,7 +62,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodul
 /**
  * If the field is of component type, then this function returns the component specific
  * representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived field reference.
+ * Caller is responsible for destroying the returned derived field handle.
  *
  * @param field  The generic field to be cast.
  * @return  Handle to derived component field, or NULL/invalid handle if wrong type or failed.
@@ -104,8 +104,8 @@ ZINC_API int cmzn_field_component_set_component_index(cmzn_field_component_id co
 	int component_index);
 
 /**
- * Destroys this reference to the component field (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the component field (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param component_address  Address of handle to the component field.
  * @return  Status CMZN_OK if successfully destroyed the component handle,

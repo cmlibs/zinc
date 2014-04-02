@@ -119,14 +119,14 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
  * Returns a new handle to the mesh with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The mesh to obtain a new reference to.
+ * @param mesh  The mesh to obtain a new handle to.
  * @return  New handle to the mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_mesh_access(cmzn_mesh_id mesh);
 
 /**
  * Destroys this handle to the finite element mesh and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param mesh_address  Address of handle to the mesh to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -313,7 +313,7 @@ ZINC_API bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
 /**
  * If the mesh is a mesh group i.e. subset of elements from a master mesh,
  * get the mesh group specific interface for add/remove functions.
- * Caller is responsible for destroying the returned reference.
+ * Caller is responsible for destroying the returned derived handle.
  *
  * @param field  The mesh to be cast.
  * @return  Handle to derived mesh group, or NULL/invalid handle if wrong type or failed.
@@ -322,7 +322,7 @@ ZINC_API cmzn_mesh_group_id cmzn_mesh_cast_group(cmzn_mesh_id mesh);
 
 /**
  * Destroys this handle to the mesh group and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param mesh_group_address  Address of mesh group handle to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -392,7 +392,7 @@ ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh
  * Returns a new handle to the element basis with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The element basis to obtain a new reference to.
+ * @param mesh  The element basis to obtain a new handle to.
  * @return  New handle to element basis, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementbasis_id cmzn_elementbasis_access(
@@ -400,7 +400,7 @@ ZINC_API cmzn_elementbasis_id cmzn_elementbasis_access(
 
 /**
  * Destroys this handle to the element_basis and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param element_basis_address  Address of handle to element_basis to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -467,7 +467,7 @@ ZINC_API int cmzn_elementbasis_get_number_of_functions(
  * Returns a new handle to the element iterator with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The element iterator to obtain a new reference to.
+ * @param mesh  The element iterator to obtain a new handle to.
  * @return  New handle to element iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementiterator_id cmzn_elementiterator_access(
@@ -498,7 +498,7 @@ ZINC_API cmzn_element_id cmzn_elementiterator_next(
  * Returns a new handle to the element template with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The element template to obtain a new reference to.
+ * @param mesh  The element template to obtain a new handle to.
  * @return  New handle to element template, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementtemplate_id cmzn_elementtemplate_access(
@@ -506,7 +506,7 @@ ZINC_API cmzn_elementtemplate_id cmzn_elementtemplate_access(
 
 /**
  * Destroys this handle to the element_template and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param element_template_address  Address of handle to element_template
  * to destroy.
@@ -625,7 +625,7 @@ ZINC_API cmzn_element_id cmzn_element_access(cmzn_element_id element);
 
 /**
  * Destroys this handle to the element and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param element_address  Address of handle to the element to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -697,7 +697,7 @@ ZINC_API int cmzn_element_merge(cmzn_element_id element,
  * Returns a new handle to the mesh changes with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param meshchanges  The mesh changes to obtain a new reference to.
+ * @param meshchanges  The mesh changes to obtain a new handle to.
  * @return  New handle to mesh changes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_meshchanges_id cmzn_meshchanges_access(
@@ -705,7 +705,7 @@ ZINC_API cmzn_meshchanges_id cmzn_meshchanges_access(
 
 /**
  * Destroys this handle to the meshchanges and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param meshchanges_address  Address of handle to the mesh changes to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.

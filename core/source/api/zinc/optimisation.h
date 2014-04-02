@@ -47,15 +47,15 @@ ZINC_API cmzn_optimisation_id cmzn_fieldmodule_create_optimisation(
  * Returns a new handle to the optimisation with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param optimisation  The optimisation to obtain a new reference to.
+ * @param optimisation  The optimisation to obtain a new handle to.
  * @return  New handle to optimisation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id optimisation);
 
 /**
- * Destroys reference to the optimisation object and sets pointer/handle to NULL.
+ * Destroys handle to the optimisation object and sets pointer/handle to NULL.
  *
- * @param optimisation_address  Address of optimisation object reference.
+ * @param optimisation_address  Address of optimisation object handle.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address);

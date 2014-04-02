@@ -36,18 +36,17 @@ typedef void (*cmzn_timenotifier_callback)(cmzn_timenotifierevent_id timenotifie
 	void *user_data);
 
 /**
- * Access the time notifier, increase the access count of the time notifier
- * by one.
+ * Get new handle to time notifier, incrementing reference count.
  *
- * @param timenotifier  handle to the "to be access" zinc timenotifier.
- * @return  handle to timenotifier if successfully access timenotifier.
+ * @param timenotifier  Handle to time notifier.
+ * @return  New handle to time notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_timenotifier_id cmzn_timenotifier_access(
 	cmzn_timenotifier_id timenotifier);
 
 /**
- * Destroys this reference to the time notifier (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the time notifier (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param timenotifier_address  The address to the handle to time notifier
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
@@ -64,21 +63,11 @@ ZINC_API int cmzn_timenotifier_destroy(cmzn_timenotifier_id *timenotifier_addres
 ZINC_API void *cmzn_timenotifier_get_callback_user_data(cmzn_timenotifier_id timenotifier);
 
 /**
- * Assign the callback function and user_data for the time notifier.
- * This function also starts the callback.
+ * Set the callback function and user_data for the time notifier.
+ * This function also activates callbacks.
  *
  * @see cmzn_timenotifier_callback_function
  * @param timenotifier  Handle to the time notifier.
- * @param function  function to be called when event is triggered.
- * @param user_data_in  Void pointer to an user object. User is responsible for
- *   the life time of such object.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-/**
- * Adds a callback routine which is called whenever the time given to the
- * time notifier has been changed.
- *
- * @param timenotifier  Handle to time notifier.
  * @param function  function to be called when event is triggered.
  * @param user_data_in  Void pointer to an user object. User is responsible for
  *   the life time of such object.
@@ -125,8 +114,8 @@ ZINC_API double cmzn_timenotifier_get_next_callback_time(
  * Caller is responsible for destroying the returned derived handle.
  *
  * @param timenotifier  The base timenotifier to be cast.
- * @return  Handle to regular timenotifier if the input timenotifier is of this type,
- * otherwise NULL.
+ * @return  Handle to derived time notifier regular, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_timenotifier_regular_id cmzn_timenotifier_cast_regular(
 	cmzn_timenotifier_id timenotifier);
@@ -147,8 +136,8 @@ ZINC_C_INLINE cmzn_timenotifier_id cmzn_timenotifier_regular_base_cast(
 }
 
 /**
- * Destroys this reference to the regular timenotifier (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the regular timenotifier (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param regular_timenotifier_address  Address of handle to the regular timenotifier.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
@@ -187,18 +176,18 @@ ZINC_API int cmzn_timenotifier_regular_set_offset(
 	cmzn_timenotifier_regular_id timenotifier_regular, double time_offset);
 
 /**
-* Returns a new reference to the timenotifier event with reference count incremented.
-* Caller is responsible for destroying the new reference.
-*
-* @param timenotifierevent  The timenotifier event to obtain a new reference to.
-* @return  New timenotifierevent reference with incremented reference count.
-*/
+ * Returns a new handle to the time notifier event with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param timenotifierevent  The time notifier event to obtain a new handle to.
+ * @return  New handle to time notifier event, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_timenotifierevent_id cmzn_timenotifierevent_access(
 	cmzn_timenotifierevent_id timenotifierevent);
 
 /**
- * Destroys this reference to the timenotifier event (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys this handle to the time notifier event (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * Note: At the end of the cmzn_timenotifier_callback_function, the caller
  * will destroy the event argument so users do not need to call this destroy

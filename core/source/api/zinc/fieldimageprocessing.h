@@ -60,7 +60,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_threshol
 /**
  * If field can be cast to a cmzn_field_imagefilter_binary_threshold_id do so
  * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter reference.
+ * Caller is responsible for destroying the new image filter handle.
  *
  * @param field  Id of the field to cast
  * @return  Handle to derived image filter binary threshold field, or NULL/invalid handle if wrong type or failed.
@@ -126,8 +126,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_binary_threshold_base_cast(
 }
 
 /**
- * Destroys this reference to the imagefilter_binary_threshold field and sets it
- * to NULL. Internally this just decrements the reference count.
+ * Destroys handle to the imagefilter_binary_threshold field and sets it
+ * to NULL. Internally this decrements the reference count.
  *
  * @param imagefilter_binary_threshold_address  Address of handle to the field to
  * 		destroy.
@@ -192,7 +192,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_discrete_gaussi
 /**
  * If field can be cast to a cmzn_field_imagefilter_discrete_gaussian_id do so
  * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter reference.
+ * Caller is responsible for destroying the new image filter handle.
  *
  * @param field Id of the field to cast
  * @return  Handle to derived image filter discrete gaussian field, or NULL/invalid handle if wrong type or failed.
@@ -265,8 +265,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_discrete_gaussian_base_cast(
 }
 
 /**
- * Destroys this reference to the imagefilter_discrete_gaussian field and sets it
- * to NULL. Internally this just decrements the reference count.
+ * Destroys handle to the imagefilter_discrete_gaussian field and sets it
+ * to NULL. Internally this decrements the reference count.
  *
  * @param imagefilter_discrete_gaussian_address  Address of handle to the field to
  * 		destroy.
@@ -329,7 +329,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
 /**
  * If field can be cast to a cmzn_field_imagefilter_threshold_id do so
  * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter reference.
+ * Caller is responsible for destroying the new image filter handle.
  *
  * @param field Id of the field to cast
  * @return  Handle to derived image filter threshold field, or NULL/invalid handle if wrong type or failed.
@@ -438,8 +438,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_threshold_base_cast(
 }
 
 /**
- * Destroys this reference to the imagefilter_threshold field and sets it
- * to NULL. Internally this just decrements the reference count.
+ * Destroys handle to the imagefilter_threshold field and sets it
+ * to NULL. Internally this decrements the reference count.
  *
  * @param imagefilter_threshold_address  Address of handle to the field to
  * 		destroy.
@@ -463,7 +463,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
 /**
  * If field can be cast to a cmzn_field_imagefilter_histogram_id do so
  * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter reference.
+ * Caller is responsible for destroying the new image filter handle.
  *
  * @param field Id of the field to cast
  * @return  Handle to derived image filter histogram field, or NULL/invalid handle if wrong type or failed.
@@ -614,8 +614,8 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_histogram_base_cast(
 }
 
 /**
- * Destroys this reference to the imagefilter_histogram field and sets it
- * to NULL. Internally this just decrements the reference count.
+ * Destroys handle to the imagefilter_histogram field and sets it
+ * to NULL. Internally this decrements the reference count.
  *
  * @param imagefilter_histogram_address  Address of handle to the field to
  * 		destroy.

@@ -21,8 +21,8 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the differential operator with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the differential operator with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
  * @param differential_operator  The differential operator to obtain a new
  * reference to.
@@ -32,11 +32,11 @@ ZINC_API cmzn_differentialoperator_id cmzn_differentialoperator_access(
 	cmzn_differentialoperator_id differential_operator);
 
 /**
- * Destroys reference to the differential operator and sets pointer/handle to
- * NULL. Internally this just decrements the reference count.
+ * Destroys handle to the differential operator and sets pointer/handle to
+ * NULL. Internally this decrements the reference count.
  *
- * @param differential_operator_address  Address of differential operator
- * reference.
+ * @param differential_operator_address  Address of handle to differential
+ * operator to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_differentialoperator_destroy(

@@ -27,15 +27,15 @@ extern "C" {
  * Returns a new handle to the glyph module with reference count
  * incremented. Caller is responsible for destroying the new handle.
  *
- * @param glyphmodule  The glyph module to obtain a new reference to.
+ * @param glyphmodule  The glyph module to obtain a new handle to.
  * @return  New handle to glyph module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyphmodule_id cmzn_glyphmodule_access(
 	cmzn_glyphmodule_id glyphmodule);
 
 /**
- * Destroys this reference to the glyph module (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the glyph module (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param glyphmodule_address  Address of handle to glyph module to destroy.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
@@ -152,17 +152,17 @@ ZINC_API int cmzn_glyphmodule_set_default_point_glyph(
 	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id glyph);
 
 /**
- * Returns a new reference to the glyph with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the glyph with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param glyph  The glyph to obtain a new reference to.
+ * @param glyph  The glyph to obtain a new handle to.
  * @return  New handle to glyph, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyph_id cmzn_glyph_access(cmzn_glyph_id glyph);
 
 /**
- * Destroys this reference to the glyph (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the glyph (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param glyph_address  The address to the handle of the glyph to be destroyed.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -250,8 +250,8 @@ ZINC_C_INLINE cmzn_glyph_id cmzn_glyph_axes_base_cast(cmzn_glyph_axes_id axes)
 }
 
 /**
- * Destroys this reference to the axes glyph (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the axes glyph (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param axes_address  Address of handle to the axes glyph.
  * @return  Status CMZN_OK if successfully destroyed the axes glyph handle,
@@ -360,8 +360,8 @@ ZINC_C_INLINE cmzn_glyph_id cmzn_glyph_colour_bar_base_cast(cmzn_glyph_colour_ba
 }
 
 /**
- * Destroys this reference to the colour_bar glyph (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the colour_bar glyph (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param colour_bar_address  Address of handle to the colour_bar glyph.
  * @return  Status CMZN_OK if successfully destroyed the colour_bar glyph handle,

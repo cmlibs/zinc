@@ -26,14 +26,14 @@ extern "C" {
  * Returns a new handle to the field cache with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param cache  The field cache to obtain a new reference to.
+ * @param cache  The field cache to obtain a new handle to.
  * @return  New handle to field cache, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache);
 
 /**
- * Destroys this reference to the field cache, and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Destroys handle to the field cache, and sets it to NULL.
+ * Internally this decrements the reference count.
  *
  * @param cache_address  Address of handle to field cache to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.

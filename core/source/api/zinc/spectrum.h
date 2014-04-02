@@ -19,23 +19,23 @@ extern "C" {
 #endif
 
 /**
-* Returns a new reference to the spectrum module with reference count
-* incremented. Caller is responsible for destroying the new reference.
-*
-* @param spectrummodule  The spectrum module to obtain a new reference to.
-* @return  spectrum module with incremented reference count.
-*/
+ * Returns a new handle to the spectrum module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
+ *
+ * @param spectrummodule  Handle to spectrum module.
+ * @return  New handle to spectrum module, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_spectrummodule_id cmzn_spectrummodule_access(
 	cmzn_spectrummodule_id spectrummodule);
 
 /**
-* Destroys this reference to the spectrum module (and sets it to NULL).
-* Internally this just decrements the reference count.
-*
-* @param spectrummodule_address  Address of handle to spectrum module
-*   to destroy.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Destroys handle to the spectrum module (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param spectrummodule_address  Address of handle to spectrum module
+ *   to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_spectrummodule_destroy(
 	cmzn_spectrummodule_id *spectrummodule_address);
 
@@ -44,73 +44,70 @@ ZINC_API int cmzn_spectrummodule_destroy(
  *
  * @param spectrummodule  The handle to the spectrum module the
  * spectrum will belong to.
- * @return  Handle to the newly created spectrum if successful, otherwise NULL.
+ * @return  Handle to new spectrum, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_spectrum_id cmzn_spectrummodule_create_spectrum(
 	cmzn_spectrummodule_id spectrummodule);
 
 /**
-* Begin caching or increment cache level for this spectrum module. Call this
-* function before making multiple changes to minimise number of change messages
-* sent to clients. Must remember to end_change after completing changes.
-* @see cmzn_spectrummodule_end_change
-*
-* @param spectrummodule  The spectrum module to begin change cache on.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Begin caching or increment cache level for this spectrum module. Call this
+ * function before making multiple changes to minimise number of change messages
+ * sent to clients. Must remember to end_change after completing changes.
+ * @see cmzn_spectrummodule_end_change
+ *
+ * @param spectrummodule  The spectrum module to begin change cache on.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_spectrummodule_begin_change(cmzn_spectrummodule_id spectrummodule);
 
 /**
-* Decrement cache level or end caching of changes for the spectrum module.
-* Call cmzn_spectrummodule_begin_change before making multiple changes
-* and call this afterwards. When change level is restored to zero,
-* cached change messages are sent out to clients.
-*
-* @param spectrummodule  The spectrum module to end change cache on.
-* @return  Status CMZN_OK on success, any other value on failure.
-*/
+ * Decrement cache level or end caching of changes for the spectrum module.
+ * Call cmzn_spectrummodule_begin_change before making multiple changes
+ * and call this afterwards. When change level is restored to zero,
+ * cached change messages are sent out to clients.
+ *
+ * @param spectrummodule  The spectrum module to end change cache on.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
 ZINC_API int cmzn_spectrummodule_end_change(cmzn_spectrummodule_id spectrummodule);
 
 /**
-* Find the spectrum with the specified name, if any.
-*
-* @param spectrummodule  spectrum module to search.
-* @param name  The name of the spectrum.
-* @return  Handle to the spectrum of that name, or 0 if not found.
-* 	Up to caller to destroy returned handle.
-*/
+ * Find the spectrum with the specified name, if any.
+ *
+ * @param spectrummodule  spectrum module to search.
+ * @param name  The name of the spectrum.
+ * @return  Handle to spectrum, or NULL/invalid handle if not found or failed.
+ */
 ZINC_API cmzn_spectrum_id cmzn_spectrummodule_find_spectrum_by_name(
 	cmzn_spectrummodule_id spectrummodule, const char *name);
 
 /**
-* Get the default spectrum, if any. By default, a single component spectrum
-* with CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW is returned.
-* Call cmzn_spectrummodule_set_default_spectrum to change the default
-* spectrum.
-*
-* @param spectrummodule  spectrum module to query.
-* @return  Handle to the default spectrum, or 0 if none.
-* 	Up to caller to destroy returned handle.
-*/
+ * Get the default spectrum, if any. By default, a single component spectrum
+ * with CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW is returned.
+ * Call cmzn_spectrummodule_set_default_spectrum to change the default
+ * spectrum.
+ *
+ * @param spectrummodule  spectrum module to query.
+ * @return  Handle to default spectrum, or NULL/invalid handle if none or failed.
+ */
 ZINC_API cmzn_spectrum_id cmzn_spectrummodule_get_default_spectrum(
 	cmzn_spectrummodule_id spectrummodule);
 
 /**
-* Set the default spectrum.
-*
-* @param spectrummodule  spectrum module to modify
-* @param spectrum  The spectrum to set as default.
-* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Set the default spectrum.
+ *
+ * @param spectrummodule  spectrum module to modify
+ * @param spectrum  The spectrum to set as default.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_spectrummodule_set_default_spectrum(
-	cmzn_spectrummodule_id spectrummodule,
-	cmzn_spectrum_id spectrum);
+	cmzn_spectrummodule_id spectrummodule, cmzn_spectrum_id spectrum);
 
 /**
- * Access the spectrum, increase the access count of the time keeper by one.
+ * Get new handle to spectrum. Increments the reference count.
  *
- * @param spectrum  handle to the "to be access" zinc spectrum.
- * @return  handle to spectrum if successfully access spectrum.
+ * @param spectrum  Handle to spectrum.
+ * @return  New handle to spectrum, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_spectrum_id cmzn_spectrum_access(cmzn_spectrum_id spectrum);
 
@@ -226,7 +223,7 @@ ZINC_API int cmzn_spectrum_get_number_of_spectrumcomponents(cmzn_spectrum_id spe
  * Create a component for spectrum. Used to colour graphics.
  *
  * @param spectrum  Handle to spectrum the spectrum component is created in.
- * @return  Handle to the new spectrum component on success, otherwise 0.
+ * @return  Handle to new spectrum component, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_create_spectrumcomponent(
 	cmzn_spectrum_id spectrum);
@@ -235,8 +232,7 @@ ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_create_spectrumcomponent(
  * Get the first spectrum component on the spectrum list of <component>.
 
  * @param spectrum  Handle to a spectrum object.
- * @return  Handle to a spectrum component object if successful,
- * otherwise NULL;
+ * @return  Handle to first spectrum component, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_get_first_spectrumcomponent(
 	cmzn_spectrum_id spectrum);
@@ -246,7 +242,7 @@ ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_get_first_spectrumcomponent(
 
  * @param spectrum  Handle to a spectrum object.
  * @param ref_component  Handle to a spectrum component object.
- * @return  Handle to a spectrum component object if successful, otherwise NULL;
+ * @return  Handle to next spectrum component, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_get_next_spectrumcomponent(
 	cmzn_spectrum_id spectrum, cmzn_spectrumcomponent_id ref_component);
@@ -255,8 +251,8 @@ ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_get_next_spectrumcomponent(
  * Get the component before <ref_component> on the components list of <spectrum>.
 
  * @param spectrum  Handle to a spectrum object.
- * @param ref_grpahic  Handle to a spectrum component object.
- * @return  Handle to a spectrum component object if successful, otherwise NULL;
+ * @param ref_component  Handle to a spectrum component object.
+ * @return  Handle to previous spectrum component, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_spectrumcomponent_id cmzn_spectrum_get_previous_spectrumcomponent(
 	cmzn_spectrum_id spectrum, cmzn_spectrumcomponent_id ref_component);
@@ -300,11 +296,11 @@ ZINC_API int cmzn_spectrum_remove_spectrumcomponent(cmzn_spectrum_id spectrum,
 ZINC_API int cmzn_spectrum_remove_all_spectrumcomponents(cmzn_spectrum_id spectrum);
 
 /**
- * Returns a new reference to the spectrum component with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the spectrum component with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
- * @param component  The spectrum component to obtain a new reference to.
- * @return  New spectrum component reference with incremented reference count.
+ * @param component  Handle to spectrum component.
+ * @return  New handle to spectrum component, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_spectrumcomponent_id cmzn_spectrumcomponent_access(
 	cmzn_spectrumcomponent_id component);
