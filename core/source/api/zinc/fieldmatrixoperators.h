@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : fieldmatrixoperators.h
-
-LAST MODIFIED : 17 June 2011
-
-DESCRIPTION :
-The public interface to the cmzn_fields that perform matrix operations.
-==============================================================================*/
+/**
+ * @file fieldmatrixoperators.h
+ *
+ * The public interface to fields that perform matrix operators.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -23,56 +20,56 @@ The public interface to the cmzn_fields that perform matrix operations.
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a field returning the scalar real determinant of a square matrix
  * source field. Only supports up to 3x3 matrix.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field supplying square matrix up to 3x3. May only have
  * 1, 4 or 9 components.
- * @return  Newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_determinant(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the N eigenvalues of symmetric N*N component source
  * field.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  N*N component square symmetric matrix field.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_eigenvalues(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the N, N-dimensional eigenvectors computed with the
  * source eigenvalues field. Sets the number of components equal to N*N, where
  * N is the number of components in the <eigenvalues_field>.
  *
  * @param field_module  Region field module which will own new field.
  * @param eigenvalues_field  Eigenvalues type field.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_eigenvectors(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id eigenvalues_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the inverse of N*N symmetric matrix valued source
  * field.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  N*N component square symmetric matrix field.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_invert(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the values resulting from matrix multiplication
  * <source_field1> x <source_field2>, with <number_of_rows> rows in both
  * <source_field1> and the result. From the <number_of_rows> the columns in
@@ -83,14 +80,14 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_invert(
  * @param number_of_rows  Number of rows N in source_field1 and result.
  * @param source_field1  N rows * M columns component matrix field 1.
  * @param source_field2  M rows * P columns component matrix field 2.
- * @return Newly created matrix with N*P components.
+ * @return  Handle to new field with N*P components, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
 	cmzn_fieldmodule_id field_module,
 	int number_of_rows, cmzn_field_id source_field1,
 	cmzn_field_id source_field2);
 
-/***************************************************************************//**
+/**
  * Creates a projection field returning the result of a matrix multiplication
  * with perspective division on the source field vector. The source_field vector
  * is expanded to a homogeneous coordinate by appending a component of value 1,
@@ -112,13 +109,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_matrix_multiply(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source vector field to project.
  * @param projection_matrix_field  Field supplying projection matrix.
- * @return  Newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_projection(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, cmzn_field_id projection_matrix_field);
 
-/***************************************************************************//**
+/**
  * Creates a field returning the transpose of N*M matrix source_field.
  * The source_number_of_rows is specified; source_number_of_columns is computed
  * as source_field->number_of_components / <source_number_of_rows>;
@@ -127,7 +124,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_projection(
  * @param field_module  Region field module which will own new field.
  * @param source_number_of_rows  Number of rows N in source_field.
  * @param source_field  N rows * M columns component matrix field.
- * @return Newly created M*N component transposed matrix field.
+ * @return  Handle to new field with M*N matrix components transposed, or
+ * NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_transpose(
 	cmzn_fieldmodule_id field_module,

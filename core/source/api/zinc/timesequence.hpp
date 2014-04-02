@@ -1,5 +1,5 @@
 /**
- * FILE : timesequence.hpp
+ * @file timesequence.hpp
  */
 /* OpenCMISS-Zinc Library
 *

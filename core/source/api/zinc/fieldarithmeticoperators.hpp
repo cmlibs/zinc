@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldarithmeticoperators.hpp
+/**
+ * @file fieldarithmeticoperators.hpp
  */
 /* OpenCMISS-Zinc Library
 *

@@ -1,5 +1,5 @@
 /**
- * FILE : glyphid.h
+ * @file glyphid.h
  *
  */
 /* OpenCMISS-Zinc Library

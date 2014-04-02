@@ -1,5 +1,5 @@
 /**
- * FILE : selection.hpp
+ * @file selection.hpp
  */
 /* OpenCMISS-Zinc Library
 *

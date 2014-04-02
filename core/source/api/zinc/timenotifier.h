@@ -1,5 +1,5 @@
 /**
- * FILE : timenotifier.h
+ * @file timenotifier.h
  *
  * The public interface to time notifier object which maintains conditions for
  * notification of time changes from a timekeeper.

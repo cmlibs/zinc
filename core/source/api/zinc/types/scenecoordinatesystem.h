@@ -1,5 +1,5 @@
 /**
- * FILE : scenecoordinatesystem.h
+ * @file scenecoordinatesystem.h
  *
  * Enumerated type for identifying scene and window coordinate systems.
  */

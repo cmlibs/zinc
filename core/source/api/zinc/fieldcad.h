@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldcad.h
+/**
+ * @file fieldcad.h
  * 
  * The public interface to zinc fields which wrap cad entities.
  * Warning: prototype!

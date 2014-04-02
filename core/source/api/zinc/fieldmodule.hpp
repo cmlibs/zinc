@@ -1,5 +1,5 @@
 /**
- * FILE : fieldmodule.hpp
+ * @file fieldmodule.hpp
  */
 /* OpenCMISS-Zinc Library
 *

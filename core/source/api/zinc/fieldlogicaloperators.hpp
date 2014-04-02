@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldlogicaloperators.hpp
+/**
+ * @file fieldlogicaloperators.hpp
  */
 /* OpenCMISS-Zinc Library
 *

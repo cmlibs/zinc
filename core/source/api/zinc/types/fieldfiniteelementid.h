@@ -1,5 +1,5 @@
 /**
- * FILE : fieldfiniteelementid.h
+ * @file fieldfiniteelementid.h
  *
  */
 /* OpenCMISS-Zinc Library

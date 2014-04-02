@@ -1,5 +1,5 @@
 /**
- * FILE : fieldgroupid.h
+ * @file fieldgroupid.h
  *
  */
 /* OpenCMISS-Zinc Library

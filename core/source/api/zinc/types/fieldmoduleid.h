@@ -1,5 +1,5 @@
 /**
- * FILE : fieldmoduleid.h
+ * @file fieldmoduleid.h
  *
  */
 /* OpenCMISS-Zinc Library
@@ -13,6 +13,14 @@
 
 /**
  * Container/manager of fields and domains within a region.
+ *
+ * Note that fieldmodule create field methods documented as supporting
+ * 'automatic scalar broadcast' for their source field arguments work as
+ * follows: if given a mix of scalar and vector source fields, the scalar value
+ * is applied to each component of the vector, e.g. the result of
+ * ADD(CONSTANT([1 2 3 4], CONSTANT([10]) is [11 12 13 14]. Internally it works
+ * by substituing the scalar operand with a concatenate field with the same
+ * number of components as the vector operand, but filled with the scalar value.
  */
 struct cmzn_fieldmodule;
 typedef struct cmzn_fieldmodule *cmzn_fieldmodule_id;

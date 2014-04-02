@@ -1,5 +1,5 @@
 /**
- * FILE : streamregion.hpp
+ * @file streamregion.hpp
  */
 /* OpenCMISS-Zinc Library
 *

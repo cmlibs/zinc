@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldconstant.hpp
+/**
+ * @file fieldconstant.hpp
  */
 /* OpenCMISS-Zinc Library
 *

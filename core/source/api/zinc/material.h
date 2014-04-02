@@ -1,5 +1,5 @@
 /**
- * FILE : material.h
+ * @file material.h
  */
 /* OpenCMISS-Zinc Library
 *
@@ -20,109 +20,108 @@ extern "C" {
 #endif
 
 /**
-* Returns a new reference to the material module with reference count
-* incremented. Caller is responsible for destroying the new reference.
-*
-* @param materialmodule  The material module to obtain a new reference to.
-* @return  material module with incremented reference count.
-*/
+ * Returns a new handle to the material module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
+ *
+ * @param materialmodule  The material module to obtain a new reference to.
+ * @return  New handle to material module, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_materialmodule_id cmzn_materialmodule_access(
 	cmzn_materialmodule_id materialmodule);
 
 /**
-* Destroys this reference to the material module (and sets it to NULL).
-* Internally this just decrements the reference count.
-*
-* @param materialmodule_address  Address of handle to material module
-*   to destroy.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Destroys this reference to the material module (and sets it to NULL).
+ * Internally this just decrements the reference count.
+ *
+ * @param materialmodule_address  Address of handle to material module
+ *   to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_materialmodule_destroy(
 	cmzn_materialmodule_id *materialmodule_address);
 
 /**
- * Create and return a handle to a new material.
+ * Create and return a new material.
  *
  * @param materialmodule  The handle to the material module the
  * material will belong to.
- * @return  Handle to the newly created material if successful, otherwise NULL.
+ * @return  Handle to new material, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_material_id cmzn_materialmodule_create_material(
 	cmzn_materialmodule_id materialmodule);
 
 /**
-* Begin caching or increment cache level for this material module. Call this
-* function before making multiple changes to minimise number of change messages
-* sent to clients. Must remember to end_change after completing changes.
-* @see cmzn_materialmodule_end_change
-*
-* @param materialmodule  The material module to begin change cache on.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Begin caching or increment cache level for this material module. Call this
+ * function before making multiple changes to minimise number of change messages
+ * sent to clients. Must remember to end_change after completing changes.
+ * @see cmzn_materialmodule_end_change
+ *
+ * @param materialmodule  The material module to begin change cache on.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_materialmodule_begin_change(
 	cmzn_materialmodule_id materialmodule);
 
 /**
-* Decrement cache level or end caching of changes for the material module.
-* Call cmzn_materialmodule_begin_change before making multiple changes
-* and call this afterwards. When change level is restored to zero,
-* cached change messages are sent out to clients.
-*
-* @param materialmodule  The material module to end change cache on.
-* @return  Status CMZN_OK on success, any other value on failure.
-*/
+ * Decrement cache level or end caching of changes for the material module.
+ * Call cmzn_materialmodule_begin_change before making multiple changes
+ * and call this afterwards. When change level is restored to zero,
+ * cached change messages are sent out to clients.
+ *
+ * @param materialmodule  The material module to end change cache on.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
 ZINC_API int cmzn_materialmodule_end_change(
 	cmzn_materialmodule_id materialmodule);
 
 /**
-* Find the material with the specified name, if any.
-*
-* @param materialmodule  material module to search.
-* @param name  The name of the material.
-* @return  Handle to the material of that name, or 0 if not found.
-* 	Up to caller to destroy returned handle.
-*/
+ * Find the material with the specified name, if any.
+ *
+ * @param materialmodule  material module to search.
+ * @param name  The name of the material.
+ * @return  Handle to material, or NULL/invalid handle if not found or failed.
+ */
 ZINC_API cmzn_material_id cmzn_materialmodule_find_material_by_name(
 	cmzn_materialmodule_id materialmodule, const char *name);
 
 /**
-* Get the default material, if any.
-*
-* @param materialmodule  material module to query.
-* @return  Handle to the default material, or 0 if none.
-* 	Up to caller to destroy returned handle.
-*/
+ * Get the default material, if any.
+ *
+ * @param materialmodule  material module to query.
+ * @return  Handle to material, or NULL/invalid handle if none or failed.
+ */
 ZINC_API cmzn_material_id cmzn_materialmodule_get_default_material(
 	cmzn_materialmodule_id materialmodule);
 
 /**
-* Set the default material.
-*
-* @param materialmodule  material module to modify
-* @param material  The material to set as default.
-* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Set the default material. This material is used as the default
+ * material for any new graphics.
+ *
+ * @param materialmodule  material module to modify
+ * @param material  The material to set as default.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_materialmodule_set_default_material(
 	cmzn_materialmodule_id materialmodule,
 	cmzn_material_id material);
 
 /**
-* Get the default selected material, if any.
-*
-* @param materialmodule  material module to query.
-* @return  Handle to the default material, or 0 if none.
-* 	Up to caller to destroy returned handle.
-*/
+ * Get the default selected material, if any. This material is used as the
+ * default selected material for any new graphics.
+ *
+ * @param materialmodule  material module to query.
+ * @return  Handle to material, or NULL/invalid handle if none or failed.
+ */
 ZINC_API cmzn_material_id cmzn_materialmodule_get_default_selected_material(
 	cmzn_materialmodule_id materialmodule);
 
 /**
-* Set the default selected material.
-*
-* @param materialmodule  material module to modify
-* @param material  The material to set as default.
-* @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Set the default selected material.
+ *
+ * @param materialmodule  material module to modify
+ * @param material  The material to set as default.
+ * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_materialmodule_set_default_selected_material(
 	cmzn_materialmodule_id materialmodule,
 	cmzn_material_id material);
@@ -184,10 +183,10 @@ ZINC_API int cmzn_material_set_managed(cmzn_material_id material,
 	bool value);
 
 /**
- * Access the material, increase the access count of the material by one.
+ * Get a new handle to the material, incrementing its reference count.
  *
- * @param material  handle to the "to be access" zinc material.
- * @return  handle to material if successfully access material.
+ * @param material  Handle to the material.
+ * @return  New handle to the material, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_material_id cmzn_material_access(cmzn_material_id material);
 
@@ -272,8 +271,7 @@ ZINC_API int cmzn_material_set_name(
  *
  * @param material  The material to query.
  * @param texture_number  The number of the texture to get, from 1 to 4.
- * @return  Handle to field which caller is responsible for destroying, or NULL
- * if none or error.
+ * @return  Handle to the field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_material_get_texture_field(
 	cmzn_material_id material, int texture_number);

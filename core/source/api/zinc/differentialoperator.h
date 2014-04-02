@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : differentialoperator.h
+/**
+ * @file differentialoperator.h
  *
  * Public interface to differential operator objects used to specify which
  * field derivative to evaluate.
@@ -20,19 +20,18 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Returns a new reference to the differential operator with reference count
  * incremented. Caller is responsible for destroying the new reference.
  *
  * @param differential_operator  The differential operator to obtain a new
  * reference to.
- * @return  New differential operator reference with incremented reference
- * count.
+ * @return  New handle to the differential operator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_differentialoperator_id cmzn_differentialoperator_access(
 	cmzn_differentialoperator_id differential_operator);
 
-/***************************************************************************//**
+/**
  * Destroys reference to the differential operator and sets pointer/handle to
  * NULL. Internally this just decrements the reference count.
  *

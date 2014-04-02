@@ -1,5 +1,5 @@
 /**
- * FILE : streamimage.hpp
+ * @file streamimage.hpp
  */
 /* OpenCMISS-Zinc Library
 *

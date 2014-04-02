@@ -1,5 +1,5 @@
 /**
- * FILE : glyph.hpp
+ * @file glyph.hpp
  */
 /* OpenCMISS-Zinc Library
 *

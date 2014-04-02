@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldmatrixoperators.hpp
+/**
+ * @file fieldmatrixoperators.hpp
  */
 /* OpenCMISS-Zinc Library
 *

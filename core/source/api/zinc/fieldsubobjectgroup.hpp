@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldsubobjectgroup.hpp
+/**
+ * @file fieldsubobjectgroup.hpp
  */
 /* OpenCMISS-Zinc Library
 *

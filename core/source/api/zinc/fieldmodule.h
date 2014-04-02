@@ -1,5 +1,5 @@
 /**
- * FILE : fieldmodule.h
+ * @file fieldmodule.h
  *
  * Public interface to the field module including its generic functions.
  */
@@ -25,28 +25,16 @@ extern "C" {
 #endif
 
 /*
- * Automatic scalar broadcast
- *
- * For field constructors (cmzn_fieldmodule_create~ functions) which specify
- * the they apply automatic scalar broadcast for their source fields arguments,
- * if the one of the source fields has multiple components and the
- * other is a scalar, then the scalar will be automatically replicated so that
- * it matches the number of components in the multiple component field.
- * For example the result of
- * ADD(CONSTANT([1 2 3 4], CONSTANT([10]) is [11 12 13 14].
- */
-
-/*
 Global functions
 ----------------
 */
 
 /**
- * Returns a new reference to the field module with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the field module with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param fieldmodule  The field module to obtain a new reference to.
- * @return  New field module reference with incremented reference count.
+ * @param fieldmodule  Handle to field module.
+ * @return  New handle to field module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_fieldmodule_access(cmzn_fieldmodule_id fieldmodule);
 
@@ -89,7 +77,7 @@ ZINC_API int cmzn_fieldmodule_end_change(cmzn_fieldmodule_id fieldmodule);
  *
  * @param fieldmodule  Region field module in which to find the field.
  * @param field_name  The name of the field to find.
- * @return  New reference to field of specified name, or NULL if not found.
+ * @return  Handle to field, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_find_field_by_name(
 	cmzn_fieldmodule_id fieldmodule, const char *field_name);
@@ -99,7 +87,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_find_field_by_name(
  * derivatives at that location. Required to evaluate and assign field values.
  *
  * @param fieldmodule  The field module to create a field cache for.
- * @return  New field cache, or NULL if failed.
+ * @return  Handle to new field cache, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(
 	cmzn_fieldmodule_id fieldmodule);
@@ -107,15 +95,14 @@ ZINC_API cmzn_fieldcache_id cmzn_fieldmodule_create_fieldcache(
 /**
  * Create a field iterator object for iterating through the fields in the field
  * module, in alphabetical order of name. The iterator initially points at the
- * position before the first field, so the first call to
- * cmzn_fielditerator_next() returns the first field and advances the
- * iterator.
+ * position before the first field, so the first call to the field iterator
+ * next() method returns the first field and advances the iterator.
  * Iterator becomes invalid if fields are added, removed or renamed while in use.
+ * @see cmzn_fielditerator_next
  *
  * @param fieldmodule  Handle to the field module whose fields are to be
  * iterated over.
- * @return  Handle to field_iterator at position before first, or NULL if
- * error.
+ * @return  Handle to field iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
 	cmzn_fieldmodule_id fieldmodule);
@@ -125,8 +112,7 @@ ZINC_API cmzn_fielditerator_id cmzn_fieldmodule_create_fielditerator(
  * objects in the field module.
  *
  * @param fieldmodule  Handle to the field module to get notifications for.
- * @return  On success, handle to field module notifier, otherwise NULL.
- * Up to caller to destroy handle.
+ * @return  Handle to new field module notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodule_create_fieldmodulenotifier(
 	cmzn_fieldmodule_id fieldmodule);
@@ -146,7 +132,7 @@ ZINC_API int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id fieldmodule);
  * Gets the region this field module can create fields for.
  *
  * @param fieldmodule  The field module to query.
- * @return  Accessed handle to owning region for field module.
+ * @return  Handle to owning region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_fieldmodule_get_region(cmzn_fieldmodule_id fieldmodule);
 
@@ -165,7 +151,7 @@ ZINC_API bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
  * incremented. Caller is responsible for destroying the new reference.
  *
  * @param notifier  The field module notifier to obtain a new reference to.
- * @return  Handle to field module notifier with incremented reference count.
+ * @return  New handle to field module notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodulenotifier_id cmzn_fieldmodulenotifier_access(
 	cmzn_fieldmodulenotifier_id notifier);
@@ -213,12 +199,12 @@ ZINC_API void *cmzn_fieldmodulenotifier_get_callback_user_data(
  cmzn_fieldmodulenotifier_id notifier); 
 
 /**
-* Returns a new reference to the fieldmodule event with reference count incremented.
-* Caller is responsible for destroying the new reference.
-*
-* @param event  The field module event to obtain a new reference to.
-* @return  New field module notifier handle with incremented reference count.
-*/
+ * Returns a new reference to the fieldmodule event with reference count incremented.
+ * Caller is responsible for destroying the new reference.
+ *
+ * @param event  The field module event to obtain a new reference to.
+ * @return  New handle to field module event, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_fieldmoduleevent_id cmzn_fieldmoduleevent_access(
 	cmzn_fieldmoduleevent_id event);
 
@@ -266,7 +252,8 @@ ZINC_API cmzn_field_change_flags cmzn_fieldmoduleevent_get_field_change_flags(
  *
  * @param event  Handle to the field module event to query.
  * @param mesh  The mesh to get change information for.
- * @return  Handle to the mesh changes object. Up to caller to destroy.
+ * @return  Handle to mesh changes, or NULL/invalid handle on failure.
+
  */
 ZINC_API cmzn_meshchanges_id cmzn_fieldmoduleevent_get_meshchanges(
 	cmzn_fieldmoduleevent_id event, cmzn_mesh_id mesh);
@@ -277,7 +264,7 @@ ZINC_API cmzn_meshchanges_id cmzn_fieldmoduleevent_get_meshchanges(
  *
  * @param event  Handle to the field module event to query.
  * @param nodeset  The nodeset to get change information for.
- * @return  Handle to the nodeset changes object. Up to caller to destroy.
+ * @return  Handle to nodeset changes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodesetchanges_id cmzn_fieldmoduleevent_get_nodesetchanges(
 	cmzn_fieldmoduleevent_id event, cmzn_nodeset_id nodeset);

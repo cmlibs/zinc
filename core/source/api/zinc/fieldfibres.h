@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldfibres.h
+/**
+ * @file fieldfibres.h
  *
  * A field which extract a transformation matrix from a scene viewer for use in
  * field expressions.
@@ -41,7 +41,7 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @param fibre_field  The (numerical) fibre field with at most 3 components
  * @param coordinate_field  The (numerical) coordinate system with at most 3 components
- * @return  Fibre field with 9 components.
+ * @return  Handle to new 9-component field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_fibre_axes(
 	cmzn_fieldmodule_id field_module,

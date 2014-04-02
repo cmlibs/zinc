@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : tessellation.hpp
+/**
+ * @file tessellation.hpp
  */
 /* OpenCMISS-Zinc Library
 *

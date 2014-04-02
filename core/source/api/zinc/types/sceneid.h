@@ -1,5 +1,5 @@
 /**
- * FILE : sceneid.h
+ * @file sceneid.h
  *
  */
 /* OpenCMISS-Zinc Library

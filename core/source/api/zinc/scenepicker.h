@@ -30,11 +30,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the scene picker with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the scene picker with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param scenepicker  The scenepicker to obtain a new reference to.
- * @return  New scenepicker reference with incremented reference count.
+ * @param scenepicker  The scenepicker to obtain a new handle to.
+ * @return  New handle to scenepicker, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenepicker_id cmzn_scenepicker_access(
 	cmzn_scenepicker_id scenepicker);
@@ -53,7 +53,7 @@ ZINC_API int cmzn_scenepicker_destroy(cmzn_scenepicker_id *scenepicker_address);
  * Get the scene set for the scene picker to pick from.
  *
  * @param scenepicker  The scene picker to get the scene from.
- * @return  Valid handle to scene object on success, 0 on failure.
+ * @return  Handle to scene, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scene_id cmzn_scenepicker_get_scene(cmzn_scenepicker_id scenepicker);
 
@@ -71,7 +71,7 @@ ZINC_API int cmzn_scenepicker_set_scene(cmzn_scenepicker_id scenepicker,
  * Get the scene filter for the scene picker.
  *
  * @param scenepicker  The scene picker to get the scene filter from.
- * @return  Valid handle to scene picker object on success, 0 on failure.
+ * @return  Handle to scene filter, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenepicker_get_scenefilter(
 	cmzn_scenepicker_id scenepicker);
@@ -110,7 +110,7 @@ ZINC_API int cmzn_scenepicker_set_sceneviewer_rectangle(
  * Get the nearest element in the defined bounding box on scene.
  *
  * @param scenepicker  The scene picker to pick the nearest element.
- * @return  a valid handle to the nearest picked element, otherwise null.
+ * @return  Handle to nearest element, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_element_id cmzn_scenepicker_get_nearest_element(
 	cmzn_scenepicker_id scenepicker);
@@ -119,7 +119,7 @@ ZINC_API cmzn_element_id cmzn_scenepicker_get_nearest_element(
  * Get the nearest node in the defined bounding box on scene.
  *
  * @param scenepicker  The scene picker to pick the nearest node.
- * @return  a valid handle to the nearest picked node, otherwise null.
+ * @return  Handle to nearest node, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_node_id cmzn_scenepicker_get_nearest_node(
 	cmzn_scenepicker_id scenepicker);
@@ -128,7 +128,8 @@ ZINC_API cmzn_node_id cmzn_scenepicker_get_nearest_node(
  * Get the nearest element graphics in the defined bounding box on scene.
  *
  * @param scenepicker  The scene picker to pick the nearest element graphics.
- * @return a valid handle to the nearest picked graphics, otherwise null.
+ * @return  Handle to graphics showing nearest element, or NULL/invalid handle
+ * if none or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scenepicker_get_nearest_element_graphics(
 	cmzn_scenepicker_id scenepicker);
@@ -137,7 +138,8 @@ ZINC_API cmzn_graphics_id cmzn_scenepicker_get_nearest_element_graphics(
  * Get the nearest node graphics in the defined bounding box on scene.
  *
  * @param scenepicker  The scene picker to pick the nearest node graphics.
- * @return a valid handle to the nearest picked graphics, otherwise null.
+ * @return  Handle to graphics showing nearest node, or NULL/invalid handle
+ * if none or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scenepicker_get_nearest_node_graphics(
 	cmzn_scenepicker_id scenepicker);
@@ -146,7 +148,7 @@ ZINC_API cmzn_graphics_id cmzn_scenepicker_get_nearest_node_graphics(
  * Get the nearest graphics in the defined bounding box on scene.
  *
  * @param scenepicker  The scene picker to pick the nearest graphics.
- * @return a valid handle to the nearest picked graphics, otherwise null.
+ * @return  Handle to nearest graphics, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scenepicker_get_nearest_graphics(
 	cmzn_scenepicker_id scenepicker);

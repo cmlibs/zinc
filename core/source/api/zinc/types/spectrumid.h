@@ -1,5 +1,5 @@
 /**
- * FILE : spectrumid.h
+ * @file spectrumid.h
  *
  */
 /* OpenCMISS-Zinc Library

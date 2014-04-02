@@ -1,5 +1,5 @@
 /**
- * FILE : fieldimage.h
+ * @file fieldimage.h
  *
  * Public interface to image field which stores images / structured grid data.
  */
@@ -109,7 +109,7 @@ ZINC_API char *cmzn_field_image_wrap_mode_enum_to_string(
  * values of the domain field to texture coordinate locations.
  *
  * @param field_module  Region field module which will own the image field.
- * @return  Newly created image field. Up to caller to destroy handle.
+ * @return  Handle to new image field, or NULL/invalid handle on failure.
 */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image(
 	cmzn_fieldmodule_id field_module);
@@ -128,7 +128,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field providing image pixel values. Must be
  * image-based with up to 4 components.
- * @return  Newly created image field. Up to caller to destroy handle.
+ * @return  Handle to new image field, or NULL/invalid handle on failure.
 */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
@@ -139,8 +139,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
  * Caller is responsible for destroying the new image filter reference.
  *
  * @param image_field  The image field to be cast.
- * @return  Image field specific representation if the input is the correct
- * field type, otherwise returns NULL.
+ * @return  Handle to derived image field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_image_id cmzn_field_cast_image(cmzn_field_id image_field);
 
@@ -380,7 +379,7 @@ ZINC_API int cmzn_field_image_set_combine_mode(cmzn_field_image_id image_field,
  * @see cmzn_fieldcache_set_field_real
  *
  * @param image_field  The image field to query.
- * @return  The domain field, or 0 if error. Up to caller to destroy handle.
+ * @return  Handle to the domain field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_field_image_get_domain_field(
 	cmzn_field_image_id image_field);

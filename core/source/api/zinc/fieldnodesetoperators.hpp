@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldnodesetoperators.hpp
+/**
+ * @file fieldnodesetoperators.hpp
  */
 /* OpenCMISS-Zinc Library
 *

@@ -1,5 +1,5 @@
 /**
- * FILE : stream.h
+ * @file stream.h
  *
  * The public interface to zinc stream.
  *

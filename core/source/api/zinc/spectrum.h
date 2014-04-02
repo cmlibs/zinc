@@ -1,5 +1,5 @@
 /**
- * FILE : spectrum.h
+ * @file spectrum.h
  */
 /* OpenCMISS-Zinc Library
 *
@@ -40,7 +40,7 @@ ZINC_API int cmzn_spectrummodule_destroy(
 	cmzn_spectrummodule_id *spectrummodule_address);
 
 /**
- * Create and return a handle to a new spectrum.
+ * Create and return a new spectrum.
  *
  * @param spectrummodule  The handle to the spectrum module the
  * spectrum will belong to.

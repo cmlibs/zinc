@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldnodesetoperators.h
+/**
+ * @file fieldnodesetoperators.h
  *
  * Implements field operators that sum or process fields over a nodeset.
  */
@@ -29,7 +29,7 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum.
  * @param nodeset  The set of nodes to sum field over.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -43,7 +43,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to obtain mean component values for.
  * @param nodeset  The set of nodes to obtain mean over.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -60,7 +60,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to sum squared component values of.
  * @param nodeset  The set of nodes to sum field over.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -78,7 +78,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_sum_squares(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to obtain mean squared component values for.
  * @param nodeset  The set of nodes to obtain mean over.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -92,7 +92,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_mean_squares(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to obtain minimum values for.
  * @param nodeset  The set of nodes to obtain minimum over.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -106,7 +106,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_minimum(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to obtain maximum values for.
  * @param nodeset  The set of nodes to obtain maximum over.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_nodeset_maximum(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,

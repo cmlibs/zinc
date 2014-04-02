@@ -1,5 +1,5 @@
 /**
- * FILE : node.hpp
+ * @file node.hpp
  */
 /* OpenCMISS-Zinc Library
 *

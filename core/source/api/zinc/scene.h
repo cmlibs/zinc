@@ -1,5 +1,5 @@
 /**
- * FILE : scene.h
+ * @file scene.h
  *
  * The public interface to a zinc scene, which gives the graphical
  * representation of a region
@@ -35,11 +35,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the scene with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the scene with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param scene  The scene to obtain a new reference to.
- * @return  New scene reference with incremented reference count.
+ * @param scene  Handle to a scene.
+ * @return  New handle to scene, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
 
@@ -104,7 +104,7 @@ ZINC_API int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
  *
  * @param scene  Handle to scene the graphics is created in.
  * @param graphics_type  Enumerator for a specific graphics type.
- * @return  Handle to the new graphics on success, otherwise 0.
+ * @return  Handle to the new graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_create_graphics(cmzn_scene_id scene,
 	enum cmzn_graphics_type graphics_type);
@@ -115,7 +115,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics(cmzn_scene_id scene,
  * iso-lines for 2-D domains.
  *
  * @param scene  Handle to scene the graphics is created in.
- * @return  Handle to the new graphics on success, otherwise 0.
+ * @return  Handle to the new graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_contours(
 	cmzn_scene_id scene);
@@ -125,7 +125,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_contours(
  * lines/faces of elements.
  *
  * @param scene  Handle to scene the graphics is created in.
- * @return  Handle to the new graphics on success, otherwise 0.
+ * @return  Handle to the new graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_lines(
 	cmzn_scene_id scene);
@@ -137,7 +137,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_lines(
  * @see cmzn_graphics_set_field_domain_type
  *
  * @param scene  Handle to scene the graphics is created in.
- * @return  Handle to the new graphics on success, otherwise 0.
+ * @return  Handle to the new graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_points(
 	cmzn_scene_id scene);
@@ -146,7 +146,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_points(
  * Create a streamlines graphics in the scene.
  *
  * @param scene  Handle to scene the graphics is created in.
- * @return  Handle to the new graphics on success, otherwise 0.
+ * @return  Handle to the new graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_streamlines(
 	cmzn_scene_id scene);
@@ -156,7 +156,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_streamlines(
  * and faces.
  *
  * @param scene  Handle to scene the graphics is created in.
- * @return  Handle to the new graphics on success, otherwise 0.
+ * @return  Handle to the new graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
 	cmzn_scene_id scene);
@@ -168,8 +168,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_create_graphics_surfaces(
  * selection.h for more details.
  *
  * @param scene  Handle to a scene object.
- * @return  On success, handle to selection notifier of this scene, otherwise
- * NULL. Up to caller to destroy handle.
+ * @return  Handle to the new selection notifier, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_selectionnotifier_id cmzn_scene_create_selectionnotifier(
 	cmzn_scene_id scene);
@@ -195,7 +194,8 @@ ZINC_API int cmzn_scene_end_change(cmzn_scene_id scene);
  *
  * @param scene  Scene in which to find the graphics.
  * @param name  The name of the graphics to find.
- * @return  New reference to graphics of specified name, or NULL if not found.
+ * @return  Handle to first graphics with name, or NULL/invalid handle if not
+ * found or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_find_graphics_by_name(cmzn_scene_id scene,
 	const char *name);
@@ -204,7 +204,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_find_graphics_by_name(cmzn_scene_id scene,
  * Get the first graphics on the graphics list of <scene>.
 
  * @param scene  Handle to a scene object.
- * @return  Handle to a graphics object if successful, otherwise NULL;
+ * @return  Handle to first graphics, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_get_first_graphics(cmzn_scene_id scene);
 
@@ -213,7 +213,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_get_first_graphics(cmzn_scene_id scene);
 
  * @param scene  Handle to a scene object.
  * @param ref_graphics  Handle to a graphics object.
- * @return  Handle to a graphics object if successful, otherwise NULL;
+ * @return  Handle to next graphics, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_get_next_graphics(cmzn_scene_id scene,
 	cmzn_graphics_id ref_graphics);
@@ -223,7 +223,7 @@ ZINC_API cmzn_graphics_id cmzn_scene_get_next_graphics(cmzn_scene_id scene,
 
  * @param scene  Handle to a scene object.
  * @param ref_grpahic  Handle to a graphics object.
- * @return  Handle to a graphics object if successful, otherwise NULL;
+ * @return  Handle to previous graphics, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_graphics_id cmzn_scene_get_previous_graphics(cmzn_scene_id scene,
 	cmzn_graphics_id ref_graphics);
@@ -239,8 +239,8 @@ ZINC_API int cmzn_scene_get_number_of_graphics(cmzn_scene_id scene);
 /**
  * Gets the region this scene visualises.
  *
- * @param scene  The scene to query.
- * @return  Handle to the region for this scene. Up to caller to destroy.
+ * @param scene  Handle to scene to query.
+ * @return  Handle to owning region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene);
 
@@ -248,7 +248,7 @@ ZINC_API cmzn_region_id cmzn_scene_get_region(cmzn_scene_id scene);
  * Get the font module which manages fonts for rendering text in graphics.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the font module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fontmodule_id cmzn_scene_get_fontmodule(cmzn_scene_id scene);
 
@@ -258,7 +258,7 @@ ZINC_API cmzn_fontmodule_id cmzn_scene_get_fontmodule(cmzn_scene_id scene);
  * functions need to be called to define standard glyphs.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the glyph module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyphmodule_id cmzn_scene_get_glyphmodule(cmzn_scene_id scene);
 
@@ -269,8 +269,7 @@ ZINC_API cmzn_glyphmodule_id cmzn_scene_get_glyphmodule(cmzn_scene_id scene);
  * standard and custom materials can be defined using material module functions.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the material module, or NULL on error. Up to caller to
- * destroy.
+ * @return  Handle to the material module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_materialmodule_id cmzn_scene_get_materialmodule(
 	cmzn_scene_id scene);
@@ -280,8 +279,7 @@ ZINC_API cmzn_materialmodule_id cmzn_scene_get_materialmodule(
  * contents of scenes with scenepicker and sceneviewer etc.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the scene filter module, or 0 on error. Up to caller to
- * destroy.
+ * @return  Handle to the scene filter module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(
 	cmzn_scene_id scene);
@@ -291,8 +289,7 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(
  * for rendering 3-D scenes into rectangular windows or canvases using OpenGL.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the sceneviewer module, or 0 on error. Up to caller to
- * destroy.
+ * @return  Handle to the sceneviewer module, or NULL/invalid handle on failure..
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(
 	cmzn_scene_id scene);
@@ -302,8 +299,7 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_scene_get_sceneviewermodule(
  * graphics data fields are converted into colours.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the spectrum module, or 0 on error. Up to caller to
- * destroy.
+ * @return  Handle to the spectrum module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_spectrummodule_id cmzn_scene_get_spectrummodule(
 	cmzn_scene_id scene);
@@ -313,7 +309,7 @@ ZINC_API cmzn_spectrummodule_id cmzn_scene_get_spectrummodule(
  * approximated by line segments in graphics.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the tessellation module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellationmodule_id cmzn_scene_get_tessellationmodule(
 	cmzn_scene_id scene);
@@ -323,7 +319,7 @@ ZINC_API cmzn_tessellationmodule_id cmzn_scene_get_tessellationmodule(
  * zinc objects.
  *
  * @param scene  The scene to request the module from.
- * @return  Handle to the timekeeper module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the timekeeper module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_timekeepermodule_id cmzn_scene_get_timekeepermodule(
 	cmzn_scene_id scene);
@@ -332,8 +328,7 @@ ZINC_API cmzn_timekeepermodule_id cmzn_scene_get_timekeepermodule(
  * Get the selection field for the scene, if any.
  *
  * @param scene  The scene to query.
- * @return  Handle to selection field or NULL if none or error. Up to caller to
- * destroy returned handle.
+ * @return  Handle to selection field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_scene_get_selection_field(cmzn_scene_id scene);
 
@@ -433,7 +428,7 @@ ZINC_API int cmzn_scene_remove_graphics(cmzn_scene_id scene,
  * find the onjects included in this volume.
  *
  * @param scene  Scene to create the scene picker for.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Handle to new scene picker, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
 

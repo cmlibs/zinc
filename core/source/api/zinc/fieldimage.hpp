@@ -1,5 +1,5 @@
 /**
- * FILE : fieldimage.hpp
+ * @file fieldimage.hpp
  */
 /* OpenCMISS-Zinc Library
 *

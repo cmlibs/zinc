@@ -1,5 +1,5 @@
 /**
- * FILE : fontid.h
+ * @file fontid.h
  *
  */
 /* OpenCMISS-Zinc Library

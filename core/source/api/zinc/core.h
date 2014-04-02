@@ -1,14 +1,8 @@
 /**
  * @file core.h
+ *
+ * The public interface to Zinc core memory handling functions.
  */
-/*******************************************************************************
-FILE : core.h
-
-LAST MODIFIED : 12 August 2003
-
-DESCRIPTION :
-The public interface to the some of the internal functions of cmiss.
-==============================================================================*/
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -23,23 +17,24 @@ The public interface to the some of the internal functions of cmiss.
 extern "C" {
 #endif
 
+/**
+ * Allocate memory using the Zinc internal heap.
+ * Deprecated.
+ *
+ * @param bytes  The requested memory block size in bytes.
+ * @return  Pointer to the memory block as a void *, or NULL if failed.
+ */
 ZINC_API void *cmzn_allocate(int bytes);
-/*******************************************************************************
-LAST MODIFIED : 12 August 2003
 
-DESCRIPTION :
-Frees the memory associated with the pointer.  Used to clean up when functions
-return buffers allocated internally to cmiss.
-==============================================================================*/
-
+/**
+ * Frees the memory allocated by the Zinc internal heap at the given pointer.
+ * Used to free buffers allocated by Zinc APIs, usually string get_name functions.
+ * Note that ptr is not cleared by this function.
+ *
+ * @param ptr  The pointer to the allocated memory block.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_GENERAL.
+ */
 ZINC_API int cmzn_deallocate(void *ptr);
-/*******************************************************************************
-LAST MODIFIED : 12 August 2003
-
-DESCRIPTION :
-Frees the memory associated with the pointer.  Used to clean up when functions
-return buffers allocated internally to cmiss.
-==============================================================================*/
 
 #ifdef __cplusplus
 }

@@ -1,5 +1,5 @@
 /**
- * FILE : fieldfiniteelement.hpp
+ * @file fieldfiniteelement.hpp
  */
 /* OpenCMISS-Zinc Library
 *

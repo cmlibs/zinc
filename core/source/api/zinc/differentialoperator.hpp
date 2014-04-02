@@ -1,5 +1,5 @@
 /**
- * FILE : differentialoperator.hpp
+ * @file differentialoperator.hpp
  */
 /* OpenCMISS-Zinc Library
 *

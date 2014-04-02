@@ -1,5 +1,5 @@
 /**
- * FILE : streamregion.h
+ * @file streamregion.h
  *
  * Region-specific file stream objects.
  */

@@ -1,5 +1,5 @@
 /**
- * FILE : timekeeperid.h
+ * @file timekeeperid.h
  *
  */
 /* OpenCMISS-Zinc Library

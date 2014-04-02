@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : fieldlogicaloperators.h
-
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-The public interface to the cmzn_fields that perform logical operations.
-==============================================================================*/
+/**
+ * @file fieldlogicaloperators.h
+ *
+ * The public interface to the cmzn_fields that perform logical operations.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -23,7 +20,7 @@ The public interface to the cmzn_fields that perform logical operations.
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one AND source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see field.h.
@@ -31,12 +28,12 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_and(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
-/***************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one EQUALS that component of source_field_two, 0 otherwise.
  * Automatic scalar broadcast will apply, see field.h.
@@ -44,13 +41,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_and(cmzn_fieldmodule_id fie
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_equal_to(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
-/*****************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one is greater than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see field.h.
@@ -58,13 +55,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_equal_to(
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
-/*****************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one is less than the component value in source_field_two.
  * Automatic scalar broadcast will apply, see field.h.
@@ -72,13 +69,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_less_than(
 	cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
-/***************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one OR source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see field.h.
@@ -86,24 +83,24 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_less_than(
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_or(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
-/***************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of the
  * source_field is zero, 0 otherwise; effectively a component-wise logical not
  * operator. Returned field has same number of components as source field.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The source field.
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_not(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one OR source_field_two is non-zero (but not both), 0 otherwise.
  * Automatic scalar broadcast will apply, see field.h.
@@ -111,7 +108,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_not(cmzn_fieldmodule_id fie
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_xor(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);

@@ -1,5 +1,5 @@
 /**
- * FILE : cinline.h
+ * @file cinline.h
  *
  */
 /* OpenCMISS-Zinc Library

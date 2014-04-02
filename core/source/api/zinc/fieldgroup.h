@@ -1,5 +1,5 @@
 /**
- * FILE : fieldgroup.h
+ * @file fieldgroup.h
  *
  * Implements a zinc field which maintains a group or selection of objects
  * from the region including the region itself, other fields representing domain
@@ -35,7 +35,7 @@ extern "C" {
  * in the group, 0 otherwise.
  *
  * @param field_module  Region field module which will own new field.
- * @return  Handle to newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_module);
 
@@ -45,8 +45,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id f
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The generic field to be cast.
- * @return  Group specific representation if the input field is of this type,
- * otherwise NULL.
+ * @return  Handle to derived group field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_group_id cmzn_field_cast_group(cmzn_field_id field);
 
@@ -197,7 +196,7 @@ ZINC_API int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_regi
  *
  * @param group  Handle to group field to modify.
  * @param subregion  Handle to region to create a subgroup for.
- * @return  Handle to new, empty sub-group field on success, NULL on failure.
+ * @return  Handle to new, empty subregion group field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 	cmzn_field_group_id group, cmzn_region_id subregion);
@@ -209,13 +208,13 @@ ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
  *
  * @param group  Handle to group field to query.
  * @param subregion  Handle to region to get the subgroup for.
- * @return  Handle to sub-group field or NULL if none.
+ * @return  Handle to subregion group field, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_field_group_id group,
 	cmzn_region_id subregion);
 
 /**
- * Create and return a handle to a node group field compatible with the supplied
+ * Create and return a node group field compatible with the supplied
  * nodeset, i.e. able to contain nodes from its master nodeset.
  * The node group field is registered as a sub-object group for this group.
  * The nodeset can be from the group's own region or any subregion of it.
@@ -227,7 +226,7 @@ ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_fie
  * @param group  Handle to group field to modify.
  * @param nodeset  Handle to a nodeset the node group is to be compatible with.
  * If not already a master nodeset, the master is obtained from it.
- * @return  Handle to new node group field, or NULL on failure.
+ * @return  Handle to new, empty node group field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
 	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
@@ -241,13 +240,13 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
  * @param group  Handle to group field to query.
  * @param nodeset  Handle to a nodeset the node group is to be compatible with.
  * If not already a master nodeset, the master is obtained from it.
- * @return  Handle to node group field, or NULL if none.
+ * @return  Handle to node group field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
 	cmzn_field_group_id group, cmzn_nodeset_id nodeset);
 
 /**
- * Create and return a handle to an element group field compatible with the
+ * Create and return an element group field compatible with the
  * supplied mesh, i.e. able to contain elements from its master mesh. The
  * element group field is registered as a sub-object group for this group.
  * The mesh can be from the group's own region or any subregion of it.
@@ -259,7 +258,7 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
  * @param group  Handle to group field to modify.
  * @param mesh  Handle to a mesh the element group is to be compatible with.
  * If not already a master mesh, the master is obtained from it.
- * @return  Handle to new element group field, or NULL on failure.
+ * @return  Handle to new, empty element group field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_element_group_id cmzn_field_group_create_field_element_group(
 	cmzn_field_group_id group, cmzn_mesh_id mesh);
@@ -273,7 +272,7 @@ ZINC_API cmzn_field_element_group_id cmzn_field_group_create_field_element_group
  * @param group  Handle to group field to query.
  * @param mesh  Handle to a mesh the element group is to be compatible with.
  * If not already a master mesh, the master is obtained from it.
- * @return  Handle to element group field, or NULL if none.
+ * @return  Handle to element group field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_element_group_id cmzn_field_group_get_field_element_group(
 	cmzn_field_group_id group, cmzn_mesh_id mesh);
@@ -283,7 +282,7 @@ ZINC_API cmzn_field_element_group_id cmzn_field_group_get_field_element_group(
  *
  * @param group the group field
  * @param domain the domain field
- * @returns the subgroup field for the specified domain, NULL otherwise
+ * @return  Handle to field representing subobject group, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_field_for_domain_field(
 	cmzn_field_group_id group, cmzn_field_id domain);
@@ -292,7 +291,7 @@ ZINC_API cmzn_field_id cmzn_field_group_get_subobject_group_field_for_domain_fie
  * Return the first non-empty subregion group in the group tree including itself.
  *
  * @param group  the group field
- * @returns  the first non-empty subregion group field, NULL otherwise.
+ * @returns  Handle to first non-empty subregion group field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_group_id cmzn_field_group_get_first_non_empty_subregion_field_group(
 	cmzn_field_group_id group);

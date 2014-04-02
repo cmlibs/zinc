@@ -1,5 +1,5 @@
 /**
- * FILE : status.hpp
+ * @file status.hpp
  *
  * C++ function status/error codes.
  *

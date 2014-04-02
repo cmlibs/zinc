@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : node.h
+/**
+ * @file node.h
  *
  * The public interface to cmzn_node.
  *
@@ -53,7 +53,7 @@ ZINC_API char *cmzn_node_value_label_enum_to_string(enum cmzn_node_value_label t
  *
  * @param fieldmodule  The field module the nodeset belongs to.
  * @param domain_type  CMZN_FIELD_DOMAIN_TYPE_NODES or CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS.
- * @return  Handle to the nodeset, or 0 if error.
+ * @return  Handle to the nodeset, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 	cmzn_fieldmodule_id fieldmodule, enum cmzn_field_domain_type domain_type);
@@ -71,7 +71,7 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
  *
  * @param fieldmodule  The field module the nodeset belongs to.
  * @param name  The name of the nodeset.
- * @return  Handle to the nodeset, or 0 if error.
+ * @return  Handle to the nodeset, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
 	cmzn_fieldmodule_id fieldmodule, const char *nodeset_name);
@@ -81,7 +81,7 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
  * Caller is responsible for destroying the new handle.
  *
  * @param nodeset  The nodeset to obtain a new reference to.
- * @return  New nodeset handle with incremented reference count.
+ * @return  New handle to nodeset, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeset_id cmzn_nodeset_access(cmzn_nodeset_id nodeset);
 
@@ -109,7 +109,7 @@ ZINC_API bool cmzn_nodeset_contains_node(cmzn_nodeset_id nodeset, cmzn_node_id n
  * Also used for defining new fields on existing nodes.
  *
  * @param nodeset  Handle to the nodeset the template works with.
- * @return  Handle to node_template, or NULL if error.
+ * @return  Handle to new nodetemplate, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodetemplate_id cmzn_nodeset_create_nodetemplate(
 	cmzn_nodeset_id nodeset);
@@ -123,7 +123,7 @@ ZINC_API cmzn_nodetemplate_id cmzn_nodeset_create_nodetemplate(
  * to automatically generate, starting from 1. Fails if supplied identifier
  * already used by an existing node.
  * @param node_template  Template for defining node fields.
- * @return  Handle to newly created node, or NULL if error.
+ * @return  Handle to new node, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_node_id cmzn_nodeset_create_node(cmzn_nodeset_id nodeset,
 	int identifier, cmzn_nodetemplate_id node_template);
@@ -137,7 +137,7 @@ ZINC_API cmzn_node_id cmzn_nodeset_create_node(cmzn_nodeset_id nodeset,
  * given new identifiers.
  *
  * @param nodeset  Handle to the nodeset to iterate over.
- * @return  Handle to node_iterator at position before first, or NULL if error.
+ * @return  Handle to new node iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeiterator_id cmzn_nodeset_create_nodeiterator(
 	cmzn_nodeset_id nodeset);
@@ -181,7 +181,7 @@ ZINC_API int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
  *
  * @param nodeset  Handle to the nodeset to find the node in.
  * @param identifier  Non-negative integer identifier of node.
- * @return  Handle to the node, or NULL if not found.
+ * @return  Handle to node, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_node_id cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_id nodeset,
 	int identifier);
@@ -190,7 +190,7 @@ ZINC_API cmzn_node_id cmzn_nodeset_find_node_by_identifier(cmzn_nodeset_id nodes
  * Returns handle to field module for region this nodeset belongs to.
  *
  * @param nodeset  The nodeset from which to obtain the field module.
- * @return  Handle to field module object. Up to caller to destroy.
+ * @return  Handle to field module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_nodeset_get_fieldmodule(cmzn_nodeset_id nodeset);
 
@@ -199,8 +199,7 @@ ZINC_API cmzn_fieldmodule_id cmzn_nodeset_get_fieldmodule(cmzn_nodeset_id nodese
  * same as the supplied nodeset if it is a master.
  *
  * @param nodeset  The nodeset to query.
- * @return  Handle to the master nodeset. Caller is responsible for destroying
- * the returned handle.
+ * @return  Handle to master nodeset, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeset_id cmzn_nodeset_get_master_nodeset(cmzn_nodeset_id nodeset);
 
@@ -237,8 +236,7 @@ ZINC_API bool cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodes
  * Caller is responsible for destroying the returned reference.
  *
  * @param field  The nodeset to be cast.
- * @return  Nodeset group specific representation if the input nodeset is of
- * this type, otherwise returns NULL.
+ * @return  Handle to derived nodeset group, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_nodeset_group_id cmzn_nodeset_cast_group(cmzn_nodeset_id nodeset);
 
@@ -314,7 +312,7 @@ ZINC_API int cmzn_nodeset_group_remove_nodes_conditional(
  * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The node iterator to obtain a new reference to.
- * @return  New node iterator handle with incremented reference count.
+ * @return  New handle to the node iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeiterator_id cmzn_nodeiterator_access(
 	cmzn_nodeiterator_id node_iterator);
@@ -333,7 +331,7 @@ ZINC_API int cmzn_nodeiterator_destroy(cmzn_nodeiterator_id *node_iterator_addre
  * returned node handle.
  *
  * @param node_iterator  Node iterator to query and advance.
- * @return  Handle to the next node, or NULL if none remaining.
+ * @return  Handle to the next node, or NULL/invalid handle if none remaining or failed.
  */
 ZINC_API cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator);
 
@@ -341,8 +339,8 @@ ZINC_API cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator)
  * Returns a new handle to the node template with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The node template to obtain a new reference to.
- * @return  New node template handle with incremented reference count.
+ * @param mesh  Handle to a node template.
+ * @return  New handle to the node template, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodetemplate_id cmzn_nodetemplate_access(
 	cmzn_nodetemplate_id node_template);
@@ -436,8 +434,7 @@ ZINC_API int cmzn_nodetemplate_set_value_number_of_versions(
  * @param node_template  Node template to query.
  * @param field  The field to get time sequence for. May be finite_element
  * type only.
- * @return  Handle to time sequence object if defined for field, or NULL if none
- * or error. Up to caller to destroy returned handle.
+ * @return  Handle to time sequence, or NULL/invalid handle if none set or failed.
  */
 ZINC_API cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field);
@@ -479,7 +476,7 @@ ZINC_API int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template
  * Caller is responsible for destroying the new handle.
  *
  * @param node  The node to obtain a new reference to.
- * @return  New node handle with incremented reference count.
+ * @return  New handle to the node, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_node_id cmzn_node_access(cmzn_node_id node);
 
@@ -517,7 +514,7 @@ ZINC_API int cmzn_node_set_identifier(cmzn_node_id node, int identifier);
  * Get the nodeset which owns this node.
  *
  * @param node  The node to query.
- * @return  Handle to the owning nodeset, or 0 if error. Up to caller to destroy.
+ * @return  Handle to the owning nodeset, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeset_id cmzn_node_get_nodeset(cmzn_node_id node);
 
@@ -535,7 +532,7 @@ ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_templa
  * Caller is responsible for destroying the new handle.
  *
  * @param nodesetchanges  The nodeset changes to obtain a new reference to.
- * @return  New nodeset changes handle with incremented reference count.
+ * @return  New handle to the nodeset changes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodesetchanges_id cmzn_nodesetchanges_access(
 	cmzn_nodesetchanges_id nodesetchanges);

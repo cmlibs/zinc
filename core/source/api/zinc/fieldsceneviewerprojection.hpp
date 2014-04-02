@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldsceneviewerprojection.hpp
+/**
+ * @file fieldsceneviewerprojection.hpp
  */
 /* OpenCMISS-Zinc Library
 *

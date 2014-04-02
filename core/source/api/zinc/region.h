@@ -1,5 +1,5 @@
 /**
- * FILE : region.h
+ * @file region.h
  *
  * The public interface to region objects used to managed models and submodels
  * in a tree-like structure. Each region owns its own fields and subregions,
@@ -33,11 +33,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the region with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the region with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param region  The region to obtain a new reference to.
- * @return  New region reference with incremented reference count.
+ * @param region  Handle to a region.
+ * @return  New handle to region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_region_access(cmzn_region_id region);
 
@@ -121,18 +121,18 @@ ZINC_API char *cmzn_region_get_name(cmzn_region_id region);
 ZINC_API int cmzn_region_set_name(cmzn_region_id region, const char *name);
 
 /**
- * Returns a reference to the parent region of this region.
+ * Returns a handle to the parent region of this region.
  *
  * @param region  The child region.
- * @return  Accessed reference to parent region, or NULL if none.
+ * @return  Handle to parent region, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_get_parent(cmzn_region_id region);
 
 /**
- * Returns a reference to the first child region of this region.
+ * Returns a handle to the first child region of this region.
  *
  * @param region  The region whose first child is requested.
- * @return  Accessed reference to first child region, or NULL if none.
+ * @return  Handle to first child region, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_get_first_child(cmzn_region_id region);
 
@@ -140,7 +140,7 @@ ZINC_API cmzn_region_id cmzn_region_get_first_child(cmzn_region_id region);
  * Returns a reference to this region's next sibling region.
  *
  * @param region  The region whose next sibling is requested.
- * @return  Accessed reference to next sibling region, or NULL if none.
+ * @return  Handle to next sibling region, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_get_next_sibling(cmzn_region_id region);
 
@@ -148,7 +148,7 @@ ZINC_API cmzn_region_id cmzn_region_get_next_sibling(cmzn_region_id region);
  * Returns a reference to this region's previous sibling region.
  *
  * @param region  The region whose previous sibling is requested.
- * @return  Accessed reference to previous sibling region, or NULL if none.
+ * @return  Handle to previous sibling region, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_get_previous_sibling(cmzn_region_id region);
 
@@ -215,35 +215,35 @@ ZINC_API bool cmzn_region_contains_subregion(cmzn_region_id region,
 	cmzn_region_id subregion);
 
 /**
- * Returns a reference to the child region with supplied name, if any.
+ * Finds child region with supplied name, if any.
  *
- * @param region  The region to search.
+ * @param region  Handle to region to search.
  * @param name  The name of the child.
- * @return  Accessed reference to the named child, or NULL if no match.
+ * @return  Handle to child region, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_find_child_by_name(
 	cmzn_region_id region, const char *name);
 
 /**
- * Returns a reference to the subregion at the path relative to this region.
+ * Returns a handle to the subregion at the path relative to this region.
  * The format of the path string is CHILD_NAME/CHILD_NAME/...
  * i.e. forward slash characters '/' are used as parent/child name separators.
  * Single leading and trailing separator characters are ignored.
  * Hence, both name="" and name="/" find the region itself.
  *
- * @param region  The region to search.
+ * @param region  Handle to the top region to search.
  * @param path  The directory-style path to the subregion.
- * @return  Accessed reference to subregion, or NULL no match.
+ * @return  Handle to subregion, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_region_id cmzn_region_find_subregion_at_path(cmzn_region_id region,
 	const char *path);
 
 /**
- * Returns field module container for this region's fields, which must be passed
+ * Get field module which manages this region's fields, which must be passed
  * to field factory create methods.
  *
- * @param region  The region from which to obtain the field module.
- * @return  Handle to field module object. Up to caller to destroy.
+ * @param region  Handle to region.
+ * @return  Handle to field module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
 
@@ -253,7 +253,7 @@ ZINC_API cmzn_fieldmodule_id cmzn_region_get_fieldmodule(cmzn_region_id region);
  *
  * @see cmzn_context_create_region
  * @param base_region  An existing region.
- * @return  Accessed reference to the newly created region, or NULL if none.
+ * @return  Handle to new region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region);
 
@@ -262,9 +262,9 @@ ZINC_API cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region);
  * Fails if a child of that name exists already.
  *
  * @see cmzn_region_set_name
- * @param parent_region  The parent region for the new region.
- * @param name  The name for the newly created region
- * @return  Accessed reference to the new child region, or NULL if failed.
+ * @param parent_region  Handle to parent region for the new region.
+ * @param name  The name for the new region.
+ * @return  Handle to new child region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_region_create_child(cmzn_region_id parent_region,
 	const char *name);
@@ -277,7 +277,7 @@ ZINC_API cmzn_region_id cmzn_region_create_child(cmzn_region_id parent_region,
  * @param top_region  The region the path is relative to.
  * @param path  Region path, a series of valid region names separated by a
  * forward slash "/". Leading and trailing separator slashes are optional.
- * @return  Accessed reference to the new subregion, or NULL if failed.
+ * @return  Handle to new subregion, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id top_region,
 	const char *path);
@@ -333,11 +333,11 @@ ZINC_API int cmzn_region_write(cmzn_region_id region,
 ZINC_API int cmzn_region_write_file(cmzn_region_id region, const char *file_name);
 
 /**
- * Return accessed handle to the scene for this region, which contains
+ * Return handle to the scene for this region, which contains
  * graphics for visualising fields in the region.
  *
  * @param cmiss_region  The region of query.
- * @return Accessed handle to scene for region, or 0 if none.
+ * @return  Handle to scene, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scene_id cmzn_region_get_scene(cmzn_region_id region);
 

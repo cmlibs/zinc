@@ -31,7 +31,7 @@ extern "C" {
  * Create a new cmgui context with an id <id>.
  *
  * @param id  The identifier given to the new context.
- * @return  a handle to a new cmzn_context if successfully create, otherwise NULL.
+ * @return  Handle to new context, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_context_id cmzn_context_create(const char *id);
 
@@ -40,7 +40,7 @@ ZINC_API cmzn_context_id cmzn_context_create(const char *id);
  * Caller is responsible for destroying the new reference.
  *
  * @param context  The context to obtain a new reference to.
- * @return  New region reference with incremented reference count.
+ * @return  New handle to context, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
 
@@ -57,8 +57,7 @@ ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
  * Returns the default region in the context.
  *
  * @param context  Handle to a context object.
- * @return  The handle to the default region of the context if successfully
- *    called, otherwise 0.
+ * @return  Handle to region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context);
 
@@ -69,7 +68,7 @@ ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context)
  *
  * @see cmzn_region_create_region
  * @param context  Handle to a context object.
- * @return  Reference to newly created region if successful, otherwise NULL.
+ * @return  Handle to new region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
 
@@ -77,7 +76,7 @@ ZINC_API cmzn_region_id cmzn_context_create_region(cmzn_context_id context);
  * Get the font module which manages fonts for rendering text in graphics.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the font module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the font module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
 	cmzn_context_id context);
@@ -88,7 +87,7 @@ ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
  * functions need to be called to define standard glyphs.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the glyph module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the glyph module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
 	cmzn_context_id context);
@@ -100,8 +99,7 @@ ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
  * standard and custom materials can be defined using material module functions.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the material module, or 0 on error. Up to caller to
- * destroy.
+ * @return  Handle to the material module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_materialmodule_id cmzn_context_get_materialmodule(
 	cmzn_context_id context);
@@ -111,8 +109,7 @@ ZINC_API cmzn_materialmodule_id cmzn_context_get_materialmodule(
  * contents of scenes with scenepicker and sceneviewer etc.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the scene filter module, or 0 on error. Up to caller to
- * destroy.
+ * @return  Handle to the scene filter module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
 	cmzn_context_id context);
@@ -122,8 +119,7 @@ ZINC_API cmzn_scenefiltermodule_id cmzn_context_get_scenefiltermodule(
  * for rendering 3-D scenes into rectangular windows or canvases using OpenGL.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the sceneviewer module, or 0 on error. Up to caller to
- * destroy.
+ * @return  Handle to the sceneviewer module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
 	cmzn_context_id context);
@@ -133,7 +129,7 @@ ZINC_API cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
  * graphics data fields are converted into colours.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the spectrum module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the spectrum module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
 	cmzn_context_id context);
@@ -143,7 +139,7 @@ ZINC_API cmzn_spectrummodule_id cmzn_context_get_spectrummodule(
  * approximated by line segments in graphics.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the tesselation module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the tesselation module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
 	cmzn_context_id context);
@@ -153,7 +149,7 @@ ZINC_API cmzn_tessellationmodule_id cmzn_context_get_tessellationmodule(
  * zinc objects.
  *
  * @param context  The context to request the module from.
- * @return  Handle to the timekeeper module, or 0 on error. Up to caller to destroy.
+ * @return  Handle to the timekeeper module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(
 	cmzn_context_id context);

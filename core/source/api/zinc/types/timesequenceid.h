@@ -1,5 +1,5 @@
 /**
- * FILE : timesequenceid.h
+ * @file timesequenceid.h
  *
  */
 /* OpenCMISS-Zinc Library

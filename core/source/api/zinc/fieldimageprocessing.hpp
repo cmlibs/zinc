@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldimageprocessing.hpp
+/**
+ * @file fieldimageprocessing.hpp
  */
 /* OpenCMISS-Zinc Library
 *

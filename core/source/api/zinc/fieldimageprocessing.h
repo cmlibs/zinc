@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : fieldimageprocessing.h
-
-LAST MODIFIED : 26 Septemeber 2008
-
-DESCRIPTION :
-Implements zinc fields which deal with image processing
-==============================================================================*/
+/**
+ * @file fieldimageprocessing.h
+ *
+ * Implements zinc fields which deal with image processing
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -24,21 +21,23 @@ Implements zinc fields which deal with image processing
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a field performing ITK binary dilate image filter on scalar source
  * field image. Sets number of components to same number as <source_field>.
  * The <radius> and <dilate_value> specify the radius of pixels to use
  * for dilation and what pixel value to use for dilation
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_dilate(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	int radius, double dilate_value);
 
-/***************************************************************************//**
+/**
  * Creates a field performing ITK binary erode image filter on scalar source
  * field image. Sets number of components to same number as <source_field>.
  * The <radius> and <erode_value> specify the radius of pixels to use
  * for dilation and what pixel value to use for dilation
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_erode(
 		cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -53,8 +52,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_erode(
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field to be filtered
- * @return  Newly created field
-*/
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_threshold(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
@@ -64,13 +63,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_threshol
  * Caller is responsible for destroying the new image filter reference.
  *
  * @param field  Id of the field to cast
- * @return  Id of the cast field, or NULL
-*/
+ * @return  Handle to derived image filter binary threshold field, or NULL/invalid handle if wrong type or failed.
+ */
 ZINC_API cmzn_field_imagefilter_binary_threshold_id
 	cmzn_field_cast_imagefilter_binary_threshold(cmzn_field_id field);
 
 /**
- *  Get the lower threshold value for this image filter.
+ * Get the lower threshold value for this image filter.
  *
  * @param imagefilter_binary_threshold  handle of the binary threshold image filter.
  * @return  the lower threshold set for this filter.
@@ -137,9 +136,10 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_binary_threshold_base_cast(
 ZINC_API int cmzn_field_imagefilter_binary_threshold_destroy(
 	cmzn_field_imagefilter_binary_threshold_id *imagefilter_binary_threshold_address);
 
-/***************************************************************************//**
+/**
  * Creates a field returning result of ITK canny edge detection filter on the
  * source field image. Sets number of components to same number as source field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_canny_edge_detection(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -149,6 +149,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_canny_edge_dete
 /**
  * Creates a field performing ITK connected threshold image filter on scalar
  * source field image. Sets number of components to same number as source field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_connected_threshold(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -165,7 +166,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_connected_thres
  * @param timeStep  The time step
  * @param conductance  The conductance
  * @param numIterations  The number of iterations to be performed
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -183,7 +184,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_curvature_aniso
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field to be filtered
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
@@ -194,13 +195,13 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_discrete_gaussi
  * Caller is responsible for destroying the new image filter reference.
  *
  * @param field Id of the field to cast
- * @return Id of the cast field, or NULL
-*/
+ * @return  Handle to derived image filter discrete gaussian field, or NULL/invalid handle if wrong type or failed.
+ */
 ZINC_API cmzn_field_imagefilter_discrete_gaussian_id
 	cmzn_field_cast_imagefilter_discrete_gaussian(cmzn_field_id field);
 
 /**
- *  Get the variance value for this image filter.
+ * Get the variance value for this image filter.
  *
  * @param imagefilter_threshold  handle of the threshold image filter.
  * @return  the current variance value set on this filter.
@@ -209,7 +210,7 @@ ZINC_API double cmzn_field_imagefilter_discrete_gaussian_get_variance(
 	cmzn_field_imagefilter_discrete_gaussian_id imagefilter_discrete_gaussian);
 
 /**
- *  Set the variance for this image filter.
+ * Set the variance for this image filter.
  *
  * Increasing the variance increases the width of the gaussian distribution
  * used and hence the number of pixels used to calculate the weighted average.
@@ -224,7 +225,7 @@ ZINC_API int cmzn_field_imagefilter_discrete_gaussian_set_variance(
 	double variance);
 
 /**
- *  Get the max kernel width for this image filter.
+ * Get the max kernel width for this image filter.
  *
  * @param imagefilter_threshold  handle of the threshold image filter.
  * @return  the current variance value set on this filter.
@@ -233,7 +234,7 @@ ZINC_API int cmzn_field_imagefilter_discrete_gaussian_get_max_kernel_width(
 	cmzn_field_imagefilter_discrete_gaussian_id imagefilter_discrete_gaussian);
 
 /**
- *  Set the max kernel width for this image filter.
+ * Set the max kernel width for this image filter.
  *
  * The max kernel width is a limit is set on the filter
  * to approximate the guassian to ensure the calculation completes.
@@ -274,36 +275,40 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_discrete_gaussian_base_cast(
 ZINC_API int cmzn_field_imagefilter_discrete_gaussian_destroy(
 		cmzn_field_imagefilter_discrete_gaussian_id *imagefilter_discrete_gaussian_address);
 
-/***************************************************************************//**
+/**
  * Creates a field performing ITK gradient magnitude recursive gaussian image
  * filter on scalar source field image.
  * Sets number of components to same number as <source_field>.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_gradient_magnitude_recursive_gaussian(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	double sigma);
 
-/***************************************************************************//**
+/**
  * Create field performing ITK mean image filter on source_field image.
  * The <radius_sizes> is a vector of integers of dimension specified by the
  * <source_field> dimension.
  * Sets number of components to same number as <source_field>.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_mean(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	int valuesCount, const int *radius_sizes);
 
-/***************************************************************************//**
+/**
  * Creates a field performing ITK rescale intensity image filter on scalar
  * source field image. Sets number of components to same number as source field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_rescale_intensity(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	double outputMin, double outputMax);
 
-/***************************************************************************//**
+/**
  * Creates a field performing ITK sigmoid image filter on scalar source field
  * image. Sets number of components to same number as <source_field>.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_sigmoid(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -316,9 +321,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_sigmoid(
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The field to be filtered
- *
- * @return Newly created field
-*/
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
@@ -328,8 +332,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
  * Caller is responsible for destroying the new image filter reference.
  *
  * @param field Id of the field to cast
- * @return Id of the cast field, or NULL
-*/
+ * @return  Handle to derived image filter threshold field, or NULL/invalid handle if wrong type or failed.
+ */
 ZINC_API cmzn_field_imagefilter_threshold_id cmzn_field_cast_imagefilter_threshold(cmzn_field_id field);
 
 /**
@@ -444,15 +448,14 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_imagefilter_threshold_base_cast(
 ZINC_API int cmzn_field_imagefilter_threshold_destroy(
 		cmzn_field_imagefilter_threshold_id *imagefilter_threshold_address);
 
-/***************************************************************************//**
+/**
  * Creates a field performing ITK histogram image filter on source field image.
  * If neither histogramMinimum or histogramMaximum are specified then the minimums and
  * maximums are calculated based on the minimum and maximum values in the input image.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The field to generate the histogram for.
- *
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
@@ -463,8 +466,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
  * Caller is responsible for destroying the new image filter reference.
  *
  * @param field Id of the field to cast
- * @return Id of the cast field, or NULL
-*/
+ * @return  Handle to derived image filter histogram field, or NULL/invalid handle if wrong type or failed.
+ */
 ZINC_API cmzn_field_imagefilter_histogram_id cmzn_field_cast_imagefilter_histogram(cmzn_field_id field);
 
 /**

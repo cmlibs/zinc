@@ -1,5 +1,5 @@
 /**
- * FILE : elementid.h
+ * @file elementid.h
  *
  */
 /* OpenCMISS-Zinc Library

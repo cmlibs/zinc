@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldgroup.hpp
+/**
+ * @file fieldgroup.hpp
  */
 /* OpenCMISS-Zinc Library
 *

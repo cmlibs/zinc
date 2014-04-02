@@ -1,5 +1,5 @@
 /**
- * FILE : sceneviewer.hpp
+ * @file sceneviewer.hpp
  */
 /* OpenCMISS-Zinc Library
 *

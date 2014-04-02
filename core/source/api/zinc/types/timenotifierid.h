@@ -1,5 +1,5 @@
 /**
- * FILE : timenotifierid.h
+ * @file timenotifierid.h
  *
  */
 /* OpenCMISS-Zinc Library
