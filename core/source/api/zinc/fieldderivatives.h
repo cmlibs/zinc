@@ -1,9 +1,8 @@
-/*******************************************************************************
-FILE : fieldderivatives.h
-
-DESCRIPTION :
-The public interface to the cmzn_fields that perform derivation.
-==============================================================================*/
+/**
+ * @file fieldderivatives.h
+ *
+ * The public interface to the Zinc fields that evaluate derivatives.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -30,7 +29,7 @@ extern "C" {
  * @param source_field  Source field to get derivative number.
  * @param xi_index  Element coordinate system index for derivative, from 1 to
  * element dimension.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_derivative(
 	cmzn_fieldmodule_id field_module,
@@ -44,7 +43,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_derivative(
  * @param vector_field  Vector field from which curl is evaluated. Must have
  * rectangular cartesian coordinate system.
  * @param coordinate_field  Field supplying location.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_curl(
 	cmzn_fieldmodule_id field_module,
@@ -60,7 +59,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_curl(
  * @param vector_field  Vector field from which divergence is evaluated. Must
  * have rectangular cartesian coordinate system.
  * @param coordinate_field  Field supplying location.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
 	cmzn_fieldmodule_id field_module,
@@ -84,7 +83,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to calculate gradients for.
  * @param coordinate_field  Field supplying location.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_gradient(
 	cmzn_fieldmodule_id field_module,

@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldderivatives.hpp
+/**
+ * @file fieldderivatives.hpp
  */
 /* OpenCMISS-Zinc Library
 *

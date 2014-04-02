@@ -1,5 +1,5 @@
 /**
- * FILE : fieldsceneviewerprojection.h
+ * @file fieldsceneviewerprojection.h
  *
  * A field which extract a transformation matrix from a scene viewer for use in
  * field expressions.
@@ -42,7 +42,7 @@ extern "C" {
  * transformation.
  * @param to_coordinate_system  The output coordinate system for the
  * transformation.
- * @return  Newly created field with 16 components.
+ * @return  Handle to new field with 16 components, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sceneviewer_projection(
 	cmzn_fieldmodule_id field_module, cmzn_sceneviewer_id sceneviewer,

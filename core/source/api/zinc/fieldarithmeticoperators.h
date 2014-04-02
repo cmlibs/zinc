@@ -1,5 +1,5 @@
 /**
- * FILE : fieldarithmeticoperators.h
+ * @file fieldarithmeticoperators.h
  *
  * The public interface to the cmzn_fields that perform arithmetic operators.
  */
@@ -28,7 +28,7 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_power(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
@@ -42,7 +42,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_power(cmzn_fieldmodule_id f
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_multiply(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
@@ -56,7 +56,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_multiply(cmzn_fieldmodule_i
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
@@ -70,7 +70,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divide(cmzn_fieldmodule_id 
  * @param field_module  Region field module which will own new field.
  * @param source_field_one First input field
  * @param source_field_two Second input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_add(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
@@ -84,7 +84,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_add(cmzn_fieldmodule_id fie
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First input field
  * @param source_field_two  Second input field
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field_one,
@@ -96,7 +96,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_subtract(cmzn_fieldmodule_i
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_log(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
@@ -107,7 +107,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_log(cmzn_fieldmodule_id fie
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
@@ -118,7 +118,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sqrt(cmzn_fieldmodule_id fi
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
@@ -129,7 +129,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_exp(cmzn_fieldmodule_id fie
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The input field
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_abs(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);

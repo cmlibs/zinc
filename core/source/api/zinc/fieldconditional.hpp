@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldconditional.hpp
+/**
+ * @file fieldconditional.hpp
  */
 /* OpenCMISS-Zinc Library
 *

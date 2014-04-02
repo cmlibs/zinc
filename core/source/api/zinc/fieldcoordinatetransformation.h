@@ -1,5 +1,5 @@
-/*******************************************************************************
- * FILE : fieldcoordinatetransformation.h
+/**
+ * @file fieldcoordinatetransformation.h
  *
  * Field coordinate transformation operators.
  */
@@ -20,7 +20,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a field which performs a coordinate transformation from the source
  * field values in their coordinate system type into the coordinate system type
  * of this field. Returned field has 3 components.
@@ -29,12 +29,12 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field with values in its own coordinate system.
  * Must have 1 to 3 components.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_coordinate_transformation(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
-/***************************************************************************//**
+/**
  * Create a field which performs a coordinate transformation of vectors from
  * their original coordinate system and coordinate positions, to the coordinate
  * system of this field. Sets the number of components in returned field to 3
@@ -45,7 +45,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_coordinate_transformation(
  * (1,2 or 3 components), two vectors (4 or 6 components) or three vectors
  * (9 components).
  * @param coordinate_field  Field giving location where vector value is from.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_vector_coordinate_transformation(
 	cmzn_fieldmodule_id field_module, cmzn_field_id vector_field,

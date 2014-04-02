@@ -1,5 +1,5 @@
 /**
- * FILE : nodeid.h
+ * @file nodeid.h
  *
  */
 /* OpenCMISS-Zinc Library

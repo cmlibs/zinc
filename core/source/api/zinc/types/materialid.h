@@ -1,5 +1,5 @@
 /**
- * FILE : materialid.h
+ * @file materialid.h
  *
  */
 /* OpenCMISS-Zinc Library

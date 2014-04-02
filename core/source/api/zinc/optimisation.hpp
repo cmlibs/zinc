@@ -1,5 +1,5 @@
 /**
- * FILE : optimisation.hpp
+ * @file optimisation.hpp
  */
 /* OpenCMISS-Zinc Library
 *
@@ -67,7 +67,7 @@ public:
 		METHOD_LEAST_SQUARES_QUASI_NEWTON = CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON
 	};
 
-	/***************************************************************************//**
+	/**
 	 * Labels of optimisation attributes which may be set or obtained using generic
 	 * get/set_attribute functions.
 	 */

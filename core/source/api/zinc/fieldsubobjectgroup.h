@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldsubobjectgroup.h
+/**
+ * @file fieldsubobjectgroup.h
  *
  * Implements region sub object groups, e.g. node group, element group.
  * These group fields evaluate to 1 (true) at domain locations in the group, and
@@ -26,7 +26,7 @@
 extern "C" {
 #endif
 
-/***************************************************************************//**
+/**
  * Creates a node group field which packages a cmzn_nodeset_group i.e. a subset
  * of nodes from a master nodeset. As a field it evaluates to 1 for nodes in
  * the nodeset group and 0 elsewhere, i.e. it is the predicate for the sub-
@@ -37,22 +37,22 @@ extern "C" {
  * @param mesh  Handle to a nodeset the node group is to be compatible with. If
  * it is not a master nodeset, the master is obtained from it.
  * Nodeset must be from the same region as field_module.
- * @return  Newly created field, or NULL if failed.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_group(
 	cmzn_fieldmodule_id field_module, cmzn_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * If field can be cast to a cmzn_field_node_group_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new reference.
+ * and return the field.
+ * Caller is responsible for destroying the returned handle.
  *
  * @param field  handle to the field to cast
- * @return  handle of the cast field, or NULL
-*/
+ * @return  Handle to derived node group field, or NULL/invalid handle if wrong type or failed.
+ */
 ZINC_API cmzn_field_node_group_id cmzn_field_cast_node_group(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Cast node group field back to its base field and return the field.  Otherwise
  * return NULL.
  *
@@ -64,7 +64,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_node_group_base_cast(cmzn_field_node_grou
 	return (cmzn_field_id)(group);
 }
 
-/***************************************************************************//**
+/**
  * Destroy the reference to the node group.
  *
  * @param group_address  address to the handle to the node group field
@@ -73,17 +73,17 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_node_group_base_cast(cmzn_field_node_grou
  */
 ZINC_API int cmzn_field_node_group_destroy(cmzn_field_node_group_id *node_group_address);
 
-/***************************************************************************//**
+/**
  * Get a handle to the 'dual' nodeset group of this node group, which provides
  * most of the methods for working with it.
  *
  * @param node_group  Handle to node group field.
- * @return  Handle to nodeset group. Caller is responsible for destroying this.
+ * @return  Handle to nodeset group, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	cmzn_field_node_group_id node_group);
 
-/***************************************************************************//**
+/**
  * Creates an element group field which packages a cmzn_mesh_group i.e. a
  * subset of elements from a master mesh. As a field it evaluates to 1 for
  * elements in the mesh group and 0 elsewhere, i.e. it is the predicate for the
@@ -94,22 +94,22 @@ ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
  * @param mesh  Handle to a finite element mesh the element group is to be
  * compatible with. If it is not a master mesh, the master is obtained from it.
  * Mesh must be from the same region as field_module.
- * @return  Newly created field, or NULL if failed.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_element_group(
 	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh);
 
-/***************************************************************************//**
+/**
  * If field can be cast to a cmzn_field_element_group_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new reference.
+ * and return the field.
+ * Caller is responsible for destroying the returned handle.
  *
  * @param field  handle to the field to cast
- * @return  handle of the cast field, or NULL
-*/
+ * @return  Handle to derived element group field, or NULL/invalid handle if wrong type or failed.
+ */
 ZINC_API cmzn_field_element_group_id cmzn_field_cast_element_group(cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Cast element group field back to its base field and return the field.  Otherwise
  * return NULL.
  *
@@ -121,7 +121,7 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_element_group_base_cast(cmzn_field_elemen
 	return (cmzn_field_id)(group);
 }
 
-/***************************************************************************//**
+/**
  * Destroy the reference to the element group.
  *
  * @param element_group_address  address to the handle to the element group field
@@ -130,12 +130,12 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_element_group_base_cast(cmzn_field_elemen
  */
 ZINC_API int cmzn_field_element_group_destroy(cmzn_field_element_group_id *element_group_address);
 
-/***************************************************************************//**
+/**
  * Get a handle to the 'dual' mesh group of this element group, which provides
  * most of the methods for working with it.
  *
  * @param element_group  Handle to element group field.
- * @return  Handle to mesh group. Caller is responsible for destroying this.
+ * @return  Handle to mesh group, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_group_id cmzn_field_element_group_get_mesh_group(
 	cmzn_field_element_group_id element_group);

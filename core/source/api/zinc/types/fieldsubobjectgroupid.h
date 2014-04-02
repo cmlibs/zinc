@@ -1,5 +1,5 @@
 /**
- * FILE : fieldsubobjectgroupid.h
+ * @file fieldsubobjectgroupid.h
  *
  */
 /* OpenCMISS-Zinc Library

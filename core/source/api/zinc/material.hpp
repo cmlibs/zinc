@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : material.hpp
+/**
+ * @file material.hpp
  */
 /* OpenCMISS-Zinc Library
 *

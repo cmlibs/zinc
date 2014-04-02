@@ -1,5 +1,5 @@
 /**
- * FILE : region.hpp
+ * @file region.hpp
  */
 /* OpenCMISS-Zinc Library
 *

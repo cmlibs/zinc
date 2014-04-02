@@ -1,5 +1,5 @@
 /**
- * FILE : spectrum.hpp
+ * @file spectrum.hpp
  */
 /* OpenCMISS-Zinc Library
 *

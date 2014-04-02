@@ -1,5 +1,5 @@
 /**
- * FILE : element.h
+ * @file element.h
  *
  * The public interface to cmzn_element, finite element meshes.
  */
@@ -80,7 +80,7 @@ ZINC_API char *cmzn_elementbasis_function_type_enum_to_string(
  * @param dimension  The dimension of element chart the basis is for.
  * @param function_type  The basis function type to use in each dimension
  * i.e. basis function is initially homogeneous.
- * @return  Handle to element_basis, or NULL if error.
+ * @return  Handle to new element basis, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
 	cmzn_fieldmodule_id fieldmodule, int dimension,
@@ -93,7 +93,7 @@ ZINC_API cmzn_elementbasis_id cmzn_fieldmodule_create_elementbasis(
  *
  * @param fieldmodule  The field module the mesh belongs to.
  * @param dimension  The dimension of the mesh from 1 to 3.
- * @return  Handle to the finite element mesh, or NULL if error.
+ * @return  Handle to the mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	cmzn_fieldmodule_id fieldmodule, int dimension);
@@ -110,7 +110,7 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
  *
  * @param fieldmodule  The field module the mesh belongs to.
  * @param name  The name of the finite element mesh.
- * @return  Handle to the finite element mesh, or NULL if error.
+ * @return  Handle to the mesh, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 	cmzn_fieldmodule_id fieldmodule, const char *mesh_name);
@@ -120,7 +120,7 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
  * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The mesh to obtain a new reference to.
- * @return  New mesh handle with incremented reference count.
+ * @return  New handle to the mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_mesh_access(cmzn_mesh_id mesh);
 
@@ -148,7 +148,7 @@ ZINC_API bool cmzn_mesh_contains_element(cmzn_mesh_id mesh,
  * Also used for defining new fields over elements.
  *
  * @param mesh  Handle to the mesh the template works with.
- * @return  Handle to element_template, or NULL if error.
+ * @return  Handle to new element template, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
 	cmzn_mesh_id mesh);
@@ -163,7 +163,7 @@ ZINC_API cmzn_elementtemplate_id cmzn_mesh_create_elementtemplate(
  * automatically generate, starting from 1. Fails if supplied identifier already
  * used by an existing element.
  * @param element_template  Template for element shape and fields.
- * @return  Handle to newly created element, or NULL if error.
+ * @return  Handle to new element, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
 	int identifier, cmzn_elementtemplate_id element_template);
@@ -178,8 +178,7 @@ ZINC_API cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
  * given new identifiers.
  *
  * @param mesh  Handle to the mesh whose elements are to be iterated over.
- * @return  Handle to element_iterator at position before first, or NULL if
- * error.
+ * @return  Handle to new element iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementiterator_id cmzn_mesh_create_elementiterator(
 	cmzn_mesh_id mesh);
@@ -239,7 +238,7 @@ ZINC_API int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
  *
  * @param mesh  Handle to the mesh to find the element in.
  * @param identifier  Non-negative integer identifier of element.
- * @return  Handle to the element, or NULL if not found.
+ * @return  Handle to element, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
 	int identifier);
@@ -254,8 +253,7 @@ ZINC_API cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
  * @param order  The order of the derivative. Currently must be 1.
  * @param term  Which of the (dimensions)^order differential operators is
  * required, starting at 1. For order 1, corresponds to a chart axis.
- * @return  Handle to differential operator, or NULL if failed. Caller is
- * responsible for destroying the returned handle.
+ * @return  Handle to differential operator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term);
@@ -272,7 +270,7 @@ ZINC_API int cmzn_mesh_get_dimension(cmzn_mesh_id mesh);
  * Returns handle to field module for region this mesh belongs to.
  *
  * @param mesh  The mesh from which to obtain the field module.
- * @return  Handle to field module object. Up to caller to destroy.
+ * @return  Handle to field module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh);
 
@@ -281,8 +279,7 @@ ZINC_API cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh);
  * same as the supplied mesh if it is a master.
  *
  * @param mesh  The mesh to query.
- * @return  Handle to the master mesh. Caller is responsible for destroying
- * the returned handle.
+ * @return  Handle to the master mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh);
 
@@ -319,8 +316,7 @@ ZINC_API bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
  * Caller is responsible for destroying the returned reference.
  *
  * @param field  The mesh to be cast.
- * @return  Mesh group specific representation if the input mesh is of this
- * type, otherwise returns NULL.
+ * @return  Handle to derived mesh group, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_mesh_group_id cmzn_mesh_cast_group(cmzn_mesh_id mesh);
 
@@ -397,7 +393,7 @@ ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh
  * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The element basis to obtain a new reference to.
- * @return  New element basis handle with incremented reference count.
+ * @return  New handle to element basis, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementbasis_id cmzn_elementbasis_access(
 	cmzn_elementbasis_id element_basis);
@@ -472,7 +468,7 @@ ZINC_API int cmzn_elementbasis_get_number_of_functions(
  * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The element iterator to obtain a new reference to.
- * @return  New element iterator handle with incremented reference count.
+ * @return  New handle to element iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementiterator_id cmzn_elementiterator_access(
 	cmzn_elementiterator_id element_iterator);
@@ -493,7 +489,7 @@ ZINC_API int cmzn_elementiterator_destroy(
  * returned element handle.
  *
  * @param element_iterator  Element iterator to query and advance.
- * @return  Handle to the next element, or NULL if none remaining.
+ * @return  Handle to next element, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_element_id cmzn_elementiterator_next(
 	cmzn_elementiterator_id element_iterator);
@@ -503,7 +499,7 @@ ZINC_API cmzn_element_id cmzn_elementiterator_next(
  * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The element template to obtain a new reference to.
- * @return  New element template handle with incremented reference count.
+ * @return  New handle to element template, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_elementtemplate_id cmzn_elementtemplate_access(
 	cmzn_elementtemplate_id element_template);
@@ -600,7 +596,7 @@ ZINC_API int cmzn_elementtemplate_define_field_simple_nodal(
  *
  * @param element_template  Element template to query.
  * @param local_node_index  The index from 1 to number of nodes in template.
- * @return  Handle to the global node, or NULL if none or error.
+ * @return  Handle to global node, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_node_id cmzn_elementtemplate_get_node(
 	cmzn_elementtemplate_id element_template, int local_node_index);
@@ -622,8 +618,8 @@ ZINC_API int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_templ
  * Returns a new handle to the element with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param element  The element to obtain a new reference to.
- * @return  New element handle with incremented reference count.
+ * @param element  Handle to an element.
+ * @return  New handle to the element, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_element_id cmzn_element_access(cmzn_element_id element);
 
@@ -669,7 +665,7 @@ ZINC_API int cmzn_element_set_identifier(cmzn_element_id element, int identifier
  * Get the mesh which owns this element.
  *
  * @param element  The element to query.
- * @return  Handle to the owning mesh, or 0 if error. Up to caller to destroy.
+ * @return  Handle to the owning mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element);
 
@@ -702,7 +698,7 @@ ZINC_API int cmzn_element_merge(cmzn_element_id element,
  * Caller is responsible for destroying the new handle.
  *
  * @param meshchanges  The mesh changes to obtain a new reference to.
- * @return  New mesh changes handle with incremented reference count.
+ * @return  New handle to mesh changes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_meshchanges_id cmzn_meshchanges_access(
 	cmzn_meshchanges_id meshchanges);

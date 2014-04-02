@@ -1,5 +1,5 @@
 /**
- * FILE : fieldvectoroperators.h
+ * @file fieldvectoroperators.h
  *
  * The public interface to the cmzn_fields that perform vector operations.
  */
@@ -37,7 +37,7 @@ extern "C" {
  * result. Only 1, 2 and 3 fields i.e. 2-D, 3-D and 4-D are supported.
  * @param source_fields  Array of fields with number of components equal to the
  * dimension i.e. one more than the number_of_source_fields.
- * @return  Newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cross_product(
 	cmzn_fieldmodule_id field_module, int number_of_source_fields,
@@ -50,7 +50,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cross_product(
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First source field. Must have 3 components.
  * @param source_field_two  Second source field.  Must have 3 components.
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cross_product_3d(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field_one,
@@ -63,7 +63,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_cross_product_3d(
  * @param field_module  Region field module which will own new field.
  * @param source_field_one  First source field.
  * @param source_field_two  Second source field.
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_dot_product(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field_one,
@@ -74,7 +74,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_dot_product(
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to normalise.
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_magnitude(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
@@ -85,7 +85,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_magnitude(
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field to normalise.
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_normalise(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
@@ -98,7 +98,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_normalise(
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field whose components are to be summed.
- * @return  Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_sum_components(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);

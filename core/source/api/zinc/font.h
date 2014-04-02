@@ -1,5 +1,5 @@
 /**
- * font.h
+ * @file font.h
  *
  * Public interface to font class for rendering text with graphics.
  */
@@ -21,11 +21,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the font module with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the font module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
  * @param fontmodule  The font module to obtain a new reference to.
- * @return  font module with incremented reference count.
+ * @return  New handle to font module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fontmodule_id cmzn_fontmodule_access(
 	cmzn_fontmodule_id fontmodule);
@@ -42,11 +42,11 @@ ZINC_API int cmzn_fontmodule_destroy(
 	cmzn_fontmodule_id *fontmodule_address);
 
 /**
- * Create and return a handle to a new font.
+ * Create and return a new font.
  *
  * @param fontmodule  The handle to the font module the
  * font will belong to.
- * @return  Handle to the newly created font if successful, otherwise NULL.
+ * @return  Handle to new font, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_font_id cmzn_fontmodule_create_font(
 	cmzn_fontmodule_id fontmodule);
@@ -78,8 +78,7 @@ ZINC_API int cmzn_fontmodule_end_change(cmzn_fontmodule_id fontmodule);
  *
  * @param fontmodule  font module to search.
  * @param name  The name of the font.
- * @return  Handle to the font of that name, or 0 if not found.
- * 	Up to caller to destroy returned handle.
+ * @return  Handle to font, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_font_id cmzn_fontmodule_find_font_by_name(
 	cmzn_fontmodule_id fontmodule, const char *name);
@@ -88,8 +87,7 @@ ZINC_API cmzn_font_id cmzn_fontmodule_find_font_by_name(
  * Get the default font, if any.
  *
  * @param fontmodule  font module to query.
- * @return  Handle to the default font, or 0 if none.
- * 	Up to caller to destroy returned handle.
+ * @return  Handle to font, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_font_id cmzn_fontmodule_get_default_font(
 	cmzn_fontmodule_id fontmodule);
@@ -109,7 +107,7 @@ ZINC_API int cmzn_fontmodule_set_default_font(
  * Access the font, increase the access count of the font by one.
  *
  * @param font  handle to the "to be access" zinc font.
- * @return  handle to font if successfully access font.
+ * @return  New handle to font, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_font_id cmzn_font_access(cmzn_font_id font);
 
@@ -148,7 +146,7 @@ ZINC_API int cmzn_font_set_name(cmzn_font_id font, const char *name);
  * @param font  The font to query.
  * @return  The enumerated typeface type, or CMZN_FONT_TYPEFACE_TYPE_INVALID on error.
  */
-ZINC_API cmzn_font_typeface_type cmzn_font_get_typeface_type(cmzn_font_id font);
+ZINC_API enum cmzn_font_typeface_type cmzn_font_get_typeface_type(cmzn_font_id font);
 
 /**
  * Set the True Type typeface type of the font.
@@ -159,7 +157,7 @@ ZINC_API cmzn_font_typeface_type cmzn_font_get_typeface_type(cmzn_font_id font);
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_typeface_type(cmzn_font_id font,
-	cmzn_font_typeface_type typeface_type);
+	enum cmzn_font_typeface_type typeface_type);
 
 /**
  * Get the render type of the given font.
@@ -167,7 +165,7 @@ ZINC_API int cmzn_font_set_typeface_type(cmzn_font_id font,
  * @param font  The font to query.
  * @return The render type of font, or CMZN_FONT_RENDER_TYPE_INVALID on error.
  */
-ZINC_API cmzn_font_render_type cmzn_font_get_render_type(
+ZINC_API enum cmzn_font_render_type cmzn_font_get_render_type(
 	cmzn_font_id font);
 
 /**
@@ -179,7 +177,7 @@ ZINC_API cmzn_font_render_type cmzn_font_get_render_type(
  * any other value on failure.
  */
 ZINC_API int cmzn_font_set_render_type(cmzn_font_id font,
-	cmzn_font_render_type render_type);
+	enum cmzn_font_render_type render_type);
 
 /**
  * Query whether the font is bold.

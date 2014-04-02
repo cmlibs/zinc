@@ -1,5 +1,5 @@
 /**
- * FILE : differentialoperatorid.h
+ * @file differentialoperatorid.h
  *
  */
 /* OpenCMISS-Zinc Library

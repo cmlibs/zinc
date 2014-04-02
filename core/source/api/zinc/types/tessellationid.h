@@ -1,5 +1,5 @@
 /**
- * FILE : tessellationid.h
+ * @file tessellationid.h
  *
  */
 /* OpenCMISS-Zinc Library

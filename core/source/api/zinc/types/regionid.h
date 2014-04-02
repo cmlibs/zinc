@@ -1,5 +1,5 @@
 /**
- * FILE : regionid.h
+ * @file regionid.h
  *
  */
 /* OpenCMISS-Zinc Library

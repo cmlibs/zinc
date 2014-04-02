@@ -1,5 +1,5 @@
 /**
- * FILE : timenotifier.hpp
+ * @file timenotifier.hpp
  */
 /* OpenCMISS-Zinc Library
 *

@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : fieldtime.h
-
-LAST MODIFIED : 16 Nov 2011
-
-DESCRIPTION :
-Implements zinc fields that is controlled by time.
-==============================================================================*/
+/**
+ * @file fieldtime.h
+ *
+ * Implements zinc fields that is controlled by time.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -23,25 +20,26 @@ Implements zinc fields that is controlled by time.
 #ifdef __cplusplus
 extern "C" {
 #endif
-/***************************************************************************//**
+
+/**
  * Creates a field whose value equals the source_field evaluated at the time
  * given by time_field, overriding any time prescribed for field evaluation.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Field to evaluate.
  * @param time_field  Field providing time value to evaluate at.
- * @return  Handle to a new time lookup field on success, NULL on failure.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_time_lookup(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
 	cmzn_field_id time_field);
 
-/***************************************************************************//**
+/**
  * Creates a field which returns the current time from the supplied time keeper.
  *
  * @param field_module  Region field module which will own new field.
  * @param timekeeper  cmzn_timekeeper object.
- * @return  Handle to a new time value field on success, NULL on failure.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_time_value(
 	cmzn_fieldmodule_id field_module, cmzn_timekeeper_id timekeeper);

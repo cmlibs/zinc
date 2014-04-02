@@ -1,5 +1,5 @@
 /**
- * FILE : sceneviewer.h
+ * @file sceneviewer.h
  *
  * The public interface to the cmzn_sceneviewer object for rendering scenes.
  */

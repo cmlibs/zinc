@@ -1,11 +1,9 @@
-/*******************************************************************************
-FILE : fieldcomposite.h
-
-LAST MODIFIED : 13 May 2008
-
-DESCRIPTION :
-The public interface to the cmzn_fields that perform arithmetic operations.
-==============================================================================*/
+/**
+ * @file fieldcomposite.h
+ *
+ * Public interface to the field operators that rearrange components of other
+ * fields.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -24,7 +22,7 @@ The public interface to the cmzn_fields that perform arithmetic operations.
 extern "C" {
 #endif
 
-/*****************************************************************************//**
+/**
  * Creates a field with the single source field.  This field is useful
  * as a placeholder candidate for replacement with more complicated operations
  * later on.
@@ -32,31 +30,31 @@ extern "C" {
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field The field the values are copied from.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_identity(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field);
 
-/*****************************************************************************//**
+/**
  * Creates a field returning the component of the source field with the given
  * component_index, starting at 1.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The field the component value is copied from.
  * @param component_index  The component index from 1 to number of components.
- * @return  Newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_component(cmzn_fieldmodule_id field_module,
 	cmzn_field_id source_field, int component_index);
 
-/*****************************************************************************//**
+/**
  * Creates a field which concatenates the components of all source fields, in
  * order, into a single vector.
  *
  * @param field_module  Region field module which will own new field.
  * @param number_of_source_fields  The number of source fields in the array.
  * @param source_fields  The array of fields to be concatenating together.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodule_id field_module,
 	int number_of_source_fields, cmzn_field_id *source_fields);
@@ -67,8 +65,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodul
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The generic field to be cast.
- * @return  component specific representation if the input field is of this type,
- * otherwise NULL.
+ * @return  Handle to derived component field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_component_id cmzn_field_cast_component(cmzn_field_id field);
 

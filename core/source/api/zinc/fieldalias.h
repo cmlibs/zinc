@@ -1,5 +1,5 @@
-/*****************************************************************************//**
- * FILE : fieldalias.h
+/**
+ * @file fieldalias.h
  *
  * Implements a zinc field which is an alias for another field, commonly from a
  * different region to make it available locally.
@@ -31,7 +31,7 @@ extern "C" {
  * @param field_module  Region field module which will own new field.
  * @param original_field  The field which the new field will be an alias for. Can
  * be from a different region.
- * @return  Newly created alias field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_alias(cmzn_fieldmodule_id field_module,
 	cmzn_field_id original_field);

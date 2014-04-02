@@ -1,5 +1,5 @@
 /**
- * FILE : scenefilter.hpp
+ * @file scenefilter.hpp
  */
 /* OpenCMISS-Zinc Library
 *

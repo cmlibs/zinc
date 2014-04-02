@@ -1,5 +1,5 @@
 /**
- * FILE : fieldfiniteelement.h
+ * @file fieldfiniteelement.h
  *
  * Implements fields interpolated over finite element meshes with
  * parameters indexed by nodes.
@@ -31,7 +31,7 @@ extern "C" {
  *
  * @param field_module  Region field module which will own new field.
  * @param number_of_components  The number of components for the new field.
- * @return  Handle to the newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
 	cmzn_fieldmodule_id field_module, int number_of_components);
@@ -42,8 +42,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The field to be cast.
- * @return  Finite_element specific representation if the input field is of this
- * type, otherwise returns NULL.
+ * @return  Handle to derived finite element field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_finite_element_id cmzn_field_cast_finite_element(cmzn_field_id field);
 
@@ -84,7 +83,7 @@ ZINC_API int cmzn_field_finite_element_destroy(
  * restricted to having numerical values.
  * @param embedded_location_field  Field returning an embedded location, i.e.
  * find_mesh_location or stored mesh location fields.
- * @return Newly created field
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -103,7 +102,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
  * source_field. Must have the same number of numerical components as the
  * source_field, and at least as many as mesh dimension.
  * @param mesh  The mesh to find locations in.
- * @return  Newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
@@ -115,8 +114,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The field to be cast.
- * @return  Find_mesh_location specific representation if the input field is of
- * this type, otherwise returns NULL.
+ * @return  Handle to derived find mesh location field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_find_mesh_location_id cmzn_field_cast_find_mesh_location(
 	cmzn_field_id field);
@@ -153,7 +151,7 @@ ZINC_API int cmzn_field_find_mesh_location_destroy(
  * Returns the mesh the find_mesh_location field is to find locations in.
  *
  * @param find_mesh_location_field  The field to query.
- * @return  The mesh to find locations in. Caller must destroy returned handle.
+ * @return  Handle to the mesh, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_mesh_id cmzn_field_find_mesh_location_get_mesh(
 	cmzn_field_find_mesh_location_id find_mesh_location_field);
@@ -210,7 +208,7 @@ ZINC_API int cmzn_field_find_mesh_location_set_search_mode(
  * @param node_value_label  The label of the node value/derivative to return.
  * @param version_number  The version number of the value or derivative to
  * return, starting from 1.
- * @return  Handle to the newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	cmzn_fieldmodule_id field_module, cmzn_field_id field,
@@ -221,7 +219,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
  *
  * @param field_module  Region field module which will own new field.
  * @param mesh  The mesh for which locations are stored.
- * @return  Handle to the newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh);
@@ -231,8 +229,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The field to be cast.
- * @return  Stored_mesh_location specific representation if the input field is of
- * this type, otherwise returns NULL.
+ * @return  Handle to derived stored mesh location field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_stored_mesh_location_id cmzn_field_cast_stored_mesh_location(cmzn_field_id field);
 
@@ -268,7 +265,7 @@ ZINC_API int cmzn_field_stored_mesh_location_destroy(
  * Creates a field which stores and returns string values at nodes.
  *
  * @param field_module  Region field module which will own new field.
- * @return  Handle to the newly created field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
 	cmzn_fieldmodule_id field_module);
@@ -278,8 +275,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
  * Caller is responsible for destroying the returned derived field reference.
  *
  * @param field  The field to be cast.
- * @return  stored_string specific representation if the input field is of
- * this type, otherwise returns NULL.
+ * @return  Handle to derived stored string field, or NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_stored_string_id cmzn_field_cast_stored_string(cmzn_field_id field);
 

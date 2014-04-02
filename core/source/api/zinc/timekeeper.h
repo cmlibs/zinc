@@ -1,5 +1,5 @@
 /**
- * FILE : timekeeper.h
+ * @file timekeeper.h
  *
  * The public interface of timekeeper which maintains a current time and manages
  * several timenotifiers.

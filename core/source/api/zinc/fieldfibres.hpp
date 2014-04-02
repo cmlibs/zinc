@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldfibres.hpp
+/**
+ * @file fieldfibres.hpp
  */
 /* OpenCMISS-Zinc Library
 *

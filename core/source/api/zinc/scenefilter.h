@@ -1,5 +1,5 @@
 /**
- * FILE: scenefilter.h
+ * @file scenefilter.h
  *
  * Public interface to scene filter objects for controlling which parts of a
  * scene are visible or processed.
@@ -25,11 +25,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the scene filter module with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the scene filter module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
- * @param filtermodule  The scene filter module to obtain a new reference to.
- * @return  Scene filter module with incremented reference count.
+ * @param filtermodule  The scene filter module to obtain a new handle to.
+ * @return  New handle to scene filter module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefiltermodule_id cmzn_scenefiltermodule_access(
 	cmzn_scenefiltermodule_id filtermodule);
@@ -52,7 +52,7 @@ ZINC_API int cmzn_scenefiltermodule_destroy(
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
  * @param filtermodule  Scene filter module to add filter to.
- * @return  Handle to the new filter, or NULL on failure.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_visibility_flags(
 	cmzn_scenefiltermodule_id filtermodule);
@@ -63,8 +63,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_visibilit
  * @param filtermodule  The module to create the filter in.
  * @param domain_type  The field domain type graphics attribute to be matched by
  * this filter.
- * @return  Handle to the new filter, or NULL on failure. Up to caller to
- * destroy the returned handle.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_field_domain_type(
 	cmzn_scenefiltermodule_id filtermodule,
@@ -76,7 +75,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_field_dom
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
  * @param match_name  The name of a graphics must be matched by this filter.
- * @return  Handle to the new filter, or NULL on failure.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_name(
 	cmzn_scenefiltermodule_id filtermodule, const char *match_name);
@@ -87,7 +86,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
  * @param graphics_type  The type of a graphics must be matched by this filter.
- * @return  Handle to the new filter, or NULL on failure.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_type(
 	cmzn_scenefiltermodule_id filtermodule, enum cmzn_graphics_type graphics_type);
@@ -98,7 +97,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
  * @param match_region  The region to be matched by this filter.
- * @return  Handle to the new filter, or NULL on failure.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_region(
 	cmzn_scenefiltermodule_id filtermodule,cmzn_region_id match_region);
@@ -108,7 +107,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_region(
  * filters.
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
- * @return  Handle to the new filter, or NULL on failure.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_operator_and(
 	cmzn_scenefiltermodule_id filtermodule);
@@ -118,7 +117,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_operator_
  * filters.
  * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
- * @return  Handle to the new filter, or NULL on failure.
+ * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_operator_or(
 	cmzn_scenefiltermodule_id filtermodule);
@@ -152,8 +151,7 @@ ZINC_API int cmzn_scenefiltermodule_end_change(
  *
  * @param filtermodule  scene filter module to search.
  * @param name  The name of the scene filter.
- * @return  Handle to the scene filter of that name, or 0 if not found.
- * 	Up to caller to destroy returned handle.
+ * @return  Handle to scene filter, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_find_scenefilter_by_name(
 	cmzn_scenefiltermodule_id filtermodule, const char *name);
@@ -162,8 +160,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_find_scenefilter_by_name(
  * Get the default scene filter, if any.
  *
  * @param filtermodule  scene filter module to query.
- * @return  Handle to the default scene filter, or 0 if none.
- * 	Up to caller to destroy returned handle.
+ * @return  Handle to default scene filter, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_get_default_scenefilter(
 	cmzn_scenefiltermodule_id filtermodule);
@@ -179,16 +176,16 @@ ZINC_API int cmzn_scenefiltermodule_set_default_scenefilter(
 	cmzn_scenefiltermodule_id filtermodule, cmzn_scenefilter_id filter);
 
 /**
- * Returns a new reference to the filter with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the filter with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param filter  The filter to obtain a new reference to.
- * @return  New filter reference with incremented reference count.
+ * @param filter  The filter to obtain a new handle to.
+ * @return  New handle to scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefilter_access(cmzn_scenefilter_id filter);
 
 /**
- * Destroys this reference to the filter (and sets it to NULL).
+ * Destroys this handle to the filter (and sets it to NULL).
  * Internally this just decrements the reference count.
  *
  * @param filter_address  The address to the handle of the filter
@@ -277,8 +274,8 @@ ZINC_API int cmzn_scenefilter_set_inverse(cmzn_scenefilter_id filter,
  * Caller is responsible for destroying the returned derived filter reference.
  *
  * @param filter  The generic filter to be cast.
- * @return  Operator specific representation if the input filter is of this type,
- * otherwise NULL.
+ * @return  Handle to derived scene filter operator, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_scenefilter_operator_id cmzn_scenefilter_cast_operator(
 	cmzn_scenefilter_id filter);
@@ -326,7 +323,7 @@ ZINC_API int cmzn_scenefilter_operator_append_operand(
 /**
  * Get the first operand filter in the operator filter's list of operands.
  * @param operator_filter  The operator filter to be iterated over.
- * @return  Handle to the first operand, or NULL if none or invalid argument.
+ * @return  Handle to first operand scene filter, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefilter_operator_get_first_operand(
 	cmzn_scenefilter_operator_id operator_filter);
@@ -337,7 +334,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefilter_operator_get_first_operand(
  *
  * @param operator_filter  The operator filter to be iterated over.
  * @param ref_operand  The filter to be referenced
- * @return  Handle to the next operand, or NULL if none or invalid argument.
+ * @return  Handle to next operand scene filter, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefilter_operator_get_next_operand(
 	cmzn_scenefilter_operator_id operator_filter,

@@ -1,5 +1,5 @@
 /**
- * FILE : graphicsid.h
+ * @file graphicsid.h
  *
  */
 /* OpenCMISS-Zinc Library

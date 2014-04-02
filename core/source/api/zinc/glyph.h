@@ -1,5 +1,5 @@
 /**
- * glyph.h
+ * @file glyph.h
  *
  * Public interface to cmzn_glyph static graphics objects used to visualise
  * points in the scene.
@@ -24,11 +24,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the glyph module with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the glyph module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
  * @param glyphmodule  The glyph module to obtain a new reference to.
- * @return  Glyph module with incremented reference count.
+ * @return  New handle to glyph module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyphmodule_id cmzn_glyphmodule_access(
 	cmzn_glyphmodule_id glyphmodule);
@@ -54,7 +54,7 @@ ZINC_API int cmzn_glyphmodule_destroy(
  */
 ZINC_API int cmzn_glyphmodule_begin_change(cmzn_glyphmodule_id glyphmodule);
 
-/***************************************************************************//**
+/**
  * Decrement cache level or end caching of changes for the glyph module.
  * Call cmzn_glyphmodule_begin_change before making multiple changes
  * and call this afterwards. When change level is restored to zero,
@@ -117,8 +117,7 @@ ZINC_API int cmzn_glyphmodule_define_standard_glyphs(
  *
  * @param glyphmodule  Glyph module to search.
  * @param name  The name of the glyph.
- * @return  Handle to the glyph of that name, or 0 if not found.
- * Up to caller to destroy returned handle.
+ * @return  Handle to glyph, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
 	cmzn_glyphmodule_id glyphmodule, const char *name);
@@ -128,8 +127,7 @@ ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_name(
  *
  * @param glyphmodule  Glyph module to search.
  * @param glyph_type  A glyph type identifier.
- * @return  Handle to a glyph with that type, or 0 if not found.
- * Up to caller to destroy returned handle.
+ * @return  Handle to glyph, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_glyph_shape_type(
 	cmzn_glyphmodule_id glyphmodule, enum cmzn_glyph_shape_type glyph_type);
@@ -138,8 +136,7 @@ ZINC_API cmzn_glyph_id cmzn_glyphmodule_find_glyph_by_glyph_shape_type(
  * Get the default glyph used for new point graphics, if any.
  *
  * @param glyphmodule  Glyph module to query.
- * @return  Handle to the default point glyph, or 0 if none.
- * Up to caller to destroy returned handle.
+ * @return  Handle to glyph, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphmodule_get_default_point_glyph(
 	cmzn_glyphmodule_id glyphmodule);
@@ -159,7 +156,7 @@ ZINC_API int cmzn_glyphmodule_set_default_point_glyph(
  * Caller is responsible for destroying the new reference.
  *
  * @param glyph  The glyph to obtain a new reference to.
- * @return  New glyph reference with incremented reference count.
+ * @return  New handle to glyph, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyph_id cmzn_glyph_access(cmzn_glyph_id glyph);
 
@@ -223,7 +220,7 @@ ZINC_API int cmzn_glyph_set_name(cmzn_glyph_id glyph, const char *name);
  * @param axis_width  The width of each axis glyph when drawn at unit length;
  * a fraction of 1 to give an appropriate arrow head size. Typically 0.1 for
  * glyph 'axis', 0.25 for glyph 'arrow_solid'. Must be non-negative.
- * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
+ * @return  Handle to new glyph, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_glyph_axes(
 	cmzn_glyphmodule_id glyphmodule, cmzn_glyph_id axis_glyph,
@@ -233,8 +230,8 @@ ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_glyph_axes(
  * If the glyph is type axes, returns the type-specific handle.
  *
  * @param glyph  The glyph to be cast.
- * @return  Axes glyph specific representation if the input is the correct
- * glyph type, otherwise returns NULL.
+ * @return  Handle to derived axes glyph, or NULL/invalid handle if wrong type
+ * or failed.
  */
 ZINC_API cmzn_glyph_axes_id cmzn_glyph_cast_axes(cmzn_glyph_id glyph);
 
@@ -309,7 +306,7 @@ ZINC_API int cmzn_glyph_axes_set_axis_label(cmzn_glyph_axes_id axes,
  *
  * @param axes  The axes glyph to query.
  * @param axis_number  The axis number from 1 to 3.
- * @return  Handle to material or NULL if none or error. Up to caller to destroy.
+ * @return  Handle to material, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_material_id cmzn_glyph_axes_get_axis_material(
 	cmzn_glyph_axes_id axes, int axis_number);
@@ -334,7 +331,7 @@ ZINC_API int cmzn_glyph_axes_set_axis_material(cmzn_glyph_axes_id axes,
  *
  * @param glyphmodule  The glyph module to create the glyph in.
  * @param spectrum  The spectrum to be displayed on the colour bar.
- * @return  Handle to new glyph or 0 on error. Up to caller to destroy.
+ * @return  Handle to new glyph, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_glyph_colour_bar(
 	cmzn_glyphmodule_id glyphmodule, cmzn_spectrum_id spectrum);
@@ -343,8 +340,8 @@ ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_glyph_colour_bar(
  * If the glyph is type colour bar, returns the type-specific handle.
  *
  * @param glyph  The glyph to be cast.
- * @return  Colour bar glyph specific representation if the input is the correct
- * glyph type, otherwise returns NULL.
+ * @return  Handle to derived colour bar glyph, or NULL/invalid handle if wrong
+ * type or failed.
  */
 ZINC_API cmzn_glyph_colour_bar_id cmzn_glyph_cast_colour_bar(cmzn_glyph_id glyph);
 
@@ -470,8 +467,7 @@ ZINC_API int cmzn_glyph_colour_bar_set_label_divisions(
  * Gets the material used for colour bar labels and ticks. Can be NULL.
  *
  * @param colour_bar  The colour bar glyph to query.
- * @return  Handle to label material, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to material, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_material_id cmzn_glyph_colour_bar_get_label_material(
 	cmzn_glyph_colour_bar_id colour_bar);

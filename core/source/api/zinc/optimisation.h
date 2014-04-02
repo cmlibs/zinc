@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * @file optimisation.h
  *
  * The public interface to cmzn_optimisation class which can minimise N
@@ -33,27 +33,26 @@ extern "C" {
  ----------------
  */
 
-/***************************************************************************//**
+/**
  * Create an optimisation object for optimising values and parameters of fields
  * from a field module.
  *
  * @param field_module  The field module to optimise fields from.
- * @return  Handle to the newly created optimisation object, or NULL on failure.
- * cmzn_optimisation_destroy must be called to destroy the handle.
+ * @return  Handle to new optimisation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_optimisation_id cmzn_fieldmodule_create_optimisation(
 	cmzn_fieldmodule_id field_module);
 
-/*******************************************************************************
+/**
  * Returns a new handle to the optimisation with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
  * @param optimisation  The optimisation to obtain a new reference to.
- * @return  New optimisation handle with incremented reference count.
+ * @return  New handle to optimisation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id optimisation);
 
-/***************************************************************************//**
+/**
  * Destroys reference to the optimisation object and sets pointer/handle to NULL.
  *
  * @param optimisation_address  Address of optimisation object reference.
@@ -61,7 +60,7 @@ ZINC_API cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id opti
  */
 ZINC_API int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address);
 
-/***************************************************************************//**
+/**
  * Get the current optimisation method for the given optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -70,7 +69,7 @@ ZINC_API int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_addres
 ZINC_API enum cmzn_optimisation_method cmzn_optimisation_get_method(
 	cmzn_optimisation_id optimisation);
 
-/***************************************************************************//**
+/**
  * Set the optimisation method for the given optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -80,7 +79,7 @@ ZINC_API enum cmzn_optimisation_method cmzn_optimisation_get_method(
 ZINC_API int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
 		enum cmzn_optimisation_method method);
 
-/***************************************************************************//**
+/**
  * Convert a short name into an enum if the name matches any of the members in
  * the enum.
  *
@@ -90,7 +89,7 @@ ZINC_API int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
 ZINC_API enum cmzn_optimisation_method cmzn_optimisation_method_enum_from_string(
 	const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
@@ -99,7 +98,7 @@ ZINC_API enum cmzn_optimisation_method cmzn_optimisation_method_enum_from_string
  */
 ZINC_API char *cmzn_optimisation_method_enum_to_string(enum cmzn_optimisation_method method);
 
-/***************************************************************************//**
+/**
  * Get an integer or Boolean attribute of the optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -109,7 +108,7 @@ ZINC_API char *cmzn_optimisation_method_enum_to_string(enum cmzn_optimisation_me
 ZINC_API int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimisation,
 	enum cmzn_optimisation_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Set an integer or Boolean attribute of the optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -122,7 +121,7 @@ ZINC_API int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimi
 ZINC_API int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
 	enum cmzn_optimisation_attribute attribute, int value);
 
-/***************************************************************************//**
+/**
  * Get a real attribute of the optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -132,7 +131,7 @@ ZINC_API int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimi
 ZINC_API double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimisation,
 	enum cmzn_optimisation_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Set a real attribute of the optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -144,7 +143,7 @@ ZINC_API double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimi
 ZINC_API int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
 	enum cmzn_optimisation_attribute attribute, double value);
 
-/***************************************************************************//**
+/**
  * Convert a short attribute name into an enum if the attribute name matches
  * any of the members in the enum.
  *
@@ -154,7 +153,7 @@ ZINC_API int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisat
 ZINC_API enum cmzn_optimisation_attribute cmzn_optimisation_attribute_enum_from_string(
 	const char *string);
 
-/***************************************************************************//**
+/**
  * Return an allocated short name of the enum type from the provided enum.
  * User must call cmzn_deallocate to destroy the successfully returned string.
  *
@@ -164,18 +163,17 @@ ZINC_API enum cmzn_optimisation_attribute cmzn_optimisation_attribute_enum_from_
 ZINC_API char *cmzn_optimisation_attribute_enum_to_string(
 	enum cmzn_optimisation_attribute attribute);
 
-/***************************************************************************//**
+/**
  * Get the first independent field from the optimisation problem description.
  * @see cmzn_optimisation_get_next_independent_field
  *
  * @param optimisation  Handle to the optimisation object to query.
- * @return  Handle to first independent field or NULL if none. Up to caller to
- * destroy the returned handle.
+ * @return  Handle to first independent field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_first_independent_field(
 	cmzn_optimisation_id optimisation);
 
-/***************************************************************************//**
+/**
  * Get the next independent field in the optimisation problem description after
  * the supplied ref_field. Use to iterate over the independent fields, taking
  * care to destroy all returned field handles exactly once:
@@ -190,13 +188,13 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_first_independent_field(
  *
  * @param optimisation  Handle to the optimisation object to query.
  * @param ref_field  Handle to an independent field from the optimisation.
- * @return  Handle to next independent field after ref_field or NULL if none.
- * Up to caller to destroy the returned handle.
+ * @return  Handle to next independent field after ref_field,
+ * or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_next_independent_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id ref_field);
 
-/***************************************************************************//**
+/**
  * Add an independent field to the given optimisation problem description.
  * Valid independent fields are limited to constant and finite_element types.
  * The parameters of these fields are modified to minimise the objective fields.
@@ -213,7 +211,7 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_next_independent_field(
 ZINC_API int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
 	cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Remove an independent field from the optimisation problem.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -224,18 +222,17 @@ ZINC_API int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimi
 ZINC_API int cmzn_optimisation_remove_independent_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Get the first objective field from the optimisation problem description.
  * @see cmzn_optimisation_get_next_objective_field
  *
  * @param optimisation  Handle to the optimisation object to query.
- * @return  Handle to first objective field or NULL if none. Up to caller to
- * destroy the returned handle.
+ * @return  Handle to first objective field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_first_objective_field(
 	cmzn_optimisation_id optimisation);
 
-/***************************************************************************//**
+/**
  * Get the next objective field in the optimisation problem description after
  * the supplied ref_field. Use to iterate over the objective fields, taking
  * care to destroy all returned field handles exactly once:
@@ -250,13 +247,13 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_first_objective_field(
  *
  * @param optimisation  Handle to the optimisation object to query.
  * @param ref_field  Handle to an objective field from the optimisation.
- * @return  Handle to next objective field after ref_field or NULL if none.
- * Up to caller to destroy the returned handle.
+ * @return  Handle to next objective field after ref_field,
+ * or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_optimisation_get_next_objective_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id ref_field);
 
-/***************************************************************************//**
+/**
  * Add an objective field to the optimisation problem description.
  * Valid objective fields must be spatially constant. The least squares solution
  * method treats fields performing a sum of squares (nodeset_sum_squares,
@@ -274,7 +271,7 @@ ZINC_API cmzn_field_id cmzn_optimisation_get_next_objective_field(
 ZINC_API int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisation,
 	cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Remove an objective field from the optimisation problem.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -285,7 +282,7 @@ ZINC_API int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisa
 ZINC_API int cmzn_optimisation_remove_objective_field(
 	cmzn_optimisation_id optimisation, cmzn_field_id field);
 
-/***************************************************************************//**
+/**
  * Get a textual report on the last solution.
  *
  * @param optimisation  Handle to the optimisation object to query.
@@ -294,7 +291,7 @@ ZINC_API int cmzn_optimisation_remove_objective_field(
  */
 ZINC_API char *cmzn_optimisation_get_solution_report(cmzn_optimisation_id optimisation);
 
-/***************************************************************************//**
+/**
  * Perform the optimisation described by the provided optimisation object.
  *
  * @param optimisation Handle to the zinc optimisation object.

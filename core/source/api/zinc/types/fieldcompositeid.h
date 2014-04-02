@@ -1,5 +1,5 @@
 /**
- * FILE : fieldcompositeid.h
+ * @file fieldcompositeid.h
  *
  */
 /* OpenCMISS-Zinc Library

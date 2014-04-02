@@ -44,7 +44,7 @@ ZINC_API int cmzn_tessellationmodule_destroy(
 	cmzn_tessellationmodule_id *tessellationmodule_address);
 
 /**
- * Create and return a handle to a new tessellation.
+ * Create and return a new tessellation.
  *
  * @param tessellationmodule  The handle to the tessellation module the
  * tessellation will belong to.

@@ -1,5 +1,5 @@
 /**
- * FILE : streamid.h
+ * @file streamid.h
  *
  */
 /* OpenCMISS-Zinc Library

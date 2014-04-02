@@ -1,5 +1,5 @@
 /**
- * FILE : streamimage.h
+ * @file streamimage.h
  *
  * Public interface to image field stream objects.
  */

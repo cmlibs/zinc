@@ -1,5 +1,5 @@
 /**
- * FILE : graphics.hpp
+ * @file graphics.hpp
  */
 /* OpenCMISS-Zinc Library
 *

@@ -1,5 +1,5 @@
 /**
- * FILE : sceneviewerinputid.h
+ * @file sceneviewerinputid.h
  *
  */
 /* OpenCMISS-Zinc Library

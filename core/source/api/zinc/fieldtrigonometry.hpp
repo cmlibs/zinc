@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldtrigonometry.hpp
+/**
+ * @file fieldtrigonometry.hpp
  */
 /* OpenCMISS-Zinc Library
 *

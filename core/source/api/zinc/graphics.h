@@ -1,5 +1,5 @@
 /**
- * FILE : graphics.h
+ * @file graphics.h
  *
  * The public interface to a zinc graphics which produces a 3-D graphics
  * object from an algorithm using fields in a region.
@@ -31,11 +31,11 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the graphics with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the graphics with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
  * @param graphics  The graphics to obtain a new reference to.
- * @return  New graphics reference with incremented reference count.
+ * @return  New handle to graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics);
 
@@ -51,8 +51,7 @@ ZINC_API int cmzn_graphics_destroy(cmzn_graphics_id *graphics_address);
  * Gets the field supplying coordinates for the graphics.
  *
  * @param graphics  The graphics to be queried.
- * @return  Handle to coordinate field, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to coordinate field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_get_coordinate_field(
 	cmzn_graphics_id graphics);
@@ -73,8 +72,7 @@ ZINC_API int cmzn_graphics_set_coordinate_field(cmzn_graphics_id graphics,
  * Gets the data field used with the spectrum to colour the graphics.
  *
  * @param graphics  The graphics to be queried.
- * @return  Handle to data field, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to data field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_get_data_field(cmzn_graphics_id graphics);
 
@@ -92,8 +90,7 @@ ZINC_API int cmzn_graphics_set_data_field(cmzn_graphics_id graphics,
  * Gets the material giving the colour/shading of the graphics when unselected.
  *
  * @param graphics  The graphics to query.
- * @return  Handle to material, or 0 if error. Up to caller to destroy returned
- * handle.
+ * @return  Handle to material, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_material_id cmzn_graphics_get_material(
 	cmzn_graphics_id graphics);
@@ -226,8 +223,7 @@ ZINC_API int cmzn_graphics_set_select_mode(cmzn_graphics_id graphics,
  * Gets the material giving the colour/shading of the graphics when selected.
  *
  * @param graphics  The graphics to query.
- * @return  Handle to material, or 0 if error. Up to caller to destroy returned
- * handle.
+ * @return  Handle to material, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_material_id cmzn_graphics_get_selected_material(
 	cmzn_graphics_id graphics);
@@ -246,8 +242,7 @@ ZINC_API int cmzn_graphics_set_selected_material(cmzn_graphics_id graphics,
  * Gets the spectrum used with the data field to colour the graphics.
  *
  * @param graphics  The graphics to be queried.
- * @return  Handle to spectrum, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to spectrum, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_spectrum_id cmzn_graphics_get_spectrum(cmzn_graphics_id graphics);
 
@@ -265,8 +260,7 @@ ZINC_API int cmzn_graphics_set_spectrum(cmzn_graphics_id graphics,
  * Gets the field which returns true/non-zero for primitive to be created.
  *
  * @param graphics  The graphics to be queried.
- * @return  Handle to subgroup field, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to subgroup field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_get_subgroup_field(cmzn_graphics_id graphics);
 
@@ -288,7 +282,7 @@ ZINC_API int cmzn_graphics_set_subgroup_field(cmzn_graphics_id graphics,
  * Caller must destroy reference.
  *
  * @param graphics  The graphics to query.
- * @return  Handle to tessellation, or 0 if none or error.
+ * @return  Handle to tessellation, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_graphics_get_tessellation(cmzn_graphics_id graphics);
 
@@ -307,7 +301,7 @@ ZINC_API int cmzn_graphics_set_tessellation(
  * Gets the field controlling tessellation quality.
  *
  * @param graphics  The graphics to query.
- * @return  Handle to field, or 0 if error. Up to caller to destroy handle.
+ * @return  Handle to tessellation field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_get_tessellation_field(
 	cmzn_graphics_id graphics);
@@ -328,10 +322,11 @@ ZINC_API int cmzn_graphics_set_tessellation_field(cmzn_graphics_id graphics,
 
 /**
  * Get the texture coordinate field of the graphics.
- * Caller must destroy reference.
+ * Caller must destroy handle.
  *
  * @param graphics  The graphics to query.
- * @return  Handle to field, or 0 if none or error.
+ * @return  Handle to texture coordinate field, or NULL/invalid handle if none
+ * or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_get_texture_coordinate_field(
 	cmzn_graphics_id graphics);
@@ -407,11 +402,10 @@ ZINC_API int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics,
 	enum cmzn_element_face_type face_type);
 
 /**
- * Return accessed handle to the scene owning this graphics.
+ * Get the scene owning this graphics.
  *
  * @param graphics  The graphics to query.
- * @return  Handle to scene owning graphics, or 0 if none. Up to caller
- * to destroy.
+ * @return  Handle to scene owning graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scene_id cmzn_graphics_get_scene(cmzn_graphics_id graphics);
 
@@ -503,8 +497,8 @@ ZINC_API int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
  * Caller is responsible for destroying the new contours graphics reference.
  *
  * @param graphics  The graphics to be cast.
- * @return  Contours graphics specific representation if the input is the correct
- * graphics type, otherwise returns NULL.
+ * @return  Handle to derived contours graphics, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_graphics_contours_id cmzn_graphics_cast_contours(cmzn_graphics_id graphics);
 
@@ -536,8 +530,7 @@ ZINC_API int cmzn_graphics_contours_destroy(cmzn_graphics_contours_id *contours_
  * Gets the isoscalar field for the contours graphics.
  *
  * @param contours  The contours graphics to query.
- * @return  Handle to isoscalar field, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to isoscalar field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_contours_get_isoscalar_field(
 	cmzn_graphics_contours_id contours);
@@ -638,8 +631,8 @@ ZINC_API int cmzn_graphics_contours_set_range_isovalues(
  * Caller is responsible for destroying the new lines graphics reference.
  *
  * @param graphics  The graphics to be cast.
- * @return  Lines graphics specific representation if the input is the correct
- * graphics type, otherwise returns NULL.
+ * @return  Handle to derived lines graphics, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_graphics_lines_id cmzn_graphics_cast_lines(cmzn_graphics_id graphics);
 
@@ -673,8 +666,8 @@ ZINC_API int cmzn_graphics_lines_destroy(cmzn_graphics_lines_id *lines_address);
  * Caller is responsible for destroying the new points graphics reference.
  *
  * @param graphics  The graphics to be cast.
- * @return  Points graphics specific representation if the input is the correct
- * graphics type, otherwise returns NULL.
+ * @return  Handle to derived points graphics, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_graphics_points_id cmzn_graphics_cast_points(cmzn_graphics_id graphics);
 
@@ -708,8 +701,8 @@ ZINC_API int cmzn_graphics_points_destroy(cmzn_graphics_points_id *points_addres
  * Caller is responsible for destroying the new streamlines graphics reference.
  *
  * @param graphics  The graphics to be cast.
- * @return  Streamlines graphics specific representation if the input is the correct
- * graphics type, otherwise returns NULL.
+ * @return  Handle to derived streamlines graphics, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_graphics_streamlines_id cmzn_graphics_cast_streamlines(cmzn_graphics_id graphics);
 
@@ -741,8 +734,8 @@ ZINC_API int cmzn_graphics_streamlines_destroy(cmzn_graphics_streamlines_id *str
  * Gets the vector field the streamline is tracking along.
  *
  * @param streamlines  The streamlines graphics to query.
- * @return  Handle to stream vector field, or 0 if none or error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to stream vector field, or NULL/invalid handle if none or
+ * failed.
  */
 ZINC_API cmzn_field_id cmzn_graphics_streamlines_get_stream_vector_field(
 	cmzn_graphics_streamlines_id streamlines);
@@ -812,8 +805,8 @@ ZINC_API int cmzn_graphics_streamlines_set_track_length(
  * Caller is responsible for destroying the new surfaces graphics reference.
  *
  * @param graphics  The graphics to be cast.
- * @return  Surfaces graphics specific representation if the input is the correct
- * graphics type, otherwise returns NULL.
+ * @return  Handle to derived surfaces graphics, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_graphics_surfaces_id cmzn_graphics_cast_surfaces(cmzn_graphics_id graphics);
 
@@ -846,18 +839,18 @@ ZINC_API int cmzn_graphics_surfaces_destroy(cmzn_graphics_surfaces_id *surfaces_
  * line attribute object for specifying section profile and scaling.
  *
  * @param graphics  The graphics to request line attributes from.
- * @return  Handle to line attributes object, or 0 if not supported for
- * graphics type or error. Up to caller to destroy returned handle.
+ * @return  Handle to graphics line attributes, or NULL/invalid handle if
+ * not supported by graphics type or failed.
  */
 ZINC_API cmzn_graphicslineattributes_id cmzn_graphics_get_graphicslineattributes(
 	cmzn_graphics_id graphics);
 
 /**
- * Returns a new reference to the line attributes with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the line attributes with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
  * @param line_attributes  The line_attributes to obtain a new reference to.
- * @return  New line attributes reference with incremented reference count.
+ * @return  New handle to graphics line attributes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphicslineattributes_id cmzn_graphicslineattributes_access(
 	cmzn_graphicslineattributes_id line_attributes);
@@ -918,8 +911,7 @@ ZINC_API int cmzn_graphicslineattributes_set_base_size(
  * @see cmzn_graphicslineattributes_set_orientation_scale_field
  *
  * @param line_attributes  The line attributes to query.
- * @return Handle to orientation scale field, or 0 if none or error. Up to
- * caller to destroy the returned handle.
+ * @return  Handle to orientation scale field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphicslineattributes_get_orientation_scale_field(
 	cmzn_graphicslineattributes_id line_attributes);
@@ -1011,18 +1003,18 @@ ZINC_API int cmzn_graphicslineattributes_set_shape_type(
  * object for specifying glyph, scaling fields, scale factors and labels.
  *
  * @param graphics  The graphics to request point attributes from.
- * @return  Handle to point attributes object, or 0 if not supported for
- * graphics type or error. Up to caller to destroy returned handle.
+ * @return  Handle to graphics point attributes, or NULL/invalid handle if
+ * not supported by graphics type or failed.
  */
 ZINC_API cmzn_graphicspointattributes_id cmzn_graphics_get_graphicspointattributes(
 	cmzn_graphics_id graphics);
 
 /**
- * Returns a new reference to the point attributes with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the point attributes with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
  * @param point_attributes  The point_attributes to obtain a new reference to.
- * @return  New point attributes reference with incremented reference count.
+ * @return  New handle to graphics point attributes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphicspointattributes_id cmzn_graphicspointattributes_access(
 	cmzn_graphicspointattributes_id point_attributes);
@@ -1081,8 +1073,7 @@ ZINC_API int cmzn_graphicspointattributes_set_base_size(
  * Gets the font in the graphics point attributes used to draw the label field.
  *
  * @param point_attributes  The point attributes to query.
- * @return  Handle to font, or 0 if none or error. Up to caller to destroy
- * returned handle.
+ * @return  Handle to font, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_font_id cmzn_graphicspointattributes_get_font(
 	cmzn_graphicspointattributes_id point_attributes);
@@ -1102,8 +1093,7 @@ ZINC_API int cmzn_graphicspointattributes_set_font(
  * Gets the glyph in the graphics point attributes used to visualise points.
  *
  * @param point_attributes  The point attributes to query.
- * @return  Handle to glyph, or 0 if none or error. Up to caller to destroy
- * returned handle.
+ * @return  Handle to glyph, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_glyph_id cmzn_graphicspointattributes_get_glyph(
 	cmzn_graphicspointattributes_id point_attributes);
@@ -1203,8 +1193,7 @@ ZINC_API int cmzn_graphicspointattributes_set_glyph_shape_type(
  * Gets the label field from the graphics point attributes.
  *
  * @param point_attributes  The point attributes to query.
- * @return Handle to label field, or 0 if none or error. Up to caller to destroy
- * returned handle.
+ * @return  Handle to label field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphicspointattributes_get_label_field(
 	cmzn_graphicspointattributes_id point_attributes);
@@ -1284,8 +1273,7 @@ ZINC_API int cmzn_graphicspointattributes_set_label_text(
  * @see cmzn_graphicspointattributes_set_orientation_scale_field
  *
  * @param point_attributes  The point attributes to query.
- * @return Handle to orientation scale field, or 0 if none or error. Up to
- * caller to destroy the returned handle.
+ * @return  Handle to orientation scale field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphicspointattributes_get_orientation_scale_field(
 	cmzn_graphicspointattributes_id point_attributes);
@@ -1368,8 +1356,7 @@ ZINC_API int cmzn_graphicspointattributes_set_scale_factors(
  * @see cmzn_graphicspointattributes_set_signed_scale_field
  *
  * @param point_attributes  The point attributes to query.
- * @return Handle to signed scale field, or 0 if none or error. Up to
- * caller to destroy the returned handle.
+ * @return  Handle to signed scale field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphicspointattributes_get_signed_scale_field(
 	cmzn_graphicspointattributes_id point_attributes);
@@ -1401,19 +1388,19 @@ ZINC_API int cmzn_graphicspointattributes_set_signed_scale_field(
  * attribute object for specifying sampling mode, density field etc.
  *
  * @param graphics  The graphics to request sampling attributes from.
- * @return  Handle to sampling attributes object, or 0 if not supported for
- * graphics type or error. Up to caller to destroy returned handle.
+ * @return  Handle to graphics sampling attributes, or NULL/invalid handle if
+ * not supported by graphics type or failed.
  */
 ZINC_API cmzn_graphicssamplingattributes_id
 	cmzn_graphics_get_graphicssamplingattributes(cmzn_graphics_id graphics);
 
 /**
- * Returns a new reference to the sampling attributes with reference count
- * incremented. Caller is responsible for destroying the new reference.
+ * Returns a new handle to the sampling attributes with reference count
+ * incremented. Caller is responsible for destroying the new handle.
  *
  * @param sampling_attributes  The graphics sampling attributes to obtain a new
  * reference to.
- * @return  New sampling attributes reference with incremented reference count.
+ * @return  New handle to graphics sampling attributes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphicssamplingattributes_id cmzn_graphicssamplingattributes_access(
 	cmzn_graphicssamplingattributes_id sampling_attributes);
@@ -1434,8 +1421,7 @@ ZINC_API int cmzn_graphicssamplingattributes_destroy(
  * when used with CELL_POISSON sampling mode.
  *
  * @param sampling_attributes  The graphics sampling attributes to query.
- * @return  Handle to sample density field, or 0 if none. Up to caller to
- * destroy handle.
+ * @return  Handle to density field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_graphicssamplingattributes_get_density_field(
 	cmzn_graphicssamplingattributes_id sampling_attributes);

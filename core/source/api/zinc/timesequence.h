@@ -1,5 +1,5 @@
 /**
- * FILE : timesequence.h
+ * @file timesequence.h
  *
  * The public interface to time sequence which represents a sequence of times
  * usually used to index node parameters.

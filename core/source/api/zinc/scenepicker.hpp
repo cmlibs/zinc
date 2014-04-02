@@ -1,5 +1,5 @@
 /**
- * FILE : scenepicker.hpp
+ * @file scenepicker.hpp
  */
 /* OpenCMISS-Zinc Library
 *

@@ -1,5 +1,5 @@
 /**
- * FILE : contextid.h
+ * @file contextid.h
  *
  */
 /* OpenCMISS-Zinc Library

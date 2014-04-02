@@ -1,5 +1,5 @@
 /**
- * FILE : fieldcache.h
+ * @file fieldcache.h
  *
  * The public interface to the zinc field evaluation and assignment cache.
  */
@@ -23,15 +23,15 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the field cache with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the field cache with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
  * @param cache  The field cache to obtain a new reference to.
- * @return  New field cache reference with incremented reference count.
+ * @return  New handle to field cache, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache);
 
-/*******************************************************************************
+/**
  * Destroys this reference to the field cache, and sets it to NULL.
  * Internally this just decrements the reference count.
  *

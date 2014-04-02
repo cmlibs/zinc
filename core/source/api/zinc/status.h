@@ -1,5 +1,5 @@
 /**
- * FILE : status.h
+ * @file status.h
  *
  * The public interface to cmzn_status.
  *

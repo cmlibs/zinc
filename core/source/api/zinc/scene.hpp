@@ -1,5 +1,5 @@
 /**
- * FILE : scene.hpp
+ * @file scene.hpp
  */
 /* OpenCMISS-Zinc Library
 *

@@ -1,5 +1,5 @@
 /**
- * FILE : element.hpp
+ * @file element.hpp
  */
 /* OpenCMISS-Zinc Library
 *

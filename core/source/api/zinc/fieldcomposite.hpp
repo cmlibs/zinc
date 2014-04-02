@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldcomposite.hpp
+/**
+ * @file fieldcomposite.hpp
  */
 /* OpenCMISS-Zinc Library
 *

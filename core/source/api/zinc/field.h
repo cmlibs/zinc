@@ -1,5 +1,5 @@
 /**
- * FILE : field.h
+ * @file field.h
  *
  * The public interface to the zinc field base object.
  */
@@ -58,11 +58,11 @@ ZINC_API char *cmzn_field_coordinate_system_type_enum_to_string(
 ZINC_API int cmzn_field_get_number_of_components(cmzn_field_id field);
 
 /**
- * Returns a new reference to the field with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the field with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
  * @param field  The field to obtain a new reference to.
- * @return  New field reference with incremented reference count.
+ * @return  New handle to field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_field_access(cmzn_field_id field);
 
@@ -155,8 +155,8 @@ ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id ca
  * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
  * that it equals or exceeds the dimension of the returned element.
  * @param chart_coordinates  Array to evaluate chart coordinate location into.
- * @return  Handle to element on success, NULL on failure including if field is
- * not defined at cache location. Caller is responsible for destroying handle.
+ * @return  Handle to element, or NULL/invalid handle on failure including
+ * field not defined at cache location.
  */
 ZINC_API cmzn_element_id cmzn_field_evaluate_mesh_location(cmzn_field_id field,
 	cmzn_fieldcache_id cache, int number_of_chart_coordinates,
@@ -339,16 +339,15 @@ ZINC_API int cmzn_field_get_number_of_source_fields(cmzn_field_id field);
  *
  * @param field  The field to query.
  * @param index  The index from 1 to number of source fields.
- * @return  Handle to the source field at the index, or NULL if none. Caller is
- * responsible for destroying the returned field handle.
+ * @return  Handle to source field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_field_get_source_field(cmzn_field_id field, int index);
 
 /**
- * Returns a reference to the field module which owns this field.
+ * Returns a handle to the field module which owns this field.
  *
  * @param field  The field to obtain field module for.
- * @return  Field module which this field belongs to.
+ * @return  Handle to owning field module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field);
 
@@ -372,11 +371,11 @@ ZINC_API bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 	cmzn_fieldcache_id cache);
 
 /**
- * Returns a new reference to the iterator with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the iterator with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
  * @param iterator  The iterator to obtain a new reference to.
- * @return  New field iterator reference with incremented reference count.
+ * @return  New handle to field iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fielditerator_id cmzn_fielditerator_access(
 	cmzn_fielditerator_id iterator);
@@ -395,7 +394,7 @@ ZINC_API int cmzn_fielditerator_destroy(cmzn_fielditerator_id *iterator_address)
  * returned field handle.
  *
  * @param iterator  Field iterator to query and advance.
- * @return  Handle to the next field, or NULL if none remaining.
+ * @return  Handle to the next field, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_field_id cmzn_fielditerator_next(cmzn_fielditerator_id iterator);
 

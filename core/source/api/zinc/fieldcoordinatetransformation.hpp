@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldcoordinatetransformation.hpp
+/**
+ * @file fieldcoordinatetransformation.hpp
  */
 /* OpenCMISS-Zinc Library
 *

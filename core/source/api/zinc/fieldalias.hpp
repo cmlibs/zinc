@@ -1,5 +1,5 @@
-/*****************************************************************************//**
- * FILE : fieldalias.hpp
+/**
+ * @file fieldalias.hpp
  *
  */
 /* OpenCMISS-Zinc Library

@@ -1,5 +1,5 @@
-/***************************************************************************//**
- * FILE : fieldtime.hpp
+/**
+ * @file fieldtime.hpp
  */
 /* OpenCMISS-Zinc Library
 *
