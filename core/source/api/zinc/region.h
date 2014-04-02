@@ -43,7 +43,7 @@ ZINC_API cmzn_region_id cmzn_region_access(cmzn_region_id region);
 
 /**
  * Destroys this handle to the region, and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param region_address  The address to the handle of the region
  *    to be destroyed.

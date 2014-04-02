@@ -1,5 +1,5 @@
 /**
- * tessellation.h
+ * @file tessellation.h
  *
  * Public interface to tessellation objects. These describe how elements or
  * other continuous field domains are subdivided into graphics.
@@ -23,23 +23,23 @@ extern "C" {
 
 
 /**
-* Returns a new reference to the tessellation module with reference count
-* incremented. Caller is responsible for destroying the new reference.
-*
-* @param tessellationmodule  The tessellation module to obtain a new reference to.
-* @return  Tessellation module with incremented reference count.
-*/
+ * Returns a new handle to the tessellation module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
+ *
+ * @param tessellationmodule  Handle to tessellation module.
+ * @return  New handle to tessellation module, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_tessellationmodule_id cmzn_tessellationmodule_access(
 	cmzn_tessellationmodule_id tessellationmodule);
 
 /**
-* Destroys this reference to the tessellation module (and sets it to NULL).
-* Internally this just decrements the reference count.
-*
-* @param tessellationmodule_address  Address of handle to tessellation module
-*   to destroy.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Destroys this handle to the tessellation module (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param tessellationmodule_address  Address of handle to tessellation module
+ *   to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_tessellationmodule_destroy(
 	cmzn_tessellationmodule_id *tessellationmodule_address);
 
@@ -48,41 +48,40 @@ ZINC_API int cmzn_tessellationmodule_destroy(
  *
  * @param tessellationmodule  The handle to the tessellation module the
  * tessellation will belong to.
- * @return  Handle to the newly created tessellation if successful, otherwise NULL.
+ * @return  Handle to new tessellation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
 	cmzn_tessellationmodule_id tessellationmodule);
 
 /**
-* Begin caching or increment cache level for this tessellation module. Call this
-* function before making multiple changes to minimise number of change messages
-* sent to clients. Must remember to end_change after completing changes.
-* @see cmzn_tessellationmodule_end_change
-*
-* @param tessellationmodule  The tessellation module to begin change cache on.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
+ * Begin caching or increment cache level for this tessellation module. Call this
+ * function before making multiple changes to minimise number of change messages
+ * sent to clients. Must remember to end_change after completing changes.
+ * @see cmzn_tessellationmodule_end_change
+ *
+ * @param tessellationmodule  The tessellation module to begin change cache on.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
 ZINC_API int cmzn_tessellationmodule_begin_change(cmzn_tessellationmodule_id tessellationmodule);
 
 /**
-* Decrement cache level or end caching of changes for the tessellation module.
-* Call cmzn_tessellationmodule_begin_change before making multiple changes
-* and call this afterwards. When change level is restored to zero,
-* cached change messages are sent out to clients.
-*
-* @param tessellationmodule  The tessellation module to end change cache on.
-* @return  Status CMZN_OK on success, any other value on failure.
-*/
+ * Decrement cache level or end caching of changes for the tessellation module.
+ * Call cmzn_tessellationmodule_begin_change before making multiple changes
+ * and call this afterwards. When change level is restored to zero,
+ * cached change messages are sent out to clients.
+ *
+ * @param tessellationmodule  The tessellation module to end change cache on.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
 ZINC_API int cmzn_tessellationmodule_end_change(cmzn_tessellationmodule_id tessellationmodule);
 
 /**
-* Find the tessellation with the specified name, if any.
-*
-* @param tessellationmodule  Tessellation module to search.
-* @param name  The name of the tessellation.
-* @return  Handle to the tessellation of that name, or 0 if not found.
-* 	Up to caller to destroy returned handle.
-*/
+ * Find the tessellation with the specified name, if any.
+ *
+ * @param tessellationmodule  Tessellation module to search.
+ * @param name  The name of the tessellation.
+ * @return  Handle to tessellation, or NULL/invalid handle if not found or failed.
+ */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
 	cmzn_tessellationmodule_id tessellationmodule, const char *name);
 
@@ -93,8 +92,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
  * and given the name "default".
  *
  * @param tessellationmodule  Tessellation module to query.
- * @return  Handle to the default tessellation, or 0 on error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to default tessellation, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_tessellation(
 	cmzn_tessellationmodule_id tessellationmodule);
@@ -118,8 +116,8 @@ ZINC_API int cmzn_tessellationmodule_set_default_tessellation(
  * and given the name "default_points".
  *
  * @param tessellationmodule  Tessellation module to query.
- * @return  Handle to the default points tessellation, or 0 on error.
- * Up to caller to destroy returned handle.
+ * @return  Handle to default points tessellation, or NULL/invalid handle if
+ * none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_points_tessellation(
 	cmzn_tessellationmodule_id tessellationmodule);
@@ -137,17 +135,17 @@ ZINC_API int cmzn_tessellationmodule_set_default_points_tessellation(
 	cmzn_tessellation_id tessellation);
 
 /**
- * Returns a new reference to the tessellation with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the tessellation with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param tessellation  The tessellation to obtain a new reference to.
- * @return  New tessellation reference with incremented reference count.
+ * @param tessellation  Handle to tessellation.
+ * @return  New handle to tessellation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellation_access(cmzn_tessellation_id tessellation);
 
 /**
- * Destroys this reference to the tessellation (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the tessellation (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param tessellation_address  The address to the handle of the tessellation
  *    to be destroyed.

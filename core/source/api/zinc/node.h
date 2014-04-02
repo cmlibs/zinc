@@ -80,14 +80,14 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
  * Returns a new handle to the nodeset with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param nodeset  The nodeset to obtain a new reference to.
+ * @param nodeset  The nodeset to obtain a new handle to.
  * @return  New handle to nodeset, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeset_id cmzn_nodeset_access(cmzn_nodeset_id nodeset);
 
 /**
  * Destroys this handle to the nodeset and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param nodeset_address  Address of handle to the nodeset to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -233,7 +233,7 @@ ZINC_API bool cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodes
 /**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
  * get the nodeset group specific interface for add/remove functions.
- * Caller is responsible for destroying the returned reference.
+ * Caller is responsible for destroying the returned derived handle.
  *
  * @param field  The nodeset to be cast.
  * @return  Handle to derived nodeset group, or NULL/invalid handle if wrong type or failed.
@@ -242,7 +242,7 @@ ZINC_API cmzn_nodeset_group_id cmzn_nodeset_cast_group(cmzn_nodeset_id nodeset);
 
 /**
  * Destroys this handle to the nodeset group and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param nodeset_group_address  Address of nodeset group handle to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -311,7 +311,7 @@ ZINC_API int cmzn_nodeset_group_remove_nodes_conditional(
  * Returns a new handle to the node iterator with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param mesh  The node iterator to obtain a new reference to.
+ * @param mesh  The node iterator to obtain a new handle to.
  * @return  New handle to the node iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeiterator_id cmzn_nodeiterator_access(
@@ -347,7 +347,7 @@ ZINC_API cmzn_nodetemplate_id cmzn_nodetemplate_access(
 
 /**
  * Destroys this handle to the node_template and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param node_template_address  Address of handle to node_template
  * to destroy.
@@ -475,14 +475,14 @@ ZINC_API int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template
  * Returns a new handle to the node with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param node  The node to obtain a new reference to.
+ * @param node  The node to obtain a new handle to.
  * @return  New handle to the node, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_node_id cmzn_node_access(cmzn_node_id node);
 
 /**
  * Destroys this handle to the node and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param node_address  Address of handle to the node to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -531,7 +531,7 @@ ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_templa
  * Returns a new handle to the nodeset changes with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param nodesetchanges  The nodeset changes to obtain a new reference to.
+ * @param nodesetchanges  The nodeset changes to obtain a new handle to.
  * @return  New handle to the nodeset changes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodesetchanges_id cmzn_nodesetchanges_access(
@@ -539,7 +539,7 @@ ZINC_API cmzn_nodesetchanges_id cmzn_nodesetchanges_access(
 
 /**
  * Destroys this handle to the nodesetchanges and sets it to NULL.
- * Internally this just decrements the reference count.
+ * Internally this decrements the reference count.
  *
  * @param nodesetchanges_address  Address of handle to the nodeset changes to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.

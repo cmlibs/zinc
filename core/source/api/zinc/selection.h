@@ -19,18 +19,18 @@ extern "C" {
 #endif
 
 /**
-* Returns a new reference to the selection notifier with reference count incremented.
-* Caller is responsible for destroying the new reference.
-*
-* @param selectionnotifier  The selection notifier to obtain a new reference to.
-* @return  New selectionnotifier reference with incremented reference count.
-*/
+ * Returns a new handle to the selection notifier with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param selectionnotifier  The selection notifier to obtain a new handle to.
+ * @return  New handle to new selection notifier, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_selectionnotifier_id cmzn_selectionnotifier_access(
 	cmzn_selectionnotifier_id selectionnotifier);
 
 /**
- * Destroys this reference to the selection notifier (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys this handle to the selection notifier (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param selectionnotifier  Handle to the selection notifier.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -71,18 +71,18 @@ ZINC_API int cmzn_selectionnotifier_set_callback(cmzn_selectionnotifier_id selec
 		cmzn_selectionnotifier_callback_function function, void *user_data_in);
 
 /**
-* Returns a new reference to the selection event with reference count incremented.
-* Caller is responsible for destroying the new reference.
-*
-* @param selectionevent  The selection event to obtain a new reference to.
-* @return  New selectionnotifier reference with incremented reference count.
-*/
+ * Returns a new handle to the selection event with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param selectionevent  The selection event to obtain a new handle to.
+ * @return  New handle to new selection event, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_selectionevent_id cmzn_selectionevent_access(
 	cmzn_selectionevent_id selectionevent);
 
 /**
- * Destroys this reference to the selection event (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the selection event (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * Note: At the end of the cmzn_selectionnotifier_callback_function, the caller
  * will destroy the event argument so users do not need to call this destroy

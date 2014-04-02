@@ -44,8 +44,8 @@ extern "C" {
 ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
 
 /**
- * Destroys this reference to the scene (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the scene (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param scene Pointer to the handle to the scene.
  * @return  status CMZN_OK if successfully remove scene, any other value on

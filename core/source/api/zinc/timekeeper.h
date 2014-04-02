@@ -22,18 +22,18 @@ extern "C" {
 #endif
 
 /**
-* Returns a new reference to the timekeeper module with reference count
-* incremented. Caller is responsible for destroying the new reference.
-*
-* @param timekeepermodule  The timekeeper module to obtain a new reference to.
-* @return  timekeeper module with incremented reference count.
-*/
+ * Returns a new handle to the timekeeper module with reference count
+ * incremented. Caller is responsible for destroying the new handle.
+ *
+ * @param timekeepermodule  Handle to timekeeper module.
+ * @return  New handle to timekeeper module, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_timekeepermodule_id cmzn_timekeepermodule_access(
 	cmzn_timekeepermodule_id timekeepermodule);
 
 /**
-* Destroys this reference to the timekeeper module (and sets it to NULL).
-* Internally this just decrements the reference count.
+* Destroys handle to the timekeeper module (and sets it to NULL).
+* Internally this decrements the reference count.
 *
 * @param timekeepermodule_address  Address of handle to timekeeper module
 *   to destroy.
@@ -43,26 +43,25 @@ ZINC_API int cmzn_timekeepermodule_destroy(
 	cmzn_timekeepermodule_id *timekeepermodule_address);
 
 /**
-* Get the default timekeeper, if any.
-*
-* @param timekeepermodule  timekeeper module to query.
-* @return  Handle to the default timekeeper, or 0 if none.
-* 	Up to caller to destroy returned handle.
-*/
+ * Get the default timekeeper.
+ *
+ * @param timekeepermodule  Handle to timekeeper module to query.
+ * @return  Handle to default timekeeper, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_timekeeper_id cmzn_timekeepermodule_get_default_timekeeper(
 	cmzn_timekeepermodule_id timekeepermodule);
 
 /**
- * Access the timekeeper, increase the access count of the time keeper by one.
+ * Get new handle to timekeeper, incrementing reference count.
  *
- * @param timekeeper  handle to the "to be access" zinc timekeeper.
- * @return  handle to timekeeper if successfully access timekeeper.
+ * @param timekeeper  Handle to timekeeper.
+ * @return  New handle to timekeeper, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_timekeeper_id cmzn_timekeeper_access(cmzn_timekeeper_id timekeeper);
 
 /**
- * Destroys this reference to the time keeper (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the time keeper (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param timekeeper_address  The address to the handle to time keeper
  * @return  Status CMZN_OK if successfully destroy the time keeper,
@@ -80,8 +79,7 @@ ZINC_API int cmzn_timekeeper_destroy(cmzn_timekeeper_id *timekeeper_address);
  *    happenes and allow setting the callback time other than t=0.
  *    Time notifier will receive/send out notification when
  *    time_offset + original callback time is reached.
- * @return  The time notifier if successfully create a time notifier otherwise
- *    NULL.
+ * @return  Handle to new timekeeper, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_timenotifier_id cmzn_timekeeper_create_timenotifier_regular(
 	cmzn_timekeeper_id timekeeper, double update_frequency, double time_offset);

@@ -20,27 +20,26 @@ extern "C" {
  * Create a scene viewer input object for manually setting mouse or other input
  * event data.
  *
- * @param sceneviewer  Handle to cmzn_sceneviewer object.
- * @return  Handle to cmzn_sceneviewerinput on success, or 0 on failure.
+ * @param sceneviewer  Handle to sceneviewer object.
+ * @return  Handle to new sceneviewerinput, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Returns a new reference to the cmzn_sceneviewerinput with reference count incremented.
- * Caller is responsible for destroying the new reference.
+ * Returns a new handle to the cmzn_sceneviewerinput with reference count incremented.
+ * Caller is responsible for destroying the new handle.
  *
- * @param input  Handle to cmzn_sceneviewerinput object.
- * @return  Accessed handle to cmzn_sceneviewerinput.
+ * @param input  Handle to sceneviewerinput object.
+ * @return  New handle to sceneviewerinput, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_sceneviewerinput_id cmzn_sceneviewerinput_access(cmzn_sceneviewerinput_id input);
 
 /**
- * Destroys this reference to the cmzn_sceneviewerinput (and sets it to 0).
- * Internally this just decrements the reference count.
+ * Destroys this handle to the sceneviewerinput (and sets it to 0).
+ * Internally this decrements the reference count.
  *
  * @param address_input  Address of handle to cmzn_sceneviewerinput object.
- * @return  CMZN_OK if successfully deaccess cmzn_sceneviewerinput, any other value on
- * failure.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewerinput_destroy(cmzn_sceneviewerinput_id *address_input);
 

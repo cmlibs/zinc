@@ -22,24 +22,22 @@ extern "C" {
  * Generic status codes returned by API functions to indicate success or error.
  *
  * WARNING: Planned future binary compatibility break.
- * At a future date we will change value of CMZN_OK to 0, and
- * introduce negative-valued error codes e.g. 'CMZN_ERROR_ARGUMENT',
- * to bring the CMGUI Zinc API in to line with common C API conventions.
- * To maintain your source compatibility through this break please ensure
- * all code checking integer status codes returned by functions compare
- * against enum CMZN_OK, NOT its current literal value
- *
+ * At a future date we will change the value of CMZN_OK to 0, and
+ * CMZN_ERROR_GENERAL to some other value, to bring the Zinc API in to line with
+ * common C API conventions. To maintain your source compatibility through this
+ * break please ensure all code checking integer status codes returned by
+ * functions compare against enumerated symbol names, not their current values.
  */
 enum cmzn_status
 {
 	CMZN_ERROR_MEMORY = -2,
-		/*!< failed to allocate memory. */
+		/*!< Failed to allocate memory. */
 	CMZN_ERROR_ARGUMENT = -1,
-		/*!< invalid argument(s) passed to API function. Only reported for new APIs. */
+		/*!< Invalid argument(s) passed to API function. */
 	CMZN_ERROR_GENERAL = 0,
-		/*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
+		/*!< Unspecified error occurred. Can include invalid argument(s) for old APIs. */
 	CMZN_OK = 1
-		/*!< value to be returned on success */
+		/*!< Successful return */
 };
 
 #ifdef __cplusplus

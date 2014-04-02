@@ -24,15 +24,15 @@ extern "C" {
  * Returns a new handle to the font module with reference count
  * incremented. Caller is responsible for destroying the new handle.
  *
- * @param fontmodule  The font module to obtain a new reference to.
+ * @param fontmodule  The font module to obtain a new handle to.
  * @return  New handle to font module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fontmodule_id cmzn_fontmodule_access(
 	cmzn_fontmodule_id fontmodule);
 
 /**
- * Destroys this reference to the font module (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the font module (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param fontmodule_address  Address of handle to font module
  *   to destroy.
@@ -104,7 +104,7 @@ ZINC_API int cmzn_fontmodule_set_default_font(
 	cmzn_font_id font);
 
 /**
- * Access the font, increase the access count of the font by one.
+ * Get new handle to font, incrementing reference count.
  *
  * @param font  handle to the "to be access" zinc font.
  * @return  New handle to font, or NULL/invalid handle on failure.

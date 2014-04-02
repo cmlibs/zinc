@@ -23,15 +23,15 @@ extern "C" {
  * Returns a new handle to the material module with reference count
  * incremented. Caller is responsible for destroying the new handle.
  *
- * @param materialmodule  The material module to obtain a new reference to.
+ * @param materialmodule  The material module to obtain a new handle to.
  * @return  New handle to material module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_materialmodule_id cmzn_materialmodule_access(
 	cmzn_materialmodule_id materialmodule);
 
 /**
- * Destroys this reference to the material module (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the material module (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param materialmodule_address  Address of handle to material module
  *   to destroy.
@@ -191,8 +191,8 @@ ZINC_API int cmzn_material_set_managed(cmzn_material_id material,
 ZINC_API cmzn_material_id cmzn_material_access(cmzn_material_id material);
 
 /**
- * Destroys this reference to the material (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the material (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param material  address to the handle to the "to be destroyed"
  *   zinc material.

@@ -34,7 +34,7 @@ extern "C" {
  * Returns a new handle to the graphics with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param graphics  The graphics to obtain a new reference to.
+ * @param graphics  The graphics to obtain a new handle to.
  * @return  New handle to graphics, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics);
@@ -279,7 +279,7 @@ ZINC_API int cmzn_graphics_set_subgroup_field(cmzn_graphics_id graphics,
 
 /**
  * Returns the tessellation object of the graphics.
- * Caller must destroy reference.
+ * Caller must destroy returned handle.
  *
  * @param graphics  The graphics to query.
  * @return  Handle to tessellation, or NULL/invalid handle if none or failed.
@@ -494,7 +494,7 @@ ZINC_API int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 /**
  * If the graphics is of type contours then this function returns
  * the contours specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new contours graphics reference.
+ * Caller is responsible for destroying the new contours graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived contours graphics, or NULL/invalid handle if
@@ -517,8 +517,8 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_contours_base_cast(cmzn_graphics_co
 }
 
 /**
- * Destroys this reference to the contours graphics (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the contours graphics (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param contours_address  Address of handle to the contours graphics.
  * @return  Status CMZN_OK if successfully destroyed the contours graphics handle,
@@ -628,7 +628,7 @@ ZINC_API int cmzn_graphics_contours_set_range_isovalues(
 /**
  * If the graphics is of type lines then this function returns
  * the lines specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new lines graphics reference.
+ * Caller is responsible for destroying the new lines graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived lines graphics, or NULL/invalid handle if
@@ -651,8 +651,8 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_lines_base_cast(cmzn_graphics_lines
 }
 
 /**
- * Destroys this reference to the lines graphics (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the lines graphics (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param lines_address  Address of handle to the lines graphics.
  * @return  Status CMZN_OK if successfully destroyed the lines graphics handle,
@@ -663,7 +663,7 @@ ZINC_API int cmzn_graphics_lines_destroy(cmzn_graphics_lines_id *lines_address);
 /**
  * If the graphics is of type points then this function returns
  * the points specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new points graphics reference.
+ * Caller is responsible for destroying the new points graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived points graphics, or NULL/invalid handle if
@@ -686,8 +686,8 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_points_base_cast(cmzn_graphics_poin
 }
 
 /**
- * Destroys this reference to the points graphics (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the points graphics (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param points_address  Address of handle to the points graphics.
  * @return  Status CMZN_OK if successfully destroyed the points graphics handle,
@@ -698,7 +698,7 @@ ZINC_API int cmzn_graphics_points_destroy(cmzn_graphics_points_id *points_addres
 /**
  * If the graphics is of type streamlines then this function returns
  * the streamlines specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new streamlines graphics reference.
+ * Caller is responsible for destroying the new streamlines graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived streamlines graphics, or NULL/invalid handle if
@@ -721,8 +721,8 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_streamlines_base_cast(cmzn_graphics
 }
 
 /**
- * Destroys this reference to the streamlines graphics (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the streamlines graphics (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param streamlines_address  Address of handle to the streamlines graphics.
  * @return  Status CMZN_OK if successfully destroyed the streamlines graphics handle,
@@ -802,7 +802,7 @@ ZINC_API int cmzn_graphics_streamlines_set_track_length(
 /**
  * If the graphics is of type surfaces then this function returns
  * the surfaces specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new surfaces graphics reference.
+ * Caller is responsible for destroying the new surfaces graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived surfaces graphics, or NULL/invalid handle if
@@ -825,8 +825,8 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_surfaces_base_cast(cmzn_graphics_su
 }
 
 /**
- * Destroys this reference to the surfaces graphics (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the surfaces graphics (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param surfaces_address  Address of handle to the surfaces graphics.
  * @return  Status CMZN_OK if successfully destroyed the surfaces graphics handle,
@@ -849,15 +849,15 @@ ZINC_API cmzn_graphicslineattributes_id cmzn_graphics_get_graphicslineattributes
  * Returns a new handle to the line attributes with reference count
  * incremented. Caller is responsible for destroying the new handle.
  *
- * @param line_attributes  The line_attributes to obtain a new reference to.
+ * @param line_attributes  The line_attributes to obtain a new handle to.
  * @return  New handle to graphics line attributes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphicslineattributes_id cmzn_graphicslineattributes_access(
 	cmzn_graphicslineattributes_id line_attributes);
 
 /**
- * Destroys this reference to the line attributes, and sets it to 0.
- * Internally this just decrements the reference count.
+ * Destroys handle to the line attributes, and sets it to 0.
+ * Internally this decrements the reference count.
  *
  * @param line_attributes_address  Address of handle to the line attributes.
  * @return  Status CMZN_OK if successfully destroyed the handle, any other
@@ -1013,15 +1013,15 @@ ZINC_API cmzn_graphicspointattributes_id cmzn_graphics_get_graphicspointattribut
  * Returns a new handle to the point attributes with reference count
  * incremented. Caller is responsible for destroying the new handle.
  *
- * @param point_attributes  The point_attributes to obtain a new reference to.
+ * @param point_attributes  The point_attributes to obtain a new handle to.
  * @return  New handle to graphics point attributes, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_graphicspointattributes_id cmzn_graphicspointattributes_access(
 	cmzn_graphicspointattributes_id point_attributes);
 
 /**
- * Destroys this reference to the point attributes, and sets it to 0.
- * Internally this just decrements the reference count.
+ * Destroys handle to the point attributes, and sets it to 0.
+ * Internally this decrements the reference count.
  *
  * @param point_attributes_address  Address of handle to the point attributes.
  * @return  Status CMZN_OK if successfully destroyed the handle, any other
@@ -1406,8 +1406,8 @@ ZINC_API cmzn_graphicssamplingattributes_id cmzn_graphicssamplingattributes_acce
 	cmzn_graphicssamplingattributes_id sampling_attributes);
 
 /**
- * Destroys this reference to the sampling attributes, and sets it to 0.
- * Internally this just decrements the reference count.
+ * Destroys handle to the sampling attributes, and sets it to 0.
+ * Internally this decrements the reference count.
  *
  * @param sampling_attributes_address  Address of handle to the graphics sampling
  * attributes.

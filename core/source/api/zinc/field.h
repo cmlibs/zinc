@@ -61,14 +61,14 @@ ZINC_API int cmzn_field_get_number_of_components(cmzn_field_id field);
  * Returns a new handle to the field with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param field  The field to obtain a new reference to.
+ * @param field  The field to obtain a new handle to.
  * @return  New handle to field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_field_access(cmzn_field_id field);
 
 /**
- * Destroys this reference to the field (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the field (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param field_address  address to the handle to field.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -374,7 +374,7 @@ ZINC_API bool cmzn_field_is_defined_at_location(cmzn_field_id field,
  * Returns a new handle to the iterator with reference count incremented.
  * Caller is responsible for destroying the new handle.
  *
- * @param iterator  The iterator to obtain a new reference to.
+ * @param iterator  The field iterator to obtain a new handle to.
  * @return  New handle to field iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_fielditerator_id cmzn_fielditerator_access(

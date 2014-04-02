@@ -20,16 +20,26 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+/**
+ * Generic status codes returned by API functions to indicate success or error.
+ *
+ * WARNING: Planned future binary compatibility break.
+ * At a future date we will change the value of OK to 0, and
+ * ERROR_GENERAL to some other value, to bring the Zinc API in to line with
+ * common API conventions. To maintain your source compatibility through this
+ * break please ensure all code checking integer status codes returned by
+ * functions compare against enumerated symbol names, not their current values.
+ */
 enum Status
 {
 	ERROR_MEMORY = CMZN_ERROR_MEMORY,
-		/*!< failed to allocate memory. */
+		/*!< Failed to allocate memory. */
 	ERROR_ARGUMENT = CMZN_ERROR_ARGUMENT,
-		/*!< invalid argument(s) passed to API function. Only reported for new APIs. */
+		/*!< Invalid argument(s) passed to API function. */
 	ERROR_GENERAL = CMZN_ERROR_GENERAL,
-		/*!< unspecified error occurred. Can include invalid argument(s) for old APIs. */
+		/*!< Unspecified error occurred. Can include invalid argument(s) for old APIs. */
 	OK = CMZN_OK
-		/*!< value to be returned on success */
+		/*!< Successful return */
 };
 
 } // namespace Zinc

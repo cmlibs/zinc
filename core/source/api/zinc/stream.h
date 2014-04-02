@@ -22,19 +22,19 @@ extern "C" {
 #endif
 
 /**
- * Returns a new reference to the stream information with reference count
+ * Returns a new handle to the stream information with reference count
  * incremented.
- * Caller is responsible for destroying the new reference.
+ * Caller is responsible for destroying the new handle.
  *
- * @param streaminformation  The stream information to obtain a new reference to.
- * @return  New stream information reference with incremented reference count.
+ * @param streaminformation  Handle to stream information.
+ * @return  New handle to stream information, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_streaminformation_id cmzn_streaminformation_access(
 	cmzn_streaminformation_id streaminformation);
 
 /**
- * Destroys this reference to the stream information (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys handle to the stream information (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
  * @param streaminformation_address  Address of handle to the stream information.
  * @return  status CMZN_OK if successfully destroyed the stream information,
@@ -57,7 +57,7 @@ ZINC_API int cmzn_streaminformation_destroy(
  * @param streaminformation  Stream information which will contains the new
  * stream resource.
  * @param file_name  name of a file.
- * @return  Handle to newly created stream resource.
+ * @return  Handle to new stream resource, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_file(
 	cmzn_streaminformation_id streaminformation, const char *file_name);
@@ -76,7 +76,7 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_fil
  *
  * @param streaminformation  Stream information which will contains the new
  * stream resource.
- * @return  Handle to newly created stream resource.
+ * @return  Handle to new stream resource, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory(
 	cmzn_streaminformation_id streaminformation);
@@ -96,48 +96,47 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_mem
  * stream resource.
  * @param buffer  pointer to the a memory buffer
  * @param buffer_length  length of the buffer
- * @return  Handle to newly created stream resource.
+ * @return  Handle to new stream resource, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory_buffer(
 	cmzn_streaminformation_id streaminformation, const void *buffer,
 	unsigned int buffer_length);
 
 /**
-* Returns a new reference to the stream resource with reference count incremented.
-* Caller is responsible for destroying the new reference.
-*
-* @param resource  The stream resource to obtain a new reference to.
-* @return  New stream resource reference with incremented reference count.
-*/
+ * Returns a new handle to the stream resource with reference count incremented.
+ * Caller is responsible for destroying the new handle.
+ *
+ * @param resource  Handle to stream resource.
+ * @return  New handle to stream resource, or NULL/invalid handle on failure.
+ */
 ZINC_API cmzn_streamresource_id cmzn_streamresource_access(cmzn_streamresource_id resource);
 
 /**
- * Destroys this reference to the stream (and sets it to NULL).
- * Internally this just decrements the reference count.
+ * Destroys this handle to the stream (and sets it to NULL).
+ * Internally this decrements the reference count.
  *
- * @param resource_address  Address of handle to the io stream.
- * @return  status CMZN_OK if successfully destroyed the output stream handle,
- * any other value on failure.
+ * @param resource_address  Address of handle to stream resource.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_streamresource_destroy(cmzn_streamresource_id *resource_address);
 
 /**
  * If the stream resource is of file type, then this function returns
  * the file specific representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived reference.
+ * Caller is responsible for destroying the returned derived handle.
  *
- * @param resource  The generic stream resource to be cast.
- * @return  streamresource_file specific representation if the input
- * streamresource is of this type, otherwise NULL.
+ * @param resource  Handle to stream resource.
+ * @return  Handle to derived file stream resource, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_streamresource_file_id cmzn_streamresource_cast_file(
 	cmzn_streamresource_id resource);
 
 /**
- * Destroys a cmzn_streamresource_file object.
- * @param resource_address  Pointer to a streamresource_file object, which
- * is destroyed and the pointer is set to NULL.
- * @return  status CMZN_OK if the operation is successful, any other value on failure.
+ * Destroys handle to stream resource file.
+ *
+ * @param resource_address  Address of handle to stream resource file. Handle is reset.
+ * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_streamresource_file_destroy(
 	cmzn_streamresource_file_id *resource_address);
@@ -170,14 +169,14 @@ ZINC_API char *cmzn_streamresource_file_get_name(cmzn_streamresource_file_id res
 /**
  * If the stream resource is of memory type, then this function returns
  * the file specific representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived reference.
+ * Caller is responsible for destroying the returned derived handle.
  *
  * @see cmzn_streamresource_memory_get_buffer
  * @see cmzn_streamresource_memory_get_buffer_copy
  *
- * @param resource  The generic streamresource to be cast.
- * @return  streamresource_memory specific representation if the input
- * streamresource is of this type, otherwise NULL.
+ * @param resource  Handle to streamresource to be cast.
+ * @return  Handle to derived memory stream resource, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_streamresource_memory_id cmzn_streamresource_cast_memory(
 	cmzn_streamresource_id resource);

@@ -82,30 +82,32 @@ ZINC_API char *cmzn_streaminformation_image_attribute_enum_to_string(
 	enum cmzn_streaminformation_image_attribute attribute);
 
 /**
- * Creates a cmzn_streaminformation_image object.
- * @return The created object.
+ * Creates a stream information object for specifying files/resources and options
+ * for reading and writing image data to/from an image field.
+ *
+ * @return  Handle to new stream information, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_streaminformation_id cmzn_field_image_create_streaminformation_image(
 	cmzn_field_image_id image_field);
 
 /**
- * Destroys a cmzn_streaminformation_image object.
+ * Destroys handle to stream information image.
  *
- * @param streaminformation_address  Pointer to a streaminformation object, which
- * is destroyed and the pointer is set to NULL.
+ * @param streaminformation_address  Address of handle to streaminformation
+ * image. Handle will be reset to NULL.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_streaminformation_image_destroy(
 	cmzn_streaminformation_image_id *streaminformation_address);
 
 /**
- * If the streaminformation is of field_image type, then this function returns
- * the field_image specific representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived reference.
+ * If the streaminformation is of image type, then this function returns
+ * the image specific handle, otherwise it returns NULL/invalid handle.
+ * Caller is responsible for destroying the returned derived handle.
  *
- * @param streaminformation  The generic streaminformation to be cast.
- * @return  field_image specific representation if the input streaminformation is
- * of this type, otherwise NULL.
+ * @param streaminformation  Handle to streaminformation to cast.
+ * @return  Handle to derived stream information image, or NULL/invalid handle if
+ * wrong type or failed.
  */
 ZINC_API cmzn_streaminformation_image_id cmzn_streaminformation_cast_image(
 	cmzn_streaminformation_id streaminformation);
