@@ -20,7 +20,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the spectrum module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param spectrummodule  Handle to spectrum module.
  * @return  New handle to spectrum module, or NULL/invalid handle on failure.
@@ -53,6 +53,7 @@ ZINC_API cmzn_spectrum_id cmzn_spectrummodule_create_spectrum(
  * Begin caching or increment cache level for this spectrum module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
+ * Can be nested.
  * @see cmzn_spectrummodule_end_change
  *
  * @param spectrummodule  The spectrum module to begin change cache on.
@@ -62,9 +63,10 @@ ZINC_API int cmzn_spectrummodule_begin_change(cmzn_spectrummodule_id spectrummod
 
 /**
  * Decrement cache level or end caching of changes for the spectrum module.
- * Call cmzn_spectrummodule_begin_change before making multiple changes
+ * Call spectrum module begin change method before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_spectrummodule_begin_change
  *
  * @param spectrummodule  The spectrum module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -83,9 +85,9 @@ ZINC_API cmzn_spectrum_id cmzn_spectrummodule_find_spectrum_by_name(
 
 /**
  * Get the default spectrum, if any. By default, a single component spectrum
- * with CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW is returned.
- * Call cmzn_spectrummodule_set_default_spectrum to change the default
- * spectrum.
+ * with COLOUR_MAPPING_TYPE_RAINBOW is returned.
+ * @see cmzn_spectrummodule_set_default_spectrum
+ * @see cmzn_spectrumcomponent_colour_mapping_type
  *
  * @param spectrummodule  spectrum module to query.
  * @return  Handle to default spectrum, or NULL/invalid handle if none or failed.
@@ -184,13 +186,10 @@ ZINC_API bool cmzn_spectrum_is_material_overwrite(cmzn_spectrum_id spectrum);
 ZINC_API int cmzn_spectrum_set_material_overwrite(cmzn_spectrum_id spectrum, bool overwrite);
 
 /**
- * Use this function with cmzn_spectrum_end_change.
- *
- * Use this function before making multiple changes on the spectrum, this
- * will stop spectrum from executing any immediate changes made.
- * After multiple changes have been made, use
- * cmzn_spectrum_end_change to execute all changes made previously in spectrum
- * at once.
+ * Call this function before making multiple changes on the spectrum, to stop
+ * spectrum from  notifying clients about every change. Call spectrum end change
+ * method afterwards to send notifications of change made. Can be nested.
+ * @see cmzn_spectrum_end_change
  *
  * @param scene  The handle to the spectrum.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -198,13 +197,10 @@ ZINC_API int cmzn_spectrum_set_material_overwrite(cmzn_spectrum_id spectrum, boo
 ZINC_API int cmzn_spectrum_begin_change(cmzn_spectrum_id spectrum);
 
 /**
- * Use this function with cmzn_spectrum_begin_change.
- *
- * Use this function before making multiple changes on the spectrum, this
- * will stop spectrum from executing any immediate changes made.
- * After multiple changes have been made, use
- * cmzn_spectrum_end_change to execute all changes made previously in spectrum
- * at once.
+ * Call spectrum begin change before making multiple changes on the spectrum,
+ * and this function afterwards to send a single notification of any changes
+ * to clients.
+ * @see cmzn_spectrum_begin_change
  *
  * @param spectrum  The handle to the spectrum.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -297,7 +293,7 @@ ZINC_API int cmzn_spectrum_remove_all_spectrumcomponents(cmzn_spectrum_id spectr
 
 /**
  * Returns a new handle to the spectrum component with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param component  Handle to spectrum component.
  * @return  New handle to spectrum component, or NULL/invalid handle on failure.
@@ -306,9 +302,9 @@ ZINC_API cmzn_spectrumcomponent_id cmzn_spectrumcomponent_access(
 	cmzn_spectrumcomponent_id component);
 
 /**
- * Destroys the spectrum component and sets the pointer to NULL.
+ * Destroys the spectrum component handle and resets it to NULL.
  *
- * @param component_address  The pointer to the handle of the spectrum component.
+ * @param component_address  Address of handle to the spectrum component.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_destroy(
@@ -437,22 +433,22 @@ ZINC_API int cmzn_spectrumcomponent_set_step_value(
 
 /**
  * Get the value which alters the colour progression when scale type
- * is set to CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG
+ * is set to SCALE_TYPE_LOG.
+ * @see CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG
  *
  * @param component  The handle of the spectrum component.
- *
- * @return  exaggeration value of the spectrum component on success.
+ * @return  The exaggeration value of the spectrum, or zero on failure.
  */
 ZINC_API double cmzn_spectrumcomponent_get_exaggeration(
 	cmzn_spectrumcomponent_id component);
 
 /**
  * Set the value which alters the colour progression when scale type
- * is set to CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG
+ * is set to SCALE_TYPE_LOG
+ * @see CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG
  *
  * @param component  The handle of the spectrum component.
- * @value  the exaggeration value to be set
- *
+ * @param value  The exaggeration value to be set.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_spectrumcomponent_set_exaggeration(
@@ -583,7 +579,7 @@ ZINC_API int cmzn_spectrumcomponent_set_extend_below(
  * Get the field component lookup number of a spectrum component, this value
  * determines which of the field component this spectrum component will look up on.
  *
- * @See cmzn_graphics_set_data_field
+ * @see cmzn_graphics_set_data_field
  *
  * @param component  Handle to the zinc spectrum component.
  * @return  positive integer of the field component number to look up to.
@@ -596,7 +592,7 @@ ZINC_API int cmzn_spectrumcomponent_get_field_component(
  * Set the field component lookup number of a spectrum component, this value
  * determines which of the field component this spectrum component will look up on.
  *
- * @See cmzn_graphics_set_data_field
+ * @see cmzn_graphics_set_data_field
  *
  * @param component  Handle to the zinc spectrum component.
  * @param component_number  field component number for this spectrum to lookup.

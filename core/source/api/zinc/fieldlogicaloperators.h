@@ -1,7 +1,7 @@
 /**
  * @file fieldlogicaloperators.h
  *
- * The public interface to the cmzn_fields that perform logical operations.
+ * The public interface to fields that perform logical operations.
  */
 /* OpenCMISS-Zinc Library
 *

@@ -58,12 +58,12 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_threshol
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
- * If field can be cast to a cmzn_field_imagefilter_binary_threshold_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter handle.
+ * If field can be cast to an imagefilter binary threshold do so and return a
+ * handle to the derived field.
  *
  * @param field  Id of the field to cast
- * @return  Handle to derived image filter binary threshold field, or NULL/invalid handle if wrong type or failed.
+ * @return  Handle to derived image filter binary threshold field, or
+ * NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_imagefilter_binary_threshold_id
 	cmzn_field_cast_imagefilter_binary_threshold(cmzn_field_id field);
@@ -190,12 +190,12 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_discrete_gaussi
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
- * If field can be cast to a cmzn_field_imagefilter_discrete_gaussian_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter handle.
+ * If field can be cast to an imagefilter discrete gaussian do so and return
+ * a handle to the derived field.
  *
  * @param field Id of the field to cast
- * @return  Handle to derived image filter discrete gaussian field, or NULL/invalid handle if wrong type or failed.
+ * @return  Handle to derived image filter discrete gaussian field, or
+ * NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_imagefilter_discrete_gaussian_id
 	cmzn_field_cast_imagefilter_discrete_gaussian(cmzn_field_id field);
@@ -327,12 +327,12 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
- * If field can be cast to a cmzn_field_imagefilter_threshold_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter handle.
+ * If field can be cast to an imagefilter threshold do so and return a
+ * handle to the derived field.
  *
  * @param field Id of the field to cast
- * @return  Handle to derived image filter threshold field, or NULL/invalid handle if wrong type or failed.
+ * @return  Handle to derived image filter threshold field, or
+ * NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_imagefilter_threshold_id cmzn_field_cast_imagefilter_threshold(cmzn_field_id field);
 
@@ -461,12 +461,12 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_histogram(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
- * If field can be cast to a cmzn_field_imagefilter_histogram_id do so
- * and return the field.  Otherwise return NULL.
- * Caller is responsible for destroying the new image filter handle.
+ * If field can be cast to an imagefilter histogram do so and return a
+ * handle to the derived field.
  *
  * @param field Id of the field to cast
- * @return  Handle to derived image filter histogram field, or NULL/invalid handle if wrong type or failed.
+ * @return  Handle to derived image filter histogram field, or
+ * NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_imagefilter_histogram_id cmzn_field_cast_imagefilter_histogram(cmzn_field_id field);
 

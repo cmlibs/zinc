@@ -59,7 +59,6 @@ ZINC_API int cmzn_field_get_number_of_components(cmzn_field_id field);
 
 /**
  * Returns a new handle to the field with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param field  The field to obtain a new handle to.
  * @return  New handle to field, or NULL/invalid handle on failure.
@@ -372,7 +371,6 @@ ZINC_API bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 
 /**
  * Returns a new handle to the iterator with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param iterator  The field iterator to obtain a new handle to.
  * @return  New handle to field iterator, or NULL/invalid handle on failure.

@@ -21,7 +21,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the material module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param materialmodule  The material module to obtain a new handle to.
  * @return  New handle to material module, or NULL/invalid handle on failure.
@@ -54,6 +54,7 @@ ZINC_API cmzn_material_id cmzn_materialmodule_create_material(
  * Begin caching or increment cache level for this material module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
+ * Can be nested.
  * @see cmzn_materialmodule_end_change
  *
  * @param materialmodule  The material module to begin change cache on.
@@ -64,9 +65,10 @@ ZINC_API int cmzn_materialmodule_begin_change(
 
 /**
  * Decrement cache level or end caching of changes for the material module.
- * Call cmzn_materialmodule_begin_change before making multiple changes
+ * Call matching begin change method before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_materialmodule_begin_change
  *
  * @param materialmodule  The material module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -130,7 +132,7 @@ ZINC_API int cmzn_materialmodule_set_default_selected_material(
  * Define a list of standard cmgui materials and store them as they are managed
  * by graphics module.
  *
- * @param materialmodule  Pointer to a Material_module object.
+ * @param materialmodule  Handle to material module to modify.
  * @return  Status CMZN_OK if successfully create a list of standard materials
  * into material module, any other value on failure.
  */

@@ -1,7 +1,7 @@
 /**
  * @file optimisation.h
  *
- * The public interface to cmzn_optimisation class which can minimise N
+ * The public interface to optimisation class which can minimise N
  * objective functions by modifying parameters of M independent fields.
  *
  */
@@ -45,7 +45,6 @@ ZINC_API cmzn_optimisation_id cmzn_fieldmodule_create_optimisation(
 
 /**
  * Returns a new handle to the optimisation with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param optimisation  The optimisation to obtain a new handle to.
  * @return  New handle to optimisation, or NULL/invalid handle on failure.

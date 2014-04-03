@@ -27,11 +27,12 @@ extern "C" {
 #endif
 
 /**
- * Creates a node group field which packages a cmzn_nodeset_group i.e. a subset
+ * Creates a node group field which defines a nodeset group i.e. a subset
  * of nodes from a master nodeset. As a field it evaluates to 1 for nodes in
  * the nodeset group and 0 elsewhere, i.e. it is the predicate for the sub-
  * domain, and this Boolean value can be combined in logical operations with
  * other fields.
+ * @see cmzn_nodeset_group_id
  *
  * @param field_module  Region field module which will own new field.
  * @param mesh  Handle to a nodeset the node group is to be compatible with. If
@@ -43,21 +44,25 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_group(
 	cmzn_fieldmodule_id field_module, cmzn_nodeset_id nodeset);
 
 /**
- * If field can be cast to a cmzn_field_node_group_id do so
- * and return the field.
- * Caller is responsible for destroying the returned handle.
+ * If field can be cast to a node group return a handle to the
+ * derived field.
  *
  * @param field  handle to the field to cast
- * @return  Handle to derived node group field, or NULL/invalid handle if wrong type or failed.
+ * @return  Handle to derived node group field, or
+ * NULL/invalid handle if wrong type or failed.
  */
 ZINC_API cmzn_field_node_group_id cmzn_field_cast_node_group(cmzn_field_id field);
 
 /**
- * Cast node group field back to its base field and return the field.  Otherwise
- * return NULL.
+ * Cast node group field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
  *
- * @param group  handle to the node group field to cast
- * @return  handle of the field, or NULL
+ * @param group  Handle to the node group field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
  */
 ZINC_C_INLINE cmzn_field_id cmzn_field_node_group_base_cast(cmzn_field_node_group_id group)
 {
@@ -84,11 +89,12 @@ ZINC_API cmzn_nodeset_group_id cmzn_field_node_group_get_nodeset_group(
 	cmzn_field_node_group_id node_group);
 
 /**
- * Creates an element group field which packages a cmzn_mesh_group i.e. a
+ * Creates an element group field which defines a mesh group i.e. a
  * subset of elements from a master mesh. As a field it evaluates to 1 for
  * elements in the mesh group and 0 elsewhere, i.e. it is the predicate for the
  * sub-domain, and this Boolean value can be combined in logical operations with
  * other fields.
+ * @see cmzn_mesh_group_id
  *
  * @param field_module  Region field module which will own new field.
  * @param mesh  Handle to a finite element mesh the element group is to be
@@ -100,9 +106,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_element_group(
 	cmzn_fieldmodule_id field_module, cmzn_mesh_id mesh);
 
 /**
- * If field can be cast to a cmzn_field_element_group_id do so
- * and return the field.
- * Caller is responsible for destroying the returned handle.
+ * If field can be cast to an element group return a handle to the
+ * derived field.
  *
  * @param field  handle to the field to cast
  * @return  Handle to derived element group field, or NULL/invalid handle if wrong type or failed.
@@ -110,11 +115,15 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_element_group(
 ZINC_API cmzn_field_element_group_id cmzn_field_cast_element_group(cmzn_field_id field);
 
 /**
- * Cast element group field back to its base field and return the field.  Otherwise
- * return NULL.
+ * Cast element group field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
  *
- * @param group  handle to the element group field to cast
- * @return  handle of the field, or NULL
+ * @param group  Handle to the element group field to cast.
+ * @return  Non-accessed handle to the base field or NULL if failed.
  */
 ZINC_C_INLINE cmzn_field_id cmzn_field_element_group_base_cast(cmzn_field_element_group_id group)
 {

@@ -26,8 +26,7 @@ extern "C" {
 ZINC_API cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Returns a new handle to the cmzn_sceneviewerinput with reference count incremented.
- * Caller is responsible for destroying the new handle.
+ * Returns a new handle to the sceneviewer input with reference count incremented.
  *
  * @param input  Handle to sceneviewerinput object.
  * @return  New handle to sceneviewerinput, or NULL/invalid handle on failure.
@@ -38,15 +37,15 @@ ZINC_API cmzn_sceneviewerinput_id cmzn_sceneviewerinput_access(cmzn_scenevieweri
  * Destroys this handle to the sceneviewerinput (and sets it to 0).
  * Internally this decrements the reference count.
  *
- * @param address_input  Address of handle to cmzn_sceneviewerinput object.
+ * @param input_address  Address of handle to sceneviewer input.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_sceneviewerinput_destroy(cmzn_sceneviewerinput_id *address_input);
+ZINC_API int cmzn_sceneviewerinput_destroy(cmzn_sceneviewerinput_id *input_address);
 
 /**
- * Set the position of the input
+ * Set the position of the input.
  *
- * @param input  Handle to cmzn_sceneviewerinput object.
+ * @param input  Handle to sceneviewer input.
  * @param x The x-coordinate of the input position.
  * @param y The y-coordinate of the input position.
  * @return  CMZN_OK if successful, any other value on failure.
@@ -56,7 +55,7 @@ ZINC_API int cmzn_sceneviewerinput_set_position(cmzn_sceneviewerinput_id input, 
 /**
  * Set modifier flags for the input, e.g. shift, ctrl, alt.
  *
- * @param input  Handle to cmzn_sceneviewerinput object.
+ * @param input  Handle to sceneviewer input.
  * @param modifier_flags  The input modifier flags to set: logical OR of
  * enum cmzn_sceneviewerinput_modifier_flag.
  * @return  CMZN_OK if successful, any other value on failure.
@@ -77,7 +76,7 @@ ZINC_API int cmzn_sceneviewerinput_set_button_type(cmzn_sceneviewerinput_id inpu
 /**
  * Set the scene viewer input event type: button press, motion, etc.
  *
- * @param input  Handle to cmzn_sceneviewerinput object.
+ * @param input  Handle to sceneviewer input.
  * @param type  Enumerator for the input event type.
  * @return  CMZN_OK if successful, any other value on failure.
  */

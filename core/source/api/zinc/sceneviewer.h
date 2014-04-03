@@ -1,7 +1,7 @@
 /**
  * @file sceneviewer.h
  *
- * The public interface to the cmzn_sceneviewer object for rendering scenes.
+ * The public interface to the sceneviewer object for rendering scenes.
  */
 /* OpenCMISS-Zinc Library
 *
@@ -33,7 +33,6 @@ Global functions
 
 /**
  * Returns a new handle to the scene viewer with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param sceneviewer  The scene viewer to obtain a new handle to.
  * @return  New handle to sceneviewer, or NULL/invalid handle on failure.
@@ -61,13 +60,11 @@ ZINC_API enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(
 	cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Use this function with cmzn_sceneviewer_end_change.
- *
- * Use this function before making multiple changes on the sceneviewer, this
- * will stop sceneviewer from executing any immediate changes made.
- * After multiple changes have been made, use
- * cmzn_sceneviewer_end_change to execute all changes made previously in sceneviewer
- * at once.
+ * Call this function before making multiple changes on the sceneviewer, this
+ * will stop sceneviewer from notifying clients of every change. After multiple
+ * changes have been made, call the sceneviewer end change method to restart
+ * notifications and notify clients of changes that have happened. Can be nested.
+ * @see cmzn_sceneviewer_end_change
  *
  * @param sceneviewer  The handle to the sceneviewer.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -75,12 +72,11 @@ ZINC_API enum cmzn_sceneviewer_interact_mode cmzn_sceneviewer_get_interact_mode(
 ZINC_API int cmzn_sceneviewer_begin_change(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Use this function with cmzn_sceneviewer_begin_change.
- *
- * Use cmzn_sceneviewer_begin_change before making multiple changes on the
- * sceneviewer, it will stop sceneviewer from executing any immediate changes made.
- * After multiple changes have been made, use this function to execute all changes
- * made previously in sceneviewer at once.
+ * Call sceneviewer begin change method before making multiple changes on the
+ * sceneviewer, to stop sceneviewer from notifying clients of every change.
+ * After multiple changes have been made, call this method to restart
+ * notifications and notify clients of changes that have happened.
+ * @see cmzn_sceneviewer_begin_change
  *
  * @param scene  The handle to the sceneviewer.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -608,7 +604,7 @@ ZINC_API int cmzn_sceneviewer_get_frame_pixels(cmzn_sceneviewer_id  sceneviewer,
  * Manually calls the scene viewer's list of input callbacks with the supplied
  * input data.
  *
- * @param sceneviewer  Handle to cmzn_sceneviewer object.
+ * @param sceneviewer  Handle to sceneviewer object.
  * @param input_data  Description of the input event.
  * @return  Status CMZN_OK on success, any other value if failed.
  */
@@ -677,7 +673,7 @@ ZINC_API cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 
 /**
  * Returns a new handle to the scene viewer module with the reference counter
- * incremented.  The caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param sceneviewermodule  The scene viewer module to obtain a reference to.
  * @return  New handle to sceneviewer module, or NULL/invalid handle on failure.
@@ -685,9 +681,9 @@ ZINC_API cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 ZINC_API cmzn_sceneviewermodule_id cmzn_sceneviewermodule_access(cmzn_sceneviewermodule_id sceneviewermodule);
 
 /**
- * Destroys the scene viewer module and sets the pointer to 0.
+ * Destroys the scene viewer module and resets it to NULL.
  *
- * @param sceneviewermodule_address  The pointer to the handle of the scene viewer module.
+ * @param sceneviewermodule_address  Address of handle of the scene viewer module.
  * @return  Status CMZN_OK if handle successfully destroyed, otherwise any other value.
  */
 ZINC_API int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneviewermodule_address);
@@ -699,8 +695,8 @@ ZINC_API int cmzn_sceneviewermodule_destroy(cmzn_sceneviewermodule_id *sceneview
  * semi-transparent objects are rendered without writing the depth buffer. Hence,
  * you can even see through the first semi-transparent surface drawn.
  *
- * @See cmzn_sceneviewer_transparency_mode
- * @See cmzn_sceneviewer_set_transparency_mode
+ * @see cmzn_sceneviewer_transparency_mode
+ * @see cmzn_sceneviewer_set_transparency_mode
  *
  * @param sceneviewer  Handle to the scene viewer.
  *
@@ -714,8 +710,8 @@ ZINC_API enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparen
 /**
  * Set the transparency_mode of the scene viewer.
  *
- * @See cmzn_sceneviewer_transparency_mode
- * @See cmzn_sceneviewer_get_transparency_mode
+ * @see cmzn_sceneviewer_transparency_mode
+ * @see cmzn_sceneviewer_get_transparency_mode
  *
  * @param sceneviewer  Handle to the scene viewer.
  * @param transparency_mode  Transparency mode to be set for sceneviewer
@@ -726,12 +722,10 @@ ZINC_API enum cmzn_sceneviewer_transparency_mode cmzn_sceneviewer_get_transparen
 ZINC_API int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_sceneviewer_transparency_mode transparency_mode);
 
-
 /**
- * Get the number of layers used in the CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT
- * transparency_mode.
- *
- * @See cmzn_sceneviewer_transparency_mode
+ * Get the number of layers used in the TRANSPARENCY_MODE_ORDER_INDEPENDENT
+ * transparency mode.
+ * @see cmzn_sceneviewer_transparency_mode
  *
  * @param sceneviewer  The scene viewer to query.
  * @return  number of layers for this scene viewer. Any otehr value if failed or
@@ -740,10 +734,9 @@ ZINC_API int cmzn_sceneviewer_set_transparency_mode(cmzn_sceneviewer_id scenevie
 ZINC_API int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Set the number of layers used in the CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT
+ * Set the number of layers used in the TRANSPARENCY_MODE_ORDER_INDEPENDENT
  * transparency_mode.
- *
- * @See cmzn_sceneviewer_transparency_mode
+ * @see cmzn_sceneviewer_transparency_mode
  *
  * @param sceneviewer  The scene viewer to modify.
  * @param layers  number of layers to be set for this scene viewer.
@@ -765,7 +758,7 @@ ZINC_API cmzn_sceneviewernotifier_id cmzn_sceneviewer_create_sceneviewernotifier
 
 /**
  * Returns a new handle to the scene viewer notifier with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param notifier  The scene viewer notifier to obtain a new handle to.
  * @return  Handle to scene viewer notifier with incremented reference count.
@@ -807,7 +800,8 @@ ZINC_API int cmzn_sceneviewernotifier_set_callback(cmzn_sceneviewernotifier_id n
 	cmzn_sceneviewernotifier_callback_function function, void *user_data_in);
 
 /**
- * Return the user data set by user when calling cmzn_sceneviewernotifier_set_callback
+ * Get the user data set when establishing the callback.
+ * @see cmzn_sceneviewernotifier_set_callback
  *
  * @see cmzn_sceneviewernotifier_set_callback
  * @param notifier  Handle to the scene viewer notifier.
@@ -818,7 +812,6 @@ ZINC_API void *cmzn_sceneviewernotifier_get_callback_user_data(
 
 /**
  * Returns a new handle to the sceneviewer event with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param event  The scene viewer event to obtain a new handle to.
  * @return  New handle to sceneviewer event, or NULL/invalid handle on failure.

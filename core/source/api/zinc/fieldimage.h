@@ -103,10 +103,11 @@ ZINC_API char *cmzn_field_image_wrap_mode_enum_to_string(
 
 /**
  * Creates a new image field. The new field has no image data; this must be set
- * by calling cmzn_field_image_* functions, e.g. cmzn_field_image_read().
+ * by calling image field specific methods, e.g. read().
  * The new field is given a default domain field which one can get (or set) with
  * image field functions. To evaluate the image field you will need to set
  * values of the domain field to texture coordinate locations.
+ * @see cmzn_field_image_read
  *
  * @param field_module  Region field module which will own the image field.
  * @return  Handle to new image field, or NULL/invalid handle on failure.
@@ -135,8 +136,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_image_from_source(
 
 /**
  * If the image_field is of type image field then this function returns
- * the image_field specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new derived image field handle.
+ * the derived image field handle.
  *
  * @param image_field  The image field to be cast.
  * @return  Handle to derived image field, or NULL/invalid handle if wrong type or failed.
@@ -149,7 +149,7 @@ ZINC_API cmzn_field_image_id cmzn_field_cast_image(cmzn_field_id image_field);
  * must not be destroyed. Use cmzn_field_access() to add a reference if
  * maintaining returned handle beyond the lifetime of the image argument.
  * Use this function to call base-class API, e.g.:
- * cmzn_field_set_name(cmzn_field_iamge_base_cast(image_field), "bob");
+ * cmzn_field_set_name(cmzn_field_image_base_cast(image_field), "bob");
  *
  * @param image  Handle to the image field to cast.
  * @return  Non-accessed handle to the base field or NULL if failed.

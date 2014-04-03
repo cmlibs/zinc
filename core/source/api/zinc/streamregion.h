@@ -58,7 +58,6 @@ ZINC_API cmzn_streaminformation_id cmzn_region_create_streaminformation_region(
 /**
  * If the streaminformation is of region type, then this function returns
  * the region specific handle.
- * Caller is responsible for destroying the returned derived handle.
  *
  * @param streaminformation  Handle to streaminformation to cast.
  * @return  Handle to derived stream information region, or NULL/invalid handle if
@@ -85,10 +84,10 @@ ZINC_C_INLINE cmzn_streaminformation_id cmzn_streaminformation_region_base_cast(
 }
 
 /**
- * Destroys a cmzn_streaminformation_region object.
+ * Destroys a stream information region object.
  *
- * @param streaminformation_address  Pointer to a streaminformation object, which
- * is destroyed and the pointer is set to NULL.
+ * @param streaminformation_address  Address of handle to streaminformation
+ * region to destroy; handle is reset to NULL.
  * @return  Status CMZN_OK if the operation is successful, any other value on
  * failure.
  */
@@ -99,7 +98,7 @@ ZINC_API int cmzn_streaminformation_region_destroy(
  * Check either an attribute of streaminformation has been set or
  * not.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param streaminformation  Handle to the stream information_region.
  * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
@@ -110,7 +109,7 @@ ZINC_API bool cmzn_streaminformation_region_has_attribute(
 /**
  * Get a real value of an attribute of streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param streaminformation  Handle to the stream information_region.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
@@ -119,9 +118,10 @@ ZINC_API double cmzn_streaminformation_region_get_attribute_real(
 	enum cmzn_streaminformation_region_attribute attribute);
 
 /**
- * Set a double attribute of the cmzn_streaminformation_region.
+ * Set a double attribute of the region stream information valid for
+ * all resources unless overridden for individual resources.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
+ * @param streaminformation  Handle to the stream information_region.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
@@ -138,8 +138,8 @@ ZINC_API int cmzn_streaminformation_region_set_attribute_real(
  * Check either an attribute of a stream in streaminformation has been set or
  * not.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
  * @param attribute  The identifier of the real attribute to get.
  * @return  1 if attribute has been set.
  */
@@ -151,8 +151,8 @@ ZINC_API bool cmzn_streaminformation_region_has_resource_attribute(
 /**
  * Get a real value of an attribute of a stream in streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
  * @param attribute  The identifier of the real attribute to get.
  * @return  Value of the attribute.
  */
@@ -162,10 +162,10 @@ ZINC_API double cmzn_streaminformation_region_get_resource_attribute_real(
 	enum cmzn_streaminformation_region_attribute attribute);
 
 /**
- * Set a double attribute of the cmzn_streaminformation_region.
+ * Set a double attribute for a resource in the region stream information.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
  * @param attribute  The identifier of the double attribute to set.
  * @param value  The new value for the attribute.
  *
@@ -182,8 +182,8 @@ ZINC_API int cmzn_streaminformation_region_set_resource_attribute_real(
 /**
  * Get the specified domain types for a stream resource in streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
  * @return  Bitmasks for specified domain types for stream resource,
  * 	CMZN_FIELD_DOMAIN_TYPE_INVALID if failed or unset
  */
@@ -197,8 +197,8 @@ ZINC_API cmzn_field_domain_types cmzn_streaminformation_region_get_resource_doma
  * type in exformat file to be imported as nodes or datapoints domain. If unset,
  * unspecified nodesets will be imported as nodes.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation_region.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
  * @param domain_types  Bitmasks for the domain type to be set for output. It currently supports
  *   the following domains:
  *   CMZN_FIELD_DOMAIN_TYPE_POINT - Only output the region name if this is the only bit set

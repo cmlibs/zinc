@@ -22,7 +22,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the font module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param fontmodule  The font module to obtain a new handle to.
  * @return  New handle to font module, or NULL/invalid handle on failure.
@@ -54,7 +54,8 @@ ZINC_API cmzn_font_id cmzn_fontmodule_create_font(
 /**
  * Begin caching or increment cache level for this font module. Call this
  * function before making multiple changes to minimise number of change messages
- * sent to clients. Must remember to end_change after completing changes.
+ * sent to clients. Must remember to end change after completing changes.
+ * Can be nested.
  * @see cmzn_fontmodule_end_change
  *
  * @param fontmodule  The font module to begin change cache on.
@@ -64,9 +65,10 @@ ZINC_API int cmzn_fontmodule_begin_change(cmzn_fontmodule_id fontmodule);
 
 /**
  * Decrement cache level or end caching of changes for the font module.
- * Call cmzn_fontmodule_begin_change before making multiple changes
+ * Call fontmodule begin change before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_fontmodule_begin_change
  *
  * @param fontmodule  The font module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.

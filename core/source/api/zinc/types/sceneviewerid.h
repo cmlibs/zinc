@@ -58,10 +58,10 @@ enum cmzn_sceneviewer_blending_mode
  * are used when an OpenGL context cannot be activated directly on the supplied
  * window, such as when the graphics are to be composited by an external program.
  * These are currently only implemeneted for winapi.
- * The graphics will be drawn offscreen and only rendered on screen when requested,
- * such as with the cmzn_sceneviewer_handle_windows_event.  The COPY version will
- * overwrite any existing pixels when drawing and the BLEND version will use the
- * alpha channel of the rendered scene to blend itself with the existing pixels.
+ * The graphics will be drawn offscreen and only rendered on screen when
+ * requested. The COPY version will overwrite any existing pixels when drawing
+ * and the BLEND version will use the alpha channel of the rendered scene to
+ * blend itself with the existing pixels.
  */
 enum cmzn_sceneviewer_buffering_mode
 {

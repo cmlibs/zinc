@@ -1,7 +1,7 @@
 /**
  * @file scenepicker.h
  *
- * Public interface to the cmzn_scene picker which represents a tool for
+ * Public interface to the scene picker which represents a tool for
  * graphics primitives picking.
  */
 /* OpenCMISS-Zinc Library
@@ -31,7 +31,6 @@ extern "C" {
 
 /**
  * Returns a new handle to the scene picker with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param scenepicker  The scenepicker to obtain a new handle to.
  * @return  New handle to scenepicker, or NULL/invalid handle on failure.

@@ -1,7 +1,7 @@
 /**
  * @file fieldarithmeticoperators.h
  *
- * The public interface to the cmzn_fields that perform arithmetic operators.
+ * The public interface to fields that perform arithmetic operators.
  */
 /* OpenCMISS-Zinc Library
 *

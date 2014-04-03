@@ -110,13 +110,8 @@ enum cmzn_field_image_wrap_mode
 };
 
 /**
- * Describes the format for storage.
- * Whether a particular format is actually available depends on whether
- * it is compatible with a particular format type when used with
- * #cmzn_field_image_get_formatted_image_data and whether support for that combination
- * has been included when the program was built.
- * This is a small subset of formats available, more can be selected by specifying
- * the appropriate format_string for a cmzn_streaminformation_image.
+ * Describes the format for image storage.
+ * @see cmzn_streaminformation_image_set_file_format
  */
 enum cmzn_streaminformation_image_file_format
 {

@@ -66,11 +66,12 @@ enum cmzn_spectrumcomponent_colour_mapping_type
 	 */
 	CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED = 2,
 	/*!< This colour mapping create non-coloured strips/bands.
-	 *  appearances can be altered by value of CMZN_SPECTRUMCOMPONENT_ATTRIBUTE_BANDED_RATIO
-	 *  and value of number of bands.
-	 *  This mode does not alter the rgb value except for the bands and
+	 *  The appearance is controlled by the number of bands and the banded ratio.
+	 *  This mode does not alter the rgb value except at the bands and
 	 *  should be used with other spectrum component or with
 	 *  overwrite_material set to 0 in spectrum.
+	 * @see cmzn_spectrumcomponent_set_banded_ratio
+	 * @see cmzn_spectrumcomponent_get_number_of_bands
 	 */
 	CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE = 3,
 	/*!< This colour mapping create a colour spectrum from black to blue.

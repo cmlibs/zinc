@@ -24,7 +24,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the tessellation module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param tessellationmodule  Handle to tessellation module.
  * @return  New handle to tessellation module, or NULL/invalid handle on failure.
@@ -57,6 +57,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
  * Begin caching or increment cache level for this tessellation module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
+ * Can be nested.
  * @see cmzn_tessellationmodule_end_change
  *
  * @param tessellationmodule  The tessellation module to begin change cache on.
@@ -66,9 +67,10 @@ ZINC_API int cmzn_tessellationmodule_begin_change(cmzn_tessellationmodule_id tes
 
 /**
  * Decrement cache level or end caching of changes for the tessellation module.
- * Call cmzn_tessellationmodule_begin_change before making multiple changes
+ * Call tessellation module begin change method before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_tessellationmodule_begin_change
  *
  * @param tessellationmodule  The tessellation module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -136,7 +138,6 @@ ZINC_API int cmzn_tessellationmodule_set_default_points_tessellation(
 
 /**
  * Returns a new handle to the tessellation with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param tessellation  Handle to tessellation.
  * @return  New handle to tessellation, or NULL/invalid handle on failure.

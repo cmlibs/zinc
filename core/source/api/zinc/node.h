@@ -1,7 +1,8 @@
 /**
  * @file node.h
  *
- * The public interface to cmzn_node.
+ * The public interface to finite element nodes and nodesets.
+ * Nodes are also used for other point domains e.g. data points.
  *
  */
 /* OpenCMISS-Zinc Library
@@ -78,7 +79,6 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_name(
 
 /**
  * Returns a new handle to the nodeset with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param nodeset  The nodeset to obtain a new handle to.
  * @return  New handle to nodeset, or NULL/invalid handle on failure.
@@ -233,7 +233,6 @@ ZINC_API bool cmzn_nodeset_match(cmzn_nodeset_id nodeset1, cmzn_nodeset_id nodes
 /**
  * If the nodeset is a nodeset group i.e. subset of nodes from a master nodeset,
  * get the nodeset group specific interface for add/remove functions.
- * Caller is responsible for destroying the returned derived handle.
  *
  * @param field  The nodeset to be cast.
  * @return  Handle to derived nodeset group, or NULL/invalid handle if wrong type or failed.
@@ -309,7 +308,6 @@ ZINC_API int cmzn_nodeset_group_remove_nodes_conditional(
 
 /**
  * Returns a new handle to the node iterator with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The node iterator to obtain a new handle to.
  * @return  New handle to the node iterator, or NULL/invalid handle on failure.
@@ -337,7 +335,6 @@ ZINC_API cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator)
 
 /**
  * Returns a new handle to the node template with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param mesh  Handle to a node template.
  * @return  New handle to the node template, or NULL/invalid handle on failure.
@@ -473,7 +470,6 @@ ZINC_API int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template
 
 /**
  * Returns a new handle to the node with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param node  The node to obtain a new handle to.
  * @return  New handle to the node, or NULL/invalid handle on failure.
@@ -529,7 +525,6 @@ ZINC_API int cmzn_node_merge(cmzn_node_id node, cmzn_nodetemplate_id node_templa
 
 /**
  * Returns a new handle to the nodeset changes with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param nodesetchanges  The nodeset changes to obtain a new handle to.
  * @return  New handle to the nodeset changes, or NULL/invalid handle on failure.

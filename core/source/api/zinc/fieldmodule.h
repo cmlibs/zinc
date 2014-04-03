@@ -31,7 +31,6 @@ Global functions
 
 /**
  * Returns a new handle to the field module with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param fieldmodule  Handle to field module.
  * @return  New handle to field module, or NULL/invalid handle on failure.
@@ -51,11 +50,12 @@ ZINC_API int cmzn_fieldmodule_destroy(cmzn_fieldmodule_id *fieldmodule_address);
  * Begin caching or increment cache level for this field module. Call this
  * function before making multiple changes to fields, nodes, elements etc. from
  * this field module to minimise number of change messages sent to clients.
- * Must call cmzn_fieldmodule_end_change after making changes.
+ * Must call matching fieldmodule end change method after making changes.
  * Note that field module changes are always cached when the region changes are
- * being cached.
- *
+ * being cached. Can be nested.
+ * @see cmzn_fieldmodule_end_change
  * @see cmzn_region_begin_change
+ *
  * @param fieldmodule  The field module to begin change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
@@ -63,9 +63,10 @@ ZINC_API int cmzn_fieldmodule_begin_change(cmzn_fieldmodule_id fieldmodule);
 
 /**
  * Decrement cache level or end caching of changes for this field module.
- * Call cmzn_fieldmodule_begin_change before making multiple changes
+ * Call matching fieldmodule begin change method before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_fieldmodule_begin_change
  *
  * @param fieldmodule  The field module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -148,7 +149,7 @@ ZINC_API bool cmzn_fieldmodule_match(cmzn_fieldmodule_id fieldmodule1,
 
 /**
  * Returns a new handle to the field module notifier with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param notifier  The field module notifier to obtain a new handle to.
  * @return  New handle to field module notifier, or NULL/invalid handle on failure.
@@ -189,7 +190,8 @@ ZINC_API int cmzn_fieldmodulenotifier_set_callback(cmzn_fieldmodulenotifier_id n
 	cmzn_fieldmodulenotifier_callback_function function, void *user_data_in);
 
 /** 
- * Return the user data set by user when calling cmzn_fieldmodulenotifier_set_callback 
+ * Get the user data set when establishing the callback.
+ * @see cmzn_fieldmodulenotifier_set_callback 
  * 
  * @see cmzn_fieldmodulenotifier_set_callback 
  * @param notifier  Handle to the field module notifier. 
@@ -200,7 +202,6 @@ ZINC_API void *cmzn_fieldmodulenotifier_get_callback_user_data(
 
 /**
  * Returns a new handle to the fieldmodule event with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param event  The field module event to obtain a new handle to.
  * @return  New handle to field module event, or NULL/invalid handle on failure.
