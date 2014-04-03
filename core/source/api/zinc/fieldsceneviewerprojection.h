@@ -37,7 +37,7 @@ extern "C" {
  * @see cmzn_fieldmodule_create_field_projection.
  *
  * @param field_module  Region field module which will own new field.
- * @param sceneviewer  Handle to cmzn_sceneviewer object.
+ * @param sceneviewer  Handle to sceneviewer object.
  * @param from_coordinate_system  The input coordinate system for the
  * transformation.
  * @param to_coordinate_system  The output coordinate system for the

@@ -22,7 +22,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the differential operator with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param differential_operator  The differential operator to obtain a new
  * reference to.

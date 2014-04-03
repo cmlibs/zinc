@@ -1,7 +1,7 @@
 /**
  * @file status.h
  *
- * The public interface to cmzn_status.
+ * C function status/error codes.
  *
  */
 /* OpenCMISS-Zinc Library

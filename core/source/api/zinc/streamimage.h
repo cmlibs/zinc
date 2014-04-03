@@ -102,8 +102,7 @@ ZINC_API int cmzn_streaminformation_image_destroy(
 
 /**
  * If the streaminformation is of image type, then this function returns
- * the image specific handle, otherwise it returns NULL/invalid handle.
- * Caller is responsible for destroying the returned derived handle.
+ * the derived image stream information handle.
  *
  * @param streaminformation  Handle to streaminformation to cast.
  * @return  Handle to derived stream information image, or NULL/invalid handle if
@@ -123,9 +122,8 @@ ZINC_API cmzn_streaminformation_image_id cmzn_streaminformation_cast_image(
  * @param streaminformation_image  Handle to the streaminformation_image to cast.
  * @return  Non-accessed handle to the base stream information or NULL if failed.
  */
-ZINC_C_INLINE cmzn_streaminformation_id
-	cmzn_streaminformation_image_base_cast(
-		cmzn_streaminformation_image_id streaminformation_image)
+ZINC_C_INLINE cmzn_streaminformation_id cmzn_streaminformation_image_base_cast(
+	cmzn_streaminformation_image_id streaminformation_image)
 {
 	return (cmzn_streaminformation_id)(streaminformation_image);
 }

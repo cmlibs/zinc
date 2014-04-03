@@ -1,7 +1,7 @@
 /**
  * @file glyph.h
  *
- * Public interface to cmzn_glyph static graphics objects used to visualise
+ * Public interface to glyph static graphics objects used to visualise
  * points in the scene.
  */
 /* OpenCMISS-Zinc Library
@@ -25,7 +25,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the glyph module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param glyphmodule  The glyph module to obtain a new handle to.
  * @return  New handle to glyph module, or NULL/invalid handle on failure.
@@ -47,6 +47,7 @@ ZINC_API int cmzn_glyphmodule_destroy(
  * Begin caching or increment cache level for this glyph module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
+ * Can be nested.
  * @see cmzn_glyphmodule_end_change
  *
  * @param glyphmodule  The glyph module to begin change cache on.
@@ -56,9 +57,10 @@ ZINC_API int cmzn_glyphmodule_begin_change(cmzn_glyphmodule_id glyphmodule);
 
 /**
  * Decrement cache level or end caching of changes for the glyph module.
- * Call cmzn_glyphmodule_begin_change before making multiple changes
+ * Call glyphmodule begin change method before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_glyphmodule_begin_change
  *
  * @param glyphmodule  The glyph module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -153,7 +155,6 @@ ZINC_API int cmzn_glyphmodule_set_default_point_glyph(
 
 /**
  * Returns a new handle to the glyph with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param glyph  The glyph to obtain a new handle to.
  * @return  New handle to glyph, or NULL/invalid handle on failure.

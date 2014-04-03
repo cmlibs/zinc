@@ -24,7 +24,6 @@ extern "C" {
 
 /**
  * Returns a new handle to the field cache with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param cache  The field cache to obtain a new handle to.
  * @return  New handle to field cache, or NULL/invalid handle on failure.

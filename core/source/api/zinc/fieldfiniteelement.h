@@ -38,8 +38,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_finite_element(
 
 /**
  * If the field is real-valued interpolated finite element then this function
- * returns the finite_element specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the returned derived field handle.
+ * returns the derived finite element field handle.
  *
  * @param field  The field to be cast.
  * @return  Handle to derived finite element field, or NULL/invalid handle if wrong type or failed.
@@ -110,11 +109,11 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_find_mesh_location(
 
 /**
  * If the field is of type find_mesh_location then this function returns the
- * find_mesh_location specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the returned derived field handle.
+ * derived find mesh location field handle.
  *
  * @param field  The field to be cast.
- * @return  Handle to derived find mesh location field, or NULL/invalid handle if wrong type or failed.
+ * @return  Handle to derived find mesh location field, or NULL/invalid handle
+ * if wrong type or failed.
  */
 ZINC_API cmzn_field_find_mesh_location_id cmzn_field_cast_find_mesh_location(
 	cmzn_field_id field);
@@ -226,7 +225,6 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
 
 /**
  * If the field is stored_mesh_location type, return type-specific handle to it.
- * Caller is responsible for destroying the returned derived field handle.
  *
  * @param field  The field to be cast.
  * @return  Handle to derived stored mesh location field, or NULL/invalid handle if wrong type or failed.
@@ -272,7 +270,6 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_stored_string(
 
 /**
  * If the field is stored_string type, return type-specific handle to it.
- * Caller is responsible for destroying the returned derived field handle.
  *
  * @param field  The field to be cast.
  * @return  Handle to derived stored string field, or NULL/invalid handle if wrong type or failed.

@@ -26,7 +26,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the scene filter module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param filtermodule  The scene filter module to obtain a new handle to.
  * @return  New handle to scene filter module, or NULL/invalid handle on failure.
@@ -46,21 +46,20 @@ ZINC_API int cmzn_scenefiltermodule_destroy(
 	cmzn_scenefiltermodule_id *filtermodule_address);
 
 /**
- * Creates a scene filter which matches any graphics with visibility
+ * Creates and returns a scene filter which matches any graphics with visibility
  * flag set AND its owning region and all ancestor region scenes' visibility
  * flags set i.e. scene visibility flags work hierarchically.
- * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
- * @param filtermodule  Scene filter module to add filter to.
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_visibility_flags(
 	cmzn_scenefiltermodule_id filtermodule);
 
 /**
- * Creates a scene filter which matches any graphics with given field domain type.
+ * Creates and returns a scene filter which matches any graphics with given field domain type.
  *
- * @param filtermodule  The module to create the filter in.
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @param domain_type  The field domain type graphics attribute to be matched by
  * this filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
@@ -70,10 +69,9 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_field_dom
 	enum cmzn_field_domain_type domain_type);
 
 /**
- * Creates a cmzn_scenefilter which matches any graphics with the supplied
- * name.
- * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
+ * Creates a scene filter which matches any graphics with the supplied name.
  *
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @param match_name  The name of a graphics must be matched by this filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
@@ -81,10 +79,9 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_
 	cmzn_scenefiltermodule_id filtermodule, const char *match_name);
 
 /**
- * Creates a cmzn_scenefilter which matches any graphics with matching
- * type.
- * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
+ * Creates a scene filter which matches any graphics with matching type.
  *
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @param graphics_type  The type of a graphics must be matched by this filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
@@ -92,10 +89,10 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_graphics_
 	cmzn_scenefiltermodule_id filtermodule, enum cmzn_graphics_type graphics_type);
 
 /**
- * Creates a cmzn_scenefilter which matches any graphics in region or any
+ * Creates a scene filter which matches any graphics in region or any
  * of its sub-regions.
- * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
  *
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @param match_region  The region to be matched by this filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
@@ -103,20 +100,20 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_region(
 	cmzn_scenefiltermodule_id filtermodule,cmzn_region_id match_region);
 
 /**
- * Creates a collective of cmzn_scenefilters which matches all supplied
- * filters.
- * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
+ * Creates and returns a scene filter which returns the logical AND of a
+ * collective of operand filters, i.e. true if all operand filters are true.
  *
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_operator_and(
 	cmzn_scenefiltermodule_id filtermodule);
 
 /**
- * Creates a collective of cmzn_scenefilters which matches any of the supplied
- * filters.
- * Caller must call cmzn_scenefilter_destroy to clean up the returned handle.
+ * Creates and returns a scene filter which returns the logical OR of a
+ * collective of operand filters, i.e. true if any operand filter is true.
  *
+ * @param filtermodule  Handle to the scene filter module to own the new filter.
  * @return  Handle to new scene filter, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_operator_or(
@@ -126,6 +123,7 @@ ZINC_API cmzn_scenefilter_id cmzn_scenefiltermodule_create_scenefilter_operator_
  * Begin caching or increment cache level for this scene filter module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
+ * Can be nested.
  * @see cmzn_scenefiltermodule_end_change
  *
  * @param filtermodule  The scene filter module to begin change cache on.
@@ -136,9 +134,10 @@ ZINC_API int cmzn_scenefiltermodule_begin_change(
 
 /**
  * Decrement cache level or end caching of changes for the scene filter module.
- * Call cmzn_scenefiltermodule_begin_change before making multiple changes
+ * Call scene filter module begin change method before making multiple changes
  * and call this afterwards. When change level is restored to zero,
  * cached change messages are sent out to clients.
+ * @see cmzn_scenefiltermodule_begin_change
  *
  * @param filtermodule  The scene filter module to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -177,7 +176,6 @@ ZINC_API int cmzn_scenefiltermodule_set_default_scenefilter(
 
 /**
  * Returns a new handle to the filter with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param filter  The filter to obtain a new handle to.
  * @return  New handle to scene filter, or NULL/invalid handle on failure.
@@ -270,8 +268,7 @@ ZINC_API int cmzn_scenefilter_set_inverse(cmzn_scenefilter_id filter,
 
 /**
  * If the filter is of operator and or or type, then this function returns the
- * operator representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived filter handle.
+ * operator derived scenefilter handle.
  *
  * @param filter  The generic filter to be cast.
  * @return  Handle to derived scene filter operator, or NULL/invalid handle if

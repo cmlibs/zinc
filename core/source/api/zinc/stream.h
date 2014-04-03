@@ -24,7 +24,6 @@ extern "C" {
 /**
  * Returns a new handle to the stream information with reference count
  * incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param streaminformation  Handle to stream information.
  * @return  New handle to stream information, or NULL/invalid handle on failure.
@@ -82,10 +81,11 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_mem
 	cmzn_streaminformation_id streaminformation);
 
 /**
- * Creates a stream resource of memory type and store the pointer to the buffer,
- * the pointer can then be read into a zinc object. This function does not
- * copy the buffer, user is responsible for the life time of the buffer. Please
- * make sure the buffer is valid when reading the stream information.
+ * Creates a stream resource of memory type for the buffer of the supplied size
+ * and at the supplied buffer pointer. The resource can then be read into a Zinc
+ * object. This function does not copy the buffer, user is responsible for the
+ * lifetime of the buffer. Please make sure the buffer is valid when reading the
+ * stream information.
  * @see cmzn_field_image_write
  * @see cmzn_region_write
  * @see cmzn_field_image_read
@@ -94,7 +94,7 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_mem
  *
  * @param streaminformation  Stream information which will contains the new
  * stream resource.
- * @param buffer  pointer to the a memory buffer
+ * @param buffer  Pointer to the memory buffer
  * @param buffer_length  length of the buffer
  * @return  Handle to new stream resource, or NULL/invalid handle on failure.
  */
@@ -104,7 +104,6 @@ ZINC_API cmzn_streamresource_id cmzn_streaminformation_create_streamresource_mem
 
 /**
  * Returns a new handle to the stream resource with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param resource  Handle to stream resource.
  * @return  New handle to stream resource, or NULL/invalid handle on failure.
@@ -122,8 +121,7 @@ ZINC_API int cmzn_streamresource_destroy(cmzn_streamresource_id *resource_addres
 
 /**
  * If the stream resource is of file type, then this function returns
- * the file specific representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived handle.
+ * the derived file stream resource handle.
  *
  * @param resource  Handle to stream resource.
  * @return  Handle to derived file stream resource, or NULL/invalid handle if
@@ -168,8 +166,7 @@ ZINC_API char *cmzn_streamresource_file_get_name(cmzn_streamresource_file_id res
 
 /**
  * If the stream resource is of memory type, then this function returns
- * the file specific representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived handle.
+ * the derived memory stream resource handle.
  *
  * @see cmzn_streamresource_memory_get_buffer
  * @see cmzn_streamresource_memory_get_buffer_copy
@@ -182,10 +179,9 @@ ZINC_API cmzn_streamresource_memory_id cmzn_streamresource_cast_memory(
 	cmzn_streamresource_id resource);
 
 /**
- * Destroys a cmzn_streamresource_memory object.
+ * Destroys a stream resource memory handle and resets it to NULL.
  *
- * @param resource_address  Pointer to a streamresource_memory object, which
- * is destroyed and the pointer is set to NULL.
+ * @param resource_address  Address of handle to memory stream resource.
  * @return  status CMZN_OK if the operation is successful, any other value on failure.
  */
 ZINC_API int cmzn_streamresource_memory_destroy(
@@ -210,11 +206,10 @@ ZINC_C_INLINE cmzn_streamresource_id cmzn_streamresource_memory_base_cast(
 
 /**
  * Return the memory block currently in the stream resource object.
- *
  * @see cmzn_region_write
  * @see cmzn_field_image_write
  *
- * @param resource  The cmzn_streamresource_memory object.
+ * @param resource  Handle to the memory stream resource.
  * @param memory_buffer_reference  Will be set to point to the allocated
  * 	memory block.
  * @param memory_buffer_size  Will be set to the length of
@@ -225,16 +220,16 @@ ZINC_API int cmzn_streamresource_memory_get_buffer(cmzn_streamresource_memory_id
 	void **memory_buffer_references, unsigned int *memory_buffer_sizes);
 
 /**
- * Similar to cmzn_streamresource_memory_get_buffer but this function will make
- * a copy and return the memory block currently in the stream resource object.
- * User must call cmzn_deallocate to release memory from the returned buffer
- * when they are no longer needed.
+ * Similar to stream resource memory get buffer method but this function returns
+ * a copy of the memory block currently in the stream resource object.
+ * User must call cmzn_deallocate to free the returned buffer after use.
  *
+ * @see cmzn_streamresource_memory_get_buffer
  * @see cmzn_region_write
  * @see cmzn_field_image_write
  * @see cmzn_deallocate
  *
- * @param resource  The cmzn_streamresource_memory object.
+ * @param resource  Handle to the memory stream resource.
  * @param memory_buffer_reference  Will be set to point to the allocated
  * 	memory block.
  * @param memory_buffer_size  Will be set to the length of
@@ -249,8 +244,8 @@ ZINC_API int cmzn_streamresource_memory_get_buffer_copy(
  * Get the specified data compression for a specified streamresource in
  * streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information.
+ * @param resource  Handle to the stream resource.
  * @return  enum for specified data_compression_type for stream resource,
  * 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID if failed or unset
  */
@@ -262,8 +257,8 @@ ZINC_API enum cmzn_streaminformation_data_compression_type
  * Specify the data compression of this streamresource and it will override the one
  * specified in the owning streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation.
- * @param resource  Handle to the cmzn_streamresource.
+ * @param streaminformation  Handle to the stream information.
+ * @param resource  Handle to the stream resource.
  * @param data_compression_type  enum to indicate the compression used in the resources
  *	in the streaminformation
  *
@@ -278,7 +273,7 @@ ZINC_API int cmzn_streaminformation_set_resource_data_compression_type(
 /**
  * Get the specified data compression for the stream resources in streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation.
+ * @param streaminformation  Handle to the stream information.
  * @return  enum for specified data_compression_type for stream resource,
  * 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID if failed or unset
  */
@@ -288,7 +283,7 @@ ZINC_API enum cmzn_streaminformation_data_compression_type cmzn_streaminformatio
 /**
  * Specify the data compression of the streamresource in the streaminformation.
  *
- * @param streaminformation  Handle to the cmzn_streaminformation.
+ * @param streaminformation  Handle to the stream information.
  * @param data_compression_type  enum to indicate the compression used in the resources
  *	in the streaminformation
  * @return   status CMZN_OK if data compression successfully set, any other value if

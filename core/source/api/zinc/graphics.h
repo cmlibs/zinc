@@ -32,7 +32,6 @@ extern "C" {
 
 /**
  * Returns a new handle to the graphics with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param graphics  The graphics to obtain a new handle to.
  * @return  New handle to graphics, or NULL/invalid handle on failure.
@@ -40,9 +39,9 @@ extern "C" {
 ZINC_API cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics);
 
 /**
- * Destroys the graphics and sets the pointer to NULL.
+ * Destroys the handle to the graphics and resets it to NULL.
  *
- * @param graphics_address  The pointer to the handle of the graphics.
+ * @param graphics_address  Address of handle to graphics to be destroyed.
  * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_destroy(cmzn_graphics_id *graphics_address);
@@ -493,8 +492,7 @@ ZINC_API int cmzn_graphics_set_field_domain_type(cmzn_graphics_id graphics,
 
 /**
  * If the graphics is of type contours then this function returns
- * the contours specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new contours graphics handle.
+ * the derived contours graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived contours graphics, or NULL/invalid handle if
@@ -627,8 +625,7 @@ ZINC_API int cmzn_graphics_contours_set_range_isovalues(
 
 /**
  * If the graphics is of type lines then this function returns
- * the lines specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new lines graphics handle.
+ * the derived lines graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived lines graphics, or NULL/invalid handle if
@@ -662,8 +659,7 @@ ZINC_API int cmzn_graphics_lines_destroy(cmzn_graphics_lines_id *lines_address);
 
 /**
  * If the graphics is of type points then this function returns
- * the points specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new points graphics handle.
+ * the derived points graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived points graphics, or NULL/invalid handle if
@@ -697,8 +693,7 @@ ZINC_API int cmzn_graphics_points_destroy(cmzn_graphics_points_id *points_addres
 
 /**
  * If the graphics is of type streamlines then this function returns
- * the streamlines specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new streamlines graphics handle.
+ * the derived streamlines graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived streamlines graphics, or NULL/invalid handle if
@@ -801,8 +796,7 @@ ZINC_API int cmzn_graphics_streamlines_set_track_length(
 
 /**
  * If the graphics is of type surfaces then this function returns
- * the surfaces specific representation, otherwise returns NULL.
- * Caller is responsible for destroying the new surfaces graphics handle.
+ * the derived surfaces graphics handle.
  *
  * @param graphics  The graphics to be cast.
  * @return  Handle to derived surfaces graphics, or NULL/invalid handle if
@@ -847,7 +841,7 @@ ZINC_API cmzn_graphicslineattributes_id cmzn_graphics_get_graphicslineattributes
 
 /**
  * Returns a new handle to the line attributes with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param line_attributes  The line_attributes to obtain a new handle to.
  * @return  New handle to graphics line attributes, or NULL/invalid handle on failure.
@@ -1011,7 +1005,7 @@ ZINC_API cmzn_graphicspointattributes_id cmzn_graphics_get_graphicspointattribut
 
 /**
  * Returns a new handle to the point attributes with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param point_attributes  The point_attributes to obtain a new handle to.
  * @return  New handle to graphics point attributes, or NULL/invalid handle on failure.
@@ -1396,7 +1390,7 @@ ZINC_API cmzn_graphicssamplingattributes_id
 
 /**
  * Returns a new handle to the sampling attributes with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param sampling_attributes  The graphics sampling attributes to obtain a new
  * reference to.

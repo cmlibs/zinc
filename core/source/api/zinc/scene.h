@@ -36,7 +36,6 @@ extern "C" {
 
 /**
  * Returns a new handle to the scene with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param scene  Handle to a scene.
  * @return  New handle to scene, or NULL/invalid handle on failure.
@@ -47,20 +46,18 @@ ZINC_API cmzn_scene_id cmzn_scene_access(cmzn_scene_id scene);
  * Destroys handle to the scene (and sets it to NULL).
  * Internally this decrements the reference count.
  *
- * @param scene Pointer to the handle to the scene.
+ * @param scene_address  Address of scene handle to destroy.
  * @return  status CMZN_OK if successfully remove scene, any other value on
  * failure.
  */
-ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene);
+ZINC_API int cmzn_scene_destroy(cmzn_scene_id * scene_address);
 
 /**
- * Use this function with cmzn_scene_end_change.
- *
  * Use this function before making multiple changes on the scene, this
  * will stop scene from executing any immediate changes made in
- * scene. After multiple changes have been made, use
- * cmzn_scene_end_change to execute all changes made previously in scene
- * at once.
+ * scene. After multiple changes have been made, call the scene end change
+ * method to notify clients of changes made up to that point. Can be nested.
+ * @see cmzn_scene_end_change
  *
  * @param scene  The handle to the scene.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -174,13 +171,11 @@ ZINC_API cmzn_selectionnotifier_id cmzn_scene_create_selectionnotifier(
 	cmzn_scene_id scene);
 
 /**
- * Use this function with cmzn_scene_begin_change.
- *
- * Use cmzn_scene_begin_change before making multiple changes on the
- * scene, it will stop scene from executing any immediate changes made in
- * scene. After multiple changes have been made, use
- * this function to execute all changes made previously in scene
- * at once.
+ * Call the scene begin change method before making multiple changes on the
+ * scene, to stop the scene from notifying clients of every change. After
+ * changes have been made, call this method to restart notifications and
+ * notify clients of changes made since calling begin change.
+ * @see cmzn_scene_begin_change
  *
  * @param scene  The handle to the scene.
  * @return  Status CMZN_OK on success, any other value on failure.

@@ -34,7 +34,6 @@ extern "C" {
 
 /**
  * Returns a new handle to the region with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param region  Handle to a region.
  * @return  New handle to region, or NULL/invalid handle on failure.
@@ -55,10 +54,12 @@ ZINC_API int cmzn_region_destroy(cmzn_region_id *region_address);
  * Begin caching or increment cache level for this region only. Call this
  * function before making multiple changes to the region or its fields and
  * objects via its field_module to minimise number of change messages sent to
- * clients. Must call cmzn_region_end_change after making changes.
- * Important: Do not pair with cmzn_region_end_hierarchical_change.
+ * clients. Must call region end change method after making changes.
+ * Important: Do not pair with region end hierarchical change method!
  * Note: region change caching encompasses field_module change caching so there
- * is no need to call cmzn_fieldmodule_begin_change/end_change as well.
+ * is no need to call fieldmodule begin/end change methods as well.
+ * Can be nested.
+ * @see cmzn_region_end_change
  *
  * @param region  The region to begin change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -67,10 +68,11 @@ ZINC_API int cmzn_region_begin_change(cmzn_region_id region);
 
 /**
  * Decrement cache level or end caching of changes for this region only.
- * Call cmzn_region_begin_change before making multiple field or region changes
+ * Call region begin change method before making multiple field or region changes
  * and call this afterwards. When change level is restored to zero in region,
  * cached change messages are sent out to clients.
- * Important: Do not pair with cmzn_region_begin_hierarchical_change.
+ * Important: Do not pair with region begin hierarchical change method!
+ * @see cmzn_region_begin_change
  *
  * @param region  The region to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -80,8 +82,10 @@ ZINC_API int cmzn_region_end_change(cmzn_region_id region);
 /**
  * Begin caching or increment cache level for all regions in a tree, used to
  * efficiently and safely make hierarchical field changes or modify the tree.
- * Must call cmzn_region_begin_hierarchical_change after modifications made.
- * Important: Do not pair with non-hierarchical cmzn_region_end_change.
+ * Must call region end hierarchical_change method after modifications made.
+ * Can be nested.
+ * Important: Do not pair with non-hierarchical region end change method!
+ * @see cmzn_region_end_hierarchical_change
  *
  * @param region  The root of the region tree to begin change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -90,10 +94,11 @@ ZINC_API int cmzn_region_begin_hierarchical_change(cmzn_region_id region);
 
 /**
  * Decrement cache level or end caching of changes for all regions in a tree.
- * Call cmzn_region_begin_hierarchical_change before making hierarchical field
+ * Call region begin hierarchical change method before making hierarchical field
  * changes or modifying the region tree, and call this afterwards. When change
  * level is restored to zero in any region, cached change messages are sent out.
- * Important: Do not pair with non-hierarchical cmzn_region_begin_change.
+ * Important: Do not pair with non-hierarchical region begin change method!
+ * @see cmzn_region_begin_hierarchical_change
  *
  * @param region  The root of the region tree to end change cache on.
  * @return  Status CMZN_OK on success, any other value on failure.
@@ -283,13 +288,13 @@ ZINC_API cmzn_region_id cmzn_region_create_subregion(cmzn_region_id top_region,
 	const char *path);
 
 /**
- * Reads region data using the cmzn_streamresource obejcts provided in the
- * cmzn_streaminformation object.
+ * Reads region data using stream resource objects provided in the
+ * stream information object.
  * @see cmzn_streaminformation_id
  *
  * @param region  The region to read the resources in streaminformation into.
- * @param streaminformation Handle to the cmzn_streaminformation containing
- * 		information to read file into.
+ * @param streaminformation  Handle to the stream information region containing
+ * 		information about resources to read from.
  * @return  Status CMZN_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
@@ -302,19 +307,18 @@ ZINC_API int cmzn_region_read(cmzn_region_id region,
  *
  * @param region  The region to be read into
  * @param file_name  name of the file to read from.
- *
  * @return  Status CMZN_OK if data successfully read and merged into specified
  * region, any other value on failure.
  */
 ZINC_API int cmzn_region_read_file(cmzn_region_id region, const char *file_name);
 
 /**
- * Write region data using the data provided in the cmzn_io_stream object.
+ * Writes region data to stream resource objects described in the
+ * stream information object.
  *
  * @param region  The region to be written out.
- * @param streaminformation Handle to the cmzn_streaminformation containing
- * 		information to read file into.
- *
+ * @param streaminformation  Handle to the stream information region containing
+ * 		information about resources to write to.
  * @return  Status CMZN_OK if data is successfully written out, any other value
  * on failure.
  */

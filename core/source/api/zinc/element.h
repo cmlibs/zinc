@@ -1,7 +1,7 @@
 /**
  * @file element.h
  *
- * The public interface to cmzn_element, finite element meshes.
+ * The public interface to Zinc finite elements and meshes.
  */
 /* OpenCMISS-Zinc Library
 *
@@ -117,7 +117,6 @@ ZINC_API cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 
 /**
  * Returns a new handle to the mesh with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The mesh to obtain a new handle to.
  * @return  New handle to the mesh, or NULL/invalid handle on failure.
@@ -172,10 +171,11 @@ ZINC_API cmzn_element_id cmzn_mesh_create_element(cmzn_mesh_id mesh,
  * Create an element iterator object for iterating through the elements in the
  * mesh which are ordered from lowest to highest identifier. The iterator
  * initially points at the position before the first element, so the first call
- * to cmzn_elementiterator_next() returns the first element and advances the
+ * to the element iterator next method returns the first element and advances the
  * iterator.
  * Iterator becomes invalid if mesh is modified or any of its elements are
  * given new identifiers.
+ * @see cmzn_elementiterator_next
  *
  * @param mesh  Handle to the mesh whose elements are to be iterated over.
  * @return  Handle to new element iterator, or NULL/invalid handle on failure.
@@ -313,7 +313,6 @@ ZINC_API bool cmzn_mesh_match(cmzn_mesh_id mesh1, cmzn_mesh_id mesh2);
 /**
  * If the mesh is a mesh group i.e. subset of elements from a master mesh,
  * get the mesh group specific interface for add/remove functions.
- * Caller is responsible for destroying the returned derived handle.
  *
  * @param field  The mesh to be cast.
  * @return  Handle to derived mesh group, or NULL/invalid handle if wrong type or failed.
@@ -390,7 +389,6 @@ ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh
 
 /**
  * Returns a new handle to the element basis with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The element basis to obtain a new handle to.
  * @return  New handle to element basis, or NULL/invalid handle on failure.
@@ -465,7 +463,6 @@ ZINC_API int cmzn_elementbasis_get_number_of_functions(
 
 /**
  * Returns a new handle to the element iterator with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The element iterator to obtain a new handle to.
  * @return  New handle to element iterator, or NULL/invalid handle on failure.
@@ -496,7 +493,6 @@ ZINC_API cmzn_element_id cmzn_elementiterator_next(
 
 /**
  * Returns a new handle to the element template with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param mesh  The element template to obtain a new handle to.
  * @return  New handle to element template, or NULL/invalid handle on failure.
@@ -616,7 +612,6 @@ ZINC_API int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_templ
 
 /**
  * Returns a new handle to the element with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param element  Handle to an element.
  * @return  New handle to the element, or NULL/invalid handle on failure.
@@ -695,7 +690,6 @@ ZINC_API int cmzn_element_merge(cmzn_element_id element,
 
 /**
  * Returns a new handle to the mesh changes with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param meshchanges  The mesh changes to obtain a new handle to.
  * @return  New handle to mesh changes, or NULL/invalid handle on failure.

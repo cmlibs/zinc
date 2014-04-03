@@ -37,7 +37,7 @@ ZINC_API cmzn_timesequence_id cmzn_fieldmodule_get_matching_timesequence(
 
 /**
  * Returns a new handle to the time sequence with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param timesequence  Handle to time sequence.
  * @return  New time sequence reference with incremented reference count.

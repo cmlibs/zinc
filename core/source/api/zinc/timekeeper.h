@@ -23,7 +23,7 @@ extern "C" {
 
 /**
  * Returns a new handle to the timekeeper module with reference count
- * incremented. Caller is responsible for destroying the new handle.
+ * incremented.
  *
  * @param timekeepermodule  Handle to timekeeper module.
  * @return  New handle to timekeeper module, or NULL/invalid handle on failure.

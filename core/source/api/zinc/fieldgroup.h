@@ -40,9 +40,8 @@ extern "C" {
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_group(cmzn_fieldmodule_id field_module);
 
 /**
- * If the field is of group type, then this function returns the group specific
- * representation, otherwise it returns NULL.
- * Caller is responsible for destroying the returned derived field handle.
+ * If the field is of group type, then this function returns the derived group
+ * field handle.
  *
  * @param field  The generic field to be cast.
  * @return  Handle to derived group field, or NULL/invalid handle if wrong type or failed.
@@ -192,7 +191,6 @@ ZINC_API int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_regi
  * group and return a handle to the newly created sub-group field.
  * The specified region must be in the tree of this group's local/owning region
  * and not already in the group.
- * Caller is responsible for destroying the returned group field handle.
  *
  * @param group  Handle to group field to modify.
  * @param subregion  Handle to region to create a subgroup for.
@@ -204,7 +202,6 @@ ZINC_API cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 /**
  * Get the group field for subregion in the specified group if it exists.
  * The specified region must be in the tree of this group's local/owning region.
- * Caller is responsible for destroying the returned group field handle.
  *
  * @param group  Handle to group field to query.
  * @param subregion  Handle to region to get the subgroup for.
@@ -221,7 +218,6 @@ ZINC_API cmzn_field_group_id cmzn_field_group_get_subregion_field_group(cmzn_fie
  * Subregion groups for any intermediate and the final nodeset-owning regions
  * are automatically created to contain the node group, if needed.
  * Fails if a compatible node group field already exists.
- * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to modify.
  * @param nodeset  Handle to a nodeset the node group is to be compatible with.
@@ -235,7 +231,6 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_create_field_node_group(
  * Find and return handle to the sub-object node group compatible with the
  * specified nodeset, if one exists for the group. The nodeset can be from
  * the group's own region or any subregion of it.
- * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to query.
  * @param nodeset  Handle to a nodeset the node group is to be compatible with.
@@ -253,7 +248,6 @@ ZINC_API cmzn_field_node_group_id cmzn_field_group_get_field_node_group(
  * Subregion groups for any intermediate and the final mesh-owning regions are
  * automatically created to contain the element group, if needed.
  * Fails if a compatible element group field already exists.
- * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to modify.
  * @param mesh  Handle to a mesh the element group is to be compatible with.
@@ -267,7 +261,6 @@ ZINC_API cmzn_field_element_group_id cmzn_field_group_create_field_element_group
  * Find and return handle to the sub-object element group compatible with the
  * specified mesh, if one exists for the group.
  * The mesh can be from the group's own region or any subregion of it. 
- * Caller is responsible for destroying the returned field handle.
  *
  * @param group  Handle to group field to query.
  * @param mesh  Handle to a mesh the element group is to be compatible with.

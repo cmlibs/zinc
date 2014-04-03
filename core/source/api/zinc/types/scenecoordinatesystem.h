@@ -25,7 +25,7 @@ enum cmzn_scenecoordinatesystem
 	CMZN_SCENECOORDINATESYSTEM_LOCAL = 1,
 	/*!< The local coordinate system of a scene, subject to its own
 	 * transformation matrix and those of all parent scenes up to the root
-	 * region of the cmzn_scene in use, which are world coordinates.*/
+	 * region of the scene in use, which are world coordinates.*/
 	CMZN_SCENECOORDINATESYSTEM_WORLD = 2,
 	/*!< The world coordinate system which scene viewer viewing parameters
 	 * are specified in, and which scene transformations (giving local

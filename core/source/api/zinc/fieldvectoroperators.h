@@ -1,7 +1,7 @@
 /**
  * @file fieldvectoroperators.h
  *
- * The public interface to the cmzn_fields that perform vector operations.
+ * The public interface to fields that perform vector operations.
  */
 /* OpenCMISS-Zinc Library
 *

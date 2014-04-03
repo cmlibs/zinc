@@ -20,7 +20,6 @@ extern "C" {
 
 /**
  * Returns a new handle to the selection notifier with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param selectionnotifier  The selection notifier to obtain a new handle to.
  * @return  New handle to new selection notifier, or NULL/invalid handle on failure.
@@ -38,7 +37,8 @@ ZINC_API cmzn_selectionnotifier_id cmzn_selectionnotifier_access(
 ZINC_API int cmzn_selectionnotifier_destroy(cmzn_selectionnotifier_id *selectionnotifier);
 
 /**
- * Return the user data set by user when calling cmzn_selectionnotifier_set_callback
+ * Get the user data set when establishing the callback.
+ * @see cmzn_selectionnotifier_set_callback
  *
  * @see cmzn_selectionnotifier_set_callback
  * @param selectionnotifier  Handle to the selection notifier.
@@ -72,7 +72,6 @@ ZINC_API int cmzn_selectionnotifier_set_callback(cmzn_selectionnotifier_id selec
 
 /**
  * Returns a new handle to the selection event with reference count incremented.
- * Caller is responsible for destroying the new handle.
  *
  * @param selectionevent  The selection event to obtain a new handle to.
  * @return  New handle to new selection event, or NULL/invalid handle on failure.
@@ -83,11 +82,7 @@ ZINC_API cmzn_selectionevent_id cmzn_selectionevent_access(
 /**
  * Destroys handle to the selection event (and sets it to NULL).
  * Internally this decrements the reference count.
- *
- * Note: At the end of the cmzn_selectionnotifier_callback_function, the caller
- * will destroy the event argument so users do not need to call this destroy
- * function unless, an additional reference count has been added through
- * cmzn_selectionevent_access function.
+ * Note: Do not destroy the event argument passed to the user callback function.
  *
  * @param selectionevent_address  Address of selection event handle to destroy.
  * @return  Status CMZN_OK on success, any other value on failure.
