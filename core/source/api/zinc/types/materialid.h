@@ -12,6 +12,8 @@
 #define CMZN_MATERIALID_H__
 
 /**
+ * @brief Zinc materials specify colouring of graphics.
+ *
  * Zinc materials specify colouring of graphics similarly to the original OpenGL
  * shading model with diffuse, ambient, emission and specular colours, shininess
  * and alpha/opacity. Image fields can be attached for texturing (and will be
@@ -21,6 +23,8 @@ struct cmzn_material;
 typedef struct cmzn_material * cmzn_material_id;
 
 /**
+ * @brief Module managing all materials.
+ *
  * Module managing all materials. Note that only default and default selected
  * materials exist on start-up, so many users will want to define standard
  * materials early in their program. Standard materials include basic colours,
@@ -37,7 +41,7 @@ typedef struct cmzn_materialmodule * cmzn_materialmodule_id;
  */
 enum cmzn_material_attribute
 {
-	CMZN_MATERIAL_ATTRIBUTE_INVALID = 0,
+	CMZN_MATERIAL_ATTRIBUTE_INVALID = 0, /*!< Unspecified material attribute. */
 	CMZN_MATERIAL_ATTRIBUTE_ALPHA = 1,
 	/*!< Opacity of the material. Transparent or translucent objects has
 		* lower alpha values then an opaque ones. Minimum acceptable value is 0

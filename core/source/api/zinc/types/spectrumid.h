@@ -12,6 +12,8 @@
 #define CMZN_SPECTRUMID_H__
 
 /**
+ * @brief A spectrumcomponent object maps a single component of a data field to a colour.
+ *
  * A spectrumcomponent object maps a single component of a data field to one of
  * several colour ramps, rainbow, alpha ramp, contour bands or a step function.
  * A spectrum may blend multiple components to give the overall colouring.
@@ -21,6 +23,8 @@ struct cmzn_spectrumcomponent;
 typedef struct cmzn_spectrumcomponent *cmzn_spectrumcomponent_id;
 
 /**
+ * @brief Zinc Spectrum maps values of graphics data fields to colours.
+ *
  * A Zinc Spectrum maps values of graphics data fields to colours. It consists
  * of a list of spectrumcomponent objects which combine to give the overall
  * colouring.
@@ -30,6 +34,8 @@ struct cmzn_spectrum;
 typedef struct cmzn_spectrum *cmzn_spectrum_id;
 
 /**
+ * @brief Module managing all spectrums.
+ *
  * Module managing all spectrums.
  */
 struct cmzn_spectrummodule;
@@ -41,12 +47,17 @@ typedef struct cmzn_spectrummodule *cmzn_spectrummodule_id;
 enum cmzn_spectrumcomponent_scale_type
 {
 	CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_INVALID = 0,
+	/*!< Unspecified scale type */
 	CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR = 1,
 	/*!< default scale type
 	 * The colour value on spectrum will be interpolated linearly in range when
 	 * this mode is chosen.
 	 */
 	CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG = 2
+	/*!< Logarithm scale type for spectrum component.
+	 * The colour value on spectrum will be interpolated logarithmically in range
+	 * when this mode is chosen.
+	 */
 };
 
 /**
@@ -57,6 +68,7 @@ enum cmzn_spectrumcomponent_scale_type
 enum cmzn_spectrumcomponent_colour_mapping_type
 {
 	CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_INVALID = 0,
+	/*!< Unspecified colour mapping type */
 	CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA = 1,
 	/*!< This colour mapping alters the alpha (transparency value) for
 	 * primitives.

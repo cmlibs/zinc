@@ -12,6 +12,8 @@
 #define CMZN_TIMESEQUENCEID_H__
 
 /**
+ * @brief A non-decreasing list of times at which nodal parameters can be stored.
+ *
  * A non-decreasing list of times at which nodal parameters can be stored.
  * Setting a timesequence for a field in a nodetemplate establishes storage
  * for N values of each component x type x version at the node (with N = the

@@ -12,6 +12,8 @@
 #define CMZN_FIELDSUBOBJECTGROUPID_H__
 
 /**
+ * @brief A field which defines a subset of nodes from a master nodeset.
+ *
  * A field which defines a subset of nodes from a master nodeset, by returning
  * true/1 on nodes in the group, false/0 otherwise. From this field one must
  * obtain the nodeset group object to work with the resulting subset: to
@@ -21,6 +23,8 @@ struct cmzn_field_node_group;
 typedef struct cmzn_field_node_group *cmzn_field_node_group_id;
 
 /**
+ * @brief A field which defines a subset of elements from a master mesh.
+ *
  * A field which defines a subset of elements from a master mesh, by returning
  * true/1 on elements in the group, false/0 otherwise. From this field one must
  * obtain the mesh group object to work with the resulting subset: to

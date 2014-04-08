@@ -19,11 +19,16 @@
 enum cmzn_timekeeper_play_direction
 {
 	CMZN_TIMEKEEPER_PLAY_DIRECTION_INVALID = 0,
+	/*!< Unspecified play direction */
 	CMZN_TIMEKEEPER_PLAY_DIRECTION_FORWARD = 1,
+	/*!< Specify the time keeper to progress at increasing time value */
 	CMZN_TIMEKEEPER_PLAY_DIRECTION_REVERSE = 2
+	/*!< Specify the time keeper to progress at decreasing time value */
 };
 
 /**
+ * @brief The timekeeper maintains a current time that is communicated to other objects
+ *
  * The timekeeper maintains a current time that is communicated to objects
  * within Zinc. For example, time-varying graphics are shown at the current
  * timekeeper time; also, the time value field allows the current timekeeper
@@ -43,6 +48,8 @@ struct cmzn_timekeeper;
 typedef struct cmzn_timekeeper *cmzn_timekeeper_id;
 
 /**
+ * @brief Module for finding and managing timekeepers.
+ *
  * Module for finding and managing timekeepers.
  */
 struct cmzn_timekeepermodule;

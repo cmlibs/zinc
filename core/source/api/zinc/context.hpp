@@ -12,8 +12,18 @@
 
 #include "zinc/context.h"
 
+/**
+ * \brief The OpenCMISS namespace
+ *
+ * This is the OpenCMISS namespace
+ */
 namespace OpenCMISS
 {
+/**
+ * \brief The OpenCMISS::Zinc namespace
+ *
+ * This is the OpenCMISS::Zinc namespace, all libZinc cpp APIs are in this namespace.
+ */
 namespace Zinc
 {
 class Fontmodule;

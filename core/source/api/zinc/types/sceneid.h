@@ -12,6 +12,8 @@
 #define CMZN_SCENEID_H__
 
 /**
+ * @brief Container/manager for the graphics making up the visualisation
+ *
  * Container/manager for the graphics making up the visualisation of the
  * region's domains and fields.
  */

@@ -206,7 +206,7 @@ ZINC_API cmzn_nodeset_id cmzn_nodeset_get_master_nodeset(cmzn_nodeset_id nodeset
 /**
  * Return the name of the nodeset.
  *
- * @see cmzn_deallocate()
+ * @see cmzn_deallocate
  * @param nodeset  The nodeset whose name is requested.
  * @return  On success: allocated string containing nodeset name. Up to caller
  * to free using cmzn_deallocate().

@@ -86,7 +86,9 @@ public:
 };
 
 /**
- * Base class functor for notifier callbacks:
+ * @brief Base class functor for Selection notifier callbacks:
+ *
+ * Base class functor for Selection notifier callbacks:
  * - Derive from this class adding any user data required.
  * - Implement virtual operator()(const Selectionevent&) to handle callback.
  * @see Selectionnotifier::setCallback()

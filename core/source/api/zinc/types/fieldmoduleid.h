@@ -12,6 +12,8 @@
 #define CMZN_FIELDMODULEID_H__
 
 /**
+ * @brief Container/manager of fields and domains within a region.
+ *
  * Container/manager of fields and domains within a region.
  *
  * Note that fieldmodule create field methods documented as supporting
@@ -26,12 +28,16 @@ struct cmzn_fieldmodule;
 typedef struct cmzn_fieldmodule *cmzn_fieldmodule_id;
 
 /**
+ * @brief Manages individual user notification of changes with a field module.
+ *
  * Manages individual user notification of changes with a field module.
  */
 struct cmzn_fieldmodulenotifier;
 typedef struct cmzn_fieldmodulenotifier *cmzn_fieldmodulenotifier_id;
 
 /**
+ * @brief Information about changes to fields and other objects in the field module.
+ *
  * Information about changes to fields and other objects in the field module,
  * sent with each callback from the fieldmodule notifier.
  */

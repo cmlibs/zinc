@@ -12,6 +12,8 @@
 #define CMZN_OPTIMISATIONID_H__
 
 /**
+ * @brief A description of a non-linear optimisation problem.
+ *
  * A description of a non-linear optimisation problem, consisting of the
  * objective fields (generally spatial sums or sum of squares) to be minimised,
  * independent fields whose parameters are to be modified in the optimisation,
@@ -98,7 +100,7 @@ enum cmzn_optimisation_attribute
 		* Default value: 1000
 		*/
 	CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_STEP = 6,
-	/*<! (Opt++ steplength control) Places an upper bound on the length of the step that can be taken at each
+	/*!< (Opt++ steplength control) Places an upper bound on the length of the step that can be taken at each
 		* iteration of the optimisation
 		* algorithm. If the scale of your optimisation parameters exceeds the bound, adjust accordingly. If you want
 		* to be conservative in your search, you may want to set MAXIMUM_STEP to a smaller value than the default. In
@@ -107,7 +109,7 @@ enum cmzn_optimisation_attribute
 		* Default value: 1.0e3
 		*/
 	CMZN_OPTIMISATION_ATTRIBUTE_MINIMUM_STEP = 7,
-	/*<! (Opt++ steplength control) Places a lower bound on the length of the step that can be taken at each
+	/*!< (Opt++ steplength control) Places a lower bound on the length of the step that can be taken at each
 		* iteration of the optimisation
 		* algorithm. If the scale of your optimisation parameters exceeds the bound, adjust accordingly. If you
 		* expect the optimisation algorithm to navigate some tricky areas, set MINIMUM_STEP to a smaller value than
@@ -123,7 +125,7 @@ enum cmzn_optimisation_attribute
 		* Default value: 1.e-4
 		*/
 	CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_BACKTRACK_ITERATIONS = 9,
-	/*<! (Opt++ globalisation strategy parameter) Only relevant when you use a algorithm with a linesearch
+	/*!< (Opt++ globalisation strategy parameter) Only relevant when you use a algorithm with a linesearch
 		* search strategy. The value places a limit on the number of iterations in the linesearch routine of the
 		* optimisation algorithm. If the limit is reached before computing a step with acceptable decrease, the
 		* algorithm terminates with an error message. The reported solution is not optimal, but the best one
@@ -132,18 +134,16 @@ enum cmzn_optimisation_attribute
 		*
 		* Default value: 5
 		*/
-	/*
-		* @todo Reserving this one for when trust region methods are available via the API. Currently everything
-		* uses linesearch methods only.
-		*/
-	CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 10,
-	/*<! (Opt++ globalisation strategy parameter) Only relevant when you are using an algorithm with a trust-region
+	CMZN_OPTIMISATION_ATTRIBUTE_TRUST_REGION_SIZE = 10
+	/*!< (Opt++ globalisation strategy parameter) Only relevant when you are using an algorithm with a trust-region
 		* or a trustpds search strategy. The value initialises the size of the trust region.
 		*
 		* Default value: 0.1?? (@todo Need to better initialise the default value, see https://software.sandia.gov/opt++/opt++2.4_doc/html/ControlParameters.html)
 		*
 		* If your problem is quadratic or close to it, you may want to initialise the size of the trust region to a
 		* larger value.
+		* @todo Reserving this one for when trust region methods are available via the API. Currently everything
+		* uses linesearch methods only.
 		*/
 };
 

@@ -12,6 +12,8 @@
 #define CMZN_REGIONID_H__
 
 /**
+ * @brief A region represents a block of a hierarchical model.
+ *
  * A region represents a block of a hierarchical model. It owns a local set of
  * domains and fields describing the model (each accessed from its fieldmodule),
  * and a scene for building graphics to visualise the model.
@@ -22,6 +24,8 @@ struct cmzn_region;
 typedef struct cmzn_region * cmzn_region_id;
 
 /**
+ * @brief A region-specific stream information object.
+ *
  * A region-specific stream information object, used to specify one or more
  * model files/resources for a region to read from or write to, with attributes
  * specified for them either globally or per-resource.
@@ -38,7 +42,10 @@ typedef struct cmzn_streaminformation_region * cmzn_streaminformation_region_id;
 enum cmzn_streaminformation_region_attribute
 {
 	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_INVALID = 0,
+	/*!< Unspecified attribute */
 	CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME = 1
+	/*!< Attribute used to specify at what time the stream resource(s) to be
+	 * reading in or writing to.*/
 };
 
 #endif /* CMZN_REGION_ID_H */

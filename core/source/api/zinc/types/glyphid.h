@@ -12,6 +12,8 @@
 #define CMZN_GLYPHID_H__
 
 /**
+ * @brief Module managing all glyphs.
+ *
  * Module managing all glyphs. Note that no glyphs exist on start-up, so
  * most users will need to define standard glyphs early in their program, and
  * after defining standard materials to pick up coloured standard glyphs.
@@ -21,6 +23,8 @@ struct cmzn_glyphmodule;
 typedef struct cmzn_glyphmodule *cmzn_glyphmodule_id;
 
 /**
+ * @brief A glyph is a static graphics object used to visualise a point in space.
+ *
  * A glyph is a static graphics object used to visualise a point in space, e.g.
  * point, line, sphere, axes etc.
  * Note that the appearance of some glyphs depend on attributes of point
@@ -32,6 +36,8 @@ struct cmzn_glyph;
 typedef struct cmzn_glyph *cmzn_glyph_id;
 
 /**
+ * @brief A specialised glyph type which renders 3-D axes.
+ *
  * A specialised glyph type which renders 3-D axes with arbitrary labels and
  * selected glyph repeated on 3 axes.
  */
@@ -39,6 +45,8 @@ struct cmzn_glyph_axes;
 typedef struct cmzn_glyph_axes *cmzn_glyph_axes_id;
 
 /**
+ * @brief A specialised glyph type which draws a cylindrical colour bar.
+ *
  * A specialised glyph type which draws a cylindrical colour bar showing the
  * colours and range of a spectrum with controllable size, scale ticks and label
  * etc. The colour bar automatically updates to show changes to the spectrum.
@@ -48,11 +56,11 @@ typedef struct cmzn_glyph_colour_bar *cmzn_glyph_colour_bar_id;
 
 /**
  * An enum defining how glyphs are repeatedly displayed at points.
- * @see cmzn_graphicspointattributes
+ * @see cmzn_graphicspointattributes_id
  */
 enum cmzn_glyph_repeat_mode
 {
-	CMZN_GLYPH_REPEAT_MODE_INVALID = 0,
+	CMZN_GLYPH_REPEAT_MODE_INVALID = 0, /*!< Unspecified glyph repeat mode */
 	CMZN_GLYPH_REPEAT_MODE_NONE = 1,
 		/*!< default cmzn_glyph_repeat_mode
 		 * normal single glyph display, no repeat */
@@ -82,7 +90,7 @@ enum cmzn_glyph_repeat_mode
  */
 enum cmzn_glyph_shape_type
 {
-	CMZN_GLYPH_SHAPE_TYPE_INVALID = 0,
+	CMZN_GLYPH_SHAPE_TYPE_INVALID = 0,      /*!< Unspecified glyph shape type */
 	CMZN_GLYPH_SHAPE_TYPE_NONE,             /*!< no glyph */
 	CMZN_GLYPH_SHAPE_TYPE_ARROW,            /*!< line arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */
 	CMZN_GLYPH_SHAPE_TYPE_ARROW_SOLID,      /*!< solid arrow from 0,0,0 to 1,0,0, head 1/3 long unit width */

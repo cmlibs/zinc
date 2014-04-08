@@ -593,7 +593,7 @@ ZINC_API double cmzn_field_imagefilter_histogram_get_marginal_scale(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_field_imagefilter_histogram_set_marginal_scale(
-	cmzn_field_imagefilter_histogram_id	imagefilter_histogram,
+	cmzn_field_imagefilter_histogram_id imagefilter_histogram,
 	double marginal_scale);
 
 /**

@@ -72,6 +72,14 @@ public:
 
 };
 
+/**
+ * @brief Base class functor for Timenotifier callbacks
+ *
+ * Base class functor for time notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Timenotifierevent&) to handle callback.
+ * @see Timenotifier::setCallback()
+ */
 class Timenotifiercallback
 {
 friend class Timenotifier;
