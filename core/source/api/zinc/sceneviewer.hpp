@@ -91,7 +91,9 @@ public:
 };
 
 /**
- * Base class functor for notifier callbacks:
+ * @brief Base class functor for Sceneviewer notifier callbacks:
+ *
+ * Base class functor for Sceneviewer notifier callbacks:
  * - Derive from this class adding any user data required.
  * - Implement virtual operator()(const Sceneviewerevent&) to handle callback.
  * @see Sceneviewernotifier::setCallback()

@@ -12,6 +12,8 @@
 #define CMZN_FIELDGROUPID_H__
 
 /**
+ * @brief A generic group field used for grouping local subobjects.
+ *
  * A generic group field type able to record which local subobjects are in the
  * group (recorded by attached node group and element group fields), or whether
  * the entire local region is in the group. This field returns true/1 at domain

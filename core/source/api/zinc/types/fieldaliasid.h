@@ -12,6 +12,8 @@
 #define CMZN_FIELDALIASID_H__
 
 /**
+ * @brief A specialised field type creating a local alias
+ *
  * A specialised field type creating a local alias for a field from another
  * region. Currently only non-spatially-varying fields can be successfully used
  * from an alias field.

@@ -368,7 +368,7 @@ inline Nodeset Node::getNodeset() const
 	return Nodeset(cmzn_node_get_nodeset(id));
 }
 
-class NodesetGroup  : public Nodeset
+class NodesetGroup : public Nodeset
 {
 
 public:

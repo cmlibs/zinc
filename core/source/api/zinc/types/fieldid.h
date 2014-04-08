@@ -12,6 +12,8 @@
 #define CMZN_FIELDID_H__
 
 /**
+ * @brief Base field type: an abstraction of a mathematical field.
+ *
  * Base field type: an abstraction of a mathematical field, a function giving
  * values at locations in a domain (mesh, nodeset, over time).
  * Instances of derived field types give the actual expression in terms of
@@ -21,6 +23,8 @@ struct cmzn_field;
 typedef struct cmzn_field *cmzn_field_id;
 
 /**
+ * @brief An iterator for looping through all the fields in a fieldmodule.
+ *
  * An iterator for looping through all the fields in a fieldmodule.
  */
 struct cmzn_fielditerator;
@@ -51,8 +55,7 @@ enum cmzn_field_change_flag
 		 * If this flag is set but not CHANGE_FLAG_FULL_RESULT then nodeset and mesh
 		 * changes describe where on the domain its values have changed. */
 	CMZN_FIELD_CHANGE_FLAG_RESULT =
-		CMZN_FIELD_CHANGE_FLAG_FULL_RESULT |
-		CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT,
+		CMZN_FIELD_CHANGE_FLAG_FULL_RESULT | CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT,
 		/*!< convenient value representing any change affecting result */
 	CMZN_FIELD_CHANGE_FLAG_FINAL = 32768
 		/*!< final notification: owning field module i.e. region has been destroyed */
@@ -73,6 +76,7 @@ typedef int cmzn_field_change_flags;
 enum cmzn_field_coordinate_system_type
 {
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID = 0,
+		/*!< Unspecified coordinate system type */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN = 1,
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
@@ -92,6 +96,7 @@ enum cmzn_field_coordinate_system_type
 enum cmzn_field_domain_type
 {
 	CMZN_FIELD_DOMAIN_TYPE_INVALID = 0,
+		/*!< Unspecified domain type */
 	CMZN_FIELD_DOMAIN_TYPE_POINT = 1,
 		/*!< A single point for the region */
 	CMZN_FIELD_DOMAIN_TYPE_NODES = 2,
@@ -120,9 +125,13 @@ typedef int cmzn_field_domain_types;
 enum cmzn_field_value_type
 {
 	CMZN_FIELD_VALUE_TYPE_INVALID = 0,
+	/*!< Unspecified value type */
 	CMZN_FIELD_VALUE_TYPE_REAL = 1,
+	/*!< Real value type */
 	CMZN_FIELD_VALUE_TYPE_STRING = 2,
+	/*!< String value type */
 	CMZN_FIELD_VALUE_TYPE_MESH_LOCATION = 3
+	/*!< Mesh location value type */
 };
 
 #endif

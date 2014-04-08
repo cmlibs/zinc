@@ -234,7 +234,7 @@ ZINC_API double cmzn_field_image_get_texture_coordinate_depth(cmzn_field_image_i
 /**
  * Gets the texture coordinate size to be used for this image field.
  *
- * @see cmzn_field_iamge_set_texture coordinate_sizes
+ * @see cmzn_field_image_set_texture_coordinate_sizes
  * @param image  The image to query.
  * @param valuesCount  The size of the sizes array to fill. Up to 3 values can
  * be requested corresponding to width, height, depth. 
@@ -277,7 +277,7 @@ ZINC_API int cmzn_field_image_set_texture_coordinate_depth(cmzn_field_image_id i
 /**
  * Sets the texture coordinate size to be used for this image field.
  *
- * @see cmzn_field_iamge_set_texture coordinate_sizes
+ * @see cmzn_field_image_get_texture_coordinate_sizes
  * @param image  The image to query.
  * @param valuesCount  The size of the sizes array to fill. Up to 3 values can
  * be set corresponding to width, height, depth. 
@@ -356,7 +356,7 @@ ZINC_API int cmzn_field_image_write_file(cmzn_field_image_id image_field,
 /**
  * Returns how the image is combined with the material: blend, decal or modulate.
  *
- * @param  image_field  The image field.
+ * @param image_field  The image field.
  * @return  Returns enum describing how the image is combined with the material.
  */
 ZINC_API enum cmzn_field_image_combine_mode cmzn_field_image_get_combine_mode(

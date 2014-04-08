@@ -12,24 +12,32 @@
 #define CMZN_FIELDIMAGEPROCESSINGID_H__
 
 /**
+ * @brief Image processing derived field type performing the ITK binary threshold filter.
+ *
  * Image processing derived field type performing the ITK binary threshold filter.
  */
 struct cmzn_field_imagefilter_binary_threshold;
 typedef struct cmzn_field_imagefilter_binary_threshold * cmzn_field_imagefilter_binary_threshold_id;
 
 /**
+ * @brief Image processing derived field type performing the ITK discrete gaussian filter.
+ *
  * Image processing derived field type performing the ITK discrete gaussian filter.
  */
 struct cmzn_field_imagefilter_discrete_gaussian;
 typedef struct cmzn_field_imagefilter_discrete_gaussian * cmzn_field_imagefilter_discrete_gaussian_id;
 
 /**
+ * @brief Image processing derived field type performing the ITK threshold filter.
+ *
  * Image processing derived field type performing the ITK threshold filter.
  */
 struct cmzn_field_imagefilter_threshold;
 typedef struct cmzn_field_imagefilter_threshold * cmzn_field_imagefilter_threshold_id;
 
 /**
+ * @brief Image processing derived field type performing the ITK histogram field.
+ *
  * Image processing derived field type performing the ITK histogram field.
  */
 struct cmzn_field_imagefilter_histogram;
@@ -42,6 +50,7 @@ typedef struct cmzn_field_imagefilter_histogram * cmzn_field_imagefilter_histogr
 enum cmzn_field_imagefilter_threshold_condition
 {
 	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_INVALID = 0,
+		/*!< Unspecified imagefilter threshold condition */
 	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_ABOVE = 1,
 		/*!< Assign where pixel values are greater than or equal to the upper threshold */
 	CMZN_FIELD_IMAGEFILTER_THRESHOLD_CONDITION_BELOW = 2,

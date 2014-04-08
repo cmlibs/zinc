@@ -12,6 +12,8 @@
 #define CMZN_SELECTIONID_H__
 
 /**
+ * @brief Manages individual user notification of changes to the selection group.
+ *
  * Manages individual user notification of changes to the selection group in a
  * scene.
  */
@@ -19,6 +21,8 @@ struct cmzn_selectionnotifier;
 typedef struct cmzn_selectionnotifier * cmzn_selectionnotifier_id;
 
 /**
+ * @brief Information about changes to the selection group in the scene.
+ *
  * Information about changes to the selection group in the scene, sent with
  * each callback from the selection notifier.
  */
@@ -33,7 +37,7 @@ typedef void (*cmzn_selectionnotifier_callback_function)(
  */
 enum cmzn_selectionevent_change_flag
 {
-	CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE = 0,
+	CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE = 0,      /*!< no changes*/
 	CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD = 1,       /*!< one or more objects added */
 	CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE = 2,    /*!< one or more objects removed */
 	CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL = 32768  /*!< final notification: owning object destroyed */

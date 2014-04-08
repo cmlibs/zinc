@@ -132,7 +132,7 @@ public:
 			reinterpret_cast<cmzn_field_group_id>(id), mesh.getId()));
 	}
 
-	Field getSubobjectGroupFieldforDomainField(const Field& domainField)
+	Field getSubobjectGroupFieldForDomainField(const Field& domainField)
 	{
 		return Field(cmzn_field_group_get_subobject_group_field_for_domain_field(
 			reinterpret_cast<cmzn_field_group_id>(id), domainField.getId()));

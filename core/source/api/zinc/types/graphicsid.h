@@ -12,6 +12,8 @@
 #define CMZN_GRAPHICSID_H__
 
 /**
+ * @brief Base graphics type: produces 3-D graphics visualising domains and fields.
+ *
  * Base graphics type: produces 3-D graphics visualising domains and fields from
  * the owning scene's region. Derived types (points, lines, surfaces, contours
  * and streamlines) specify the algorithm used to create the graphics and
@@ -21,6 +23,8 @@ struct cmzn_graphics;
 typedef struct cmzn_graphics * cmzn_graphics_id;
 
 /**
+ * @brief The contours derived graphics type.
+ *
  * The contours derived graphics type. Produces graphics visualising where the
  * 'iso-scalar' field equals fixed values: iso-surfaces on 3-D domains,
  * iso-lines on 2-D domains.
@@ -29,6 +33,8 @@ struct cmzn_graphics_contours;
 typedef struct cmzn_graphics_contours *cmzn_graphics_contours_id;
 
 /**
+ * @brief Lines visualise 1-D elements in the model.
+ *
  * Lines visualise 1-D elements in the model, including lines/faces of
  * higher-dimensional elements (if read in or defined via the field module).
  * These can be displayed as lines or extruded circles, as specified by the
@@ -39,6 +45,8 @@ struct cmzn_graphics_lines;
 typedef struct cmzn_graphics_points *cmzn_graphics_lines_id;
 
 /**
+ * @brief Points graphics visualise discrete locations in the model.
+ *
  * Points graphics visualise discrete locations in the model with oriented and
  * scaled glyphs and text labels as specified by the graphics point attributes.
  * Points can be generated on any field DomainType. For mesh domains, points are
@@ -53,6 +61,9 @@ struct cmzn_graphics_points;
 typedef struct cmzn_graphics_points *cmzn_graphics_points_id;
 
 /**
+ * @brief Streamlines visualise the path of a fluid particle tracking along a vector
+ * field.
+ *
  * Streamlines visualise the path of a fluid particle tracking along a vector
  * field. 2-D and 3-D mesh domains are supported. Seed points for streamlines
  * are sampled from elements according to the graphics sampling attributes and
@@ -70,15 +81,22 @@ typedef struct cmzn_graphics_streamlines *cmzn_graphics_streamlines_id;
 /**
  * Enumeration giving the direction streamlines are tracked relative to
  * the stream vector field.
+ *
+ * @see cmzn_graphics_streamlines_set_stream_vector_field
  */
 enum cmzn_graphics_streamlines_track_direction
 {
 	CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_INVALID = 0,
+	/*!< Unspecified track direction */
 	CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD = 1,
+	/*!< following stream_vector_field */
 	CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE = 2
+	/*!< the reverse of stream_vector_field is tracked */
 };
 
 /**
+ * @brief Surfaces visualise 2-D elements in the model.
+ *
  * Surfaces visualise 2-D elements in the model, including faces of 3-D
  * elements (if read in or defined via the field module).
  */
@@ -91,11 +109,18 @@ typedef struct cmzn_graphics_surfaces *cmzn_graphics_surfaces_id;
 enum cmzn_graphics_type
 {
 	CMZN_GRAPHICS_TYPE_INVALID = 0,
+	/*!< Unspecified graphics type */
 	CMZN_GRAPHICS_TYPE_POINTS = 1,
+	/*!< Points graphics visualise discrete locations in the model. */
 	CMZN_GRAPHICS_TYPE_LINES = 2,
+	/*!< Lines visualise 1-D elements in the model. */
 	CMZN_GRAPHICS_TYPE_SURFACES = 3,
+	/*!< Surfaces visualise 2-D elements in the model. */
 	CMZN_GRAPHICS_TYPE_CONTOURS = 4,
+	/*!< Produces graphics visualising where the 'iso-scalar' field equals. */
 	CMZN_GRAPHICS_TYPE_STREAMLINES = 5
+	/*!< Streamlines visualise the path of a fluid particle tracking along a vector
+	 * field.*/
 };
 
 /**
@@ -105,7 +130,7 @@ enum cmzn_graphics_type
  */
 enum cmzn_graphics_select_mode
 {
-	CMZN_GRAPHICS_SELECT_MODE_INVALID = 0,
+	CMZN_GRAPHICS_SELECT_MODE_INVALID = 0, /*!< Upspecified select mode */
 	CMZN_GRAPHICS_SELECT_MODE_ON = 1,
 		/*!< draw all objects with unselected objects drawn in standard material,
 		  selected objects in selected_material, and with picking enabled.
@@ -121,6 +146,8 @@ enum cmzn_graphics_select_mode
 };
 
 /**
+ * @brief Attributes object specifying how points are visualised.
+ *
  * Attributes object specifying how points are visualised in the graphics
  * including glyph, scaling, labels and font.
  * @see cmzn_graphics_get_graphicspointattributes
@@ -129,6 +156,8 @@ struct cmzn_graphicspointattributes;
 typedef struct cmzn_graphicspointattributes * cmzn_graphicspointattributes_id;
 
 /**
+ * @brief Attributes object specifying how lines are visualised.
+ *
  * Attributes object specifying how lines are visualised in the graphics
  * including shape/profile and scaling.
  * @see cmzn_graphics_get_graphicslineattributes
@@ -142,13 +171,21 @@ typedef struct cmzn_graphicslineattributes * cmzn_graphicslineattributes_id;
 enum cmzn_graphicslineattributes_shape_type
 {
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID = 0,
+	/*!< Unspecified shape type. */
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE = 1,
+	/*!< Specified line graphics to be drawn as single pixel lines */
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON = 2,
+	/*!< Specified line graphics to be drawn as ribbons */
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION = 3,
+	/*!< Specified line graphics to be drawn as cylinders */
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION = 4
+	/*!< Specified line graphics to be drawn as rectangles
+	 * (appeared square cross-section). */
 };
 
 /**
+ * @brief Graphics attributes object specifying how points are sampled in elements.
+ *
  * Graphics attributes object specifying how points are sampled in elements,
  * including sampling mode, density, etc.
  * @see cmzn_graphics_get_graphicssamplingattributes
@@ -161,7 +198,7 @@ typedef struct cmzn_graphicssamplingattributes * cmzn_graphicssamplingattributes
  */
 enum cmzn_graphics_render_polygon_mode
 {
-	CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID = 0,
+	CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID = 0,  /*!< Unspecified polyon mode */
 	CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED = 1,   /*!< Draw filled polygons */
 	CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME = 2 /*!< Draw polygon wireframe edge lines */
 };

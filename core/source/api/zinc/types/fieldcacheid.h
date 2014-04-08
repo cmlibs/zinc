@@ -12,6 +12,9 @@
 #define CMZN_FIELDCACHEID_H__
 
 /**
+ * @brief Cache for setting domain locations at which fields are evaluated or
+ * assigned.
+ *
  * Cache for setting domain locations at which fields are to be evaluated or
  * assigned, and for storing intermediate values and data structures so that
  * multiple evaluations are more efficient.

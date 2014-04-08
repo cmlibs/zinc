@@ -518,7 +518,7 @@ inline Mesh Element::getMesh() const
 	return Mesh(cmzn_element_get_mesh(id));
 }
 
-class MeshGroup  : public Mesh
+class MeshGroup : public Mesh
 {
 
 public:

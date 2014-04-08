@@ -12,12 +12,16 @@
 #define CMZN_SCENEVIEWERID_H__
 
 /**
+ * @brief Module object for creating and managing scene viewers.
+ *
  * Module object for creating and managing scene viewers.
  */
 struct cmzn_sceneviewermodule;
 typedef struct cmzn_sceneviewermodule * cmzn_sceneviewermodule_id;
 
 /**
+ * @brief The Zinc sceneviewer is responsible for rendering the graphical Scene.
+ *
  * The Zinc sceneviewer is responsible for rendering the graphical Scene using
  * OpenGL. It has methods to set its top scene and scene filter, and to get and
  * set attributes controlling the view orientation, field of view, clipping
@@ -48,12 +52,7 @@ enum cmzn_sceneviewer_blending_mode
 };
 
 /**
- * Describes the buffering mode of the scene viewer.  A DOUBLE_BUFFER allows the
- * graphics to be drawn offscreen before being displayed all at once, reducing the
- * apparent flicker.  A SINGLE_BUFFER may allow you a greater colour depth or
- * other features unavailable on a single buffer scene viewer.  Secifying
- * ANY_BUFFER_MODE will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
- * be selected depending on the other requirements of the scene viewer.
+ * Describes the buffering mode of the scene viewer.
  * The special modes RENDER_OFFSCREEN_AND_COPY and RENDER_OFFSCREEN_AND_BLEND
  * are used when an OpenGL context cannot be activated directly on the supplied
  * window, such as when the graphics are to be composited by an external program.
@@ -66,11 +65,28 @@ enum cmzn_sceneviewer_blending_mode
 enum cmzn_sceneviewer_buffering_mode
 {
 	CMZN_SCENEVIEWER_BUFFERING_MODE_INVALID,
+	/*!< Invalid scene viewer buffering mode. */
 	CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT,
+	/*!< BUFFERING_MODE_DEFAULT will mean that with SINGLE_BUFFER or DOUBLE_BUFFER mode may
+	 * be selected depending on the other requirements of the scene viewer. */
 	CMZN_SCENEVIEWER_BUFFERING_MODE_SINGLE,
+	/*!< allow you a greater colour depth or
+	 * other features unavailable on a single buffer scene viewer. */
 	CMZN_SCENEVIEWER_BUFFERING_MODE_DOUBLE,
+	/*!< allows the graphics to be drawn offscreen before being displayed all at once,
+	 * reducing the apparent flicker. */
 	CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_COPY,
+	/*!< A special modes, used when an OpenGL context cannot be activated directly
+	 * on the supplied window, such as when the graphics are to be composited by an
+	 * external program. These are currently only implemeneted for winapi.
+	 * The graphics will be drawn offscreen and only rendered on screen when
+	 * requested. This mode will overwrite any existing pixels when drawing.
+	 */
 	CMZN_SCENEVIEWER_BUFFERING_MODE_RENDER_OFFSCREEN_AND_BLEND
+	/*!< Similar to RENDER_OFFSCREEN_AND_COPY, however instead of overwriting existing pixels,
+	 * this mode will use the alpha channel of the rendered scene to
+	 * blend itself with the existing pixels.
+	 */
 };
 
 /**
@@ -79,6 +95,7 @@ enum cmzn_sceneviewer_buffering_mode
 enum cmzn_sceneviewer_interact_mode
 {
 	CMZN_SCENEVIEWER_INTERACT_MODE_INVALID,
+	/*!< Unspecified scene viewer interaction mode. */
 	CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD,
 		/*!< CMZN_SCENEVIEWER_INTERACT_MODE_STANDARD is the traditional cmgui mode.
 		 *   Rotate: Left mouse button
@@ -97,8 +114,11 @@ enum cmzn_sceneviewer_interact_mode
 enum cmzn_sceneviewer_projection_mode
 {
 	CMZN_SCENEVIEWER_PROJECTION_MODE_INVALID,
+	/*!< Unspecified scene viewer projection mode. */
 	CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL,
+	/*!< Parallel (orthographic) projection transformations will be used when drawing. */
 	CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE
+	/*!< Perspective  projection transformations will be used when drawing. */
 };
 
 /**
@@ -108,12 +128,13 @@ enum cmzn_sceneviewer_projection_mode
 enum cmzn_sceneviewer_stereo_mode
 {
 	CMZN_SCENEVIEWER_STEREO_MODE_INVALID,
+	/*!< Unspecified scene viewer stereo mode. */
 	CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT,
-		/*!< either STEREO or MONO depending on other scene viewer requirements */
+	/*!< either STEREO or MONO depending on other scene viewer requirements */
 	CMZN_SCENEVIEWER_STEREO_MODE_MONO,
-		/*!< Normal 2-D Monoscopic display */
+	/*!< Normal 2-D Monoscopic display */
 	CMZN_SCENEVIEWER_STEREO_MODE_STEREO
-		/*!< Stereoscopic display */
+	/*!< Stereoscopic display */
 };
 
 /**
@@ -122,6 +143,7 @@ enum cmzn_sceneviewer_stereo_mode
 enum cmzn_sceneviewer_transparency_mode
 {
 	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_INVALID = 0,
+	/*!< Unspecified scene viewer transparency mode. */
 	CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST = 1,
 	/*!< CMZN_CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST just includes
 	 * transparent objects in the normal render, this causes them
@@ -152,6 +174,7 @@ enum cmzn_sceneviewer_transparency_mode
 enum cmzn_sceneviewer_viewport_mode
 {
 	CMZN_SCENEVIEWER_VIEWPORT_MODE_INVALID,
+	/*!< Unspecified scene viewer viewport mode. */
 	CMZN_SCENEVIEWER_VIEWPORT_MODE_ABSOLUTE,
 		/*!< viewport_pixels_per_unit values are used to give and exact mapping from
 		 *   user coordinates to pixels. */
@@ -164,12 +187,16 @@ enum cmzn_sceneviewer_viewport_mode
 };
 
 /**
+ * @brief Manages individual user notification of changes with a scene viewer.
+ *
  * Manages individual user notification of changes with a scene viewer.
  */
 struct cmzn_sceneviewernotifier;
 typedef struct cmzn_sceneviewernotifier *cmzn_sceneviewernotifier_id;
 
 /**
+ * @brief Information about changes to fields and other objects in the scene viewer.
+ *
  * Information about changes to fields and other objects in the scene viewer,
  * sent with each callback from the sceneviewer notifier.
  */

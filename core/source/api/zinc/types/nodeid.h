@@ -12,18 +12,24 @@
 #define CMZN_NODESETID_H__
 
 /**
+ * @brief A set of nodes or points.
+ *
  * A set of nodes or points, equivalent to a zero-dimensional mesh.
  */
 struct cmzn_nodeset;
 typedef struct cmzn_nodeset *cmzn_nodeset_id;
 
 /**
+ * @brief A specialised nodeset consisting of a subset of nodes from a master nodeset.
+ *
  * A specialised nodeset consisting of a subset of nodes from a master nodeset.
  */
 struct cmzn_nodeset_group;
 typedef struct cmzn_nodeset_group *cmzn_nodeset_group_id;
 
 /**
+ * @brief A description of field parameters to define at a node.
+ *
  * A description of field parameters to define at a node (incl. value/derivative
  * types, versions), used as a template for creating new nodes in a nodeset, or
  * merging into a node to define or undefine fields on it.
@@ -32,6 +38,8 @@ struct cmzn_nodetemplate;
 typedef struct cmzn_nodetemplate *cmzn_nodetemplate_id;
 
 /**
+ * @brief Point object used to represent finite element nodes.
+ *
  * Point object used to represent finite element nodes, data points etc.
  * Important notes:
  * An unlimited number of fields may be defined at nodes to store parameters,
@@ -45,6 +53,8 @@ struct cmzn_node;
 typedef struct cmzn_node *cmzn_node_id;
 
 /**
+ * @brief An iterator for looping through all the nodes in a nodeset.
+ *
  * An iterator for looping through all the nodes in a nodeset.
  */
 struct cmzn_nodeiterator;
@@ -55,7 +65,7 @@ typedef struct cmzn_nodeiterator * cmzn_nodeiterator_id;
  */
 enum cmzn_node_value_label
 {
-	CMZN_NODE_VALUE_LABEL_INVALID = 0,
+	CMZN_NODE_VALUE_LABEL_INVALID = 0,		/*!< Unspecified node value label */
 	CMZN_NODE_VALUE_LABEL_VALUE = 1,       /*!< literal field value */
 	CMZN_NODE_VALUE_LABEL_D_DS1 = 2,       /*!< derivative w.r.t. arc length S1 */
 	CMZN_NODE_VALUE_LABEL_D_DS2 = 3,       /*!< derivative w.r.t. arc length S2 */
@@ -67,6 +77,8 @@ enum cmzn_node_value_label
 };
 
 /**
+ * @brief Object describing changes to a nodeset in a fieldmoduleevent.
+ *
  * Object describing changes to a nodeset in a fieldmoduleevent
  */
 struct cmzn_nodesetchanges;

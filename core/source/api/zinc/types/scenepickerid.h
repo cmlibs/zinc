@@ -12,6 +12,8 @@
 #define CMZN_SCENEPICKERID_H__
 
 /**
+ * @brief Utility object for picking graphics and model objects.
+ *
  * Utility object for picking graphics and model objects (nodes/elements) from
  * the 3-D graphics in a scene tree.
  */

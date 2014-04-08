@@ -487,6 +487,8 @@ public:
 };
 
 /**
+ * @brief Base class functor for field module notifier callbacks
+ *
  * Base class functor for field module notifier callbacks:
  * - Derive from this class adding any user data required.
  * - Implement virtual operator()(const Fieldmoduleevent&) to handle callback.

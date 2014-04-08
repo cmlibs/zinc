@@ -12,6 +12,8 @@
 #define CMZN_DIFFERENTIALOPERATORID_H__
 
 /**
+ * @brief Describes the derivative of a field to evaluate.
+ *
  * Describes the derivative of a field to evaluate. For example, del/del_xi1.
  * @see cmzn_mesh_get_chart_differentialoperator
  * @see cmzn_field_evaluate_derivative

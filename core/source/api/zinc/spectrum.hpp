@@ -96,7 +96,7 @@ public:
 		return id;
 	}
 
-	double getRangeMinumum()
+	double getRangeMinimum()
 	{
 		return cmzn_spectrumcomponent_get_range_minimum(id);
 	}
@@ -116,7 +116,7 @@ public:
 		return cmzn_spectrumcomponent_set_range_maximum(id, value);
 	}
 
-	double getColourMinumum()
+	double getColourMinimum()
 	{
 		return cmzn_spectrumcomponent_get_colour_minimum(id);
 	}
@@ -126,7 +126,7 @@ public:
 		return cmzn_spectrumcomponent_set_colour_minimum(id,value);
 	}
 
-	double getColourMaxumum()
+	double getColourMaximum()
 	{
 		return cmzn_spectrumcomponent_get_colour_maximum(id);
 	}

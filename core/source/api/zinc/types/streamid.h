@@ -12,6 +12,8 @@
 #define CMZN_STREAMID_H__
 
 /**
+ * @brief Base stream information type.
+ *
  * Base stream information type. The stream information maintains, creates and
  * adds details to streamresources for reading from or writing to external
  * resources. Users can create a type-specific stream information for each
@@ -23,6 +25,8 @@ struct cmzn_streaminformation;
 typedef struct cmzn_streaminformation *cmzn_streaminformation_id;
 
 /**
+ * @brief A description of a resource for reading from or writing to.
+ *
  * A description of a resource for reading from or writing to, such as a file or
  * memory buffer. These are created through the stream information object.
  *
@@ -33,10 +37,12 @@ typedef struct cmzn_streaminformation *cmzn_streaminformation_id;
  * @see cmzn_streaminformation_create_streamresource_memory
  * @see cmzn_streaminformation_create_streamresource_memory_buffer
  */
-	struct cmzn_streamresource;
-	typedef struct cmzn_streamresource *cmzn_streamresource_id;
+struct cmzn_streamresource;
+typedef struct cmzn_streamresource *cmzn_streamresource_id;
 
 /**
+ * @brief A derived streamresource describing a file.
+ *
  * A derived streamresource describing a file.
  *
  * @see cmzn_streaminformation_create_streamresource_file
@@ -45,6 +51,8 @@ struct cmzn_streamresource_file;
 typedef struct cmzn_streamresource_file *cmzn_streamresource_file_id;
 
 /**
+ * @brief A derived stream resource describing a block of memory.
+ *
  * A derived stream resource describing a block of memory.
  *
  * @see cmzn_streaminformation_create_streamresource_memory
@@ -59,6 +67,7 @@ typedef struct cmzn_streamresource_memory *cmzn_streamresource_memory_id;
 enum cmzn_streaminformation_data_compression_type
 {
 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_INVALID = 0,
+	/*!< Unspecified data compression type */
 	CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_DEFAULT = 1,
 	/*!< default data compression
 	 * This is the default compression for streamresource.

@@ -286,7 +286,7 @@ ZINC_API cmzn_mesh_id cmzn_mesh_get_master_mesh(cmzn_mesh_id mesh);
 /**
  * Return the name of the mesh.
  *
- * @see cmzn_deallocate()
+ * @see cmzn_deallocate
  * @param mesh  The mesh whose name is requested.
  * @return  On success: allocated string containing mesh name. Up to caller to
  * free using cmzn_deallocate().

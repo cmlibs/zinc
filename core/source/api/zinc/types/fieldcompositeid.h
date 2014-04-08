@@ -12,6 +12,8 @@
 #define CMZN_FIELDCOMPOSITEID_H__
 
 /**
+ * @brief A field returning a single component of a source field as a scalar.
+ *
  * A field returning a single component of a source field as a scalar.
  */
 struct cmzn_field_component;

@@ -12,6 +12,8 @@
 #define CMZN_CONTEXTID_H__
 
 /**
+ * @brief The context is the primary object created for each instance of Zinc.
+ *
  * The context is the primary object created for each instance of Zinc. All
  * other objects are created or obtained directly or indirectly from it.
  * If multiple contexts are used, ensure that only objects stemming from the

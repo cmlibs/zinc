@@ -12,6 +12,8 @@
 #define CMZN_ELEMENTID_H__
 
 /**
+ * @brief A finite element mesh consisting of a set of elements of fixed dimension.
+ *
  * A finite element mesh consisting of a set of elements of fixed dimension.
  * Note that Zinc elements are not iso-parametric, meaning each field must
  * be individually defined on them, specifying the basis and parameter mapping.
@@ -20,12 +22,16 @@ struct cmzn_mesh;
 typedef struct cmzn_mesh *cmzn_mesh_id;
 
 /**
+ * @brief A specialised mesh consisting of a subset of elements from a master mesh.
+ *
  * A specialised mesh consisting of a subset of elements from a master mesh.
  */
 struct cmzn_mesh_group;
 typedef struct cmzn_mesh_group *cmzn_mesh_group_id;
 
 /**
+ * @brief A description of element shape and field definitions.
+ *
  * A description of element shape and field definitions (incl. basis, parameter
  * mappings), used as a template for creating new elements in a mesh, or merging
  * into an element to define additional fields on it.
@@ -34,6 +40,8 @@ struct cmzn_elementtemplate;
 typedef struct cmzn_elementtemplate *cmzn_elementtemplate_id;
 
 /**
+ * @brief A single finite element from a mesh.
+ *
  * A single finite element from a mesh. Represents a local coordinate chart
  * of prescribed shape/bounds, over which fields can be defined.
  */
@@ -45,7 +53,7 @@ typedef struct cmzn_element *cmzn_element_id;
  */
 enum cmzn_element_face_type
 {
-	CMZN_ELEMENT_FACE_TYPE_INVALID = -1,
+	CMZN_ELEMENT_FACE_TYPE_INVALID = -1, /**< Unspecified element face type */
 	CMZN_ELEMENT_FACE_TYPE_ALL,   /*!< include all faces */
 	CMZN_ELEMENT_FACE_TYPE_XI1_0, /*!< only faces where top-level xi1 == 0 */
 	CMZN_ELEMENT_FACE_TYPE_XI1_1, /*!< only faces where top-level xi1 == 1 */
@@ -72,12 +80,16 @@ enum cmzn_element_shape_type
 };
 
 /**
+ * @brief An iterator for looping through all the elements in a mesh.
+ *
  * An iterator for looping through all the elements in a mesh.
  */
 struct cmzn_elementiterator;
 typedef struct cmzn_elementiterator * cmzn_elementiterator_id;
 
 /**
+ * @brief A set of basis functions that can apply over an element of a given dimension.
+ *
  * A set of basis functions that can apply over an element of a given dimension.
  */
 struct cmzn_elementbasis;
@@ -104,6 +116,7 @@ enum cmzn_elementbasis_function_type
 enum cmzn_element_point_sampling_mode
 {
 	CMZN_ELEMENT_POINT_SAMPLING_MODE_INVALID = 0,
+	/*!< Unspecified point sampling mode */
 	CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES = 1,
 		/*!< Sample points at centres of element or tessellation cells */
 	CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS = 2,
@@ -118,6 +131,8 @@ enum cmzn_element_point_sampling_mode
 };
 
 /**
+ * @brief Object describing changes to a mesh in a fieldmoduleevent
+ *
  * Object describing changes to a mesh in a fieldmoduleevent
  */
 struct cmzn_meshchanges;
