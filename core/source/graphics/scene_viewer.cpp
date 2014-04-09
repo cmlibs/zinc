@@ -5551,25 +5551,22 @@ DESCRIPTION :
 See Scene_viewer_set_viewport_info for explanation of the values returned.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = CMZN_ERROR_ARGUMENT;
 
-	ENTER(Scene_viewer_get_viewport_info);
-	if (scene_viewer&&viewport_left&&viewport_top&&viewport_pixels_per_unit_x&&
-		viewport_pixels_per_unit_y)
+	if (scene_viewer && viewport_left && viewport_top &&
+		viewport_pixels_per_unit_x && viewport_pixels_per_unit_y)
 	{
 		*viewport_left=scene_viewer->user_viewport_left;
 		*viewport_top=scene_viewer->user_viewport_top;
 		*viewport_pixels_per_unit_x=scene_viewer->user_viewport_pixels_per_unit_x;
 		*viewport_pixels_per_unit_y=scene_viewer->user_viewport_pixels_per_unit_y;
-		return_code=1;
+		return_code=CMZN_OK;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_get_viewport_info.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Scene_viewer_get_viewport_info */
@@ -5769,7 +5766,7 @@ int cmzn_sceneviewer_set_perturb_lines_flag(cmzn_sceneviewer_id sceneviewer,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Scene_viewer_get_viewport_size(struct Scene_viewer *scene_viewer,
+int cmzn_sceneviewer_get_viewport_size(struct Scene_viewer *scene_viewer,
 	int *width, int *height)
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
@@ -5778,10 +5775,9 @@ DESCRIPTION :
 Returns the width and height of the Scene_viewers drawing area.
 ==============================================================================*/
 {
-	int return_code;
+	int return_code = 0;
 
-	ENTER(Scene_viewer_get_viewport_size);
-	if (scene_viewer&&width&&height)
+	if (scene_viewer && width && height)
 	{
 		*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 		*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -5790,13 +5786,11 @@ Returns the width and height of the Scene_viewers drawing area.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_viewport_size.  Invalid argument(s)");
-		return_code=0;
+			"cmzn_sceneviewer_get_viewport_size.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_get_viewport_size */
+} /* cmzn_sceneviewer_get_viewport_size */
 
 int cmzn_sceneviewer_set_viewport_size(struct Scene_viewer *scene_viewer,
 	int width, int height)
