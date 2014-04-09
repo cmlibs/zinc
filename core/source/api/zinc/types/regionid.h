@@ -12,7 +12,7 @@
 #define CMZN_REGIONID_H__
 
 /**
- * @brief A region represents a block of a hierarchical model.
+ * @brief A hierarchical block/namespace owning domains and fields.
  *
  * A region represents a block of a hierarchical model. It owns a local set of
  * domains and fields describing the model (each accessed from its fieldmodule),

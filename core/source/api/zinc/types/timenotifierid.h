@@ -12,7 +12,7 @@
 #define CMZN_TIMENOTIFIERID_H__
 
 /**
- * @brief A timenotifier informs zinc of the timing requirements.
+ * @brief Description of timing requirements and for setting up time callbacks.
  *
  * A timenotifier informs zinc of the timing requirements of a client and can
  * be set to receive callbacks when the time changes.

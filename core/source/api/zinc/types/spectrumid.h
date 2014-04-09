@@ -12,7 +12,7 @@
 #define CMZN_SPECTRUMID_H__
 
 /**
- * @brief A spectrumcomponent object maps a single component of a data field to a colour.
+ * @brief Maps a single component of a data field to colour in a spectrum.
  *
  * A spectrumcomponent object maps a single component of a data field to one of
  * several colour ramps, rainbow, alpha ramp, contour bands or a step function.

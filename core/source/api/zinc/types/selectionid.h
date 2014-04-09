@@ -37,7 +37,7 @@ typedef void (*cmzn_selectionnotifier_callback_function)(
  */
 enum cmzn_selectionevent_change_flag
 {
-	CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE = 0,      /*!< no changes*/
+	CMZN_SELECTIONEVENT_CHANGE_FLAG_NONE = 0,      /*!< no change */
 	CMZN_SELECTIONEVENT_CHANGE_FLAG_ADD = 1,       /*!< one or more objects added */
 	CMZN_SELECTIONEVENT_CHANGE_FLAG_REMOVE = 2,    /*!< one or more objects removed */
 	CMZN_SELECTIONEVENT_CHANGE_FLAG_FINAL = 32768  /*!< final notification: owning object destroyed */

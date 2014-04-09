@@ -76,17 +76,38 @@ typedef int cmzn_field_change_flags;
 enum cmzn_field_coordinate_system_type
 {
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_INVALID = 0,
-		/*!< Unspecified coordinate system type */
+	/*!< Unspecified coordinate system type */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN = 1,
+	/*!< Default rectangular Cartesian coordinate system */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_CYLINDRICAL_POLAR = 2,
+	/*!< Cylindrical polar coordinate system with components r, theta, z.
+	     Converts to rectangular Cartesian via:
+	       x = r*cos(theta)
+	       y = r*sin(theta)
+	       z = z */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_SPHERICAL_POLAR = 3,
+	/*!< Spherical polar coordinate system with components r, theta, phi.
+	     Converts to rectangular Cartesian via:
+	       x = r*cos(phi)*cos(theta)
+	       y = r*cos(phi)*sin(theta)
+	       z = r*sin(phi) */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_PROLATE_SPHEROIDAL = 4,
-		/*!< @see cmzn_field_set_coordinate_system_focus */
+	/*!< Prolate spheroidal coordinate system with components lambda, mu, theta,
+	     with a focus value giving scale. Converts to rectangular Cartesian via:
+	       x = focus*cosh(lambda)*cos(mu)
+	       y = focus*sinh(lambda)*sin(mu)*cos(theta)
+	       z = focus*sinh(lambda)*sin(mu)*sin(theta)
+	     @see cmzn_field_set_coordinate_system_focus */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_OBLATE_SPHEROIDAL = 5,
-		/*!< @see cmzn_field_set_coordinate_system_focus */
+	/*!< Oblate spheroidal coordinate system with components lambda, mu, theta,
+	     with a focus value giving scale. Converts to rectangular Cartesian via:
+	       x = focus*cosh(lambda)*cos(mu)*sin(theta)
+	       y = focus*sinh(lambda)*sin(mu)
+	       z = focus*cosh(lambda)*cos(mu)*cos(theta)
+	     @see cmzn_field_set_coordinate_system_focus */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
-		/*!< For Euler angles specifying fibre axes orientation from default
-		 * aligned with element xi coordinates. */
+	/*!< For Euler angles specifying fibre axes orientation from default
+	     aligned with element xi coordinates. */
 };
 
 /**
