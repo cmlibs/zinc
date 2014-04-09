@@ -230,7 +230,7 @@ DESCRIPTION :
 				Scene_viewer_get_viewport_info(scene_viewer,
 					&viewport_left, &viewport_top,
 					&viewport_pixels_per_unit_x, &viewport_pixels_per_unit_y);
-				Scene_viewer_get_viewport_size(scene_viewer,
+				cmzn_sceneviewer_get_viewport_size(scene_viewer,
 					&viewport_width, &viewport_height);
 				/* Multiply total_projection by viewport matrices */
 				for (i=0;i<4;i++)
