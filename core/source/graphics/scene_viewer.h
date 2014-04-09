@@ -977,8 +977,8 @@ pixels per unit enables zooming to be achieved.
 
 struct Graphics_buffer *cmzn_sceneviewer_get_graphics_buffer(cmzn_sceneviewer_id scene_viewer);
 
-//int Scene_viewer_get_viewport_size(struct Scene_viewer *scene_viewer,
-//	int *width, int *height);
+int Scene_viewer_get_viewport_size(struct Scene_viewer *scene_viewer,
+	int *width, int *height);
 /*******************************************************************************
 LAST MODIFIED : 2 July 2002
 
