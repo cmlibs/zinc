@@ -12,7 +12,7 @@
 #define CMZN_STREAMID_H__
 
 /**
- * @brief Base stream information type.
+ * @brief Base type listing resources and options for stream I/O.
  *
  * Base stream information type. The stream information maintains, creates and
  * adds details to streamresources for reading from or writing to external

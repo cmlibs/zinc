@@ -117,7 +117,7 @@ enum cmzn_graphics_type
 	CMZN_GRAPHICS_TYPE_SURFACES = 3,
 	/*!< Surfaces visualise 2-D elements in the model. */
 	CMZN_GRAPHICS_TYPE_CONTOURS = 4,
-	/*!< Produces graphics visualising where the 'iso-scalar' field equals. */
+	/*!< Visualises where a scalar field is equal to a constant. */
 	CMZN_GRAPHICS_TYPE_STREAMLINES = 5
 	/*!< Streamlines visualise the path of a fluid particle tracking along a vector
 	 * field.*/
@@ -130,7 +130,7 @@ enum cmzn_graphics_type
  */
 enum cmzn_graphics_select_mode
 {
-	CMZN_GRAPHICS_SELECT_MODE_INVALID = 0, /*!< Upspecified select mode */
+	CMZN_GRAPHICS_SELECT_MODE_INVALID = 0, /*!< Unspecified select mode */
 	CMZN_GRAPHICS_SELECT_MODE_ON = 1,
 		/*!< draw all objects with unselected objects drawn in standard material,
 		  selected objects in selected_material, and with picking enabled.
@@ -177,10 +177,9 @@ enum cmzn_graphicslineattributes_shape_type
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON = 2,
 	/*!< Specified line graphics to be drawn as ribbons */
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION = 3,
-	/*!< Specified line graphics to be drawn as cylinders */
+	/*!< Specified line graphics to be drawn as extruded circle/ellipse. */
 	CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION = 4
-	/*!< Specified line graphics to be drawn as rectangles
-	 * (appeared square cross-section). */
+	/*!< Specified line graphics to be drawn as extruded square/rectangle. */
 };
 
 /**
@@ -198,7 +197,7 @@ typedef struct cmzn_graphicssamplingattributes * cmzn_graphicssamplingattributes
  */
 enum cmzn_graphics_render_polygon_mode
 {
-	CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID = 0,  /*!< Unspecified polyon mode */
+	CMZN_GRAPHICS_RENDER_POLYGON_MODE_INVALID = 0,  /*!< Unspecified polygon mode */
 	CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED = 1,   /*!< Draw filled polygons */
 	CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME = 2 /*!< Draw polygon wireframe edge lines */
 };

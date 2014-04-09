@@ -20,7 +20,7 @@ struct cmzn_nodeset;
 typedef struct cmzn_nodeset *cmzn_nodeset_id;
 
 /**
- * @brief A specialised nodeset consisting of a subset of nodes from a master nodeset.
+ * @brief A subset of a master nodeset.
  *
  * A specialised nodeset consisting of a subset of nodes from a master nodeset.
  */
@@ -65,7 +65,7 @@ typedef struct cmzn_nodeiterator * cmzn_nodeiterator_id;
  */
 enum cmzn_node_value_label
 {
-	CMZN_NODE_VALUE_LABEL_INVALID = 0,		/*!< Unspecified node value label */
+	CMZN_NODE_VALUE_LABEL_INVALID = 0,     /*!< Unspecified node value label */
 	CMZN_NODE_VALUE_LABEL_VALUE = 1,       /*!< literal field value */
 	CMZN_NODE_VALUE_LABEL_D_DS1 = 2,       /*!< derivative w.r.t. arc length S1 */
 	CMZN_NODE_VALUE_LABEL_D_DS2 = 3,       /*!< derivative w.r.t. arc length S2 */

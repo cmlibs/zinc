@@ -27,7 +27,7 @@ enum cmzn_timekeeper_play_direction
 };
 
 /**
- * @brief The timekeeper maintains a current time that is communicated to other objects
+ * @brief The timekeeper synchronises a current time across Zinc objects.
  *
  * The timekeeper maintains a current time that is communicated to objects
  * within Zinc. For example, time-varying graphics are shown at the current
