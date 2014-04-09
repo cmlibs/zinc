@@ -124,7 +124,7 @@ enum cmzn_elementbasis_function_type
 	     2 linked dimensions gives a linear triangle with 3 parameters with
 	     lowest xi cycling fastest: xi (0,0) (1,0) (0,1)
 	     3 linked dimensions gives a linear tetrahedron with 4 parameters with
-	     lowest xi cycling fastest: xi (0,0,0) (1,0,0) (0,1,0) (0,1,0) */
+	     lowest xi cycling fastest: xi (0,0,0) (1,0,0) (0,1,0) (0,0,1) */
 	CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX = 6,
 	/*!< Quadratic Lagrange simplex basis linked on 2 or more dimensions over
 	     chart xi >= 0, and sum of linked xi coordinates <= 1.
