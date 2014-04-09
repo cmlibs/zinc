@@ -78,7 +78,7 @@ void cmzn_scenepicker::updateViewerRectangle()
 		Scene_viewer_get_viewport_info(scene_viewer,
 			&viewport_left, &viewport_bottom, &viewport_pixels_per_unit_x,
 			&viewport_pixels_per_unit_y);
-		cmzn_sceneviewer_get_viewport_size(scene_viewer, &width, &height);
+		Scene_viewer_get_viewport_size(scene_viewer,	&width, &height);
 		viewport_width  = ((double)width)/viewport_pixels_per_unit_x;
 		viewport_height = ((double)height)/viewport_pixels_per_unit_y;
 		/* recalculate the centre of y as windows coordinate is different from the

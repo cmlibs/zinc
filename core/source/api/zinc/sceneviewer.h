@@ -250,24 +250,10 @@ ZINC_API int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
 	enum cmzn_sceneviewer_viewport_mode viewport_mode);
 
 /**
- * @brief cmzn_sceneviewer_set_viewport_size
- * @param sceneviewer  The scene viewer to modify
- * @param width  The width in pixels to set
- * @param height  The height in pixels to set
- * @return CMISS_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ * Sets the width and height of the scene viewer's drawing area.
  */
 ZINC_API int cmzn_sceneviewer_set_viewport_size(cmzn_sceneviewer_id sceneviewer,
 	int width, int height);
-
-/**
- * @brief Returns the width and height of the sceneviewers drawing area.
- * @param sceneviewer the scene viewer to get the width and height of.
- * @param width address of int to return width in pixels in.
- * @param height address of int to return height in pixels in.
- * @return CMISS_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_sceneviewer_get_viewport_size(cmzn_sceneviewer_id sceneviewer,
-	int *width, int *height);
 
 /**
  * Gets the projection mode - parallel/perspective - of the scene viewer.

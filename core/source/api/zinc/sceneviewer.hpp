@@ -319,11 +319,6 @@ public:
 		return cmzn_sceneviewer_set_viewport_size(id, width, height);
 	}
 
-	int getViewportSize(int *width, int *height)
-	{
-		return cmzn_sceneviewer_get_viewport_size(id, width, height);
-	}
-
 	inline Sceneviewerinput createSceneviewerinput();
 
 	inline int processSceneviewerinput(const Sceneviewerinput& input);
