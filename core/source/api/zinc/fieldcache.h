@@ -52,8 +52,9 @@ ZINC_API int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address);
 ZINC_API int cmzn_fieldcache_clear_location(cmzn_fieldcache_id cache);
 
 /**
- * Prescribes an element location without specifying chart coordinates. Suitable
- * only for evaluating fields that are constant across the element.
+ * Prescribes an element location without specifying the location in its local
+ * 'xi' chart coordinates (which are all reset to 0). Suitable only for
+ * evaluating or assigning to fields that are constant across the element.
  * Note: replaces any other spatial location in cache (e.g. node.) but time
  * is unchanged.
  *
@@ -65,19 +66,19 @@ ZINC_API int cmzn_fieldcache_set_element(cmzn_fieldcache_id cache,
 	cmzn_element_id element);
 
 /**
- * Prescribes a location in an element for field evaluation or assignment with
- * the cache.
+ * Prescribes a location in a mesh as an element plus local 'xi' chart
+ * coordinates, for field evaluation or assignment with the cache.
  * Note: replaces any other spatial location in cache (e.g. node.) but time
  * is unchanged.
  *
  * @param cache  The field cache to set the location in.
  * @param element  The element the location is in. Must belong to same region
  * as cache.
- * @param number_of_chart_coordinates  The size of the chart_coordinates array,
+ * @param number_of_chart_coordinates  The size of the local coordinates array,
  * checked to be not less than the element dimension.
- * @param chart_coordinates  Location in element chart. Value is not checked;
- * caller is responsible for supplying locations within the bounds of the
- * element shape.
+ * @param chart_coordinates  Location in element's local 'xi' coordinate chart.
+ * Value is not checked; caller is responsible for supplying locations within
+ * the bounds of the element shape.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_fieldcache_set_mesh_location(cmzn_fieldcache_id cache,

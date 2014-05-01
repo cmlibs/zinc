@@ -90,8 +90,10 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_embedded(
 
 /**
  * Creates a field returning the location in a mesh at which the calculated
- * source_field value equals the mesh_field value. Type-specific functions allow
- * the search to find the nearest value and set a conditional field.
+ * source_field value equals the mesh_field value. Its values consist of an
+ * element and coordinates in the element's local 'xi' coordinate chart.
+ * Type-specific functions allow the search to find the nearest value and set a
+ * conditional field.
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  Source field whose value is to be searched for. Must have
@@ -214,7 +216,9 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 	enum cmzn_node_value_label node_value_label, int version_number);
 
 /**
- * Creates a field which stores and returns mesh location values at nodes.
+ * Creates a field which stores and returns mesh location values at nodes. Its
+ * values consists of an element and coordinates in the element's local 'xi'
+ * coordinate chart.
  *
  * @param field_module  Region field module which will own new field.
  * @param mesh  The mesh for which locations are stored.

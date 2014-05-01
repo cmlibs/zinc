@@ -105,9 +105,10 @@ ZINC_API int cmzn_field_set_managed(cmzn_field_id field, bool value);
  * @param field  The field to assign value to.
  * @param cache  Store of location to assign at and intermediate field values.
  * @param element  The element to set.
- * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
- * that it equals or exceeds the dimension of the element.
- * @param chart_coordinates  Array containing chart coordinate location to set.
+ * @param number_of_chart_coordinates  Size of following element local
+ * coordinates array. Must be at least the dimension of the element.
+ * @param chart_coordinates  Array containing location to set in element's
+ * local 'xi' coordinate chart.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_field_assign_mesh_location(cmzn_field_id field,
@@ -151,9 +152,10 @@ ZINC_API int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id ca
  *
  * @param field  The field to evaluate.
  * @param cache  Store of location to evaluate at and intermediate field values.
- * @param number_of_chart_coordinates  Size of chart_coordinates array. Checked
- * that it equals or exceeds the dimension of the returned element.
- * @param chart_coordinates  Array to evaluate chart coordinate location into.
+ * @param number_of_chart_coordinates  Size of following element local
+ * coordinates array. Must be at least the dimension of the returned element.
+ * @param chart_coordinates  Array to receive the location in the element's
+ * local 'xi' coordinate chart.
  * @return  Handle to element, or NULL/invalid handle on failure including
  * field not defined at cache location.
  */
