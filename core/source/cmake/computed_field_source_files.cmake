@@ -19,6 +19,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_group.cpp
 	source/computed_field/computed_field_logical_operators.cpp
 	source/computed_field/computed_field_matrix_operators.cpp
+	source/computed_field/computed_field_mesh_operators.cpp
 	source/computed_field/computed_field_nodeset_operators.cpp
 	source/computed_field/computed_field_scene_viewer_projection.cpp
 	source/computed_field/computed_field_subobject_group.cpp
@@ -47,6 +48,7 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_group_base.hpp
 	source/computed_field/computed_field_logical_operators.h
 	source/computed_field/computed_field_matrix_operators.hpp
+	source/computed_field/computed_field_mesh_operators.hpp
 	source/computed_field/computed_field_nodeset_operators.hpp
 	source/computed_field/computed_field_scene_viewer_projection.h
 	source/computed_field/computed_field_subobject_group_private.hpp

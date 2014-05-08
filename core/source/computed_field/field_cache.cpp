@@ -209,9 +209,9 @@ int cmzn_fieldcache_set_time(cmzn_fieldcache_id cache, double time)
 int cmzn_fieldcache_set_element(cmzn_fieldcache_id cache,
 	cmzn_element_id element)
 {
-	const double chart_coordinates[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
-	return cmzn_fieldcache_set_mesh_location_with_parent(cache, element,
-		MAXIMUM_ELEMENT_XI_DIMENSIONS, chart_coordinates, /*top_level_element*/0);
+	if (cache)
+		return cache->setElement(element);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_fieldcache_set_mesh_location_with_parent(

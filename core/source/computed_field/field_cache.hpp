@@ -211,15 +211,25 @@ public:
 		}
 	}
 
+	int setElement(cmzn_element_id element)
+	{
+		const double chart_coordinates[MAXIMUM_ELEMENT_XI_DIMENSIONS] = { 0.0, 0.0, 0.0 };
+		return this->setMeshLocation(element, chart_coordinates);
+	}
+
 	/** @param topLevelElement  Optional top-level element to inherit fields from */
 	int setMeshLocation(cmzn_element_id element, const double *chart_coordinates,
 		cmzn_element_id top_level_element = 0)
 	{
-		FE_value time = location->get_time();
-		delete location;
-		location = new Field_element_xi_location(element, chart_coordinates, time, top_level_element);
-		locationChanged();
-		return CMZN_OK;
+		if (element && chart_coordinates)
+		{
+			FE_value time = location->get_time();
+			delete location;
+			location = new Field_element_xi_location(element, chart_coordinates, time, top_level_element);
+			locationChanged();
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	int setNode(cmzn_node_id node)

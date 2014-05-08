@@ -21,6 +21,83 @@ therefore cannot reside in finite element modules.
 #include "finite_element/finite_element_region.h"
 #include "general/multi_range.h"
 #include "selection/element_point_ranges_selection.h"
+#include <vector>
+
+class IntegrationPoints
+{
+	struct ShapePoints
+	{
+		FE_element_shape *shape;
+		int numPoints;
+		FE_value *points;
+		FE_value *weights;
+
+		ShapePoints(FE_element_shape *shapeIn, int numPointsIn, FE_value *pointsIn, FE_value *weightsIn) :
+			shape(ACCESS(FE_element_shape)(shapeIn)),
+			numPoints(numPointsIn),
+			points(pointsIn),
+			weights(weightsIn)
+		{
+		}
+
+		ShapePoints(ShapePoints& source) :
+			shape(0),
+			numPoints(0),
+			points(0),
+			weights(0)
+		{
+			swap(*this, source);
+		}
+
+		~ShapePoints()
+		{
+			DEACCESS(FE_element_shape)(&shape);
+			delete points;
+			delete weights;
+		}
+
+		ShapePoints& operator==(ShapePoints& source)
+		{
+			swap(*this, source);
+			return *this;
+		}
+
+		void swap(ShapePoints& p1, ShapePoints& p2)
+		{
+			FE_element_shape *tempShape = p1.shape;
+			p1.shape = p2.shape;
+			p2.shape = tempShape;
+			int tempNumPoints = p1.numPoints;
+			p1.numPoints = p2.numPoints;
+			p2.numPoints = tempNumPoints;
+			FE_value *tempPoints = p1.points;
+			p1.points = p2.points;
+			p2.points = tempPoints;
+			FE_value *tempWeights = p1.weights;
+			p1.weights = p2.weights;
+			p2.weights = tempWeights;
+		}
+
+private:
+		ShapePoints();
+	};
+	std::vector<ShapePoints> shapePoints;
+	int order;
+
+public:
+	IntegrationPoints(int orderIn) :
+		order(orderIn)
+	{
+	}
+
+	~IntegrationPoints()
+	{
+	}
+
+	/** @return number of points */
+	int getPoints(cmzn_element *element, FE_value *&points, FE_value *&weights);
+
+};
 
 /*
 Global functions
