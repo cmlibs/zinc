@@ -122,14 +122,16 @@ int IntegrationPoints::getPoints(cmzn_element *element, FE_value *&points, FE_va
 	get_FE_element_shape(element, &shape);
 	if (!shape)
 		return 0;
-	size_t size = this->shapePoints.size();
+	const size_t size = this->knownShapePoints.size();
+	ShapePoints *shapePoints;
 	for (size_t i = 0; i < size; ++i)
 	{
-		if (this->shapePoints[i].shape == shape)
+		shapePoints = this->knownShapePoints[i];
+		if (shapePoints->shape == shape)
 		{
-			points = this->shapePoints[i].points;
-			weights = this->shapePoints[i].weights;
-			return this->shapePoints[i].numPoints;
+			points = shapePoints->points;
+			weights = shapePoints->weights;
+			return shapePoints->numPoints;
 		}
 	}
 	int numPoints = 0;
@@ -239,7 +241,8 @@ int IntegrationPoints::getPoints(cmzn_element *element, FE_value *&points, FE_va
 				cmzn_element_get_identifier(element));
 		} break;
 	}
-	shapePoints.push_back(ShapePoints(shape, numPoints, points, weights));
+	shapePoints = new ShapePoints(shape, numPoints, points, weights);
+	this->knownShapePoints.push_back(shapePoints);
 	return numPoints;
 }
 
