@@ -23,6 +23,7 @@ public:
 		HEART_EXNODE_GZ = 12,
 		HEART_EXELEM_GZ = 13,
 		FIELDMODULE_TWO_CUBES_RESOURCE = 14
+		FIELDMODULE_ALLSHAPES_RESOURCE = 15
 	};
 
 	TestResources()
@@ -88,6 +89,10 @@ public:
 		if (resourceName == TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)
 		{
 			return "@FIELDMODULE_TWO_CUBES_RESOURCE@";
+		}
+		if (resourceName == TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)
+		{
+			return "@FIELDMODULE_ALLSHAPES_RESOURCE@";
 		}
 		return 0;
 	}

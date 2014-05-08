@@ -18,6 +18,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldconstant.cpp
 	${CURRENT_TEST}/fieldimage.cpp
 	${CURRENT_TEST}/fielditerator.cpp
+	${CURRENT_TEST}/fieldmeshoperators.cpp
 	${CURRENT_TEST}/fieldmodulenotifier.cpp
 	${CURRENT_TEST}/finiteelement.cpp
 	${CURRENT_TEST}/nodesandelements.cpp
@@ -33,3 +34,4 @@ SET(FIELDIMAGE_BLOCKCOLOURS_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/blockcolours.png
 SET(FIELDMODULE_TWO_CUBES_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/two_cubes.exformat")
 SET(HEART_EXNODE_GZ "${CMAKE_CURRENT_LIST_DIR}/heart.exnode.gz")
 SET(HEART_EXELEM_GZ "${CMAKE_CURRENT_LIST_DIR}/heart.exelem.gz")
+SET(FIELDMODULE_ALLSHAPES_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/allshapes.exformat")
