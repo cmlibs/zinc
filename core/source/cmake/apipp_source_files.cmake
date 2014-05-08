@@ -28,6 +28,7 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimageprocessing.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldlogicaloperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmatrixoperators.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmeshoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldnodesetoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsceneviewerprojection.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsubobjectgroup.hpp

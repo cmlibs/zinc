@@ -30,6 +30,7 @@ class FieldImagefilterBinaryThreshold;
 class FieldImagefilterDiscreteGaussian;
 class FieldImagefilterHistogram;
 class FieldImagefilterThreshold;
+class FieldMeshIntegral;
 class FieldNodeGroup;
 class FieldStoredMeshLocation;
 class FieldStoredString;
@@ -255,6 +256,7 @@ public:
 	inline FieldImagefilterDiscreteGaussian castImagefilterDiscreteGaussian();
 	inline FieldImagefilterHistogram castImagefilterHistogram();
 	inline FieldImagefilterThreshold castImagefilterThreshold();
+	inline FieldMeshIntegral castMeshIntegral();
 	inline FieldNodeGroup castNodeGroup();
 	inline FieldStoredMeshLocation castStoredMeshLocation();
 	inline FieldStoredString castStoredString();

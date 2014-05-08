@@ -12,7 +12,7 @@
 #define CMZN_FIELDFINITEELEMENTID_H__
 
 /**
- * @brief A real-valued field defined by element basis.
+ * @brief A real-valued interpolated field.
  *
  * A real-valued field with a specified number of components defined by
  * interpolation with an element basis over elements of a mesh, and/or with

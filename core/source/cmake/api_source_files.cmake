@@ -28,6 +28,7 @@ SET( API_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldimageprocessing.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldlogicaloperators.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmatrixoperators.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmeshoperators.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmodule.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldnodesetoperators.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsceneviewerprojection.h
@@ -69,6 +70,7 @@ SET( API_TYPES_HDRS
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldimageid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldimageprocessingid.h
+	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldmeshoperatorsid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldmoduleid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fieldsubobjectgroupid.h
 	${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/types/fontid.h
