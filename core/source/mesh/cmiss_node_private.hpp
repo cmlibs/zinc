@@ -73,7 +73,7 @@ cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset);
  */
 bool cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
 
-/***************************************************************************//**
+/**
  * If the name is of the form GROUP_NAME.NODESET_NAME. Create a nodeset group.
  * For internal use in command migration only.
  *
@@ -82,7 +82,7 @@ bool cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset);
  * @return  Handle to the nodeset, or NULL if error, name already in use or no
  * such nodeset name.
  */
-cmzn_nodeset_group_id cmzn_fieldmodule_create_field_nodeset_group_from_name_internal(
+cmzn_nodeset_group_id cmzn_fieldmodule_create_nodeset_group_from_name_internal(
 	cmzn_fieldmodule_id field_module, const char *nodeset_group_name);
 
 struct cmzn_nodesetchanges

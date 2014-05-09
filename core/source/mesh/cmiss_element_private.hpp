@@ -100,4 +100,16 @@ public:
 	}
 };
 
+/**
+ * If the name is of the form GROUP_NAME.MESH_NAME. Create a mesh group.
+ * For internal use in command migration only.
+ *
+ * @param field_module  The field module the mesh belongs to.
+ * @param name  The name of the mesh: GROUP_NAME.{mesh1d|mesh2d|mesh3d}.
+ * @return  Handle to the mesh, or NULL if error, name already in use or no
+ * such mesh name.
+ */
+cmzn_mesh_group_id cmzn_fieldmodule_create_mesh_group_from_name_internal(
+	cmzn_fieldmodule_id field_module, const char *mesh_group_name);
+
 #endif /* !defined (CMZN_ELEMENT_PRIVATE_HPP) */
