@@ -1033,7 +1033,7 @@ bool cmzn_nodeset_is_data_internal(cmzn_nodeset_id nodeset)
 	return false;
 }
 
-cmzn_nodeset_group_id cmzn_fieldmodule_create_field_nodeset_group_from_name_internal(
+cmzn_nodeset_group_id cmzn_fieldmodule_create_nodeset_group_from_name_internal(
 	cmzn_fieldmodule_id fieldmodule, const char *nodeset_group_name)
 {
 	cmzn_nodeset_group_id nodeset_group = 0;

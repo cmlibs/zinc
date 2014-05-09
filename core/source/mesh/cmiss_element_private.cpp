@@ -1926,3 +1926,38 @@ cmzn_element_change_flags cmzn_meshchanges_get_summary_element_change_flags(
 		return meshchanges->getSummaryElementChangeFlags();
 	return CMZN_ELEMENT_CHANGE_FLAG_NONE;
 }
+
+cmzn_mesh_group_id cmzn_fieldmodule_create_mesh_group_from_name_internal(
+	cmzn_fieldmodule_id fieldmodule, const char *mesh_group_name)
+{
+	cmzn_mesh_group_id mesh_group = 0;
+	if (fieldmodule && mesh_group_name)
+	{
+		cmzn_field_id existing_field = cmzn_fieldmodule_find_field_by_name(fieldmodule, mesh_group_name);
+		if (existing_field)
+		{
+			cmzn_field_destroy(&existing_field);
+		}
+		else
+		{
+			char *group_name = duplicate_string(mesh_group_name);
+			char *mesh_name = strrchr(group_name, '.');
+			if (mesh_name)
+			{
+				*mesh_name = '\0';
+				++mesh_name;
+				cmzn_mesh_id master_mesh = cmzn_fieldmodule_find_mesh_by_name(fieldmodule, mesh_name);
+				cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, group_name);
+				cmzn_field_group_id group = cmzn_field_cast_group(field);
+				cmzn_field_element_group_id element_group = cmzn_field_group_create_field_element_group(group, master_mesh);
+				mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
+				cmzn_field_element_group_destroy(&element_group);
+				cmzn_field_group_destroy(&group);
+				cmzn_field_destroy(&field);
+				cmzn_mesh_destroy(&master_mesh);
+			}
+			DEALLOCATE(group_name);
+		}
+	}
+	return mesh_group;
+}
