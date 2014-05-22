@@ -110,7 +110,7 @@ public:
 				if (values[i] < 1)
 					return CMZN_ERROR_ARGUMENT;
 			}
-			bool change = (this->numbersOfPoints.size() != valuesCount);
+			bool change = (static_cast<int>(this->numbersOfPoints.size()) != valuesCount);
 			this->numbersOfPoints.resize(valuesCount);
 			for (int i = 0; i < valuesCount; ++i)
 			{
