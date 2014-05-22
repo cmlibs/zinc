@@ -65,6 +65,7 @@ class FieldMatrixMultiply;
 class FieldProjection;
 class FieldTranspose;
 class FieldMeshIntegral;
+class FieldMeshIntegralSquares;
 class FieldNodesetSum;
 class FieldNodesetMean;
 class FieldNodesetSumSquares;
@@ -321,6 +322,9 @@ public:
 	inline FieldTranspose createFieldTranspose(int sourceNumberOfRows, const Field& sourceField);
 
 	inline FieldMeshIntegral createFieldMeshIntegral(const Field& integrandField,
+		const Field& coordinateField, const Mesh& mesh);
+
+	inline FieldMeshIntegralSquares createFieldMeshIntegralSquares(const Field& integrandField,
 		const Field& coordinateField, const Mesh& mesh);
 
 	inline FieldNodesetSum createFieldNodesetSum(const Field& sourceField, const Nodeset& nodeset);

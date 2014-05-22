@@ -16,6 +16,7 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include <stdlib.h>
 
 #include "zinc/fieldcache.h"
+#include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
@@ -210,6 +211,70 @@ and in <line_direction_address> the xi direction of LINE_SHAPE.
 	return (return_code);
 } /* categorize_FE_element_shape */
 
+namespace {
+
+class AddXi1
+{
+	FE_value_triple* xiPos;
+
+public:
+	AddXi1(FE_value_triple* xiArray) :
+		xiPos(xiArray)
+	{
+	}
+
+	inline bool operator()(FE_value *xi)
+	{
+		(*xiPos)[0] = xi[0];
+		(*xiPos)[1] = 0.0;
+		(*xiPos)[2] = 0.0;
+		++xiPos;
+		return true;
+	}
+};
+
+class AddXi2
+{
+	FE_value_triple* xiPos;
+
+public:
+	AddXi2(FE_value_triple* xiArray) :
+		xiPos(xiArray)
+	{
+	}
+
+	inline bool operator()(FE_value *xi)
+	{
+		(*xiPos)[0] = xi[0];
+		(*xiPos)[1] = xi[1];
+		(*xiPos)[2] = 0.0;
+		++xiPos;
+		return true;
+	}
+};
+
+class AddXi3
+{
+	FE_value_triple* xiPos;
+
+public:
+	AddXi3(FE_value_triple* xiArray) :
+		xiPos(xiArray)
+	{
+	}
+
+	inline bool operator()(FE_value *xi)
+	{
+		(*xiPos)[0] = xi[0];
+		(*xiPos)[1] = xi[1];
+		(*xiPos)[2] = xi[2];
+		++xiPos;
+		return true;
+	}
+};
+
+} // anonymous namespace
+
 /*
 Global functions
 ----------------
@@ -234,9 +299,9 @@ comments for simplex and polygons shapes for more details.
 	enum FE_element_shape_category element_shape_category;
 	ZnReal xi_j, xi_k;
 	int element_dimension, i, j, k, line_direction, linked_xi_directions[2],
-		number_in_xi0, number_in_xi1, number_in_xi_around_polygon = 0,
+		number_in_xi_around_polygon = 0,
 		number_in_xi_simplex = 0, number_of_polygon_sides,
-		number_of_xi_points, points_per_row, return_code;
+		number_of_xi_points, return_code;
 	FE_value_triple *xi, *xi_points;
 
 	ENTER(FE_element_shape_get_xi_points_cell_centres);
@@ -312,16 +377,7 @@ comments for simplex and polygons shapes for more details.
 					{
 						number_in_xi_simplex = number_in_xi[2];
 					}
-					/* sum the number of cell centres in sub-tetrahedra */
-					number_of_xi_points = 1;
-					points_per_row = 1;
-					for (i = 2; i <= number_in_xi_simplex; i++)
-					{
-						points_per_row += i;
-						number_of_xi_points += points_per_row;
-					}
-					/* add 4 tetrahedra per sub-octahedra */
-					number_of_xi_points += 4*(number_of_xi_points - points_per_row);
+					number_of_xi_points = Calculate_xi_points_tetrahedron_cell_centres::calculateNumPoints(number_in_xi_simplex);
 				} break;
 				case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
 				{
@@ -361,69 +417,21 @@ comments for simplex and polygons shapes for more details.
 				{
 					case ELEMENT_CATEGORY_1D_LINE:
 					{
-						for (i = 0; i < number_in_xi[0]; i++)
-						{
-							(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
-							(*xi)[1] = 0.0;
-							(*xi)[2] = 0.0;
-							xi++;
-						}
+						Calculate_xi_points_line_cell_centres lineCentres(number_in_xi);
+						AddXi1 addXi1(xi_points);
+						lineCentres.forEachPoint(addXi1);
 					} break;
 					case ELEMENT_CATEGORY_2D_SQUARE:
 					{
-						for (j = 0; j < number_in_xi[1]; j++)
-						{
-							xi_j = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
-							for (i = 0; i < number_in_xi[0]; i++)
-							{
-								(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
-								(*xi)[1] = xi_j;
-								(*xi)[2] = 0.0;
-								xi++;
-							}
-						}
+						Calculate_xi_points_square_cell_centres squareCentres(number_in_xi);
+						AddXi2 addXi2(xi_points);
+						squareCentres.forEachPoint(addXi2);
 					} break;
 					case ELEMENT_CATEGORY_2D_TRIANGLE:
 					{
-						/* Trianglular elements are subdivided into equal-sized upright and
-							 reversed triangles as follows:
-
-							  /\
-							 /__\
-							/\  /\
-						   /__\/__\
-
-							 Note that xi0 ranges from 0 to 1 along the base of the triangle,
-							 and xi1 ranges from 0 to 1 up the left side. However, only half
-							 of a unit square is used: the centre of the far side is thus
-							 xi0, xi1 = 0.5, 0.5.
-
-							 First add the centres of the upright triangles */
-						for (j = 0; j < number_in_xi_simplex; j++)
-						{
-							xi_j = ((FE_value)j + (1.0/3.0))/(FE_value)number_in_xi_simplex;
-							number_in_xi0 = number_in_xi_simplex - j;
-							for (i = 0; i < number_in_xi0; i++)
-							{
-								(*xi)[0] = ((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
-								(*xi)[1] = xi_j;
-								(*xi)[2] = 0.0;
-								xi++;
-							}
-						}
-						/* Then add points in centres of reversed triangles */
-						for (j = 1; j < number_in_xi_simplex; j++)
-						{
-							xi_j = ((FE_value)j - (1.0/3.0))/(FE_value)number_in_xi_simplex;
-							number_in_xi0 = number_in_xi_simplex - j + 1;
-							for (i = 1; i < number_in_xi0; i++)
-							{
-								(*xi)[0] = ((FE_value)i - (1.0/3.0))/(FE_value)number_in_xi_simplex;
-								(*xi)[1] = xi_j;
-								(*xi)[2] = 0.0;
-								xi++;
-							}
-						}
+						Calculate_xi_points_triangle_cell_centres triangleCentres(number_in_xi_simplex);
+						AddXi2 addXi2(xi_points);
+						triangleCentres.forEachPoint(addXi2);
 					} break;
 					case ELEMENT_CATEGORY_2D_POLYGON:
 					{
@@ -441,165 +449,23 @@ comments for simplex and polygons shapes for more details.
 					} break;
 					case ELEMENT_CATEGORY_3D_CUBE:
 					{
-						for (k = 0; k < number_in_xi[2]; k++)
-						{
-							xi_k = ((FE_value)k + 0.5)/(FE_value)number_in_xi[2];
-							for (j = 0; j < number_in_xi[1]; j++)
-							{
-								xi_j = ((FE_value)j + 0.5)/(FE_value)number_in_xi[1];
-								for (i = 0; i <number_in_xi[0]; i++)
-								{
-									(*xi)[0] = ((FE_value)i + 0.5)/(FE_value)number_in_xi[0];
-									(*xi)[1] = xi_j;
-									(*xi)[2] = xi_k;
-									xi++;
-								}
-							}
-						}
+						Calculate_xi_points_cube_cell_centres cubeCentres(number_in_xi);
+						AddXi3 addXi3(xi_points);
+						cubeCentres.forEachPoint(addXi3);
 					} break;
 					case ELEMENT_CATEGORY_3D_TETRAHEDRON:
 					{
-						/* Similar to triangle subdivision, tetrahedra are divided into
-							 sub-tetrahedra with octahedra (8 equilateral triangle faces)
-							 in between them. The octahedra have 4 times the volume of the
-							 tetrahedra, hence are arbitrarily subdivided along one of their
-							 three long axes to make 4 further tetrahedra. The tetrahedra
-							 coming from the octahedra have 2 equilateral triangle faces
-							 matching those in the other sub-tetrahedra, but the other 2 faces
-							 share a common, elongated edge. Octahedra can be visualised as
-							 2 square pyramids back-to-back, and look identical on all three
-							 axes. Xi values within tetrahedra vary from 0 to 1 along each
-							 axis, but only the lower tetrahedron of this unit cube is used.
-							 If a tetrahedron is subdivided in 2*2*2 fashion, it will contain
-							 a single octahedron. One of the axes of the octahedron goes
-							 through the point xi0, xi1, xi2 = 0.5, 0.0, 0.0, and it is this
-							 axis that becomes the "long edge" of the 4 tetrahedra
-							 sub-divided from it.
-
-							 First add the centres of the sub-tetrahedra */
-						for (k = 0; k < number_in_xi_simplex; k++)
-						{
-							xi_k = ((FE_value)k + 0.25)/(FE_value)number_in_xi_simplex;
-							number_in_xi1 = number_in_xi_simplex - k;
-							for (j = 0; j <= number_in_xi1; j++)
-							{
-								xi_j = ((FE_value)j + 0.25)/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi1 - j;
-								for (i = 0; i < number_in_xi0; i++)
-								{
-									(*xi)[0] = ((FE_value)i + 0.25)/(FE_value)number_in_xi_simplex;
-									(*xi)[1] = xi_j;
-									(*xi)[2] = xi_k;
-									xi++;
-								}
-							}
-						}
-						/* Then add points in centres of tetrahedra subdivided from
-							 octahedra */
-						for (k = 1; k < number_in_xi_simplex; k++)
-						{
-							xi_k = ((FE_value)k - 0.5)/(FE_value)number_in_xi_simplex;
-							number_in_xi1 = number_in_xi_simplex - k + 1;
-							for (j = 1; j < number_in_xi1; j++)
-							{
-								xi_j = ((FE_value)j - 0.5)/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi1 - j + 1;
-								for (i = 1; i < number_in_xi0; i++)
-								{
-									(*xi)[0] = ((FE_value)i - 0.75)/(FE_value)number_in_xi_simplex;
-									(*xi)[1] = xi_j;
-									(*xi)[2] = xi_k;
-									xi++;
-								}
-							}
-						}
-						for (k = 1; k < number_in_xi_simplex; k++)
-						{
-							xi_k = ((FE_value)k - 0.25)/(FE_value)number_in_xi_simplex;
-							number_in_xi1 = number_in_xi_simplex - k + 1;
-							for (j = 1; j < number_in_xi1; j++)
-							{
-								xi_j = ((FE_value)j - 0.75)/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi1 - j + 1;
-								for (i = 1; i < number_in_xi0; i++)
-								{
-									(*xi)[0] = ((FE_value)i - 0.5)/(FE_value)number_in_xi_simplex;
-									(*xi)[1] = xi_j;
-									(*xi)[2] = xi_k;
-									xi++;
-								}
-							}
-						}
-						for (k = 1; k < number_in_xi_simplex; k++)
-						{
-							xi_k = ((FE_value)k - 0.75)/(FE_value)number_in_xi_simplex;
-							number_in_xi1 = number_in_xi_simplex - k + 1;
-							for (j = 1; j < number_in_xi1; j++)
-							{
-								xi_j = ((FE_value)j - 0.25)/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi1 - j + 1;
-								for (i = 1; i < number_in_xi0; i++)
-								{
-									(*xi)[0] = ((FE_value)i - 0.5)/(FE_value)number_in_xi_simplex;
-									(*xi)[1] = xi_j;
-									(*xi)[2] = xi_k;
-									xi++;
-								}
-							}
-						}
-						for (k = 1; k < number_in_xi_simplex; k++)
-						{
-							xi_k = ((FE_value)k - 0.5)/(FE_value)number_in_xi_simplex;
-							number_in_xi1 = number_in_xi_simplex - k + 1;
-							for (j = 1; j < number_in_xi1; j++)
-							{
-								xi_j = ((FE_value)j - 0.5)/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi1 - j + 1;
-								for (i = 1; i < number_in_xi0; i++)
-								{
-									(*xi)[0] = ((FE_value)i - 0.25)/(FE_value)number_in_xi_simplex;
-									(*xi)[1] = xi_j;
-									(*xi)[2] = xi_k;
-									xi++;
-								}
-							}
-						}
+						Calculate_xi_points_tetrahedron_cell_centres tetrahedronCentres(number_in_xi_simplex);
+						AddXi3 addXi3(xi_points);
+						tetrahedronCentres.forEachPoint(addXi3);
 					} break;
 					case ELEMENT_CATEGORY_3D_TRIANGLE_LINE:
 					{
-						/* layout is just like triangles but with the apprpriate number
-							 of points in the line_direction */
-						for (k = 0; k < number_in_xi[line_direction]; k++)
-						{
-							xi_k = ((FE_value)k + 0.5)/(FE_value)number_in_xi[line_direction];
-							for (j = 0; j < number_in_xi_simplex; j++)
-							{
-								xi_j = ((FE_value)j + (1.0/3.0))/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi_simplex - j;
-								for (i = 0; i < number_in_xi0; i++)
-								{
-									(*xi)[linked_xi_directions[0]] =
-										((FE_value)i + (1.0/3.0))/(FE_value)number_in_xi_simplex;
-									(*xi)[linked_xi_directions[1]] = xi_j;
-									(*xi)[line_direction] = xi_k;
-									xi++;
-								}
-							}
-							/* Then add points in centres of reversed triangles */
-							for (j = 1; j < number_in_xi_simplex; j++)
-							{
-								xi_j = ((FE_value)j - (1.0/3.0))/(FE_value)number_in_xi_simplex;
-								number_in_xi0 = number_in_xi_simplex - j + 1;
-								for (i = 1; i < number_in_xi0; i++)
-								{
-									(*xi)[linked_xi_directions[0]] =
-										((FE_value)i - (1.0/3.0))/(FE_value)number_in_xi_simplex;
-									(*xi)[linked_xi_directions[1]] = xi_j;
-									(*xi)[line_direction] = xi_k;
-									xi++;
-								}
-							}
-						}
+						Calculate_xi_points_wedge_cell_centres wedgeCentres(
+							line_direction, linked_xi_directions[0], linked_xi_directions[1],
+							number_in_xi[line_direction], number_in_xi_simplex);
+						AddXi3 addXi3(xi_points);
+						wedgeCentres.forEachPoint(addXi3);
 					} break;
 					case ELEMENT_CATEGORY_3D_POLYGON_LINE:
 					{
@@ -1957,7 +1823,7 @@ fields, required for DENSITY and POISSON modes.
 				default:
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_element_shape_get_xi_points_cell_centres.  "
+						"FE_element_get_xi_points_cell_random.  "
 						"Unknown element shape");
 					return_code = 0;
 				} break;
@@ -2058,7 +1924,7 @@ int FE_element_get_xi_points(struct FE_element *element,
 						else
 						{
 							display_message(ERROR_MESSAGE,"FE_element_get_xi_points.  "
-								"Could not allocate xi_points for exact_xi");
+								"Could not allocate xi_points for set location");
 							return_code = 0;
 						}
 					}
@@ -2070,7 +1936,45 @@ int FE_element_get_xi_points(struct FE_element *element,
 					return_code = 0;
 				}
 			} break;
-			default:
+			case CMZN_ELEMENT_POINT_SAMPLING_MODE_GAUSSIAN_QUADRATURE:
+			{
+				// not efficient; should be cached between elements
+				IntegrationPointsCache integrationCache(CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN,
+					cmzn_element_get_dimension(element), number_in_xi);
+				double xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+				for (int j = 0; j < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++j)
+					xi[j] = 0.0;
+				double weight;
+				IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
+				if (shapePoints)
+				{
+					int numPoints = shapePoints->getNumPoints();
+					if (ALLOCATE(xi_points, FE_value_triple, numPoints))
+					{
+						*number_of_xi_points_address = numPoints;
+						*xi_points_address = xi_points;
+						for (int p = 0; p < numPoints; ++p)
+						{
+							shapePoints->getPoint(p, xi, &weight);
+							for (int j = 0; j < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++j)
+								xi_points[p][j] = xi[j];
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE, "FE_element_get_xi_points.  "
+							"Could not allocate xi_points for gaussian quadrature");
+						return_code = 0;
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "FE_element_get_xi_points.  "
+						"Gauss points cannot be determined for element shape");
+					return_code = 0;
+				}
+			} break;
+			case CMZN_ELEMENT_POINT_SAMPLING_MODE_INVALID:
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_get_xi_points.  Unknown sampling_mode");

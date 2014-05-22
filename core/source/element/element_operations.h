@@ -23,61 +23,96 @@ therefore cannot reside in finite element modules.
 #include "selection/element_point_ranges_selection.h"
 #include <vector>
 
-class IntegrationPoints
+class IntegrationShapePoints
 {
-	struct ShapePoints
-	{
-		FE_element_shape *shape;
-		int numPoints;
-		FE_value *points;
-		FE_value *weights;
+	friend class IntegrationPointsCache;
 
-		// takes ownership of points and weights arrays
-		ShapePoints(FE_element_shape *shapeIn, int numPointsIn,
-			FE_value *pointsIn, FE_value *weightsIn) :
-			shape(ACCESS(FE_element_shape)(shapeIn)),
-			numPoints(numPointsIn),
-			points(pointsIn),
-			weights(weightsIn)
-		{
-		}
-
-		~ShapePoints()
-		{
-			DEACCESS(FE_element_shape)(&this->shape);
-			delete[] this->points;
-			delete[] this->weights;
-		}
-
-	private:
-		ShapePoints();
-		ShapePoints(const ShapePoints& source);
-		ShapePoints& operator=(const ShapePoints& source);
-	};
-
-private:
-	std::vector<ShapePoints*> knownShapePoints;
-	int order;
+protected:
+	FE_element_shape *shape;
+	int dimension;
+	int numbersOfPoints[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	int numPoints;
+	FE_value *points;
+	FE_value *weights;
 
 public:
-	IntegrationPoints(int orderIn) :
-		order(orderIn)
+	typedef bool (*InvokeFunction)(void *, FE_value *xi, FE_value weight);
+
+	// takes ownership of points and weights arrays
+	IntegrationShapePoints(FE_element_shape *shapeIn, int *numbersOfPointsIn,
+		int numPointsIn, FE_value *pointsIn, FE_value *weightsIn) :
+		shape(ACCESS(FE_element_shape)(shapeIn)),
+		dimension(0),
+		numPoints(numPointsIn),
+		points(pointsIn),
+		weights(weightsIn)
 	{
+		get_FE_element_shape_dimension(this->shape, &this->dimension);
+		for (int i = 0; i < this->dimension; ++i)
+			this->numbersOfPoints[i] = numbersOfPointsIn[i];
 	}
 
-	~IntegrationPoints()
+	virtual ~IntegrationShapePoints()
 	{
-		for (std::vector<ShapePoints*>::iterator iter = knownShapePoints.begin();
-				iter != knownShapePoints.end(); ++iter)
-		{
-			ShapePoints *shapePoints = *iter;
-			delete shapePoints;
-		}
+		DEACCESS(FE_element_shape)(&this->shape);
+		delete[] this->points;
+		delete[] this->weights;
 	}
+
+	int getNumPoints()
+	{
+		return this->numPoints;
+	}
+
+	void getPoint(int index, FE_value *xi, FE_value *weight)
+	{
+		for (int i = 0; i < this->dimension; ++i)
+			xi[i] = this->points[index*dimension + i];
+		*weight = this->weights[index];
+	}
+
+	template<class IntegralTerm>
+		void forEachPoint(IntegralTerm& term)
+	{
+		if (this->points)
+		{
+			for (int i = 0; i < this->numPoints; ++i)
+				if (!term(points + i*dimension, weights[i]))
+					return;
+		}
+		else
+			this->forEachPointVirtual(IntegralTerm::invoke, (void*)&term);
+	}
+
+	virtual void forEachPointVirtual(InvokeFunction invokeFunction, void *termVoid)
+	{
+		for (int i = 0; i < this->numPoints; ++i)
+			if (!(invokeFunction)(termVoid, points + i*dimension, weights[i]))
+				return;
+	}
+
+private:
+	IntegrationShapePoints();
+	IntegrationShapePoints(const IntegrationShapePoints& source);
+	IntegrationShapePoints& operator=(const IntegrationShapePoints& source);
+};
+
+class IntegrationPointsCache
+{
+private:
+	std::vector<IntegrationShapePoints*> knownShapePoints;
+	cmzn_element_quadrature_rule quadratureRule;
+	int numbersOfPoints[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	bool variableNumbersOfPoints;
+
+public:
+	IntegrationPointsCache(cmzn_element_quadrature_rule quadratureRuleIn,
+		int numbersOfPointsCountIn, const int *numbersOfPointsIn);
+
+	~IntegrationPointsCache();
 
 	/** @return number of points */
-	int getPoints(cmzn_element *element, FE_value *&points, FE_value *&weights);
-
+	IntegrationShapePoints *getPoints(cmzn_element *element);
 };
 
 /*

@@ -351,6 +351,8 @@ DECLARE_CHANGE_LOG_TYPES(FE_element);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode);
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_quadrature_rule);
+
 typedef int (*FE_element_field_component_modify)(
 	struct FE_element_field_component *,struct FE_element *,struct FE_field *,
 	FE_value,int,FE_value *);
