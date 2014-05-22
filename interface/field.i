@@ -66,6 +66,7 @@
 %include "zinc/fieldimageprocessing.hpp"
 %include "zinc/fieldlogicaloperators.hpp"
 %include "zinc/fieldmatrixoperators.hpp"
+%include "zinc/fieldmeshoperators.hpp"
 %include "zinc/fieldnodesetoperators.hpp"
 %include "zinc/fieldsceneviewerprojection.hpp"
 %include "zinc/fieldvectoroperators.hpp"
