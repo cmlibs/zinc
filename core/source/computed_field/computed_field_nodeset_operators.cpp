@@ -290,9 +290,9 @@ public:
 		return 0;
 	}
 
-	virtual int supports_sum_square_terms() const
+	virtual bool supports_sum_square_terms() const
 	{
-		return 1;
+		return true;
 	}
 
 	virtual int get_number_of_sum_square_terms(cmzn_fieldcache& cache) const;

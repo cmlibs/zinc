@@ -18,6 +18,370 @@ Functions for discretizing finite elements into points and simple sub-domains.
 #include "finite_element/finite_element.h"
 #include "graphics/auxiliary_graphics_types.h"
 
+class Calculate_xi_points
+{
+protected:
+	int numPoints;
+	FE_value weight;
+
+	Calculate_xi_points(int numPointsIn, FE_value totalWeightIn) :
+		numPoints(numPointsIn),
+		weight(totalWeightIn/numPointsIn)
+	{
+	}
+
+public:
+	int getNumPoints() const
+	{
+		return this->numPoints;
+	}
+
+	FE_value getWeight() const
+	{
+		return this->weight;
+	}
+};
+
+class Calculate_xi_points_line_cell_centres : public Calculate_xi_points
+{
+public:
+	Calculate_xi_points_line_cell_centres(int *numbersOfPoints) :
+		Calculate_xi_points(numbersOfPoints[0], 1.0)
+	{
+	}
+
+	template <class ProcessPoint>
+	void forEachPoint(ProcessPoint &processPoint)
+	{
+		FE_value xi;
+		const FE_value numPointsReal = static_cast<FE_value>(numPoints);
+		int i;
+		for (i = 0; i < this->numPoints; ++i)
+		{
+			xi = (i + 0.5) / numPointsReal;
+			if (!processPoint(&xi))
+				return;
+		}
+	}
+};
+
+class Calculate_xi_points_square_cell_centres : public Calculate_xi_points
+{
+	int numPoints1, numPoints2;
+public:
+	Calculate_xi_points_square_cell_centres(int *numbersOfPoints) :
+		Calculate_xi_points(numbersOfPoints[0]*numbersOfPoints[1], 1.0),
+		numPoints1(numbersOfPoints[0]),
+		numPoints2(numbersOfPoints[1])
+	{
+	}
+
+	template <class ProcessPoint>
+	void forEachPoint(ProcessPoint &processPoint)
+	{
+		FE_value xi[2];
+		const FE_value numPoints1Real = static_cast<FE_value>(this->numPoints1);
+		const FE_value numPoints2Real = static_cast<FE_value>(this->numPoints2);
+		int i, j;
+		for (j = 0; j < numPoints2; ++j)
+		{
+			xi[1] = (j + 0.5) / numPoints2Real;
+			for (i = 0; i < numPoints1; ++i)
+			{
+				xi[0] = (i + 0.5) / numPoints1Real;
+				if (!processPoint(xi))
+					return;
+			}
+		}
+	}
+};
+
+class Calculate_xi_points_triangle_cell_centres : public Calculate_xi_points
+{
+	int numSimplexPoints;
+public:
+	Calculate_xi_points_triangle_cell_centres(int numSimplexPointsIn) :
+		Calculate_xi_points(numSimplexPointsIn*numSimplexPointsIn, 0.5),
+		numSimplexPoints(numSimplexPointsIn)
+	{
+	}
+
+	template <class ProcessPoint>
+	void forEachPoint(ProcessPoint &processPoint)
+	{
+		/* Triangular elements are subdivided into equal-sized upright and
+		   reversed triangles as follows:
+
+		       /\
+		      /__\
+		     /\  /\
+		    /__\/__\
+
+		   Note that xi0 ranges from 0 to 1 along the base of the triangle,
+		   and xi1 ranges from 0 to 1 up the left side. However, only half
+		   of a unit square is used: the centre of the far side is thus
+		   xi0, xi1 = 0.5, 0.5. */
+		FE_value xi[2];
+		const FE_value numSimplexPointsReal = static_cast<FE_value>(this->numSimplexPoints);
+		const double one_third = 1.0/3.0;
+		int i, j, numPoints1;
+		// add centres of upright triangles
+		for (j = 0; j < this->numSimplexPoints; ++j)
+		{
+			xi[1] = (j + one_third)/numSimplexPointsReal;
+			numPoints1 = this->numSimplexPoints - j;
+			for (i = 0; i < numPoints1; ++i)
+			{
+				xi[0] = (i + one_third)/numSimplexPointsReal;
+				if (!processPoint(xi))
+					return;
+			}
+		}
+		/* add centres of reversed triangles */
+		for (j = 1; j < this->numSimplexPoints; ++j)
+		{
+			xi[1] = (j - one_third)/numSimplexPointsReal;
+			numPoints1 = this->numSimplexPoints - j + 1;
+			for (i = 1; i < numPoints1; ++i)
+			{
+				xi[0] = (i - one_third)/numSimplexPointsReal;
+				if (!processPoint(xi))
+					return;
+			}
+		}
+	}
+};
+
+class Calculate_xi_points_wedge_cell_centres : public Calculate_xi_points
+{
+	int lineAxis;
+	int simplexAxis1;
+	int simplexAxis2;
+	int numLinePoints;
+	int numSimplexPoints;
+public:
+	// axes must be 0, 1, 2 in some order
+	Calculate_xi_points_wedge_cell_centres(int lineAxisIn, int simplexAxis1In, int simplexAxis2In,
+			int numLinePointsIn, int numSimplexPointsIn) :
+		Calculate_xi_points(numLinePointsIn*numSimplexPointsIn*numSimplexPointsIn, 0.5),
+		lineAxis(lineAxisIn),
+		simplexAxis1(simplexAxis1In),
+		simplexAxis2(simplexAxis2In),
+		numLinePoints(numLinePointsIn),
+		numSimplexPoints(numSimplexPointsIn)
+	{
+	}
+
+	template <class ProcessPoint>
+	void forEachPoint(ProcessPoint &processPoint)
+	{
+		// layout as for triangle, multiplied by points on line axis
+		FE_value xi[3];
+		const FE_value numLinePointsReal = static_cast<FE_value>(this->numLinePoints);
+		const FE_value numSimplexPointsReal = static_cast<FE_value>(this->numSimplexPoints);
+		const double one_third = 1.0/3.0;
+		int i, j, k, numPoints1;
+		for (k = 0; k < this->numLinePoints; ++k)
+		{
+			xi[this->lineAxis] = (k + 0.5)/numLinePointsReal;
+			// add centres of upright triangles
+			for (j = 0; j < this->numSimplexPoints; ++j)
+			{
+				xi[this->simplexAxis2] = (j + one_third)/numSimplexPointsReal;
+				numPoints1 = this->numSimplexPoints - j;
+				for (i = 0; i < numPoints1; ++i)
+				{
+					xi[this->simplexAxis1] = (i + one_third)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+			/* add centres of reversed triangles */
+			for (j = 1; j < this->numSimplexPoints; ++j)
+			{
+				xi[this->simplexAxis2] = (j - one_third)/numSimplexPointsReal;
+				numPoints1 = this->numSimplexPoints - j + 1;
+				for (i = 1; i < numPoints1; ++i)
+				{
+					xi[this->simplexAxis1] = (i - one_third)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+	}
+};
+
+class Calculate_xi_points_cube_cell_centres : public Calculate_xi_points
+{
+	int numPoints1, numPoints2, numPoints3;
+public:
+	Calculate_xi_points_cube_cell_centres(int *numbersOfPoints) :
+		Calculate_xi_points(numbersOfPoints[0]*numbersOfPoints[1]*numbersOfPoints[2], 1.0),
+		numPoints1(numbersOfPoints[0]),
+		numPoints2(numbersOfPoints[1]),
+		numPoints3(numbersOfPoints[2])
+	{
+	}
+
+	template <class ProcessPoint>
+	void forEachPoint(ProcessPoint &processPoint)
+	{
+		FE_value xi[3];
+		const FE_value numPoints1Real = static_cast<FE_value>(this->numPoints1);
+		const FE_value numPoints2Real = static_cast<FE_value>(this->numPoints2);
+		const FE_value numPoints3Real = static_cast<FE_value>(this->numPoints3);
+		int i, j, k;
+		for (k = 0; k < numPoints3; ++k)
+		{
+			xi[2] = (k + 0.5) / numPoints3Real;
+			for (j = 0; j < numPoints2; ++j)
+			{
+				xi[1] = (j + 0.5) / numPoints2Real;
+				for (i = 0; i < numPoints1; ++i)
+				{
+					xi[0] = (i + 0.5) / numPoints1Real;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+	}
+};
+
+class Calculate_xi_points_tetrahedron_cell_centres : public Calculate_xi_points
+{
+	int numSimplexPoints;
+public:
+	Calculate_xi_points_tetrahedron_cell_centres(int numSimplexPointsIn) :
+		Calculate_xi_points(calculateNumPoints(numSimplexPointsIn), 1.0/6.0),
+		numSimplexPoints(numSimplexPointsIn)
+	{
+	}
+
+	static int calculateNumPoints(int numSimplexPointsIn)
+	{
+		// sum the number of cell centres in sub-tetrahedra
+		int numPoints = 1;
+		int rowPoints = 1;
+		for (int i = 2; i <= numSimplexPointsIn; ++i)
+		{
+			rowPoints += i;
+			numPoints += rowPoints;
+		}
+		// add 4 tetrahedra per sub-octahedra
+		numPoints += 4*(numPoints - rowPoints);
+		return numPoints;
+	}
+
+	template <class ProcessPoint>
+	void forEachPoint(ProcessPoint &processPoint)
+	{
+		/* Similar to triangle subdivision, tetrahedra are divided into
+		   sub-tetrahedra with octahedra (8 equilateral triangle faces)
+		   in between them. The octahedra have 4 times the volume of the
+		   tetrahedra, hence are arbitrarily subdivided along one of their
+		   three long axes to make 4 further tetrahedra. The tetrahedra
+		   coming from the octahedra have 2 equilateral triangle faces
+		   matching those in the other sub-tetrahedra, but the other 2 faces
+		   share a common, elongated edge. Octahedra can be visualised as
+		   2 square pyramids back-to-back, and look identical on all three
+		   axes. Xi values within tetrahedra vary from 0 to 1 along each
+		   axis, but only the lower tetrahedron of this unit cube is used.
+		   If a tetrahedron is subdivided in 2*2*2 fashion, it will contain
+		   a single octahedron. One of the axes of the octahedron goes
+		   through the point xi0, xi1, xi2 = 0.5, 0.0, 0.0, and it is this
+		   axis that becomes the "long edge" of the 4 tetrahedra
+		   sub-divided from it. */
+		FE_value xi[3];
+		const FE_value numSimplexPointsReal = static_cast<FE_value>(this->numSimplexPoints);
+		int i, j, k, numPoints1, numPoints2;
+		// add the centres of the sub-tetrahedra */
+		for (k = 0; k < this->numSimplexPoints; ++k)
+		{
+			xi[2] = (k + 0.25)/numSimplexPointsReal;
+			numPoints2 = this->numSimplexPoints - k;
+			for (j = 0; j <= numPoints2; ++j)
+			{
+				xi[1] = (j + 0.25)/numSimplexPointsReal;
+				numPoints1 = numPoints2 - j;
+				for (i = 0; i < numPoints1; ++i)
+				{
+					xi[0] = (i + 0.25)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+		/* Then add points in centres of tetrahedra subdivided from
+				octahedra */
+		for (k = 1; k < this->numSimplexPoints; ++k)
+		{
+			xi[2] = (k - 0.5)/numSimplexPointsReal;
+			numPoints2 = this->numSimplexPoints - k + 1;
+			for (j = 1; j < numPoints2; ++j)
+			{
+				xi[1] = (j - 0.5)/numSimplexPointsReal;
+				numPoints1 = numPoints2 - j + 1;
+				for (i = 1; i < numPoints1; ++i)
+				{
+					xi[0] = (i - 0.75)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+		for (k = 1; k < this->numSimplexPoints; ++k)
+		{
+			xi[2] = (k - 0.25)/numSimplexPointsReal;
+			numPoints2 = this->numSimplexPoints - k + 1;
+			for (j = 1; j < numPoints2; ++j)
+			{
+				xi[1] = (j - 0.75)/numSimplexPointsReal;
+				numPoints1 = numPoints2 - j + 1;
+				for (i = 1; i < numPoints1; ++i)
+				{
+					xi[0] = (i - 0.5)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+		for (k = 1; k < this->numSimplexPoints; ++k)
+		{
+			xi[2] = (k - 0.75)/numSimplexPointsReal;
+			numPoints2 = this->numSimplexPoints - k + 1;
+			for (j = 1; j < numPoints2; ++j)
+			{
+				xi[1] = (j - 0.25)/numSimplexPointsReal;
+				numPoints1 = numPoints2 - j + 1;
+				for (i = 1; i < numPoints1; ++i)
+				{
+					xi[0] = (i - 0.5)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+		for (k = 1; k < this->numSimplexPoints; ++k)
+		{
+			xi[2] = (k - 0.5)/numSimplexPointsReal;
+			numPoints2 = this->numSimplexPoints - k + 1;
+			for (j = 1; j < numPoints2; ++j)
+			{
+				xi[1] = (j - 0.5)/numSimplexPointsReal;
+				numPoints1 = numPoints2 - j + 1;
+				for (i = 1; i < numPoints1; ++i)
+				{
+					xi[0] = (i - 0.25)/numSimplexPointsReal;
+					if (!processPoint(xi))
+						return;
+				}
+			}
+		}
+	}
+};
+
 int FE_element_shape_get_xi_points_cell_centres(
 	struct FE_element_shape *element_shape, int *number_in_xi,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address);

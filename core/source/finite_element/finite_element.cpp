@@ -10590,6 +10590,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sampling_mode)
 		case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
 			return "set_location";
 			break;
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_GAUSSIAN_QUADRATURE:
+			return "gaussian_quadrature";
+			break;
 		case CMZN_ELEMENT_POINT_SAMPLING_MODE_INVALID:
 			break;
 	}
@@ -10597,6 +10600,24 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sampling_mode)
 }
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode)
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_quadrature_rule)
+{
+	switch (enumerator_value)
+	{
+		case CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN:
+			return "gaussian_quadrature";
+			break;
+		case CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT:
+			return "midpoint_quadrature";
+			break;
+		case CMZN_ELEMENT_QUADRATURE_RULE_INVALID:
+			break;
+	}
+	return 0;
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_quadrature_rule)
 
 /** Important: check other enumerator functions work when adding new values.
  * They assume enums are powers of 2 */

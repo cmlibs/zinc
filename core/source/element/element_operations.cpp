@@ -33,6 +33,8 @@ Global constants
 ----------------
 */
 
+const int CMZN_MAX_GAUSS_POINTS = 4;
+
 const struct
 {
 	FE_value location;                               FE_value weight;
@@ -53,7 +55,7 @@ const struct
 	{ (+sqrt((3.0-2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0+sqrt(30.0))/72.0 },
 	{ (+sqrt((3.0+2.0*sqrt(6.0/5.0))/7.0)+1.0)/2.0,  (18.0-sqrt(30.0))/72.0 }
 };
-const int lineOffset[] = { 0, 1, 3, 6 };
+const int lineOffset[CMZN_MAX_GAUSS_POINTS] = { 0, 1, 3, 6 };
 
 const struct
 {
@@ -79,8 +81,8 @@ const struct
 	{ { 0.108103018168070, 0.445948490915965 },         0.223381589678011*0.5 },
 	{ { 0.445948490915965, 0.445948490915965 },         0.223381589678011*0.5 }
 };
-const int triangleOffset[] = { 0, 1, 4, 8 };
-const int triangleCount[] = { 1, 3, 4, 6 };
+const int triangleOffset[CMZN_MAX_GAUSS_POINTS] = { 0, 1, 4, 8 };
+const int triangleCount[CMZN_MAX_GAUSS_POINTS] = { 1, 3, 4, 6 };
 
 const struct
 {
@@ -113,137 +115,344 @@ const struct
 	{ { 0.100596423833201, 0.399403576166799, 0.399403576166799 }, 0.024888888888889 },
 	{ { 0.25, 0.25, 0.25 },                                       -0.013155555555556 }
 };
-const int tetrahedronOffset[] = { 0, 1, 5, 10 };
-const int tetrahedronCount[] = { 1, 4, 5, 11 };
+const int tetrahedronOffset[CMZN_MAX_GAUSS_POINTS] = { 0, 1, 5, 10 };
+const int tetrahedronCount[CMZN_MAX_GAUSS_POINTS] = { 1, 4, 5, 11 };
 
-int IntegrationPoints::getPoints(cmzn_element *element, FE_value *&points, FE_value *&weights)
+template <class Calculate_xi_points_type>
+class IntegrationShapePointsMidpoint: public IntegrationShapePoints
+{
+	class ProcessPoint
+	{
+		InvokeFunction invokeFunction;
+		void *termVoid;
+		FE_value weight;
+
+	public:
+		ProcessPoint(InvokeFunction invokeFunctionIn, void *termVoidIn, FE_value weightIn) :
+			invokeFunction(invokeFunctionIn),
+			termVoid(termVoidIn),
+			weight(weightIn)
+		{
+		}
+
+		inline bool operator()(FE_value *xi)
+		{
+			return (invokeFunction)(this->termVoid, xi, this->weight);
+		}
+	};
+
+	Calculate_xi_points_type *calculate_xi_points;
+
+public:
+	// takes ownership of calculate_xi_pointsIn
+	IntegrationShapePointsMidpoint(FE_element_shape *shapeIn, int *numbersOfPointsIn,
+			Calculate_xi_points_type *calculate_xi_pointsIn) :
+		IntegrationShapePoints(shapeIn, numbersOfPointsIn, calculate_xi_pointsIn->getNumPoints(), 0, 0),
+		calculate_xi_points(calculate_xi_pointsIn)
+	{
+	}
+
+	virtual ~IntegrationShapePointsMidpoint()
+	{
+		delete calculate_xi_points;
+	}
+
+	virtual void forEachPointVirtual(InvokeFunction invokeFunction, void *termVoid)
+	{
+		ProcessPoint processPoint(invokeFunction, termVoid, calculate_xi_points->getWeight());
+		this->calculate_xi_points->forEachPoint(processPoint);
+	}
+};
+
+IntegrationPointsCache::IntegrationPointsCache(cmzn_element_quadrature_rule quadratureRuleIn,
+	int numbersOfPointsCountIn, const int *numbersOfPointsIn) :
+	quadratureRule(quadratureRuleIn),
+	variableNumbersOfPoints(false)
+{
+	int lastNumPointsInDirection = 1;
+	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++i)
+	{
+		if ((i < numbersOfPointsCountIn) && numbersOfPointsIn &&
+			(0 < numbersOfPointsIn[i]))
+		{
+			if ((this->quadratureRule == CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN) &&
+					(numbersOfPointsIn[i] > CMZN_MAX_GAUSS_POINTS))
+				this->numbersOfPoints[i] = CMZN_MAX_GAUSS_POINTS;
+			else
+				this->numbersOfPoints[i] = numbersOfPointsIn[i];
+			if ((i > 0) && (lastNumPointsInDirection != this->numbersOfPoints[i]))
+				variableNumbersOfPoints = true;
+			lastNumPointsInDirection = this->numbersOfPoints[i];
+		}
+		else
+			this->numbersOfPoints[i] = lastNumPointsInDirection;
+	}
+}
+
+IntegrationPointsCache::~IntegrationPointsCache()
+{
+	for (std::vector<IntegrationShapePoints*>::iterator iter = knownShapePoints.begin();
+			iter != knownShapePoints.end(); ++iter)
+	{
+		IntegrationShapePoints *shapePoints = *iter;
+		delete shapePoints;
+	}
+}
+
+IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
 {
 	FE_element_shape *shape = 0;
 	get_FE_element_shape(element, &shape);
 	if (!shape)
 		return 0;
+	const int elementDimension = cmzn_element_get_dimension(element);
+	int *useNumbersOfPoints = this->numbersOfPoints;
+	int inheritedNumbersOfPoints[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	if (variableNumbersOfPoints)
+	{
+		FE_value element_to_top_level[9];
+		cmzn_element *top_level_element = FE_element_get_top_level_element_conversion(
+			element, /*check_top_level_element*/0, (LIST_CONDITIONAL_FUNCTION(cmzn_element) *)0, 0,
+			CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level);
+		if (top_level_element != element)
+		{
+			get_FE_element_discretization_from_top_level(element, inheritedNumbersOfPoints,
+				top_level_element, this->numbersOfPoints, element_to_top_level);
+			useNumbersOfPoints = inheritedNumbersOfPoints;
+		}
+	}
 	const size_t size = this->knownShapePoints.size();
-	ShapePoints *shapePoints;
+	IntegrationShapePoints *shapePoints;
 	for (size_t i = 0; i < size; ++i)
 	{
 		shapePoints = this->knownShapePoints[i];
 		if (shapePoints->shape == shape)
 		{
-			points = shapePoints->points;
-			weights = shapePoints->weights;
-			return shapePoints->numPoints;
+			bool pointsMatch = true;
+			if (variableNumbersOfPoints)
+				for (int j = 0; j < elementDimension; ++j)
+					if (shapePoints->numbersOfPoints[j] != useNumbersOfPoints[j])
+					{
+						pointsMatch = false;
+						break;
+					}
+			if (pointsMatch)
+				return shapePoints;
 		}
 	}
-	int numPoints = 0;
 	cmzn_element_shape_type shape_type = cmzn_element_get_shape_type(element);
-	switch (shape_type)
+	switch (this->quadratureRule)
 	{
-		case CMZN_ELEMENT_SHAPE_TYPE_LINE:
-		case CMZN_ELEMENT_SHAPE_TYPE_SQUARE:
-		case CMZN_ELEMENT_SHAPE_TYPE_CUBE:
+	case CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN:
 		{
-			int dimension = cmzn_element_get_dimension(element);
-			const int order_offset = lineOffset[this->order - 1];
-			numPoints = 1;
-			for (int i = 0; i < dimension; ++i)
-				numPoints *= order;
-			points = new FE_value[numPoints*dimension];
-			weights = new FE_value[numPoints];
-			for (int g = 0; g < numPoints; ++g)
+			int numPoints = 0;
+			FE_value *points = 0;
+			FE_value *weights = 0;
+			switch (shape_type)
 			{
-				weights[g] = 1.0;
-				int shift_g = g;
-				for (int i = 0; i < dimension; ++i)
+				case CMZN_ELEMENT_SHAPE_TYPE_LINE:
+				case CMZN_ELEMENT_SHAPE_TYPE_SQUARE:
+				case CMZN_ELEMENT_SHAPE_TYPE_CUBE:
 				{
-					int g1 = order_offset + shift_g % order;
-					points[g*dimension + i] = lineGaussPt[g1].location;
-					weights[g] *= lineGaussPt[g1].weight;
-					shift_g /= order;
-				}
-			}
-		} break;
-	case CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE:
-		{
-			const int dimension = 2;
-			numPoints = triangleCount[this->order - 1];
-			const int orderOffset = triangleOffset[this->order - 1];
-			points = new FE_value[numPoints*dimension];
-			weights = new FE_value[numPoints];
-			for (int g = 0; g < numPoints; ++g)
-			{
-				weights[g] = triangleGaussPt[orderOffset + g].weight;
-				for (int i = 0; i < dimension; ++i)
-					points[g*dimension + i] = triangleGaussPt[orderOffset + g].location[i];
-			}
-		} break;
-	case CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON:
-		{
-			const int dimension = 3;
-			numPoints = tetrahedronCount[this->order - 1];
-			const int orderOffset = tetrahedronOffset[this->order - 1];
-			points = new FE_value[numPoints*dimension];
-			weights = new FE_value[numPoints];
-			for (int g = 0; g < numPoints; ++g)
-			{
-				weights[g] = tetrahedronGaussPt[orderOffset + g].weight;
-				for (int i = 0; i < dimension; ++i)
-					points[g*dimension + i] = tetrahedronGaussPt[orderOffset + g].location[i];
-			}
-		} break;
-	case CMZN_ELEMENT_SHAPE_TYPE_WEDGE12:
-	case CMZN_ELEMENT_SHAPE_TYPE_WEDGE13:
-	case CMZN_ELEMENT_SHAPE_TYPE_WEDGE23:
-		{
-			const int dimension = 3;
-			const int lineOrderOffset = lineOffset[this->order - 1];
-			const int tri_count = triangleCount[this->order - 1];
-			const int tri_offset = triangleOffset[this->order - 1];
-			numPoints = this->order*tri_count;
-			points = new FE_value[numPoints*dimension];
-			weights = new FE_value[numPoints];
-			int line_axis, tri_axis1, tri_axis2;
-			if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE12)
-			{
-				line_axis = 2;
-				tri_axis1 = 0;
-				tri_axis2 = 1;
-			}
-			else if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE13)
-			{
-				line_axis = 1;
-				tri_axis1 = 0;
-				tri_axis2 = 2;
-			}
-			else // (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE23)
-			{
-				line_axis = 0;
-				tri_axis1 = 1;
-				tri_axis2 = 2;
-			}
-			for (int h = 0; h < order; ++h)
-			{
-				FE_value lineXi = lineGaussPt[lineOrderOffset + h].location;
-				FE_value lineWeight = lineGaussPt[lineOrderOffset + h].weight;
-				int htri = h*tri_count;
-				for (int g = 0; g < tri_count; ++g)
+					const int dimension = cmzn_element_get_dimension(element);
+					int order_offset[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+					numPoints = 1;
+					for (int i = 0; i < dimension; ++i)
+					{
+						numPoints *= useNumbersOfPoints[i];
+						order_offset[i] = lineOffset[useNumbersOfPoints[i] - 1];
+					}
+					points = new FE_value[numPoints*dimension];
+					weights = new FE_value[numPoints];
+					for (int g = 0; g < numPoints; ++g)
+					{
+						weights[g] = 1.0;
+						int shift_g = g;
+						for (int i = 0; i < dimension; ++i)
+						{
+							int g1 = order_offset[i] + (shift_g % useNumbersOfPoints[i]);
+							points[g*dimension + i] = lineGaussPt[g1].location;
+							weights[g] *= lineGaussPt[g1].weight;
+							shift_g /= useNumbersOfPoints[i];
+						}
+					}
+				} break;
+				case CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE:
 				{
-					points[(htri + g)*dimension + tri_axis1] = triangleGaussPt[g + tri_offset].location[0];
-					points[(htri + g)*dimension + tri_axis2] = triangleGaussPt[g + tri_offset].location[1];
-					points[(htri + g)*dimension + line_axis] = lineXi;
-					weights[htri + g] = lineWeight*triangleGaussPt[g + tri_offset].weight;
-				}
+					const int dimension = 2;
+					int order = useNumbersOfPoints[0];
+					if (useNumbersOfPoints[1] > order)
+						order = useNumbersOfPoints[1];
+					numPoints = triangleCount[order - 1];
+					const int orderOffset = triangleOffset[order - 1];
+					points = new FE_value[numPoints*dimension];
+					weights = new FE_value[numPoints];
+					for (int g = 0; g < numPoints; ++g)
+					{
+						weights[g] = triangleGaussPt[orderOffset + g].weight;
+						for (int i = 0; i < dimension; ++i)
+							points[g*dimension + i] = triangleGaussPt[orderOffset + g].location[i];
+					}
+				} break;
+				case CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON:
+				{
+					const int dimension = 3;
+					int order = useNumbersOfPoints[0];
+					for (int i = 1; i < dimension; ++i)
+						if (useNumbersOfPoints[i] > order)
+							order = useNumbersOfPoints[i];
+					numPoints = tetrahedronCount[order - 1];
+					const int orderOffset = tetrahedronOffset[order - 1];
+					points = new FE_value[numPoints*dimension];
+					weights = new FE_value[numPoints];
+					for (int g = 0; g < numPoints; ++g)
+					{
+						weights[g] = tetrahedronGaussPt[orderOffset + g].weight;
+						for (int i = 0; i < dimension; ++i)
+							points[g*dimension + i] = tetrahedronGaussPt[orderOffset + g].location[i];
+					}
+				} break;
+				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE12:
+				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE13:
+				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE23:
+				{
+					const int dimension = 3;
+					int line_axis, tri_axis1, tri_axis2;
+					if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE12)
+					{
+						line_axis = 2;
+						tri_axis1 = 0;
+						tri_axis2 = 1;
+					}
+					else if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE13)
+					{
+						line_axis = 1;
+						tri_axis1 = 0;
+						tri_axis2 = 2;
+					}
+					else // (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE23)
+					{
+						line_axis = 0;
+						tri_axis1 = 1;
+						tri_axis2 = 2;
+					}
+					const int lineOrder = useNumbersOfPoints[line_axis];
+					const int lineOrderOffset = lineOffset[lineOrder - 1];
+					int triOrder = useNumbersOfPoints[tri_axis1];
+					if (useNumbersOfPoints[tri_axis2] > triOrder)
+						triOrder = useNumbersOfPoints[tri_axis2];
+					const int tri_count = triangleCount[triOrder - 1];
+					const int tri_offset = triangleOffset[triOrder - 1];
+					numPoints = lineOrder*tri_count;
+					points = new FE_value[numPoints*dimension];
+					weights = new FE_value[numPoints];
+					for (int h = 0; h < lineOrder; ++h)
+					{
+						FE_value lineXi = lineGaussPt[lineOrderOffset + h].location;
+						FE_value lineWeight = lineGaussPt[lineOrderOffset + h].weight;
+						int htri = h*tri_count;
+						for (int g = 0; g < tri_count; ++g)
+						{
+							points[(htri + g)*dimension + tri_axis1] = triangleGaussPt[g + tri_offset].location[0];
+							points[(htri + g)*dimension + tri_axis2] = triangleGaussPt[g + tri_offset].location[1];
+							points[(htri + g)*dimension + line_axis] = lineXi;
+							weights[htri + g] = lineWeight*triangleGaussPt[g + tri_offset].weight;
+						}
+					}
+				} break;
+				default:
+				{
+					display_message(INFORMATION_MESSAGE, "IntegrationPointsCache::getPoints()  "
+						"Unknown shape type encountered first for element %d.",
+						cmzn_element_get_identifier(element));
+					return 0;
+				} break;
+			}
+			shapePoints = new IntegrationShapePoints(shape, useNumbersOfPoints, numPoints, points, weights);
+		} break;
+	case CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT:
+		{
+			switch (shape_type)
+			{
+				case CMZN_ELEMENT_SHAPE_TYPE_LINE:
+					shapePoints = new IntegrationShapePointsMidpoint<Calculate_xi_points_line_cell_centres>(
+						shape, useNumbersOfPoints, new Calculate_xi_points_line_cell_centres(useNumbersOfPoints));
+					break;
+				case CMZN_ELEMENT_SHAPE_TYPE_SQUARE:
+					shapePoints = new IntegrationShapePointsMidpoint<Calculate_xi_points_square_cell_centres>(
+						shape, useNumbersOfPoints, new Calculate_xi_points_square_cell_centres(useNumbersOfPoints));
+					break;
+				case CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE:
+				{
+					int numberOfSimplexPoints = useNumbersOfPoints[0];
+					if (useNumbersOfPoints[1] > numberOfSimplexPoints)
+						numberOfSimplexPoints = useNumbersOfPoints[1];
+					shapePoints = new IntegrationShapePointsMidpoint<Calculate_xi_points_triangle_cell_centres>(
+						shape, useNumbersOfPoints, new Calculate_xi_points_triangle_cell_centres(numberOfSimplexPoints));
+				}	break;
+				case CMZN_ELEMENT_SHAPE_TYPE_CUBE:
+					shapePoints = new IntegrationShapePointsMidpoint<Calculate_xi_points_cube_cell_centres>(
+						shape, useNumbersOfPoints, new Calculate_xi_points_cube_cell_centres(useNumbersOfPoints));
+					break;
+				case CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON:
+				{
+					int numberOfSimplexPoints = useNumbersOfPoints[0];
+					if (useNumbersOfPoints[1] > numberOfSimplexPoints)
+						numberOfSimplexPoints = useNumbersOfPoints[1];
+					if (useNumbersOfPoints[2] > numberOfSimplexPoints)
+						numberOfSimplexPoints = useNumbersOfPoints[2];
+					shapePoints = new IntegrationShapePointsMidpoint<Calculate_xi_points_tetrahedron_cell_centres>(
+						shape, useNumbersOfPoints, new Calculate_xi_points_tetrahedron_cell_centres(numberOfSimplexPoints));
+				}	break;
+				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE12:
+				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE13:
+				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE23:
+				{
+					const int dimension = 3;
+					int line_axis, tri_axis1, tri_axis2;
+					if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE12)
+					{
+						line_axis = 2;
+						tri_axis1 = 0;
+						tri_axis2 = 1;
+					}
+					else if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE13)
+					{
+						line_axis = 1;
+						tri_axis1 = 0;
+						tri_axis2 = 2;
+					}
+					else // (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE23)
+					{
+						line_axis = 0;
+						tri_axis1 = 1;
+						tri_axis2 = 2;
+					}
+					int numberOfSimplexPoints = useNumbersOfPoints[tri_axis1];
+					if (useNumbersOfPoints[tri_axis2] > numberOfSimplexPoints)
+						numberOfSimplexPoints = useNumbersOfPoints[tri_axis2];
+					shapePoints = new IntegrationShapePointsMidpoint<Calculate_xi_points_wedge_cell_centres>(
+						shape, useNumbersOfPoints, new Calculate_xi_points_wedge_cell_centres(line_axis, tri_axis1, tri_axis2,
+							useNumbersOfPoints[line_axis], numberOfSimplexPoints));
+				} break;
+				default:
+				{
+					display_message(INFORMATION_MESSAGE, "IntegrationPointsCache::getPoints()  "
+						"Unknown shape type encountered first for element %d.",
+						cmzn_element_get_identifier(element));
+					return 0;
+				} break;
 			}
 		} break;
-	default:
+	case CMZN_ELEMENT_QUADRATURE_RULE_INVALID:
 		{
-			display_message(INFORMATION_MESSAGE, "IntegrationPoints::getPoints()  "
-				"Unknown shape type encountered first for element %d.",
-				cmzn_element_get_identifier(element));
+			display_message(INFORMATION_MESSAGE, "IntegrationPointsCache::getPoints()  "
+				"Invalid quadrature rule.");
+			return 0;
 		} break;
 	}
-	shapePoints = new ShapePoints(shape, numPoints, points, weights);
 	this->knownShapePoints.push_back(shapePoints);
-	return numPoints;
+	return shapePoints;
 }
 
 /*
@@ -756,10 +965,11 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 	{
 		return_code = 1;
 		const int dimension = cmzn_mesh_get_dimension(mesh);
-		IntegrationPoints integration(order);
+		// GRC add more control
+		IntegrationPointsCache integrationCache(CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN, 1, &order);
 		int numPoints;
-		double *points = 0;
-		double *weights = 0;
+		double xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		double weight;
 		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(nodeset_region);
 		cmzn_fieldmodule_begin_change(field_module);
 		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
@@ -775,16 +985,22 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 		cmzn_nodeset_id master_gauss_points_nodeset = cmzn_nodeset_get_master_nodeset(gauss_points_nodeset);
 		while ((0 != (element = cmzn_elementiterator_next_non_access(iterator))) && return_code)
 		{
-			numPoints = integration.getPoints(element, points, weights);
-			if (0 == numPoints && first_unknown_shape)
+			IntegrationShapePoints *shapePoints = integrationCache.getPoints(element);
+			if (0 == shapePoints)
 			{
-				display_message(INFORMATION_MESSAGE, "gfx create gauss_points:  "
-					"Unknown shape type encountered first for element %d. Ignoring.",
-					cmzn_element_get_identifier(element));
-				first_unknown_shape = 0;
+				if (first_unknown_shape)
+				{
+					display_message(INFORMATION_MESSAGE, "gfx create gauss_points:  "
+						"Unknown shape type encountered first for element %d. Ignoring.",
+						cmzn_element_get_identifier(element));
+					first_unknown_shape = 0;
+				}
+				continue;
 			}
-			for (int g = 0; g < numPoints; g++)
+			numPoints = shapePoints->getNumPoints();
+			for (int p = 0; p < numPoints; p++)
 			{
+				shapePoints->getPoint(p, xi, &weight);
 				cmzn_node_id node = 0;
 				while ((0 != (node = cmzn_nodeset_find_node_by_identifier(master_gauss_points_nodeset, id))))
 				{
@@ -793,8 +1009,8 @@ int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,
 				}
 				node = cmzn_nodeset_create_node(gauss_points_nodeset, id, node_template);
 				cmzn_fieldcache_set_node(field_cache, node);
-				cmzn_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, points + g*dimension);
-				cmzn_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, weights + g);
+				cmzn_field_assign_mesh_location(gauss_location_field_base, field_cache, element, dimension, xi);
+				cmzn_field_assign_real(gauss_weight_field_base, field_cache, /*number_of_values*/1, &weight);
 				cmzn_node_destroy(&node);
 				id++;
 			}

@@ -154,8 +154,31 @@ enum cmzn_element_point_sampling_mode
 		     Poisson distribution with expected number given by:
 		     sample density field * cell volume, area or length, depending on dimension.
 		     The sample density field should be evaluated at the cell centre. */
-	CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION = 4
+	CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION = 4,
 		/*!< One point at a specified location in the element chart. */
+	CMZN_ELEMENT_POINT_SAMPLING_MODE_GAUSSIAN_QUADRATURE = 5
+		/*!< Sample at Gaussian quadrature points for the element. Currently
+		     limited to a maximum of 4 points in each element direction.
+		     Triangles and tetrahedra have symmetric point arrangements for an
+		     equal polynomial degree in each axis. */
+};
+
+/**
+ * Quadrature rule for numerically integrating over elements.
+ */
+enum cmzn_element_quadrature_rule
+{
+	CMZN_ELEMENT_QUADRATURE_RULE_INVALID = 0,
+		/*!< Unspecified or invalid quarature rule */
+	CMZN_ELEMENT_QUADRATURE_RULE_GAUSSIAN = 1,
+		/*!< Gaussian quadrature. Gives optimal/exact integration of polynomials of
+		     degree up to 2n - 1, when n is the number of Gauss points chosen.
+		     Currently limited to a maximum of 4 points in each element direction.
+		     Triangles and tetrahedra have symmetric point arrangements for an
+		     equal polynomial degree in each axis. */
+	CMZN_ELEMENT_QUADRATURE_RULE_MIDPOINT = 2
+		/*!< Sample at mid-points of equal-sized cells in element local xi chart,
+		     with equal weights. Also called the rectangle rule. */
 };
 
 /**

@@ -207,7 +207,7 @@ public:
 		return field;
 	}
 
-	inline cmzn_field_id getSourceField(int index);
+	inline cmzn_field_id getSourceField(int index) const;
 
 	/**
 	 * Override to inherit attributes such as coordinate system from source fields.
@@ -246,10 +246,10 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& valueCache) = 0;
 
-	/** Override & return 1 for field types supporting the sum_square_terms API */
-	virtual int supports_sum_square_terms() const
+	/** Override & return true for field types supporting the sum_square_terms API */
+	virtual bool supports_sum_square_terms() const
 	{
-		return 0;
+		return false;
 	}
 
 	/** Override for field types whose value is a sum of squares to get the
@@ -591,7 +591,7 @@ DESCRIPTION :
 
 }; /* struct Computed_field */
 
-inline cmzn_field_id Computed_field_core::getSourceField(int index)
+inline cmzn_field_id Computed_field_core::getSourceField(int index) const
 {
 	return field->source_fields[index];
 }
