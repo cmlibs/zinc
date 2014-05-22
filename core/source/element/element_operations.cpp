@@ -408,7 +408,6 @@ IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
 				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE13:
 				case CMZN_ELEMENT_SHAPE_TYPE_WEDGE23:
 				{
-					const int dimension = 3;
 					int line_axis, tri_axis1, tri_axis2;
 					if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_WEDGE12)
 					{
