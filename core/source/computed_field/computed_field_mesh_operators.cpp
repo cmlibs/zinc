@@ -225,7 +225,7 @@ public:
 				break;
 			case 2:
 				if (coordinatesCount == 2)
-					dLAV = dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2];
+					dLAV = fabs(dx_dxi[0]*dx_dxi[3] - dx_dxi[1]*dx_dxi[2]);
 				else
 				{
 					// dA = magnitude of dx_dxi1 (x) dx_dxi2
@@ -237,9 +237,10 @@ public:
 				}
 				break;
 			case 3:
-				dLAV = dx_dxi[0]*(dx_dxi[4]*dx_dxi[8] - dx_dxi[7]*dx_dxi[5]) +
-				       dx_dxi[3]*(dx_dxi[7]*dx_dxi[2] - dx_dxi[1]*dx_dxi[8]) +
-				       dx_dxi[6]*(dx_dxi[1]*dx_dxi[5] - dx_dxi[4]*dx_dxi[2]);
+				dLAV = fabs(
+					dx_dxi[0]*(dx_dxi[4]*dx_dxi[8] - dx_dxi[7]*dx_dxi[5]) +
+					dx_dxi[3]*(dx_dxi[7]*dx_dxi[2] - dx_dxi[1]*dx_dxi[8]) +
+					dx_dxi[6]*(dx_dxi[1]*dx_dxi[5] - dx_dxi[4]*dx_dxi[2]));
 				break;
 			}
 			return integrandValueCache->values;
@@ -436,6 +437,7 @@ class IntegralTermAppendSquares : public IntegralTermBase
 {
 	int termValuesCount;
 	FE_value *termValues;
+	const FE_value *initValues;
 
 public:
 	IntegralTermAppendSquares(Computed_field_mesh_integral& meshIntegralIn,
@@ -443,8 +445,14 @@ public:
 			int termValuesCountIn, FE_value *termValuesIn) :
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
 		termValuesCount(termValuesCountIn),
-		termValues(termValuesIn)
+		termValues(termValuesIn),
+		initValues(termValuesIn)
 	{
+	}
+
+	int getCount() const
+	{
+		return termValues - initValues;
 	}
 
 	inline bool operator()(FE_value *xi, FE_value weight)
@@ -473,7 +481,15 @@ int Computed_field_mesh_integral_squares::evaluate_sum_square_terms(
 {
 	IntegralTermAppendSquares appendSquares(*this, cache,
 		RealFieldValueCache::cast(inValueCache), number_of_values, values);
-	return this->evaluateTerms(appendSquares);
+	int result = this->evaluateTerms(appendSquares);
+	if (result && (appendSquares.getCount() != number_of_values))
+	{
+		display_message(ERROR_MESSAGE, "Computed_field_mesh_integral_squares.  "
+			"Field %s: calculated %d square terms, %d expected\n",
+			this->field->name, appendSquares.getCount(), number_of_values);
+		result = 0;
+	}
+	return result;
 }
 
 class IntegralTermSumSquares : public IntegralTermBase
