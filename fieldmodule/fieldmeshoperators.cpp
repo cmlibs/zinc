@@ -182,9 +182,14 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	const double two_constants[2] = { 1.5, 2.0 };
 	pair[0] = zinc.fm.createFieldConstant(2, two_constants);
 	EXPECT_TRUE(pair[0].isValid());
-	Field x = zinc.fm.createFieldComponent(coordinateField, 1);
-	EXPECT_TRUE(x.isValid());
-	Field cosx = zinc.fm.createFieldCos(x);
+	Field xField = zinc.fm.createFieldComponent(coordinateField, 1);
+	EXPECT_TRUE(xField.isValid());
+	const double xScale = 0.75;
+	Field xScaleField = zinc.fm.createFieldConstant(1, &xScale);
+	EXPECT_TRUE(xScaleField.isValid());
+	Field scaledxField = zinc.fm.createFieldMultiply(xField, xScaleField);
+	EXPECT_TRUE(scaledxField.isValid());
+	Field cosx = zinc.fm.createFieldCos(scaledxField);
 	pair[1] = cosx;
 	EXPECT_TRUE(pair[1].isValid());
 	Field nonLinearScalingField = zinc.fm.createFieldConcatenate(2, pair);
@@ -204,12 +209,22 @@ TEST(ZincFieldMeshIntegral, quadrature)
 	FieldMeshIntegral nonLinearScaledSurfaceAreaField2 = zinc.fm.createFieldMeshIntegral(cosxScaling, coordinateField, exteriorMesh2d);
 	EXPECT_TRUE(nonLinearScaledSurfaceAreaField2.isValid());
 
+#ifdef OLD_CODE
+	// old values for xScale = 1.0, ie. cosx = cos(xField) directly.
+	// which had negative volume in part of one element
 	const double expectedNonLinearScaledVolume[4] =
 		{ 7.0559053802963243, 6.8104343003626475, 6.8106518841869459, 6.8111846989802229 };
 	const double expectedNonLinearScaledSurfaceArea[4] =
 		{ 34.143865450652747,	34.256878457593942,	34.225521083053025,	34.240971095640752 };
 	double expectedNonLinearScaledSurfaceArea2[4] =
 		{	28.225665628446976, 27.278460970304074, 27.281297642206969, 27.282378561895456 };
+#endif
+	const double expectedNonLinearScaledVolume[4] =
+		{ 8.0633827703553891, 7.9076251581212436, 7.9076684902556282, 7.9078818241699338 };
+	const double expectedNonLinearScaledSurfaceArea[4] =
+		{ 35.077246331415274, 35.021495747953381, 35.021673194493403, 35.021707031197636 };
+	double expectedNonLinearScaledSurfaceArea2[4] =
+		{ 33.793631094781738, 33.154980715337537, 33.156021138639595, 33.156471874247998 };
 
 	double nonLinearScaledVolume = 0;
 	double nonLinearScaledSurfaceArea = 0;
