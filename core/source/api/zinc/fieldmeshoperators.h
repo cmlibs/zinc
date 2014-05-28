@@ -30,8 +30,9 @@ extern "C" {
  * By default, the integral is calculated by 1-point Gaussian quadrature,
  * sufficient only for linear interpolation. Separate methods are available to
  * set the numbers of quadrature points.
- * Note: assumes all elements of the mesh have a right-handed coordinate
- * system; if this is not the case the integral will be incorrect.
+ * Note: uses absolute value of dV/dA/dL so works with right- or left- handed
+ * element local coordinate systems. However, cannot handle elements that are
+ * partly or completely inverted from expected handedness.
  * @see cmzn_field_mesh_integral_set_numbers_of_points
  *
  * @param field_module  Region field module which will own the new field.

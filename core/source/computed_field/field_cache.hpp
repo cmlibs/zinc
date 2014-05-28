@@ -376,6 +376,8 @@ public:
 		}
 		derivatives_valid = 0;
 	}
+private:
+	RealFieldValueCache(); // not implemented
 };
 
 class StringFieldValueCache : public FieldValueCache
