@@ -435,24 +435,22 @@ int Computed_field_mesh_integral_squares::get_number_of_sum_square_terms(cmzn_fi
 
 class IntegralTermAppendSquares : public IntegralTermBase
 {
-	int termValuesCount;
+	int remainingValuesCount;
 	FE_value *termValues;
-	const FE_value *initValues;
 
 public:
 	IntegralTermAppendSquares(Computed_field_mesh_integral& meshIntegralIn,
 			cmzn_fieldcache& parentCache, RealFieldValueCache& valueCache,
 			int termValuesCountIn, FE_value *termValuesIn) :
 		IntegralTermBase(meshIntegralIn, parentCache, valueCache),
-		termValuesCount(termValuesCountIn),
-		termValues(termValuesIn),
-		initValues(termValuesIn)
+		remainingValuesCount(termValuesCountIn),
+		termValues(termValuesIn)
 	{
 	}
 
-	int getCount() const
+	int getRemainingValuesCount() const
 	{
-		return termValues - initValues;
+		return this->remainingValuesCount;
 	}
 
 	inline bool operator()(FE_value *xi, FE_value weight)
@@ -461,9 +459,12 @@ public:
 		FE_value *integrandValues = baseProcess(xi, dLAV);
 		if (integrandValues)
 		{
-			const FE_value sqrt_weight_dLAV = sqrt(fabs(weight*dLAV));
+			this->remainingValuesCount -= this->componentsCount;
+			if (this->remainingValuesCount < 0)
+				return false;
+			const FE_value sqrt_weight_dLAV = (weight < 0.0) ? -sqrt(-weight*dLAV) : sqrt(weight*dLAV);
 			for (int i = 0; i < this->componentsCount; ++i)
-				this->termValues[i] = fabs(integrandValues[i])*sqrt_weight_dLAV;
+				this->termValues[i] = integrandValues[i]*sqrt_weight_dLAV;
 			this->termValues += this->componentsCount;
 			return true;
 		}
@@ -482,11 +483,11 @@ int Computed_field_mesh_integral_squares::evaluate_sum_square_terms(
 	IntegralTermAppendSquares appendSquares(*this, cache,
 		RealFieldValueCache::cast(inValueCache), number_of_values, values);
 	int result = this->evaluateTerms(appendSquares);
-	if (result && (appendSquares.getCount() != number_of_values))
+	if (result && (appendSquares.getRemainingValuesCount() != 0))
 	{
-		display_message(ERROR_MESSAGE, "Computed_field_mesh_integral_squares.  "
-			"Field %s: calculated %d square terms, %d expected\n",
-			this->field->name, appendSquares.getCount(), number_of_values);
+		display_message(ERROR_MESSAGE, "Computed_field_mesh_integral_squares.evaluate_sum_square_terms  "
+			"Field %s: expected %d values; actual number %d\n",
+			this->field->name, number_of_values, number_of_values - appendSquares.getRemainingValuesCount());
 		result = 0;
 	}
 	return result;

@@ -18,6 +18,9 @@
  * in 3-D, alternatively dA for area in 2-D, or dL for length in 1-D.
  * An integrand of constant 1.0 combined with the RC coordinate field gives
  * the volume, area or length, depending on the mesh dimension.
+ * Note: uses absolute value of dV/dA/dL so works with right- or left- handed
+ * element local coordinate systems. However, cannot handle elements that are
+ * partly or completely inverted from expected handedness.
  */
 struct cmzn_field_mesh_integral;
 typedef struct cmzn_field_mesh_integral *cmzn_field_mesh_integral_id;
