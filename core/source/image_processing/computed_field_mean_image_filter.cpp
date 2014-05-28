@@ -237,7 +237,7 @@ and generate the outputImage.
 }; /* template < class ImageType > class Computed_field_mean_image_filter_Functor */
 
 Computed_field_mean_image_filter::Computed_field_mean_image_filter(
-	Computed_field *source_field, int valuesCount, const int *radius_sizes_in) :
+	Computed_field *source_field, int radius_sizes_count, const int *radius_sizes_in) :
 	computed_field_image_filter(source_field),
 	radius_sizes(NULL)
 /*******************************************************************************
@@ -251,14 +251,10 @@ Create the computed_field representation of the MeanImageFilter.
 	radius_sizes = new int[dimension];
 	for (i = 0 ; i < dimension ; i++)
 	{
-		if (i > valuesCount)
-		{
-			radius_sizes[i] = radius_sizes_in[valuesCount - 1];
-		}
+		if (i > radius_sizes_count)
+			radius_sizes[i] = radius_sizes_in[radius_sizes_count - 1];
 		else
-		{
 			radius_sizes[i] = radius_sizes_in[i];
-		}
 	}
 }
 
@@ -278,17 +274,17 @@ void Computed_field_mean_image_filter::create_functor()
 
 struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_mean(
 	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int valuesCount, const int *radius_sizes)
+	struct Computed_field *source_field, int radius_sizes_count, const int *radius_sizes)
 {
-	Computed_field *field = NULL;
-	if (source_field)
+	cmzn_field_id field = 0;
+	if (source_field && (0 < radius_sizes_count) && radius_sizes)
 	{
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
 			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
-			new Computed_field_mean_image_filter(source_field, valuesCount, radius_sizes));
+			new Computed_field_mean_image_filter(source_field, radius_sizes_count, radius_sizes));
 	}
 	else
 	{
