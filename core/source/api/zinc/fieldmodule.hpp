@@ -401,7 +401,7 @@ public:
 
 	inline FieldImagefilterHistogram createFieldImagefilterHistogram(const Field& sourceField);
 
-	inline FieldImagefilterMean createFieldImagefilterMean(const Field& sourceField, int valuesCount,
+	inline FieldImagefilterMean createFieldImagefilterMean(const Field& sourceField, int radiusSizesCount,
 		const int *radiusSizesIn);
 
 	inline FieldImagefilterGradientMagnitudeRecursiveGaussian
