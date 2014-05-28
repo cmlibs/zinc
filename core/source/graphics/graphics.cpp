@@ -502,19 +502,15 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 {
 	FE_value initial_xi[3];
 	GLfloat time;
-	int element_dimension = 1, element_graphics_name,
-		i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_xi_points, return_code,
-		*top_level_xi_point_numbers,
-		use_element_dimension, *use_number_in_xi;
+	int element_graphics_name, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+		number_of_xi_points, return_code;
 	struct CM_element_information cm;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
-	struct FE_element *top_level_element,*use_element;
+	struct FE_element *top_level_element;
 	struct cmzn_graphics *graphics;
 	struct GT_glyph_set *glyph_set;
 	struct GT_polyline *polyline;
 	struct GT_surface *surface;
-	struct Multi_range *ranges;
 	FE_value_triple *xi_points = NULL;
 
 	ENTER(FE_element_to_graphics_object);
@@ -522,7 +518,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		(NULL != (graphics = graphics_to_object_data->graphics)) &&
 		graphics->graphics_object)
 	{
-		element_dimension = get_FE_element_dimension(element);
+		int element_dimension = get_FE_element_dimension(element);
 		return_code = 1;
 		get_FE_element_identifier(element, &cm);
 		element_graphics_name = cm.number;
@@ -857,42 +853,16 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 								{
 									get_FE_element_identifier(element, &cm);
 									element_graphics_name = cm.number;
-									top_level_xi_point_numbers = (int *)NULL;
-									if (CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS ==
-										graphics->sampling_mode)
-									{
-										FE_element_convert_xi_points_cell_corners_to_top_level(
-											element, top_level_element, top_level_number_in_xi,
-											number_of_xi_points, xi_points, &top_level_xi_point_numbers);
-									}
-									if (top_level_xi_point_numbers)
-									{
-										/* xi_points have been converted to top-level */
-										use_element = top_level_element;
-										use_number_in_xi = top_level_number_in_xi;
-									}
-									else
-									{
-										use_element = element;
-										use_number_in_xi = number_in_xi;
-									}
-									ranges = (struct Multi_range *)NULL;
-									element_point_ranges_identifier.element = use_element;
-									element_point_ranges_identifier.top_level_element=
-										top_level_element;
-									element_point_ranges_identifier.sampling_mode =
-										graphics->sampling_mode;
-									use_element_dimension = get_FE_element_dimension(use_element);
-									for (i = 0; i < use_element_dimension; i++)
-									{
-										element_point_ranges_identifier.number_in_xi[i] =
-											use_number_in_xi[i];
-									}
+									element_point_ranges_identifier.element = element;
+									element_point_ranges_identifier.top_level_element = top_level_element;
+									element_point_ranges_identifier.sampling_mode = graphics->sampling_mode;
+									for (i = 0; i < element_dimension; i++)
+										element_point_ranges_identifier.number_in_xi[i] = number_in_xi[i];
 									/* NOT an error if no glyph_set produced == empty selection */
 									if ((0 < number_of_xi_points) &&
 										NULL != (glyph_set = create_GT_glyph_set_from_FE_element(
 											graphics_to_object_data->field_cache,
-											use_element, top_level_element,
+											element, top_level_element,
 											graphics_to_object_data->rc_coordinate_field,
 											number_of_xi_points, xi_points,
 											graphics_to_object_data->glyph_gt_object, graphics->glyph_repeat_mode,
@@ -902,17 +872,13 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 											graphics->signed_scale_field, graphics->data_field,
 											graphics->font, graphics->label_field, graphics->label_offset,
 											graphics->label_text,
-											graphics->select_mode, name_selected, ranges,
-											top_level_xi_point_numbers)))
+											graphics->select_mode, name_selected, (struct Multi_range *)NULL,
+											/*point_numbers*/(int *)0)))
 									{
 										/* set auxiliary_object_name for glyph_set to
 											 element_graphics_name so we can edit */
 										GT_glyph_set_set_auxiliary_integer_identifier(glyph_set,
 											element_graphics_name);
-									}
-									if (top_level_xi_point_numbers)
-									{
-										DEALLOCATE(top_level_xi_point_numbers);
 									}
 									DEALLOCATE(xi_points);
 								}
