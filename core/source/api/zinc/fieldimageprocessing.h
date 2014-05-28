@@ -287,14 +287,19 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_gradient_magnit
 
 /**
  * Create field performing ITK mean image filter on source_field image.
- * The <radius_sizes> is a vector of integers of dimension specified by the
- * <source_field> dimension.
  * Sets number of components to same number as <source_field>.
+ *
+ * @param field_module  The field module for the region to own the new field.
+ * @param source_field  The source field to be processed.
+ * @param radius_sizes_count  The size of the radius sizes array.
+ * @param radius_sizes  Array of radius sizes to use in each image axis.
+ * If there are fewer sizes than image dimension the last value is used on
+ * subsequent image axes.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_mean(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-	int valuesCount, const int *radius_sizes);
+	int radius_sizes_count, const int *radius_sizes);
 
 /**
  * Creates a field performing ITK rescale intensity image filter on scalar

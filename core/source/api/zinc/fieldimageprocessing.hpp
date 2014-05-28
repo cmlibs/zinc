@@ -309,7 +309,7 @@ private:
 
 	friend FieldImagefilterMean
 		Fieldmodule::createFieldImagefilterMean(const Field& sourceField,
-			int valuesCount,const int *radiusSizesIn);
+			int radiusSizesCount, const int *radiusSizesIn);
 
 public:
 
@@ -511,10 +511,10 @@ inline FieldImagefilterRescaleIntensity
 }
 
 inline FieldImagefilterMean Fieldmodule::createFieldImagefilterMean(const Field& sourceField,
-	int valuesCount, const int *radiusSizesIn)
+	int radiusSizesCount, const int *radiusSizesIn)
 {
 	return FieldImagefilterMean(cmzn_fieldmodule_create_field_imagefilter_mean(
-		id, sourceField.getId(), valuesCount, radiusSizesIn));
+		id, sourceField.getId(), radiusSizesCount, radiusSizesIn));
 }
 
 inline FieldImagefilterSigmoid
