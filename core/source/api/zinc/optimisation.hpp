@@ -90,6 +90,16 @@ public:
 		return id;
 	}
 
+	Field getConditionalField(const Field& independentField)
+	{
+		return Field(cmzn_optimisation_get_conditional_field(id, independentField.getId()));
+	}
+
+	int setConditionalField(const Field& independentField, const Field& conditionalField)
+	{
+		return cmzn_optimisation_set_conditional_field(id, independentField.getId(), conditionalField.getId());
+	}
+
 	Method getMethod()
 	{
 		return static_cast<Method>(cmzn_optimisation_get_method(id));
@@ -162,7 +172,7 @@ public:
 
 	int removeObjectiveField(const Field& field)
 	{
-		return (cmzn_optimisation_remove_independent_field(id, field.getId()));
+		return (cmzn_optimisation_remove_objective_field(id, field.getId()));
 	}
 
 	char *getSolutionReport()

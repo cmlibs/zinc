@@ -46,7 +46,6 @@ public:
 	int prepareTerms();
 };
 
-typedef std::vector<cmzn_field_id> FieldVector;
 typedef std::vector<ObjectiveFieldData*> ObjectiveFieldDataVector;
 
 class Minimisation
@@ -64,7 +63,6 @@ public:
 private:
 	FE_value **dof_storage_array;
 	FE_value *dof_initial_values;
-	FieldVector independentFields;
 	int totalObjectiveFieldComponents;
 	int totalLeastSquaresTerms;
 	FE_value *objectiveValues;
@@ -73,7 +71,7 @@ private:
 public:
 	Minimisation(cmzn_optimisation& optimisation) :
 		optimisation(optimisation),
-		field_module(cmzn_fieldmodule_access(optimisation.fieldModule)),
+		field_module(cmzn_fieldmodule_access(optimisation.getFieldmodule())),
 		field_cache(cmzn_fieldmodule_create_fieldcache(field_module)),
 		current_time(0.0),
 		total_dof(0),
@@ -81,12 +79,6 @@ public:
 		dof_initial_values(0),
 		optppMessageStream(&optimisation.solution_report)
 	{
-		for (FieldList::iterator iter = optimisation.independentFields.begin();
-			iter != optimisation.independentFields.end(); ++iter)
-		{
-			cmzn_field_access(*iter);
-			independentFields.push_back(*iter);
-		}
 		totalObjectiveFieldComponents = 0;
 		for (FieldList::iterator iter = optimisation.objectiveFields.begin();
 			iter != optimisation.objectiveFields.end(); ++iter)

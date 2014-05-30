@@ -60,6 +60,40 @@ ZINC_API cmzn_optimisation_id cmzn_optimisation_access(cmzn_optimisation_id opti
 ZINC_API int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address);
 
 /**
+ * Get the conditional field which controls which degrees of freedom of an
+ * independent field are included in the optimisation, if any.
+ * @see cmzn_optimisation_set_conditional_field
+ *
+ * @param optimisation  Handle to the optimisation object.
+ * @param independent_field  The independent field the condition applies to.
+ * @return  Handle to conditional field, or NULL/invalid handle if none
+ * or failed.
+ */
+ZINC_API cmzn_field_id cmzn_optimisation_get_conditional_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id independent_field);
+
+/**
+ * Set a conditional field which controls which degrees of freedom of an
+ * independent field are included in the optimisation, for all components or
+ * per-component. The conditional field is queried at the start of the
+ * optimisation, so the number of DOFs remains constant throughout it.
+ * The conditional field only applies to finite element independent fields,
+ * and is queried and applied to nodal DOFs only.
+ *
+ * @param optimisation  Handle to the optimisation object.
+ * @param independent_field  The independent field to select a subset of DOFs
+ * from. Must already have been added to the optimisation.
+ * @param conditional_field  A field with either one component or the same
+ * number of components as the independent field. DOFs for the independent
+ * field (or components of it, if non-scalar) are included only where this
+ * field is defined and non-zero. Pass a NULL/invalid handle to clear.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_optimisation_set_conditional_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id independent_field,
+	cmzn_field_id conditional_field);
+
+/**
  * Get the current optimisation method for the given optimisation object.
  *
  * @param optimisation  Handle to the optimisation object.
@@ -73,10 +107,10 @@ ZINC_API enum cmzn_optimisation_method cmzn_optimisation_get_method(
  *
  * @param optimisation  Handle to the optimisation object.
  * @param method  The optimisation method to use.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
-		enum cmzn_optimisation_method method);
+	enum cmzn_optimisation_method method);
 
 /**
  * Convert a short name into an enum if the name matches any of the members in
