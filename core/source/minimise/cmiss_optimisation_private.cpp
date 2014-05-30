@@ -24,6 +24,196 @@
 #include "minimise/cmiss_optimisation_private.hpp"
 #include "minimise/optimisation.hpp"
 
+cmzn_optimisation::cmzn_optimisation(cmzn_fieldmodule_id field_module) :
+	fieldModule(cmzn_region_get_fieldmodule(cmzn_fieldmodule_get_region_internal(field_module))),
+	method(CMZN_OPTIMISATION_METHOD_QUASI_NEWTON),
+	functionTolerance(1.49012e-8),
+	gradientTolerance(6.05545e-6),
+	stepTolerance(1.49012e-8),
+	maximumIterations(100),
+	maximumNumberFunctionEvaluations(1000),
+	maximumStep(1.0e3),
+	minimumStep(1.49012e-8),
+	linesearchTolerance(1.e-4),
+	maximumBacktrackIterations(5),
+	trustRegionSize(0.1),
+	access_count(1)
+{
+}
+
+cmzn_optimisation::~cmzn_optimisation()
+{
+	IndependentAndConditionalFieldsList::iterator iter1;
+	for (iter1 = independentFields.begin(); iter1 != independentFields.end(); ++iter1)
+	{
+		cmzn_field_destroy(&(iter1->independentField));
+		cmzn_field_destroy(&(iter1->conditionalField));
+	}
+	FieldList::iterator iter;
+	for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
+	{
+		cmzn_field_destroy(&(*iter));
+	}
+	cmzn_fieldmodule_destroy(&fieldModule);
+}
+
+cmzn_field_id cmzn_optimisation::getConditionalField(cmzn_field_id independentField) const
+{
+	if (independentField)
+	{
+		IndependentAndConditionalFieldsList::const_iterator iter;
+		for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
+			if (iter->independentField == independentField)
+				return cmzn_field_access(iter->conditionalField);
+	}
+	return 0;
+}
+
+/**
+ * @param independentField  The independent field to apply condition to.
+ * @param conditionalField  Field with either 1 component, or as many components
+ * as independentField. NULL to clear.
+ */
+int cmzn_optimisation::setConditionalField(cmzn_field_id independentField,
+	cmzn_field_id conditionalField)
+{
+	int conditionalComponents;
+	if (independentField && ((0 == conditionalField) ||
+		(1 == (conditionalComponents = cmzn_field_get_number_of_components(conditionalField))) ||
+		(cmzn_field_get_number_of_components(independentField) == conditionalComponents)))
+	{
+		IndependentAndConditionalFieldsList::iterator iter;
+		for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
+			if (iter->independentField == independentField)
+			{
+				REACCESS(Computed_field)(&(iter->conditionalField), conditionalField);
+				return CMZN_OK;
+			}
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_field_id cmzn_optimisation::getFirstIndependentField() const
+{
+	IndependentAndConditionalFieldsList::const_iterator iter = independentFields.begin();
+	if (iter != independentFields.end())
+		return cmzn_field_access(iter->independentField);
+	return 0;
+}
+
+cmzn_field_id cmzn_optimisation::getNextIndependentField(cmzn_field_id ref_field) const
+{
+	IndependentAndConditionalFieldsList::const_iterator iter;
+	for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
+		if (iter->independentField == ref_field)
+		{
+			++iter;
+			if (iter != independentFields.end())
+				return cmzn_field_access(iter->independentField);
+			break;
+		}
+	return 0;
+}
+
+int cmzn_optimisation::addIndependentField(cmzn_field_id field)
+{
+	if (!cmzn_fieldmodule_contains_field(fieldModule, field))
+		return CMZN_ERROR_ARGUMENT;
+	if (!(Computed_field_is_constant(field) || Computed_field_is_type_finite_element(field)))
+		return CMZN_ERROR_ARGUMENT;
+	if (cmzn_field_get_value_type(field) != CMZN_FIELD_VALUE_TYPE_REAL)
+		return CMZN_ERROR_ARGUMENT;
+	IndependentAndConditionalFieldsList::const_iterator iter;
+	for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
+	{
+		if (iter->independentField == field)
+			return CMZN_ERROR_ARGUMENT;
+	}
+	IndependentAndConditionalFields newRecord;
+	newRecord.independentField = cmzn_field_access(field);
+	newRecord.conditionalField = 0;
+	this->independentFields.push_back(newRecord);
+	return CMZN_OK;
+}
+
+int cmzn_optimisation::removeIndependentField(cmzn_field_id field)
+{
+	IndependentAndConditionalFieldsList::iterator iter;
+	for (iter = independentFields.begin(); iter != independentFields.end(); ++iter)
+	{
+		if (iter->independentField == field)
+		{
+			cmzn_field_destroy(&(iter->independentField));
+			cmzn_field_destroy(&(iter->conditionalField));
+			independentFields.erase(iter);
+			return CMZN_OK;
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_field_id cmzn_optimisation::getFirstObjectiveField() const
+{
+	cmzn_field_id field = 0;
+	FieldList::const_iterator iter = objectiveFields.begin();
+	if (iter != objectiveFields.end())
+	{
+		field = cmzn_field_access(*iter);
+	}
+	return field;
+}
+
+cmzn_field_id cmzn_optimisation::getNextObjectiveField(cmzn_field_id ref_field) const
+{
+	cmzn_field_id field = 0;
+	FieldList::const_iterator iter = objectiveFields.begin();
+	while (iter != objectiveFields.end())
+	{
+		if (*iter == ref_field)
+		{
+			++iter;
+			if (iter != objectiveFields.end())
+			{
+				field = cmzn_field_access(*iter);
+			}
+			break;
+		}
+		++iter;
+	}
+	return field;
+}
+
+int cmzn_optimisation::addObjectiveField(cmzn_field_id field)
+{
+	if (!cmzn_fieldmodule_contains_field(fieldModule, field))
+		return CMZN_ERROR_ARGUMENT;
+	if (cmzn_field_get_value_type(field) != CMZN_FIELD_VALUE_TYPE_REAL)
+		return CMZN_ERROR_ARGUMENT;
+	FieldList::const_iterator iter;
+	for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
+	{
+		if (*iter == field)
+			return CMZN_ERROR_ARGUMENT;
+	}
+	objectiveFields.push_back(cmzn_field_access(field));
+	return CMZN_OK;
+}
+
+int cmzn_optimisation::removeObjectiveField(cmzn_field_id field)
+{
+	FieldList::iterator iter;
+	for (iter = objectiveFields.begin(); iter != objectiveFields.end(); ++iter)
+	{
+		if (*iter == field)
+		{
+			cmzn_field_destroy(&(*iter));
+			objectiveFields.erase(iter);
+			return CMZN_OK;
+		}
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 char *cmzn_optimisation::getSolutionReport()
 {
 	std::string temp = solution_report.str();
@@ -32,29 +222,30 @@ char *cmzn_optimisation::getSolutionReport()
 
 int cmzn_optimisation::runOptimisation()
 {
-	int return_code = 1;
+	int return_code = CMZN_OK;
 	solution_report.str("");
 	// check required attributes are set
 	if (method == CMZN_OPTIMISATION_METHOD_INVALID)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Optimisation method invalid or not set.");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	if (independentFields.size() < 1)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Must set at least one independent field.");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	if (objectiveFields.size() < 1)
 	{
 		display_message(ERROR_MESSAGE, "cmzn_optimisation_optimise.  Must set at least one objective field.");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	if (return_code)
+	if (return_code == CMZN_OK)
 	{
 		Minimisation minimisation(*this);
-		return_code = return_code && minimisation.prepareOptimisation();
-		return_code = return_code && minimisation.runOptimisation();
+		return_code = minimisation.prepareOptimisation();
+		if (return_code == CMZN_OK)
+			return_code = minimisation.runOptimisation();
 	}
 	return return_code;
 }
@@ -77,27 +268,39 @@ int cmzn_optimisation_destroy(cmzn_optimisation_id *optimisation_address)
 {
 	if (optimisation_address)
 		return cmzn_optimisation::deaccess(*optimisation_address);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_field_id cmzn_optimisation_get_conditional_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id independent_field)
+{
+	if (optimisation)
+		return optimisation->getConditionalField(independent_field);
 	return 0;
+}
+
+int cmzn_optimisation_set_conditional_field(
+	cmzn_optimisation_id optimisation, cmzn_field_id independent_field,
+	cmzn_field_id conditional_field)
+{
+	if (optimisation)
+		return optimisation->setConditionalField(independent_field, conditional_field);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_optimisation_method cmzn_optimisation_get_method(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
-		return optimisation->method;
+		return optimisation->getMethod();
 	return CMZN_OPTIMISATION_METHOD_INVALID;
 }
 
 int cmzn_optimisation_set_method(cmzn_optimisation_id optimisation,
 		enum cmzn_optimisation_method method)
 {
-	if (optimisation && (
-		(method == CMZN_OPTIMISATION_METHOD_QUASI_NEWTON) ||
-		(method == CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)))
-	{
-		optimisation->method = method;
-		return 1;
-	}
-	return 0;
+	if (optimisation)
+		return optimisation->setMethod(method);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 class cmzn_optimisation_method_conversion
@@ -155,15 +358,16 @@ int cmzn_optimisation_get_attribute_integer(cmzn_optimisation_id optimisation,
 			break;
 		}
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
 		enum cmzn_optimisation_attribute attribute, int value)
 {
-	int return_code = 1;
+	int return_code = CMZN_ERROR_ARGUMENT;
 	if (optimisation)
 	{
+		return_code = CMZN_OK;
 		switch (attribute)
 		{
 		case CMZN_OPTIMISATION_ATTRIBUTE_MAXIMUM_ITERATIONS:
@@ -176,7 +380,7 @@ int cmzn_optimisation_set_attribute_integer(cmzn_optimisation_id optimisation,
 			optimisation->maximumBacktrackIterations = value;
 			break;
 		default:
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 			break;
 		}
 	}
@@ -221,9 +425,10 @@ double cmzn_optimisation_get_attribute_real(cmzn_optimisation_id optimisation,
 int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
 		enum cmzn_optimisation_attribute attribute, double value)
 {
-	int return_code = 1;
+	int return_code = CMZN_ERROR_ARGUMENT;
 	if (optimisation)
 	{
+		return_code = CMZN_OK;
 		switch (attribute)
 		{
 		case CMZN_OPTIMISATION_ATTRIBUTE_FUNCTION_TOLERANCE:
@@ -248,7 +453,7 @@ int cmzn_optimisation_set_attribute_real(cmzn_optimisation_id optimisation,
 			optimisation->trustRegionSize = value;
 			break;
 		default:
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 			break;
 		}
 	}
@@ -335,7 +540,7 @@ int cmzn_optimisation_add_independent_field(cmzn_optimisation_id optimisation,
 {
 	if (optimisation && field)
 		return optimisation->addIndependentField(field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_optimisation_remove_independent_field(
@@ -343,7 +548,7 @@ int cmzn_optimisation_remove_independent_field(
 {
 	if (optimisation && field)
 		return optimisation->removeIndependentField(field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_field_id cmzn_optimisation_get_first_objective_field(
@@ -367,7 +572,7 @@ int cmzn_optimisation_add_objective_field(cmzn_optimisation_id optimisation,
 {
 	if (optimisation && field)
 		return optimisation->addObjectiveField(field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_optimisation_remove_objective_field(
@@ -375,7 +580,7 @@ int cmzn_optimisation_remove_objective_field(
 {
 	if (optimisation && field)
 		return optimisation->removeObjectiveField(field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_optimisation_get_solution_report(cmzn_optimisation_id optimisation)
@@ -389,5 +594,5 @@ int cmzn_optimisation_optimise(cmzn_optimisation_id optimisation)
 {
 	if (optimisation)
 		return optimisation->runOptimisation();
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }

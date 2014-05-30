@@ -77,11 +77,6 @@ Minimisation::~Minimisation()
 	if (dof_initial_values) DEALLOCATE(dof_initial_values);
 	cmzn_fieldcache_destroy(&field_cache);
 	cmzn_fieldmodule_destroy(&field_module);
-	for (FieldVector::iterator iter = independentFields.begin();
-		iter != independentFields.end(); ++iter)
-	{
-		cmzn_field_destroy(&(*iter));
-	}
 	for (ObjectiveFieldDataVector::iterator iter = objectiveFields.begin();
 		iter != objectiveFields.end(); ++iter)
 	{
@@ -91,13 +86,12 @@ Minimisation::~Minimisation()
 
 int Minimisation::prepareOptimisation()
 {
-	int return_code = 1;
+	int return_code = CMZN_OK;
 	cmzn_fieldmodule_begin_change(field_module);
-	if (optimisation.independentFields.size() != independentFields.size())
-		return_code = 0;
 	if (optimisation.objectiveFields.size() != objectiveFields.size())
-		return_code = 0;
-	return_code = return_code && construct_dof_arrays();
+		return_code = CMZN_ERROR_ARGUMENT;
+	if ((return_code == CMZN_OK) && (CMZN_OK != construct_dof_arrays()))
+		return_code = CMZN_ERROR_GENERAL;
 	if (optimisation.method == CMZN_OPTIMISATION_METHOD_LEAST_SQUARES_QUASI_NEWTON)
 	{
 		totalLeastSquaresTerms = 0;
@@ -107,13 +101,13 @@ int Minimisation::prepareOptimisation()
 			ObjectiveFieldData *objective = *iter;
 			if (!objective->prepareTerms())
 			{
-				return_code = 0;
+				return_code = CMZN_ERROR_GENERAL;
 				break;
 			}
 			totalLeastSquaresTerms += objective->bufferSize;
 		}
 	}
-	if (!return_code)
+	if (return_code != CMZN_OK)
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::prepareOptimisation() Failed");
 	}
@@ -126,10 +120,11 @@ int Minimisation::prepareOptimisation()
  */
 void Minimisation::touch_independent_fields()
 {
-	for (FieldList::iterator iter = optimisation.independentFields.begin();
+	IndependentAndConditionalFieldsList::iterator iter;
+	for (iter = optimisation.independentFields.begin();
 		iter != optimisation.independentFields.end(); ++iter)
 	{
-		Computed_field_changed(*iter);
+		Computed_field_changed(iter->independentField);
 	}
 }
 
@@ -138,7 +133,7 @@ int Minimisation::runOptimisation()
 	cmzn_fieldmodule_begin_change(field_module);
 	// Minimise the objective function
 	int return_code = 0;
-	switch (optimisation.method)
+	switch (this->optimisation.getMethod())
 	{
 	case CMZN_OPTIMISATION_METHOD_QUASI_NEWTON:
 		return_code = minimise_QN();
@@ -156,8 +151,9 @@ int Minimisation::runOptimisation()
 	if (!return_code)
 	{
 		display_message(ERROR_MESSAGE, "Minimisation::runOptimisation() Failed");
+		return CMZN_ERROR_GENERAL;
 	}
-	return return_code;
+	return CMZN_OK;
 }
 
 /***************************************************************************//**
@@ -180,11 +176,22 @@ int Minimisation::construct_dof_arrays()
 		dof_initial_values = 0;
 	}
 	total_dof = 0;
-	for (FieldVector::iterator iter = independentFields.begin();
-		iter != independentFields.end(); ++iter)
+	IndependentAndConditionalFieldsList::iterator iter;
+	for (iter = optimisation.independentFields.begin();
+		iter != optimisation.independentFields.end(); ++iter)
 	{
-		cmzn_field *independentField = *iter;
+		cmzn_field *independentField = iter->independentField;
 		int number_of_components = cmzn_field_get_number_of_components(independentField);
+		cmzn_fieldcache_id cache = 0;
+		cmzn_field *conditionalField = iter->conditionalField;
+		FE_value *conditionalValues = 0;
+		int conditionalComponents = 0;
+		if (conditionalField)
+		{
+			conditionalComponents = cmzn_field_get_number_of_components(conditionalField);
+			conditionalValues = new FE_value[conditionalComponents];
+			cache = cmzn_fieldmodule_create_fieldcache(this->field_module);
+		}
 		if (Computed_field_is_type_finite_element(independentField))
 		{
 			// should only have one independent field
@@ -195,10 +202,21 @@ int Minimisation::construct_dof_arrays()
 			cmzn_node_id node = 0;
 			while ((0 != (node = cmzn_nodeiterator_next_non_access(iterator))) && return_code)
 			{
+				if (conditionalField)
+				{
+					cmzn_fieldcache_set_node(cache, node);
+					int result = cmzn_field_evaluate_real(conditionalField, cache, conditionalComponents, conditionalValues);
+					if (result != CMZN_OK)
+						continue; // conditionalField not defined => skip
+					if ((1 == conditionalComponents) && (conditionalValues[0] == 0.0))
+						continue; // scalar conditional field is zero => skip
+				}
 				if (FE_field_is_defined_at_node(fe_field, node))
 				{
 					for (int component_number = 0; component_number < number_of_components; component_number++)
 					{
+						if ((conditionalComponents > 1) && (conditionalValues[component_number] == 0.0))
+							continue;
 						int number_of_values = 1 + get_FE_node_field_component_number_of_derivatives(node,
 							fe_field, component_number);
 						int number_of_versions = get_FE_node_field_component_number_of_versions(node,
@@ -294,6 +312,8 @@ int Minimisation::construct_dof_arrays()
 				"Invalid independent field type.");
 			return_code = 0;
 		}
+		delete[] conditionalValues;
+		cmzn_fieldcache_destroy(&cache);
 	}
 	return return_code;
 }
@@ -315,11 +335,10 @@ void Minimisation::list_dof_values()
  */
 void Minimisation::invalidate_independent_field_caches()
 {
-	for (FieldVector::iterator iter = independentFields.begin();
-		iter != independentFields.end(); ++iter)
+	for (IndependentAndConditionalFieldsList::iterator iter = optimisation.independentFields.begin();
+		iter != optimisation.independentFields.end(); ++iter)
 	{
-		cmzn_field_id independentField = *iter;
-		independentField->clearCaches();
+		iter->independentField->clearCaches();
 	}
 }
 
@@ -452,6 +471,7 @@ void objective_function_LSQ(int ndim, const ColumnVector& x, ColumnVector& fx,
 	minimisation->invalidate_independent_field_caches();
 	int return_code = 1;
 	Field_time_location location;
+	// NEWMAT::ColumnVector::element(int m) is 0-based, not 1 as are other interfaces
 	int termIndex = 0;
 	for (ObjectiveFieldDataVector::iterator iter = minimisation->objectiveFields.begin();
 		iter != minimisation->objectiveFields.end(); ++iter)
