@@ -27,6 +27,7 @@
 cmzn_optimisation::cmzn_optimisation(cmzn_fieldmodule_id field_module) :
 	fieldModule(cmzn_region_get_fieldmodule(cmzn_fieldmodule_get_region_internal(field_module))),
 	method(CMZN_OPTIMISATION_METHOD_QUASI_NEWTON),
+	access_count(1),
 	functionTolerance(1.49012e-8),
 	gradientTolerance(6.05545e-6),
 	stepTolerance(1.49012e-8),
@@ -36,8 +37,7 @@ cmzn_optimisation::cmzn_optimisation(cmzn_fieldmodule_id field_module) :
 	minimumStep(1.49012e-8),
 	linesearchTolerance(1.e-4),
 	maximumBacktrackIterations(5),
-	trustRegionSize(0.1),
-	access_count(1)
+	trustRegionSize(0.1)
 {
 }
 
