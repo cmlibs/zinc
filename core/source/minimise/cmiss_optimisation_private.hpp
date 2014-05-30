@@ -39,6 +39,7 @@ private:
 	IndependentAndConditionalFieldsList independentFields;
 	FieldList objectiveFields;
 	int access_count;
+public:
 	// Opt++ stopping tolerances
 	double functionTolerance;
 	double gradientTolerance;
