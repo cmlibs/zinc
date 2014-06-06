@@ -369,3 +369,176 @@ TEST(ZincFieldFiniteElement, node_value_label)
 	ASSERT_DOUBLE_EQ(derivatives2[1], outDerivatives2[1]);
 	ASSERT_DOUBLE_EQ(derivatives2[2], outDerivatives2[2]);
 }
+
+TEST(ZincFieldIsExterior, evaluate3d)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+
+	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
+	EXPECT_TRUE(isExteriorField.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	double value;
+	int size;
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(6, size = mesh3d.getSize());
+	for (int i = 1; i <= size; ++i)
+	{
+		Element element = mesh3d.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(OK, result = cache.setElement(element));
+		EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(0.0, value);
+	}
+
+	const int interiorFaces[] = { 1, 3, 6, 7, 11, 15 };
+	const int numInteriorFaces = sizeof(interiorFaces)/sizeof(const int);
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(24, size = mesh2d.getSize());
+	for (int i = 1; i <= size; ++i)
+	{
+		Element element = mesh2d.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(OK, result = cache.setElement(element));
+		EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &value));
+		bool expectExterior = true;
+		for (int j = 0; j < numInteriorFaces; ++j)
+			if (interiorFaces[j] == i)
+			{
+				expectExterior = false;
+				break;
+			}
+		if (expectExterior)
+			EXPECT_EQ(1.0, value);
+		else
+			EXPECT_EQ(0.0, value);
+	}
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(33, size = mesh1d.getSize());
+	for (int i = 1; i <= size; ++i)
+	{
+		Element element = mesh1d.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		EXPECT_EQ(OK, result = cache.setElement(element));
+		EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &value));
+		if (i == 10)
+			EXPECT_EQ(0.0, value);
+		else
+			EXPECT_EQ(1.0, value);
+	}
+}
+
+TEST(ZincFieldIsOnFace, evaluate3d)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	double value;
+
+	int size1, size2, size3;
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(2, size3 = mesh3d.getSize());
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_EQ(11, size2 = mesh2d.getSize());
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_EQ(20, size1 = mesh1d.getSize());
+
+	const int expectedFaces[6][2] = {
+		{ 1, 2 }, { 2, 3}, { 4, 6 }, { 5, 7 }, { 8, 10 }, { 9, 11 } };
+	const int expectedLines[6][8] = {
+		{  1,  2,  3,  4,  7,  8,  9, 10 },
+		{  3,  4,  5,  6,  9, 10, 11, 12 },
+		{  1,  3,  5, 13, 14, 17, 18,  0 },
+		{  2,  4,  6, 15, 16, 19, 20,  0 },
+		{  7,  9, 11, 13, 15, 17, 19,  0 },
+		{  8, 10, 12, 14, 16, 18, 20,  0 } };
+	int f, i, j;
+	for (f = 0; f < 6; ++f)
+	{
+		Element::FaceType faceType = static_cast<Element::FaceType>(Element::FACE_TYPE_XI1_0 + f);
+		FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(faceType);
+		EXPECT_TRUE(isOnFaceField.isValid());
+
+		for (i = 1; i <= size3; ++i)
+		{
+			Element element = mesh3d.findElementByIdentifier(i);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(OK, result = cache.setElement(element));
+			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+			EXPECT_EQ(0.0, value);
+		}
+
+		for (i = 1; i <= size2; ++i)
+		{
+			Element element = mesh2d.findElementByIdentifier(i);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(OK, result = cache.setElement(element));
+			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+			if ((i == expectedFaces[f][0]) || (i == expectedFaces[f][1]))
+				EXPECT_EQ(1.0, value);
+			else
+				EXPECT_EQ(0.0, value);
+		}
+
+		for (i = 1; i <= size1; ++i)
+		{
+			Element element = mesh1d.findElementByIdentifier(i);
+			EXPECT_TRUE(element.isValid());
+			EXPECT_EQ(OK, result = cache.setElement(element));
+			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+			bool expectOnFace = false;
+			for (j = 0; j < 8; ++j)
+			if (expectedLines[f][j] == i)
+			{
+				expectOnFace = true;
+				break;
+			}
+			if (expectOnFace)
+				EXPECT_EQ(1.0, value);
+			else
+				EXPECT_EQ(0.0, value);
+		}
+	}
+
+	// FACE_TYPE_ALL is true on any element that is a face of another element
+	FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_ALL);
+	EXPECT_TRUE(isOnFaceField.isValid());
+	for (i = 1; i <= size3; ++i)
+	{
+		Element element = mesh3d.findElementByIdentifier(i);
+		EXPECT_EQ(OK, result = cache.setElement(element));
+		EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(0.0, value);
+	}
+	for (i = 1; i <= size2; ++i)
+	{
+		Element element = mesh2d.findElementByIdentifier(i);
+		EXPECT_EQ(OK, result = cache.setElement(element));
+		EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(1.0, value);
+	}
+	for (i = 1; i <= size1; ++i)
+	{
+		Element element = mesh1d.findElementByIdentifier(i);
+		EXPECT_EQ(OK, result = cache.setElement(element));
+		EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(1.0, value);
+	}
+}
+
+TEST(ZincFieldIsOnFace, invalidArguments)
+{
+	ZincTestSetupCpp zinc;
+	FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_INVALID);
+	EXPECT_FALSE(isOnFaceField.isValid());
+}
