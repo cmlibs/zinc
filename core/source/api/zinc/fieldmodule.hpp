@@ -48,6 +48,8 @@ class FieldFindMeshLocation;
 class FieldNodeValue;
 class FieldStoredMeshLocation;
 class FieldStoredString;
+class FieldIsExterior;
+class FieldIsOnFace;
 class FieldGroup;
 class FieldImage;
 class FieldAnd;
@@ -285,6 +287,10 @@ public:
 	inline FieldStoredMeshLocation createFieldStoredMeshLocation(const Mesh& mesh);
 
 	inline FieldStoredString createFieldStoredString();
+
+	inline FieldIsExterior createFieldIsExterior();
+
+	inline FieldIsOnFace createFieldIsOnFace(Element::FaceType face);
 
 	inline FieldGroup createFieldGroup();
 

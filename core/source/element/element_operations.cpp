@@ -213,7 +213,7 @@ IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
 		FE_value element_to_top_level[9];
 		cmzn_element *top_level_element = FE_element_get_top_level_element_conversion(
 			element, /*check_top_level_element*/0, (LIST_CONDITIONAL_FUNCTION(cmzn_element) *)0, 0,
-			CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level);
+			CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level);
 		if (top_level_element != element)
 		{
 			get_FE_element_discretization_from_top_level(element, inheritedNumbersOfPoints,

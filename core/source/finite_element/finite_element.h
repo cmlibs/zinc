@@ -349,6 +349,8 @@ DECLARE_LIST_TYPES(FE_element);
 
 DECLARE_CHANGE_LOG_TYPES(FE_element);
 
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_face_type);
+
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_quadrature_rule);

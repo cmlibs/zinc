@@ -3865,3 +3865,183 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 		return NULL;
 	}
 }
+
+namespace {
+
+const char computed_field_is_exterior_type_string[] = "is_exterior";
+
+class Computed_field_is_exterior : public Computed_field_core
+{
+public:
+	Computed_field_is_exterior() : Computed_field_core()
+	{
+	};
+
+private:
+	Computed_field_core *copy()
+	{
+		return new Computed_field_is_exterior();
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_is_exterior_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		return (0 != dynamic_cast<Computed_field_is_exterior*>(other_field));
+	}
+
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	int list()
+	{
+		return 1;
+	}
+
+	char* get_command_string()
+	{
+		return duplicate_string(computed_field_is_exterior_type_string);
+	}
+
+	bool is_defined_at_location(cmzn_fieldcache& cache)
+	{
+		return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
+	}
+};
+
+int Computed_field_is_exterior::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
+{
+	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (element_xi_location)
+	{
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		cmzn_element* element = element_xi_location->get_element();
+		const int dimension = get_FE_element_dimension(element);
+		if (FE_element_meets_topological_criteria(element, dimension,
+			/*exterior*/1, CMZN_ELEMENT_FACE_TYPE_INVALID, /*conditional*/0, /*conditional_data*/0))
+		{
+			valueCache.values[0] = 1.0;
+		}
+		else
+		{
+			valueCache.values[0] = 0.0;
+		}
+		FE_value *temp = valueCache.derivatives;
+		for (int j = 0; j < dimension; ++j)
+			temp[j] = 0.0;
+		valueCache.derivatives_valid = 1;
+		return 1;
+	}
+	return 0;
+}
+
+} // namespace
+
+cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
+	struct cmzn_fieldmodule *field_module)
+{
+	return Computed_field_create_generic(field_module,
+		/*check_source_field_regions*/true,
+		/*number_of_components*/1,
+		/*number_of_source_fields*/0, NULL,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_is_exterior());
+}
+
+namespace {
+
+const char computed_field_is_on_face_type_string[] = "is_on_face";
+
+class Computed_field_is_on_face : public Computed_field_core
+{
+	cmzn_element_face_type faceType;
+
+public:
+	Computed_field_is_on_face(cmzn_element_face_type faceTypeIn) :
+		Computed_field_core(),
+		faceType(faceTypeIn)
+	{
+	};
+
+private:
+	Computed_field_core *copy()
+	{
+		return new Computed_field_is_on_face(this->faceType);
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_is_on_face_type_string);
+	}
+
+	int compare(Computed_field_core* other_field)
+	{
+		Computed_field_is_on_face* other_core = dynamic_cast<Computed_field_is_on_face*>(other_field);
+		return (0 != other_core) && (other_core->faceType == this->faceType);
+	}
+
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	int list()
+	{
+		display_message(INFORMATION_MESSAGE,"    face : %s\n", ENUMERATOR_STRING(cmzn_element_face_type)(this->faceType));
+		return 1;
+	}
+
+	char* get_command_string()
+	{
+		char *command_string = duplicate_string(computed_field_is_on_face_type_string);
+		int error = 0;
+		append_string(&command_string, " face ", &error);
+		append_string(&command_string, ENUMERATOR_STRING(cmzn_element_face_type)(this->faceType), &error);
+		return command_string;
+	}
+
+	bool is_defined_at_location(cmzn_fieldcache& cache)
+	{
+		return (0 != dynamic_cast<Field_element_xi_location*>(cache.getLocation()));
+	}
+};
+
+int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
+{
+	Field_element_xi_location *element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (element_xi_location)
+	{
+		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+		cmzn_element* element = element_xi_location->get_element();
+		const int dimension = get_FE_element_dimension(element);
+		if (FE_element_meets_topological_criteria(element, dimension,
+			/*exterior*/0, this->faceType, /*conditional*/0, /*conditional_data*/0))
+		{
+			valueCache.values[0] = 1.0;
+		}
+		else
+		{
+			valueCache.values[0] = 0.0;
+		}
+		FE_value *temp = valueCache.derivatives;
+		for (int j = 0; j < dimension; ++j)
+			temp[j] = 0.0;
+		valueCache.derivatives_valid = 1;
+		return 1;
+	}
+	return 0;
+}
+
+} // namespace
+
+cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
+	struct cmzn_fieldmodule *field_module, cmzn_element_face_type face)
+{
+	if (face == CMZN_ELEMENT_FACE_TYPE_INVALID)
+		return 0;
+	return Computed_field_create_generic(field_module,
+		/*check_source_field_regions*/true,
+		/*number_of_components*/1,
+		/*number_of_source_fields*/0, NULL,
+		/*number_of_source_values*/0, NULL,
+		new Computed_field_is_on_face(face));
+}

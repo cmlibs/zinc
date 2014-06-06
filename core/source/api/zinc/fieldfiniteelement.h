@@ -308,6 +308,28 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_stored_string_base_cast(
 ZINC_API int cmzn_field_stored_string_destroy(
 	cmzn_field_stored_string_id *stored_string_field_address);
 
+/**
+ * Creates a field which returns 1 on 2-D faces and 1-D lines considered as
+ * exterior to their top-level element, and 0 elsewhere.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_exterior(
+	struct cmzn_fieldmodule *field_module);
+
+/**
+ * Creates a field which returns 1 on 2-D faces and 1-D lines considered
+ * to lie on a specified face of their top-level element, and 0 elsewhere.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param face  The enumerated face type, defined with respect to the
+ * top-level element.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_on_face(
+	struct cmzn_fieldmodule *field_module, cmzn_element_face_type face);
+
 #ifdef __cplusplus
 }
 #endif

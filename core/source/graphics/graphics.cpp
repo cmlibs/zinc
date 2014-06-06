@@ -192,7 +192,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
 			graphics->exterior = false;
-			graphics->face=CMZN_ELEMENT_FACE_TYPE_ALL; /* any face */
+			graphics->face=CMZN_ELEMENT_FACE_TYPE_INVALID; /* do not check face */
 
 			/* line attributes */
 			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE;
@@ -1584,7 +1584,7 @@ enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_graphics_id
 
 int cmzn_graphics_set_element_face_type(cmzn_graphics_id graphics, enum cmzn_element_face_type face_type)
 {
-	if (graphics && (face_type != CMZN_ELEMENT_FACE_TYPE_INVALID))
+	if (graphics)
 	{
 		if (face_type != graphics->face)
 		{
@@ -1892,45 +1892,12 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		{
 			if (graphics->exterior)
 			{
-				append_string(&graphics_string," exterior",&error);
+				append_string(&graphics_string, " exterior", &error);
 			}
-			if (CMZN_ELEMENT_FACE_TYPE_ALL != graphics->face)
+			if (CMZN_ELEMENT_FACE_TYPE_INVALID != graphics->face)
 			{
-				append_string(&graphics_string," face",&error);
-				switch (graphics->face)
-				{
-					case CMZN_ELEMENT_FACE_TYPE_XI1_0:
-					{
-						append_string(&graphics_string," xi1_0",&error);
-					} break;
-					case CMZN_ELEMENT_FACE_TYPE_XI1_1:
-					{
-						append_string(&graphics_string," xi1_1",&error);
-					} break;
-					case CMZN_ELEMENT_FACE_TYPE_XI2_0:
-					{
-						append_string(&graphics_string," xi2_0",&error);
-					} break;
-					case CMZN_ELEMENT_FACE_TYPE_XI2_1:
-					{
-						append_string(&graphics_string," xi2_1",&error);
-					} break;
-					case CMZN_ELEMENT_FACE_TYPE_XI3_0:
-					{
-						append_string(&graphics_string," xi3_0",&error);
-					} break;
-					case CMZN_ELEMENT_FACE_TYPE_XI3_1:
-					{
-						append_string(&graphics_string," xi3_1",&error);
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"cmzn_graphics_string.  Invalid face number");
-						DEALLOCATE(graphics_string);
-						error=1;
-					} break;
-				}
+				append_string(&graphics_string, " face", &error);
+				append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
 			}
 		}
 
