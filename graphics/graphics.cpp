@@ -72,7 +72,7 @@ TEST(cmzn_graphics_api, face)
 	cmzn_graphics_id gr = cmzn_scene_create_graphics_lines(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
 
-	EXPECT_EQ(CMZN_ELEMENT_FACE_TYPE_ALL, cmzn_graphics_get_element_face_type(gr));
+	EXPECT_EQ(CMZN_ELEMENT_FACE_TYPE_INVALID, cmzn_graphics_get_element_face_type(gr));
 	int result = cmzn_graphics_set_element_face_type(gr, CMZN_ELEMENT_FACE_TYPE_XI2_0);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_EQ(CMZN_ELEMENT_FACE_TYPE_XI2_0, cmzn_graphics_get_element_face_type(gr));
