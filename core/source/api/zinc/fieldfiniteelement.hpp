@@ -131,6 +131,36 @@ public:
 	{	}
 };
 
+class FieldIsExterior : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIsExterior(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldIsExterior Fieldmodule::createFieldIsExterior();
+
+public:
+
+	FieldIsExterior() : Field(0)
+	{ }
+};
+
+class FieldIsOnFace : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIsOnFace(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldIsOnFace Fieldmodule::createFieldIsOnFace(Element::FaceType face);
+
+public:
+
+	FieldIsOnFace() : Field(0)
+	{ }
+};
+
 inline FieldFiniteElement Fieldmodule::createFieldFiniteElement(int numberOfComponents)
 {
 	return FieldFiniteElement(reinterpret_cast<cmzn_field_finite_element_id>(
@@ -188,6 +218,17 @@ inline FieldStoredString Fieldmodule::createFieldStoredString()
 inline FieldStoredString Field::castStoredString()
 {
 	return FieldStoredString(cmzn_field_cast_stored_string(id));
+}
+
+inline FieldIsExterior Fieldmodule::createFieldIsExterior()
+{
+	return FieldIsExterior(cmzn_fieldmodule_create_field_is_exterior(id));
+}
+
+inline FieldIsOnFace Fieldmodule::createFieldIsOnFace(Element::FaceType face)
+{
+	return FieldIsOnFace(cmzn_fieldmodule_create_field_is_on_face(
+		id, static_cast<cmzn_element_face_type>(face)));
 }
 
 }  // namespace Zinc

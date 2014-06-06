@@ -10574,6 +10574,37 @@ Up to the calling function to deallocate the returned char string.
 	return (return_code);
 } /* GET_NAME(FE_field_component) */
 
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_face_type)
+{
+	switch (enumerator_value)
+	{
+		case CMZN_ELEMENT_FACE_TYPE_ALL:
+			return "all";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI1_0:
+			return "xi1_0";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI1_1:
+			return "xi1_1";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI2_0:
+			return "xi2_0";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI2_1:
+			return "xi2_1";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI3_0:
+			return "xi3_0";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI3_1:
+			return "xi3_1";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_INVALID:
+			break;
+	}
+	return 0;
+}
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sampling_mode)
 {
 	switch (enumerator_value)
@@ -22037,38 +22068,39 @@ int FE_element_meets_topological_criteria(struct FE_element *element,
 			return_code = 1;
 			if (0 < element->number_of_parents)
 			{
-				if (3 > dimension)
+				/* test for exterior element */
+				if (exterior)
 				{
-					/* test for exterior element */
-					if (exterior)
+					if (1 != element->number_of_parents)
 					{
-						if (1 != element->number_of_parents)
+						return_code = 0;
+						if (1 == dimension)
 						{
-							return_code = 0;
-							if (1 == dimension)
+							for (i = 0; i < element->number_of_parents; i++)
 							{
-								for (i = 0; i < element->number_of_parents; i++)
+								/* following is not <= 1 so 'exterior' works appropriately on 2-D meshes */
+								if (element->parents[i]->number_of_parents == 1)
 								{
-									/* following is not <= 1 so 'exterior' works appropriately on 2-D meshes */
-									if (element->parents[i]->number_of_parents == 1)
-									{
-										return_code = 1;
-										break;
-									}
+									return_code = 1;
+									break;
 								}
 							}
 						}
 					}
-					/* test for on correct face */
-					if (return_code && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= face))
+				}
+				/* test for on correct face */
+				if (return_code && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= face))
+				{
+					if (NULL == FE_element_get_parent_on_face(
+						element, face, conditional, conditional_data))
 					{
-						if (NULL == FE_element_get_parent_on_face(
-							element, face, conditional, conditional_data))
-						{
-							return_code = 0;
-						}
+						return_code = 0;
 					}
 				}
+			}
+			else if (exterior || (CMZN_ELEMENT_FACE_TYPE_INVALID != face))
+			{
+				return_code = 0;
 			}
 		}
 	}
@@ -22077,9 +22109,8 @@ int FE_element_meets_topological_criteria(struct FE_element *element,
 		display_message(ERROR_MESSAGE,
 			"FE_element_meets_topological_criteria.  Invalid argument(s)");
 	}
-
 	return (return_code);
-} /* FE_element_meets_topological_criteria */
+}
 
 struct FE_element_field_values *CREATE(FE_element_field_values)(void)
 /*******************************************************************************
@@ -28244,7 +28275,7 @@ is checked and the <top_level_xi> calculated.
 			if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
 				element,*top_level_element,
 				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)))
+				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
 				*top_level_element_dimension = (*top_level_element)->shape->dimension;
