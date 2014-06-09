@@ -529,7 +529,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		{
 			int dimension = cmzn_graphics_get_domain_dimension(graphics);
 			draw_element = FE_element_meets_topological_criteria(element, dimension,
-				graphics->exterior, graphics->face,
+				(element_dimension < 3) ? graphics->exterior : 0,
+				(element_dimension < 3) ? graphics->face : CMZN_ELEMENT_FACE_TYPE_INVALID,
 				graphics->subgroup_field ? cmzn_element_conditional_field_is_true : 0,
 				graphics->subgroup_field ? (void *)&conditional_field_data : 0);
 		}
