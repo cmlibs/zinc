@@ -1896,7 +1896,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			}
 			if (CMZN_ELEMENT_FACE_TYPE_INVALID != graphics->face)
 			{
-				append_string(&graphics_string, " face", &error);
+				append_string(&graphics_string, " face ", &error);
 				append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
 			}
 		}
@@ -2038,143 +2038,120 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		// point attributes
 		if (CMZN_GRAPHICS_TYPE_POINTS == graphics->graphics_type)
 		{
+			append_string(&graphics_string," glyph ",&error);
 			if (graphics->glyph)
 			{
-				append_string(&graphics_string," glyph ",&error);
 				name = cmzn_glyph_get_name(graphics->glyph);
 				append_string(&graphics_string,name,&error);
 				DEALLOCATE(name);
-
-				if (graphics->glyph_repeat_mode != CMZN_GLYPH_REPEAT_MODE_NONE)
-				{
-					append_string(&graphics_string, " ", &error);
-					append_string(&graphics_string,
-						ENUMERATOR_STRING(cmzn_glyph_repeat_mode)(graphics->glyph_repeat_mode), &error);
-				}
-				sprintf(temp_string," size \"%g*%g*%g\"",graphics->point_base_size[0],
-					graphics->point_base_size[1],graphics->point_base_size[2]);
-				append_string(&graphics_string,temp_string,&error);
-
-				sprintf(temp_string," offset %g,%g,%g",
-					graphics->point_offset[0], graphics->point_offset[1], graphics->point_offset[2]);
-
-				append_string(&graphics_string,temp_string,&error);
-				if (graphics->font)
-				{
-					append_string(&graphics_string," font ",&error);
-					if (GET_NAME(cmzn_font)(graphics->font, &name))
-					{
-						append_string(&graphics_string,name,&error);
-						DEALLOCATE(name);
-					}
-				}
-				if (graphics->label_field)
-				{
-					name = cmzn_field_get_name(graphics->label_field);
-					make_valid_token(&name);
-					append_string(&graphics_string," label ",&error);
-					append_string(&graphics_string,name,&error);
-					DEALLOCATE(name);
-				}
-				const int number_of_glyphs =
-					cmzn_glyph_repeat_mode_get_number_of_glyphs(graphics->glyph_repeat_mode);
-				int last_glyph_number_with_label_text = -1;
-				for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
-				{
-					if (cmzn_glyph_repeat_mode_glyph_number_has_label(graphics->glyph_repeat_mode, glyph_number) &&
-						(0 != graphics->label_text[glyph_number]))
-					{
-						last_glyph_number_with_label_text = glyph_number;
-					}
-				}
-				if (graphics->label_field || (last_glyph_number_with_label_text >= 0))
-				{
-					sprintf(temp_string," label_offset \"%g,%g,%g\"",graphics->label_offset[0],
-						graphics->label_offset[1],graphics->label_offset[2]);
-					append_string(&graphics_string,temp_string,&error);
-				}
-				if (last_glyph_number_with_label_text >= 0)
-				{
-					append_string(&graphics_string, " label_text ", &error);
-					int number_of_labels = 0;
-					for (int glyph_number = 0; glyph_number <= last_glyph_number_with_label_text; ++glyph_number)
-					{
-						if (cmzn_glyph_repeat_mode_glyph_number_has_label(graphics->glyph_repeat_mode, glyph_number))
-						{
-							if (number_of_labels > 0)
-							{
-								append_string(&graphics_string, " & ", &error);
-							}
-							if (graphics->label_text[number_of_labels])
-							{
-								char *label_text = duplicate_string(graphics->label_text[number_of_labels]);
-								make_valid_token(&label_text);
-								append_string(&graphics_string, label_text, &error);
-								DEALLOCATE(label_text);
-							}
-							else
-							{
-								append_string(&graphics_string, "\"\"", &error);
-							}
-							++number_of_labels;
-						}
-					}
-				}
-				if (graphics->label_density_field)
-				{
-					if (GET_NAME(Computed_field)(graphics->label_density_field,&name))
-					{
-						/* put quotes around name if it contains special characters */
-						make_valid_token(&name);
-						append_string(&graphics_string," ldensity ",&error);
-						append_string(&graphics_string,name,&error);
-						DEALLOCATE(name);
-					}
-				}
-				if (graphics->point_orientation_scale_field)
-				{
-					if (GET_NAME(Computed_field)(graphics->point_orientation_scale_field,&name))
-					{
-						/* put quotes around name if it contains special characters */
-						make_valid_token(&name);
-						append_string(&graphics_string," orientation ",&error);
-						append_string(&graphics_string,name,&error);
-						DEALLOCATE(name);
-					}
-					else
-					{
-						DEALLOCATE(graphics_string);
-						error=1;
-					}
-				}
-				if (graphics->signed_scale_field)
-				{
-					if (GET_NAME(Computed_field)(graphics->signed_scale_field,&name))
-					{
-						/* put quotes around name if it contains special characters */
-						make_valid_token(&name);
-						append_string(&graphics_string," variable_scale ",&error);
-						append_string(&graphics_string,name,&error);
-						DEALLOCATE(name);
-					}
-					else
-					{
-						DEALLOCATE(graphics_string);
-						error=1;
-					}
-				}
-				if (graphics->point_orientation_scale_field || graphics->signed_scale_field)
-				{
-					sprintf(temp_string," scale_factors \"%g*%g*%g\"",
-						graphics->point_scale_factors[0],
-						graphics->point_scale_factors[1],
-						graphics->point_scale_factors[2]);
-					append_string(&graphics_string,temp_string,&error);
-				}
 			}
 			else
 			{
-				append_string(&graphics_string," glyph none",&error);
+				append_string(&graphics_string, "none", &error);
+			}
+			if (graphics->glyph_repeat_mode != CMZN_GLYPH_REPEAT_MODE_NONE)
+			{
+				append_string(&graphics_string, " ", &error);
+				append_string(&graphics_string,
+					ENUMERATOR_STRING(cmzn_glyph_repeat_mode)(graphics->glyph_repeat_mode), &error);
+			}
+			sprintf(temp_string," size \"%g*%g*%g\"",graphics->point_base_size[0],
+				graphics->point_base_size[1],graphics->point_base_size[2]);
+			append_string(&graphics_string,temp_string,&error);
+			sprintf(temp_string," offset %g,%g,%g",
+				graphics->point_offset[0], graphics->point_offset[1], graphics->point_offset[2]);
+			append_string(&graphics_string,temp_string,&error);
+			if (graphics->font)
+			{
+				append_string(&graphics_string," font ",&error);
+				GET_NAME(cmzn_font)(graphics->font, &name);
+				make_valid_token(&name);
+				append_string(&graphics_string,name,&error);
+				DEALLOCATE(name);
+			}
+			if (graphics->label_field)
+			{
+				name = cmzn_field_get_name(graphics->label_field);
+				make_valid_token(&name);
+				append_string(&graphics_string," label ",&error);
+				append_string(&graphics_string,name,&error);
+				DEALLOCATE(name);
+			}
+			const int number_of_glyphs =
+				cmzn_glyph_repeat_mode_get_number_of_glyphs(graphics->glyph_repeat_mode);
+			int last_glyph_number_with_label_text = -1;
+			for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
+			{
+				if (cmzn_glyph_repeat_mode_glyph_number_has_label(graphics->glyph_repeat_mode, glyph_number) &&
+					(0 != graphics->label_text[glyph_number]))
+				{
+					last_glyph_number_with_label_text = glyph_number;
+				}
+			}
+			if (graphics->label_field || (last_glyph_number_with_label_text >= 0))
+			{
+				sprintf(temp_string," label_offset \"%g,%g,%g\"",graphics->label_offset[0],
+					graphics->label_offset[1],graphics->label_offset[2]);
+				append_string(&graphics_string,temp_string,&error);
+			}
+			if (last_glyph_number_with_label_text >= 0)
+			{
+				append_string(&graphics_string, " label_text ", &error);
+				int number_of_labels = 0;
+				for (int glyph_number = 0; glyph_number <= last_glyph_number_with_label_text; ++glyph_number)
+				{
+					if (cmzn_glyph_repeat_mode_glyph_number_has_label(graphics->glyph_repeat_mode, glyph_number))
+					{
+						if (number_of_labels > 0)
+						{
+							append_string(&graphics_string, " & ", &error);
+						}
+						if (graphics->label_text[number_of_labels])
+						{
+							char *label_text = duplicate_string(graphics->label_text[number_of_labels]);
+							make_valid_token(&label_text);
+							append_string(&graphics_string, label_text, &error);
+							DEALLOCATE(label_text);
+						}
+						else
+						{
+							append_string(&graphics_string, "\"\"", &error);
+						}
+						++number_of_labels;
+					}
+				}
+			}
+			if (graphics->label_density_field)
+			{
+				append_string(&graphics_string," ldensity ",&error);
+				GET_NAME(Computed_field)(graphics->label_density_field,&name);
+				make_valid_token(&name);
+				append_string(&graphics_string,name,&error);
+				DEALLOCATE(name);
+			}
+			if (graphics->point_orientation_scale_field)
+			{
+				append_string(&graphics_string," orientation ",&error);
+				GET_NAME(Computed_field)(graphics->point_orientation_scale_field,&name);
+				make_valid_token(&name);
+				append_string(&graphics_string,name,&error);
+				DEALLOCATE(name);
+			}
+			if (graphics->signed_scale_field)
+			{
+				append_string(&graphics_string," variable_scale ",&error);
+				GET_NAME(Computed_field)(graphics->signed_scale_field,&name);
+				make_valid_token(&name);
+				append_string(&graphics_string,name,&error);
+				DEALLOCATE(name);
+			}
+			if (graphics->point_orientation_scale_field || graphics->signed_scale_field)
+			{
+				sprintf(temp_string," scale_factors \"%g*%g*%g\"",
+					graphics->point_scale_factors[0],
+					graphics->point_scale_factors[1],
+					graphics->point_scale_factors[2]);
+				append_string(&graphics_string,temp_string,&error);
 			}
 		}
 
