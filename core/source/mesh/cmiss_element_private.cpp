@@ -1039,6 +1039,11 @@ public:
 		return Computed_field_element_group_core_cast(group)->addObject(element);
 	}
 
+	int addElementsConditional(cmzn_field_id conditional_field)
+	{
+		return Computed_field_element_group_core_cast(group)->addElementsConditional(conditional_field);
+	}
+
 	int removeAllElements()
 	{
 		return Computed_field_element_group_core_cast(group)->clear();
@@ -1324,8 +1329,16 @@ int cmzn_mesh_group_destroy(cmzn_mesh_group_id *mesh_group_address)
 
 int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
-	if (mesh_group && element)
+	if (mesh_group)
 		return mesh_group->addElement(element);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_mesh_group_add_elements_conditional(cmzn_mesh_group_id mesh_group,
+   cmzn_field_id conditional_field)
+{
+	if (mesh_group)
+		return mesh_group->addElementsConditional(conditional_field);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1338,7 +1351,7 @@ int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group)
 
 int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
-	if (mesh_group && element)
+	if (mesh_group)
 		return mesh_group->removeElement(element);
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -1346,21 +1359,21 @@ int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group, cmzn_element_i
 int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
 	cmzn_field_id conditional_field)
 {
-	if (mesh_group && conditional_field)
+	if (mesh_group)
 		return mesh_group->removeElementsConditional(conditional_field);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
-	if (mesh_group && element)
+	if (mesh_group)
 		return mesh_group->addElementFaces(element);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group, cmzn_element_id element)
 {
-	if (mesh_group && element)
+	if (mesh_group)
 		return mesh_group->removeElementFaces(element);
 	return CMZN_ERROR_ARGUMENT;
 }

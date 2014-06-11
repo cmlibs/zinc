@@ -53,105 +53,73 @@ PROTOTYPE_DESTROY_LIST_FUNCTION(object_type) \
 #define DECLARE_COPY_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_COPY_LIST_FUNCTION(object_type) \
 { \
-	int return_code; \
 	if (target_list && source_list) \
 	{ \
 		CMZN_BTREE(object_type) *target = reinterpret_cast<CMZN_BTREE(object_type) *>(target_list); \
 		CMZN_BTREE(object_type) *source = reinterpret_cast<CMZN_BTREE(object_type) *>(source_list); \
 		*target = *source; \
-		return_code = 1; \
+		if (target->size() == source->size()) \
+			return 1; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
 			"COPY_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
 	} \
-	return (return_code); \
+	return 0; \
 }
 
 #define DECLARE_REMOVE_OBJECT_FROM_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_OBJECT_FROM_LIST_FUNCTION(object_type) \
 { \
-	int return_code; \
 	if (object && list) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
-		return_code = (1 == cmiss_btree->erase(object)); \
-		if (!return_code) \
-		{ \
-			display_message(ERROR_MESSAGE, "REMOVE_OBJECT_FROM_LIST(" #object_type \
-				").  Object is not in list"); \
-		} \
+		return cmiss_btree->erase(object); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"REMOVE_OBJECT_FROM_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code=0; \
-	} \
-	return (return_code); \
+	display_message(ERROR_MESSAGE, \
+		"REMOVE_OBJECT_FROM_LIST(" #object_type ").  Invalid argument(s)"); \
+	return 0; \
 }
 
 #define DECLARE_REMOVE_OBJECTS_FROM_INDEXED_LIST_BTREE_THAT_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_OBJECTS_FROM_LIST_THAT_FUNCTION(object_type) \
 { \
-	int return_code; \
 	if (conditional && list) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
-		return_code = cmiss_btree->erase_conditional(conditional, user_data); \
+		return cmiss_btree->erase_conditional(conditional, user_data); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"REMOVE_OBJECTS_FROM_LIST_THAT" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	return (return_code); \
+	display_message(ERROR_MESSAGE, \
+		"REMOVE_OBJECTS_FROM_LIST_THAT" #object_type ").  Invalid argument(s)"); \
+	return 0; \
 }
 
 #define DECLARE_REMOVE_ALL_OBJECTS_FROM_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_REMOVE_ALL_OBJECTS_FROM_LIST_FUNCTION(object_type) \
 { \
-	int return_code; \
 	if (list) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		cmiss_btree->clear(); \
-		return_code = 1; \
+		return 1; \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"REMOVE_ALL_OBJECTS_FROM_LIST" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	return (return_code); \
+	display_message(ERROR_MESSAGE, \
+		"REMOVE_ALL_OBJECTS_FROM_LIST" #object_type ").  Invalid argument(s)"); \
+	return 0; \
 }
 
 #define DECLARE_ADD_OBJECT_TO_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_ADD_OBJECT_TO_LIST_FUNCTION( object_type ) \
 { \
-	int return_code; \
 	if (object && list) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
-		return_code = cmiss_btree->insert(object); \
-		if (!return_code) \
-		{ \
-			display_message(ERROR_MESSAGE, "ADD_OBJECT_TO_LIST(" #object_type \
-				").  Object is already at that index"); \
-			return_code = 0; \
-		} \
+		return cmiss_btree->insert(object); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"ADD_OBJECT_TO_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	return (return_code); \
+	display_message(ERROR_MESSAGE, \
+		"ADD_OBJECT_TO_LIST(" #object_type ").  Invalid argument(s)"); \
+	return 0; \
 }
 
 #define DECLARE_NUMBER_IN_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
@@ -170,18 +138,14 @@ PROTOTYPE_NUMBER_IN_LIST_FUNCTION(object_type) \
 #define DECLARE_IS_OBJECT_IN_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_IS_OBJECT_IN_LIST_FUNCTION(object_type) \
 { \
-	int return_code = 0; \
 	if (list && object) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
-		return_code = cmiss_btree->contains(object); \
+		return cmiss_btree->contains(object); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"IS_OBJECT_IN_LIST(" #object_type ").  Invalid argument"); \
-	} \
-	return (return_code); \
+	display_message(ERROR_MESSAGE, \
+		"IS_OBJECT_IN_LIST(" #object_type ").  Invalid argument"); \
+	return 0; \
 }
 
 #define DECLARE_FIRST_OBJECT_IN_INDEXED_LIST_BTREE_THAT_FUNCTION( object_type ) \
@@ -192,30 +156,22 @@ PROTOTYPE_FIRST_OBJECT_IN_LIST_THAT_FUNCTION(object_type) \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return cmiss_btree->find_first_object_that(conditional, user_data); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"FIRST_OBJECT_IN_LIST_THAT(" #object_type ").  Invalid argument(s)"); \
-	} \
+	display_message(ERROR_MESSAGE, \
+		"FIRST_OBJECT_IN_LIST_THAT(" #object_type ").  Invalid argument(s)"); \
 	return 0; \
 }
 
 #define DECLARE_FOR_EACH_OBJECT_IN_INDEXED_LIST_BTREE_FUNCTION( object_type ) \
 PROTOTYPE_FOR_EACH_OBJECT_IN_LIST_FUNCTION(object_type) \
 { \
-	int return_code = 1; \
 	if (list && iterator) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
-		return_code = cmiss_btree->for_each_object(iterator, user_data); \
+		return cmiss_btree->for_each_object(iterator, user_data); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"FOR_EACH_OBJECT_IN_LIST(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	return (return_code); \
+	display_message(ERROR_MESSAGE, \
+		"FOR_EACH_OBJECT_IN_LIST(" #object_type ").  Invalid argument(s)"); \
+	return 0; \
 }
 
 #define DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION( object_type , iterator_type ) \
@@ -232,18 +188,14 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(object_type,iterator_type) \
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(object_type,identifier, \
 	identifier_type) \
 { \
-	struct object_type *object = 0; \
 	if (list) \
 	{ \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
-		object = cmiss_btree->find_object_by_identifier(identifier); \
+		return cmiss_btree->find_object_by_identifier(identifier); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, "FIND_BY_IDENTIFIER_IN_LIST(" #object_type \
-			"," #identifier ").  Invalid argument"); \
-	} \
-	return (object); \
+	display_message(ERROR_MESSAGE, "FIND_BY_IDENTIFIER_IN_LIST(" #object_type \
+		"," #identifier ").  Invalid argument"); \
+	return 0; \
 }
 
 #define PROTOTYPE_INDEXED_LIST_BTREE_BEGIN_IDENTIFIER_CHANGE_FUNCTION( object_type , \
@@ -270,13 +222,10 @@ PROTOTYPE_INDEXED_LIST_BTREE_BEGIN_IDENTIFIER_CHANGE_FUNCTION(object_type, \
 		CMZN_BTREE(object_type) *cmiss_btree = reinterpret_cast<CMZN_BTREE(object_type) *>(list); \
 		return cmiss_btree->begin_identifier_change(object); \
 	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
-			").  Invalid argument(s)"); \
-	} \
-	return (0); \
+	display_message(ERROR_MESSAGE, \
+		"LIST_BEGIN_IDENTIFIER_CHANGE(" #object_type "," #identifier \
+		").  Invalid argument(s)"); \
+	return 0; \
 }
 
 #define PROTOTYPE_INDEXED_LIST_BTREE_END_IDENTIFIER_CHANGE_FUNCTION( \

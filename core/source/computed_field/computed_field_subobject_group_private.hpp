@@ -308,27 +308,30 @@ public:
 		{
 			if (isElementCompatible(object))
 			{
-				if (IS_OBJECT_IN_LIST(FE_element)(object, object_list))
-					return CMZN_ERROR_GENERAL;
-				ADD_OBJECT_TO_LIST(FE_element)(object, object_list);
-				change_detail.changeAdd();
-				update();
-				return CMZN_OK;
+				if (ADD_OBJECT_TO_LIST(FE_element)(object, object_list))
+				{
+					change_detail.changeAdd();
+					update();
+					return CMZN_OK;
+				}
+				return CMZN_ERROR_GENERAL;
 			}
 			return CMZN_ERROR_ARGUMENT;
 		};
 
 		inline int removeObject(FE_element *object)
 		{
-			if (IS_OBJECT_IN_LIST(FE_element)(object, object_list))
+			if (REMOVE_OBJECT_FROM_LIST(FE_element)(object, object_list))
 			{
-				REMOVE_OBJECT_FROM_LIST(FE_element)(object, object_list);
 				change_detail.changeRemove();
 				update();
 				return CMZN_OK;
 			}
 			return CMZN_ERROR_GENERAL;
 		};
+
+		/** add any elements from master mesh for which conditional_field is true */
+		int addElementsConditional(cmzn_field_id conditional_field);
 
 		/** remove all elements for which conditional_field is true */
 		int removeElementsConditional(cmzn_field_id conditional_field);
@@ -505,6 +508,9 @@ public:
 			FE_region *element_fe_region = FE_element_get_FE_region(element);
 			return (element_fe_region == fe_region);
 		}
+
+		/** @return  Mesh to iterate over, or 0 if none. If a master mesh is returned, conditional_field must be checked */
+		cmzn_mesh_id getConditionalFieldIterationMesh(cmzn_field_id conditional_field) const;
 
 	};
 

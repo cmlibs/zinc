@@ -356,6 +356,20 @@ ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
 
 /**
+ * Ensure this mesh group contains all elements from the master mesh for which
+ * the conditional field is true i.e. non-zero valued in the element.
+ * Results are undefined if conditional field is not constant over element.
+ * Note that group and element_group fields are valid conditional fields.
+ *
+ * @param mesh_group  Handle to the mesh group to add elements to.
+ * @param conditional_field  Field which if non-zero in an element indicates it
+ * is to be added.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_mesh_group_add_elements_conditional(cmzn_mesh_group_id mesh_group,
+   cmzn_field_id conditional_field);
+
+/**
  * Remove all elements from mesh group.
  *
  * @param mesh_group  Handle to mesh group to modify.
