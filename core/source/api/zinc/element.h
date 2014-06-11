@@ -367,7 +367,7 @@ ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_group_add_elements_conditional(cmzn_mesh_group_id mesh_group,
-   cmzn_field_id conditional_field);
+	cmzn_field_id conditional_field);
 
 /**
  * Remove all elements from mesh group.
@@ -399,7 +399,7 @@ ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_mesh_group_remove_elements_conditional(cmzn_mesh_group_id mesh_group,
-   cmzn_field_id conditional_field);
+	cmzn_field_id conditional_field);
 
 /**
  * Returns a new handle to the element basis with reference count incremented.

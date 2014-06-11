@@ -745,6 +745,11 @@ public:
 		return Computed_field_node_group_core_cast(group)->addObject(node);
 	}
 
+	int addNodesConditional(cmzn_field_id conditional_field)
+	{
+		return Computed_field_node_group_core_cast(group)->addNodesConditional(conditional_field);
+	}
+
 	int removeAllNodes()
 	{
 		return Computed_field_node_group_core_cast(group)->clear();
@@ -947,8 +952,16 @@ int cmzn_nodeset_group_destroy(cmzn_nodeset_group_id *nodeset_group_address)
 
 int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group, cmzn_node_id node)
 {
-	if (nodeset_group && node)
+	if (nodeset_group)
 		return nodeset_group->addNode(node);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_nodeset_group_add_nodes_conditional(
+	cmzn_nodeset_group_id nodeset_group, cmzn_field_id conditional_field)
+{
+	if (nodeset_group)
+		return nodeset_group->addNodesConditional(conditional_field);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -961,7 +974,7 @@ int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_group)
 
 int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group, cmzn_node_id node)
 {
-	if (nodeset_group && node)
+	if (nodeset_group)
 		return nodeset_group->removeNode(node);
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -969,7 +982,7 @@ int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group, cmzn_nod
 int cmzn_nodeset_group_remove_nodes_conditional(cmzn_nodeset_group_id nodeset_group,
 	cmzn_field_id conditional_field)
 {
-	if (nodeset_group && conditional_field)
+	if (nodeset_group)
 		return nodeset_group->removeNodesConditional(conditional_field);
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -977,7 +990,7 @@ int cmzn_nodeset_group_remove_nodes_conditional(cmzn_nodeset_group_id nodeset_gr
 int cmzn_nodeset_group_add_element_nodes(
 	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element)
 {
-	if (nodeset_group && element)
+	if (nodeset_group)
 		return nodeset_group->addElementNodes(element);
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -985,7 +998,7 @@ int cmzn_nodeset_group_add_element_nodes(
 int cmzn_nodeset_group_remove_element_nodes(
 	cmzn_nodeset_group_id nodeset_group, cmzn_element_id element)
 {
-	if (nodeset_group && element)
+	if (nodeset_group)
 		return nodeset_group->removeElementNodes(element);
 	return CMZN_ERROR_ARGUMENT;
 }

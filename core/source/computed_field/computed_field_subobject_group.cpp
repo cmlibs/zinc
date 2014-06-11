@@ -77,7 +77,7 @@ struct cmzn_node_field_is_true_iterator_data
 int cmzn_node_field_is_true_iterator(cmzn_node_id node, void *data_void)
 {
 	cmzn_node_field_is_true_iterator_data *data =
-		reinterpret_cast<cmzn_node_field_is_true_iterator_data *>(data_void);
+		static_cast<cmzn_node_field_is_true_iterator_data *>(data_void);
 	cmzn_fieldcache_set_node(data->cache, node);
 	return cmzn_field_evaluate_boolean(data->field, data->cache);
 }
@@ -270,70 +270,126 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 	return CMZN_OK;
 };
 
-int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_field)
+cmzn_nodeset_id Computed_field_node_group::getConditionalFieldIterationNodeset(
+	cmzn_field_id conditional_field) const
 {
-	if (!conditional_field)
-		return CMZN_ERROR_ARGUMENT;
-	Computed_field_node_group *other_node_group = 0;
-	cmzn_field_group_id group = cmzn_field_cast_group(conditional_field);
-	if (group)
-	{
-		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
-		cmzn_field_group_destroy(&group);
-		if (!node_group)
-			return CMZN_OK;
-		other_node_group = Computed_field_node_group_core_cast(node_group);
-		cmzn_field_node_group_destroy(&node_group);
-	}
-	else
-	{
-		other_node_group = dynamic_cast<Computed_field_node_group *>(conditional_field->core);
-	}
-	int return_code = CMZN_OK;
-	const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
+	cmzn_nodeset_id nodeset = 0;
+	Computed_field_node_group *other_node_group =
+		dynamic_cast<Computed_field_node_group *>(conditional_field->core);
+	cmzn_field_group_id group;
 	if (other_node_group)
 	{
-		if (other_node_group->field == field)
-			return clear();
-		if (other_node_group->getSize() < getSize())
+		nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(
+			reinterpret_cast<cmzn_field_node_group_id>(other_node_group->field)));
+	}
+	else if (0 != (group = cmzn_field_cast_group(conditional_field)))
+	{
+		cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, this->master_nodeset);
+		if (node_group)
 		{
-			cmzn_nodeiterator_id iter = CREATE_LIST_ITERATOR(FE_node)(other_node_group->object_list);
-			cmzn_node_id node = 0;
-			while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
-			{
-				if (IS_OBJECT_IN_LIST(FE_node)(node, object_list))
-					REMOVE_OBJECT_FROM_LIST(FE_node)(node, object_list);
-			}
-			cmzn_nodeiterator_destroy(&iter);
+			nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+			cmzn_field_node_group_destroy(&node_group);
 		}
-		else
-		{
-			if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-				FE_node_is_in_list, (void *)other_node_group->object_list, object_list))
-			{
-				return_code = CMZN_ERROR_GENERAL;
-			}
-		}
+		cmzn_field_group_destroy(&group);
 	}
 	else
+		nodeset = cmzn_nodeset_access(this->master_nodeset);
+	return nodeset;
+}
+
+int Computed_field_node_group::addNodesConditional(cmzn_field_id conditional_field)
+{
+	if ((!conditional_field) || (conditional_field->manager != this->field->manager))
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_nodeset_id iterationNodeset = this->getConditionalFieldIterationNodeset(conditional_field);
+	if (iterationNodeset)
 	{
-		cmzn_region_id region = cmzn_nodeset_get_region_internal(master_nodeset);
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		cmzn_node_field_is_true_iterator_data data = { cache, conditional_field };
-		if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
-			cmzn_node_field_is_true_iterator, (void *)&data, object_list))
+		const int old_size = NUMBER_IN_LIST(FE_node)(this->object_list);
+		cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(iterationNodeset);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(this->field);
+		cmzn_fieldcache *cache = 0;
+		if (cmzn_nodeset_match(this->master_nodeset, iterationNodeset))
+			cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_node_id node = 0;
+		while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 		{
-			return_code = CMZN_ERROR_GENERAL;
+			if (cache)
+			{
+				cache->setNode(node);
+				if (!cmzn_field_evaluate_boolean(conditional_field, cache))
+					continue;
+			}
+			ADD_OBJECT_TO_LIST(FE_node)(node, this->object_list);
 		}
+		cmzn_nodeiterator_destroy(&iter);
 		cmzn_fieldcache_destroy(&cache);
 		cmzn_fieldmodule_destroy(&field_module);
+		const int new_size = NUMBER_IN_LIST(FE_node)(this->object_list);
+		if (new_size != old_size)
+		{
+			change_detail.changeAdd();
+			update();
+		}
+		cmzn_nodeset_destroy(&iterationNodeset);
 	}
-	const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
-	if (new_size != old_size)
+	return CMZN_OK;
+}
+
+int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_field)
+{
+	if ((!conditional_field) || (conditional_field->manager != this->field->manager))
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
+	cmzn_nodeset_id iterationNodeset = this->getConditionalFieldIterationNodeset(conditional_field);
+	if (iterationNodeset)
 	{
-		change_detail.changeRemove();
-		update();
+		LIST(FE_node) *nodeList = this->object_list;
+		if (conditional_field->dependsOnField(this->field))
+		{
+			// copy list, since can't query it within REMOVE_OBJECTS_FROM_LIST_THAT
+			nodeList = CREATE_RELATED_LIST(FE_node)(this->object_list);
+			if (!COPY_LIST(FE_node)(nodeList, this->object_list))
+				return_code = CMZN_ERROR_MEMORY;
+		}
+		if (CMZN_OK == return_code)
+		{
+			const int old_size = NUMBER_IN_LIST(FE_node)(this->object_list);
+			if (cmzn_nodeset_get_size(iterationNodeset) < this->getSize())
+			{
+				cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(iterationNodeset);
+				cmzn_node_id node = 0;
+				while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
+					REMOVE_OBJECT_FROM_LIST(FE_node)(node, nodeList);
+				cmzn_nodeiterator_destroy(&iter);
+			}
+			else
+			{
+				cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(this->field);
+				cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
+				cmzn_node_field_is_true_iterator_data data = { cache, conditional_field };
+				if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(
+					cmzn_node_field_is_true_iterator, (void *)&data, nodeList))
+				{
+					return_code = CMZN_ERROR_GENERAL;
+				}
+				cmzn_fieldcache_destroy(&cache);
+				cmzn_fieldmodule_destroy(&field_module);
+			}
+			if ((nodeList != this->object_list) && (CMZN_OK == return_code))
+			{
+				DESTROY(LIST(FE_node))(&this->object_list);
+				this->object_list = nodeList;
+			}
+			const int new_size = NUMBER_IN_LIST(FE_node)(this->object_list);
+			if (new_size != old_size)
+			{
+				change_detail.changeRemove();
+				update();
+			}
+		}
+		if (nodeList != this->object_list)
+			DESTROY(LIST(FE_node))(&nodeList);
+		cmzn_nodeset_destroy(&iterationNodeset);
 	}
 	return return_code;
 }
@@ -341,6 +397,9 @@ int Computed_field_node_group::removeNodesConditional(cmzn_field_id conditional_
 int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 {
 	if (!isParentElementCompatible(element))
+		return CMZN_ERROR_ARGUMENT;
+	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(this->master_nodeset);
+	if (fe_nodeset->getFieldDomainType() != CMZN_FIELD_DOMAIN_TYPE_NODES)
 		return CMZN_ERROR_ARGUMENT;
 	int return_code = CMZN_OK;
 	int number_of_nodes = 0;
@@ -412,6 +471,9 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 int Computed_field_node_group::removeElementNodes(cmzn_element_id element)
 {
 	if (!isParentElementCompatible(element))
+		return CMZN_ERROR_ARGUMENT;
+	FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(this->master_nodeset);
+	if (fe_nodeset->getFieldDomainType() != CMZN_FIELD_DOMAIN_TYPE_NODES)
 		return CMZN_ERROR_ARGUMENT;
 	int number_of_nodes = 0;
 	int number_of_parents = 0;
