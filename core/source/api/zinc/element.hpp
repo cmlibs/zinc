@@ -546,6 +546,12 @@ public:
 			reinterpret_cast<cmzn_mesh_group_id>(id), element.getId());
 	}
 
+	int addElementsConditional(const Field& conditionalField)
+	{
+		return cmzn_mesh_group_add_elements_conditional(
+			reinterpret_cast<cmzn_mesh_group_id>(id), conditionalField.getId());
+	}
+
 	int removeAllElements()
 	{
 		return cmzn_mesh_group_remove_all_elements(reinterpret_cast<cmzn_mesh_group_id>(id));

@@ -21,6 +21,7 @@
 #include "computed_field/computed_field_subobject_group_internal.hpp"
 #include "computed_field/computed_field_subobject_group_private.hpp"
 #include "computed_field/computed_field_private.hpp"
+#include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
 #include "finite_element/finite_element_region.h"
 #include "general/debug.h"
@@ -62,7 +63,7 @@ struct cmzn_element_field_is_true_iterator_data
 int cmzn_element_field_is_true_iterator(cmzn_element_id element, void *data_void)
 {
 	cmzn_element_field_is_true_iterator_data *data =
-		reinterpret_cast<cmzn_element_field_is_true_iterator_data *>(data_void);
+		static_cast<cmzn_element_field_is_true_iterator_data *>(data_void);
 	cmzn_fieldcache_set_element(data->cache, element);
 	return cmzn_field_evaluate_boolean(data->field, data->cache);
 }
@@ -81,73 +82,128 @@ int cmzn_node_field_is_true_iterator(cmzn_node_id node, void *data_void)
 	return cmzn_field_evaluate_boolean(data->field, data->cache);
 }
 
-}
+} // anonymous namespace
 
-/** remove objects from the group if they are in the supplied list */
-int Computed_field_element_group::removeElementsConditional(cmzn_field_id conditional_field)
+cmzn_mesh_id Computed_field_element_group::getConditionalFieldIterationMesh(
+	cmzn_field_id conditional_field) const
 {
-	if (!conditional_field)
-		return CMZN_ERROR_ARGUMENT;
-	Computed_field_element_group *other_element_group = 0;
-	cmzn_field_group_id group = cmzn_field_cast_group(conditional_field);
-	if (group)
-	{
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, master_mesh);
-		cmzn_field_group_destroy(&group);
-		if (!element_group)
-			return CMZN_OK;
-		other_element_group = Computed_field_element_group_core_cast(element_group);
-		cmzn_field_element_group_destroy(&element_group);
-	}
-	else
-	{
-		other_element_group = dynamic_cast<Computed_field_element_group *>(conditional_field->core);
-	}
-	int return_code = CMZN_OK;
-	const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
+	cmzn_mesh_id mesh = 0;
+	Computed_field_element_group *other_element_group =
+		dynamic_cast<Computed_field_element_group *>(conditional_field->core);
+	cmzn_field_group_id group;
 	if (other_element_group)
 	{
-		if (other_element_group->field == field)
-			return clear();
-		if (other_element_group->getSize() < getSize())
+		mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(
+			reinterpret_cast<cmzn_field_element_group_id>(other_element_group->field)));
+	}
+	else if (0 != (group = cmzn_field_cast_group(conditional_field)))
+	{
+		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, this->master_mesh);
+		if (element_group)
 		{
-			cmzn_elementiterator_id iter = CREATE_LIST_ITERATOR(FE_element)(other_element_group->object_list);
-			cmzn_element_id element = 0;
-			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
-			{
-				if (IS_OBJECT_IN_LIST(FE_element)(element, object_list))
-					REMOVE_OBJECT_FROM_LIST(FE_element)(element, object_list);
-			}
-			cmzn_elementiterator_destroy(&iter);
+			mesh = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group));
+			cmzn_field_element_group_destroy(&element_group);
 		}
-		else
-		{
-			if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-				FE_element_is_in_list, (void *)other_element_group->object_list, object_list))
-			{
-				return_code = CMZN_ERROR_GENERAL;
-			}
-		}
+		cmzn_field_group_destroy(&group);
 	}
 	else
+		mesh = cmzn_mesh_access(this->master_mesh);
+	return mesh;
+}
+
+int Computed_field_element_group::addElementsConditional(cmzn_field_id conditional_field)
+{
+	if ((!conditional_field) || (conditional_field->manager != this->field->manager))
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_mesh_id iterationMesh = this->getConditionalFieldIterationMesh(conditional_field);
+	if (iterationMesh)
 	{
-		cmzn_region_id region = cmzn_mesh_get_region_internal(master_mesh);
-		cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		cmzn_element_field_is_true_iterator_data data = { cache, conditional_field };
-		if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
-			cmzn_element_field_is_true_iterator, (void *)&data, object_list))
+		const int old_size = NUMBER_IN_LIST(FE_element)(this->object_list);
+		cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(iterationMesh);
+		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(this->field);
+		cmzn_fieldcache *cache = 0;
+		if (cmzn_mesh_match(this->master_mesh, iterationMesh))
+			cache = cmzn_fieldmodule_create_fieldcache(field_module);
+		cmzn_element_id element = 0;
+		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 		{
-			return_code = CMZN_ERROR_GENERAL;
+			if (cache)
+			{
+				cache->setElement(element);
+				if (!cmzn_field_evaluate_boolean(conditional_field, cache))
+					continue;
+			}
+			ADD_OBJECT_TO_LIST(FE_element)(element, this->object_list);
 		}
+		cmzn_elementiterator_destroy(&iter);
 		cmzn_fieldcache_destroy(&cache);
 		cmzn_fieldmodule_destroy(&field_module);
+		const int new_size = NUMBER_IN_LIST(FE_element)(this->object_list);
+		if (new_size != old_size)
+		{
+			change_detail.changeAdd();
+			update();
+		}
+		cmzn_mesh_destroy(&iterationMesh);
 	}
-	const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
-	if (new_size != old_size)
+	return CMZN_OK;
+}
+
+int Computed_field_element_group::removeElementsConditional(cmzn_field_id conditional_field)
+{
+	if ((!conditional_field) || (conditional_field->manager != this->field->manager))
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
+	cmzn_mesh_id iterationMesh = this->getConditionalFieldIterationMesh(conditional_field);
+	if (iterationMesh)
 	{
-		change_detail.changeRemove();
-		update();
+		LIST(FE_element) *elementList = this->object_list;
+		if (conditional_field->dependsOnField(this->field))
+		{
+			// copy list, since can't query it within REMOVE_OBJECTS_FROM_LIST_THAT
+			elementList = CREATE_RELATED_LIST(FE_element)(this->object_list);
+			if (!COPY_LIST(FE_element)(elementList, this->object_list))
+				return_code = CMZN_ERROR_MEMORY;
+		}
+		if (CMZN_OK == return_code)
+		{
+			const int old_size = NUMBER_IN_LIST(FE_element)(this->object_list);
+			if (cmzn_mesh_get_size(iterationMesh) < this->getSize())
+			{
+				cmzn_elementiterator_id iter = cmzn_mesh_create_elementiterator(iterationMesh);
+				cmzn_element_id element = 0;
+				while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+					REMOVE_OBJECT_FROM_LIST(FE_element)(element, elementList);
+				cmzn_elementiterator_destroy(&iter);
+			}
+			else
+			{
+				cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(this->field);
+				cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(field_module);
+				cmzn_element_field_is_true_iterator_data data = { cache, conditional_field };
+				if (!REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+					cmzn_element_field_is_true_iterator, (void *)&data, elementList))
+				{
+					return_code = CMZN_ERROR_GENERAL;
+				}
+				cmzn_fieldcache_destroy(&cache);
+				cmzn_fieldmodule_destroy(&field_module);
+			}
+			if ((elementList != this->object_list) && (CMZN_OK == return_code))
+			{
+				DESTROY(LIST(FE_element))(&this->object_list);
+				this->object_list = elementList;
+			}
+			const int new_size = NUMBER_IN_LIST(FE_element)(this->object_list);
+			if (new_size != old_size)
+			{
+				change_detail.changeRemove();
+				update();
+			}
+		}
+		if (elementList != this->object_list)
+			DESTROY(LIST(FE_element))(&elementList);
+		cmzn_mesh_destroy(&iterationMesh);
 	}
 	return return_code;
 }
