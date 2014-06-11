@@ -64,7 +64,7 @@ ZINC_API cmzn_nodeset_id cmzn_fieldmodule_find_nodeset_by_field_domain_type(
  * container of nodes - i.e. cmzn_node objects. Valid names may be any
  * node_group field, or the following special names:
  * "nodes" = the primary set of nodes for a region, able to be indexed by
- * cmzn_elements for storing or mapping to finite element field parameters.
+ * elements for storing or mapping to finite element field parameters.
  * "datapoints" = an additional set of nodes generally used to represent data
  * points, not for finite element field parameters.
  * Note that the default names for node group fields created from a group
@@ -116,7 +116,7 @@ ZINC_API cmzn_nodetemplate_id cmzn_nodeset_create_nodetemplate(
 
 /**
  * Create a new node in this nodeset with fields defined as in the
- * node_template. Returns handle to new element.
+ * node_template. Returns handle to new node.
  *
  * @param nodeset  Handle to the nodeset to create the new node in.
  * @param identifier  Non-negative integer identifier of new node, or -1
@@ -276,6 +276,18 @@ ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
 	cmzn_node_id node);
 
 /**
+ * Ensure this nodeset group contains all nodes from the master nodeset for
+ * which the conditional field is true i.e. non-zero valued at the node.
+ *
+ * @param nodeset_group  Handle to the nodeset group to add nodes to.
+ * @param conditional_field  Field which if non-zero in a node indicates it
+ * is to be added.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_nodeset_group_add_nodes_conditional(
+	cmzn_nodeset_group_id nodeset_group, cmzn_field_id conditional_field);
+
+/**
  * Remove all nodes from nodeset group.
  *
  * @param nodeset_group  Handle to nodeset group to modify.
@@ -309,7 +321,7 @@ ZINC_API int cmzn_nodeset_group_remove_nodes_conditional(
 /**
  * Returns a new handle to the node iterator with reference count incremented.
  *
- * @param mesh  The node iterator to obtain a new handle to.
+ * @param node_iterator  The node iterator to obtain a new handle to.
  * @return  New handle to the node iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodeiterator_id cmzn_nodeiterator_access(
@@ -336,7 +348,7 @@ ZINC_API cmzn_node_id cmzn_nodeiterator_next(cmzn_nodeiterator_id node_iterator)
 /**
  * Returns a new handle to the node template with reference count incremented.
  *
- * @param mesh  Handle to a node template.
+ * @param node_template  Handle to a node template.
  * @return  New handle to the node template, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_nodetemplate_id cmzn_nodetemplate_access(

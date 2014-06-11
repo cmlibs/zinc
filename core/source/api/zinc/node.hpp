@@ -388,6 +388,12 @@ public:
 			reinterpret_cast<cmzn_nodeset_group_id>(id), node.getId());
 	}
 
+	int addNodesConditional(const Field& conditionalField)
+	{
+		return cmzn_nodeset_group_add_nodes_conditional(
+			reinterpret_cast<cmzn_nodeset_group_id>(id), conditionalField.getId());
+	}
+
 	int removeAllNodes()
 	{
 		return cmzn_nodeset_group_remove_all_nodes(
