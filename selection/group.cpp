@@ -22,9 +22,11 @@
 #include <zinc/element.hpp>
 #include <zinc/field.hpp>
 #include <zinc/fieldcache.hpp>
+#include <zinc/fieldcomposite.hpp>
 #include <zinc/fieldconstant.hpp>
 #include <zinc/fieldfiniteelement.hpp>
 #include <zinc/fieldgroup.hpp>
+#include <zinc/fieldlogicaloperators.hpp>
 #include <zinc/fieldsubobjectgroup.hpp>
 #include <zinc/node.hpp>
 #include <zinc/region.hpp>
@@ -116,4 +118,88 @@ TEST(ZincFieldElementGroup, add_remove_conditional)
 	EXPECT_EQ(9, result = facesMeshGroup.getSize());
 	EXPECT_FALSE(facesMeshGroup.containsElement(element1));
 	EXPECT_FALSE(facesMeshGroup.containsElement(element2));
+
+	// check not an error to remove nodes already removed
+	EXPECT_EQ(OK, facesMeshGroup.removeAllElements());
+	EXPECT_EQ(0, result = facesMeshGroup.getSize());
+	EXPECT_EQ(OK, facesMeshGroup.removeElementsConditional(otherFacesGroup));
+}
+
+TEST(ZincFieldNodeGroup, add_remove_conditional)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+
+	int size;
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(12, size = nodeset.getSize());
+
+	FieldNodeGroup nodesGroup = group.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(nodesGroup.isValid());
+	NodesetGroup nodesetGroup = nodesGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+	EXPECT_EQ(0, nodesetGroup.getSize());
+
+	EXPECT_EQ(ERROR_ARGUMENT, nodesetGroup.addNodesConditional(Field()));
+	EXPECT_EQ(ERROR_ARGUMENT, nodesetGroup.removeNodesConditional(Field()));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	FieldComponent x = zinc.fm.createFieldComponent(coordinates, 1);
+	EXPECT_TRUE(x.isValid());
+	const double fifteen = 15.0;
+	FieldGreaterThan x_gt_15 = x > zinc.fm.createFieldConstant(1, &fifteen);
+	EXPECT_TRUE(x_gt_15.isValid());
+
+	const double oneValue = 1.0;
+	FieldConstant trueField = zinc.fm.createFieldConstant(1, &oneValue);
+	EXPECT_TRUE(trueField.isValid());
+
+	EXPECT_EQ(OK, nodesetGroup.addNodesConditional(x_gt_15));
+	EXPECT_EQ(4, result = nodesetGroup.getSize());
+	for (int i = 3; i <= 12; i += 3)
+		EXPECT_TRUE(nodesetGroup.containsNode(nodeset.findNodeByIdentifier(i)));
+
+	// copy into another element group to test conditional add/removal
+	// optimisation for smaller groups
+	FieldNodeGroup otherNodesGroup = zinc.fm.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(otherNodesGroup.isValid());
+	NodesetGroup otherNodesetGroup = otherNodesGroup.getNodesetGroup();
+	EXPECT_TRUE(otherNodesetGroup.isValid());
+	EXPECT_EQ(OK, otherNodesetGroup.addNodesConditional(nodesGroup));
+	EXPECT_EQ(4, result = otherNodesetGroup.getSize());
+	for (int i = 3; i <= 12; i += 3)
+		EXPECT_TRUE(otherNodesetGroup.containsNode(nodeset.findNodeByIdentifier(i)));
+
+	// add all faces for conditional removal
+	EXPECT_EQ(OK, nodesetGroup.addNodesConditional(trueField));
+	EXPECT_EQ(12, result = nodesetGroup.getSize());
+
+	EXPECT_EQ(OK, nodesetGroup.removeNodesConditional(x_gt_15));
+	EXPECT_EQ(8, result = nodesetGroup.getSize());
+	for (int i = 3; i <= 12; i += 3)
+		EXPECT_FALSE(nodesetGroup.containsNode(nodeset.findNodeByIdentifier(i)));
+
+	// test using self as a conditional
+	EXPECT_EQ(OK, nodesetGroup.removeNodesConditional(nodesGroup));
+	EXPECT_EQ(0, nodesetGroup.getSize());
+
+	EXPECT_EQ(OK, nodesetGroup.addNodesConditional(trueField));
+	EXPECT_EQ(12, result = nodesetGroup.getSize());
+
+	EXPECT_EQ(OK, nodesetGroup.removeNodesConditional(otherNodesGroup));
+	EXPECT_EQ(8, result = nodesetGroup.getSize());
+	for (int i = 3; i <= 12; i += 3)
+		EXPECT_FALSE(nodesetGroup.containsNode(nodeset.findNodeByIdentifier(i)));
+
+	// check not an error to remove nodes already removed
+	EXPECT_EQ(OK, nodesetGroup.removeAllNodes());
+	EXPECT_EQ(0, result = nodesetGroup.getSize());
+	EXPECT_EQ(OK, nodesetGroup.removeNodesConditional(otherNodesGroup));
 }
