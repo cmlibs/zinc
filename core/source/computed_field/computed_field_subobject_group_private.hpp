@@ -17,6 +17,7 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_group_base.hpp"
+#include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_private.hpp"
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
@@ -68,12 +69,18 @@ public:
 
 class Computed_field_subobject_group : public Computed_field_group_base
 {
+protected:
+	Computed_field_group *ownerGroup; // not accessed
+
 public:
 
 	Computed_field_subobject_group() :
-		Computed_field_group_base()
+		Computed_field_group_base(),
+		ownerGroup(0)
 	{
 	}
+
+	virtual ~Computed_field_subobject_group();
 
 	const char* get_type_string()
 	{
@@ -95,6 +102,19 @@ public:
 				return true;
 		}
 		return false;
+	}
+
+	// Set for subobject groups which are managed by a Computed_field_group.
+	void setOwnerGroup(Computed_field_group *ownerGroupIn)
+	{
+		this->ownerGroup = ownerGroupIn;
+	}
+
+	inline cmzn_field_group_subelement_handling_mode getSubobjectHandlingMode() const
+	{
+		if (this->ownerGroup)
+			return this->ownerGroup->getSubelementHandlingMode();
+		return CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE;
 	}
 
 };
@@ -312,9 +332,17 @@ public:
 				{
 					change_detail.changeAdd();
 					update();
-					return CMZN_OK;
 				}
-				return CMZN_ERROR_GENERAL;
+				else if (!IS_OBJECT_IN_LIST(FE_element)(object, object_list))
+					return CMZN_ERROR_MEMORY;
+				if (this->getSubobjectHandlingMode() == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL)
+				{
+					this->getField()->beginChange();
+					int return_code = this->addSubelements(object);
+					this->getField()->endChange();
+					return return_code;
+				}
+				return CMZN_OK;
 			}
 			return CMZN_ERROR_ARGUMENT;
 		};
@@ -410,6 +438,14 @@ public:
 		int removeElementFaces(cmzn_element_id parent);
 
 	private:
+
+		/** Adds faces and nodes of element to related subobject groups.
+		 * only call with this->ownerGroup set, and between begin/end change */
+		int addSubelements(cmzn_element_id element);
+
+		/** Adds faces of element to element group, and their faces to related group
+		 * recursively. Only call with this->ownerGroup set, and between begin/end change */
+		int addElementFacesRecursive(cmzn_element_id element);
 
 		Computed_field_core* copy()
 		{

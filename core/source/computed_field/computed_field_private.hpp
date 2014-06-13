@@ -475,6 +475,16 @@ DESCRIPTION :
 		return DEACCESS(Computed_field)(field_address);
 	}
 
+	void beginChange() const
+	{
+		MANAGER_BEGIN_CACHE(Computed_field)(this->manager);
+	}
+
+	void endChange() const
+	{
+		MANAGER_END_CACHE(Computed_field)(this->manager);
+	}
+
 	/** call whenever field values have been assigned to. Clears all cached data for
 	 * this field and any field that depends on it.
 	 */
