@@ -35,6 +35,13 @@
 #include "cad/element_identifier.h"
 #endif /* defined (USE_OPENCASCADE) */
 
+Computed_field_subobject_group::~Computed_field_subobject_group()
+{
+	if (this->ownerGroup)
+		display_message(ERROR_MESSAGE, "Computed_field_subobject_group %s destroyed with non-zero ownerGroup",
+			this->field ? this->field->name : "?");
+}
+
 namespace {
 
 class Computed_field_sub_group_object_package : public Computed_field_type_package
@@ -115,6 +122,8 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 {
 	if ((!conditional_field) || (conditional_field->manager != this->field->manager))
 		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
+	this->getField()->beginChange();
 	cmzn_mesh_id iterationMesh = this->getConditionalFieldIterationMesh(conditional_field);
 	if (iterationMesh)
 	{
@@ -125,6 +134,8 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 		if (cmzn_mesh_match(this->master_mesh, iterationMesh))
 			cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		cmzn_element_id element = 0;
+		const bool handleSubelements =
+			this->getSubobjectHandlingMode() == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL;
 		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 		{
 			if (cache)
@@ -133,7 +144,18 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 				if (!cmzn_field_evaluate_boolean(conditional_field, cache))
 					continue;
 			}
-			ADD_OBJECT_TO_LIST(FE_element)(element, this->object_list);
+			if (!(ADD_OBJECT_TO_LIST(FE_element)(element, this->object_list) ||
+				IS_OBJECT_IN_LIST(FE_element)(element, this->object_list)))
+			{
+				return_code = CMZN_ERROR_MEMORY;
+				break;
+			}
+			if (handleSubelements)
+			{
+				return_code = this->addSubelements(element);
+				if (return_code != CMZN_OK)
+					break;
+			}
 		}
 		cmzn_elementiterator_destroy(&iter);
 		cmzn_fieldcache_destroy(&cache);
@@ -146,7 +168,8 @@ int Computed_field_element_group::addElementsConditional(cmzn_field_id condition
 		}
 		cmzn_mesh_destroy(&iterationMesh);
 	}
-	return CMZN_OK;
+	this->getField()->endChange();
+	return return_code;
 }
 
 int Computed_field_element_group::removeElementsConditional(cmzn_field_id conditional_field)
@@ -208,6 +231,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 	return return_code;
 }
 
+// GRC remove
 int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 {
 	if (!isParentElementCompatible(parent))
@@ -241,7 +265,71 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 		update();
 	}
 	return return_code;
-};
+}
+
+int Computed_field_element_group::addSubelements(cmzn_element_id element)
+{
+	int return_code = CMZN_OK;
+	if (1 < this->dimension)
+	{
+		Computed_field_element_group *faceElementGroup =
+			this->ownerGroup->getElementGroupPrivate(this->dimension - 1, /*create*/true);
+		if (faceElementGroup)
+			return_code = faceElementGroup->addElementFacesRecursive(element);
+		else
+			return_code = CMZN_ERROR_GENERAL;
+	}
+	if (CMZN_OK == return_code)
+	{
+		Computed_field_node_group *nodeGroup = this->ownerGroup->getNodeGroupPrivate(/*create*/true);
+		if (nodeGroup)
+			return_code = nodeGroup->addElementNodes(element);
+		else
+			return_code = CMZN_ERROR_GENERAL;
+	}
+	return return_code;
+}
+
+int Computed_field_element_group::addElementFacesRecursive(cmzn_element_id element)
+{
+	Computed_field_element_group *faceElementGroup = 0;
+	if (1 < this->dimension)
+	{
+		faceElementGroup = this->ownerGroup->getElementGroupPrivate(this->dimension - 1, /*create*/true);
+		if (!faceElementGroup)
+			return CMZN_ERROR_GENERAL;
+	}
+	int return_code = CMZN_OK;
+	int number_of_faces = 0;
+	get_FE_element_number_of_faces(element, &number_of_faces);
+	cmzn_element_id face = 0;
+	int numberAdded = 0;
+	for (int i = 0; i < number_of_faces; ++i)
+	{
+		if (get_FE_element_face(element, i, &face) && face)
+		{
+			if (ADD_OBJECT_TO_LIST(FE_element)(face, this->object_list))
+				++numberAdded;
+			else if (!IS_OBJECT_IN_LIST(FE_element)(face, this->object_list))
+			{
+				return_code = CMZN_ERROR_MEMORY;
+				break;
+			}
+			if (1 < this->dimension)
+			{
+				return_code = faceElementGroup->addElementFacesRecursive(face);
+				if (CMZN_OK != return_code)
+					break;
+			}
+		}
+	}
+	if (numberAdded)
+	{
+		this->change_detail.changeAdd();
+		this->update();
+	}
+	return return_code;
+}
 
 int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 {
@@ -268,7 +356,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 		update();
 	}
 	return CMZN_OK;
-};
+}
 
 cmzn_nodeset_id Computed_field_node_group::getConditionalFieldIterationNodeset(
 	cmzn_field_id conditional_field) const
@@ -413,17 +501,12 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 		{
 			if (get_FE_element_node(element, i, &node) && node)
 			{
-				if (!IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+				if (ADD_OBJECT_TO_LIST(FE_node)(node, this->object_list))
+					++number_added;
+				else if (!IS_OBJECT_IN_LIST(FE_node)(node, this->object_list))
 				{
-					if (ADD_OBJECT_TO_LIST(FE_node)(node, object_list))
-					{
-						++number_added;
-					}
-					else
-					{
-						return_code = CMZN_ERROR_GENERAL;
-						break;
-					}
+					return_code = CMZN_ERROR_GENERAL;
+					break;
 				}
 			}
 		}
@@ -442,17 +525,12 @@ int Computed_field_node_group::addElementNodes(cmzn_element_id element)
 				node = element_field_nodes_array[i];
 				if (node)
 				{
-					if (!IS_OBJECT_IN_LIST(FE_node)(node, object_list))
+					if (ADD_OBJECT_TO_LIST(FE_node)(node, this->object_list))
+						++number_added;
+					else if (!IS_OBJECT_IN_LIST(FE_node)(node, this->object_list))
 					{
-						if (ADD_OBJECT_TO_LIST(FE_node)(node, object_list))
-						{
-							++number_added;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "Could not add node");
-							return_code = CMZN_ERROR_GENERAL;
-						}
+						return_code = CMZN_ERROR_GENERAL;
+						break;
 					}
 					cmzn_node_destroy(&node);
 				}

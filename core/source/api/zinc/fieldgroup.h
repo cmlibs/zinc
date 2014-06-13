@@ -187,6 +187,30 @@ ZINC_API bool cmzn_field_group_contains_region(cmzn_field_group_id group, cmzn_r
 ZINC_API int cmzn_field_group_remove_region(cmzn_field_group_id group, cmzn_region_id region);
 
 /**
+ * Get mode controlling how subelements (faces, lines, nodes) are handled
+ * when parent elements are added or removed from subobject groups.
+ *
+ * @param group  Handle to group field to modify.
+ * @return  The subelement handling mode, or SUBELEMENT_HANDLING_MODE_INVALID
+ * on error.
+ */
+ZINC_API enum cmzn_field_group_subelement_handling_mode
+	cmzn_field_group_get_subelement_handling_mode(cmzn_field_group_id group);
+
+/**
+ * Set mode controlling how subelements (faces, lines, nodes) are handled
+ * when parent elements are added or removed from subobject groups.
+ * Note this mode only affects what happens for subsequently added or removed
+ * elements - it does not change the contents of the group.
+ *
+ * @param group  Handle to group field to modify.
+ * @param mode  The new subelement handling mode.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_group_set_subelement_handling_mode(cmzn_field_group_id group,
+	enum cmzn_field_group_subelement_handling_mode mode);
+
+/**
  * Create a group field for the specified subregion, include it in the specified
  * group and return a handle to the newly created sub-group field.
  * The specified region must be in the tree of this group's local/owning region

@@ -24,4 +24,20 @@
 struct cmzn_field_group;
 typedef struct cmzn_field_group *cmzn_field_group_id;
 
+/**
+ * Enumeration controlling how subelements (faces, lines, nodes) are handled
+ * when parent elements are added or removed from subobject groups.
+ */
+enum cmzn_field_group_subelement_handling_mode
+{
+	CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_INVALID = 0,
+	/*!< Invalid mode */
+	CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE = 1,
+	/*!< Do not add/remove faces, lines or nodes with parent elements.
+	 * This is the default mode for new groups. */
+	CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL = 2
+	/*!< Ensure group contains all faces, lines and nodes for any higher dimension
+	 * element in the wider group. More expensive to maintain. */
+};
+
 #endif
