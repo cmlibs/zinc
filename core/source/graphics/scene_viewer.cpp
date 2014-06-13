@@ -744,6 +744,7 @@ modes, so push/pop them if you want them preserved.
 					dz = scene_viewer->eyez-scene_viewer->lookatz;
 					factor = scene_viewer->near_plane/sqrt(dx*dx+dy*dy+dz*dz);
 					/* perspective projection */
+
 					glFrustum(scene_viewer->left*factor, scene_viewer->right*factor,
 						scene_viewer->bottom*factor, scene_viewer->top*factor,
 						scene_viewer->near_plane, scene_viewer->far_plane);
@@ -3560,19 +3561,19 @@ Converts mouse button-press and motion events into viewing transformations in
 									scene_viewer->eyex += (a[0]*dy*dist);
 									scene_viewer->eyey += (a[1]*dy*dist);
 									scene_viewer->eyez += (a[2]*dy*dist);
-									if (0.0001 < (scene_viewer->near_plane + dy*dist))
+									double near_far_minimum_ratio = 0.00001;
+									if ((near_far_minimum_ratio * scene_viewer->far_plane) <
+										(scene_viewer->near_plane + dy*dist + scene_viewer->near_plane_fly_debt))
 									{
 										if (scene_viewer->near_plane_fly_debt != 0.0)
 										{
-											if (scene_viewer->near_plane_fly_debt >= 0)
-												scene_viewer->near_plane_fly_debt -= dy*dist;
-											else
-												scene_viewer->near_plane_fly_debt += dy*dist;
+											scene_viewer->near_plane_fly_debt += dy*dist;
 											if (scene_viewer->near_plane_fly_debt > 0.0)
 											{
 												scene_viewer->near_plane += scene_viewer->near_plane_fly_debt;
 												scene_viewer->far_plane += scene_viewer->near_plane_fly_debt;
 												scene_viewer->near_plane_fly_debt = 0.0;
+												scene_viewer->far_plane_fly_debt = 0.0;
 											}
 										}
 										else
@@ -3583,6 +3584,13 @@ Converts mouse button-press and motion events into viewing transformations in
 									}
 									else
 									{
+										if (scene_viewer->near_plane_fly_debt == 0.0)
+										{
+											double diff = scene_viewer->near_plane - near_far_minimum_ratio * scene_viewer->far_plane;
+											scene_viewer->near_plane = near_far_minimum_ratio * scene_viewer->far_plane;
+											scene_viewer->far_plane -= diff;
+											scene_viewer->near_plane_fly_debt -= near_far_minimum_ratio * scene_viewer->far_plane;
+										}
 										scene_viewer->near_plane_fly_debt += dy*dist;
 									}
 									cmzn_sceneviewer_set_view_angle(scene_viewer, angle);
