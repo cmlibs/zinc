@@ -373,6 +373,8 @@ ZINC_API double cmzn_spectrumcomponent_get_colour_minimum(
  * Set the normalised minimum value for the colour type of this spectrum
  * component. The range of colour displayed by this spectrum ranges from
  * minimum value of colour to the miximum value of colour
+ * Changing this value does not affect COLOUR_MAPPING_TYPE_BANDED, use
+ * cmzn_spectrumcomponent_set_number_of_bands to set the number of bands.
  *
  * @param component  The handle of the spectrum component.
  * @value  the minimum colour value to be set
@@ -396,7 +398,9 @@ ZINC_API double cmzn_spectrumcomponent_get_colour_maximum(
 /**
  * Set the normalised maximum value for the colour type of this spectrum
  * component. The range of colour displayed by this spectrum ranges from
- * minimum value of colour to the miximum value of colour
+ * minimum value of colour to the miximum value of colour.
+ * Changing this value does not affect COLOUR_MAPPING_TYPE_BANDED, use
+ * cmzn_spectrumcomponent_set_number_of_bands to set the number of bands.
  *
  * @param component  The handle of the spectrum component.
  * @value  the maximum colour value to be set

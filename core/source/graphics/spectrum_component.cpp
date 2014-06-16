@@ -1582,8 +1582,8 @@ passed in render data.
 						value=1.0-value;
 					}
 					/* apply the value minimums and maximums */
-					value=component->min_value+(component->max_value-component->min_value)*
-						value;
+					if (component->colour_mapping_type != CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED)
+						value=component->min_value+(component->max_value-component->min_value)*value;
 					switch (component->colour_mapping_type)
 					{
 						case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
