@@ -111,6 +111,7 @@ public:
 
 class Fieldmodule;
 class Mesh;
+class MeshGroup;
 class Elementtemplate;
 
 class Element
@@ -440,6 +441,8 @@ public:
 		return id;
 	}
 
+	inline MeshGroup castGroup();
+
 	bool containsElement(const Element& element)
 	{
 		return cmzn_mesh_contains_element(id, element.getId());
@@ -570,6 +573,11 @@ public:
 	}
 
 };
+
+inline MeshGroup Mesh::castGroup()
+{
+	return MeshGroup(cmzn_mesh_cast_group(id));
+}
 
 class Meshchanges
 {

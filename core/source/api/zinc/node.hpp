@@ -20,6 +20,7 @@ namespace Zinc
 
 class Fieldmodule;
 class Nodeset;
+class NodesetGroup;
 class Nodetemplate;
 
 class Node
@@ -299,6 +300,8 @@ public:
 		return id;
 	}
 
+	inline NodesetGroup castGroup();
+
 	bool containsNode(const Node& node)
 	{
 		return cmzn_nodeset_contains_node(id, node.getId());
@@ -413,6 +416,11 @@ public:
 	}
 
 };
+
+inline NodesetGroup Nodeset::castGroup()
+{
+	return NodesetGroup(cmzn_nodeset_cast_group(id));
+}
 
 class Nodesetchanges
 {
