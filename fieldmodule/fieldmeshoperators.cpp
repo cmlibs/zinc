@@ -353,4 +353,5 @@ TEST(ZincFieldMeshIntegralSquares, quadrature)
 				EXPECT_NEAR(expectedValue[0], value[0], tolerance);
 				EXPECT_NEAR(expectedValue[1], value[1], tolerance);
 			}
+	zinc.fm.endChange();
 }

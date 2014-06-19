@@ -18,6 +18,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldconstant.cpp
 	${CURRENT_TEST}/fieldimage.cpp
 	${CURRENT_TEST}/fielditerator.cpp
+	${CURRENT_TEST}/fieldlogicaloperators.cpp
 	${CURRENT_TEST}/fieldmeshoperators.cpp
 	${CURRENT_TEST}/fieldmodulenotifier.cpp
 	${CURRENT_TEST}/finiteelement.cpp
