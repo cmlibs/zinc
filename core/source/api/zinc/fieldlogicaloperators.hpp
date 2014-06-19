@@ -79,6 +79,20 @@ inline FieldGreaterThan operator>(const Field& operand1, const Field& operand2)
 	return operand1.getFieldmodule().createFieldGreaterThan(operand1, operand2);
 }
 
+class FieldIsDefined : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldIsDefined(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldIsDefined Fieldmodule::createFieldIsDefined(const Field& sourceField);
+
+public:
+	FieldIsDefined() : Field(0)
+	{	}
+};
+
 class FieldLessThan : public Field
 {
 private:
@@ -176,6 +190,11 @@ inline FieldGreaterThan Fieldmodule::createFieldGreaterThan(const Field& sourceF
 {
 	return FieldGreaterThan(cmzn_fieldmodule_create_field_greater_than(id,
 		sourceField1.getId(), sourceField2.getId()));
+}
+
+inline FieldIsDefined Fieldmodule::createFieldIsDefined(const Field& sourceField)
+{
+	return FieldIsDefined(cmzn_fieldmodule_create_field_is_defined(id, sourceField.getId()));
 }
 
 inline FieldLessThan Fieldmodule::createFieldLessThan(const Field& sourceField1, const Field& sourceField2)

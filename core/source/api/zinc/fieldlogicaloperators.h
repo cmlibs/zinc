@@ -76,6 +76,17 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_less_than(
 	cmzn_field_id source_field_one, cmzn_field_id source_field_two);
 
 /**
+ * Creates a field returning 1 (true) at locations where the source field is
+ * defined and 0 (false) elsewhere.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  Field to check whether defined at location.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_is_defined(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
+
+/**
  * Creates a field whose component values are 1 if that component of
  * source_field_one OR source_field_two is non-zero, 0 otherwise.
  * Automatic scalar broadcast will apply, see field.h.

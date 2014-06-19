@@ -55,6 +55,7 @@ class FieldImage;
 class FieldAnd;
 class FieldEqualTo;
 class FieldGreaterThan;
+class FieldIsDefined;
 class FieldLessThan;
 class FieldOr;
 class FieldNot;
@@ -303,6 +304,8 @@ public:
 	inline FieldEqualTo createFieldEqualTo(const Field& sourceField1, const Field& sourceField2);
 
 	inline FieldGreaterThan createFieldGreaterThan(const Field& sourceField1, const Field& sourceField2);
+
+	inline FieldIsDefined createFieldIsDefined(const Field& sourceField);
 
 	inline FieldLessThan createFieldLessThan(const Field& sourceField1, const Field& sourceField2);
 
