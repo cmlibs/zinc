@@ -1,12 +1,10 @@
-/*******************************************************************************
-FILE : computed_field_logical_operators.c
-
-LAST MODIFIED : 16 May 2008
-
-DESCRIPTION :
-Implements a number of logical operations on computed fields.
-Three methods are developed here: AND, OR, XOR, EQUAL_TO, LESS_THAN, GREATER_THAN
-==============================================================================*/
+/**
+ * FILE : computed_field_logical_operators.cpp
+ *
+ * Implements a number of logical operations on computed fields.
+ * Following operators are defined: AND, OR, XOR, NOT, EQUAL_TO, LESS_THAN,
+ * GREATER_THAN, IS_DEFINED.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -619,17 +617,16 @@ int Computed_field_less_than::evaluate(cmzn_fieldcache& cache, FieldValueCache& 
 
 } //namespace
 
-Computed_field *Computed_field_create_less_than(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_less_than(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
+	ACCESS(cmzn_field)(source_field_one);
+	ACCESS(cmzn_field)(source_field_two);
 	if (field_module && source_field_one  && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
@@ -637,7 +634,7 @@ Computed_field *Computed_field_create_less_than(
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
 		field = Computed_field_create_generic(field_module,
@@ -650,11 +647,10 @@ Computed_field *Computed_field_create_less_than(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_or.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_less_than.  Invalid argument(s)");
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
-
+	DEACCESS(cmzn_field)(&source_field_one);
+	DEACCESS(cmzn_field)(&source_field_two);
 	return (field);
 }
 
@@ -745,17 +741,16 @@ int Computed_field_greater_than::evaluate(cmzn_fieldcache& cache, FieldValueCach
 
 } //namespace
 
-Computed_field *Computed_field_create_greater_than(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field_one,
-	struct Computed_field *source_field_two)
+cmzn_field_id cmzn_fieldmodule_create_field_greater_than(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field_one, cmzn_field_id source_field_two)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	/* Access and broadcast before checking components match,
 		the local source_field_one and source_field_two will
 		get replaced if necessary. */
-	ACCESS(Computed_field)(source_field_one);
-	ACCESS(Computed_field)(source_field_two);
+	ACCESS(cmzn_field)(source_field_one);
+	ACCESS(cmzn_field)(source_field_two);
 	if (field_module && source_field_one  && source_field_one->isNumerical() &&
 		source_field_two && source_field_two->isNumerical() &&
 		Computed_field_broadcast_field_components(field_module,
@@ -763,7 +758,7 @@ Computed_field *Computed_field_create_greater_than(
 		(source_field_one->number_of_components ==
 			source_field_two->number_of_components))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field_one;
 		source_fields[1] = source_field_two;
 		field = Computed_field_create_generic(field_module,
@@ -776,11 +771,10 @@ Computed_field *Computed_field_create_greater_than(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_fieldmodule_create_field_or.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_greater_than.  Invalid argument(s)");
 	}
-	DEACCESS(Computed_field)(&source_field_one);
-	DEACCESS(Computed_field)(&source_field_two);
-
+	DEACCESS(cmzn_field)(&source_field_one);
+	DEACCESS(cmzn_field)(&source_field_two);
 	return (field);
 }
 
@@ -866,26 +860,15 @@ int Computed_field_is_defined::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 
 } //namespace
 
-/*****************************************************************************//**
- * Creates a scalar field whose value is 1 wherever the source field is defined,
- * and 0 elsewhere (without error).
- *
- * @param field_module  Region field module which will own new field.
- * @param source_field  Source field to check whether defined.
- * @return Newly created field
- */
-Computed_field *Computed_field_create_is_defined(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_is_defined(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
 {
-	Computed_field *field = Computed_field_create_generic(field_module,
+	return Computed_field_create_generic(field_module,
 		/*check_source_field_regions*/true,
 		/*number_of_components*/1,
 		/*number_of_source_fields*/1, &source_field,
 		/*number_of_source_values*/0, NULL,
 		new Computed_field_is_defined());
-
-	return (field);
 }
 
 int Computed_field_get_type_is_defined(struct Computed_field *field,
