@@ -538,6 +538,9 @@ public:
 	explicit MeshGroup(cmzn_mesh_group_id mesh_id) : Mesh(reinterpret_cast<cmzn_mesh_id>(mesh_id))
 	{ }
 
+	MeshGroup()
+	{ }
+
 	cmzn_mesh_group_id getId() const
 	{
 		return (cmzn_mesh_group_id)(id);

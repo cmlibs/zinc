@@ -65,6 +65,7 @@ Structure for maintaining a graphical scene of region.
 	struct LIST(CMZN_CALLBACK_ITEM(cmzn_scene_top_region_change)) *top_region_change_callback_list;
 	unsigned int position;
 	cmzn_field_group_id selection_group;
+	bool selectionChanged;
 	cmzn_selectionnotifier_list *selectionnotifier_list;
 
 public:
@@ -336,12 +337,6 @@ int list_cmzn_scene_transformation_commands(struct cmzn_scene *scene,
 	void *command_prefix_void);
 
 int list_cmzn_scene_transformation(struct cmzn_scene *scene);
-
-int cmzn_scene_add_selection_from_element_list_of_dimension(cmzn_scene_id scene,
-	struct LIST(FE_element) *element_list, int dimension);
-
-int cmzn_scene_remove_selection_from_element_list_of_dimension(cmzn_scene_id scene,
-	struct LIST(FE_element) *element_list, int dimension);
 
 /***************************************************************************//**
  * Returns the status of the inherited visibility flag of the scene.

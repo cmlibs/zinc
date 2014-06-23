@@ -207,6 +207,12 @@ public:
 		return field;
 	}
 
+	/** only call when field member set! */
+	inline void beginChange() const;
+
+	/** only call when field member set! */
+	inline void endChange() const;
+
 	inline cmzn_field_id getSourceField(int index) const;
 
 	/**
@@ -475,16 +481,6 @@ DESCRIPTION :
 		return DEACCESS(Computed_field)(field_address);
 	}
 
-	void beginChange() const
-	{
-		MANAGER_BEGIN_CACHE(Computed_field)(this->manager);
-	}
-
-	void endChange() const
-	{
-		MANAGER_END_CACHE(Computed_field)(this->manager);
-	}
-
 	/** call whenever field values have been assigned to. Clears all cached data for
 	 * this field and any field that depends on it.
 	 */
@@ -600,6 +596,18 @@ DESCRIPTION :
 	void setChangedPrivate(MANAGER_CHANGE(Computed_field) change);
 
 }; /* struct Computed_field */
+
+inline void Computed_field_core::beginChange() const
+{
+	if (this->field->manager)
+		MANAGER_BEGIN_CACHE(Computed_field)(this->field->manager);
+}
+
+inline void Computed_field_core::endChange() const
+{
+	if (this->field->manager)
+		MANAGER_END_CACHE(Computed_field)(this->field->manager);
+}
 
 inline cmzn_field_id Computed_field_core::getSourceField(int index) const
 {

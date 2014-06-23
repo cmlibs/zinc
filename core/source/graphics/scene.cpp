@@ -247,6 +247,7 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
 				scene->transformation_field = NULL;
 				scene->transformation_time_callback_flag = 0;
 				scene->selection_group = NULL;
+				scene->selectionChanged = false;
 				scene->selectionnotifier_list = NULL;
 			}
 			else
@@ -390,6 +391,11 @@ void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_vo
 					cmzn_region_reaccess_next_sibling(&child_region);
 				}
 			}
+		}
+		else if (scene->selectionChanged)
+		{
+			local_selection_changed = true;
+			scene->selectionChanged = false;
 		}
 		int changeSummary = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
 		if ((changeSummary & CMZN_FIELD_CHANGE_FLAG_RESULT) || local_selection_changed)
@@ -2563,6 +2569,7 @@ int cmzn_scene_set_selection_field(cmzn_scene_id scene,
 				isEmpty = cmzn_field_group_is_empty(selection_group);
 				cmzn_field_access(cmzn_field_group_base_cast(selection_group));
 			}
+			scene->selectionChanged = true;
 			bool wasEmpty = true;
 			if (scene->selection_group)
 			{

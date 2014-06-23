@@ -703,8 +703,8 @@ FE_region::~FE_region()
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		DESTROY(CHANGE_LOG(FE_element))(&(this->fe_element_changes[dim]));
 
-	unsigned int size = this->scale_factor_sets.size();
-	for (unsigned i = 0; i < size; ++i)
+	const size_t size = this->scale_factor_sets.size();
+	for (size_t i = 0; i < size; ++i)
 	{
 		cmzn_mesh_scale_factor_set *scale_factor_set = this->scale_factor_sets[i];
 		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
@@ -1010,19 +1010,12 @@ This function is recursive.
 				int number_of_faces = 0;
 				get_FE_element_number_of_faces(element, &number_of_faces);
 				for (int i = 0; (i < number_of_faces) && return_code; i++)
-				{
 					if (get_FE_element_face(element, i, &face) && face)
 					{
 						int number_of_parents = 0;
-						if ((return_code = get_FE_element_number_of_parents_in_list(face,
-							element_list, &number_of_parents)) &&
-							(0 == number_of_parents))
-						{
-							return_code =
-								FE_region_remove_FE_element_private(fe_region, face);
-						}
+						if (!cmzn_element_has_parent_in_list(face, element_list))
+							return_code = FE_region_remove_FE_element_private(fe_region, face);
 					}
-				}
 			}
 			FE_REGION_FE_ELEMENT_CHANGE(fe_region, element,
 				CHANGE_LOG_OBJECT_REMOVED(FE_element), element);
@@ -1894,63 +1887,27 @@ cmzn_nodeiterator_id FE_nodeset::createNodeiterator()
 /**
  * Removes <node> from the nodeset.
  * Nodes can only be removed if not in use by elements in <fe_region>.
- * Should enclose call between FE_region_begin_change and FE_region_end_change
- * to minimise messages.
  * Note it is more efficient to use FE_nodeset::remove_FE_node_list for more than
  * one node.
  */
 int FE_nodeset::remove_FE_node(struct FE_node *node)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
-	if (IS_OBJECT_IN_LIST(FE_node)(node, this->nodeList))
+	if (IS_OBJECT_IN_LIST(cmzn_node)(node, this->nodeList))
 	{
-		/* expensive; same code as for remove_FE_node_list.
-		 * Supply highest dimension element list in region
-		 * to avoid repeated checks for nodes inherited from them */
-		struct FE_element_add_nodes_to_list_data add_nodes_data;
-		for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+		LIST(cmzn_node) *removeNodeList = CREATE_RELATED_LIST(cmzn_node)(this->nodeList);
+		if (ADD_OBJECT_TO_LIST(cmzn_node)(node, removeNodeList))
 		{
-			add_nodes_data.element_list = fe_region->fe_element_list[dim];
-			if (NUMBER_IN_LIST(FE_element)(add_nodes_data.element_list) > 0)
-				break;
-		}
-		add_nodes_data.node_list = CREATE(LIST(FE_node))();
-		add_nodes_data.intersect_node_list = CREATE(LIST(FE_node))();
-		return_code = CMZN_ERROR_GENERAL;
-		if (add_nodes_data.node_list && add_nodes_data.intersect_node_list &&
-			ADD_OBJECT_TO_LIST(FE_node)(node, add_nodes_data.intersect_node_list))
-		{
-			return_code = CMZN_OK;
-			for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+			return_code = this->remove_FE_node_list(removeNodeList);
+			if (return_code != CMZN_OK)
 			{
-				if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
-					FE_element_add_nodes_to_list, (void *)&add_nodes_data,
-					fe_region->fe_element_list[dim]))
-				{
-					return_code = CMZN_ERROR_GENERAL;
-					break;
-				}
+				display_message(ERROR_MESSAGE,
+					"FE_nodeset::remove_FE_node.  Node is in use by elements in region");
 			}
-			if (0 < NUMBER_IN_LIST(FE_node)(add_nodes_data.node_list))
-			{
-				return_code = CMZN_ERROR_GENERAL;
-			}
-		}
-		DESTROY(LIST(FE_node))(&add_nodes_data.node_list);
-		DESTROY(LIST(FE_node))(&add_nodes_data.intersect_node_list);
-		if (return_code == CMZN_OK)
-		{
-			/* access node in case it is only accessed here */
-			ACCESS(FE_node)(node);
-			REMOVE_OBJECT_FROM_LIST(FE_node)(node, this->nodeList);
-			this->nodeRemovedChange(node); 
-			DEACCESS(FE_node)(&node);
 		}
 		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_nodeset::remove_FE_node.  Node is in use by elements in region");
-		}
+			return_code = CMZN_ERROR_GENERAL;
+		DESTROY(LIST(FE_node))(&removeNodeList);
 	}
 	return return_code;
 }
@@ -1958,8 +1915,6 @@ int FE_nodeset::remove_FE_node(struct FE_node *node)
 /**
  * Attempts to removes all the nodes in <node_list> from this nodeset.
  * Nodes can only be removed if not in use by elements in <fe_region>.
- * Should enclose call between FE_region_begin_change and FE_region_end_change to
- * minimise messages.
  * On return, <node_list> will contain all the nodes that are still in
  * <fe_region> after the call.
  * A successful return code is only obtained if all nodes from <node_list> are
@@ -1971,46 +1926,39 @@ int FE_nodeset::remove_FE_node_list(struct LIST(FE_node) *node_list)
 	if (node_list)
 	{
 		return_code = CMZN_OK;
-		struct FE_element_add_nodes_to_list_data add_nodes_data;
-		struct LIST(FE_node) *exclusion_node_list = CREATE(LIST(FE_node))();
-		/* expensive to determine nodes in use by elements, even more so for
-		 * faces and lines.
-		 * Supply highest dimension element list in region
-		 * to avoid repeated checks for nodes inherited from them */
-		for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
+		LIST(FE_node) *exclusion_node_list = CREATE(LIST(FE_node))();
+		// since we do not maintain pointers from nodes to elements using them,
+		// must iterate over all elements to remove nodes referenced by them
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (0 < dimension); --dimension)
 		{
-			add_nodes_data.element_list = fe_region->fe_element_list[dim];
-			if (NUMBER_IN_LIST(FE_element)(add_nodes_data.element_list) > 0)
-				break;
-		}
-		add_nodes_data.node_list = exclusion_node_list;
-		add_nodes_data.intersect_node_list = node_list;
-		for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; (0 <= dim); --dim)
-		{
-			if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
-				FE_element_add_nodes_to_list, (void *)&add_nodes_data,
-				fe_region->fe_element_list[dim]))
-			{
-				return_code = CMZN_ERROR_GENERAL;
-				break;
-			}
+			cmzn_elementiterator *iter = CREATE_LIST_ITERATOR(cmzn_element)(fe_region->get_element_list(dimension));
+			cmzn_element *element;
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)) && (CMZN_OK == return_code))
+				return_code = cmzn_element_add_stored_nodes_to_list(element, exclusion_node_list, /*onlyFrom*/node_list);
+			cmzn_elementiterator_destroy(&iter);
 		}
 		if (CMZN_OK == return_code)
 		{
 			/* begin/end change to prevent multiple messages */
 			FE_region_begin_change(fe_region);
-			cmzn_nodeiterator *iter = CREATE_LIST_ITERATOR(FE_node)(node_list);
+			cmzn_nodeiterator *iter = CREATE_LIST_ITERATOR(cmzn_node)(node_list);
 			cmzn_node *node = 0;
 			while ((0 != (node = cmzn_nodeiterator_next_non_access(iter))))
 			{
-				if (!IS_OBJECT_IN_LIST(FE_node)(node, exclusion_node_list) &&
-						REMOVE_OBJECT_FROM_LIST(FE_node)(node, this->nodeList))
-					this->nodeRemovedChange(node); 
+				if (IS_OBJECT_IN_LIST(cmzn_node)(node, exclusion_node_list))
+					continue;
+				if (REMOVE_OBJECT_FROM_LIST(cmzn_node)(node, this->nodeList))
+					this->nodeRemovedChange(node);
+				else
+				{
+					return_code = CMZN_ERROR_GENERAL;
+					break;
+				}
 			}
 			cmzn_nodeiterator_destroy(&iter);
-			REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_list,
+			REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_node)(FE_node_is_not_in_list,
 				(void *)(this->nodeList), node_list);
-			if (0 < NUMBER_IN_LIST(FE_node)(node_list))
+			if (0 < NUMBER_IN_LIST(cmzn_node)(node_list))
 				return_code = CMZN_ERROR_GENERAL;
 			FE_region_end_change(fe_region);
 		}
@@ -2315,8 +2263,8 @@ cmzn_mesh_scale_factor_set *FE_region_find_mesh_scale_factor_set_by_name(
 	if (fe_region && name)
 	{
 		std::vector<cmzn_mesh_scale_factor_set*>& scale_factor_sets = fe_region->get_scale_factor_sets();
-		const unsigned size = scale_factor_sets.size();
-		for (unsigned i = 0; i < size; ++i)
+		const size_t size = scale_factor_sets.size();
+		for (size_t i = 0; i < size; ++i)
 		{
 			if (0 == strcmp(scale_factor_sets[i]->getName(), name))
 			{

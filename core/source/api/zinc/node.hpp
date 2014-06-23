@@ -380,6 +380,9 @@ public:
 	explicit NodesetGroup(cmzn_nodeset_group_id nodeset_id) : Nodeset(reinterpret_cast<cmzn_nodeset_id>(nodeset_id))
 	{ }
 
+	NodesetGroup()
+	{ }
+
 	cmzn_nodeset_group_id getId() const
 	{
 		return (cmzn_nodeset_group_id)(id);

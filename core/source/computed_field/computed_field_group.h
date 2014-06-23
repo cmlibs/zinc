@@ -134,9 +134,12 @@ public:
 
 	cmzn_field_group_id getFirstNonEmptyGroup();
 
+#ifdef OLD_CODE
+// no longer used by cmgui, but may be restored
 	int clear_region_tree_node(int use_data);
 
 	int clear_region_tree_element();
+#endif // OLD_CODE
 
 	int for_each_group_hiearchical(cmzn_field_group_iterator_function function, void *user_data);
 
@@ -188,11 +191,11 @@ public:
 
 	int setSubelementHandlingMode(cmzn_field_group_subelement_handling_mode mode);
 
-	// for use by subobject group only. Assumes within begin/end change
+	// for use by subobject group only. Assumes within begin/end change if creating
 	Computed_field_element_group *getElementGroupPrivate(int dimension, bool create = false);
 
-	// for use by subobject group only. Assumes within begin/end change
-	Computed_field_node_group *getNodeGroupPrivate(bool create = false);
+	// for use by subobject group only. Assumes within begin/end change if creating
+	Computed_field_node_group *getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create = false);
 
 private:
 
@@ -260,11 +263,14 @@ private:
 int cmzn_field_group_for_each_group_hierarchical(cmzn_field_group_id group,
 	cmzn_field_group_iterator_function function, void *user_data);
 
+#ifdef OLD_CODE
+// no longer used by cmgui, but may be restored
 int cmzn_field_group_clear_region_tree_node(cmzn_field_group_id group);
 
 int cmzn_field_group_clear_region_tree_data(cmzn_field_group_id group);
 
 int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group);
+#endif // OLD_CODE
 
 int cmzn_field_is_type_group(cmzn_field_id field, void *dummy_void);
 

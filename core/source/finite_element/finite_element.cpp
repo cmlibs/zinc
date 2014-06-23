@@ -21932,14 +21932,6 @@ column of the <coordinate_transformation> matrix.
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements)
-/*******************************************************************************
-LAST MODIFIED : 27 October 2000
-
-DESCRIPTION :
-Returns the list of <adjacent_elements> not including <element> which share the
-face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
-correct size and should be DEALLOCATED when finished with.
-==============================================================================*/
 {
 	int i, j, return_code;
 	struct FE_element *face;
@@ -21947,29 +21939,19 @@ correct size and should be DEALLOCATED when finished with.
 	ENTER(adjacent_FE_element);
 	if ((element) && (element->shape) && (element->faces))
 	{
+		j = 0;
 		if ((0 <= face_number) && (face_number < element->shape->number_of_faces)&&
-			 (NULL != (face = (element->faces)[face_number])) && (face->parents))
+				(NULL != (face = (element->faces)[face_number])) && (face->parents))
 		{
 			if (ALLOCATE(*adjacent_elements, struct FE_element *, face->number_of_parents))
 			{
-				j = 0;
-				for (i = 0; i < face->number_of_parents; i++)
+				for (i = 0; i < face->number_of_parents; ++i)
 				{
 					if ((face->parents[i]) && (face->parents[i] != element))
 					{
 						(*adjacent_elements)[j] = face->parents[i];
-						j++;
+						++j;
 					}
-				}
-				*number_of_adjacent_elements = j;
-				if (j > 0)
-				{
-					return_code = 1;
-				}
-				else
-				{
-					DEALLOCATE(*adjacent_elements);
-					return_code = 0;
 				}
 			}
 			else
@@ -21978,13 +21960,11 @@ correct size and should be DEALLOCATED when finished with.
 					"adjacent_FE_element.  Unable to allocate array");
 				return_code = 0;
 			}
+			return_code = 1;
 		}
 		else
-		{
-			/* In the generic heart mesh there are elements that
-				do not have faces defined this isn't an error */
-			return_code = 0;
-		}
+			*adjacent_elements = 0;
+		*number_of_adjacent_elements = j;
 	}
 	else
 	{
@@ -25002,41 +24982,17 @@ Can be used to determine if a face is in use by more than one parent elements.
 	return (return_code);
 } /* get_FE_element_number_of_parents */
 
-int get_FE_element_number_of_parents_in_list(struct FE_element *element,
-	struct LIST(FE_element) *element_list, int *number_of_parents_address)
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns the number of parents of <element> that are in <element_list>.
-==============================================================================*/
+bool cmzn_element_has_parent_in_list(cmzn_element *element,
+	LIST(cmzn_element) *elementList)
 {
-	int count, i, return_code;
-
-	ENTER(get_FE_element_number_of_parents_in_list);
-	if ((element) && (element_list) && (number_of_parents_address))
+	if ((element) && (elementList))
 	{
-		count = 0;
-		for (i = 0; i < element->number_of_parents; i++)
-		{
-			if (IS_OBJECT_IN_LIST(FE_element)(element->parents[i], element_list))
-			{
-				count++;
-			}
-		}
-		*number_of_parents_address = count;
-		return_code = 1;
+		for (int i = 0; i < element->number_of_parents; i++)
+			if (IS_OBJECT_IN_LIST(cmzn_element)(element->parents[i], elementList))
+				return true;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_parents_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_number_of_parents_in_list */
+	return false;
+}
 
 int FE_element_get_first_parent(struct FE_element *element,
 	struct FE_element **parent_element_address, int *face_number_address)
@@ -28692,137 +28648,110 @@ static int FE_element_find_inherit_elements(struct FE_element *element,
 	return (return_code);
 } /* FE_element_find_inherit_elements */
 
-int FE_element_add_nodes_to_list(struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Adds all the nodes used by <element> to the <node_list> in the data. Since it
-is very inefficient to determine the nodes in use by faces or lines, the
-<element_list> being iterated over is also passed to this function so that only
-faces or lines with parents not in the <element_list> are checked, and only
-nodes inherited from top level elements not in the list are considered.
-The optional <intersect_node_list> restricts nodes added to <node_list> to also
-be in it.
-<data_void> points at a struct FE_element_add_nodes_to_list_data.
-==============================================================================*/
+int cmzn_element_add_stored_nodes_to_list(cmzn_element *element,
+	LIST(cmzn_node) *nodeList, LIST(cmzn_node) *onlyFromNodeList)
 {
-	int i, number_of_nodes, return_code;
-	struct FE_element *inherit_element;
-	struct FE_element_add_nodes_to_list_data *data;
-	struct FE_node **element_field_nodes, **nodes;
-	struct LIST(FE_element) *inherit_element_list;
-
-	ENTER(FE_element_add_nodes_to_list);
-	if (element && (data = (struct FE_element_add_nodes_to_list_data *)data_void))
+	if (!(element && nodeList && onlyFromNodeList))
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
+	if ((element->information) && (element->information->nodes))
 	{
-		return_code = 1;
-		if (element->information)
+		cmzn_node *node;
+		const int localNodesCount = element->information->number_of_nodes;
+		for (int i = 0; i < localNodesCount; i++)
 		{
-			if ((0 < (number_of_nodes = element->information->number_of_nodes)) &&
-				(nodes = element->information->nodes))
+			node = element->information->nodes[i];
+			if (node && IS_OBJECT_IN_LIST(cmzn_node)(node, onlyFromNodeList))
 			{
-				for (i = number_of_nodes; (0 < i) && return_code; i--)
+				if (!(ADD_OBJECT_TO_LIST(FE_node)(node, nodeList) ||
+					IS_OBJECT_IN_LIST(FE_node)(node, nodeList)))
 				{
-					if (*nodes)
-					{
-						if (!IS_OBJECT_IN_LIST(FE_node)(*nodes, data->node_list))
-						{
-							if ((!(data->intersect_node_list)) ||
-								IS_OBJECT_IN_LIST(FE_node)(*nodes, data->intersect_node_list))
-							{
-								return_code =
-									ADD_OBJECT_TO_LIST(FE_node)(*nodes, data->node_list);
-							}
-						}
-					}
-					nodes++;
-				}
-			}
-		}
-		if (return_code)
-		{
-			int check_parents;
-
-			/* only look at parents if there are any NOT in element_list */
-			check_parents = 0;
-			for (i = 0; i < element->number_of_parents; i++)
-			{
-				if (!IS_OBJECT_IN_LIST(FE_element)(element->parents[i], data->element_list))
-				{
-					check_parents = 1;
+					return_code = CMZN_ERROR_GENERAL;
 					break;
 				}
 			}
-			if (check_parents)
+		}
+	}
+	return return_code;
+}
+
+int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeList)
+{
+	if (!(element && nodeList))
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
+	cmzn_node *node;
+	if ((element->information) && (element->information->nodes))
+	{
+		const int localNodesCount = element->information->number_of_nodes;
+		for (int i = 0; i < localNodesCount; i++)
+		{
+			node = element->information->nodes[i];
+			if ((node) && (!(ADD_OBJECT_TO_LIST(FE_node)(node, nodeList) ||
+				IS_OBJECT_IN_LIST(FE_node)(node, nodeList))))
 			{
-				/* get list of node-containing elements that are ancestors of this
-					 element, are not themselves in the data->element_list and with
-					 intermediate ancestors not in the data->element_list */
-				inherit_element_list = CREATE(LIST(FE_element))();
-				return_code = FE_element_find_inherit_elements(element,
-					data->element_list, inherit_element_list);
-				if (return_code)
-				{
-					while (return_code && (inherit_element =
-						FIRST_OBJECT_IN_LIST_THAT(FE_element)(
-							(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
-							inherit_element_list)))
-					{
-						return_code = REMOVE_OBJECT_FROM_LIST(FE_element)(
-							inherit_element, inherit_element_list);
-						if (return_code)
-						{
-							/*???RC Just handle first coordinate field for now -- later
-								check ALL fields! */
-							return_code = calculate_FE_element_field_nodes(element,
-								(struct FE_field *)NULL, &number_of_nodes, &element_field_nodes,
-								inherit_element);
-							if (return_code)
-							{
-								if (NULL != (nodes = element_field_nodes))
-								{
-									for (i = number_of_nodes; 0 < i; i--)
-									{
-										if (*nodes)
-										{
-											if (!IS_OBJECT_IN_LIST(FE_node)(*nodes, data->node_list))
-											{
-												if ((!(data->intersect_node_list)) ||
-													IS_OBJECT_IN_LIST(FE_node)(*nodes,
-														data->intersect_node_list))
-												{
-													if (!ADD_OBJECT_TO_LIST(FE_node)(*nodes,
-														data->node_list))
-													{
-														return_code = 0;
-													}
-												}
-											}
-											DEACCESS(FE_node)(nodes);
-										}
-										nodes++;
-									}
-									DEALLOCATE(element_field_nodes);
-								}
-							}
-						}
-					}
-				}
-				DESTROY(LIST(FE_element))(&inherit_element_list);
+				return_code = CMZN_ERROR_GENERAL;
+				break;
 			}
 		}
 	}
-	else
+	if (0 < element->number_of_parents)
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_add_nodes_to_list.  Invalid argument(s)");
-		return_code = 0;
+		int number_of_element_field_nodes;
+		cmzn_node_id *element_field_nodes_array;
+		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+			&number_of_element_field_nodes, &element_field_nodes_array,
+			/*top_level_element*/(struct FE_element *)NULL))
+		{
+			for (int i = 0; i < number_of_element_field_nodes; i++)
+			{
+				node = element_field_nodes_array[i];
+				if ((node) && (!(ADD_OBJECT_TO_LIST(FE_node)(node, nodeList) ||
+						IS_OBJECT_IN_LIST(FE_node)(node, nodeList))))
+					return_code = CMZN_ERROR_GENERAL;
+				cmzn_node_destroy(&node);
+			}
+			DEALLOCATE(element_field_nodes_array);
+		}
+		else
+			return_code = CMZN_ERROR_GENERAL;
 	}
-	LEAVE;
+	return return_code;
+}
 
-	return (return_code);
-} /* FE_element_add_nodes_to_list */
+int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList)
+{
+	if (!(element && nodeList))
+		return CMZN_ERROR_ARGUMENT;
+	int return_code = CMZN_OK;
+	cmzn_node *node;
+	if ((element->information) && (element->information->nodes))
+	{
+		const int localNodesCount = element->information->number_of_nodes;
+		for (int i = 0; i < localNodesCount; i++)
+			REMOVE_OBJECT_FROM_LIST(cmzn_node)(element->information->nodes[i], nodeList);
+	}
+	if (0 < element->number_of_parents)
+	{
+		int number_of_element_field_nodes;
+		cmzn_node_id *element_field_nodes_array;
+		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+			&number_of_element_field_nodes, &element_field_nodes_array,
+			/*top_level_element*/(struct FE_element *)NULL))
+		{
+			for (int i = 0; i < number_of_element_field_nodes; i++)
+			{
+				node = element_field_nodes_array[i];
+				REMOVE_OBJECT_FROM_LIST(cmzn_node)(element_field_nodes_array[i], nodeList);
+				cmzn_node_destroy(&node);
+			}
+			DEALLOCATE(element_field_nodes_array);
+		}
+		else
+			return_code = CMZN_ERROR_GENERAL;
+	}
+	return return_code;
+}
 
 int FE_element_is_dimension(struct FE_element *element,void *dimension_void)
 /*******************************************************************************

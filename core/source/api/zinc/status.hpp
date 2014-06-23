@@ -32,6 +32,10 @@ namespace Zinc
  */
 enum Status
 {
+	ERROR_ALREADY_EXISTS = CMZN_ERROR_ALREADY_EXISTS,
+		/*!< Object already exists or is present in owner/set */
+	ERROR_NOT_FOUND = CMZN_ERROR_NOT_FOUND,
+		/*!< Object or resource not found */
 	ERROR_MEMORY = CMZN_ERROR_MEMORY,
 		/*!< Failed to allocate memory. */
 	ERROR_ARGUMENT = CMZN_ERROR_ARGUMENT,
