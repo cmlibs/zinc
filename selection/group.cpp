@@ -523,7 +523,7 @@ TEST(ZincFieldGroup, subelementHandlingMode)
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_NONE, mode = childGroup.getSubelementHandlingMode());
 }
 
-TEST(ZincFieldElementGroup, add_with_subelement_handling)
+TEST(ZincFieldElementGroup, add_remove_with_subelement_handling)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -533,6 +533,7 @@ TEST(ZincFieldElementGroup, add_with_subelement_handling)
 
 	FieldGroup group = zinc.fm.createFieldGroup();
 	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(OK, result = group.setName("group"));
 	FieldGroup::SubelementHandlingMode mode;
 	EXPECT_EQ(OK, result = group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
 	EXPECT_EQ(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL, mode = group.getSubelementHandlingMode());
@@ -588,16 +589,11 @@ TEST(ZincFieldElementGroup, add_with_subelement_handling)
 	EXPECT_EQ(20, size1 = linesMeshGroup.getSize());
 	EXPECT_EQ(12, size0 = nodesetGroup.getSize());
 
-	// in this mode removeAllElements on top mesh should empty whole group
-	// however handling subelements on remove is not implemented yet - GRC
 	EXPECT_EQ(OK, result = elementsMeshGroup.removeAllElements());
-	EXPECT_EQ(OK, result = facesMeshGroup.removeAllElements());
-	EXPECT_EQ(OK, result = linesMeshGroup.removeAllElements());
-	EXPECT_EQ(OK, result = nodesetGroup.removeAllNodes());
-	EXPECT_EQ(0, elementsMeshGroup.getSize());
-	EXPECT_EQ(0, facesMeshGroup.getSize());
-	EXPECT_EQ(0, linesMeshGroup.getSize());
-	EXPECT_EQ(0, nodesetGroup.getSize());
+	EXPECT_EQ(0, result = elementsMeshGroup.getSize());
+	EXPECT_EQ(0, result = facesMeshGroup.getSize());
+	EXPECT_EQ(0, result = linesMeshGroup.getSize());
+	EXPECT_EQ(0, result = nodesetGroup.getSize());
 
 	EXPECT_EQ(OK, result = elementsMeshGroup.addElement(element1));
 	EXPECT_EQ(1, size3 = elementsMeshGroup.getSize());
@@ -610,14 +606,16 @@ TEST(ZincFieldElementGroup, add_with_subelement_handling)
 	EXPECT_EQ(20, size1 = linesMeshGroup.getSize());
 	EXPECT_EQ(12, size0 = nodesetGroup.getSize());
 
-	EXPECT_EQ(OK, result = elementsMeshGroup.removeAllElements());
-	EXPECT_EQ(OK, result = facesMeshGroup.removeAllElements());
-	EXPECT_EQ(OK, result = linesMeshGroup.removeAllElements());
-	EXPECT_EQ(OK, result = nodesetGroup.removeAllNodes());
-	EXPECT_EQ(0, elementsMeshGroup.getSize());
-	EXPECT_EQ(0, facesMeshGroup.getSize());
-	EXPECT_EQ(0, linesMeshGroup.getSize());
-	EXPECT_EQ(0, nodesetGroup.getSize());
+	EXPECT_EQ(OK, result = elementsMeshGroup.removeElement(element1));
+	EXPECT_EQ(1, size3 = elementsMeshGroup.getSize());
+	EXPECT_EQ(6, size2 = facesMeshGroup.getSize());
+	EXPECT_EQ(12, size1 = linesMeshGroup.getSize());
+	EXPECT_EQ(8, size0 = nodesetGroup.getSize());
+	EXPECT_EQ(OK, result = elementsMeshGroup.removeElement(element2));
+	EXPECT_EQ(0, result = elementsMeshGroup.getSize());
+	EXPECT_EQ(0, result = facesMeshGroup.getSize());
+	EXPECT_EQ(0, result = linesMeshGroup.getSize());
+	EXPECT_EQ(0, result = nodesetGroup.getSize());
 
 	FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_XI2_0);
 	EXPECT_TRUE(isOnFaceField.isValid());
@@ -627,4 +625,153 @@ TEST(ZincFieldElementGroup, add_with_subelement_handling)
 	EXPECT_EQ(2, size2 = facesMeshGroup.getSize());
 	EXPECT_EQ(7, size1 = linesMeshGroup.getSize());
 	EXPECT_EQ(6, size0 = nodesetGroup.getSize());
+
+	EXPECT_EQ(OK, result = facesMeshGroup.addElementsConditional(trueField));
+	EXPECT_EQ(0, size3 = elementsMeshGroup.getSize());
+	EXPECT_EQ(11, size2 = facesMeshGroup.getSize());
+	EXPECT_EQ(20, size1 = linesMeshGroup.getSize());
+	EXPECT_EQ(12, size0 = nodesetGroup.getSize());
+
+	EXPECT_EQ(OK, result = facesMeshGroup.removeElementsConditional(!isOnFaceField));
+	EXPECT_EQ(0, size3 = elementsMeshGroup.getSize());
+	EXPECT_EQ(2, size2 = facesMeshGroup.getSize());
+	EXPECT_EQ(7, size1 = linesMeshGroup.getSize());
+	EXPECT_EQ(6, size0 = nodesetGroup.getSize());
+
+	EXPECT_EQ(OK, result = facesMeshGroup.removeElementsConditional(facesGroup));
+	EXPECT_EQ(0, result = elementsMeshGroup.getSize());
+	EXPECT_EQ(0, result = facesMeshGroup.getSize());
+	EXPECT_EQ(0, result = linesMeshGroup.getSize());
+	EXPECT_EQ(0, result = nodesetGroup.getSize());
+
+#ifdef FUTURE_CODE
+	// test removal of lines appropriately leaves nodes behind
+	Element line1 = mesh1d.findElementByIdentifier(1);
+	EXPECT_TRUE(line1.isValid());
+	Element line3 = mesh1d.findElementByIdentifier(3);
+	EXPECT_TRUE(line3.isValid());
+	Element line13 = mesh1d.findElementByIdentifier(13);
+	EXPECT_TRUE(line13.isValid());
+	Element line14 = mesh1d.findElementByIdentifier(14);
+	EXPECT_TRUE(line14.isValid());
+
+	EXPECT_EQ(OK, result = linesMeshGroup.addElement(line1));
+	EXPECT_EQ(OK, result = linesMeshGroup.addElement(line3));
+	EXPECT_EQ(OK, result = linesMeshGroup.addElement(line13));
+	EXPECT_EQ(OK, result = linesMeshGroup.addElement(line14));
+	EXPECT_EQ(0, size3 = elementsMeshGroup.getSize());
+	EXPECT_EQ(0, size2 = facesMeshGroup.getSize());
+	EXPECT_EQ(4, size1 = linesMeshGroup.getSize());
+	EXPECT_EQ(4, size0 = nodesetGroup.getSize());
+	EXPECT_EQ(OK, result = linesMeshGroup.removeElement(line1));
+	EXPECT_EQ(3, size1 = linesMeshGroup.getSize());
+	EXPECT_EQ(4, size0 = nodesetGroup.getSize());
+#endif // FUTURE_CODE
+
+	// fill group, ready to test clear()
+	EXPECT_EQ(OK, result = elementsMeshGroup.addElementsConditional(trueField));
+	EXPECT_EQ(2, size3 = elementsMeshGroup.getSize());
+	EXPECT_EQ(11, size2 = facesMeshGroup.getSize());
+	EXPECT_EQ(20, size1 = linesMeshGroup.getSize());
+	EXPECT_EQ(12, size0 = nodesetGroup.getSize());
+
+	// remove handles to subobject group fields/domains so they can be cleaned up
+	char *name;
+	name = elementsMeshGroup.getName();
+	EXPECT_STREQ("group.mesh3d", name);
+	cmzn_deallocate(name);
+	name = nodesetGroup.getName();
+	EXPECT_STREQ("group.nodes", name);
+	cmzn_deallocate(name);
+	elementsGroup = FieldElementGroup();
+	elementsMeshGroup = MeshGroup();
+	facesGroup = FieldElementGroup();
+	facesMeshGroup = MeshGroup();
+	linesGroup = FieldElementGroup();
+	linesMeshGroup = MeshGroup();
+	nodesGroup = FieldNodeGroup();
+	nodesetGroup = NodesetGroup();
+
+	// check clear empties and orphans subobject groups
+	Mesh tempMesh;
+	Nodeset tempNodeset;
+	EXPECT_EQ(OK, result = group.clear());
+
+	elementsGroup = group.getFieldElementGroup(mesh3d);
+	EXPECT_FALSE(elementsGroup.isValid());
+	tempMesh = zinc.fm.findMeshByName("group.mesh3d");
+	EXPECT_FALSE(tempMesh.isValid());
+
+	facesGroup = group.getFieldElementGroup(mesh2d);
+	EXPECT_FALSE(facesGroup.isValid());
+	tempMesh = zinc.fm.findMeshByName("group.mesh2d");
+	EXPECT_FALSE(tempMesh.isValid());
+
+	linesGroup = group.getFieldElementGroup(mesh1d);
+	EXPECT_FALSE(linesGroup.isValid());
+	tempMesh = zinc.fm.findMeshByName("group.mesh1d");
+	EXPECT_FALSE(tempMesh.isValid());
+
+	nodesGroup = group.getFieldNodeGroup(nodeset);
+	EXPECT_FALSE(nodesGroup.isValid());
+	tempNodeset = zinc.fm.findNodesetByName("group.nodes");
+	EXPECT_FALSE(tempNodeset.isValid());
+}
+
+TEST(ZincMesh, castGroup)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(CMZN_OK, result = group.setName("group"));
+
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_TRUE(mesh3d.isValid());
+	MeshGroup noMeshGroup = mesh3d.castGroup();
+	EXPECT_FALSE(noMeshGroup.isValid());
+
+	FieldElementGroup elementGroup = group.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(elementGroup.isValid());
+
+	MeshGroup expectedMeshGroup = elementGroup.getMeshGroup();
+	EXPECT_TRUE(expectedMeshGroup.isValid());
+
+	Mesh findMesh = zinc.fm.findMeshByName("group.mesh3d");
+	EXPECT_TRUE(findMesh.isValid());
+
+	MeshGroup findMeshGroup = findMesh.castGroup();
+	EXPECT_TRUE(findMesh.isValid());
+
+	EXPECT_EQ(expectedMeshGroup, findMeshGroup);
+}
+
+TEST(ZincNodeset, castGroup)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(CMZN_OK, result = group.setName("group"));
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	NodesetGroup noNodesetGroup = nodeset.castGroup();
+	EXPECT_FALSE(noNodesetGroup.isValid());
+
+	FieldNodeGroup nodeGroup = group.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(nodeGroup.isValid());
+
+	NodesetGroup expectedNodesetGroup = nodeGroup.getNodesetGroup();
+	EXPECT_TRUE(expectedNodesetGroup.isValid());
+
+	Nodeset findNodeset = zinc.fm.findNodesetByName("group.nodes");
+	EXPECT_TRUE(findNodeset.isValid());
+
+	NodesetGroup findNodesetGroup = findNodeset.castGroup();
+	EXPECT_TRUE(findNodeset.isValid());
+
+	EXPECT_EQ(expectedNodesetGroup, findNodesetGroup);
 }
