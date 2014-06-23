@@ -1012,7 +1012,6 @@ This function is recursive.
 				for (int i = 0; (i < number_of_faces) && return_code; i++)
 					if (get_FE_element_face(element, i, &face) && face)
 					{
-						int number_of_parents = 0;
 						if (!cmzn_element_has_parent_in_list(face, element_list))
 							return_code = FE_region_remove_FE_element_private(fe_region, face);
 					}
