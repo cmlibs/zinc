@@ -37,7 +37,9 @@ enum cmzn_field_group_subelement_handling_mode
 	 * This is the default mode for new groups. */
 	CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL = 2
 	/*!< Ensure group contains all faces, lines and nodes for any higher dimension
-	 * element in the wider group. More expensive to maintain. */
+	 * element added to the group; on removal of an element remove any of its
+	 * faces, lines and nodes not part of any neighbour element.
+	 * More expensive to maintain. */
 };
 
 #endif

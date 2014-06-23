@@ -350,7 +350,9 @@ ZINC_C_INLINE cmzn_mesh_id cmzn_mesh_group_base_cast(
  *
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to add. Must be from the group's master mesh.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if element
+ * was already in the group but otherwise successful, or any other value on
+ * more serious failure.
  */
 ZINC_API int cmzn_mesh_group_add_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
@@ -382,7 +384,9 @@ ZINC_API int cmzn_mesh_group_remove_all_elements(cmzn_mesh_group_id mesh_group);
  *
  * @param mesh_group  Handle to mesh group to modify.
  * @param element  Handle to element to remove.
- * @return  Status CMZN_OK if element removed, any other value if failed.
+ * @return  Status CMZN_OK on success, CMZN_ERROR_NOT_FOUND if element was not
+ * in the group but otherwise successful, or any other value on more serious
+ * failure.
  */
 ZINC_API int cmzn_mesh_group_remove_element(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);

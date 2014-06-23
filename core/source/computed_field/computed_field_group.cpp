@@ -248,25 +248,26 @@ int Computed_field_group::clearLocal()
 {
 	if (this->isEmptyLocal())
 		return CMZN_OK;
-	cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-	cmzn_fieldmodule_begin_change(field_module);
+	this->beginChange();
+	// for efficiently, temporarily disable subelement handling
+	cmzn_field_group_subelement_handling_mode oldSubelementHandlingMode = this->subelementHandlingMode;
+	this->subelementHandlingMode = CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_NONE;
 	contains_all = false;
-	clearLocalNodeGroup(/*isData*/false);
+	clearLocalNodeGroup(/*isData*/false); 
 	clearLocalNodeGroup(/*isData*/true);
 	for (int i = 0; i < MAXIMUM_ELEMENT_XI_DIMENSIONS; i++)
 		clearLocalElementGroup(i);
 	change_detail.changeRemoveLocal();
+	this->subelementHandlingMode = oldSubelementHandlingMode;
 	Computed_field_changed(this->field);
-	cmzn_fieldmodule_end_change(field_module);
-	cmzn_fieldmodule_destroy(&field_module);
+	this->endChange();
 	return CMZN_OK;
 };
 
 int Computed_field_group::clear()
 {
 	int return_code = 0;
-	cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-	cmzn_fieldmodule_begin_change(field_module);
+	this->beginChange();
 	for (Region_field_map_iterator iter = subregion_group_map.begin();
 		iter != subregion_group_map.end(); iter++)
 	{
@@ -275,8 +276,7 @@ int Computed_field_group::clear()
 	}
 	return_code = clearLocal();
 	Computed_field_changed(this->field);
-	cmzn_fieldmodule_end_change(field_module);
-	cmzn_fieldmodule_destroy(&field_module);
+	this->endChange();
 	return return_code;
 };
 
@@ -473,14 +473,27 @@ Computed_field_element_group *Computed_field_group::getElementGroupPrivate(int d
 	return 0;
 }
 
-Computed_field_node_group *Computed_field_group::getNodeGroupPrivate(bool create)
+Computed_field_node_group *Computed_field_group::getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create)
 {
-	if (this->local_node_group)
-		return static_cast<Computed_field_node_group *>(this->local_node_group->core);
+	switch (domain_type)
+	{
+	case CMZN_FIELD_DOMAIN_TYPE_NODES:
+		if (this->local_node_group)
+			return static_cast<Computed_field_node_group *>(this->local_node_group->core);
+		break;
+	case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
+		if (this->local_data_group)
+			return static_cast<Computed_field_node_group *>(this->local_data_group->core);
+		break;
+	default:
+		display_message(ERROR_MESSAGE, "Computed_field_group::getNodeGroupPrivate.  Invalid domain_type");
+		return 0;
+		break;
+	}
 	if (create)
 	{
 		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(this->field);
-		cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
+		cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, domain_type);
 		cmzn_field_node_group_id node_group = this->create_node_group(nodeset);
 		Computed_field_node_group *nodeGroupCore = Computed_field_node_group_core_cast(node_group);
 		cmzn_field_node_group_destroy(&node_group);
@@ -962,6 +975,8 @@ int Computed_field_group::remove_empty_subgroups()
 	return 1;
 }
 
+#ifdef OLD_CODE
+// no longer used by cmgui, but may be restored
 int Computed_field_group::clear_region_tree_node(int use_data)
 {
 	Region_field_map_iterator pos;
@@ -1000,6 +1015,7 @@ int Computed_field_group::clear_region_tree_node(int use_data)
 	}
 	return (return_code);
 }
+#endif // OLD_CODE
 
 int Computed_field_group::addLocalRegion()
 {
@@ -1028,6 +1044,8 @@ bool Computed_field_group::containsLocalRegion()
 	return contains_all;
 }
 
+#ifdef OLD_CODE
+// no longer used by cmgui, but may be restored
 int Computed_field_group::clear_region_tree_element()
 {
 	Region_field_map_iterator pos;
@@ -1053,6 +1071,7 @@ int Computed_field_group::clear_region_tree_element()
 	}
 	return (return_code);
 }
+#endif // OLD_CODE
 
 int Computed_field_group::for_each_group_hiearchical(
 	cmzn_field_group_iterator_function function, void *user_data)
@@ -1229,6 +1248,8 @@ cmzn_field_group_id cmzn_field_group_create_subregion_field_group(
 	return 0;
 }
 
+#ifdef OLD_CODE
+// no longer used by cmgui, but may be restored
 int cmzn_field_group_clear_region_tree_node(cmzn_field_group_id group)
 {
 	int return_code = 0;
@@ -1259,20 +1280,6 @@ int cmzn_field_group_clear_region_tree_data(cmzn_field_group_id group)
 	return return_code;
 }
 
-int cmzn_field_group_remove_empty_subgroups(cmzn_field_group_id group)
-{
-	if (group)
-	{
-		Computed_field_group *group_core =
-			Computed_field_group_core_cast(group);
-		if (group_core)
-		{
-			return group_core->remove_empty_subgroups();
-		}
-	}
-	return 0;
-}
-
 int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group)
 {
 	int return_code = 0;
@@ -1286,6 +1293,21 @@ int cmzn_field_group_clear_region_tree_element(cmzn_field_group_id group)
 		}
 	}
 	return return_code;
+}
+#endif // OLD_CODE
+
+int cmzn_field_group_remove_empty_subgroups(cmzn_field_group_id group)
+{
+	if (group)
+	{
+		Computed_field_group *group_core =
+			Computed_field_group_core_cast(group);
+		if (group_core)
+		{
+			return group_core->remove_empty_subgroups();
+		}
+	}
+	return 0;
 }
 
 cmzn_field_id cmzn_field_group_get_subobject_group_field_for_domain_field(cmzn_field_group_id group, cmzn_field_id domain)

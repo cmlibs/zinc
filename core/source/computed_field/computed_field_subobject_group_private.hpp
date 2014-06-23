@@ -294,7 +294,7 @@ public:
 
 		cmzn_mesh_id master_mesh;
 		const int dimension;
-		struct LIST(FE_element) *object_list;
+		struct LIST(cmzn_element) *object_list;
 		cmzn_field_subobject_group_change_detail change_detail;
 
 	public:
@@ -310,7 +310,7 @@ public:
 
 		~Computed_field_element_group()
 		{
-			DESTROY(LIST(FE_element))(&object_list);
+			DESTROY(LIST(cmzn_element))(&object_list);
 			cmzn_mesh_destroy(&master_mesh);
 		}
 
@@ -324,39 +324,9 @@ public:
 			return master_mesh;
 		}
 
-		inline int addObject(FE_element *object)
-		{
-			if (isElementCompatible(object))
-			{
-				if (ADD_OBJECT_TO_LIST(FE_element)(object, object_list))
-				{
-					change_detail.changeAdd();
-					update();
-				}
-				else if (!IS_OBJECT_IN_LIST(FE_element)(object, object_list))
-					return CMZN_ERROR_MEMORY;
-				if (this->getSubobjectHandlingMode() == CMZN_FIELD_GROUP_SUBELEMENT_HANDLING_MODE_FULL)
-				{
-					this->getField()->beginChange();
-					int return_code = this->addSubelements(object);
-					this->getField()->endChange();
-					return return_code;
-				}
-				return CMZN_OK;
-			}
-			return CMZN_ERROR_ARGUMENT;
-		};
+		int addObject(cmzn_element *object);
 
-		inline int removeObject(FE_element *object)
-		{
-			if (REMOVE_OBJECT_FROM_LIST(FE_element)(object, object_list))
-			{
-				change_detail.changeRemove();
-				update();
-				return CMZN_OK;
-			}
-			return CMZN_ERROR_GENERAL;
-		};
+		int removeObject(cmzn_element *object);
 
 		/** add any elements from master mesh for which conditional_field is true */
 		int addElementsConditional(cmzn_field_id conditional_field);
@@ -364,25 +334,16 @@ public:
 		/** remove all elements for which conditional_field is true */
 		int removeElementsConditional(cmzn_field_id conditional_field);
 
-		virtual int clear()
-		{
-			if (NUMBER_IN_LIST(FE_element)(object_list))
-			{
-				REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(object_list);
-				change_detail.changeRemove();
-				update();
-			}
-			return CMZN_OK;
-		};
+		virtual int clear();
 
-		bool containsObject(FE_element *object)
+		bool containsObject(cmzn_element *object)
 		{
-			return (0 != IS_OBJECT_IN_LIST(FE_element)(object, object_list));
+			return (0 != IS_OBJECT_IN_LIST(cmzn_element)(object, object_list));
 		};
 
 		cmzn_elementiterator_id createIterator()
 		{
-			return CREATE_LIST_ITERATOR(FE_element)(object_list);
+			return CREATE_LIST_ITERATOR(cmzn_element)(object_list);
 		}
 
 		/** @return  non-accessed element with that identifier, or 0 if none */
@@ -391,17 +352,17 @@ public:
 			struct CM_element_information cm;
 			cm.type = ((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE));
 			cm.number = identifier;
-			return FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&cm, object_list);
+			return FIND_BY_IDENTIFIER_IN_LIST(cmzn_element,identifier)(&cm, object_list);
 		}
 
 		int getSize()
 		{
-			return NUMBER_IN_LIST(FE_element)(object_list);
+			return NUMBER_IN_LIST(cmzn_element)(object_list);
 		}
 
 		virtual bool isEmpty() const
 		{
-			if (NUMBER_IN_LIST(FE_element)(object_list))
+			if (NUMBER_IN_LIST(cmzn_element)(object_list))
 				return false;
 			return true;
 		}
@@ -443,9 +404,18 @@ public:
 		 * only call with this->ownerGroup set, and between begin/end change */
 		int addSubelements(cmzn_element_id element);
 
+		/** Removes faces and nodes of element from related subobject groups, but
+		 * only if not used by peers.
+		 * only call with this->ownerGroup set, and between begin/end change */
+		int removeSubelements(cmzn_element_id element);
+
 		/** Adds faces of element to element group, and their faces to related group
 		 * recursively. Only call with this->ownerGroup set, and between begin/end change */
 		int addElementFacesRecursive(cmzn_element_id element);
+
+		/** Removes faces of element from element group, and their faces from related group
+		 * recursively. Only call with this->ownerGroup set, and between begin/end change */
+		int removeElementFacesRecursive(cmzn_element_id element, Computed_field_element_group& parentElementGroup);
 
 		Computed_field_core* copy()
 		{
@@ -506,16 +476,16 @@ public:
 			if (field)
 			{
 				FE_region *fe_region = cmzn_mesh_get_FE_region_internal(this->master_mesh);
-				CHANGE_LOG(FE_element) *fe_element_changes =
+				CHANGE_LOG(cmzn_element) *fe_element_changes =
 					FE_region_get_FE_element_changes(fe_region, this->dimension);
 				int change_summary = 0;
-				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(fe_element_changes, &change_summary);
-				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_element))
+				CHANGE_LOG_GET_CHANGE_SUMMARY(cmzn_element)(fe_element_changes, &change_summary);
+				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(cmzn_element))
 				{
-					const int old_size = NUMBER_IN_LIST(FE_element)(object_list);
-					REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)(
+					const int old_size = NUMBER_IN_LIST(cmzn_element)(object_list);
+					REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_element)(
 						FE_element_is_not_in_FE_region, (void *)fe_region, object_list);
-					const int new_size = NUMBER_IN_LIST(FE_element)(object_list);
+					const int new_size = NUMBER_IN_LIST(cmzn_element)(object_list);
 					if (new_size != old_size)
 					{
 						change_detail.changeRemove();
@@ -545,8 +515,11 @@ public:
 			return (element_fe_region == fe_region);
 		}
 
-		/** @return  Mesh to iterate over, or 0 if none. If a master mesh is returned, conditional_field must be checked */
-		cmzn_mesh_id getConditionalFieldIterationMesh(cmzn_field_id conditional_field) const;
+		/**
+		 * @param isEmptyGroup  True if there is a group, but the element group is empty.
+		 * @return  Non-empty element group, or 0 if not a group or empty.
+		 */
+		Computed_field_element_group *getConditionalElementGroup(cmzn_field *conditionalField, bool &isEmptyGroup) const;
 
 	};
 
@@ -555,7 +528,7 @@ public:
 	private:
 
 		cmzn_nodeset_id master_nodeset;
-		struct LIST(FE_node) *object_list;
+		struct LIST(cmzn_node) *object_list;
 		cmzn_field_subobject_group_change_detail change_detail;
 
 	public:
@@ -570,7 +543,7 @@ public:
 
 		~Computed_field_node_group()
 		{
-			DESTROY(LIST(FE_node))(&object_list);
+			DESTROY(LIST(cmzn_node))(&object_list);
 			cmzn_nodeset_destroy(&master_nodeset);
 		}
 
@@ -579,31 +552,9 @@ public:
 			return master_nodeset;
 		}
 
-		inline int addObject(FE_node *object)
-		{
-			if (isNodeCompatible(object))
-			{
-				if (ADD_OBJECT_TO_LIST(FE_node)(object, object_list))
-				{
-					change_detail.changeAdd();
-					update();
-					return CMZN_OK;
-				}
-				return CMZN_ERROR_GENERAL;
-			}
-			return CMZN_ERROR_ARGUMENT;
-		};
+		int addObject(cmzn_node *object);
 
-		inline int removeObject(FE_node *object)
-		{
-			if (REMOVE_OBJECT_FROM_LIST(FE_node)(object, object_list))
-			{
-				change_detail.changeRemove();
-				update();
-				return CMZN_OK;
-			}
-			return CMZN_ERROR_GENERAL;
-		};
+		int removeObject(cmzn_node *object);
 
 		/** add any nodes from master nodeset for which conditional_field is true */
 		int addNodesConditional(cmzn_field_id conditional_field);
@@ -611,41 +562,43 @@ public:
 		/** remove all nodes for which conditional_field is true */
 		int removeNodesConditional(cmzn_field_id conditional_field);
 
+		int removeNodesInList(LIST(cmzn_node) *removeNodeList);
+
 		virtual int clear()
 		{
-			if (NUMBER_IN_LIST(FE_node)(object_list))
+			if (NUMBER_IN_LIST(cmzn_node)(object_list))
 			{
-				REMOVE_ALL_OBJECTS_FROM_LIST(FE_node)(object_list);
+				REMOVE_ALL_OBJECTS_FROM_LIST(cmzn_node)(object_list);
 				change_detail.changeRemove();
 				update();
 			}
 			return CMZN_OK;
 		};
 
-		bool containsObject(FE_node *object)
+		bool containsObject(cmzn_node *object)
 		{
-			return (0 != IS_OBJECT_IN_LIST(FE_node)(object, object_list));
+			return (0 != IS_OBJECT_IN_LIST(cmzn_node)(object, object_list));
 		};
 
 		cmzn_nodeiterator_id createIterator()
 		{
-			return CREATE_LIST_ITERATOR(FE_node)(object_list);
+			return CREATE_LIST_ITERATOR(cmzn_node)(object_list);
 		}
 
 		/** @return  non-accessed node with that identifier, or 0 if none */
 		inline cmzn_node_id findNodeByIdentifier(int identifier)
 		{
-			return FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier, object_list);
+			return FIND_BY_IDENTIFIER_IN_LIST(cmzn_node,cm_node_identifier)(identifier, object_list);
 		}
 
 		int getSize()
 		{
-			return NUMBER_IN_LIST(FE_node)(object_list);
+			return NUMBER_IN_LIST(cmzn_node)(object_list);
 		}
 
 		virtual bool isEmpty() const
 		{
-			if (NUMBER_IN_LIST(FE_node)(object_list))
+			if (NUMBER_IN_LIST(cmzn_node)(object_list))
 				return false;
 			return true;
 		}
@@ -680,6 +633,11 @@ public:
 
 		/** ensure element's nodes are not in node group */
 		int removeElementNodes(cmzn_element_id element);
+
+		LIST(cmzn_node) *createRelatedNodeList() const
+		{
+			return CREATE_RELATED_LIST(cmzn_node)(this->object_list);
+		}
 
 	private:
 
@@ -729,7 +687,7 @@ public:
 			Computed_field_changed(field);
 		}
 
-		static int FE_node_is_not_in_FE_nodeset(struct FE_node *node, void *fe_nodeset_void)
+		static int FE_node_is_not_in_FE_nodeset(cmzn_node *node, void *fe_nodeset_void)
 		{
 			return !(reinterpret_cast<FE_nodeset*>(fe_nodeset_void)->containsNode(node));
 		}
@@ -740,15 +698,15 @@ public:
 			if (field)
 			{
 				FE_nodeset *fe_nodeset = cmzn_nodeset_get_FE_nodeset_internal(this->master_nodeset);
-				CHANGE_LOG(FE_node) *fe_node_changes = fe_nodeset->getChangeLog();
+				CHANGE_LOG(cmzn_node) *fe_node_changes = fe_nodeset->getChangeLog();
 				int change_summary = 0;
-				CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(fe_node_changes, &change_summary);
-				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_node))
+				CHANGE_LOG_GET_CHANGE_SUMMARY(cmzn_node)(fe_node_changes, &change_summary);
+				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(cmzn_node))
 				{
-					const int old_size = NUMBER_IN_LIST(FE_node)(object_list);
-					REMOVE_OBJECTS_FROM_LIST_THAT(FE_node)(FE_node_is_not_in_FE_nodeset,
+					const int old_size = NUMBER_IN_LIST(cmzn_node)(object_list);
+					REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_node)(FE_node_is_not_in_FE_nodeset,
 						(void *)fe_nodeset, object_list);
-					const int new_size = NUMBER_IN_LIST(FE_node)(object_list);
+					const int new_size = NUMBER_IN_LIST(cmzn_node)(object_list);
 					if (new_size != old_size)
 					{
 						change_detail.changeRemove();
@@ -772,8 +730,11 @@ public:
 			return (element_fe_region == fe_region);
 		}
 
-		/** @return  Nodeset to iterate over, or 0 if none. If a master nodeset is returned, conditional_field must be checked */
-		cmzn_nodeset_id getConditionalFieldIterationNodeset(cmzn_field_id conditional_field) const;
+		/**
+		 * @param isEmptyGroup  True if there is a group, but the node group is empty.
+		 * @return  Non-empty node group, or 0 if not a group or empty.
+		 */
+		Computed_field_node_group *getConditionalNodeGroup(cmzn_field *conditionalField, bool &isEmptyGroup) const;
 
 	};
 

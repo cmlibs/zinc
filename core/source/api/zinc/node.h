@@ -270,7 +270,9 @@ ZINC_C_INLINE cmzn_nodeset_id cmzn_nodeset_group_base_cast(
  *
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to add. Must be from the group's master nodeset.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if node was
+ * already in group but otherwise successful, or any other value on more
+ * serious failure.
  */
 ZINC_API int cmzn_nodeset_group_add_node(cmzn_nodeset_group_id nodeset_group,
 	cmzn_node_id node);
@@ -300,7 +302,9 @@ ZINC_API int cmzn_nodeset_group_remove_all_nodes(cmzn_nodeset_group_id nodeset_g
  *
  * @param nodeset_group  Handle to nodeset group to modify.
  * @param node  Handle to node to remove.
- * @return  Status CMZN_OK if node is removed, any other value if failed.
+ * @return  Status CMZN_OK on success, CMZN_ERROR_NOT_FOUND if node
+ * was not in the group but otherwise successful, or any other value
+ * on more serious failure.
  */
 ZINC_API int cmzn_nodeset_group_remove_node(cmzn_nodeset_group_id nodeset_group,
 	cmzn_node_id node);

@@ -30,6 +30,10 @@ extern "C" {
  */
 enum cmzn_status
 {
+	CMZN_ERROR_ALREADY_EXISTS = -4,
+		/*!< Object already exists or is present in owner/set */
+	CMZN_ERROR_NOT_FOUND = -3,
+		/*!< Object or resource not found */
 	CMZN_ERROR_MEMORY = -2,
 		/*!< Failed to allocate memory. */
 	CMZN_ERROR_ARGUMENT = -1,

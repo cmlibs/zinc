@@ -2124,14 +2124,11 @@ Returns the number of parents of <element>.
 Can be used to determine if a face is in use by more than one parent elements.
 ==============================================================================*/
 
-int get_FE_element_number_of_parents_in_list(struct FE_element *element,
-	struct LIST(FE_element) *element_list, int *number_of_parents_address);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns the number of parents of <element> that are in <element_list>.
-==============================================================================*/
+/**
+ * @return  true if any parent of element is in the element list.
+ */
+bool cmzn_element_has_parent_in_list(cmzn_element *element,
+	LIST(cmzn_element) *elementList);
 
 int FE_element_get_first_parent(struct FE_element *element,
 	struct FE_element **parent_element_address, int *face_number_address);
@@ -3355,39 +3352,29 @@ int get_FE_element_discretization(struct FE_element *element,
  */
 int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
 
-struct FE_element_add_nodes_to_list_data
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
+/**
+ * Add nodes directly referenced in element information to the node list.
+ * @param element  The element to add nodes from.
+ * @param nodeList  The node list to fill.
+ * @param onlyFromNodeList  List of nodes which can be added.
+ * @return  CMZN_OK on success, otherwise any other value.
+ */
+int cmzn_element_add_stored_nodes_to_list(cmzn_element *element,
+	LIST(cmzn_node) *nodeList, LIST(cmzn_node) *onlyFromNodeList);
 
-DESCRIPTION :
-Data for passing to FE_element_add_nodes_to_list.
-==============================================================================*/
-{
-	/* the entire list being iterated over by function. Having this allows us
-		 to avoid determining the nodes on faces and lines if all their parents are
-		 to have their nodes added to the list already */
-	struct LIST(FE_element) *element_list;
-	/* the list being added to */
-	struct LIST(FE_node) *node_list;
-	/* optional intersect_node_list. Only nodes in this list are candidates for
-		 adding to the above node_list */
-	struct LIST(FE_node) *intersect_node_list;
-};
+/**
+ * Add nodes used by this element, including inherited from parent elements, to
+ * the supplied list.
+ * @return  CMZN_OK on success, any other value on failure.
+ */
+int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeList);
 
-int FE_element_add_nodes_to_list(struct FE_element *element, void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-Adds all the nodes used by <element> to the <node_list> in the data. Since it
-is very inefficient to determine the nodes in use by faces or lines, the
-<element_list> being iterated over is also passed to this function so that only
-faces or lines with parents not in the <element_list> are checked, and only
-nodes inherited from top level elements not in the list are considered.
-The optional <intersect_node_list> restricts nodes added to <node_list> to also
-be in it.
-<data_void> points at a struct FE_element_add_nodes_to_list_data.
-==============================================================================*/
+/**
+ * Remove nodes used by this element, including inherited from parent elements,
+ * from the supplied list.
+ * @return CMZN_OK on success, any other value on failure.
+ */
+int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList);
 
 int FE_element_is_dimension(struct FE_element *element,void *dimension_void);
 /*******************************************************************************
