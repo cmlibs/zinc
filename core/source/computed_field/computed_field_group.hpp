@@ -1,5 +1,5 @@
 /**
- *FILE : computed_field_group.h
+ *FILE : computed_field_group.hpp
  *
  * Implements a "group" computed_field which group regions, 
  * node and data point component.
@@ -10,8 +10,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if !defined (COMPUTED_FIELD_GROUP_H)
-#define COMPUTED_FIELD_GROUP_H
+#if !defined (COMPUTED_FIELD_GROUP_HPP)
+#define COMPUTED_FIELD_GROUP_HPP
 
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldgroup.h"
@@ -276,4 +276,4 @@ int cmzn_field_is_type_group(cmzn_field_id field, void *dummy_void);
 
 bool cmzn_field_group_was_modified(cmzn_field_group_id group);
 
-#endif /* !defined (COMPUTED_FIELD_GROUP_H) */
+#endif /* !defined (COMPUTED_FIELD_GROUP_HPP) */

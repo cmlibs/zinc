@@ -13,9 +13,9 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdlib.h>
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_group.h"
+#include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_group_base.hpp"
-#include "computed_field/computed_field_subobject_group_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_module.hpp"
 #include "zinc/fieldgroup.h"

@@ -35,7 +35,6 @@
 #include "general/object.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
-#include "computed_field/computed_field_group.h"
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_module.hpp"
@@ -58,7 +57,6 @@
 #include "graphics/render_gl.h"
 #include "graphics/scene_coordinate_system.hpp"
 #include "graphics/tessellation.hpp"
-#include "computed_field/computed_field_subobject_group_private.hpp"
 #if defined(USE_OPENCASCADE)
 #	include "cad/computed_field_cad_geometry.h"
 #	include "cad/computed_field_cad_topology.h"

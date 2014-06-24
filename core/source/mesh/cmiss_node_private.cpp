@@ -28,7 +28,7 @@
 #include "mesh/cmiss_node_private.hpp"
 #include <vector>
 #include "computed_field/computed_field_private.hpp"
-#include "computed_field/computed_field_subobject_group_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 
 /*
 Global types

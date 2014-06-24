@@ -27,8 +27,6 @@ gtObject/gtWindow management routines.
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/material.h"
 #include "zinc/status.h"
-#include "computed_field/computed_field.h"
-#include "computed_field/computed_field_group.h"
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -51,7 +49,6 @@ gtObject/gtWindow management routines.
 #include "graphics/graphics_object.hpp"
 #include "graphics/graphics_object_highlight.hpp"
 #include "graphics/graphics_object_private.hpp"
-#include "computed_field/computed_field_subobject_group_private.hpp"
 
 /*
 Module types

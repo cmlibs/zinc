@@ -10,7 +10,7 @@ FILE : graphics_object_highlight.hpp
 #ifndef GRAPHICS_OBJECT_HIGHLIGHT_HPP
 #define GRAPHICS_OBJECT_HIGHLIGHT_HPP
 
-#include "computed_field/computed_field_subobject_group_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 
 class SubObjectGroupHighlightFunctor
 	{
