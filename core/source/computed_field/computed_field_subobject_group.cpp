@@ -18,8 +18,7 @@
 #include "zinc/fieldcad.h"
 #endif /* defined (USE_OPENCASCADE) */
 
-#include "computed_field/computed_field_subobject_group_internal.hpp"
-#include "computed_field/computed_field_subobject_group_private.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"

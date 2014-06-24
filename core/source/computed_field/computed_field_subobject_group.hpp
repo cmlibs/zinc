@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : computed_field_subobject_group_private.hpp
+ * FILE : computed_field_subobject_group.hpp
  *
  * Implements region sub object groups, e.g. node group, element group.
  */
@@ -17,7 +17,7 @@
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_group_base.hpp"
-#include "computed_field/computed_field_group.h"
+#include "computed_field/computed_field_group.hpp"
 #include "computed_field/computed_field_private.hpp"
 #include "general/cmiss_set.hpp"
 #include "general/debug.h"
@@ -759,6 +759,18 @@ inline Computed_field_node_group *Computed_field_node_group_core_cast(
 	return (static_cast<Computed_field_node_group *>(
 		reinterpret_cast<Computed_field*>(object_group_field)->core));
 }
+
+/**
+ * List statistics about btree structure of node_group.
+ */
+void cmzn_field_node_group_list_btree_statistics(
+	cmzn_field_node_group_id node_group);
+
+/**
+ * List statistics about btree structure of element_group.
+ */
+void cmzn_field_element_group_list_btree_statistics(
+	cmzn_field_element_group_id element_group);
 
 #endif /* COMPUTED_FIELD_SUBOBJECT_GROUP_HPP */
 

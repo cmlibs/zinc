@@ -19,7 +19,7 @@
 #include "zinc/fieldlogicaloperators.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_group.h"
+#include "computed_field/computed_field_group.hpp"
 #include "element/element_operations.h"
 #include "finite_element/finite_element_discretization.h"
 #include "general/debug.h"
