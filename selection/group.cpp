@@ -644,7 +644,6 @@ TEST(ZincFieldElementGroup, add_remove_with_subelement_handling)
 	EXPECT_EQ(0, result = linesMeshGroup.getSize());
 	EXPECT_EQ(0, result = nodesetGroup.getSize());
 
-#ifdef FUTURE_CODE
 	// test removal of lines appropriately leaves nodes behind
 	Element line1 = mesh1d.findElementByIdentifier(1);
 	EXPECT_TRUE(line1.isValid());
@@ -666,7 +665,6 @@ TEST(ZincFieldElementGroup, add_remove_with_subelement_handling)
 	EXPECT_EQ(OK, result = linesMeshGroup.removeElement(line1));
 	EXPECT_EQ(3, size1 = linesMeshGroup.getSize());
 	EXPECT_EQ(4, size0 = nodesetGroup.getSize());
-#endif // FUTURE_CODE
 
 	// fill group, ready to test clear()
 	EXPECT_EQ(OK, result = elementsMeshGroup.addElementsConditional(trueField));
@@ -774,4 +772,178 @@ TEST(ZincNodeset, castGroup)
 	EXPECT_TRUE(findNodeset.isValid());
 
 	EXPECT_EQ(expectedNodesetGroup, findNodesetGroup);
+}
+
+namespace {
+
+class SelectioncallbackRecordChange : public Selectioncallback
+{
+	int changeFlags;
+
+	virtual void operator()(const Selectionevent &selectionevent)
+	{
+		this->changeFlags = selectionevent.getChangeFlags();
+	}
+
+public:
+	SelectioncallbackRecordChange() :
+			Selectioncallback(),
+			changeFlags(Selectionevent::CHANGE_FLAG_NONE)
+	{ }
+
+	void clear()
+	{
+		changeFlags = Selectionevent::CHANGE_FLAG_NONE;
+	}
+
+	int getChangeSummary() const
+	{
+		return this->changeFlags;
+	}
+
+};
+
+} // anonymous namespace
+
+// Test that emptying subobject or subregion groups then removing empty
+// subgroups - while fieldmodule changes are stopped - correctly propagates
+// a change. There was a defect where this was reported as no change.
+TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	int size0, size3;
+	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
+	EXPECT_EQ(2, size3 = mesh3d.getSize());
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(12, size0 = nodeset.getSize());
+
+	Element element1 = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Node node1 = nodeset.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
+
+	// set up notification of scene selection group changes
+	
+	Selectionnotifier selectionnotifier = zinc.scene.createSelectionnotifier();
+	EXPECT_TRUE(selectionnotifier.isValid());
+
+	SelectioncallbackRecordChange callback;
+	EXPECT_EQ(OK, result = selectionnotifier.setCallback(callback));
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(OK, result = group.setName("group"));
+
+	FieldElementGroup elementGroup = group.createFieldElementGroup(mesh3d);
+	EXPECT_TRUE(elementGroup.isValid());
+	MeshGroup meshGroup = elementGroup.getMeshGroup();
+	EXPECT_TRUE(meshGroup.isValid());
+	EXPECT_EQ(0, meshGroup.getSize());
+	EXPECT_EQ(OK, meshGroup.addElement(element1));
+
+	// test that setting a non-empty selection group notifies
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
+	EXPECT_EQ(OK, zinc.scene.setSelectionField(group));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, result = callback.getChangeSummary());
+
+	// test that removing an element correctly propagates to the parent group
+	callback.clear();
+	EXPECT_EQ(OK, meshGroup.removeElement(element1));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
+
+	// test that re-adding an element correctly propagates to the parent group
+	callback.clear();
+	EXPECT_EQ(OK, meshGroup.addElement(element1));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, result = callback.getChangeSummary());
+
+	// test that removing an element and flushing empty subgroups while
+	// caching changes correctly propagates to the parent group
+	callback.clear();
+	zinc.fm.beginChange();
+	EXPECT_EQ(OK, meshGroup.removeElement(element1));
+	EXPECT_EQ(OK, group.removeEmptySubgroups());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
+	zinc.fm.endChange();
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
+	// rediscover orphaned element/mesh group
+	EXPECT_TRUE((elementGroup = group.getFieldElementGroup(mesh3d)).isValid());
+	EXPECT_TRUE((meshGroup = elementGroup.getMeshGroup()).isValid());
+
+	FieldNodeGroup nodeGroup = group.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(nodeGroup.isValid());
+	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+
+	// test that adding a node correctly propagates to the parent group
+	callback.clear();
+	EXPECT_EQ(OK, nodesetGroup.addNode(node1));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, result = callback.getChangeSummary());
+
+	// test that removing node correctly propagates to the parent group
+	callback.clear();
+	EXPECT_EQ(OK, nodesetGroup.removeNode(node1));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
+	EXPECT_EQ(OK, nodesetGroup.addNode(node1)); // re-add node
+
+	// test that removing a node and flushing empty subgroups while
+	// caching changes correctly propagates to the parent group
+	callback.clear();
+	zinc.fm.beginChange();
+	EXPECT_EQ(OK, nodesetGroup.removeNode(node1));
+	EXPECT_EQ(OK, group.removeEmptySubgroups());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
+	zinc.fm.endChange();
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
+	// rediscover orphaned node/nodest group
+	EXPECT_TRUE((nodeGroup = group.getFieldNodeGroup(nodeset)).isValid());
+	EXPECT_TRUE((nodesetGroup = nodeGroup.getNodesetGroup()).isValid());
+
+	// test propagation of change from adding a child region to group
+	Region childRegion = zinc.root_region.createChild("child");
+	EXPECT_TRUE(childRegion.isValid());
+	FieldGroup childGroup = group.getSubregionFieldGroup(childRegion);
+	EXPECT_FALSE(childGroup.isValid());
+	callback.clear();
+	EXPECT_EQ(OK, result = group.addRegion(childRegion));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_ADD, result = callback.getChangeSummary());
+	childGroup = group.getSubregionFieldGroup(childRegion);
+	EXPECT_TRUE(childGroup.isValid());
+
+	// test propagation of change from removing child region
+	callback.clear();
+	EXPECT_EQ(OK, result = group.removeRegion(childRegion));
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
+	EXPECT_EQ(OK, result = group.addRegion(childRegion));
+
+	// test that removing child region and flushing empty subgroups while
+	// caching changes correctly propagates to the parent group
+	callback.clear();
+	zinc.fm.beginChange();
+	EXPECT_EQ(OK, result = group.removeRegion(childRegion));
+	EXPECT_EQ(OK, group.removeEmptySubgroups());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
+	zinc.fm.endChange();
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
+
+	childGroup = group.getSubregionFieldGroup(childRegion);
+	EXPECT_FALSE(childGroup.isValid());
+
+	EXPECT_EQ(OK, result = group.addRegion(childRegion));
+	childGroup = group.getSubregionFieldGroup(childRegion);
+	EXPECT_TRUE(childGroup.isValid());
+
+	// test that removing child region local group and flushing empty subgroups while
+	// caching hierarchical changes correctly propagates to the parent group
+	callback.clear();
+	zinc.root_region.beginHierarchicalChange();
+	EXPECT_EQ(OK, result = childGroup.clearLocal());
+	EXPECT_EQ(OK, group.removeEmptySubgroups());
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_NONE, result = callback.getChangeSummary());
+	zinc.root_region.endHierarchicalChange();
+	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
 }
