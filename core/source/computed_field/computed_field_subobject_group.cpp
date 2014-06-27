@@ -283,17 +283,7 @@ int Computed_field_element_group::removeElementsConditional(cmzn_field_id condit
 				return_code = CMZN_ERROR_GENERAL;
 			}
 			if (handleSubelements)
-			{
-				iter = CREATE_LIST_ITERATOR(cmzn_element)(removeElementList);
-				if (!iter)
-					return_code = CMZN_ERROR_MEMORY;
-				while ((0 != (element = cmzn_elementiterator_next_non_access(iter)))
-					&& (CMZN_OK == return_code))
-				{
-					return_code = this->removeSubelements(element);
-				}
-				cmzn_elementiterator_destroy(&iter);
-			}
+				return_code = this->removeSubelementsList(removeElementList);
 		}
 		DESTROY(LIST(cmzn_element))(&removeElementList);
 	}
@@ -330,16 +320,7 @@ int Computed_field_element_group::clear()
 			this->object_list = CREATE_RELATED_LIST(cmzn_element)(removeElementList);
 			if (this->object_list)
 			{
-				cmzn_elementiterator *iter = CREATE_LIST_ITERATOR(cmzn_element)(removeElementList);
-				if (!iter)
-					return_code = CMZN_ERROR_MEMORY;
-				cmzn_element *element;
-				while ((0 != (element = cmzn_elementiterator_next_non_access(iter)))
-					&& (CMZN_OK == return_code))
-				{
-					return_code = this->removeSubelements(element);
-				}
-				cmzn_elementiterator_destroy(&iter);
+				return_code = this->removeSubelementsList(removeElementList);
 				DESTROY(LIST(cmzn_element))(&removeElementList);
 			}
 			else
@@ -437,31 +418,99 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 				return_code = cmzn_element_add_nodes_to_list(element, removeNodeList);
 				int numberOfFaces = 0;
 				get_FE_element_number_of_faces(element, &numberOfFaces);
-				for (int face = 0; (face < numberOfFaces) && (CMZN_OK == return_code); ++face)
+				if (0 < numberOfFaces)
 				{
-					int adjacentElementsCount = 0;
-					cmzn_element **adjacentElements = 0;
-					if (adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements))
+					for (int face = 0; (face < numberOfFaces) && (CMZN_OK == return_code); ++face)
 					{
-						for (int i = 0; i < adjacentElementsCount; ++i)
-							if (IS_OBJECT_IN_LIST(cmzn_element)(adjacentElements[i], this->object_list))
-							{
-								return_code = cmzn_element_remove_nodes_from_list(adjacentElements[i], removeNodeList);
-								if (CMZN_OK != return_code)
-									break;
-							}
-						if (adjacentElementsCount)
-							DEALLOCATE(adjacentElements);
+						int adjacentElementsCount = 0;
+						cmzn_element **adjacentElements = 0;
+						if (adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements))
+						{
+							for (int i = 0; i < adjacentElementsCount; ++i)
+								if (IS_OBJECT_IN_LIST(cmzn_element)(adjacentElements[i], this->object_list))
+								{
+									return_code = cmzn_element_remove_nodes_from_list(adjacentElements[i], removeNodeList);
+									if (CMZN_OK != return_code)
+										break;
+								}
+							if (adjacentElementsCount)
+								DEALLOCATE(adjacentElements);
+						}
+						else
+							return_code = CMZN_ERROR_GENERAL;
 					}
-					else
-						return_code = CMZN_ERROR_GENERAL;
+				}
+				else if (1 == this->dimension)
+				{
+					// remove nodes used by remaining elements - expensive
+					cmzn_elementiterator *iter = CREATE_LIST_ITERATOR(cmzn_element)(this->object_list);
+					if (!iter)
+						return_code = CMZN_ERROR_MEMORY;
+					cmzn_element *tmpElement;
+					while ((0 != (tmpElement = cmzn_elementiterator_next_non_access(iter))) && (CMZN_OK == return_code))
+						return_code = cmzn_element_remove_nodes_from_list(tmpElement, removeNodeList);
+					cmzn_elementiterator_destroy(&iter);
 				}
 				if (CMZN_OK == return_code)
 					return_code = nodeGroup->removeNodesInList(removeNodeList);
 				DESTROY(LIST(cmzn_node))(&removeNodeList);
 			}
 			else
-			  return_code = CMZN_ERROR_GENERAL;
+			  return_code = CMZN_ERROR_MEMORY;
+		}
+	}
+	return return_code;
+}
+
+int Computed_field_element_group::removeSubelementsList(LIST(cmzn_element) *removedElementList)
+{
+	int return_code = CMZN_OK;
+	cmzn_elementiterator *iter;
+	cmzn_element *element;
+	if (1 < this->dimension)
+	{
+		Computed_field_element_group *faceElementGroup =
+			this->ownerGroup->getElementGroupPrivate(this->dimension - 1);
+		if (faceElementGroup)
+		{
+			iter = CREATE_LIST_ITERATOR(cmzn_element)(removedElementList);
+			if (!iter)
+				return_code = CMZN_ERROR_MEMORY;
+			while ((0 != (element = cmzn_elementiterator_next_non_access(iter))) && (CMZN_OK == return_code))
+				return_code = faceElementGroup->removeElementFacesRecursive(element, *this);
+			cmzn_elementiterator_destroy(&iter);
+		}
+	}
+	if (CMZN_OK == return_code)
+	{
+		Computed_field_node_group *nodeGroup = this->ownerGroup->getNodeGroupPrivate(CMZN_FIELD_DOMAIN_TYPE_NODES);
+		if (nodeGroup)
+		{
+			LIST(cmzn_node) *removeNodeList = nodeGroup->createRelatedNodeList();
+			if (removeNodeList)
+			{
+				// fill list with nodes from removed elements
+				iter = CREATE_LIST_ITERATOR(cmzn_element)(removedElementList);
+				if (!iter)
+					return_code = CMZN_ERROR_MEMORY;
+				while ((0 != (element = cmzn_elementiterator_next_non_access(iter))) && (CMZN_OK == return_code))
+					return_code = cmzn_element_add_nodes_to_list(element, removeNodeList);
+				cmzn_elementiterator_destroy(&iter);
+
+				// remove nodes used by remaining elements
+				iter = CREATE_LIST_ITERATOR(cmzn_element)(this->object_list);
+				if (!iter)
+					return_code = CMZN_ERROR_MEMORY;
+				while ((0 != (element = cmzn_elementiterator_next_non_access(iter))) && (CMZN_OK == return_code))
+					return_code = cmzn_element_remove_nodes_from_list(element, removeNodeList);
+				cmzn_elementiterator_destroy(&iter);
+
+				if (CMZN_OK == return_code)
+					return_code = nodeGroup->removeNodesInList(removeNodeList);
+				DESTROY(LIST(cmzn_node))(&removeNodeList);
+			}
+			else
+			  return_code = CMZN_ERROR_MEMORY;
 		}
 	}
 	return return_code;
