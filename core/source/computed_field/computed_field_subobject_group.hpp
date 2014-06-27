@@ -409,6 +409,11 @@ public:
 		 * only call with this->ownerGroup set, and between begin/end change */
 		int removeSubelements(cmzn_element_id element);
 
+		/** Removes faces and nodes of elements in list from related subobject
+		 * groups, but only if not used by peers.
+		 * only call with this->ownerGroup set, and between begin/end change */
+		int removeSubelementsList(LIST(cmzn_element) *removedElementList);
+
 		/** Adds faces of element to element group, and their faces to related group
 		 * recursively. Only call with this->ownerGroup set, and between begin/end change */
 		int addElementFacesRecursive(cmzn_element_id element);

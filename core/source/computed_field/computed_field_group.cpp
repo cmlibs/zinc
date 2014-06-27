@@ -80,6 +80,7 @@ void Computed_field_group::clearLocalElementGroup(int index)
 			static_cast<Computed_field_subobject_group *>(this->local_element_group[index]->core);
 		subobject_group->clear();
 		subobject_group->setOwnerGroup(0);
+		check_subobject_group_dependency(subobject_group);
 		cmzn_field_destroy(&this->local_element_group[index]);
 	}
 }
@@ -103,6 +104,7 @@ void Computed_field_group::clearLocalNodeGroup(bool isData)
 			static_cast<Computed_field_subobject_group *>((*node_group_field_address)->core);
 		subobject_group->clear();
 		subobject_group->setOwnerGroup(0);
+		check_subobject_group_dependency(subobject_group);
 		cmzn_field_destroy(node_group_field_address);
 	}
 }
@@ -964,6 +966,9 @@ int Computed_field_group::remove_empty_subgroups()
 		group_core->remove_empty_subgroups();
 		if (group_core->isEmpty())
 		{
+			// must transfer non-local changes now
+			const int subregion_group_change = group_core->change_detail.getChangeSummary();
+			this->change_detail.changeMergeNonlocal(subregion_group_change);
 			subregion_group_map.erase(iter++);
 			cmzn_field_group_destroy(&subregion_group_field);
 		}
@@ -972,6 +977,8 @@ int Computed_field_group::remove_empty_subgroups()
 			++iter;
 		}
 	}
+	if (this->change_detail.getChangeSummary() != CMZN_FIELD_GROUP_CHANGE_NONE)
+		Computed_field_dependency_changed(this->field);
 	return 1;
 }
 

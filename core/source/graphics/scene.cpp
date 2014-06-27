@@ -1060,22 +1060,14 @@ int cmzn_region_deaccess_scene(struct cmzn_region *region)
 	return (return_code);
 }
 
-int cmzn_scene_destroy(struct cmzn_scene **scene)
+int cmzn_scene_destroy(struct cmzn_scene **scene_address)
 {
-	int return_code;
-
-	ENTER(cmzn_scene_destroy);
-	if (scene && *scene)
+	if (scene_address && *scene_address)
 	{
-		return_code = DEACCESS(cmzn_scene)(scene);
+		DEACCESS(cmzn_scene)(scene_address);
+		return CMZN_OK;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	LEAVE;
-
-	return return_code;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 void cmzn_scene_glyph_change(struct cmzn_scene *scene,

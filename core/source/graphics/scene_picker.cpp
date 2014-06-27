@@ -539,44 +539,29 @@ int cmzn_scenepicker::addPickedElementsToFieldGroup(cmzn_field_group_id group)
 							cmzn_mesh_destroy(&mesh);
 							cmzn_mesh_group_destroy(&meshGroup);
 							mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, domainDimension);
-							cmzn_field_group_id subregion_group = cmzn_field_group_get_subregion_field_group(group, region);
-							if (!subregion_group)
-								subregion_group = cmzn_field_group_create_subregion_field_group(group, region);
-							if (subregion_group)
-							{
-								cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(
-									subregion_group, mesh);
-								if (!element_group)
-									element_group = cmzn_field_group_create_field_element_group(subregion_group, mesh);
-								meshGroup = cmzn_field_element_group_get_mesh_group(element_group);
-								cmzn_field_element_group_destroy(&element_group);
-							}
+							cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(group, mesh);
+							if (!element_group)
+								element_group = cmzn_field_group_create_field_element_group(group, mesh);
+							meshGroup = cmzn_field_element_group_get_mesh_group(element_group);
+							cmzn_field_element_group_destroy(&element_group);
 							cmzn_fieldmodule_destroy(&fieldmodule);
 						}
 						else
-						{
 							cmzn_scene_destroy(&picked_scene);
-						}
 						if (mesh && meshGroup)
 						{
 							cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, (int)(select_buffer_ptr[5]));
-							if (element)
-							{
-								cmzn_mesh_group_add_element(meshGroup, element);
-								cmzn_element_destroy(&element);
-							}
+							cmzn_mesh_group_add_element(meshGroup, element);
+							cmzn_element_destroy(&element);
 						}
 					}
 					cmzn_graphics_destroy(&graphics);
 				}
 			}
 		}
-		if (lastScene)
-			cmzn_scene_destroy(&lastScene);
-		if (meshGroup)
-			cmzn_mesh_group_destroy(&meshGroup);
-		if (mesh)
-			cmzn_mesh_destroy(&mesh);
+		cmzn_scene_destroy(&lastScene);
+		cmzn_mesh_group_destroy(&meshGroup);
+		cmzn_mesh_destroy(&mesh);
 	}
 	cmzn_region_end_hierarchical_change(groupRegion);
 	return CMZN_OK;
@@ -605,8 +590,7 @@ int cmzn_scenepicker::addPickedNodesToFieldGroup(cmzn_field_group_id group)
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element number
-			 * select_buffer[6] = point number
+			 * select_buffer[5] = node number
 			 */
 			select_buffer_ptr = next_select_buffer;
 			number_of_names=(int)(select_buffer_ptr[0]);
@@ -631,44 +615,29 @@ int cmzn_scenepicker::addPickedNodesToFieldGroup(cmzn_field_group_id group)
 							cmzn_nodeset_destroy(&nodeset);
 							cmzn_nodeset_group_destroy(&nodesetGroup);
 							nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, domainType);
-							cmzn_field_group_id subregion_group = cmzn_field_group_get_subregion_field_group(group, region);
-							if (!subregion_group)
-								subregion_group = cmzn_field_group_create_subregion_field_group(group, region);
-							if (subregion_group)
-							{
-								cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(
-									subregion_group, nodeset);
-								if (!node_group)
-									node_group = cmzn_field_group_create_field_node_group(subregion_group, nodeset);
-								nodesetGroup = cmzn_field_node_group_get_nodeset_group(node_group);
-								cmzn_field_node_group_destroy(&node_group);
-							}
+							cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+							if (!node_group)
+								node_group = cmzn_field_group_create_field_node_group(group, nodeset);
+							nodesetGroup = cmzn_field_node_group_get_nodeset_group(node_group);
+							cmzn_field_node_group_destroy(&node_group);
 							cmzn_fieldmodule_destroy(&fieldmodule);
 						}
 						else
-						{
 							cmzn_scene_destroy(&picked_scene);
-						}
 						if (nodeset && nodesetGroup)
 						{
 							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, (int)(select_buffer_ptr[6]));
-							if (node)
-							{
-								cmzn_nodeset_group_add_node(nodesetGroup, node);
-								cmzn_node_destroy(&node);
-							}
+							cmzn_nodeset_group_add_node(nodesetGroup, node);
+							cmzn_node_destroy(&node);
 						}
 					}
 					cmzn_graphics_destroy(&graphics);
 				}
 			}
 		}
-		if (lastScene)
-			cmzn_scene_destroy(&lastScene);
-		if (nodesetGroup)
-			cmzn_nodeset_group_destroy(&nodesetGroup);
-		if (nodeset)
-			cmzn_nodeset_destroy(&nodeset);
+		cmzn_scene_destroy(&lastScene);
+		cmzn_nodeset_group_destroy(&nodesetGroup);
+		cmzn_nodeset_destroy(&nodeset);
 	}
 	cmzn_region_end_hierarchical_change(groupRegion);
 	return CMZN_OK;

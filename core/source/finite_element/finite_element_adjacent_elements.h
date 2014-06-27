@@ -19,18 +19,6 @@ indexed_multi_range.
 #include "zinc/element.h"
 #include "general/indexed_multi_range.h"
 
-int adjacent_FE_element(struct FE_element *element,
-	int face_number, int *number_of_adjacent_elements, 
-	struct FE_element ***adjacent_elements);
-/*******************************************************************************
-LAST MODIFIED : 27 October 2000
-
-DESCRIPTION :
-Returns the list of <adjacent_elements> not including <element> which share the 
-face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the 
-correct size and should be DEALLOCATED when finished with.
-==============================================================================*/
-
 int adjacent_FE_element_from_nodes(struct FE_element *element,
 	int node_index, int *number_of_adjacent_elements, 
 	struct FE_element ***adjacent_elements, 

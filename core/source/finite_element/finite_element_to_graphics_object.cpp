@@ -340,6 +340,7 @@ static int field_cache_location_to_glyph_point(cmzn_fieldcache_id field_cache,
 	return (return_code);
 }
 
+#ifdef OLD_CODE
 static int fill_table(struct FE_element **element_block,int *adjacency_table,
 	struct FE_element *element,int i,int j,int k,int n_xi[3])
 /*******************************************************************************
@@ -418,6 +419,7 @@ but are indirectly connected (e.g. mesh with slit)
 
 	return (return_code);
 } /* fill_table */
+#endif // OLD_CODE
 
 /*
 Global functions
