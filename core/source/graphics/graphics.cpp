@@ -5410,7 +5410,7 @@ cmzn_graphics_id cmzn_graphics_access(cmzn_graphics_id graphics)
 
 int cmzn_graphics_destroy(cmzn_graphics_id *graphics_address)
 {
-	if (graphics_address)
+	if (graphics_address && *graphics_address)
 	{
 		DEACCESS(cmzn_graphics)(graphics_address);
 		return CMZN_OK;

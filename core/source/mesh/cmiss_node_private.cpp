@@ -1171,7 +1171,12 @@ cmzn_node_id cmzn_node_access(cmzn_node_id node)
 
 int cmzn_node_destroy(cmzn_node_id *node_address)
 {
-	return DEACCESS(FE_node)(node_address);
+	if (node_address && *node_address)
+	{
+		DEACCESS(FE_node)(node_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_node_get_identifier(cmzn_node_id node)

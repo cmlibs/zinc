@@ -442,7 +442,12 @@ cmzn_field_id cmzn_field_access(cmzn_field_id field)
 
 int cmzn_field_destroy(cmzn_field_id *field_address)
 {
-	return (DEACCESS(Computed_field)(field_address));
+	if (field_address && *field_address)
+	{
+		DEACCESS(Computed_field)(field_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_fieldmodule_id cmzn_field_get_fieldmodule(cmzn_field_id field)

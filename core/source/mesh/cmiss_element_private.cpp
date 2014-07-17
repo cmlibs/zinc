@@ -351,7 +351,7 @@ public:
 		const int *local_node_indexes)
 	{
 		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		FE_element_field_component *component =
 			CREATE(FE_element_field_component)(STANDARD_NODE_TO_ELEMENT_MAP,
 				number_of_nodes, fe_basis, (FE_element_field_component_modify)NULL);
@@ -388,9 +388,9 @@ public:
 				clearComponent(i);
 				components[i] = component;
 			}
-			return 1;
+			return CMZN_OK;
 		}
-		return 0;
+		return CMZN_ERROR_MEMORY;
 	}
 
 	int defineOnElement(FE_element *element)
@@ -552,13 +552,13 @@ public:
 		int component_number, cmzn_elementbasis_id basis, int basis_number_of_nodes,
 		const int *local_node_indexes)
 	{
-		int return_code = 1;
+		int return_code = CMZN_OK;
 		if (basis->getDimension() != element_dimension)
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_elementtemplate_define_field_simple_nodal.  "
 				"Basis has different dimension to mesh");
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 		}
 		FE_basis *fe_basis = basis->getFeBasis();
 		if (!fe_basis)
@@ -566,7 +566,7 @@ public:
 			display_message(ERROR_MESSAGE,
 				"cmzn_elementtemplate_define_field_simple_nodal.  "
 				"Basis is invalid or incomplete");
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 		}
 		else
 		{
@@ -577,7 +577,7 @@ public:
 					"cmzn_elementtemplate_define_field_simple_nodal.  "
 					"%d nodes supplied but %d expected for basis",
 					basis_number_of_nodes, expected_basis_number_of_nodes);
-				return_code = 0;
+				return_code = CMZN_ERROR_ARGUMENT;
 			}
 		}
 		for (int i = 0; i < basis_number_of_nodes; i++)
@@ -587,7 +587,7 @@ public:
 				display_message(ERROR_MESSAGE,
 					"cmzn_elementtemplate_define_field_simple_nodal.  "
 					"Local node index out of range 1 to number in element(%d)", element_number_of_nodes);
-				return_code = 0;
+				return_code = CMZN_ERROR_ARGUMENT;
 				break;
 			}
 		}
@@ -601,7 +601,7 @@ public:
 				display_message(ERROR_MESSAGE,
 					"cmzn_elementtemplate_define_field_simple_nodal.  "
 					"Field is from another region");
-				return_code = 0;
+				return_code = CMZN_ERROR_ARGUMENT;
 			}
 			cmzn_field_finite_element_destroy(&finite_element_field);
 		}
@@ -610,19 +610,13 @@ public:
 			display_message(ERROR_MESSAGE,
 				"cmzn_elementtemplate_define_field_simple_nodal.  "
 				"Can only define real finite_element field type on elements");
-			return_code = 0;
+			return_code = CMZN_ERROR_ARGUMENT;
 		}
-		if (return_code)
+		if (CMZN_OK == return_code)
 		{
 			cmzn_element_field& element_field = getElementField(fe_field);
-			if (element_field.buildComponent(component_number, fe_basis, basis_number_of_nodes, local_node_indexes))
-			{
-				clearTemplateElement();
-			}
-			else
-			{
-				return_code = 0;
-			}
+			return_code = element_field.buildComponent(component_number, fe_basis, basis_number_of_nodes, local_node_indexes);
+			clearTemplateElement();
 		}
 		REACCESS(FE_basis)(&fe_basis, NULL);
 		return return_code;
@@ -720,11 +714,9 @@ public:
 
 	int setNode(int local_node_index, cmzn_node_id node)
 	{
-		if (validate())
-		{
-			return set_FE_element_node(getTemplateElement(), local_node_index - 1, node);
-		}
-		return 0;
+		if (validate() && set_FE_element_node(getTemplateElement(), local_node_index - 1, node))
+			return CMZN_OK;
+		return CMZN_ERROR_GENERAL;
 	}
 
 	int mergeIntoElement(cmzn_element_id element)
@@ -1543,7 +1535,7 @@ int cmzn_elementtemplate_define_field_simple_nodal(
 		return element_template->defineFieldSimpleNodal(
 			field, component_number, basis, number_of_nodes, local_node_indexes);
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_node_id cmzn_elementtemplate_get_node(
@@ -1559,7 +1551,7 @@ int cmzn_elementtemplate_set_node(cmzn_elementtemplate_id element_template,
 {
 	if (element_template)
 		return element_template->setNode(local_node_index, node);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_element_id cmzn_element_access(cmzn_element_id element)
@@ -1571,7 +1563,12 @@ cmzn_element_id cmzn_element_access(cmzn_element_id element)
 
 int cmzn_element_destroy(cmzn_element_id *element_address)
 {
-	return DEACCESS(FE_element)(element_address);
+	if (element_address && (*element_address))
+	{
+		DEACCESS(FE_element)(element_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 /**
