@@ -66,10 +66,9 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_divergence(
 	cmzn_field_id vector_field, cmzn_field_id coordinate_field);
 
 /**
- * Creates a field returning the curl of vector_field at location given by
- * coordinate_field. All fields including return field have 3 components.
- * Converts a field returning the gradient of a source field with respect to
- * a given coordinate field. Calculation will only succeed in any element with
+ * Creates a field returning the gradient of a source field with respect to
+ * a given coordinate field.
+ * Calculation will only succeed in any element with
  * xi-dimension equal to the number of components in the <coordinate_field>.
  * Sets the number of components in return field to the product of the number
  * of components in the <source_field> and <coordinate_field>.
