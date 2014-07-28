@@ -21963,7 +21963,10 @@ int adjacent_FE_element(struct FE_element *element,
 			return_code = 1;
 		}
 		else
+		{
 			*adjacent_elements = 0;
+			return_code = 0;
+		}
 		*number_of_adjacent_elements = j;
 	}
 	else
