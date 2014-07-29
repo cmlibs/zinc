@@ -6189,72 +6189,72 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 				Texture_execute_vertex_program_environment(material->fourth_image_texture.texture,
 					0);
 			}
-		}
 #if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
-		if (material->spectrum && (
-			material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
-			material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
-		{
-			int i, lookup_dimensions, *lookup_sizes;
-			ZnReal values[4];
+			if (material->spectrum && (
+				material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
+				material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
+			{
+				int i, lookup_dimensions, *lookup_sizes;
+				ZnReal values[4];
 
-			Spectrum_get_colour_lookup_sizes(material->spectrum,
-				&lookup_dimensions, &lookup_sizes);
-			/* Set the offsets = 0.5 / size */
-			for (i = 0 ; i < lookup_dimensions ; i++)
-			{
-				values[i] = 0.5 / ((double)lookup_sizes[i]);
-			}
-			for (; i < 4 ; i++)
-			{
-				values[i] = 0.0;
-			}
-			if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
-			{
-				glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
-					values[0], values[1], values[2], values[3]);
-			}
-			else
-			{
-				GLint loc1=-1;
-				if (glIsProgram(material->program->glsl_current_program))
+				Spectrum_get_colour_lookup_sizes(material->spectrum,
+					&lookup_dimensions, &lookup_sizes);
+				/* Set the offsets = 0.5 / size */
+				for (i = 0 ; i < lookup_dimensions ; i++)
 				{
-					loc1 = glGetUniformLocation(material->program->glsl_current_program,"lookup_offsets");
-					if (loc1 != (GLint)-1)
+					values[i] = 0.5 / ((double)lookup_sizes[i]);
+				}
+				for (; i < 4 ; i++)
+				{
+					values[i] = 0.0;
+				}
+				if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+				{
+					glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
+						values[0], values[1], values[2], values[3]);
+				}
+				else
+				{
+					GLint loc1=-1;
+					if (glIsProgram(material->program->glsl_current_program))
 					{
-						glUniform4f(loc1, values[0], values[1],
-							values[2], values[3]);
+						loc1 = glGetUniformLocation(material->program->glsl_current_program,"lookup_offsets");
+						if (loc1 != (GLint)-1)
+						{
+							glUniform4f(loc1, values[0], values[1],
+								values[2], values[3]);
+						}
 					}
 				}
-			}
-			/* Set the scales = (size - 1) / (size) */
-			for (i = 0 ; i < lookup_dimensions ; i++)
-			{
-				values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
-			}
-			for (; i < 4 ; i++)
-			{
-				values[i] = 1.0;
-			}
-			if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
-			{
-				glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
-					values[0], values[1], values[2], values[3]);
-			}
-			else
-			{
-				GLint loc2=-1;
-				if (glIsProgram(material->program->glsl_current_program))
+				/* Set the scales = (size - 1) / (size) */
+				for (i = 0 ; i < lookup_dimensions ; i++)
 				{
-					loc2 = glGetUniformLocation(material->program->glsl_current_program,"lookup_scales");
-					if (loc2 != (GLint)-1)
+					values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
+				}
+				for (; i < 4 ; i++)
+				{
+					values[i] = 1.0;
+				}
+				if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+				{
+					glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
+						values[0], values[1], values[2], values[3]);
+				}
+				else
+				{
+					GLint loc2=-1;
+					if (glIsProgram(material->program->glsl_current_program))
 					{
-						glUniform4f(loc2, values[0], values[1],
-							values[2], values[3]);
+						loc2 = glGetUniformLocation(material->program->glsl_current_program,"lookup_scales");
+						if (loc2 != (GLint)-1)
+						{
+							glUniform4f(loc2, values[0], values[1],
+								values[2], values[3]);
+						}
 					}
 				}
+				DEALLOCATE(lookup_sizes);
 			}
-			DEALLOCATE(lookup_sizes);
 		}
 #endif /* defined GL_ARB_fragment_program */
 		return_code = direct_render_Graphical_material(material, renderer);
