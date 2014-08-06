@@ -22,6 +22,7 @@
 enum cmzn_scenecoordinatesystem
 {
 	CMZN_SCENECOORDINATESYSTEM_INVALID = 0,
+	/*!< Unspecified coordinate system. */
 	CMZN_SCENECOORDINATESYSTEM_LOCAL = 1,
 	/*!< The local coordinate system of a scene, subject to its own
 	 * transformation matrix and those of all parent scenes up to the root

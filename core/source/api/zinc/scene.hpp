@@ -246,7 +246,7 @@ public:
 		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}
 
-	Scenepicker createScenepicker();
+	inline Scenepicker createScenepicker();
 
 };
 
