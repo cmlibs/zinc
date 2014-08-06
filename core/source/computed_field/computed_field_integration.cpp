@@ -524,7 +524,7 @@ time is supplied in the workingCache.
 	if (mapping_item && texture_mapping && last_to_be_checked &&
 		(*last_to_be_checked))
 	{
-		return_code=1;
+		return_code=CMZN_OK;
 		element_dimension = get_FE_element_dimension(mapping_item->element);
 		number_of_faces = element_dimension*2;
 		if (magnitude_coordinates)
@@ -536,7 +536,7 @@ time is supplied in the workingCache.
 			number_of_components = Computed_field_get_number_of_components(
 				coordinate_field);
 		}
-		for (i = 0;return_code&&(i<number_of_faces);i++)
+		for (i = 0; (return_code == CMZN_OK)&&(i<number_of_faces);i++)
 		{
 			if (element_dimension == 1)
 			{
@@ -588,8 +588,8 @@ time is supplied in the workingCache.
 				}
 				if (!(get_FE_element_shape(mapping_item->element, &shape) &&
 					FE_element_shape_find_face_number_for_xi(shape, xi, &face_number)
-					&& (adjacent_FE_element(mapping_item->element, face_number,
-					&number_of_neighbour_elements, &neighbour_elements))))
+					&& (((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
+					&number_of_neighbour_elements, &neighbour_elements))))))
 				{
 					number_of_neighbour_elements = 0;
 				}
@@ -657,7 +657,7 @@ time is supplied in the workingCache.
 								DEALLOCATE(fifo_node);
 								DESTROY(Computed_field_element_integration_mapping)(
 									&mapping_neighbour);
-								return_code=0;
+								return_code=CMZN_ERROR_GENERAL;
 							}
 						}
 						else
@@ -666,7 +666,7 @@ time is supplied in the workingCache.
 								"Computed_field_set_type_integration.  "
 								"Unable to allocate member");
 							DEALLOCATE(fifo_node);
-							return_code=0;
+							return_code=CMZN_ERROR_MEMORY;
 						}
 					}
 				}
@@ -748,7 +748,7 @@ time is supplied in the workingCache.
 	{
 		display_message(ERROR_MESSAGE,
 			"Computed_field_integration_add_neighbours.  Invalid argument(s)");
-		return_code=0;
+		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	LEAVE;
 
@@ -774,7 +774,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(field);
 		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		field_cache->setTime(time);
-		return_code = 1;
+		return_code = CMZN_OK;
 		first_to_be_checked=last_to_be_checked=
 			(Computed_field_element_integration_mapping_fifo *)NULL;
 		node_element_list=(LIST(Index_multi_range) *)NULL;
@@ -800,11 +800,11 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 					"Computed_field_set_type_integration.  "
 					"Unable to allocate member");
 				DEALLOCATE(fifo_node);
-				return_code=0;
+				return_code=CMZN_ERROR_MEMORY;
 			}
-			if (return_code)
+			if (CMZN_OK == return_code)
 			{
-				while (return_code && first_to_be_checked)
+				while ((CMZN_OK == return_code) && first_to_be_checked)
 				{
 					return_code = add_neighbours(*field_cache,
 						first_to_be_checked->mapping_item, texture_mapping,
@@ -852,7 +852,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 				first_to_be_checked = first_to_be_checked->next;
 				DEALLOCATE(fifo_node);
 			}
-			if (!return_code)
+			if (return_code != CMZN_OK)
 			{
 				DESTROY_LIST(Computed_field_element_integration_mapping)(&texture_mapping);
 			}
@@ -866,7 +866,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 			display_message(ERROR_MESSAGE,
 				"Computed_field_integration_calculate_mapping.  "
 				"Unable to create mapping list.");
-			return_code=0;
+			return_code=CMZN_ERROR_GENERAL;
 		}
 		cmzn_fieldcache_destroy(&field_cache);
 		cmzn_fieldmodule_destroy(&field_module);
@@ -876,7 +876,7 @@ int Computed_field_integration::calculate_mapping(FE_value time)
 		display_message(ERROR_MESSAGE,
 			"Computed_field_integration_calculate_mapping.  "
 			"Invalid arguments.");
-		return_code=0;
+		return_code=CMZN_ERROR_ARGUMENT;
 	}
 	return (return_code);
 } /* Computed_field_integration_calculate_mapping */

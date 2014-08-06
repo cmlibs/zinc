@@ -21933,15 +21933,15 @@ int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements)
 {
-	int i, j, return_code;
+	int i, j, return_code = CMZN_OK;
 	struct FE_element *face;
 
-	ENTER(adjacent_FE_element);
-	if ((element) && (element->shape) && (element->faces))
+	if ((element) && (element->shape) && (element->faces) &&
+		(0 <= face_number) && (face_number < element->shape->number_of_faces))
 	{
 		j = 0;
-		if ((0 <= face_number) && (face_number < element->shape->number_of_faces)&&
-				(NULL != (face = (element->faces)[face_number])) && (face->parents))
+		if ((NULL != (face = (element->faces)[face_number])) &&
+			(face->parents))
 		{
 			if (ALLOCATE(*adjacent_elements, struct FE_element *, face->number_of_parents))
 			{
@@ -21958,23 +21958,22 @@ int adjacent_FE_element(struct FE_element *element,
 			{
 				display_message(ERROR_MESSAGE,
 					"adjacent_FE_element.  Unable to allocate array");
-				return_code = 0;
+				return_code = CMZN_ERROR_MEMORY;
 			}
-			return_code = 1;
+			return_code = CMZN_OK;
 		}
 		else
 		{
 			*adjacent_elements = 0;
-			return_code = 0;
+			return_code = CMZN_ERROR_NOT_FOUND;
 		}
 		*number_of_adjacent_elements = j;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"adjacent_FE_element.  Invalid argument(s)");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* adjacent_FE_element */
