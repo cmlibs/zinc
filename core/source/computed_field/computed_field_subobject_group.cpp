@@ -424,7 +424,8 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 					{
 						int adjacentElementsCount = 0;
 						cmzn_element **adjacentElements = 0;
-						if (adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements))
+						if (CMZN_ERROR_ARGUMENT !=
+							adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements))
 						{
 							for (int i = 0; i < adjacentElementsCount; ++i)
 								if (IS_OBJECT_IN_LIST(cmzn_element)(adjacentElements[i], this->object_list))
