@@ -424,8 +424,8 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 					{
 						int adjacentElementsCount = 0;
 						cmzn_element **adjacentElements = 0;
-						if (CMZN_ERROR_ARGUMENT !=
-							adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements))
+						return_code = adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements);
+						if (return_code == CMZN_OK)
 						{
 							for (int i = 0; i < adjacentElementsCount; ++i)
 								if (IS_OBJECT_IN_LIST(cmzn_element)(adjacentElements[i], this->object_list))
@@ -437,6 +437,8 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 							if (adjacentElementsCount)
 								DEALLOCATE(adjacentElements);
 						}
+						else if (CMZN_ERROR_NOT_FOUND == return_code)
+							return_code = CMZN_OK;
 						else
 							return_code = CMZN_ERROR_GENERAL;
 					}

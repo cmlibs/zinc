@@ -21953,6 +21953,7 @@ int adjacent_FE_element(struct FE_element *element,
 						++j;
 					}
 				}
+				return_code = CMZN_OK;
 			}
 			else
 			{
@@ -21960,7 +21961,6 @@ int adjacent_FE_element(struct FE_element *element,
 					"adjacent_FE_element.  Unable to allocate array");
 				return_code = CMZN_ERROR_MEMORY;
 			}
-			return_code = CMZN_OK;
 		}
 		else
 		{
