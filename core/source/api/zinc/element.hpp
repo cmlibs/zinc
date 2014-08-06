@@ -245,7 +245,7 @@ public:
 		return static_cast<ShapeType>(cmzn_element_get_shape_type(id));
 	}
 
-	int merge(const Elementtemplate& elementTemplate);
+	inline int merge(const Elementtemplate& elementTemplate);
 
 };
 

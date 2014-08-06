@@ -35,7 +35,7 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_coordinate_transformation(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
 
 /**
- * Create a field which performs a coordinate transformation of vectors from
+ * Creates a field which performs a coordinate transformation of vectors from
  * their original coordinate system and coordinate positions, to the coordinate
  * system of this field. Sets the number of components in returned field to 3
  * times the number of vectors expected from the source vector_field.
