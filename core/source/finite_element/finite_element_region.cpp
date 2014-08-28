@@ -2835,17 +2835,17 @@ function -- they currently are not.
 If the element has no parent, merges nodes directly referenced by <element>.
 ==============================================================================*/
 {
-	int i, number_of_parents, number_of_element_field_nodes, number_of_nodes,
+	int i, number_of_element_field_nodes, number_of_nodes,
 		return_code;
 	struct FE_node **element_field_nodes_array, *node;
 
 	ENTER(FE_region_merge_FE_element_nodes);
 	if (fe_region && element &&
-		get_FE_element_number_of_nodes(element, &number_of_nodes) &&
-		get_FE_element_number_of_parents(element, &number_of_parents))
+		get_FE_element_number_of_nodes(element, &number_of_nodes))
 	{
 		return_code = 1;
 		FE_nodeset *fe_nodeset = fe_region->nodesets[0];
+		const int number_of_parents = get_FE_element_number_of_parents(element);
 		if (0 < number_of_parents)
 		{
 			if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,

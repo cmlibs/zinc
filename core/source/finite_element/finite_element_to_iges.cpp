@@ -193,7 +193,7 @@ DESCRIPTION :
 		monomial_x[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		monomial_y[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		monomial_z[1 + MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_component_values, number_of_faces,number_of_parents,
+		number_of_component_values, number_of_faces,
 		outer_boundary_directory_pointer,*reorder_faces,return_code,
 		surface_directory_pointer,world_curve_directory_pointer;
 	struct CM_element_information cm;
@@ -210,8 +210,8 @@ DESCRIPTION :
 		return_code=1;
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
 		if ((2==get_FE_element_dimension(element))&&
-			get_FE_element_number_of_parents(element, &number_of_parents) &&
-			(1>=number_of_parents)&&(coordinate_field=get_data->fe_field)&&
+			(1 >= get_FE_element_number_of_parents(element)) &&
+			(coordinate_field=get_data->fe_field)&&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
 			(calculate_FE_element_field_values(element,coordinate_field,
@@ -700,7 +700,7 @@ basis type, however every element type will be converted to a cubic.
 ==============================================================================*/
 {
 	FE_value values[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-	int i, j, number_of_components, number_of_parents, number_of_values, return_code;
+	int i, j, number_of_components, number_of_values, return_code;
 	struct CM_element_information cm;
 	struct FE_element *face, *true_face;
 	struct FE_element_shape *element_shape, *face_shape;
@@ -714,8 +714,7 @@ basis type, however every element type will be converted to a cubic.
 	{
 		return_code = 1;
 		if ((2 == get_FE_element_dimension(element)) &&
-			get_FE_element_number_of_parents(element, &number_of_parents) &&
-			(1>=number_of_parents))
+			(1 >= get_FE_element_number_of_parents(element)))
 		{
 			/* Create the node and element templates */
 			if (!get_data->element)
