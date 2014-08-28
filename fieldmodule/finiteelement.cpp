@@ -542,3 +542,58 @@ TEST(ZincFieldIsOnFace, invalidArguments)
 	FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_INVALID);
 	EXPECT_FALSE(isOnFaceField.isValid());
 }
+
+TEST(ZincFieldEdgeDiscontinuity, evaluate3d)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinatesField.isValid());
+
+	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
+	EXPECT_TRUE(isExteriorField.isValid());
+
+	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(coordinatesField, isExteriorField);
+	EXPECT_TRUE(edgeDiscontinuityField.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+
+	// field should not be defined on 2-D elements
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	Element face1 = mesh2d.findElementByIdentifier(1);
+	EXPECT_TRUE(face1.isValid());
+	double xi2d[2] = { 0.5, 0.5 };
+	EXPECT_EQ(OK, result = cache.setMeshLocation(face1, 2, xi2d));
+	double outValues[3];
+	EXPECT_NE(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+	Element line1 = mesh1d.findElementByIdentifier(1);
+	EXPECT_TRUE(line1.isValid());
+	double xi = 0.5;
+	EXPECT_EQ(OK, result = cache.setMeshLocation(line1, 1, &xi));
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
+	ASSERT_DOUBLE_EQ(10.0, outValues[0]);
+	ASSERT_DOUBLE_EQ(10.0, outValues[1]);
+	ASSERT_DOUBLE_EQ(0.0, outValues[2]);
+	Element line3 = mesh1d.findElementByIdentifier(3);
+	EXPECT_TRUE(line3.isValid());
+	EXPECT_EQ(OK, result = cache.setMeshLocation(line3, 1, &xi));
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
+	ASSERT_DOUBLE_EQ(0.0, outValues[0]);
+	ASSERT_DOUBLE_EQ(0.0, outValues[1]);
+	ASSERT_DOUBLE_EQ(0.0, outValues[2]);
+}
+
+TEST(ZincFieldEdgeDiscontinuity, invalidArguments)
+{
+	ZincTestSetupCpp zinc;
+	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(Field(), Field());
+	EXPECT_FALSE(edgeDiscontinuityField.isValid());
+}
