@@ -2226,6 +2226,269 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 
 namespace {
 
+const char computed_field_edge_discontinuity_type_string[] = "edge_discontinuity";
+
+class Computed_field_edge_discontinuity : public Computed_field_core
+{
+public:
+	Computed_field_edge_discontinuity() :
+		Computed_field_core()
+	{
+	};
+
+	virtual void inherit_source_field_attributes()
+	{
+		if (field)
+			Computed_field_set_coordinate_system_from_sources(field);
+	}
+
+private:
+	Computed_field_core *copy()
+	{
+		return new Computed_field_edge_discontinuity();
+	}
+
+	const char *get_type_string()
+	{
+		return (computed_field_edge_discontinuity_type_string);
+	}
+
+	int compare(Computed_field_core* other_core)
+	{
+		return (field && (0 != dynamic_cast<Computed_field_edge_discontinuity*>(other_core)));
+	}
+
+	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
+	{
+		RealFieldValueCache *valueCache = new RealFieldValueCache(field->number_of_components);
+		// need extra cache for evaluating at parent element locations
+		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
+		return valueCache;
+	}
+
+	int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
+
+	int list();
+
+	char* get_command_string();
+
+	virtual bool is_defined_at_location(cmzn_fieldcache& cache)
+	{
+		return (0 != field->evaluate(cache));
+	}
+
+	cmzn_field *getConditionalField() const
+	{
+		return (2 == field->number_of_source_fields) ? field->source_fields[1] : 0;
+	}
+
+};
+
+int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
+{
+	Field_element_xi_location* element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation());
+	if (!element_xi_location)
+		return 0;
+	cmzn_element *element = element_xi_location->get_element();
+	if (1 != get_FE_element_dimension(element))
+		return 0;
+	const FE_value xi = *(element_xi_location->get_xi());
+	cmzn_field *sourceField = getSourceField(0);
+	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	if (!sourceValueCache)
+		return 0;
+	const FE_value *sourceValues = sourceValueCache->values;
+
+	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
+	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
+	extraCache.setTime(cache.getTime());
+
+	cmzn_field *conditionalField = this->getConditionalField();
+	const int numberOfParents = get_FE_element_number_of_parents(element);
+	FE_value parentXi[2];
+	const int numberOfComponents = field->number_of_components;
+	// GRC put in type-specific value cache to save allocations here
+	RealFieldValueCache parent1SourceValueCache(numberOfComponents);
+	RealFieldValueCache parent2SourceValueCache(numberOfComponents);
+	RealFieldValueCache *parentSourceValueCaches[2] =
+		{ &parent1SourceValueCache, &parent2SourceValueCache };
+	const FE_value *elementToParentsXi[2];
+	int qualifyingParents = 0;
+	for (int i = 0; (i < numberOfParents) && (qualifyingParents < 2); ++i)
+	{
+		cmzn_element *parent = get_FE_element_parent(element, i);
+		if (!parent)
+		  continue;
+		int face_number = get_FE_element_face_number(parent, element);
+		FE_element_shape *parentShape = 0;
+		get_FE_element_shape(parent, &parentShape);
+		const FE_value *elementToParentXi = get_FE_element_shape_face_to_element(parentShape, face_number);
+
+		parentXi[0] = elementToParentXi[0] + elementToParentXi[1]*xi;
+		parentXi[1] = elementToParentXi[2] + elementToParentXi[3]*xi;
+		extraCache.setMeshLocation(parent, parentXi);
+		if (conditionalField)
+		{
+			RealFieldValueCache *conditionalValueCache = RealFieldValueCache::cast(conditionalField->evaluate(extraCache));
+			if ((!conditionalValueCache) || (0.0 == conditionalValueCache->values[0]))
+				continue;
+		}
+		RealFieldValueCache *parentSourceValueCache =
+			RealFieldValueCache::cast(sourceField->evaluateWithDerivatives(extraCache, 2));
+		if (!parentSourceValueCache)
+			continue;
+		parentSourceValueCaches[qualifyingParents]->copyValues(*parentSourceValueCache);
+
+		// face-to-element map matches either xi or (1.0 - xi), try latter and see which is closer to line value
+		parentXi[0] = elementToParentXi[0] + elementToParentXi[1]*(1.0 - xi);
+		parentXi[1] = elementToParentXi[2] + elementToParentXi[3]*(1.0 - xi);
+		extraCache.setMeshLocation(parent, parentXi);
+		parentSourceValueCache = RealFieldValueCache::cast(sourceField->evaluateWithDerivatives(extraCache, 2));
+
+		FE_value sqdiff1 = 0.0, sqdiff2 = 0.0;
+		for (int n = 0; n < numberOfComponents; ++n)
+		{
+			FE_value diff1 = parentSourceValueCaches[qualifyingParents]->values[n] - sourceValues[n];
+			sqdiff1 += diff1*diff1;
+			FE_value diff2 = parentSourceValueCache->values[n] - sourceValues[n];
+			sqdiff2 += diff2*diff2;
+		}
+		if (sqdiff2 < sqdiff1)
+			parentSourceValueCaches[qualifyingParents]->copyValues(*parentSourceValueCache);
+		elementToParentsXi[qualifyingParents] = elementToParentXi;
+		++qualifyingParents;
+	}
+	if (2 == qualifyingParents)
+	{
+		// GRC derivatives cycle fastest, components slowest
+		// GRC handle simplex barycentric coordinate derivative
+		for (int p = 0; p < 2; ++p)
+		{
+			RealFieldValueCache& parentSourceValueCache = *(parentSourceValueCaches[p]);
+			const FE_value *elementToParentXi = elementToParentsXi[p];
+			if (0.0 == elementToParentXi[1])
+			{
+				// parent lateral direction = xi1;
+				if (0.0 == elementToParentXi[0]) // away from edge
+					for (int n = 0; n < numberOfComponents; ++n)
+						parentSourceValueCache.values[n] = parentSourceValueCache.derivatives[n*2];
+				else
+					for (int n = 0; n < numberOfComponents; ++n)
+						parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2];
+			}
+			else if (0.0 == elementToParentXi[3])
+			{
+				// parent lateral direction = xi2;
+				if (0.0 == elementToParentXi[2]) // away from edge
+					for (int n = 0; n < numberOfComponents; ++n)
+						parentSourceValueCache.values[n] = parentSourceValueCache.derivatives[n*2 + 1];
+				else
+					for (int n = 0; n < numberOfComponents; ++n)
+						parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2 + 1];
+			}
+			else
+			{
+				// simplex - get derivative w.r.t. extra barycentric coordinate: 1 - xi1 - xi2
+				for (int n = 0; n < numberOfComponents; ++n)
+					parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2]
+						- parentSourceValueCache.derivatives[n*2 + 1];
+			}
+		}
+		for (int n = 0; n < numberOfComponents; ++n)
+			valueCache.values[n] = parent1SourceValueCache.values[n] + parent2SourceValueCache.values[n];
+	}
+	else
+	{
+		for (int n = 0; n < numberOfComponents; ++n)
+			valueCache.values[n] = 0.0;
+	}
+	valueCache.derivatives_valid = 0;
+	return 1;
+}
+
+int Computed_field_edge_discontinuity::list()
+{
+	int return_code;
+	if (field)
+	{
+		display_message(INFORMATION_MESSAGE, "    source field : %s\n", field->source_fields[0]->name);
+		cmzn_field *conditionalField = this->getConditionalField();
+		if (conditionalField)
+			display_message(INFORMATION_MESSAGE, "    conditional field : %s\n", conditionalField->name);
+		return_code = 1;
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"list_Computed_field_edge_discontinuity.  Invalid arguments.");
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+/** Returns allocated command string for reproducing field. Includes type. */
+char *Computed_field_edge_discontinuity::get_command_string()
+{
+	char *command_string = 0;
+	if (field)
+	{
+		int error = 0;
+		append_string(&command_string,
+			computed_field_edge_discontinuity_type_string, &error);
+		append_string(&command_string, " source_field ", &error);
+		char *field_name = cmzn_field_get_name(field->source_fields[0]);
+		make_valid_token(&field_name);
+		append_string(&command_string, field_name, &error);
+		DEALLOCATE(field_name);
+		cmzn_field *conditionalField = this->getConditionalField();
+		if (conditionalField)
+		{
+			append_string(&command_string, " conditional_field ", &error);
+			field_name = cmzn_field_get_name(conditionalField);
+			make_valid_token(&field_name);
+			append_string(&command_string, field_name, &error);
+			DEALLOCATE(field_name);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"Computed_field_edge_discontinuity::get_command_string.  Invalid field");
+	}
+	return (command_string);
+}
+
+} //namespace
+
+cmzn_field_id cmzn_fieldmodule_create_field_edge_discontinuity(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_field_id conditional_field)
+{
+	struct Computed_field *field = 0;
+	if (field_module && source_field &&
+		Computed_field_has_numerical_components(source_field, NULL) &&
+		((0 == conditional_field) || Computed_field_is_scalar(conditional_field, 0)))
+	{
+		cmzn_field_id source_fields[2];
+		source_fields[0] = source_field;
+		source_fields[1] = conditional_field;
+		field = Computed_field_create_generic(field_module,
+			/*check_source_field_regions*/true,
+			source_field->number_of_components,
+			/*number_of_source_fields*/(0 == conditional_field) ? 1 : 2, source_fields,
+			/*number_of_source_values*/0, NULL,
+			new Computed_field_edge_discontinuity());
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+			"cmzn_fieldmodule_create_field_edge_discontinuity.  Invalid argument(s)");
+	}
+	return (field);
+}
+
+namespace {
+
 const char computed_field_embedded_type_string[] = "embedded";
 
 class Computed_field_embedded : public Computed_field_core
@@ -2420,7 +2683,7 @@ cmzn_field_id cmzn_fieldmodule_create_field_embedded(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_embedded.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_embedded.  Invalid argument(s)");
 	}
 	return (field);
 }

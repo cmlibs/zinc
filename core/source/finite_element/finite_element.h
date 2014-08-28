@@ -1881,6 +1881,16 @@ Returns the dimension of <element_shape>.
 If fails, puts zero at <dimension_address>.
 ==============================================================================*/
 
+/**
+ * Return face_to_element map, a square matrix b + A xi for the face_number of
+ * shape.
+ *
+ * @return  Address of internal face_to_element map, or 0 if invalid arguments.
+ * Note: do not deallocate!
+ */
+const FE_value *get_FE_element_shape_face_to_element(
+	struct FE_element_shape *element_shape, int face_number);
+
 int get_FE_element_shape_xi_linkage_number(
 	struct FE_element_shape *element_shape, int xi_number1, int xi_number2,
 	int *xi_linkage_number_address);
@@ -2114,15 +2124,24 @@ Returns the number of fields defined at <element>.
 Does not include fields inherited from parent elements.
 ==============================================================================*/
 
-int get_FE_element_number_of_parents(struct FE_element *element,
-	int *number_of_parents_address);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
+/**
+ * Get the number of parent elements this element has, i.e. how many elements
+ * of dimension 1 higher which this element is a face of.
+ *
+ * @param element  The element to query.
+ * @return  The number of next higher dimension elements this element is a face of.
+ */
+int get_FE_element_number_of_parents(struct FE_element *element);
 
-DESCRIPTION :
-Returns the number of parents of <element>.
-Can be used to determine if a face is in use by more than one parent elements.
-==============================================================================*/
+/**
+ * Get a parent element of this element by index.
+ * @see get_FE_element_number_of_parents.
+ *
+ * @param element  The element to query.
+ * @param index  The index of the parent, from 0 to number_of_parents - 1.
+ * @return  Unaccessed pointer to the parent element, or 0 if none.
+ */
+struct FE_element *get_FE_element_parent(struct FE_element *element, int index);
 
 /**
  * @return  true if any parent of element is in the element list.
@@ -2182,6 +2201,11 @@ Sets face <face_number> of <element> to <face_element>, ensuring the
 Must have set the shape with set_FE_element_shape first.
 Should only be called for unmanaged elements.
 ==============================================================================*/
+
+/**
+ * Return the face number of the face in element >= 0, or -1 if not found.
+ */
+int get_FE_element_face_number(struct FE_element *element, struct FE_element *face);
 
 int set_FE_element_number_of_nodes(struct FE_element *element,
 	int number_of_nodes);

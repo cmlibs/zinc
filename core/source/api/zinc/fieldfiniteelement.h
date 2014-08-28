@@ -74,6 +74,26 @@ ZINC_API int cmzn_field_finite_element_destroy(
 	cmzn_field_finite_element_id *finite_element_field_address);
 
 /**
+ * Creates a field returning values on 1-D line elements equal to the
+ * difference in source field derivatives on two adjacent 2-D elements taken
+ * w.r.t. the xi coordinate normal to the line direction. The first two parent
+ * elements satisfying the conditions are used. The new field has the same
+ * number of components as the source field.
+ * This field is intended for use in penalty functions to favour C1 continuity
+ * in fitting problems with non-continuous bases.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param source_field  The source field to measure discontinuity of.
+ * @param conditional_field  Optional field which must be true (non-zero) on a
+ * parent 2-D element to include it in the expression. If omitted, the first
+ * two parent elements are used.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_edge_discontinuity(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_field_id conditional_field);
+
+/**
  * Creates a field returning a value of a source field at an embedded location.
  * The new field has the same value type as the source field.
  *

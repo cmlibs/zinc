@@ -20797,6 +20797,19 @@ If fails, puts zero at <dimension_address>.
 	return (return_code);
 } /* get_FE_element_shape_dimension */
 
+const FE_value *get_FE_element_shape_face_to_element(
+	struct FE_element_shape *element_shape, int face_number)
+{
+	if (element_shape && (0 <= face_number) &&
+		(face_number < element_shape->number_of_faces))
+	{
+		return element_shape->face_to_element +
+			(face_number*element_shape->dimension*element_shape->dimension);
+	}
+	display_message(ERROR_MESSAGE, "get_FE_element_shape_face_to_element.  Invalid argument(s)");
+	return 0;
+}
+
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 	FE_value *xi, int *face_number)
 /*******************************************************************************
@@ -24955,34 +24968,21 @@ Does not include fields inherited from parent elements.
 	return (number_of_fields);
 } /* get_FE_element_number_of_fields */
 
-int get_FE_element_number_of_parents(struct FE_element *element,
-	int *number_of_parents_address)
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns the number of parents of <element>.
-Can be used to determine if a face is in use by more than one parent elements.
-==============================================================================*/
+int get_FE_element_number_of_parents(struct FE_element *element)
 {
-	int return_code;
+	if (element)
+		return element->number_of_parents;
+	display_message(ERROR_MESSAGE, "get_FE_element_number_of_parents.  Invalid argument(s)");
+	return 0;
+}
 
-	ENTER(get_FE_element_number_of_parents);
-	if (element && number_of_parents_address)
-	{
-		*number_of_parents_address = element->number_of_parents;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_parents.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_number_of_parents */
+struct FE_element *get_FE_element_parent(struct FE_element *element, int index)
+{
+	if ((element) && (0 <= index) && (index < element->number_of_parents))
+		return element->parents[index];
+	display_message(ERROR_MESSAGE, "get_FE_element_parent.  Invalid argument(s)");
+	return 0;
+}
 
 bool cmzn_element_has_parent_in_list(cmzn_element *element,
 	LIST(cmzn_element) *elementList)
@@ -24998,18 +24998,8 @@ bool cmzn_element_has_parent_in_list(cmzn_element *element,
 
 int FE_element_get_first_parent(struct FE_element *element,
 	struct FE_element **parent_element_address, int *face_number_address)
-/*******************************************************************************
-LAST MODIFIED : 7 April 2003
-
-DESCRIPTION :
-Returns the first <parent_element> of <element> and the <face_number> it is at.
-If there is no parent, a true return_code is returned but with a NULL
-<parent_element>.
-==============================================================================*/
 {
 	int return_code;
-
-	ENTER(FE_element_get_first_parent);
 	if ((element) && (parent_element_address) && (face_number_address))
 	{
 		if ((element->parents) && (0 < element->number_of_parents))
@@ -25031,10 +25021,8 @@ If there is no parent, a true return_code is returned but with a NULL
 			"FE_element_get_first_parent.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_get_first_parent */
+}
 
 int get_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape **shape)
@@ -25205,6 +25193,22 @@ Should only be called for unmanaged elements.
 
 	return (return_code);
 } /* set_FE_element_face */
+
+int get_FE_element_face_number(struct FE_element *element, struct FE_element *face)
+{
+	if (element && face)
+	{
+		const int nFaces = element->shape->number_of_faces;
+		for (int i = 0; i < nFaces; ++i)
+		{
+			if (element->faces[i] == face)
+				return i;
+		}
+	}
+	else
+		display_message(ERROR_MESSAGE, "get_FE_element_face_number.  Invalid argument(s)");
+	return -1;
+}
 
 int set_FE_element_number_of_nodes(struct FE_element *element,
 	int number_of_nodes)

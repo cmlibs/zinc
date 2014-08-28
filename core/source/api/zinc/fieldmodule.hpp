@@ -43,6 +43,7 @@ class FieldCoordinateTransformation;
 class FieldVectorCoordinateTransformation;
 class FieldFibreAxes;
 class FieldFiniteElement;
+class FieldEdgeDiscontinuity;
 class FieldEmbedded;
 class FieldFindMeshLocation;
 class FieldNodeValue;
@@ -278,6 +279,8 @@ public:
 	inline FieldFiniteElement createFieldFiniteElement(int numberOfComponents);
 
 	inline FieldEmbedded createFieldEmbedded(const Field& sourceField, const Field& embeddedLocationField);
+
+	inline FieldEdgeDiscontinuity createFieldEdgeDiscontinuity(const Field& sourceField, const Field& conditionalField);
 
 	inline FieldFindMeshLocation createFieldFindMeshLocation(
 		const Field& sourceField, const Field& meshField, const Mesh& mesh);

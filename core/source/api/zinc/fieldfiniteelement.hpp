@@ -32,6 +32,23 @@ public:
 	{	}
 };
 
+class FieldEdgeDiscontinuity : public Field
+{
+private:
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEdgeDiscontinuity(cmzn_field_id field_id) : Field(field_id)
+	{	}
+
+	friend FieldEdgeDiscontinuity Fieldmodule::createFieldEdgeDiscontinuity(
+		const Field& sourceField, const Field& conditionalField);
+
+public:
+
+	FieldEdgeDiscontinuity() : Field(0)
+	{ }
+
+};
+
 class FieldEmbedded : public Field
 {
 private:
@@ -170,6 +187,13 @@ inline FieldFiniteElement Fieldmodule::createFieldFiniteElement(int numberOfComp
 inline FieldFiniteElement Field::castFiniteElement()
 {
 	return FieldFiniteElement(cmzn_field_cast_finite_element(id));
+}
+
+inline FieldEdgeDiscontinuity Fieldmodule::createFieldEdgeDiscontinuity(
+	const Field& sourceField, const Field& conditionalField)
+{
+	return FieldEdgeDiscontinuity(cmzn_fieldmodule_create_field_edge_discontinuity(id,
+		sourceField.getId(), conditionalField.getId()));
 }
 
 inline FieldEmbedded Fieldmodule::createFieldEmbedded(const Field& sourceField, const Field& embeddedLocationField)
