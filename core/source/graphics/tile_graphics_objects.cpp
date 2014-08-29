@@ -20,6 +20,7 @@ and Texture_tiling boundaries.
 #include "graphics/tile_graphics_objects.h"
 #include "graphics/graphics_object_private.hpp"
 
+#if defined (TILE_GRAPHICS_ENABLED)
 const GLfloat small_tolerance = 1e-5f;
 
 static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_surface,
@@ -38,17 +39,7 @@ static struct GT_surface *tile_create_GT_surface(struct GT_surface *original_sur
 		current_surface->surface_type = g_SH_DISCONTINUOUS_TEXMAP;
 		current_surface->render_polygon_mode = CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED;
 		current_surface->ptrnext = (struct GT_surface *)NULL;
-		switch (polygon_size)
-		{
-			case 3:
-			{
-				current_surface->polygon = g_TRIANGLE;
-			} break;
-			case 4:
-			{
-				current_surface->polygon = g_QUADRILATERAL;
-			} break;
-		}
+		current_surface->polygon = g_TRIANGLE;
 		current_surface->tile_number = tile_number;
 		if (!ALLOCATE(current_surface->pointlist, Triple,
 				size))
@@ -317,236 +308,6 @@ static int tile_interpolate_triangle(struct GT_surface *new_surface,
 		}
 	}
 	return(return_code);
-}
-
-static int tile_interpolate_quad(struct GT_surface *new_surface,
-	int index_new, struct GT_surface *surface, int index,
-	int vertexstart, int vertexi, int vertexj, int vertexk,
-	GLfloat xi0, GLfloat xi)
-{
-	int k2, return_code;
-	Triple *texturetri, *newtexturetri, *pointtri, *newpointtri,
-		*normaltri, *newnormaltri, *tangenttri, *newtangenttri;
-	GLfloat *datatri, *newdatatri;
-
-	return_code = 1;
-	if (index_new + 2 >= new_surface->allocated_size)
-	{
-		return_code = tile_reallocate_GT_surface(
-			new_surface, 2 * new_surface->allocated_size);
-	}
-
-	if (return_code)
-	{
-		texturetri = surface->texturelist;
-		newtexturetri = new_surface->texturelist;
-
-		pointtri = surface->pointlist;
-		newpointtri = new_surface->pointlist;
-
-		normaltri = surface->normallist;
-		newnormaltri = new_surface->normallist;
-
-		tangenttri = surface->tangentlist;
-		newtangenttri = new_surface->tangentlist;
-
-		datatri = surface->data;
-		newdatatri = new_surface->data;
-
-		for (k2 = 0 ; k2 < 3 ; k2++)
-		{
-			newtexturetri[index_new][k2] = 
-				(1.0 - xi0) * texturetri[index+vertexstart][k2]
-				+ xi0 * texturetri[index+vertexi][k2];
-			newtexturetri[index_new+1][k2] =
-				(1.0 - xi) * texturetri[index+vertexstart][k2]
-				+ xi * texturetri[index+vertexi][k2];
-			newtexturetri[index_new+3][k2] =
-				(1.0 - xi0) * texturetri[index+vertexj][k2]
-				+ xi0 * texturetri[index+vertexk][k2];
-			newtexturetri[index_new+2][k2] =
-				(1.0 - xi) * texturetri[index+vertexj][k2]
-				+ xi * texturetri[index+vertexk][k2];
-
-			newpointtri[index_new][k2] = 
-				(1.0 - xi0) * pointtri[index+vertexstart][k2]
-				+ xi0 * pointtri[index+vertexi][k2];
-			newpointtri[index_new+1][k2] =
-				(1.0 - xi) * pointtri[index+vertexstart][k2]
-				+ xi * pointtri[index+vertexi][k2];
-			newpointtri[index_new+3][k2] =
-				(1.0 - xi0) * pointtri[index+vertexj][k2]
-				+ xi0 * pointtri[index+vertexk][k2];
-			newpointtri[index_new+2][k2] =
-				(1.0 - xi) * pointtri[index+vertexj][k2]
-				+ xi * pointtri[index+vertexk][k2];
-
-			if (normaltri)
-			{
-				newnormaltri[index_new][k2] = 
-					(1.0 - xi0) * normaltri[index+vertexstart][k2]
-					+ xi0 * normaltri[index+vertexi][k2];
-				newnormaltri[index_new+1][k2] =
-					(1.0 - xi) * normaltri[index+vertexstart][k2]
-					+ xi * normaltri[index+vertexi][k2];
-				newnormaltri[index_new+3][k2] =
-					(1.0 - xi0) * normaltri[index+vertexj][k2]
-					+ xi0 * normaltri[index+vertexk][k2];
-				newnormaltri[index_new+2][k2] =
-					(1.0 - xi) * normaltri[index+vertexj][k2]
-					+ xi * normaltri[index+vertexk][k2];
-			}
-
-			if (tangenttri)
-			{
-				newtangenttri[index_new][k2] = 
-					(1.0 - xi0) * tangenttri[index+vertexstart][k2]
-					+ xi0 * tangenttri[index+vertexi][k2];
-				newtangenttri[index_new+1][k2] =
-					(1.0 - xi) * tangenttri[index+vertexstart][k2]
-					+ xi * tangenttri[index+vertexi][k2];
-				newtangenttri[index_new+3][k2] =
-					(1.0 - xi0) * tangenttri[index+vertexj][k2]
-					+ xi0 * tangenttri[index+vertexk][k2];
-				newtangenttri[index_new+2][k2] =
-					(1.0 - xi) * tangenttri[index+vertexj][k2]
-					+ xi * tangenttri[index+vertexk][k2];
-			}
-		}
-		if (datatri)
-		{
-			int new_data_index = index_new * surface->n_data_components;
-			int data_index = index * surface->n_data_components;
-			for (k2 = 0 ; k2 < surface->n_data_components ; k2++)
-			{
-				newdatatri[new_data_index+k2] = 
-					(1.0 - xi0) * datatri[data_index+
-						vertexstart * surface->n_data_components+k2]
-					+ xi0 * datatri[data_index+
-						vertexi * surface->n_data_components+k2];
-				newdatatri[new_data_index+surface->n_data_components+k2] = 
-					(1.0 - xi) * datatri[data_index+
-						vertexstart * surface->n_data_components+k2]
-					+ xi * datatri[data_index+
-						vertexi * surface->n_data_components+k2];
-				newdatatri[new_data_index+3*surface->n_data_components+k2] = 
-					(1.0 - xi0) * datatri[data_index+
-						vertexj * surface->n_data_components+k2]
-					+ xi0 * datatri[data_index+
-						vertexk * surface->n_data_components+k2];
-				newdatatri[new_data_index+2*surface->n_data_components+k2] = 
-					(1.0 - xi) * datatri[data_index+
-						vertexj * surface->n_data_components+k2]
-					+ xi * datatri[data_index+
-						vertexk * surface->n_data_components+k2];
-			}
-		}
-	}
-	return(return_code);
-}
-
-static int tile_copy_quad_strip_to_dc(struct GT_surface *new_surface,
-	int index, struct GT_surface *surface, int i, int j,
-	struct Texture_tiling *texture_tiling)
-{
-	int npts1 = surface->n_pts1;
-	GLfloat overlap_range, texture_offset, texture_scaling;
-	Triple *texturepoints = surface->texturelist;
-	int k, texture_tile;
-
-	if (index + 3 >= new_surface->allocated_size)
-	{
-		tile_reallocate_GT_surface(new_surface, 2 * new_surface->allocated_size);
-	}
-
-	for (k = 0 ; k < 3 ; k++)
-	{
-		new_surface->pointlist[index][k] = 
-			surface->pointlist[i+npts1*j][k];
-		new_surface->pointlist[index+1][k] = 
-			surface->pointlist[i+1+npts1*j][k];
-		new_surface->pointlist[index+3][k] = 
-			surface->pointlist[i+npts1*(j+1)][k];
-		new_surface->pointlist[index+2][k] = 
-			surface->pointlist[i+1+npts1*(j+1)][k];
-	}
-	if (surface->normallist)
-	{
-		for (k = 0 ; k < 3 ; k++)
-		{
-			new_surface->normallist[index][k] = 
-				surface->normallist[i+npts1*j][k];
-			new_surface->normallist[index+1][k] = 
-				surface->normallist[i+1+npts1*j][k];
-			new_surface->normallist[index+3][k] = 
-				surface->normallist[i+npts1*(j+1)][k];
-		new_surface->normallist[index+2][k] = 
-				surface->normallist[i+1+npts1*(j+1)][k];
-		}
-	}
-	for (k = 0 ; k < 3 ; k++)
-	{
-		if (k < 0)
-		{
-			overlap_range = 2.0 * (GLfloat)texture_tiling->overlap * 
-				texture_tiling->tile_coordinate_range[k] /
-				(GLfloat)texture_tiling->tile_size[k];
-			texture_tile = (int)floor((texturepoints[i+npts1*j][k]) /
-				(texture_tiling->tile_coordinate_range[k] - overlap_range));
-			/* Need to handle the boundaries specially */
-			texture_offset = texture_tile *
-				(texture_tiling->tile_coordinate_range[k]- overlap_range);
-			texture_scaling = 
-				texture_tiling->coordinate_scaling[k];
-		}
-		else
-		{
-			texture_offset = 0.0;
-			texture_scaling = 1.0;
-		}
-		new_surface->texturelist[index][k] = 
-			(texturepoints[i+npts1*j][k] - texture_offset)
-			* texture_scaling;
-		new_surface->texturelist[index+1][k] = 
-			(texturepoints[i+1+npts1*j][k] - texture_offset)
-			* texture_scaling;
-		new_surface->texturelist[index+3][k] = 
-			(texturepoints[i+npts1*(j+1)][k] - texture_offset)
-			* texture_scaling;
-		new_surface->texturelist[index+2][k] = 
-			(texturepoints[i+1+npts1*(j+1)][k] - texture_offset)
-			* texture_scaling;
-	}
-	if (surface->tangentlist)
-	{
-		for (k = 0 ; k < 3 ; k++)
-		{
-			new_surface->tangentlist[index][k] = 
-				surface->tangentlist[i+npts1*j][k];
-			new_surface->tangentlist[index+1][k] = 
-				surface->tangentlist[i+1+npts1*j][k];
-			new_surface->tangentlist[index+3][k] = 
-				surface->tangentlist[i+npts1*(j+1)][k];
-			new_surface->tangentlist[index+2][k] = 
-				surface->tangentlist[i+1+npts1*(j+1)][k];
-		}
-	}
-	if (surface->data)
-	{
-		index *= surface->n_data_components;
-		for (k = 0 ; k < surface->n_data_components ; k++)
-		{
-			new_surface->data[index+k] = 
-				surface->data[(i+npts1*j)*surface->n_data_components+k];
-			new_surface->data[index+surface->n_data_components+k] = 
-				surface->data[(i+1+npts1*j)*surface->n_data_components+k];
-			new_surface->data[index+3*surface->n_data_components+k] = 
-				surface->data[(i+npts1*(j+1))*surface->n_data_components+k];
-			new_surface->data[index+2*surface->n_data_components+k] = 
-				surface->data[(i+1+npts1*(j+1))*surface->n_data_components+k];
-		}
-	}
-	return(1);
 }
 
 static int tile_copy_vertices_to_triangle(
@@ -944,237 +705,6 @@ static int tile_select_tile_bin(Triple texture_point,
 }
 
 /***************************************************************************//**
- * Split a GT_surface <surface> of quads based on its texture coordinates and 
- * <texture_tiling> boundaries.  Returns a surface or linked list of surfaces
- * that have equivalent geometry separated into separate surfaces for separate
- * tiles.
- * This routine is not general, it only works if the quadrilateril sides are 
- * exactly aligned with the texture coordinates.  If this is not the case it is
- * expected that the quad is split into two triangles and this version of the tile
- * algorithm used.
- */
-static int tile_and_bin_GT_surface_quads(struct GT_surface *surface, 
-	struct Texture_tiling *texture_tiling, struct GT_surface **quad_tiles,
-	GLfloat *overlap_range, int size, int number_of_tiles)
-{
-	GLfloat nextcut, xi0, xi;
-	int finished, index, k, l, index_new, return_code, 
-		vertex1, vertexstart, vertexi, vertexj, othervertex;
-	struct GT_surface *current_surface, *new_surface;
-	Triple texture_centre, *texturetri;
-	GLfloat vertexk[4];
-
-	ENTER(tile_GT_surface);
-
-	if (surface && texture_tiling && quad_tiles)
-	{
-		return_code = 1;
-		current_surface = surface;
-		for (k = 0 ; return_code && (k < texture_tiling->dimension) ; k++)
-		{
-#if defined (DEBUG_CODE)
-			printf("direction %d\n", k);
-#endif /* defined (DEBUG_CODE) */
-			if (texture_tiling->texture_tiles[k] > 1)
-			{
-				new_surface = tile_create_GT_surface(current_surface,
-					size, 0, /*polygon_size*/4);
-									
-				for (l = 0 ; return_code && (l < current_surface->n_pts1) ; l++)
-				{
-					index = 4 * l;
-					texturetri = current_surface->texturelist;
-	
-					/* We can work from the three vertices as we know the fourth is 
-					 * aligned in texture coordinates.
-					 */
-					vertexk[0] = (texturetri[index][k]) / 
-						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-					vertexk[1] = (texturetri[index+1][k]) / 
-						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-					vertexk[2] = (texturetri[index+2][k]) / 
-						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-					vertexk[3] = (texturetri[index+3][k]) / 
-						(texture_tiling->tile_coordinate_range[k] - overlap_range[k]);
-#if defined (DEBUG_CODE)
-					printf(" tricoordinates %g %g %g\n",
-						texturetri[index][k], texturetri[index+1][k], texturetri[index+2][k]);
-					printf(" vertexk %g %g %g\n",
-						vertexk[0], vertexk[1], vertexk[2]);
-#endif /* defined (DEBUG_CODE) */
-					if ((vertexk[1] >= vertexk[0]) && (vertexk[2] >= vertexk[0]))
-					{
-						vertexstart = 0;
-						vertexi = 1;
-						vertexj = 3;
-						othervertex = 2;
-					}
-					else
-					{
-						if ((vertexk[2] >= vertexk[1]) && (vertexk[0] >= vertexk[1]))
-						{
-							vertexstart = 1;
-							vertexi = 2;
-							vertexj = 0;
-							othervertex = 3;
-						}
-						else
-						{
-							vertexstart = 3;
-							vertexi = 0;
-							vertexj = 2;
-							othervertex = 1;
-						}
-					}
-	
-#if defined (DEBUG_CODE)
-					printf(" vertexstart %d %g %g %g\n",
-						vertexstart, vertexk[vertexstart],
-						vertexk[vertexi], vertexk[vertexj]);
-#endif /* defined (DEBUG_CODE) */
-	
-					nextcut = floor(vertexk[vertexstart] + 1.0 + small_tolerance);
-					if (vertexk[vertexj] > vertexk[vertexi] + small_tolerance)
-					{
-						/* Then we assume vertexi and vertexstart have the same value and so
-						 * rather than flipping we rotate so vertexstart is now what was vertexi
-						 * to maintain the same winding order.
-						 */
-						int tempvertexj = vertexstart;
-						vertexstart = vertexi;
-						vertexi = othervertex;
-						othervertex = vertexj;
-						vertexj = tempvertexj;
-					}
-					if (vertexk[vertexi] > vertexk[vertexstart] + small_tolerance)
-					{
-						/* What was the previous xi */
-						xi0 = 0.0;
-						finished = 0;
-						
-						while (!finished)
-						{
-							xi = (nextcut - vertexk[vertexstart]) /
-								(vertexk[vertexi] - vertexk[vertexstart]);
-							if (xi > 1.0 - small_tolerance)
-							{
-								xi = 1.0;
-							}
-		
-							index_new = 4 * new_surface->n_pts1;
-							if (tile_interpolate_quad(new_surface,
-									index_new, current_surface, index,
-									vertexstart, vertexi, vertexj, othervertex,
-									xi0, xi))
-							{
-								new_surface->n_pts1++;
-							}
-							else
-							{
-								return_code = 0;
-								finished = 1;
-							}
-		
-							xi0 = xi;
-							if (nextcut < vertexk[vertexi])
-							{
-								nextcut++;
-								
-								if (nextcut > vertexk[vertexi] - small_tolerance)
-								{
-									nextcut = vertexk[vertexi];
-								}
-							}
-							else
-							{
-								finished = 1;
-							}
-						}
-					}
-					else
-					{
-						if (tile_copy_polygon(new_surface,
-							4 * new_surface->n_pts1,
-							current_surface, index))
-						{
-							new_surface->n_pts1++;
-						}
-					}
-				}
-				if (current_surface != surface)
-				{
-					/* Destroy this if it is a local temporary, 
-						otherwise leave it up to the calling routine who
-						created it. */
-					DESTROY(GT_surface)(&current_surface);
-				}
-				current_surface = new_surface;
-			}
-		}
-							
-		/* Put the quads in their appropriate bin */
-		for (l = 0 ; return_code && (l < current_surface->n_pts1) ; l++)
-		{
-			index = 4 * l;
-			/* Use the centre of a triangle to determine its bin */
-								
-			texturetri = current_surface->texturelist;
-			texture_centre[0] = (texturetri[index][0]
-				+ texturetri[index+1][0] + 
-				texturetri[index+3][0]) / 3.0;
-			texture_centre[1] = (texturetri[index][1]
-				+ texturetri[index+1][1] + 
-				texturetri[index+3][1]) / 3.0;
-			texture_centre[2] = (texturetri[index][2]
-				+ texturetri[index+1][2] + 
-				texturetri[index+3][2]) / 3.0;
-			vertex1 = tile_select_tile_bin(texture_centre,
-				texture_tiling, /*with_modulus*/1, overlap_range);
-			if ((vertex1 >= 0) && (vertex1 < number_of_tiles))
-			{
-				new_surface = tile_create_or_get_tile_bin(
-					quad_tiles, vertex1, size,
-					/*polygon_size*/4, current_surface);
-				if (new_surface)
-				{
-					if (tile_copy_polygon(new_surface,
-							4 * new_surface->n_pts1,
-							current_surface, index))
-					{
-						new_surface->n_pts1++;
-					}
-					else
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE, "tile_GT_surface.  "
-					"Invalid triangle tile %d", vertex1);
-			}
-		}
-		if (surface != current_surface)
-		{
-			DESTROY(GT_surface)(&current_surface);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"tile_GT_surface. Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* tile_and_bin_GT_surface_quads */
-
-/***************************************************************************//**
  * Split a GT_surface <surface> of triangles based on its texture coordinates and 
  * <texture_tiling> boundaries.  Returns a surface or linked list of surfaces
  * that have equivalent geometry separated into separate surfaces for separate
@@ -1565,147 +1095,273 @@ static int tile_test_aligned_texture_coordinates(Triple vertex1, Triple vertex2)
 	return (return_code);
 }
 
-struct GT_surface *tile_GT_surface(struct GT_surface *surface, 
-	struct Texture_tiling *texture_tiling)
-/*******************************************************************************
-LAST MODIFIED : 30 November 2007
-
-DESCRIPTION :
-Split a GT_surface <surface> based on its texture coordinates and 
-<texture_tiling> boundaries.  Returns a surface or linked list of surfaces
-that have equivalent geometry separated into separate surfaces for separate
-tiles.
-==============================================================================*/
+static int tile_select_tile_bin(Triple texture_point,
+	struct Texture_tiling *texture_tiling, int with_modulus,
+	Triple overlap_range)
 {
-	int i, index, index1, index2, index3, index4, j, k, kmax,
-		initial_points, npts1, npts2,
-		number_of_tiles, return_code, vertex1, vertex2, vertex3, vertex4;
-	struct GT_surface *current_surface,  *return_surface,
-		**surface_tiles, **triangle_tiles;
-	Triple overlap_range, *texturepoints;
-
-	ENTER(tile_GT_surface);
-
-	if (surface && texture_tiling)
+	int tile, tilex, tiley, tilez;
+	switch (texture_tiling->dimension)
 	{
+		case 1:
+		{
+			if (texture_tiling->texture_tiles[0] > 1)
+			{
+				tilex = (int)floor((texture_point[0]) /
+					(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			}
+			else
+			{
+				tilex = 0;
+			}
+			if (with_modulus)
+			{
+				if (tilex < 0)
+				{
+					tilex = ((-tilex) % texture_tiling->texture_tiles[0]);
+					if (tilex != 0)
+					{
+						tilex = texture_tiling->texture_tiles[0] - tilex;
+					}
+				}
+				else
+				{
+					tilex = tilex % texture_tiling->texture_tiles[0];
+				}
+			}
+			tile = tilex;
+		} break;
+		case 2:
+		{
+			if (texture_tiling->texture_tiles[0] > 1)
+			{
+				tilex = (int)floor((texture_point[0]) /
+					(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			}
+			else
+			{
+				tilex = 0;
+			}
+			if (texture_tiling->texture_tiles[1] > 1)
+			{
+				tiley = (int)floor((texture_point[1]) /
+					(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			}
+			else
+			{
+				tiley = 0;
+			}
+			if (with_modulus)
+			{
+				if (tilex < 0)
+				{
+					tilex = ((-tilex) % texture_tiling->texture_tiles[0]);
+					if (tilex != 0)
+					{
+						tilex = texture_tiling->texture_tiles[0] - tilex;
+					}
+				}
+				else
+				{
+					tilex = tilex % texture_tiling->texture_tiles[0];
+				}
+				if (tiley < 0)
+				{
+					tiley = ((-tiley) % texture_tiling->texture_tiles[1]);
+					if (tiley != 0)
+					{
+						tiley = texture_tiling->texture_tiles[1] - tiley;
+					}
+				}
+				else
+				{
+					tiley = tiley % texture_tiling->texture_tiles[1];
+				}
+			}
+			tile = tilex +
+				texture_tiling->texture_tiles[0] * tiley;
+		} break;
+		case 3:
+		{
+			if (texture_tiling->texture_tiles[0] > 1)
+			{
+				tilex = (int)floor((texture_point[0]) /
+					(texture_tiling->tile_coordinate_range[0] - overlap_range[0]));
+			}
+			else
+			{
+				tilex = 0;
+			}
+			if (texture_tiling->texture_tiles[1] > 1)
+			{
+				tiley = (int)floor((texture_point[1]) /
+					(texture_tiling->tile_coordinate_range[1] - overlap_range[1]));
+			}
+			else
+			{
+				tiley = 0;
+			}
+			if (texture_tiling->texture_tiles[2] > 1)
+			{
+				tilez = (int)floor((texture_point[2]) /
+					(texture_tiling->tile_coordinate_range[2] - overlap_range[2]));
+			}
+			else
+			{
+				tilez = 0;
+			}
+			if (with_modulus)
+			{
+				if (tilex < 0)
+				{
+					tilex = ((-tilex) % texture_tiling->texture_tiles[0]);
+					if (tilex != 0)
+					{
+						tilex = texture_tiling->texture_tiles[0] - tilex;
+					}
+				}
+				else
+				{
+					tilex = tilex % texture_tiling->texture_tiles[0];
+				}
+				if (tiley < 0)
+				{
+					tiley = ((-tiley) % texture_tiling->texture_tiles[1]);
+					if (tiley != 0)
+					{
+						tiley = texture_tiling->texture_tiles[1] - tiley;
+					}
+				}
+				else
+				{
+					tiley = tiley % texture_tiling->texture_tiles[1];
+				}
+				if (tilez < 0)
+				{
+					tilez = ((-tilez) % texture_tiling->texture_tiles[2]);
+					if (tilez != 0)
+					{
+						tilez = texture_tiling->texture_tiles[2] - tilez;
+					}
+				}
+				else
+				{
+					tilez = tilez % texture_tiling->texture_tiles[2];
+				}
+			}
+			tile = tilex +
+				texture_tiling->texture_tiles[0] *
+				(tiley +
+					texture_tiling->texture_tiles[1] * tilez);
+		} break;
+		default:
+		{
+			tile = 0;
+		}
+	}
+	return (tile);
+}
+
+
+static struct GT_surface *tile_create_or_get_tile_bin(
+	struct GT_surface **tiles, int bin_number, int initial_points,
+	int polygon_size, struct GT_surface *template_surface)
+{
+	struct GT_surface *return_surface;
+
+	if (tiles[bin_number])
+ 	{
+		return_surface = tiles[bin_number];
+	}
+	else
+	{
+		return_surface = tile_create_GT_surface(template_surface,
+					initial_points, bin_number, polygon_size);
+		if (return_surface)
+		{
+			tiles[bin_number] = return_surface;
+		}
+	}
+
+	return (return_surface);
+}
+
+struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
+	GT_surface_vertex_buffers *vb_surface, struct Graphics_vertex_array *array,
+	struct Texture_tiling *texture_tiling)
+{
+	struct Graphics_vertex_array *tiles_array = 0;
+
+	if (vb_surface && array &&texture_tiling)
+	{
+		int i, index, index3, index4, j, k, kmax,
+			number_of_tiles, return_code;
+		Triple overlap_range, *texturepoints;
+
 		return_code = 1;
-		npts1 = surface->n_pts1;
-		npts2 = surface->n_pts2;
 		number_of_tiles = texture_tiling->texture_tiles[0];
-		overlap_range[0] = 2.0 * (GLfloat)texture_tiling->overlap * 
+		overlap_range[0] = 2.0 * (GLfloat)texture_tiling->overlap *
 			texture_tiling->tile_coordinate_range[0] /
 			(GLfloat)texture_tiling->tile_size[0];
 		if (texture_tiling->dimension > 1)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[1];
-			overlap_range[1] = 2.0 * (GLfloat)texture_tiling->overlap * 
+			overlap_range[1] = 2.0 * (GLfloat)texture_tiling->overlap *
 				texture_tiling->tile_coordinate_range[1] /
 				(GLfloat)texture_tiling->tile_size[1];
 		}
 		if (texture_tiling->dimension > 2)
 		{
 			number_of_tiles *= texture_tiling->texture_tiles[2];
-			overlap_range[2] = 2.0 * (GLfloat)texture_tiling->overlap * 
+			overlap_range[2] = 2.0 * (GLfloat)texture_tiling->overlap *
 				texture_tiling->tile_coordinate_range[2] /
 				(GLfloat)texture_tiling->tile_size[2];
 		}
-		ALLOCATE(surface_tiles, struct GT_surface *, number_of_tiles);
-		for (i = 0 ; i < number_of_tiles ; i++)
-		{
-			surface_tiles[i] = (struct GT_surface *)NULL;
-		}
-		ALLOCATE(triangle_tiles, struct GT_surface *, number_of_tiles);
-		for (i = 0 ; i < number_of_tiles ; i++)
-		{
-			triangle_tiles[i] = (struct GT_surface *)NULL;
-		}
-		texturepoints = surface->texturelist;
-		initial_points = 100;
-		switch (surface->polygon)
-		{
-			case g_QUADRILATERAL:
-			{
-				for (i=0;return_code && (i<npts1-1);i++)
-				{
-					for (j=0;return_code && (j<npts2-1);j++)
-					{
-						index1 = i+npts1*j;
-						index2 = i+1+npts1*j;
-						index3 = i+npts1*(j+1);
-						index4 = i+1+npts1*(j+1);
 
-						/* Determine which tile each vertex belongs too */
-						vertex1 = tile_select_tile_bin(texturepoints[index1],
-							texture_tiling, /*with_modulus*/0, overlap_range);
-						vertex2 = tile_select_tile_bin(texturepoints[index2],
-							texture_tiling, /*with_modulus*/0, overlap_range);
-						vertex3 = tile_select_tile_bin(texturepoints[index3],
-							texture_tiling, /*with_modulus*/0, overlap_range);
-						vertex4 = tile_select_tile_bin(texturepoints[index4],
-							texture_tiling, /*with_modulus*/0, overlap_range);
-						if ((vertex1 == vertex2) &&
-							(vertex1 == vertex3) &&
-							(vertex1 == vertex4))
-						{
-							vertex1 = tile_select_tile_bin(texturepoints[index1],
-							texture_tiling, /*with_modulus*/1, overlap_range);
-							current_surface = tile_create_or_get_tile_bin(
-								surface_tiles, vertex1, initial_points,
-								/*polygon_size*/4, surface);
-							if (current_surface)
-							{
-								index = 4 * current_surface->n_pts1;
-								return_code = tile_copy_quad_strip_to_dc(
-									current_surface, index, surface, i, j,
-									texture_tiling);
-								current_surface->n_pts1++;
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-						else if (tile_test_aligned_texture_coordinates(texturepoints[index1], texturepoints[index2])
-							&& tile_test_aligned_texture_coordinates(texturepoints[index1], texturepoints[index3])
-							&& tile_test_aligned_texture_coordinates(texturepoints[index2], texturepoints[index4]))
-						{
-							/* Make a surface to store our triangles as we split them */
-							current_surface = tile_create_GT_surface(surface,
-								initial_points, /*tile_number*/0, /*polygon_size*/4);
-							return_code = tile_copy_quad_strip_to_dc(
-								current_surface, /*index*/0, surface, i, j,
-								texture_tiling);
-							current_surface->n_pts1 = 1;
-							return_code = tile_and_bin_GT_surface_quads(current_surface,
-								texture_tiling, surface_tiles,
-								overlap_range, initial_points, number_of_tiles);
-							DESTROY(GT_surface)(&current_surface);
-						}
-						else
-						{
-							/* Make a surface to store our triangles as we split them */
-							current_surface = tile_create_GT_surface(surface,
-								initial_points, /*tile_number*/0, /*polygon_size*/3);
-							/* Make two triangles out of the quad */
-							tile_copy_vertices_to_triangle(
-								current_surface, /*vertex_index*/0, surface,
-								index1, index2, index3);
-							tile_copy_vertices_to_triangle(
-								current_surface, /*vertex_index*/3, surface,
-								index2, index4, index3);
-							current_surface->n_pts1 = 2;
-							return_code = tile_and_bin_GT_surface_triangles(current_surface,
-								texture_tiling, triangle_tiles,
-								overlap_range, initial_points, number_of_tiles);
-							DESTROY(GT_surface)(&current_surface);
-						}						
-					}
-				}
-			} break;
-			case g_TRIANGLE:
+		unsigned int surface_index;
+		unsigned int surface_count = array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		GLfloat *position_buffer = 0, *data_buffer = 0, *normal_buffer = 0,
+			*texture_coordinate0_buffer = 0, *tangent_buffer = 0;
+		unsigned int position_values_per_vertex, position_vertex_count,
+		data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
+		normal_vertex_count, texture_coordinate0_values_per_vertex,
+		texture_coordinate0_vertex_count, tangent_values_per_vertex, tangent_vertex_count;
+		unsigned int texture_coordinate0_values_per_vertex,
+			texture_coordinate0_vertex_count;
+		GLfloat *texture_coordinate0_buffer = 0;
+		if (array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+			texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+			&texture_coordinate0_vertex_count)
+			&& (texture_coordinate0_vertex_count == position_vertex_count))
+		{
+			tiles_array = new Graphics_vertex_array(GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS);
+			GLfloat *texture_coordinate0_vertex = NULL;
+			for (int surface_index = 0; surface_index < surface_count; i++)
 			{
-				index1 = 0;
-				index2 = npts1;				
+				unsigned int index_start, index_count;
+				unsigned int npts1 = 0, npts2 = 0;
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					surface_index, 1, &index_start);
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					surface_index, 1, &index_count);
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+					surface_index, 1, &npts1);
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+					surface_index, 1, &npts2);
+				texture_coordinate0_vertex = texture_coordinate0_buffer +
+					texture_coordinate0_values_per_vertex * index_start;
+
+				int initial_points = 100;
+				int index1 = 0;
+				int index2 = npts1;
+				Triple texturepoints1, texturepoints2, texturepoints3;
+				int return_code = 1;
+				int vertex1, vertex2, vertex3;
 				for (i=npts1-1;return_code && (i>0);i--)
 				{
 					for (j=i;return_code && (j>0);j--)
@@ -1722,16 +1378,25 @@ tiles.
 						for (k = 0 ; k < kmax ; k++)
 						{
 							/* Determine which tile each vertex belongs too */
-							vertex1 = tile_select_tile_bin(texturepoints[index1],
+							texturepoints1[0] = texture_coordinate0_vertex[index1 * 3];
+							texturepoints1[1] = texture_coordinate0_vertex[index1 * 3 + 1];
+							texturepoints1[2] = texture_coordinate0_vertex[index1 * 3 + 2];
+							vertex1 = tile_select_tile_bin(texturepoints1,
 								texture_tiling, /*with_modulus*/0, overlap_range);
-							vertex2 = tile_select_tile_bin(texturepoints[index2],
+							texturepoints2[0] = texture_coordinate0_vertex[index2 * 3];
+							texturepoints2[1] = texture_coordinate0_vertex[index2 * 3 + 1];
+							texturepoints2[2] = texture_coordinate0_vertex[index2 * 3 + 2];
+							vertex2 = tile_select_tile_bin(texturepoints2,
 								texture_tiling, /*with_modulus*/0, overlap_range);
-							vertex3 = tile_select_tile_bin(texturepoints[index3],
+							texturepoints3[0] = texture_coordinate0_vertex[index3 * 3];
+							texturepoints3[1] = texture_coordinate0_vertex[index3 * 3 + 1];
+							texturepoints3[2] = texture_coordinate0_vertex[index3 * 3 + 2];
+							vertex3 = tile_select_tile_bin(texturepoints3,
 								texture_tiling, /*with_modulus*/0, overlap_range);
 							if ((vertex1 == vertex2) &&
 								(vertex1 == vertex3))
 							{
-								vertex1 = tile_select_tile_bin(texturepoints[index1],
+								vertex1 = tile_select_tile_bin(texturepoints1,
 									texture_tiling, /*with_modulus*/1, overlap_range);
 								current_surface = tile_create_or_get_tile_bin(
 									triangle_tiles, vertex1, initial_points,
@@ -1774,13 +1439,9 @@ tiles.
 					}
 					index1++;
 				}
-			} break;
-			default:
-			{
-				/* Surface type not handled */
-				return_code = 0;
 			}
 		}
+
 		current_surface = (struct GT_surface *)NULL;
 		return_surface = (struct GT_surface *)NULL;
 		for (i = 0 ; return_code && (i < number_of_tiles) ; i++)
@@ -1808,7 +1469,7 @@ tiles.
 				/* Writing every surface is helpful when using valgrind so that it traps
 				 * earlier.  i.e. now rather than in the opengl render.
 				 */
-				write_GT_surface(current_surface);				
+				write_GT_surface(current_surface);
 #endif // defined (DEBUG_CODE)
 			}
 			if (triangle_tiles[i])
@@ -1831,7 +1492,7 @@ tiles.
 						index);
 				}
 #if defined (DEBUG_CODE)
-				write_GT_surface(current_surface);				
+				write_GT_surface(current_surface);
 #endif // defined (DEBUG_CODE)
 			}
 		}
@@ -1847,8 +1508,9 @@ tiles.
 		display_message(ERROR_MESSAGE,"tile_GT_surface. Invalid argument(s)");
 		return_surface=(struct GT_surface *)NULL;
 	}
-	LEAVE;
 
-	return (return_surface);
-} /* tile_GT_surface */
+	return tiles_array;
+}
 
+
+#endif

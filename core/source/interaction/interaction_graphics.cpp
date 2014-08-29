@@ -14,6 +14,7 @@ Functions for building graphics assisting interaction, eg. rubber-band effect.
 #include <stdio.h>
 #include "general/debug.h"
 #include "interaction/interaction_graphics.h"
+#include "graphics/graphics_object.hpp"
 #include "general/message.h"
 
 /*
@@ -24,14 +25,6 @@ Module functions
 int Interaction_volume_make_polyline_extents(
 	struct Interaction_volume *interaction_volume,
 	struct GT_object *graphics_object)
-/*******************************************************************************
-LAST MODIFIED : 10 July 2000
-
-DESCRIPTION :
-Fills <graphics_object> - of type g_POLYLINE with lines marking the box
-enclosing the <interaction volume>, used for rubber-banding. Lines are put at
-time 0 in the graphics object; any other primitives at that time are cleared.
-==============================================================================*/
 {
 	ZnReal model_vertex[8][3];
 	/* use 0.999999 to avoid clipping problems for frustums */
@@ -46,14 +39,12 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 		{ 0.9999, 0.9999,-0.9999},
 		{ 0.9999, 0.9999, 0.9999}
 	};
-	ZnReal time;
 	int i,return_code;
-	struct GT_polyline *polyline;
+	struct GT_polyline_vertex_buffers *polyline;
 	Triple *point,*points;
 
-	ENTER(Interaction_volume_make_polyline_extents);
 	if (interaction_volume&&graphics_object&&
-		(g_POLYLINE==GT_object_get_type(graphics_object)))
+		(g_POLYLINE_VERTEX_BUFFERS==GT_object_get_type(graphics_object)))
 	{
 		return_code=1;
 		/* get the 8 vertices of the interaction_volume frustum */
@@ -66,8 +57,7 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 		{
 			/* make a polyline big enough for the 12 line segment edges of the box */
 			if (ALLOCATE(points,Triple,24)&&
-				(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-					12,points,/*normalpoints*/NULL,0,(GLfloat *)NULL)))
+				(polyline=CREATE(GT_polyline_vertex_buffers)(g_PLAIN_DISCONTINUOUS, 0)))
 			{
 				point=points;
 				/* lines spanning axis 1 */
@@ -111,21 +101,21 @@ time 0 in the graphics object; any other primitives at that time are cleared.
 					point++;
 				}
 				/* put all graphics in at time 0 */
-				time=0.0;
-				if (GT_object_has_time(graphics_object,time))
-				{
-					GT_object_remove_primitives_at_time(graphics_object,time,
-						(GT_object_primitive_object_name_conditional_function *)NULL,
-						NULL);
-				}
-				if (!GT_OBJECT_ADD(GT_polyline)(graphics_object,time,polyline))
+				struct Graphics_vertex_array *array = GT_object_get_vertex_set(
+					graphics_object);
+				GT_object_remove_primitives_at_time(graphics_object,0.0,
+					(GT_object_primitive_object_name_conditional_function *)NULL,
+					NULL);
+				fill_line_graphics_vertex_array(array,	24, points, 0, 0, 0);
+				if (!GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics_object, polyline))
 				{
 					display_message(ERROR_MESSAGE,
 						"Interaction_volume_make_polyline_extents.  "
 						"Could not add primitive");
 					return_code=0;
-					DESTROY(GT_polyline)(&polyline);
+					DESTROY(GT_polyline_vertex_buffers)(&polyline);
 				}
+				DEALLOCATE(points);
 			}
 			else
 			{

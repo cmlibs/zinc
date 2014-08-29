@@ -20,6 +20,7 @@
 #include "finite_element/finite_element_to_iso_surfaces.h"
 #include "general/debug.h"
 #include "general/matrix_vector.h"
+#include "graphics/graphics_object.hpp"
 #include "graphics/volume_texture.h"
 #include "general/message.h"
 
@@ -597,8 +598,7 @@ public:
 
 	int sweep();
 
-	int fill_graphics(struct GT_object *graphics_object,
-		enum cmzn_graphics_render_polygon_mode render_polygon_mode);
+	int fill_graphics(struct Graphics_vertex_array *array);
 
 private:
 
@@ -1804,136 +1804,117 @@ bool Isosurface_builder::reverse_winding()
 	return (reverse_winding);
 }
 
-int Isosurface_builder::fill_graphics(struct GT_object *graphics_object,
-	enum cmzn_graphics_render_polygon_mode render_polygon_mode)
+int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 {
 	int return_code = 1;
 	bool reverse = reverse_winding();
+	unsigned int vertex_start = array->get_number_of_vertices(
+		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+	unsigned int total_number_of_triangles = 0;
+	int polygonType = (int)g_TRIANGLE;
+
 	for (Iso_mesh_map_const_iterator mesh_iter = mesh_map.begin();
 		mesh_iter != mesh_map.end(); mesh_iter++)
 	{
 		Iso_mesh& mesh = *(mesh_iter->second);
 		const Iso_triangle_list& triangle_list = mesh.triangle_list;
 		const int number_of_triangles = triangle_list.size();
+		total_number_of_triangles += (unsigned int)number_of_triangles;
 		if (0 < number_of_triangles)
 		{
-			Triple *points = NULL;
-			Triple *normalpoints = NULL;
-			Triple *texturepoints = NULL;
-			Triple *tangentpoints = NULL;
-			GLfloat *datavalues = NULL;
-			ALLOCATE(points, Triple, number_of_triangles*3);
-			ALLOCATE(normalpoints, Triple, number_of_triangles*3);
-			if (NULL != texture_coordinate_field)
+			GLfloat floatField[3];
+			GLfloat *dataField = NULL;
+
+			if (0 != data_field)
+				dataField = new GLfloat[number_of_data_components];
+			for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin(); triangle_iter != triangle_list.end(); triangle_iter++)
 			{
-				ALLOCATE(texturepoints, Triple, number_of_triangles*3);
-			}
-			if (NULL != data_field)
-			{
-				ALLOCATE(datavalues, GLfloat, number_of_triangles*3*number_of_data_components);
-			}
-			if ((NULL != points) && (NULL != normalpoints))
-			{
-				Triple *point = points;
-				Triple *normal = normalpoints;
-				Triple *texture = texturepoints;
-				GLfloat *data = datavalues;
-				for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin(); triangle_iter != triangle_list.end(); triangle_iter++)
+				const Iso_triangle *triangle = *triangle_iter;
+				const Iso_vertex* v1 = triangle->v1;
+				const Iso_vertex* v2 = reverse ? triangle->v3 : triangle->v2;
+				const Iso_vertex* v3 = reverse ? triangle->v2 : triangle->v3;
+
+				CAST_TO_OTHER(floatField,v1->coordinates,GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				CAST_TO_OTHER(floatField,v2->coordinates,GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				CAST_TO_OTHER(floatField,v3->coordinates,GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+
+				// calculate facet normal:
+				FE_value axis1[3], axis2[3], facet_normal[3];
+				axis1[0] = v2->coordinates[0] - v1->coordinates[0];
+				axis1[1] = v2->coordinates[1] - v1->coordinates[1];
+				axis1[2] = v2->coordinates[2] - v1->coordinates[2];
+				axis2[0] = v3->coordinates[0] - v1->coordinates[0];
+				axis2[1] = v3->coordinates[1] - v1->coordinates[1];
+				axis2[2] = v3->coordinates[2] - v1->coordinates[2];
+				cross_product_FE_value_vector3(axis1, axis2, facet_normal);
+				normalize_FE_value3(facet_normal);
+				CAST_TO_OTHER(floatField,facet_normal,GLfloat,3);
+				for (int i = 0; i < 3; i++)
 				{
-					const Iso_triangle *triangle = *triangle_iter;
-					const Iso_vertex* v1 = triangle->v1;
-					const Iso_vertex* v2 = reverse ? triangle->v3 : triangle->v2;
-					const Iso_vertex* v3 = reverse ? triangle->v2 : triangle->v3;
-					(*point)[0] = (ZnReal)v1->coordinates[0];
-					(*point)[1] = (ZnReal)v1->coordinates[1];
-					(*point)[2] = (ZnReal)v1->coordinates[2];
-					point++;
-					(*point)[0] = (ZnReal)v2->coordinates[0];
-					(*point)[1] = (ZnReal)v2->coordinates[1];
-					(*point)[2] = (ZnReal)v2->coordinates[2];
-					point++;
-					(*point)[0] = (ZnReal)v3->coordinates[0];
-					(*point)[1] = (ZnReal)v3->coordinates[1];
-					(*point)[2] = (ZnReal)v3->coordinates[2];
-					point++;
-					// calculate facet normal:
-					FE_value axis1[3], axis2[3], facet_normal[3];
-					axis1[0] = v2->coordinates[0] - v1->coordinates[0];
-					axis1[1] = v2->coordinates[1] - v1->coordinates[1];
-					axis1[2] = v2->coordinates[2] - v1->coordinates[2];
-					axis2[0] = v3->coordinates[0] - v1->coordinates[0];
-					axis2[1] = v3->coordinates[1] - v1->coordinates[1];
-					axis2[2] = v3->coordinates[2] - v1->coordinates[2];
-					cross_product_FE_value_vector3(axis1, axis2, facet_normal);
-					normalize_FE_value3(facet_normal);
-					for (int i = 0; i < 3; i++)
-					{
-						(*normal)[0] = (ZnReal)facet_normal[0];
-						(*normal)[1] = (ZnReal)facet_normal[1];
-						(*normal)[2] = (ZnReal)facet_normal[2];
-						normal++;
-					}
-					if (NULL != texture)
-					{
-						(*texture)[0] = (ZnReal)v1->texture_coordinates[0];
-						(*texture)[1] = (ZnReal)v1->texture_coordinates[1];
-						(*texture)[2] = (ZnReal)v1->texture_coordinates[2];
-						texture++;
-						(*texture)[0] = (ZnReal)v2->texture_coordinates[0];
-						(*texture)[1] = (ZnReal)v2->texture_coordinates[1];
-						(*texture)[2] = (ZnReal)v2->texture_coordinates[2];
-						texture++;
-						(*texture)[0] = (ZnReal)v3->texture_coordinates[0];
-						(*texture)[1] = (ZnReal)v3->texture_coordinates[1];
-						(*texture)[2] = (ZnReal)v3->texture_coordinates[2];
-						texture++;
-					}
-					if (0 != data)
-					{
-						for (int j = 0; j < number_of_data_components; j++)
-						{
-							data[                              j] = GLfloat(v1->data[j]);
-							data[  number_of_data_components + j] = GLfloat(v2->data[j]);
-							data[2*number_of_data_components + j] = GLfloat(v3->data[j]);
-						}
-						data += number_of_data_components*3;
-					}
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+						3, 1, floatField);
+				}
+				if (0 != texture_coordinate_field)
+				{
+					CAST_TO_OTHER(floatField,v1->texture_coordinates,GLfloat,3);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+						3, 1, floatField);
+					CAST_TO_OTHER(floatField,v2->texture_coordinates,GLfloat,3);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+						3, 1, floatField);
+					CAST_TO_OTHER(floatField,v3->texture_coordinates,GLfloat,3);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+						3, 1, floatField);
+
+				}
+				if (0 != data_field)
+				{
+					CAST_TO_OTHER(dataField,v1->data,GLfloat,number_of_data_components);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						number_of_data_components, 1, dataField);
+					CAST_TO_OTHER(dataField,v2->data,GLfloat,number_of_data_components);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						number_of_data_components, 1, dataField);
+					CAST_TO_OTHER(dataField,v3->data,GLfloat,number_of_data_components);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						number_of_data_components, 1, dataField);
 				}
 			}
-			else
-			{
-				return_code = 0;
-			}
-			if (return_code)
-			{
-				GT_surface *surface = CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode, g_TRIANGLE,
-					/*number_of_points_in_xi1*/number_of_triangles, /*number_of_points_in_xi2*/3, points,
-					normalpoints, tangentpoints, texturepoints, number_of_data_components, datavalues);
-				if (NULL != surface)
-				{
-					/* for selective editing of GT_object primitives, record element ID */
-					struct CM_element_information cm;
-					get_FE_element_identifier(element, &cm);
-					GT_surface_set_integer_identifier(surface, cm.number);
-					if (!GT_OBJECT_ADD(GT_surface)(graphics_object, /*time*/0.0, surface))
-					{
-						DESTROY(GT_surface)(&surface);
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
-				DEALLOCATE(texturepoints);
-				DEALLOCATE(datavalues);
-			}
+			if (0 != data_field)
+				delete[] dataField;
 		}
+	}
+	if (total_number_of_triangles > 0)
+	{
+		struct CM_element_information cm;
+		get_FE_element_identifier(element, &cm);
+		unsigned int number_of_vertices = total_number_of_triangles * 3;
+		unsigned int number_of_xi1 = total_number_of_triangles;
+		unsigned int number_of_xi2 = 3;
+		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+			1, 1, &(cm.number));
+		array->add_fast_search_id(cm.number);
+		int modificationRequired = 0;
+		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+			1, 1, &modificationRequired);
+		array->add_unsigned_integer_attribute(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+			1, 1, &number_of_vertices);
+		array->add_unsigned_integer_attribute(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+			1, 1, &vertex_start);
+		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+			1, 1, &polygonType);
+		array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+			1, 1, &number_of_xi1);
+		array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+			1, 1, &number_of_xi2);
 	}
 	return (return_code);
 }
@@ -2030,23 +2011,24 @@ int Iso_surface_specification_destroy(
 	return (return_code);
 }
 
-int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
-	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh, int *number_in_xi,
-	struct Iso_surface_specification *specification,
-	struct GT_object *graphics_object, enum cmzn_graphics_render_polygon_mode render_polygon_mode)
+int create_iso_surfaces_from_FE_element(struct FE_element *element,
+	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh,
+	struct Graphics_vertex_array *array,
+	int *number_in_xi, struct Iso_surface_specification *specification)
 {
+	ENTER(create_iso_surfaces_from_FE_element_new);
 	int return_code = 0;
-	if ((NULL != element) && field_cache && mesh && (3 == get_FE_element_dimension(element)) &&
+	if ((NULL != element) && field_cache && mesh && array && (3 == get_FE_element_dimension(element)) &&
 		(NULL != number_in_xi) &&
 		(0 < number_in_xi[0]) && (0 < number_in_xi[1]) && (0 < number_in_xi[2]) &&
-		(NULL != specification) && (NULL != graphics_object))
+		(NULL != specification))
 	{
 		Isosurface_builder iso_builder(element, field_cache, mesh,
 			number_in_xi[0], number_in_xi[1], number_in_xi[2], *specification);
 		return_code = iso_builder.sweep();
 		if (return_code)
 		{
-			return_code = iso_builder.fill_graphics(graphics_object, render_polygon_mode);
+			return_code = iso_builder.fill_graphics(array);
 		}
 	}
 	else
@@ -2054,5 +2036,8 @@ int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
 		display_message(ERROR_MESSAGE,
 			"create_iso_surfaces_from_FE_element_new.  Invalid argument(s)");
 	}
+	LEAVE;
+
 	return (return_code);
-}
+} /* create_iso_surfaces_from_FE_element_new */
+

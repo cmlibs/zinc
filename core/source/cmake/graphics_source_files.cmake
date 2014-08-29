@@ -14,13 +14,13 @@ SET( GRAPHICS_SRCS
 	source/graphics/scene.cpp
 	source/graphics/colour.cpp
 	source/graphics/complex.cpp
-	source/graphics/decimate_voltex.cpp
 	source/graphics/element_point_ranges.cpp
 	source/graphics/environment_map.cpp
 	source/graphics/glyph.cpp
 	source/graphics/glyph_axes.cpp
 	source/graphics/glyph_circular.cpp
 	source/graphics/glyph_colour_bar.cpp
+	source/graphics/graphics_vertex_array.cpp
 	source/graphics/import_graphics_object.cpp
 	source/graphics/iso_field_calculation.cpp
 	source/graphics/laguer.cpp
@@ -41,9 +41,10 @@ SET( GRAPHICS_SRCS
 	source/graphics/tessellation.cpp
 	source/graphics/texture.cpp
 	source/graphics/texture_line.cpp
+	source/graphics/threejs_export.cpp
 	source/graphics/triangle_mesh.cpp
-	source/graphics/userdef_objects.cpp
-	source/graphics/volume_texture.cpp )
+	source/graphics/volume_texture.cpp
+	source/graphics/webgl_export.cpp )
 SET( GRAPHICS_HDRS
 	source/graphics/auxiliary_graphics_types.h
 	source/graphics/graphics.h
@@ -52,7 +53,6 @@ SET( GRAPHICS_HDRS
 	source/graphics/scene.hpp
 	source/graphics/colour.h
 	source/graphics/complex.h
-	source/graphics/decimate_voltex.h
 	source/graphics/element_point_ranges.h
 	source/graphics/environment_map.h
 	source/graphics/glyph.hpp
@@ -63,6 +63,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
 	source/graphics/graphics_object_highlight.hpp
+	source/graphics/graphics_vertex_array.hpp
 	source/graphics/image.h
 	source/graphics/import_graphics_object.h
 	source/graphics/iso_field_calculation.h
@@ -90,9 +91,10 @@ SET( GRAPHICS_HDRS
 	source/graphics/texture.h
 	source/graphics/texture.hpp
 	source/graphics/texture_line.h
+	source/graphics/threejs_export.hpp
 	source/graphics/triangle_mesh.hpp
-	source/graphics/userdef_objects.h
-	source/graphics/volume_texture.h )
+	source/graphics/volume_texture.h
+	source/graphics/webgl_export.hpp )
 
 IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_SRCS ${GRAPHICS_SRCS}

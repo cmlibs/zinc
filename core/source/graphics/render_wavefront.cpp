@@ -260,11 +260,9 @@ Writes Wavefront object file that defines the material
 static int makewavefront(FILE *wavefront_file, int full_comments,
 	gtObject *object, ZnReal time);
 
-int draw_glyph_set_wavefront(FILE *wavefront_file, int number_of_points,
-	Triple *point_list,Triple *axis1_list,
-	Triple *axis2_list,Triple *axis3_list,struct GT_object *glyph,char **labels,
-	int number_of_data_components,GLfloat *data,struct Graphical_material *material,
-	struct Spectrum *spectrum,ZnReal time)
+int draw_glyph_set_wavefront(FILE *wavefront_file,
+	GT_glyphset_vertex_buffers *glyph_set,	Graphics_vertex_array *vertex_array,
+	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 11 May 1999
 
@@ -275,98 +273,95 @@ points  given by the positions in <point_list> and oriented and scaled by
 ==============================================================================*/
 {
 	ZnReal transformation[16];
-	int i,return_code;
-	struct GT_object *transformed_object;
-	Triple *point,*axis1,*axis2,*axis3;
+	int return_code = 0;
+	struct GT_object *transformed_object = 0;
 
-	ENTER(draw_glyph_set_wavefront);
-	/* Keep a similar interface to all the other render implementations */
-	USE_PARAMETER(labels);
-	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(data);
-	USE_PARAMETER(spectrum);
-	return_code=0;
-	if ((0<number_of_points)&&point_list&&axis1_list&&axis2_list&&axis3_list&&
-		glyph)
+	if (glyph_set && vertex_array)
 	{
-		point=point_list;
-		axis1=axis1_list;
-		axis2=axis2_list;
-		axis3=axis3_list;
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0;
+		GLfloat *position_buffer = 0;
+		vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			&position_buffer, &position_values_per_vertex, &position_vertex_count);
+
 		/* try to draw points and lines faster */
-		if (0==strcmp(glyph->name,"point"))
+		if (0==strcmp(glyph_set->glyph->name,"point"))
 		{
-			for (int i = 0; i < number_of_points; i++)
+			GLfloat *position = position_buffer;
+			for (unsigned int i = 0; i < position_vertex_count; i++)
 			{
 				fprintf(wavefront_file, "v %.8f %.8f %.8f\n",
-					point_list[i][0],
-					point_list[i][1],
-					point_list[i][2]);
+					position[0], position[1], position[2]);
+				position += position_values_per_vertex;
 			}
 		}
-		else if (0==strcmp(glyph->name,"line"))
+		else if (0==strcmp(glyph_set->glyph->name,"line"))
 		{
 			display_message(WARNING_MESSAGE,"draw_glyph_set_wavefront.  "
 				"pointset glyphs not currently rendered in wavefront files (use a surface glyph).");
 		}
 		else
 		{
-			for (i=0;i<number_of_points;i++)
+			unsigned int axis1_values_per_vertex = 0, axis1_vertex_count = 0,
+				axis2_values_per_vertex = 0, axis2_vertex_count = 0,
+				axis3_values_per_vertex = 0, axis3_vertex_count = 0;
+			GLfloat *axis1_buffer = 0, *axis2_buffer = 0, *axis3_buffer = 0;
+			vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS1,
+				&axis1_buffer, &axis1_values_per_vertex, &axis1_vertex_count);
+			vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS2,
+				&axis2_buffer, &axis2_values_per_vertex, &axis2_vertex_count);
+			vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS3,
+				&axis3_buffer, &axis3_values_per_vertex, &axis3_vertex_count);
+			for (unsigned int i=0;i<position_vertex_count;i++)
 			{
-				transformation[ 0] = (*axis1)[0];
-				transformation[ 1] = (*axis1)[1];
-				transformation[ 2] = (*axis1)[2];
-				axis1++;
-				transformation[ 4] = (*axis2)[0];
-				transformation[ 5] = (*axis2)[1];
-				transformation[ 6] = (*axis2)[2];
-				axis2++;
-				transformation[ 8] = (*axis3)[0];
-				transformation[ 9] = (*axis3)[1];
-				transformation[10] = (*axis3)[2];
-				axis3++;
-				transformation[12] = (*point)[0];
-				transformation[13] = (*point)[1];
-				transformation[14] = (*point)[2];
-				point++;
+				transformation[ 0] = axis1_buffer[0];
+				transformation[ 1] = axis1_buffer[1];
+				transformation[ 2] = axis1_buffer[2];
+				transformation[ 4] = axis2_buffer[0];
+				transformation[ 5] = axis2_buffer[1];
+				transformation[ 6] = axis2_buffer[2];
+				transformation[ 8] = axis3_buffer[0];
+				transformation[ 9] = axis3_buffer[1];
+				transformation[10] = axis3_buffer[2];
+				transformation[12] = position_buffer[0];
+				transformation[13] = position_buffer[1];
+				transformation[14] = position_buffer[2];
 				transformation[ 3] = 0.0;
 				transformation[ 7] = 0.0;
 				transformation[11] = 0.0;
 				transformation[15] = 1.0;
-				transformed_object = transform_GT_object(glyph, transformation);
+				transformed_object = transform_GT_object(glyph_set->glyph, transformation);
 				if (transformed_object != 0)
 				{
 					set_GT_object_default_material(transformed_object,
 						material);
-					makewavefront(wavefront_file, 1, transformed_object, time);
+					makewavefront(wavefront_file, 1, transformed_object, 0);
 					DEACCESS(GT_object)(&transformed_object);
 				}
+				position_buffer += position_values_per_vertex;
+				axis1_buffer += axis1_values_per_vertex;
+				axis2_buffer += axis2_values_per_vertex;
+				axis3_buffer += axis3_values_per_vertex;
 			}
 		}
 		return_code=1;
 	}
 	else
 	{
-		if (0 == number_of_points)
-		{
-			return_code=1;
-		}
-		else
-		{
 			display_message(ERROR_MESSAGE,"draw_glyph_set_wavefront. Invalid argument(s)");
 			return_code=0;
-		}
 	}
-	LEAVE;
 
 	return (return_code);
 } /* draw_glyph_set_wavefront */
 
-static int draw_surface_wavefront(FILE *file, Triple *surfpts, Triple *normalpts,
-	Triple *texturepts, int npts1,int npts2, gtPolygonType polygon_type,
-	int number_of_data_components, GLfloat *data,
-	struct Graphical_material *material, struct Spectrum *spectrum,
-	struct LIST(Wavefront_vertex) *vertex_list,
+int draw_surface_wavefront(FILE *file,
+	GT_surface_vertex_buffers *surface,
+	Graphics_vertex_array *vertex_array,
+	struct Graphical_material *material,
 	struct Graphical_material **current_material)
 /*******************************************************************************
 LAST MODIFIED : 3 October 2000
@@ -374,441 +369,155 @@ LAST MODIFIED : 3 October 2000
 DESCRIPTION :
 ==============================================================================*/
 {
-	int i,j,index,npts12,return_code = 0, *vertex_index_array, *vertex_index;
-	struct Wavefront_vertex *vertex;
-	struct Wavefront_vertex_position position;
-	Triple *surface_point_1, *texture_point;
+	int return_code = 0;
+	unsigned int i, j;
 
-	ENTER(draw_surface_wavefront);
-	/* Keep a similar interface to all the other render implementations */
-	USE_PARAMETER(normalpts);
-	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(data);
-	USE_PARAMETER(spectrum);
-	if (surfpts&&(1<npts1)&&(1<npts2))
+	if (surface&&vertex_array)
 	{
-		switch (polygon_type)
-		{
-			case g_QUADRILATERAL:
-			{
-				npts12 = npts1 * npts2;
-				activate_material_wavefront(file, material, current_material);
-				ALLOCATE(vertex_index_array,int,npts12);
-				vertex_index = vertex_index_array;
-				for (i=0;i<npts1;i++)
-				{
-					for (j=0;j<npts2;j++)
-					{
-						if (vertex_list&&((i==0)||(i==(npts1-1))||(j==0)||(j==(npts2-1))))
-						{
-							position.x = surfpts[i+npts1*j][0];
-							position.y = surfpts[i+npts1*j][1];
-							position.z = surfpts[i+npts1*j][2];
-							vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,
-								vertex_list);
-							if (vertex != 0)
-							{
-								*vertex_index = vertex->index;
-							}
-							else
-							{
-								fprintf(file, "v %.8f %.8f %.8f\n",
-									surfpts[i+npts1*j][0],
-									surfpts[i+npts1*j][1],
-									surfpts[i+npts1*j][2]);
-								file_vertex_index++;
-								*vertex_index = file_vertex_index;
-								vertex = CREATE(Wavefront_vertex)(file_vertex_index,
-									surfpts[i+npts1*j][0], surfpts[i+npts1*j][1],
-									surfpts[i+npts1*j][2]);
-								if (vertex != 0)
-								{
-									ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
-								}
-							}
-						}
-						else
-						{
-							fprintf(file, "v %.8f %.8f %.8f\n",
-								surfpts[i+npts1*j][0],
-								surfpts[i+npts1*j][1],
-								surfpts[i+npts1*j][2]);
-							file_vertex_index++;
-							*vertex_index = file_vertex_index;
-						}
-						vertex_index++;
-					}
-				}
-				if (texturepts)
-				{
-					for (i=0;i<npts1;i++)
-					{
-						for (j=0;j<npts2;j++)
-						{
-							fprintf(file, "vt %f %f %f\n",
-								texturepts[i+npts1*j][0],
-								texturepts[i+npts1*j][1],
-								texturepts[i+npts1*j][2]);
-							file_texture_vertex_index++;
-						}
-					}
-				}
+		unsigned int surface_index;
+		unsigned int surface_count =
+			vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		GLfloat *position_buffer = 0,  *texture_coordinate0_buffer = 0;
+		unsigned int position_values_per_vertex, position_vertex_count,
+			texture_coordinate0_values_per_vertex,	texture_coordinate0_vertex_count;
+		if (0 == surface_count)
+			return 1;
 
-				index = file_texture_vertex_index-npts1*npts2+1;
-				vertex_index = vertex_index_array;
-				for (i=0;i<npts1-1;i++)
-				{
-					for (j=0;j<npts2-1;j++)
-					{
-						if (texturepts)
-						{
-							fprintf(file, "f %d/%d %d/%d %d/%d %d/%d\n",
-								*vertex_index, index,
-								*(vertex_index + 1), (index + 1),
-								*(vertex_index + npts2 + 1), (index + npts2 + 1),
-								*(vertex_index + npts2), (index + npts2));
-						}
-						else
-						{
-							fprintf(file, "f %d %d %d %d\n",
-								*vertex_index,
-								*(vertex_index + 1),
-								*(vertex_index + npts2 + 1),
-								*(vertex_index + npts2));
-						}
-						vertex_index++;
-						index++;
-					}
-					vertex_index++;
-					index++;
-				}
-				DEALLOCATE(vertex_index_array);
-				return_code=1;
-			} break;
-			case g_TRIANGLE:
+		vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			&position_buffer, &position_values_per_vertex, &position_vertex_count);
+		vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+			&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+			&texture_coordinate0_vertex_count);
+		unsigned int *index_vertex_buffer = 0, index_values_per_vertex = 0, index_vertex_count = 0;
+		vertex_array->get_unsigned_integer_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_ARRAY,
+			&index_vertex_buffer, &index_values_per_vertex,
+			&index_vertex_count);
+		activate_material_wavefront(file, material, current_material);
+		for (i = 0; i< position_vertex_count; i++)
+		{
+			fprintf(file, "v %.8f %.8f %.8f\n",
+				position_buffer[0],
+				position_buffer[1],
+				position_buffer[2]);
+			position_buffer += position_values_per_vertex;
+		}
+		if (texture_coordinate0_buffer)
+		{
+			for (i = 0; i< texture_coordinate0_vertex_count; i++)
 			{
-				npts12 = (npts1 + 1) * npts1 / 2;
-				activate_material_wavefront(file, material, current_material);
-				ALLOCATE(vertex_index_array,int,npts12);
-				vertex_index = vertex_index_array;
-				texture_point=texturepts;
-				surface_point_1=surfpts;
-				for (i = npts1;i>0;i--)
+				fprintf(file, "vt %f %f %f\n",
+					texture_coordinate0_buffer[0],
+					texture_coordinate0_buffer[1],
+					texture_coordinate0_buffer[2]);
+				texture_coordinate0_buffer += texture_coordinate0_values_per_vertex;
+			}
+		}
+		for (surface_index = 0; surface_index < surface_count; surface_index++)
+		{
+			int object_name = 0;
+			vertex_array->get_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+				surface_index, 1, &object_name);
+			if (object_name > -1)
+			{
+				if (index_vertex_buffer)
 				{
-					for (j = 0 ; j < i ; j++)
+					unsigned int number_of_strips = 0;
+					unsigned int strip_start = 0;
+					vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_STRIPS,
+						surface_index, 1, &number_of_strips);
+					vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_START,
+						surface_index, 1, &strip_start);
+					for (i = 0; i < number_of_strips; i++)
 					{
-						if (vertex_list&&((i==0)||(i==(npts1-1))||(j==0)||(j==(i-1))))
+						unsigned int points_per_strip = 0;
+						unsigned int index_start_for_strip = 0;
+						vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_START,
+							strip_start+i, 1, &index_start_for_strip);
+						vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_POINTS_FOR_STRIP,
+							strip_start+i, 1, &points_per_strip);
+						unsigned int *indices = &index_vertex_buffer[index_start_for_strip];
+						for (j =0; j<points_per_strip - 2; j++)
 						{
-							position.x = (*surface_point_1)[0];
-							position.y = (*surface_point_1)[1];
-							position.z = (*surface_point_1)[2];
-							vertex = FIND_BY_IDENTIFIER_IN_LIST(Wavefront_vertex,position)(&position,vertex_list);
-							if (vertex != 0)
+							if (0 == (j % 2))
 							{
-								*vertex_index = vertex->index;
+								if (texture_coordinate0_buffer)
+								{
+									fprintf(file, "f %d/%d %d/%d %d/%d\n",
+										indices[j]+1, indices[j]+1,
+										indices[j+1]+1, indices[j+1]+1,
+										indices[j+2]+1, indices[j+2]+1);
+								}
+								else
+								{
+									fprintf(file, "f %d %d %d\n",
+										indices[j]+1,indices[j+1]+1,indices[j+2]+1);
+								}
 							}
 							else
 							{
-								fprintf(file, "v %.8f %.8f %.8f\n",
-									(*surface_point_1)[0],
-									(*surface_point_1)[1],
-									(*surface_point_1)[2]);
-								file_vertex_index++;
-								*vertex_index = file_vertex_index;
-								vertex = CREATE(Wavefront_vertex)(file_vertex_index,
-									(*surface_point_1)[0], (*surface_point_1)[1],
-									(*surface_point_1)[2]);
-								if (vertex != 0)
+								if (texture_coordinate0_buffer)
 								{
-									ADD_OBJECT_TO_LIST(Wavefront_vertex)(vertex, vertex_list);
+									fprintf(file, "f %d/%d %d/%d %d/%d\n",
+										indices[j+1]+1, indices[j+1]+1,
+										indices[j]+1, indices[j]+1,
+										indices[j+2]+1, indices[j+2]+1);
+								}
+								else
+								{
+									fprintf(file, "f %d %d %d\n",
+										indices[j+1]+1,indices[j]+1,indices[j+2]+1);
 								}
 							}
 						}
-						else
-						{
-							fprintf(file, "v %.8f %.8f %.8f\n",
-								(*surface_point_1)[0],
-								(*surface_point_1)[1],
-								(*surface_point_1)[2]);
-							file_vertex_index++;
-							*vertex_index = file_vertex_index;
-						}
-						vertex_index++;
-						surface_point_1++;
-						if (texturepts)
-						{
-							fprintf(file, "vt %f %f %f\n",
-								(*texture_point)[0],
-								(*texture_point)[1],
-								(*texture_point)[2]);
-							file_texture_vertex_index++;
-							texture_point++;
-						}
 					}
 				}
-				index = file_texture_vertex_index-npts12+1;
-				vertex_index = vertex_index_array;
-				for (i= npts1;i>1;i--)
+				else
 				{
-					for (j=0;j<i-1;j++)
+					unsigned int index_start, index_count;
+					vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						surface_index, 1, &index_start);
+					vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						surface_index, 1, &index_count);
+					unsigned int number_of_triangles = index_count / 3;
+					int current_index = index_start + 1;
+					for (i = 0; i < number_of_triangles; i++)
 					{
-						if (texturepts)
+						if (texture_coordinate0_buffer)
 						{
 							fprintf(file, "f %d/%d %d/%d %d/%d\n",
-								*vertex_index, index,
-								*(vertex_index + 1), (index + 1),
-								*(vertex_index + i), (index + i));
-							if (j < i-2)
-							{
-								fprintf(file, "f %d/%d %d/%d %d/%d\n",
-									*(vertex_index + i), (index + i),
-									*(vertex_index + 1), (index + 1),
-									*(vertex_index + i + 1), (index + i + 1));
-							}
+								current_index, current_index,
+								current_index+1, current_index+1,
+								current_index+2, current_index+2);
 						}
 						else
 						{
 							fprintf(file, "f %d %d %d\n",
-								*vertex_index,
-								*(vertex_index + 1),
-								*(vertex_index + i));
-							if (j < i-2)
-							{
-								fprintf(file, "f %d %d %d\n",
-									*(vertex_index + i),
-									*(vertex_index + 1),
-									*(vertex_index + i + 1));
-							}
+								current_index,current_index+1,current_index+2);
 						}
-						vertex_index++;
-						index++;
+						current_index += 3;
 					}
-					vertex_index++;
-					index++;
 				}
-				DEALLOCATE(vertex_index_array);
-				return_code=1;
-			} break;
-			case g_GENERAL_POLYGON:
-			{
-				/* Do nothing */
-			} break;
+			}
 		}
 	}
 	else
 	{
-		if ((1<npts1)&&(1<npts2))
-		{
-			display_message(ERROR_MESSAGE,
-				"draw_surface_wavefront.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
+		display_message(ERROR_MESSAGE,
+			"draw_surface_wavefront.  Invalid argument(s)");
+		return_code=0;
 	}
-
-
-	LEAVE;
 
 	return (return_code);
 } /* draw_surface_wavefront */
-
-static int drawvoltexwavefront(FILE *out_file, int full_comments,
-	int number_of_vertices, struct VT_iso_vertex **vertex_list,
-	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int number_of_data_components,
-	struct Graphical_material *default_material, struct Spectrum *spectrum)
-/*******************************************************************************
-LAST MODIFIED : 10 November 2005
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int i,return_code;
-
-	ENTER(drawvoltexwavefront);
-	/* Keep a similar interface to all the other render implementations */
-	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(default_material);
-	USE_PARAMETER(spectrum);
-	return_code=0;
-	if (triangle_list && vertex_list && (0<number_of_triangles))
-	{
-		if ( full_comments )
-		{
-			fprintf(out_file,"#vertex list\n");
-		}
-		for (i=0;i<number_of_vertices;i++)
-		{
-			if ( full_comments )
-			{
-				fprintf(out_file,"#vertex %d\n",i+1);
-			}
-			fprintf(out_file,"v %lf %lf %lf\n",vertex_list[i]->coordinates[0],
-				vertex_list[i]->coordinates[1],vertex_list[i]->coordinates[2]);
-		}
-		if ( full_comments )
-		{
-			fprintf(out_file,"#texture vertices %d\n",number_of_vertices+1);
-		}
-		for (i=0;i<number_of_vertices;i++)
-		{
-			if ( full_comments )
-			{
-				fprintf(out_file,"#vertex %d\n",i+1);
-			}
-			fprintf(out_file,"vt %lf %lf %lf\n",vertex_list[i]->texture_coordinates[0],
-				vertex_list[i]->texture_coordinates[1],vertex_list[i]->texture_coordinates[2]);
-		}
-		if ( full_comments )
-		{
-			fprintf(out_file,"#normal list\n");
-		}
-		for (i=0;i<number_of_vertices;i++)
-		{
-			if ( full_comments )
-			{
-				fprintf(out_file,"#normal %d\n",i+1);
-			}
-			fprintf(out_file,"vn %lf %lf %lf\n",-(vertex_list[i]->normal[0]),
-				-(vertex_list[i]->normal[1]),-(vertex_list[i]->normal[2]));
-		}
-		for (i=0;i<number_of_triangles;i++)
-		{
-			if ( full_comments )
-			{
-				fprintf(out_file,"# polygon %d\n",i+1);
-			}
-			fprintf(out_file,"f   %d/%d/%d  %d/%d/%d  %d/%d/%d\n",
-				triangle_list[i]->vertices[0]->index+file_vertex_index+1,
-				triangle_list[i]->vertices[0]->index+file_texture_vertex_index+1,
-				triangle_list[i]->vertices[0]->index+file_normal_vertex_index+1,
-				triangle_list[i]->vertices[1]->index+file_vertex_index+1,
-				triangle_list[i]->vertices[1]->index+file_texture_vertex_index+1,
-				triangle_list[i]->vertices[1]->index+file_normal_vertex_index+1,
-				triangle_list[i]->vertices[2]->index+file_vertex_index+1,
-				triangle_list[i]->vertices[2]->index+file_texture_vertex_index+1,
-				triangle_list[i]->vertices[2]->index+file_normal_vertex_index+1);
-		} /* for i */
-		file_vertex_index += number_of_vertices;
-		file_normal_vertex_index += number_of_vertices;
-		file_texture_vertex_index += number_of_vertices;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"drawvoltexwavefront.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* drawvoltexwavefront */
-
-int drawnurbswavefront(FILE *file, struct GT_nurbs *nurbptr)
-/*******************************************************************************
-LAST MODIFIED : 9 March 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int i, number_of_control_points, return_code;
-
-	ENTER(drawnurbsGL);
-
-	return_code=0;
-	if (nurbptr)
-	{
-		number_of_control_points = nurbptr->maxs * nurbptr->maxt;
-		for( i = 0 ; i < number_of_control_points ; i++)
-		{
-			if(nurbptr->controlpts[4 * i + 3] == 1.0)
-			{
-				fprintf(file, "v %f %f %f\n",
-					nurbptr->controlpts[4 * i],
-					nurbptr->controlpts[4 * i + 1],
-					nurbptr->controlpts[4 * i + 2]);
-			}
-			else
-			{
-				fprintf(file, "v %f %f %f %f\n",
-					nurbptr->controlpts[4 * i],
-					nurbptr->controlpts[4 * i + 1],
-					nurbptr->controlpts[4 * i + 2],
-					nurbptr->controlpts[4 * i + 3]);
-			}
-		}
-		if (nurbptr->texture_control_points)
-		{
-			for( i = 0 ; i < number_of_control_points ; i++)
-			{
-				if(nurbptr->texture_control_points[4 * i + 3] == 1.0)
-				{
-					fprintf(file, "vt %f %f %f\n",
-						nurbptr->texture_control_points[4 * i],
-						nurbptr->texture_control_points[4 * i + 1],
-						nurbptr->texture_control_points[4 * i + 2]);
-				}
-				else
-				{
-					fprintf(file, "vt %f %f %f %f\n",
-						nurbptr->texture_control_points[4 * i],
-						nurbptr->texture_control_points[4 * i + 1],
-						nurbptr->texture_control_points[4 * i + 2],
-						nurbptr->texture_control_points[4 * i + 3]);
-				}
-			}
-		}
-		fprintf(file, "cstype rat bspline\n");
-		fprintf(file, "deg %d %d\n", nurbptr->sorder - 1, nurbptr->torder - 1);
-		fprintf(file, "surf %f %f %f %f",
-			nurbptr->sknots[0], nurbptr->sknots[nurbptr->sknotcnt - 1],
-			nurbptr->tknots[0], nurbptr->tknots[nurbptr->tknotcnt - 1]);
-		if (!nurbptr->texture_control_points)
-		{
-			for( i = 0 ; i < number_of_control_points ; i++)
-			{
-				fprintf(file, " %d", file_vertex_index + i + 1);
-			}
-		}
-		else
-		{
-			for( i = 0 ; i < number_of_control_points ; i++)
-			{
-				fprintf(file, " %d/%d", file_vertex_index + i + 1,
-					file_vertex_index + i + 1);
-			}
-		}
-		fprintf(file, "\nparm u");
-		for( i = 0 ; i < nurbptr->sknotcnt ; i++)
-		{
-			fprintf(file, " %f", nurbptr->sknots[i]);
-		}
-		fprintf(file, "\nparm v");
-		for( i = 0 ; i < nurbptr->tknotcnt ; i++)
-		{
-			fprintf(file, " %f", nurbptr->tknots[i]);
-		}
-		fprintf(file, "\nend\n");
-
-		file_vertex_index += number_of_control_points;
-
-		if (nurbptr->cknotcnt>0)
-		{
-			display_message(ERROR_MESSAGE,"drawnurbswavefront.	Trimming not yet implemented");
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"drawnurbsGL.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* drawnurbsGL */
 
 static int makewavefront(FILE *wavefront_file, int full_comments,
 	gtObject *object, ZnReal time)
@@ -819,17 +528,9 @@ DESCRIPTION :
 Convert graphical object into Wavefront object file.
 ==============================================================================*/
 {
-	ZnReal proportion = 0.0,*times;
-	int itime, number_of_times, return_code;
+	int number_of_times, return_code;
 	struct Graphical_material *current_material;
-	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
-	struct GT_nurbs *nurbs;
-	struct GT_surface *interpolate_surface,*surface,*surface_2 = NULL;
-	struct GT_voltex *voltex;
-	struct LIST(Wavefront_vertex) *vertex_list;
-	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
-	ENTER(makewavefront);
 	/* check arguments */
 	return_code = 1;
 	current_material = (struct Graphical_material *)NULL;
@@ -838,63 +539,7 @@ Convert graphical object into Wavefront object file.
 		number_of_times = object->number_of_times;
 		if (0 < number_of_times)
 		{
-			itime = number_of_times;
-			if ((itime>1)&&(times=object->times))
-			{
-				itime--;
-				times += itime;
-				if (time>= *times)
-				{
-					proportion=0;
-				}
-				else
-				{
-					while ((itime>0)&&(time< *times))
-					{
-						itime--;
-						times--;
-					}
-					if (time< *times)
-					{
-						proportion=0;
-					}
-					else
-					{
-						proportion=times[1]-times[0];
-						if (proportion>0)
-						{
-							proportion=time-times[0]/proportion;
-						}
-						else
-						{
-							proportion=0;
-						}
-					}
-				}
-			}
-			else
-			{
-				itime=0;
-				proportion=0;
-			}
-			if (object->primitive_lists &&
-				(primitive_list1 = object->primitive_lists + itime))
-			{
-				if (proportion > 0)
-				{
-					if (!(primitive_list2 = object->primitive_lists + itime + 1))
-					{
-						display_message(ERROR_MESSAGE,
-							"makewavefront.  Invalid primitive_list");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					primitive_list2 = (union GT_primitive_list *)NULL;
-				}
-			}
-			else
+			if (!object->primitive_lists)
 			{
 				display_message(ERROR_MESSAGE,
 					"makewavefront.  Invalid primitive_lists");
@@ -905,52 +550,16 @@ Convert graphical object into Wavefront object file.
 		{
 			switch (object->object_type)
 			{
-				case g_GLYPH_SET:
+				case g_GLYPH_SET_VERTEX_BUFFERS:
 				{
-					glyph_set = primitive_list1->gt_glyph_set.first;
-					if (glyph_set != 0)
+					struct GT_glyphset_vertex_buffers *gt_glyphset_vertex_buffers =
+						object->primitive_lists->gt_glyphset_vertex_buffers;
+					if (gt_glyphset_vertex_buffers != 0)
 					{
-						if (proportion>0)
-						{
-							glyph_set_2 = primitive_list2->gt_glyph_set.first;
-							while (glyph_set&&glyph_set_2)
-							{
-								interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2);
-								if (interpolate_glyph_set != 0)
-								{
-									draw_glyph_set_wavefront(wavefront_file,
-										interpolate_glyph_set->number_of_points,
-										interpolate_glyph_set->point_list,
-										interpolate_glyph_set->axis1_list,
-										interpolate_glyph_set->axis2_list,
-										interpolate_glyph_set->axis3_list,
-										interpolate_glyph_set->glyph,
-										interpolate_glyph_set->labels,
-										interpolate_glyph_set->n_data_components,
-										interpolate_glyph_set->data,
-										object->default_material,object->spectrum,
-										time);
-									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
-								}
-								glyph_set=glyph_set->ptrnext;
-								glyph_set_2=glyph_set_2->ptrnext;
-							}
-						}
-						else
-						{
-							while (glyph_set)
-							{
-								draw_glyph_set_wavefront(wavefront_file,
-									glyph_set->number_of_points,
-									glyph_set->point_list,glyph_set->axis1_list,
-									glyph_set->axis2_list,glyph_set->axis3_list,glyph_set->glyph,
-									glyph_set->labels,glyph_set->n_data_components,
-									glyph_set->data,object->default_material,object->spectrum,
-									time);
-								glyph_set=glyph_set->ptrnext;
-							}
-						}
+							draw_glyph_set_wavefront(wavefront_file,
+								gt_glyphset_vertex_buffers,
+								object->vertex_array,
+								object->default_material);
 						return_code=1;
 					}
 					else
@@ -959,160 +568,28 @@ Convert graphical object into Wavefront object file.
 						return_code=0;
 					}
 				} break;
-				case g_VOLTEX:
+				case g_SURFACE_VERTEX_BUFFERS:
 				{
-					voltex = primitive_list1->gt_voltex.first;
-					if (voltex != 0)
+					struct GT_surface_vertex_buffers *gt_surface_vertex_buffers =
+						object->primitive_lists->gt_surface_vertex_buffers;
+					if (gt_surface_vertex_buffers != 0)
 					{
-						while (voltex)
-						{
-							drawvoltexwavefront(wavefront_file, full_comments,
-								voltex->number_of_vertices, voltex->vertex_list,
-								voltex->number_of_triangles, voltex->triangle_list,
-								voltex->n_data_components,
-								object->default_material, object->spectrum);
-							voltex=voltex->ptrnext;
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"makegtobject.  Missing voltex");
-						return_code=0;
-					}
-				} break;
-				case g_SURFACE:
-				{
-					surface = primitive_list1->gt_surface.first;
-					if (surface != 0)
-					{
-						if (proportion>0)
-						{
-							surface_2 = primitive_list2->gt_surface.first;
-						}
-						switch (surface->surface_type)
+						switch (gt_surface_vertex_buffers->surface_type)
 						{
 							case g_SHADED:
 							case g_SHADED_TEXMAP:
-							{
-								vertex_list = CREATE_LIST(Wavefront_vertex)();
-								if (proportion>0)
-								{
-									while (surface&&surface_2)
-									{
-										interpolate_surface=morph_GT_surface(proportion,
-											surface,surface_2);
-										if (interpolate_surface != 0)
-										{
-											draw_surface_wavefront(
-												wavefront_file,
-												interpolate_surface->pointlist,
-												interpolate_surface->normallist,
-												interpolate_surface->texturelist,
-												interpolate_surface->n_pts1,
-												interpolate_surface->n_pts2,
-												interpolate_surface->polygon,
-												interpolate_surface->n_data_components,
-												interpolate_surface->data,
-												object->default_material, object->spectrum,
-												vertex_list, &current_material);
-											DESTROY(GT_surface)(&interpolate_surface);
-										}
-										surface=surface->ptrnext;
-										surface_2=surface_2->ptrnext;
-									}
-								}
-								else
-								{
-									{
-										while (surface)
-										{
-											draw_surface_wavefront(wavefront_file,
-												surface->pointlist,surface->normallist,
-												surface->texturelist, surface->n_pts1,
-												surface->n_pts2, surface->polygon,
-												surface->n_data_components,
-												surface->data,object->default_material,
-												object->spectrum,
-												vertex_list, &current_material);
-											surface=surface->ptrnext;
-										}
-									}
-								}
-								DESTROY_LIST(Wavefront_vertex)(&vertex_list);
-								return_code=1;
-							} break;
 							case g_SH_DISCONTINUOUS:
 							case g_SH_DISCONTINUOUS_TEXMAP:
 							{
-								if (g_NO_DATA==surface->n_data_components)
-								{
-									if (proportion>0)
-									{
-										while (surface&&surface_2)
-										{
-											interpolate_surface=morph_GT_surface(proportion,
-												surface,surface_2);
-											if (interpolate_surface != 0)
-											{
-/* 												draw_dc_surfaceGL(interpolate_surface->pointlist, */
-/* 													interpolate_surface->n_pts1, */
-/* 													interpolate_surface->n_pts2); */
-												DESTROY(GT_surface)(&interpolate_surface);
-											}
-											surface=surface->ptrnext;
-											surface_2=surface_2->ptrnext;
-										}
-									}
-									else
-									{
-										while (surface)
-										{
-/* 											draw_dc_surfaceGL(surface->pointlist,surface->n_pts1, */
-/* 												surface->n_pts2); */
-											surface=surface->ptrnext;
-										}
-									}
-								}
-								else
-								{
-									if (proportion>0)
-									{
-										while (surface&&surface_2)
-										{
-											interpolate_surface=morph_GT_surface(proportion,
-												surface,surface_2);
-											if (interpolate_surface != 0)
-											{
-/* 												draw_data_dc_surfaceGL(interpolate_surface->pointlist, */
-/* 													interpolate_surface->data, */
-/* 													object->default_material, object->spectrum, */
-/* 													interpolate_surface->n_pts1, */
-/* 													interpolate_surface->n_pts2); */
-												DESTROY(GT_surface)(&interpolate_surface);
-											}
-											surface=surface->ptrnext;
-											surface_2=surface_2->ptrnext;
-										}
-									}
-									else
-									{
-										while (surface)
-										{
-/* 											draw_data_dc_surfaceGL(surface->pointlist,surface->data, */
-/* 												object->default_material, object->spectrum, */
-/* 												surface->n_pts1,surface->n_pts2); */
-											surface=surface->ptrnext;
-										}
-									}
-								}
+								draw_surface_wavefront(wavefront_file,
+									gt_surface_vertex_buffers,
+									object->vertex_array,
+									object->default_material,
+									&current_material);
 								return_code=1;
 							} break;
 							default:
 							{
-								display_message(ERROR_MESSAGE,
-									"makewavefront.  Invalid surface type");
-								return_code=0;
 							} break;
 						}
 					}
@@ -1121,27 +598,6 @@ Convert graphical object into Wavefront object file.
 						display_message(ERROR_MESSAGE,"makewavefront.  Missing surface");
 						return_code=0;
 					}
-				} break;
-				case g_NURBS:
-				{
-					nurbs = primitive_list1->gt_nurbs.first;
-					if (nurbs != 0)
-					{
-						return_code=1;
-						while(return_code && nurbs)
-						{
-							return_code = drawnurbswavefront(wavefront_file, nurbs);
-							nurbs=nurbs->ptrnext;
-						}
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"makewavefront.  Missing nurbs");
-						return_code=0;
-					}
-				} break;
-				case g_USERDEF:
-				{
 				} break;
 				default:
 				{
@@ -1195,10 +651,8 @@ Write the window object to the <wavefront_file_void>.
 		wavefront_global_file = export_to_wavefront_data->wavefront_file;
 		switch(gt_object->object_type)
 		{
-			case g_GLYPH_SET:
-			case g_VOLTEX:
-			case g_SURFACE:
-			case g_NURBS:
+			case g_GLYPH_SET_VERTEX_BUFFERS:
+			case g_SURFACE_VERTEX_BUFFERS:
 			{
 				int error = 0;
 				char *parsed_name = duplicate_string(gt_object->name);

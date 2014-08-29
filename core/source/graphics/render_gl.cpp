@@ -11,9 +11,10 @@ GL rendering calls - API specific.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 #include <math.h>
-
+#include <map>
 #include "zinc/zincconfigure.h"
 
+#include "general/mystring.h"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_library.h"
@@ -30,10 +31,15 @@ GL rendering calls - API specific.
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/material.hpp"
 #include "graphics/render_gl.h"
+#include "graphics/scene.h"
 #include "graphics/scene.hpp"
 #include "graphics/scene_coordinate_system.hpp"
 #include "graphics/spectrum.hpp"
 #include "graphics/texture.hpp"
+#include "graphics/threejs_export.hpp"
+#include "graphics/webgl_export.hpp"
+
+#define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
 
 /**
  * Specifies the rendering type for this graphics_object.  The render function
@@ -122,12 +128,14 @@ class Render_graphics_opengl_glbeginend : public Render_graphics_opengl
 public:
 	Render_graphics_opengl_glbeginend() : Render_graphics_opengl()
 	  {
+		Render_graphics_opengl::use_display_list = 0;
 	  }
 
 	  int Scene_tree_execute(cmzn_scene *scene)
 	  {
 		  set_Scene(scene);
-		  return Scene_render_opengl(scene, this);
+		  int return_code = Scene_render_opengl(scene, this);
+		  return return_code;
 	  }
 
 	  int Graphics_object_execute(GT_object *graphics_object)
@@ -157,7 +165,10 @@ public:
 
 	  int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	  {
-		  return cmzn_scene_graphics_render_opengl(scene, this);
+		  glPushName(0);
+		  int return_code = cmzn_scene_graphics_render_opengl(scene, this);
+		  glPopName();
+		  return return_code;
 	  }
 
 	  int cmzn_scene_execute_child_scene(cmzn_scene *scene)
@@ -337,7 +348,6 @@ public:
 
 }; /* class Render_graphics_opengl_client_vertex_arrays */
 
-
 /**
  * An implementation of a render class that uses client vertex arrays.
  */
@@ -407,32 +417,258 @@ Render_graphics_opengl *Render_graphics_opengl_create_client_vertex_arrays_rende
 	return new Render_graphics_opengl_client_vertex_arrays();
 }
 
-class Render_graphics_opengl_vertex_buffer_objects : public Render_graphics_opengl_glbeginend
-{
-public:
-	Render_graphics_opengl_vertex_buffer_objects() :
-	  Render_graphics_opengl_glbeginend()
-	  {
-	  }
-
-	  int Graphics_object_compile(GT_object *graphics_object)
-	  {
-		  return Render_graphics_opengl_glbeginend::Graphics_object_compile(graphics_object) &&
-			  Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
-	  }
-
-	  int Graphics_compile(cmzn_graphics *graphics)
-	  {
-		  struct GT_object *graphics_object = cmzn_graphics_get_graphics_object(graphics);
-		  return Render_graphics_opengl_glbeginend::Graphics_object_compile(graphics_object) &&
-			  Graphics_object_compile_opengl_vertex_buffer_object(graphics_object, this);
-	  }
-
-}; /* class Render_graphics_opengl_glbeginend */
-
 Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_renderer()
 {
 	return new Render_graphics_opengl_vertex_buffer_object();
+}
+
+class Render_graphics_opengl_webgl : public Render_graphics_opengl_vertex_buffer_object
+{
+public:
+
+	Webgl_export webgl_export;
+	int current_number;
+
+	Render_graphics_opengl_webgl(const char *filename_in) :
+		Render_graphics_opengl_vertex_buffer_object(),
+		webgl_export(filename_in)
+	{
+		current_number = 0;
+	}
+
+	~Render_graphics_opengl_webgl()
+	{
+	}
+
+	/**
+	 * Compile the Graphics_object.
+	 */
+	int Graphics_object_compile(GT_object */*graphics_object*/)
+	{
+		return true;
+	}
+
+	/**
+	 * Compile the Graphics.
+	 */
+	int Graphics_compile(cmzn_graphics *graphics)
+	{
+		return Graphics_object_compile(cmzn_graphics_get_graphics_object(
+			graphics));
+	}
+
+	int Graphics_execute(cmzn_graphics *graphics)
+	{
+		GT_object *graphics_object = cmzn_graphics_get_graphics_object(
+			graphics);
+		char *graphics_name = cmzn_graphics_get_name_internal(graphics);
+		char export_name[50];
+		sprintf(export_name, "object_%d_graphics_%s", current_number, graphics_name);
+		int return_code = webgl_export.exportGraphicsObject(graphics_object, export_name);
+		DEALLOCATE(graphics_name);
+		return return_code;
+	}
+
+	int cmzn_scene_execute_graphics(cmzn_scene *scene)
+	{
+		return cmzn_scene_graphics_render_opengl(scene, this);
+	}
+
+	int cmzn_scene_execute(cmzn_scene *scene)
+	{
+		current_number = current_number + 1;
+		return execute_scene_exporter_output(scene, this);
+	}
+
+	int Scene_tree_execute(cmzn_scene *scene)
+	{
+		if (webgl_export.beginExport())
+		{
+			set_Scene(scene);
+			int return_code = Scene_render_opengl(scene, this);
+			webgl_export.endExport();
+			return return_code;
+		}
+		return 0;
+	}
+
+}; /* class Render_graphics_opengl_webgl */
+
+Render_graphics_opengl *Render_graphics_opengl_create_webgl_renderer(const char *filename)
+{
+	return new Render_graphics_opengl_webgl(filename);
+}
+
+class Render_graphics_opengl_threejs : public Render_graphics_opengl_vertex_buffer_object
+{
+public:
+
+	std::map<cmzn_graphics *, Threejs_export *> exports_map;
+	char *filename;
+	double begin_time, end_time;
+	int number_of_time_steps, current_time_frame;
+	int current_graphics_number, face_colour, export_data_value;
+
+	Render_graphics_opengl_threejs(const char *filename_in,
+		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
+		int face_colour_in, int export_data_value_in) :
+		Render_graphics_opengl_vertex_buffer_object(),
+		filename(duplicate_string(filename_in)), begin_time(begin_time_in),
+		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in), face_colour(face_colour_in),
+		export_data_value(export_data_value_in)
+	{
+		exports_map.clear();
+		current_graphics_number = 0;
+		current_time_frame = 0;
+	}
+
+	~Render_graphics_opengl_threejs()
+	{
+		if (filename)
+			DEALLOCATE(filename);
+	}
+
+	void clear_exports_map()
+	{
+		for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
+			export_iter != exports_map.end(); export_iter++)
+		{
+			delete export_iter->second;
+		}
+		exports_map.clear();
+	}
+
+	virtual int cmzn_scene_compile_members(cmzn_scene *scene)
+	{
+		current_graphics_number = 0;
+		if (number_of_time_steps == 0)
+		{
+			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/0);
+			return cmzn_scene_execute(scene);
+		}
+		else
+		{
+			int current_time = this->time;
+			if (begin_time == end_time)
+			{
+				this->time = begin_time;
+				cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
+				return cmzn_scene_execute(scene);
+			}
+			else
+			{
+				int return_code = 1;
+				double increment = 0;
+				if (number_of_time_steps > 1)
+					increment = (end_time - begin_time) / (double)(number_of_time_steps - 1);
+				for (int i = 0; i < number_of_time_steps && return_code; i++)
+				{
+					this->time = begin_time + i * increment;
+					cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
+					return_code = cmzn_scene_execute(scene);
+					current_time_frame++;
+				}
+				clear_exports_map();
+			}
+			current_time_frame = 0;
+			this->time = current_time;
+			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
+			return 1;
+		}
+	}
+
+	/**
+	 * Compile the Graphics_object.
+	 */
+	int Graphics_object_compile(GT_object */*graphics_object*/)
+	{
+		return true;
+	}
+
+	/**
+	 * Compile the Graphics.
+	 */
+	int Graphics_compile(cmzn_graphics *graphics)
+	{
+		return Graphics_object_compile(cmzn_graphics_get_graphics_object(
+			graphics));
+	}
+
+	int Graphics_execute(cmzn_graphics *graphics)
+	{
+		int return_code = 1;
+		GT_object *graphics_object = cmzn_graphics_get_graphics_object(
+			graphics);
+		if (graphics_object &&
+			(GT_object_get_type(graphics_object) == g_SURFACE_VERTEX_BUFFERS))
+		{
+			Threejs_export *threejs_export = 0;
+			if (number_of_time_steps == 0 || current_time_frame == 0)
+			{
+				char *graphics_name = cmzn_graphics_get_name_internal(graphics);
+				struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
+				struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
+				char *region_name = cmzn_region_get_name(region);
+				char new_filename[50];
+				if (region_name)
+					sprintf(new_filename, "%s_%s_%s", filename, region_name, graphics_name);
+				else
+					sprintf(new_filename, "%s_root_%s", filename, graphics_name);
+				threejs_export = new Threejs_export(new_filename, number_of_time_steps,
+					face_colour, export_data_value);
+				threejs_export->beginExport();
+				DEALLOCATE(graphics_name);
+				if (region_name)
+					DEALLOCATE(region_name);
+				exports_map.insert(std::make_pair(graphics, threejs_export));
+			}
+			else
+			{
+				std::map<cmzn_graphics *, Threejs_export *>::iterator iter = exports_map.find(graphics);
+				if (iter != exports_map.end())
+				{
+					threejs_export = iter->second;
+				}
+			}
+			return_code = threejs_export->exportGraphicsObject(graphics_object, current_time_frame);
+			if ((number_of_time_steps == 0) || (number_of_time_steps == 1) ||
+				(number_of_time_steps - 1 == current_time_frame))
+			{
+				threejs_export->endExport();
+			}
+		}
+		return return_code;
+	}
+
+	int cmzn_scene_execute_graphics(cmzn_scene *scene)
+	{
+		return cmzn_scene_graphics_render_opengl(scene, this);
+	}
+
+	int cmzn_scene_execute(cmzn_scene *scene)
+	{
+		current_graphics_number = current_graphics_number + 1;
+		return execute_scene_threejs_output(scene, this);
+	}
+
+	int Scene_tree_execute(cmzn_scene *scene)
+	{
+		if (filename)
+		{
+			set_Scene(scene);
+			return Scene_render_opengl(scene, this);
+		}
+		return 0;
+	}
+
+}; /* class Render_graphics_opengl_threejs */
+
+Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *filename,
+	int number_of_time_steps, double begin_time, double end_time,
+	int face_colour, int export_data_value)
+{
+	return new Render_graphics_opengl_threejs(filename, number_of_time_steps,
+		begin_time, end_time, face_colour, export_data_value);
 }
 
 /**
@@ -446,6 +682,7 @@ template <class Render_immediate> class Render_graphics_opengl_display_list
 public:
 	Render_graphics_opengl_display_list() : Render_immediate()
 	  {
+		Render_graphics_opengl::use_display_list = 1;
 	  }
 
 	  ~Render_graphics_opengl_display_list()
@@ -454,7 +691,10 @@ public:
 
 	  int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	  {
-		  return cmzn_scene_graphics_render_opengl(scene, this);
+		  glPushName(0);
+		  int return_code = cmzn_scene_graphics_render_opengl(scene, this);
+		  glPopName();
+		  return return_code;
 	  }
 
 	  int cmzn_scene_execute_child_scene(cmzn_scene *scene)
@@ -621,1688 +861,15 @@ inline char *concatenateLabels(char *label1, char *label2, bool &allocatedText)
 
 } // namespace
 
-/**
- * Draws graphics object <glyph> at <number_of_points> points given by the
- * positions in <point_list> and oriented and scaled by <axis1_list>, <axis2_list>
- * and <axis3_list>, each axis additionally scaled by its value in <scale_list>.
- * If the glyph is part of a linked list through its nextobject
- * member, these attached glyphs are also executed.
- * Writes the <labels> array strings, if supplied, beside each glyph point.
- * If <names> are supplied these identify each point/glyph for OpenGL picking.
- * If <draw_selected> is set, then only those <names> in <selected_name_ranges>
- * are drawn, otherwise only those names not there are drawn.
- * If <some_selected> is true, <selected_name_ranges> indicates the points that
- * are selected, or all points if <selected_name_ranges> is NULL.
- * @param no_lighting  Flag giving current state of whether lighting is off.
- * Enable or disable lighting and update as appropriate for point/line or surface
- * glyphs to minimise state changes.
- */
-static int draw_glyphsetGL(GT_glyph_set *glyph_set,
-	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Spectrum *spectrum, int draw_selected,
-	SubObjectGroupHighlightFunctor *highlight_functor,
-	Render_graphics_opengl *renderer, bool& lighting_on)
-{
-	char **label;
-	ZnReal *label_bound;
-	GLfloat transformation[16], x, y, z;
-	GLfloat *datum = 0;
-	int draw_all, i, name_selected = 0, label_bounds_per_glyph = 0,
-		return_code;
-	struct Spectrum_render_data *render_data = NULL;
-	Triple *axis1, *axis2, *axis3, *label_density, *point, *scale, temp_axis1, temp_axis2,
-		temp_axis3, temp_point;
-
-	ENTER(draw_glyphsetGL);
-	if (glyph_set)
-	{
-		const bool data_spectrum = (0 != glyph_set->data) && (0 != spectrum);
-		const int number_of_points = glyph_set->number_of_points;
-		if ((0==number_of_points) ||
-			(draw_selected&&((!glyph_set->names) || (!highlight_functor))))
-		{
-			/* nothing to draw */
-			return_code=1;
-		}
-		else
-		{
-#if defined (OPENGL_API)
-			int number_of_data_components = glyph_set->n_data_components;
-			if ((!data_spectrum)||(render_data=spectrum_start_renderGL
-				(spectrum,material,number_of_data_components)))
-			{
-				int *names = glyph_set->names;
-				bool picking_names = (names) && (renderer->picking);
-				draw_all = (!names) ||
-					((!draw_selected)&&(!highlight_functor));
-				point = glyph_set->point_list;
-				axis1 = glyph_set->axis1_list;
-				axis2 = glyph_set->axis2_list;
-				axis3 = glyph_set->axis3_list;
-				scale = glyph_set->scale_list;
-				datum = glyph_set->data;
-				if (glyph_set->label_density_list)
-				{
-					label_density = glyph_set->label_density_list;
-				}
-				else
-				{
-					label_density = (Triple *)NULL;
-				}
-				int *name = names;
-				if (picking_names)
-				{
-					/* make space for picking name on name stack */
-					glPushName(0);
-				}
-				char **labels = glyph_set->labels;
-				label=labels;
-				label_bound = glyph_set->label_bounds;
-				if (label_bound)
-				{
-					label_bounds_per_glyph = 1 << glyph_set->label_bounds_dimension;
-				}
-				// try to draw points and lines faster
-				GT_object *glyph = glyph_set->glyph;
-				cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
-				int object_name = glyph_set->object_name;
-				cmzn_glyph_shape_type glyph_type = glyph ?
-					GT_object_get_glyph_type(glyph) : CMZN_GLYPH_SHAPE_TYPE_NONE;
-				// output static labels at each point, if supplied
-				const int number_of_glyphs =
-					cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
-				char **static_labels = 0;
-				for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
-				{
-					if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
-						(0 != glyph_set->static_label_text[glyph_number]))
-					{
-						static_labels = glyph_set->static_label_text;
-						break;
-					}
-				}
-
-				if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_POINT) &&
-					(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE))
-				{
-					if (lighting_on)
-					{
-						/* disable lighting so rendered in flat diffuse colour */
-						glDisable(GL_LIGHTING);
-						lighting_on = !lighting_on;
-					}
-					const bool multiBeginEnd = (picking_names || labels || static_labels || highlight_functor);
-					if (!multiBeginEnd)
-					{
-						// more efficient to render points with one glBegin/glEnd
-						glBegin(GL_POINTS);
-					}
-					/* cannot put glLoadName between glBegin and glEnd */
-					if ((object_name >= 0) && highlight_functor)
-					{
-						name_selected=highlight_functor->call(object_name);
-					}
-					for (i=0;i<number_of_points;i++)
-					{
-						if ((object_name < 0) && ((names) && highlight_functor))
-						{
-							name_selected = highlight_functor->call(*name);
-						}
-						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-						{
-							/* set the spectrum for this datum, if any */
-							if (data_spectrum)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-							}
-							if (picking_names)
-							{
-								glLoadName((GLuint)(*name));
-							}
-							resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
-								glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-								*point, *axis1, *axis2, *axis3, *scale,
-								temp_point, temp_axis1, temp_axis2, temp_axis3);
-							if (multiBeginEnd)
-							{
-								glBegin(GL_POINTS);
-							}
-							glVertex3fv(temp_point);
-							if (multiBeginEnd)
-							{
-								glEnd();
-							}
-							if ((labels && *label) || static_labels)
-							{
-								Triple lpoint;
-								for (int j = 0; j < 3; ++j)
-								{
-									lpoint[j] = temp_point[j]
-										+ glyph_set->label_offset[0]*temp_axis1[j]
-										+ glyph_set->label_offset[1]*temp_axis2[j]
-										+ glyph_set->label_offset[2]*temp_axis3[j];
-								}
-								bool allocatedText = false;
-								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
-								cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
-								if (allocatedText)
-								{
-									delete[] text;
-								}
-							}
-						}
-						/* advance pointers */
-						point++;
-						axis1++;
-						axis2++;
-						axis3++;
-						scale++;
-						if (data_spectrum)
-						{
-							datum += number_of_data_components;
-						}
-						if (names)
-						{
-							name++;
-						}
-						if (labels)
-						{
-							label++;
-						}
-					}
-					if (!multiBeginEnd)
-					{
-						glEnd();
-					}
-				}
-				else if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_LINE) &&
-					(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE))
-				{
-					if (lighting_on)
-					{
-						/* disable lighting so rendered in flat diffuse colour */
-						glDisable(GL_LIGHTING);
-						lighting_on = !lighting_on;
-					}
-					const bool multiBeginEnd = (picking_names || labels || static_labels || highlight_functor);
-					if (!multiBeginEnd)
-					{
-						// more efficient to render lines with one glBegin/glEnd
-						glBegin(GL_LINES);
-					}
-					if ((object_name >= 0) && highlight_functor)
-					{
-						name_selected=highlight_functor->call(object_name);
-					}
-					/* cannot put glLoadName between glBegin and glEnd */
-					for (i=0;i<number_of_points;i++)
-					{
-						if ((object_name < 0) && (names) && highlight_functor)
-						{
-							name_selected = highlight_functor->call(*name);
-						}
-						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-						{
-							/* set the spectrum for this datum, if any */
-							if (data_spectrum)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-							}
-							if (picking_names)
-							{
-								glLoadName((GLuint)(*name));
-							}
-							resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
-								glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-								*point, *axis1, *axis2, *axis3, *scale,
-								temp_point, temp_axis1, temp_axis2, temp_axis3);
-							x = temp_point[0];
-							y = temp_point[1];
-							z = temp_point[2];
-							if (multiBeginEnd)
-							{
-								glBegin(GL_LINES);
-							}
-							glVertex3f(x,y,z);
-							x = temp_point[0] + temp_axis1[0];
-							y = temp_point[1] + temp_axis1[1];
-							z = temp_point[2] + temp_axis1[2];
-							glVertex3f(x,y,z);
-							if (multiBeginEnd)
-							{
-								glEnd();
-							}
-							if ((labels && *label) || static_labels)
-							{
-								Triple lpoint;
-								for (int j = 0; j < 3; ++j)
-								{
-									lpoint[j] = temp_point[j]
-										+ glyph_set->label_offset[0]*temp_axis1[j]
-										+ glyph_set->label_offset[1]*temp_axis2[j]
-										+ glyph_set->label_offset[2]*temp_axis3[j];
-								}
-								bool allocatedText = false;
-								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
-								cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
-								if (allocatedText)
-								{
-									delete[] text;
-								}
-							}
-						}
-						point++;
-						axis1++;
-						axis2++;
-						axis3++;
-						scale++;
-						if (data_spectrum)
-						{
-							datum += number_of_data_components;
-						}
-						if (names)
-						{
-							name++;
-						}
-						if (labels)
-						{
-							label++;
-						}
-					}
-					if (!multiBeginEnd)
-					{
-						glEnd();
-					}
-				}
-				else if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_CROSS) &&
-					(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE))
-				{
-					if (lighting_on)
-					{
-						/* disable lighting so rendered in flat diffuse colour */
-						glDisable(GL_LIGHTING);
-						lighting_on = !lighting_on;
-					}
-					const bool multiBeginEnd = (picking_names || labels || static_labels || highlight_functor);
-					if (!multiBeginEnd)
-					{
-						// more efficient to render lines with one glBegin/glEnd
-						glBegin(GL_LINES);
-					}
-					if ((object_name >= 0) && highlight_functor)
-					{
-						name_selected=highlight_functor->call(object_name);
-					}
-					/* cannot put glLoadName between glBegin and glEnd */
-					for (i=0;i<number_of_points;i++)
-					{
-						if ((object_name < 0) && (names) && highlight_functor)
-						{
-							name_selected = highlight_functor->call(*name);
-						}
-						if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-						{
-							/* set the spectrum for this datum, if any */
-							if (data_spectrum)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-							}
-							if (picking_names)
-							{
-								glLoadName((GLuint)(*name));
-							}
-							resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
-								glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-								*point, *axis1, *axis2, *axis3, *scale,
-								temp_point, temp_axis1, temp_axis2, temp_axis3);
-							if (multiBeginEnd)
-							{
-								glBegin(GL_LINES);
-							}
-							/* x-line */
-							x = temp_point[0] - 0.5*temp_axis1[0];
-							y = temp_point[1] - 0.5*temp_axis1[1];
-							z = temp_point[2] - 0.5*temp_axis1[2];
-							glVertex3f(x,y,z);
-							x += temp_axis1[0];
-							y += temp_axis1[1];
-							z += temp_axis1[2];
-							glVertex3f(x,y,z);
-							/* y-line */
-							x = temp_point[0] - 0.5*temp_axis2[0];
-							y = temp_point[1] - 0.5*temp_axis2[1];
-							z = temp_point[2] - 0.5*temp_axis2[2];
-							glVertex3f(x,y,z);
-							x += temp_axis2[0];
-							y += temp_axis2[1];
-							z += temp_axis2[2];
-							glVertex3f(x,y,z);
-							/* z-line */
-							x = temp_point[0] - 0.5*temp_axis3[0];
-							y = temp_point[1] - 0.5*temp_axis3[1];
-							z = temp_point[2] - 0.5*temp_axis3[2];
-							glVertex3f(x,y,z);
-							x += temp_axis3[0];
-							y += temp_axis3[1];
-							z += temp_axis3[2];
-							glVertex3f(x,y,z);
-							if (multiBeginEnd)
-							{
-								glEnd();
-							}
-							if ((labels && *label) || static_labels)
-							{
-								Triple lpoint;
-								for (int j = 0; j < 3; ++j)
-								{
-									lpoint[j] = temp_point[j]
-										+ glyph_set->label_offset[0]*temp_axis1[j]
-										+ glyph_set->label_offset[1]*temp_axis2[j]
-										+ glyph_set->label_offset[2]*temp_axis3[j];
-								}
-								bool allocatedText = false;
-								char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? *label : 0, allocatedText);
-								cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
-								if (allocatedText)
-								{
-									delete[] text;
-								}
-							}
-						}
-						/* advance pointers */
-						point++;
-						axis1++;
-						axis2++;
-						axis3++;
-						scale++;
-						if (data_spectrum)
-						{
-							datum += number_of_data_components;
-						}
-						if (names)
-						{
-							name++;
-						}
-						if (labels)
-						{
-							label++;
-						}
-					}
-					if (!multiBeginEnd)
-					{
-						glEnd();
-					}
-				}
-				else // general case
-				{
-					if (!lighting_on)
-					{
-						/* enable lighting for general glyphs */
-						glEnable(GL_LIGHTING);
-						lighting_on = !lighting_on;
-					}
-					/* must push and pop the modelview matrix */
-					glMatrixMode(GL_MODELVIEW);
-					if ((object_name >= 0) && highlight_functor)
-					{
-						name_selected=highlight_functor->call(object_name);
-					}
-					if (glyph)
-					{
-						Graphics_object_glyph_labels_function glyph_labels_function =
-							Graphics_object_get_glyph_labels_function(glyph);
-						for (i = 0; i < number_of_points; i++)
-						{
-							if ((object_name < 0) && (names) && highlight_functor)
-							{
-								name_selected = highlight_functor->call(*name);
-							}
-							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
-							{
-								if (picking_names)
-								{
-									glLoadName((GLuint)(*name));
-								}
-								/* set the spectrum for this datum, if any */
-								if (data_spectrum)
-								{
-									spectrum_renderGL_value(spectrum,material,render_data,datum);
-								}
-								for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
-								{
-									/* store the current modelview matrix */
-									glPushMatrix();
-									resolve_glyph_axes(glyph_repeat_mode, glyph_number,
-										glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-										*point, *axis1, *axis2, *axis3, *scale,
-										temp_point, temp_axis1, temp_axis2, temp_axis3);
-
-									/* make transformation matrix for manipulating glyph */
-									transformation[ 0] = temp_axis1[0];
-									transformation[ 1] = temp_axis1[1];
-									transformation[ 2] = temp_axis1[2];
-									transformation[ 3] = 0.0;
-									transformation[ 4] = temp_axis2[0];
-									transformation[ 5] = temp_axis2[1];
-									transformation[ 6] = temp_axis2[2];
-									transformation[ 7] = 0.0;
-									transformation[ 8] = temp_axis3[0];
-									transformation[ 9] = temp_axis3[1];
-									transformation[10] = temp_axis3[2];
-									transformation[11] = 0.0;
-									transformation[12] = temp_point[0];
-									transformation[13] = temp_point[1];
-									transformation[14] = temp_point[2];
-									transformation[15] = 1.0;
-									glMultMatrixf(transformation);
-									renderer->Graphics_object_execute(glyph);
-									if (glyph_labels_function)
-									{
-										Triple label_scale;
-										for (int j = 0; j < 3; ++j)
-										{
-											label_scale[j] = glyph_set->base_size[j] + glyph_set->scale_factors[j]*(*scale)[j];
-										}
-										return_code = (*glyph_labels_function)(&label_scale,
-											glyph_set->label_bounds_dimension, glyph_set->label_bounds_components, label_bound,
-											label_density, material, secondary_material, glyph_set->font, renderer);
-									}
-									/* restore the original modelview matrix */
-									glPopMatrix();
-								}
-							}
-							/* advance pointers */
-							point++;
-							axis1++;
-							axis2++;
-							axis3++;
-							scale++;
-							if (data_spectrum)
-							{
-								datum += number_of_data_components;
-							}
-							if (glyph_set->label_density_list)
-							{
-								label_density++;
-							}
-							if (names)
-							{
-								name++;
-							}
-							if (glyph_set->label_bounds)
-							{
-								label_bound += glyph_set->label_bounds_components * label_bounds_per_glyph;
-							}
-						}
-					}
-					if ((labels || static_labels) && !glyph_set->label_bounds)
-					{
-						label = labels;
-						/* Default is to draw the label value at the origin */
-						name=names;
-						if (lighting_on)
-						{
-							/* disable lighting so rendered in flat diffuse colour */
-							glDisable(GL_LIGHTING);
-							lighting_on = false;
-						}
-						point = glyph_set->point_list;
-						axis1 = glyph_set->axis1_list;
-						axis2 = glyph_set->axis2_list;
-						axis3 = glyph_set->axis3_list;
-						scale = glyph_set->scale_list;
-						datum = glyph_set->data;
-						if ((object_name >= 0) && highlight_functor)
-						{
-							name_selected=highlight_functor->call(object_name);
-						}
-						for (i=0;i<number_of_points;i++)
-						{
-							if ((object_name < 0) && (names) && highlight_functor)
-							{
-								name_selected = highlight_functor->call(*name);
-							}
-							if ((static_labels || (label && *label)) && (draw_all	|| ((name_selected) && draw_selected)
-								|| ((!name_selected)&&(!draw_selected))))
-							{
-								if (picking_names)
-								{
-									glLoadName((GLuint)(*name));
-								}
-								/* set the spectrum for this datum, if any */
-								if (data_spectrum)
-								{
-									spectrum_renderGL_value(spectrum,material,render_data,datum);
-								}
-								for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
-								{
-									if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
-										((labels && (glyph_number == 0) && (*label)) || (static_labels && static_labels[glyph_number])))
-									{
-										resolve_glyph_axes(glyph_repeat_mode, glyph_number,
-											glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-											*point, *axis1, *axis2, *axis3, *scale,
-											temp_point, temp_axis1, temp_axis2, temp_axis3);
-										if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_MIRROR) && ((*scale)[0] < 0.0f))
-										{
-											for (int j = 0; j < 3; ++j)
-											{
-												temp_point[j] += (
-													(1.0 - glyph_set->label_offset[0])*temp_axis1[j] +
-													glyph_set->label_offset[1]*temp_axis2[j] +
-													glyph_set->label_offset[2]*temp_axis3[j]);
-											}
-										}
-										else
-										{
-											for (int j = 0; j < 3; ++j)
-											{
-												temp_point[j] += (
-													glyph_set->label_offset[0]*temp_axis1[j] +
-													glyph_set->label_offset[1]*temp_axis2[j] +
-													glyph_set->label_offset[2]*temp_axis3[j]);
-											}
-										}
-										bool allocatedText = false;
-										char *text = concatenateLabels(
-											static_labels ? static_labels[glyph_number] : 0,
-											(label && (glyph_number == 0)) ? *label : 0, allocatedText);
-										cmzn_font_rendergl_text(glyph_set->font, text, temp_point[0], temp_point[1], temp_point[2]);
-										if (allocatedText)
-										{
-											delete[] text;
-										}
-									}
-								}
-							}
-							/* advance pointers */
-							point++;
-							axis1++;
-							axis2++;
-							axis3++;
-							scale++;
-							if (data_spectrum)
-							{
-								datum += number_of_data_components;
-							}
-							if (names)
-							{
-								name++;
-							}
-							if (label)
-							{
-								label++;
-							}
-						}
-					}
-				}
-				if (picking_names)
-				{
-					/* free space for point number on picking name stack */
-					glPopName();
-				}
-				if (data_spectrum)
-				{
-					spectrum_end_renderGL(spectrum,render_data);
-				}
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"draw_glyphsetGL.  Unable to start data rendering");
-				return_code=0;
-			}
-#endif /* defined (OPENGL_API) */
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"draw_glyphsetGL. Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_glyphsetGL */
-
-static int draw_pointsetGL(int n_pts,Triple *point_list,char **text,
-	gtMarkerType marker_type,GLfloat marker_size,int *names,
-	int number_of_data_components, GLfloat *data,
-struct Graphical_material *material, struct Spectrum *spectrum,
-struct cmzn_font *font)
-	/*******************************************************************************
-	LAST MODIFIED : 18 November 2005
-
-	DESCRIPTION :
-	???RC.  21/12/97 The optional names are supplied to allow identification of the
-	object with OpenGL picking. (used to use a accessed pointer to an FE_node which
-	did not allow other objects to be identified, nor nodes to be destroyed). Since
-	can't change picking names between glBegin and glEnd, must have a separate
-	begin/end bracket for each point. This may reduce rendering performance a
-	little, but on the upside, spectrum handling and text output are done
-	simultaneously.
-	==============================================================================*/
-{
-	char **text_string;
-	GLfloat half_marker_size,x,x1,x2,x3,y,y1,y2,y3,z,z1,z2,z3;
-	GLfloat *datum = NULL;
-	int i,*name,offset,return_code;
-	struct Spectrum_render_data *render_data = NULL;
-	Triple *point;
-
-	ENTER(draw_pointsetGL);
-	/* default return code */
-	return_code=0;
-	/* checking arguments */
-	if (point_list&&(0<n_pts))
-	{
-#if defined (OPENGL_API)
-		if ((!data)||(render_data=spectrum_start_renderGL
-			(spectrum,material,number_of_data_components)))
-		{
-			point=point_list;
-			/* if there is data to plot, start the spectrum rendering */
-			if (data)
-			{
-				datum = data;
-			}
-			/* draw markers */
-			half_marker_size=marker_size/2;
-			if ((g_POINT_MARKER==marker_type)||
-				((g_PLUS_MARKER==marker_type)&&(0>=half_marker_size)))
-			{
-				glBegin(GL_POINTS);
-				for (i=0;i<n_pts;i++)
-				{
-					/* set the spectrum for this datum, if any */
-					if (data)
-					{
-						spectrum_renderGL_value(spectrum,material,render_data,datum);
-						datum += number_of_data_components;
-					}
-					x=(*point)[0];
-					y=(*point)[1];
-					z=(*point)[2];
-					point++;
-					glVertex3f(x,y,z);
-				}
-				glEnd();
-			}
-			else
-			{
-				switch (marker_type)
-				{
-				case g_PLUS_MARKER:
-					{
-						glBegin(GL_LINES);
-						for (i=0;i<n_pts;i++)
-						{
-							/* set the spectrum for this datum, if any */
-							if (data)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum += number_of_data_components;
-							}
-							x=(*point)[0];
-							y=(*point)[1];
-							z=(*point)[2];
-							point++;
-							/* first line */
-							glVertex3f(x-half_marker_size,y,z);
-							glVertex3f(x+half_marker_size,y,z);
-							/* second line */
-							glVertex3f(x,y-half_marker_size,z);
-							glVertex3f(x,y+half_marker_size,z);
-							/* third line */
-							glVertex3f(x,y,z-half_marker_size);
-							glVertex3f(x,y,z+half_marker_size);
-						}
-						glEnd();
-					} break;
-				case g_DERIVATIVE_MARKER:
-					{
-						glBegin(GL_LINES);
-						for (i=0;i<n_pts;i++)
-						{
-							/* set the spectrum for this datum, if any */
-							if (data)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum += number_of_data_components;
-							}
-							x=(*point)[0];
-							y=(*point)[1];
-							z=(*point)[2];
-							point++;
-							x1=(*point)[0];
-							y1=(*point)[1];
-							z1=(*point)[2];
-							point++;
-							if ((x1!=x)||(y1!=y)||(z1!=z))
-							{
-								glVertex3f(x,y,z);
-								glVertex3f(x1,y1,z1);
-							}
-							x2=(*point)[0];
-							y2=(*point)[1];
-							z2=(*point)[2];
-							point++;
-							if ((x2!=x)||(y2!=y)||(z2!=z))
-							{
-								glVertex3f(x,y,z);
-								glVertex3f(x2,y2,z2);
-							}
-							x3=(*point)[0];
-							y3=(*point)[1];
-							z3=(*point)[2];
-							point++;
-							if ((x3!=x)||(y3!=y)||(z3!=z))
-							{
-								glVertex3f(x,y,z);
-								glVertex3f(x3,y3,z3);
-							}
-						}
-						glEnd();
-					} break;
-				default:
-					{
-						/* Do nothing, satisfy warnings */
-					} break;
-				}
-			}
-			/* output text at each point, if supplied */
-			text_string = text;
-			if (text_string)
-			{
-				point=point_list;
-				datum=data;
-				if (g_DERIVATIVE_MARKER==marker_type)
-				{
-					offset=4;
-				}
-				else
-				{
-					offset=1;
-				}
-				for (i=0;i<n_pts;i++)
-				{
-					x=(*point)[0];
-					y=(*point)[1];
-					z=(*point)[2];
-					point += offset;
-					/* set the spectrum for this datum, if any */
-					if (data)
-					{
-						spectrum_renderGL_value(spectrum,material,render_data,datum);
-						datum += number_of_data_components;
-					}
-					if (*text_string)
-					{
-						cmzn_font_rendergl_text(font, *text_string, x, y, z);
-					}
-					text_string++;
-				}
-			}
-			/* picking */
-			name = names;
-			if (name)
-			{
-				point=point_list;
-				datum=data;
-				/* make a first name to load over with each name */
-				glPushName(0);
-				switch (marker_type)
-				{
-				case g_POINT_MARKER:
-				case g_PLUS_MARKER:
-					{
-						for (i=0;i<n_pts;i++)
-						{
-							x=(*point)[0];
-							y=(*point)[1];
-							z=(*point)[2];
-							point++;
-							/* set the spectrum for this datum, if any */
-							if (data)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum += number_of_data_components;
-							}
-							glLoadName((GLuint)(*name));
-							glBegin(GL_POINTS);
-							glVertex3f(x,y,z);
-							glEnd();
-							name++;
-						}
-					} break;
-				case g_DERIVATIVE_MARKER:
-					{
-						for (i=0;i<n_pts;i++)
-						{
-							x=(*point)[0];
-							y=(*point)[1];
-							z=(*point)[2];
-							point++;
-							x1=(*point)[0];
-							y1=(*point)[1];
-							z1=(*point)[2];
-							point++;
-							x2=(*point)[0];
-							y2=(*point)[1];
-							z2=(*point)[2];
-							point++;
-							x3=(*point)[0];
-							y3=(*point)[1];
-							z3=(*point)[2];
-							point++;
-							/* set the spectrum for this datum, if any */
-							if (data)
-							{
-								spectrum_renderGL_value(spectrum,material,render_data,datum);
-								datum += number_of_data_components;
-							}
-							/* output names */
-							glLoadName((GLuint)(*name));
-							glBegin(GL_POINTS);
-							glVertex3f(x,y,z);
-							glEnd();
-							if ((x1!=x)||(y1!=y)||(z1!=z))
-							{
-								glPushName(1);
-								glBegin(GL_POINTS);
-								glVertex3f(x1,y1,z1);
-								glEnd();
-								glPopName();
-							}
-							if ((x2!=x)||(y2!=y)||(z2!=z))
-							{
-								glPushName(2);
-								glBegin(GL_POINTS);
-								glVertex3f(x2,y2,z2);
-								glEnd();
-								glPopName();
-							}
-							if ((x3!=x)||(y3!=y)||(z3!=z))
-							{
-								glPushName(3);
-								glBegin(GL_POINTS);
-								glVertex3f(x3,y3,z3);
-								glEnd();
-								glPopName();
-							}
-						}
-						name++;
-					} break;
-				default:
-					{
-						/* Do nothing, satisfy warnings */
-					} break;
-				}
-				glPopName();
-			}
-			if (data)
-			{
-				spectrum_end_renderGL(spectrum,render_data);
-			}
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"draw_pointsetGL.  Missing spectrum");
-			return_code=0;
-		}
-#endif /* defined (OPENGL_API) */
-	}
-	else
-	{
-		if (0<n_pts)
-		{
-			display_message(ERROR_MESSAGE,"drawpointsetGL. Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_pointsetGL */
-
-static int draw_polylineGL(Triple *point_list, Triple *normal_list, int n_pts,
-	int number_of_data_components, GLfloat *data,
-struct Graphical_material *material,struct Spectrum *spectrum)
-	/*******************************************************************************
-	LAST MODIFIED : 9 June 1999
-
-	DESCRIPTION :
-	==============================================================================*/
-{
-	int return_code;
-#if defined (OPENGL_API)
-	GLfloat *datum = NULL;
-	int i;
-	Triple *normal = NULL, *point = NULL;
-#endif /* defined (OPENGL_API) */
-	struct Spectrum_render_data *render_data = NULL;
-
-	ENTER(drawpolylineGL);
-#if defined (DEBUG_CODE)
-	printf("draw_polylineGL %d\n",n_pts);
-#endif /* defined (DEBUG_CODE) */
-
-	/* checking arguments */
-	const bool data_spectrum = (0 != data) && (0 != spectrum);
-	if (point_list&&(0<n_pts)&&((!data_spectrum)||(render_data=
-		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
-	{
-#if defined (OPENGL_API)
-		point=point_list;
-		if (normal_list)
-		{
-			normal = normal_list;
-		}
-		if (data_spectrum)
-		{
-			datum=data;
-		}
-		glBegin(GL_LINE_STRIP);
-		for (i=n_pts;i>0;i--)
-		{
-			if (data_spectrum)
-			{
-				spectrum_renderGL_value(spectrum,material,render_data,datum);
-				datum += number_of_data_components;
-			}
-			if (normal_list)
-			{
-				glNormal3fv(*normal);
-				normal++;
-			}
-			glVertex3fv(*point);
-			point++;
-		}
-		glEnd();
-		if (data_spectrum)
-		{
-			spectrum_end_renderGL(spectrum,render_data);
-		}
-		return_code=1;
-	}
-	else
-	{
-		if (0<n_pts)
-		{
-			display_message(ERROR_MESSAGE,"draw_polylineGL.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-#endif /* defined (OPENGL_API) */
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_polylineGL */
-
-static int draw_dc_polylineGL(Triple *point_list,Triple *normal_list, int n_pts,
-	int number_of_data_components, GLfloat *data,
-struct Graphical_material *material,struct Spectrum *spectrum)
-	/*******************************************************************************
-	LAST MODIFIED : 9 June 1999
-
-	DESCRIPTION :
-	==============================================================================*/
-{
-	int return_code;
-#if defined (OPENGL_API)
-	int i;
-	Triple *point = NULL, *normal = NULL;
-	GLfloat *datum = NULL;
-#endif /* defined (OPENGL_API) */
-	struct Spectrum_render_data *render_data = NULL;
-
-	ENTER(draw_dc_polylineGL);
-	const bool data_spectrum = (0 != data) && (0 != spectrum);
-	if (point_list&&(0<n_pts)&&((!data_spectrum)||(render_data=
-		spectrum_start_renderGL(spectrum,material,number_of_data_components))))
-	{
-#if defined (OPENGL_API)
-		point=point_list;
-		if (data_spectrum)
-		{
-			datum=data;
-		}
-		if (normal_list)
-		{
-			normal = normal_list;
-		}
-		glBegin(GL_LINES);
-		for (i=n_pts;i>0;i--)
-		{
-			if (data_spectrum)
-			{
-				spectrum_renderGL_value(spectrum,material,render_data,datum);
-				datum += number_of_data_components;
-			}
-			if (normal_list)
-			{
-				glNormal3fv(*normal);
-				normal++;
-			}
-			glVertex3fv(*point);
-			point++;
-			if (data_spectrum)
-			{
-				spectrum_renderGL_value(spectrum,material,render_data,datum);
-				datum += number_of_data_components;
-			}
-			if (normal_list)
-			{
-				glNormal3fv(*normal);
-				normal++;
-			}
-			glVertex3fv(*point);
-			point++;
-		}
-		glEnd();
-#endif /* defined (OPENGL_API) */
-		if (data_spectrum)
-		{
-			spectrum_end_renderGL(spectrum,render_data);
-		}
-		return_code=1;
-	}
-	else
-	{
-		if (0<n_pts)
-		{
-			display_message(ERROR_MESSAGE,"draw_dc_polylineGL.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_dc_polylineGL */
-
-/**
-* Outputs quadrilateral surfaces as a series of OpenGL quad strips, and
-* triangle surfaces as a series of triangle strips.
-*/
-static int draw_surfaceGL(Triple *surfpts, Triple *normalpoints, Triple *tangentpoints,
-	Triple *texturepoints, int npts1, int npts2, gtPolygonType polygon_type,
-	int number_of_data_components, GLfloat *data,
-struct Graphical_material *material, struct Spectrum *spectrum,
-struct Spectrum_render_data *render_data)
-{
-	int return_code;
-
-	ENTER(draw_surfaceGL);
-#if ! defined GL_VERSION_1_3
-	USE_PARAMETER(tangentpoints);
-#endif /* ! defined GL_VERSION_1_3 */
-	const bool data_spectrum = (0 != data) && (0 != render_data);
-	if (surfpts && (1 < npts1) && (1 < npts2))
-	{
-#if defined (OPENGL_API)
-#if defined GL_VERSION_1_3
-		if (tangentpoints)
-		{
-			if (!Graphics_library_check_extension(GL_VERSION_1_3))
-			{
-				/* Ignore these tangentpoints */
-				tangentpoints = (Triple *)NULL;
-			}
-		}
-#endif /* defined GL_VERSION_1_3 */
-		switch (polygon_type)
-		{
-		case g_QUADRILATERAL:
-			{
-				/* For standard OpenGL polygon winding with normals out of the page,
-				* expect points in sequence:
-				*   7-8-9
-				*   | | |
-				*   4-5-6
-				*   | | |
-				*   1-2-3
-				* The first quad strip is the left column from bottom to top:
-				*   1,2,4,5,7,8
-				*/
-				const int number_of_strips = npts1 - 1;
-				const int points_per_strip = 2*npts2;
-				int i, index, j;
-				for (i = 0; i < number_of_strips; i++)
-				{
-					index = i;
-					glBegin(GL_QUAD_STRIP);
-					for (j = 0; j < points_per_strip; j++)
-					{
-						if (normalpoints)
-						{
-							glNormal3fv(normalpoints[index]);
-						}
-#if defined GL_VERSION_1_3
-						if (tangentpoints)
-						{
-							glMultiTexCoord3fv(GL_TEXTURE1_ARB, tangentpoints[index]);
-						}
-#endif /* defined GL_VERSION_1_3 */
-						if (texturepoints)
-						{
-							glTexCoord3fv(texturepoints[index]);
-						}
-						if (data_spectrum)
-						{
-							spectrum_renderGL_value(spectrum, material, render_data,
-								data + index*number_of_data_components);
-						}
-						glVertex3fv(surfpts[index]);
-						if (j & 1)
-						{
-							index += number_of_strips;
-						}
-						else
-						{
-							index++;
-						}
-					}
-					glEnd();
-				}
-			} break;
-		case g_TRIANGLE:
-			{
-				/* For standard OpenGL polygon winding with normals out of the page,
-				* expect points in sequence:
-				*   6
-				*   |\
-				*   4-5
-				*   |\|\
-				*   1-2-3
-				* The first triangle strip is the left column from bottom to top:
-				*   1,2,4,5,6
-				*/
-				const int number_of_strips = npts1 - 1;
-				int i, index, j, points_per_strip;
-				for (i = 0; i < number_of_strips; i++)
-				{
-					index = i;
-					points_per_strip = (npts1 - i)*2 - 1;
-					glBegin(GL_TRIANGLE_STRIP);
-					for (j = 0; j < points_per_strip; j++)
-					{
-						if (normalpoints)
-						{
-							glNormal3fv(normalpoints[index]);
-						}
-#if defined GL_VERSION_1_3
-						if (tangentpoints)
-						{
-							glMultiTexCoord3fv(GL_TEXTURE1_ARB, tangentpoints[index]);
-						}
-#endif /* defined GL_VERSION_1_3 */
-						if (texturepoints)
-						{
-							glTexCoord3fv(texturepoints[index]);
-						}
-						if (data_spectrum)
-						{
-							spectrum_renderGL_value(spectrum, material, render_data,
-								data + index*number_of_data_components);
-						}
-						glVertex3fv(surfpts[index]);
-						if (j & 1)
-						{
-							index += (number_of_strips - (j >> 1));
-						}
-						else
-						{
-							index++;
-						}
-					}
-					glEnd();
-				}
-			} break;
-		default:
-			{
-				/* Do nothing, satisfy warnings */
-			} break;
-		}
-#endif /* defined (OPENGL_API) */
-		return_code=1;
-	}
-	else
-	{
-		if ((1<npts1)&&(1<npts2))
-		{
-			display_message(ERROR_MESSAGE,
-				"draw_surfaceGL.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_surfaceGL */
-
-static int draw_dc_surfaceGL(Triple *surfpts, Triple *normal_points,
-	Triple *tangent_points, Triple *texture_points,
-	int npolys,int npp,gtPolygonType polygon_type,int strip,
-#if defined (OPENGL_API)
-	GLenum& gl_surface_mode,
-#endif /* defined (OPENGL_API) */
-	int number_of_data_components,GLfloat *data,
-struct Graphical_material *material,struct Spectrum *spectrum,
-struct Spectrum_render_data *render_data)
-	/*******************************************************************************
-	LAST MODIFIED : 9 June 1999
-
-	DESCRIPTION :
-	If the <polygon_type> is g_TRIANGLE or g_QUADRILATERAL, the discontinuous
-	sets of vertices are drawn as separate triangles or quadrilaterals - or as
-	strips of the respective types if the <strip> flag is set. Otherwise a single
-	polygon is drawn for each of the <npolys>.
-	==============================================================================*/
-{
-#if defined (OPENGL_API)
-	GLenum mode;
-#endif /* defined (OPENGL_API) */
-	GLfloat *data_item = NULL;
-	int i,j,return_code = 0;
-	Triple *normal_point = NULL, *point = NULL, *texture_point = NULL;
-
-	ENTER(draw_data_dc_surfaceGL);
-	USE_PARAMETER(tangent_points);
-	const bool data_spectrum = (0 != data) && (0 != render_data);
-	if (surfpts&&(0<npolys)&&(2<npp))
-	{
-		if (data_spectrum)
-		{
-			data_item=data;
-		}
-		point=surfpts;
-		if (normal_points)
-		{
-			normal_point = normal_points;
-		}
-		if (texture_points)
-		{
-			texture_point = texture_points;
-		}
-#if defined (OPENGL_API)
-		switch (polygon_type)
-		{
-		case g_QUADRILATERAL:
-			{
-				if (strip)
-				{
-					mode=GL_QUAD_STRIP;
-				}
-				else
-				{
-					mode=GL_QUADS;
-				}
-			} break;
-		case g_TRIANGLE:
-			{
-				if (strip)
-				{
-					mode=GL_TRIANGLE_STRIP;
-				}
-				else
-				{
-					mode=GL_TRIANGLES;
-				}
-			} break;
-		default:
-			{
-				mode=GL_POLYGON;
-			}
-		}
-		for (i=0;i<npolys;i++)
-		{
-			if (mode != gl_surface_mode)
-			{
-				if (gl_surface_mode != GL_POINTS)
-				{
-					glEnd();
-				}
-				gl_surface_mode = mode;
-				glBegin(gl_surface_mode);
-			}
-			for (j=0;j<npp;j++)
-			{
-				if (data_spectrum)
-				{
-					spectrum_renderGL_value(spectrum,material,render_data,data_item);
-					data_item += number_of_data_components;
-				}
-				if (normal_points)
-				{
-					glNormal3fv(*normal_point);
-					normal_point++;
-				}
-				if (texture_points)
-				{
-					glTexCoord3fv(*texture_point);
-					texture_point++;
-				}
-				glVertex3fv(*point);
-				point++;
-
-
-			}
-		}
-#endif /* defined (OPENGL_API) */
-		return_code=1;
-	}
-	else
-	{
-		if (0<npolys)
-		{
-			display_message(ERROR_MESSAGE,
-				"draw_dc_surfaceGL.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_dc_surfaceGL */
-
-static int draw_nurbsGL(struct GT_nurbs *nurbptr)
-	/*******************************************************************************
-	LAST MODIFIED : 9 June 1999
-
-	DESCRIPTION :
-	==============================================================================*/
-{
-	int return_code;
-#if defined (OPENGL_API)
-	GLfloat *cknots_temp = NULL, *control_temp = NULL, *normal_temp = NULL,
-		*pwl_temp = NULL, *sknots_temp = NULL, *tknots_temp = NULL,	*texture_temp = NULL,
-		*trimarray_temp = NULL;
-	GLUnurbsObj *the_nurb;
-	int i;
-#endif /* defined (OPENGL_API) */
-
-	ENTER(draw_nurbsGL);
-	/* default return code */
-	return_code=0;
-	/* checking arguments */
-	if (nurbptr)
-	{
-#if defined (OPENGL_API)
-		/* allocate local temporary arrays */
-		ALLOCATE(sknots_temp,GLfloat,nurbptr->sknotcnt);
-		ALLOCATE(tknots_temp,GLfloat,nurbptr->tknotcnt);
-		ALLOCATE(control_temp,GLfloat,4*(nurbptr->maxs)*(nurbptr->maxt));
-		/* check memory allocation */
-		if (sknots_temp&&tknots_temp&&control_temp)
-		{
-			/* move sknots into temp GLfloat array */
-			for (i=0;i<nurbptr->sknotcnt;i++)
-			{
-				sknots_temp[i]=(GLfloat)nurbptr->sknots[i];
-			}
-			/* move tknots into a temp GLfloat array */
-			for (i=0;i<nurbptr->tknotcnt;i++)
-			{
-				tknots_temp[i]=(GLfloat)nurbptr->tknots[i];
-			}
-			if (nurbptr->normal_control_points)
-			{
-				/* move normals into a temp GLfloat array */
-				ALLOCATE(normal_temp,GLfloat,4*(nurbptr->maxs)*(nurbptr->maxt));
-				for (i=0;i<(4*nurbptr->maxt*nurbptr->maxs);i++)
-				{
-					normal_temp[i]=(GLfloat)nurbptr->normal_control_points[i];
-				}
-			}
-			if (nurbptr->texture_control_points)
-			{
-				/* move textures into a temp GLfloat array */
-				ALLOCATE(texture_temp,GLfloat,4*(nurbptr->maxs)*(nurbptr->maxt));
-				for (i=0;i<(4*nurbptr->maxt*nurbptr->maxs);i++)
-				{
-					texture_temp[i]=(GLfloat)nurbptr->texture_control_points[i];
-				}
-			}
-			if (nurbptr->cknotcnt>0)
-			{
-				/* move cknots into a temp GLfloat array */
-				ALLOCATE(cknots_temp,GLfloat,nurbptr->cknotcnt);
-				for (i=0;i<nurbptr->cknotcnt;i++)
-				{
-					cknots_temp[i]=(GLfloat)nurbptr->cknots[i];
-				}
-			}
-			/* move controlpts into a temp GLfloat array */
-			for (i=0;i<(4*nurbptr->maxt*nurbptr->maxs);i++)
-			{
-				control_temp[i]=(GLfloat)nurbptr->controlpts[i];
-			}
-			if (nurbptr->ccount>0)
-			{
-				/* move trimarray into a temp GLfloat array */
-				ALLOCATE(trimarray_temp,GLfloat,3*nurbptr->ccount);
-				for (i=0;i<(3*nurbptr->ccount);i++)
-				{
-					trimarray_temp[i]=(GLfloat)nurbptr->trimarray[i];
-				}
-			}
-			if (nurbptr->pwlcnt>0)
-			{
-				/* move pwlarray into a temp GLfloat array */
-				ALLOCATE(pwl_temp,GLfloat,3*nurbptr->pwlcnt);
-				for (i=0;i<(3*nurbptr->pwlcnt);i++)
-				{
-					pwl_temp[i]=(GLfloat)nurbptr->pwlarray[i];
-				}
-			}
-			/* store the evaluator attributes */
-			glPushAttrib(GL_EVAL_BIT);
-			if(!nurbptr->normal_control_points)
-			{
-				/* automatically calculate surface normals */
-				glEnable(GL_AUTO_NORMAL);
-			}
-			the_nurb=gluNewNurbsRenderer();
-			/* set the maximum sampled pixel size */
-			/* start the nurbs surface */
-			gluBeginSurface(the_nurb);
-			/* draw the nurbs surface */
-			gluNurbsSurface(the_nurb,nurbptr->sknotcnt,sknots_temp,nurbptr->tknotcnt,
-				tknots_temp,4,4*(nurbptr->maxs),control_temp,nurbptr->sorder,
-				nurbptr->torder,GL_MAP2_VERTEX_4);
-			if(nurbptr->normal_control_points)
-			{
-				gluNurbsSurface(the_nurb,nurbptr->sknotcnt,sknots_temp,nurbptr->tknotcnt,
-					tknots_temp,4,4*(nurbptr->maxs),normal_temp,nurbptr->sorder,
-					nurbptr->torder,GL_MAP2_NORMAL);
-			}
-			if(nurbptr->texture_control_points)
-			{
-				gluNurbsSurface(the_nurb,nurbptr->sknotcnt,sknots_temp,nurbptr->tknotcnt,
-					tknots_temp,4,4*(nurbptr->maxs),texture_temp,nurbptr->sorder,
-					nurbptr->torder,GL_MAP2_TEXTURE_COORD_3);
-			}
-			if (nurbptr->cknotcnt>0)
-			{
-				/* trim the nurbs surface with a nurbs curve */
-				gluBeginTrim(the_nurb);
-				gluNurbsCurve(the_nurb,nurbptr->cknotcnt,cknots_temp,3,trimarray_temp,
-					nurbptr->corder,GLU_MAP1_TRIM_3);
-				gluEndTrim(the_nurb);
-			}
-			if (nurbptr->pwlcnt)
-			{
-				/* trim the nurbs surface with a pwl curve */
-				gluBeginTrim(the_nurb);
-				gluPwlCurve(the_nurb,nurbptr->pwlcnt,pwl_temp,3,GLU_MAP1_TRIM_3);
-				gluEndTrim(the_nurb);
-			}
-			/* end the nurbs surface */
-			gluEndSurface(the_nurb);
-			/* restore the evaluator attributes */
-			glPopAttrib();
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"drawnurbsGL.	Memory allocation failed");
-			return_code=0;
-		}
-		/* deallocate local temp arrays */
-		DEALLOCATE(control_temp);
-		if (nurbptr->ccount>0)
-		{
-			DEALLOCATE(trimarray_temp);
-		}
-		if (nurbptr->normal_control_points)
-		{
-			DEALLOCATE(normal_temp);
-		}
-		if (nurbptr->texture_control_points)
-		{
-			DEALLOCATE(texture_temp);
-		}
-		if (nurbptr->cknotcnt>0)
-		{
-			DEALLOCATE(cknots_temp);
-		}
-		DEALLOCATE(sknots_temp);
-		DEALLOCATE(tknots_temp);
-		if(nurbptr->pwlcnt>0)
-		{
-			DEALLOCATE(pwl_temp);
-		}
-#endif /* defined (OPENGL_API) */
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"drawnurbsGL.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_nurbsGL */
-
-static int draw_voltexGL(int number_of_vertices, struct VT_iso_vertex **vertex_list,
-	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int number_of_data_components, int number_of_texture_coordinates,
-struct Graphical_material *default_material, struct Spectrum *spectrum)
-	/*******************************************************************************
-	LAST MODIFIED : 11 November 2005
-
-	DESCRIPTION :
-	Numbers in <iso_poly_material_index> are indices into the materials in the
-	<per_vertex_materials>. A zero value denotes use of the default material;
-	and index of 1 means the first material in the per_vertex_materials. Not
-	supplying the <iso_poly_material_index> gives the default material to all
-	vertices.
-	Use of <iso_poly_environment_map_index> and <per_vertex_environment_maps> is
-	exactly the same as for materials. Note environment map materials are used in
-	preference to normal materials.
-	==============================================================================*/
-{
-	int i, j, return_code;
-	struct Spectrum_render_data *render_data = NULL;
-	struct VT_iso_triangle *triangle;
-	struct VT_iso_vertex *vertex;
-
-	ENTER(draw_voltexGL);
-	return_code = 0;
-	const bool data_spectrum = (0 < number_of_data_components) && (0 != spectrum);
-	if (triangle_list && vertex_list && (0 < number_of_vertices) && (0 < number_of_triangles))
-	{
-#if defined (OPENGL_API)
-		if ((!data_spectrum) ||
-			(render_data=spectrum_start_renderGL(spectrum,default_material,
-			number_of_data_components)))
-		{
-			glBegin(GL_TRIANGLES);
-			for (i = 0; i < number_of_triangles; i++)
-			{
-				triangle = triangle_list[i];
-				GLfloat values[3];
-				GLfloat *data = 0;
-				if (data_spectrum)
-				{
-					data = new GLfloat[number_of_data_components];
-				}
-				for (j = 0 ; j < 3 ; j++)
-				{
-					vertex = triangle->vertices[j];
-					if (data_spectrum)
-					{
-						CAST_TO_OTHER(data, vertex->data, GLfloat, number_of_data_components);
-						spectrum_renderGL_value(spectrum,default_material,render_data,data);
-					}
-					if (number_of_texture_coordinates)
-					{
-						CAST_TO_OTHER(values, vertex->texture_coordinates, GLfloat, 3);
-						glTexCoord3fv(values);
-					}
-					CAST_TO_OTHER(values, vertex->normal, GLfloat, 3);
-					glNormal3fv(values);
-					CAST_TO_OTHER(values, vertex->coordinates, GLfloat, 3);
-					glVertex3fv(values);
-				}
-				if (data)
-					delete[] data;
-			}
-			glEnd();
-			if (data_spectrum)
-			{
-				spectrum_end_renderGL(spectrum,render_data);
-			}
-			return_code=1;
-		}
-		else
-#endif /* defined (OPENGL_API) */
-		{
-			display_message(ERROR_MESSAGE,"draw_voltexGL.  Unable to render data.");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"draw_voltexGL.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_voltexGL */
-
 /** Routine that uses the objects material and spectrum to convert
 * an array of data to corresponding colour data.
 */
-static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
+int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 	GLfloat **colour_buffer, unsigned int *colour_values_per_vertex,
 	unsigned int *colour_vertex_count)
 {
 	GLfloat *data_buffer = NULL;
-	int return_code;
+	int return_code = 1;
 	unsigned int data_values_per_vertex, data_vertex_count;
 	Spectrum *spectrum = 0;
 
@@ -2311,56 +878,59 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 		&data_buffer, &data_values_per_vertex, &data_vertex_count) &&
 		(0 != (spectrum = get_GT_object_spectrum(object))))
 	{
-		/* Ignoring selected state here so we don't need to refer to primitive */
 		Graphical_material *material = get_GT_object_default_material(object);
-
-		if (ALLOCATE(*colour_buffer, GLfloat, 4 * data_vertex_count))
+		/* Ignoring selected state here so we don't need to refer to primitive */
+		if (object->buffer_binding)
 		{
-			GLfloat *data_vertex;
-			GLfloat *colour_vertex;
-			unsigned int i;
-
-			if (!cmzn_spectrum_is_material_overwrite(spectrum))
+			if (ALLOCATE(*colour_buffer, GLfloat, 4 * data_vertex_count))
 			{
-				Colour diffuse_colour;
-				Graphical_material_get_diffuse(material, &diffuse_colour);
-				MATERIAL_PRECISION prec;
-				Graphical_material_get_alpha(material, &prec);
-				GLfloat alpha = prec;
+				GLfloat *data_vertex;
+				GLfloat *colour_vertex;
+				unsigned int i;
+				if (!cmzn_spectrum_is_material_overwrite(spectrum))
+				{
+					Colour diffuse_colour;
+					Graphical_material_get_diffuse(material, &diffuse_colour);
+					MATERIAL_PRECISION prec;
+					Graphical_material_get_alpha(material, &prec);
+					GLfloat alpha = prec;
 
+					colour_vertex = *colour_buffer;
+					for (i = 0 ; i < data_vertex_count ; i++)
+					{
+						colour_vertex[0] = diffuse_colour.red;
+						colour_vertex[1] = diffuse_colour.green;
+						colour_vertex[2] = diffuse_colour.blue;
+						colour_vertex[3] = alpha;
+						colour_vertex += 4;
+					}
+				}
 				colour_vertex = *colour_buffer;
+				data_vertex = data_buffer;
+				FE_value *feData = new FE_value[data_values_per_vertex];
+				ZnReal colData[4];
 				for (i = 0 ; i < data_vertex_count ; i++)
 				{
-					colour_vertex[0] = diffuse_colour.red;
-					colour_vertex[1] = diffuse_colour.green;
-					colour_vertex[2] = diffuse_colour.blue;
-					colour_vertex[3] = alpha;
+					CAST_TO_FE_VALUE(feData,data_vertex,(int)data_values_per_vertex);
+					Spectrum_value_to_rgba(spectrum, data_values_per_vertex,
+							feData, colData);
+					for (unsigned int j = 0 ; j < 4 ; j++)
+					{
+						colour_vertex[j] = (GLfloat)colData[j];
+					}
 					colour_vertex += 4;
+					data_vertex += data_values_per_vertex;
 				}
-			}
-			colour_vertex = *colour_buffer;
-			data_vertex = data_buffer;
-			FE_value *feData = new FE_value[data_values_per_vertex];
-			ZnReal colData[4];
-			for (i = 0 ; i < data_vertex_count ; i++)
-			{
-				CAST_TO_FE_VALUE(feData,data_vertex,(int)data_values_per_vertex);
-				Spectrum_value_to_rgba(spectrum, data_values_per_vertex,
-					feData, colData);
-				CAST_TO_OTHER(colour_vertex, colData, GLfloat, 4);
-				colour_vertex += 4;
-				data_vertex += data_values_per_vertex;
-			}
-			Spectrum_end_value_to_rgba(spectrum);
+				Spectrum_end_value_to_rgba(spectrum);
 
-			*colour_vertex_count = data_vertex_count;
-			*colour_values_per_vertex = 4;
-			delete[] feData;
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
+				*colour_vertex_count = data_vertex_count;
+				*colour_values_per_vertex = 4;
+				delete[] feData;
+			}
+			else
+			{
+				return_code = 0;
+			}
 		}
 	}
 	else
@@ -2374,7 +944,7 @@ static int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 	Render_graphics_opengl *renderer,
 	GLfloat **vertex_buffer, GLfloat **colour_buffer, GLfloat **normal_buffer,
-	GLfloat **texture_coordinate0_buffer)
+	GLfloat **texture_coordinate0_buffer, GLfloat **tangant_buffer)
 {
 	int return_code;
 
@@ -2385,6 +955,9 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 		switch (GT_object_get_type(object))
 		{
 		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
+		case g_POINT_SET_VERTEX_BUFFERS:
 			{
 				if (object->secondary_material)
 				{
@@ -2408,8 +981,10 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 					if (colour_vertex_count == position_vertex_count)
 					{
 						glEnableClientState(GL_COLOR_ARRAY);
-						glColorPointer(colour_values_per_vertex, GL_FLOAT,
+						glColorPointer(/*must be 4*/4, GL_FLOAT,
 							/*Packed vertices*/0, /*Client vertex array*/*colour_buffer);
+						glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+						glEnable(GL_COLOR_MATERIAL);
 					}
 					else
 					{
@@ -2438,10 +1013,27 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 					&texture_coordinate0_vertex_count)
 					&& (texture_coordinate0_vertex_count == position_vertex_count))
 				{
+					glClientActiveTexture(GL_TEXTURE0);
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
 					glTexCoordPointer(texture_coordinate0_values_per_vertex,
 						GL_FLOAT, /*Packed vertices*/0,
 						/*Client vertex array*/*texture_coordinate0_buffer);
+				}
+				*tangant_buffer = NULL;
+				unsigned int tangent_values_per_vertex,
+					tangent_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+					tangant_buffer, &tangent_values_per_vertex,
+					&tangent_vertex_count)
+					&& (tangent_vertex_count == position_vertex_count))
+				{
+					glClientActiveTexture(GL_TEXTURE1);
+					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+					glTexCoordPointer(tangent_values_per_vertex,
+						GL_FLOAT, /*Packed vertices*/0,
+						/*Client vertex array*/*tangant_buffer);
+					glClientActiveTexture(GL_TEXTURE0);
 				}
 			} break;
 		default:
@@ -2461,7 +1053,7 @@ static int Graphics_object_enable_opengl_client_vertex_arrays(GT_object *object,
 static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object,
 	Render_graphics_opengl *renderer,
 	GLfloat *vertex_buffer, GLfloat *colour_buffer, GLfloat *normal_buffer,
-	GLfloat *texture_coordinate0_buffer)
+	GLfloat *texture_coordinate0_buffer, GLfloat *tangent_buffer)
 {
 	int return_code;
 
@@ -2472,6 +1064,9 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 		switch (GT_object_get_type(object))
 		{
 		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
+		case g_POINT_SET_VERTEX_BUFFERS:
 			{
 				if (vertex_buffer)
 				{
@@ -2481,6 +1076,7 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 				{
 					glDisableClientState(GL_COLOR_ARRAY);
 					DEALLOCATE(colour_buffer);
+					glDisable(GL_COLOR_MATERIAL);
 				}
 				if (normal_buffer)
 				{
@@ -2488,7 +1084,14 @@ static int Graphics_object_disable_opengl_client_vertex_arrays(GT_object *object
 				}
 				if (texture_coordinate0_buffer)
 				{
+					glClientActiveTexture(GL_TEXTURE0);
 					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+				}
+				if (tangent_buffer)
+				{
+					glClientActiveTexture(GL_TEXTURE1);
+					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+					glClientActiveTexture(GL_TEXTURE0);
 				}
 			} break;
 		default:
@@ -2811,8 +1414,37 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 		return_code = 1;
 		switch (GT_object_get_type(object))
 		{
-		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
+		{
+			GT_glyphset_vertex_buffers *glyph_set = NULL;
+			if (object->primitive_lists)
+				glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
+			if (glyph_set)
 			{
+				if (glyph_set->glyph)
+				{
+					Graphics_object_compile_opengl_vertex_buffer_object(glyph_set->glyph, renderer);
+				}
+				if (glyph_set->font)
+					cmzn_font_compile(glyph_set->font);
+			}
+		}
+		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_POINT_SET_VERTEX_BUFFERS:
+			{
+				unsigned int *partialRedrawIndices = 0;
+				unsigned int partialRedrawIndicesPerVertex, partialRedrawIndicesCount;
+				unsigned int *redraw_count_buffer = 0;
+				unsigned int redrawPerVertex, redrawCount;
+				object->vertex_array->get_unsigned_integer_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW,
+						&partialRedrawIndices, &partialRedrawIndicesPerVertex,
+						&partialRedrawIndicesCount);
+				object->vertex_array->get_unsigned_integer_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW_COUNT,
+						&redraw_count_buffer, &redrawPerVertex,
+						&redrawCount);
 				GLfloat *position_vertex_buffer = NULL;
 				unsigned int position_values_per_vertex, position_vertex_count;
 				if (object->vertex_array->get_float_vertex_buffer(
@@ -2822,6 +1454,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 				{
 					if (!object->position_vertex_buffer_object)
 					{
+						object->buffer_binding = 1;
 						glGenBuffers(1, &object->position_vertex_buffer_object);
 					}
 
@@ -2831,12 +1464,25 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 						* some of the other buffers in our first pass calculation.
 						*/
 					}
-					else
+					else if (object->buffer_binding)
 					{
 						glBindBuffer(GL_ARRAY_BUFFER, object->position_vertex_buffer_object);
-						glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*
-							position_values_per_vertex*position_vertex_count,
-							position_vertex_buffer, GL_STATIC_DRAW);
+						if (!partialRedrawIndices)
+							glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*
+									position_values_per_vertex*position_vertex_count,
+									position_vertex_buffer, GL_STATIC_DRAW);
+						else
+						{
+							GLintptr bytesStart = 0;
+							GLsizeiptr size = 0;
+							for (unsigned int i = 0; i < redrawCount; i++)
+							{
+								bytesStart = sizeof(GLfloat)*position_values_per_vertex*partialRedrawIndices[i];
+								size = sizeof(GLfloat)*position_values_per_vertex*redraw_count_buffer[i];
+								glBufferSubData(GL_ARRAY_BUFFER, bytesStart, size, &(position_vertex_buffer[partialRedrawIndices[i]*position_values_per_vertex]));
+							}
+	
+						}
 						object->position_values_per_vertex = position_values_per_vertex;
 					}
 				}
@@ -2848,25 +1494,26 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 						object->position_vertex_buffer_object = 0;
 					}
 				}
-
 				unsigned int colour_values_per_vertex, colour_vertex_count;
 				GLfloat *colour_buffer = (GLfloat *)NULL;
 				if (Graphics_object_create_colour_buffer_from_data(object,
 					&colour_buffer,
-					&colour_values_per_vertex, &colour_vertex_count)
-					&& (colour_vertex_count == position_vertex_count))
+					&colour_values_per_vertex, &colour_vertex_count))
 				{
-					if (!object->colour_vertex_buffer_object)
+					if (object->buffer_binding && (colour_vertex_count == position_vertex_count))
 					{
-						glGenBuffers(1, &object->colour_vertex_buffer_object);
-					}
-					glBindBuffer(GL_ARRAY_BUFFER, object->colour_vertex_buffer_object);
-					glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*colour_values_per_vertex*colour_vertex_count,
-						colour_buffer, GL_STATIC_DRAW);
-					object->colour_values_per_vertex = colour_values_per_vertex;
-					if (colour_buffer)
-					{
-						DEALLOCATE(colour_buffer);
+						if (!object->colour_vertex_buffer_object)
+						{
+							glGenBuffers(1, &object->colour_vertex_buffer_object);
+						}
+						glBindBuffer(GL_ARRAY_BUFFER, object->colour_vertex_buffer_object);
+						glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)* /*need to be 4 */4 *colour_vertex_count,
+							colour_buffer, GL_STATIC_DRAW);
+						object->colour_values_per_vertex = colour_values_per_vertex;
+						if (colour_buffer)
+						{
+							DEALLOCATE(colour_buffer);
+						}
 					}
 				}
 				else
@@ -2893,9 +1540,24 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					{
 						glGenBuffers(1, &object->normal_vertex_buffer_object);
 					}
-					glBindBuffer(GL_ARRAY_BUFFER, object->normal_vertex_buffer_object);
-					glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*normal_values_per_vertex*normal_vertex_count,
-						normal_buffer, GL_STATIC_DRAW);
+					if (object->buffer_binding)
+					{
+						glBindBuffer(GL_ARRAY_BUFFER, object->normal_vertex_buffer_object);
+						if (!partialRedrawIndices)
+							glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*normal_values_per_vertex*normal_vertex_count,
+								normal_buffer, GL_STATIC_DRAW);
+						else
+						{
+							GLintptr bytesStart = 0;
+							GLsizeiptr size = 0;
+							for (unsigned int i = 0; i < redrawCount; i++)
+							{
+								bytesStart = sizeof(GLfloat)*normal_values_per_vertex*partialRedrawIndices[i];
+								size = sizeof(GLfloat)*normal_values_per_vertex*redraw_count_buffer[i];
+								glBufferSubData(GL_ARRAY_BUFFER, bytesStart, size, &(normal_buffer[partialRedrawIndices[i]*normal_values_per_vertex]));
+							}
+						}
+					}
 				}
 				else
 				{
@@ -2919,10 +1581,26 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					{
 						glGenBuffers(1, &object->texture_coordinate0_vertex_buffer_object);
 					}
-					glBindBuffer(GL_ARRAY_BUFFER, object->texture_coordinate0_vertex_buffer_object);
-					glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*texture_coordinate0_values_per_vertex*texture_coordinate0_vertex_count,
-						texture_coordinate0_buffer, GL_STATIC_DRAW);
-					object->texture_coordinate0_values_per_vertex = texture_coordinate0_values_per_vertex;
+					if (object->buffer_binding)
+					{
+						glBindBuffer(GL_ARRAY_BUFFER, object->texture_coordinate0_vertex_buffer_object);
+						if (!partialRedrawIndices)
+							glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*texture_coordinate0_values_per_vertex*texture_coordinate0_vertex_count,
+								texture_coordinate0_buffer, GL_STATIC_DRAW);
+						else
+						{
+							GLintptr bytesStart = 0;
+							GLsizeiptr size = 0;
+							for (unsigned int i = 0; i < redrawCount; i++)
+							{
+								bytesStart = sizeof(GLfloat)*texture_coordinate0_values_per_vertex*partialRedrawIndices[i];
+								size = sizeof(GLfloat)*texture_coordinate0_values_per_vertex*redraw_count_buffer[i];
+								glBufferSubData(GL_ARRAY_BUFFER, bytesStart, size,
+									&(texture_coordinate0_buffer[partialRedrawIndices[i]*texture_coordinate0_values_per_vertex]));
+							}
+						}
+						object->texture_coordinate0_values_per_vertex = texture_coordinate0_values_per_vertex;
+					}
 				}
 				else
 				{
@@ -2933,7 +1611,47 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					}
 				}
 
-				if (position_vertex_buffer && object->secondary_material)
+				GLfloat *tangent_buffer = NULL;
+				unsigned int tangent_values_per_vertex,
+					tangent_vertex_count;
+				if (object->vertex_array->get_float_vertex_buffer(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+					&tangent_buffer, &tangent_values_per_vertex,
+					&tangent_vertex_count) &&
+					(tangent_vertex_count == position_vertex_count))
+				{
+					if (!object->tangent_vertex_buffer_object)
+					{
+						glGenBuffers(1, &object->tangent_vertex_buffer_object);
+					}
+					glBindBuffer(GL_ARRAY_BUFFER, object->tangent_vertex_buffer_object);
+					if (!partialRedrawIndices)
+						glBufferData(GL_ARRAY_BUFFER, sizeof(GLfloat)*tangent_values_per_vertex*tangent_vertex_count,
+								tangent_buffer, GL_STATIC_DRAW);
+					else
+					{
+						GLintptr bytesStart = 0;
+						GLsizeiptr size = 0;
+						for (unsigned int i = 0; i < redrawCount; i++)
+						{
+							bytesStart = sizeof(GLfloat)*tangent_values_per_vertex*partialRedrawIndices[i];
+							size = sizeof(GLfloat)*tangent_values_per_vertex*redraw_count_buffer[i];
+							glBufferSubData(GL_ARRAY_BUFFER, bytesStart, size, &(tangent_buffer[partialRedrawIndices[i]*tangent_values_per_vertex]));
+						}
+					}
+					object->tangent_values_per_vertex = tangent_values_per_vertex;
+				}
+				else
+				{
+					if (object->tangent_vertex_buffer_object)
+					{
+						glDeleteBuffers(1, &object->tangent_vertex_buffer_object);
+						object->tangent_vertex_buffer_object = 0;
+					}
+				}
+
+				if ((GT_object_get_type(object) == g_POLYLINE_VERTEX_BUFFERS) &&
+					position_vertex_buffer && object->secondary_material)
 				{
 #if defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object)
 					if (Graphics_library_check_extension(GL_ARB_draw_buffers)
@@ -2955,12 +1673,55 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 						"Multipass rendering not compiled in this version.");
 #endif /* defined (GL_VERSION_2_0) && defined (GL_EXT_framebuffer_object) */
 				}
+				unsigned int *index_vertex_buffer, index_values_per_vertex, index_vertex_count;
+				if (object->vertex_array->get_unsigned_integer_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_ARRAY,
+					&index_vertex_buffer, &index_values_per_vertex,
+					&index_vertex_count))
+				{
+					if (!object->index_vertex_buffer_object)
+					{
+						glGenBuffers(1, &object->index_vertex_buffer_object);
+					}
+
+					if (object->secondary_material)
+					{
+						/* Defer to lower in this function as we may want to use the contents of
+						* some of the other buffers in our first pass calculation.
+						*/
+					}
+					else if (object->buffer_binding)
+					{
+						glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object->index_vertex_buffer_object);
+						glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(GLuint)*
+							index_values_per_vertex*index_vertex_count,
+							index_vertex_buffer, GL_STATIC_DRAW);
+					}
+				}
+				else
+				{
+					if (object->index_vertex_buffer_object)
+					{
+						glDeleteBuffers(1, &object->index_vertex_buffer_object);
+						object->index_vertex_buffer_object = 0;
+					}
+				}
 			} break;
 		default:
 			{
 				/* Do nothing */
 			} break;
 		}
+		GT_object *temp_glyph = GT_object_get_next_object(object);
+		if (temp_glyph)
+		{
+			Graphics_object_compile_opengl_vertex_buffer_object(temp_glyph, renderer);
+		}
+		object->buffer_binding = 0;
+		object->vertex_array->clear_specified_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW);
+		object->vertex_array->clear_specified_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW_COUNT);
 	}
 	else
 	{
@@ -2986,6 +1747,9 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 		switch (GT_object_get_type(object))
 		{
 		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
+		case g_POINT_SET_VERTEX_BUFFERS:
 			{
 				if (object->position_vertex_buffer_object)
 				{
@@ -3003,9 +1767,11 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 						object->colour_vertex_buffer_object);
 					glEnableClientState(GL_COLOR_ARRAY);
 					glColorPointer(
-						object->colour_values_per_vertex,
+						/*must be 4*/4,
 						GL_FLOAT, /*Packed vertices*/0,
 						/*No offset in vertex array*/(void *)0);
+					glColorMaterial(GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE);
+					glEnable(GL_COLOR_MATERIAL);
 				}
 				if (object->normal_vertex_buffer_object)
 				{
@@ -3018,6 +1784,7 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 				}
 				if (object->texture_coordinate0_vertex_buffer_object)
 				{
+					glClientActiveTexture(GL_TEXTURE0);
 					glBindBuffer(GL_ARRAY_BUFFER,
 						object->texture_coordinate0_vertex_buffer_object);
 					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
@@ -3025,6 +1792,22 @@ static int Graphics_object_enable_opengl_vertex_buffer_object(GT_object *object,
 						object->texture_coordinate0_values_per_vertex,
 						GL_FLOAT, /*Packed vertices*/0,
 						/*No offset in vertex array*/(void *)0);
+				}
+				if (object->tangent_vertex_buffer_object)
+				{
+					glClientActiveTexture(GL_TEXTURE1);
+					glBindBuffer(GL_ARRAY_BUFFER,
+						object->tangent_vertex_buffer_object);
+					glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+					glTexCoordPointer(
+						object->tangent_values_per_vertex,
+						GL_FLOAT, /*Packed vertices*/0,
+						/*No offset in vertex array*/(void *)0);
+					glClientActiveTexture(GL_TEXTURE0);
+				}
+				if (object->index_vertex_buffer_object)
+				{
+					glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, object->index_vertex_buffer_object);
 				}
 			} break;
 		default:
@@ -3056,6 +1839,9 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 		switch (GT_object_get_type(object))
 		{
 		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
+		case g_POINT_SET_VERTEX_BUFFERS:
 			{
 				if (object->position_vertex_buffer_object)
 				{
@@ -3064,6 +1850,7 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 				if (object->colour_vertex_buffer_object)
 				{
 					glDisableClientState(GL_COLOR_ARRAY);
+					glDisable(GL_COLOR_MATERIAL);
 				}
 				if (object->normal_vertex_buffer_object)
 				{
@@ -3071,7 +1858,14 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 				}
 				if (object->texture_coordinate0_vertex_buffer_object)
 				{
+					glClientActiveTexture(GL_TEXTURE0);
 					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+				}
+				if (object->tangent_vertex_buffer_object)
+				{
+					glClientActiveTexture(GL_TEXTURE1);
+					glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+					glClientActiveTexture(GL_TEXTURE0);
 				}
 				/* Reset to normal client vertex arrays */
 				glBindBuffer(GL_ARRAY_BUFFER, 0);
@@ -3090,25 +1884,1279 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 	return (return_code);
 } /* Graphics_object_enable_opengl_client_vertex_arrays */
 
+static int draw_vertexBufferPointset(gtObject *object,
+	struct Graphical_material *material, struct Spectrum *spectrum,
+	Render_graphics_opengl *renderer,
+	Graphics_object_rendering_type rendering_type)
+{
+	if (object && object->vertex_array)
+	{
+		GT_pointset_vertex_buffers *point_set = object->primitive_lists->gt_pointset_vertex_buffers;
+		struct cmzn_font *font = point_set->font;
+		std::string *label_buffer = 0;
+		unsigned int pointset_index = 0;
+		unsigned int pointset_count =
+			object->vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		GLfloat *position_buffer = 0, *data_buffer = 0;
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+			data_values_per_vertex = 0, data_vertex_count = 0,
+			label_per_vertex = 0, label_count = 0;
+		if (0<pointset_count)
+		{
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				&position_buffer, &position_values_per_vertex, &position_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+				&data_buffer, &data_values_per_vertex, &data_vertex_count);
+			object->vertex_array->get_string_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL,
+				&label_buffer, &label_per_vertex, &label_count);
+			struct Spectrum_render_data *render_data = NULL;
+			if (data_buffer)
+			{
+				render_data=spectrum_start_renderGL(spectrum,material,data_values_per_vertex);
+			}
+			switch (rendering_type)
+			{
+				case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+				{
+					Graphics_object_enable_opengl_client_vertex_arrays(
+						object, renderer,
+						&position_buffer, &data_buffer, 0,	0, 0);
+				} break;
+				case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+				{
+					Graphics_object_enable_opengl_vertex_buffer_object(
+						object, renderer);
+				} break;
+				default:
+				{
+				} break;
+			}
+			for (pointset_index = 0; pointset_index < pointset_count; pointset_index++)
+			{
+				unsigned int index_start = 0, index_count = 0;
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					pointset_index, 1, &index_start);
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					pointset_index, 1, &index_count);
+				std::string *labels = label_buffer + label_per_vertex * index_start;
+				switch (rendering_type)
+				{
+					case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+					case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+					{
+						glDrawArrays(GL_POINTS, index_start, index_count);
+					} break;
+					default:
+					{
+					} break;
+				}
+				if (labels)
+				{
+					std::string *label = labels;
+					GLfloat *position = position_buffer + position_values_per_vertex * index_start;
+					GLfloat x = 0.0, y = 0.0, z = 0.0;
+					GLfloat *datum = data_buffer + data_values_per_vertex * index_start;
+					for (unsigned int i=0;i<index_count;i++)
+					{
+						x=position[0];
+						y=position[1];
+						z=position[2];
+						position += 3;
+						/* set the spectrum for this datum, if any */
+						if (datum)
+						{
+							spectrum_renderGL_value(spectrum,material,render_data,datum);
+							datum += data_values_per_vertex;
+						}
+						cmzn_font_rendergl_text(font, const_cast<char *>(label->c_str()), x, y, z);
+						label++;
+					}
+				}
+			}
+			switch (rendering_type)
+			{
+				case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+				{
+					Graphics_object_disable_opengl_client_vertex_arrays(
+						object, renderer,
+						position_buffer, data_buffer, 0,
+						0, 0);
+				} break;
+				case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+				{
+					Graphics_object_disable_opengl_vertex_buffer_object(
+						object, renderer);
+				} break;
+				default:
+				{
+				}break;
+			}
+			if (render_data)
+			{
+				spectrum_end_renderGL(spectrum,render_data);
+			}
+		}
+		return 1;
+	}
+	return 0;
+}
+
+static int draw_vertexBufferGlyphset(gtObject *object,
+	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	struct Spectrum *spectrum,
+	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
+	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
+	Render_graphics_opengl *renderer, bool &lighting_on,
+	Graphics_object_rendering_type rendering_type, bool pick_object_id)
+	/*******************************************************************************
+	LAST MODIFIED : 22 November 2005
+
+	DESCRIPTION :
+	Draws graphics object <glyph> at <number_of_points> points given by the
+	positions in <point_list> and oriented and scaled by <axis1_list>, <axis2_list>
+	and <axis3_list>, each axis additionally scaled by its value in <scale_list>.
+	If the glyph is part of a linked list through its nextobject
+	member, these attached glyphs are also executed.
+	Writes the <labels> array strings, if supplied, beside each glyph point.
+	If <names> are supplied these identify each point/glyph for OpenGL picking.
+	If <draw_selected> is set, then only those <names> in <selected_name_ranges>
+	are drawn, otherwise only those names not there are drawn.
+	If <some_selected> is true, <selected_name_ranges> indicates the points that
+	are selected, or all points if <selected_name_ranges> is NULL.
+	@param no_lighting  Flag giving current state of whether lighting is off.
+	Enable or disable lighting and update as appropriate for point/line or surface
+	glyphs to minimise state changes.
+	==============================================================================*/
+{
+	GLfloat transformation[16], x, y, z;
+	int draw_all, name_selected = 0, label_bounds_per_glyph = 0,
+		return_code;
+	struct Spectrum_render_data *render_data = NULL;
+	Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+
+	if (object && object->vertex_array)
+	{
+		unsigned int nodeset_index = 0;
+		unsigned int nodeset_count =
+			object->vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		GT_glyphset_vertex_buffers *glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
+		struct GT_object *glyph = glyph_set->glyph;
+		GLfloat *position_buffer = 0, *data_buffer = 0, *axis1_buffer = 0,
+			*axis2_buffer = 0, *axis3_buffer = 0, *scale_buffer = 0, *normal_buffer = 0,
+			*texture_coordinate0_buffer = 0, *label_bound_buffer = 0;
+		std::string *label_buffer = 0;
+		int *names_buffer = 0;
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+			data_values_per_vertex = 0, data_vertex_count = 0, axis1_values_per_vertex = 0,
+			axis1_vertex_count = 0, axis2_values_per_vertex = 0, axis2_vertex_count = 0,
+			axis3_values_per_vertex = 0, axis3_vertex_count = 0, scale_values_per_vertex = 0,
+			scale_vertex_count = 0, names_count = 0, names_per_vertex = 0,
+			label_bounds_per_vertex = 0, label_bounds_count = 0,
+			label_per_vertex, label_count = 0;
+		if (0 < nodeset_count)
+		{
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				&position_buffer, &position_values_per_vertex, &position_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+				&data_buffer, &data_values_per_vertex, &data_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS1,
+				&axis1_buffer, &axis1_values_per_vertex, &axis1_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS2,
+				&axis2_buffer, &axis2_values_per_vertex, &axis2_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS3,
+				&axis3_buffer, &axis3_values_per_vertex, &axis3_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_SCALE,
+				&scale_buffer, &scale_values_per_vertex, &scale_vertex_count);
+			object->vertex_array->get_integer_vertex_buffer(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_VERTEX_ID,
+				&names_buffer, &names_per_vertex, &names_count);
+			object->vertex_array->get_float_vertex_buffer(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL_BOUND,
+				&label_bound_buffer, &label_bounds_per_vertex, &label_bounds_count);
+			object->vertex_array->get_string_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL,
+				&label_buffer, &label_per_vertex, &label_count);
+		}
+		if ((0 == nodeset_count) || ((0 < nodeset_count) && ((glyph && position_buffer &&
+			axis1_buffer && axis2_buffer && axis3_buffer && scale_buffer) || (!glyph && label_buffer))))
+		{
+			if ((0==nodeset_count) ||
+				(draw_selected&&((!names_buffer) || (!highlight_functor))))
+			{
+				/* nothing to draw */
+				return_code=1;
+			}
+			else
+			{
+#if defined (OPENGL_API)
+				unsigned int label_density_values_per_vertex = 0,label_density_count = 0;
+				GLfloat *label_density_buffer = 0;
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL_DENSITY,
+					&label_density_buffer, &label_density_values_per_vertex, &label_density_count);
+				bool picking_names = (names_buffer) && (renderer->picking);
+				draw_all = ((!names_buffer) || ((!draw_selected)&&(!highlight_functor)));
+				if (data_buffer)
+				{
+					render_data=spectrum_start_renderGL(spectrum,material,data_values_per_vertex);
+				}
+				for (nodeset_index = 0; nodeset_index < nodeset_count; nodeset_index++)
+				{
+					unsigned int index_start = 0, index_count = 0;
+					object->vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						nodeset_index, 1, &index_start);
+					object->vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						nodeset_index, 1, &index_count);
+					GLfloat *position = position_buffer + position_values_per_vertex * index_start,
+						*axis1 = axis1_buffer + axis1_values_per_vertex * index_start,
+						*axis2 = axis2_buffer + axis2_values_per_vertex * index_start,
+						*axis3 = axis3_buffer + axis3_values_per_vertex * index_start,
+						*scale = scale_buffer + scale_values_per_vertex * index_start,
+						*datum = data_buffer + data_values_per_vertex * index_start,
+						*label_density = label_density_buffer + label_density_values_per_vertex * index_start,
+						*label_bounds = label_bound_buffer + label_bounds_per_vertex * index_start;
+					std::string *labels = label_buffer + label_per_vertex * index_start;
+					std::string *label = labels;
+					int object_name = 0;
+					object->vertex_array->get_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+						nodeset_index, 1, &object_name);
+					int *names = names_buffer + names_per_vertex * index_start;
+					if (pick_object_id)
+					{
+						/* put out name for picking - cast to GLuint */
+						glLoadName((GLuint)object_name);
+					}
+					if (picking_names)
+					{
+						/* make space for picking name on name stack */
+						glPushName(0);
+					}
+					if (label_bounds)
+					{
+						label_bounds_per_glyph = 1 << glyph_set->label_bounds_dimension;
+					}
+					GT_object *glyph = glyph_set->glyph;
+					cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+
+					cmzn_glyph_shape_type glyph_type = glyph ?
+						GT_object_get_glyph_type(glyph) : CMZN_GLYPH_SHAPE_TYPE_NONE;
+					//TO BE ENABLED:
+					// output static labels at each point, if supplied
+					const int number_of_glyphs =
+						cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+					char **static_labels = 0;
+					for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
+					{
+						if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+							(0 != glyph_set->static_label_text[glyph_number]))
+						{
+							static_labels = glyph_set->static_label_text;
+							break;
+						}
+					}
+//					/* try to draw points and lines faster */
+					if ((glyph_type == CMZN_GLYPH_SHAPE_TYPE_POINT) &&
+						(glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_NONE))
+					{
+						switch (rendering_type)
+						{
+							case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+							{
+								Graphics_object_enable_opengl_client_vertex_arrays(
+									object, renderer,
+									&position_buffer, &data_buffer, &normal_buffer,
+									&texture_coordinate0_buffer, 0);
+							} break;
+							case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+							{
+								Graphics_object_enable_opengl_vertex_buffer_object(
+									object, renderer);
+							} break;
+							default:
+							{
+							} break;
+						}
+						if (lighting_on)
+						{
+							/* disable lighting so rendered in flat diffuse colour */
+							glDisable(GL_LIGHTING);
+							lighting_on = !lighting_on;
+						}
+						if ((object_name >= 0) && highlight_functor)
+						{
+							name_selected=highlight_functor->call(object_name);
+						}
+						const bool multiBeginEnd = (picking_names || label_buffer || static_labels || highlight_functor);
+						if (multiBeginEnd)
+						{
+							for (unsigned i=0;i<index_count;i++)
+							{
+								if ((object_name < 0) && ((names) && highlight_functor))
+								{
+									name_selected = highlight_functor->call(*names);
+								}
+								if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
+								{
+									/* set the spectrum for this datum, if any */
+									if (data_buffer)
+									{
+										spectrum_renderGL_value(spectrum,material,render_data,datum);
+									}
+									x = position[0];
+									y = position[1];
+									z = position[2];
+									if (picking_names)
+									{
+										glLoadName((GLuint)(*names));
+									}
+									resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+										glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+										position, axis1, axis2, axis3, scale,
+										temp_point, temp_axis1, temp_axis2, temp_axis3);
+									switch (rendering_type)
+									{
+									case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+									{
+										glBegin(GL_POINTS);
+										glVertex3fv(position);
+										glEnd();
+									} break;
+									case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+									case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+									{
+										glDrawArrays(GL_POINTS, index_start+i, 1);
+									} break;
+									default:
+									{
+									} break;
+									}
+
+									if (label || static_labels)
+									{
+										Triple lpoint;
+										for (int j = 0; j < 3; ++j)
+										{
+											lpoint[j] = temp_point[j]+ glyph_set->label_offset[0]*temp_axis1[j] +
+											  glyph_set->label_offset[1]*temp_axis2[j] + glyph_set->label_offset[2]*temp_axis3[j];
+										}
+										bool allocatedText = false;
+										char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? const_cast<char *>(label->c_str()) : 0, allocatedText);
+										cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+										if (allocatedText)
+										{
+											delete[] text;
+										}
+									}
+								}
+								position += position_values_per_vertex;
+								axis1 += axis1_values_per_vertex;
+								axis2 += axis2_values_per_vertex;
+								axis3 += axis3_values_per_vertex;
+								scale += scale_values_per_vertex;
+								if (data_buffer)
+								{
+									datum += data_values_per_vertex;
+								}
+								if (names_buffer)
+								{
+									names += names_per_vertex;
+								}
+								if (labels)
+								{
+									label++;
+								}
+							}
+						}
+						else
+						{
+							switch (rendering_type)
+							{
+							case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+							case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+							{
+								glDrawArrays(GL_POINTS, index_start, index_count);
+							} break;
+							default:
+							{
+							} break;
+							}
+						}
+						switch (rendering_type)
+						{
+							case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+							{
+								Graphics_object_disable_opengl_client_vertex_arrays(
+									object, renderer,
+									position_buffer, data_buffer, normal_buffer,
+									texture_coordinate0_buffer, 0);
+							} break;
+							case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+							{
+								Graphics_object_disable_opengl_vertex_buffer_object(
+									object, renderer);
+							} break;
+							default:
+							{
+							} break;
+						}
+					}
+					else
+					{
+						if (!lighting_on)
+						{
+							/* enable lighting for general glyphs */
+							glEnable(GL_LIGHTING);
+							lighting_on = !lighting_on;
+						}
+						/* must push and pop the modelview matrix */
+						glMatrixMode(GL_MODELVIEW);
+						if ((object_name >= 0) && highlight_functor)
+						{
+							name_selected=highlight_functor->call(object_name);
+						}
+						if (glyph)
+						{
+							Graphics_object_glyph_labels_function glyph_labels_function =
+								Graphics_object_get_glyph_labels_function(glyph);
+							for (unsigned int i = 0; i < index_count; i++)
+							{
+								if ((object_name < 0) && names && highlight_functor)
+								{
+									name_selected = highlight_functor->call(*names);
+								}
+								if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
+								{
+									if (picking_names)
+									{
+										glLoadName((GLuint)(*names));
+									}
+									/* set the spectrum for this datum, if any */
+									if (datum)
+									{
+										spectrum_renderGL_value(spectrum,material,render_data,datum);
+									}
+									for (int j = 0; j < number_of_glyphs; j++)
+									{
+										/* store the current modelview matrix */
+										glPushMatrix();
+										resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/j,
+											glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+											position, axis1, axis2, axis3, scale,
+											temp_point, temp_axis1, temp_axis2, temp_axis3);
+
+										/* make transformation matrix for manipulating glyph */
+										transformation[ 0] = temp_axis1[0];
+										transformation[ 1] = temp_axis1[1];
+										transformation[ 2] = temp_axis1[2];
+										transformation[ 3] = 0.0;
+										transformation[ 4] = temp_axis2[0];
+										transformation[ 5] = temp_axis2[1];
+										transformation[ 6] = temp_axis2[2];
+										transformation[ 7] = 0.0;
+										transformation[ 8] = temp_axis3[0];
+										transformation[ 9] = temp_axis3[1];
+										transformation[10] = temp_axis3[2];
+										transformation[11] = 0.0;
+										transformation[12] = temp_point[0];
+										transformation[13] = temp_point[1];
+										transformation[14] = temp_point[2];
+										transformation[15] = 1.0;
+										glMultMatrixf(transformation);
+										renderer->Graphics_object_execute(glyph);
+										if (glyph_labels_function)
+										{
+											Triple label_scale;
+											for (int j = 0; j < 3; ++j)
+											{
+												label_scale[j] = glyph_set->base_size[j] + glyph_set->scale_factors[j]*(scale)[j];
+											}
+											ZnReal *realField = 0;
+											if (label_bounds_per_vertex > 0 && label_bounds)
+											{
+												realField = new ZnReal[label_bounds_per_vertex];
+												CAST_TO_OTHER(realField,label_bounds,ZnReal,(int)label_bounds_per_vertex);
+											}
+											if (label_density)
+											{
+												Triple label_density_triple;
+												label_density_triple[0] = 0;
+												label_density_triple[1] = 0;
+												label_density_triple[2] = 0;
+												for (unsigned int i = 0; i < label_density_values_per_vertex; i++)
+												{
+													label_density_triple[i] = label_density[i];
+												}
+												return_code = (*glyph_labels_function)(&label_scale,
+													glyph_set->label_bounds_dimension, glyph_set->label_bounds_components, realField,
+													&label_density_triple, material, secondary_material, glyph_set->font, renderer);
+											}
+											else
+											{
+												return_code = (*glyph_labels_function)(&label_scale,
+													glyph_set->label_bounds_dimension, glyph_set->label_bounds_components, realField,
+													0, material, secondary_material, glyph_set->font, renderer);
+											}
+										}
+										/* restore the original modelview matrix */
+										glPopMatrix();
+									}
+								}
+								/* advance pointers */
+								position += position_values_per_vertex;
+								axis1 += axis1_values_per_vertex;
+								axis2 += axis2_values_per_vertex;
+								axis3 += axis3_values_per_vertex;
+								scale += scale_values_per_vertex;
+								if (datum)
+								{
+									datum += data_values_per_vertex;
+								}
+								if (label_density)
+								{
+									label_density += label_density_values_per_vertex;
+								}
+								if (names)
+								{
+									names += names_per_vertex;
+								}
+								if (label_bounds)
+								{
+									label_bounds += label_bounds_per_vertex;
+								}
+							}
+						}
+						/* output label at each point, if supplied */
+						if ((labels || static_labels) && !label_bound_buffer)
+						{
+							/* Default is to draw the label value at the origin */
+							names = names_buffer + names_per_vertex * index_start;
+							if (lighting_on)
+							{
+								/* disable lighting so rendered in flat diffuse colour */
+								glDisable(GL_LIGHTING);
+								lighting_on = false;
+							}
+							position = position_buffer + position_values_per_vertex * index_start;
+							datum = data_buffer + data_values_per_vertex * index_start;
+							axis1 = axis1_buffer + axis1_values_per_vertex * index_start;
+							axis2 = axis2_buffer + axis2_values_per_vertex * index_start;
+							axis3 = axis3_buffer + axis3_values_per_vertex * index_start;
+							scale = scale_buffer + scale_values_per_vertex * index_start;
+							datum = data_buffer + data_values_per_vertex * index_start;
+							if ((object_name >= 0) && highlight_functor)
+							{
+								name_selected=highlight_functor->call(object_name);
+							}
+							for (unsigned int i = 0; i < index_count; i++)
+							{
+								if ((object_name < 0) && names && highlight_functor)
+								{
+									name_selected = highlight_functor->call(*names);
+								}
+								if ((static_labels || label) && (draw_all || ((name_selected) && draw_selected)
+									|| ((!name_selected)&&(!draw_selected))))
+								{
+									if (picking_names)
+									{
+										glLoadName((GLuint)(*names));
+									}
+									/* set the spectrum for this datum, if any */
+									if (datum)
+									{
+										spectrum_renderGL_value(spectrum,material,render_data,datum);
+									}
+									for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
+									{
+										if (cmzn_glyph_repeat_mode_glyph_number_has_label(glyph_repeat_mode, glyph_number) &&
+											((labels && (glyph_number == 0) && label) || (static_labels && static_labels[glyph_number])))
+										{
+											resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+												glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+												position, axis1, axis2, axis3, scale,
+												temp_point, temp_axis1, temp_axis2, temp_axis3);
+											if ((glyph_repeat_mode == CMZN_GLYPH_REPEAT_MODE_MIRROR) && ((scale)[0] < 0.0f))
+											{
+												for (int j = 0; j < 3; ++j)
+												{
+													temp_point[j] += (
+														(1.0 - glyph_set->label_offset[0])*temp_axis1[j] +
+														glyph_set->label_offset[1]*temp_axis2[j] +
+														glyph_set->label_offset[2]*temp_axis3[j]);
+												}
+											}
+											else
+											{
+												for (int j = 0; j < 3; ++j)
+												{
+													temp_point[j] += (
+														glyph_set->label_offset[0]*temp_axis1[j] +
+														glyph_set->label_offset[1]*temp_axis2[j] +
+														glyph_set->label_offset[2]*temp_axis3[j]);
+												}
+											}
+											bool allocatedText = false;
+											char *text = concatenateLabels(
+												static_labels ? static_labels[glyph_number] : 0,
+												(label && (glyph_number == 0)) ? const_cast<char *>(label->c_str()) : 0, allocatedText);
+											cmzn_font_rendergl_text(glyph_set->font, text, temp_point[0], temp_point[1], temp_point[2]);
+											if (allocatedText)
+											{
+												delete[] text;
+											}
+										}
+									}
+								}
+								/* advance pointers */
+								position += position_values_per_vertex;
+								axis1 += axis1_values_per_vertex;
+								axis2 += axis2_values_per_vertex;
+								axis3 += axis3_values_per_vertex;
+								scale += scale_values_per_vertex;
+								if (datum)
+								{
+									datum += data_values_per_vertex;
+								}
+								if (label_density)
+								{
+									label_density += label_density_values_per_vertex;
+								}
+								if (names)
+								{
+									names += names_per_vertex;
+								}
+								if (label)
+								{
+									label++;
+								}
+							}
+						}
+					}
+					if (picking_names)
+					{
+						/* free space for point number on picking name stack */
+						glPopName();
+					}
+					return_code=1;
+				}
+				if (data_buffer)
+				{
+					spectrum_end_renderGL(spectrum,render_data);
+				}
+#endif /* defined (OPENGL_API) */
+			}
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"draw_glyphsetGL. Invalid argument(s)");
+		return_code=0;
+	}
+	LEAVE;
+
+	return (return_code);
+} /* draw_glyphsetGL */
+
+int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
+	union GT_primitive_list *primitive_list, int picking_names,
+	Graphics_object_rendering_type rendering_type, struct Spectrum *spectrum,
+	struct Graphical_material *material, int draw_selected)
+{
+	int return_code = 1;
+	if (object && renderer && primitive_list)
+	{
+		int name_selected = 0;
+		GT_surface_vertex_buffers *vb_surface = primitive_list->gt_surface_vertex_buffers;
+		struct Graphics_vertex_array *array = object->vertex_array;
+		if (vb_surface)
+		{
+			GLenum mode = g_TRIANGLE;
+			switch (vb_surface->surface_type)
+			{
+			case g_SHADED:
+			case g_SHADED_TEXMAP:
+			{
+				/*
+				if (object->texture_tiling &&
+					(0 < array->get_number_of_vertices(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO)))
+				{
+					struct Graphics_vertex_array *tile_array =
+						tile_GT_surface_vertex_buffer(vb_surface, array, object->texture_tiling);
+					mode = GL_TRIANGLES;
+				}
+				else
+				{
+					mode = GL_TRIANGLE_STRIP;
+				}
+				*/
+				mode = GL_TRIANGLE_STRIP;
+			} break;
+			case g_SH_DISCONTINUOUS:
+			case g_SH_DISCONTINUOUS_STRIP:
+			case g_SH_DISCONTINUOUS_TEXMAP:
+			case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+			{
+				mode = GL_TRIANGLES;
+			} break;
+			default:
+			{
+			} break;
+			}
+			if (picking_names)
+			{
+				glPushName(0);
+			}
+			bool wireframe_flag = (vb_surface->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME);
+			if (wireframe_flag)
+			{
+				glPushAttrib(GL_POLYGON_BIT);
+				glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
+			}
+			struct Spectrum_render_data *spectrum_render_data = NULL;
+			return_code = 1;
+			unsigned int surface_index;
+			unsigned int surface_count =
+				array->get_number_of_vertices(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+			GLfloat *position_buffer = 0, *data_buffer = 0, *normal_buffer = 0,
+				*texture_coordinate0_buffer = 0, *tangent_buffer = 0;
+			unsigned int position_values_per_vertex, position_vertex_count,
+			data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
+			normal_vertex_count, texture_coordinate0_values_per_vertex,
+			texture_coordinate0_vertex_count, tangent_values_per_vertex, tangent_vertex_count;
+			unsigned int *index_vertex_buffer, index_values_per_vertex, index_vertex_count;
+			object->vertex_array->get_unsigned_integer_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_ARRAY,
+				&index_vertex_buffer, &index_values_per_vertex,
+				&index_vertex_count);
+
+			switch (rendering_type)
+			{
+			case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+			{
+				array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					&position_buffer, &position_values_per_vertex, &position_vertex_count);
+				array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+					&data_buffer, &data_values_per_vertex, &data_vertex_count);
+				if (data_buffer)
+				{
+					spectrum_render_data=spectrum_start_renderGL(spectrum,material,data_values_per_vertex);
+				}
+
+				array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+				array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+					&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+					&texture_coordinate0_vertex_count);
+				array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+					&tangent_buffer, &tangent_values_per_vertex,
+					&tangent_vertex_count);
+
+				if (object->secondary_material)
+				{
+					display_message(WARNING_MESSAGE,"render_GT_object_opengl_immediate.  "
+						"Multipass rendering not implemented with glbegin/glend rendering.");
+				}
+			} break;
+			case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+			{
+				Graphics_object_enable_opengl_client_vertex_arrays(
+					object, renderer,
+					&position_buffer, &data_buffer, &normal_buffer,
+					&texture_coordinate0_buffer, &tangent_buffer);
+			} break;
+			case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+			{
+				Graphics_object_enable_opengl_vertex_buffer_object(
+					object, renderer);
+			} break;
+			}
+			for (surface_index = 0; surface_index < surface_count; surface_index++)
+			{
+				int object_name;
+				array->get_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					surface_index, 1, &object_name);
+				if (object_name > -1)
+				{
+					/* work out if subobjects selected */
+					if (renderer->highlight_functor)
+					{
+						name_selected=(renderer->highlight_functor)->call(object_name);
+					}
+					else
+					{
+						name_selected = 0;
+					}
+					if ((name_selected&&draw_selected)||
+						((!name_selected)&&(!draw_selected)))
+					{
+						if (picking_names)
+						{
+							/* put out name for picking - cast to GLuint */
+							glLoadName((GLuint)object_name);
+						}
+						unsigned int index_start, index_count;
+						GLfloat *position_vertex = NULL, *data_vertex = NULL, *normal_vertex = NULL,
+							*texture_coordinate0_vertex = NULL, *tangent_vertex = NULL;
+
+						array->get_unsigned_integer_attribute(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+							surface_index, 1, &index_start);
+						array->get_unsigned_integer_attribute(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+							surface_index, 1, &index_count);
+						unsigned int npts1, npts2;
+						array->get_unsigned_integer_attribute(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+							surface_index, 1, &npts1);
+						array->get_unsigned_integer_attribute(
+							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+							surface_index, 1, &npts2);
+						switch (rendering_type)
+						{
+							case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+							{
+								switch (mode)
+								{
+									case GL_TRIANGLE_STRIP:
+									{
+										unsigned int number_of_strips = 0;
+										unsigned int strip_start = 0;
+										object->vertex_array->get_unsigned_integer_attribute(
+											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_STRIPS,
+											surface_index, 1, &number_of_strips);
+										object->vertex_array->get_unsigned_integer_attribute(
+											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_START,
+											surface_index, 1, &strip_start);
+										GLfloat *current_position = position_buffer;
+										for (unsigned int i = 0; i < number_of_strips; i++)
+										{
+											unsigned int points_per_strip = 0;
+											unsigned int index_start_for_strip = 0;
+											object->vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_START,
+												strip_start+i, 1, &index_start_for_strip);
+											object->vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_POINTS_FOR_STRIP,
+												strip_start+i, 1, &points_per_strip);
+											unsigned int *indices = &index_vertex_buffer[index_start_for_strip];
+											glBegin(GL_TRIANGLE_STRIP);
+											for (unsigned int j = 0; j < points_per_strip; j++)
+											{
+												// Only use begin/end mode for picking, draw vertices only
+												//										GLfloat *current_data = 0, *current_normal = 0,
+												//											*current_texture_coordinate0 = 0, *current_tangent = 0;
+												//										if (normal_buffer)
+												//										{
+												//											current_normal = &(normal_buffer[*indices * normal_values_per_vertex]);
+												//											glNormal3fv(current_normal);
+												//										}
+												//#if defined GL_VERSION_1_3
+												//										if (tangent_buffer)
+												//										{
+												//											current_tangent = &(tangent_buffer[*indices * tangent_values_per_vertex]);
+												//											glMultiTexCoord3fv(GL_TEXTURE1_ARB, current_tangent);
+												//										}
+												//#endif /* defined GL_VERSION_1_3 */
+												//										if (texture_coordinate0_buffer)
+												//										{
+												//											current_texture_coordinate0 = &(texture_coordinate0_buffer[*indices * texture_coordinate0_values_per_vertex]);
+												//											glTexCoord3fv(current_texture_coordinate0);
+												//										}
+												//										if (data_buffer)
+												//										{
+												//											current_data = &(data_buffer[*indices * data_values_per_vertex]);
+												//											spectrum_renderGL_value(spectrum, material, spectrum_render_data,
+												//												data_vertex);
+												//										}
+												current_position = &(position_buffer[*indices * position_values_per_vertex]);
+												glVertex3fv(current_position);
+												indices++;
+											}
+											glEnd();
+										}
+									} break;
+									case GL_TRIANGLES:
+									{
+										position_vertex = position_buffer + position_values_per_vertex * index_start;
+										if (data_buffer)
+										{
+											data_vertex = data_buffer +
+												data_values_per_vertex * index_start;
+										}
+										if (normal_buffer)
+										{
+											normal_vertex = normal_buffer +
+												normal_values_per_vertex * index_start;
+										}
+										if (texture_coordinate0_buffer)
+										{
+											texture_coordinate0_vertex = texture_coordinate0_buffer +
+												texture_coordinate0_values_per_vertex * index_start;
+										}
+										if (tangent_buffer)
+										{
+											tangent_vertex = tangent_buffer + tangent_values_per_vertex * index_start;
+										}
+										glBegin(GL_TRIANGLES);
+										for (unsigned int j = 0; j < npts1; j++)
+										{
+											// Only use begin/end mode for picking, draw vertices only
+											//									if (normal_buffer)
+											//									{
+											//										glNormal3fv(normal_vertex);
+											//										normal_vertex += normal_values_per_vertex;
+											//									}
+											//#if defined GL_VERSION_1_3
+											//									if (tangent_buffer)
+											//									{
+											//										glMultiTexCoord3fv(GL_TEXTURE1_ARB, tangent_vertex);
+											//										tangent_vertex += tangent_values_per_vertex;
+											//									}
+											//#endif /* defined GL_VERSION_1_3 */
+											//									if (texture_coordinate0_buffer)
+											//									{
+											//										glTexCoord3fv(texture_coordinate0_vertex);
+											//										texture_coordinate0_buffer += texture_coordinate0_values_per_vertex;
+											//									}
+											//									if (data_buffer)
+											//									{
+											//										spectrum_renderGL_value(spectrum, material, spectrum_render_data,
+											//											data_vertex);
+											//										data_vertex += data_values_per_vertex;
+											//									}
+											glVertex3fv(position_vertex);
+											position_vertex += position_values_per_vertex;
+										}
+										glEnd();
+									}break;
+								}
+								return_code=1;
+							} break;
+							case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+							case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+							{
+								switch (mode)
+								{
+									case GL_TRIANGLE_STRIP:
+									{
+										unsigned int number_of_strips = 0;
+										unsigned int strip_start = 0;
+										array->get_unsigned_integer_attribute(
+											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_STRIPS,
+											surface_index, 1, &number_of_strips);
+										array->get_unsigned_integer_attribute(
+											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_START,
+											surface_index, 1, &strip_start);
+										for (unsigned int i = 0; i < number_of_strips; i++)
+										{
+											unsigned int points_per_strip = 0;
+											unsigned int index_start_for_strip = 0;
+											array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_START,
+												strip_start+i, 1, &index_start_for_strip);
+											array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_POINTS_FOR_STRIP,
+												strip_start+i, 1, &points_per_strip);
+											if (object->index_vertex_buffer_object)
+											{
+												glDrawElements(mode, points_per_strip, GL_UNSIGNED_INT, BUFFER_OFFSET(sizeof(GLuint) * index_start_for_strip));
+											}
+										}
+									} break;
+									case GL_TRIANGLES:
+									{
+										glDrawArrays(mode, index_start, index_count);
+									}break;
+									default:
+									{
+										/* Do nothing, satisfy warnings */
+									} break;
+								} break;
+							}
+						}
+					}
+				}
+			}
+			switch (rendering_type)
+			{
+				case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+				{
+					if (data_buffer)
+					{
+						spectrum_end_renderGL(spectrum, spectrum_render_data);
+					}
+				} break;
+				case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+				{
+					Graphics_object_disable_opengl_client_vertex_arrays(
+						object, renderer,
+						position_buffer, data_buffer, normal_buffer,
+						texture_coordinate0_buffer, tangent_buffer);
+				} break;
+				case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+				{
+					Graphics_object_disable_opengl_vertex_buffer_object(
+						object, renderer);
+				}
+			}
+
+			if (wireframe_flag)
+			{
+				glPopAttrib();
+			}
+			if (picking_names)
+			{
+				glPopName();
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,"drawGLSurface.  Missing surfaces.");
+			return_code=0;
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,"drawGLSurface.  Invalid arguments.");
+		return_code=0;
+	}
+	return return_code;
+}
+
+int draw_vertexBufferLine(gtObject *object, Render_graphics_opengl *renderer,
+	union GT_primitive_list *primitive_list, int picking_names,
+	Graphics_object_rendering_type rendering_type, struct Spectrum *spectrum,
+	struct Graphical_material *material, int draw_selected)
+{
+	int return_code = 1;
+	GT_polyline_vertex_buffers *line = primitive_list->gt_polyline_vertex_buffers;
+	GLenum mode = GL_LINE_STRIP;
+	switch (line->polyline_type)
+	{
+	case g_PLAIN:
+	case g_NORMAL:
+		{
+			mode = GL_LINE_STRIP;
+		} break;
+	case g_PLAIN_DISCONTINUOUS:
+	case g_NORMAL_DISCONTINUOUS:
+		{
+			mode = GL_LINES;
+		} break;
+	default:
+		{
+			display_message(ERROR_MESSAGE,
+				"render_GT_object_opengl_immediate.  Invalid line type");
+			return_code=0;
+		} break;
+	}
+	if (return_code)
+	{
+		unsigned int line_index;
+		unsigned int line_count = object->vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		GLfloat *position_buffer, *data_buffer, *normal_buffer,
+			*texture_coordinate0_buffer;
+		struct Spectrum_render_data *render_data = NULL;
+		unsigned int position_values_per_vertex, position_vertex_count,
+			data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
+			normal_vertex_count, texture_coordinate0_values_per_vertex,
+			texture_coordinate0_vertex_count;
+
+		position_buffer = (GLfloat *)NULL;
+		data_buffer = (GLfloat *)NULL;
+		normal_buffer = (GLfloat *)NULL;
+		texture_coordinate0_buffer = (GLfloat *)NULL;
+
+		switch (rendering_type)
+		{
+		case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+			{
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					&position_buffer, &position_values_per_vertex, &position_vertex_count);
+
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+					&data_buffer, &data_values_per_vertex, &data_vertex_count);
+				if (data_buffer)
+				{
+					render_data=spectrum_start_renderGL
+						(spectrum,material,data_values_per_vertex);
+				}
+
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+					&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+					&texture_coordinate0_vertex_count);
+
+				if (object->secondary_material)
+				{
+					display_message(WARNING_MESSAGE,"render_GT_object_opengl_immediate.  "
+						"Multipass rendering not implemented with glbegin/glend rendering.");
+				}
+			} break;
+		case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+			{
+				Graphics_object_enable_opengl_client_vertex_arrays(
+					object, renderer,
+					&position_buffer, &data_buffer, &normal_buffer,
+					&texture_coordinate0_buffer, 0);
+			} break;
+		case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+			{
+				Graphics_object_enable_opengl_vertex_buffer_object(
+					object, renderer);
+			} break;
+		}
+
+		for (line_index = 0; line_index < line_count; line_index++)
+		{
+			int object_name = 0;
+			object->vertex_array->get_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+				line_index, 1, &object_name);
+			if (object_name > -1)
+			{
+				/* work out if subobjects selected */
+				int name_selected = 0;
+				if (renderer->highlight_functor)
+				{
+					name_selected=(renderer->highlight_functor)->call(object_name);
+				}
+				else
+				{
+					name_selected = 0;
+				}
+				if ((name_selected&&draw_selected)||
+					((!name_selected)&&(!draw_selected)))
+				{
+					if (picking_names)
+					{
+						/* put out name for picking - cast to GLuint */
+						glLoadName((GLuint)object_name);
+					}
+					unsigned int i, index_start, index_count;
+					GLfloat *position_vertex = NULL, *data_vertex = NULL, *normal_vertex = NULL,
+						*texture_coordinate0_vertex = NULL;
+
+					object->vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						line_index, 1, &index_start);
+					object->vertex_array->get_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						line_index, 1, &index_count);
+
+					switch (rendering_type)
+					{
+						case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+						{
+							position_vertex = position_buffer +
+								position_values_per_vertex * index_start;
+							if (data_buffer)
+							{
+								data_vertex = data_buffer +
+									data_values_per_vertex * index_start;
+							}
+							if (normal_buffer)
+							{
+								normal_vertex = normal_buffer +
+									normal_values_per_vertex * index_start;
+							}
+							if (texture_coordinate0_buffer)
+							{
+								texture_coordinate0_vertex = texture_coordinate0_buffer +
+									texture_coordinate0_values_per_vertex * index_start;
+							}
+
+							glBegin(mode);
+							for (i=index_count;i>0;i--)
+							{
+								if (data_buffer)
+								{
+									spectrum_renderGL_value(spectrum,material,render_data,data_vertex);
+									data_vertex += data_values_per_vertex;
+								}
+								if (normal_buffer)
+								{
+									glNormal3fv(normal_vertex);
+									normal_vertex += normal_values_per_vertex;
+								}
+								if (texture_coordinate0_buffer)
+								{
+									glTexCoord3fv(texture_coordinate0_vertex);
+									texture_coordinate0_vertex += texture_coordinate0_values_per_vertex;
+								}
+								glVertex3fv(position_vertex);
+								position_vertex += position_values_per_vertex;
+							}
+							glEnd();
+						} break;
+						case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+						case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+						{
+							glDrawArrays(mode, index_start, index_count);
+						} break;
+					}
+				}
+			}
+		}
+		switch (rendering_type)
+		{
+		case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
+			{
+				if (data_buffer)
+				{
+					spectrum_end_renderGL(spectrum, render_data);
+				}
+			} break;
+		case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
+			{
+				Graphics_object_disable_opengl_client_vertex_arrays(
+					object, renderer,
+					position_buffer, data_buffer, normal_buffer,
+					texture_coordinate0_buffer, 0);
+			} break;
+		case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+			{
+				Graphics_object_disable_opengl_vertex_buffer_object(
+					object, renderer);
+			}
+		}
+	}
+	return return_code;
+}
+
 static int render_GT_object_opengl_immediate(gtObject *object,
 	int draw_selected, Render_graphics_opengl *renderer,
 	Graphics_object_rendering_type rendering_type)
 {
 	ZnReal proportion = 0.0,*times;
-	int itime, name_selected, number_of_times, picking_names, return_code, strip;
+	int itime, number_of_times, picking_names, return_code;
 #if defined (OPENGL_API)
 	bool lighting_on = true;
 #endif /* defined (OPENGL_API) */
 	struct Graphical_material *material, *secondary_material;
-	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
-	struct GT_nurbs *nurbs;
-	struct GT_point *point;
-	struct GT_pointset *interpolate_point_set,*point_set,*point_set_2;
-	struct GT_polyline *interpolate_line,*line = NULL,*line_2 = NULL;
-	struct GT_surface *interpolate_surface,*surface = NULL,*surface_2 = NULL,*tile_surface,
-		*tile_surface_2;
-	struct GT_userdef *userdef;
-	struct GT_voltex *voltex;
 	struct Spectrum *spectrum;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
@@ -3200,1007 +3248,59 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 			{
 				switch (GT_object_get_type(object))
 				{
-				case g_GLYPH_SET:
+				case g_POINT_SET_VERTEX_BUFFERS:
+				{
+					GT_pointset_vertex_buffers *point_set = object->primitive_lists->gt_pointset_vertex_buffers;
+					if (point_set)
 					{
-						glyph_set = primitive_list1->gt_glyph_set.first;
-						if (glyph_set)
-						{
 #if defined (OPENGL_API)
-							// push enable bit as lighting is switched off and on depending on
-							// whether glyph is points or lines vs. surfaces, whether labels are drawn
-							glPushAttrib(GL_ENABLE_BIT);
-							/* store the transform attribute group to save current matrix mode
-							and GL_NORMALIZE flag. */
-							glPushAttrib(GL_TRANSFORM_BIT);
-							/* Must enable GL_NORMALIZE so that normals are normalized after
-							scaling and shear by the transformations in the glyph set -
-							otherwise lighting will be wrong. Since this may reduce
-							performance, only enable for glyph_sets. */
-							glEnable(GL_NORMALIZE);
-							if (picking_names)
-							{
-								glPushName(0);
-							}
+						/* disable lighting so rendered in flat diffuse colour */
+						/*???RC glPushAttrib and glPopAttrib are *very* slow */
+						glPushAttrib(GL_ENABLE_BIT);
+						glDisable(GL_LIGHTING);
 #endif /* defined (OPENGL_API) */
-							if (proportion > 0)
-							{
-								glyph_set_2 = primitive_list2->gt_glyph_set.first;
-								while (glyph_set&&glyph_set_2)
-								{
-									interpolate_glyph_set=morph_GT_glyph_set(proportion,
-										glyph_set,glyph_set_2);
-									if (interpolate_glyph_set)
-									{
-										if (picking_names)
-										{
-											/* put out name for picking - cast to GLuint */
-											glLoadName((GLuint)interpolate_glyph_set->object_name);
-										}
-										/* work out if subobjects selected  */
-										draw_glyphsetGL(interpolate_glyph_set,
-											material, secondary_material, spectrum,
-											draw_selected, renderer->highlight_functor,
-											renderer, lighting_on);
-										DESTROY(GT_glyph_set)(&interpolate_glyph_set);
-									}
-									glyph_set=glyph_set->ptrnext;
-									glyph_set_2=glyph_set_2->ptrnext;
-								}
-							}
-							else
-							{
-								while (glyph_set)
-								{
-									if (picking_names)
-									{
-										/* put out name for picking - cast to GLuint */
-										glLoadName((GLuint)glyph_set->object_name);
-									}
-									/* work out if subobjects selected  */
-									draw_glyphsetGL(glyph_set,
-										material, secondary_material,
-										spectrum, draw_selected, renderer->highlight_functor,
-										renderer, lighting_on);
-									glyph_set=glyph_set->ptrnext;
-								}
-							}
+						draw_vertexBufferPointset(object, material, spectrum, renderer, rendering_type);
 #if defined (OPENGL_API)
-							if (picking_names)
-							{
-								glPopName();
-							}
-							/* restore the transform attribute group */
-							glPopAttrib();
-							/* restore previous lighting state */
-							glPopAttrib();
-#endif /* defined (OPENGL_API) */
-							return_code=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing glyph_set");
-							return_code=0;
-						}
-					} break;
-				case g_POINT:
-					{
-						point = primitive_list1->gt_point.first;
-						if (point)
-						{
-							draw_pointsetGL(1, point->position, &(point->text),
-								point->marker_type,
-								point->marker_size, /*names*/(int *)NULL,
-								point->n_data_components, point->data,
-								material,spectrum,point->font);
-							return_code=1;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing point");
-							return_code=0;
-						}
-					} break;
-				case g_POINTSET:
-					{
-						point_set = primitive_list1->gt_pointset.first;
-						if (point_set)
-						{
-#if defined (OPENGL_API)
-							/* disable lighting so rendered in flat diffuse colour */
-							/*???RC glPushAttrib and glPopAttrib are *very* slow */
-							glPushAttrib(GL_ENABLE_BIT);
-							glDisable(GL_LIGHTING);
-#endif /* defined (OPENGL_API) */
-							if (proportion>0)
-							{
-								point_set_2 = primitive_list2->gt_pointset.first;
-								while (point_set&&point_set_2)
-								{
-									interpolate_point_set=morph_GT_pointset(proportion,
-										point_set,point_set_2);
-									if (interpolate_point_set)
-									{
-										draw_pointsetGL(interpolate_point_set->n_pts,
-											interpolate_point_set->pointlist,
-											interpolate_point_set->text,
-											interpolate_point_set->marker_type,
-											interpolate_point_set->marker_size, point_set->names,
-											interpolate_point_set->n_data_components,
-											interpolate_point_set->data,
-											material,spectrum,interpolate_point_set->font);
-										DESTROY(GT_pointset)(&interpolate_point_set);
-									}
-									point_set=point_set->ptrnext;
-									point_set_2=point_set_2->ptrnext;
-								}
-							}
-							else
-							{
-								while (point_set)
-								{
-									draw_pointsetGL(point_set->n_pts,point_set->pointlist,
-										point_set->text,point_set->marker_type,point_set->marker_size,
-										point_set->names,point_set->n_data_components,point_set->data,
-										material,spectrum,point_set->font);
-									point_set=point_set->ptrnext;
-								}
-							}
-#if defined (OPENGL_API)
-							/* restore previous lighting state */
-							glPopAttrib();
-#endif /* defined (OPENGL_API) */
-							return_code=1;
-						}
-						else
-						{
-							/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing point");
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing point");
-							return_code=0;
-						}
-					} break;
-				case g_VOLTEX:
-					{
-						voltex = primitive_list1->gt_voltex.first;
-#if defined (OPENGL_API)
-						/* save transformation attributes state */
-						if (voltex)
-						{
-							if (voltex->voltex_type == g_VOLTEX_WIREFRAME_SHADED_TEXMAP)
-							{
-								glPushAttrib(GL_TRANSFORM_BIT | GL_POLYGON_BIT);
-								glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-							}
-							else
-							{
-								glPushAttrib(GL_TRANSFORM_BIT);
-							}
-							/*???RC Why do we need NORMALIZE on for voltex? */
-							glEnable(GL_NORMALIZE);
-							if (picking_names)
-							{
-								glPushName(0);
-							}
-#endif /* defined (OPENGL_API) */
-							while (voltex)
-							{
-								/* work out if subobjects selected */
-								name_selected=0;
-								if ((name_selected&&draw_selected)||
-									((!name_selected)&&(!draw_selected)))
-								{
-									if (picking_names)
-									{
-										/* put out name for picking - cast to GLuint */
-										glLoadName(voltex->object_name);
-									}
-									draw_voltexGL(voltex->number_of_vertices, voltex->vertex_list,
-										voltex->number_of_triangles, voltex->triangle_list,
-										voltex->n_data_components, voltex->n_texture_coordinates,
-										material,spectrum);
-								}
-								voltex=voltex->ptrnext;
-							}
-							return_code=1;
-#if defined (OPENGL_API)
-							if (picking_names)
-							{
-								glPopName();
-							}
-							/* restore previous coloring state */
-							glPopAttrib();
-#endif /* defined (OPENGL_API) */
-						}
-					} break;
-				case g_POLYLINE:
-					{
-						/*???debug */
-						/*printf("g_POLYLINE time=%g proportion=%g\n",time,proportion);*/
-						line = primitive_list1->gt_polyline.first;
-						if (line)
-						{
-							if (proportion>0)
-							{
-								line_2 = primitive_list2->gt_polyline.first;
-							}
-#if defined (OPENGL_API)
-							if (lighting_on && ((g_PLAIN == line->polyline_type) ||
-								(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
-							{
-								/* disable lighting so rendered in flat diffuse colour */
-								/*???RC glPushAttrib and glPopAttrib are *very* slow */
-								glPushAttrib(GL_ENABLE_BIT);
-								glDisable(GL_LIGHTING);
-								lighting_on = false;
-							}
-							if (picking_names)
-							{
-								glPushName(0);
-							}
-#endif /* defined (OPENGL_API) */
-							switch (line->polyline_type)
-							{
-							case g_PLAIN:
-							case g_NORMAL:
-								{
-									if (proportion>0)
-									{
-										while (line&&line_2)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(line->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												interpolate_line=morph_GT_polyline(proportion,
-													line,line_2);
-												if (interpolate_line)
-												{
-													if (picking_names)
-													{
-														/* put out name for picking - cast to GLuint */
-														glLoadName((GLuint)interpolate_line->object_name);
-													}
-													draw_polylineGL(interpolate_line->pointlist,
-														interpolate_line->normallist, interpolate_line->n_pts,
-														interpolate_line->n_data_components,
-														interpolate_line->data, material,
-														spectrum);
-													DESTROY(GT_polyline)(&interpolate_line);
-												}
-											}
-											line=line->ptrnext;
-											line_2=line_2->ptrnext;
-										}
-									}
-									else
-									{
-										while (line)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(line->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												if (picking_names)
-												{
-													/* put out name for picking - cast to GLuint */
-													glLoadName((GLuint)line->object_name);
-												}
-												draw_polylineGL(line->pointlist,line->normallist,
-													line->n_pts, line->n_data_components, line->data,
-													material,spectrum);
-											}
-											line=line->ptrnext;
-										}
-									}
-									return_code=1;
-								} break;
-							case g_PLAIN_DISCONTINUOUS:
-							case g_NORMAL_DISCONTINUOUS:
-								{
-									if (proportion>0)
-									{
-										while (line&&line_2)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(line->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												interpolate_line=morph_GT_polyline(proportion,line,
-													line_2);
-												if (interpolate_line)
-												{
-													if (picking_names)
-													{
-														/* put out name for picking - cast to GLuint */
-														glLoadName((GLuint)interpolate_line->object_name);
-													}
-													draw_dc_polylineGL(interpolate_line->pointlist,
-														interpolate_line->normallist, interpolate_line->n_pts,
-														interpolate_line->n_data_components,
-														interpolate_line->data,
-														material,spectrum);
-													DESTROY(GT_polyline)(&interpolate_line);
-												}
-											}
-											line=line->ptrnext;
-											line_2=line_2->ptrnext;
-										}
-									}
-									else
-									{
-										while (line)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(line->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												if (picking_names)
-												{
-													/* put out name for picking - cast to GLuint */
-													glLoadName((GLuint)line->object_name);
-												}
-												draw_dc_polylineGL(line->pointlist,line->normallist,
-													line->n_pts,line->n_data_components,line->data,
-													material,spectrum);
-											}
-											line=line->ptrnext;
-										}
-									}
-									return_code=1;
-								} break;
-							default:
-								{
-									display_message(ERROR_MESSAGE,
-										"render_GT_object_opengl_immediate.  Invalid line type");
-									return_code=0;
-								} break;
-							}
-#if defined (OPENGL_API)
-							if (picking_names)
-							{
-								glPopName();
-							}
-							if (!lighting_on)
-							{
 								/* restore previous lighting state */
-								glPopAttrib();
-							}
+						glPopAttrib();
 #endif /* defined (OPENGL_API) */
-						}
-						else
-						{
-							/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing line");
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing line");
-							return_code=0;
-						}
-					} break;
-				case g_POLYLINE_VERTEX_BUFFERS:
+						return_code=1;
+					}
+					else
 					{
-						GT_polyline_vertex_buffers *line;
-						line = primitive_list1->gt_polyline_vertex_buffers;
-						if (line)
-						{
-							if (lighting_on && ((g_PLAIN == line->polyline_type) ||
-								(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
-							{
-								/* disable lighting so rendered in flat diffuse colour */
-								/*???RC glPushAttrib and glPopAttrib are *very* slow */
-								glPushAttrib(GL_ENABLE_BIT);
-								glDisable(GL_LIGHTING);
-								lighting_on = false;
-							}
-							if (picking_names)
-							{
-								glPushName(0);
-							}
-							return_code = 1;
-							GLenum mode;
-							switch (line->polyline_type)
-							{
-							case g_PLAIN:
-							case g_NORMAL:
-								{
-									mode = GL_LINE_STRIP;
-								} break;
-							case g_PLAIN_DISCONTINUOUS:
-							case g_NORMAL_DISCONTINUOUS:
-								{
-									mode = GL_LINES;
-								} break;
-							default:
-								{
-									display_message(ERROR_MESSAGE,
-										"render_GT_object_opengl_immediate.  Invalid line type");
-									return_code=0;
-								} break;
-							}
-							if (return_code)
-							{
-								unsigned int line_index;
-								unsigned int line_count =
-									object->vertex_array->get_number_of_vertices(
-									GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
-
-								GLfloat *position_buffer, *data_buffer, *normal_buffer,
-									*texture_coordinate0_buffer;
-								struct Spectrum_render_data *render_data = NULL;
-								unsigned int position_values_per_vertex, position_vertex_count,
-									data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
-									normal_vertex_count, texture_coordinate0_values_per_vertex,
-									texture_coordinate0_vertex_count;
-
-								position_buffer = (GLfloat *)NULL;
-								data_buffer = (GLfloat *)NULL;
-								normal_buffer = (GLfloat *)NULL;
-								texture_coordinate0_buffer = (GLfloat *)NULL;
-
-								switch (rendering_type)
-								{
-								case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
-									{
-										object->vertex_array->get_float_vertex_buffer(
-											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-											&position_buffer, &position_values_per_vertex, &position_vertex_count);
-
-										object->vertex_array->get_float_vertex_buffer(
-											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-											&data_buffer, &data_values_per_vertex, &data_vertex_count);
-										if (data_buffer)
-										{
-											render_data=spectrum_start_renderGL
-												(spectrum,material,data_values_per_vertex);
-										}
-
-										object->vertex_array->get_float_vertex_buffer(
-											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
-											&normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
-										object->vertex_array->get_float_vertex_buffer(
-											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-											&texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
-											&texture_coordinate0_vertex_count);
-
-										if (object->secondary_material)
-										{
-											display_message(WARNING_MESSAGE,"render_GT_object_opengl_immediate.  "
-												"Multipass rendering not implemented with glbegin/glend rendering.");
-										}
-									} break;
-								case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
-									{
-										Graphics_object_enable_opengl_client_vertex_arrays(
-											object, renderer,
-											&position_buffer, &data_buffer, &normal_buffer,
-											&texture_coordinate0_buffer);
-									} break;
-								case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
-									{
-										Graphics_object_enable_opengl_vertex_buffer_object(
-											object, renderer);
-									} break;
-								}
-
-								for (line_index = 0; line_index < line_count; line_index++)
-								{
-									int object_name;
-									object->vertex_array->get_integer_attribute(
-										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
-										line_index, 1, &object_name);
-
-									/* work out if subobjects selected */
-									if (renderer->highlight_functor)
-									{
-										name_selected=(renderer->highlight_functor)->call(object_name);
-									}
-									else
-									{
-										name_selected = 0;
-									}
-									if ((name_selected&&draw_selected)||
-										((!name_selected)&&(!draw_selected)))
-									{
-										if (picking_names)
-										{
-											/* put out name for picking - cast to GLuint */
-											glLoadName((GLuint)object_name);
-										}
-										unsigned int i, index_start, index_count;
-										GLfloat *position_vertex = NULL, *data_vertex = NULL, *normal_vertex = NULL,
-											*texture_coordinate0_vertex = NULL;
-
-										object->vertex_array->get_unsigned_integer_attribute(
-											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-											line_index, 1, &index_start);
-										object->vertex_array->get_unsigned_integer_attribute(
-											GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-											line_index, 1, &index_count);
-
-										switch (rendering_type)
-										{
-										case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
-											{
-												position_vertex = position_buffer +
-													position_values_per_vertex * index_start;
-												if (data_buffer)
-												{
-													data_vertex = data_buffer +
-														data_values_per_vertex * index_start;
-												}
-												if (normal_buffer)
-												{
-													normal_vertex = normal_buffer +
-														normal_values_per_vertex * index_start;
-												}
-												if (texture_coordinate0_buffer)
-												{
-													texture_coordinate0_vertex = texture_coordinate0_buffer +
-														texture_coordinate0_values_per_vertex * index_start;
-												}
-
-												glBegin(mode);
-												for (i=index_count;i>0;i--)
-												{
-													if (data_buffer)
-													{
-														spectrum_renderGL_value(spectrum,material,render_data,data_vertex);
-														data_vertex += data_values_per_vertex;
-													}
-													if (normal_buffer)
-													{
-														glNormal3fv(normal_vertex);
-														normal_vertex += normal_values_per_vertex;
-													}
-													if (texture_coordinate0_buffer)
-													{
-														glTexCoord3fv(texture_coordinate0_vertex);
-														texture_coordinate0_vertex += texture_coordinate0_values_per_vertex;
-													}
-													glVertex3fv(position_vertex);
-													position_vertex += position_values_per_vertex;
-												}
-												glEnd();
-											} break;
-										case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
-										case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
-											{
-												glDrawArrays(mode, index_start, index_count);
-											} break;
-										}
-									}
-								}
-								switch (rendering_type)
-								{
-								case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
-									{
-										if (data_buffer)
-										{
-											spectrum_end_renderGL(spectrum, render_data);
-										}
-									} break;
-								case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
-									{
-										Graphics_object_disable_opengl_client_vertex_arrays(
-											object, renderer,
-											position_buffer, data_buffer, normal_buffer,
-											texture_coordinate0_buffer);
-									} break;
-								case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
-									{
-										Graphics_object_disable_opengl_vertex_buffer_object(
-											object, renderer);
-									}
-								}
-							}
-							if (picking_names)
-							{
-								glPopName();
-							}
-							if (!lighting_on)
-							{
-								/* restore previous lighting state */
-								glPopAttrib();
-							}
-						}
-						else
-						{
-							/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing line");
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing line");
-							return_code=0;
-						}
-					} break;
-				case g_SURFACE:
-					{
-						surface = primitive_list1->gt_surface.first;
-						if (surface)
-						{
-#if defined (OPENGL_API)
-							if (picking_names)
-							{
-								glPushName(0);
-							}
-							bool wireframe_flag = (surface->render_polygon_mode == CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME);
-							if (wireframe_flag)
-							{
-								glPushAttrib(GL_POLYGON_BIT);
-								glPolygonMode(GL_FRONT_AND_BACK,GL_LINE);
-							}
-							struct Spectrum_render_data *spectrum_render_data = NULL;
-							if (surface->data)
-							{
-								spectrum_render_data = spectrum_start_renderGL(spectrum,material,surface->n_data_components);
-							}
-#endif /* defined (OPENGL_API) */
-							if (proportion>0)
-							{
-								surface_2 = primitive_list2->gt_surface.first;
-							}
-							switch (surface->surface_type)
-							{
-							case g_SHADED:
-							case g_SHADED_TEXMAP:
-								{
-									if (proportion>0)
-									{
-										while (surface&&surface_2)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(surface->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												interpolate_surface=morph_GT_surface(proportion,
-													surface,surface_2);
-												if (interpolate_surface)
-												{
-													if (picking_names)
-													{
-														/* put out name for picking - cast to GLuint */
-														glLoadName((GLuint)interpolate_surface->object_name);
-													}
-													if (object->texture_tiling &&
-														interpolate_surface->texturelist)
-													{
-														tile_surface = tile_GT_surface(interpolate_surface,
-															object->texture_tiling);
-														while(tile_surface)
-														{
-															/* Need to select the texture target */
-															Texture_tiling_activate_tile(object->texture_tiling,
-																tile_surface->tile_number);
-#if defined (OPENGL_API)
-															GLenum gl_surface_mode = GL_POINTS; // Not a valid surface primitive
-#endif /* defined (OPENGL_API) */
-															draw_dc_surfaceGL(tile_surface->pointlist,
-																tile_surface->normallist,
-																tile_surface->tangentlist,
-																tile_surface->texturelist,
-																tile_surface->n_pts1,
-																tile_surface->n_pts2,
-																tile_surface->polygon,  /*strip*/0,
-#if defined (OPENGL_API)
-																gl_surface_mode,
-#endif /* defined (OPENGL_API) */
-																tile_surface->n_data_components,
-																tile_surface->data,
-																material, spectrum, spectrum_render_data);
-#if defined (OPENGL_API)
-															if (gl_surface_mode != GL_POINTS)
-															{
-																glEnd();
-															}
-#endif /* defined (OPENGL_API) */
-															tile_surface_2 = tile_surface;
-															tile_surface = tile_surface->ptrnext;
-															DESTROY(GT_surface)(&tile_surface_2);
-														}
-													}
-													else
-													{
-														draw_surfaceGL(interpolate_surface->pointlist,
-															interpolate_surface->normallist,
-															interpolate_surface->tangentlist,
-															interpolate_surface->texturelist,
-															interpolate_surface->n_pts1,
-															interpolate_surface->n_pts2,
-															interpolate_surface->polygon,
-															interpolate_surface->n_data_components,
-															interpolate_surface->data,
-															material, spectrum, spectrum_render_data);
-													}
-													DESTROY(GT_surface)(&interpolate_surface);
-												}
-											}
-											surface=surface->ptrnext;
-											surface_2=surface_2->ptrnext;
-										}
-									}
-									else
-									{
-										while (surface)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(surface->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												if (picking_names)
-												{
-													/* put out name for picking - cast to GLuint */
-													glLoadName((GLuint)surface->object_name);
-												}
-												if (object->texture_tiling &&
-													surface->texturelist)
-												{
-													tile_surface = tile_GT_surface(surface,
-														object->texture_tiling);
-													while(tile_surface)
-													{
-														Texture_tiling_activate_tile(object->texture_tiling,
-															tile_surface->tile_number);
-#if defined (OPENGL_API)
-														GLenum gl_surface_mode = GL_POINTS; // Not a valid surface primitive
-#endif /* defined (OPENGL_API) */
-														draw_dc_surfaceGL(tile_surface->pointlist,
-															tile_surface->normallist,
-															tile_surface->tangentlist,
-															tile_surface->texturelist,
-															tile_surface->n_pts1,
-															tile_surface->n_pts2,
-															tile_surface->polygon, /*strip*/0,
-#if defined (OPENGL_API)
-															gl_surface_mode,
-#endif /* defined (OPENGL_API) */
-															tile_surface->n_data_components,
-															tile_surface->data,
-															material, spectrum, spectrum_render_data);
-#if defined (OPENGL_API)
-														if (gl_surface_mode != GL_POINTS)
-														{
-															glEnd();
-														}
-#endif /* defined (OPENGL_API) */
-														tile_surface_2 = tile_surface;
-														tile_surface = tile_surface->ptrnext;
-														DESTROY(GT_surface)(&tile_surface_2);
-													}
-												}
-												else
-												{
-													draw_surfaceGL(surface->pointlist, surface->normallist,
-														surface->tangentlist,
-														surface->texturelist, surface->n_pts1,
-														surface->n_pts2, surface->polygon,
-														surface->n_data_components, surface->data,
-														material, spectrum, spectrum_render_data);
-												}
-											}
-											surface=surface->ptrnext;
-										}
-									}
-									return_code=1;
-								} break;
-							case g_SH_DISCONTINUOUS:
-							case g_SH_DISCONTINUOUS_STRIP:
-							case g_SH_DISCONTINUOUS_TEXMAP:
-							case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-								{
-#if defined (OPENGL_API)
-									GLenum gl_surface_mode = GL_POINTS; // Not a valid surface primitive
-#endif /* defined (OPENGL_API) */
-									strip=((g_SH_DISCONTINUOUS_STRIP_TEXMAP==surface->surface_type)
-										||(g_SH_DISCONTINUOUS_STRIP==surface->surface_type));
-									if (proportion>0)
-									{
-										while (surface&&surface_2)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(surface->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												interpolate_surface=morph_GT_surface(proportion,
-													surface,surface_2);
-												if (interpolate_surface)
-												{
-													if (picking_names)
-													{
-#if defined (OPENGL_API)
-														if (gl_surface_mode != GL_POINTS)
-														{
-															glEnd();
-															gl_surface_mode = GL_POINTS;
-														}
-														/* put out name for picking - cast to GLuint */
-														glLoadName((GLuint)interpolate_surface->object_name);
-#endif /* defined (OPENGL_API) */
-													}
-													draw_dc_surfaceGL(interpolate_surface->pointlist,
-														interpolate_surface->normallist,
-														interpolate_surface->tangentlist,
-														interpolate_surface->texturelist,
-														interpolate_surface->n_pts1,
-														interpolate_surface->n_pts2,
-														interpolate_surface->polygon,strip,
-#if defined (OPENGL_API)
-														gl_surface_mode,
-#endif /* defined (OPENGL_API) */
-														interpolate_surface->n_data_components,
-														interpolate_surface->data,
-														material, spectrum, spectrum_render_data);
-													DESTROY(GT_surface)(&interpolate_surface);
-												}
-											}
-											surface=surface->ptrnext;
-											surface_2=surface_2->ptrnext;
-										}
-									}
-									else
-									{
-										while (surface)
-										{
-											/* work out if subobjects selected */
-											if (renderer->highlight_functor)
-											{
-												name_selected=(renderer->highlight_functor)->call(surface->object_name);
-											}
-											else
-											{
-												name_selected = 0;
-											}
-											if ((name_selected&&draw_selected)||
-												((!name_selected)&&(!draw_selected)))
-											{
-												if (picking_names)
-												{
-#if defined (OPENGL_API)
-													if (gl_surface_mode != GL_POINTS)
-													{
-														glEnd();
-														gl_surface_mode = GL_POINTS;
-													}
-													/* put out name for picking - cast to GLuint */
-													glLoadName((GLuint)surface->object_name);
-#endif /* defined (OPENGL_API) */
-												}
-												draw_dc_surfaceGL(surface->pointlist,surface->normallist,
-													surface->tangentlist,
-
-													surface->texturelist,surface->n_pts1,surface->n_pts2,
-													surface->polygon,strip,
-#if defined (OPENGL_API)
-													gl_surface_mode,
-#endif /* defined (OPENGL_API) */
-													surface->n_data_components, surface->data,
-													material, spectrum, spectrum_render_data);
-											}
-											surface=surface->ptrnext;
-										}
-									}
-#if defined (OPENGL_API)
-									if (gl_surface_mode != GL_POINTS)
-									{
-										glEnd();
-									}
-#endif /* defined (OPENGL_API) */
-									return_code=1;
-								} break;
-							default:
-								{
-									display_message(ERROR_MESSAGE,
-										"render_GT_object_opengl_immediate.  Invalid surface type");
-									return_code=0;
-								} break;
-							}
-#if defined (OPENGL_API)
-							if (spectrum_render_data)
-							{
-								spectrum_end_renderGL(spectrum,spectrum_render_data);
-							}
-							if (wireframe_flag)
-							{
-								glPopAttrib();
-							}
-							if (picking_names)
-							{
-								glPopName();
-							}
-#endif /* defined (OPENGL_API) */
-						}
-						else
-						{
-							/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing surface");
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing surface");
-							return_code=0;
-						}
-					} break;
-				case g_NURBS:
+						/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing point");
+						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing point");
+						return_code=0;
+					}
+				} break;
+				case g_GLYPH_SET_VERTEX_BUFFERS:
+				{
+					GT_glyphset_vertex_buffers *glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
+					if (glyph_set)
 					{
 #if defined (OPENGL_API)
-						/* store transformation attributes and GL_NORMALIZE */
+						// push enable bit as lighting is switched off and on depending on
+						// whether glyph is points or lines vs. surfaces, whether labels are drawn
+						glPushAttrib(GL_ENABLE_BIT);
+						/* store the transform attribute group to save current matrix mode
+						and GL_NORMALIZE flag. */
 						glPushAttrib(GL_TRANSFORM_BIT);
+						/* Must enable GL_NORMALIZE so that normals are normalized after
+						scaling and shear by the transformations in the glyph set -
+						otherwise lighting will be wrong. Since this may reduce
+						performance, only enable for glyph_sets. */
 						glEnable(GL_NORMALIZE);
 						if (picking_names)
 						{
 							glPushName(0);
 						}
 #endif /* defined (OPENGL_API) */
-						nurbs = primitive_list1->gt_nurbs.first;
-						if (nurbs)
-						{
-							return_code = 1;
-							while(return_code && nurbs)
-							{
-								if (picking_names)
-								{
-									/* put out name for picking - cast to GLuint */
-									glLoadName((GLuint)nurbs->object_name);
-								}
-								/* work out if subobjects selected */
-								name_selected=0;
-								if ((name_selected&&draw_selected)||
-									((!name_selected)&&(!draw_selected)))
-								{
-									return_code = draw_nurbsGL(nurbs);
-								}
-								nurbs=nurbs->ptrnext;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing nurbs");
-							return_code=0;
-						}
+
+						draw_vertexBufferGlyphset(object,
+							material, secondary_material, spectrum,
+							//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
+							draw_selected, renderer->highlight_functor,
+							renderer, lighting_on, rendering_type, picking_names);
 #if defined (OPENGL_API)
 						if (picking_names)
 						{
@@ -4208,38 +3308,55 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						}
 						/* restore the transform attribute group */
 						glPopAttrib();
+						/* restore previous lighting state */
+						glPopAttrib();
 #endif /* defined (OPENGL_API) */
-					} break;
-				case g_USERDEF:
+					}
+					return_code=1;
+				} break;
+					case g_POLYLINE_VERTEX_BUFFERS:
 					{
-#if defined (OPENGL_API)
-						/* save transformation attributes state */
-						glPushAttrib(GL_TRANSFORM_BIT);
-						glEnable(GL_NORMALIZE);
-#endif /* defined (OPENGL_API) */
-						userdef = primitive_list1->gt_userdef.first;
-						if (userdef)
+						GT_polyline_vertex_buffers *line = primitive_list1->gt_polyline_vertex_buffers;
+						if (line)
 						{
-							if (userdef->render_function)
+							if (lighting_on && ((g_PLAIN == line->polyline_type) ||
+								(g_PLAIN_DISCONTINUOUS == line->polyline_type)))
 							{
-								(userdef->render_function)(userdef->data);
+								/* disable lighting so rendered in flat diffuse colour */
+								/*???RC glPushAttrib and glPopAttrib are *very* slow */
+								glPushAttrib(GL_ENABLE_BIT);
+								glDisable(GL_LIGHTING);
+								lighting_on = false;
 							}
-							else
+							if (picking_names)
 							{
-								display_message(ERROR_MESSAGE,
-									"render_GT_object_opengl_immediate.  Missing render function user defined object");
-								return_code=0;
+								glPushName(0);
+							}
+							draw_vertexBufferLine(object, renderer, primitive_list1, picking_names,
+								rendering_type, spectrum, material, draw_selected);
+							return_code = 1;
+
+							if (picking_names)
+							{
+								glPopName();
+							}
+							if (!lighting_on)
+							{
+								/* restore previous lighting state */
+								glPopAttrib();
 							}
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing userdef");
+							/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing line");
+							display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing line");
 							return_code=0;
 						}
-#if defined (OPENGL_API)
-						/* restore previous transformation attributes */
-						glPopAttrib();
-#endif /* defined (OPENGL_API) */
+					} break;
+					case g_SURFACE_VERTEX_BUFFERS:
+					{
+						return_code = drawGLSurfaces(object, renderer, primitive_list1, picking_names,
+							rendering_type, spectrum, material, draw_selected);
 					} break;
 				default:
 					{
@@ -4262,10 +3379,9 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 static int Graphics_object_compile_members_opengl(GT_object *graphics_object_list,
 	Render_graphics_opengl *renderer)
 {
-	int i, return_code;
+	int return_code;
 	struct GT_object *graphics_object;
 
-	ENTER(Graphics_object_compile_members);
 	if (graphics_object_list)
 	{
 		return_code = 1;
@@ -4302,59 +3418,34 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 				}
 				switch (graphics_object->object_type)
 				{
-				case g_GLYPH_SET:
+				case g_GLYPH_SET_VERTEX_BUFFERS:
 					{
-						struct GT_glyph_set *glyph_set;
+						struct GT_glyphset_vertex_buffers *glyph_set;
 
 						if (graphics_object->primitive_lists)
 						{
-							for (i = 0 ; i < graphics_object->number_of_times ; i++)
+							glyph_set = graphics_object->primitive_lists->gt_glyphset_vertex_buffers;
+							if (glyph_set)
 							{
-								glyph_set = graphics_object->primitive_lists[i].gt_glyph_set.first;
-								if (glyph_set)
-								{
-									if (glyph_set->glyph)
-										renderer->Graphics_object_compile(glyph_set->glyph);
-									if (glyph_set->font)
-										cmzn_font_compile(glyph_set->font);
-								}
+								if (glyph_set->glyph)
+									renderer->Graphics_object_compile(glyph_set->glyph);
+								if (glyph_set->font)
+									cmzn_font_compile(glyph_set->font);
 							}
 						}
 					} break;
-				case g_POINT:
+				case g_POINT_SET_VERTEX_BUFFERS:
 					{
-						struct GT_point *point;
+						struct GT_pointset_vertex_buffers *point_set;
 
 						if (graphics_object->primitive_lists)
 						{
-							for (i = 0 ; i < graphics_object->number_of_times ; i++)
+							point_set = graphics_object->primitive_lists->gt_pointset_vertex_buffers;
+							if (point_set)
 							{
-								point = graphics_object->primitive_lists[i].gt_point.first;
-								if (point)
+								if (point_set->font)
 								{
-									if (point->font)
-									{
-										cmzn_font_compile(point->font);
-									}
-								}
-							}
-						}
-					} break;
-				case g_POINTSET:
-					{
-						struct GT_pointset *point_set;
-
-						if (graphics_object->primitive_lists)
-						{
-							for (i = 0 ; i < graphics_object->number_of_times ; i++)
-							{
-								point_set = graphics_object->primitive_lists[i].gt_pointset.first;
-								if (point_set)
-								{
-									if (point_set->font)
-									{
-										cmzn_font_compile(point_set->font);
-									}
+									cmzn_font_compile(point_set->font);
 								}
 							}
 						}
@@ -4372,7 +3463,6 @@ static int Graphics_object_compile_members_opengl(GT_object *graphics_object_lis
 		display_message(ERROR_MESSAGE,"Graphics_object_compile_members.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Graphics_object_compile_members */

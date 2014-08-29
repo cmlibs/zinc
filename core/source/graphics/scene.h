@@ -444,5 +444,12 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
  */
 void cmzn_scene_detach_from_owner(cmzn_scene_id scene);
 
+int Scene_render_threejs(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter, const char *filename,
+	int number_of_time_steps, double begin_time, double end_time, int face_colour, int export_data_value);
+
+int Scene_render_webgl(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter, const char *filename);
+
 #endif /* !defined (SCENE_H) */
 

@@ -57,17 +57,19 @@ Global functions
 ----------------
 */
 
-struct GT_polyline *create_GT_polyline_streamline_FE_element(
+
+int create_polyline_streamline_FE_element_vertex_array(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field, struct FE_region *fe_region);
+	struct Computed_field *data_field, struct FE_region *fe_region,
+	struct Graphics_vertex_array *array);
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
 
 DESCRIPTION :
-Creates a <GT_polyline> streamline from the <coordinate_field> following
+Creates a <GT_polyline_vertex_buffers> streamline from the <coordinate_field> following
 <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
 the xi coordinates supplied. If <reverse_track> is true, the reverse of the
 stream vector is tracked, and the travel_scalar is made negative.
@@ -78,7 +80,7 @@ expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
 /**
- * Creates a <GT_surface> streamline from the <coordinate_field> following
+ * Fills the array with coordinates of the streamline from the <coordinate_field> following
  * <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
  * the xi coordinates supplied. If <reverse_track> is true, the reverse of the
  * stream vector is tracked, and the travel_scalar is made negative.
@@ -91,7 +93,7 @@ expected to have been set in the field_cache if needed.
  * @param line_scale_factors  Ignored. For future use.
  * @param line_orientation_scale_field  Ignored. For future use.
  */
-struct GT_surface *create_GT_surface_streamribbon_FE_element(
+int create_surface_streamribbon_FE_element_vertex_array(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
@@ -99,7 +101,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	struct FE_region *fe_region, enum cmzn_graphics_render_polygon_mode render_polygon_mode);
+	struct FE_region *fe_region, struct Graphics_vertex_array *array);
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
@@ -110,21 +112,6 @@ LAST MODIFIED : 17 March 1999
 
 DESCRIPTION :
 Adds a new flow particle structure to the start of the Streampoint list
-==============================================================================*/
-
-int update_flow_particle_list(struct Streampoint *point,
-	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,FE_value step,FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 17 March 1999
-
-DESCRIPTION :
-Uses RungeKutta integration to update the position of the given streampoints
-using the vector/gradient field and stepsize.  If time is 0 then the previous
-point positions are updated adding no new objects.  Otherwise a new pointset is
-created with the given timestamp.
-@param field_cache  cmzn_fieldcache for evaluating fields with. Time is
-expected to have been set in the field_cache if needed.
 ==============================================================================*/
 
 int element_to_particle(struct FE_element *element,

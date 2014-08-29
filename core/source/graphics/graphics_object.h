@@ -33,17 +33,6 @@ struct Graphical_material;
 struct cmzn_font;
 struct cmzn_scene;
 
-typedef enum
-/*******************************************************************************
-LAST MODIFIED : 16 February 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	g_SIMPLE,
-	g_LINKED
-} gtObjectLinkType;
-
 enum GT_object_type
 /*******************************************************************************
 LAST MODIFIED : 13 August 1998
@@ -57,29 +46,13 @@ without knowing which order the types are in.
 {
 	g_OBJECT_TYPE_INVALID,
 	g_OBJECT_TYPE_BEFORE_FIRST,
-	g_GLYPH_SET,
-	g_NURBS,
-	g_POINT,
-	g_POINTSET,
-	g_POLYLINE,
-	g_SURFACE,
-	g_USERDEF,
-	g_VOLTEX,
 	g_POLYLINE_VERTEX_BUFFERS,
+	g_SURFACE_VERTEX_BUFFERS,
+	g_GLYPH_SET_VERTEX_BUFFERS,
+	g_POINT_SET_VERTEX_BUFFERS,
+	g_POINT_VERTEX_BUFFERS,
 	g_OBJECT_TYPE_AFTER_LAST
 };
-
-enum GT_visibility_type
-/*******************************************************************************
-LAST MODIFIED : 22 September 1997
-
-DESCRIPTION :
-Flag for visibility of GT_objects when drawn on windows.
-==============================================================================*/
-{
-	g_INVISIBLE,
-	g_VISIBLE
-}; /* enum GT_visibility_type */
 
 typedef enum
 /*******************************************************************************
@@ -88,9 +61,9 @@ LAST MODIFIED : 26 June 1998
 DESCRIPTION :
 ==============================================================================*/
 {
-	g_GENERAL_POLYGON,
-	g_QUADRILATERAL,
-	g_TRIANGLE
+	g_GENERAL_POLYGON = 1,
+	g_QUADRILATERAL = 2, /* Deprecated, no longer supported in latest version  of OpenGL. */
+	g_TRIANGLE = 3
 } gtPolygonType;
 
 enum GT_surface_type
@@ -102,7 +75,6 @@ Must ensure all the types defined here are handled by functions:
   get_GT_surface_type_string      (in: graphics_object.c)
   get_GT_surface_type_from_string (in: graphics_object.c)
   makegtobj                       (in: makegtobj.c)
-  file_read_graphics_objects      (in: import_graphics_object.c)
 Have members BEFORE_FIRST and AFTER_LAST to enable iterating through the list
 without knowing which order the types are in.
 ==============================================================================*/
@@ -116,20 +88,6 @@ without knowing which order the types are in.
 	g_SH_DISCONTINUOUS_STRIP,
 	g_SH_DISCONTINUOUS_STRIP_TEXMAP,
 	g_SURFACE_TYPE_AFTER_LAST
-};
-
-enum GT_voltex_type
-/*******************************************************************************
-LAST MODIFIED : 3 May 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	g_VOLTEX_TYPE_INVALID,
-	g_VOLTEX_TYPE_BEFORE_FIRST,
-	g_VOLTEX_SHADED_TEXMAP,
-	g_VOLTEX_WIREFRAME_SHADED_TEXMAP,
-	g_VOLTEX_TYPE_AFTER_LAST
 };
 
 enum GT_polyline_type
@@ -157,28 +115,6 @@ without knowing which order the types are in.
 
 typedef enum
 /*******************************************************************************
-LAST MODIFIED : 16 February 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	g_RGBCOLOUR,
-	g_MATERIAL
-} gtAttributeType;
-
-typedef enum
-/*******************************************************************************
-LAST MODIFIED : 16 February 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	g_NOT_CREATED,
-	g_CREATED
-} gtStatusType;
-
-typedef enum
-/*******************************************************************************
 LAST MODIFIED : 6 July 1998
 
 DESCRIPTION :
@@ -191,17 +127,6 @@ transformation step is bypassed anyway.
 	g_ID,
 	g_NOT_ID
 } gtTransformType;
-
-typedef enum
-/*******************************************************************************
-LAST MODIFIED : 16 February 1996
-
-DESCRIPTION :
-==============================================================================*/
-{
-	g_PARENT,
-	g_CHILD
-} gtInheritanceType;
 
 typedef enum
 /*******************************************************************************
@@ -230,15 +155,10 @@ DESCRIPTION :
 	g_DERIVATIVE_MARKER
 } gtMarkerType;
 
-struct GT_glyph_set;
-struct GT_nurbs;
-struct GT_point;
-struct GT_pointset;
-struct GT_polyline;
 struct GT_polyline_vertex_buffers;
-struct GT_surface;
-struct GT_userdef;
-struct GT_voltex;
+struct GT_surface_vertex_buffers;
+struct GT_glyphset_vertex_buffers;
+struct GT_pointset_vertex_buffers;
 
 struct GT_object;
 
@@ -331,7 +251,6 @@ the time range valid.
 Global functions
 ----------------
 */
-const char *GT_object_get_name(struct GT_object *gt_object);
 
 enum GT_object_type GT_object_get_type(struct GT_object *gt_object);
 /*******************************************************************************
@@ -356,15 +275,6 @@ LAST MODIFIED : 17 June 2004
 
 DESCRIPTION :
 Sets the next object for the gt_object.
-==============================================================================*/
-
-int GT_object_compare_name(struct GT_object *gt_object,
-	char *name);
-/*******************************************************************************
-LAST MODIFIED : 17 June 2004
-
-DESCRIPTION :
-Returns true if the name of the <gt_object> matches the string <name> exactly.
 ==============================================================================*/
 
 const char *get_GT_object_type_string(enum GT_object_type object_type);
@@ -427,52 +337,6 @@ get_GT_surface_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 
-struct GT_glyph_set *morph_GT_glyph_set(ZnReal proportion,
-	struct GT_glyph_set *initial,struct GT_glyph_set *final);
-/*******************************************************************************
-LAST MODIFIED : 7 July 1998
-
-DESCRIPTION :
-Creates a new GT_glyph_set which is the interpolation of two GT_glyph_sets.
-The two glyph_sets must have the same glyph and data_type.
-==============================================================================*/
-
-struct GT_pointset *morph_GT_pointset(ZnReal proportion,
-	struct GT_pointset *initial,struct GT_pointset *final);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Creates a new GT_pointset which is the interpolation of two GT_pointsets.
-==============================================================================*/
-
-struct GT_polyline *morph_GT_polyline(ZnReal proportion,
-	struct GT_polyline *initial,struct GT_polyline *final);
-/*******************************************************************************
-LAST MODIFIED : 6 February 1996
-
-DESCRIPTION :
-Creates a new GT_polyline which is the interpolation of two GT_polylines.
-==============================================================================*/
-
-struct GT_surface *morph_GT_surface(ZnReal proportion,
-	struct GT_surface *initial,struct GT_surface *final);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Creates a new GT_surface which is the interpolation of two GT_surfaces.
-==============================================================================*/
-
-gtObject *morph_gtObject(char *name,ZnReal proportion,gtObject *initial,
-	gtObject *final);
-/*******************************************************************************
-LAST MODIFIED : 27 December 1995
-
-DESCRIPTION :
-Creates a new gtObject which is the interpolation of two gtObjects.
-==============================================================================*/
-
 struct GT_object *transform_GT_object(struct GT_object *object,
 	ZnReal *transformation);
 /*******************************************************************************
@@ -484,395 +348,37 @@ Only surfaces are implemented at the moment.
 Normals are not updated (wavefront export doesn't use normals anyway).
 ==============================================================================*/
 
-Triple *surfalloc(int,int,int);
-/*******************************************************************************
-LAST MODIFIED : 21 March 1993
-
-DESCRIPTION :
-==============================================================================*/
-
-Triple *linealloc(int,int);
-/*******************************************************************************
-LAST MODIFIED : 21 March 1993
-
-DESCRIPTION :
-==============================================================================*/
-
 PROTOTYPE_OBJECT_FUNCTIONS(GT_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_object);
 
-struct GT_glyph_set *CREATE(GT_glyph_set)(int number_of_points,
-	Triple *point_list, Triple *axis1_list, Triple *axis2_list,
-	Triple *axis3_list, Triple *scale_list, struct GT_object *glyph,
-	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
-	Triple base_size, Triple scale_factors, Triple offset,
-	struct cmzn_font *font, char **labels, Triple label_offset,
-	char *static_label_text[3], int n_data_components, GLfloat *data,
-	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
-	Triple *label_density_list,	int object_name, int *names);
-/*******************************************************************************
-Allocates memory and assigns fields for a GT_glyph_set. The glyph set shows
-the object <glyph> at the specified <number_of_points> with positions given in
-<point_list>, and principal axes in <axis1_list>, <axis2_list> and <axis3_list>.
-The magnitude of these axes control scaling of the glyph at each point, while
-their orientations - which need not be orthogonal - effect rotations and skew.
-There magnitudes also multiplied by the <scale_list> values, 1 value per axis,
-which permit certain glyphs to reverse direction with negative values.
-The optional <labels> parameter is an array of strings to be written beside each
-glyph, while the optional <data> of number <n_data_components> per glyph allows
-colouring of the glyphs by a spectrum.
-The optional <label_density_list> controls the number of labels in each direction
-for glyphs that output more than one label per glyph such as axes or graph grids.
-The glyph_set will be marked as coming from the <object_name>, a non-negative 
-integer identifier (or negative for no name), while the optional <names> contains
-san integer identifier per point.
-Note: All arrays passed to this routine are owned by the new GT_glyph_set
-and are deallocated by its DESTROY function.
-==============================================================================*/
 
-int DESTROY(GT_glyph_set)(struct GT_glyph_set **glyph_set_address);
-/*******************************************************************************
-LAST MODIFIED : 16 November 2000
+int DESTROY(GT_polyline_vertex_buffers)(struct GT_polyline_vertex_buffers **polyline);
+int DESTROY(GT_surface_vertex_buffers)(struct GT_surface_vertex_buffers **surface);
+int DESTROY(GT_glyphset_vertex_buffers)(struct GT_glyphset_vertex_buffers **glyphset);
+int DESTROY(GT_pointset_vertex_buffers)(struct GT_pointset_vertex_buffers **glyphset);
 
-DESCRIPTION :
-Frees the frees the memory for <**glyph_set_address> and sets
-<*glyph_set_address> to NULL.
-==============================================================================*/
-
-int GT_glyph_set_set_integer_identifier(struct GT_glyph_set *glyph_set,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-int GT_glyph_set_set_auxiliary_integer_identifier(struct GT_glyph_set *glyph_set,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the extra integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-struct GT_nurbs *CREATE(GT_nurbs)(void);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Creates a default GT_nurbs object.
-==============================================================================*/
-
-int DESTROY(GT_nurbs)(struct GT_nurbs **nurbs);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the memory for <**nurbs> and its fields and sets <*nurbs> to NULL.
-==============================================================================*/
-
-int GT_nurbs_set_integer_identifier(struct GT_nurbs *nurbs,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-int GT_nurbs_set_surface(struct GT_nurbs *nurbs,
-	int sorder, int torder, int sknotcount, int tknotcount,
-	ZnReal *sknots, ZnReal *tknots,
-	int scontrolcount, int tcontrolcount, ZnReal *control_points);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Sets the surface in a GT_nurbs structure.
-There must be sknotcount values in sknots,
-tknotcount values in tknots and scontrolcount * tcontrolcount values
-in the controlpoints, with the s direction varying more quickly.
-The arrays are assigned directly to the object and not copied.
-==============================================================================*/
-
-int GT_nurbs_set_nurb_trim_curve(struct GT_nurbs *nurbs,
-	int order, int knotcount, ZnReal *knots,
-	int control_count, ZnReal *control_points);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Sets a Nurb curve used to trim the Nurbs surface in a GT_nurbs structure.
-The arrays are assigned directly to the object and not copied.
-==============================================================================*/
-
-int GT_nurbs_set_piecewise_linear_trim_curve(struct GT_nurbs *nurbs,
-	int number_of_points, ZnReal *points);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Sets a piecewise linear curve used to trim the Nurbs surface in a GT_nurbs structure.
-The array is assigned directly to the object and not copied.
-==============================================================================*/
-
-int GT_nurbs_set_normal_control_points(struct GT_nurbs *nurbs,
-	ZnReal *normal_control_points);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Sets the control point array for the normals.  The array is assigned directly and
-the number of points is assumed to be the same as the geometry control
-points specified in set surface.  Each normal is assumed to have three components.
-==============================================================================*/
-
-int GT_nurbs_set_texture_control_points(struct GT_nurbs *nurbs,
-	ZnReal *texture_control_points);
-/*******************************************************************************
-LAST MODIFIED : 10 March 1999
-
-DESCRIPTION :
-Sets the control point array for the texture.  The array is assigned directly and
-the number of points is assumed to be the same as the geometry control
-points specified in set surface.  Each point is assumed to have three
-texture coordinates.
-==============================================================================*/
-
-struct GT_point *CREATE(GT_point)(Triple *position,char *text,
-	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,
-	int object_name, GLfloat *data, struct cmzn_font *font);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Allocates memory and assigns fields for a GT_point.  When the <marker_type> is
-g_DERIVATIVE_MARKER, there should be 4 points in <pointlist> - first point is
-for the <node>, next point is the end point for the xi1 derivative axis, etc.
-If the end point is the same as the node point it is assumed that there isn't a
-derivative in that xi direction.
-==============================================================================*/
-
-int DESTROY(GT_point)(struct GT_point **point);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the frees the memory for <**point> and sets <*point> to NULL.
-==============================================================================*/
-
-int GT_point_set_integer_identifier(struct GT_point *point,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-struct GT_pointset *CREATE(GT_pointset)(int n_pts,Triple *pointlist,char **text,
-	gtMarkerType marker_type,ZnReal marker_size,int n_data_components,GLfloat *data,
-	int *names, struct cmzn_font *font);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2005
-
-DESCRIPTION :
-Allocates memory and assigns fields for a GT_pointset.  When the <marker_type>
-is g_DERIVATIVE_MARKER, there should be 4*<n_pts> points in <pointlist> - in
-each group of four points the first for the nodes, the next is the end points
-for the xi1 derivative axis, etc.  If the end point is the same as the node
-point it is assumed that there isn't a derivative in that xi direction.
-==============================================================================*/
-
-int DESTROY(GT_pointset)(struct GT_pointset **pointset);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the frees the memory for <**pointset> and sets <*pointset> to NULL.
-==============================================================================*/
-
-int GT_pointset_set_integer_identifier(struct GT_pointset *point_set,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-int GT_pointset_get_point_list(struct GT_pointset *pointset, int *number_of_points,
-	Triple **positions);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-SAB Added to allow GT_pointset to be hidden but should be replaced.
-Gets the <number_of_points> and the <positions> of those points into the
-<pointset> object.  The <positions> pointer is copied directly from the internal
-storage.
-==============================================================================*/
-
-int GT_pointset_set_point_list(struct GT_pointset *pointset, int number_of_points,
-	Triple *positions);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-SAB Added to allow GT_pointset to be hidden but should be replaced.
-Sets the <number_of_points> and the <positions> of those points into the
-<pointset> object.  The <positions> pointer is copied directly overwriting the
-current storage and the internal data, text and names arrays are messed up.
-==============================================================================*/
-
-struct GT_polyline *CREATE(GT_polyline)(enum GT_polyline_type polyline_type,
-	int n_pts,Triple *pointlist,Triple *normallist,
-	int n_data_components,GLfloat *data);
-/*******************************************************************************
-LAST MODIFIED : 22 April 2004
-
-DESCRIPTION :
-Allocates memory and assigns fields for a graphics polyline.
-==============================================================================*/
-
-int DESTROY(GT_polyline)(struct GT_polyline **polyline);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the memory for <**polyline> and its fields and sets <*polyline> to NULL.
-==============================================================================*/
+int GT_glyphset_vertex_buffers_setup(GT_glyphset_vertex_buffers *glyphset,
+	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
+	Triple base_size, Triple scale_factors, Triple offset, cmzn_font_id font,
+	Triple label_offset, char *static_label_text[3],
+	int label_bounds_dimension, int label_bounds_components);
 
 /***************************************************************************//**
  * Creates the shared scene information for a GT_polyline_vertex_buffers.
  */
 struct GT_polyline_vertex_buffers *CREATE(GT_polyline_vertex_buffers)(
-	enum GT_polyline_type polyline_type);
+	enum GT_polyline_type polyline_type, int line_width);
 
-int GT_polyline_set_integer_identifier(struct GT_polyline *polyline,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
+struct GT_surface_vertex_buffers *CREATE(GT_surface_vertex_buffers)(
+	enum GT_surface_type surface_type, enum cmzn_graphics_render_polygon_mode render_polygon_mode);
 
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
+struct GT_glyphset_vertex_buffers *CREATE(GT_glyphset_vertex_buffers)();
 
-struct GT_surface *CREATE(GT_surface)(enum GT_surface_type surface_type,
-	enum cmzn_graphics_render_polygon_mode render_polygon_mode, gtPolygonType polytype,
-	int n_pts1,int n_pts2,Triple *pointlist,
-	Triple *normallist, Triple *tangentlist, Triple *texturelist,
-	int n_data_components,GLfloat *data);
-/*******************************************************************************
-LAST MODIFIED : 28 November 2003
-
-DESCRIPTION :
-Allocates memory and assigns fields for a graphics surface.
-==============================================================================*/
-
-int DESTROY(GT_surface)(struct GT_surface **surface);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the memory for <**surface> and sets <*surface> to NULL.
-==============================================================================*/
+struct GT_pointset_vertex_buffers *CREATE(GT_pointset_vertex_buffers)(
+	struct cmzn_font *font, gtMarkerType marker_type,
+	ZnReal marker_size);
 
 int GT_surface_set_integer_identifier(struct GT_surface *surface,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-struct GT_userdef *CREATE(GT_userdef)(void *data,
-	int (*destroy_function)(void **),int (*render_function)(void *));
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Allocates memory and assigns fields for a user-defined primitive.
-Any data required for rendering the primitive should be passed in the
-void *data parameter; a destroy_function should be given if dynamically
-allocated data is passed. The render function is called with the data as a
-parameter to render the user-defined primitive.
-==============================================================================*/
-
-int DESTROY(GT_userdef)(struct GT_userdef **userdef);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the memory for <**userdef> and its fields and sets <*userdef> to NULL.
-==============================================================================*/
-
-struct GT_voltex *CREATE(GT_voltex)(
-	int number_of_vertices,  struct VT_iso_vertex **vertex_list,
-	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int n_data_components, int n_texture_coordinates,
-	enum GT_voltex_type voltex_type);
-/*******************************************************************************
-LAST MODIFIED : 17 February 2006
-
-DESCRIPTION :
-Allocates memory and assigns fields for a graphics volume texture.
-==============================================================================*/
-
-int DESTROY(GT_voltex)(struct GT_voltex **voltex);
-/*******************************************************************************
-LAST MODIFIED : 19 June 1998
-
-DESCRIPTION :
-Frees the memory for <**voltex> and sets <*voltex> to NULL.
-???DB.  Free memory for fields ?
-==============================================================================*/
-
-int GT_voltex_set_integer_identifier(struct GT_voltex *voltex,
-	int identifier);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Sets the integer identifier used by the graphics to distinguish this object.
-==============================================================================*/
-
-int GT_voltex_get_number_of_triangles(struct GT_voltex *voltex);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Returns the number of polygons used in the GT_voltex.
-==============================================================================*/
-
-struct VT_iso_triangle **GT_voltex_get_triangle_list(struct GT_voltex *voltex);
-/*******************************************************************************
-LAST MODIFIED : 10 November 2005
-
-DESCRIPTION :
-Returns the internal pointer to the triangles used in the GT_voltex.
-==============================================================================*/
-
-int GT_voltex_get_number_of_vertices(struct GT_voltex *voltex);
-/*******************************************************************************
-LAST MODIFIED : 18 June 2004
-
-DESCRIPTION :
-Returns the number of vertices used in the GT_voltex.
-==============================================================================*/
-
-struct VT_iso_vertex **GT_voltex_get_vertex_list(struct GT_voltex *voltex);
-/*******************************************************************************
-LAST MODIFIED : 10 November 2005
-
-DESCRIPTION :
-Returns the internal pointer to the list of vertices used in the GT_voltex.
-==============================================================================*/
-
-int GT_voltex_set_integer_identifier(struct GT_voltex *voltex,
 	int identifier);
 /*******************************************************************************
 LAST MODIFIED : 18 June 2004
@@ -1025,21 +531,21 @@ does not already exist. If the <primitive> is NULL an empty time is added if \
 there is not already one. <primitive> is a NULL-terminated linked-list. \
 ============================================================================*/ \
 
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_glyph_set);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_nurbs);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_point);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_pointset);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_polyline);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_surface);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_userdef);
-PROTOTYPE_GT_OBJECT_ADD_FUNCTION(GT_voltex);
-
 /*************************************************************************//**
  * Adds <primitive> to <graphics_object>.  There can be only one time for this
  * type
  */
 int GT_OBJECT_ADD(GT_polyline_vertex_buffers)(
 	struct GT_object *graphics_object, struct GT_polyline_vertex_buffers *primitive);
+
+int GT_OBJECT_ADD(GT_surface_vertex_buffers)(
+	struct GT_object *graphics_object, struct GT_surface_vertex_buffers *primitive);
+
+int GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(
+	struct GT_object *graphics_object, struct GT_glyphset_vertex_buffers *primitive);
+
+int GT_OBJECT_ADD(GT_pointset_vertex_buffers)(
+	struct GT_object *graphics_object, struct GT_pointset_vertex_buffers *primitive);
 
 #if ! defined (SHORT_NAMES)
 #define GT_OBJECT_GET_(primitive_type) GT_object_get_ ## primitive_type
@@ -1058,10 +564,6 @@ DESCRIPTION : \
 Returns pointer to the primitive at the given time in graphics_object. \
 ???RC only used in spectrum_editor.c and should be replaced.
 ============================================================================*/
-
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_pointset);
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_polyline);
-PROTOTYPE_GT_OBJECT_GET_FUNCTION(GT_surface);
 
 typedef int (GT_object_primitive_object_name_conditional_function) \
 	(int object_name, void *user_data);
@@ -1118,57 +620,6 @@ The extracted primitives are returned in a linked-list. \
 If the primitive type has an auxiliary_object_name, it is matched, not the \
 object_name. \
 ============================================================================*/ \
-
-PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_glyph_set);
-PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_polyline);
-PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_surface);
-PROTOTYPE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION(GT_voltex);
-
-int GT_object_merge_GT_voltex(struct GT_object *graphics_object,
-	struct GT_voltex *voltex);
-/*******************************************************************************
-LAST MODIFIED : 26 October 2005
-
-DESCRIPTION :
-If <graphics_object> does not already contain a GT_voltex then the <voltex> is
-added in the normal way.  If a GT_voltex is already contained in the
-<graphics_object> then the new <voltex> is merged into the existing one and
-any co-located vertices are merged, stitching the two voltexes together.
-==============================================================================*/
-
-int GT_object_decimate_GT_voltex(struct GT_object *graphics_object,
-	double threshold_distance);
-/*******************************************************************************
-LAST MODIFIED : 11 November 2005
-
-DESCRIPTION :
-==============================================================================*/
-
-int GT_object_normalise_GT_voltex_normals(struct GT_object *graphics_object);
-/*******************************************************************************
-LAST MODIFIED : 28 October 2005
-
-DESCRIPTION :
-If a GT_voltex is contained in the <graphics_object> then normals are
-normalised for each of the VT_iso_vertices using the surrounding triangles.
-==============================================================================*/
-
-/***************************************************************************//**
- * Performs polygon reduction by converting surface into a GT_voltex and using
- * its decimation function, then converting back to a GT_surface which will
- * replace all previous GT_surface objects in graphics_object.
- *
- * @param graphics_object  Graphics object of type g_SURFACE. Note that only
- * a few surface types are supported in the conversion to voltex; see
- * GT_voltex_create_from_GT_surface().
- * @param threshold_distance  Parameter controlling decimation; see
- * GT_voltex_decimate_triangles().
- * @return  1 on success, 0 on failure. On success the previous surface list in
- * graphics_object is replaced by a single discontinuous triangle surface which
- * cannot be selectively edited by graphics name / element number.
- */
-int GT_object_decimate_GT_surface(struct GT_object *graphics_object,
-	double threshold_distance);
 
 /**
  * Gets the mode controlling how graphics are drawn depending on whether the
@@ -1304,24 +755,24 @@ struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object);
 struct cmzn_font;
 
 /**
- * Gets the font used by the first GT_glyph_set in the graphics object, if any.
+ * Gets the font used by the first GT_glyphset_vertex_buffer in the graphics object, if any.
  */
 struct cmzn_font *get_GT_object_font(struct GT_object *graphics_object);
 
 /**
- * Sets the font of all GT_glyph_set primitives in a GT_object.
+ * Sets the font of all GT_glyphset_vertex_buffer primitives in a GT_object.
  */
 int set_GT_object_font(struct GT_object *graphics_object,
 	struct cmzn_font *font);
 
 /**
- * Gets the glyph used by the first GT_glyph_set in the graphics object, if any.
+ * Gets the glyph used by the first GT_glyphset_vertex_buffer in the graphics object, if any.
  * @return  Glyph GT_object, non-accessed, or NULL on failure.
  */
 struct GT_object *get_GT_object_glyph(struct GT_object *graphics_object);
 
 /**
- * Sets the glyph of all GT_glyph_set primitives in a GT_object.
+ * Sets the glyph of all GT_glyphset_vertex_buffer primitives in a GT_object.
  */
 int set_GT_object_glyph(struct GT_object *graphics_object,
 	struct GT_object *glyph);
@@ -1388,27 +839,6 @@ Ensures the <spectrum> maximum and minimum is at least large enough to include
 the range of data values in <graphics_object>.
 ==============================================================================*/
 
-struct GT_object_compile_context *CREATE(GT_object_compile_context)(
-	ZnReal time, struct Graphics_buffer *graphics_buffer
-#if defined (OPENGL_API)
-	, unsigned int ndc_display_list, unsigned int end_ndc_display_list
-#endif /* defined (OPENGL_API) */
-	);
-/*******************************************************************************
-LAST MODIFIED : 12 October 2005
-
-DESCRIPTION :
-Creates a GT_object_compile_context structure.
-==============================================================================*/
-
-int DESTROY(GT_object_compile_context)(struct GT_object_compile_context **context);
-/*******************************************************************************
-LAST MODIFIED : 12 October 2005
-
-DESCRIPTION :
-Frees the memory for <**context> and sets <*context> to NULL.
-==============================================================================*/
-
 /**
  * Internal function for getting type enum for quickly matching standard glyphs for
  * point, line, cross, for fast alternative rendering
@@ -1422,5 +852,6 @@ enum cmzn_glyph_shape_type GT_object_get_glyph_type(
  */
 int GT_object_set_glyph_type(struct GT_object *gt_object,
 	enum cmzn_glyph_shape_type glyph_type);
+
 
 #endif /* !defined (GRAPHICS_OBJECT_H) */

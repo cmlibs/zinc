@@ -1961,6 +1961,8 @@ access this function.
 			 */
 			if (Graphics_library_check_extension(GL_ARB_vertex_buffer_object))
 			{
+#define USE_DISPLAY_LIST = 0
+#if defined (USE_DISPLAY_LIST)
 				if (Graphics_library_check_extension(GL_display_lists)
 					/* Only allow vertex buffers and display lists to be used
 					 * together on Nvidia and Mesa as other drivers (at least some ATI and Intel)
@@ -1981,6 +1983,11 @@ access this function.
 					rendering_data.renderer =
 						Render_graphics_opengl_create_vertex_buffer_object_renderer();
 				}
+
+#else
+				rendering_data.renderer =
+					Render_graphics_opengl_create_vertex_buffer_object_renderer();
+#endif
 			}
 			else
 #endif /* defined (GL_VERSION_1_5) */
@@ -2016,6 +2023,7 @@ access this function.
 						Render_graphics_opengl_create_glbeginend_renderer();
 				}
 			}
+
 			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);
 			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
 			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;

@@ -1174,12 +1174,21 @@ void cmzn_scene_font_change(struct cmzn_scene *scene,
 }
 
 int cmzn_scene_compile_graphics(cmzn_scene *scene,
-	Render_graphics_compile_members *renderer)
+	Render_graphics_compile_members *renderer, int force_rebuild)
 {
 	int return_code;
 
 	if (scene)
 	{
+		if (force_rebuild)
+		{
+			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+				cmzn_graphics_flag_for_full_rebuild, (void *)renderer,
+				scene->list_of_graphics);
+		}
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+			cmzn_graphics_compile_visible_graphics, (void *)renderer,
+			scene->list_of_graphics);
 		/* check whether scene contents need building */
 		return_code = cmzn_scene_build_graphics_objects(scene,
 			renderer->getScenefilter(), renderer->time, renderer->name_prefix);
@@ -1239,11 +1248,9 @@ DESCRIPTION :
 
 	if (scene)
 	{
-		glPushName(0);
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_execute_visible_graphics,
 			renderer, scene->list_of_graphics);
-		glPopName();
 		return_code = 1;
 	}
 	else
@@ -1290,6 +1297,37 @@ int cmzn_scene_render_child_scene(struct cmzn_scene *scene,
 
 	return (return_code);
 
+}
+
+int execute_scene_threejs_output(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer)
+{
+	if (scene)
+	{
+		renderer->cmzn_scene_execute_graphics(scene);
+		return 1;
+	}
+	return 0;
+}
+
+int execute_scene_exporter_output(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer)
+{
+	if (scene)
+	{
+		if (scene->time_notifier)
+		{
+			renderer->time = cmzn_timenotifier_get_time(scene->time_notifier);
+		}
+		else
+		{
+			renderer->time = 0;
+		}
+		renderer->cmzn_scene_execute_graphics(scene);
+		renderer->cmzn_scene_execute_child_scene(scene);
+		return 1;
+	}
+	return 0;
 }
 
 int execute_cmzn_scene(struct cmzn_scene *scene,
@@ -3523,4 +3561,27 @@ cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene)
 		return scenepicker;
 	}
 	return 0;
+}
+
+int Scene_render_threejs(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter, const char *filename,
+	int number_of_time_steps, double begin_time, double end_time, int face_colour, int export_data_value)
+{
+	Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
+		filename, number_of_time_steps, begin_time,end_time, face_colour, export_data_value) ;
+	renderer->Scene_compile(scene, scenefilter);
+	delete renderer;
+
+	return 1;
+}
+
+int Scene_render_webgl(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter, const char *filename)
+{
+	Render_graphics_opengl *renderer =	Render_graphics_opengl_create_webgl_renderer(filename);
+	renderer->Scene_compile(scene, scenefilter);
+	renderer->Scene_tree_execute(scene);
+	delete renderer;
+
+	return 1;
 }

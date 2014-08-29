@@ -359,7 +359,7 @@ int cmzn_graphics_to_graphics_object(
  * If the settings visibility flag is set and it has a graphics_object, the
  * graphics_object is compiled.
  * @param graphics The graphics to be edit
- * @param context_void Void pointer to the GT_object_compile_context
+ * @param renderer_void Void pointer to the renderer
  * @return If successfully compile visible setting returns 1, else 0
  */
 int cmzn_graphics_compile_visible_graphics(
@@ -627,5 +627,8 @@ int cmzn_graphics_set_renderer_highlight_functor(struct cmzn_graphics *graphics,
 
 int cmzn_graphics_remove_renderer_highlight_functor(struct cmzn_graphics *graphics,
 	void *renderer_void);
+
+int cmzn_graphics_flag_for_full_rebuild(
+	struct cmzn_graphics *graphics,void *dummy_void);
 
 #endif

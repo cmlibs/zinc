@@ -16,16 +16,10 @@ Header file for rendergl.c, GL rendering calls (API specific)
 
 #include "graphics/graphics_object.h"
 
-struct GT_surface *tile_GT_surface(struct GT_surface *surface, 
+/*
+struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
+	GT_surface_vertex_buffers *vb_surface, struct Graphics_vertex_array *array,
 	struct Texture_tiling *texture_tiling);
-/*******************************************************************************
-LAST MODIFIED : 29 November 2007
-
-DESCRIPTION :
-Split a GT_surface <surface> based on its texture coordinates and 
-<texture_tiling> boundaries.  Returns a surface or linked list of surfaces
-that have equivalent geometry separated into separate surfaces for separate
-tiles.
-==============================================================================*/
+*/
 
 #endif /* !defined (TILE_GRAPHICS_OBJECTS_H) */

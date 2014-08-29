@@ -419,7 +419,8 @@ static int Material_program_uniform_write_glsl_values(Material_program_uniform *
 #endif // defined (OPENGL_API)
 
 #if defined (OPENGL_API)
-static int Material_program_compile(struct Material_program *material_program)
+static int Material_program_compile(struct Material_program *material_program,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 4 July 2007
 
@@ -446,15 +447,7 @@ be shared by multiple materials using the same program.
 #endif /* defined (TESTING_PROGRAM_STRINGS) */
 		if (!material_program->compiled)
 		{
-#if defined GL_ARB_vertex_program && defined GL_ARB_fragment_program || defined GL_VERSION_2_0
-
-#if defined GL_ARB_fragment_program && defined GL_ARB_vertex_program
-			 if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
-				  Graphics_library_check_extension(GL_ARB_vertex_program))
-			 {
-				 material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
-			 }
-#endif
+#if (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program) || defined GL_VERSION_2_0
 #if defined (GL_VERSION_2_0)
 			 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_ARB)
 			 {
@@ -463,7 +456,17 @@ be shared by multiple materials using the same program.
 					 material_program->shader_type=MATERIAL_PROGRAM_SHADER_GLSL;
 				 }
 			 }
-#endif /* defined GL_ARB_vertex_program && defined GL_ARB_fragment_program */
+#endif
+#if defined GL_ARB_fragment_program && defined GL_ARB_vertex_program
+			 if (material_program->shader_type!=MATERIAL_PROGRAM_SHADER_GLSL)
+			 {
+				 if (Graphics_library_check_extension(GL_ARB_fragment_program) &&
+				 Graphics_library_check_extension(GL_ARB_vertex_program))
+			 	 {
+				 	 material_program->shader_type=MATERIAL_PROGRAM_SHADER_ARB;
+			 	 }
+			 }
+#endif
 			 if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL ||
 					 material_program->shader_type==MATERIAL_PROGRAM_SHADER_ARB)
 			 {
@@ -477,7 +480,7 @@ be shared by multiple materials using the same program.
 				char *components_string, *fragment_program_string = NULL,
 						*vertex_program_string = NULL, *geometry_program_string = NULL;
 				enum Graphics_library_vendor_id vendor_id;
-				const char *colour_texture_string[] = {"double", "vec2", "vec3", "vec4"};
+				const char *colour_texture_string[] = {"float", "vec2", "vec3", "vec4"};
 				int colour_texture_dimension = 0, components_error, number_of_inputs,
 					error;
 
@@ -595,8 +598,8 @@ be shared by multiple materials using the same program.
 								 "void main()\n"
 								 "{\n"
 								 "  vec4 eyeVertex, finalCol;\n"
-								 "  double NdotHV;\n"
-								 "  double Len, attenuation;\n"
+								 "  float NdotHV;\n"
+								 "  float Len, attenuation;\n"
 								 "  eyeVertex = gl_ModelViewMatrix * gl_Vertex;\n"
 								 "  eyeNormal = normalize(gl_NormalMatrix * gl_Normal);\n"
 								 "  lightVec = gl_LightSource[0].position.xyz - eyeVertex.xyz;\n"
@@ -613,7 +616,7 @@ be shared by multiple materials using the same program.
 								 "    * gl_FrontMaterial.specular;\n"
 								 "  finalCol = finalCol * attenuation + gl_FrontMaterial.emission\n"
 								 "     + gl_FrontMaterial.ambient * gl_LightModel.ambient;\n"
-								 "  finalCol.a = gl_LightSource[0].diffuse.a * gl_Color.a;\n"
+								"  finalCol.a = gl_LightSource[0].diffuse.a * gl_Color.a;\n"
 								 , &error);
 					 }
 					 else
@@ -831,9 +834,9 @@ be shared by multiple materials using the same program.
 								 "\n"
 								 "void main()\n"
 								 "{\n"
-								 "  double perspective, texel, NdotL;\n"
+								 "  float perspective, texel, NdotL;\n"
 								 "  vec4 tex4coord, eyespaceCoord, finalCol;\n"
-								 "  perspective = double(1.0) / NewCoord.w;\n"
+								 "  perspective = float(1.0) / NewCoord.w;\n"
 								 "  eyespaceCoord = NewCoord;\n"
 								 "  eyespaceCoord = eyespaceCoord * perspective * 0.5 + 0.5;\n"
 								 "  NdotL = dot(normalize(eyeNormal),normalize(lightVec));\n"
@@ -1270,7 +1273,7 @@ be shared by multiple materials using the same program.
 								 "  ambient = gl_FrontMaterial.ambient * gl_LightSource[0].ambient;\n"
 								 "  ambientGlobal = gl_LightModel.ambient * gl_FrontMaterial.ambient;\n"
 								 "  vec4 ecPos = gl_ModelViewMatrix * gl_Vertex;\n"
-								 "  vec3 aux = vec3(gl_LightSource[0].position - ecPos);\n"
+								 "  vec3 aux = gl_LightSource[0].position.xyz - ecPos.xyz;\n"
 								 , &error);
 					 }
 					 else
@@ -1346,8 +1349,8 @@ be shared by multiple materials using the same program.
 							if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 							{
 								 append_string(&vertex_program_string,
-										"  gl_TexCoord[3].xyz = normalize(gl_NormalMatrix * gl_Normal);\n"
-										"  gl_TexCoord[2].xyz = vec3(normalize(-ecPos));\n"
+										"  gl_TexCoord[3].xyz = normalize((gl_ModelViewMatrixInverseTranspose * vec4(gl_Normal,0.0)).xyz);\n"
+										"  gl_TexCoord[2].xyz = vec3(normalize(-ecPos.xyz));\n"
 										"  gl_TexCoord[1].xyz = aux;\n"
 										, &error);
 							}
@@ -1463,7 +1466,6 @@ be shared by multiple materials using the same program.
 								 , &error);
 						 }
 
-
 						 if ((MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_1 |
 									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_2 |
 									 MATERIAL_PROGRAM_CLASS_DEPENDENT_TEXTURE_3 |
@@ -1521,8 +1523,8 @@ be shared by multiple materials using the same program.
 								"{\n"
 								"  vec4 color;\n"
 								"  vec3 n, reflV, viewV, ldir;\n"
-								"  double NdotL, NdotHV, len;\n"
-								"  double att;\n"
+								"  float NdotL, NdotHV, len;\n"
+								"  float att;\n"
 								"\n"
 								, &error);
 					}
@@ -1709,8 +1711,8 @@ be shared by multiple materials using the same program.
 										 "  n = 2.0 * tex2 - 1.0;\n"
 										 "  n = normalize(n);\n"
 										 "//Reverse the texture normal direction component if required\n"
-										 " if (!gl_FrontFacing)\n"
-										 "   n.z = -1.0 * n.z;\n"
+										 "  if (!gl_FrontFacing)\n"
+										 "    n.z = -1.0 * n.z;\n"
 										 , &error);
 							 }
 						}
@@ -1833,7 +1835,7 @@ be shared by multiple materials using the same program.
 									 }
 									 else
 									 {
-											/* double type tex */
+											/* float type tex */
 											append_string(&fragment_program_string,
 												 "  color.xyz = color.xyz * tex;\n"
 												 , &error);
@@ -1911,7 +1913,7 @@ be shared by multiple materials using the same program.
 								 }
 								 else
 								 {
-										/* double type tex */
+										/* float type tex */
 										append_string(&fragment_program_string,
 											 "  color.xyz = vec3(tex);\n"
 											 , &error);
@@ -2033,7 +2035,7 @@ be shared by multiple materials using the same program.
 													 "  //starting at the middle of the first texel and finishing in the\n"
 													 "  //middle of the last texel\n"
 													 "  vec4  offsetcolour = color.%s * lookup_scales + lookup_offsets;\n"
-													 "  vec4  dependentlookup = texture1D(texture1, double(offsetcolour));\n",
+													 "  vec4  dependentlookup = texture1D(texture1, float(offsetcolour));\n",
 													 components_string);
 										 }
 										 else
@@ -2168,7 +2170,7 @@ be shared by multiple materials using the same program.
 									   "  //Offset and scale to counteract effect of linear interpolation\n"
 									   "  //starting at the middle of the first texel and finishing in the\n"
 									   "  //middle of the last texel\n"
-									   "  double  offsetcolour;\n"
+									   "  float  offsetcolour;\n"
 										 "  vec4  dependentlookup;\n", &error);
 									char lookup_one_component_string[] =
 										 "  offsetcolour = color.%s * lookup_scales.x + lookup_offsets.x;\n"
@@ -2473,7 +2475,7 @@ be shared by multiple materials using the same program.
 									"  vec3 eyeNormal = gl_NormalMatrix * n;\n"
 									"  if (!gl_FrontFacing)\n"
 									"    eyeNormal.z = -1.0 * eyeNormal.z;\n"
-									"  double normalMag = dot (eyeNormal, eyeNormal);\n"
+									"  float normalMag = dot (eyeNormal, eyeNormal);\n"
 									"  eyeNormal = normalize(eyeNormal);\n"
 									"  len = length(vec3(gl_TexCoord[1]));\n"
 									"  att = 1.0 / (gl_LightSource[0].constantAttenuation +\n"
@@ -2760,14 +2762,17 @@ be shared by multiple materials using the same program.
 								display_message(INFORMATION_MESSAGE,"Vertex program info:\n%s\n",infoLog);
 								free(infoLog);
 							}
-							glGetShaderiv(material_program->geometry_program, GL_INFO_LOG_LENGTH,&infologLength);
-							if (infologLength > 0)
+							if (material_program->geometry_program)
 							{
-								infoLog = (char *)malloc(infologLength);
-								glGetShaderInfoLog(material_program->geometry_program,
-									infologLength, &charsWritten, infoLog);
-								display_message(INFORMATION_MESSAGE,"Geometry program info:\n%s\n",infoLog);
-								free(infoLog);
+								glGetShaderiv(material_program->geometry_program, GL_INFO_LOG_LENGTH,&infologLength);
+								if (infologLength > 0)
+								{
+									infoLog = (char *)malloc(infologLength);
+									glGetShaderInfoLog(material_program->geometry_program,
+										infologLength, &charsWritten, infoLog);
+									display_message(INFORMATION_MESSAGE,"Geometry program info:\n%s\n",infoLog);
+									free(infoLog);
+								}
 							}
 							glGetShaderiv(material_program->fragment_program, GL_INFO_LOG_LENGTH,&infologLength);
 							if (infologLength > 0)
@@ -2779,37 +2784,42 @@ be shared by multiple materials using the same program.
 								free(infoLog);
 							}
 						}
-
-						if (!material_program->display_list)
+						if (renderer->use_display_list)
 						{
-							material_program->display_list = glGenLists(1);
+							if (!material_program->display_list)
+							{
+								material_program->display_list = glGenLists(1);
+							}
+							glNewList(material_program->display_list, GL_COMPILE);
+							glLinkProgram(material_program->glsl_current_program);
+							glUseProgram(material_program->glsl_current_program);
+							glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
+							glEndList();
 						}
-						glNewList(material_program->display_list, GL_COMPILE);
-						glLinkProgram(material_program->glsl_current_program);
-						glUseProgram(material_program->glsl_current_program);
-						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
-						glEndList();
 					}
 					else
 					{
-						if (!material_program->display_list)
+						if (renderer->use_display_list)
 						{
-							material_program->display_list = glGenLists(/*number_of_lists*/1);
+							if (!material_program->display_list)
+							{
+								material_program->display_list = glGenLists(/*number_of_lists*/1);
+							}
+
+							glNewList(material_program->display_list, GL_COMPILE);
+
+							glEnable(GL_VERTEX_PROGRAM_ARB);
+							glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+									material_program->vertex_program);
+
+							glEnable(GL_FRAGMENT_PROGRAM_ARB);
+							glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+									material_program->fragment_program);
+
+							glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+
+							glEndList();
 						}
-
-						glNewList(material_program->display_list, GL_COMPILE);
-
-						glEnable(GL_VERTEX_PROGRAM_ARB);
-						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
-							material_program->vertex_program);
-
-						glEnable(GL_FRAGMENT_PROGRAM_ARB);
-						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
-							material_program->fragment_program);
-
-						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
-
-						glEndList();
 					}
 				}
 				material_program->compiled = 1;
@@ -2847,7 +2857,8 @@ be shared by multiple materials using the same program.
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-static int Material_program_execute(struct Material_program *material_program)
+static int Material_program_execute(struct Material_program *material_program,
+	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 20 November 2003
 
@@ -2861,16 +2872,52 @@ DESCRIPTION :
 	{
 		if (material_program->compiled)
 		{
-			if (material_program->display_list)
+			if (renderer->use_display_list)
 			{
-				glCallList(material_program->display_list);
+				if (material_program->display_list)
+				{
+					glCallList(material_program->display_list);
+				}
+			}
+			else
+			{
+				if (material_program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
+				{
+					if (material_program->glsl_current_program)
+					{
+						GLint linked= 0;
+						glGetProgramiv(material_program->glsl_current_program, GL_LINK_STATUS, &linked);
+						if (linked)
+						{
+							glUseProgram(material_program->glsl_current_program);
+						}
+						else
+						{
+							glLinkProgram(material_program->glsl_current_program);
+							glUseProgram(material_program->glsl_current_program);
+						}
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE);
+					}
+				}
+				else
+				{
+					if (material_program->vertex_program && material_program->fragment_program)
+					{
+						glEnable(GL_VERTEX_PROGRAM_ARB);
+						glBindProgramARB(GL_VERTEX_PROGRAM_ARB,
+								material_program->vertex_program);
+
+						glEnable(GL_FRAGMENT_PROGRAM_ARB);
+						glBindProgramARB(GL_FRAGMENT_PROGRAM_ARB,
+								material_program->fragment_program);
+						glEnable(GL_VERTEX_PROGRAM_TWO_SIDE_ARB);
+					}
+				}
 			}
 			return_code = 1;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"Material_program_execute.  Display list not current");
 			return_code = 0;
 		}
 	}
@@ -2891,7 +2938,7 @@ DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,const char *,strcm
 DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
 
 #if defined (OPENGL_API)
-static int direct_render_Graphical_material(struct Graphical_material *material,
+int direct_render_Graphical_material(Graphical_material *material,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2002
@@ -3008,7 +3055,7 @@ material results.
 
 		if (material->program)
 		{
-			 Material_program_execute(material->program);
+			 Material_program_execute(material->program, renderer);
 #if defined (GL_VERSION_2_0)
 			 if (material->program->shader_type==MATERIAL_PROGRAM_SHADER_GLSL)
 			 {
@@ -3051,7 +3098,7 @@ material results.
 #endif /* defined (GL_VERSION_2_0) */
 			if (material->image_texture.texture)
 			{
-#if defined(GL_VERSION_2_0) || defined GL_ARB_vertex_program && defined GL_ARB_fragment_program
+#if defined(GL_VERSION_2_0) || (defined GL_ARB_vertex_program && defined GL_ARB_fragment_program)
 				 /* Adjust the scaling by the ratio from the original texel
 					size to the actually rendered texture size so that
 					we are independent of texture reduction. */
@@ -5870,7 +5917,7 @@ int Material_compile_members_opengl(Graphical_material *material,
 
 			if (material->program)
 			{
-				Material_program_compile(material->program);
+				Material_program_compile(material->program, renderer);
 			}
 		}
 		else
@@ -5966,7 +6013,7 @@ will work with order_independent_transparency.
 		/* Only do the materials that have been compiled already as the scene
 			is compiled so presumably uncompiled materials are not used. */
 		if ((GRAPHICS_COMPILED == material->compile_status) &&
-			material->display_list)
+			(!data->renderer->use_display_list || material->display_list))
 		{
 			unmodified_program = material->program;
 			if (material->program)
@@ -6085,43 +6132,90 @@ will work with order_independent_transparency.
 				}
 				if (!material->program->compiled)
 				{
-					Material_program_compile(material->program);
+					Material_program_compile(material->program, data->renderer);
 				}
 			}
 
-			glNewList(material->display_list,GL_COMPILE);
-			if (material->program &&
-				material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+			if (data->renderer->use_display_list)
 			{
-				if (material->image_texture.texture)
+				glNewList(material->display_list,GL_COMPILE);
+				if (material->program &&
+						material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
 				{
-					Texture_execute_vertex_program_environment(material->image_texture.texture,
-						0);
-				}
-			}
-			direct_render_Graphical_material(material,data->renderer);
-			if (material->program &&
-				material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
-			{
-				GLint loc1;
-				if (data && data->renderer)
-				{
-					if (glIsProgram(material->program->glsl_current_program))
+					if (material->image_texture.texture)
 					{
-						loc1 = glGetUniformLocation((GLuint)material->program->glsl_current_program,"texturesize");
+						Texture_execute_vertex_program_environment(material->image_texture.texture,
+							0);
+					}
+				}
+				direct_render_Graphical_material(material,data->renderer);
+				if (material->program &&
+						material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL)
+				{
+					GLint loc1;
+					if (data && data->renderer)
+					{
+						if (glIsProgram(material->program->glsl_current_program))
+						{
+							loc1 = glGetUniformLocation((GLuint)material->program->glsl_current_program,"texturesize");
+							if (loc1>-1)
+							{
+								glUniform4f(loc1, static_cast<GLfloat>(data->renderer->viewport_width),
+										static_cast<GLfloat>(data->renderer->viewport_height), 1.0, 1.0);
+							}
+							loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
+							if (loc1 != (GLint)-1)
+							{
+								glUniform1i(loc1, 3);
+							}
+						}
+					}
+				}
+				glEndList();
+			}
+			else
+			{
+				if (material->program)
+				{
+					if (material->image_texture.texture)
+					{
+						if (material->program->shader_type != MATERIAL_PROGRAM_SHADER_ARB &&
+								material->program->glsl_current_program)
+						{
+							Texture_execute_vertex_program_environment(material->image_texture.texture,
+								material->program->glsl_current_program);
+							GLint loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture0");
+							if (loc1 != (GLint)-1)
+								 glUniform1i(loc1, 0);
+						}
+						else
+						{
+							Texture_execute_vertex_program_environment(material->image_texture.texture,
+								0);
+						}
+					}
+				}
+				direct_render_Graphical_material(material, data->renderer);
+				if (material->program)
+				{
+					if (material->program->shader_type != MATERIAL_PROGRAM_SHADER_ARB)
+					{
+						GLint loc1=-1;
+						loc1 = glGetUniformLocation(material->program->glsl_current_program,"texturesize");
 						if (loc1>-1)
 						{
-							glUniform4f(loc1, data->renderer->buffer_width, data->renderer->buffer_height, 1.0, 1.0);
+							glUniform4f(loc1, static_cast<GLfloat>(data->renderer->viewport_width),
+									static_cast<GLfloat>(data->renderer->viewport_height), 1.0, 1.0);
 						}
 						loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
 						if (loc1 != (GLint)-1)
 						{
+
 							glUniform1i(loc1, 3);
 						}
 					}
 				}
 			}
-			glEndList();
 			material->program = unmodified_program;
 		}
 	}
@@ -6191,14 +6285,14 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 			}
 #if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
 			if (material->spectrum && (
-				material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
-				material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
+					material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
+					material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
 			{
 				int i, lookup_dimensions, *lookup_sizes;
-				ZnReal values[4];
+				GLfloat values[4];
 
 				Spectrum_get_colour_lookup_sizes(material->spectrum,
-					&lookup_dimensions, &lookup_sizes);
+						&lookup_dimensions, &lookup_sizes);
 				/* Set the offsets = 0.5 / size */
 				for (i = 0 ; i < lookup_dimensions ; i++)
 				{
@@ -6211,7 +6305,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 				if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
 				{
 					glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
-						values[0], values[1], values[2], values[3]);
+							values[0], values[1], values[2], values[3]);
 				}
 				else
 				{
@@ -6222,7 +6316,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 						if (loc1 != (GLint)-1)
 						{
 							glUniform4f(loc1, values[0], values[1],
-								values[2], values[3]);
+									values[2], values[3]);
 						}
 					}
 				}
@@ -6238,7 +6332,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 				if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
 				{
 					glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
-						values[0], values[1], values[2], values[3]);
+							values[0], values[1], values[2], values[3]);
 				}
 				else
 				{
@@ -6249,12 +6343,13 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 						if (loc2 != (GLint)-1)
 						{
 							glUniform4f(loc2, values[0], values[1],
-								values[2], values[3]);
+									values[2], values[3]);
 						}
 					}
 				}
 				DEALLOCATE(lookup_sizes);
 			}
+
 		}
 #endif /* defined GL_ARB_fragment_program */
 		return_code = direct_render_Graphical_material(material, renderer);

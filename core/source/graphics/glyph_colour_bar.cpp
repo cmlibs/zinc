@@ -15,6 +15,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "graphics/glyph_colour_bar.hpp"
+#include "graphics/graphics_vertex_array.hpp"
 #include "graphics/spectrum.h"
 #include "general/message.h"
 
@@ -58,9 +59,9 @@ GT_object *create_Spectrum_colour_bar(
 		return_code;
 	ZnReal spectrum_value;
 	GLfloat *data,*datum;
-	struct GT_pointset *pointset;
-	struct GT_polyline *polyline;
-	struct GT_surface *surface;
+	struct GT_pointset_vertex_buffers *pointset;
+	struct GT_polyline_vertex_buffers *polyline;
+	struct GT_surface_vertex_buffers *surface;
 	Triple base,centre,front_axis,*point,*points,*normal,*normalpoints,
 		scaled_axis,scaled_front,scaled_side;
 
@@ -120,9 +121,9 @@ GT_object *create_Spectrum_colour_bar(
 		}
 		if (return_code)
 		{
-			bar_graphics_object = CREATE(GT_object)(name,g_SURFACE,bar_material);
-			tick_graphics_object = CREATE(GT_object)("ticks",g_POLYLINE,tick_label_material);
-			label_graphics_object = CREATE(GT_object)("labels",g_POINTSET,tick_label_material);
+			bar_graphics_object = CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,bar_material);
+			tick_graphics_object = CREATE(GT_object)("ticks",g_POLYLINE_VERTEX_BUFFERS,tick_label_material);
+			label_graphics_object = CREATE(GT_object)("labels",g_POINT_SET_VERTEX_BUFFERS,tick_label_material);
 			if (bar_graphics_object && tick_graphics_object && label_graphics_object)
 			{
 				GT_object_set_next_object(bar_graphics_object, tick_graphics_object);
@@ -141,7 +142,7 @@ GT_object *create_Spectrum_colour_bar(
 			/* create the colour bar */
 			points=(Triple *)NULL;
 			data=0;
-			surface=(struct GT_surface *)NULL;
+			surface=(struct GT_surface_vertex_buffers *)NULL;
 			points_along_bar = 109;
 			points_around_bar = 25;
 			if (ALLOCATE(points,Triple,points_along_bar*points_around_bar)&&
@@ -199,15 +200,18 @@ GT_object *create_Spectrum_colour_bar(
 						datum+=(component_number + 1);
 					}
 				}
-				return_code=(
-					(surface=CREATE(GT_surface)(g_SHADED,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,g_QUADRILATERAL,
-						points_around_bar,points_along_bar,points,normalpoints,
-						/*tangentpoints*/(Triple *)NULL,
-						/*texturepoints*/(Triple *)NULL,
-						/*n_data_components*/(component_number + 1),data)) &&
-					set_GT_object_default_material(bar_graphics_object,bar_material) &&
-					set_GT_object_Spectrum(bar_graphics_object,spectrum)&&
-					GT_OBJECT_ADD(GT_surface)(bar_graphics_object,time,surface));
+				surface = CREATE(GT_surface_vertex_buffers)(
+					g_SHADED,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+				return_code = ((fill_surface_graphics_vertex_array(GT_object_get_vertex_set(bar_graphics_object),
+						g_TRIANGLE, points_around_bar, points_along_bar,
+						points,normalpoints,/*tangentpoints*/(Triple *)NULL,
+						 /*texturepoints*/(Triple *)NULL, (component_number + 1), data)) &&
+						 (set_GT_object_default_material(bar_graphics_object,bar_material)) &&
+						 (set_GT_object_Spectrum(bar_graphics_object,spectrum))&&
+						 (GT_OBJECT_ADD(GT_surface_vertex_buffers)(bar_graphics_object, surface)));
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
+				DEALLOCATE(data);
 			}
 			else
 			{
@@ -219,12 +223,7 @@ GT_object *create_Spectrum_colour_bar(
 					"create_Spectrum_colour_bar.  Could not build spectrum bar");
 				if (surface)
 				{
-					DESTROY(GT_surface)(&surface);
-				}
-				else
-				{
-					DEALLOCATE(points);
-					DEALLOCATE(data);
+					DESTROY(GT_surface_vertex_buffers)(&surface);
 				}
 			}
 		}
@@ -243,7 +242,7 @@ GT_object *create_Spectrum_colour_bar(
 		{
 			/* create the scale ticks */
 			points=(Triple *)NULL;
-			polyline=(struct GT_polyline *)NULL;
+			polyline=(struct GT_polyline_vertex_buffers *)NULL;
 			if (ALLOCATE(points,Triple,2*number_of_ticks))
 			{
 				point=points;
@@ -259,13 +258,14 @@ GT_object *create_Spectrum_colour_bar(
 					(*(point+1))[2]=(*point)[2]+scaled_side[2];
 					point += 2;
 				}
-				return_code=(
-					(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-						number_of_ticks,points,/*normalpoints*/(Triple *)NULL,
+				polyline = CREATE(GT_polyline_vertex_buffers)(g_PLAIN_DISCONTINUOUS, 1);
+				return_code=((fill_line_graphics_vertex_array(GT_object_get_vertex_set(tick_graphics_object),
+						(unsigned int)(number_of_ticks * 2),points,/*normalpoints*/(Triple *)NULL,
 						/*n_data_components*/0,(GLfloat *)NULL))&&
-					set_GT_object_default_material(tick_graphics_object,
-						tick_label_material) &&
-					GT_OBJECT_ADD(GT_polyline)(tick_graphics_object,time,polyline));
+					(set_GT_object_default_material(tick_graphics_object,
+						tick_label_material)) &&
+					(GT_OBJECT_ADD(GT_polyline_vertex_buffers)(tick_graphics_object,polyline)));
+					DEALLOCATE(points);
 			}
 			else
 			{
@@ -277,11 +277,7 @@ GT_object *create_Spectrum_colour_bar(
 					"create_Spectrum_colour_bar.  Could not build scale ticks");
 				if (polyline)
 				{
-					DESTROY(GT_polyline)(&polyline);
-				}
-				else
-				{
-					DEALLOCATE(points);
+					DESTROY(GT_polyline_vertex_buffers)(&polyline);
 				}
 			}
 		}
@@ -294,7 +290,7 @@ GT_object *create_Spectrum_colour_bar(
 			/* create the scale labels */
 			points=(Triple *)NULL;
 			labels=(char **)NULL;
-			pointset=(struct GT_pointset *)NULL;
+			pointset=(struct GT_pointset_vertex_buffers *)NULL;
 			allocated_labels=0;
 			if (ALLOCATE(points,Triple,number_of_ticks)&&
 				ALLOCATE(labels,char *,number_of_ticks))
@@ -322,12 +318,17 @@ GT_object *create_Spectrum_colour_bar(
 						return_code=0;
 					}
 				}
-				return_code=((pointset=
-					CREATE(GT_pointset)(number_of_ticks,points,labels,g_NO_MARKER,0.0,
-						/*n_data_components*/0,(GLfloat *)NULL,(int *)NULL, font)) &&
-					set_GT_object_default_material(label_graphics_object,
-						tick_label_material) &&
-					GT_OBJECT_ADD(GT_pointset)(label_graphics_object,time,pointset));
+				GT_pointset_vertex_buffers *pointsets = CREATE(GT_pointset_vertex_buffers)(font, g_NO_MARKER, 0.0);
+				return_code=((fill_pointset_graphics_vertex_array(GT_object_get_vertex_set(label_graphics_object),
+					(unsigned int)number_of_ticks, points, labels, /*n_data_components*/0,(GLfloat *)NULL))&&
+					(set_GT_object_default_material(label_graphics_object, tick_label_material)) &&
+					(GT_OBJECT_ADD(GT_pointset_vertex_buffers)(label_graphics_object,pointsets)));
+				DEALLOCATE(points);
+				for (i=0;i<allocated_labels;i++)
+				{
+					DEALLOCATE(labels[i]);
+				}
+				DEALLOCATE(labels);
 			}
 			else
 			{
@@ -339,16 +340,7 @@ GT_object *create_Spectrum_colour_bar(
 					"create_Spectrum_colour_bar.  Could not build scale labels");
 				if (pointset)
 				{
-					DESTROY(GT_pointset)(&pointset);
-				}
-				else
-				{
-					DEALLOCATE(points);
-					for (i=0;i<allocated_labels;i++)
-					{
-						DEALLOCATE(labels[i]);
-					}
-					DEALLOCATE(labels);
+					DESTROY(GT_pointset_vertex_buffers)(&pointset);
 				}
 			}
 			if (!return_code)

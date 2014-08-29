@@ -15,6 +15,8 @@
 #include "graphics/scene_coordinate_system.hpp"
 #include "graphics/triangle_mesh.hpp"
 
+struct Graphics_buffer;
+
 /***************************************************************************//**
  * Common code for all OpenGL based implementations.
  */

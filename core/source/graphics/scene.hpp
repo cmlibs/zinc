@@ -19,7 +19,13 @@ int cmzn_scene_compile_scene(cmzn_scene *scene,
 	Render_graphics_compile_members *renderer);
 
 int cmzn_scene_compile_graphics(cmzn_scene *scene,
-	Render_graphics_compile_members *renderer);
+	Render_graphics_compile_members *renderer, int force_rebuild);
+
+int execute_scene_exporter_output(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
+
+int execute_scene_threejs_output(struct cmzn_scene *scene,
+	Render_graphics_opengl *renderer);
 
 int execute_cmzn_scene(cmzn_scene *scene,
 	Render_graphics_opengl *renderer);

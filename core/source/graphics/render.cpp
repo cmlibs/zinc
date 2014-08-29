@@ -41,5 +41,5 @@ int Render_graphics_compile_members::cmzn_scene_compile(cmzn_scene *scene)
 
 int Render_graphics_compile_members::cmzn_scene_compile_members(cmzn_scene *scene)
 {
-	return cmzn_scene_compile_graphics(scene, this);
+	return cmzn_scene_compile_graphics(scene, this, /*force_rebuild*/0);
 }

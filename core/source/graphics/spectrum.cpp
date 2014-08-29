@@ -1658,25 +1658,23 @@ Uses the <spectrum> to calculate RGBA components to represent the
 	ENTER(spectrum_value_to_rgba);
 	if (spectrum)
 	{
-		GLfloat frgba[4];
 		if (spectrum->overwrite_colour)
 		{
 			rgba[0] = 0.0;
 			rgba[1] = 0.0;
 			rgba[2] = 0.0;
 			rgba[3] = 1.0;
-			CAST_TO_OTHER(frgba, rgba, GLfloat, 4);
 		}
+		GLfloat frgba[4];
+		CAST_TO_OTHER(frgba,rgba,GLfloat,4);
 		render_data.rgba = frgba;
 		GLfloat *fData = new GLfloat[number_of_data_components];
 		CAST_TO_OTHER(fData,data,GLfloat,number_of_data_components);
 		render_data.data = fData;
 		render_data.number_of_data_components = number_of_data_components;
-
 		return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_spectrumcomponent)(
 			cmzn_spectrumcomponent_activate,(void *)&render_data,
 			spectrum->list_of_components);
-
 		CAST_TO_OTHER(rgba, frgba, ZnReal, 4);
 
 		delete[] fData;
