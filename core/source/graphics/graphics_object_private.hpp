@@ -60,247 +60,37 @@ Global types
 ------------
 */
 
-struct GT_glyph_set
-/*******************************************************************************
-LAST MODIFIED : 7 June 2001
-
-DESCRIPTION :
-Graphics primitive for positioning and scaling a glyph - a graphics object with
-no materials that merely defines geometry. Glyphs should be designed to be
-centred at 0,0,0 and oriented with the 3 primary axes 1, 2 and 3. The display
-list of the glyph is called after setting up a model transformation matrix that
-shifts the centre and axes 1, 2 and 3 of the glyph to vectors specified in the
-<point_list>, <axis1_list>, <axis2_list> and <axis3_list>, respectively. Both
-scaling and rotation - not necessarily maintaining orthogonality - are supplied
-by the axis vectors. An additional scaling is supplied by the <size> member
-which has one component per axis. Certain glyphs, eg. arrows and cones, are able
-to take advantage of negative sizes to point inwards in a given axis, eg. to
-show compressive strains as -><-, and tensile strains as <-->. Data may also be
-stored with this object so that the entire glyph may be coloured by a spectrum.
-Hence, glyphs should not have any data themselves. An optional label may also be
-drawn beside each glyph. The optional <names> array allows individual items in
-the glyph_set to be identified in picking for node position/vector editing.
-==============================================================================*/
-{
-	int number_of_points;
-	Triple *axis1_list, *axis2_list, *axis3_list, *label_density_list, *point_list, *scale_list;
-	char **labels;
-	char *static_label_text[3];
-	struct GT_object *glyph;
-	enum cmzn_glyph_repeat_mode glyph_repeat_mode;
-	Triple base_size, scale_factors, offset, label_offset;
-	int n_data_components;
-	GLfloat *data;
-	int label_bounds_dimension, label_bounds_components;
-	ZnReal *label_bounds;
-	struct cmzn_font *font;
-	/* store integer object_name eg. element number from which this object came */
-	int object_name;
-	/* have auxiliary_object_name for marking glyph_set for editing purposes; this
-		 is necessary since for some element_point types we put the
-		 top_level_element in the object_name; the graphics name of the actual
-		 face/line/element in use should go here: */
-	int auxiliary_object_name;
-	/* names recorded per point in the set, eg. node or grid point numbers */
-	int *names;
-	struct GT_glyph_set *ptrnext;
-}; /* struct GT_glyph_set */
-
-struct GT_nurbs
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int nurbsprop;
-
-	/* surface description */
-	int sorder;
-	int torder;
-	int sknotcnt;
-	int tknotcnt;
-	int maxs;
-	int maxt;
-	ZnReal *sknots;
-	ZnReal *tknots;
-	ZnReal *controlpts;
-	/* normals */
-	ZnReal *normal_control_points;
-	/* texture coordinates */
-	ZnReal *texture_control_points;
-
-	/* nurb trim curve */
-	int corder;
-	int cknotcnt;
-	int ccount;
-	ZnReal *cknots;
-	ZnReal *trimarray;
-
-	/* piecewise linear trim curve */
-	int pwlcnt;
-	ZnReal *pwlarray;
-
-	/* store integer object_name eg. element number from which this object came */
-	int object_name;
-
-	struct GT_nurbs *ptrnext;
-}; /* struct GT_nurbs */
-
-struct GT_point
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-==============================================================================*/
-{
-	Triple *position;
-	char *text;
-	gtMarkerType marker_type;
-	ZnReal marker_size;
-	int n_data_components;
-	GLfloat *data;
-	struct cmzn_font *font;
-
-	/* store integer object_name eg. node number from which this object came */
-	int object_name;
-
-	struct GT_point *ptrnext;
-}; /* struct GT_point */
-
-struct GT_pointset
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-???RC.  integer names added for OpenGL picking.
-==============================================================================*/
-{
-	int n_pts;
-	Triple *pointlist;
-	char **text;
-	gtMarkerType marker_type;
-	ZnReal marker_size;
-	int n_data_components;
-	GLfloat *data;
-	struct cmzn_font *font;
-
-	/* store integer object_name eg. element number from which this object came */
-	int object_name;
-
-	/* names are usually node numbers (they were accessed nodes, but this
-		 prevented the nodes from being destroyed) */
-	int *names;
-	struct GT_pointset *ptrnext;
-}; /* struct GT_pointset */
-
-struct GT_polyline
-/*******************************************************************************
-LAST MODIFIED : 16 April 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	enum GT_polyline_type polyline_type;
-	int n_pts;
-	int n_data_components;
-	Triple *pointlist;
-	Triple *normallist;
-	GLfloat *data;
-	/* store integer object_name eg. element number from which this object came */
-	int object_name;
-	struct GT_polyline *ptrnext;
-}; /* struct GT_polyline */
-
 /***************************************************************************//**
  * Provides the scene information for the lines stored in the
- * vertex_array.
- */
+ * vertex_array. */
 struct GT_polyline_vertex_buffers
 {
 	enum GT_polyline_type polyline_type;
+	int line_width;
 }; /* struct GT_polyline_vertex_buffers */
 
-struct GT_surface
-/*******************************************************************************
-LAST MODIFIED : 16 April 1999
-
-DESCRIPTION :
-==============================================================================*/
+struct GT_surface_vertex_buffers
 {
 	enum GT_surface_type surface_type;
 	enum cmzn_graphics_render_polygon_mode render_polygon_mode;
-	gtPolygonType polygon;
-	int n_data_components;
-	int n_pts1;
-	int n_pts2;
-	Triple *pointlist;
-	Triple *normallist;
-	Triple *tangentlist;
-	Triple *texturelist;
-	GLfloat *data;
-	/* store integer object_name eg. element number from which this object came */
-	int object_name;
-	int tile_number;
-	int allocated_size;
-	struct GT_surface *ptrnext;
-}; /* struct GT_surface */
+}; /* struct GT_polyline_vertex_buffers */
 
-struct GT_userdef
-/*******************************************************************************
-LAST MODIFIED : 22 January 2003
-
-DESCRIPTION :
-User defined graphics object primitive type. Contains three parameters:
-- void pointer to data for user defined graphics;
-- pointer to function used to destroy user data when the GT_userdef is
-	destroyed.
-- pointer to function for rendering the user defined graphics passing data as
-	a parameter.
-???RC May wish to add time to render function.
-???RC This structure could/should be made private.
-==============================================================================*/
+struct GT_glyphset_vertex_buffers
 {
-	void *data;
-	int (*destroy_function)(void **);
-	int (*render_function)(void *);
+	struct cmzn_font *font;
+	struct GT_object *glyph;
+	Triple base_size, scale_factors, offset, label_offset;
+	char *static_label_text[3];
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode;
+	int label_bounds_dimension, label_bounds_components;
+}; /* struct GT_polyline_vertex_buffers */
 
-	/* store integer object_name eg. node number from which this object came */
-	int object_name;
-
-	/* for compatibility with the other GT_objects: */
-	struct GT_userdef *ptrnext;
-}; /* struct GT_userdef */
-
-struct GT_voltex
-/*******************************************************************************
-LAST MODIFIED : 9 November 2005
-
-DESCRIPTION :
-==============================================================================*/
+struct GT_pointset_vertex_buffers
 {
-	int number_of_vertices;
-	struct VT_iso_vertex **vertex_list;
-
-	int number_of_triangles;
-	struct VT_iso_triangle **triangle_list;
-
-	/* octree of vertex locations, used to accelerate stitching,
-		NULL is not being used.  The user_data in this octree points
-		to struct VT_iso_vertex objects. */
-	struct Octree *vertex_octree;
-
-	int n_data_components;
-	int n_texture_coordinates;
-
-	/* store integer object_name eg. element number from which this object came */
-	int object_name;
-
-	struct GT_voltex *ptrnext;
-
-	/* voltex type */
-	enum GT_voltex_type voltex_type;
-}; /* struct GT_voltex */
+	gtMarkerType marker_type;
+	ZnReal marker_size;
+	struct cmzn_font *font;
+}; /* struct GT_pointset_vertex_buffers */
 
 union GT_primitive_list
 /*******************************************************************************
@@ -312,32 +102,11 @@ maintains a pointer to the first and last primitives so that the list can be
 traversed from first to last, and additional primitives added at the end.
 ==============================================================================*/
 {
-	struct {
-		struct GT_glyph_set *first, *last;
-	} gt_glyph_set;
-	struct {
-		struct GT_nurbs *first, *last;
-	} gt_nurbs;
-	struct {
-		struct GT_point *first, *last;
-	} gt_point;
-	struct {
-		struct GT_pointset *first, *last;
-	} gt_pointset;
-	struct {
-		struct GT_polyline *first, *last;
-	} gt_polyline;
 	/* Only one object allowed for this type */
 	struct GT_polyline_vertex_buffers *gt_polyline_vertex_buffers;
-	struct {
-		struct GT_surface *first, *last;
-	} gt_surface;
-	struct {
-		struct GT_userdef *first, *last;
-	} gt_userdef;
-	struct {
-		struct GT_voltex *first, *last;
-	} gt_voltex;
+	struct GT_surface_vertex_buffers *gt_surface_vertex_buffers;
+	struct GT_glyphset_vertex_buffers *gt_glyphset_vertex_buffers;
+	struct GT_pointset_vertex_buffers *gt_pointset_vertex_buffers;
 }; /* union GT_primitive_list */
 
 struct GT_object
@@ -359,8 +128,6 @@ Graphical object data structure.
 	/* default attributes */
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */
-	/* either colour or material */
-	gtAttributeType default_att;
 	int default_colourindex;
 	struct Graphical_material *default_material, *secondary_material, 
 		*selected_material;
@@ -382,6 +149,7 @@ Graphical object data structure.
 
 	union GT_primitive_list *primitive_lists;
 #if defined (OPENGL_API)
+	int buffer_binding;
 	GLuint display_list;
 
 	GLuint vertex_array_object;
@@ -391,10 +159,12 @@ Graphical object data structure.
 	GLuint colour_vertex_buffer_object;
 	GLuint colour_values_per_vertex;
 	GLuint normal_vertex_buffer_object;
-	/* The normal pointer doesn't have a size option, must be 3. */
 	GLuint texture_coordinate0_vertex_buffer_object;
 	GLuint texture_coordinate0_values_per_vertex;
-	
+	/* tangent buffer will be passed in as coordinates of texture unit 1*/
+	GLuint tangent_vertex_buffer_object;
+	GLuint tangent_values_per_vertex;
+	GLuint index_vertex_buffer_object;
 	/* For multipass rendering we use some more vertex_buffers
 	 * a framebuffer and a texture. */
 	unsigned int multipass_width;
@@ -412,32 +182,6 @@ Graphical object data structure.
 	enum cmzn_glyph_shape_type glyph_type;
 
 	int access_count;
-};
-
-struct GT_object_compile_context
-/*******************************************************************************
-LAST MODIFIED : 19 November 2007
-
-DESCRIPTION :
-Data used to control the compilation fo the GT_object.
-==============================================================================*/
-{ 
-	ZnReal time;
-	struct Graphics_buffer *graphics_buffer;
-	int draw_selected;
-
-#if defined (OPENGL_API)
-	/* Execute this display list to shift to the ndc coordinate system */
-	GLuint ndc_display_list;
-	/* Execute this display list to return to the standard coordinate system */
-	GLuint end_ndc_display_list;
-#endif /* defined (OPENGL_API) */
-
-	/* If <texture_tiling> is not NULL, then the primary texture was too 
-		large for the current hardware and has been tiled into several textures.
-		The information about the tile boundaries is in the <texture_tiling> 
-		structure and should be used to compile any graphics objects. */
-	struct Texture_tiling *texture_tiling;
 };
 
 class Render_graphics_compile_members;

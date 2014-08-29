@@ -33,8 +33,7 @@ public:
 
 	int current_layer, number_of_layers;
 
-	unsigned int buffer_width;
-	unsigned int buffer_height;
+	int use_display_list;
 
 	SubObjectGroupHighlightFunctor *highlight_functor;
 
@@ -53,8 +52,7 @@ public:
 		viewport_height(1.0),
 		current_layer(0),
 		number_of_layers(1),
-		buffer_width(0),
-		buffer_height(0),
+		use_display_list(0),
 		highlight_functor(NULL),
 		point_unit_size_pixels(1.0)
 	{
@@ -164,5 +162,17 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_rende
  * for rendering and uses vertex buffer objects when compiling primitives.
  */
 Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer();
+
+Render_graphics_opengl *Render_graphics_opengl_create_webgl_renderer(const char *filename);
+
+Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *filename,
+	int number_of_time_steps, double begin_time, double end_time, int face_colour, int export_data_value);
+
+/** Routine that uses the objects material and spectrum to convert
+* an array of data to corresponding colour data.
+*/
+int Graphics_object_create_colour_buffer_from_data(GT_object *object,
+	GLfloat **colour_buffer, unsigned int *colour_values_per_vertex,
+	unsigned int *colour_vertex_count);
 
 #endif /* !defined (RENDERGL_HPP) */

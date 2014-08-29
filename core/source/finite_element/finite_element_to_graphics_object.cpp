@@ -696,30 +696,31 @@ these are simply returned, since no valid direction can be produced.
 	return (return_code);
 } /* make_glyph_orientation_scale_axes */
 
-struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
+struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 	cmzn_nodeset_id nodeset, cmzn_fieldcache_id field_cache,
-	struct Computed_field *coordinate_field, struct GT_object *glyph,
+	struct GT_object *graphics_object,
 	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
-	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
+	struct Computed_field *coordinate_field,
+	struct Computed_field *data_field,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field,
-	struct cmzn_font *font, struct Computed_field *label_field,
-	FE_value *label_offset, char *static_label_text[3],
+	struct Computed_field *label_field,
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum cmzn_graphics_select_mode select_mode,
-	struct Computed_field *group_field)
+	struct Computed_field *subgroup_field,
+	struct Computed_field *group_field,
+	struct GT_object *glyph,
+	const FE_value *base_size, const FE_value *offset, const FE_value *scale_factors,
+	struct cmzn_font *font,	FE_value *label_offset, char *static_label_text[3],
+	enum cmzn_graphics_select_mode select_mode)
 {
+	GT_glyphset_vertex_buffers *glyphset = 0;
 	char *glyph_name, **labels;
 	ZnReal *label_bounds;
 	FE_value *label_bounds_vector = NULL;
 	GLfloat *data;
 	int coordinate_dimension, i, *label_bounds_bit_pattern = NULL, label_bounds_components = 0,
-		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names;
-
-	ENTER(create_GT_glyph_set_from_nodeset);
-	struct GT_glyph_set *glyph_set = (struct GT_glyph_set *)NULL;
-	if (field_cache && nodeset && coordinate_field &&
+		label_bounds_dimension, label_bounds_values = 0, n_data_components, *names, return_code = 1;
+	if (field_cache && nodeset && coordinate_field && graphics_object &&
 		(3>=(coordinate_dimension=Computed_field_get_number_of_components(coordinate_field)))&&
 		((!orientation_scale_field) ||
 			(9 >= Computed_field_get_number_of_components(orientation_scale_field)))&&
@@ -730,7 +731,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 		((!label_density_field) ||
 			(3 >=	Computed_field_get_number_of_components(label_density_field))))
 	{
-		int return_code = 1;
+
 		/* label_field is not a required field (if undefined, label is empty) EXCEPT
 		 * where glyph bases its glyph_labels_function bounds on it */
 		struct Computed_field *label_bounds_field = NULL;
@@ -747,7 +748,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 						if (GET_NAME(GT_object)(glyph,&glyph_name))
 						{
 							display_message(ERROR_MESSAGE,
-								"create_GT_glyph_set_from_nodeset.  "
+								"Nodeset_add_glyph_to_vertex_array.  "
 								"Label field must be numeric for use with glyph '%s'",
 								glyph_name);
 							DEALLOCATE(glyph_name);
@@ -766,7 +767,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 			int number_of_points = cmzn_nodeset_get_size(nodeset);
 			if (0 < number_of_points)
 			{
-				int final_number_of_points = 0; // will include only points with all mandatory fields defined
+				unsigned int final_number_of_points = 0; // will include only points with all mandatory fields defined
 				Triple *point_list = (Triple *)NULL;
 				Triple *axis1_list = (Triple *)NULL;
 				Triple *axis2_list = (Triple *)NULL;
@@ -889,7 +890,7 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 				}
 				if (return_code && (0 < final_number_of_points))
 				{
-					if (final_number_of_points < number_of_points)
+					if (final_number_of_points < (unsigned int)number_of_points)
 					{
 						// assuming reallocating to smaller size always succeeds
 						REALLOCATE(point_list, point_list, Triple, final_number_of_points);
@@ -899,47 +900,60 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 						REALLOCATE(scale_list, scale_list, Triple, final_number_of_points);
 						if (label_density_field)
 						{
-							REALLOCATE(label_density_list, label_density_list, Triple, number_of_points);
+							REALLOCATE(label_density_list, label_density_list, Triple, final_number_of_points);
 						}
 						if (data)
 						{
-							REALLOCATE(data, data, GLfloat, number_of_points*n_data_components);
+							REALLOCATE(data, data, GLfloat, final_number_of_points*n_data_components);
 						}
 						if (labels)
 						{
-							REALLOCATE(labels, labels, char *, number_of_points);
+							REALLOCATE(labels, labels, char *, final_number_of_points);
 						}
 						if (names)
 						{
-							REALLOCATE(names, names, int, number_of_points);
+							REALLOCATE(names, names, int, final_number_of_points);
 						}
 					}
-					glyph_set = CREATE(GT_glyph_set)(final_number_of_points, point_list,
+					glyphset = CREATE(GT_glyphset_vertex_buffers)();
+					GT_glyphset_vertex_buffers_setup(glyphset,
+						glyph, glyph_repeat_mode,
+						glyph_base_size, glyph_scale_factors, glyph_offset, font,
+						glyph_label_offset, static_label_text,
+						label_bounds_dimension, label_bounds_components);
+					if (0 == fill_glyph_graphics_vertex_array(
+						GT_object_get_vertex_set(graphics_object), /*vertex_location*/-1,
+						 (unsigned int)final_number_of_points, point_list,
 						axis1_list, axis2_list, axis3_list, scale_list,
-						glyph, glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
-						font, labels, glyph_label_offset, static_label_text,
 						n_data_components, data,
-						label_bounds_dimension, label_bounds_components, label_bounds,
-						label_density_list,
-						/*object_name*/-1, names);
+						label_density_list, /*object_name*/-1, names, labels,
+						label_bounds_values, label_bounds_components, label_bounds))
+					{
+						DESTROY(GT_glyphset_vertex_buffers)(&glyphset);
+					}
 				}
-				else
+				if (label_bounds_field)
 				{
 					DEALLOCATE(label_bounds);
-					DEALLOCATE(point_list);
-					DEALLOCATE(axis1_list);
-					DEALLOCATE(axis2_list);
-					DEALLOCATE(axis3_list);
-					DEALLOCATE(scale_list);
-					DEALLOCATE(label_density_list);
-					DEALLOCATE(data);
-					DEALLOCATE(labels);
-					DEALLOCATE(names);
-				}
-				if (label_bounds)
-				{
+					/* Temporary space for evaluating the label field */
 					DEALLOCATE(label_bounds_vector);
+					/* Prcompute bit pattern for label values */
 					DEALLOCATE(label_bounds_bit_pattern);
+				}
+
+				DEALLOCATE(point_list);
+				DEALLOCATE(axis1_list);
+				DEALLOCATE(axis2_list);
+				DEALLOCATE(axis3_list);
+				DEALLOCATE(scale_list);
+				DEALLOCATE(label_density_list);
+				DEALLOCATE(data);
+				DEALLOCATE(names);
+				if (labels)
+				{
+					for (int k = 0; k < (int)final_number_of_points; k++)
+						DEALLOCATE(labels[k]);
+					DEALLOCATE(labels);
 				}
 				delete[] data_values;
 			} /* no points, hence no glyph_set */
@@ -948,17 +962,16 @@ struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_GT_glyph_set_from_nodeset.  Invalid argument(s)");
+			"Nodeset_add_glyph_to_vertex_array.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (glyph_set);
-} /* create_GT_glyph_set_from_nodeset */
+	return glyphset;
+}
 
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *array,
-	Computed_field *coordinate_field, Computed_field *data_field,
-	int number_of_data_values, FE_value *data_buffer,
+	Computed_field *coordinate_field,
+	int number_of_data_values, Computed_field *data_field,
 	Computed_field *texture_coordinate_field,
 	unsigned int number_of_segments, FE_element *top_level_element)
 {
@@ -966,6 +979,8 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	int graphics_name, return_code;
 	struct CM_element_information cm;
 	unsigned int i, vertex_start, number_of_vertices;
+	GLfloat *floatData = 0;
+	double *data_buffer = 0;
 
 	ENTER(FE_element_add_line_to_vertex_buffer_set)
 	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
@@ -978,84 +993,151 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 		return_code = 1;
 
 		/* clear coordinates in case coordinate field is not 3 component */
-		FE_value coordinates[3];
-		coordinates[0]=0.0;
-		coordinates[1]=0.0;
-		coordinates[2]=0.0;
-
-		GLfloat *floatData = data_field ? new GLfloat[number_of_data_values] : 0;
-
-		FE_value texture_coordinates[3];
-		if (texture_coordinate_field)
-		{
-			texture_coordinates[0] = 0.0;
-			texture_coordinates[1] = 0.0;
-			texture_coordinates[2] = 0.0;
-		}
 
 		/* for selective editing of GT_object primitives, record element ID */
 		get_FE_element_identifier(element, &cm);
 		graphics_name = cm.number;
-		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ID,
-			1, 1, &graphics_name);
 
-		vertex_start = array->get_number_of_vertices(
-			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
-
-		distance=(FE_value)number_of_segments;
-		for (i = 0; (i <= number_of_segments); i++)
+		int replaceRequired = 0;
+		/* find if vertex already in the array */
+		int vertex_location = array->find_fast_search_id_location(graphics_name);
+		/* vertex found in array, check if update is required */
+		if (vertex_location >= 0)
 		{
-			xi=((FE_value)i)/distance;
-			/* evaluate the fields */
-			return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
-				field_cache, element, /*dimension*/1, &xi, top_level_element));
-			if (return_code && (CMZN_OK == cmzn_field_evaluate_real(coordinate_field,
-					field_cache, coordinate_dimension, coordinates)) &&
-				((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field,
-					field_cache, number_of_data_values, data_buffer))) &&
-				((!texture_coordinate_field) || (CMZN_OK == cmzn_field_evaluate_real(texture_coordinate_field,
-					field_cache, texture_coordinate_dimension, texture_coordinates))))
+			array->get_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				vertex_location, 1, &replaceRequired);
+		}
+		if (vertex_location < 0 || replaceRequired)
+		{
+			if (vertex_location < 0)
 			{
-				GLfloat floatField[3];
-				CAST_TO_OTHER(floatField,coordinates,GLfloat,3);
-				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, 1, floatField);
-				if (data_field)
-				{
-					CAST_TO_OTHER(floatData,data_buffer,GLfloat,number_of_data_values);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_values, 1, floatData);
-				}
-				if (texture_coordinate_field)
-				{
-					CAST_TO_OTHER(floatField,texture_coordinates,GLfloat,3);
-					array->add_float_attribute(
-						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, 1, floatField);
-				}
+				array->add_fast_search_id(graphics_name);
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					1, 1, &graphics_name);
+				int modificationRequired = 0;
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+					1, 1, &modificationRequired);
+				/* case for addition */
+				vertex_start = array->get_number_of_vertices(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 			}
 			else
 			{
-				return_code = 0;
-				break;
+				array->replace_integer_vertex_buffer_at_position(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
+					&graphics_name);
+				/* case for modification */
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					vertex_location, 1, &vertex_start);
 			}
-		}
-		if (return_code)
-		{
-			number_of_vertices = number_of_segments+1;
-			array->add_unsigned_integer_attribute(
-				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-				1, 1, &number_of_vertices);
-			array->add_unsigned_integer_attribute(
-				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-				1, 1, &vertex_start);
-		}
-		/* else could try and remove vertices that failed */
+			FE_value coordinates[3];
+			coordinates[0]=0.0;
+			coordinates[1]=0.0;
+			coordinates[2]=0.0;
 
-		/* I don't think I need to clear the field cache's here, instead I have
-		 * done it in GT_element_settings_to_graphics_object.
-		 */
-		delete[] floatData;
+			if (data_field)
+			{
+				number_of_data_values = Computed_field_get_number_of_components(data_field);
+				floatData = new GLfloat[number_of_data_values];
+				data_buffer = new double[number_of_data_values];
+			}
+
+			FE_value texture_coordinates[3];
+			if (texture_coordinate_field)
+			{
+				texture_coordinates[0] = 0.0;
+				texture_coordinates[1] = 0.0;
+				texture_coordinates[2] = 0.0;
+			}
+
+			distance=(FE_value)number_of_segments;
+			for (i = 0; (i <= number_of_segments); i++)
+			{
+				xi=((FE_value)i)/distance;
+				/* evaluate the fields */
+				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
+					field_cache, element, /*dimension*/1, &xi, top_level_element));
+				if (return_code && (CMZN_OK == cmzn_field_evaluate_real(coordinate_field,
+					field_cache, coordinate_dimension, coordinates)) &&
+					((!data_field) || (CMZN_OK == cmzn_field_evaluate_real(data_field,
+						field_cache, number_of_data_values, data_buffer))) &&
+						((!texture_coordinate_field) || (CMZN_OK == cmzn_field_evaluate_real(texture_coordinate_field,
+							field_cache, texture_coordinate_dimension, texture_coordinates))))
+				{
+					GLfloat floatField[3];
+					CAST_TO_OTHER(floatField,coordinates,GLfloat,3);
+					if (vertex_location < 0)
+					{
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							3, 1, floatField);
+						if (data_field)
+						{
+							CAST_TO_OTHER(floatData,data_buffer,GLfloat,number_of_data_values);
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+								number_of_data_values, 1, floatData);
+						}
+						if (texture_coordinate_field)
+						{
+							CAST_TO_OTHER(floatField,texture_coordinates,GLfloat,3);
+							array->add_float_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+								3, 1, floatField);
+						}
+					}
+					else
+					{
+						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							vertex_start + i, 3, 1, floatField);
+						if (data_field)
+						{
+							CAST_TO_OTHER(floatData,data_buffer,GLfloat,number_of_data_values);
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+								vertex_start + i, number_of_data_values, 1, floatData);
+						}
+						if (texture_coordinate_field)
+						{
+							CAST_TO_OTHER(floatField,texture_coordinates,GLfloat,3);
+							array->replace_float_vertex_buffer_at_position(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+								vertex_start + i, 3, 1, floatField);
+						}
+					}
+				}
+				else
+				{
+					return_code = 0;
+					break;
+				}
+			}
+			if (return_code)
+			{
+				if (vertex_location < 0)
+				{
+					number_of_vertices = number_of_segments+1;
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						1, 1, &number_of_vertices);
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						1, 1, &vertex_start);
+				}
+				else if (replaceRequired)
+				{
+					int updated = 0;
+					array->replace_integer_vertex_buffer_at_position(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+						vertex_location, 1, 1, &updated);
+				}
+			}
+			/* else could try and remove vertices that failed */
+
+			/* I don't think I need to clear the field cache's here, instead I have
+			 * done it in GT_element_settings_to_graphics_object.
+			 */
+			delete[] data_buffer;
+			delete[] floatData;
+		}
 	}
 	else
 	{
@@ -1069,31 +1151,34 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	return (return_code);
 } /* FE_element_add_line_to_vertex_buffer_set */
 
-struct GT_surface *create_cylinder_from_FE_element(
-	struct FE_element *element, cmzn_fieldcache_id field_cache,
-	cmzn_mesh_id line_mesh, struct Computed_field *coordinate_field,
-	struct Computed_field *data_field, const FE_value *base_size,
-	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
-	int number_of_segments_along,int number_of_segments_around,
+int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
+	cmzn_fieldcache_id field_cache,
+	struct Graphics_vertex_array *array, cmzn_mesh_id line_mesh,
+	struct Computed_field *coordinate_field,
+	struct Computed_field *data_field,
+	const FE_value *base_size,
+	const FE_value *scale_factors,
+	cmzn_field_id orientation_scale_field,
+	int number_of_segments_along, int number_of_segments_around,
 	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode)
+	struct FE_element *top_level_element)
 {
 	FE_value coordinates[3], cos_theta, derivative_xi[3], distance, dS_dxi,
 		end_aligned_normal[3], facet_angle, jacobian[9], length, normal_1, normal_2,
 		normal_3, *radius_array, diameter_derivative, diameter_value, sin_theta,
 		tex_coordinates[3], theta, theta_change, xi, x, y;
 	ZnReal texture_coordinate1;
-	GLfloat *data, *datum;
-	int facet_offset,i,j,k,n_data_components,number_of_points;
+	GLfloat *data = 0, *datum = 0, *original_data = 0;
+	int facet_offset,i,j,k,n_data_components,number_of_points, return_code;
 	struct CM_element_information cm;
-	struct GT_surface *surface;
-	Triple *derivative, *normal = NULL, *normalpoints, *point, *points, *previous_point,
-		*previous_normal, *texturepoints, *texture_coordinate;
+	Triple *derivative, *normal = NULL, *normalpoints, *point, *points, *texturepoints, *previous_point,
+		*previous_normal, *texture_coordinate;
+	unsigned int vertex_start = 0;
 
-	ENTER(create_cylinder_from_FE_element);
 	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
 	int texture_coordinate_dimension = texture_coordinate_field ?
 		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
+	return_code = 0;
 	if (element && field_cache && line_mesh && (1 == get_FE_element_dimension(element)) &&
 		(0 < number_of_segments_along) && (1 < number_of_segments_around) &&
 		coordinate_field && (3 >= coordinate_dimension) &&
@@ -1102,6 +1187,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			(1 == Computed_field_get_number_of_components(orientation_scale_field))) &&
 		((!texture_coordinate_field) || (3 >= texture_coordinate_dimension)))
 	{
+		return_code = 1;
 		cmzn_differentialoperator_id d_dxi = cmzn_mesh_get_chart_differentialoperator(line_mesh, /*order*/1, 1);
 		/* clear coordinates and derivatives not set if coordinate field is not
 			 3 component */
@@ -1109,7 +1195,6 @@ struct GT_surface *create_cylinder_from_FE_element(
 		coordinates[2]=0.0;
 		derivative_xi[1]=0.0;
 		derivative_xi[2]=0.0;
-		surface=(struct GT_surface *)NULL;
 		points=(Triple *)NULL;
 		normalpoints=(Triple *)NULL;
 		texturepoints=(Triple *)NULL;
@@ -1122,30 +1207,58 @@ struct GT_surface *create_cylinder_from_FE_element(
 			if (!ALLOCATE(data,GLfloat,number_of_points*n_data_components))
 			{
 				display_message(ERROR_MESSAGE,
-					"create_cylinder_from_FE_element.  Could allocate data");
+					"FE_element_add_cylinder_to_vertex_array.  Could allocate data");
+				return_code = 0;
 			}
+			original_data = data;
 		}
-		if ((data||(!n_data_components))&&
-			ALLOCATE(points,Triple,number_of_points)&&
-			ALLOCATE(normalpoints,Triple,number_of_points)&&
-			ALLOCATE(texturepoints,Triple,number_of_points)&&
-			ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))&&
-			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_polygon_mode,g_QUADRILATERAL,
-				number_of_segments_around+1,number_of_segments_along+1,
-				points,normalpoints,(Triple *)NULL,texturepoints,n_data_components,data)))
+		get_FE_element_identifier(element, &cm);
+		int replaceRequired = 0;
+		/* find if vertex already in the array */
+		int vertex_location = array->find_fast_search_id_location(cm.number);
+		/* vertex found in array, check if update is required */
+		if (vertex_location >= 0)
 		{
-			// convert diameter to radius
+			array->get_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				vertex_location, 1, &replaceRequired);
+		}
+		if ((vertex_location < 0 || replaceRequired) &&
+			(data||(!n_data_components))&&
+			(ALLOCATE(normalpoints,Triple,number_of_points))&&
+			(ALLOCATE(points,Triple,number_of_points))&&
+			(ALLOCATE(texturepoints,Triple,number_of_points))&&
+			(ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))))
+		{
 			FE_value constant_radius = 0.5*base_size[0];
 			FE_value scale_factor = 0.5*scale_factors[0];
 			/* for selective editing of GT_object primitives, record element ID */
-			get_FE_element_identifier(element, &cm);
-			GT_surface_set_integer_identifier(surface, cm.number);
+			if (vertex_location < 0)
+			{
+				array->add_fast_search_id(cm.number);
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					1, 1, &(cm.number));
+				int modificationRequired = 0;
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+					1, 1, &modificationRequired);
+				vertex_start = array->get_number_of_vertices(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+			}
+			else
+			{
+				/* case for modification */
+				array->replace_integer_vertex_buffer_at_position(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
+					&(cm.number));
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					vertex_location, 1, &vertex_start);
+			}
 			point=points;
 			derivative=normalpoints;
 			texture_coordinate=texturepoints;
 			/* Calculate the points and radius and data at the each point */
 			FE_value *feData = new FE_value[n_data_components];
-			for (i=0;(i<=number_of_segments_along)&&surface;i++)
+			for (i=0;(i<=number_of_segments_along) && return_code;i++)
 			{
 				xi=(ZnReal)i/(ZnReal)number_of_segments_along;
 				/* evaluate the fields */
@@ -1197,7 +1310,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 					/* store the data and then we are done with it */
 					if (data_field)
 					{
-						CAST_TO_OTHER(data,feData,ZnReal,n_data_components);
+						CAST_TO_OTHER(data,feData,GLfloat,n_data_components);
 						datum=data;
 						for (j=number_of_segments_around;j>=0;j--)
 						{
@@ -1222,7 +1335,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 				else
 				{
 					/* error evaluating fields */
-					DESTROY(GT_surface)(&surface);
+					return_code = 0;
 				}
 				point += number_of_segments_around+1;
 				derivative += number_of_segments_around+1;
@@ -1239,7 +1352,7 @@ struct GT_surface *create_cylinder_from_FE_element(
 			const FE_value zero_dS_dxi = 1.0E-6*(FE_value)number_of_segments_along*
 				sqrt(derivative_xi[0]*derivative_xi[0] + derivative_xi[1]*derivative_xi[1] + derivative_xi[2]*derivative_xi[2]);
 
-			if (surface)
+			if (return_code)
 			{
 				/* Calculate the normals at the first and last points as we must line
 					up at these points so that the next elements join on correctly */
@@ -1512,11 +1625,34 @@ struct GT_surface *create_cylinder_from_FE_element(
 					}
 				}
 			}
-			DEALLOCATE(radius_array);
-			if (surface)
+			if (return_code)
 			{
+				GLfloat floatField[3];
+				unsigned int number_of_vertices = number_of_points;
+				unsigned int number_of_xi1 = number_of_segments_around+1;
+				unsigned int number_of_xi2 = number_of_segments_along+1;
+				int polygonType = (int)g_TRIANGLE;
+				if (vertex_location < 0)
+				{
+					array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+						1, 1, &number_of_xi1);
+					array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+						1, 1, &number_of_xi2);
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						1, 1, &number_of_vertices);
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						1, 1, &vertex_start);
+					array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+						1, 1, &polygonType);
+					array->fill_element_index(vertex_start, number_of_xi1, number_of_xi2,
+						ARRAY_SHAPE_TYPE_UNSPECIFIED);
+				}
 				/* normalize the normals */
 				normal=normalpoints;
+				point = points;
+				datum = original_data;
 				for (i=number_of_points;i>0;i--)
 				{
 					normal_1=(*normal)[0];
@@ -1529,7 +1665,49 @@ struct GT_surface *create_cylinder_from_FE_element(
 						(*normal)[1]=ZnReal(normal_2/distance);
 						(*normal)[2]=ZnReal(normal_3/distance);
 					}
+					floatField[0] = (GLfloat)(*normal)[0];
+					floatField[1] = (GLfloat)(*normal)[1];
+					floatField[2] = (GLfloat)(*normal)[2];
+					if (vertex_location < 0)
+					{
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+							3, 1, floatField);
+					}
+					else
+					{
+						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+							vertex_start + i, 3, 1, floatField);
+					}
 					normal++;
+					floatField[0] = (GLfloat)(*point)[0];
+					floatField[1] = (GLfloat)(*point)[1];
+					floatField[2] = (GLfloat)(*point)[2];
+					if (vertex_location < 0)
+					{
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							3, 1, floatField);
+					}
+					else
+					{
+						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							vertex_start + i, 3, 1, floatField);
+					}
+					point++;
+					if (data_field && data)
+					{
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+								n_data_components, 1, datum);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+								vertex_start + i, n_data_components, 1, datum);
+						}
+						datum += n_data_components;
+					}
+
 				}
 				/* calculate the texture coordinates */
 				/* the texture coordinate along the length has been set above but must
@@ -1541,39 +1719,52 @@ struct GT_surface *create_cylinder_from_FE_element(
 					texture_coordinate1 = (*texture_coordinate)[0];
 					for (j = 0; j <= number_of_segments_around; j++)
 					{
-						(*texture_coordinate)[0] = texture_coordinate1;
-						(*texture_coordinate)[1] =
-							(ZnReal)j / (ZnReal)number_of_segments_around;
-						(*texture_coordinate)[2] = 0.0;
+						floatField[0] = (GLfloat)texture_coordinate1;
+						floatField[1] =
+							(GLfloat)j / (GLfloat)number_of_segments_around;
+						floatField[2] = (GLfloat)0.0;
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+								3, 1, floatField);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+								vertex_start + i * number_of_segments_around + j, 3, 1, floatField);
+						}
 						texture_coordinate++;
 					}
 				}
 			}
-		}
-		else
-		{
-			DEALLOCATE(points);
-			DEALLOCATE(normalpoints);
-			DEALLOCATE(texturepoints);
-			DEALLOCATE(data);
-		}
-		if (!surface)
-		{
-			display_message(ERROR_MESSAGE,
-				"create_cylinder_from_FE_element.  Failed");
+			if (radius_array)
+				DEALLOCATE(radius_array);
+			if (points)
+				DEALLOCATE(points);
+			if (normalpoints)
+				DEALLOCATE(normalpoints);
+			if (texturepoints)
+				DEALLOCATE(texturepoints);
+			if (original_data)
+				DEALLOCATE(original_data);
+			if (replaceRequired)
+			{
+				int updated = 0;
+				array->replace_integer_vertex_buffer_at_position(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+					vertex_location, 1, 1, &updated);
+			}
 		}
 		cmzn_differentialoperator_destroy(&d_dxi);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_cylinder_from_FE_element.  Invalid argument(s)");
-		surface=(struct GT_surface *)NULL;
+			"FE_element_add_cylinder_to_vertex_array.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (surface);
-} /* create_cylinder_from_FE_element */
+	return (return_code);
+}
 
 int get_surface_element_segmentation(struct FE_element *element,
 	int number_of_segments_in_xi1_requested,
@@ -1613,7 +1804,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 						*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
 						*number_of_points =
 							*number_of_points_in_xi1*(*number_of_points_in_xi2);
-						*polygon_type=g_QUADRILATERAL;
+						*polygon_type=g_TRIANGLE;
 					}
 					else
 					{
@@ -1694,7 +1885,7 @@ int get_surface_element_segmentation(struct FE_element *element,
 					*number_of_points_in_xi2=number_of_segments_in_xi2_requested+1;
 					*number_of_points =
 						(*number_of_points_in_xi1)*(*number_of_points_in_xi2);
-					*polygon_type = g_QUADRILATERAL;
+					*polygon_type = g_TRIANGLE;
 				} break;
 			}
 		}
@@ -1714,15 +1905,16 @@ int get_surface_element_segmentation(struct FE_element *element,
 	return (return_code);
 } /* get_surface_element_segmentation */
 
-struct GT_surface *create_GT_surface_from_FE_element(
-	struct FE_element *element, cmzn_fieldcache_id field_cache,
-	cmzn_mesh_id surface_mesh, struct Computed_field *coordinate_field,
+
+int FE_element_add_surface_to_vertex_array(struct FE_element *element,
+	cmzn_fieldcache_id field_cache, cmzn_mesh_id surface_mesh,
+	struct Graphics_vertex_array *array,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,
-	int number_of_segments_in_xi1_requested,
-	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,
-	enum cmzn_graphics_render_polygon_mode render_polygon_mode)
+	unsigned int number_of_segments_in_xi1_requested,
+	unsigned int number_of_segments_in_xi2_requested,
+	char reverse_normals, struct FE_element *top_level_element)
 {
 	char modified_reverse_normals, special_normals;
 	enum Collapsed_element_type collapsed_element;
@@ -1730,18 +1922,16 @@ struct GT_surface *create_GT_surface_from_FE_element(
 	FE_value coordinates[3], derivative_xi1[3], derivative_xi2[3],
 		texture_values[3], texture_derivative_xi1[3], texture_derivative_xi2[3],
 		texture_determinant;
-	ZnReal distance;
-	GLfloat *data;
 	gtPolygonType polygon_type;
-	struct GT_surface *surface;
 	int calculate_tangent_points, i,j,n_data_components,number_of_points,
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		return_code;
 	struct CM_element_information cm;
-	Triple *normal, *normalpoints, *point, *points, *tangent = NULL, *tangentpoints,
-		temp_normal, *texturepoints, *texture_coordinate = NULL;
+	Triple *normal, *normalpoints, *tangent = NULL, *tangentpoints, temp_normal;
+	unsigned int vertex_start;
+	GLfloat floatField[3];
+	return_code = 1;
 
-	ENTER(create_GT_surface_from_FE_element);
 	int coordinate_dimension = Computed_field_get_number_of_components(coordinate_field);
 	int texture_coordinate_dimension = texture_coordinate_field ?
 		Computed_field_get_number_of_components(texture_coordinate_field) : 0;
@@ -1775,42 +1965,58 @@ struct GT_surface *create_GT_surface_from_FE_element(
 		texture_derivative_xi1[2]=0.0;
 		texture_derivative_xi2[1]=0.0;
 		texture_derivative_xi2[2]=0.0;
+		tangentpoints=(Triple *)NULL;
+		normalpoints=(Triple *)NULL;
 		get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,
 			&collapsed_element, &shape_type);
-		/* create the GT_surface */
-		surface=(struct GT_surface *)NULL;
-		points=(Triple *)NULL;
-		normalpoints=(Triple *)NULL;
-		tangentpoints=(Triple *)NULL;
-		texturepoints=(Triple *)NULL;
 		n_data_components = 0;
-		data=0L;
 		if (data_field)
 		{
 			n_data_components = Computed_field_get_number_of_components(data_field);
-			if (!ALLOCATE(data,GLfloat,number_of_points*n_data_components))
-			{
-				display_message(ERROR_MESSAGE,
-					"create_GT_surface_from_FE_element.  Could not allocate data");
-			}
 		}
+		get_FE_element_identifier(element, &cm);
+		GLfloat *floatData = data_field ? new GLfloat[n_data_components] : 0;
 		FE_value *xi_points = new FE_value[2*number_of_points];
-		if ((NULL != xi_points) && (data || (0 == n_data_components)) &&
-			ALLOCATE(points,Triple,number_of_points)&&
-			ALLOCATE(normalpoints,Triple,number_of_points)&&
-			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points)&&
-			ALLOCATE(texturepoints,Triple,number_of_points)))&&
-			(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_polygon_mode,polygon_type,
-			number_of_points_in_xi1,number_of_points_in_xi2, points,
-			normalpoints, tangentpoints, texturepoints, n_data_components,data)))
+		int replaceRequired = 0;
+		/* find if vertex already in the array */
+		int vertex_location = array->find_fast_search_id_location(cm.number);
+		/* vertex found in array, check if update is required */
+		if (vertex_location >= 0)
+		{
+			array->get_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				vertex_location, 1, &replaceRequired);
+		}
+		if ((vertex_location < 0 || replaceRequired) && (NULL != xi_points) &&
+			(floatData || (0 == n_data_components)) &&
+			(ALLOCATE(normalpoints,Triple,number_of_points)) &&
+			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points))))
 		{
 			FE_value *feData = new FE_value[n_data_components];
 			/* for selective editing of GT_object primitives, record element ID */
-			get_FE_element_identifier(element, &cm);
-			GT_surface_set_integer_identifier(surface, cm.number);
+			if (vertex_location < 0)
+			{
+				array->add_fast_search_id(cm.number);
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					1, 1, &(cm.number));
+				vertex_start = array->get_number_of_vertices(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+				int modificationRequired = 0;
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+					1, 1, &modificationRequired);
+			}
+			else
+			{
+				array->replace_integer_vertex_buffer_at_position(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
+					&(cm.number));
+				array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					vertex_location, 1, &vertex_start);
+			}
+
 			/* calculate the xi coordinates and store in xi_points array */
 			const FE_value xi_distance1 = (FE_value)(number_of_points_in_xi1 - 1);
 			const FE_value xi_distance2 = (FE_value)(number_of_points_in_xi2 - 1);
@@ -1901,16 +2107,14 @@ struct GT_surface *create_GT_surface_from_FE_element(
 				}
 			}
 			/* calculate the points, normals and data */
-			point=points;
 			normal=normalpoints;
 			calculate_tangent_points = 0;
 			if (texture_coordinate_field)
 			{
 				calculate_tangent_points = 1;
 				tangent=tangentpoints;
-				texture_coordinate=texturepoints;
 			}
-			if ((g_QUADRILATERAL==polygon_type)&&
+			if ((SIMPLEX_SHAPE!=shape_type)&&
 				((ELEMENT_COLLAPSED_XI1_0==collapsed_element)||
 				(ELEMENT_COLLAPSED_XI1_1==collapsed_element)||
 				(ELEMENT_COLLAPSED_XI2_0==collapsed_element)||
@@ -1924,9 +2128,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 			}
 			const FE_value special_normal_sign = reverse_winding ? -1.0 : 1.0;
 			i=0;
-			return_code = 1;
 			FE_value *xi = xi_points;
-			while ((i<number_of_points)&&surface)
+			while ((i<number_of_points)&&return_code)
 			{
 				return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location_with_parent(
 					field_cache, element, /*dimension*/2, xi, top_level_element));
@@ -1972,12 +2175,17 @@ struct GT_surface *create_GT_surface_from_FE_element(
 				}
 				if (return_code)
 				{
-					(*point)[0]=ZnReal(coordinates[0]);
-					(*point)[1]=ZnReal(coordinates[1]);
-					(*point)[2]=ZnReal(coordinates[2]);
-					point++;
-					/* calculate the normals */
-					/* calculate the normal=d/d_xi1 x d/d_xi2 */
+					CAST_TO_OTHER(floatField,coordinates,GLfloat,coordinate_dimension);
+					if (vertex_location < 0)
+					{
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							coordinate_dimension, 1, floatField);
+					}
+					else
+					{
+						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							vertex_start + i, coordinate_dimension, 1, floatField);
+					}
 					(*normal)[0] = ZnReal(derivative_xi1[1]*derivative_xi2[2] - derivative_xi2[1]*derivative_xi1[2]);
 					(*normal)[1] = ZnReal(derivative_xi1[2]*derivative_xi2[0] - derivative_xi2[2]*derivative_xi1[0]);
 					(*normal)[2] = ZnReal(derivative_xi1[0]*derivative_xi2[1] - derivative_xi2[0]*derivative_xi1[1]);
@@ -2014,6 +2222,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 						}
 						tangent++;
 					}
+					/* calculate the normals */
+					/* calculate the normal=d/d_xi1 x d/d_xi2 */
 					if (special_normals)
 					{
 						if (((ELEMENT_COLLAPSED_XI1_0==collapsed_element) && (!reverse_winding)) ||
@@ -2023,9 +2233,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=ZnReal(derivative_xi1[0]);
-								(*normal)[1]=ZnReal(derivative_xi1[1]);
-								(*normal)[2]=ZnReal(derivative_xi1[2]);
+								(*normal)[0] = ZnReal(derivative_xi1[0]);
+								(*normal)[1] = ZnReal(derivative_xi1[1]);
+								(*normal)[2] = ZnReal(derivative_xi1[2]);
 							}
 						}
 						else if (ELEMENT_COLLAPSED_XI2_0==collapsed_element)
@@ -2034,9 +2244,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi2 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=ZnReal(derivative_xi2[0]);
-								(*normal)[1]=ZnReal(derivative_xi2[1]);
-								(*normal)[2]=ZnReal(derivative_xi2[2]);
+								(*normal)[0] = ZnReal(derivative_xi2[0]);
+								(*normal)[1] = ZnReal(derivative_xi2[1]);
+								(*normal)[2] = ZnReal(derivative_xi2[2]);
 							}
 						}
 						else if (((ELEMENT_COLLAPSED_XI1_1==collapsed_element) && (!reverse_winding)) ||
@@ -2046,9 +2256,9 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi1 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=ZnReal(derivative_xi1[0]);
-								(*normal)[1]=ZnReal(derivative_xi1[1]);
-								(*normal)[2]=ZnReal(derivative_xi1[2]);
+								(*normal)[0] = ZnReal(derivative_xi1[0]);
+								(*normal)[1] = ZnReal(derivative_xi1[1]);
+								(*normal)[2] = ZnReal(derivative_xi1[2]);
 							}
 						}
 						else if (ELEMENT_COLLAPSED_XI2_1==collapsed_element)
@@ -2057,35 +2267,48 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							{
 								/* save xi2 derivatives, get normal from cross product of
 									these */
-								(*normal)[0]=ZnReal(derivative_xi2[0]);
-								(*normal)[1]=ZnReal(derivative_xi2[1]);
-								(*normal)[2]=ZnReal(derivative_xi2[2]);
+								(*normal)[0] = ZnReal(derivative_xi2[0]);
+								(*normal)[1] = ZnReal(derivative_xi2[1]);
+								(*normal)[2] = ZnReal(derivative_xi2[2]);
 							}
 						}
 					}
 					normal++;
 					if (data_field)
 					{
-						CAST_TO_OTHER(data,feData,ZnReal,n_data_components);
-						data+=n_data_components;
+						CAST_TO_OTHER(floatData,feData,GLfloat,n_data_components);
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+								n_data_components, 1, floatData);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+								vertex_start + i, n_data_components, 1, floatData);
+						}
 					}
 					if (texture_coordinate_field)
 					{
-						(*texture_coordinate)[0]=ZnReal(texture_values[0]);
-						(*texture_coordinate)[1]=ZnReal(texture_values[1]);
-						(*texture_coordinate)[2]=ZnReal(texture_values[2]);
-						texture_coordinate++;
+						floatField[0] = GLfloat(texture_values[0]);
+						floatField[1] = GLfloat(texture_values[1]);
+						floatField[2] = GLfloat(texture_values[2]);
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+								texture_coordinate_dimension, 1, floatField);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+								vertex_start + i, texture_coordinate_dimension, 1, floatField);
+						}
 					}
-				}
-				else
-				{
-					/* error evaluating fields */
-					DESTROY(GT_surface)(&surface);
 				}
 				xi += 2;
 				i++;
 			}
-			if (surface)
+			if (return_code)
 			{
 				if (special_normals)
 				{
@@ -2220,6 +2443,8 @@ struct GT_surface *create_GT_surface_from_FE_element(
 						}
 					}
 				}
+
+				ZnReal distance;
 				/* normalize the normals */
 				normal=normalpoints;
 				if (modified_reverse_normals)
@@ -2232,6 +2457,19 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							(*normal)[0] = -(*normal)[0]/distance;
 							(*normal)[1] = -(*normal)[1]/distance;
 							(*normal)[2] = -(*normal)[2]/distance;
+						}
+						floatField[0] = (GLfloat)(*normal)[0];
+						floatField[1] = (GLfloat)(*normal)[1];
+						floatField[2] = (GLfloat)(*normal)[2];
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+								3, 1, floatField);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+								vertex_start + (number_of_points - i), 3, 1, floatField);
 						}
 						normal++;
 					}
@@ -2246,6 +2484,19 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							(*normal)[0] /= distance;
 							(*normal)[1] /= distance;
 							(*normal)[2] /= distance;
+						}
+						floatField[0] = (GLfloat)(*normal)[0];
+						floatField[1] = (GLfloat)(*normal)[1];
+						floatField[2] = (GLfloat)(*normal)[2];
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+								3, 1, floatField);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+								vertex_start + (number_of_points - i), 3, 1, floatField);
 						}
 						normal++;
 					}
@@ -2263,43 +2514,81 @@ struct GT_surface *create_GT_surface_from_FE_element(
 							(*tangent)[1] /= distance;
 							(*tangent)[2] /= distance;
 						}
+						floatField[0] = (GLfloat)(*tangent)[0];
+						floatField[1] = (GLfloat)(*tangent)[1];
+						floatField[2] = (GLfloat)(*tangent)[2];
+						if (vertex_location < 0)
+						{
+							array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+								3, 1, floatField);
+						}
+						else
+						{
+							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+								vertex_start + (number_of_points - i), 3, 1, floatField);
+						}
 						tangent++;
 					}
 				}
+
 			}
 			delete[] feData;
 		}
-		else
+		if (return_code && (vertex_location < 0))
 		{
-			DEALLOCATE(points);
-			DEALLOCATE(normalpoints);
-			if (tangentpoints)
-			{
-				DEALLOCATE(tangentpoints);
-			}
-			if (texturepoints)
-			{
-				DEALLOCATE(texturepoints);
-			}
-			if (data)
-			{
-				DEALLOCATE(data);
-			}
+			unsigned int number_of_vertices = number_of_points;
+			unsigned int number_of_xi1 = number_of_points_in_xi1;
+			unsigned int number_of_xi2 = number_of_points_in_xi2;
+			int polygonType = (int)polygon_type;
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_vertices);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+				1, 1, &polygonType);
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+				1, 1, &number_of_xi1);
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+				1, 1, &number_of_xi2);
+			if (shape_type == SIMPLEX_SHAPE)
+				array->fill_element_index(vertex_start, number_of_xi1, number_of_xi2,
+					ARRAY_SHAPE_TYPE_SIMPLEX);
+			else
+				array->fill_element_index(vertex_start, number_of_xi1, number_of_xi2,
+					ARRAY_SHAPE_TYPE_UNSPECIFIED);
 		}
+		if (replaceRequired)
+		{
+			unsigned int number_of_vertices = number_of_points;
+			int updated = 0;
+			array->replace_integer_vertex_buffer_at_position(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				vertex_location, 1, 1, &updated);
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW,
+					1, 1, &vertex_start);
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW_COUNT,
+					1, 1, &number_of_vertices);
+		}
+
 		delete[] xi_points;
 		cmzn_differentialoperator_destroy(&d_dxi1);
 		cmzn_differentialoperator_destroy(&d_dxi2);
+		DEALLOCATE(normalpoints);
+		if (tangentpoints)
+		{
+			DEALLOCATE(tangentpoints);
+		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_GT_surface_from_FE_element.  Invalid argument(s)");
-		surface=(struct GT_surface *)NULL;
+			"FE_element_add_surface_to_vertex_array.  Invalid argument(s)");
 	}
-	LEAVE;
 
-	return (surface);
-} /* create_GT_surface_from_FE_element */
+	return (return_code);
+}
 
 int Set_element_and_local_xi(struct FE_element **element_block,
 	int *n_xi, FE_value *xi, struct FE_element **element)
@@ -2364,42 +2653,39 @@ The <xi> are set to their local values within the returned <element>.
 	return(return_code);
 }
 
-struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
+int add_glyphset_vertex_from_FE_element(
+	struct GT_object *graphics_object,
 	cmzn_fieldcache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points, FE_value_triple *xi_points,
-	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
-	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
+	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
 	struct Computed_field *data_field,
-	struct cmzn_font *font, struct Computed_field *label_field,
-	FE_value *label_offset, char *static_label_text[3],
+	struct Computed_field *label_field,
 	enum cmzn_graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers)
 {
-	char **label, **labels;
+	char **label = 0, **labels = 0;
 	FE_value a[3], b[3], c[3], coordinates[3], orientation_scale[9], size[3],
 		variable_scale[3], xi[3];
-	GLfloat *data;
-	int draw_all, i, j, n_data_components, *name, *names,
+	GLfloat *data = NULL;
+	int draw_all, i, j, n_data_components, return_code = 1,
 		number_of_orientation_scale_components, number_of_variable_scale_components,
-		point_number, point_selected,	points_to_draw;
+		point_number, point_selected, points_to_draw, *names = 0,  *name = 0;
 	struct CM_element_information cm;
-	struct GT_glyph_set *glyph_set;
 	Triple *axis1, *axis1_list, *axis2, *axis2_list, *axis3, *axis3_list,
 		*point, *point_list, *scale, *scale_list;
+	struct Graphics_vertex_array *array;
 
-	ENTER(create_GT_glyph_set_from_FE_element);
 	/* must set following to 0 in case fields not supplied */
 	number_of_orientation_scale_components = 0;
 	number_of_variable_scale_components = 0;
-	if (field_cache && element && coordinate_field &&
+
+	if (graphics_object && (0 != (array = GT_object_get_vertex_set(graphics_object))) &&
+		field_cache && element && coordinate_field &&
 		(3 >= Computed_field_get_number_of_components(coordinate_field)) &&
-		(0 < number_of_xi_points) && xi_points && ((glyph &&
-		offset && base_size && scale_factors &&
-		((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
+		(0 < number_of_xi_points) && xi_points && ((((!orientation_scale_field)||((9>=(number_of_orientation_scale_components=
 			Computed_field_get_number_of_components(orientation_scale_field)))&&
 			Computed_field_is_orientation_scale_capable(orientation_scale_field,
 				(void *)NULL))) &&
@@ -2412,16 +2698,8 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 		coordinates[0] = 0.0;
 		coordinates[1] = 0.0;
 		coordinates[2] = 0.0;
-		glyph_set = (struct GT_glyph_set *)NULL;
-		point_list = (Triple *)NULL;
-		axis1_list = (Triple *)NULL;
-		axis2_list = (Triple *)NULL;
-		axis3_list = (Triple *)NULL;
-		scale_list = (Triple *)NULL;
-		labels = (char **)NULL;
 		n_data_components = 0;
 		data = 0;
-		names = (int *)NULL;
 		if ((CMZN_GRAPHICS_SELECT_MODE_ON == select_mode) ||
 			(CMZN_GRAPHICS_SELECT_MODE_OFF == select_mode) ||
 			((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == select_mode) && element_selected))
@@ -2458,7 +2736,18 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 				points_to_draw = number_of_xi_points - points_to_draw;
 			}
 		}
-		if (0 < points_to_draw)
+		/* store element number as object_name for editing GT_object primitives */
+		get_FE_element_identifier(element, &cm);
+		int replaceRequired = 0;
+		/* find if vertex already in the array */
+		int vertex_location = array->find_fast_search_id_location(cm.number);
+		/* vertex found in array, check if update is required */
+		if (vertex_location >= 0)
+		{
+			array->get_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				vertex_location, 1, &replaceRequired);
+		}
+		if ((0 < points_to_draw) && (vertex_location < 0 || replaceRequired))
 		{
 			draw_all = (points_to_draw == number_of_xi_points);
 			if (data_field)
@@ -2482,30 +2771,13 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 			{
 				ALLOCATE(names,int,points_to_draw);
 			}
-			/* store element number as object_name for editing GT_object primitives */
-			get_FE_element_identifier(element, &cm);
-			Triple glyph_base_size, glyph_scale_factors, glyph_offset, glyph_label_offset;
-			for (i = 0; i < 3; i++)
-			{
-				glyph_base_size[i] = static_cast<GLfloat>(base_size[i]);
-				glyph_scale_factors[i] = static_cast<GLfloat>(scale_factors[i]);
-				glyph_offset[i] = static_cast<GLfloat>(offset[i]);
-				glyph_label_offset[i] = static_cast<GLfloat>(label_offset[i]);
-			}
 			if ((data || (!n_data_components)) && ((!label_field) || labels) &&
-				((CMZN_GRAPHICS_SELECT_MODE_OFF == select_mode) || names) &&
-				ALLOCATE(point_list, Triple, points_to_draw) &&
-				ALLOCATE(axis1_list, Triple, points_to_draw) &&
-				ALLOCATE(axis2_list, Triple, points_to_draw) &&
-				ALLOCATE(axis3_list, Triple, points_to_draw) &&
-				ALLOCATE(scale_list, Triple, points_to_draw) &&
-				(glyph_set = CREATE(GT_glyph_set)(points_to_draw, point_list,
-					axis1_list, axis2_list, axis3_list, scale_list,
-					glyph, glyph_repeat_mode, glyph_base_size, glyph_scale_factors, glyph_offset,
-					font, labels, glyph_label_offset, static_label_text, n_data_components, data,
-					/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
-					/*label_density_list*/(Triple *)NULL,
-					cm.number, names)))
+					((CMZN_GRAPHICS_SELECT_MODE_OFF == select_mode) || names) &&
+					ALLOCATE(point_list, Triple, points_to_draw) &&
+					ALLOCATE(axis1_list, Triple, points_to_draw) &&
+					ALLOCATE(axis2_list, Triple, points_to_draw) &&
+					ALLOCATE(axis3_list, Triple, points_to_draw) &&
+					ALLOCATE(scale_list, Triple, points_to_draw))
 			{
 				point = point_list;
 				axis1 = axis1_list;
@@ -2514,7 +2786,8 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 				scale = scale_list;
 				name = names;
 				label = labels;
-				for (i = 0; (i < number_of_xi_points) && glyph_set; i++)
+				GLfloat *data_value = data;
+				for (i = 0; i < number_of_xi_points; i++)
 				{
 					if (point_numbers)
 					{
@@ -2585,11 +2858,10 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 							axis2++;
 							axis3++;
 							scale++;
-
 							if (data_field)
 							{
-								CAST_TO_OTHER(data,feData,ZnReal,n_data_components);
-								data += n_data_components;
+								CAST_TO_OTHER(data_value,feData,GLfloat,n_data_components);
+								data_value += n_data_components;
 							}
 							if (names)
 							{
@@ -2601,42 +2873,106 @@ struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
 								label++;
 							}
 						}
-						else
-						{
-							/* error evaluating fields */
-							DESTROY(GT_glyph_set)(&glyph_set);
-						}
 					}
 				}
-			}
-			else
-			{
+				return_code = fill_glyph_graphics_vertex_array(
+					array, vertex_location, (unsigned int)points_to_draw, point_list,
+					axis1_list, axis2_list, axis3_list, scale_list,
+					n_data_components, data, 0, cm.number, names, labels, 0, 0, 0);
 				DEALLOCATE(point_list);
 				DEALLOCATE(axis1_list);
 				DEALLOCATE(axis2_list);
 				DEALLOCATE(axis3_list);
 				DEALLOCATE(scale_list);
-				DEALLOCATE(data);
-				DEALLOCATE(labels);
+				if (data)
+					DEALLOCATE(data);
+				if (labels)
+				{
+					for (int k = 0; k < points_to_draw; k++)
+						DEALLOCATE(labels[k]);
+					DEALLOCATE(labels);
+				}
 				DEALLOCATE(names);
 			}
-			if (!glyph_set)
-			{
-				display_message(ERROR_MESSAGE,
-					"create_GT_glyph_set_from_FE_element.  Failed");
-			}
 			delete[] feData;
+		}
+		if (replaceRequired)
+		{
+			int updated = 0;
+			array->replace_integer_vertex_buffer_at_position(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				vertex_location, 1, 1, &updated);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_GT_glyph_set_from_FE_element.  Invalid argument(s)");
-		glyph_set=(struct GT_glyph_set *)NULL;
+			"add_glyphset_vertex_from_FE_element.  Invalid argument(s)");
+		return_code = 0;
 	}
-	LEAVE;
 
-	return (glyph_set);
-} /* create_GT_glyph_set_from_FE_element */
+	return (return_code);
+}
 
+int Cmiss_graphic_point_graphics_to_vertex_buffer(
+	cmzn_fieldcache_id field_cache, FE_value time, struct Computed_field *label_field,
+	const FE_value *base_size, const FE_value *offset, const FE_value *scale_factors,
+	struct Graphics_vertex_array *array)
+{
+	int return_code = 1;
+//	char **labels = NULL;
+	if (array)
+	{
+		if (field_cache)
+		{
+			cmzn_fieldcache_set_time(field_cache, time);
+			if (label_field)
+			{
+//				ALLOCATE(labels, char *, 1);
+//				*labels = Cmiss_field_evaluate_string(graphic->label_field, field_cache);
+			}
+		}
 
+		Triple point, axis1, axis2, axis3, scale_list;
+		point[0] = (GLfloat)offset[0];
+		point[1] = (GLfloat)offset[1];
+		point[2] = (GLfloat)offset[2];
+		axis1[0] = (GLfloat)base_size[0];
+		axis1[1] = 0.0;
+		axis1[2] = 0.0;
+		axis2[0] = 0.0;
+		axis2[1] = (GLfloat)base_size[1];
+		axis2[2] = 0.0;
+		axis3[0] = 0.0;
+		axis3[1] = 0.0;
+		axis3[2] = (GLfloat)base_size[2];
+		scale_list[0] = (GLfloat)scale_factors[0];
+		scale_list[1] = (GLfloat)scale_factors[1];
+		scale_list[2] = (GLfloat)scale_factors[2];
+		unsigned int number_of_points = 1;
+		unsigned int vertex_start = array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+		array->add_unsigned_integer_attribute(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+			1, 1, &number_of_points);
+		array->add_unsigned_integer_attribute(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+			1, 1, &vertex_start);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			3, number_of_points, point);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS1,
+			3, number_of_points, axis1);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS2,
+			3, number_of_points, axis2);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS3,
+			3, number_of_points, axis3);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_SCALE,
+			3, number_of_points, scale_list);
+	}
+	else
+	{
+		return_code = 0;
+	}
+
+	return (return_code);
+}

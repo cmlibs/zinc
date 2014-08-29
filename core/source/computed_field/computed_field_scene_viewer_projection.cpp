@@ -424,7 +424,6 @@ Clear the type specific data used by this type.
 		{
 			DEALLOCATE(current_local_transformation);
 		}
-
 		if (sceneviewernotifier)
 		{
 			cmzn_sceneviewernotifier_destroy(&sceneviewernotifier);

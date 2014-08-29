@@ -23,6 +23,7 @@ value over 2-D elements.
 #include "general/object.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/graphics_object.h"
+#include "graphics/graphics_object.hpp"
 #include "general/message.h"
 
 #define CONTOUR_POLYLINE_REALLOCATE_SIZE 25
@@ -202,8 +203,8 @@ of components are expected to be supplied in <data1> and <data2>.
 	return (return_code);
 } /* Contour_lines_add_segment */
 
-int Contour_lines_add_to_graphics_object(struct Contour_lines *contour_lines,
-	struct GT_object *graphics_object,ZnReal time,int object_name)
+int Contour_lines_add_to_vertex_array(struct Contour_lines *contour_lines,
+	struct Graphics_vertex_array *array,int object_name)
 /*******************************************************************************
 LAST MODIFIED : 1 February 2000
 
@@ -212,69 +213,54 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 <graphics_object> at <time>.
 ==============================================================================*/
 {
-	GLfloat *data;
 	int i,return_code;
 	struct Contour_polyline *polyline;
-	struct GT_polyline *gt_polyline;
 	Triple *point_list;
 
 	ENTER(Contour_lines_add_to_graphics_object);
-	if (contour_lines&&graphics_object)
+	if (contour_lines&&array)
 	{
 		return_code=1;
+		unsigned int vertex_start = array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+		GLfloat *dataField = NULL;
+		if (0 < contour_lines->number_of_data_components)
+			dataField = new GLfloat[contour_lines->number_of_data_components];
 		for (i=0;(i<contour_lines->number_of_polylines)&&return_code;i++)
 		{
 			polyline= &(contour_lines->polylines[i]);
+			unsigned int number_of_vertices = (unsigned int)polyline->number_of_points;
 			point_list=(Triple *)NULL;
-			data=0;
-			if (ALLOCATE(point_list,Triple,polyline->number_of_points)&&
-				((0==contour_lines->number_of_data_components)||
-					ALLOCATE(data,GLfloat,contour_lines->number_of_data_components*
-						polyline->number_of_points)))
+
+			array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				3, polyline->number_of_points, polyline->point_list[0]);
+			ZnReal *original_data = polyline->data;
+			for (int j = 0; j < polyline->number_of_points; j++)
 			{
-				memcpy(point_list,polyline->point_list,
-					polyline->number_of_points*sizeof(Triple));
-				if (0<contour_lines->number_of_data_components)
+				if (contour_lines->number_of_data_components > 0)
 				{
-					CAST_TO_OTHER(data, polyline->data, GLfloat, polyline->number_of_points*contour_lines->number_of_data_components);
-				}
-				if (NULL != (gt_polyline=CREATE(GT_polyline)(g_PLAIN,
-					polyline->number_of_points,point_list,(Triple *)NULL,
-					contour_lines->number_of_data_components,data)))
-				{
-					/* for selective editing of primitives, record object_name */
-					GT_polyline_set_integer_identifier(gt_polyline, object_name);
-					if (!GT_OBJECT_ADD(GT_polyline)(graphics_object,time,gt_polyline))
-					{
-						return_code=0;
-					}
-				}
-				else
-				{
-					return_code=0;
+					CAST_TO_OTHER(dataField, original_data, GLfloat, contour_lines->number_of_data_components);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+						contour_lines->number_of_data_components, 1, dataField);
+					original_data += contour_lines->number_of_data_components;
 				}
 			}
-			if (!return_code)
-			{
-				display_message(ERROR_MESSAGE,
-					"Contour_lines_add_to_graphics_object.  Failed");
-				if (gt_polyline)
-				{
-					DESTROY(GT_polyline)(&gt_polyline);
-				}
-				else
-				{
-					if (point_list)
-					{
-						DEALLOCATE(point_list);
-					}
-					if (data)
-					{
-						DEALLOCATE(data);
-					}
-				}
-			}
+			array->add_fast_search_id(object_name);
+			array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+				1, 1, &(object_name));
+			int modificationRequired = 0;
+			array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
+				1, 1, &modificationRequired);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_vertices);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			vertex_start += number_of_vertices;
 		}
+		if (0 != contour_lines->number_of_data_components)
+			delete[] dataField;
 	}
 	else
 	{
@@ -866,12 +852,13 @@ data values for more efficient storage and smoother rendering.
 	return (return_code);
 } /* Contour_lines_link_ends */
 
+
 int create_iso_lines_from_FE_element(struct FE_element *element,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *isoscalar_field,FE_value iso_value,
+	struct Computed_field *isoscalar_field, FE_value iso_value,
 	struct Computed_field *data_field,int number_of_segments_in_xi1_requested,
 	int number_of_segments_in_xi2_requested,struct FE_element *top_level_element,
-	struct GT_object *graphics_object)
+	struct Graphics_vertex_array *array)
 {
 	enum Collapsed_element_type collapsed_element;
 	enum FE_element_shape_type shape_type1;
@@ -890,7 +877,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 		(0<number_of_segments_in_xi2_requested)&&coordinate_field&&
 		(3>=Computed_field_get_number_of_components(coordinate_field))&&
 		isoscalar_field&&(1==Computed_field_get_number_of_components(isoscalar_field))&&
-		graphics_object&&(g_POLYLINE==GT_object_get_type(graphics_object)))
+		array)
 	{
 		return_code=1;
 		if (data_field)
@@ -1015,9 +1002,8 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 			{
 				Contour_lines_link_ends(contour_lines);
 				get_FE_element_identifier(element, &cm_identifier);
-				if (!Contour_lines_add_to_graphics_object(contour_lines,
-						graphics_object, /*graphics_object_time*/0.0,
-						cm_identifier.number))
+				if (!Contour_lines_add_to_vertex_array(contour_lines,
+						array, cm_identifier.number))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");

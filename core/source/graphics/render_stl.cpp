@@ -225,71 +225,6 @@ Module functions
 int makestl(Stl_context& stl_context, gtObject *graphics_object, ZnReal time);
 
 /***************************************************************************//**
- * Writes a glyph set to STL file.
- * Only surface glyphs can be output; other primitives are silently ignored.
- * Transformations are flattened.
- *
- * @param stl_context output  STL file and context data
- * @param glyph_set  The glyph_set to output triangulated surfaces from.
- * @param time the time at which the graphics are output
- * @return 1 on success, 0 on failure
- */
-static int draw_glyph_set_stl(Stl_context& stl_context,
-	GT_glyph_set *glyph_set, ZnReal time)
-{
-	int return_code = 1;
-	if (glyph_set)
-	{
-		Triple *axis1 = glyph_set->axis1_list;
-		Triple *axis2 = glyph_set->axis2_list;
-		Triple *axis3 = glyph_set->axis3_list;
-		Triple *point = glyph_set->point_list;
-		Triple *scale = glyph_set->scale_list;
-		Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
-		GT_object *glyph = glyph_set->glyph;
-		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
-		const int number_of_glyphs =
-			cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
-		const int number_of_points = glyph_set->number_of_points;
-		for (int i = 0; i < number_of_points; i++)
-		{
-			for (int glyph_number = 0; glyph_number < number_of_glyphs; glyph_number++)
-			{
-				resolve_glyph_axes(glyph_repeat_mode, glyph_number,
-					glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-					*point, *axis1, *axis2, *axis3, *scale,
-					temp_point, temp_axis1, temp_axis2, temp_axis3);
-				Transformation_matrix matrix(
-					(double)temp_axis1[0], (double)temp_axis2[0], (double)temp_axis3[0], (double)temp_point[0],
-					(double)temp_axis1[1], (double)temp_axis2[1], (double)temp_axis3[1], (double)temp_point[1],
-					(double)temp_axis1[2], (double)temp_axis2[2], (double)temp_axis3[2], (double)temp_point[2],
-					0.0, 0.0, 0.0, 1.0);
-				stl_context.push_multiply_transformation(matrix);
-				struct GT_object *temp_glyph = glyph;
-				/* call the glyph display lists of the linked-list of glyphs */
-				while (temp_glyph)
-				{
-					makestl(stl_context, temp_glyph, time);
-					temp_glyph = GT_object_get_next_object(temp_glyph);
-				}
-				stl_context.pop_transformation();
-			}
-			point++;
-			axis1++;
-			axis2++;
-			axis3++;
-			scale++;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "draw_glyph_set_stl. Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-/***************************************************************************//**
  * Writes quadrilateral and triangle surface strips to STL file as
  * individual triangles.
  * 
@@ -337,20 +272,6 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 			{
 				switch (polygon_type)
 				{
-					case g_QUADRILATERAL:
-					{
-						for (j=npts2-1; j>0; j--)
-						{
-							for (i=npts1-1; i>0; i--)
-							{
-								stl_context.write_triangle(point[0], point[1], point[npts1]);
-								stl_context.write_triangle(point[1], point[npts1+1], point[npts1]);
-								point++;
-							}
-							point++;
-						}
-						return_code=1;
-					} break;
 					case g_TRIANGLE:
 					{
 						/* expecting npts2 == npts1 */
@@ -368,7 +289,7 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 						}
 						return_code=1;
 					} break;
-					case g_GENERAL_POLYGON:
+					default:
 					{
 						/* Do nothing */
 					} break;
@@ -385,22 +306,6 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 				{
 					switch (polygon_type)
 					{
-						case g_QUADRILATERAL:
-						{
-							if (strip)
-							{
-								for (j=0; j<npts2-2; j+=2)
-								{
-									stl_context.write_triangle(point[j], point[j+1], point[j+2]);
-									stl_context.write_triangle(point[j+1], point[j+3], point[j+2]);
-								}
-							}
-							else
-							{
-								stl_context.write_triangle(point[0], point[1], point[2]);
-								stl_context.write_triangle(point[0], point[2], point[3]);
-							}
-						} break;
 						case g_TRIANGLE:
 						{
 							if (strip)
@@ -471,66 +376,6 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
 
 	return (return_code);
 } /* draw_surface_stl */
-
-/***************************************************************************//**
- * Writes voltex triangles to STL file.
- * 
- * @param stl_context output STL file and context data
- * @param surfpts array of points making up the surface
- * @param number_of_vertices number of vertices in structure
- * @param vertex_list array of vertices
- * @param number_of_triangles number of triangles to output
- * @param triangle_list array of triangles indexing the vertex_list
- * @param number_of_data_components ignored
- * @param material ignored
- * @param spectrum ignored
- * @return 1 on success, 0 on failure
- */
-int draw_voltex_stl(Stl_context& stl_context,
-	int number_of_vertices, struct VT_iso_vertex **vertex_list,
-	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int number_of_data_components,
-	struct Graphical_material *material, struct Spectrum *spectrum)
-{
-	int i, index1, index2, index3, return_code;
-	Triple v1, v2, v3;
-
-	ENTER(draw_voltex_stl);
-	/* Keep a similar interface to all the other render implementations */
-	USE_PARAMETER(number_of_vertices);
-	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(material);
-	USE_PARAMETER(spectrum);
-	return_code=0;
-	if (triangle_list && vertex_list && (0<number_of_triangles))
-	{
-		for (i=0;i<number_of_triangles;i++)
-		{
-			index1 = triangle_list[i]->vertices[0]->index;
-			index2 = triangle_list[i]->vertices[1]->index;
-			index3 = triangle_list[i]->vertices[2]->index;
-			v1[0] = vertex_list[index1]->coordinates[0];
-			v1[1] = vertex_list[index1]->coordinates[1];
-			v1[2] = vertex_list[index1]->coordinates[2];
-			v2[0] = vertex_list[index2]->coordinates[0];
-			v2[1] = vertex_list[index2]->coordinates[1];
-			v2[2] = vertex_list[index2]->coordinates[2];
-			v3[0] = vertex_list[index3]->coordinates[0];
-			v3[1] = vertex_list[index3]->coordinates[1];
-			v3[2] = vertex_list[index3]->coordinates[2];
-			stl_context.write_triangle(v1, v2, v3);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"draw_voltex_stl.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* draw_voltex_stl */
 
 /***************************************************************************//**
  * Writes surface primitives in graphics object to STL file.
@@ -620,139 +465,6 @@ int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 		{
 			switch (object->object_type)
 			{
-				case g_GLYPH_SET:
-				{
-					struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
-
-					glyph_set = primitive_list1->gt_glyph_set.first;
-					if (glyph_set != 0)
-					{
-						if (proportion>0)
-						{
-							glyph_set_2 = primitive_list2->gt_glyph_set.first;
-							while (glyph_set&&glyph_set_2)
-							{
-								interpolate_glyph_set=morph_GT_glyph_set(proportion,
-									glyph_set,glyph_set_2);
-								if (interpolate_glyph_set != 0)
-								{
-									draw_glyph_set_stl(stl_context, interpolate_glyph_set, time);
-									DESTROY(GT_glyph_set)(&interpolate_glyph_set);
-								}
-								glyph_set=glyph_set->ptrnext;
-								glyph_set_2=glyph_set_2->ptrnext;
-							}
-						}
-						else
-						{
-							while (glyph_set)
-							{
-								draw_glyph_set_stl(stl_context, glyph_set, time);
-								glyph_set=glyph_set->ptrnext;
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"makestl.  Missing glyph_set");
-						return_code=0;
-					}
-				} break;
-				case g_VOLTEX:
-				{
-					struct GT_voltex *voltex;
-
-					voltex = primitive_list1->gt_voltex.first;
-					if (voltex != 0)
-					{
-						while (voltex)
-						{
-							draw_voltex_stl(stl_context,
-								voltex->number_of_vertices, voltex->vertex_list,
-								voltex->number_of_triangles, voltex->triangle_list,
-								voltex->n_data_components, 
-								object->default_material, object->spectrum);
-							voltex=voltex->ptrnext;
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"makestl.  Missing voltex");
-						return_code=0;
-					}
-				} break;
-				case g_POINTSET:
-				case g_POLYLINE:					
-				{
-					/* not relevant to STL: ignore */
-					return_code=1;
-				} break;
-				case g_SURFACE:
-				{
-					struct GT_surface *interpolate_surface,*surface,*surface_2;
-
-					surface = primitive_list1->gt_surface.first;
-					if (surface != 0)
-					{
-						if (proportion>0)
-						{
-							surface_2 = primitive_list2->gt_surface.first;
-							while (surface&&surface_2)
-							{
-								interpolate_surface=morph_GT_surface(proportion,
-									surface,surface_2);
-								if (interpolate_surface != 0)
-								{
-									draw_surface_stl(stl_context,
-										interpolate_surface->pointlist,
-										interpolate_surface->normallist,
-										interpolate_surface->texturelist,
-										interpolate_surface->n_pts1,
-										interpolate_surface->n_pts2,
-										interpolate_surface->surface_type,
-										interpolate_surface->polygon,
-										interpolate_surface->n_data_components,
-										interpolate_surface->data,
-										object->default_material, object->spectrum);
-									DESTROY(GT_surface)(&interpolate_surface);
-								}
-								surface=surface->ptrnext;
-								surface_2=surface_2->ptrnext;
-							}
-						}
-						else
-						{
-							while (surface)
-							{
-								draw_surface_stl(stl_context,
-									surface->pointlist,surface->normallist,
-									surface->texturelist,
-									surface->n_pts1, surface->n_pts2,
-									surface->surface_type, surface->polygon,
-									surface->n_data_components,
-									surface->data,object->default_material,
-									object->spectrum);
-								surface=surface->ptrnext;
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"makestl.  Missing surface");
-						return_code=0;
-					}
-				} break;
-				case g_NURBS:
-				{
-					display_message(WARNING_MESSAGE,"makestl.  nurbs not supported yet");
-					return_code=1;
-				} break;
-				case g_USERDEF:
-				{
-				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,"makestl.  Invalid object type");

@@ -15,6 +15,7 @@
 #include "general/message.h"
 #include "general/mystring.h"
 #include "graphics/glyph_axes.hpp"
+#include "graphics/graphics_vertex_array.hpp"
 
 cmzn_glyph_axes::cmzn_glyph_axes(cmzn_glyph *axisGlyphIn, double axisWidthIn) :
 	axisGlyph(axisGlyphIn->access()),
@@ -92,16 +93,24 @@ GT_object *createAxisGraphicsObject(int primaryAxis, GT_object *axisObject,
 	Triple glyph_scale_factors = { 0.0f, 0.0f, 0.0f };
 	Triple glyph_offset = { 0.0f, 0.0f, 0.0f };
 	Triple glyph_label_offset = { 1.1f, 0.0f, 0.0f };
-	GT_glyph_set *glyph_set = CREATE(GT_glyph_set)(1,
-		point_list, axis1_list, axis2_list, axis3_list, scale_list,
-		axisObject, repeat_mode,
-		glyph_base_size, glyph_scale_factors, glyph_offset,
-		font, (char **)0, glyph_label_offset, staticLabels, g_NO_DATA, 0,
-		/*label_bounds_dimension*/0, /*label_bounds_components*/0, /*label_bounds*/(ZnReal *)NULL,
-		/*label_density_list*/(Triple *)NULL, /*object_name*/-1, /*names*/(int *)NULL);
 
-	GT_object *graphicsObject = CREATE(GT_object)(name, g_GLYPH_SET, material);
-	GT_OBJECT_ADD(GT_glyph_set)(graphicsObject, /*time*/0.0, glyph_set);
+	GT_object *graphicsObject = CREATE(GT_object)(name, g_GLYPH_SET_VERTEX_BUFFERS, material);
+	GT_glyphset_vertex_buffers *glyphset = CREATE(GT_glyphset_vertex_buffers)();
+	GT_glyphset_vertex_buffers_setup(glyphset,
+		axisObject, repeat_mode,
+		glyph_base_size, glyph_scale_factors, glyph_offset, font,
+		glyph_label_offset, staticLabels,
+		0, 0);
+	fill_glyph_graphics_vertex_array(
+		GT_object_get_vertex_set(graphicsObject), /*vertex_location*/-1,
+		1, point_list,	axis1_list, axis2_list, axis3_list, scale_list,
+		g_NO_DATA, 0, 0, /*object_name*/-1, 0, 0, 0, 0, 0);
+	GT_OBJECT_ADD(GT_glyphset_vertex_buffers)(graphicsObject, glyphset);
+	DEALLOCATE(point_list);
+	DEALLOCATE(axis1_list);
+	DEALLOCATE(axis2_list);
+	DEALLOCATE(axis3_list);
+	DEALLOCATE(scale_list);
 	return graphicsObject;
 }
 

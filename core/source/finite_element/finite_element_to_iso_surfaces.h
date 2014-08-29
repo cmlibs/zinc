@@ -41,11 +41,11 @@ int Iso_surface_specification_destroy(
 	struct Iso_surface_specification **specification_address);
 
 /***************************************************************************//**
- * Converts a 3-D element into an iso_surface as a GT_surface
+ * Converts a 3-D element into an iso_surface as a GT_surface_vertex_buffer
  */
-int create_iso_surfaces_from_FE_element_new(struct FE_element *element,
-	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh, int *number_in_xi,
-	struct Iso_surface_specification *specification,
-	struct GT_object *graphics_object, enum cmzn_graphics_render_polygon_mode render_polygon_mode);
+int create_iso_surfaces_from_FE_element(struct FE_element *element,
+	cmzn_fieldcache_id field_cache, cmzn_mesh_id mesh,
+	struct Graphics_vertex_array *array,
+	int *number_in_xi, struct Iso_surface_specification *specification);
 
 #endif /* !defined (FINITE_ELEMENT_TO_ISO_SURFACES_H) */

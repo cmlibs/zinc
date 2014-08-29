@@ -112,13 +112,13 @@ struct GT_object *create_GT_object_arrow_solid(const char *name, int primary_axi
 	ZnReal r1 = 0.0, r2 = 0.0, x1 = 0.0, x2 = 0.0;
 	int i;
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *points = NULL, *normalpoints = NULL;
-
 	if (name&&(2<number_of_segments_around)&&(0<shaft_radius)&&(1>shaft_radius)&&
 		(0<shaft_length)&&(1>shaft_length))
 	{
-		glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+		glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+		GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
+			g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 		for (i=0;(i<4)&&glyph;i++)
 		{
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
@@ -166,25 +166,22 @@ struct GT_object *create_GT_object_arrow_solid(const char *name, int primary_axi
 					DEALLOCATE(normalpoints);
 				}
 			}
-			if (points&&(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,
-				CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,g_QUADRILATERAL,2,number_of_segments_around+1,
-				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+			if (!(points&&(fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+					g_TRIANGLE, 2, number_of_segments_around+1,
+					points,normalpoints,/*tangentpoints*/(Triple *)NULL,
+					 /*texturepoints*/(Triple *)NULL, g_NO_DATA, (GLfloat *)NULL))))
 			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DESTROY(GT_surface)(&surface);
-					DEACCESS(GT_object)(&glyph);
-				}
-			}
-			else
-			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
 				DEACCESS(GT_object)(&glyph);
 			}
+			DEALLOCATE(points);
+			DEALLOCATE(normalpoints);
 		}
-		if (!glyph)
+
+		if (glyph)
+		{
+			GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surface);
+		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
 				"create_GT_object_arrow_solid.  Error creating glyph");
@@ -206,34 +203,34 @@ struct GT_object *create_GT_object_arrow_solid(const char *name, int primary_axi
 struct GT_object *create_GT_object_cone(const char *name,int number_of_segments_around)
 {
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
+	struct GT_surface_vertex_buffers *surface;
 	Triple *points,*normalpoints;
 
 	if (name&&(2<number_of_segments_around))
 	{
-		surface=(struct GT_surface *)NULL;
+		surface=(struct GT_surface_vertex_buffers *)NULL;
 		if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 			ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 		{
 			construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-				g_NO_DATA,(GLfloat *)NULL)))
+			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+			GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
+				g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+			if (fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+				g_TRIANGLE, 2, number_of_segments_around+1,
+				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
+				 /*texturepoints*/(Triple *)NULL, g_NO_DATA, (GLfloat *)NULL))
 			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
+				GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surface);
 			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+			else
 			{
+				DESTROY(GT_surface_vertex_buffers)(&surface);
 				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_surface)(&surface);
 			}
+			DEALLOCATE(points);
+			DEALLOCATE(normalpoints);
 		}
 		if (!glyph)
 		{
@@ -256,61 +253,53 @@ struct GT_object *create_GT_object_cone(const char *name,int number_of_segments_
 struct GT_object *create_GT_object_cone_solid(const char *name,int number_of_segments_around)
 {
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *points,*normalpoints;
+	int return_code = 1;
 
 	if (name&&(2<number_of_segments_around))
 	{
-		glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
+		glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+		GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
+			g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 		if (glyph)
 		{
-			surface=(struct GT_surface *)NULL;
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 			{
 				construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
+				if (return_code && ( 0 == fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+					g_TRIANGLE, 2, number_of_segments_around+1,
+					points, normalpoints,/*tangentpoints*/(Triple *)NULL, /*texturepoints*/(Triple *)NULL,
+					g_NO_DATA, (GLfloat *)NULL)))
 				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
+					return_code = 0;
 				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DEACCESS(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
 			}
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 			{
 				construct_tube(number_of_segments_around, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
+				if (return_code && ( 0 == fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+					g_TRIANGLE, 2, number_of_segments_around+1,
+					points, normalpoints,/*tangentpoints*/(Triple *)NULL, /*texturepoints*/(Triple *)NULL,
+					g_NO_DATA, (GLfloat *)NULL)))
 				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
+					return_code = 0;
 				}
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
 			}
-			if (surface)
+			if (return_code)
 			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DEACCESS(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
+				GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surface);
 			}
 			else
 			{
+				DESTROY(GT_surface_vertex_buffers)(&surface);
 				DEACCESS(GT_object)(&glyph);
 			}
 		}
@@ -335,34 +324,32 @@ struct GT_object *create_GT_object_cone_solid(const char *name,int number_of_seg
 struct GT_object *create_GT_object_cylinder(const char *name,int number_of_segments_around)
 {
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *points,*normalpoints;
 
 	if (name&&(2<number_of_segments_around))
 	{
-		surface=(struct GT_surface *)NULL;
 		if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 			ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 		{
 			construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 				points,normalpoints);
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-				g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-				/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-				g_NO_DATA,(GLfloat *)NULL)))
+			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+			GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
+				g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+			if (fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+				g_TRIANGLE, 2, number_of_segments_around+1,
+				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
+				 /*texturepoints*/(Triple *)NULL, g_NO_DATA, (GLfloat *)NULL))
 			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
+				GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surface);
 			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+			else
 			{
+				DESTROY(GT_surface_vertex_buffers)(&surface);
 				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_surface)(&surface);
 			}
+			DEALLOCATE(points);
+			DEALLOCATE(normalpoints);
 		}
 		if (!glyph)
 		{
@@ -386,40 +373,30 @@ struct GT_object *create_GT_object_cylinder(const char *name,int number_of_segme
 struct GT_object *create_GT_object_cylinder_solid(const char *name,int number_of_segments_around)
 {
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *points,*normalpoints;
+	int return_code = 1;
 
 	if (name&&(2<number_of_segments_around))
 	{
-		glyph=CREATE(GT_object)(name,g_SURFACE, (struct Graphical_material *)NULL);
-		if (glyph)
+		glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+		GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
+			g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+		if (glyph && surface)
 		{
-			surface=(struct GT_surface *)NULL;
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 			{
 				construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
+				if (return_code && (0 == fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+					g_TRIANGLE, 2, number_of_segments_around+1,
+					points, normalpoints,/*tangentpoints*/(Triple *)NULL, /*texturepoints*/(Triple *)NULL,
+					g_NO_DATA, (GLfloat *)NULL)))
 				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
+					return_code = 0;
 				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DEACCESS(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-			else
-			{
-				DEACCESS(GT_object)(&glyph);
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
 			}
 			/* Cover over the ends */
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
@@ -427,51 +404,38 @@ struct GT_object *create_GT_object_cylinder_solid(const char *name,int number_of
 			{
 				construct_tube(number_of_segments_around,0.0,0.0,0.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
+				if (return_code && ( 0 == fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+					g_TRIANGLE, 2, number_of_segments_around+1,
+					points, normalpoints,/*tangentpoints*/(Triple *)NULL, /*texturepoints*/(Triple *)NULL,
+					g_NO_DATA, (GLfloat *)NULL)))
 				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
+					return_code = 0;
 				}
-			}
-			if (surface)
-			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DEACCESS(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
-			}
-			else
-			{
-				DEACCESS(GT_object)(&glyph);
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
 			}
 			if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 				ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 			{
 				construct_tube(number_of_segments_around,1.0,0.0,1.0,0.5,0.0,0.0,1,
 					points,normalpoints);
-				if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-							g_QUADRILATERAL,2,number_of_segments_around+1,points,normalpoints,
-							/*tangentpoints*/(Triple *)NULL,/*texturepoints*/(Triple *)NULL,
-							g_NO_DATA,(GLfloat *)NULL)))
+				if (return_code && ( 0 == fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+					g_TRIANGLE, 2, number_of_segments_around+1,
+					points, normalpoints,/*tangentpoints*/(Triple *)NULL, /*texturepoints*/(Triple *)NULL,
+					g_NO_DATA, (GLfloat *)NULL)))
 				{
-					DEALLOCATE(points);
-					DEALLOCATE(normalpoints);
+					return_code = 0;
 				}
+				DEALLOCATE(points);
+				DEALLOCATE(normalpoints);
 			}
-			if (surface)
+			if (return_code)
 			{
-				if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-				{
-					DEACCESS(GT_object)(&glyph);
-					DESTROY(GT_surface)(&surface);
-				}
+				GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surface);
 			}
 			else
 			{
+				DESTROY(GT_surface_vertex_buffers)(&surface);
 				DEACCESS(GT_object)(&glyph);
 			}
 		}
@@ -494,12 +458,10 @@ struct GT_object *create_GT_object_sphere(const char *name,int number_of_segment
 	ZnReal longitudinal_normal,phi,radial_normal,theta,x,y,z;
 	int i,j;
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *normal,*normalpoints,*points,*vertex;
 
 	if (name&&(2<number_of_segments_around)&&(1<number_of_segments_down))
 	{
-		surface=(struct GT_surface *)NULL;
 		if (ALLOCATE(points,Triple,
 			(number_of_segments_down+1)*(number_of_segments_around+1))&&
 			ALLOCATE(normalpoints,Triple,(number_of_segments_down+1)*
@@ -531,23 +493,23 @@ struct GT_object *create_GT_object_sphere(const char *name,int number_of_segment
 					normal += (number_of_segments_down+1);
 				}
 			}
-			if (!(surface=CREATE(GT_surface)(g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-				g_QUADRILATERAL,number_of_segments_down+1,number_of_segments_around+1,
+			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+			GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
+				g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+			if (fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
+				g_TRIANGLE, number_of_segments_down+1,number_of_segments_around+1,
 				points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+				 /*texturepoints*/(Triple *)NULL, g_NO_DATA, (GLfloat *)NULL))
 			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
+				GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surface);
 			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
+			else
 			{
+				DESTROY(GT_surface_vertex_buffers)(&surface);
 				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_surface)(&surface);
 			}
+			DEALLOCATE(points);
+			DEALLOCATE(normalpoints);
 		}
 		if (!glyph)
 		{

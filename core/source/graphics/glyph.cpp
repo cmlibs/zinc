@@ -264,8 +264,6 @@ Renders the label_bounds as lines and labels.
 		number_of_minor_lines, number_of_labels, number_of_ticks, return_code;
 	ZnReal axis_position, fabs_length, length, log_scale;
 	struct GT_object *graphics_object;
-	struct GT_pointset *label_set;
-	struct GT_polyline *polyline;
 	Triple *label_string_locations, *label_vertex, *major_linepoints, *major_vertex, 
 		*minor_linepoints, *minor_vertex;
 
@@ -355,6 +353,7 @@ Renders the label_bounds as lines and labels.
 			minor_vertex = minor_linepoints;
 			major_vertex = major_linepoints;
 			label_vertex = label_string_locations;
+			GT_polyline_vertex_buffers *polyline = 0;
 			for (j=first;j<=last;j++)
 			{
 				if (number_of_ticks > 1)
@@ -469,74 +468,103 @@ Renders the label_bounds as lines and labels.
 					number_of_minor_lines++;
 				}
 			}
-			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-				number_of_major_lines, major_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
+			polyline =
+				CREATE(GT_polyline_vertex_buffers)(g_PLAIN_DISCONTINUOUS, 0.0);
 			if (polyline)
 			{
-				graphics_object=CREATE(GT_object)(name,g_POLYLINE,
-					/*use the default material, must be before graphics which specify a material*/
-					(struct Graphical_material *)NULL);
-				if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
+				graphics_object=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS,0);
+				if (graphics_object)
 				{
-					renderer->Graphics_object_render_immediate(graphics_object);
+					unsigned int number_of_vertices = number_of_major_lines * 2;
+					struct Graphics_vertex_array *array = GT_object_get_vertex_set(
+						graphics_object);
+					fill_line_graphics_vertex_array(array,
+						number_of_vertices, major_linepoints, 0, 0, 0);
+					if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics_object,polyline))
+					{
+						renderer->Graphics_object_render_immediate(graphics_object);
+					}
+					else
+					{
+						DESTROY(GT_polyline_vertex_buffers)(&polyline);
+						return_code = 0;
+					}
+					DEACCESS(GT_object)(&graphics_object);
 				}
 				else
 				{
-					DESTROY(GT_polyline)(&polyline);
+					DESTROY(GT_polyline_vertex_buffers)(&polyline);
 					return_code = 0;
 				}
-				DEACCESS(GT_object)(&graphics_object);
 			}
-			else
-			{
-				DEALLOCATE(major_linepoints);
-			}
-			label_set = CREATE(GT_pointset)(number_of_labels, label_string_locations,
-				label_strings, g_NO_MARKER, /*marker_size*/0, /*n_data_components*/0,
-				(GLfloat *)NULL, /*names*/(int *)NULL, font);
+			DEALLOCATE(major_linepoints);
+			GT_pointset_vertex_buffers *label_set = CREATE(GT_pointset_vertex_buffers)(font, g_NO_MARKER, 0.0);
 			if (label_set)
 			{
-				graphics_object=CREATE(GT_object)(name, g_POINTSET, material);
-				if (GT_OBJECT_ADD(GT_pointset)(graphics_object,/*time*/0.0,label_set))
+				graphics_object=CREATE(GT_object)(name, g_POINT_SET_VERTEX_BUFFERS, material);
+				if (graphics_object)
 				{
-					renderer->Graphics_object_render_immediate(graphics_object);
+					unsigned int number_of_vertices = number_of_labels;
+					struct Graphics_vertex_array *array = GT_object_get_vertex_set(
+						graphics_object);
+					fill_pointset_graphics_vertex_array(array,
+						number_of_vertices,label_string_locations, label_strings, 0, 0);
+					if (GT_OBJECT_ADD(GT_pointset_vertex_buffers)(graphics_object,label_set))
+					{
+						renderer->Graphics_object_render_immediate(graphics_object);
+					}
+					else
+					{
+						DESTROY(GT_pointset_vertex_buffers)(&label_set);
+						return_code = 0;
+					}
+					DEACCESS(GT_object)(&graphics_object);
 				}
 				else
 				{
-					DESTROY(GT_pointset)(&label_set);
+					DESTROY(GT_pointset_vertex_buffers)(&label_set);
 					return_code = 0;
 				}
-				DEACCESS(GT_object)(&graphics_object);
 			}
 			else
 			{
-				DEALLOCATE(label_string_locations);
 				for (j = 0 ; j < number_of_labels ; j++)
 				{
 					DEALLOCATE(label_strings[j]);
 				}
 				DEALLOCATE(label_strings);
 			}
-			polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-				number_of_minor_lines, minor_linepoints,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
+			DEALLOCATE(label_string_locations);
+			polyline =
+				CREATE(GT_polyline_vertex_buffers)(g_PLAIN_DISCONTINUOUS, 0.0);
 			if (polyline)
 			{
-				graphics_object=CREATE(GT_object)(name,g_POLYLINE, secondary_material);
-				if (GT_OBJECT_ADD(GT_polyline)(graphics_object,/*time*/0.0,polyline))
+				graphics_object=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS,secondary_material);
+				if (graphics_object)
 				{
-					renderer->Graphics_object_render_immediate(graphics_object);
+					unsigned int number_of_vertices = number_of_minor_lines * 2;
+					struct Graphics_vertex_array *array = GT_object_get_vertex_set(
+						graphics_object);
+					fill_line_graphics_vertex_array(array,
+						number_of_vertices, minor_linepoints, 0, 0, 0);
+					if (GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics_object,polyline))
+					{
+						renderer->Graphics_object_render_immediate(graphics_object);
+					}
+					else
+					{
+						DESTROY(GT_polyline_vertex_buffers)(&polyline);
+						return_code = 0;
+					}
+					DEACCESS(GT_object)(&graphics_object);
 				}
 				else
 				{
-					DESTROY(GT_polyline)(&polyline);
+					DESTROY(GT_polyline_vertex_buffers)(&polyline);
 					return_code = 0;
 				}
-				DEACCESS(GT_object)(&graphics_object);
 			}
-			else
-			{
-				DEALLOCATE(minor_linepoints);
-			}
+			DEALLOCATE(minor_linepoints);
 		}
 	}
 	else
@@ -606,7 +634,6 @@ second component on the second axis.
 {
 	int return_code;
 
-	ENTER(draw_glyph_axes_ticks);
 	if ((label_bounds_dimension > 0) && (label_bounds_components > 0)
 		&& label_bounds)
 	{
@@ -631,13 +658,12 @@ second component on the second axis.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"draw_glyph_axes_ticks.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE,"draw_glyph_grid_lines.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* draw_glyph_axes_ticks */
+}
 
 /*
 Global functions
@@ -848,13 +874,17 @@ struct GT_object *create_GT_object_arrow_line(const char *name,ZnReal head_lengt
 {
 	int j;
 	struct GT_object *glyph = 0;
-	struct GT_polyline *polyline;
 	Triple *points,*vertex;
 
-	ENTER(create_GT_object_arrow_line);
 	if (name)
 	{
-		polyline=(struct GT_polyline *)NULL;
+		unsigned int number_of_segments = 10;
+		unsigned int vertex_start = 0;
+		GT_polyline_vertex_buffers *lines =
+			CREATE(GT_polyline_vertex_buffers)(
+				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
+		glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS,(struct Graphical_material *)NULL);
+		GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph, lines);
 		if (ALLOCATE(points,Triple,10))
 		{
 			vertex=points;
@@ -880,25 +910,23 @@ struct GT_object *create_GT_object_arrow_line(const char *name,ZnReal head_lengt
 			points[ 8][0]=1.0;
 			points[ 9][0]=1.0-head_length;
 			points[ 9][2]=-half_head_width;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-				5,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			GLfloat floatField[3];
+			vertex=points;
+			for (j=0;j<10;j++)
 			{
-				DEALLOCATE(points);
+				CAST_TO_OTHER(floatField,(*vertex),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				vertex++;
 			}
-		}
-		if (polyline)
-		{
-			glyph=CREATE(GT_object)(name,g_POLYLINE,(struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
-			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_polyline)(&polyline);
-			}
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,
-				"create_GT_object_arrow_line.  Error creating glyph");
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_segments);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			DEALLOCATE(points);
 		}
 	}
 	else
@@ -906,8 +934,6 @@ struct GT_object *create_GT_object_arrow_line(const char *name,ZnReal head_lengt
 		display_message(ERROR_MESSAGE,
 			"create_GT_object_arrow_line.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (glyph);
 }
 
@@ -929,12 +955,9 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 	int j;
 	struct Colour colour;
 	struct Graphical_material *material;
-	struct GT_object *glyph = 0, *last_object = 0;
-	struct GT_pointset *pointset;
-	struct GT_polyline *polyline;
+	struct GT_object *glyph = 0, *labels_object, *last_object = 0;
 	Triple *points,*vertex;
 
-	ENTER(create_GT_object_axes);
 	if (name)
 	{
 		last_object = (struct GT_object *)NULL;
@@ -992,7 +1015,6 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 		}
 		else
 		{
-			polyline=(struct GT_polyline *)NULL;
 			if (ALLOCATE(points,Triple,30))
 			{
 				vertex=points;
@@ -1046,23 +1068,36 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				points[28][2]=1.0;
 				points[29][2]=1.0-head_length;
 				points[29][1]=-half_head_width;
-				polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-					15,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL);
-				if (polyline)
+				GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
+					g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
+				glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+				if (glyph)
 				{
-					glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-					GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline);
+					GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
 					last_object = glyph;
 				}
-				else
+				vertex=points;
+				GLfloat floatField[3];
+				unsigned int number_of_segments = 30, vertex_start = 0;
+				struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+				for (j=0;j<30;j++)
 				{
-					DEALLOCATE(points);
+					CAST_TO_OTHER(floatField,(*vertex),GLfloat,3);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+						3, 1, floatField);
+					vertex++;
 				}
+				array->add_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					1, 1, &number_of_segments);
+				array->add_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					1, 1, &vertex_start);
+				DEALLOCATE(points);
 			}
 		}
 		if (glyph && labels)
 		{
-			pointset=(struct GT_pointset *)NULL;
 			if (ALLOCATE(points,Triple,3)&&
 				ALLOCATE(text,char *,3)&&
 				ALLOCATE(text[0],char,strlen(labels[0]) + 1)&&
@@ -1083,24 +1118,24 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				points[2][1]=0.0;
 				points[2][2]=1.0+label_offset;
 				strcpy(text[2],labels[2]);
-				pointset=CREATE(GT_pointset)(3,points,text,g_NO_MARKER,0.0,
-					g_NO_DATA,(GLfloat *)NULL,(int *)NULL, font);
-				if (pointset)
+				GT_pointset_vertex_buffers *pointsets = CREATE(GT_pointset_vertex_buffers)(
+					font, g_NO_MARKER, 0.0);
+				labels_object=CREATE(GT_object)(glyph_name,g_POINT_SET_VERTEX_BUFFERS,
+					(struct Graphical_material *)NULL);
+				if (labels_object)
 				{
-					GT_object *labels_object = CREATE(GT_object)(glyph_name,g_POINTSET,(struct Graphical_material *)NULL);
-					GT_OBJECT_ADD(GT_pointset)(labels_object,/*time*/0.0,pointset);
+					GT_OBJECT_ADD(GT_pointset_vertex_buffers)(labels_object,pointsets);
 					GT_object_set_next_object(last_object, labels_object);
-					DEACCESS(GT_object)(&labels_object);
+					last_object = labels_object;
 				}
-				else
-				{
-					DEALLOCATE(text[0]);
-					DEALLOCATE(text[1]);
-					DEALLOCATE(text[2]);
-					DEALLOCATE(text);
-					DEALLOCATE(points);
-				}
-				DEALLOCATE(glyph_name);
+				struct Graphics_vertex_array *array = GT_object_get_vertex_set(last_object);
+				fill_pointset_graphics_vertex_array(array,
+					3,points, text, 0, 0);
+				DEALLOCATE(text[0]);
+				DEALLOCATE(text[1]);
+				DEALLOCATE(text[2]);
+				DEALLOCATE(text);
+				DEALLOCATE(points);
 			}
 		}
 		if (!glyph)
@@ -1112,7 +1147,6 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 	{
 		display_message(ERROR_MESSAGE,"create_GT_object_axes.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }
@@ -1126,13 +1160,10 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 struct GT_object *create_GT_object_cross(const char *name)
 {
 	struct GT_object *glyph = 0;
-	struct GT_polyline *polyline;
 	Triple *points;
 
-	ENTER(create_GT_object_cross);
 	if (name)
 	{
-		polyline=(struct GT_polyline *)NULL;
 		if (ALLOCATE(points,Triple,6))
 		{
 			/* x-line */
@@ -1156,31 +1187,37 @@ struct GT_object *create_GT_object_cross(const char *name)
 			points[5][0]=0.0;
 			points[5][1]=0.0;
 			points[5][2]=+0.5;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-				3,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+			GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
+				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
+			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
-				DEALLOCATE(points);
+				GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
 			}
-		}
-		if (polyline)
-		{
-			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
+			Triple *vertex=points;
+			GLfloat floatField[3];
+			unsigned int number_of_segments = 6, vertex_start = 0;
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			for (int j=0;j<6;j++)
 			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_polyline)(&polyline);
+				CAST_TO_OTHER(floatField,(*vertex),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				vertex++;
 			}
-		}
-		if (!glyph)
-		{
-			display_message(ERROR_MESSAGE,"create_GT_object_cross.  Error creating glyph");
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_segments);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			DEALLOCATE(points);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"create_GT_object_cross.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }
@@ -1194,15 +1231,12 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 	ZnReal factor;
 	int a, b, c, i;
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *point, *points, *normalpoint, *normalpoints;
 
-	ENTER(create_GT_object_cube_solid);
 	if (name)
 	{
-		surface=(struct GT_surface *)NULL;
-		if (ALLOCATE(points,Triple,24)&&
-			ALLOCATE(normalpoints,Triple,24))
+		if (ALLOCATE(points,Triple,36)&&
+			ALLOCATE(normalpoints,Triple,36))
 		{
 			point = points;
 			normalpoint = normalpoints;
@@ -1220,13 +1254,13 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 				}
 				b = (a + 1) % 3;
 				c = (a + 2) % 3;
-				/* vertices */
+				/* vertices
+				 *  4-3   1-3-4 3-1-2
+				 *  |/|
+				 *  1-2
+				 * */
 				(*point)[a] = 0.5*factor;
 				(*point)[b] = 0.5*factor;
-				(*point)[c] = 0.5;
-				point++;
-				(*point)[a] = 0.5*factor;
-				(*point)[b] = -0.5*factor;
 				(*point)[c] = 0.5;
 				point++;
 				(*point)[a] = 0.5*factor;
@@ -1236,6 +1270,18 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 				(*point)[a] = 0.5*factor;
 				(*point)[b] = 0.5*factor;
 				(*point)[c] = -0.5;
+				point++;
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = -0.5*factor;
+				(*point)[c] = -0.5;
+				point++;
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = 0.5*factor;
+				(*point)[c] = 0.5;
+				point++;
+				(*point)[a] = 0.5*factor;
+				(*point)[b] = -0.5*factor;
+				(*point)[c] = 0.5;
 				point++;
 				/* normals */
 				(*normalpoint)[a] = factor;
@@ -1254,23 +1300,51 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 				(*normalpoint)[b] = 0.0;
 				(*normalpoint)[c] = 0.0;
 				normalpoint++;
+				(*normalpoint)[a] = factor;
+				(*normalpoint)[b] = 0.0;
+				(*normalpoint)[c] = 0.0;
+				normalpoint++;
+				(*normalpoint)[a] = factor;
+				(*normalpoint)[b] = 0.0;
+				(*normalpoint)[c] = 0.0;
+				normalpoint++;
 			}
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-				g_QUADRILATERAL,6,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				/*texturepoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+			point = points;
+			normalpoint = normalpoints;
+			int polygonType = (int)g_TRIANGLE;
+			unsigned int number_of_xi1 = 6, number_of_xi2 = 6, number_of_vertices = 36,
+				vertex_start = 0;
+			GLfloat floatField[3];
+			glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,(struct Graphical_material *)NULL);
+			GT_surface_vertex_buffers *surfaces = CREATE(GT_surface_vertex_buffers)(
+				g_SH_DISCONTINUOUS, CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+			GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surfaces);
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			for (unsigned int j=0;j<36;j++)
 			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
+				CAST_TO_OTHER(floatField,(*point),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				point++;
+				CAST_TO_OTHER(floatField,(*normalpoint),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					3, 1, floatField);
+				normalpoint++;
 			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_surface)(&surface);
-			}
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+				1, 1, &number_of_xi1);
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+				1, 1, &number_of_xi2);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_vertices);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+				1, 1, &polygonType);
+			DEALLOCATE(points);
+			DEALLOCATE(normalpoints);
 		}
 		if (!glyph)
 		{
@@ -1282,7 +1356,6 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 	{
 		display_message(ERROR_MESSAGE,"create_GT_object_cube_solid.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }
@@ -1295,13 +1368,11 @@ struct GT_object *create_GT_object_cube_wireframe(const char *name)
 {
 	int a, b, c, i;
 	struct GT_object *glyph = 0;
-	struct GT_polyline *polyline;
 	Triple *points, *vertex;
 
 	ENTER(create_GT_object_cube_wireframe);
 	if (name)
 	{
-		polyline = (struct GT_polyline *)NULL;
 		if (ALLOCATE(points, Triple, 24))
 		{
 			vertex=points;
@@ -1339,20 +1410,31 @@ struct GT_object *create_GT_object_cube_wireframe(const char *name)
 					vertex++;
 				}
 			}
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-				12,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+			GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
+				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
+			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
-				DEALLOCATE(points);
+				GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
 			}
-		}
-		if (polyline)
-		{
-			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
+			vertex=points;
+			GLfloat floatField[3];
+			unsigned int number_of_segments = 24, vertex_start = 0;
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			for (int j=0;j<24;j++)
 			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_polyline)(&polyline);
+				CAST_TO_OTHER(floatField,(*vertex),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				vertex++;
 			}
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_segments);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			DEALLOCATE(points);
 		}
 		if (!glyph)
 		{
@@ -1365,7 +1447,6 @@ struct GT_object *create_GT_object_cube_wireframe(const char *name)
 		display_message(ERROR_MESSAGE,
 			"create_GT_object_cube_wireframe.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }
@@ -1377,13 +1458,10 @@ struct GT_object *create_GT_object_cube_wireframe(const char *name)
 struct GT_object *create_GT_object_line(const char *name)
 {
 	struct GT_object *glyph = 0;
-	struct GT_polyline *polyline;
 	Triple *points;
 
-	ENTER(create_GT_object_line);
 	if (name)
 	{
-		polyline=(struct GT_polyline *)NULL;
 		if (ALLOCATE(points,Triple,2))
 		{
 			points[0][0]=0.0;
@@ -1392,20 +1470,31 @@ struct GT_object *create_GT_object_line(const char *name)
 			points[1][0]=1.0;
 			points[1][1]=0.0;
 			points[1][2]=0.0;
-			if (!(polyline=CREATE(GT_polyline)(g_PLAIN_DISCONTINUOUS,
-				1,points,/*normalpoints*/(Triple *)NULL,g_NO_DATA,(GLfloat *)NULL)))
+			GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
+				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
+			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+			if (glyph)
 			{
-				DEALLOCATE(points);
+				GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
 			}
-		}
-		if (polyline)
-		{
-			glyph=CREATE(GT_object)(name,g_POLYLINE, (struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_polyline)(glyph,/*time*/0.0,polyline))
+			Triple *vertex=points;
+			GLfloat floatField[3];
+			unsigned int number_of_segments = 2, vertex_start = 0;
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			for (int j=0;j<2;j++)
 			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_polyline)(&polyline);
+				CAST_TO_OTHER(floatField,(*vertex),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				vertex++;
 			}
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_segments);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			DEALLOCATE(points);
 		}
 		if (!glyph)
 		{
@@ -1416,7 +1505,6 @@ struct GT_object *create_GT_object_line(const char *name)
 	{
 		display_message(ERROR_MESSAGE,"create_GT_object_line.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }
@@ -1430,32 +1518,23 @@ struct GT_object *create_GT_object_point(const char *name,gtMarkerType marker_ty
 	ZnReal marker_size)
 {
 	struct GT_object *glyph = 0;
-	struct GT_pointset *pointset;
 	Triple *points;
 
-	ENTER(create_GT_object_point);
 	if (name)
 	{
-		pointset=(struct GT_pointset *)NULL;
 		if (ALLOCATE(points,Triple,1))
 		{
 			(*points)[0]=0.0;
 			(*points)[1]=0.0;
 			(*points)[2]=0.0;
-			if (!(pointset=CREATE(GT_pointset)(1,points,(char **)NULL,marker_type,
-				marker_size,g_NO_DATA,(GLfloat *)NULL,(int *)NULL, (struct cmzn_font *)NULL)))
-			{
-				DEALLOCATE(points);
-			}
-		}
-		if (pointset)
-		{
-			glyph=CREATE(GT_object)(name,g_POINTSET, (struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_pointset)(glyph,/*time*/0.0,pointset))
-			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_pointset)(&pointset);
-			}
+			glyph=CREATE(GT_object)(name,g_POINT_SET_VERTEX_BUFFERS,
+				(struct Graphical_material *)NULL);
+			GT_pointset_vertex_buffers *pointsets = CREATE(GT_pointset_vertex_buffers)(
+				NULL, marker_type, marker_size);
+			GT_OBJECT_ADD(GT_pointset_vertex_buffers)(glyph,pointsets);
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			fill_pointset_graphics_vertex_array(array, 1, points, 0, 0, 0);
+			DEALLOCATE(points);
 		}
 		if (!glyph)
 		{
@@ -1466,7 +1545,6 @@ struct GT_object *create_GT_object_point(const char *name,gtMarkerType marker_ty
 	{
 		display_message(ERROR_MESSAGE,"create_GT_object_point.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }
@@ -1480,17 +1558,14 @@ struct GT_object *create_GT_object_point(const char *name,gtMarkerType marker_ty
 struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoints)
 {
 	struct GT_object *glyph = 0;
-	struct GT_surface *surface;
 	Triple *point,*points,*normalpoints, *texturepoints;
 
-	ENTER(create_GT_object_sheet);
 	if (name)
 	{
-		surface=(struct GT_surface *)NULL;
 		texturepoints = (Triple *)NULL;
-		if (ALLOCATE(points,Triple,4)&&
-			ALLOCATE(normalpoints,Triple,4)&&
-			(!define_texturepoints || ALLOCATE(texturepoints,Triple,4)))
+		if (ALLOCATE(points,Triple,6)&&
+			ALLOCATE(normalpoints,Triple,6)&&
+			(!define_texturepoints || ALLOCATE(texturepoints,Triple,6)))
 		{
 			point = points;
 			/* vertices */
@@ -1499,7 +1574,11 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 			(*point)[2] = 0.0;
 			point++;
 			(*point)[0] = 0.5;
-			(*point)[1] = -0.5;
+			(*point)[1] = 0.5;
+			(*point)[2] = 0.0;
+			point++;
+			(*point)[0] = -0.5;
+			(*point)[1] = 0.5;
 			(*point)[2] = 0.0;
 			point++;
 			(*point)[0] = 0.5;
@@ -1507,7 +1586,11 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 			(*point)[2] = 0.0;
 			point++;
 			(*point)[0] = -0.5;
-			(*point)[1] = 0.5;
+			(*point)[1] = -0.5;
+			(*point)[2] = 0.0;
+			point++;
+			(*point)[0] = 0.5;
+			(*point)[1] = -0.5;
 			(*point)[2] = 0.0;
 			/* normals */
 			point = normalpoints;
@@ -1527,6 +1610,13 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 			(*point)[1] = 0.0;
 			(*point)[2] = 1.0;
 			point++;
+			(*point)[0] = 0.0;
+			(*point)[1] = 0.0;
+			(*point)[2] = 1.0;
+			point++;
+			(*point)[0] = 0.0;
+			(*point)[1] = 0.0;
+			(*point)[2] = 1.0;
 			/* texture coordinates */
 			if (define_texturepoints)
 			{
@@ -1536,10 +1626,6 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 				(*point)[2] = 0.0;
 				point++;
 				(*point)[0] = 1.0;
-				(*point)[1] = 0.0;
-				(*point)[2] = 0.0;
-				point++;
-				(*point)[0] = 1.0;
 				(*point)[1] = 1.0;
 				(*point)[2] = 0.0;
 				point++;
@@ -1547,23 +1633,62 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 				(*point)[1] = 1.0;
 				(*point)[2] = 0.0;
 				point++;
+				(*point)[0] = 1.0;
+				(*point)[1] = 1.0;
+				(*point)[2] = 0.0;
+				point++;
+				(*point)[0] = 0.0;
+				(*point)[1] = 0.0;
+				(*point)[2] = 0.0;
+				point++;
+				(*point)[0] = 1.0;
+				(*point)[1] = 0.0;
+				(*point)[2] = 0.0;
 			}
-			if (!(surface=CREATE(GT_surface)(g_SH_DISCONTINUOUS_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-				g_QUADRILATERAL,1,4,points,normalpoints,/*tangentpoints*/(Triple *)NULL,
-				texturepoints,g_NO_DATA,(GLfloat *)NULL)))
+			unsigned int number_of_vertices = 6, number_of_xi1 = 2, number_of_xi2 = 3,
+				vertex_start = 0;
+			int polygonType = (int)g_TRIANGLE;
+			Triple *vertex=points, *normal=normalpoints, *texpoints = texturepoints;
+			GLfloat floatField[3];
+			glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,(struct Graphical_material *)NULL);
+			GT_surface_vertex_buffers *surfaces = CREATE(GT_surface_vertex_buffers)(
+				g_SH_DISCONTINUOUS_TEXMAP, CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+			GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surfaces);
+			struct Graphics_vertex_array *array = GT_object_get_vertex_set(glyph);
+			for (unsigned int j=0;j<number_of_vertices;j++)
 			{
-				DEALLOCATE(points);
-				DEALLOCATE(normalpoints);
+				CAST_TO_OTHER(floatField,(*vertex),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					3, 1, floatField);
+				vertex++;
+				CAST_TO_OTHER(floatField,(*normal),GLfloat,3);
+				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+					3, 1, floatField);
+				normal++;
+				if (define_texturepoints)
+				{
+					CAST_TO_OTHER(floatField,(*texpoints),GLfloat,3);
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+						3, 1, floatField);
+					texpoints++;
+				}
 			}
-		}
-		if (surface)
-		{
-			glyph=CREATE(GT_object)(name,g_SURFACE,	(struct Graphical_material *)NULL);
-			if (!GT_OBJECT_ADD(GT_surface)(glyph,/*time*/0.0,surface))
-			{
-				DEACCESS(GT_object)(&glyph);
-				DESTROY(GT_surface)(&surface);
-			}
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+				1, 1, &number_of_xi1);
+			array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+				1, 1, &number_of_xi2);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+				1, 1, &number_of_vertices);
+			array->add_unsigned_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+				1, 1, &vertex_start);
+			array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+				1, 1, &polygonType);
+			DEALLOCATE(points);
+			DEALLOCATE(normalpoints);
+			if (define_texturepoints)
+				DEALLOCATE(texturepoints);
 		}
 		if (!glyph)
 		{
@@ -1575,7 +1700,6 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 	{
 		display_message(ERROR_MESSAGE,"create_GT_object_sheet.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (glyph);
 }

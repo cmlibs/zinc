@@ -24,6 +24,7 @@ Functions for calculating streamlines in finite elements.
 #include "general/matrix_vector.h"
 #include "general/random.h"
 #include "graphics/graphics_object.h"
+#include "graphics/graphics_object.hpp"
 #include "general/message.h"
 /* SAB Trying to hide the guts of GT_object and its primitives,
 	however the stream point stuff currently messes around in the guts
@@ -1357,21 +1358,19 @@ Global functions
 ----------------
 */
 
-struct GT_polyline *create_GT_polyline_streamline_FE_element(
+int create_polyline_streamline_FE_element_vertex_array(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length,enum Streamline_data_type data_type,
-	struct Computed_field *data_field, struct FE_region *fe_region)
+	struct Computed_field *data_field, struct FE_region *fe_region,
+	struct Graphics_vertex_array *array)
 {
-	ZnRealType gt_data_type;
 	GLfloat *stream_data;
 	int element_dimension,number_of_stream_points,number_of_coordinate_components,
-		number_of_stream_vector_components;
-	struct GT_polyline *polyline;
+		number_of_stream_vector_components, return_code = 1;
 	Triple *stream_points,*stream_normals,*stream_vectors;
 
-	ENTER(create_GT_polyline_streamline_FE_element);
 	if (stream_vector_field)
 	{
 		if (element&&FE_element_is_top_level(element, NULL)&&
@@ -1386,7 +1385,7 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 			(9==number_of_stream_vector_components)))
 			|| ((2 == number_of_coordinate_components) &&
 			(2==number_of_stream_vector_components)))&&
-			(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
+			(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field) && array)
 		{
 			/* track points and normals on streamline, and data if requested */
 			if (track_streamline_from_FE_element(&element,start_xi,
@@ -1396,60 +1395,50 @@ struct GT_polyline *create_GT_polyline_streamline_FE_element(
 			{
 				if (0<number_of_stream_points)
 				{
-					/* now create a polyline from the points */
-					if (STREAM_NO_DATA != data_type)
-					{
-						gt_data_type=g_SCALAR;
-					}
-					else
-					{
-						gt_data_type=g_NO_DATA;
-					}
-					if (!(polyline=CREATE(GT_polyline)(g_PLAIN,
-						number_of_stream_points,stream_points,/* normals */(Triple *)NULL,
-						gt_data_type,stream_data)))
-					{
-						display_message(ERROR_MESSAGE,
-							"create_GT_polyline_streamline_FE_element.  "
-							"Could not create polyline");
-						DEALLOCATE(stream_points);
-						DEALLOCATE(stream_data);
-					}
-					/* didn't want vectors and normals anyway */
+					unsigned int total_number_of_vertices = number_of_stream_points;
+					unsigned int vertex_start = array->get_number_of_vertices(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+
+					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+						3, number_of_stream_points, &(stream_points[0][0]));
+					if (stream_data)
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+							1, number_of_stream_points, stream_data);
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						1, 1, &total_number_of_vertices);
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						1, 1, &vertex_start);
+					DEALLOCATE(stream_points);
+					DEALLOCATE(stream_data);
 					DEALLOCATE(stream_vectors);
 					DEALLOCATE(stream_normals);
 				}
 				else
 				{
-					/* no error: streamline empty */
-					polyline = (struct GT_polyline *)NULL;
+					return_code = 0;
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"create_GT_polyline_streamline_FE_element.  "
-					"failed to track streamline");
-				polyline = (struct GT_polyline *)NULL;
+				return_code = 0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,
-				"create_GT_polyline_streamline_FE_element.  Invalid argument(s)");
-			polyline=(struct GT_polyline *)NULL;
+			return_code = 0;
 		}
 	}
 	else
 	{
-		polyline=(struct GT_polyline *)NULL;
+		return_code = 0;
 	}
-	LEAVE;
 
-	return (polyline);
-} /* create_GT_polyline_streamline_FE_element */
+	return (return_code);
+}
 
-struct GT_surface *create_GT_surface_streamribbon_FE_element(
+int create_surface_streamribbon_FE_element_vertex_array(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track, FE_value length,
@@ -1457,19 +1446,16 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum Streamline_data_type data_type,struct Computed_field *data_field,
-	struct FE_region *fe_region, enum cmzn_graphics_render_polygon_mode render_polygon_mode)
+	struct FE_region *fe_region, struct Graphics_vertex_array *array)
 {
 	double cosw,magnitude,sinw;
-	ZnRealType gt_data_type;
-	GLfloat *data,*datum,*stream_data,stream_datum= 0.0;
+	GLfloat *stream_data,stream_datum= 0.0;
 	int d,element_dimension,i,number_of_stream_points,number_of_coordinate_components,
-		number_of_stream_vector_components,surface_points_per_step;
-	struct GT_surface *surface;
-	Triple cross_thickness,cross_width,*normal,*normalpoints,*point,*points,stream_cross,
+		number_of_stream_vector_components,surface_points_per_step, return_code = 1;
+	Triple cross_thickness,cross_width,normal,point,stream_cross,
 		stream_normal,*stream_normals,stream_point,*stream_points,
 		stream_unit_vector = {1.0, 0.0, 0.0},stream_vector,*stream_vectors;
 
-	ENTER(create_GT_surface_streamribbon_FE_element);
 	USE_PARAMETER(line_scale_factors);
 	USE_PARAMETER(line_orientation_scale_field);
 	if (stream_vector_field)
@@ -1487,7 +1473,7 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 						(9==number_of_stream_vector_components)))
 						|| ((2 == number_of_coordinate_components) &&
 							(2==number_of_stream_vector_components)))&&
-							(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field))
+							(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field) && array)
 		{
 			const FE_value width = line_base_size[0];
 			const FE_value thickness = line_base_size[1];
@@ -1516,292 +1502,287 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 							surface_points_per_step = 2;
 						} break;
 					}
-					/* now create a surface from the points */
-					points=(Triple *)NULL;
-					data = 0;
-					if (STREAM_NO_DATA != data_type)
+
+					unsigned int vertex_start = array->get_number_of_vertices(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+					unsigned int number_of_vertices = surface_points_per_step * number_of_stream_points;
+					/* now fill in the points and data from the streamline */
+					GLfloat floatField[3];
+					for (i=0;i<number_of_stream_points;i++)
 					{
-						gt_data_type=g_SCALAR;
-						ALLOCATE(data,GLfloat,surface_points_per_step*number_of_stream_points);
-					}
-					else
-					{
-						gt_data_type=g_NO_DATA;
-					}
-					if (ALLOCATE(points,Triple,surface_points_per_step*number_of_stream_points)&&
-						ALLOCATE(normalpoints,Triple,surface_points_per_step*number_of_stream_points)
-						&&((g_NO_DATA==gt_data_type)||data))
-					{
-						if (NULL != (surface=CREATE(GT_surface)(g_SHADED_TEXMAP,render_polygon_mode,
-							g_QUADRILATERAL,surface_points_per_step,number_of_stream_points,
-							points, normalpoints, /*tangentpoints*/(Triple *)NULL,
-							/*texturepoints*/(Triple *)NULL,gt_data_type,data)))
+						stream_point[0]=stream_points[i][0];
+						stream_point[1]=stream_points[i][1];
+						stream_point[2]=stream_points[i][2];
+						stream_vector[0]=stream_vectors[i][0];
+						stream_vector[1]=stream_vectors[i][1];
+						stream_vector[2]=stream_vectors[i][2];
+						stream_normal[0]=stream_normals[i][0];
+						stream_normal[1]=stream_normals[i][1];
+						stream_normal[2]=stream_normals[i][2];
+						if (stream_data)
 						{
-							point = points;
-							normal = normalpoints;
-							datum = data;
-							/* now fill in the points and data from the streamline */
-							for (i=0;i<number_of_stream_points;i++)
+							stream_datum=stream_data[i];
+						}
+						if (0.0 < (magnitude = sqrt(stream_vector[0]*stream_vector[0]+
+							stream_vector[1]*stream_vector[1]+
+							stream_vector[2]*stream_vector[2])))
+						{
+							stream_unit_vector[0] = stream_vector[0] / GLfloat(magnitude);
+							stream_unit_vector[1] = stream_vector[1] / GLfloat(magnitude);
+							stream_unit_vector[2] = stream_vector[2] / GLfloat(magnitude);
+						}
+						/* get stream_cross = stream_normal (x) stream_unit_vector */
+						stream_cross[0]=stream_normal[1]*stream_unit_vector[2]-
+							stream_normal[2]*stream_unit_vector[1];
+						stream_cross[1]=stream_normal[2]*stream_unit_vector[0]-
+							stream_normal[0]*stream_unit_vector[2];
+						stream_cross[2]=stream_normal[0]*stream_unit_vector[1]-
+							stream_normal[1]*stream_unit_vector[0];
+						cross_width[0] = stream_cross[0] * 0.5f * width;
+						cross_width[1] = stream_cross[1] * 0.5f * width;
+						cross_width[2] = stream_cross[2] * 0.5f * width;
+						cross_thickness[0] = stream_normal[0] * 0.5f * GLfloat(thickness);
+						cross_thickness[1] = stream_normal[1] * 0.5f * GLfloat(thickness);
+						cross_thickness[2] = stream_normal[2] * 0.5f * GLfloat(thickness);
+						switch (line_shape)
+						{
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
+							default:
 							{
-								stream_point[0]=stream_points[i][0];
-								stream_point[1]=stream_points[i][1];
-								stream_point[2]=stream_points[i][2];
-								stream_vector[0]=stream_vectors[i][0];
-								stream_vector[1]=stream_vectors[i][1];
-								stream_vector[2]=stream_vectors[i][2];
-								stream_normal[0]=stream_normals[i][0];
-								stream_normal[1]=stream_normals[i][1];
-								stream_normal[2]=stream_normals[i][2];
-								if (stream_data)
+								point[0] = stream_point[0] + cross_width[0];
+								point[1] = stream_point[1] + cross_width[1];
+								point[2] = stream_point[2] + cross_width[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = stream_normal[0];
+								normal[1] = stream_normal[1];
+								normal[2] = stream_normal[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
 								{
-									stream_datum=stream_data[i];
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
 								}
-								if (0.0 < (magnitude = sqrt(stream_vector[0]*stream_vector[0]+
-									stream_vector[1]*stream_vector[1]+
-									stream_vector[2]*stream_vector[2])))
+								point[0] = stream_point[0] - cross_width[0];
+								point[1] = stream_point[1] - cross_width[1];
+								point[2] = stream_point[2] - cross_width[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = stream_normal[0];
+								normal[1] = stream_normal[1];
+								normal[2] = stream_normal[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
 								{
-									stream_unit_vector[0] = stream_vector[0] / GLfloat(magnitude);
-									stream_unit_vector[1] = stream_vector[1] / GLfloat(magnitude);
-									stream_unit_vector[2] = stream_vector[2] / GLfloat(magnitude);
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
 								}
-								/* get stream_cross = stream_normal (x) stream_unit_vector */
-								stream_cross[0]=stream_normal[1]*stream_unit_vector[2]-
-									stream_normal[2]*stream_unit_vector[1];
-								stream_cross[1]=stream_normal[2]*stream_unit_vector[0]-
-									stream_normal[0]*stream_unit_vector[2];
-								stream_cross[2]=stream_normal[0]*stream_unit_vector[1]-
-									stream_normal[1]*stream_unit_vector[0];
-								cross_width[0] = stream_cross[0] * 0.5f * width;
-								cross_width[1] = stream_cross[1] * 0.5f * width;
-								cross_width[2] = stream_cross[2] * 0.5f * width;
-								cross_thickness[0] = stream_normal[0] * 0.5f * GLfloat(thickness);
-								cross_thickness[1] = stream_normal[1] * 0.5f * GLfloat(thickness);
-								cross_thickness[2] = stream_normal[2] * 0.5f * GLfloat(thickness);
-								switch (line_shape)
+							} break;
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+							{
+								for (d = 0 ; d < surface_points_per_step ; d++)
 								{
-									case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
-									default:
+									sinw = sin( 2 * PI * (double)d /
+										(double)(surface_points_per_step - 1));
+									cosw = cos( 2 * PI * (double)d /
+										(double)(surface_points_per_step - 1));
+									point[0] = stream_point[0] + GLfloat(sinw) * cross_width[0] + GLfloat(cosw) * cross_thickness[0];
+									point[1] = stream_point[1] + GLfloat(sinw) * cross_width[1] + GLfloat(cosw) * cross_thickness[1];
+									point[2] = stream_point[2] + GLfloat(sinw) * cross_width[2] + GLfloat(cosw) * cross_thickness[2];
+									CAST_TO_OTHER(floatField,point,GLfloat,3);
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+										3, 1, floatField);
+									normal[0] = -GLfloat(sinw) * stream_cross[0] * 0.5f * GLfloat(thickness) -
+										GLfloat(cosw) * stream_normal[0] * 0.5f * width;
+									normal[1] = -GLfloat(sinw) * stream_cross[1] * 0.5f * GLfloat(thickness) -
+										GLfloat(cosw) * stream_normal[1] * 0.5f * GLfloat(thickness);
+									normal[2] = -GLfloat(sinw) * stream_cross[2] * 0.5f * GLfloat(thickness) -
+										GLfloat(cosw) * stream_normal[2] * 0.5f * GLfloat(thickness);
+									magnitude = sqrt(normal[0] * normal[0] + normal[1] * normal[1] + normal[2] * normal[2]);
+									if (0.0<magnitude)
 									{
-										(*point)[0] = stream_point[0] + cross_width[0];
-										(*point)[1] = stream_point[1] + cross_width[1];
-										(*point)[2] = stream_point[2] + cross_width[2];
-										point++;
-										(*normal)[0] = stream_normal[0];
-										(*normal)[1] = stream_normal[1];
-										(*normal)[2] = stream_normal[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-										(*point)[0] = stream_point[0] - cross_width[0];
-										(*point)[1] = stream_point[1] - cross_width[1];
-										(*point)[2] = stream_point[2] - cross_width[2];
-										point++;
-										(*normal)[0] = stream_normal[0];
-										(*normal)[1] = stream_normal[1];
-										(*normal)[2] = stream_normal[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-									} break;
-									case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+										normal[0] /= GLfloat(magnitude);
+										normal[1] /= GLfloat(magnitude);
+										normal[2] /= GLfloat(magnitude);
+									}
+									CAST_TO_OTHER(floatField,normal,GLfloat,3);
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+										3, 1, floatField);
+									if ((STREAM_NO_DATA != data_type) && stream_data)
 									{
-										for (d = 0 ; d < surface_points_per_step ; d++)
-										{
-											sinw = sin( 2 * PI * (double)d /
-												(double)(surface_points_per_step - 1));
-											cosw = cos( 2 * PI * (double)d /
-												(double)(surface_points_per_step - 1));
-											(*point)[0] = stream_point[0] + GLfloat(sinw) * cross_width[0]
-												+ GLfloat(cosw) * cross_thickness[0];
-											(*point)[1] = stream_point[1] + GLfloat(sinw) * cross_width[1]
-												+ GLfloat(cosw) * cross_thickness[1];
-											(*point)[2] = stream_point[2] + GLfloat(sinw) * cross_width[2]
-												+ GLfloat(cosw) * cross_thickness[2];
-											point++;
-											(*normal)[0] = -GLfloat(sinw) * stream_cross[0] * 0.5f * GLfloat(thickness) -
-												GLfloat(cosw) * stream_normal[0] * 0.5f * width;
-											(*normal)[1] = -GLfloat(sinw) * stream_cross[1] * 0.5f * GLfloat(thickness) -
-												GLfloat(cosw) * stream_normal[1] * 0.5f * GLfloat(thickness);
-											(*normal)[2] = -GLfloat(sinw) * stream_cross[2] * 0.5f * GLfloat(thickness) -
-												GLfloat(cosw) * stream_normal[2] * 0.5f * GLfloat(thickness);
-											magnitude = sqrt((*normal)[0] * (*normal)[0]
-												+ (*normal)[1] * (*normal)[1]
-												+ (*normal)[2] * (*normal)[2]);
-											if (0.0<magnitude)
-											{
-												(*normal)[0] /= GLfloat(magnitude);
-												(*normal)[1] /= GLfloat(magnitude);
-												(*normal)[2] /= GLfloat(magnitude);
-											}
-											normal++;
-											if (datum)
-											{
-												*datum = stream_datum;
-												datum++;
-											}
-										}
-									} break;
-									case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
-									{
-										(*point)[0] = stream_point[0] + cross_width[0]
-										                                            + cross_thickness[0];
-										(*point)[1] = stream_point[1] + cross_width[1]
-										                                            + cross_thickness[1];
-										(*point)[2] = stream_point[2] + cross_width[2]
-										                                            + cross_thickness[2];
-										point++;
-										(*normal)[0] = stream_normal[0];
-										(*normal)[1] = stream_normal[1];
-										(*normal)[2] = stream_normal[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-										(*point)[0] = stream_point[0] - cross_width[0]
-										                                            + cross_thickness[0];
-										(*point)[1] = stream_point[1] - cross_width[1]
-										                                            + cross_thickness[1];
-										(*point)[2] = stream_point[2] - cross_width[2]
-										                                            + cross_thickness[2];
-										point++;
-										(*normal)[0] = stream_normal[0];
-										(*normal)[1] = stream_normal[1];
-										(*normal)[2] = stream_normal[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-
-										(*point)[0] = stream_point[0] - cross_width[0]
-										                                            + cross_thickness[0];
-										(*point)[1] = stream_point[1] - cross_width[1]
-										                                            + cross_thickness[1];
-										(*point)[2] = stream_point[2] - cross_width[2]
-										                                            + cross_thickness[2];
-										point++;
-										(*normal)[0] = -stream_cross[0];
-										(*normal)[1] = -stream_cross[1];
-										(*normal)[2] = -stream_cross[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-										(*point)[0] = stream_point[0] - cross_width[0]
-										                                            - cross_thickness[0];
-										(*point)[1] = stream_point[1] - cross_width[1]
-										                                            - cross_thickness[1];
-										(*point)[2] = stream_point[2] - cross_width[2]
-										                                            - cross_thickness[2];
-										point++;
-										(*normal)[0] = -stream_cross[0];
-										(*normal)[1] = -stream_cross[1];
-										(*normal)[2] = -stream_cross[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-
-										(*point)[0] = stream_point[0] - cross_width[0]
-										                                            - cross_thickness[0];
-										(*point)[1] = stream_point[1] - cross_width[1]
-										                                            - cross_thickness[1];
-										(*point)[2] = stream_point[2] - cross_width[2]
-										                                            - cross_thickness[2];
-										point++;
-										(*normal)[0] = -stream_normal[0];
-										(*normal)[1] = -stream_normal[1];
-										(*normal)[2] = -stream_normal[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-										(*point)[0] = stream_point[0] + cross_width[0]
-										                                            - cross_thickness[0];
-										(*point)[1] = stream_point[1] + cross_width[1]
-										                                            - cross_thickness[1];
-										(*point)[2] = stream_point[2] + cross_width[2]
-										                                            - cross_thickness[2];
-										point++;
-										(*normal)[0] = -stream_normal[0];
-										(*normal)[1] = -stream_normal[1];
-										(*normal)[2] = -stream_normal[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-
-										(*point)[0] = stream_point[0] + cross_width[0]
-										                                            - cross_thickness[0];
-										(*point)[1] = stream_point[1] + cross_width[1]
-										                                            - cross_thickness[1];
-										(*point)[2] = stream_point[2] + cross_width[2]
-										                                            - cross_thickness[2];
-										point++;
-										(*normal)[0] = stream_cross[0];
-										(*normal)[1] = stream_cross[1];
-										(*normal)[2] = stream_cross[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-										(*point)[0] = stream_point[0] + cross_width[0]
-										                                            + cross_thickness[0];
-										(*point)[1] = stream_point[1] + cross_width[1]
-										                                            + cross_thickness[1];
-										(*point)[2] = stream_point[2] + cross_width[2]
-										                                            + cross_thickness[2];
-										point++;
-										(*normal)[0] = stream_cross[0];
-										(*normal)[1] = stream_cross[1];
-										(*normal)[2] = stream_cross[2];
-										normal++;
-										if (datum)
-										{
-											*datum = stream_datum;
-											datum++;
-										}
-									} break;
+										array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+											1, 1, &stream_datum);
+									}
 								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"create_GT_surface_streamribbon_FE_element. "
-								"Could not create surface");
-							DEALLOCATE(data);
-							DEALLOCATE(points);
-							DEALLOCATE(normalpoints);
+							} break;
+							case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
+							{
+								point[0] = stream_point[0] + cross_width[0] + cross_thickness[0];
+								point[1] = stream_point[1] + cross_width[1] + cross_thickness[1];
+								point[2] = stream_point[2] + cross_width[2] + cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = stream_normal[0];
+								normal[1] = stream_normal[1];
+								normal[2] = stream_normal[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+								point[0] = stream_point[0] - cross_width[0] + cross_thickness[0];
+								point[1] = stream_point[1] - cross_width[1] + cross_thickness[1];
+								point[2] = stream_point[2] - cross_width[2] + cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = stream_normal[0];
+								normal[1] = stream_normal[1];
+								normal[2] = stream_normal[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+
+								point[0] = stream_point[0] - cross_width[0] + cross_thickness[0];
+								point[1] = stream_point[1] - cross_width[1] + cross_thickness[1];
+								point[2] = stream_point[2] - cross_width[2] + cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = -stream_cross[0];
+								normal[1] = -stream_cross[1];
+								normal[2] = -stream_cross[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+								point[0] = stream_point[0] - cross_width[0] - cross_thickness[0];
+								point[1] = stream_point[1] - cross_width[1] - cross_thickness[1];
+								point[2] = stream_point[2] - cross_width[2] - cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = -stream_cross[0];
+								normal[1] = -stream_cross[1];
+								normal[2] = -stream_cross[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+
+								point[0] = stream_point[0] - cross_width[0] - cross_thickness[0];
+								point[1] = stream_point[1] - cross_width[1] - cross_thickness[1];
+								point[2] = stream_point[2] - cross_width[2] - cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = -stream_normal[0];
+								normal[1] = -stream_normal[1];
+								normal[2] = -stream_normal[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+								point[0] = stream_point[0] + cross_width[0] - cross_thickness[0];
+								point[1] = stream_point[1] + cross_width[1] - cross_thickness[1];
+								point[2] = stream_point[2] + cross_width[2] - cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = -stream_normal[0];
+								normal[1] = -stream_normal[1];
+								normal[2] = -stream_normal[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+
+								point[0] = stream_point[0] + cross_width[0] - cross_thickness[0];
+								point[1] = stream_point[1] + cross_width[1] - cross_thickness[1];
+								point[2] = stream_point[2] + cross_width[2] - cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = stream_cross[0];
+								normal[1] = stream_cross[1];
+								normal[2] = stream_cross[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+								point[0] = stream_point[0] + cross_width[0] + cross_thickness[0];
+								point[1] = stream_point[1] + cross_width[1] + cross_thickness[1];
+								point[2] = stream_point[2] + cross_width[2] + cross_thickness[2];
+								CAST_TO_OTHER(floatField,point,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+									3, 1, floatField);
+								normal[0] = stream_cross[0];
+								normal[1] = stream_cross[1];
+								normal[2] = stream_cross[2];
+								CAST_TO_OTHER(floatField,normal,GLfloat,3);
+								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+									3, 1, floatField);
+								if ((STREAM_NO_DATA != data_type) && stream_data)
+								{
+									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+										1, 1, &stream_datum);
+								}
+							} break;
 						}
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"create_GT_surface_streamribbon_FE_element. "
-							"Could not allocate memory for points");
-						DEALLOCATE(data);
-						surface=(struct GT_surface *)NULL;
-					}
+					int polygonType = (int)g_TRIANGLE;
+
+					unsigned int number_of_xi1 = surface_points_per_step,
+						number_of_xi2 = number_of_stream_points;
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+						1, 1, &number_of_vertices);
+					array->add_unsigned_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+						1, 1, &vertex_start);
+					array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+						1, 1, &polygonType);
+					array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+						1, 1, &number_of_xi1);
+					array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+						1, 1, &number_of_xi2);
+					array->fill_element_index(vertex_start, number_of_xi1, number_of_xi2,
+						ARRAY_SHAPE_TYPE_UNSPECIFIED);
 					/* no longer need original streamline */
 					DEALLOCATE(stream_points);
 					DEALLOCATE(stream_vectors);
@@ -1811,32 +1792,31 @@ struct GT_surface *create_GT_surface_streamribbon_FE_element(
 				else
 				{
 					/* no error: streamline empty */
-					surface=(struct GT_surface *)NULL;
+					return_code = 0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_GT_surface_streamline_FE_element.  "
+					"create_surface_streamribbon_FE_element_vertex_array.  "
 					"failed to track streamline");
-				surface=(struct GT_surface *)NULL;
+				return_code = 0;
 			}
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_GT_surface_streamline_FE_element.  Invalid argument(s)");
-			surface=(struct GT_surface *)NULL;
+				"create_surface_streamribbon_FE_element_vertex_array.  Invalid argument(s)");
+			return_code = 0;
 		}
 	}
 	else
 	{
-		surface=(struct GT_surface *)NULL;
+		return_code = 0;
 	}
-	LEAVE;
 
-	return (surface);
-} /* create_GT_surface_streamribbon_FE_element */
+	return (return_code);
+}
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,
@@ -1888,115 +1868,6 @@ Adds a new flow particle structure to the start of the Streampoint list
 
 	return (return_code);
 } /* add_flow_particle */
-
-int update_flow_particle_list(struct Streampoint *point,
-	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
-	struct Computed_field *stream_vector_field,FE_value step, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 3 December 2001
-
-DESCRIPTION :
-Uses RungeKutta integration to update the position of the given streampoints
-using the vector/gradient field and stepsize.  If time is 0 then the previous
-point positions are updated adding no new objects.  Otherwise a new pointset is
-created with the given timestamp.
-==============================================================================*/
-{
-	FE_value coordinates[3],step_size,total_stepped;
-	int keep_tracking,index,number_of_points,return_code;
-	struct GT_pointset *pointset;
-	struct Streampoint *point2;
-	Triple *particle_positions;
-
-	ENTER(update_flow_particle_list);
-	return_code = 1;
-	if (time&&point&&coordinate_field&&stream_vector_field&&
-		(3>=Computed_field_get_number_of_components(coordinate_field)))
-	{
-		coordinates[0]=0.0;
-		coordinates[1]=0.0;
-		coordinates[2]=0.0;
-		/* add a new time value and copy the entire graphics primitives */
-			/*???DB.  Yet to be done ? */
-		/* count number of points */
-		point2=point;
-		number_of_points=0;
-		while (point2)
-		{
-			number_of_points++;
-			point2=point2->next;
-		}
-		if (ALLOCATE(particle_positions,Triple,number_of_points))
-		{
-			if ((pointset=CREATE(GT_pointset)(number_of_points,particle_positions,
-				(char **)NULL,g_POINT_MARKER,1,g_NO_DATA,(GLfloat *)NULL,(int *)NULL,
-				(struct cmzn_font *)NULL))&&
-				GT_OBJECT_ADD(GT_pointset)(point->graphics_object,ZnReal(time),pointset))
-			{
-				/* copy point positions and then point to new position space */
-				point2=point;
-				/* streampoint list is created by prefixing new points so the
-					particle positions are in the reverse order */
-				index=number_of_points-1;
-				while (point2)
-				{
-					(*(particle_positions+index))[0]=
-						(*((*(point2->pointlist))+point2->index))[0];
-					(*(particle_positions+index))[1]=
-						(*((*(point2->pointlist))+point2->index))[1];
-					(*(particle_positions+index))[2]=
-						(*((*(point2->pointlist))+point2->index))[2];
-					point2->pointlist= &(pointset->pointlist);
-					point2->index=index;
-					index--;
-					point2=point2->next;
-				}
-			}
-			else
-			{
-				DEALLOCATE(particle_positions);
-				display_message(ERROR_MESSAGE,
-					"gfx_create_flow_particles.  Unable to create new pointset");
-				return_code=0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-"gfx_create_flow_particles.  Unable to allocate memory for particle positions");
-			return_code=0;
-		}
-	}
-	while (return_code&&point&&(point->element))
-	{
-		total_stepped=0;
-		step_size=step;
-		keep_tracking=1;
-		while (return_code&&(total_stepped<step))
-		{
-			if (total_stepped+step_size>step)
-			{
-				step_size=step-total_stepped;
-			}
-			return_code=update_adaptive_imp_euler(field_cache, coordinate_field,
-				stream_vector_field,/*reverse_track*/0,(struct FE_region *)NULL,
-				&(point->element),point->xi,coordinates,&step_size,
-				&total_stepped,&keep_tracking);
-			(*((point->pointlist)[point->index]))[0]=GLfloat(coordinates[0]);
-			(*((point->pointlist)[point->index]))[1]=GLfloat(coordinates[1]);
-			(*((point->pointlist)[point->index]))[2]=GLfloat(coordinates[2]);
-		}
-		if (total_stepped)
-		{
-			/* the particle has moved so the graphics object needs updating */
-			GT_object_changed(point->graphics_object);
-		}
-		point=point->next;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* update_flow_particle_list */
 
 int element_to_particle(struct FE_element *element,
 	void *void_element_to_particle_data)

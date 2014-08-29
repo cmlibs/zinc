@@ -27,8 +27,8 @@ Functions for reading graphics object data from a file.
 #include "graphics/material.h"
 #include "graphics/graphics_library.h"
 #include "graphics/graphics_object.h"
+#include "graphics/graphics_object.hpp"
 #include "graphics/import_graphics_object.h"
-#include "graphics/userdef_objects.h"
 #include "graphics/volume_texture.h"
 #include "general/message.h"
 
@@ -36,6 +36,12 @@ Functions for reading graphics object data from a file.
 Module functions
 ----------------
 */
+
+/*
+Global functions
+----------------
+*/
+
 static int file_read_GT_object_type(struct IO_stream *file,
 	enum GT_object_type *object_type)
 /*******************************************************************************
@@ -49,13 +55,32 @@ enumerated <object_type>.
 	char *type_string;
 	int return_code;
 
-	ENTER(file_read_GT_object_type);
 	if (file&&object_type)
 	{
 		if (IO_stream_read_string(file,"s",&type_string))
 		{
-			return_code=get_GT_object_type_from_string(type_string,object_type);
-			DEALLOCATE(type_string);
+			*object_type = g_OBJECT_TYPE_INVALID;
+			return_code = 1;
+			if (0 == (strcmp("SURFACE", type_string)))
+			{
+				*object_type = g_SURFACE_VERTEX_BUFFERS;
+			}
+			else if (0 == (strcmp("POLYLINE", type_string)))
+			{
+				*object_type = g_POLYLINE_VERTEX_BUFFERS;
+			}
+			else if (0 == (strcmp("POINT", type_string)))
+			{
+				*object_type = g_POINT_VERTEX_BUFFERS;
+			}
+			else if (0 == (strcmp("POINTSET", type_string)))
+			{
+				*object_type = g_POINT_SET_VERTEX_BUFFERS;
+			}
+			else
+			{
+				return_code = get_GT_object_type_from_string(type_string,object_type);
+			}
 		}
 		else
 		{
@@ -70,7 +95,6 @@ enumerated <object_type>.
 		display_message(ERROR_MESSAGE,
 			"file_read_GT_object_type.  Invalid argument(s)");
 	}
-	LEAVE;
 
 	return (return_code);
 } /* file_read_GT_object_type */
@@ -179,26 +203,14 @@ DESCRIPTION :
 	enum GT_surface_type surface_type;
 	enum GT_polyline_type polyline_type;
 	GLfloat *data;
-	int sorder,torder,corder;
-	int sknotcnt,tknotcnt,cknotcnt,pwlcnt,ccount;
-	int maxs,maxt;
-	ZnReal *sknots,*tknots,*cknots;
-	ZnReal *controlpts,*trimarray,*pwlarray;
 	enum GT_object_type object_type;
 	gtMatrix transform;
 	gtTransformType transtype;
 	struct Graphical_material *object_material;
-	struct GT_nurbs *nurbs;
-	struct GT_point *point;
-	struct GT_pointset *pointset;
-	struct GT_polyline *polyline;
-	struct GT_surface *surface;
-	struct GT_userdef *userdef;
 	struct IO_stream *stream;
 	int version;
 	double time;
 
-	ENTER(file_read_graphics_objects);
 	cmzn_glyphmodule_begin_change(glyphmodule);
 #if defined (DEBUG_CODE)
 	/*???debug*/
@@ -318,19 +330,20 @@ DESCRIPTION :
 						}
 						if (obj)
 						{
-							if (GT_object_has_time(obj,time))
-							{
-								display_message(WARNING_MESSAGE,
-									"Overwriting time %g in graphics object '%s'",time,
-									objname);
-								return_code = GT_object_remove_primitives_at_time(obj, time,
-									(GT_object_primitive_object_name_conditional_function *)NULL,
-									(void *)NULL);
-							}
+							return_code = GT_object_remove_primitives_at_time(obj, time,
+								(GT_object_primitive_object_name_conditional_function *)NULL,
+								(void *)NULL);
 						}
 						else if (return_code)
 						{
-							obj=CREATE(GT_object)(objname,object_type,object_material);
+							if (object_type == g_POINT_VERTEX_BUFFERS)
+							{
+								obj=CREATE(GT_object)(objname,g_POINT_SET_VERTEX_BUFFERS,object_material);
+							}
+							else
+							{
+								obj=CREATE(GT_object)(objname,object_type,object_material);
+							}
 							glyph = cmzn_glyphmodule_create_glyph_static(glyphmodule, obj);
 							if (glyph)
 							{
@@ -342,17 +355,11 @@ DESCRIPTION :
 								return_code = 0;
 							}
 						}
-#if defined (DEBUG_CODE)
-						/*???debug */
-						printf("object type = %d (%s)\n",object_type,
-							get_GT_object_type_string(object_type));
-						printf("object name = %s\n",objname);
-#endif /* defined (DEBUG_CODE) */
 						if (return_code)
 						{
 						switch (object_type)
 						{
-							case g_POINT:
+							case g_POINT_VERTEX_BUFFERS:
 							{
 								/*???DB.  Check allocation */
 								ALLOCATE(pointlist,Triple,1);
@@ -361,17 +368,14 @@ DESCRIPTION :
 									IO_stream_scan(stream,"%f",&((*pointlist)[i]));
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
-								point = CREATE(GT_point)(pointlist,(char *)NULL,
-									g_PLUS_MARKER, 1.0, g_NO_DATA,
-									/*object_name*/0,(GLfloat *)NULL, (struct cmzn_font *)NULL);
-								GT_OBJECT_ADD(GT_point)(obj,time,point);
+								GT_pointset_vertex_buffers *pointset = CREATE(GT_pointset_vertex_buffers)(0, g_PLUS_MARKER, 1.0);
+								fill_pointset_graphics_vertex_array(GT_object_get_vertex_set(obj),
+									1, pointlist, 0, /*n_data_components*/0,(GLfloat *)NULL);
+								GT_OBJECT_ADD(GT_pointset_vertex_buffers)(obj,pointset);
+								DEALLOCATE(pointlist);
 							} break;
-							case g_POINTSET:
+							case g_POINT_SET_VERTEX_BUFFERS:
 							{
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("Reading g_POINTSET\n");
-#endif /* defined (DEBUG_CODE) */
 								IO_stream_scan(stream,"%d",&npts1);
 								/*???DB.  Check allocation */
 								ALLOCATE(pointlist,Triple,npts1);
@@ -383,35 +387,24 @@ DESCRIPTION :
 									}
 								}
 								/*???DB.  Merging GTTEXT into GTPOINT and GTPOINTSET */
-								pointset = CREATE(GT_pointset)(npts1,pointlist,
-									(char **)NULL,g_PLUS_MARKER,/*marker_size*/1.0,g_NO_DATA,
-									(GLfloat *)NULL,(int *)NULL, (struct cmzn_font *)NULL);
-								GT_OBJECT_ADD(GT_pointset)(obj,time,pointset);
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" end of g_POINTSET\n");
-#endif /* defined (DEBUG_CODE) */
+								GT_pointset_vertex_buffers *pointset = CREATE(GT_pointset_vertex_buffers)(0, g_PLUS_MARKER, 1.0);
+								fill_pointset_graphics_vertex_array(GT_object_get_vertex_set(obj),
+									npts1, pointlist, 0, /*n_data_components*/0,(GLfloat *)NULL);
+								GT_OBJECT_ADD(GT_pointset_vertex_buffers)(obj, pointset);
+								DEALLOCATE(pointlist);
 							} break;
-							case g_POLYLINE:
+							case g_POLYLINE_VERTEX_BUFFERS:
 							{
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("Reading g_POLYLINE\n");
-#endif /* defined (DEBUG_CODE) */
 								/*IO_stream_scan(stream,"%d",&polyline_type);*/
 								if (file_read_GT_polyline_type(stream,&polyline_type))
 								{
-#if defined (DEBUG_CODE)
-									/*???debug */
-									printf("  polyline_type = %d (%s)\n",polyline_type,
-										get_GT_polyline_type_string(polyline_type));
-#endif /* defined (DEBUG_CODE) */
 									IO_stream_scan(stream,"%d",&npts1);
 									/* must clear the following since passed directly to
 										 CREATE(GT_surface) unless specifically allocated */
 									pointlist=(Triple *)NULL;
 									normallist = (Triple *)NULL;
 									data = 0;
+									unsigned int number_of_points = 0;
 									switch (polyline_type)
 									{
 										case g_PLAIN:
@@ -424,6 +417,7 @@ DESCRIPTION :
 													IO_stream_scan(stream,"%f",&(pointlist[i][j]));
 												}
 											}
+											number_of_points = npts1;
 										} break;
 										case g_PLAIN_DISCONTINUOUS:
 										{
@@ -435,6 +429,7 @@ DESCRIPTION :
 													IO_stream_scan(stream,"%f",&(pointlist[i][j]));
 												}
 											}
+											number_of_points = 2*npts1;
 										} break;
 										case g_NORMAL_DISCONTINUOUS:
 										{
@@ -451,6 +446,7 @@ DESCRIPTION :
 													IO_stream_scan(stream,"%f",&(normallist[i][j]));
 												}
 											}
+											number_of_points = 2*npts1;
 										} break;
 										case g_NORMAL:
 										{
@@ -467,14 +463,25 @@ DESCRIPTION :
 													IO_stream_scan(stream,"%f",&(normallist[i][j]));
 												}
 											}
+											number_of_points = npts1;
 										} break;
 										default:
 										{
 										} break;
 									}
-									polyline = CREATE(GT_polyline)(polyline_type, npts1,
-										pointlist, normallist, g_NO_DATA, (GLfloat *)NULL);
-									GT_OBJECT_ADD(GT_polyline)(obj,time,polyline);
+									GT_polyline_vertex_buffers *polyline = CREATE(GT_polyline_vertex_buffers)(polyline_type, 1);
+									fill_line_graphics_vertex_array(GT_object_get_vertex_set(obj),
+										number_of_points, pointlist, normallist,
+										/*n_data_components*/0,(GLfloat *)NULL);
+									GT_OBJECT_ADD(GT_polyline_vertex_buffers)(obj, polyline);
+									if (pointlist)
+									{
+										DEALLOCATE(pointlist);
+									}
+									if (normallist)
+									{
+										DEALLOCATE(normallist);
+									}
 								}
 								else
 								{
@@ -482,25 +489,12 @@ DESCRIPTION :
 										"file_read_graphics_objects.  Unknown polyline type");
 									return_code=0;
 								}
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" end of g_POLYLINE\n");
-#endif /* defined (DEBUG_CODE) */
 							} break;
-							case g_SURFACE:
+							case g_SURFACE_VERTEX_BUFFERS:
 							{
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("Reading g_SURFACE\n");
-#endif /* defined (DEBUG_CODE) */
 								/*IO_stream_scan(stream,"%d",&surface_type);*/
 								if (file_read_GT_surface_type(stream,&surface_type))
 								{
-#if defined (DEBUG_CODE)
-									/*???debug */
-									printf("  surface_type = %d (%s)\n",surface_type,
-										get_GT_surface_type_string(surface_type));
-#endif /* defined (DEBUG_CODE) */
 									IO_stream_scan(stream,"%d",&n_data_components);
 									IO_stream_scan(stream,"%d",&npts1);
 									IO_stream_scan(stream,"%d",&npts2);
@@ -595,11 +589,30 @@ DESCRIPTION :
 											}
 										} break;
 									}
-									surface=CREATE(GT_surface)(surface_type,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED,
-										g_QUADRILATERAL,npts1,npts2,pointlist,normallist,
-										/*tangentlist*/(Triple *)NULL,texturelist,
-										n_data_components,data);
-									GT_OBJECT_ADD(GT_surface)(obj,time,surface);
+									struct GT_surface_vertex_buffers *surface =
+										CREATE(GT_surface_vertex_buffers)(surface_type,
+											CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
+									fill_surface_graphics_vertex_array(GT_object_get_vertex_set(obj),
+										g_TRIANGLE, npts1, npts2,
+										pointlist,normallist, /*tangentlist*/(Triple *)NULL,
+										texturelist, n_data_components, data);
+									GT_OBJECT_ADD(GT_surface_vertex_buffers)(obj,surface);
+									if (pointlist)
+									{
+										DEALLOCATE(pointlist);
+									}
+									if (normallist)
+									{
+										DEALLOCATE(normallist);
+									}
+									if (texturelist)
+									{
+										DEALLOCATE(texturelist);
+									}
+									if (data)
+									{
+										DEALLOCATE(data);
+									}
 								}
 								else
 								{
@@ -607,133 +620,6 @@ DESCRIPTION :
 										"file_read_graphics_objects.  Unknown surface type");
 									return_code=0;
 								}
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" end of g_SURFACE\n");
-#endif /* defined (DEBUG_CODE) */
-							} break;
-							case g_NURBS:
-							{
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("Reading g_NURBS\n");
-#endif /* defined (DEBUG_CODE) */
-								/* 26 June 97. Added nurbs_type */
-								if (version < 3)
-								{
-									display_message(WARNING_MESSAGE,
-										"file_read_graphics_objects.  Nurb type now redundant, value is ignored");
-									IO_stream_scan(stream,"%d",&dummy);
-								}
-								IO_stream_scan(stream,"%d %d %d",&sorder,&torder,&corder);
-								IO_stream_scan(stream,"%d %d",&sknotcnt,&tknotcnt);
-								/* must clear the following since passed directly to
-									CREATE(GT_nurbs) unless specifically allocated */
-								sknots=(double *)NULL;
-								tknots=(double *)NULL;
-								controlpts=(double *)NULL;
-								cknots=(double *)NULL;
-								trimarray=(double *)NULL;
-								pwlarray=(double *)NULL;
-								ALLOCATE(sknots,double,sknotcnt);
-								for (i=0;i<sknotcnt;i++)
-								{
-									IO_stream_scan(stream,"%lf",&(sknots[i]));
-								}
-								ALLOCATE(tknots,double,tknotcnt);
-								for (i=0;i<tknotcnt;i++)
-								{
-									IO_stream_scan(stream,"%lf",&(tknots[i]));
-								}
-								IO_stream_scan(stream,"%d %d",&maxs,&maxt);
-								ALLOCATE(controlpts,double,4*maxs*maxt);
-								for (i=0;i<maxs;i++)
-								{
-									for (j=0;j<maxt;j++)
-									{
-										IO_stream_scan(stream,"%lf %lf %lf %lf",
-											&(controlpts[4*(i + maxs*j)+0]),
-											&(controlpts[4*(i + maxs*j)+1]),
-											&(controlpts[4*(i + maxs*j)+2]),
-											&(controlpts[4*(i + maxs*j)+3]));
-									}
-								}
-								IO_stream_scan(stream,"%d",&cknotcnt);
-								if(cknotcnt)
-								{
-									ALLOCATE(cknots,double,cknotcnt);
-									for (i=0;i<cknotcnt;i++)
-									{
-										IO_stream_scan(stream,"%lf",&(cknots[i]));
-									}
-								}
-								IO_stream_scan(stream,"%d",&ccount);
-								if(ccount)
-								{
-									ALLOCATE(trimarray,double,3*ccount);
-									for (i=0;i<ccount;i++)
-									{
-										for (j = 0;j<3;j++)
-										{
-											IO_stream_scan(stream,"%lf",&(trimarray[3*i+j]));
-										}
-									}
-								}
-								IO_stream_scan(stream,"%d",&pwlcnt);
-								if(pwlcnt)
-								{
-									ALLOCATE(pwlarray,double,3*pwlcnt);
-									for (i=0;i<pwlcnt;i++)
-									{
-										for (j=0;j<3;j++)
-										{
-											IO_stream_scan(stream,"%lf",&(pwlarray[3*i+j]));
-										}
-									}
-								}
-								nurbs=CREATE(GT_nurbs)();
-								if(nurbs)
-								{
-									GT_nurbs_set_surface(nurbs, sorder, torder,
-										sknotcnt, tknotcnt, sknots, tknots,
-										maxs, maxt, controlpts);
-									if(cknotcnt)
-									{
-										GT_nurbs_set_nurb_trim_curve(nurbs,
-											corder, cknotcnt, cknots,
-											ccount, trimarray);
-									}
-									if(pwlcnt)
-									{
-										GT_nurbs_set_piecewise_linear_trim_curve(nurbs,
-											pwlcnt, pwlarray);
-									}
-									GT_OBJECT_ADD(GT_nurbs)(obj,time,nurbs);
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"file_read_graphics_objects.  Unable to create GT_nurbs object.");
-									return_code=0;
-								}
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" end of g_NURBS\n");
-#endif /* defined (DEBUG_CODE) */
-							} break;
-							case g_USERDEF:
-							{
-								/*--------- application specific user defined --------*/
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("Reading g_USERDEF\n");
-#endif /* defined (DEBUG_CODE) */
-								file_read_userdef(stream,&userdef);
-								GT_OBJECT_ADD(GT_userdef)(obj,time,userdef);
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" end of g_USERDEF\n");
-#endif /* defined (DEBUG_CODE) */
 							} break;
 							default:
 							{
@@ -779,25 +665,19 @@ DESCRIPTION :
 			"file_read_graphics_objects.  Invalid argument(s)");
 	}
 	cmzn_glyphmodule_end_change(glyphmodule);
-#if defined (DEBUG_CODE)
-	/*???debug */
-	printf("LEAVE(file_read_graphics_objects)\n");
-#endif /* defined (DEBUG_CODE) */
-	LEAVE;
 
 	return (return_code);
 } /* file_read_graphics_objects */
 
 #define MAX_OBJ_VERTICES (128)
 
-int file_read_voltex_graphics_object_from_obj(char *file_name,
+int file_read_surface_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	ZnReal time, struct cmzn_materialmodule *materialmodule,
 	struct cmzn_glyphmodule *glyphmodule)
 {
 	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
-	enum GT_voltex_type voltex_type;
 	FE_value rmag, result[3], vector1[3], vector2[3], vectorsum[3], vertex0[3],
 		vertex1[3], vertex2[3];
 	ZnReal *new_coordinate_vertices, *coordinate_vertices,
@@ -808,12 +688,11 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 		*vertex_reindex, warning_multiple_normals;
 	gtObject *new_obj, *next_obj, *obj;
 	struct Graphical_material *scanned_material;
-	struct GT_voltex *voltex;
+	GT_surface_vertex_buffers *surfaces = 0;
 	struct IO_stream *file;
 	struct VT_iso_vertex *vertex, **vertex_list;
 	struct VT_iso_triangle *triangle, **triangle_list;
 
-	ENTER(file_read_voltex_graphics_objects_from_obj);
 	cmzn_glyphmodule_begin_change(glyphmodule);
 	return_code = 1;
 	if (file_name && materialmodule)
@@ -847,17 +726,11 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 				next_obj = obj;
 				while (next_obj)
 				{
-					if (g_VOLTEX==GT_object_get_type(next_obj))
+					if (g_SURFACE_VERTEX_BUFFERS==GT_object_get_type(next_obj))
 					{
-						if (GT_object_has_time(next_obj, time))
-						{
-							display_message(WARNING_MESSAGE,
-								"Overwriting time %g in graphics object '%s'",
-								time, objname);
-							return_code = GT_object_remove_primitives_at_time(next_obj, time,
-								(GT_object_primitive_object_name_conditional_function *)NULL,
-								(void *)NULL);
-						}
+						return_code = GT_object_remove_primitives_at_time(next_obj, time,
+							(GT_object_primitive_object_name_conditional_function *)NULL,
+							(void *)NULL);
 					}
 					else
 					{
@@ -871,7 +744,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			}
 			else if (return_code)
 			{
-				obj = CREATE(GT_object)(objname, g_VOLTEX, NULL);
+				obj = CREATE(GT_object)(objname, g_SURFACE_VERTEX_BUFFERS, NULL);
 				glyph = cmzn_glyphmodule_create_glyph_static(glyphmodule, obj);
 				if (glyph)
 				{
@@ -882,24 +755,6 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 				{
 					return_code = 0;
 				}
-			}
-			switch (render_polygon_mode)
-			{
-				case CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED:
-				{
-					voltex_type = g_VOLTEX_SHADED_TEXMAP;
-				} break;
-				case CMZN_GRAPHICS_RENDER_POLYGON_MODE_WIREFRAME:
-				{
-					voltex_type = g_VOLTEX_WIREFRAME_SHADED_TEXMAP;
-				} break;
-				default:
-				{
-					display_message(ERROR_MESSAGE,
-						"file_read_voltex_graphics_object_from_obj.  "
-						"Unknown render type");
-					return_code = 0;
-				} break;
 			}
 
 			if (return_code)
@@ -956,19 +811,42 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								if (number_of_vertices && vertex_list &&
 									number_of_triangles && triangle_list)
 								{
-									/* Add the voltex we currently have and reset the vertex and triangle lists */
-									voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
-										number_of_triangles, triangle_list,
-										/*n_data_components*/0, n_texture_coordinates, voltex_type);
-									if (voltex)
+									surfaces = CREATE(GT_surface_vertex_buffers)(g_SH_DISCONTINUOUS_TEXMAP,
+										render_polygon_mode);
+									struct Graphics_vertex_array *array = GT_object_get_vertex_set(obj);
+									GLfloat floatField[3];
+									unsigned int total_number_of_vertices = number_of_triangles * 3;
+									unsigned int vertex_start = 0;
+									int polygonType = (int)g_TRIANGLE;
+									array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+										1, 1, &polygonType);
+									for (int k = 0; k < number_of_triangles; k++)
 									{
-										return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
+										for (int l = 0; l < 3; l++)
+										{
+											CAST_TO_OTHER(floatField,triangle_list[k]->vertices[l]->coordinates,GLfloat,3);
+											array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+												3, 1, floatField);
+											CAST_TO_OTHER(floatField,triangle_list[k]->vertices[l]->normal,GLfloat,3);
+											array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+												3, 1, floatField);
+										}
+									}
+									array->add_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+										1, 1, &total_number_of_vertices);
+									array->add_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+										1, 1, &vertex_start);
+									if (surfaces)
+									{
+										return_code = GT_OBJECT_ADD(GT_surface_vertex_buffers)(obj, surfaces);
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,
-											"file_read_voltex_graphics_object_from_obj.  "
-											"Unable create GT_voltex when changing material");
+											"file_read_surface_graphics_object_from_obj.  "
+											"Unable create GT_surface_vertex_buffers when changing material");
 										return_code=0;
 									}
 								}
@@ -1023,7 +901,7 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 								else
 								{
 									/* Make a new obj using the new material */
-									new_obj = CREATE(GT_object)(objname, g_VOLTEX, scanned_material);
+									new_obj = CREATE(GT_object)(objname, g_SURFACE_VERTEX_BUFFERS, scanned_material);
 									GT_object_set_next_object(obj, new_obj);
 								}
 								REACCESS(GT_object)(&obj, new_obj);
@@ -1423,18 +1301,42 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 			}
 			if (return_code)
 			{
-				voltex = CREATE(GT_voltex)(number_of_vertices, vertex_list,
-					number_of_triangles, triangle_list,
-					/*n_data_components*/0, n_texture_coordinates, voltex_type);
-				if (voltex)
+				surfaces = CREATE(GT_surface_vertex_buffers)(
+					g_SH_DISCONTINUOUS_TEXMAP, render_polygon_mode);
+				struct Graphics_vertex_array *array = GT_object_get_vertex_set(obj);
+				GLfloat floatField[3];
+				unsigned int total_number_of_vertices = number_of_triangles * 3;
+				unsigned int vertex_start = 0;
+				int polygonType = (int)g_TRIANGLE;
+				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
+					1, 1, &polygonType);
+				for (int k = 0; k < number_of_triangles; k++)
 				{
-					return_code = GT_OBJECT_ADD(GT_voltex)(obj, time, voltex);
+					for (int l = 0; l < 3; l++)
+					{
+						CAST_TO_OTHER(floatField,triangle_list[k]->vertices[l]->coordinates,GLfloat,3);
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+							3, 1, floatField);
+						CAST_TO_OTHER(floatField,triangle_list[k]->vertices[l]->normal,GLfloat,3);
+						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+							3, 1, floatField);
+					}
+				}
+				array->add_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					1, 1, &total_number_of_vertices);
+				array->add_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					1, 1, &vertex_start);
+				if (surfaces)
+				{
+					return_code = GT_OBJECT_ADD(GT_surface_vertex_buffers)(obj, surfaces);
 				}
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"file_read_voltex_graphics_object_from_obj.  "
-						"Unable create GT_voltex");
+						"file_read_surface_graphics_object_from_obj.  "
+						"Unable create GT_surface_vertex_buffers");
 					return_code=0;
 				}
 				if (return_code)
@@ -1451,17 +1353,17 @@ int file_read_voltex_graphics_object_from_obj(char *file_name,
 		{
 			return_code=0;
 			display_message(ERROR_MESSAGE,
-				"file_read_voltex_graphics_object_from_obj.  Unable to open file %s", file_name);
+				"file_read_surface_graphics_object_from_obj.  Unable to open file %s", file_name);
 		}
 	}
 	else
 	{
 		return_code=0;
 		display_message(ERROR_MESSAGE,
-			"file_read_voltex_graphics_object_from_obj.  Invalid argument(s)");
+			"file_read_surface_graphics_object_from_obj.  Invalid argument(s)");
 	}
 	cmzn_glyphmodule_end_change(glyphmodule);
 	LEAVE;
 
 	return (return_code);
-} /* file_read_voltex_graphics_object_from_obj */
+}

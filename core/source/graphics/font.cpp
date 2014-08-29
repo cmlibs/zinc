@@ -647,6 +647,7 @@ DESCRIPTION :
 				case CMZN_FONT_RENDER_TYPE_OUTLINE:
 				case CMZN_FONT_RENDER_TYPE_EXTRUDE:
 				{
+					glEnable(GL_LIGHTING);
 					glMatrixMode(GL_MODELVIEW);
 					glPushMatrix();
 					font->ftFont->Render(text, -1, FTPoint(x, y, z));

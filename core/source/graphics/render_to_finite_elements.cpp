@@ -511,388 +511,228 @@ Module functions
 ----------------
 */
 
-static int render_polyline_to_finite_elements(
-	struct Render_to_finite_elements_data *data, Triple *point_list,
-	int number_of_data_components,GLfloat *data_values,
-	struct Graphical_material *material,struct Spectrum *spectrum,int n_pts,
-	enum GT_polyline_type polyline_type)
-/*******************************************************************************
-LAST MODIFIED : 14 July 2006
-
-DESCRIPTION :
-Writes VRML code to the file handle which represents the given
-continuous polyline. If data or spectrum are NULL they are ignored.
-==============================================================================*/
+static int render_polyline_vertex_buffers_to_finite_elements(
+	struct Render_to_finite_elements_data *data, GT_object *object)
 {
-	int i,number_of_points,return_code;
-	FE_value_triple position;
-
-	ENTER(render_polyline_to_finite_elements);
-	if (point_list&&(1<n_pts)&&
-		((g_NO_DATA==number_of_data_components)||(data&&material&&spectrum)))
+	int return_code = 1;
+	if (data && object)
 	{
-		return_code=1;
-		switch (polyline_type)
+		unsigned int line_index;
+		unsigned int line_count = object->vertex_array->get_number_of_vertices(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+			data_values_per_vertex = 0, data_vertex_count = 0;
+		GLfloat *position_buffer = 0;
+		GLfloat *data_buffer = 0;
+		object->vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			&position_buffer, &position_values_per_vertex, &position_vertex_count);
+		object->vertex_array->get_float_vertex_buffer(
+			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			&data_buffer, &data_values_per_vertex, &data_vertex_count);
+		Render_node lastNode, thisNode;
+
+		FE_value *position = new FE_value[(position_values_per_vertex > 3) ? position_values_per_vertex : 3];
+		for (unsigned int j = 0; j < 3; ++j)
 		{
-			case g_PLAIN:
-			{
-				number_of_points=n_pts;
-			} break;
-			case g_PLAIN_DISCONTINUOUS:
-			{
-				/* n_pts = number of line segments in this case */
-				number_of_points=2*n_pts;
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"render_polyline_to_finite_elements.  Unsupported polyline_type");
-				return_code=0;
-			} break;
+			position[j] = 0.0;
 		}
-		if (return_code)
+		FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
+		for (line_index = 0; line_index < line_count; line_index++)
 		{
-			GLfloat *data_values_ptr = data_values;
-			FE_value *data_ptr = 0;
-			if (number_of_data_components)
+			int object_name = 0;
+			object->vertex_array->get_integer_attribute(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+				line_index, 1, &object_name);
+			if (object_name > -1)
 			{
-				data_ptr = new FE_value[number_of_data_components];
-			}
-			Render_node *nodes = new Render_node[number_of_points];
-			for (i = 0; i < number_of_points; i++)
-			{
-				if (number_of_data_components)
+				unsigned int i, index_start, index_count;
+				GLfloat *position_vertex = 0;
+				GLfloat *data_vertex = 0;
+
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					line_index, 1, &index_start);
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					line_index, 1, &index_count);
+
+				position_vertex = position_buffer +
+					position_values_per_vertex * index_start;
+				if (data_buffer)
 				{
-					CAST_TO_OTHER(data_ptr, data_values_ptr, FE_value, number_of_data_components);
+					data_vertex = data_buffer +
+						data_values_per_vertex * index_start;
 				}
-				CAST_TO_FE_VALUE(position, point_list[i], 3);
-				nodes[i].assign(*data, position, number_of_data_components, data_ptr);
-				if (number_of_data_components)
+				for (i = 0; i < index_count; ++i)
 				{
-					data_values_ptr += number_of_data_components;
+					for (unsigned int j = 0; j < position_values_per_vertex; ++j)
+					{
+						position[j] = static_cast<FE_value>(position_vertex[j]);
+					}
+					position_vertex += position_values_per_vertex;
+					if (data_buffer)
+					{
+						for (unsigned int j = 0; j < data_values_per_vertex; ++j)
+						{
+							data_values[j] = static_cast<FE_value>(data_vertex[j]);
+						}
+						data_vertex += data_values_per_vertex;
+					}
+					thisNode.assign(*data, position, data_values_per_vertex, data_values);
+					if (i)
+					{
+						data->addLine(data_values_per_vertex, &lastNode, &thisNode);
+					}
+					lastNode.transfer(thisNode);
 				}
 			}
-			delete[] data_ptr;
-			switch (polyline_type)
-			{
-				case g_PLAIN:
-				{
-					for (i = 0 ; i < n_pts - 1 ; i++)
-					{
-						data->addLine(number_of_data_components, &nodes[i], &nodes[i+1]);
-					}
-				} break;
-				case g_PLAIN_DISCONTINUOUS:
-				{
-					for (i=0;i<n_pts;i++)
-					{
-						data->addLine(number_of_data_components, &nodes[2*i], &nodes[2*i+1]);
-					}
-				} break;
-				case g_POLYLINE_TYPE_BEFORE_FIRST:
-				case g_NORMAL:
-				case g_NORMAL_DISCONTINUOUS:
-				case g_POLYLINE_TYPE_AFTER_LAST:
-				case g_POLYLINE_TYPE_INVALID:
-				{
-					/* Do nothing */
-				} break;
-			}
-			delete[] nodes;
 		}
+		delete[] data_values;
+		delete[] position;
 	}
 	else
 	{
-		if (1<n_pts)
-		{
-			display_message(ERROR_MESSAGE,"render_polyline_to_finite_elements.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
+		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* render_polyline_to_finite_elements */
 
-static int render_surface_to_finite_elements(
-	struct Render_to_finite_elements_data *data,
-	Triple *surfpts, Triple *normalpts,
-	Triple *texturepts, int number_of_data_components, GLfloat *data_values,
-	int npts1,
-	int npts2,enum GT_surface_type surface_type,gtPolygonType polygon_type)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2005
-
-DESCRIPTION :
-==============================================================================*/
+static int render_surface_vertex_buffer_to_finite_elements(struct Render_to_finite_elements_data *data,
+	GT_object *object)
 {
-	int i,j,return_code;
-	int index,index_1,index_2,number_of_points;
-	FE_value_triple position;
-
-	ENTER(render_surface_to_finite_elements);
-	return_code=0;
-	USE_PARAMETER(normalpts);
-	USE_PARAMETER(texturepts);
-	if (surfpts&&(0<npts1)&&(1<npts2))
+	if (data && object && object->primitive_lists)
 	{
-		switch (surface_type)
+		GT_surface_vertex_buffers *vb_surface = object->primitive_lists->gt_surface_vertex_buffers;
+		if (vb_surface)
 		{
-			case g_SHADED:
-			case g_SHADED_TEXMAP:
-			{
-				switch (polygon_type)
-				{
-					case g_QUADRILATERAL:
-					{
-						number_of_points=npts1*npts2;
-						return_code=1;
-					} break;
-					case g_TRIANGLE:
-					{
-						number_of_points=(npts1*(npts1+1))/2;
-						return_code=1;
-					} break;
-					case g_GENERAL_POLYGON:
-					{
-						/* Do nothing */
-					} break;
-				}
-			} break;
-			case g_SH_DISCONTINUOUS:
-			case g_SH_DISCONTINUOUS_TEXMAP:
-			{
-				number_of_points = npts1*npts2;
-				return_code = 1;
-			} break;
-			case g_SURFACE_TYPE_BEFORE_FIRST:
-			case g_SH_DISCONTINUOUS_STRIP:
-			case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-			case g_SURFACE_TYPE_AFTER_LAST:
-			case g_SURFACE_TYPE_INVALID:
-			{
-				/* Do nothing */
-			} break;
-		}
-		if (return_code)
-		{
-			GLfloat *data_values_ptr = data_values;
+			unsigned int surface_count =
+				object->vertex_array->get_number_of_vertices(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+			GLfloat *position_buffer = 0, *data_buffer = 0;
+			unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+				data_values_per_vertex = 0, data_vertex_count = 0;
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				&position_buffer, &position_values_per_vertex, &position_vertex_count);
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+				&data_buffer, &data_values_per_vertex, &data_vertex_count);
+			unsigned int *index_vertex_buffer, index_values_per_vertex, index_vertex_count;
+			object->vertex_array->get_unsigned_integer_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_ARRAY,
+				&index_vertex_buffer, &index_values_per_vertex,
+				&index_vertex_count);
 			FE_value *data_ptr = 0;
-			if (number_of_data_components)
+			if (data_values_per_vertex > 0)
 			{
-				data_ptr = new FE_value[number_of_data_components];
+				data_ptr = new FE_value[data_values_per_vertex];
 			}
-			Render_node *nodes = new Render_node[number_of_points];
+			FE_value_triple position;
+			Render_node *nodes = new Render_node[position_vertex_count];
+			GLfloat *data_vertex = data_buffer;
+			GLfloat *position_vertex = position_buffer;
 			if (0 != nodes)
 			{
-				for (i = 0 ; return_code && (i < number_of_points) ; i++)
+				for (unsigned int i = 0 ; i < position_vertex_count ; i++)
 				{
-					if (number_of_data_components)
+					if (data_values_per_vertex)
 					{
-						CAST_TO_OTHER(data_ptr, data_values_ptr, FE_value, number_of_data_components);
+						CAST_TO_OTHER(data_ptr, data_vertex, FE_value, (int)data_values_per_vertex);
 					}
-					CAST_TO_FE_VALUE(position, surfpts[i], 3);
-					nodes[i].assign(*data, position, number_of_data_components, data_ptr);
-					if (number_of_data_components)
+					CAST_TO_FE_VALUE(position, position_vertex, 3);
+					nodes[i].assign(*data, position, data_values_per_vertex, data_ptr);
+					if (data_values_per_vertex)
 					{
-						data_values_ptr += number_of_data_components;
+						data_vertex += data_values_per_vertex;
+					}
+					position_vertex += position_values_per_vertex;
+				}
+				for (unsigned int surface_index = 0; surface_index < surface_count; surface_index++)
+				{
+					int object_name = 0;
+					object->vertex_array->get_integer_attribute(
+						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+						surface_index, 1, &object_name);
+					if (object_name > -1)
+					{
+						if (0 != nodes)
+						{
+							switch (vb_surface->surface_type)
+							{
+								case g_SHADED:
+								case g_SHADED_TEXMAP:
+								{
+									unsigned int number_of_strips = 0;
+									unsigned int strip_start = 0;
+									object->vertex_array->get_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_STRIPS,
+										surface_index, 1, &number_of_strips);
+									object->vertex_array->get_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_START,
+										surface_index, 1, &strip_start);
+									for (unsigned int i = 0; i < number_of_strips; i++)
+									{
+										unsigned int points_per_strip = 0;
+										unsigned int index_start_for_strip = 0;
+										object->vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_START,
+											strip_start+i, 1, &index_start_for_strip);
+										object->vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_POINTS_FOR_STRIP,
+											strip_start+i, 1, &points_per_strip);
+										unsigned int *indices = &index_vertex_buffer[index_start_for_strip];
+										for (unsigned int j =0; j<points_per_strip - 2; j++)
+										{
+											if (0 == (j % 2))
+											{
+												data->addTriangle(data_values_per_vertex,
+													&nodes[indices[j]], &nodes[indices[j + 1]], &nodes[indices[j + 2]]);
+											}
+											else
+											{
+												data->addTriangle(data_values_per_vertex,
+													&nodes[indices[j + 1]], &nodes[indices[j]], &nodes[indices[j + 2]]);
+											}
+										}
+									}
+								} break;
+								case g_SH_DISCONTINUOUS:
+								case g_SH_DISCONTINUOUS_STRIP:
+								case g_SH_DISCONTINUOUS_TEXMAP:
+								case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+								{
+									unsigned int index_start, index_count;
+									object->vertex_array->get_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+										surface_index, 1, &index_start);
+									object->vertex_array->get_unsigned_integer_attribute(
+										GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+										surface_index, 1, &index_count);
+									for (unsigned int i = 0; i < index_count;)
+									{
+										data->addTriangle(data_values_per_vertex,
+											&nodes[index_start+i], &nodes[index_start+i+1], &nodes[index_start+i+2]);
+										i += 3;
+									}
+								}break;
+								default:
+								{
+								} break;
+							}
+						}
 					}
 				}
+				delete[] nodes;
 			}
-			else
+			if (data_values_per_vertex > 0)
 			{
-				display_message(ERROR_MESSAGE,
-					"render_voltex_to_finite_elements.  "
-					"Unable to allocate node array");
-				return_code = 0;
+				delete[] data_ptr;
 			}
-			if (return_code)
-			{
-				switch (surface_type)
-				{
-					case g_SHADED:
-					case g_SHADED_TEXMAP:
-					{
-						switch (polygon_type)
-						{
-							case g_QUADRILATERAL:
-							{
-								index=0;
-								for (j=0;j<npts2-1;j++)
-								{
-									for (i=0;i<npts1-1;i++)
-									{
-										data->addSquare(number_of_data_components,
-											&nodes[index], &nodes[index+1], &nodes[index+npts1], &nodes[index+npts1+1]);
-										index++;
-									}
-									index++;
-								}
-							} break;
-							case g_TRIANGLE:
-							{
-								/* triangle strip */
-								index_1=0;
-								index_2=index_1+npts1;
-								for (i=npts1-1;i>0;i--)
-								{
-									data->addTriangle(number_of_data_components,
-										&nodes[index_1], &nodes[index_1+1], &nodes[index_2]);
-									index_1++;
-									for (j=i-1;j>0;j--)
-									{
-										data->addTriangle(number_of_data_components,
-											&nodes[index_1], &nodes[index_2+1], &nodes[index_2]);
-										index_2++;
-										data->addTriangle(number_of_data_components,
-											&nodes[index_1], &nodes[index_1+1], &nodes[index_2]);
-										index_1++;
-									}
-									index_1++;
-									index_2++;
-								}
-							} break;
-							case g_GENERAL_POLYGON:
-							{
-								/* Do nothing */
-							} break;
-						}
-					} break;
-					case g_SH_DISCONTINUOUS:
-					case g_SH_DISCONTINUOUS_TEXMAP:
-					{
-						index = 0;
-						switch (polygon_type)
-						{
-							case g_QUADRILATERAL:
-							{
-								for (i = 0; i<npts1; i++)
-								{
-									data->addSquare(number_of_data_components,
-										&nodes[index], &nodes[index+1], &nodes[index+2], &nodes[index+3]);
-									index += 4;
-								}
-							} break;
-							case g_TRIANGLE:
-							{
-								for (i = 0; i < npts1; i++)
-								{
-									data->addTriangle(number_of_data_components,
-										&nodes[index], &nodes[index + 1], &nodes[index + 2]);
-									index += 3;
-								}
-							} break;
-							default:
-							{
-								display_message(ERROR_MESSAGE,
-									"render_surface_to_finite_elements.  Unsupported discontinuous polygon_type");
-								return_code = 0;
-							} break;
-						}
-					} break;
-					case g_SURFACE_TYPE_BEFORE_FIRST:
-					case g_SH_DISCONTINUOUS_STRIP:
-					case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
-					case g_SURFACE_TYPE_AFTER_LAST:
-					case g_SURFACE_TYPE_INVALID:
-					{
-						/* Do nothing */
-					} break;
-				}
-			}
-			delete[] nodes;
-			delete[] data_ptr;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"render_surface_to_finite_elements.  Unsupported surface_type");
-			return_code=0;
+			return 1;
 		}
 	}
-	else
-	{
-		if ((0<npts1)&&(1<npts2))
-		{
-			display_message(ERROR_MESSAGE,
-				"render_surface_to_finite_elements.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	LEAVE;
-
-	return (return_code);
-} /* render_surface_to_finite_elements */
-
-static int render_voltex_to_finite_elements(
-	struct Render_to_finite_elements_data *data,
-	int number_of_vertices, struct VT_iso_vertex **vertex_list,
-	int number_of_triangles, struct VT_iso_triangle **triangle_list,
-	int number_of_data_components)
-/*******************************************************************************
-LAST MODIFIED : 8 December 2005
-
-DESCRIPTION :
-==============================================================================*/
-{
-	int i, return_code;
-	FE_value_triple position;
-
-	ENTER(render_voltex_to_finite_elements);
-
-	return_code = 1;
-	if (triangle_list && vertex_list && (0<number_of_triangles))
-	{
-		FE_value *data_ptr = 0;
-		if (number_of_data_components)
-		{
-			data_ptr = new FE_value[number_of_data_components];
-		}
-		Render_node *nodes = new Render_node[number_of_vertices];
-		if (0 != nodes)
-		{
-			for (i = 0 ; return_code && (i < number_of_vertices) ; i++)
-			{
-				if (number_of_data_components)
-				{
-					CAST_TO_OTHER(data_ptr, vertex_list[i]->data, FE_value, number_of_data_components);
-				}
-				CAST_TO_FE_VALUE(position, vertex_list[i]->coordinates, 3);
-				nodes[i].assign(*data, position, number_of_data_components, data_ptr);
-			}
-			if (return_code)
-			{
-				for (i = 0 ; return_code && (i < number_of_triangles) ; i++)
-				{
-					return_code = data->addTriangle(number_of_data_components,
-						&nodes[triangle_list[i]->vertices[0]->index],
-						&nodes[triangle_list[i]->vertices[1]->index],
-						&nodes[triangle_list[i]->vertices[2]->index]);
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"render_voltex_to_finite_elements.  "
-				"Unable to allocate node array");
-			return_code = 0;
-		}
-		delete[] nodes;
-		delete[] data_ptr;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* render_voltex_to_finite_elements */
+	return 0;
+}
 
 static int Graphics_object_render_to_finite_elements(
 	struct GT_object *object, double time,
@@ -905,17 +745,8 @@ DESCRIPTION :
 {
 	ZnReal proportion= 0,*times;
 	int itime, number_of_times, return_code;
-#if defined (NEW_CODE)
-	struct GT_glyph_set *interpolate_glyph_set,*glyph_set,*glyph_set_2;
-	struct GT_point *point;
-	struct GT_pointset *interpolate_point_set,*point_set,*point_set_2;
-#endif /* defined (NEW_CODE) */
-	struct GT_polyline *interpolate_line,*line,*line_2;
-	struct GT_surface *interpolate_surface,*surface,*surface_2;
-	struct GT_voltex *voltex;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
-	ENTER(Graphics_object_render_to_finite_elements);
 	return_code=1;
 	if (object && data)
 	{
@@ -989,189 +820,20 @@ DESCRIPTION :
 		{
 			switch (GT_object_get_type(object))
 			{
-				case g_POLYLINE:
-				{
-					line = primitive_list1->gt_polyline.first;
-					if (line != 0)
-					{
-						if (0<proportion)
-						{
-							line_2 = primitive_list2->gt_polyline.first;
-							while (line&&line_2)
-							{
-								interpolate_line=
-									morph_GT_polyline(proportion,line,line_2);
-								if (interpolate_line)
-								{
-									render_polyline_to_finite_elements(data,
-										interpolate_line->pointlist,
-										interpolate_line->n_data_components,interpolate_line->data,
-										object->default_material,object->spectrum,
-										interpolate_line->n_pts,interpolate_line->polyline_type);
-									DESTROY(GT_polyline)(&interpolate_line);
-								}
-								line=line->ptrnext;
-								line_2=line_2->ptrnext;
-							}
-						}
-						else
-						{
-							while (line)
-							{
-								render_polyline_to_finite_elements(data,
-									line->pointlist,
-									line->n_data_components,line->data,
-									object->default_material,object->spectrum,
-									line->n_pts,line->polyline_type);
-								line=line->ptrnext;
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing polyline");
-						return_code=0;
-					}
-				} break;
 				case g_POLYLINE_VERTEX_BUFFERS:
 				{
-					unsigned int line_index;
-					unsigned int line_count = object->vertex_array->get_number_of_vertices(
-						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
-					unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
-						data_values_per_vertex = 0, data_vertex_count = 0;
-					GLfloat *position_buffer = 0;
-					GLfloat *data_buffer = 0;
-					object->vertex_array->get_float_vertex_buffer(
-						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						&position_buffer, &position_values_per_vertex, &position_vertex_count);
-					object->vertex_array->get_float_vertex_buffer(
-						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						&data_buffer, &data_values_per_vertex, &data_vertex_count);
-					Render_node lastNode, thisNode;
-
-					FE_value *position = new FE_value[(position_values_per_vertex > 3) ? position_values_per_vertex : 3];
-					for (unsigned int j = 0; j < 3; ++j)
+					if (object->vertex_array)
 					{
-						position[j] = 0.0;
-					}
-					FE_value *data_values = (0 != data_buffer) ? new FE_value[data_values_per_vertex] : 0;
-					for (line_index = 0; line_index < line_count; line_index++)
-					{
-						unsigned int i, index_start, index_count;
-						GLfloat *position_vertex = 0;
-						GLfloat *data_vertex = 0;
-
-						object->vertex_array->get_unsigned_integer_attribute(
-							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-							line_index, 1, &index_start);
-						object->vertex_array->get_unsigned_integer_attribute(
-							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-							line_index, 1, &index_count);
-
-						position_vertex = position_buffer +
-							position_values_per_vertex * index_start;
-						if (data_buffer)
-						{
-							data_vertex = data_buffer +
-								data_values_per_vertex * index_start;
-						}
-						for (i = 0; i < index_count; ++i)
-						{
-							for (unsigned int j = 0; j < position_values_per_vertex; ++j)
-							{
-								position[j] = static_cast<FE_value>(position_vertex[j]);
-							}
-							position_vertex += position_values_per_vertex;
-							if (data_buffer)
-							{
-								for (unsigned int j = 0; j < data_values_per_vertex; ++j)
-								{
-									data_values[j] = static_cast<FE_value>(data_vertex[j]);
-								}
-								data_vertex += data_values_per_vertex;
-							}
-							thisNode.assign(*data, position, data_values_per_vertex, data_values);
-							if (i)
-							{
-								data->addLine(data_values_per_vertex, &lastNode, &thisNode);
-							}
-							lastNode.transfer(thisNode);
-						}
-					}
-					delete[] data_values;
-					delete[] position;
-				} break;
-				case g_SURFACE:
-				{
-					surface = primitive_list1->gt_surface.first;
-					if (surface != 0)
-					{
-						if (0<proportion)
-						{
-							surface_2 = primitive_list2->gt_surface.first;
-							while (surface&&surface_2)
-							{
-								interpolate_surface=morph_GT_surface(proportion,
-									surface,surface_2);
-								if (interpolate_surface != 0)
-								{
-									render_surface_to_finite_elements(data,
-										interpolate_surface->pointlist,
-										interpolate_surface->normallist,
-										interpolate_surface->texturelist,
-										interpolate_surface->n_data_components,
-										interpolate_surface->data,interpolate_surface->n_pts1,
-										interpolate_surface->n_pts2,surface->surface_type,
-										surface->polygon);
-									DESTROY(GT_surface)(&interpolate_surface);
-								}
-								surface=surface->ptrnext;
-								surface_2=surface_2->ptrnext;
-							}
-						}
-						else
-						{
-							while (surface)
-							{
-								render_surface_to_finite_elements(data,
-									surface->pointlist,
-									surface->normallist,surface->texturelist,
-									surface->n_data_components,surface->data,
-									surface->n_pts1,
-									surface->n_pts2,surface->surface_type,surface->polygon);
-								surface=surface->ptrnext;
-							}
-						}
-						return_code=1;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing surface");
-						return_code=0;
+						render_polyline_vertex_buffers_to_finite_elements(data, object);
 					}
 				} break;
-				case g_VOLTEX:
+				case g_SURFACE_VERTEX_BUFFERS:
 				{
-					voltex = primitive_list1->gt_voltex.first;
-					if (voltex != 0)
+					if (object->vertex_array)
 					{
-						while (voltex)
-						{
-							render_voltex_to_finite_elements(data,
-								voltex->number_of_vertices, voltex->vertex_list,
-								voltex->number_of_triangles, voltex->triangle_list,
-								voltex->n_data_components);
-							voltex=voltex->ptrnext;
-						}
-						return_code=1;
+						render_surface_vertex_buffer_to_finite_elements(data, object);
 					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing voltex");
-						return_code=0;
-					}
+
 				} break;
 				default:
 				{
@@ -1186,7 +848,6 @@ DESCRIPTION :
 		display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements.  Missing object");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* Graphics_object_render_to_finite_elements */
@@ -1208,17 +869,12 @@ DESCRIPTION :
 		data->setTime(time);
 		switch(GT_object_get_type(gt_object))
 		{
-			case g_VOLTEX:
-			case g_SURFACE:
-			case g_POLYLINE:
 			case g_POLYLINE_VERTEX_BUFFERS:
+			case g_SURFACE_VERTEX_BUFFERS:
 			{
 				return_code = Graphics_object_render_to_finite_elements(gt_object,
 					time, data);
 			} break;
-			case g_POINT:
-			case g_POINTSET:
-			case g_GLYPH_SET:
 			default:
 			{
 				display_message(ERROR_MESSAGE,"Graphics_object_render_to_finite_elements_iterator.  "

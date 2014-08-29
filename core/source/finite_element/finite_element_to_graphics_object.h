@@ -27,31 +27,6 @@ Global types
 ------------
 */
 
-struct Displacement_map
-/*******************************************************************************
-LAST MODIFIED : 27 April 1998
-
-DESCRIPTION :
-Used for displaying voltexes.
-???RC Move to texture? volume_texture?
-==============================================================================*/
-{
-	FE_value scale;
-	int xi_direction;
-	struct Texture *texture;
-}; /* struct Displacement_map */
-
-struct Surface_pointset
-/*******************************************************************************
-LAST MODIFIED : 21 December 1998
-
-DESCRIPTION :
-==============================================================================*/
-{
-	FE_value scale;
-	struct GT_pointset *surface_points;
-	struct Texture *texture;
-}; /* struct Surface_pointset */
 
 enum Collapsed_element_type
 /*******************************************************************************
@@ -107,18 +82,16 @@ these are simply returned, since no valid direction can be produced.
 to be set in the field_cache if needed.
 ==============================================================================*/
 
-struct GT_glyph_set *create_GT_glyph_set_from_FE_element(
+int add_glyphset_vertex_from_FE_element(
+	struct GT_object *graphics_object,
 	cmzn_fieldcache_id field_cache,
 	struct FE_element *element, struct FE_element *top_level_element,
 	struct Computed_field *coordinate_field,
-	int number_of_xi_points, FE_value_triple *xi_points,
-	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
-	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
+	int number_of_xi_points, FE_value_triple *xi_points, struct GT_object *glyph,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field, 
-	struct cmzn_font *font, struct Computed_field *label_field,
-	FE_value *label_offset, char *static_label_text[3],
+	struct Computed_field *data_field,
+	struct Computed_field *label_field,
 	enum cmzn_graphics_select_mode select_mode, int element_selected,
 	struct Multi_range *selected_ranges, int *point_numbers);
 /*******************************************************************************
@@ -155,21 +128,24 @@ Note:
 to be set in the field_cache if needed.
 ==============================================================================*/
 
-struct GT_glyph_set *create_GT_glyph_set_from_nodeset(
+struct GT_glyphset_vertex_buffers *Nodeset_create_vertex_array(
 	cmzn_nodeset_id nodeset, cmzn_fieldcache_id field_cache,
+	struct GT_object *graphics_object,
+	enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	struct Computed_field *coordinate_field,
-	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
-	FE_value *base_size, FE_value *offset, FE_value *scale_factors,
+	struct Computed_field *data_field,
 	struct Computed_field *orientation_scale_field,
 	struct Computed_field *variable_scale_field,
-	struct Computed_field *data_field,
-	struct cmzn_font *font, struct Computed_field *label_field,
-	FE_value *label_offset, char *static_label_text[3],
+	struct Computed_field *label_field,
 	struct Computed_field *label_density_field,
-	struct Computed_field *subgroup_field, enum cmzn_graphics_select_mode select_mode,
-	struct Computed_field *group_field);
+	struct Computed_field *subgroup_field,
+	struct Computed_field *group_field,
+	struct GT_object *glyph,
+	const FE_value *base_size, const FE_value *offset, const FE_value *scale_factors,
+	struct cmzn_font *font, FE_value *label_offset, char *static_label_text[3],
+	enum cmzn_graphics_select_mode select_mode);
 /*******************************************************************************
-Creates a GT_glyph_set displaying a <glyph> of at least <base_size>, with the
+Creates a GT_glyphset_vertex_buffer displaying a <glyph> of at least <base_size>, with the
 given glyph <offset> at each node in <fe_region>.
 The optional <orientation_scale_field> can be used to orient and scale the
 glyph in a manner depending on the number of components in the field. The
@@ -212,53 +188,14 @@ Notes:
  * to say which parent element they should be evaluated on as necessary.
  */
 int FE_element_add_line_to_vertex_array(struct FE_element *element,
-	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *vertex_array,
-	struct Computed_field *coordinate_field, struct Computed_field *data_field,
-	int number_of_data_values, FE_value *data_buffer,
-	struct Computed_field *texture_coordinate_field,
-	unsigned int number_of_segments, struct FE_element *top_level_element);
+	cmzn_fieldcache_id field_cache, struct Graphics_vertex_array *array,
+	Computed_field *coordinate_field,
+	int number_of_data_values, Computed_field *data_field,
+	Computed_field *texture_coordinate_field,
+	unsigned int number_of_segments, FE_element *top_level_element);
 
 /***************************************************************************//**
- * Creates a <GT_surface> from the <coordinate_field> and the radius for the 1-D
- * finite <element> using a grid of points.  The cylinder is built out of an
- * array of rectangles <number_of_segments_along> by <number_of_segments_around>
- * the cylinder.The diameter is calculated as:
- * diameter = base_size[0] + scale_factor[0]*orientation_scale_field[0]
- * The optional <data_field> is calculated over the length of the cylinder, for
- * later colouration by a spectrum.
- * The optional <top_level_element> may be provided as a clue to Computed_fields
- * to say which parent element they should be evaluated on as necessary.
- * The first component of <texture_coordinate_field> is used to control the
- * texture coordinates along the element. If not supplied it will match Xi. The
- * texture coordinate around the cylinders is always from 0 to 1.
- * Notes:
- * - the coordinate field is assumed to be rectangular cartesian.
- * @param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
- * to be set in the field_cache if needed.
- */
-struct GT_surface *create_cylinder_from_FE_element(
-	struct FE_element *element, cmzn_fieldcache_id field_cache,
-	cmzn_mesh_id line_mesh, struct Computed_field *coordinate_field,
-	struct Computed_field *data_field, const FE_value *base_size,
-	const FE_value *scale_factors, cmzn_field_id orientation_scale_field,
-	int number_of_segments_along,int number_of_segments_around,
-	struct Computed_field *texture_coordinate_field,
-	struct FE_element *top_level_element, enum cmzn_graphics_render_polygon_mode render_polygon_mode);
-
-/****************************************************************************//**
- * Sorts out how standard, polygon and simplex elements are segmented, based on
- * numbers of segments requested for "square" elements.
- */
-int get_surface_element_segmentation(struct FE_element *element,
-	int number_of_segments_in_xi1_requested,
-	int number_of_segments_in_xi2_requested,
-	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
-	int *number_of_points,int *number_of_polygon_vertices,
-	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
-	enum FE_element_shape_type *shape_type_address);
-
-/***************************************************************************//**
- * Creates a <GT_surface> from the <coordinate_field> for the 2-D finite
+ * Fill the array with coordinates from the <coordinate_field> for the 2-D finite
  * <element> using an array of <number_of_segments_in_xi1> by
  * <number_of_segments_in_xi2> rectangles in xi space.  The spacing is constant
  * in each of xi1 and xi2.
@@ -274,14 +211,62 @@ int get_surface_element_segmentation(struct FE_element *element,
  * to be set in the field_cache if needed.
  * @param surface_mesh  2-D surface mesh being converted to surface graphics.
 */
-struct GT_surface *create_GT_surface_from_FE_element(
-	struct FE_element *element, cmzn_fieldcache_id field_cache,
-	cmzn_mesh_id surface_mesh, struct Computed_field *coordinate_field,
+int FE_element_add_surface_to_vertex_array(struct FE_element *element,
+	cmzn_fieldcache_id field_cache, cmzn_mesh_id surface_mesh,
+	struct Graphics_vertex_array *array,
+	struct Computed_field *coordinate_field,
 	struct Computed_field *texture_coordinate_field,
 	struct Computed_field *data_field,
+	unsigned int number_of_segments_in_xi1_requested,
+	unsigned int number_of_segments_in_xi2_requested,
+	char reverse_normals, struct FE_element *top_level_element);
+
+/***************************************************************************//**
+ * Fills the array with coordinates from the <coordinate_field> and the radius for
+ * the 1-D finite <element> using a grid of points.  The cylinder is built out of an
+ * array of rectangles <number_of_segments_along> by <number_of_segments_around>
+ * the cylinder.The diameter is calculated as:
+ * diameter = base_size[0] + scale_factor[0]*orientation_scale_field[0]
+ * The optional <data_field> is calculated over the length of the cylinder, for
+ * later colouration by a spectrum.
+ * The optional <top_level_element> may be provided as a clue to Computed_fields
+ * to say which parent element they should be evaluated on as necessary.
+ * The first component of <texture_coordinate_field> is used to control the
+ * texture coordinates along the element. If not supplied it will match Xi. The
+ * texture coordinate around the cylinders is always from 0 to 1.
+ * Notes:
+ * - the coordinate field is assumed to be rectangular cartesian.
+ * @param field_cache  cmzn_fieldcache for evaluating fields. Time is expected
+ * to be set in the field_cache if needed.
+ */
+int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
+	cmzn_fieldcache_id field_cache,
+	struct Graphics_vertex_array *array, cmzn_mesh_id line_mesh,
+	struct Computed_field *coordinate_field,
+	struct Computed_field *data_field,
+	const FE_value *base_size,
+	const FE_value *scale_factors,
+	cmzn_field_id orientation_scale_field,
+	int number_of_segments_along, int number_of_segments_around,
+	struct Computed_field *texture_coordinate_field,
+	struct FE_element *top_level_element);
+
+/****************************************************************************//**
+ * Sorts out how standard, polygon and simplex elements are segmented, based on
+ * numbers of segments requested for "square" elements.
+ */
+int get_surface_element_segmentation(struct FE_element *element,
 	int number_of_segments_in_xi1_requested,
-	int number_of_segments_in_xi2_requested,char reverse_normals,
-	struct FE_element *top_level_element,
-	enum cmzn_graphics_render_polygon_mode render_polygon_mode);
+	int number_of_segments_in_xi2_requested,
+	int *number_of_points_in_xi1,int *number_of_points_in_xi2,
+	int *number_of_points,int *number_of_polygon_vertices,
+	gtPolygonType *polygon_type,enum Collapsed_element_type *collapsed_element,
+	enum FE_element_shape_type *shape_type_address);
+
+int Cmiss_graphic_point_graphics_to_vertex_buffer(
+	cmzn_fieldcache_id field_cache, FE_value time,
+	struct Computed_field *label_field,
+	const FE_value *base_size, const FE_value *offset, const FE_value *scale_factors,
+	struct Graphics_vertex_array *array);
 
 #endif /* !defined (FINITE_ELEMENT_TO_GRAPHICAL_OBJECT_H) */
