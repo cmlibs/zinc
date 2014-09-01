@@ -541,9 +541,12 @@ static int render_polyline_vertex_buffers_to_finite_elements(
 		for (line_index = 0; line_index < line_count; line_index++)
 		{
 			int object_name = 0;
-			object->vertex_array->get_integer_attribute(
+			if (!object->vertex_array->get_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-				line_index, 1, &object_name);
+				line_index, 1, &object_name))
+			{
+				object_name = 0;
+			}
 			if (object_name > -1)
 			{
 				unsigned int i, index_start, index_count;
@@ -652,9 +655,12 @@ static int render_surface_vertex_buffer_to_finite_elements(struct Render_to_fini
 				for (unsigned int surface_index = 0; surface_index < surface_count; surface_index++)
 				{
 					int object_name = 0;
-					object->vertex_array->get_integer_attribute(
+					if (!object->vertex_array->get_integer_attribute(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-						surface_index, 1, &object_name);
+						surface_index, 1, &object_name))
+					{
+						object_name = 0;
+					}
 					if (object_name > -1)
 					{
 						if (0 != nodes)

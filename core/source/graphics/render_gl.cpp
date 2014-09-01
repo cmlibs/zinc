@@ -2692,10 +2692,14 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 			}
 			for (surface_index = 0; surface_index < surface_count; surface_index++)
 			{
-				int object_name;
-				array->get_integer_attribute(
+				int object_name = 0;
+				if (!array->get_integer_attribute(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-					surface_index, 1, &object_name);
+					surface_index, 1, &object_name))
+				{
+					/* no object name, draw only glyphs provide no object id */
+					object_name = 0;
+				}
 				if (object_name > -1)
 				{
 					/* work out if subobjects selected */
@@ -3033,9 +3037,13 @@ int draw_vertexBufferLine(gtObject *object, Render_graphics_opengl *renderer,
 		for (line_index = 0; line_index < line_count; line_index++)
 		{
 			int object_name = 0;
-			object->vertex_array->get_integer_attribute(
+			if (!object->vertex_array->get_integer_attribute(
 				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-				line_index, 1, &object_name);
+				line_index, 1, &object_name))
+			{
+				/* no object name, draw only glyphs provide no object id */
+				object_name = 0;
+			}
 			if (object_name > -1)
 			{
 				/* work out if subobjects selected */
