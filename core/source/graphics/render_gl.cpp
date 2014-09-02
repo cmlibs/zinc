@@ -682,7 +682,7 @@ template <class Render_immediate> class Render_graphics_opengl_display_list
 public:
 	Render_graphics_opengl_display_list() : Render_immediate()
 	  {
-		Render_graphics_opengl::use_display_list = 1;
+		Render_immediate::use_display_list = 1;
 	  }
 
 	  ~Render_graphics_opengl_display_list()
