@@ -159,7 +159,7 @@ void FE_nodeset::createChangeLog()
 {
 	if (this->fe_node_changes)
 		DESTROY(CHANGE_LOG(FE_node))(&this->fe_node_changes);
-	this->fe_node_changes = CREATE(CHANGE_LOG(FE_node))(this->nodeList, /*max_changes*/1000);
+	this->fe_node_changes = CREATE(CHANGE_LOG(FE_node))(this->nodeList, /*max_changes*/2000);
 	this->last_fe_node_field_info = 0;
 }
 
@@ -726,7 +726,7 @@ void FE_region::createChangeLogs()
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 	{
 		this->fe_element_changes[dim] = CREATE(CHANGE_LOG(FE_element))(
-			this->fe_element_list[dim], /*max_changes*/1000);
+			this->fe_element_list[dim], /*max_changes*/2000);
 	}
 	this->last_fe_element_field_info = (struct FE_element_field_info *)NULL;
 }

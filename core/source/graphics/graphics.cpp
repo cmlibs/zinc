@@ -3658,13 +3658,13 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				}
 				int numberNodeChanges = 0;
 				struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(CMZN_FIELD_DOMAIN_TYPE_NODES);
-				CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(nodeChanges, &numberNodeChanges);
+				CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_node)(nodeChanges, &numberNodeChanges);
 				// must check equal and higher dimension element changes due to field inheritance
 				bool tooManyElementChanges = false;
 				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
 				{
 					int number = 0;
-					CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(feRegionChanges->getElementChanges(dim), &number);
+					CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_element)(feRegionChanges->getElementChanges(dim), &number);
 					if (number*2 > FE_region_get_number_of_FE_elements_of_dimension(
 						cmzn_region_get_FE_region(graphics->scene->region), dim))
 					{
