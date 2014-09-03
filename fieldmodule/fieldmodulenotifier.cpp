@@ -268,7 +268,7 @@ TEST(ZincFieldmodulenotifier, partial_nodeset_change)
 	Nodesetchanges nodesetchanges = recordChange.lastEvent.getNodesetchanges(nodeset);
 	EXPECT_TRUE(nodesetchanges.isValid());
 	// following could change with internal logic:
-	EXPECT_EQ(16, result = nodesetchanges.getNumberOfChanges());
+	EXPECT_EQ(4, result = nodesetchanges.getNumberOfChanges());
 	EXPECT_EQ(Node::CHANGE_FLAG_ADD | Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getSummaryNodeChangeFlags());
 	EXPECT_EQ(Node::CHANGE_FLAG_ADD | Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node2));
 	EXPECT_EQ(Node::CHANGE_FLAG_ADD | Node::CHANGE_FLAG_FIELD, result = nodesetchanges.getNodeChangeFlags(node1));
