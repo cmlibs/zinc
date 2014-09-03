@@ -83,9 +83,9 @@ find more info is needed later so leave for now. \
 		 set by calling CHANGE_LOG_SET_CHANGE_ALL or by the log exceeding \
 		 max_changes */ \
 	int all_change; \
-	/* number_of_changes is incremented with each logged change. When all_change \
+	/* number_of_changed_objects is incremented with each logged change entry. When all_change \
 		 is flagged, the number in the object_list is added to it */ \
-	int number_of_changes; \
+	int number_of_changed_objects; \
 	/* number indicating the maximum length the entry_list may become before \
 		 all_change is set. Negative numbers indicate there is no limit */ \
 	int max_changes; \
@@ -349,7 +349,7 @@ be owned by another object. Make sure the object_list is not destroyed first! \
 		{ \
 			change_log->change_summary = CHANGE_LOG_OBJECT_UNCHANGED(object_type); \
 			change_log->all_change = 0; \
-			change_log->number_of_changes = 0; \
+			change_log->number_of_changed_objects = 0; \
 			change_log->max_changes = max_changes; \
 			change_log->entry_list = CREATE_LIST(CHANGE_LOG_ENTRY(object_type))(); \
 			change_log->object_list = object_list; \
@@ -422,7 +422,7 @@ Clears all entries/flags in the change_log. \
 	{ \
 		change_log->change_summary = CHANGE_LOG_OBJECT_UNCHANGED(object_type); \
 		change_log->all_change = 0; \
-		change_log->number_of_changes = 0; \
+		change_log->number_of_changed_objects = 0; \
 		REMOVE_ALL_OBJECTS_FROM_LIST(CHANGE_LOG_ENTRY(object_type))( \
 			change_log->entry_list); \
 		return_code = 1; \
@@ -453,7 +453,7 @@ PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type) \
 			change_log->change_summary |= \
 				CHANGE_LOG_OBJECT_CHANGED(object_type); \
 		} \
-		change_log->number_of_changes += \
+		change_log->number_of_changed_objects += \
 			NUMBER_IN_LIST(object_type)(change_log->object_list); \
 		if (!change_log->all_change) \
 		{ \
@@ -505,78 +505,78 @@ Tells the <change_log> that <object> has undergone the <change>. \
 			change_log->change_summary |= \
 				CHANGE_LOG_OBJECT_CHANGED(object_type); \
 		} \
-		(change_log->number_of_changes)++; \
 		if (!change_log->all_change) \
 		{ \
-			if ((0 <= change_log->max_changes) && \
-				(change_log->number_of_changes > change_log->max_changes)) \
+			entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
+				the_object)(object, change_log->entry_list); \
+			if (NULL != entry) \
 			{ \
-				return_code = CHANGE_LOG_ALL_CHANGE(object_type)(change_log, change); \
+				switch (change) \
+				{ \
+					case CHANGE_LOG_OBJECT_ADDED(object_type): \
+					{ \
+						if (entry->change == CHANGE_LOG_OBJECT_REMOVED(object_type)) \
+						{ \
+							/* adding after removed is OK but assume it was modified */ \
+							entry->change = CHANGE_LOG_OBJECT_CHANGED(object_type); \
+						} \
+						else \
+						{ \
+							entry->change = CHANGE_LOG_OBJECT_ADDED(object_type); \
+						} \
+					} break; \
+					case CHANGE_LOG_OBJECT_REMOVED(object_type): \
+					{ \
+						if (entry->change == CHANGE_LOG_OBJECT_ADDED(object_type)) \
+						{ \
+							/* if just been added, no change needs to be noted */ \
+							REMOVE_OBJECT_FROM_LIST(CHANGE_LOG_ENTRY(object_type))(entry, \
+								change_log->entry_list); \
+						} \
+						else \
+						{ \
+							/* REMOVED bit only ever set on its own */ \
+							entry->change = CHANGE_LOG_OBJECT_REMOVED(object_type); \
+						} \
+					} break; \
+					case CHANGE_LOG_OBJECT_UNCHANGED(object_type): \
+					{ \
+						/* don't want this to be called with UNCHANGED so that case is \
+							 handled here too */ \
+						display_message(ERROR_MESSAGE, \
+							"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
+							").  Invalid change type"); \
+						return_code = 0; \
+					} break; \
+					default: /* all other bit combinations */ \
+					{ \
+						/* no change if object removed */ \
+						if (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type)) \
+						{ \
+							/* bitwise OR */ \
+							entry->change |= change; \
+						} \
+					} break; \
+				} \
 			} \
 			else \
 			{ \
-				entry = FIND_BY_IDENTIFIER_IN_LIST(CHANGE_LOG_ENTRY(object_type), \
-					the_object)(object, change_log->entry_list); \
-				if (NULL != entry) \
+				/* create a new CHANGE_LOG_ENTRY */ \
+				if (change == CHANGE_LOG_OBJECT_UNCHANGED(object_type)) \
 				{ \
-					switch (change) \
-					{ \
-						case CHANGE_LOG_OBJECT_ADDED(object_type): \
-						{ \
-							if (entry->change == CHANGE_LOG_OBJECT_REMOVED(object_type)) \
-							{ \
-								/* adding after removed is OK but assume it was modified */ \
-								entry->change = CHANGE_LOG_OBJECT_CHANGED(object_type); \
-							} \
-							else \
-							{ \
-								entry->change = CHANGE_LOG_OBJECT_ADDED(object_type); \
-							} \
-						} break; \
-						case CHANGE_LOG_OBJECT_REMOVED(object_type): \
-						{ \
-							if (entry->change == CHANGE_LOG_OBJECT_ADDED(object_type)) \
-							{ \
-								/* if just been added, no change needs to be noted */ \
-								REMOVE_OBJECT_FROM_LIST(CHANGE_LOG_ENTRY(object_type))(entry, \
-									change_log->entry_list); \
-							} \
-							else \
-							{ \
-								/* REMOVED bit only ever set on its own */ \
-								entry->change = CHANGE_LOG_OBJECT_REMOVED(object_type); \
-							} \
-						} break; \
-						case CHANGE_LOG_OBJECT_UNCHANGED(object_type): \
-						{ \
-							/* don't want this to be called with UNCHANGED so that case is \
-								 handled here too */ \
-							display_message(ERROR_MESSAGE, \
-								"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
-								").  Invalid change type"); \
-							return_code = 0; \
-						} break; \
-						default: /* all other bit combinations */ \
-						{ \
-							/* no change if object removed */ \
-							if (entry->change != CHANGE_LOG_OBJECT_REMOVED(object_type)) \
-							{ \
-								/* bitwise OR */ \
-								entry->change |= change; \
-							} \
-						} break; \
-					} \
+					/* cannot create an entry marked as OBJECT_UNCHANGED */ \
+					display_message(ERROR_MESSAGE, \
+						"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
+						").  Cannot note OBJECT_UNCHANGED"); \
+					return_code = 0; \
 				} \
 				else \
 				{ \
-					/* create a new CHANGE_LOG_ENTRY */ \
-					if (change == CHANGE_LOG_OBJECT_UNCHANGED(object_type)) \
+					(change_log->number_of_changed_objects)++; \
+					if ((0 <= change_log->max_changes) && \
+						(change_log->number_of_changed_objects > change_log->max_changes)) \
 					{ \
-						/* cannot create an entry marked as OBJECT_UNCHANGED */ \
-						display_message(ERROR_MESSAGE, \
-							"CHANGE_LOG_OBJECT_CHANGE(" #object_type \
-							").  Cannot note OBJECT_UNCHANGED"); \
-						return_code = 0; \
+						return_code = CHANGE_LOG_ALL_CHANGE(object_type)(change_log, change); \
 					} \
 					else \
 					{ \
@@ -650,8 +650,8 @@ against a particular change by bitwise ANDing with ADD, REMOVE etc. \
 	return (return_code); \
 } /* CHANGE_LOG_GET_CHANGE_SUMMARY(object_type) */
 
-#define DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION( object_type ) \
-PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type) \
+#define DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION( object_type ) \
+PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION(object_type) \
 /***************************************************************************** \
 LAST MODIFIED : 3 February 2003 \
 \
@@ -663,23 +663,23 @@ changed since some objects may have been changed more than once. \
 { \
 	int return_code; \
 \
-	ENTER(CHANGE_LOG_GET_NUMBER_OF_CHANGES(object_type)); \
-	if (change_log && number_of_changes_address) \
+	ENTER(CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(object_type)); \
+	if (change_log && number_of_changed_objects_address) \
 	{ \
-		*number_of_changes_address = change_log->number_of_changes; \
+		*number_of_changed_objects_address = change_log->number_of_changed_objects; \
 		return_code = 1; \
 	} \
 	else \
 	{ \
 		display_message(ERROR_MESSAGE, \
-			"CHANGE_LOG_GET_NUMBER_OF_CHANGES(" #object_type \
+			"CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(" #object_type \
 			").  Invalid argument(s)"); \
 		return_code = 0; \
 	} \
 	LEAVE; \
 \
 	return (return_code); \
-} /* CHANGE_LOG_GET_NUMBER_OF_CHANGES(object_type) */
+} /* CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(object_type) */
 
 #define DECLARE_CHANGE_LOG_QUERY_FUNCTION( object_type ) \
 PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION(object_type) \
@@ -940,7 +940,7 @@ DECLARE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
-DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type) \
+DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_QUERY_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_MERGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type) \

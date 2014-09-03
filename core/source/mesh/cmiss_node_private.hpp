@@ -117,7 +117,7 @@ public:
 	int getNumberOfChanges()
 	{
 		int number = 0;
-		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_node)(this->changeLog, &number);
+		CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_node)(this->changeLog, &number);
 		return number;
 	}
 

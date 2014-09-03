@@ -88,7 +88,7 @@ public:
 	int getNumberOfChanges()
 	{
 		int number = 0;
-		CHANGE_LOG_GET_NUMBER_OF_CHANGES(FE_element)(this->changeLog, &number);
+		CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_element)(this->changeLog, &number);
 		return number;
 	}
 

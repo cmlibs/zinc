@@ -221,14 +221,14 @@ Returns a bitwise OR of all the changes enumerators in the change_log. Check \
 against a particular change by bitwise ANDing with ADD, REMOVE etc. \
 ==============================================================================*/
 
-#define CHANGE_LOG_GET_NUMBER_OF_CHANGES_( object_type ) \
-	change_log_get_number_of_changes_ ## object_type
-#define CHANGE_LOG_GET_NUMBER_OF_CHANGES( object_type ) \
-	CHANGE_LOG_GET_NUMBER_OF_CHANGES_(object_type)
+#define CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_( object_type ) \
+	change_log_get_number_of_changed_objects_ ## object_type
+#define CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS( object_type ) \
+	CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_(object_type)
 
-#define PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION( object_type ) \
-int CHANGE_LOG_GET_NUMBER_OF_CHANGES(object_type)( \
-	struct CHANGE_LOG(object_type) *change_log, int *number_of_changes_address) \
+#define PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION( object_type ) \
+int CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(object_type)( \
+	struct CHANGE_LOG(object_type) *change_log, int *number_of_changed_objects_address) \
 /***************************************************************************** \
 LAST MODIFIED : 3 February 2003 \
 \
@@ -324,7 +324,7 @@ PROTOTYPE_CHANGE_LOG_ALL_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_IS_ALL_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
-PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGES_FUNCTION(object_type); \
+PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type); \
