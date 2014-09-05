@@ -419,6 +419,11 @@ public:
 		return CMZN_FIELD_VALUE_TYPE_REAL;
 	}
 
+protected:
+
+	// call whenever type-specific parameters are changed to notify clients
+	inline void setChanged();
+
 }; /* class Computed_field_core */
 
 /** Flag attributes for generic fields */
@@ -595,6 +600,18 @@ DESCRIPTION :
 	 */
 	void setChangedPrivate(MANAGER_CHANGE(Computed_field) change);
 
+	/**
+	 * Enlarges or shrinks source fields array to fit optional source field.
+	 * Must be the last source field expected for field type.
+	 * To be used with care by certain field types only.
+	 *
+	 * @param index  Index of optional source field, starting at 1. Must be equal
+	 * or one greater than the number of source fields.
+	 * @param sourceField  The source field to set, or 0 to clear.
+	 * @return  CMZN_OK or other status code on failure.
+	 */
+	int setOptionalSourceField(int index, Computed_field *sourceField);
+
 }; /* struct Computed_field */
 
 inline void Computed_field_core::beginChange() const
@@ -770,22 +787,41 @@ struct cmzn_region *Computed_field_manager_get_region(
 const cmzn_set_cmzn_field &Computed_field_manager_get_fields(
 	struct MANAGER(Computed_field) *manager);
 
-/***************************************************************************//**
+/**
  * Record that field data has changed.
  * Notify clients if not caching changes.
  *
  * @param field  The field that has changed.
  */
-int Computed_field_changed(struct Computed_field *field);
+inline int Computed_field_changed(struct Computed_field *field)
+{
+	if (field)
+		return MANAGED_OBJECT_CHANGE(Computed_field)(field,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
+	display_message(ERROR_MESSAGE, "Computed_field_changed.  Invalid argument(s)");
+	return 0;
+}
 
-/***************************************************************************//**
+inline void Computed_field_core::setChanged()
+{
+	Computed_field_changed(this->field);
+}
+
+/**
  * Record that external global objects this field depends on have change such
  * that this field should evaluate to different values.
  * Notify clients if not caching changes.
  *
  * @param field  The field whose dependencies have changed.
  */
-int Computed_field_dependency_changed(struct Computed_field *field);
+inline int Computed_field_dependency_changed(struct Computed_field *field)
+{
+	if (field)
+		return MANAGED_OBJECT_CHANGE(Computed_field)(field,
+			MANAGER_CHANGE_FULL_RESULT(Computed_field));
+	display_message(ERROR_MESSAGE, "Computed_field_dependency_changed.  Invalid argument(s)");
+	return 0;
+}
 
 Computed_field_simple_package *Computed_field_package_get_simple_package(
 	struct Computed_field_package *computed_field_package);

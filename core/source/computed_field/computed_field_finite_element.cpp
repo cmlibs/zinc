@@ -24,6 +24,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
+#include "general/enumerator_private.hpp"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "computed_field/computed_field_finite_element.h"
@@ -2224,15 +2225,38 @@ If the field is of type COMPUTED_FIELD_NODE_VALUE, the FE_field being
 	return (return_code);
 } /* Computed_field_get_type_node_value */
 
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_field_edge_discontinuity_measure)
+{
+	switch (enumerator_value)
+	{
+		case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_INVALID:
+			break;
+		case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1:
+			return "measure_c1";
+			break;
+		case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1:
+			return "measure_g1";
+			break;
+		case CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL:
+			return "measure_surface_normal";
+			break;
+	}
+	return 0;
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure)
+
 namespace {
 
 const char computed_field_edge_discontinuity_type_string[] = "edge_discontinuity";
 
 class Computed_field_edge_discontinuity : public Computed_field_core
 {
+	cmzn_field_edge_discontinuity_measure measure;
 public:
 	Computed_field_edge_discontinuity() :
-		Computed_field_core()
+		Computed_field_core(),
+		measure(CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1)
 	{
 	};
 
@@ -2240,6 +2264,41 @@ public:
 	{
 		if (field)
 			Computed_field_set_coordinate_system_from_sources(field);
+	}
+
+	/** @return non-accessed conditional field, if any */
+	cmzn_field *getConditionalField() const
+	{
+		return (2 == field->number_of_source_fields) ? field->source_fields[1] : 0;
+	}
+
+	int setConditionalField(cmzn_field *conditionalField)
+	{
+		if ((!conditionalField) || Computed_field_is_scalar(conditionalField, 0))
+			return this->field->setOptionalSourceField(2, conditionalField);
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	cmzn_field_edge_discontinuity_measure getMeasure() const
+	{
+		return this->measure;
+	}
+
+	int setMeasure(cmzn_field_edge_discontinuity_measure measureIn)
+	{
+		if ((measureIn == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1) ||
+			(measureIn == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1) ||
+			((measureIn == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL) &&
+			(3 == getSourceField(0)->number_of_components)))
+		{
+			if (measureIn != this->measure)
+			{
+				this->measure = measureIn;
+				this->setChanged();
+			}
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 private:
@@ -2277,11 +2336,6 @@ private:
 		return (0 != field->evaluate(cache));
 	}
 
-	cmzn_field *getConditionalField() const
-	{
-		return (2 == field->number_of_source_fields) ? field->source_fields[1] : 0;
-	}
-
 };
 
 int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
@@ -2294,7 +2348,11 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		return 0;
 	const FE_value xi = *(element_xi_location->get_xi());
 	cmzn_field *sourceField = getSourceField(0);
-	RealFieldValueCache *sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
+	RealFieldValueCache *sourceValueCache;
+	if (this->measure == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL)
+		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluateWithDerivatives(cache, 1));
+	else
+		sourceValueCache = RealFieldValueCache::cast(sourceField->evaluate(cache));
 	if (!sourceValueCache)
 		return 0;
 	const FE_value *sourceValues = sourceValueCache->values;
@@ -2307,7 +2365,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	const int numberOfParents = get_FE_element_number_of_parents(element);
 	FE_value parentXi[2];
 	const int numberOfComponents = field->number_of_components;
-	// GRC put in type-specific value cache to save allocations here
+	// Future: put in type-specific value cache to save allocations here
 	RealFieldValueCache parent1SourceValueCache(numberOfComponents);
 	RealFieldValueCache parent2SourceValueCache(numberOfComponents);
 	RealFieldValueCache *parentSourceValueCaches[2] =
@@ -2360,8 +2418,6 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	}
 	if (2 == qualifyingParents)
 	{
-		// GRC derivatives cycle fastest, components slowest
-		// GRC handle simplex barycentric coordinate derivative
 		for (int p = 0; p < 2; ++p)
 		{
 			RealFieldValueCache& parentSourceValueCache = *(parentSourceValueCaches[p]);
@@ -2393,7 +2449,36 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 					parentSourceValueCache.values[n] = -parentSourceValueCache.derivatives[n*2]
 						- parentSourceValueCache.derivatives[n*2 + 1];
 			}
+			if (this->measure == CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL)
+			{
+				// requires source field to have 3 components
+				const FE_value *dx_dxi1 = sourceValueCache->derivatives;
+				const FE_value dx_dxi2[3] =
+				{
+					parentSourceValueCache.values[0],
+					parentSourceValueCache.values[1],
+					parentSourceValueCache.values[2]
+				};
+				parentSourceValueCache.values[0] = dx_dxi1[1]*dx_dxi2[2] - dx_dxi2[1]*dx_dxi1[2];
+				parentSourceValueCache.values[1] = dx_dxi1[2]*dx_dxi2[0] - dx_dxi2[2]*dx_dxi1[0];
+				parentSourceValueCache.values[2] = dx_dxi1[0]*dx_dxi2[1] - dx_dxi2[0]*dx_dxi1[1];
+			}
+			if (this->measure != CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1)
+			{
+				// normalise derivatives
+				FE_value sumsq = 0.0;
+				for (int n = 0; n < numberOfComponents; ++n)
+					sumsq += parentSourceValueCache.values[n]*parentSourceValueCache.values[n];
+				if (sumsq > 0.0)
+				{
+					FE_value factor = sqrt(sumsq);
+					for (int n = 0; n < numberOfComponents; ++n)
+						parentSourceValueCache.values[n] /= factor;
+				}
+			}
 		}
+		// since the above code ensures tangents/normals for each adjacent element are in
+		// opposite directions, the difference is just their sum:
 		for (int n = 0; n < numberOfComponents; ++n)
 			valueCache.values[n] = parent1SourceValueCache.values[n] + parent2SourceValueCache.values[n];
 	}
@@ -2412,6 +2497,7 @@ int Computed_field_edge_discontinuity::list()
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE, "    source field : %s\n", field->source_fields[0]->name);
+		display_message(INFORMATION_MESSAGE, "    measure : %s\n", ENUMERATOR_STRING(cmzn_field_edge_discontinuity_measure)(this->measure));
 		cmzn_field *conditionalField = this->getConditionalField();
 		if (conditionalField)
 			display_message(INFORMATION_MESSAGE, "    conditional field : %s\n", conditionalField->name);
@@ -2440,6 +2526,8 @@ char *Computed_field_edge_discontinuity::get_command_string()
 		make_valid_token(&field_name);
 		append_string(&command_string, field_name, &error);
 		DEALLOCATE(field_name);
+		append_string(&command_string, " ", &error);
+		append_string(&command_string, ENUMERATOR_STRING(cmzn_field_edge_discontinuity_measure)(this->measure), &error);
 		cmzn_field *conditionalField = this->getConditionalField();
 		if (conditionalField)
 		{
@@ -2460,22 +2548,25 @@ char *Computed_field_edge_discontinuity::get_command_string()
 
 } //namespace
 
+struct cmzn_field_edge_discontinuity : public Computed_field
+{
+	inline Computed_field_edge_discontinuity *get_core()
+	{
+		return static_cast<Computed_field_edge_discontinuity*>(core);
+	}
+};
+
 cmzn_field_id cmzn_fieldmodule_create_field_edge_discontinuity(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-	cmzn_field_id conditional_field)
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
 {
 	struct Computed_field *field = 0;
 	if (field_module && source_field &&
-		Computed_field_has_numerical_components(source_field, NULL) &&
-		((0 == conditional_field) || Computed_field_is_scalar(conditional_field, 0)))
+		Computed_field_has_numerical_components(source_field, NULL))
 	{
-		cmzn_field_id source_fields[2];
-		source_fields[0] = source_field;
-		source_fields[1] = conditional_field;
 		field = Computed_field_create_generic(field_module,
 			/*check_source_field_regions*/true,
 			source_field->number_of_components,
-			/*number_of_source_fields*/(0 == conditional_field) ? 1 : 2, source_fields,
+			/*number_of_source_fields*/1, &source_field,
 			/*number_of_source_values*/0, NULL,
 			new Computed_field_edge_discontinuity());
 	}
@@ -2485,6 +2576,56 @@ cmzn_field_id cmzn_fieldmodule_create_field_edge_discontinuity(
 			"cmzn_fieldmodule_create_field_edge_discontinuity.  Invalid argument(s)");
 	}
 	return (field);
+}
+
+cmzn_field_edge_discontinuity_id cmzn_field_cast_edge_discontinuity(cmzn_field_id field)
+{
+	if (field && dynamic_cast<Computed_field_edge_discontinuity*>(field->core))
+	{
+		cmzn_field_access(field);
+		return (reinterpret_cast<cmzn_field_edge_discontinuity_id>(field));
+	}
+	return 0;
+}
+
+int cmzn_field_edge_discontinuity_destroy(
+	cmzn_field_edge_discontinuity_id *edge_discontinuity_field_address)
+{
+	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(edge_discontinuity_field_address));
+}
+
+cmzn_field_id cmzn_field_edge_discontinuity_get_conditional_field(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field)
+{
+	if (edge_discontinuity_field)
+		return cmzn_field_access(edge_discontinuity_field->get_core()->getConditionalField());
+	return 0;
+}
+
+int cmzn_field_edge_discontinuity_set_conditional_field(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field,
+	cmzn_field_id conditional_field)
+{
+	if (edge_discontinuity_field)
+		return edge_discontinuity_field->get_core()->setConditionalField(conditional_field);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_field_edge_discontinuity_measure cmzn_field_edge_discontinuity_get_measure(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field)
+{
+	if (edge_discontinuity_field)
+		return edge_discontinuity_field->get_core()->getMeasure();
+	return CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_INVALID;
+}
+
+int cmzn_field_edge_discontinuity_set_measure(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field,
+	cmzn_field_edge_discontinuity_measure measure)
+{
+	if (edge_discontinuity_field)
+		return edge_discontinuity_field->get_core()->setMeasure(measure);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 namespace {

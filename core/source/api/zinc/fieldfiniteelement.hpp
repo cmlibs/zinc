@@ -35,17 +35,52 @@ public:
 class FieldEdgeDiscontinuity : public Field
 {
 private:
-	// takes ownership of C handle, responsibility for destroying it
-	explicit FieldEdgeDiscontinuity(cmzn_field_id field_id) : Field(field_id)
-	{	}
-
 	friend FieldEdgeDiscontinuity Fieldmodule::createFieldEdgeDiscontinuity(
-		const Field& sourceField, const Field& conditionalField);
+		const Field& sourceField);
 
 public:
 
 	FieldEdgeDiscontinuity() : Field(0)
 	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit FieldEdgeDiscontinuity(cmzn_field_edge_discontinuity_id field_edge_discontinuity_id) :
+		Field(reinterpret_cast<cmzn_field_id>(field_edge_discontinuity_id))
+	{	}
+
+	inline cmzn_field_edge_discontinuity_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_field_edge_discontinuity_id>(id);
+	}
+
+	enum Measure
+	{
+		MEASURE_INVALID = CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_INVALID,
+		MEASURE_C1 = CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1,
+		MEASURE_G1 = CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1,
+		MEASURE_SURFACE_NORMAL = CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL
+	};
+
+	Field getConditionalField()
+	{
+		return Field(cmzn_field_edge_discontinuity_get_conditional_field(getDerivedId()));
+	}
+
+	int setConditionalField(const Field& conditionalField)
+	{
+		return cmzn_field_edge_discontinuity_set_conditional_field(getDerivedId(), conditionalField.getId());
+	}
+
+	Measure getMeasure()
+	{
+		return static_cast<Measure>(cmzn_field_edge_discontinuity_get_measure(getDerivedId()));
+	}
+
+	int setMeasure(Measure measure)
+	{
+		return cmzn_field_edge_discontinuity_set_measure(getDerivedId(),
+			static_cast<cmzn_field_edge_discontinuity_measure>(measure));
+	}
 
 };
 
@@ -190,10 +225,15 @@ inline FieldFiniteElement Field::castFiniteElement()
 }
 
 inline FieldEdgeDiscontinuity Fieldmodule::createFieldEdgeDiscontinuity(
-	const Field& sourceField, const Field& conditionalField)
+	const Field& sourceField)
 {
-	return FieldEdgeDiscontinuity(cmzn_fieldmodule_create_field_edge_discontinuity(id,
-		sourceField.getId(), conditionalField.getId()));
+	return FieldEdgeDiscontinuity(reinterpret_cast<cmzn_field_edge_discontinuity_id>(
+		cmzn_fieldmodule_create_field_edge_discontinuity(id, sourceField.getId())));
+}
+
+inline FieldEdgeDiscontinuity Field::castEdgeDiscontinuity()
+{
+	return FieldEdgeDiscontinuity(cmzn_field_cast_edge_discontinuity(id));
 }
 
 inline FieldEmbedded Fieldmodule::createFieldEmbedded(const Field& sourceField, const Field& embeddedLocationField)

@@ -280,7 +280,7 @@ public:
 
 	inline FieldEmbedded createFieldEmbedded(const Field& sourceField, const Field& embeddedLocationField);
 
-	inline FieldEdgeDiscontinuity createFieldEdgeDiscontinuity(const Field& sourceField, const Field& conditionalField);
+	inline FieldEdgeDiscontinuity createFieldEdgeDiscontinuity(const Field& sourceField);
 
 	inline FieldFindMeshLocation createFieldFindMeshLocation(
 		const Field& sourceField, const Field& meshField, const Mesh& mesh);
