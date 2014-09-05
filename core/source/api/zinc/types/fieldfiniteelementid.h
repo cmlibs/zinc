@@ -20,7 +20,44 @@
  */
 struct cmzn_field_finite_element;
 typedef struct cmzn_field_finite_element *cmzn_field_finite_element_id;
-#define CMZN_FIELD_FINITE_ELEMENT_ID_DEFINED
+
+/**
+ * @brief A field measuring discontinuity between surface elements.
+ *
+ * Produces a value on 1-D line elements with as many components as the source
+ * field, which gives the discontinuity of that field between two adjacent
+ * surfaces by a chosen measure. An optional conditional field controls which
+ * adjacent surfaces are used. The field values are zero when the surfaces are
+ * continuous by the chosen measure, and wherever fewer than two qualifying
+ * adjacent surfaces can be found.
+ * @see cmzn_field_edge_discontinuity_measure
+ */
+struct cmzn_field_edge_discontinuity;
+typedef struct cmzn_field_edge_discontinuity *cmzn_field_edge_discontinuity_id;
+
+/**
+ * Enumeration giving which measure of discontinuity is calculated by the
+ * edge discontinuity field.
+ */
+enum cmzn_field_edge_discontinuity_measure
+{
+	CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_INVALID = 0,
+	/*!< Invalid value.
+	 */
+	CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1 = 1,
+	/*!< Measure C1-continuity i.e. difference in tangents w.r.t. lateral
+	 * xi on each side of the edge. Default value.
+	 */
+	CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1 = 2,
+	/*!< Measure G1-continuity i.e. difference in tangents w.r.t. lateral
+	 * direction on each side of the edge, normalised to unit length so only
+	 * the direction matters.
+	 */
+	CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL = 3
+	/*!< Measure difference in unit surface normals on adjacent surfaces at edge.
+	 * Source field must have 3 components for this measure.
+   */
+};
 
 /**
  * @brief A field that computes the location in a mesh.

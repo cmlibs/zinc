@@ -21,6 +21,7 @@ class Differentialoperator;
 class Element;
 class Fieldcache;
 class FieldComponent;
+class FieldEdgeDiscontinuity;
 class FieldElementGroup;
 class FieldFindMeshLocation;
 class FieldFiniteElement;
@@ -247,6 +248,7 @@ public:
 
 	// casting functions: must check isValid()
 	inline FieldComponent castComponent();
+	inline FieldEdgeDiscontinuity castEdgeDiscontinuity();
 	inline FieldElementGroup castElementGroup();
 	inline FieldFindMeshLocation castFindMeshLocation();
 	inline FieldFiniteElement castFiniteElement();

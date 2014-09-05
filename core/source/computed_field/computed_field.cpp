@@ -1074,48 +1074,6 @@ Computed_field *Computed_field_create_generic(
 	return (field);
 }
 
-int Computed_field_changed(struct Computed_field *field)
-{
-	int return_code;
-
-	ENTER(Computed_field_changed);
-	if (field)
-	{
-		return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Computed_field));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_changed.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
-int Computed_field_dependency_changed(struct Computed_field *field)
-{
-	int return_code;
-
-	ENTER(Computed_field_dependency_changed);
-	if (field)
-	{
-		return_code = MANAGED_OBJECT_CHANGE(Computed_field)(field,
-			MANAGER_CHANGE_FULL_RESULT(Computed_field));
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Computed_field_dependency_changed.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 /** @return  True if field can be evaluated with supplied cache.
  * Must be called to check field evaluate/assign functions from external API.
  */
@@ -2626,6 +2584,44 @@ void Computed_field::setChangedPrivate(MANAGER_CHANGE(Computed_field) change)
 	if (this->manager_change_status == MANAGER_CHANGE_NONE(Computed_field))
 		ADD_OBJECT_TO_LIST(Computed_field)(this, this->manager->changed_object_list);
 	this->manager_change_status |= change;
+}
+
+int Computed_field::setOptionalSourceField(int index, Computed_field *sourceField)
+{
+	if ((index > 0) && ((index == this->number_of_source_fields) ||
+		(index == (this->number_of_source_fields + 1))))
+	{
+		if (sourceField)
+		{
+			if (index > this->number_of_source_fields)
+			{
+				Computed_field **tmp;
+				REALLOCATE(tmp, this->source_fields, Computed_field *, index);
+				if (!tmp)
+					return CMZN_ERROR_MEMORY;
+				tmp[index - 1] = ACCESS(Computed_field)(sourceField);
+				this->source_fields = tmp;
+				++(this->number_of_source_fields);
+				Computed_field_changed(this);
+			}
+			else if (sourceField != this->source_fields[index - 1])
+			{
+				REACCESS(Computed_field)(&(this->source_fields[index - 1]), sourceField);
+				Computed_field_changed(this);
+			}
+		}
+		else
+		{
+			if (index == this->number_of_source_fields)
+			{
+				DEACCESS(Computed_field)(&(this->source_fields[index - 1]));
+				--(this->number_of_source_fields);
+				Computed_field_changed(this);
+			}			
+		}
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int Computed_field_core::check_dependency()

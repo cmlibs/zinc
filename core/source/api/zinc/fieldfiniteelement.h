@@ -74,24 +74,120 @@ ZINC_API int cmzn_field_finite_element_destroy(
 	cmzn_field_finite_element_id *finite_element_field_address);
 
 /**
- * Creates a field returning values on 1-D line elements equal to the
- * difference in source field derivatives on two adjacent 2-D elements taken
- * w.r.t. the xi coordinate normal to the line direction. The first two parent
- * elements satisfying the conditions are used. The new field has the same
- * number of components as the source field.
- * This field is intended for use in penalty functions to favour C1 continuity
- * in fitting problems with non-continuous bases.
+ * Creates a field producing a value on 1-D line elements with as many
+ * components as the source field, which gives the discontinuity of that field
+ * between two adjacent surfaces by a chosen measure. An optional conditional
+ * field restricts which adjacent surfaces qualify, with the first two used.
+ * The field values are zero when the surfaces are continuous by the chosen
+ * measure, and when there are fewer than two qualifying adjacent surfaces.
+ * The default measure of discontinuity is C1.
+ * In optimisation problems, adding an objective field consisting of the
+ * integral of [squares of] this field over a 1-D mesh will favour high-
+ * continuity solutions.
+ * @see cmzn_field_edge_discontinuity_measure
+ * @see cmzn_field_edge_discontinuity_set_measure
+ * @see cmzn_field_edge_discontinuity_set_conditional_field
  *
  * @param field_module  Region field module which will own new field.
  * @param source_field  The source field to measure discontinuity of.
- * @param conditional_field  Optional field which must be true (non-zero) on a
- * parent 2-D element to include it in the expression. If omitted, the first
- * two parent elements are used.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_edge_discontinuity(
-	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field);
+
+/**
+ * If the field is edge discontinuity type then returns the derived edge
+ * discontinuity field handle.
+ *
+ * @param field  The field to be cast.
+ * @return  Handle to derived edge discontinuity field, or NULL/invalid handle
+ * if wrong type or failed.
+ */
+ZINC_API cmzn_field_edge_discontinuity_id cmzn_field_cast_edge_discontinuity(
+	cmzn_field_id field);
+
+/**
+ * Cast edge discontinuity field back to its base field and return the field.
+ * IMPORTANT NOTE: Returned field does not have incremented reference count and
+ * must not be destroyed. Use cmzn_field_access() to add a reference if
+ * maintaining returned handle beyond the lifetime of the derived field.
+ * Use this function to call base-class API, e.g.:
+ * cmzn_field_set_name(cmzn_field_derived_base_cast(derived_field), "bob");
+ *
+ * @param edge_discontinuity_field  Handle to edge discontinuity field to cast.
+ * @return  Non-accessed handle to the base field or NULL if invalid argument.
+ */
+ZINC_C_INLINE cmzn_field_id cmzn_field_edge_discontinuity_base_cast(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field)
+{
+	return (cmzn_field_id)(edge_discontinuity_field);
+}
+
+/**
+ * Destroys handle to the edge_discontinuity field (and sets it to NULL).
+ * Internally this decrements the reference count.
+ *
+ * @param edge_discontinuity_field_address  Address of handle to the field to
+ * destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_edge_discontinuity_destroy(
+	cmzn_field_edge_discontinuity_id *edge_discontinuity_field_address);
+
+/**
+ * Get the conditional field controlling which surfaces are involved in the
+ * measure of discontinuity.
+ *
+ * @param edge_discontinuity_field  Handle to the edge discontinuity field to
+ * query.
+ * @return  Handle to the conditional field, or NULL/invalid handle if none or
+ * failed.
+ */
+ZINC_API cmzn_field_id cmzn_field_edge_discontinuity_get_conditional_field(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field);
+
+/**
+ * Set the conditional field controlling which surfaces are involved in the
+ * measure of discontinuity.
+ *
+ * @param edge_discontinuity_field  Handle to the edge discontinuity field to
+ * modify.
+ * @param conditional_field  Scalar field which is evaluated on surface
+ * elements and must be true (non-zero) to include that element in the measure
+ * of discontinuity. With no conditional_field and/or more adjacent qualifying
+ * surfaces, the first two surfaces are used.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_edge_discontinuity_set_conditional_field(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field,
 	cmzn_field_id conditional_field);
+
+/**
+ * Get which measure of discontinuity is used: C1, G1, SURFACE_NORMAL.
+ * @see cmzn_field_edge_discontinuity_measure
+ *
+ * @param edge_discontinuity_field  Handle to the edge discontinuity field to
+ * query.
+ * @return  Enumerated value specifying for measure of discontinuity, or
+ * MEASURE_INVALID if invalid argument.
+ */
+ZINC_API cmzn_field_edge_discontinuity_measure
+	cmzn_field_edge_discontinuity_get_measure(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field);
+
+/**
+ * Set which measure of discontinuity is used: C1, G1, SURFACE_NORMAL.
+ * @see cmzn_field_edge_discontinuity_measure
+ *
+ * @param edge_discontinuity_field  Handle to the edge discontinuity field to
+ * modify.
+ * @param measure  Enumerated value specifying which measure of discontinuity
+ * is to be calculated.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_field_edge_discontinuity_set_measure(
+	cmzn_field_edge_discontinuity_id edge_discontinuity_field,
+	cmzn_field_edge_discontinuity_measure measure);
 
 /**
  * Creates a field returning a value of a source field at an embedded location.

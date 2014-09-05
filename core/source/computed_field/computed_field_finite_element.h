@@ -15,6 +15,7 @@ Implements computed fields which interface to finite element fields.
 #define COMPUTED_FIELD_FINITE_ELEMENT_H
 
 #include "zinc/fieldfiniteelement.h"
+#include "general/enumerator.h"
 
 /*
 Global functions
@@ -170,5 +171,7 @@ struct Computed_field *Computed_field_create_xi_coordinates(
 
 struct FE_time_sequence *Computed_field_get_FE_node_field_FE_time_sequence(
 	 struct Computed_field *computed_field, struct FE_node *node);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_field_edge_discontinuity_measure);
 
 #endif /* !defined (COMPUTED_FIELD_FINITE_ELEMENT_H) */
