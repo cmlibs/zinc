@@ -92,6 +92,13 @@ public:
 			surfaceDensity, surfaceDensityScaleFactor);
 	}
 
+	int convertPointsToNodes(const Scenefilter& filter, const Nodeset& nodeset,
+		const Field& coordinateField)
+	{
+		return cmzn_scene_convert_points_to_nodes(id, filter.getId(),
+			nodeset.getId(), coordinateField.getId());
+	}
+
 	Graphics createGraphics(Graphics::Type graphicsType)
 	{
 		return Graphics(cmzn_scene_create_graphics(id,

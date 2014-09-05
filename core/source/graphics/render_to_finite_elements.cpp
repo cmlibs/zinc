@@ -89,7 +89,8 @@ struct Render_to_finite_elements_data
 		if (group)
 		{
 			cmzn_field_node_group_id node_group = cmzn_field_group_get_field_node_group(group, master_nodeset);
-			if (nodeset_in && (RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode))
+			if (nodeset_in && ((RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode) ||
+				(RENDER_TO_FINITE_ELEMENTS_NODES == render_mode)))
 			{
 				nodeset = cmzn_nodeset_access(nodeset_in);
 			}
@@ -100,22 +101,29 @@ struct Render_to_finite_elements_data
 				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
 				cmzn_field_node_group_destroy(&node_group);
 			}
-			cmzn_field_element_group_id element_group_1d = cmzn_field_group_get_field_element_group(group, master_mesh_1d);
-			if (!element_group_1d)
-				element_group_1d = cmzn_field_group_create_field_element_group(group, master_mesh_1d);
-			mesh_1d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_1d));
-			cmzn_field_element_group_destroy(&element_group_1d);
-			cmzn_field_element_group_id element_group_2d = cmzn_field_group_get_field_element_group(group, master_mesh_2d);
-			if (!element_group_2d)
-				element_group_2d = cmzn_field_group_create_field_element_group(group, master_mesh_2d);
-			mesh_2d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_2d));
-			cmzn_field_element_group_destroy(&element_group_2d);
+			if (RENDER_TO_FINITE_ELEMENTS_NODES != render_mode)
+			{
+				cmzn_field_element_group_id element_group_1d = cmzn_field_group_get_field_element_group(group, master_mesh_1d);
+				if (!element_group_1d)
+					element_group_1d = cmzn_field_group_create_field_element_group(group, master_mesh_1d);
+				mesh_1d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_1d));
+				cmzn_field_element_group_destroy(&element_group_1d);
+				cmzn_field_element_group_id element_group_2d = cmzn_field_group_get_field_element_group(group, master_mesh_2d);
+				if (!element_group_2d)
+					element_group_2d = cmzn_field_group_create_field_element_group(group, master_mesh_2d);
+				mesh_2d = cmzn_mesh_group_base_cast(cmzn_field_element_group_get_mesh_group(element_group_2d));
+				cmzn_field_element_group_destroy(&element_group_2d);
+			}
 		}
 		else
 		{
-			nodeset = cmzn_nodeset_access(nodeset_in && (RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode) ? nodeset_in : master_nodeset);
-			mesh_1d = cmzn_mesh_access(master_mesh_1d);
-			mesh_2d = cmzn_mesh_access(master_mesh_2d);
+			nodeset = cmzn_nodeset_access(nodeset_in && ((RENDER_TO_FINITE_ELEMENTS_NODES == render_mode||
+				RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD == render_mode)) ? nodeset_in : master_nodeset);
+			if (RENDER_TO_FINITE_ELEMENTS_NODES != render_mode)
+			{
+				mesh_1d = cmzn_mesh_access(master_mesh_1d);
+				mesh_2d = cmzn_mesh_access(master_mesh_2d);
+			}
 		}
 		if (render_mode == RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD)
 		{
@@ -152,37 +160,40 @@ struct Render_to_finite_elements_data
 		node_template = cmzn_nodeset_create_nodetemplate(nodeset);
 		if (!cmzn_nodetemplate_define_field(node_template, coordinate_field))
 			return_code = 0;
-		const int local_node_indexes[] = { 1, 2, 3, 4 };
+		if (RENDER_TO_FINITE_ELEMENTS_NODES != render_mode)
+		{
+			const int local_node_indexes[] = { 1, 2, 3, 4 };
 
-		line_element_template = cmzn_mesh_create_elementtemplate(mesh_1d);
-		cmzn_elementtemplate_set_element_shape_type(line_element_template, CMZN_ELEMENT_SHAPE_TYPE_LINE);
-		cmzn_elementtemplate_set_number_of_nodes(line_element_template, 2);
-		cmzn_elementbasis_id line_basis = cmzn_fieldmodule_create_elementbasis(
-			field_module, /*dimension*/1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
-		if (!cmzn_elementtemplate_define_field_simple_nodal(line_element_template,
-			coordinate_field, /*component_number*/-1, line_basis, /*number_of_nodes*/2, local_node_indexes))
-			return_code = 0;
-		cmzn_elementbasis_destroy(&line_basis);
+			line_element_template = cmzn_mesh_create_elementtemplate(mesh_1d);
+			cmzn_elementtemplate_set_element_shape_type(line_element_template, CMZN_ELEMENT_SHAPE_TYPE_LINE);
+			cmzn_elementtemplate_set_number_of_nodes(line_element_template, 2);
+			cmzn_elementbasis_id line_basis = cmzn_fieldmodule_create_elementbasis(
+				field_module, /*dimension*/1, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
+			if (!cmzn_elementtemplate_define_field_simple_nodal(line_element_template,
+				coordinate_field, /*component_number*/-1, line_basis, /*number_of_nodes*/2, local_node_indexes))
+				return_code = 0;
+			cmzn_elementbasis_destroy(&line_basis);
 
-		triangle_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
-		cmzn_elementtemplate_set_element_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE);
-		cmzn_elementtemplate_set_number_of_nodes(triangle_element_template, 3);
-		cmzn_elementbasis_id triangle_basis = cmzn_fieldmodule_create_elementbasis(
-			field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
-		if (!cmzn_elementtemplate_define_field_simple_nodal(triangle_element_template,
-			coordinate_field, /*component_number*/-1, triangle_basis, /*number_of_nodes*/3, local_node_indexes))
-			return_code = 0;
-		cmzn_elementbasis_destroy(&triangle_basis);
+			triangle_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
+			cmzn_elementtemplate_set_element_shape_type(triangle_element_template, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE);
+			cmzn_elementtemplate_set_number_of_nodes(triangle_element_template, 3);
+			cmzn_elementbasis_id triangle_basis = cmzn_fieldmodule_create_elementbasis(
+				field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
+			if (!cmzn_elementtemplate_define_field_simple_nodal(triangle_element_template,
+				coordinate_field, /*component_number*/-1, triangle_basis, /*number_of_nodes*/3, local_node_indexes))
+				return_code = 0;
+			cmzn_elementbasis_destroy(&triangle_basis);
 
-		square_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
-		cmzn_elementtemplate_set_element_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_TYPE_SQUARE);
-		cmzn_elementtemplate_set_number_of_nodes(square_element_template, 4);
-		cmzn_elementbasis_id square_basis = cmzn_fieldmodule_create_elementbasis(
-			field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
-		if (!cmzn_elementtemplate_define_field_simple_nodal(square_element_template,
-			coordinate_field, /*component_number*/-1, square_basis, /*number_of_nodes*/4, local_node_indexes))
-			return_code = 0;
-		cmzn_elementbasis_destroy(&square_basis);
+			square_element_template = cmzn_mesh_create_elementtemplate(mesh_2d);
+			cmzn_elementtemplate_set_element_shape_type(square_element_template, CMZN_ELEMENT_SHAPE_TYPE_SQUARE);
+			cmzn_elementtemplate_set_number_of_nodes(square_element_template, 4);
+			cmzn_elementbasis_id square_basis = cmzn_fieldmodule_create_elementbasis(
+				field_module, /*dimension*/2, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE);
+			if (!cmzn_elementtemplate_define_field_simple_nodal(square_element_template,
+				coordinate_field, /*component_number*/-1, square_basis, /*number_of_nodes*/4, local_node_indexes))
+				return_code = 0;
+			cmzn_elementbasis_destroy(&square_basis);
+		}
 
 		return return_code;
 	}
@@ -740,6 +751,37 @@ static int render_surface_vertex_buffer_to_finite_elements(struct Render_to_fini
 	return 0;
 }
 
+static int render_point_vertex_buffer_to_nodes(struct Render_to_finite_elements_data *data,
+	GT_object *object)
+{
+	if (data && object)
+	{
+		if (object->vertex_array)
+		{
+			GLfloat *position_buffer = 0;
+			unsigned int position_values_per_vertex = 0, position_vertex_count = 0;
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				&position_buffer, &position_values_per_vertex, &position_vertex_count);
+			FE_value_triple position;
+			Render_node *nodes = new Render_node[position_vertex_count];
+			GLfloat *position_vertex = position_buffer;
+			if (0 != nodes)
+			{
+				for (unsigned int i = 0 ; i < position_vertex_count ; i++)
+				{
+					CAST_TO_FE_VALUE(position, position_vertex, 3);
+					nodes[i].assign(*data, position, 0, 0);
+					position_vertex += position_values_per_vertex;
+				}
+				delete[] nodes;
+			}
+			return 1;
+		}
+	}
+	return 0;
+}
+
 static int Graphics_object_render_to_finite_elements(
 	struct GT_object *object, double time,
 	struct Render_to_finite_elements_data *data)
@@ -828,18 +870,27 @@ DESCRIPTION :
 			{
 				case g_POLYLINE_VERTEX_BUFFERS:
 				{
-					if (object->vertex_array)
+					if (object->vertex_array && (RENDER_TO_FINITE_ELEMENTS_NODES != data->render_mode))
 					{
 						render_polyline_vertex_buffers_to_finite_elements(data, object);
 					}
 				} break;
 				case g_SURFACE_VERTEX_BUFFERS:
 				{
-					if (object->vertex_array)
+					if (object->vertex_array && (RENDER_TO_FINITE_ELEMENTS_NODES != data->render_mode))
 					{
 						render_surface_vertex_buffer_to_finite_elements(data, object);
 					}
 
+				} break;
+				case g_GLYPH_SET_VERTEX_BUFFERS:
+				case g_POINT_SET_VERTEX_BUFFERS:
+				case g_POINT_VERTEX_BUFFERS:
+				{
+					if (object->vertex_array && (RENDER_TO_FINITE_ELEMENTS_NODES == data->render_mode))
+					{
+						render_point_vertex_buffer_to_nodes(data, object);
+					}
 				} break;
 				default:
 				{
@@ -877,6 +928,9 @@ DESCRIPTION :
 		{
 			case g_POLYLINE_VERTEX_BUFFERS:
 			case g_SURFACE_VERTEX_BUFFERS:
+			case g_GLYPH_SET_VERTEX_BUFFERS:
+			case g_POINT_SET_VERTEX_BUFFERS:
+			case g_POINT_VERTEX_BUFFERS:
 			{
 				return_code = Graphics_object_render_to_finite_elements(gt_object,
 					time, data);
@@ -920,6 +974,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 		case RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD:
 		{
 			enumerator_string = "render_surface_node_cloud";
+		} break;
+		case RENDER_TO_FINITE_ELEMENTS_NODES:
+		{
+			enumerator_string = "render_points";
 		} break;
 		default:
 		{
