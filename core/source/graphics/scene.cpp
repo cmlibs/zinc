@@ -2896,6 +2896,27 @@ int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_scene_convert_points_to_nodes(cmzn_scene_id scene,
+	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
+	cmzn_field_id coordinate_field)
+{
+	cmzn_region_id destination_region = cmzn_nodeset_get_region_internal(nodeset);
+	if (scene && nodeset && coordinate_field &&
+		(Computed_field_get_region(coordinate_field) == destination_region) &&
+		(CMZN_FIELD_VALUE_TYPE_REAL == cmzn_field_get_value_type(coordinate_field)) &&
+		(3 >= cmzn_field_get_number_of_components(coordinate_field)))
+	{
+		int return_code = render_to_finite_elements(scene->region,
+			/*graphics_name*/static_cast<const char *>(0), filter,
+			RENDER_TO_FINITE_ELEMENTS_NODES, destination_region,
+			static_cast<cmzn_field_group_id>(0), coordinate_field, nodeset,
+			0, 0,
+			0, 0);
+		return return_code ? CMZN_OK : CMZN_ERROR_GENERAL;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 cmzn_graphics_id cmzn_scene_create_graphics(cmzn_scene_id scene,
 		enum cmzn_graphics_type graphics_type)
 {

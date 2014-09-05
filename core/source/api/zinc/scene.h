@@ -97,6 +97,25 @@ ZINC_API int cmzn_scene_convert_to_point_cloud(cmzn_scene_id scene,
 	double surface_density, double surface_density_scale_factor);
 
 /**
+ * Creates nodal points in the supplied nodeset sampled points that
+ * are in the scene tree (filtered by the optional filter), i.e. including
+ * all its descendents. Points/nodes are created with the next available
+ * identifier.
+ *
+ * @param scene  The root scene containing graphics to convert.
+ * @param filter  The filter determining which graphics from the scene tree
+ * are converted. If not supplied then all graphics are converted.
+ * @param nodeset  The nodeset to add nodes to.
+ * @param coordinate_field  The coordinate field to be defined and assigned on
+ * the new nodes. Must be from the same region as the nodeset.
+ * @return  Status CMZN_OK on success, otherwise some other error code
+ * including CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_scene_convert_points_to_nodes(cmzn_scene_id scene,
+	cmzn_scenefilter_id filter, cmzn_nodeset_id nodeset,
+	cmzn_field_id coordinate_field);
+
+/**
  * Create a graphics of the given type in the scene.
  *
  * @param scene  Handle to scene the graphics is created in.

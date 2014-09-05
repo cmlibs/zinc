@@ -34,7 +34,8 @@ Renders the visible objects as finite elements into the specified <fe_region>.
 	/* Renders the scene as square linear product elements.  A collapsed linear
 		product element will be used to represent a triangle. */
 	RENDER_TO_FINITE_ELEMENTS_LINEAR_PRODUCT,
-	RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD
+	RENDER_TO_FINITE_ELEMENTS_SURFACE_NODE_CLOUD,
+	RENDER_TO_FINITE_ELEMENTS_NODES
 };
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(Render_to_finite_elements_mode)
