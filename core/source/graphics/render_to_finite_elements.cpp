@@ -977,7 +977,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Render_to_finite_elements_mode)
 		} break;
 		case RENDER_TO_FINITE_ELEMENTS_NODES:
 		{
-			enumerator_string = "render_points";
+			enumerator_string = "render_nodes";
 		} break;
 		default:
 		{
