@@ -22,6 +22,7 @@
 #include <zinc/element.hpp>
 #include <zinc/field.hpp>
 #include <zinc/fieldcache.hpp>
+#include <zinc/fieldconstant.hpp>
 #include <zinc/fieldmodule.hpp>
 #include <zinc/fieldfiniteelement.hpp>
 #include <zinc/node.hpp>
@@ -543,7 +544,88 @@ TEST(ZincFieldIsOnFace, invalidArguments)
 	EXPECT_FALSE(isOnFaceField.isValid());
 }
 
-TEST(ZincFieldEdgeDiscontinuity, evaluate3d)
+TEST(cmzn_field_edge_discontinuity, valid_arguments)
+{
+	ZincTestSetup zinc;
+	int result;
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_region_read_file(zinc.root_region,
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	cmzn_field_id coordinatesField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
+	EXPECT_NE((cmzn_field_id)0, coordinatesField);
+
+	cmzn_field_id edgeDiscontinuityField = cmzn_fieldmodule_create_field_edge_discontinuity(
+		zinc.fm, coordinatesField);
+	EXPECT_NE((cmzn_field_id)0, edgeDiscontinuityField);
+
+	cmzn_field_edge_discontinuity_id edgeDiscontinuity = cmzn_field_cast_edge_discontinuity(edgeDiscontinuityField);
+	EXPECT_NE((cmzn_field_edge_discontinuity_id)0, edgeDiscontinuity);
+
+	cmzn_field_edge_discontinuity_measure measure;
+	EXPECT_EQ(CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_C1, measure = cmzn_field_edge_discontinuity_get_measure(edgeDiscontinuity));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_edge_discontinuity_set_measure(edgeDiscontinuity, CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1));
+	EXPECT_EQ(CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1, measure = cmzn_field_edge_discontinuity_get_measure(edgeDiscontinuity));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_edge_discontinuity_set_measure(edgeDiscontinuity, CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL));
+	EXPECT_EQ(CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL, measure = cmzn_field_edge_discontinuity_get_measure(edgeDiscontinuity));
+
+	const double one = 1.0;
+	cmzn_field_id conditionalField = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &one);
+	EXPECT_NE((cmzn_field_id)0, conditionalField);
+
+	cmzn_field_id tmpField = 0;
+	tmpField = cmzn_field_edge_discontinuity_get_conditional_field(edgeDiscontinuity);
+	EXPECT_EQ(0, tmpField);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_edge_discontinuity_set_conditional_field(edgeDiscontinuity, conditionalField));
+	tmpField = cmzn_field_edge_discontinuity_get_conditional_field(edgeDiscontinuity);
+	EXPECT_EQ(conditionalField, tmpField);
+	cmzn_field_destroy(&tmpField);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_edge_discontinuity_set_conditional_field(edgeDiscontinuity, 0));
+	tmpField = cmzn_field_edge_discontinuity_get_conditional_field(edgeDiscontinuity);
+	EXPECT_EQ((cmzn_field_id)0, tmpField);
+
+	cmzn_field_destroy(&conditionalField);
+	cmzn_field_destroy(&edgeDiscontinuityField);
+	cmzn_field_edge_discontinuity_destroy(&edgeDiscontinuity);
+	cmzn_field_destroy(&coordinatesField);
+}
+
+TEST(cmzn_field_edge_discontinuity, invalid_arguments)
+{
+	ZincTestSetup zinc;
+	int result;
+
+	const double one = 1.0;
+	cmzn_field_id constField = cmzn_fieldmodule_create_field_constant(zinc.fm, 1, &one);
+	EXPECT_NE((cmzn_field_id)0, constField);
+
+	cmzn_field_id edgeDiscontinuityField;
+	EXPECT_EQ((cmzn_field_id)0, edgeDiscontinuityField = cmzn_fieldmodule_create_field_edge_discontinuity(0, constField));
+	EXPECT_EQ((cmzn_field_id)0, edgeDiscontinuityField = cmzn_fieldmodule_create_field_edge_discontinuity(zinc.fm, 0));
+
+	EXPECT_NE((cmzn_field_id)0, edgeDiscontinuityField = cmzn_fieldmodule_create_field_edge_discontinuity(zinc.fm, constField));
+	cmzn_field_edge_discontinuity_id edgeDiscontinuity;
+	edgeDiscontinuity = cmzn_field_cast_edge_discontinuity(0);
+	EXPECT_EQ((cmzn_field_edge_discontinuity_id)0, edgeDiscontinuity);
+	edgeDiscontinuity = cmzn_field_cast_edge_discontinuity(edgeDiscontinuityField);
+	EXPECT_NE((cmzn_field_edge_discontinuity_id)0, edgeDiscontinuity);
+
+	EXPECT_EQ(CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_INVALID, result = cmzn_field_edge_discontinuity_get_measure(0));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_field_edge_discontinuity_set_measure(0, CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_G1));
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_field_edge_discontinuity_set_measure(edgeDiscontinuity, CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_INVALID));
+	// can't use MEASURE_SURFACE_NORMAL unless source field has 3 components
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_field_edge_discontinuity_set_measure(edgeDiscontinuity, CMZN_FIELD_EDGE_DISCONTINUITY_MEASURE_SURFACE_NORMAL));
+
+	EXPECT_EQ(CMZN_ERROR_ARGUMENT, result = cmzn_field_edge_discontinuity_set_conditional_field(0, constField));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_edge_discontinuity_set_conditional_field(edgeDiscontinuity, constField));
+	EXPECT_EQ((cmzn_field_id)0, cmzn_field_edge_discontinuity_get_conditional_field(0));
+
+	cmzn_field_edge_discontinuity_destroy(&edgeDiscontinuity);
+	cmzn_field_destroy(&edgeDiscontinuityField);
+	cmzn_field_destroy(&constField);
+}
+
+TEST(ZincFieldEdgeDiscontinuity, validArguments)
 {
 	ZincTestSetupCpp zinc;
 	int result;
@@ -554,10 +636,236 @@ TEST(ZincFieldEdgeDiscontinuity, evaluate3d)
 	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinatesField.isValid());
 
+	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(coordinatesField);
+	EXPECT_TRUE(edgeDiscontinuityField.isValid());
+
+	FieldEdgeDiscontinuity tmpEdgeDiscontinuityField = edgeDiscontinuityField.castEdgeDiscontinuity();
+	EXPECT_TRUE(tmpEdgeDiscontinuityField.isValid());
+
+	FieldEdgeDiscontinuity::Measure measure;
+	EXPECT_EQ(FieldEdgeDiscontinuity::MEASURE_C1, measure = edgeDiscontinuityField.getMeasure());
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_G1));
+	EXPECT_EQ(FieldEdgeDiscontinuity::MEASURE_G1, measure = edgeDiscontinuityField.getMeasure());
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_SURFACE_NORMAL));
+	EXPECT_EQ(FieldEdgeDiscontinuity::MEASURE_SURFACE_NORMAL, measure = edgeDiscontinuityField.getMeasure());
+
+	const double one = 1.0;
+	FieldConstant conditionalField = zinc.fm.createFieldConstant(1, &one);
+	EXPECT_TRUE(conditionalField.isValid());
+
+	Field tmpField = edgeDiscontinuityField.getConditionalField();
+	EXPECT_FALSE(tmpField.isValid());
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setConditionalField(conditionalField));
+	tmpField = edgeDiscontinuityField.getConditionalField();
+	EXPECT_EQ(conditionalField, tmpField);
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setConditionalField(Field()));
+	tmpField = edgeDiscontinuityField.getConditionalField();
+	EXPECT_FALSE(tmpField.isValid());
+}
+
+TEST(ZincFieldEdgeDiscontinuity, invalidArguments)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(Field());
+	EXPECT_FALSE(edgeDiscontinuityField.isValid());
+	FieldEdgeDiscontinuity::Measure measure;
+	EXPECT_EQ(FieldEdgeDiscontinuity::MEASURE_INVALID, measure = edgeDiscontinuityField.getMeasure());
+	EXPECT_EQ(ERROR_ARGUMENT, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_C1));
+
+	const double one = 1.0;
+	FieldConstant constField = zinc.fm.createFieldConstant(1, &one);
+	EXPECT_TRUE(constField.isValid());
+
+	edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(constField);
+	EXPECT_TRUE(edgeDiscontinuityField.isValid());
+	EXPECT_EQ(ERROR_ARGUMENT, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_INVALID));
+	// can't use MEASURE_SURFACE_NORMAL unless source field has 3 components
+	EXPECT_EQ(ERROR_ARGUMENT, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_SURFACE_NORMAL));
+
+	FieldEdgeDiscontinuity tmpEdgeDiscontinuityField = constField.castEdgeDiscontinuity();
+	EXPECT_FALSE(tmpEdgeDiscontinuityField.isValid());
+}
+
+TEST(ZincFieldEdgeDiscontinuity, evaluate)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_ALLSHAPES_RESOURCE)));
+
+	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinatesField.isValid());
+
 	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
 	EXPECT_TRUE(isExteriorField.isValid());
 
-	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(coordinatesField, isExteriorField);
+	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(coordinatesField);
+	EXPECT_TRUE(edgeDiscontinuityField.isValid());
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setConditionalField(isExteriorField));
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_C1));
+
+	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
+	const int numLines = 33;
+	const int numValues = 3*numLines;
+	EXPECT_EQ(numLines, mesh1d.getSize());
+	double expectedValues_C1[numValues] =
+	{
+		0, -0, -0,
+		-1, 1, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 1, 1,
+		0, 1, -1,
+		0, -1, 0,
+		0, -1, 0,
+		0, 0, 0,
+		1, 0, 0,
+		1, 0, -1,
+		-1, 1, -0,
+		-1, 1, -1,
+		0, 1, 1,
+		-1, 1, -1,
+		-1, 1, -0,
+		0, 0, -1,
+		-2, 0, 1,
+		1, 0, 1,
+		1, -1, -1,
+		0, -1, 0,
+		0, 0, -1,
+		0, -2, 1,
+		1, 1, 0,
+		1, -1, 0,
+		1, 0, 1,
+		1, 0, -1,
+		0, 1, 1,
+		0, 1, -1,
+		0, -1, 1,
+		-0, -1, -1,
+		-1, -2, 2
+	};
+	double values_C1[numValues];
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	const double xi = 0.5;
+	for (int i = 0; i < 33; ++i)
+	{
+		Element line = mesh1d.findElementByIdentifier(i + 1);
+		EXPECT_EQ(OK, result = cache.setMeshLocation(line, 1, &xi));
+		EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, values_C1 + 3*i));
+		for (int j = 0; j < 3; ++j)
+		 ASSERT_DOUBLE_EQ(expectedValues_C1[3*i + j], values_C1[3*i + j]);
+	}
+
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_G1));
+	double expectedValues_G1[numValues] =
+	{
+		0, -0, -0,
+		-1, 1, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 1, 1,
+		0, 1, -1,
+		0.2928932188134525, -0.7071067811865475, 0,
+		0.2928932188134525, -0.7071067811865475, 0,
+		0, 0, 0,
+		0.7071067811865475, 0.2928932188134525, 0,
+		0.7071067811865475, 0, -0.7071067811865475,
+		0.1055728090000841, 0.4472135954999579, -0,
+		-0.1873204098133684, 0.4472135954999579, -0.7071067811865475,
+		0, 1, 1,
+		-0.7071067811865475, 1, -0.7071067811865475,
+		-0.4472135954999579, -0.1055728090000841, -0,
+		0, -0.2928932188134525, -0.7071067811865475,
+		-1.707106781186548, 0, 0.7071067811865475,
+		1, 0, 1,
+		1, -0.7071067811865475, -0.7071067811865475,
+		-0.2928932188134525, -0.7071067811865475, 0,
+		-0.2928932188134525, 0, -0.7071067811865475,
+		0, -1.707106781186548, 0.7071067811865475,
+		1, 1, 0,
+		1, -1, 0,
+		1, 0, 1,
+		1, 0, -1,
+		0, 1, 1,
+		0, 1, -1,
+		0, -1, 1,
+		-0, -1, -1,
+		-0.4082482904638631, -1.408248290463863, 0.8164965809277262,
+	};
+	double values_G1[numValues];
+	for (int i = 0; i < 33; ++i)
+	{
+		Element line = mesh1d.findElementByIdentifier(i + 1);
+		EXPECT_EQ(OK, result = cache.setMeshLocation(line, 1, &xi));
+		EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, values_G1 + 3*i));
+		for (int j = 0; j < 3; ++j)
+			ASSERT_DOUBLE_EQ(expectedValues_G1[3*i + j], values_G1[3*i + j]);
+	}
+
+	EXPECT_EQ(OK, result = edgeDiscontinuityField.setMeasure(FieldEdgeDiscontinuity::MEASURE_SURFACE_NORMAL));
+	double expectedValues_SN[numValues] =
+	{
+		0, 0, 0,
+		-1, -1, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 1, -1,
+		0, -1, -1,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0, 0,
+		0, 0.7071067811865475, -0.2928932188134525,
+		0, 0, 0,
+		0.7071067811865475, 0, -0.2928932188134525,
+		0, -1, 1,
+		-0.7071067811865475, -1, -0.7071067811865475,
+		0, 0, 0,
+		0.1297565119969216, -0.5773502691896258, 0.1297565119969216,
+		0.7071067811865475, -0, 1.707106781186548,
+		-1, 0, 1,
+		-1, -0.7071067811865475, -0.7071067811865475,
+		0, 0, 0,
+		-0.5773502691896258, 0.1297565119969216, 0.1297565119969216,
+		0, -0.7071067811865475, -1.707106781186548,
+		-1, 1, 0,
+		1, 1, 0,
+		1, 0, -1,
+		-1, 0, -1,
+		0, -1, 1,
+		0, 1, 1,
+		0, -1, -1,
+		0, 1, -1,
+		-0.5773502691896258, -0.5773502691896258, -1.577350269189626,
+	};
+	double values_SN[numValues];
+	for (int i = 0; i < 33; ++i)
+	{
+		Element line = mesh1d.findElementByIdentifier(i + 1);
+		EXPECT_EQ(OK, result = cache.setMeshLocation(line, 1, &xi));
+		EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, values_SN + 3*i));
+		for (int j = 0; j < 3; ++j)
+			ASSERT_DOUBLE_EQ(expectedValues_SN[3*i + j], values_SN[3*i + j]);
+	}
+}
+
+TEST(ZincFieldEdgeDiscontinuity, invalidEvaluate)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+
+	Field coordinatesField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinatesField.isValid());
+
+	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(coordinatesField);
 	EXPECT_TRUE(edgeDiscontinuityField.isValid());
 
 	Fieldcache cache = zinc.fm.createFieldcache();
@@ -571,29 +879,4 @@ TEST(ZincFieldEdgeDiscontinuity, evaluate3d)
 	EXPECT_EQ(OK, result = cache.setMeshLocation(face1, 2, xi2d));
 	double outValues[3];
 	EXPECT_NE(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
-
-	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
-	EXPECT_TRUE(mesh1d.isValid());
-	Element line1 = mesh1d.findElementByIdentifier(1);
-	EXPECT_TRUE(line1.isValid());
-	double xi = 0.5;
-	EXPECT_EQ(OK, result = cache.setMeshLocation(line1, 1, &xi));
-	EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
-	ASSERT_DOUBLE_EQ(10.0, outValues[0]);
-	ASSERT_DOUBLE_EQ(10.0, outValues[1]);
-	ASSERT_DOUBLE_EQ(0.0, outValues[2]);
-	Element line3 = mesh1d.findElementByIdentifier(3);
-	EXPECT_TRUE(line3.isValid());
-	EXPECT_EQ(OK, result = cache.setMeshLocation(line3, 1, &xi));
-	EXPECT_EQ(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
-	ASSERT_DOUBLE_EQ(0.0, outValues[0]);
-	ASSERT_DOUBLE_EQ(0.0, outValues[1]);
-	ASSERT_DOUBLE_EQ(0.0, outValues[2]);
-}
-
-TEST(ZincFieldEdgeDiscontinuity, invalidArguments)
-{
-	ZincTestSetupCpp zinc;
-	FieldEdgeDiscontinuity edgeDiscontinuityField = zinc.fm.createFieldEdgeDiscontinuity(Field(), Field());
-	EXPECT_FALSE(edgeDiscontinuityField.isValid());
 }
