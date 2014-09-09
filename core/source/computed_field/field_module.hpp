@@ -212,6 +212,15 @@ int cmzn_fieldmodule_coordinate_system_is_set(
 	struct cmzn_fieldmodule *fieldmodule);
 
 /**
+ * Clear stored coordinate system in field module. 
+ *
+ * @param fieldmodule  The field module to modify.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+int cmzn_fieldmodule_clear_coordinate_system(
+	struct cmzn_fieldmodule *fieldmodule);
+
+/**
  * Sets the replace_field that will be redefined by the next field
  * created with the field module. Cleared after next field create call.
  * Field name and coordinate system defaults are taken from supplied field.

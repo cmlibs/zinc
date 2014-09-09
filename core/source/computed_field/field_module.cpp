@@ -288,6 +288,17 @@ int cmzn_fieldmodule_coordinate_system_is_set(
 	return 0;
 }
 
+int cmzn_fieldmodule_clear_coordinate_system(
+	struct cmzn_fieldmodule *fieldmodule)
+{
+	if (fieldmodule)
+	{
+		fieldmodule->coordinate_system_override = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_fieldmodule_set_replace_field(
 	struct cmzn_fieldmodule *fieldmodule,
 	struct Computed_field *replace_field)
