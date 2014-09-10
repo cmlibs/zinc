@@ -11,6 +11,7 @@
 #define RENDERGL_HPP
 #include "graphics/graphics_object.h"
 #include "graphics/render.hpp"
+#include "graphics/scene.h"
 #include "graphics/graphics_object_highlight.hpp"
 
 struct cmzn_graphics;
@@ -165,8 +166,9 @@ Render_graphics_opengl *Render_graphics_opengl_create_vertex_buffer_object_displ
 
 Render_graphics_opengl *Render_graphics_opengl_create_webgl_renderer(const char *filename);
 
-Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *filename,
-	int number_of_time_steps, double begin_time, double end_time, int face_colour, int export_data_value);
+Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *file_prefix,
+	int number_of_time_steps, double begin_time, double end_time,
+	enum cmzn_scene_render_threejs_data_export_mode mode);
 
 /** Routine that uses the objects material and spectrum to convert
 * an array of data to corresponding colour data.

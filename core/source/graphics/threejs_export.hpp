@@ -20,7 +20,8 @@ class Threejs_export
 {
 private:
 	char *filename;
-	int number_of_time_steps, face_colour, export_data_value;
+	int number_of_time_steps;
+	cmzn_scene_render_threejs_data_export_mode mode;
 	FILE *threejs_file;
 	std::string facesString;
 	std::string verticesMorphString;
@@ -52,10 +53,9 @@ private:
 public:
 
 	Threejs_export(const char *filename, int number_of_time_steps_in,
-		int face_colour_in, int export_data_value_in) :
+		cmzn_scene_render_threejs_data_export_mode mode_in) :
 		filename(duplicate_string(filename)), number_of_time_steps(number_of_time_steps_in),
-		face_colour(face_colour_in), export_data_value(export_data_value_in),
-		threejs_file(0)
+		mode(mode_in),	threejs_file(0)
 	{
 		verticesMorphString.clear();
 		colorsMorphString.clear();

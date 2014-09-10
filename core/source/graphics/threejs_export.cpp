@@ -63,7 +63,7 @@ Threejs_export::~Threejs_export()
 int Threejs_export::beginExport()
 {
 	char temp[200];
-	sprintf(temp, "%s.js", filename);
+	sprintf(temp, "%s.json", filename);
 	threejs_file=fopen(temp,"w");
 	fprintf(threejs_file,"{\n\t\"metadata\" : {\n\t\t\"formatVersion\" : 3,\n");
 	fprintf(threejs_file,"\t\t\"description\" : \"Exported from LibZinc.\"\n\t},\n\n");
@@ -401,7 +401,7 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 	if (vertex_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
 		fprintf(threejs_file,"\t\"colors\" : [");
-		if (!face_colour)
+		if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE)
 		{
 			GLfloat *currentVertex = vertex_buffer;
 			for (unsigned int i = 0; i < vertex_count; i++)
@@ -532,7 +532,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				}
 			}
 
-			if (export_data_value == 0)
+			if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR)
 			{
 				unsigned int colour_values_per_vertex, colour_vertex_count;
 				GLfloat *colour_buffer = (GLfloat *)NULL;
@@ -566,7 +566,8 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 				}
 			}
-			else
+			else if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE ||
+					CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE)
 			{
 				GLfloat *data_buffer = NULL;
 				unsigned int data_values_per_vertex, data_vertex_count;
@@ -576,7 +577,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				{
 					if (time_step == 0)
 					{
-						if (face_colour)
+						if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE)
 						{
 							typebitmask |= THREEJS_TYPE_FACE_COLOR;
 						}
