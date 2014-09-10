@@ -504,18 +504,19 @@ class Render_graphics_opengl_threejs : public Render_graphics_opengl_vertex_buff
 public:
 
 	std::map<cmzn_graphics *, Threejs_export *> exports_map;
-	char *filename;
+	char *file_prefix;
 	double begin_time, end_time;
 	int number_of_time_steps, current_time_frame;
-	int current_graphics_number, face_colour, export_data_value;
+	int current_graphics_number;
+	enum cmzn_scene_render_threejs_data_export_mode mode;
 
-	Render_graphics_opengl_threejs(const char *filename_in,
+	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
-		int face_colour_in, int export_data_value_in) :
+		enum cmzn_scene_render_threejs_data_export_mode mode_in) :
 		Render_graphics_opengl_vertex_buffer_object(),
-		filename(duplicate_string(filename_in)), begin_time(begin_time_in),
-		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in), face_colour(face_colour_in),
-		export_data_value(export_data_value_in)
+		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
+		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in),
+		mode(mode_in)
 	{
 		exports_map.clear();
 		current_graphics_number = 0;
@@ -524,8 +525,8 @@ public:
 
 	~Render_graphics_opengl_threejs()
 	{
-		if (filename)
-			DEALLOCATE(filename);
+		if (file_prefix)
+			DEALLOCATE(file_prefix);
 	}
 
 	void clear_exports_map()
@@ -609,13 +610,12 @@ public:
 				struct cmzn_scene *scene = cmzn_graphics_get_scene_private(graphics);
 				struct cmzn_region *region = cmzn_scene_get_region_internal(scene);
 				char *region_name = cmzn_region_get_name(region);
-				char new_filename[50];
+				char new_file_prefix[50];
 				if (region_name)
-					sprintf(new_filename, "%s_%s_%s", filename, region_name, graphics_name);
+					sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
 				else
-					sprintf(new_filename, "%s_root_%s", filename, graphics_name);
-				threejs_export = new Threejs_export(new_filename, number_of_time_steps,
-					face_colour, export_data_value);
+					sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
+				threejs_export = new Threejs_export(new_file_prefix, number_of_time_steps, mode);
 				threejs_export->beginExport();
 				DEALLOCATE(graphics_name);
 				if (region_name)
@@ -653,7 +653,7 @@ public:
 
 	int Scene_tree_execute(cmzn_scene *scene)
 	{
-		if (filename)
+		if (file_prefix)
 		{
 			set_Scene(scene);
 			return Scene_render_opengl(scene, this);
@@ -663,12 +663,12 @@ public:
 
 }; /* class Render_graphics_opengl_threejs */
 
-Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *filename,
-	int number_of_time_steps, double begin_time, double end_time,
-	int face_colour, int export_data_value)
+Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
+	const char *file_prefix, int number_of_time_steps, double begin_time,
+	double end_time, enum cmzn_scene_render_threejs_data_export_mode mode)
 {
-	return new Render_graphics_opengl_threejs(filename, number_of_time_steps,
-		begin_time, end_time, face_colour, export_data_value);
+	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,
+		begin_time, end_time, mode);
 }
 
 /**

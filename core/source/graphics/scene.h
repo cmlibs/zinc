@@ -23,6 +23,7 @@ FILE : scene.h
 #include "context/context.h"
 #include "region/cmiss_region.h"
 #include "zinc/types/timenotifierid.h"
+#include "general/enumerator_private.hpp"
 
 typedef std::list<cmzn_selectionnotifier *> cmzn_selectionnotifier_list;
 
@@ -444,12 +445,29 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
  */
 void cmzn_scene_detach_from_owner(cmzn_scene_id scene);
 
+enum cmzn_scene_render_threejs_data_export_mode
+{
+	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_INVALID = 0,
+	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR = 1,
+	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE = 2,
+	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE = 3
+};
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scene_render_threejs_data_export_mode);
+
+enum cmzn_scene_render_threejs_data_export_mode
+	cmzn_scene_render_threejs_data_export_mode_enum_from_string(const char *string);
+
+char *cmzn_scene_render_threejs_data_export_mode_enum_to_string(
+	enum cmzn_scene_render_threejs_data_export_mode mode);
+
 int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *filename,
-	int number_of_time_steps, double begin_time, double end_time, int face_colour, int export_data_value);
+	int number_of_time_steps, double begin_time, double end_time,
+	cmzn_scene_render_threejs_data_export_mode export_mode);
 
 int Scene_render_webgl(cmzn_scene_id scene,
-	cmzn_scenefilter_id scenefilter, const char *filename);
+	cmzn_scenefilter_id scenefilter, const char *name_prefix);
 
 #endif /* !defined (SCENE_H) */
 

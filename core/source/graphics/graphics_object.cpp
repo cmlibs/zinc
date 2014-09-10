@@ -1121,7 +1121,7 @@ GT_pointset_vertex_buffers *CREATE(GT_pointset_vertex_buffers)(
 
 int DESTROY(GT_glyphset_vertex_buffers)(GT_glyphset_vertex_buffers **glyphset_address)
 {
-	int return_code;
+	int return_code = 0;
 	GT_glyphset_vertex_buffers *glyphset = 0;
 	if (glyphset_address && (glyphset = (*glyphset_address)))
 	{

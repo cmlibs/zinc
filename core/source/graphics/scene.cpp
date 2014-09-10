@@ -38,6 +38,7 @@ FILE : scene.cpp
 #include "general/any_object_definition.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
+#include "general/enumerator_conversion.hpp"
 #include "general/mystring.h"
 #include "region/cmiss_region_private.h"
 #include "general/object.h"
@@ -3584,16 +3585,88 @@ cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene)
 	return 0;
 }
 
-int Scene_render_threejs(cmzn_scene_id scene,
-	cmzn_scenefilter_id scenefilter, const char *filename,
-	int number_of_time_steps, double begin_time, double end_time, int face_colour, int export_data_value)
+class cmzn_scene_render_threejs_data_export_mode_conversion
 {
-	Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
-		filename, number_of_time_steps, begin_time,end_time, face_colour, export_data_value) ;
-	renderer->Scene_compile(scene, scenefilter);
-	delete renderer;
+public:
+	static const char *to_string(enum cmzn_scene_render_threejs_data_export_mode export_mode)
+	{
+		const char *enum_string = 0;
+		switch (export_mode)
+		{
+			case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR:
+				enum_string = "RENDER_THREEJS_DATA_EXPORT_COLOUR";
+				break;
+			case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE:
+				enum_string = "RENDER_THREEJS_DATA_EXPORT_PER_VERTEX_VALUE";
+				break;
+			case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE:
+				enum_string = "RENDER_THREEJS_DATA_EXPORT_PER_FACE_VALUE";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
 
-	return 1;
+enum cmzn_scene_render_threejs_data_export_mode
+	cmzn_scene_render_threejs_data_export_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_scene_render_threejs_data_export_mode,
+		cmzn_scene_render_threejs_data_export_mode_conversion>(string);
+}
+
+char *cmzn_scene_render_threejs_data_export_mode_enum_to_string(
+	enum cmzn_scene_render_threejs_data_export_mode mode)
+{
+	const char *mode_string = cmzn_scene_render_threejs_data_export_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_scene_render_threejs_data_export_mode)
+{
+	const char *enumerator_string;
+
+	switch (enumerator_value)
+	{
+		case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR:
+		{
+			enumerator_string = "data_export_colour";
+		} break;
+		case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE:
+		{
+			enumerator_string = "data_export_per_vertex_value";
+		} break;
+		case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE:
+		{
+			enumerator_string = "data_export_per_face_value";
+		} break;
+		default:
+		{
+			enumerator_string = (const char *)NULL;
+		} break;
+	}
+
+	return (enumerator_string);
+}
+
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_scene_render_threejs_data_export_mode)
+
+int Scene_render_threejs(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter, const char *file_prefix,
+	int number_of_time_steps, double begin_time, double end_time,
+	cmzn_scene_render_threejs_data_export_mode export_mode)
+{
+	if (file_prefix)
+	{
+		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
+			file_prefix, number_of_time_steps, begin_time,end_time, export_mode) ;
+		renderer->Scene_compile(scene, scenefilter);
+		delete renderer;
+
+		return 1;
+	}
+	return 0;
 }
 
 int Scene_render_webgl(cmzn_scene_id scene,
