@@ -88,9 +88,9 @@ bool Computed_field_fibre_axes::is_defined_at_location(cmzn_fieldcache& cache)
  * the source fibre and coordinate fields. Function reads the coordinate field and
  * derivatives in rectangular cartesian coordinates. The 1 to 3 fibre angles in
  * the fibre_field are used as follows (2 values omit step 3, 1 only does step 1):
- * 1 = fibre_angle in xi1-xi2 plane measured from xi1;
- * 2 = sheet_angle, inclination of the fibres from xi1-xi2 plane after step 1.
- * 3 = imbrication_angle, rotation of the sheet about the fibre vector.
+ * 1 = fibre angle in xi1-xi2 plane measured from xi1;
+ * 2 = imbrication angle, inclination of the fibres from xi1-xi2 plane after step 1.
+ * 3 = sheet angle, rotation of the sheet about the fibre vector.
  * coordinates from the source_field values in an arbitrary
  * <element_dimension> may be 2 or 3 only.
  * Derivatives may not be computed for this type of Computed_field [yet].

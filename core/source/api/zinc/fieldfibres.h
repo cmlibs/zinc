@@ -37,6 +37,9 @@ extern "C" {
  * sheet axis = in plane of fibre axis and d(coordinates)/dxi2 but corrected to
  * be closest vector to d(coordinates)/dxi2 which is normal to fibre axes.
  * normal axis = cross product fibre (x) sheet
+ * How the components of the fibre angles rotate the above system is described
+ * with the FIBRE coordinate system.
+ * @see cmzn_field_coordinate_system_type
  *
  * @param field_module  Region field module which will own new field.
  * @param fibre_field  The (numerical) fibre field with at most 3 components
