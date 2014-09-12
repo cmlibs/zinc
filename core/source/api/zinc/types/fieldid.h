@@ -106,8 +106,23 @@ enum cmzn_field_coordinate_system_type
 	       z = focus*cosh(lambda)*cos(mu)*cos(theta)
 	     @see cmzn_field_set_coordinate_system_focus */
 	CMZN_FIELD_COORDINATE_SYSTEM_TYPE_FIBRE = 6,
-	/*!< For Euler angles specifying fibre axes orientation from default
-	     aligned with element xi coordinates. */
+	/*!< A fibre/material orthonormal reference coordinate system defined within
+	  elements by Euler angle rotations of a coordinate system initially oriented
+	  with the derivatives of RC coordinates w.r.t. element 'xi' coordinates:
+	  initial fibre vector = normalised dx/dxi1.
+	  initial sheet vector = unit vector normal to fibre in xi1-xi2 plane,
+	    calculated as: normal (x) fibre.
+	  initial normal vector = unit vector normal to xi1-xi2 plane,
+	    calculated as: dx/dxi1 (x) dx/dxi2, then normalised.
+	  Up to three fibre angles (components of fibre field) are applied as
+	  rotations in radians in the following sequence (later steps omitted for fewer
+	  components):
+	  1. fibre angle = anticlockwise (right-hand) rotation of initial fibre & sheet
+	     vectors about initial normal vector.
+	  2. imbrication angle = anticlockwise rotation of initial normal and rotated
+	     fibre vectors about the rotated sheet vector.
+	  3. sheet angle = anticlockwise rotation of the rotated sheet and rotated
+	     normal vectors about the rotated fibre vector. */
 };
 
 /**
