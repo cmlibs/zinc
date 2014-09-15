@@ -23757,7 +23757,7 @@ the derivatives will start at the first position of <jacobian>.
 								}
 								temp = 1.0 - xi_coordinate;
 								basis_value=basis_function_values;
-								if (jacobian)
+								if (derivative)
 								{
 									// derivatives are w.r.t. element xi, not the grid element xi
 									FE_value grid_xi_scaling = static_cast<FE_value>(number_in_xi[i]);
@@ -23797,7 +23797,6 @@ the derivatives will start at the first position of <jacobian>.
 								(struct FE_time_sequence *)NULL);
 							component_grid_values_storage=
 								element_field_values->component_grid_values_storage + this_comp_no;
-							derivative=jacobian;
 
 							element_values_storage=
 								(*component_grid_values_storage)+size*offset;
@@ -23817,7 +23816,7 @@ the derivatives will start at the first position of <jacobian>.
 								basis_value++;
 							}
 							*calculated_value=(FE_value)sum;
-							if (jacobian)
+							if (derivative)
 							{
 								for (k=number_of_xi_coordinates;k>0;k--)
 								{
