@@ -3651,7 +3651,8 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 			}
 			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
 			{
-				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES)
+				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES ||
+					graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS)
 				{
 					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 					return 1;
