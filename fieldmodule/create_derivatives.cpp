@@ -22,6 +22,12 @@
 #include <zinc/region.h>
 #include <zinc/status.h>
 
+#include "zinctestsetupcpp.hpp"
+#include <zinc/differentialoperator.hpp>
+#include <zinc/element.hpp>
+#include <zinc/field.hpp>
+#include <zinc/fieldcache.hpp>
+
 #include "test_resources.h"
 
 #include "zinctestsetup.hpp"
@@ -381,7 +387,7 @@ TEST(cmzn_fieldmodule_create_field_gradient, valid_args)
 // Issue 3317: Gradient field calculations for grid based scalar fields are not
 // being scaled by the number of grid points in each xi direction. The resulting
 // gradients are smaller than their correct values.
-TEST(cmzn_field, issue_3317_grid_derivatives)
+TEST(cmzn_field, issue_3317_grid_derivatives_wrt_xi)
 {
 	ZincTestSetup zinc;
 
@@ -439,4 +445,58 @@ TEST(cmzn_field, issue_3317_grid_derivatives)
 	cmzn_differentialoperator_destroy(&d_dxi2);
 	cmzn_differentialoperator_destroy(&d_dxi3);
 	cmzn_mesh_destroy(&mesh);
+}
+
+// Issue 3812 – Grid-based field component derivatives only work for first component
+// Derivatives for higher grid-based components were overwriting those of first component
+TEST(ZincField, issue_3812_grid_derivatives_non_first_component)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_XYZP_RESOURCE)));
+
+	Field dependent = zinc.fm.findFieldByName("dependent");
+	EXPECT_TRUE(dependent.isValid());
+	EXPECT_EQ(4, dependent.getNumberOfComponents());
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Differentialoperator d_dxi1 = mesh.getChartDifferentialoperator(1, 1);
+	EXPECT_TRUE(d_dxi1.isValid());
+	Differentialoperator d_dxi2 = mesh.getChartDifferentialoperator(1, 2);
+	EXPECT_TRUE(d_dxi2.isValid());
+	Differentialoperator d_dxi3 = mesh.getChartDifferentialoperator(1, 3);
+	EXPECT_TRUE(d_dxi3.isValid());
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+	Element element = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	const double xi[3] = { 0.5, 0.5, 0.5 };
+	EXPECT_EQ(OK, result = cache.setMeshLocation(element, 3, xi));
+
+	const double expected_x[4] = { 0.5, 0.5, 0.5, 1.23456789 };
+	double x[4];
+	EXPECT_EQ(OK, result = dependent.evaluateReal(cache, 4, x));
+	for (int i = 0; i < 4; ++i)
+		ASSERT_DOUBLE_EQ(expected_x[i], x[i]);
+
+	const double expected_dx_dxi1[4] = { 1.0, 0.0, 0.0, 0.0 };
+	double dx_dxi1[4];
+	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi1, cache, 4, dx_dxi1));
+	for (int i = 0; i < 4; ++i)
+		ASSERT_DOUBLE_EQ(expected_dx_dxi1[i], dx_dxi1[i]);
+
+	const double expected_dx_dxi2[4] = { 0.0, 1.0, 0.0, 0.0 };
+	double dx_dxi2[4];
+	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi2, cache, 4, dx_dxi2));
+	for (int i = 0; i < 4; ++i)
+		ASSERT_DOUBLE_EQ(expected_dx_dxi2[i], dx_dxi2[i]);
+
+	const double expected_dx_dxi3[4] = { 0.0, 0.0, 1.0, 0.0 };
+	double dx_dxi3[4];
+	EXPECT_EQ(OK, result = dependent.evaluateDerivative(d_dxi3, cache, 4, dx_dxi3));
+	for (int i = 0; i < 4; ++i)
+		ASSERT_DOUBLE_EQ(expected_dx_dxi3[i], dx_dxi3[i]);
 }
