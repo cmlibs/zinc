@@ -1560,7 +1560,8 @@ int recursively_add_source_fields_to_list( struct Computed_field *field, struct 
 int Computed_field_is_coordinate_field(struct Computed_field *field, void *not_in_use)
 {
 	USE_PARAMETER(not_in_use);
-	return cmzn_field_is_type_coordinate(field);
+	return (cmzn_field_is_type_coordinate(field) &&
+		Computed_field_has_up_to_3_numerical_components(field, 0));
 }
 
 int Computed_field_get_domain( struct Computed_field *field, struct LIST(Computed_field) *domain_field_list )

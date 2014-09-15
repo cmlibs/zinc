@@ -573,7 +573,8 @@ be destroyed, assuming it is only accessed by this field and its manager.
 struct cmzn_region *Computed_field_get_region(struct Computed_field *field);
 
 /**
- * Returns true if the field is a coordinate field, false otherwise
+ * Returns true if the field is a finite element coordinate type field and
+ * composed of three or less components, false otherwise.
  *
  * @param field the field to determine whether or not it is a coordinate field
  * @return 1 if the field is a coordinate field, 0 otherwise
