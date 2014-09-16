@@ -129,7 +129,7 @@ int DESTROY(Graphics_vertex_buffer)(
 
 
 typedef std::map<Graphics_vertex_array_attribute_type, Graphics_vertex_string_buffer*> String_buffer_map;
-typedef std::map<int , int> Fast_search_id_map;
+typedef std::multimap<int , int> Fast_search_id_map;
 
 class Graphics_vertex_array_internal
 {
@@ -137,6 +137,8 @@ public:
 	Graphics_vertex_array_type type;
 	LIST(Graphics_vertex_buffer) *buffer_list;
 	String_buffer_map string_buffer_list;
+	/* fast search map for locating id for quick modification,
+	 * this is implemented as multimap for graphics type that have varying number of primitives */
 	Fast_search_id_map id_map;
 
 	Graphics_vertex_array_internal(Graphics_vertex_array_type type)
@@ -164,7 +166,10 @@ public:
 
 	int add_fast_search_id(int object_id);
 
-	int find_fast_search_id_location(int target_id);
+	int find_first_fast_search_id_location(int target_id);
+
+	int get_all_fast_search_id_locations(int target_id,
+		int *number_of_locations, int **locations);
 
 	/** Gets the buffer appropriate for storing this vertex data or
 	* creates one in this array if it doesn't already exist.
@@ -233,7 +238,7 @@ int Graphics_vertex_array_internal::add_fast_search_id(int object_id)
 	return 1;
 }
 
-int Graphics_vertex_array_internal::find_fast_search_id_location(int target_id)
+int Graphics_vertex_array_internal::find_first_fast_search_id_location(int target_id)
 {
 	int location = -1;
 	Fast_search_id_map::iterator pos;
@@ -243,6 +248,24 @@ int Graphics_vertex_array_internal::find_fast_search_id_location(int target_id)
 		location = pos->second;
 	}
 	return location;
+}
+
+int Graphics_vertex_array_internal::get_all_fast_search_id_locations(int target_id,
+	int *number_of_locations, int **locations)
+{
+	*number_of_locations = id_map.count(target_id);
+	if (*number_of_locations > 0)
+	{
+		int current_location = 0;
+		*locations = new int[*number_of_locations];
+		Fast_search_id_map::iterator pos;
+		for (pos = id_map.lower_bound(target_id); pos != id_map.upper_bound(target_id); ++pos)
+		{
+			(*locations)[current_location] = pos->second;
+			current_location++;
+		}
+	}
+	return 1;
 }
 
 Graphics_vertex_string_buffer *Graphics_vertex_array_internal::get_or_create_string_buffer(
@@ -885,10 +908,16 @@ int Graphics_vertex_array::add_fast_search_id(int object_id)
 	return 1;
 }
 
-int Graphics_vertex_array::find_fast_search_id_location(
+int Graphics_vertex_array::find_first_fast_search_id_location(
 	 int target_id)
 {
-	return internal->find_fast_search_id_location(target_id);
+	return internal->find_first_fast_search_id_location(target_id);
+}
+
+int Graphics_vertex_array::get_all_fast_search_id_locations(int target_id,
+	int *number_of_locations, int **locations)
+{
+	return internal->get_all_fast_search_id_locations(target_id, number_of_locations, locations);
 }
 
 int Graphics_vertex_array::clear_buffers()
@@ -911,7 +940,6 @@ Graphics_vertex_array::~Graphics_vertex_array()
 {
 	delete internal;
 }
-
 
 int fill_glyph_graphics_vertex_array(struct Graphics_vertex_array *array, int vertex_location,
 	unsigned int number_of_points, Triple *point_list, Triple *axis1_list, Triple *axis2_list,
