@@ -1000,7 +1000,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_fast_search_id_location(graphics_name);
+		int vertex_location = array->find_first_fast_search_id_location(graphics_name);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -1215,7 +1215,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 		get_FE_element_identifier(element, &cm);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(cm.number);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -1982,7 +1982,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 		FE_value *xi_points = new FE_value[2*number_of_points];
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(cm.number);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -2740,7 +2740,7 @@ int add_glyphset_vertex_from_FE_element(
 		get_FE_element_identifier(element, &cm);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(cm.number);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{

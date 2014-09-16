@@ -321,7 +321,13 @@ public:
 
 	int add_fast_search_id(int object_id);
 
-	int find_fast_search_id_location(int target_id);
+	/* return the first index if element with same id is found, this is used
+	 * with fixed number of vertices per id e.g. elements */
+	int find_first_fast_search_id_location(int target_id);
+
+	/* return the all indices if element with same id is found, this is used
+	 * with varying number of vertices per id e.g contour */
+	int get_all_fast_search_id_locations(int target_id, int *number_of_locations, int **locations);
 
 	void fill_element_index(unsigned vertex_start, unsigned int number_of_xi1, unsigned int number_of_xi2,
 		enum Graphics_vertex_array_shape_type shape_type);
