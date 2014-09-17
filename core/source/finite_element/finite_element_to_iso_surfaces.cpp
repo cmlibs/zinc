@@ -600,7 +600,14 @@ public:
 
 	int fill_graphics(struct Graphics_vertex_array *array);
 
-	int replace_graphics(struct Graphics_vertex_array *array);
+	void add_vertex_array_entries(struct Graphics_vertex_array *array,
+		enum Graphics_vertex_array_attribute_type type, int number_of_components,
+		const FE_value *values1, const FE_value *values2, const FE_value *values3);
+
+	void replace_vertex_array_entries(struct Graphics_vertex_array *array,
+		enum Graphics_vertex_array_attribute_type type, int number_of_components,
+		const FE_value *values1, const FE_value *values2, const FE_value *values3,
+		unsigned int insert_vertex_location);
 
 private:
 
@@ -1806,123 +1813,44 @@ bool Isosurface_builder::reverse_winding()
 	return (reverse_winding);
 }
 
-int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
+inline void Isosurface_builder::add_vertex_array_entries(struct Graphics_vertex_array *array,
+	enum Graphics_vertex_array_attribute_type type, int number_of_components,
+	const FE_value *values1, const FE_value *values2, const FE_value *values3)
 {
-	int return_code = 1;
-	bool reverse = reverse_winding();
-	unsigned int vertex_start = array->get_number_of_vertices(
-		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
-	unsigned int total_number_of_triangles = 0;
-	int polygonType = (int)g_TRIANGLE;
+	GLfloat *floatField = new GLfloat[number_of_components];
+	CAST_TO_OTHER(floatField,values1, GLfloat, number_of_components);
+	array->add_float_attribute(type,
+		number_of_components, 1, floatField);
+	CAST_TO_OTHER(floatField,values2, GLfloat, number_of_components);
+	array->add_float_attribute(type,
+		number_of_components, 1, floatField);
+	CAST_TO_OTHER(floatField,values3, GLfloat, number_of_components);
+	array->add_float_attribute(type,
+		number_of_components, 1, floatField);
+	delete[] floatField;
 
-	for (Iso_mesh_map_const_iterator mesh_iter = mesh_map.begin();
-		mesh_iter != mesh_map.end(); mesh_iter++)
-	{
-		Iso_mesh& mesh = *(mesh_iter->second);
-		const Iso_triangle_list& triangle_list = mesh.triangle_list;
-		const int number_of_triangles = triangle_list.size();
-		total_number_of_triangles += (unsigned int)number_of_triangles;
-		if (0 < number_of_triangles)
-		{
-			GLfloat floatField[3];
-			GLfloat *dataField = NULL;
+}
 
-			if (0 != data_field)
-				dataField = new GLfloat[number_of_data_components];
-			for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin(); triangle_iter != triangle_list.end(); triangle_iter++)
-			{
-				const Iso_triangle *triangle = *triangle_iter;
-				const Iso_vertex* v1 = triangle->v1;
-				const Iso_vertex* v2 = reverse ? triangle->v3 : triangle->v2;
-				const Iso_vertex* v3 = reverse ? triangle->v2 : triangle->v3;
-
-				CAST_TO_OTHER(floatField,v1->coordinates,GLfloat,3);
-				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, 1, floatField);
-				CAST_TO_OTHER(floatField,v2->coordinates,GLfloat,3);
-				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, 1, floatField);
-				CAST_TO_OTHER(floatField,v3->coordinates,GLfloat,3);
-				array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-					3, 1, floatField);
-
-				// calculate facet normal:
-				FE_value axis1[3], axis2[3], facet_normal[3];
-				axis1[0] = v2->coordinates[0] - v1->coordinates[0];
-				axis1[1] = v2->coordinates[1] - v1->coordinates[1];
-				axis1[2] = v2->coordinates[2] - v1->coordinates[2];
-				axis2[0] = v3->coordinates[0] - v1->coordinates[0];
-				axis2[1] = v3->coordinates[1] - v1->coordinates[1];
-				axis2[2] = v3->coordinates[2] - v1->coordinates[2];
-				cross_product_FE_value_vector3(axis1, axis2, facet_normal);
-				normalize_FE_value3(facet_normal);
-				CAST_TO_OTHER(floatField,facet_normal,GLfloat,3);
-				for (int i = 0; i < 3; i++)
-				{
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
-						3, 1, floatField);
-				}
-				if (0 != texture_coordinate_field)
-				{
-					CAST_TO_OTHER(floatField,v1->texture_coordinates,GLfloat,3);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, 1, floatField);
-					CAST_TO_OTHER(floatField,v2->texture_coordinates,GLfloat,3);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, 1, floatField);
-					CAST_TO_OTHER(floatField,v3->texture_coordinates,GLfloat,3);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-						3, 1, floatField);
-
-				}
-				if (0 != data_field)
-				{
-					CAST_TO_OTHER(dataField,v1->data,GLfloat,number_of_data_components);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_components, 1, dataField);
-					CAST_TO_OTHER(dataField,v2->data,GLfloat,number_of_data_components);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_components, 1, dataField);
-					CAST_TO_OTHER(dataField,v3->data,GLfloat,number_of_data_components);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-						number_of_data_components, 1, dataField);
-				}
-			}
-			if (0 != data_field)
-				delete[] dataField;
-		}
-	}
-	if (total_number_of_triangles > 0)
-	{
-		struct CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
-		unsigned int number_of_vertices = total_number_of_triangles * 3;
-		unsigned int number_of_xi1 = total_number_of_triangles;
-		unsigned int number_of_xi2 = 3;
-		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-			1, 1, &(cm.number));
-		array->add_fast_search_id(cm.number);
-		int modificationRequired = 0;
-		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
-			1, 1, &modificationRequired);
-		array->add_unsigned_integer_attribute(
-			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
-			1, 1, &number_of_vertices);
-		array->add_unsigned_integer_attribute(
-			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
-			1, 1, &vertex_start);
-		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POLYGON,
-			1, 1, &polygonType);
-		array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
-			1, 1, &number_of_xi1);
-		array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
-			1, 1, &number_of_xi2);
-	}
-	return (return_code);
+inline void Isosurface_builder::replace_vertex_array_entries(struct Graphics_vertex_array *array,
+	enum Graphics_vertex_array_attribute_type type, int number_of_components,
+	const FE_value *values1, const FE_value *values2, const FE_value *values3,
+	unsigned int insert_vertex_location)
+{
+	GLfloat *floatField = new GLfloat[number_of_components];
+	CAST_TO_OTHER(floatField,values1, GLfloat, number_of_components);
+	array->replace_float_vertex_buffer_at_position(type,
+		insert_vertex_location, number_of_components, 1, floatField);
+	CAST_TO_OTHER(floatField,values2, GLfloat, number_of_components);
+	array->replace_float_vertex_buffer_at_position(type,
+		insert_vertex_location+1, number_of_components, 1, floatField);
+	CAST_TO_OTHER(floatField,values3, GLfloat, number_of_components);
+	array->replace_float_vertex_buffer_at_position(type,
+		insert_vertex_location+2, number_of_components, 1, floatField);
+	delete[] floatField;
 }
 
 /* replace graphics as it already exist be the locations should be updated/expanded */
-int Isosurface_builder::replace_graphics(struct Graphics_vertex_array *array)
+int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 {
 	int return_code = 1;
 	bool reverse = reverse_winding();
@@ -1949,11 +1877,7 @@ int Isosurface_builder::replace_graphics(struct Graphics_vertex_array *array)
 		total_number_of_triangles_to_add = 0;
 		if (0 < number_of_triangles)
 		{
-			GLfloat floatField[3];
 			GLfloat *dataField = NULL;
-
-			if (0 != data_field)
-				dataField = new GLfloat[number_of_data_components];
 			for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin();
 				triangle_iter != triangle_list.end(); triangle_iter++)
 			{
@@ -1988,30 +1912,15 @@ int Isosurface_builder::replace_graphics(struct Graphics_vertex_array *array)
 
 				if (number_of_available_vertices < 3)
 				{
-					CAST_TO_OTHER(floatField,v1->coordinates,GLfloat,3);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						3, 1, floatField);
-					CAST_TO_OTHER(floatField,v2->coordinates,GLfloat,3);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						3, 1, floatField);
-					CAST_TO_OTHER(floatField,v3->coordinates,GLfloat,3);
-					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						3, 1, floatField);
+					add_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+						3, &(v1->coordinates[0]), &(v2->coordinates[0]), &(v3->coordinates[0]));
 				}
 				else
 				{
-					CAST_TO_OTHER(floatField,v1->coordinates,GLfloat,3);
-					array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						insert_vertex_location, 3, 1, floatField);
-					CAST_TO_OTHER(floatField,v2->coordinates,GLfloat,3);
-					array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						insert_vertex_location+1, 3, 1, floatField);
-					CAST_TO_OTHER(floatField,v3->coordinates,GLfloat,3);
-					array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-						insert_vertex_location+2, 3, 1, floatField);
-					floatField[0] = place_holder[0];
-					floatField[1] = place_holder[1];
-					floatField[2] = place_holder[2];
+					replace_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+						3, &(v1->coordinates[0]), &(v2->coordinates[0]), &(v3->coordinates[0]),
+						insert_vertex_location);
+					CAST_TO_OTHER(place_holder,v3->coordinates,GLfloat,3);
 				}
 
 				// calculate facet normal:
@@ -2024,72 +1933,45 @@ int Isosurface_builder::replace_graphics(struct Graphics_vertex_array *array)
 				axis2[2] = v3->coordinates[2] - v1->coordinates[2];
 				cross_product_FE_value_vector3(axis1, axis2, facet_normal);
 				normalize_FE_value3(facet_normal);
-				CAST_TO_OTHER(floatField,facet_normal,GLfloat,3);
-				for (int i = 0; i < 3; i++)
+				if (number_of_available_vertices < 3)
 				{
-					if (number_of_available_vertices <= 0)
-					{
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
-							3, 1, floatField);
-					}
-					else
-					{
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
-							insert_vertex_location+i, 3, 1, floatField);
-					}
+					add_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+						3, &(facet_normal[0]), &(facet_normal[0]), &(facet_normal[0]));
+				}
+				else
+				{
+					replace_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+						3, &(facet_normal[0]), &(facet_normal[0]), &(facet_normal[0]),
+						insert_vertex_location);
 				}
 				if (0 != texture_coordinate_field)
 				{
-					if (number_of_available_vertices <= 0)
+					if (number_of_available_vertices < 3)
 					{
-						CAST_TO_OTHER(floatField,v1->texture_coordinates,GLfloat,3);
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-							3, 1, floatField);
-						CAST_TO_OTHER(floatField,v2->texture_coordinates,GLfloat,3);
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-							3, 1, floatField);
-						CAST_TO_OTHER(floatField,v3->texture_coordinates,GLfloat,3);
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-							3, 1, floatField);
+						add_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+							3, &(v1->texture_coordinates[0]), &(v2->texture_coordinates[0]), &(v3->texture_coordinates[0]));
 					}
 					else
 					{
-						CAST_TO_OTHER(floatField,v1->texture_coordinates,GLfloat,3);
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-							insert_vertex_location, 3, 1, floatField);
-						CAST_TO_OTHER(floatField,v2->texture_coordinates,GLfloat,3);
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-							insert_vertex_location+1, 3, 1, floatField);
-						CAST_TO_OTHER(floatField,v3->texture_coordinates,GLfloat,3);
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-							insert_vertex_location+2, 3, 1, floatField);
+						replace_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+							3, &(v1->texture_coordinates[0]), &(v2->texture_coordinates[0]), &(v3->texture_coordinates[0]),
+							insert_vertex_location);
 					}
 				}
 				if (0 != data_field)
 				{
-					if (number_of_available_vertices <= 0)
+					if (number_of_available_vertices < 3)
 					{
-						CAST_TO_OTHER(dataField,v1->data,GLfloat,number_of_data_components);
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-							number_of_data_components, 1, dataField);
-						CAST_TO_OTHER(dataField,v2->data,GLfloat,number_of_data_components);
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-							number_of_data_components, 1, dataField);
-						CAST_TO_OTHER(dataField,v3->data,GLfloat,number_of_data_components);
-						array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-							number_of_data_components, 1, dataField);
+						add_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+							number_of_data_components, &(v1->data[0]),
+							&(v2->data[0]), &(v3->data[0]));
 					}
 					else
 					{
-						CAST_TO_OTHER(floatField,v1->data,GLfloat,3);
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-							insert_vertex_location, number_of_data_components, 1, dataField);
-						CAST_TO_OTHER(floatField,v2->data,GLfloat,3);
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-							insert_vertex_location+1, number_of_data_components, 1, dataField);
-						CAST_TO_OTHER(floatField,v3->data,GLfloat,3);
-						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-							insert_vertex_location+2, number_of_data_components, 1, dataField);
+						replace_vertex_array_entries(array, GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+							number_of_data_components, &(v1->data[0]),
+							&(v2->data[0]), &(v3->data[0]),
+							insert_vertex_location);
 					}
 				}
 				if (number_of_available_vertices < 3)
@@ -2102,8 +1984,6 @@ int Isosurface_builder::replace_graphics(struct Graphics_vertex_array *array)
 					insert_vertex_location += 3;
 				}
 			}
-			if (0 != data_field)
-				delete[] dataField;
 		}
 	}
 	if (number_of_available_vertices > 0)
@@ -2269,10 +2149,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 			return_code = iso_builder.sweep();
 			if (return_code)
 			{
-				if (vertex_location < 0)
-					return_code = iso_builder.fill_graphics(array);
-				else if (replaceRequired)
-					return_code = iso_builder.replace_graphics(array);
+				return_code = iso_builder.fill_graphics(array);
 			}
 		}
 		else /* do not waste time calculating existing valid graphics */
