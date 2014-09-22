@@ -880,7 +880,7 @@ int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 	{
 		Graphical_material *material = get_GT_object_default_material(object);
 		/* Ignoring selected state here so we don't need to refer to primitive */
-		if (object->buffer_binding)
+		if (object->buffer_binding || (object->compile_status == GRAPHICS_NOT_COMPILED))
 		{
 			if (ALLOCATE(*colour_buffer, GLfloat, 4 * data_vertex_count))
 			{
@@ -1500,7 +1500,8 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 					&colour_buffer,
 					&colour_values_per_vertex, &colour_vertex_count))
 				{
-					if (object->buffer_binding && (colour_vertex_count == position_vertex_count))
+					if ((object->buffer_binding || (object->compile_status == GRAPHICS_NOT_COMPILED)) &&
+							(colour_vertex_count == position_vertex_count))
 					{
 						if (!object->colour_vertex_buffer_object)
 						{
@@ -1722,6 +1723,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW);
 		object->vertex_array->clear_specified_buffer(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW_COUNT);
+		object->compile_status == GRAPHICS_COMPILED;
 	}
 	else
 	{
@@ -2200,99 +2202,87 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 						{
 							name_selected=highlight_functor->call(object_name);
 						}
-						const bool multiBeginEnd = (picking_names || label_buffer || static_labels || highlight_functor);
-						if (multiBeginEnd)
+						for (unsigned i=0;i<index_count;i++)
 						{
-							for (unsigned i=0;i<index_count;i++)
+							if ((object_name < 0) && ((names) && highlight_functor))
 							{
-								if ((object_name < 0) && ((names) && highlight_functor))
+								name_selected = highlight_functor->call(*names);
+							}
+							if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
+							{
+								/* set the spectrum for this datum, if any */
+								if (data_buffer)
 								{
-									name_selected = highlight_functor->call(*names);
+									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-								if (draw_all||(name_selected&&draw_selected)||((!name_selected)&&(!draw_selected)))
+								x = position[0];
+								y = position[1];
+								z = position[2];
+								if (picking_names)
 								{
-									/* set the spectrum for this datum, if any */
-									if (data_buffer)
-									{
-										spectrum_renderGL_value(spectrum,material,render_data,datum);
-									}
-									x = position[0];
-									y = position[1];
-									z = position[2];
-									if (picking_names)
-									{
-										glLoadName((GLuint)(*names));
-									}
-									resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
-										glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
-										position, axis1, axis2, axis3, scale,
-										temp_point, temp_axis1, temp_axis2, temp_axis3);
-									switch (rendering_type)
-									{
+									glLoadName((GLuint)(*names));
+								}
+								resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
+									glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+									position, axis1, axis2, axis3, scale,
+									temp_point, temp_axis1, temp_axis2, temp_axis3);
+								switch (rendering_type)
+								{
 									case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
 									{
 										glBegin(GL_POINTS);
-										glVertex3fv(position);
+										glVertex3fv(temp_point);
 										glEnd();
 									} break;
 									case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
 									case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
 									{
+										glBindBuffer(GL_ARRAY_BUFFER, object->position_vertex_buffer_object);
+										GLintptr bytesStart = 0;
+										GLsizeiptr size = 0;
+										bytesStart = sizeof(GLfloat)*position_values_per_vertex*(index_start+i);
+										size = sizeof(GLfloat)*position_values_per_vertex;
+										glBufferSubData(GL_ARRAY_BUFFER, bytesStart, size, &(temp_point[0]));
 										glDrawArrays(GL_POINTS, index_start+i, 1);
 									} break;
 									default:
 									{
 									} break;
-									}
+								}
 
-									if (label || static_labels)
+								if (label || static_labels)
+								{
+									Triple lpoint;
+									for (int j = 0; j < 3; ++j)
 									{
-										Triple lpoint;
-										for (int j = 0; j < 3; ++j)
-										{
-											lpoint[j] = temp_point[j]+ glyph_set->label_offset[0]*temp_axis1[j] +
-											  glyph_set->label_offset[1]*temp_axis2[j] + glyph_set->label_offset[2]*temp_axis3[j];
-										}
-										bool allocatedText = false;
-										char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? const_cast<char *>(label->c_str()) : 0, allocatedText);
-										cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
-										if (allocatedText)
-										{
-											delete[] text;
-										}
+										lpoint[j] = temp_point[j]+ glyph_set->label_offset[0]*temp_axis1[j] +
+											glyph_set->label_offset[1]*temp_axis2[j] + glyph_set->label_offset[2]*temp_axis3[j];
 									}
-								}
-								position += position_values_per_vertex;
-								axis1 += axis1_values_per_vertex;
-								axis2 += axis2_values_per_vertex;
-								axis3 += axis3_values_per_vertex;
-								scale += scale_values_per_vertex;
-								if (data_buffer)
-								{
-									datum += data_values_per_vertex;
-								}
-								if (names_buffer)
-								{
-									names += names_per_vertex;
-								}
-								if (labels)
-								{
-									label++;
+									bool allocatedText = false;
+									char *text = concatenateLabels(static_labels ? static_labels[0] : 0, label ? const_cast<char *>(label->c_str()) : 0, allocatedText);
+									cmzn_font_rendergl_text(glyph_set->font, text, lpoint[0], lpoint[1], lpoint[2]);
+									if (allocatedText)
+									{
+										delete[] text;
+									}
 								}
 							}
-						}
-						else
-						{
-							switch (rendering_type)
+							position += position_values_per_vertex;
+							axis1 += axis1_values_per_vertex;
+							axis2 += axis2_values_per_vertex;
+							axis3 += axis3_values_per_vertex;
+							scale += scale_values_per_vertex;
+							if (data_buffer)
 							{
-							case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
-							case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
+								datum += data_values_per_vertex;
+							}
+							if (names_buffer)
 							{
-								glDrawArrays(GL_POINTS, index_start, index_count);
-							} break;
-							default:
+								names += names_per_vertex;
+							}
+							if (labels)
 							{
-							} break;
+								label++;
 							}
 						}
 						switch (rendering_type)
