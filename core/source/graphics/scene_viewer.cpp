@@ -1954,75 +1954,77 @@ access this function.
 			/* Determine which renderer to use once now rather than when compiling
 			 * each individual object.
 			 */
-#if defined (GL_VERSION_1_5)
-			/* Check for GL_ARB_vertex_buffer_object includes whether OpenGL version is 1.1 or
-			 * greater and we actually use the OpenGL 1.5 interface and just use this
-			 * flag to enable override control.
-			 */
-			if (Graphics_library_check_extension(GL_ARB_vertex_buffer_object))
-			{
-#define USE_DISPLAY_LIST = 0
-#if defined (USE_DISPLAY_LIST)
-				if (Graphics_library_check_extension(GL_display_lists)
-					/* Only allow vertex buffers and display lists to be used
-					 * together on Nvidia and Mesa as other drivers (at least some ATI and Intel)
-					 * generate a segfault in the driver on both linux and windows.
-					 * We can enable other drivers as they are proven reliable,
-					 * although if we adopt vertex buffers widely then display lists aren't
-					 * that useful any more.
-					 * See https://tracker.physiomeproject.org/show_bug.cgi?id=1533
-					 */
-					&& ((Graphics_library_vendor_nvidia == Graphics_library_get_vendor_id())
-					|| (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id())))
-				{
-					rendering_data.renderer =
-						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer();
-				}
-				else
-				{
-					rendering_data.renderer =
-						Render_graphics_opengl_create_vertex_buffer_object_renderer();
-				}
-
-#else
-				rendering_data.renderer =
-					Render_graphics_opengl_create_vertex_buffer_object_renderer();
-#endif
-			}
-			else
-#endif /* defined (GL_VERSION_1_5) */
-#if defined (GL_VERSION_1_1)
-			/* Check for GL_EXT_vertex_array includes whether OpenGL version is 1.1 or
-			 * greater and we actually use the OpenGL 1.1 interface and just use this
-			 * flag to enable override control.
-			 */
-			if (Graphics_library_check_extension(GL_EXT_vertex_array))
-			{
-				if (Graphics_library_check_extension(GL_display_lists))
-				{
-					rendering_data.renderer =
-						Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer();
-				}
-				else
-				{
-					rendering_data.renderer =
-						Render_graphics_opengl_create_client_vertex_arrays_renderer();
-				}
-			}
-			else
-#endif /* defined (GL_VERSION_1_1) */
-			{
-				if (Graphics_library_check_extension(GL_display_lists))
-				{
-					rendering_data.renderer =
-						Render_graphics_opengl_create_glbeginend_display_list_renderer();
-				}
-				else
-				{
-					rendering_data.renderer =
-						Render_graphics_opengl_create_glbeginend_renderer();
-				}
-			}
+			rendering_data.renderer =
+				Render_graphics_opengl_create_vertex_buffer_object_renderer();
+//#if defined (GL_VERSION_1_5)
+//			/* Check for GL_ARB_vertex_buffer_object includes whether OpenGL version is 1.1 or
+//			 * greater and we actually use the OpenGL 1.5 interface and just use this
+//			 * flag to enable override control.
+//			 */
+//			if (Graphics_library_check_extension(GL_ARB_vertex_buffer_object))
+//			{
+//#define USE_DISPLAY_LIST = 0
+//#if defined (USE_DISPLAY_LIST)
+//				if (Graphics_library_check_extension(GL_display_lists)
+//					/* Only allow vertex buffers and display lists to be used
+//					 * together on Nvidia and Mesa as other drivers (at least some ATI and Intel)
+//					 * generate a segfault in the driver on both linux and windows.
+//					 * We can enable other drivers as they are proven reliable,
+//					 * although if we adopt vertex buffers widely then display lists aren't
+//					 * that useful any more.
+//					 * See https://tracker.physiomeproject.org/show_bug.cgi?id=1533
+//					 */
+//					&& ((Graphics_library_vendor_nvidia == Graphics_library_get_vendor_id())
+//					|| (Graphics_library_vendor_mesa == Graphics_library_get_vendor_id())))
+//				{
+//					rendering_data.renderer =
+//						Render_graphics_opengl_create_vertex_buffer_object_display_list_renderer();
+//				}
+//				else
+//				{
+//					rendering_data.renderer =
+//						Render_graphics_opengl_create_vertex_buffer_object_renderer();
+//				}
+//
+//#else
+//				rendering_data.renderer =
+//					Render_graphics_opengl_create_vertex_buffer_object_renderer();
+//#endif
+//			}
+//			else
+//#endif /* defined (GL_VERSION_1_5) */
+//#if defined (GL_VERSION_1_1)
+//			/* Check for GL_EXT_vertex_array includes whether OpenGL version is 1.1 or
+//			 * greater and we actually use the OpenGL 1.1 interface and just use this
+//			 * flag to enable override control.
+//			 */
+//			if (Graphics_library_check_extension(GL_EXT_vertex_array))
+//			{
+//				if (Graphics_library_check_extension(GL_display_lists))
+//				{
+//					rendering_data.renderer =
+//						Render_graphics_opengl_create_client_vertex_arrays_display_list_renderer();
+//				}
+//				else
+//				{
+//					rendering_data.renderer =
+//						Render_graphics_opengl_create_client_vertex_arrays_renderer();
+//				}
+//			}
+//			else
+//#endif /* defined (GL_VERSION_1_1) */
+//			{
+//				if (Graphics_library_check_extension(GL_display_lists))
+//				{
+//					rendering_data.renderer =
+//						Render_graphics_opengl_create_glbeginend_display_list_renderer();
+//				}
+//				else
+//				{
+//					rendering_data.renderer =
+//						Render_graphics_opengl_create_glbeginend_renderer();
+//				}
+//			}
 
 			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);
 			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
