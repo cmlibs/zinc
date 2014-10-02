@@ -15,7 +15,7 @@ Function definitions for debugging.
 #if !defined (DEBUG_H)
 #define DEBUG_H
 
-#include <stdarg.h>
+#include <cstdarg>
 
 #include "zinc/zincconfigure.h"
 #include "zinc/zincsharedobject.h"
@@ -34,7 +34,7 @@ Macros
 	allocation of zero size. Inlined for optimisation */
 #if (defined (OPTIMISED)) || (defined (NDEBUG))
 
-#include <stdlib.h>
+#include <cstdlib>
 
 #define ALLOCATE( result , type , number ) \
  ( result = ( 0 < ( number ) ) ? ( type * )malloc( ( number ) * sizeof( type ) ) : ( type * )NULL )
@@ -47,6 +47,8 @@ Macros
 #define ASSERT_IF( expression , return_code , error_value )
 
 #else /* (defined (OPTIMISED)) || (defined (NDEBUG)) */
+
+#include <cstddef> // to define size_t
 
 #define ALLOCATE( result , type , number ) \
 ( result = ( type *) allocate( ( number ) * sizeof( type ) , __FILE__ , \
@@ -131,7 +133,7 @@ is swallowed with the call USE_PARAMETER(dummy_void); at the start of function.
 #endif /* defined (USE_PARAMETER_ON) */
 
 #if !(defined (OPTIMISED)) || (defined (NDEBUG))
-char *allocate(unsigned long int size, const char *file_name,int line_number,const char *type);
+char *allocate(size_t size, const char *file_name,int line_number,const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
 
@@ -147,7 +149,7 @@ DESCRIPTION :
 Wrapper for free.
 ==============================================================================*/
 
-char *reallocate(char *ptr,unsigned long int size,const char *file_name,int line_number,
+char *reallocate(char *ptr,size_t size,const char *file_name,int line_number,
 	const char *type);
 /*******************************************************************************
 LAST MODIFIED : 7 January 1998
