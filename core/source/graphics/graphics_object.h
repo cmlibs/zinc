@@ -164,19 +164,23 @@ struct GT_object;
 
 typedef struct GT_object gtObject;
 
+/**
+ * Structure for storing range of coordinates in graphics.
+ * Initialised with first flag set; range is only valid if first is cleared.
+ */
 struct Graphics_object_range_struct
-/*******************************************************************************
-LAST MODIFIED : 6 August 1997
-
-DESCRIPTION :
-Structure for storing range of time in one or several graphics objects.
-Set first=1 before calling range routines. Only if first==0 afterwards is the
-range valid.
-==============================================================================*/
 {
 	int first;
-	Triple maximum,minimum;
-}; /* Graphics_object_range_struct */
+	Triple maximum, minimum;
+
+	Graphics_object_range_struct() :
+		first(1)
+	{
+		// zero ranges to handle fewer than 3 coordinates
+		for (int i = 0; i < 3; ++i)
+			this->maximum[i] = this->minimum[i] = 0.0;
+	}
+};
 
 /**
  * Class for storing range of data in one or several graphics objects.

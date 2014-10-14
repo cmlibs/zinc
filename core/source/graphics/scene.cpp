@@ -853,10 +853,7 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 	struct Graphics_object_range_struct *graphics_object_range)
 {
 	double coordinates[4],transformed_coordinates[4];
-	gtMatrix *transformation = NULL;
 	int i,j,k,return_code;
-	struct Graphics_object_range_struct temp_graphics_object_range;
-	struct cmzn_graphics_range graphics_range;
 
 	if (top_scene && scene && graphics_object_range)
 	{
@@ -866,16 +863,10 @@ int cmzn_scene_get_range(cmzn_scene_id scene,
 		renderer.setScenefilter(filter);
 
 		renderer.cmzn_scene_compile(scene);
-		if (NULL != (transformation = cmzn_scene_get_total_transformation(
-			scene, top_scene)))
-		{
-			temp_graphics_object_range.first = 1;
-			graphics_range.graphics_object_range = &temp_graphics_object_range;
-		}
-		else
-		{
-			graphics_range.graphics_object_range = graphics_object_range;
-		}
+		gtMatrix *transformation = cmzn_scene_get_total_transformation(scene, top_scene);
+		Graphics_object_range_struct temp_graphics_object_range;
+		cmzn_graphics_range graphics_range;
+		graphics_range.graphics_object_range = (transformation) ? &temp_graphics_object_range : graphics_object_range;
 		graphics_range.filter = filter;
 		graphics_range.coordinate_system = CMZN_SCENECOORDINATESYSTEM_LOCAL;
 		return_code = FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
@@ -3383,20 +3374,13 @@ int cmzn_scene_get_global_graphics_range(cmzn_scene_id top_scene,
 {
 	double max_x, max_y, max_z, min_x, min_y, min_z;
 	int return_code = 1;
-	struct Graphics_object_range_struct graphics_object_range;
 
 	if (top_scene && centre_x && centre_y && centre_z && size_x && size_y && size_z)
 	{
 		/* must first build graphics objects */
 		build_Scene(top_scene, filter);
 		/* get range of visible graphics_objects in scene */
-		graphics_object_range.first = 1;
-		graphics_object_range.minimum[0] = 0.0;
-		graphics_object_range.minimum[1] = 0.0;
-		graphics_object_range.minimum[2] = 0.0;
-		graphics_object_range.maximum[0] = 0.0;
-		graphics_object_range.maximum[1] = 0.0;
-		graphics_object_range.maximum[2] = 0.0;
+		Graphics_object_range_struct graphics_object_range;
 		cmzn_scene_id scene = top_scene;
 		cmzn_scene_get_global_graphics_range_internal(top_scene, scene, filter, &graphics_object_range);
 		if (graphics_object_range.first)
