@@ -33,10 +33,10 @@ private:
 			}
 			EntryType **newBlocks;
 			if (!REALLOCATE(newBlocks, blocks, EntryType *, newBlockCount))
-				return NULL;
+				return 0;
 			for (IndexType i = blockCount; i < newBlockCount; i++)
 			{
-				newBlocks[i] = NULL;
+				newBlocks[i] = 0;
 			}
 			blocks = newBlocks;
 			blockCount = newBlockCount;
@@ -59,7 +59,7 @@ private:
 public:
 	
 	block_array() :
-		blocks(NULL),
+		blocks(0),
 		blockCount(0)
 	{
 	}
@@ -239,8 +239,11 @@ public:
 	{
 		IndexType intIndexCount = indexCount >> 5;
 		// bulk set the flags in lots of 32 bits
-		if (!setValues(0, intIndexCount-1, 0xFFFFFFFF))
-			return false;
+		if (intIndexCount > 0)
+		{
+			if (!setValues(0, intIndexCount-1, 0xFFFFFFFF))
+				return false;
+		}
 		// individually set remaining bits
 		for (IndexType index = intIndexCount*32; index < indexCount; index++)
 		{
