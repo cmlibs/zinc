@@ -1861,30 +1861,22 @@ will produce the range of all the graphics objects.
 						{
 							if (*first)
 							{
-								minimum[0]=vertex_buffer[0];
-								maximum[0]=minimum[0];
-								minimum[1]=vertex_buffer[1];
-								maximum[1]=minimum[1];
-								minimum[2]=vertex_buffer[2];
-								maximum[2]=minimum[2];
-								vertex_count--;
+								for (i = 0 ; i < values_per_vertex ; i++)
+									minimum[i] = maximum[i] = vertex_buffer[i];
+								--vertex_count;
 								vertex_buffer += values_per_vertex;
 								*first=0;
 							}
 							while (vertex_count>0)
 							{
-								for (i = 0 ; i < 3 ; i++)
+								for (i = 0 ; i < values_per_vertex ; i++)
 								{
-									if (vertex_buffer[i]<minimum[i])
-									{
-										minimum[i]=vertex_buffer[i];
-									}
-									else if (vertex_buffer[i]>maximum[i])
-									{
-										maximum[i]=vertex_buffer[i];
-									}
+									if (vertex_buffer[i] < minimum[i])
+										minimum[i] = vertex_buffer[i];
+									else if (vertex_buffer[i] > maximum[i])
+										maximum[i] = vertex_buffer[i];
 								}
-								vertex_count--;
+								--vertex_count;
 								vertex_buffer += values_per_vertex;
 							}
 						}
