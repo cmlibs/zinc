@@ -251,7 +251,7 @@ private:
 		FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodeArgument,
 		FmlObjectHandle fmlElementArgument);
 
-	bool FieldMLReader::evaluatorIsScalarContinuousPiecewiseOverElements(FmlObjectHandle fmlEvaluator,
+	bool evaluatorIsScalarContinuousPiecewiseOverElements(FmlObjectHandle fmlEvaluator,
 		FmlObjectHandle &fmlElementArgument);
 
 	int readAggregateFields();
