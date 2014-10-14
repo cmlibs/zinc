@@ -199,6 +199,8 @@ private:
 
 	std::string getName(FmlObjectHandle fmlObjectHandle)
 	{
+		if (FML_INVALID_HANDLE == fmlObjectHandle)
+			return std::string("INVALID");
 		nameBuffer[0] = 0;
 		while (true)
 		{
@@ -214,6 +216,8 @@ private:
 
 	std::string getDeclaredName(FmlObjectHandle fmlObjectHandle)
 	{
+		if (FML_INVALID_HANDLE == fmlObjectHandle)
+			return std::string("INVALID");
 		nameBuffer[0] = 0;
 		while (true)
 		{
@@ -246,6 +250,9 @@ private:
 		FmlObjectHandle fmlNodeEnsembleType, FmlObjectHandle fmlNodeParameters,
 		FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodeArgument,
 		FmlObjectHandle fmlElementArgument);
+
+	bool FieldMLReader::evaluatorIsScalarContinuousPiecewiseOverElements(FmlObjectHandle fmlEvaluator,
+		FmlObjectHandle &fmlElementArgument);
 
 	int readAggregateFields();
 
@@ -752,12 +759,12 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 			if (realParameters)
 			{
 				return_code = cmzn_field_real_parameters_set_values(realParameters,
-					index, valueBufferSize, realValueBuffer + record*totalDenseSize);
+					index, totalDenseSize, realValueBuffer + record*totalDenseSize);
 			}
 			else
 			{
 				return_code = cmzn_field_integer_parameters_set_values(integerParameters,
-					index, valueBufferSize, integerValueBuffer + record*totalDenseSize);
+					index, totalDenseSize, integerValueBuffer + record*totalDenseSize);
 			}
 		}
 	}
@@ -1096,7 +1103,7 @@ int FieldMLReader::readMeshes()
 		// create elements in the mesh of given dimension
 
 		cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
-		cmzn_elementtemplate_id element_template = cmzn_mesh_create_elementtemplate(mesh);
+		cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
 
 		cmzn_ensemble_iterator *elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
 		if (!elementsIterator)
@@ -1147,14 +1154,14 @@ int FieldMLReader::readMeshes()
 			}
 			if (shape_type != last_shape_type)
 			{
-				if (!(cmzn_elementtemplate_set_element_shape_type(element_template, shape_type)))
+				if (!(cmzn_elementtemplate_set_element_shape_type(elementtemplate, shape_type)))
 				{
 					return_code = 0;
 					break;
 				}
 				last_shape_type = shape_type;
 			}
-			if (!cmzn_mesh_define_element(mesh, elementIdentifier, element_template))
+			if (!cmzn_mesh_define_element(mesh, elementIdentifier, elementtemplate))
 			{
 				return_code = 0;
 				break;
@@ -1169,7 +1176,7 @@ int FieldMLReader::readMeshes()
 		cmzn_ensemble_iterator_destroy(&elementsIterator);
 		cmzn_field_ensemble_destroy(&elementsEnsemble);
 
-		cmzn_elementtemplate_destroy(&element_template);
+		cmzn_elementtemplate_destroy(&elementtemplate);
 		cmzn_mesh_destroy(&mesh);
 	}
 	return return_code;
@@ -1411,13 +1418,13 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	FmlObjectHandle fmlElementArgument)
 {
 	int return_code = 1;
-	const int componentCount = fmlComponentEvaluators.size();
+	const int componentCount = static_cast<int>(fmlComponentEvaluators.size());
 
 	std::string fieldName = getName(fmlFieldEvaluator);
 
 	if (verbose)
 	{
-		display_message(INFORMATION_MESSAGE, "\n==> Defining field from evaluator %s, components = %d\n",
+		display_message(INFORMATION_MESSAGE, "\n==> Defining field from evaluator %s, %d components\n",
 			fieldName.c_str(), componentCount);
 	}
 
@@ -1426,8 +1433,16 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	cmzn_field_set_managed(field, true);
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
 	{
-		// overzealous to help ensure there is at least one 'coordinate' field to define faces
-		cmzn_field_set_type_coordinate(field, true);
+		// if field value type is RC coordinates, set field 'type coordinate' flag.
+		// Needed to define faces, and by cmgui to find default coordinate field.
+		FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlFieldEvaluator);
+		std::string valueTypeName = this->getDeclaredName(fmlValueType);
+		if ((valueTypeName == "coordinates.rc.3d") ||
+			(valueTypeName == "coordinates.rc.2d") ||
+			(valueTypeName == "coordinates.rc.1d"))
+		{
+			cmzn_field_set_type_coordinate(field, true);
+		}
 	}
 
 	// create nodes and set node parameters
@@ -1520,7 +1535,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 
 	cmzn_mesh_id mesh =
 		cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
-	cmzn_elementtemplate_id element_template = 0;
+	cmzn_elementtemplate_id elementtemplate = 0;
 	cmzn_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
 	cmzn_ensemble_iterator_id elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
 	if (!elementsIterator)
@@ -1532,10 +1547,11 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	while (return_code)
 	{
 		int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
-		bool newElementtemplate = (element_template != 0);
+		bool newElementtemplate = (elementtemplate == 0);
 		bool definedOnAllComponents = true;
 		for (int ic = 0; ic < componentCount; ic++)
 		{
+			// TODO: HANDLE INDIRECT MAP TO ELEMENT EVALUATOR
 			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession, fmlComponentEvaluators[ic],
 				static_cast<int>(elementIdentifier), /*allowDefault*/1);
 			if (fmlElementEvaluator != fmlElementEvaluators[ic])
@@ -1557,11 +1573,11 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		}
 		if (newElementtemplate)
 		{
-			if (element_template)
-				cmzn_elementtemplate_destroy(&element_template);
-			element_template = cmzn_mesh_create_elementtemplate(mesh);
+			if (elementtemplate)
+				cmzn_elementtemplate_destroy(&elementtemplate);
+			elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
 			// do not want to override shape of existing elements:
-			cmzn_elementtemplate_set_element_shape_type(element_template, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
+			cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
 			int total_local_point_count = 0;
 			for (int ic = 0; ic < componentCount; ic++)
 			{
@@ -1599,9 +1615,9 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						}
 					}
 					total_local_point_count += components[ic]->local_point_count;
-					cmzn_elementtemplate_set_number_of_nodes(element_template, total_local_point_count);
+					cmzn_elementtemplate_set_number_of_nodes(elementtemplate, total_local_point_count);
 				}
-				if (!cmzn_elementtemplate_define_field_simple_nodal(element_template, field,
+				if (!cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, field,
 					/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
 					components[ic]->local_point_indexes))
 				{
@@ -1641,7 +1657,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						return_code = 0;
 						break;
 					}
-					cmzn_elementtemplate_set_node(element_template, component->swizzled_local_point_indexes[i], node);
+					cmzn_elementtemplate_set_node(elementtemplate, component->swizzled_local_point_indexes[i], node);
 					cmzn_node_destroy(&node);
 				}
 			}
@@ -1649,7 +1665,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		if (return_code)
 		{
 			cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, elementIdentifier);
-			if (!cmzn_element_merge(element, element_template))
+			if (!cmzn_element_merge(element, elementtemplate))
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
 				return_code = 0;
@@ -1662,13 +1678,71 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	cmzn_ensemble_iterator_destroy(&elementsIterator);
 	cmzn_field_ensemble_destroy(&elementsEnsemble);
 	cmzn_field_ensemble_destroy(&nodesEnsemble);
-	if (element_template)
-		cmzn_elementtemplate_destroy(&element_template);
+	if (elementtemplate)
+		cmzn_elementtemplate_destroy(&elementtemplate);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_nodeset_destroy(&nodes);
 	cmzn_field_destroy(&field);
 
 	return return_code;
+}
+
+/**
+ * Test whether the evaluator is scalar, continuous and piecewise over elements
+ * of the mesh, directly or indirectly via a map to an intermediate ensemble,
+ * and a function of the same element argument evaluator.
+ * @param fmlEvaluator  The evaluator to check.
+ * @param fmlElementArgument  On true result, set to the element argument the
+ * piecewise evaluator is ultimately indexed over.
+ * @return  Boolean true if in recognised form, false if not.
+ */
+bool FieldMLReader::evaluatorIsScalarContinuousPiecewiseOverElements(FmlObjectHandle fmlEvaluator,
+	FmlObjectHandle &fmlElementArgument)
+{
+	if (FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, fmlEvaluator))
+		return false;
+	FmlObjectHandle fmlValueType = Fieldml_GetValueType(this->fmlSession, fmlEvaluator);
+	if (FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(this->fmlSession, fmlValueType))
+		return false;
+	if (1 != Fieldml_GetTypeComponentCount(this->fmlSession, fmlValueType))
+		return false;
+	FmlObjectHandle fmlPiecewiseIndex = Fieldml_GetIndexEvaluator(this->fmlSession, fmlEvaluator, /*evaluatorIndex*/1);
+	if (fmlPiecewiseIndex == FML_INVALID_OBJECT_HANDLE)
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Piecewise Evaluator %s has no index evaluator",
+			this->getName(fmlEvaluator).c_str());
+		return false;
+	}
+	// can either be directly indexed by elements, or indirectly by map
+	// from elements to intermediate ensemble (i.e. a function ID)
+	int bindCount = Fieldml_GetBindCount(fmlSession, fmlEvaluator);
+	if (1 == bindCount)
+	{
+		// test for recognised indirect form: a parameter mapping element to piecewise index
+		FmlObjectHandle fmlBindArgument = Fieldml_GetBindArgument(fmlSession, fmlEvaluator, 1);
+		FmlObjectHandle fmlBindEvaluator = Fieldml_GetBindEvaluator(fmlSession, fmlEvaluator, 1);
+		if (fmlBindArgument != fmlPiecewiseIndex)
+			return false;
+		if (FHT_PARAMETER_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlBindEvaluator))
+			return false;
+		int parameterIndexCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlBindEvaluator);
+		if (1 != parameterIndexCount)
+			return false;
+		fmlPiecewiseIndex = Fieldml_GetIndexEvaluator(this->fmlSession, fmlBindEvaluator, /*evaluatorIndex*/1);
+		if (fmlPiecewiseIndex == FML_INVALID_OBJECT_HANDLE)
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Parameter Evaluator %s has no index evaluator",
+				this->getName(fmlBindEvaluator).c_str());
+			return false;
+		}
+	}
+	else if (1 < bindCount)
+		return false;
+	FmlObjectHandle fmlIndexType = Fieldml_GetValueType(this->fmlSession, fmlPiecewiseIndex);
+	if (fmlIndexType != this->fmlElementsType)
+		return false;
+	fmlElementArgument = fmlPiecewiseIndex;
+	return true;
 }
 
 /** continuous-valued aggregates of piecewise varying with mesh elements are
@@ -1692,9 +1766,8 @@ int FieldMLReader::readAggregateFields()
 		const int componentCount = (fmlValueTypeComponentEnsembleType == FML_INVALID_OBJECT_HANDLE) ? 1 :
 			Fieldml_GetMemberCount(fmlSession, fmlValueTypeComponentEnsembleType);
 
-		// check aggregate components are piecewise over elements
-
-		bool piecewiseOverElements = true;
+		// check components are scalar, piecewise over elements
+		bool validComponents = true;
 		std::vector<FmlObjectHandle> fmlComponentEvaluators(componentCount, FML_INVALID_OBJECT_HANDLE);
 
 		FmlObjectHandle fmlElementArgument = FML_INVALID_OBJECT_HANDLE;
@@ -1710,48 +1783,34 @@ int FieldMLReader::readAggregateFields()
 				return_code = 0;
 				break;
 			}
-			FmlObjectHandle fmlIndexEvaluator = FML_INVALID_OBJECT_HANDLE;
-			if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlSession, fmlComponentEvaluators[ic]))
-			{
-				fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlComponentEvaluators[ic], /*evaluatorIndex*/1);
-			}
-			if (fmlElementArgument == FML_INVALID_OBJECT_HANDLE)
-			{
-				fmlElementArgument = fmlIndexEvaluator;
-			}
-			if ((FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlComponentEvaluators[ic])) ||
-				(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlComponentEvaluators[ic]))) ||
-				(Fieldml_GetValueType(fmlSession, fmlIndexEvaluator) != fmlElementsType))
+			FmlObjectHandle fmlComponentElementArgument = FML_INVALID_OBJECT_HANDLE;
+			if (!this->evaluatorIsScalarContinuousPiecewiseOverElements(
+				fmlComponentEvaluators[ic], fmlComponentElementArgument))
 			{
 				if (verbose)
-				{
-					display_message(WARNING_MESSAGE, "Read FieldML:  Aggregate %s component %d is not piecewise indexed by mesh elements ensemble",
+					display_message(WARNING_MESSAGE, "Read FieldML:  Aggregate %s component %d is not piecewise over elements",
 						fieldName.c_str(), componentIndex);
-				}
-				piecewiseOverElements = false;
+				validComponents = false;
 				break;
 			}
-			else if ((Fieldml_GetObjectType(fmlSession, fmlIndexEvaluator) != FHT_ARGUMENT_EVALUATOR) ||
-				(fmlIndexEvaluator != fmlElementArgument))
+			if (fmlElementArgument == FML_INVALID_OBJECT_HANDLE)
+				fmlElementArgument = fmlComponentElementArgument;
+			else if (fmlComponentElementArgument != fmlElementArgument)
 			{
-				display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s components must use same argument evaluator for element index",
-					fieldName.c_str());
-				return_code = 0;
+				if (verbose)
+					display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s components must use same element argument",
+						fieldName.c_str());
+				validComponents = false;
 				break;
 			}
 		}
 		if (!return_code)
-		{
 			break;
-		}
-		if (!piecewiseOverElements)
+		if (!validComponents)
 		{
 			if (verbose)
-			{
-				display_message(WARNING_MESSAGE,
-					"Read FieldML:  Aggregate %s cannot be interpreted as a field defined over a mesh. Skipping.",
+				display_message(WARNING_MESSAGE, "Read FieldML:  Aggregate %s cannot be interpreted as a field defined over a mesh. Skipping.",
 					fieldName.c_str());
-			}
 			continue;
 		}
 
@@ -1850,56 +1909,22 @@ int FieldMLReader::readReferenceFields()
 			continue;
 		}
 
-		// check reference evaluator is piecewise over elements
-		// GRC should check it is scalar too
-
-		bool piecewiseOverElements = true;
-
-		FmlObjectHandle fmlElementArgument = FML_INVALID_OBJECT_HANDLE;
-
+		// check reference evaluator is scalar, piecewise over elements
 		FmlObjectHandle fmlComponentEvaluator = Fieldml_GetReferenceSourceEvaluator(fmlSession, fmlReference);
 		if (fmlComponentEvaluator == FML_INVALID_OBJECT_HANDLE)
 		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Reference %s remove evaluator is missing", fieldName.c_str());
+			display_message(ERROR_MESSAGE, "Read FieldML:  Reference %s source evaluator is missing", fieldName.c_str());
 			return_code = 0;
 			break;
 		}
-
-		FmlObjectHandle fmlIndexEvaluator = FML_INVALID_OBJECT_HANDLE;
-		if (FHT_PIECEWISE_EVALUATOR == Fieldml_GetObjectType(fmlSession, fmlComponentEvaluator))
-		{
-			fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlComponentEvaluator, /*evaluatorIndex*/1);
-		}
-		if (fmlElementArgument == FML_INVALID_OBJECT_HANDLE)
-		{
-			fmlElementArgument = fmlIndexEvaluator;
-		}
-		if ((FHT_PIECEWISE_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlComponentEvaluator)) ||
-			(FHT_CONTINUOUS_TYPE != Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlComponentEvaluator))) ||
-			(Fieldml_GetValueType(fmlSession, fmlIndexEvaluator) != fmlElementsType))
+		FmlObjectHandle fmlElementArgument = FML_INVALID_OBJECT_HANDLE;
+		if (!this->evaluatorIsScalarContinuousPiecewiseOverElements(
+			fmlComponentEvaluator, fmlElementArgument))
 		{
 			if (verbose)
-			{
-				display_message(WARNING_MESSAGE, "Read FieldML:  Reference %s remote evaluator %s is not piecewise indexed by mesh elements ensemble",
-					fieldName.c_str(), getName(fmlComponentEvaluator).c_str());
-			}
-			piecewiseOverElements = false;
-		}
-		else if (Fieldml_GetObjectType(fmlSession, fmlIndexEvaluator) != FHT_ARGUMENT_EVALUATOR)
-		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Reference %s does not use an argument evaluator for element index",
-				fieldName.c_str());
-			return_code = 0;
-			break;
-		}
-		if (!piecewiseOverElements)
-		{
-			if (verbose)
-			{
 				display_message(WARNING_MESSAGE,
 					"Read FieldML:  Reference %s cannot be interpreted as a field defined over a mesh. Skipping.",
 					fieldName.c_str());
-			}
 			continue;
 		}
 
