@@ -121,3 +121,72 @@ TEST(ZincRegion, read_fieldml_tetmesh)
 	EXPECT_EQ(OK, result = surfaceArea.evaluateReal(cache, 1, &outSurfaceArea));
 	ASSERT_DOUBLE_EQ(2.7717561493468423, outSurfaceArea);
 }
+
+namespace {
+
+void check_wheel_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	EXPECT_EQ(OK, result = fm.defineAllFaces());
+	Mesh mesh3d = fm.findMeshByDimension(3);
+	EXPECT_EQ(12, mesh3d.getSize());
+	Mesh mesh2d = fm.findMeshByDimension(2);
+	EXPECT_EQ(48, mesh2d.getSize());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(61, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(129, nodes.getSize());
+
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral volume = fm.createFieldMeshIntegral(one, coordinates, mesh3d);
+	EXPECT_TRUE(volume.isValid());
+	const int pointCount = 2;
+	EXPECT_EQ(OK, result = volume.setNumbersOfPoints(1, &pointCount));
+
+	FieldElementGroup exteriorFacesGroup = fm.createFieldElementGroup(mesh2d);
+	EXPECT_TRUE(exteriorFacesGroup.isValid());
+	EXPECT_EQ(OK, result = exteriorFacesGroup.setManaged(true));
+	MeshGroup exteriorFacesMeshGroup = exteriorFacesGroup.getMeshGroup();
+	EXPECT_TRUE(exteriorFacesMeshGroup.isValid());
+	FieldIsExterior isExterior = fm.createFieldIsExterior();
+	EXPECT_TRUE(isExterior.isValid());
+	exteriorFacesMeshGroup.addElementsConditional(isExterior);
+	EXPECT_EQ(30, exteriorFacesMeshGroup.getSize());
+	FieldMeshIntegral surfaceArea = fm.createFieldMeshIntegral(one, coordinates, exteriorFacesMeshGroup);
+	EXPECT_TRUE(surfaceArea.isValid());
+	EXPECT_EQ(OK, result = surfaceArea.setNumbersOfPoints(1, &pointCount));
+
+	Fieldcache cache = fm.createFieldcache();
+	double outVolume;
+	EXPECT_EQ(OK, result = volume.evaluateReal(cache, 1, &outVolume));
+	ASSERT_DOUBLE_EQ(100.28718664065387, outVolume);
+	double outSurfaceArea;
+	EXPECT_EQ(OK, result = surfaceArea.evaluateReal(cache, 1, &outSurfaceArea));
+	ASSERT_DOUBLE_EQ(150.53218306379620, outSurfaceArea);
+}
+
+}
+
+// wheel_direct model defines a 3-D RC coordinates field over a wheel mesh
+// consisting of 6 wedge elements in the centre, and 6 cube elements around
+// them, all coordinates interpolated with triquadratic bases.
+// This model tests having variant element shapes and a piecewise field
+// template which directly maps element to function (basis + parameter map).
+// It also reads shapeids, node coordinates and connectivity (for wedge and
+// cube connectivity) from separate files, and the connectivity data uses
+// dictionary of keys (DOK) format with key data in the first column of the
+// same file.
+TEST(ZincRegion, read_fieldml_wheel_direct)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_FIELDML_WHEEL_DIRECT_RESOURCE)));
+	check_wheel_model(zinc.fm);
+}

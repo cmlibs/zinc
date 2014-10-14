@@ -52,7 +52,6 @@
 <DataResource name="mesh3d.connectivity.trilinearSimplex.nodes.resource">
  <DataResourceDescription>
   <DataResourceHref xlink:href="tetmesh.connectivity.txt" format="PLAIN_TEXT"/>
-  <!-- "C:\Users\gchr006\cmiss\zinc\library_unit_tests\fieldio\tetmesh.connectivity.txt" -->
  </DataResourceDescription>
  <ArrayDataSource name="mesh3d.connectivity.trilinearSimplex.nodes.data" location="1" rank="2">
   <RawArraySize>
@@ -97,7 +96,6 @@
 <DataResource name="coordinates.resource">
  <DataResourceDescription>
   <DataResourceHref xlink:href="tetmesh.coordinates.txt" format="PLAIN_TEXT"/>
-  <!-- "C:\Users\gchr006\cmiss\zinc\library_unit_tests\fieldio\tetmesh.coordinates.txt" -->
  </DataResourceDescription>
  <ArrayDataSource name="coordinates.data" location="1" rank="2">
   <RawArraySize>
