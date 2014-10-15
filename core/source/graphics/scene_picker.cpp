@@ -91,7 +91,7 @@ void cmzn_scenepicker::updateViewerRectangle()
 	}
 }
 
-int cmzn_scenepicker::getPickingRectangleCentreCoordinates(double *coordinateValuesOut3)
+int cmzn_scenepicker::getPickingVolumeCentre(double *coordinateValuesOut3)
 {
 	updateViewerRectangle();
 	if (interaction_volume)
@@ -762,10 +762,10 @@ int cmzn_scenepicker_add_picked_nodes_to_field_group(cmzn_scenepicker_id scenepi
 	return scenepicker->addPickedNodesToFieldGroup(group);
 }
 
-int cmzn_scenepicker_get_picking_rectangle_centre_coordinates(cmzn_scenepicker_id scenepicker,
+int cmzn_scenepicker_get_picking_volume_centre(cmzn_scenepicker_id scenepicker,
 	double *coordinateValuesOut3)
 {
-	return scenepicker->getPickingRectangleCentreCoordinates(coordinateValuesOut3);
+	return scenepicker->getPickingVolumeCentre(coordinateValuesOut3);
 }
 
 int cmzn_scenepicker_set_interaction_volume(cmzn_scenepicker_id scenepicker,

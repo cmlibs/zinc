@@ -137,9 +137,9 @@ public:
 		return cmzn_scenepicker_set_scenefilter(id, filter.getId());
 	}
 
-	int getPickingRectangleCentreCoordinates(double *coordinateValuesOut3)
+	int getPickingVolumeCentre(double *coordinateValuesOut3)
 	{
-		return cmzn_scenepicker_get_picking_rectangle_centre_coordinates(id, coordinateValuesOut3);
+		return cmzn_scenepicker_get_picking_volume_centre(id, coordinateValuesOut3);
 	}
 
 };
