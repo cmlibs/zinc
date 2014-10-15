@@ -176,6 +176,17 @@ ZINC_API int cmzn_scenepicker_add_picked_nodes_to_field_group(
 ZINC_API int cmzn_scenepicker_add_picked_elements_to_field_group(
 	cmzn_scenepicker_id scenepicker, cmzn_field_group_id group);
 
+/**
+ * Return the centre of the picking reactangle in world coordinates.
+ *
+ * @param scenepicker  The scene picker to pick the nearest element.
+ * @param coordinateValuesOut3 Array of size 3 to hold the values of
+ * 	the coordinates.
+ * @return Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_scenepicker_get_picking_rectangle_centre_coordinates(
+		cmzn_scenepicker_id scenepicker, double *coordinateValuesOut3);
+
 #ifdef __cplusplus
 }
 #endif
