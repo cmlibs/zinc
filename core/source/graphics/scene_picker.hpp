@@ -88,7 +88,7 @@ public:
 
 	int addPickedNodesToFieldGroup(cmzn_field_group_id group);
 
-	int getPickingRectangleCentreCoordinates(double *coordinateValuesOut3);
+	int getPickingVolumeCentre(double *coordinateValuesOut3);
 
 };
 
