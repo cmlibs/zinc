@@ -12,6 +12,8 @@
 
 %module(package="opencmiss.zinc") scenepicker
 
+%include "doublevaluesarraytypemap.i"
+
 %import "element.i"
 %import "graphics.i"
 %import "node.i"
