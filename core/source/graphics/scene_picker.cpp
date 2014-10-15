@@ -91,6 +91,22 @@ void cmzn_scenepicker::updateViewerRectangle()
 	}
 }
 
+int cmzn_scenepicker::getPickingRectangleCentreCoordinates(double *coordinateValuesOut3)
+{
+	updateViewerRectangle();
+	if (interaction_volume)
+	{
+		double normalised_point[3];
+		normalised_point[0]=0.0;
+		normalised_point[1]=0.0;
+		normalised_point[2]=0.0;
+		Interaction_volume_normalised_to_model_coordinates(
+			interaction_volume,normalised_point,coordinateValuesOut3);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_GENERAL;
+}
+
 int cmzn_scenepicker::pickObjects()
 {
 	double modelview_matrix[16],projection_matrix[16];
@@ -744,6 +760,12 @@ int cmzn_scenepicker_add_picked_nodes_to_field_group(cmzn_scenepicker_id scenepi
 	cmzn_field_group_id group)
 {
 	return scenepicker->addPickedNodesToFieldGroup(group);
+}
+
+int cmzn_scenepicker_get_picking_rectangle_centre_coordinates(cmzn_scenepicker_id scenepicker,
+	double *coordinateValuesOut3)
+{
+	return scenepicker->getPickingRectangleCentreCoordinates(coordinateValuesOut3);
 }
 
 int cmzn_scenepicker_set_interaction_volume(cmzn_scenepicker_id scenepicker,

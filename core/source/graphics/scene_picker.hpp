@@ -88,6 +88,8 @@ public:
 
 	int addPickedNodesToFieldGroup(cmzn_field_group_id group);
 
+	int getPickingRectangleCentreCoordinates(double *coordinateValuesOut3);
+
 };
 
 PROTOTYPE_OBJECT_FUNCTIONS(cmzn_scenepicker);
