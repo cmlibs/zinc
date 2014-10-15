@@ -190,3 +190,14 @@ TEST(ZincRegion, read_fieldml_wheel_direct)
 		TestResources::getLocation(TestResources::FIELDIO_FIELDML_WHEEL_DIRECT_RESOURCE)));
 	check_wheel_model(zinc.fm);
 }
+
+// wheel_indirect model is the same as the wheel_direct model except that it
+// uses a more efficient indirect element-to-function map
+TEST(ZincRegion, read_fieldml_wheel_indirect)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_FIELDML_WHEEL_INDIRECT_RESOURCE)));
+	check_wheel_model(zinc.fm);
+}

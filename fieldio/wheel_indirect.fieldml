@@ -193,25 +193,19 @@
  </Bindings>
 </ReferenceEvaluator>
 
-<!-- direct mapping from element to function: verbose for large mesh -->
+<!-- indirect mapping from element to function via parameter map to shapeid.
+  Scales well, keeping XML size constant for large meshes -->
 <PiecewiseEvaluator name="mesh3d.template1" valueType="real.1d">
- <IndexEvaluators>
-  <IndexEvaluator evaluator="mesh3d.argument.elements" indexNumber="1" />
- </IndexEvaluators>
- <EvaluatorMap>
-  <EvaluatorMapEntry value="1" evaluator="mesh3d.triquadraticWedge12"/>
-  <EvaluatorMapEntry value="2" evaluator="mesh3d.triquadraticWedge12"/>
-  <EvaluatorMapEntry value="3" evaluator="mesh3d.triquadraticWedge12"/>
-  <EvaluatorMapEntry value="4" evaluator="mesh3d.triquadraticWedge12"/>
-  <EvaluatorMapEntry value="5" evaluator="mesh3d.triquadraticWedge12"/>
-  <EvaluatorMapEntry value="6" evaluator="mesh3d.triquadraticWedge12"/>
-  <EvaluatorMapEntry value="7" evaluator="mesh3d.triquadraticLagrange"/>
-  <EvaluatorMapEntry value="8" evaluator="mesh3d.triquadraticLagrange"/>
-  <EvaluatorMapEntry value="9" evaluator="mesh3d.triquadraticLagrange"/>
-  <EvaluatorMapEntry value="10" evaluator="mesh3d.triquadraticLagrange"/>
-  <EvaluatorMapEntry value="11" evaluator="mesh3d.triquadraticLagrange"/>
-  <EvaluatorMapEntry value="12" evaluator="mesh3d.triquadraticLagrange"/>
- </EvaluatorMap>
+  <Bindings>
+    <Bind argument="mesh3d.shapeid.argument" source="wheel.mesh3d.shapeid" />
+  </Bindings>
+  <IndexEvaluators>
+    <IndexEvaluator evaluator="mesh3d.shapeid.argument" indexNumber="1" />
+  </IndexEvaluators>
+  <EvaluatorMap>
+    <EvaluatorMapEntry value="1" evaluator="mesh3d.triquadraticWedge12"/>
+    <EvaluatorMapEntry value="2" evaluator="mesh3d.triquadraticLagrange"/>
+  </EvaluatorMap>
 </PiecewiseEvaluator>
 
 <!-- Interpolated field definitions -->
