@@ -591,8 +591,9 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	int sparseIndexCount = 0;
 	cmzn_field_ensemble_id *sparseIndexEnsembles = 0;
 	FmlObjectHandle fmlKeyDataSource = FML_INVALID_HANDLE;
-	int keyArraySizes[2] = { 1, 0 };
-	int keyArrayOffsets[2] = { 0, 0 };
+	int keyArrayRawSizes[2];
+	int keyArraySizes[2];
+	int keyArrayOffsets[2];
 	if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
 	{
 		sparseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/1);
@@ -618,14 +619,30 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 				getName(fmlKeyDataSource).c_str(), name);
 			return_code = 0;
 		}
-		else if ((FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceSizes(fmlSession, fmlKeyDataSource, keyArraySizes)) ||
-			(keyArraySizes[0] != arraySizes[0]) || (keyArraySizes[1] != sparseIndexCount))
+		else if ((FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceRawSizes(fmlSession, fmlKeyDataSource, keyArrayRawSizes)) ||
+			(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceSizes(fmlSession, fmlKeyDataSource, keyArraySizes)) ||
+			(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceOffsets(fmlSession, fmlKeyDataSource, keyArrayOffsets)))
 		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Invalid array sizes for key data source %s for parameters %s",
+			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to get array sizes for key data source %s for parameters %s",
 				getName(fmlKeyDataSource).c_str(), name);
 			return_code = 0;
 		}
 		else
+		{
+			// zero array size means use raw size less offset
+			for (int r = 0; r < 2; ++r)
+			{
+				if (keyArraySizes[r] == 0)
+					keyArraySizes[r] = keyArrayRawSizes[r] - keyArrayOffsets[r];
+			}
+			if ((keyArraySizes[0] != arraySizes[0]) || (keyArraySizes[1] != sparseIndexCount))
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Invalid array sizes for key data source %s for parameters %s",
+					getName(fmlKeyDataSource).c_str(), name);
+				return_code = 0;
+			}
+		}
+		if (return_code)
 		{
 			for (int i = 0; i < sparseIndexCount; i++)
 			{
@@ -730,7 +747,8 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 		}
 		if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
 		{
-			ioResult = Fieldml_ReadIntSlab(fmlKeyReader, keyArrayOffsets, keyArraySizes, keyBuffer);
+			int keyArrayReadOffsets[2] = { 0, 0 };
+			ioResult = Fieldml_ReadIntSlab(fmlKeyReader, keyArrayReadOffsets, keyArraySizes, keyBuffer);
 			if (ioResult != FML_IOERR_NO_ERROR)
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Failed to read key data source %s for parameters %s",
@@ -1544,6 +1562,22 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	}
 	std::vector<FmlObjectHandle> fmlElementEvaluators(componentCount, FML_INVALID_OBJECT_HANDLE);
 	std::vector<ElementFieldComponent*> components(componentCount, (ElementFieldComponent*)0);
+	std::vector<cmzn_field_integer_parameters*> componentFunctionMap(componentCount, (cmzn_field_integer_parameters*)0);
+	std::vector<cmzn_ensemble_index*> componentFunctionIndex(componentCount, (cmzn_ensemble_index*)0);
+	for (int ic = 0; ic < componentCount; ic++)
+	{
+		int bindCount = Fieldml_GetBindCount(fmlSession, fmlComponentEvaluators[ic]);
+		if (1 == bindCount)
+		{
+			// recognised indirect form: a parameter mapping element to piecewise index
+			FmlObjectHandle fmlComponentFunctionMapEvaluator =
+				Fieldml_GetBindEvaluator(fmlSession, fmlComponentEvaluators[ic], 1);
+			cmzn_field_id parameterMap = getParameters(fmlComponentFunctionMapEvaluator);
+			componentFunctionMap[ic] = cmzn_field_cast_integer_parameters(parameterMap);
+			componentFunctionIndex[ic] = cmzn_field_integer_parameters_create_index(componentFunctionMap[ic]);
+			cmzn_field_destroy(&parameterMap);
+		}
+	}
 	while (return_code)
 	{
 		int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
@@ -1551,9 +1585,20 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		bool definedOnAllComponents = true;
 		for (int ic = 0; ic < componentCount; ic++)
 		{
-			// TODO: HANDLE INDIRECT MAP TO ELEMENT EVALUATOR
-			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession, fmlComponentEvaluators[ic],
-				static_cast<int>(elementIdentifier), /*allowDefault*/1);
+			int functionId = elementIdentifier;
+			if (componentFunctionMap[ic])
+			{
+				// handle indirect element to function map
+				if (!(cmzn_ensemble_index_set_entry(componentFunctionIndex[ic], elementsIterator) &&
+					cmzn_field_integer_parameters_get_values(componentFunctionMap[ic],
+						componentFunctionIndex[ic], 1, &functionId)))
+				{
+					definedOnAllComponents = false;
+					break;
+				}
+			}
+			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession,
+				fmlComponentEvaluators[ic], functionId, /*allowDefault*/1);
 			if (fmlElementEvaluator != fmlElementEvaluators[ic])
 			{
 				fmlElementEvaluators[ic] = fmlElementEvaluator;
@@ -1674,6 +1719,11 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		}
 		if (!cmzn_ensemble_iterator_increment(elementsIterator))
 			break;
+	}
+	for (int ic = 0; ic < componentCount; ic++)
+	{
+		cmzn_field_integer_parameters_destroy(&(componentFunctionMap[ic]));
+		cmzn_ensemble_index_destroy(&(componentFunctionIndex[ic]));
 	}
 	cmzn_ensemble_iterator_destroy(&elementsIterator);
 	cmzn_field_ensemble_destroy(&elementsEnsemble);
