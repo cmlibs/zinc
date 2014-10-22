@@ -1767,7 +1767,7 @@ will produce the range of all the graphics objects.
 ==============================================================================*/
 {
 	GLfloat *maximum,*minimum;
-	int *first, i, j, number_of_times = 0,	return_code = 0;
+	int *first, j, number_of_times = 0,	return_code = 0;
 	struct Graphics_object_range_struct *graphics_object_range;
 	union GT_primitive_list *primitive_list;
 
@@ -1861,7 +1861,7 @@ will produce the range of all the graphics objects.
 						{
 							if (*first)
 							{
-								for (i = 0 ; i < values_per_vertex ; i++)
+								for (unsigned int i = 0 ; i < values_per_vertex ; i++)
 									minimum[i] = maximum[i] = vertex_buffer[i];
 								--vertex_count;
 								vertex_buffer += values_per_vertex;
@@ -1869,7 +1869,7 @@ will produce the range of all the graphics objects.
 							}
 							while (vertex_count>0)
 							{
-								for (i = 0 ; i < values_per_vertex ; i++)
+								for (unsigned int i = 0 ; i < values_per_vertex ; i++)
 								{
 									if (vertex_buffer[i] < minimum[i])
 										minimum[i] = vertex_buffer[i];

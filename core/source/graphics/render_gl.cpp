@@ -1723,7 +1723,7 @@ static int Graphics_object_compile_opengl_vertex_buffer_object(GT_object *object
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW);
 		object->vertex_array->clear_specified_buffer(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_PARTIAL_REDRAW_COUNT);
-		object->compile_status == GRAPHICS_COMPILED;
+		object->compile_status = GRAPHICS_COMPILED;
 	}
 	else
 	{
@@ -3297,7 +3297,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						draw_vertexBufferGlyphset(object,
 							material, secondary_material, spectrum,
 							//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
-							draw_selected, renderer->highlight_functor,
+							(draw_selected > 0 ), renderer->highlight_functor,
 							renderer, lighting_on, rendering_type, picking_names);
 #if defined (OPENGL_API)
 						if (picking_names)
