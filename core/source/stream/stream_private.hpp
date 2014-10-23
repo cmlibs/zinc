@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_stream_private.hpp
+ * FILE : stream_private.hpp
  *
  * The private interface to cmzn_stream.
  *

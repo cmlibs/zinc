@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_field_image_stream.cpp
+ * FILE : field_image_stream.cpp
  *
  * The definition to cmzn_field_image_stream.
  *
@@ -19,7 +19,7 @@
 #include "graphics/texture.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
-#include "stream/cmiss_field_image_stream.hpp"
+#include "stream/field_image_stream.hpp"
 #include "image_io/analyze.h"
 
 int cmzn_field_image_read(cmzn_field_image_id image_field,

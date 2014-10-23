@@ -16,7 +16,7 @@
 #include "zinc/field.h"
 #include "zinc/fieldimage.h"
 #include "general/image_utilities.h"
-#include "stream/cmiss_stream_private.hpp"
+#include "stream/stream_private.hpp"
 
 struct cmzn_streaminformation_image : cmzn_streaminformation
 {

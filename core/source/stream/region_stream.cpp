@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_region_stream.cpp
+ * FILE : region_stream.cpp
  *
  * The definition to cmzn_region_stream.
  *
@@ -17,7 +17,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "region/cmiss_region.h"
-#include "stream/cmiss_region_stream.hpp"
+#include "stream/region_stream.hpp"
 
 namespace {
 
