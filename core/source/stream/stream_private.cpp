@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : cmiss_stream_private.cpp
+ * FILE : stream_private.cpp
  *
- * The definition to cmiss_stream.
+ * The definition to cmzn_stream.
  *
  */
 /* OpenCMISS-Zinc Library
@@ -13,7 +13,7 @@
 #include "zinc/stream.h"
 #include "general/debug.h"
 #include "general/mystring.h"
-#include "stream/cmiss_stream_private.hpp"
+#include "stream/stream_private.hpp"
 
 cmzn_streamresource_id cmzn_streamresource_access(cmzn_streamresource_id resource)
 {

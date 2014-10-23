@@ -29,7 +29,7 @@ SET( GENERAL_SRCS
 	source/general/statistics.cpp
 	source/general/time.cpp
 	source/general/value.cpp
-	source/stream/cmiss_stream_private.cpp )
+	source/stream/stream_private.cpp )
 SET( GENERAL_HDRS
 	source/general/any_object.h
 	source/general/any_object_definition.h
@@ -76,7 +76,7 @@ SET( GENERAL_HDRS
 	source/general/statistics.h
 	source/general/time.h
 	source/general/value.h
-	source/stream/cmiss_stream_private.hpp )
+	source/stream/stream_private.hpp )
 IF( NOT HAVE_VFSCANF )
 	SET( GENERAL_SRCS ${GENERAL_SRCS}
 		source/general/alt_vfscanf.c )

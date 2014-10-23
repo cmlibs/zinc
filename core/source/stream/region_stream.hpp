@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : cmiss_region_stream.hpp
+ * FILE : region_stream.hpp
  *
  * The private interface to cmzn_region_stream.
  *
@@ -16,7 +16,7 @@
 #include "zinc/types/fieldid.h"
 #include "zinc/region.h"
 #include "zinc/status.h"
-#include "stream/cmiss_stream_private.hpp"
+#include "stream/stream_private.hpp"
 
 struct cmzn_region_resource_properties : cmzn_resource_properties
 {
