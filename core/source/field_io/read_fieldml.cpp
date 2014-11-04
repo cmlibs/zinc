@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : read_fieldml.cpp
  * 
  * Functions for importing regions and fields from FieldML 0.4+ documents.
@@ -22,12 +22,12 @@
 #include "zinc/node.h"
 #include "zinc/region.h"
 #include "zinc/status.h"
-#include "field_io/cmiss_field_ensemble.h"
-#include "field_io/cmiss_field_parameters.h"
+#include "datastore/map.hpp"
 #include "field_io/read_fieldml.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
+#include "general/refcounted.hpp"
 #include "fieldml_api.h"
 #include "FieldmlIoApi.h"
 
@@ -102,19 +102,11 @@ const BasisType libraryBases[] =
 
 const int numLibraryBases = sizeof(libraryBases) / sizeof(BasisType);
 
-struct ConnectivityData
-{
-	int firstLocalNode;
-	FmlObjectHandle fmlConnectivityDomain;
-	FmlObjectHandle fmlConnectivitySource;
-	cmzn_field_ensemble_id localNodeEnsemble;
-};
-
 struct ElementFieldComponent
 {
 	cmzn_elementbasis_id element_basis;
-	cmzn_field_integer_parameters_id local_point_to_node;
-	cmzn_ensemble_index_id index;
+	HDsMapInt local_point_to_node;
+	HDsMapIndexing indexing;
 	int local_point_count;
 	const int *swizzle;
 	int *local_point_indexes;
@@ -122,14 +114,14 @@ struct ElementFieldComponent
 	int *node_identifiers;
 
 	ElementFieldComponent(cmzn_elementbasis_id element_basis,
-			cmzn_field_integer_parameters_id local_point_to_node,
-			cmzn_ensemble_index_id index, int local_point_count,
-			const int *swizzle) :
+			HDsMapInt local_point_to_nodeIn,
+			HDsMapIndexing indexingIn, int local_point_countIn,
+			const int *swizzleIn) :
 		element_basis(element_basis),
-		local_point_to_node(local_point_to_node),
-		index(index),
-		local_point_count(local_point_count),
-		swizzle(swizzle),
+		local_point_to_node(local_point_to_nodeIn),
+		indexing(indexingIn),
+		local_point_count(local_point_countIn),
+		swizzle(swizzleIn),
 		local_point_indexes(new int[local_point_count]),
 		swizzled_local_point_indexes(new int[local_point_count]),
 		node_identifiers(new int[local_point_count])
@@ -139,8 +131,6 @@ struct ElementFieldComponent
 	~ElementFieldComponent()
 	{
 		cmzn_elementbasis_destroy(&element_basis);
-		cmzn_field_integer_parameters_destroy(&local_point_to_node);
-		cmzn_ensemble_index_destroy(&index);
 		delete[] local_point_indexes;
 		delete[] swizzled_local_point_indexes;
 		delete[] node_identifiers;
@@ -148,6 +138,9 @@ struct ElementFieldComponent
 };
 
 typedef std::map<FmlObjectHandle,ElementFieldComponent*> EvaluatorElementFieldComponentMap;
+typedef std::map<FmlObjectHandle,HDsLabels> FmlObjectLabelsMap;
+typedef std::map<FmlObjectHandle,HDsMapInt> FmlObjectIntParametersMap;
+typedef std::map<FmlObjectHandle,HDsMapDouble> FmlObjectDoubleParametersMap;
 
 class FieldMLReader
 {
@@ -159,6 +152,9 @@ class FieldMLReader
 	FmlObjectHandle fmlNodesType;
 	FmlObjectHandle fmlElementsType;
 	EvaluatorElementFieldComponentMap componentMap;
+	FmlObjectLabelsMap labelsMap;
+	FmlObjectIntParametersMap intParametersMap;
+	FmlObjectDoubleParametersMap doubleParametersMap;
 	bool verbose;
 	int nameBufferLength;
 	char *nameBuffer; // buffer for reading object names into
@@ -230,12 +226,14 @@ private:
 		}
 		return std::string(nameBuffer);
 	}
-	cmzn_field_ensemble_id getEnsemble(FmlObjectHandle fmlEnsemble);
 
-	int readParametersArray(FmlObjectHandle fmlParameters,
-		cmzn_field_id parameters, const char *name);
+	DsLabels *getLabelsForEnsemble(FmlObjectHandle fmlEnsemble);
 
-	cmzn_field_id getParameters(FmlObjectHandle fmlParameters);
+	template <typename VALUETYPE> int readParametersArray(FmlObjectHandle fmlParameters,
+		DsMap<VALUETYPE>& parameters);
+
+	DsMap<int> *FieldMLReader::getEnsembleParameters(FmlObjectHandle fmlParameters);
+	DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParameters);
 
 	enum cmzn_element_shape_type getElementShapeFromName(const char *shapeName);
 
@@ -270,57 +268,21 @@ private:
 
 };
 
-// GRC This should be in ensemble class & made more efficient
-int cmzn_field_ensemble_add_identifier_range(cmzn_field_ensemble_id ensemble,
-	int min, int max, int stride)
-{
-#ifdef DEBUG_CODE
-	{
-		char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
-		display_message(INFORMATION_MESSAGE, "cmzn_field_ensemble_add_identifier_range: Ensemble %s min %d max %d (stride %d)\n", name, min, max, stride);
-		DEALLOCATE(name);
-	}
-#endif // DEBUG_CODE
-	if ((!ensemble) || (max < min) || (stride < 1))
-	{
-		char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
-		display_message(ERROR_MESSAGE, "Read FieldML:  Invalid range min=%d max=%d stride=%d for ensemble type %s",
-			min, max, stride, name);
-		DEALLOCATE(name);
-		return 0;
-	}
-	for (FmlEnsembleValue identifier = min; identifier <= max; identifier += stride)
-	{
-#ifdef DEBUG_CODE
-		char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
-		display_message(INFORMATION_MESSAGE, "Read FieldML:  Ensemble %s identifier %d (%d:%d)\n", name, identifier, min, max);
-		DEALLOCATE(name);
-#endif // DEBUG_CODE
-		cmzn_ensemble_iterator_id iterator =
-			cmzn_field_ensemble_find_or_create_entry(ensemble, identifier);
-		if (!iterator)
-		{
-			char *name = cmzn_field_get_name(cmzn_field_ensemble_base_cast(ensemble));
-			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to create member %d for ensemble type %s",
-				identifier, name);
-			DEALLOCATE(name);
-			return 0;
-		}
-		cmzn_ensemble_iterator_destroy(&iterator);
-	}
-	return 1;
-}
-
-/***************************************************************************//**
- * Gets ensemble type matching fmlEnsembleType. Definition is read from
+/**
+ * Gets handle to DsLabels matching fmlEnsembleType. Definition is read from
  * FieldML document only when first requested.
- * ???GRC technically, this should make ensembles from the argument, not the type
+ * ???GRC Assumes there is only one argument for each type; consider having a
+ * separate class to represent each argument.
  *
  * @param fmlEnsembleType  Handle of type FHT_ENSEMBLE_TYPE.
- * @return  Accessed handle to ensemble field, or 0 on failure */
-cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleType)
+ * @return  Accessed pointer to labels, or 0 on failure */
+DsLabels *FieldMLReader::getLabelsForEnsemble(FmlObjectHandle fmlEnsembleType)
 {
-	std::string name = getName(fmlEnsembleType);
+	FmlObjectLabelsMap::iterator iterator = this->labelsMap.find(fmlEnsembleType);
+	if (iterator != labelsMap.end())
+		return cmzn::ACCESS(iterator->second.getObject());
+
+	std::string name = this->getName(fmlEnsembleType);
 	if (name.length()==0)
 	{
 		// GRC workaround for ensemble types that have not been imported
@@ -329,22 +291,7 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 	}
 	if (Fieldml_GetObjectType(fmlSession, fmlEnsembleType) != FHT_ENSEMBLE_TYPE)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Argument %s is not ensemble type", name.c_str());
-		return 0;
-	}
-	cmzn_field_id ensemble_field = cmzn_fieldmodule_find_field_by_name(field_module, name.c_str());
-	if (isProcessed(fmlEnsembleType))
-	{
-		cmzn_field_ensemble_id ensemble = cmzn_field_cast_ensemble(ensemble_field);
-		cmzn_field_destroy(&ensemble_field);
-		return ensemble;
-	}
-	if (ensemble_field)
-	{
-		// current code is not able to merge into existing ensemble because parameters
-		// may be densely indexed by ensemble as it is in FieldML document
-		display_message(ERROR_MESSAGE, "Read FieldML:  Cannot merge ensemble type %s", name.c_str());
-		cmzn_field_destroy(&ensemble_field);
+		display_message(ERROR_MESSAGE, "FieldMLReader::getLabelsForEnsemble:  Argument %s is not ensemble type", name.c_str());
 		return 0;
 	}
 
@@ -374,22 +321,20 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 	{
 		display_message(INFORMATION_MESSAGE, "Reading ensemble type %s\n", name.c_str());
 	}
-	ensemble_field = cmzn_fieldmodule_create_field_ensemble(field_module);
-	cmzn_field_set_name(ensemble_field, name.c_str());
-	cmzn_field_set_managed(ensemble_field, true);
-	cmzn_field_ensemble_id ensemble = cmzn_field_cast_ensemble(ensemble_field);
-	cmzn_field_destroy(&ensemble_field);
-	if (!ensemble)
-	{
-		return 0;
-	}
+	HDsLabels labels(new DsLabels());
+	labels->setName(name);
+	this->setProcessed(fmlEnsembleType);
+	this->labelsMap[fmlEnsembleType] = labels;
+
 	int return_code = 1;
 	if (FML_ENSEMBLE_MEMBER_RANGE == fmlEnsembleMembersType)
 	{
 		FmlEnsembleValue min = Fieldml_GetEnsembleMembersMin(fmlSession, fmlEnsembleType);
 		FmlEnsembleValue max = Fieldml_GetEnsembleMembersMax(fmlSession, fmlEnsembleType);
 		int stride = Fieldml_GetEnsembleMembersStride(fmlSession, fmlEnsembleType);
-		return_code = cmzn_field_ensemble_add_identifier_range(ensemble, min, max, stride);
+		int result = labels->addLabelsRange(min, max, stride);
+		if (result != CMZN_OK)
+			return 0;
 	}
 	else
 	{
@@ -443,17 +388,23 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 					switch (fmlEnsembleMembersType)
 					{
 					case FML_ENSEMBLE_MEMBER_LIST_DATA:
-						return_code = cmzn_field_ensemble_add_identifier_range(ensemble,
-							/*min*/rangeData[i], /*max*/rangeData[i], /*stride*/1);
-						break;
+					{
+						int result = labels->findOrCreateLabel(rangeData[i]);
+						if (result != CMZN_OK)
+							return_code = 0;
+					} break;
 					case FML_ENSEMBLE_MEMBER_RANGE_DATA:
-						return_code = cmzn_field_ensemble_add_identifier_range(ensemble,
-							/*min*/rangeData[i*2], /*max*/rangeData[i*2 + 1], /*stride*/1);
-						break;
+					{
+						int result = labels->addLabelsRange(/*min*/rangeData[i*2], /*max*/rangeData[i*2 + 1]);
+						if (result != CMZN_OK)
+							return_code = 0;
+					} break;
 					case FML_ENSEMBLE_MEMBER_STRIDE_RANGE_DATA:
-						return_code = cmzn_field_ensemble_add_identifier_range(ensemble,
-							/*min*/rangeData[i*3], /*max*/rangeData[i*3 + 1], /*stride*/rangeData[i*3 + 2]);
-						break;
+					{
+						int result = labels->addLabelsRange(/*min*/rangeData[i*3], /*max*/rangeData[i*3 + 1], /*stride*/rangeData[i*3 + 2]);
+						if (result != CMZN_OK)
+							return_code = 0;
+					} break;
 					default:
 						// should never happen - see switch above
 						display_message(ERROR_MESSAGE, "Read FieldML:  Unexpected ensemble members type");
@@ -465,11 +416,10 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 						break;
 					}
 				}
-				int ensembleSize = cmzn_field_ensemble_get_size(ensemble);
-				if (return_code && (ensembleSize != memberCount))
+				if (return_code && (labels->getSize() != memberCount))
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Ensemble type %s lists member count %d, actual number in data source is %d",
-						name.c_str(), memberCount, ensembleSize);
+						name.c_str(), memberCount, labels->getSize());
 					return_code = 0;
 				}
 			}
@@ -477,22 +427,33 @@ cmzn_field_ensemble_id FieldMLReader::getEnsemble(FmlObjectHandle fmlEnsembleTyp
 			Fieldml_CloseReader(fmlReader);
 		}
 	}
-	if (return_code)
-	{
-		setProcessed(fmlEnsembleType);
-	}
-	else
-	{
-		cmzn_field_ensemble_destroy(&ensemble);
-	}
-	return ensemble;
+	if (!return_code)
+		return 0;
+	return cmzn::ACCESS(labels.getObject());
+}
+
+// template and full specialisations to read different types with template
+template <typename VALUETYPE> FmlIoErrorNumber FieldML_ReadSlab(
+	FmlReaderHandle readerHandle, const int *offsets, const int *sizes, VALUETYPE *valueBuffer);
+
+template <> inline FmlIoErrorNumber FieldML_ReadSlab(
+	FmlReaderHandle readerHandle, const int *offsets, const int *sizes, double *valueBuffer)
+{
+	return Fieldml_ReadDoubleSlab(readerHandle, offsets, sizes, valueBuffer);
+}
+
+template <> inline FmlIoErrorNumber FieldML_ReadSlab(
+	FmlReaderHandle readerHandle, const int *offsets, const int *sizes, int *valueBuffer)
+{
+	return Fieldml_ReadIntSlab(readerHandle, offsets, sizes, valueBuffer);
 }
 
 // TODO : Support order
 // ???GRC can order cover subset of ensemble?
-int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
-	cmzn_field_id parameters, const char *name)
+template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
+	DsMap<VALUETYPE>& parameters)
 {
+	std::string name = this->getName(fmlParameters);
 	FieldmlDataDescriptionType dataDescription = Fieldml_GetParameterDataDescription(fmlSession, fmlParameters);
 	if ((dataDescription != FML_DATA_DESCRIPTION_DENSE_ARRAY) &&
 		(dataDescription != FML_DATA_DESCRIPTION_DOK_ARRAY))
@@ -500,25 +461,14 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 		display_message(ERROR_MESSAGE, "Read FieldML:  Unknown data description for parameters %s; must be dense array or DOK array", name);
 		return 0;
 	}
-	cmzn_field_real_parameters_id realParameters = cmzn_field_cast_real_parameters(parameters);
-	cmzn_field_integer_parameters_id integerParameters = cmzn_field_cast_integer_parameters(parameters);
-	if ((!realParameters) && (!integerParameters))
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Invalid parameters field type");
-		return 0;
-	}
 
 	int return_code = 1;
 	const int recordIndexCount = (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY) ? 1 : 0;
 
 	const int denseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/0);
-	cmzn_field_ensemble_id *denseIndexEnsembles = new cmzn_field_ensemble_id[denseIndexCount];
-	cmzn_ensemble_iterator_id *denseIterators = new cmzn_ensemble_iterator_id[denseIndexCount];
-	for (int i = 0; i < denseIndexCount; i++)
-	{
-		denseIndexEnsembles[i] = 0;
-		denseIterators[i] = 0;
-	}
+
+	std::vector<HDsLabels> denseIndexLabels(denseIndexCount);
+	std::vector<HDsLabelIterator> denseLabelIterators(denseIndexCount);
 	int arrayRank = 0;
 	int *arrayRawSizes = 0;
 	int *arrayOffsets = 0;
@@ -572,13 +522,13 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 				return_code = 0;
 				break;
 			}
-			denseIndexEnsembles[i] = getEnsemble(fmlDenseIndexType);
-			if (!denseIndexEnsembles[i])
+			denseIndexLabels[i] = HDsLabels(this->getLabelsForEnsemble(fmlDenseIndexType));
+			if (!denseIndexLabels[i])
 			{
 				return_code = 0;
 				break;
 			}
-			denseIterators[i] = cmzn_field_ensemble_get_first_entry(denseIndexEnsembles[i]);
+			denseLabelIterators[i] = HDsLabelIterator(denseIndexLabels[i]->createLabelIterator());
 			FmlObjectHandle fmlOrderDataSource = Fieldml_GetParameterIndexOrder(fmlSession, fmlParameters, i + 1);
 			if (fmlOrderDataSource != FML_INVALID_HANDLE)
 			{
@@ -589,7 +539,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	}
 
 	int sparseIndexCount = 0;
-	cmzn_field_ensemble_id *sparseIndexEnsembles = 0;
+	std::vector<HDsLabels> sparseIndexLabels;
 	FmlObjectHandle fmlKeyDataSource = FML_INVALID_HANDLE;
 	int keyArrayRawSizes[2];
 	int keyArraySizes[2];
@@ -597,11 +547,6 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
 	{
 		sparseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/1);
-		sparseIndexEnsembles = new cmzn_field_ensemble_id[sparseIndexCount];
-		for (int i = 0; i < sparseIndexCount; i++)
-		{
-			sparseIndexEnsembles[i] = 0;
-		}
 		fmlKeyDataSource = Fieldml_GetKeyDataSource(fmlSession, fmlParameters);
 		if (fmlKeyDataSource == FML_INVALID_HANDLE)
 		{
@@ -648,8 +593,8 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 			{
 				FmlObjectHandle fmlSparseIndexEvaluator = Fieldml_GetParameterIndexEvaluator(fmlSession, fmlParameters, i + 1, /*isSparse*/1);
 				FmlObjectHandle fmlSparseIndexType = Fieldml_GetValueType(fmlSession, fmlSparseIndexEvaluator);
-				sparseIndexEnsembles[i] = getEnsemble(fmlSparseIndexType);
-				if (!sparseIndexEnsembles[i])
+				sparseIndexLabels.push_back(HDsLabels(getLabelsForEnsemble(fmlSparseIndexType)));
+				if (!sparseIndexLabels[i])
 				{
 					return_code = 0;
 					break;
@@ -658,13 +603,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 		}
 	}
 
-	cmzn_ensemble_index_id index = realParameters ?
-		cmzn_field_real_parameters_create_index(realParameters) :
-		cmzn_field_integer_parameters_create_index(integerParameters);
-	if (!index)
-	{
-		return_code = 0;
-	}
+	HDsMapIndexing indexing(parameters.createIndexing());
 
 	int valueBufferSize = 1;
 	int totalDenseSize = 1;
@@ -678,20 +617,12 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 				totalDenseSize *= arraySizes[r];
 		}
 	}
-	double *realValueBuffer = 0;
+	VALUETYPE *valueBuffer = new VALUETYPE[valueBufferSize];
 	int *integerValueBuffer = 0;
 	int *keyBuffer = 0;
 	if (return_code)
 	{
-		if (realParameters)
-		{
-			realValueBuffer = new double[valueBufferSize];
-		}
-		else
-		{
-			integerValueBuffer = new int[valueBufferSize];
-		}
-		if ((0 == realValueBuffer) && (0 == integerValueBuffer))
+		if (0 == valueBuffer)
 		{
 			return_code = 0;
 		}
@@ -731,14 +662,7 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 	if (return_code)
 	{
 		FmlIoErrorNumber ioResult = FML_IOERR_NO_ERROR;
-		if (realValueBuffer)
-		{
-			ioResult = Fieldml_ReadDoubleSlab(fmlReader, arrayOffsets, arraySizes, realValueBuffer);
-		}
-		else
-		{
-			ioResult = Fieldml_ReadIntSlab(fmlReader, arrayOffsets, arraySizes, integerValueBuffer);
-		}
+		ioResult = FieldML_ReadSlab(fmlReader, arrayOffsets, arraySizes, valueBuffer);
 		if (ioResult != FML_IOERR_NO_ERROR)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to read data source %s for parameters %s",
@@ -763,195 +687,140 @@ int FieldMLReader::readParametersArray(FmlObjectHandle fmlParameters,
 		const int recordCount = (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY) ? arraySizes[0] : 1;
 		for (int record = 0; (record < recordCount) && return_code; ++record)
 		{
-			if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
-			{
-				for (int i = 0; i < sparseIndexCount; i++)
-				{
-					// should make convenience function for these three calls
-					cmzn_ensemble_iterator_id entry =
-						cmzn_field_ensemble_find_entry_by_identifier(sparseIndexEnsembles[i], keyBuffer[record*sparseIndexCount + i]);
-					cmzn_ensemble_index_set_entry(index, entry);
-					cmzn_ensemble_iterator_destroy(&entry);
-				}
-			}
-			if (realParameters)
-			{
-				return_code = cmzn_field_real_parameters_set_values(realParameters,
-					index, totalDenseSize, realValueBuffer + record*totalDenseSize);
-			}
-			else
-			{
-				return_code = cmzn_field_integer_parameters_set_values(integerParameters,
-					index, totalDenseSize, integerValueBuffer + record*totalDenseSize);
-			}
+			for (int i = 0; i < sparseIndexCount; i++)
+				indexing->setEntryIdentifier(*(sparseIndexLabels[i]), keyBuffer[record*sparseIndexCount + i]);
+			return_code = parameters.setValues(*indexing, totalDenseSize, valueBuffer + record*totalDenseSize);
 		}
 	}
 
 	if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
-	{
 		Fieldml_CloseReader(fmlKeyReader);
-	}
 	Fieldml_CloseReader(fmlReader);
-	if (sparseIndexEnsembles)
-	{
-		for (int i = 0; i < sparseIndexCount; i++)
-		{
-			cmzn_field_ensemble_destroy(&(sparseIndexEnsembles[i]));
-		}
-		delete[] sparseIndexEnsembles;
-	}
-	if (denseIndexEnsembles)
-	{
-		for (int i = 0; i < denseIndexCount; i++)
-		{
-			cmzn_field_ensemble_destroy(&(denseIndexEnsembles[i]));
-		}
-		delete[] denseIndexEnsembles;
-	}
-	if (denseIterators)
-	{
-		for (int i = 0; i < denseIndexCount; i++)
-		{
-			cmzn_ensemble_iterator_destroy(&(denseIterators[i]));
-		}
-		delete[] denseIterators;
-	}
-	cmzn_ensemble_index_destroy(&index);
-
-	delete[] realValueBuffer;
-	delete[] integerValueBuffer;
+	delete[] valueBuffer;
 	delete[] keyBuffer;
 	delete[] arraySizes;
 	delete[] arrayOffsets;
 	delete[] arrayRawSizes;
-
-	if (realParameters)
-		cmzn_field_real_parameters_destroy(&realParameters);
-	if (integerParameters)
-		cmzn_field_integer_parameters_destroy(&integerParameters);
-
 	return return_code;
 }
 
-/***************************************************************************//**
- * Gets cmzn_real_parameters or cmzn_integer_parameters (for ensemble) with
- * data read from fmlParameters object supplied. Data is read from FieldML only
- * when first requested.
+/**
+ * Returns integer map for supplied parameters, reading it from the data source
+ * if encountered for the first time.
  *
  * @param fmlParameters  Handle of type FHT_PARAMETER_EVALUATOR.
- * @return  Accessed handle to parameters field, or 0 on failure */
-cmzn_field_id FieldMLReader::getParameters(FmlObjectHandle fmlParameters)
+ * @return  Accessed pointer to integer map, or 0 on failure */
+DsMap<int> *FieldMLReader::getEnsembleParameters(FmlObjectHandle fmlParameters)
 {
-	if (Fieldml_GetObjectType(fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
-	{
-		display_message(ERROR_MESSAGE, "FieldMLReader::getParameters.  Invalid argument");
-		return 0;
-	}
+	FmlObjectIntParametersMap::iterator iter = this->intParametersMap.find(fmlParameters);
+	if (iter != this->intParametersMap.end())
+		return cmzn::ACCESS(iter->second.getObject());
+
 	std::string name = getName(fmlParameters);
-
-	FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlParameters);
-	FieldmlHandleType value_class = Fieldml_GetObjectType(fmlSession, fmlValueType);
-	if ((value_class != FHT_CONTINUOUS_TYPE) && ((value_class != FHT_ENSEMBLE_TYPE)))
+	if (Fieldml_GetObjectType(this->fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML.  Cannot read parameters %s since not continuous or ensemble type", name.c_str());
+		display_message(ERROR_MESSAGE, "FieldMLReader::getEnsembleParameters.  %s is not a parameter evaluator", name.c_str());
 		return 0;
 	}
-	bool isReal = (value_class == FHT_CONTINUOUS_TYPE);
-	if (isReal)
+	FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlParameters);
+	FieldmlHandleType valueClass = Fieldml_GetObjectType(fmlSession, fmlValueType);
+	if (valueClass != FHT_ENSEMBLE_TYPE)
 	{
-		FmlObjectHandle fmlValueTypeComponentEnsembleType = Fieldml_GetTypeComponentEnsemble(fmlSession, fmlValueType);
-		if (fmlValueTypeComponentEnsembleType != FML_INVALID_OBJECT_HANDLE)
-		{
-			display_message(WARNING_MESSAGE, "Read FieldML:  Cannot read non-scalar parameters %s", name.c_str());
-			return 0;
-		}
-	}
-
-	cmzn_field_id parameters = cmzn_fieldmodule_find_field_by_name(field_module, name.c_str());
-	if (isProcessed(fmlParameters))
-	{
-		return parameters;
-	}
-	if (parameters)
-	{
-		bool invalidType = false;
-		if (isReal)
-		{
-			cmzn_field_real_parameters_id realParameters = cmzn_field_cast_real_parameters(parameters);
-			invalidType = (realParameters == 0);
-			cmzn_field_real_parameters_destroy(&realParameters);
-		}
-		else
-		{
-			cmzn_field_integer_parameters_id integerParameters = cmzn_field_cast_integer_parameters(parameters);
-			invalidType = (integerParameters == 0);
-			cmzn_field_integer_parameters_destroy(&integerParameters);
-		}
-		if (invalidType)
-		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Cannot merge real parameters into existing field %s of different type", name.c_str());
-			cmzn_field_destroy(&parameters);
-			return 0;
-		}
-		// should check matching indexes too
+		display_message(ERROR_MESSAGE, "FieldMLReader::getEnsembleParameters.  %s is not ensemble-valued", name.c_str());
+		return 0;
 	}
 
 	if (verbose)
-	{
-		display_message(INFORMATION_MESSAGE, "Reading %s parameters %s\n", (isReal ? "real" : "integer"), name.c_str());
-	}
-
-	int indexEnsembleCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlParameters);
-	cmzn_field_ensemble_id *indexEnsembles = new cmzn_field_ensemble_id[indexEnsembleCount];
-	for (int i = 0; i < indexEnsembleCount; i++)
-	{
-		indexEnsembles[i] = 0;
-	}
-
+		display_message(INFORMATION_MESSAGE, "Reading ensemble parameters %s\n", name.c_str());
+	int indexCount = Fieldml_GetIndexEvaluatorCount(this->fmlSession, fmlParameters);
+	std::vector<HDsLabels> indexingLabelsVector;
 	int return_code = 1;
-	for (int indexEnsembleIndex = 1; indexEnsembleIndex <= indexEnsembleCount; indexEnsembleIndex++)
+	for (int indexNumber = 1; indexNumber <= indexCount; ++indexNumber)
 	{
-		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlParameters, indexEnsembleIndex);
-		if ((FHT_ARGUMENT_EVALUATOR != Fieldml_GetObjectType(fmlSession, fmlIndexEvaluator)) ||
-			(FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlIndexEvaluator))))
+		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(this->fmlSession, fmlParameters, indexNumber);
+		FmlObjectHandle fmlEnsembleType = Fieldml_GetValueType(this->fmlSession, fmlIndexEvaluator);
+		if ((FHT_ARGUMENT_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, fmlIndexEvaluator)) ||
+			(FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(this->fmlSession, fmlEnsembleType)))
 		{
-			display_message(WARNING_MESSAGE, "Read FieldML:  Index %d (%s) of parameters %s is not an ensemble-valued argument evaluator",
-				indexEnsembleIndex, getName(fmlIndexEvaluator).c_str(), name.c_str());
+			display_message(WARNING_MESSAGE, "FieldMLReader::getEnsembleParameters:  Index %d (%s) of parameters %s is not an ensemble-valued argument evaluator",
+				indexNumber, getName(fmlIndexEvaluator).c_str(), name.c_str());
 			return_code = 0;
 		}
-		indexEnsembles[indexEnsembleIndex - 1] = getEnsemble(Fieldml_GetValueType(fmlSession, fmlIndexEvaluator));
 		if (verbose)
-		{
-			display_message(INFORMATION_MESSAGE, "  Index ensemble %d = %s\n", indexEnsembleIndex,
-				getName(fmlIndexEvaluator).c_str());
-		}
+			display_message(INFORMATION_MESSAGE, "  Index %d = %s\n", indexNumber, getName(fmlIndexEvaluator).c_str());
+		indexingLabelsVector.push_back(HDsLabels(this->getLabelsForEnsemble(fmlEnsembleType)));
+	}
+	if (!return_code)
+		return 0;
+	DsMap<int> *parameters = DsMap<int>::create(indexingLabelsVector);
+	parameters->setName(name);
+	return_code = this->readParametersArray(fmlParameters, *parameters);
+	this->setProcessed(fmlParameters);
+	if (!return_code)
+		cmzn::DEACCESS(parameters);
+	return parameters;
+}
+
+/**
+ * Returns double map for supplied parameters, reading it from the data source
+ * if encountered for the first time.
+ *
+ * @param fmlParameters  Handle of type FHT_PARAMETER_EVALUATOR.
+ * @return  Accessed pointer to double map, or 0 on failure */
+DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParameters)
+{
+	FmlObjectDoubleParametersMap::iterator iter = this->doubleParametersMap.find(fmlParameters);
+	if (iter != this->doubleParametersMap.end())
+		return cmzn::ACCESS(iter->second.getObject());
+
+	std::string name = getName(fmlParameters);
+	if (Fieldml_GetObjectType(this->fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
+	{
+		display_message(ERROR_MESSAGE, "FieldMLReader::getContinuousParameters.  %s is not a parameter evaluator", name.c_str());
+		return 0;
+	}
+	FmlObjectHandle fmlValueType = Fieldml_GetValueType(fmlSession, fmlParameters);
+	FieldmlHandleType valueClass = Fieldml_GetObjectType(fmlSession, fmlValueType);
+	if (valueClass != FHT_CONTINUOUS_TYPE)
+	{
+		display_message(ERROR_MESSAGE, "FieldMLReader::getContinuousParameters.  %s is not continuous-valued", name.c_str());
+		return 0;
+	}
+	FmlObjectHandle fmlValueTypeComponentEnsembleType = Fieldml_GetTypeComponentEnsemble(fmlSession, fmlValueType);
+	if (fmlValueTypeComponentEnsembleType != FML_INVALID_OBJECT_HANDLE)
+	{
+		display_message(WARNING_MESSAGE, "FieldMLReader::getContinuousParameters:  Cannot read non-scalar parameters %s", name.c_str());
+		return 0;
 	}
 
-	if (return_code)
+	if (verbose)
+		display_message(INFORMATION_MESSAGE, "Reading continuous parameters %s\n", name.c_str());
+	int indexCount = Fieldml_GetIndexEvaluatorCount(this->fmlSession, fmlParameters);
+	std::vector<HDsLabels> indexingLabelsVector;
+	int return_code = 1;
+	for (int indexNumber = 1; indexNumber <= indexCount; ++indexNumber)
 	{
-		if (!parameters)
+		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(this->fmlSession, fmlParameters, indexNumber);
+		FmlObjectHandle fmlEnsembleType = Fieldml_GetValueType(this->fmlSession, fmlIndexEvaluator);
+		if ((FHT_ARGUMENT_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, fmlIndexEvaluator)) ||
+			(FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(this->fmlSession, fmlEnsembleType)))
 		{
-			parameters = isReal ?
-				cmzn_fieldmodule_create_field_real_parameters(field_module, indexEnsembleCount, indexEnsembles) :
-				cmzn_fieldmodule_create_field_integer_parameters(field_module, indexEnsembleCount, indexEnsembles);
-			cmzn_field_set_name(parameters, name.c_str());
-			cmzn_field_set_managed(parameters, true);
+			display_message(WARNING_MESSAGE, "FieldMLReader::getContinuousParameters:  Index %d (%s) of parameters %s is not an ensemble-valued argument evaluator",
+				indexNumber, getName(fmlIndexEvaluator).c_str(), name.c_str());
+			return_code = 0;
 		}
-		return_code = readParametersArray(fmlParameters, parameters, name.c_str());
+		if (verbose)
+			display_message(INFORMATION_MESSAGE, "  Index %d = %s\n", indexNumber, getName(fmlIndexEvaluator).c_str());
+		indexingLabelsVector.push_back(HDsLabels(this->getLabelsForEnsemble(fmlEnsembleType)));
 	}
-	for (int i = 0; i < indexEnsembleCount; i++)
-	{
-		cmzn_field_ensemble_destroy(&indexEnsembles[i]);
-	}
-	delete[] indexEnsembles;
-	if (return_code)
-	{
-		setProcessed(fmlParameters);
-	}
-	else
-	{
-		cmzn_field_destroy(&parameters);
-	}
+	if (!return_code)
+		return 0;
+	DsMap<double> *parameters = DsMap<double>::create(indexingLabelsVector);
+	parameters->setName(name);
+	return_code = this->readParametersArray(fmlParameters, *parameters);
+	this->setProcessed(fmlParameters);
+	if (!return_code)
+		cmzn::DEACCESS(parameters);
 	return parameters;
 }
 
@@ -998,18 +867,18 @@ int FieldMLReader::readMeshes()
 		}
 
 		fmlElementsType = Fieldml_GetMeshElementsType(fmlSession, fmlMeshType);
-		cmzn_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
+		HDsLabels elementsLabels(getLabelsForEnsemble(fmlElementsType));
 		if (verbose)
 		{
 			display_message(INFORMATION_MESSAGE, "Defining %d elements from %s\n",
-				cmzn_field_ensemble_get_size(elementsEnsemble), getName(fmlElementsType).c_str());
+				elementsLabels->getSize(), getName(fmlElementsType).c_str());
 		}
 
 		// determine element shape mapping
 
 		FmlObjectHandle fmlShapeEvaluator = Fieldml_GetMeshShapes(fmlSession, fmlMeshType);
 		cmzn_element_shape_type const_shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
-		cmzn_field_integer_parameters_id elementShapeParameters = 0; // used only if shape evaluator uses indirect map
+		HDsMapInt elementShapeParameters; // used only if shape evaluator uses indirect map
 		if (fmlShapeEvaluator == FML_INVALID_OBJECT_HANDLE)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Missing shape evaluator for mesh type %s", name.c_str());
@@ -1099,14 +968,12 @@ int FieldMLReader::readMeshes()
 						else
 						{
 							// Case 3. piecewise over 'shape ensemble', indirectly mapping from parameters mapping from element
-							cmzn_field_id field = getParameters(fmlElementToShapeParameter);
-							elementShapeParameters = cmzn_field_cast_integer_parameters(field);
+							elementShapeParameters = HDsMapInt(this->getEnsembleParameters(fmlElementToShapeParameter));
 							if (!elementShapeParameters)
 							{
 								display_message(ERROR_MESSAGE, "Read FieldML:  Invalid element to shape parameters %s for shape evaluator %s of mesh type %s.",
 									getName(fmlElementToShapeParameter).c_str(), getName(fmlShapeEvaluator).c_str(), name.c_str());
 							}
-							cmzn_field_destroy(&field);
 						}
 					} break;
 				default:
@@ -1123,77 +990,72 @@ int FieldMLReader::readMeshes()
 		cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
 		cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
 
-		cmzn_ensemble_iterator *elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
-		if (!elementsIterator)
-		{
-			return_code = 0;
-		}
+		HDsLabelIterator elementsLabelIterator(elementsLabels->createLabelIterator());
 		FmlObjectHandle fmlLastElementShapeEvaluator = FML_INVALID_OBJECT_HANDLE;
 		cmzn_element_shape_type last_shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
-		cmzn_ensemble_index_id elementIndex = elementShapeParameters ?
-			cmzn_field_integer_parameters_create_index(elementShapeParameters) : 0;
-		while (return_code)
+
+		HDsMapIndexing elementShapeParametersIndexing(elementShapeParameters ? elementShapeParameters->createIndexing() : 0);
+
+		if (elementsLabelIterator && (elementsLabelIterator->getIdentifier() != DS_LABEL_IDENTIFIER_INVALID))
 		{
-			int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
-			cmzn_element_shape_type shape_type = const_shape_type;
-			if (const_shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
+			while (return_code)
 			{
-				int shapeIdentifier = elementIdentifier;
-				if (elementShapeParameters &&
-					((CMZN_OK != cmzn_ensemble_index_set_entry(elementIndex, elementsIterator)) ||
-					 (CMZN_OK != cmzn_field_integer_parameters_get_values(elementShapeParameters, elementIndex, 1, &shapeIdentifier))))
+				int elementIdentifier = elementsLabelIterator->getIdentifier();
+				cmzn_element_shape_type shape_type = const_shape_type;
+				if (const_shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 				{
-					display_message(ERROR_MESSAGE, "Read FieldML:  Failed to map shape of element %d in mesh type %s.",
-						elementIdentifier, name.c_str());
-					return_code = 0;
-					break;
-				}
-				else
-				{
-					FmlObjectHandle fmlElementShapeEvaluator =
-						Fieldml_GetElementEvaluator(fmlSession, fmlShapeEvaluator, shapeIdentifier, /*allowDefault*/1);
-					if (fmlElementShapeEvaluator == fmlLastElementShapeEvaluator)
+					int shapeIdentifier = elementIdentifier;
+					if (elementShapeParameters && (
+						(CMZN_OK != elementShapeParametersIndexing->setEntry(*elementsLabelIterator)) ||
+						(CMZN_OK != elementShapeParameters->getValues(*elementShapeParametersIndexing, 1, &shapeIdentifier))))
 					{
-						shape_type = last_shape_type;
-					}
-					else
-					{
-						shape_type = getElementShapeFromName(getName(fmlElementShapeEvaluator).c_str());
-						fmlLastElementShapeEvaluator = fmlElementShapeEvaluator;
-					}
-					if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
-					{
-						display_message(ERROR_MESSAGE, "Read FieldML:  Could not get shape of element %d in mesh type %s.",
+						display_message(ERROR_MESSAGE, "Read FieldML:  Failed to map shape of element %d in mesh type %s.",
 							elementIdentifier, name.c_str());
 						return_code = 0;
 						break;
 					}
+					else
+					{
+						FmlObjectHandle fmlElementShapeEvaluator =
+							Fieldml_GetElementEvaluator(fmlSession, fmlShapeEvaluator, shapeIdentifier, /*allowDefault*/1);
+						if (fmlElementShapeEvaluator == fmlLastElementShapeEvaluator)
+						{
+							shape_type = last_shape_type;
+						}
+						else
+						{
+							shape_type = getElementShapeFromName(getName(fmlElementShapeEvaluator).c_str());
+							fmlLastElementShapeEvaluator = fmlElementShapeEvaluator;
+						}
+						if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
+						{
+							display_message(ERROR_MESSAGE, "Read FieldML:  Could not get shape of element %d in mesh type %s.",
+								elementIdentifier, name.c_str());
+							return_code = 0;
+							break;
+						}
+					}
 				}
-			}
-			if (shape_type != last_shape_type)
-			{
-				if (!(cmzn_elementtemplate_set_element_shape_type(elementtemplate, shape_type)))
+				if (shape_type != last_shape_type)
+				{
+					if (!(cmzn_elementtemplate_set_element_shape_type(elementtemplate, shape_type)))
+					{
+						return_code = 0;
+						break;
+					}
+					last_shape_type = shape_type;
+				}
+				if (!cmzn_mesh_define_element(mesh, elementIdentifier, elementtemplate))
 				{
 					return_code = 0;
 					break;
 				}
-				last_shape_type = shape_type;
+				if (!elementsLabelIterator->increment())
+					break;
 			}
-			if (!cmzn_mesh_define_element(mesh, elementIdentifier, elementtemplate))
-			{
-				return_code = 0;
-				break;
-			}
-			if (!cmzn_ensemble_iterator_increment(elementsIterator))
-				break;
 		}
-
-		if (elementShapeParameters)
-			cmzn_field_integer_parameters_destroy(&elementShapeParameters);
-
-		cmzn_ensemble_iterator_destroy(&elementsIterator);
-		cmzn_field_ensemble_destroy(&elementsEnsemble);
-
+		else if (!elementsLabelIterator)
+			return_code = 0;
 		cmzn_elementtemplate_destroy(&elementtemplate);
 		cmzn_mesh_destroy(&mesh);
 	}
@@ -1393,10 +1255,8 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 			evaluatorName.c_str(), interpolator_name);
 	}
 
-	cmzn_field_id local_point_to_node_field = getParameters(fmlLocalPointToNode);
-	cmzn_field_integer_parameters_id local_point_to_node = cmzn_field_cast_integer_parameters(local_point_to_node_field);
-	cmzn_field_destroy(&local_point_to_node_field);
-	cmzn_ensemble_index_id index = cmzn_field_integer_parameters_create_index(local_point_to_node);
+	HDsMapInt local_point_to_node(this->getEnsembleParameters(fmlLocalPointToNode));
+	HDsMapIndexing indexing(local_point_to_node->createIndexing());
 
 	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
 	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
@@ -1411,8 +1271,8 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 		}
 	}
 	int basis_number_of_nodes = cmzn_elementbasis_get_number_of_nodes(element_basis);
-	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, index, local_point_count, libraryBases[basis_index].swizzle);
-	if (local_point_to_node && index && local_point_count && (local_point_count == basis_number_of_nodes))
+	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, indexing, local_point_count, libraryBases[basis_index].swizzle);
+	if (local_point_to_node && indexing && local_point_count && (local_point_count == basis_number_of_nodes))
 	{
 		componentMap[fmlEvaluator] = component;
 	}
@@ -1466,59 +1326,56 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	// create nodes and set node parameters
 
 	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	cmzn_field_ensemble_id nodesEnsemble = getEnsemble(fmlNodeEnsembleType);
-	if (fmlNodesType == FML_INVALID_OBJECT_HANDLE)
+	HDsLabels nodesLabels(getLabelsForEnsemble(fmlNodeEnsembleType));
+	if (this->fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
-		fmlNodesType = fmlNodeEnsembleType;
-		// create the nodes
-		cmzn_nodetemplate_id node_template = cmzn_nodeset_create_nodetemplate(nodes);
-		cmzn_ensemble_iterator_id nodesIterator = cmzn_field_ensemble_get_first_entry(nodesEnsemble);
-		while (return_code)
+		this->fmlNodesType = fmlNodeEnsembleType;
+		if (nodesLabels->getSize() > 0)
 		{
-			cmzn_ensemble_identifier nodeIdentifier = cmzn_ensemble_iterator_get_identifier(nodesIterator);
-			cmzn_node_id node = cmzn_nodeset_create_node(nodes, nodeIdentifier, node_template);
-			cmzn_node_destroy(&node);
-			if (!cmzn_ensemble_iterator_increment(nodesIterator))
-				break;
+			// create the nodes
+			// GRC: Could be made more efficient with bulk call
+			cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodes);
+			HDsLabelIterator nodesLabelIterator(nodesLabels->createLabelIterator());
+			do
+			{
+				DsLabelIdentifier nodeIdentifier = nodesLabelIterator->getIdentifier();
+				cmzn_node_id node = cmzn_nodeset_create_node(nodes, nodeIdentifier, nodetemplate);
+				cmzn_node_destroy(&node);
+			} while (nodesLabelIterator->increment());
+			cmzn_nodetemplate_destroy(&nodetemplate);
 		}
-		cmzn_ensemble_iterator_destroy(&nodesIterator);
-		cmzn_nodetemplate_destroy(&node_template);
 	}
 
-	cmzn_field_id node_parameters_field = getParameters(fmlNodeParameters);
-	cmzn_field_real_parameters_id node_parameters = cmzn_field_cast_real_parameters(node_parameters_field);
-	cmzn_field_destroy(&node_parameters_field);
-	if (!node_parameters)
+	HDsMapDouble nodeParameters(this->getContinuousParameters(fmlNodeParameters));
+	if (!nodeParameters)
 	{
 		display_message(ERROR_MESSAGE,
 			"Read FieldML:  Field %s nodal parameters %s unable to be read.",
 			fieldName.c_str(), getName(fmlNodeParameters).c_str());
 		return_code = 0;
 	}
-	else
+	else if ((return_code) && (nodesLabels->getSize() > 0))
 	{
-		cmzn_nodetemplate_id node_template = cmzn_nodeset_create_nodetemplate(nodes);
-		cmzn_nodetemplate_define_field(node_template, field);
-		return_code = 1;
-		cmzn_ensemble_index_id index = cmzn_field_real_parameters_create_index(node_parameters);
-		// GRC inefficient to iterate over sparse parameters this way
-		cmzn_ensemble_iterator_id nodesIterator = cmzn_field_ensemble_get_first_entry(nodesEnsemble);
+		cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodes);
+		cmzn_nodetemplate_define_field(nodetemplate, field);
+		HDsMapIndexing nodeParametersIndexing(nodeParameters->createIndexing());
 		double *values = new double[componentCount];
 		int *valueExists = new int[componentCount];
 		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		while (return_code)
+		// GRC inefficient to iterate over sparse parameters this way
+		HDsLabelIterator nodesLabelIterator(nodesLabels->createLabelIterator());
+		do
 		{
-			cmzn_ensemble_identifier nodeIdentifier = cmzn_ensemble_iterator_get_identifier(nodesIterator);
+			DsLabelIdentifier nodeIdentifier = nodesLabelIterator->getIdentifier();
 			cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, nodeIdentifier);
-			cmzn_ensemble_index_set_entry(index, nodesIterator);
+			nodeParametersIndexing->setEntry(*nodesLabelIterator);
 			int valuesRead = 0;
-			if (cmzn_field_real_parameters_get_values_sparse(
-				node_parameters, index, componentCount, values, valueExists, &valuesRead))
+			if (nodeParameters->getValuesSparse(*nodeParametersIndexing, componentCount, values, valueExists, valuesRead))
 			{
 				if (0 < valuesRead)
 				{
-					// A limitation of cmgui is that all nodal component values must be set if any are set.
-					// Set the dummy values to zero.
+					// A current limitation of Zinc is that all nodal component values
+					// must be set if any are set. Set the dummy values to zero.
 					if (valuesRead < componentCount)
 					{
 						for (int i = 0; i < componentCount; i++)
@@ -1527,7 +1384,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 								values[i] = 0.0;
 						}
 					}
-					cmzn_node_merge(node, node_template);
+					cmzn_node_merge(node, nodetemplate);
 					cmzn_fieldcache_set_node(field_cache, node);
 					cmzn_field_assign_real(field, field_cache, componentCount, values);
 				}
@@ -1535,18 +1392,14 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			else
 			{
 				return_code = 0;
+				break;
 			}
 			cmzn_node_destroy(&node);
-			if (!cmzn_ensemble_iterator_increment(nodesIterator))
-				break;
-		}
+		} while (nodesLabelIterator->increment());
 		cmzn_fieldcache_destroy(&field_cache);
 		delete[] valueExists;
 		delete[] values;
-		cmzn_ensemble_iterator_destroy(&nodesIterator);
-		cmzn_field_real_parameters_destroy(&node_parameters);
-		cmzn_ensemble_index_destroy(&index);
-		cmzn_nodetemplate_destroy(&node_template);
+		cmzn_nodetemplate_destroy(&nodetemplate);
 	}
 
 	// define element fields
@@ -1554,16 +1407,14 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	cmzn_mesh_id mesh =
 		cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
 	cmzn_elementtemplate_id elementtemplate = 0;
-	cmzn_field_ensemble_id elementsEnsemble = getEnsemble(fmlElementsType);
-	cmzn_ensemble_iterator_id elementsIterator = cmzn_field_ensemble_get_first_entry(elementsEnsemble);
-	if (!elementsIterator)
-	{
+	HDsLabels elementsLabels(getLabelsForEnsemble(fmlElementsType));
+	HDsLabelIterator elementsLabelIterator(elementsLabels->createLabelIterator());
+	if (!elementsLabelIterator)
 		return_code = 0;
-	}
 	std::vector<FmlObjectHandle> fmlElementEvaluators(componentCount, FML_INVALID_OBJECT_HANDLE);
 	std::vector<ElementFieldComponent*> components(componentCount, (ElementFieldComponent*)0);
-	std::vector<cmzn_field_integer_parameters*> componentFunctionMap(componentCount, (cmzn_field_integer_parameters*)0);
-	std::vector<cmzn_ensemble_index*> componentFunctionIndex(componentCount, (cmzn_ensemble_index*)0);
+	std::vector<HDsMapInt> componentFunctionMap(componentCount);
+	std::vector<HDsMapIndexing> componentFunctionIndex(componentCount);
 	for (int ic = 0; ic < componentCount; ic++)
 	{
 		int bindCount = Fieldml_GetBindCount(fmlSession, fmlComponentEvaluators[ic]);
@@ -1572,162 +1423,152 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			// recognised indirect form: a parameter mapping element to piecewise index
 			FmlObjectHandle fmlComponentFunctionMapEvaluator =
 				Fieldml_GetBindEvaluator(fmlSession, fmlComponentEvaluators[ic], 1);
-			cmzn_field_id parameterMap = getParameters(fmlComponentFunctionMapEvaluator);
-			componentFunctionMap[ic] = cmzn_field_cast_integer_parameters(parameterMap);
-			componentFunctionIndex[ic] = cmzn_field_integer_parameters_create_index(componentFunctionMap[ic]);
-			cmzn_field_destroy(&parameterMap);
+			HDsMapInt parameterMap(this->getEnsembleParameters(fmlComponentFunctionMapEvaluator));
+			if (parameterMap)
+			{
+				componentFunctionMap[ic] = parameterMap;
+				componentFunctionIndex[ic] = HDsMapIndexing(parameterMap->createIndexing());
+			}
+			else
+				return_code = 0;
 		}
 	}
-	while (return_code)
+	if (return_code && (elementsLabels->getSize() > 0))
 	{
-		int elementIdentifier = cmzn_ensemble_iterator_get_identifier(elementsIterator);
-		bool newElementtemplate = (elementtemplate == 0);
-		bool definedOnAllComponents = true;
-		for (int ic = 0; ic < componentCount; ic++)
+		do
 		{
-			int functionId = elementIdentifier;
-			if (componentFunctionMap[ic])
+			DsLabelIdentifier elementIdentifier = elementsLabelIterator->getIdentifier();
+			bool newElementtemplate = (elementtemplate == 0);
+			bool definedOnAllComponents = true;
+			for (int ic = 0; ic < componentCount; ic++)
 			{
-				// handle indirect element to function map
-				if (!(cmzn_ensemble_index_set_entry(componentFunctionIndex[ic], elementsIterator) &&
-					cmzn_field_integer_parameters_get_values(componentFunctionMap[ic],
-						componentFunctionIndex[ic], 1, &functionId)))
+				int functionId = elementIdentifier;
+				if (componentFunctionMap[ic])
+				{
+					// handle indirect element to function map
+					if (!(componentFunctionIndex[ic]->setEntry(*elementsLabelIterator) &&
+						componentFunctionMap[ic]->getValues(*(componentFunctionIndex[ic]), 1, &functionId)))
+					{
+						definedOnAllComponents = false;
+						break;
+					}
+				}
+				FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession,
+					fmlComponentEvaluators[ic], functionId, /*allowDefault*/1);
+				if (fmlElementEvaluator != fmlElementEvaluators[ic])
+				{
+					fmlElementEvaluators[ic] = fmlElementEvaluator;
+					newElementtemplate = true;
+				}
+				if (fmlElementEvaluator == FML_INVALID_OBJECT_HANDLE)
 				{
 					definedOnAllComponents = false;
 					break;
 				}
 			}
-			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession,
-				fmlComponentEvaluators[ic], functionId, /*allowDefault*/1);
-			if (fmlElementEvaluator != fmlElementEvaluators[ic])
+			if (definedOnAllComponents)
 			{
-				fmlElementEvaluators[ic] = fmlElementEvaluator;
-				newElementtemplate = true;
-			}
-			if (fmlElementEvaluator == FML_INVALID_OBJECT_HANDLE)
-			{
-				definedOnAllComponents = false;
-				break;
-			}
-		}
-		if (!definedOnAllComponents)
-		{
-			if (!cmzn_ensemble_iterator_increment(elementsIterator))
-				break;
-			continue;
-		}
-		if (newElementtemplate)
-		{
-			if (elementtemplate)
-				cmzn_elementtemplate_destroy(&elementtemplate);
-			elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
-			// do not want to override shape of existing elements:
-			cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
-			int total_local_point_count = 0;
-			for (int ic = 0; ic < componentCount; ic++)
-			{
-				components[ic] = getElementFieldComponent(mesh, fmlElementEvaluators[ic],
-					fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
-				if (!components[ic])
+				if (newElementtemplate)
 				{
-					display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d element %d evaluator %s does not reference a supported basis function or mapping",
-						fieldName.c_str(), ic + 1, elementIdentifier, getName(fmlElementEvaluators[ic]).c_str());
-					return_code = 0;
-					break;
-				}
-				bool new_local_point_to_node = true;
-				for (int jc = 0; jc < ic; jc++)
-				{
-					if (components[jc]->local_point_to_node == components[ic]->local_point_to_node)
+					if (elementtemplate)
+						cmzn_elementtemplate_destroy(&elementtemplate);
+					elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
+					// do not want to override shape of existing elements:
+					cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
+					int total_local_point_count = 0;
+					for (int ic = 0; ic < componentCount; ic++)
 					{
-						new_local_point_to_node = false;
-						break;
-					}
-				}
-				if (new_local_point_to_node)
-				{
-					const int *swizzle = components[ic]->swizzle;
-					for (int i = 0; i < components[ic]->local_point_count; i++)
-					{
-						components[ic]->local_point_indexes[i] = total_local_point_count + i + 1;
-						if (swizzle)
+						components[ic] = getElementFieldComponent(mesh, fmlElementEvaluators[ic],
+							fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
+						if (!components[ic])
 						{
-							components[ic]->swizzled_local_point_indexes[i] = total_local_point_count + swizzle[i];
+							display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d element %d evaluator %s does not reference a supported basis function or mapping",
+								fieldName.c_str(), ic + 1, elementIdentifier, getName(fmlElementEvaluators[ic]).c_str());
+							return_code = 0;
+							break;
 						}
-						else
+						bool new_local_point_to_node = true;
+						for (int jc = 0; jc < ic; jc++)
 						{
-							components[ic]->swizzled_local_point_indexes[i] = components[ic]->local_point_indexes[i];
+							if (components[jc]->local_point_to_node == components[ic]->local_point_to_node)
+							{
+								new_local_point_to_node = false;
+								break;
+							}
+						}
+						if (new_local_point_to_node)
+						{
+							const int *swizzle = components[ic]->swizzle;
+							for (int i = 0; i < components[ic]->local_point_count; i++)
+							{
+								components[ic]->local_point_indexes[i] = total_local_point_count + i + 1;
+								if (swizzle)
+								{
+									components[ic]->swizzled_local_point_indexes[i] = total_local_point_count + swizzle[i];
+								}
+								else
+								{
+									components[ic]->swizzled_local_point_indexes[i] = components[ic]->local_point_indexes[i];
+								}
+							}
+							total_local_point_count += components[ic]->local_point_count;
+							cmzn_elementtemplate_set_number_of_nodes(elementtemplate, total_local_point_count);
+						}
+						if (!cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, field,
+							/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
+							components[ic]->local_point_indexes))
+						{
+							return_code = 0;
+							break;
 						}
 					}
-					total_local_point_count += components[ic]->local_point_count;
-					cmzn_elementtemplate_set_number_of_nodes(elementtemplate, total_local_point_count);
 				}
-				if (!cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, field,
-					/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
-					components[ic]->local_point_indexes))
-				{
-					return_code = 0;
+				if (!return_code)
 					break;
-				}
-			}
-		}
-		if (!return_code)
-			break;
 
-		int total_local_point_count = 0;
-		for (int ic = 0; (ic < componentCount) && return_code; ic++)
-		{
-			ElementFieldComponent *component = components[ic];
-			if ((total_local_point_count + 1) == component->local_point_indexes[0])
-			{
-				total_local_point_count += component->local_point_count;
-				cmzn_ensemble_index_set_entry(component->index, elementsIterator);
-				if (!cmzn_field_integer_parameters_get_values(component->local_point_to_node, component->index,
-					component->local_point_count, component->node_identifiers))
+				int total_local_point_count = 0;
+				for (int ic = 0; (ic < componentCount) && return_code; ic++)
 				{
-					display_message(ERROR_MESSAGE, "Read FieldML:  Incomplete local to global map for field %s", fieldName.c_str());
-					return_code = 0;
-					break;
-				}
-				for (int i = 0; i < component->local_point_count; i++)
-				{
-					cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
-					if (!node)
+					ElementFieldComponent *component = components[ic];
+					if ((total_local_point_count + 1) == component->local_point_indexes[0])
 					{
-						char *local_point_to_node_name = cmzn_field_get_name(
-							cmzn_field_integer_parameters_base_cast(component->local_point_to_node));
-						display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
-							component->node_identifiers[i], elementIdentifier, i + 1, local_point_to_node_name);
-						DEALLOCATE(local_point_to_node_name);
-						return_code = 0;
-						break;
+						total_local_point_count += component->local_point_count;
+						component->indexing->setEntry(*elementsLabelIterator);
+						if (!component->local_point_to_node->getValues(*(component->indexing),
+							component->local_point_count, component->node_identifiers))
+						{
+							display_message(ERROR_MESSAGE, "Read FieldML:  Incomplete local to global map for field %s", fieldName.c_str());
+							return_code = 0;
+							break;
+						}
+						for (int i = 0; i < component->local_point_count; i++)
+						{
+							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
+							if (!node)
+							{
+								display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
+									component->node_identifiers[i], elementIdentifier, i + 1, component->local_point_to_node->getName().c_str());
+								return_code = 0;
+								break;
+							}
+							cmzn_elementtemplate_set_node(elementtemplate, component->swizzled_local_point_indexes[i], node);
+							cmzn_node_destroy(&node);
+						}
 					}
-					cmzn_elementtemplate_set_node(elementtemplate, component->swizzled_local_point_indexes[i], node);
-					cmzn_node_destroy(&node);
+				}
+				if (return_code)
+				{
+					cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, elementIdentifier);
+					if (!cmzn_element_merge(element, elementtemplate))
+					{
+						display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
+						return_code = 0;
+					}
+					cmzn_element_destroy(&element);
 				}
 			}
-		}
-		if (return_code)
-		{
-			cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, elementIdentifier);
-			if (!cmzn_element_merge(element, elementtemplate))
-			{
-				display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
-				return_code = 0;
-			}
-			cmzn_element_destroy(&element);
-		}
-		if (!cmzn_ensemble_iterator_increment(elementsIterator))
-			break;
+		} while (elementsLabelIterator->increment());
 	}
-	for (int ic = 0; ic < componentCount; ic++)
-	{
-		cmzn_field_integer_parameters_destroy(&(componentFunctionMap[ic]));
-		cmzn_ensemble_index_destroy(&(componentFunctionIndex[ic]));
-	}
-	cmzn_ensemble_iterator_destroy(&elementsIterator);
-	cmzn_field_ensemble_destroy(&elementsEnsemble);
-	cmzn_field_ensemble_destroy(&nodesEnsemble);
 	if (elementtemplate)
 		cmzn_elementtemplate_destroy(&elementtemplate);
 	cmzn_mesh_destroy(&mesh);

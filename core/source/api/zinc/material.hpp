@@ -234,6 +234,6 @@ inline Materialmodule Context::getMaterialmodule()
 	return Materialmodule(cmzn_context_get_materialmodule(id));
 }
 
-} // namespace cmzn
+}
 }
 #endif

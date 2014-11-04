@@ -12,6 +12,17 @@
 SET( CURVE_SRCS source/curve/curve.cpp )
 SET( CURVE_HDRS source/curve/curve.h )
 
+SET( DATASTORE_SRCS
+	source/datastore/labels.cpp
+	source/datastore/labelsgroup.cpp
+	source/datastore/map.cpp
+	source/datastore/mapindexing.cpp )
+SET( DATASTORE_HDRS
+	source/datastore/labels.hpp
+	source/datastore/labelsgroup.hpp
+	source/datastore/map.hpp
+	source/datastore/mapindexing.hpp )
+
 SET( ELEMENT_SRCS
 	source/element/element_operations.cpp )
 SET( ELEMENT_HDRS

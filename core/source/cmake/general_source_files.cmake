@@ -72,6 +72,8 @@ SET( GENERAL_HDRS
 	source/general/object.h
 	source/general/octree.h
 	source/general/random.h
+	source/general/refcounted.hpp
+	source/general/refhandle.hpp
 	source/general/simple_list.h
 	source/general/statistics.h
 	source/general/time.h
