@@ -126,14 +126,14 @@ bool DsMap<ValueType>::setNotDense()
 {
 	if (!dense)
 		return true;
-	//display_message(INFORMATION_MESSAGE, "In DsMap::setNotDense  Map %s %d\n", this->name, getMaxDenseSize());
+	//display_message(INFORMATION_MESSAGE, "In DsMap::setNotDense  Map %s %d\n", this->name.c_str(), getMaxDenseSize());
 	dense = false;
 	if (value_exists.setAllTrue(getMaxDenseSize()))
 		return true;
 	// failed: restore dense status and return false
 	display_message(ERROR_MESSAGE,
 		"DsMap::setNotDense.  Failed to convert %s to non-dense",
-		this->name);
+		this->name.c_str());
 	value_exists.clear();
 	dense = true;
 	return false;
@@ -165,7 +165,7 @@ bool DsMap<ValueType>::copyValues(int labelsNumber,
 			if (!values.getValue(oldIndex, value))
 			{
 				display_message(ERROR_MESSAGE, "DsMap::copyValues  Map %s is missing a value\n",
-					this->name);
+					this->name.c_str());
 				return false;
 			}
 			if (!dest_values.setValue(newIndex, value))
@@ -201,11 +201,11 @@ template <typename ValueType>
 bool DsMap<ValueType>::resize(DsLabelIndex *newIndexSizes)
 {
 #if defined (DEBUG_CODE)
-	display_message(INFORMATION_MESSAGE, "DsMap::resize  %s\n", this->name);
+	display_message(INFORMATION_MESSAGE, "DsMap::resize  %s\n", this->name.c_str());
 	for (int i = 0; i < labelsArraySize; i++)
 	{
 		display_message(INFORMATION_MESSAGE, "    Labels %s: %u -> %u\n",
-			this->labelsArray[i]->getName(), this->indexSizes[i], newIndexSizes[i]);
+			this->labelsArray[i]->getName().c_str(), this->indexSizes[i], newIndexSizes[i]);
 	}
 #endif /* defined (DEBUG_CODE) */
 
@@ -235,7 +235,7 @@ bool DsMap<ValueType>::resize(DsLabelIndex *newIndexSizes)
 		{
 			display_message(WARNING_MESSAGE,
 				"DsMap::resize  Not enough memory to resize map %s\n",
-				this->name);
+				this->name.c_str());
 			delete[] copySize;
 			delete[] newOffsets;
 			return false;
@@ -260,21 +260,21 @@ inline int DsMap<ValueType>::validIndexCount(DsMapIndexing& indexing, DsMapAddre
 	if (!indexing.indexesMap(this))
 	{
 		display_message(ERROR_MESSAGE, "%s.  Invalid indexing for map %s",
-			methodName, this->name);
+			methodName, this->name.c_str());
 		return 0;
 	}
 	DsMapAddressType index_entry_count = indexing.getEntryCount();
 	if (0 == index_entry_count)
 	{
 		display_message(ERROR_MESSAGE, "%s.  Invalid indexing specifies zero values.",
-			methodName, this->name);
+			methodName, this->name.c_str());
 		return 0;
 	}
 	if (number_of_values != index_entry_count)
 	{
 		display_message(ERROR_MESSAGE,
 			"%s.  Index specifies %u values, %u supplied for map %s.",
-			methodName, index_entry_count, number_of_values, this->name);
+			methodName, index_entry_count, number_of_values, this->name.c_str());
 		return 0;
 	}
 	return 1;
@@ -316,7 +316,7 @@ int DsMap<ValueType>::getValues(DsMapIndexing& indexing,
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::getValues  Failed to begin iteration over indexing for map %s\n",
-			this->name);
+			this->name.c_str());
 		return 0;
 	}
 	int i;
@@ -349,7 +349,7 @@ int DsMap<ValueType>::getValues(DsMapIndexing& indexing,
 			{
 				index = indexing.getIterationIndex(i);
 				display_message(INFORMATION_MESSAGE, "Labels %d %s : index %d indexSizes = %d (#values %d)\n",
-					i, this->labelsArray[i]->getName(), index, this->indexSizes[i], number_of_values);
+					i, this->labelsArray[i]->getName().c_str(), index, this->indexSizes[i], number_of_values);
 			}
 			if (labelsArraySize == 2)
 			{
@@ -382,14 +382,14 @@ int DsMap<ValueType>::getValues(DsMapIndexing& indexing,
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::getValues  Only %u out of %u values iterated for map %s\n",
-			value_number, number_of_values, this->name);
+			value_number, number_of_values, this->name.c_str());
 		return_code = 0;
 	}
 	else if (iterResult && (value_number >= number_of_values))
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::getValues  Iteration past end of values for map %s\n",
-			this->name);
+			this->name.c_str());
 		return_code = 0;
 	}
 	return return_code;
@@ -409,7 +409,7 @@ int DsMap<ValueType>::getValuesSparse(DsMapIndexing& indexing,
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::getValuesSparse  Failed to begin iteration over indexing for map %s\n",
-			this->name);
+			this->name.c_str());
 		return 0;
 	}
 	int i;
@@ -456,14 +456,14 @@ int DsMap<ValueType>::getValuesSparse(DsMapIndexing& indexing,
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::getValuesSparse  Only %u out of %u values iterated for map %s\n",
-			value_number, number_of_values, this->name);
+			value_number, number_of_values, this->name.c_str());
 		return_code = 0;
 	}
 	else if (iterResult && (value_number >= number_of_values))
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::getValuesSparse  Iteration past end of values for map %s\n",
-			this->name);
+			this->name.c_str());
 		return_code = 0;
 	}
 	return return_code;
@@ -564,7 +564,7 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::setValues  Failed to begin iteration over indexing for map %s\n",
-			this->name);
+			this->name.c_str());
 		return 0;
 	}
 	bool oldValue;
@@ -581,7 +581,7 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 		{
 			display_message(ERROR_MESSAGE,
 				"DsMap::setValues  Failed to set value in map %s\n",
-				this->name);
+				this->name.c_str());
 			return_code = 0;
 			break;
 		}
@@ -591,7 +591,7 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 			{
 				display_message(ERROR_MESSAGE,
 					"DsMap::setValues  Failed to set value_exists flag int map %s\n",
-					this->name);
+					this->name.c_str());
 				return_code = 0;
 				break;
 			}
@@ -604,14 +604,14 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::setValues  Only %u out of %u values iterated for map %s\n",
-			value_number, number_of_values, this->name);
+			value_number, number_of_values, this->name.c_str());
 		return_code = 0;
 	}
 	else if (iterResult && (value_number >= number_of_values))
 	{
 		display_message(ERROR_MESSAGE,
 			"DsMap::setValues  Iteration past end of values for map %s\n",
-			this->name);
+			this->name.c_str());
 		return_code = 0;
 	}
 	// FUTURE_CODE: propagate change message

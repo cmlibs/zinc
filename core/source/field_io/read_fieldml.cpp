@@ -458,7 +458,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 	if ((dataDescription != FML_DATA_DESCRIPTION_DENSE_ARRAY) &&
 		(dataDescription != FML_DATA_DESCRIPTION_DOK_ARRAY))
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Unknown data description for parameters %s; must be dense array or DOK array", name);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Unknown data description for parameters %s; must be dense array or DOK array", name.c_str());
 		return 0;
 	}
 
@@ -476,19 +476,19 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 	FmlObjectHandle fmlDataSource = Fieldml_GetDataSource(fmlSession, fmlParameters);
 	if (fmlDataSource == FML_INVALID_HANDLE)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Could not get data source for parameters %s", name);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Could not get data source for parameters %s", name.c_str());
 		return_code = 0;
 	}
 	else if (FML_DATA_SOURCE_ARRAY != Fieldml_GetDataSourceType(fmlSession, fmlDataSource))
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Only supports ArrayDataSource for parameters %s", name);
+		display_message(ERROR_MESSAGE, "Read FieldML:  Only supports ArrayDataSource for parameters %s", name.c_str());
 		return_code = 0;
 	}
 	else if ((arrayRank = Fieldml_GetArrayDataSourceRank(fmlSession, fmlDataSource))
 		!= (recordIndexCount + denseIndexCount))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Data source %s has invalid rank for parameters %s",
-			getName(fmlDataSource).c_str(), name);
+			getName(fmlDataSource).c_str(), name.c_str());
 		return_code = 0;
 	}
 	else if ((arrayRank > 0) && ((0 == (arrayRawSizes = new int[arrayRank])) ||
@@ -498,7 +498,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 		(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceSizes(fmlSession, fmlDataSource, arraySizes))))
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Failed to get array sizes of data source %s for parameters %s",
-			getName(fmlDataSource).c_str(), name);
+			getName(fmlDataSource).c_str(), name.c_str());
 		return_code = 0;
 	}
 	else
@@ -518,7 +518,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Data source %s size[%d]=%d, differs from size of dense index %s for parameters %s",
 					getName(fmlDataSource).c_str(), recordIndexCount + i, arraySizes[recordIndexCount + i],
-					getName(fmlDenseIndexEvaluator).c_str(), name);
+					getName(fmlDenseIndexEvaluator).c_str(), name.c_str());
 				return_code = 0;
 				break;
 			}
@@ -533,7 +533,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 			if (fmlOrderDataSource != FML_INVALID_HANDLE)
 			{
 				display_message(WARNING_MESSAGE, "Read FieldML:  Parameters %s dense index %s specifies order. This is not yet supported; results will be incorrect.",
-					name, getName(fmlDenseIndexEvaluator).c_str());
+					name.c_str(), getName(fmlDenseIndexEvaluator).c_str());
 			}
 		}
 	}
@@ -550,18 +550,18 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 		fmlKeyDataSource = Fieldml_GetKeyDataSource(fmlSession, fmlParameters);
 		if (fmlKeyDataSource == FML_INVALID_HANDLE)
 		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Could not get key data source for parameters %s", name);
+			display_message(ERROR_MESSAGE, "Read FieldML:  Could not get key data source for parameters %s", name.c_str());
 			return_code = 0;
 		}
 		else if (FML_DATA_SOURCE_ARRAY != Fieldml_GetDataSourceType(fmlSession, fmlKeyDataSource))
 		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Only supports ArrayDataSource for keys for parameters %s", name);
+			display_message(ERROR_MESSAGE, "Read FieldML:  Only supports ArrayDataSource for keys for parameters %s", name.c_str());
 			return_code = 0;
 		}
 		else if (Fieldml_GetArrayDataSourceRank(fmlSession, fmlKeyDataSource) != 2)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Key data source %s for parameters %s must be rank 2",
-				getName(fmlKeyDataSource).c_str(), name);
+				getName(fmlKeyDataSource).c_str(), name.c_str());
 			return_code = 0;
 		}
 		else if ((FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceRawSizes(fmlSession, fmlKeyDataSource, keyArrayRawSizes)) ||
@@ -569,7 +569,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 			(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceOffsets(fmlSession, fmlKeyDataSource, keyArrayOffsets)))
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to get array sizes for key data source %s for parameters %s",
-				getName(fmlKeyDataSource).c_str(), name);
+				getName(fmlKeyDataSource).c_str(), name.c_str());
 			return_code = 0;
 		}
 		else
@@ -583,7 +583,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 			if ((keyArraySizes[0] != arraySizes[0]) || (keyArraySizes[1] != sparseIndexCount))
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Invalid array sizes for key data source %s for parameters %s",
-					getName(fmlKeyDataSource).c_str(), name);
+					getName(fmlKeyDataSource).c_str(), name.c_str());
 				return_code = 0;
 			}
 		}
@@ -644,7 +644,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 		if (fmlReader == FML_INVALID_HANDLE)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Could not open reader for parameters %s data source %s",
-				name, getName(fmlDataSource).c_str());
+				name.c_str(), getName(fmlDataSource).c_str());
 			return_code = 0;
 		}
 		if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
@@ -653,7 +653,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 			if (fmlKeyReader == FML_INVALID_HANDLE)
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Could not open reader for parameters %s key data source %s",
-					name, getName(fmlKeyDataSource).c_str());
+					name.c_str(), getName(fmlKeyDataSource).c_str());
 				return_code = 0;
 			}
 		}
@@ -666,7 +666,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 		if (ioResult != FML_IOERR_NO_ERROR)
 		{
 			display_message(ERROR_MESSAGE, "Read FieldML:  Failed to read data source %s for parameters %s",
-				getName(fmlDataSource).c_str(), name);
+				getName(fmlDataSource).c_str(), name.c_str());
 			return_code = 0;
 		}
 		if (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY)
@@ -676,7 +676,7 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 			if (ioResult != FML_IOERR_NO_ERROR)
 			{
 				display_message(ERROR_MESSAGE, "Read FieldML:  Failed to read key data source %s for parameters %s",
-					getName(fmlKeyDataSource).c_str(), name);
+					getName(fmlKeyDataSource).c_str(), name.c_str());
 				return_code = 0;
 			}
 		}
