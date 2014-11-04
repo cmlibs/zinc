@@ -12,7 +12,6 @@
 
 #include "zinc/status.h"
 #include "datastore/labels.hpp"
-#include "general/message.h"
 
 DsLabels::DsLabels() :
 	cmzn::RefCounted(),

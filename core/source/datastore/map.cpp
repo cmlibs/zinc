@@ -11,7 +11,6 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "datastore/map.hpp"
-#include "general/message.h"
 
 DsMapBase::DsMapBase(int labelsArraySizeIn, DsLabels **labelsArrayIn) :
 	dense(true),
