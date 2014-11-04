@@ -29,9 +29,7 @@ SET( COMPUTED_FIELD_CORE_SRCS
 	source/computed_field/computed_field_wrappers.cpp
 	source/computed_field/differential_operator.cpp
 	source/computed_field/field_cache.cpp
-	source/computed_field/field_ensemble.cpp
 	source/computed_field/field_module.cpp
-	source/computed_field/field_parameters.cpp
 	source/computed_field/computed_field_find_xi.cpp
 	source/computed_field/computed_field_finite_element.cpp
 	source/computed_field/computed_field_set.cpp
@@ -58,16 +56,11 @@ SET( COMPUTED_FIELD_CORE_HDRS
 	source/computed_field/computed_field_wrappers.h
 	source/computed_field/differential_operator.hpp
 	source/computed_field/field_cache.hpp
-	source/computed_field/field_ensemble.hpp
 	source/computed_field/field_module.hpp
 	source/computed_field/computed_field_find_xi.h
 	source/computed_field/computed_field_finite_element.h
 	source/computed_field/computed_field_set.h
-	source/computed_field/field_location.hpp
-	source/field_io/cmiss_field_ensemble.h
-	source/field_io/cmiss_field_ensemble_id.h
-	source/field_io/cmiss_field_parameters.h
-	source/field_io/cmiss_field_parameters_id.h )
+	source/computed_field/field_location.hpp )
 
 SET( COMPUTED_FIELD_GRAPHICS_SRCS
 	source/computed_field/computed_field_find_xi_graphics.cpp )
