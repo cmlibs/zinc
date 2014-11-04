@@ -618,7 +618,6 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 		}
 	}
 	VALUETYPE *valueBuffer = new VALUETYPE[valueBufferSize];
-	int *integerValueBuffer = 0;
 	int *keyBuffer = 0;
 	if (return_code)
 	{
