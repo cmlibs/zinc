@@ -14,6 +14,7 @@
 #include "datastore/labels.hpp"
 #include "datastore/mapindexing.hpp"
 #include "general/block_array.hpp"
+#include "general/message.h"
 
 class DsMapBase : public cmzn::RefCounted
 {

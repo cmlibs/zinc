@@ -232,8 +232,8 @@ private:
 	template <typename VALUETYPE> int readParametersArray(FmlObjectHandle fmlParameters,
 		DsMap<VALUETYPE>& parameters);
 
-	DsMap<int> *FieldMLReader::getEnsembleParameters(FmlObjectHandle fmlParameters);
-	DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParameters);
+	DsMap<int> *getEnsembleParameters(FmlObjectHandle fmlParameters);
+	DsMap<double> *getContinuousParameters(FmlObjectHandle fmlParameters);
 
 	enum cmzn_element_shape_type getElementShapeFromName(const char *shapeName);
 
