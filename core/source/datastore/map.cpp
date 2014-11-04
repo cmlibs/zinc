@@ -44,7 +44,7 @@ bool DsMapBase::checkLabelsArrays(int labelsArraySizeIn, DsLabels **labelsArrayI
 			if (labelsArrayIn[j] == labelsArrayIn[i])
 			{
 				display_message(ERROR_MESSAGE,
-					"DsMapBase::create.  Repeated labels '%s'", labelsArrayIn[i]->getName());
+					"DsMapBase::create.  Repeated labels '%s'", labelsArrayIn[i]->getName().c_str());
 				return false;
 			}
 		}
