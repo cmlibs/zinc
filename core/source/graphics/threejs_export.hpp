@@ -21,12 +21,12 @@ class Threejs_export
 private:
 	char *filename;
 	int number_of_time_steps;
-	cmzn_scene_render_threejs_data_export_mode mode;
-	FILE *threejs_file;
+	cmzn_streaminformation_scene_export_data_type mode;
 	std::string facesString;
 	std::string verticesMorphString;
 	std::string normalMorphString;
 	std::string colorsMorphString;
+	std::string outputString;
 
 	void writeVertexBuffer(const char *output_variable_name,
 		GLfloat *vertex_buffer, unsigned int values_per_vertex,
@@ -53,14 +53,15 @@ private:
 public:
 
 	Threejs_export(const char *filename, int number_of_time_steps_in,
-		cmzn_scene_render_threejs_data_export_mode mode_in) :
+		cmzn_streaminformation_scene_export_data_type mode_in) :
 		filename(duplicate_string(filename)), number_of_time_steps(number_of_time_steps_in),
-		mode(mode_in),	threejs_file(0)
+		mode(mode_in)
 	{
 		verticesMorphString.clear();
 		colorsMorphString.clear();
 		normalMorphString.clear();
 		facesString.clear();
+		outputString.clear();
 	}
 
 	~Threejs_export();
@@ -70,5 +71,7 @@ public:
 	int beginExport();
 
 	int endExport();
+
+	std::string *getExportString();
 
 };

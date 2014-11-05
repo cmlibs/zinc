@@ -104,6 +104,13 @@ public:
 		Streamresource(reinterpret_cast<cmzn_streamresource_id>(streamresource_memory_id))
 	{ }
 
+	int getBuffer(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
+	{
+		return cmzn_streamresource_memory_get_buffer(
+			reinterpret_cast<cmzn_streamresource_memory_id>(id), memory_buffer_references,
+			memory_buffer_sizes);
+	}
+
 };
 
 inline StreamresourceFile Streamresource::castFile()
@@ -118,6 +125,7 @@ inline StreamresourceMemory Streamresource::castMemory()
 
 class StreaminformationImage;
 class StreaminformationRegion;
+class StreaminformationScene;
 
 class Streaminformation
 {
@@ -225,6 +233,7 @@ public:
 
 	inline StreaminformationImage castImage();
 	inline StreaminformationRegion castRegion();
+	inline StreaminformationScene castScene();
 
 };
 

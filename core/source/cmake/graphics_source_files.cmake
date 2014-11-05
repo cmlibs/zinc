@@ -12,6 +12,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/graphics.cpp
 	source/graphics/graphics_module.cpp
 	source/graphics/scene.cpp
+	source/stream/scene_stream.cpp
 	source/graphics/colour.cpp
 	source/graphics/complex.cpp
 	source/graphics/element_point_ranges.cpp
@@ -51,6 +52,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/graphics_module.h
 	source/graphics/scene.h
 	source/graphics/scene.hpp
+	source/stream/scene_stream.hpp
 	source/graphics/colour.h
 	source/graphics/complex.h
 	source/graphics/element_point_ranges.h

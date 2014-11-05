@@ -12,6 +12,7 @@ FILE : scene.h
 #define SCENE_H
 
 #include <list>
+#include <string>
 #include "zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "general/any_object.h"
@@ -445,29 +446,25 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
  */
 void cmzn_scene_detach_from_owner(cmzn_scene_id scene);
 
-enum cmzn_scene_render_threejs_data_export_mode
-{
-	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_INVALID = 0,
-	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR = 1,
-	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE = 2,
-	CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE = 3
-};
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_export_data_type);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_scene_render_threejs_data_export_mode);
+enum cmzn_streaminformation_scene_export_data_type
+	cmzn_streaminformation_scene_export_data_type_enum_from_string(const char *string);
 
-enum cmzn_scene_render_threejs_data_export_mode
-	cmzn_scene_render_threejs_data_export_mode_enum_from_string(const char *string);
-
-char *cmzn_scene_render_threejs_data_export_mode_enum_to_string(
-	enum cmzn_scene_render_threejs_data_export_mode mode);
+char *cmzn_streaminformation_scene_export_data_type_enum_to_string(
+	enum cmzn_streaminformation_scene_export_data_type mode);
 
 int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *filename,
 	int number_of_time_steps, double begin_time, double end_time,
-	cmzn_scene_render_threejs_data_export_mode export_mode);
+	cmzn_streaminformation_scene_export_data_type export_mode,
+	int *number_of_entries, std::string **output_string);
 
 int Scene_render_webgl(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *name_prefix);
+
+int Scene_get_number_of_graphics_with_type_in_tree(
+	cmzn_scene_id scene, cmzn_scenefilter_id scenefilter, enum cmzn_graphics_type type);
 
 #endif /* !defined (SCENE_H) */
 

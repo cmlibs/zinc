@@ -680,7 +680,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 	char face_word[MAX_OBJ_VERTICES][128], objname[100], *text, *word, matname[128];
 	FE_value rmag, result[3], vector1[3], vector2[3], vectorsum[3], vertex0[3],
 		vertex1[3], vertex2[3];
-	ZnReal *new_coordinate_vertices, *coordinate_vertices,
+	ZnReal *new_coordinate_vertices = 0, *coordinate_vertices = 0,
 		*new_normal_vertices, *normal_vertices, *new_texture_vertices, *texture_vertices;
 	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number,
 		number_of_triangles,  number_of_vertices, n_face_vertices,  n_obj_coordinate_vertices,
