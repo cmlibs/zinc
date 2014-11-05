@@ -17,6 +17,7 @@ from opencmiss.zinc.context import Context
 from opencmiss.zinc.glyph import Glyph
 from opencmiss.zinc.field import Field
 from opencmiss.zinc.sceneviewer import Sceneviewer
+from opencmiss.zinc.streamscene import StreaminformationScene
 from opencmiss.zinc import status
 
 class GraphicsTestCase(unittest.TestCase):
@@ -24,8 +25,8 @@ class GraphicsTestCase(unittest.TestCase):
 
     def setUp(self):
         self.context = Context('graphicstest')
-        root_region = self.context.getDefaultRegion()
-        self.scene = root_region.getScene()
+        self.root_region = self.context.getDefaultRegion()
+        self.scene = self.root_region.getScene()
 
 
     def tearDown(self):
@@ -90,7 +91,29 @@ class GraphicsTestCase(unittest.TestCase):
         self.assertEqual([0.1, 0.9, 0.4], rgb)
         
         self.assertRaises(TypeError, sv.setBackgroundColourRGB, [3.0, 2.0])
-    
+        
+    def testSceneExport(self):
+        self.root_region.readFile('resource/cube.exformat')
+        surfaces = self.scene.createGraphicsSurfaces()
+        coordinatesField = self.root_region.getFieldmodule().findFieldByName("coordinates");
+        result = surfaces.setCoordinateField(coordinatesField)
+        self.assertEqual(1, result)
+        si = self.scene.createStreaminformationScene();
+        si.setExportFormat(si.EXPORT_FORMAT_THREEJS)
+        result = si.getNumberOfResourcesRequired()
+        self.assertEqual(1, result)
+        result = si.setExportDataType(si.EXPORT_DATA_TYPE_COLOUR)
+        self.assertEqual(1, result)
+        memeory_sr = si.createStreamresourceMemory();
+        result = self.scene.exportScene(si)
+        self.assertEqual(1, result)
+        result, outputstring = memeory_sr.getBuffer()
+        self.assertEqual(1, result)
+        stringLoc = outputstring.find('vertices')
+        if stringLoc > -1:
+            self.assertEqual(1, 1)
+        else:
+            self.assertEqual(1, 0)
 def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
