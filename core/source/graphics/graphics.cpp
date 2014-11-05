@@ -3414,10 +3414,10 @@ int cmzn_graphics_execute_visible_graphics(
 	struct cmzn_graphics *graphics, void *renderer_void)
 {
 	int return_code = 1;
-	Render_graphics *renderer;
+	Render_graphics_opengl *renderer;
 
 	ENTER(cmzn_graphics_execute_visible_graphics);
-	if (graphics && (renderer = static_cast<Render_graphics *>
+	if (graphics && (renderer = static_cast<Render_graphics_opengl *>
 			(renderer_void)))
 	{
 		return_code = 1;
@@ -3430,10 +3430,13 @@ int cmzn_graphics_execute_visible_graphics(
 				{
 					if (renderer->begin_coordinate_system(graphics->coordinate_system))
 					{
+						if (renderer->picking)
+						{
 #if defined (OPENGL_API)
 						/* use position in list as name for GL picking */
-						glLoadName((GLuint)graphics->position);
+							glLoadName((GLuint)graphics->position);
 #endif /* defined (OPENGL_API) */
+						}
 						return_code = renderer->Graphics_execute(graphics);
 						renderer->end_coordinate_system(graphics->coordinate_system);
 					}
