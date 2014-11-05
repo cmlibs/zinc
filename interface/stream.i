@@ -18,6 +18,7 @@
 #include "zinc/stream.hpp"
 #include "zinc/streamimage.hpp"
 #include "zinc/streamregion.hpp"
+#include "zinc/streamscene.hpp"
 %}
 
 %include "zinc/stream.hpp"

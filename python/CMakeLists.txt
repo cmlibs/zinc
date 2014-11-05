@@ -89,6 +89,7 @@ SET(INTERFACE_SRCS
 	../interface/stream.i
 	../interface/streamimage.i
 	../interface/streamregion.i
+	../interface/streamscene.i
 	../interface/tessellation.i
 	../interface/timekeeper.i
 	../interface/timenotifier.i
