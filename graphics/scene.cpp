@@ -17,6 +17,8 @@
 #include <zinc/graphics.h>
 #include <zinc/region.h>
 #include <zinc/scenefilter.h>
+#include <zinc/streamscene.h>
+#include <zinc/stream.h>
 #include <zinc/sceneviewer.h>
 #include <zinc/spectrum.h>
 
@@ -28,6 +30,7 @@
 #include "zinc/scenefilter.hpp"
 #include "zinc/sceneviewer.hpp"
 #include "zinc/spectrum.hpp"
+#include "zinc/streamscene.hpp"
 
 #include "test_resources.h"
 #include "zinctestsetup.hpp"
@@ -406,4 +409,115 @@ TEST(ZincScene, graphics_list)
 	ASSERT_EQ(CMZN_ERROR_ARGUMENT, result = zinc.scene.moveGraphicsBefore(points, Graphics()));
 
 	ASSERT_EQ(CMZN_OK, result = zinc.scene.removeAllGraphics());
+}
+
+TEST(cmzn_scene, threejs_export_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	int result;
+
+	EXPECT_EQ(CMZN_OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	GraphicsSurfaces surfaces = zinc.scene.createGraphicsSurfaces();
+	EXPECT_TRUE(surfaces.isValid());
+
+	Field coordinateField = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinateField.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = surfaces.setCoordinateField(coordinateField));
+
+	StreaminformationScene si = zinc.scene.createStreaminformationScene();
+	EXPECT_TRUE(si.isValid());
+
+	EXPECT_EQ(CMZN_OK, result = si.setExportFormat(si.EXPORT_FORMAT_THREEJS));
+
+	EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
+
+	EXPECT_EQ(0, result = si.getNumberOfTimeSteps());
+
+	double double_result = 0.0;
+	EXPECT_EQ(0.0, double_result = si.getInitialTime());
+	EXPECT_EQ(0.0, double_result = si.getFinishTime());
+
+	EXPECT_EQ(CMZN_OK, result = si.setExportDataType(si.EXPORT_DATA_TYPE_COLOUR));
+
+	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
+
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.exportScene(si));
+
+	char *memory_buffer;
+	unsigned int size = 0;
+
+	result = memeory_sr.getBuffer((void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	char *temp_char = strstr ( memory_buffer, "vertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+}
+
+TEST(cmzn_scene, threejs_export)
+{
+	ZincTestSetup zinc;
+
+	int result;
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_region_read_file(zinc.root_region, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	cmzn_graphics_id surfaces = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_graphics_id>(0), surfaces);
+
+	cmzn_field_id coordinateField = cmzn_fieldmodule_find_field_by_name(zinc.fm, "coordinates");
+	EXPECT_NE(static_cast<cmzn_field_id>(0), coordinateField);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_graphics_set_coordinate_field(surfaces, coordinateField));
+
+	cmzn_streaminformation_id streaminformation = cmzn_scene_create_streaminformation_scene(zinc.scene);
+	EXPECT_NE(static_cast<cmzn_streaminformation_id>(0), streaminformation);
+
+	cmzn_streaminformation_scene_id scene_si = cmzn_streaminformation_cast_scene(streaminformation);
+	EXPECT_NE(static_cast<cmzn_streaminformation_scene_id>(0), scene_si);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_export_format(
+		scene_si, CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS));
+
+	EXPECT_EQ(1, result = cmzn_streaminformation_scene_get_number_of_resources_required(scene_si));
+	EXPECT_EQ(0, result = cmzn_streaminformation_scene_get_number_of_time_steps(scene_si));
+
+	double double_result = 0.0;
+	EXPECT_EQ(0.0, double_result = cmzn_streaminformation_scene_get_initial_time(scene_si));
+	EXPECT_EQ(0.0, double_result = cmzn_streaminformation_scene_get_finish_time(scene_si));
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_export_data_type(
+		scene_si, CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR));
+
+	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_memory(streaminformation);
+
+	EXPECT_EQ(CMZN_OK, result = cmzn_scene_export_scene(zinc.scene, scene_si));
+
+	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
+		data_sr);
+
+	char *memory_buffer;
+	unsigned int size = 0;
+
+	result = cmzn_streamresource_memory_get_buffer(memeory_sr, (void**)&memory_buffer, &size);
+	EXPECT_EQ(CMZN_OK, result);
+
+	char *temp_char = strstr ( memory_buffer, "vertices");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	temp_char = strstr ( memory_buffer, "faces");
+	EXPECT_NE(static_cast<char *>(0), temp_char);
+
+	cmzn_field_destroy(&coordinateField);
+	cmzn_streamresource_destroy(&data_sr);
+	data_sr = cmzn_streamresource_memory_base_cast(memeory_sr);
+	cmzn_streamresource_destroy(&data_sr);
+	cmzn_streaminformation_scene_destroy(&scene_si);
+	cmzn_streaminformation_destroy(&streaminformation);
+	cmzn_graphics_destroy(&surfaces);
 }
