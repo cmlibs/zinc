@@ -1335,7 +1335,8 @@ int execute_cmzn_scene(struct cmzn_scene *scene,
 		/* put out the name (position) of the scene: */
 		//
 		//printf("%i \n", scene->position);
-		glLoadName((GLuint)scene->position);
+		if (renderer->picking)
+			glLoadName((GLuint)scene->position);
 		/* save a matrix multiply when identity transformation */
 		if(scene->transformation)
 		{
@@ -3186,9 +3187,11 @@ int Scene_render_opengl(cmzn_scene *scene, Render_graphics_opengl *renderer)
 
 	if (scene && renderer)
 	{
-		glPushName(0);
+		if (renderer->picking)
+			glPushName(0);
 		renderer->cmzn_scene_execute(scene);
-		glPopName();
+		if (renderer->picking)
+			glPopName();
 	}
 	else
 	{

@@ -165,9 +165,11 @@ public:
 
 	  int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	  {
-		  glPushName(0);
+		  if (this->picking)
+			  glPushName(0);
 		  int return_code = cmzn_scene_graphics_render_opengl(scene, this);
-		  glPopName();
+		  if (this->picking)
+			  glPopName();
 		  return return_code;
 	  }
 
@@ -716,9 +718,11 @@ public:
 
 	  int cmzn_scene_execute_graphics(cmzn_scene *scene)
 	  {
-		  glPushName(0);
+		  if (this->picking)
+			  glPushName(0);
 		  int return_code = cmzn_scene_graphics_render_opengl(scene, this);
-		  glPopName();
+		  if (this->picking)
+			  glPopName();
 		  return return_code;
 	  }
 
@@ -2162,7 +2166,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
 						nodeset_index, 1, &object_name);
 					int *names = names_buffer + names_per_vertex * index_start;
-					if (pick_object_id)
+					if (renderer->picking && pick_object_id)
 					{
 						/* put out name for picking - cast to GLuint */
 						glLoadName((GLuint)object_name);
