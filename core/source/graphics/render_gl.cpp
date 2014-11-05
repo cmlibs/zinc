@@ -508,25 +508,46 @@ public:
 	double begin_time, end_time;
 	int number_of_time_steps, current_time_frame;
 	int current_graphics_number;
-	enum cmzn_scene_render_threejs_data_export_mode mode;
+	enum cmzn_streaminformation_scene_export_data_type mode;
+	int *number_of_entries;
+	std::string **output_string;
 
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
-		enum cmzn_scene_render_threejs_data_export_mode mode_in) :
+		enum cmzn_streaminformation_scene_export_data_type mode_in, int *number_of_entries_in,
+		std::string **output_string_in) :
 		Render_graphics_opengl_vertex_buffer_object(),
 		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
 		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in),
-		mode(mode_in)
+		mode(mode_in), number_of_entries(number_of_entries_in)
 	{
 		exports_map.clear();
 		current_graphics_number = 0;
 		current_time_frame = 0;
+		output_string = output_string_in;
 	}
 
 	~Render_graphics_opengl_threejs()
 	{
 		if (file_prefix)
 			DEALLOCATE(file_prefix);
+	}
+
+	int write_output_string()
+	{
+		*number_of_entries = exports_map.size();
+		if (*number_of_entries > 0)
+		{
+			int i = 0;
+			*output_string = new std::string[*number_of_entries];
+			for (std::map<cmzn_graphics *, Threejs_export *>::iterator export_iter = exports_map.begin();
+				export_iter != exports_map.end(); export_iter++)
+			{
+				(*output_string)[i] = std::string(*(export_iter->second->getExportString()));
+				i++;
+			}
+		}
+		return 1;
 	}
 
 	void clear_exports_map()
@@ -545,7 +566,9 @@ public:
 		if (number_of_time_steps == 0)
 		{
 			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/0);
-			return cmzn_scene_execute(scene);
+			cmzn_scene_execute(scene);
+			write_output_string();
+			clear_exports_map();
 		}
 		else
 		{
@@ -554,7 +577,7 @@ public:
 			{
 				this->time = begin_time;
 				cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
-				return cmzn_scene_execute(scene);
+				cmzn_scene_execute(scene);
 			}
 			else
 			{
@@ -569,13 +592,14 @@ public:
 					return_code = cmzn_scene_execute(scene);
 					current_time_frame++;
 				}
-				clear_exports_map();
 			}
+			write_output_string();
+			clear_exports_map();
 			current_time_frame = 0;
 			this->time = current_time;
 			cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
-			return 1;
 		}
+		return 1;
 	}
 
 	/**
@@ -665,10 +689,11 @@ public:
 
 Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 	const char *file_prefix, int number_of_time_steps, double begin_time,
-	double end_time, enum cmzn_scene_render_threejs_data_export_mode mode)
+	double end_time, enum cmzn_streaminformation_scene_export_data_type mode,
+	int *number_of_entries, std::string **output_string)
 {
 	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,
-		begin_time, end_time, mode);
+		begin_time, end_time, mode, number_of_entries, output_string);
 }
 
 /**
@@ -2038,7 +2063,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 {
 	GLfloat transformation[16], x, y, z;
 	int draw_all, name_selected = 0, label_bounds_per_glyph = 0,
-		return_code;
+		return_code = 1;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
 
@@ -2555,7 +2580,6 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 		display_message(ERROR_MESSAGE,"draw_glyphsetGL. Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
 } /* draw_glyphsetGL */

@@ -9,6 +9,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #if !defined (RENDERGL_HPP)
 #define RENDERGL_HPP
+#include <string>
 #include "graphics/graphics_object.h"
 #include "graphics/render.hpp"
 #include "graphics/scene.h"
@@ -168,7 +169,8 @@ Render_graphics_opengl *Render_graphics_opengl_create_webgl_renderer(const char 
 
 Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *file_prefix,
 	int number_of_time_steps, double begin_time, double end_time,
-	enum cmzn_scene_render_threejs_data_export_mode mode);
+	enum cmzn_streaminformation_scene_export_data_type mode,
+	int *number_of_entries, std::string **output_string);
 
 /** Routine that uses the objects material and spectrum to convert
 * an array of data to corresponding colour data.

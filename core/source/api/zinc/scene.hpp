@@ -22,6 +22,7 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class StreaminformationScene;
 class Sceneviewermodule;
 class Scenepicker;
 
@@ -254,6 +255,10 @@ public:
 	}
 
 	inline Scenepicker createScenepicker();
+
+	inline int exportScene(const StreaminformationScene& streaminformationScene);
+
+	inline StreaminformationScene createStreaminformationScene();
 
 };
 

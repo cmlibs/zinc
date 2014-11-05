@@ -20,6 +20,7 @@ FILE : scene.cpp
 #include "zinc/material.h"
 #include "zinc/node.h"
 #include "zinc/scenepicker.h"
+#include "zinc/streamscene.h"
 #include "zinc/scene.h"
 #include "zinc/status.h"
 #include "computed_field/computed_field.h"
@@ -3569,22 +3570,22 @@ cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene)
 	return 0;
 }
 
-class cmzn_scene_render_threejs_data_export_mode_conversion
+class cmzn_streaminformation_scene_export_data_type_conversion
 {
 public:
-	static const char *to_string(enum cmzn_scene_render_threejs_data_export_mode export_mode)
+	static const char *to_string(enum cmzn_streaminformation_scene_export_data_type export_mode)
 	{
 		const char *enum_string = 0;
 		switch (export_mode)
 		{
-			case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR:
-				enum_string = "RENDER_THREEJS_DATA_EXPORT_COLOUR";
+			case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR:
+				enum_string = "EXPORT_DATA_TYPE_COLOUR";
 				break;
-			case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE:
-				enum_string = "RENDER_THREEJS_DATA_EXPORT_PER_VERTEX_VALUE";
+			case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE:
+				enum_string = "XPORT_DATA_TYPE_PER_VERTEX_VALUE";
 				break;
-			case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE:
-				enum_string = "RENDER_THREEJS_DATA_EXPORT_PER_FACE_VALUE";
+			case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE:
+				enum_string = "EXPORT_DATA_TYPE_PER_FACE_VALUE";
 				break;
 		default:
 			break;
@@ -3593,35 +3594,35 @@ public:
 	}
 };
 
-enum cmzn_scene_render_threejs_data_export_mode
-	cmzn_scene_render_threejs_data_export_mode_enum_from_string(const char *string)
+enum cmzn_streaminformation_scene_export_data_type
+	cmzn_streaminformation_scene_export_data_type_enum_from_string(const char *string)
 {
-	return string_to_enum<enum cmzn_scene_render_threejs_data_export_mode,
-		cmzn_scene_render_threejs_data_export_mode_conversion>(string);
+	return string_to_enum<enum cmzn_streaminformation_scene_export_data_type,
+		cmzn_streaminformation_scene_export_data_type_conversion>(string);
 }
 
-char *cmzn_scene_render_threejs_data_export_mode_enum_to_string(
-	enum cmzn_scene_render_threejs_data_export_mode mode)
+char *cmzn_streaminformation_scene_export_data_type_enum_to_string(
+	enum cmzn_streaminformation_scene_export_data_type mode)
 {
-	const char *mode_string = cmzn_scene_render_threejs_data_export_mode_conversion::to_string(mode);
+	const char *mode_string = cmzn_streaminformation_scene_export_data_type_conversion::to_string(mode);
 	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_scene_render_threejs_data_export_mode)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_streaminformation_scene_export_data_type)
 {
 	const char *enumerator_string;
 
 	switch (enumerator_value)
 	{
-		case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR:
+		case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR:
 		{
 			enumerator_string = "data_export_colour";
 		} break;
-		case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE:
+		case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE:
 		{
 			enumerator_string = "data_export_per_vertex_value";
 		} break;
-		case CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE:
+		case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE:
 		{
 			enumerator_string = "data_export_per_face_value";
 		} break;
@@ -3634,23 +3635,25 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_scene_render_threejs_data_export_mode)
 	return (enumerator_string);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_scene_render_threejs_data_export_mode)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_export_data_type)
 
 int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *file_prefix,
 	int number_of_time_steps, double begin_time, double end_time,
-	cmzn_scene_render_threejs_data_export_mode export_mode)
+	cmzn_streaminformation_scene_export_data_type export_mode,
+	int *number_of_entries, std::string **output_string)
 {
-	if (file_prefix)
+	if (scene)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
-			file_prefix, number_of_time_steps, begin_time,end_time, export_mode) ;
+			file_prefix, number_of_time_steps, begin_time,end_time, export_mode, number_of_entries,
+			output_string);
 		renderer->Scene_compile(scene, scenefilter);
 		delete renderer;
 
-		return 1;
+		return CMZN_OK;
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int Scene_render_webgl(cmzn_scene_id scene,
@@ -3662,4 +3665,51 @@ int Scene_render_webgl(cmzn_scene_id scene,
 	delete renderer;
 
 	return 1;
+}
+
+struct Scene_get_number_of_graphics_data
+{
+	cmzn_scenefilter_id scenefilter;
+	enum cmzn_graphics_type type;
+	int number_of_graphics;
+};
+
+int Scene_get_number_of_graphics_with_type(cmzn_scene_id scene, void *Scene_get_number_of_graphics_data_void)
+{
+	struct Scene_get_number_of_graphics_data *data = 0;
+	if (scene && (0 != (data = (Scene_get_number_of_graphics_data *)Scene_get_number_of_graphics_data_void)))
+	{
+		struct cmzn_graphics *graphics = 0;
+		int number_of_graphics = cmzn_scene_get_number_of_graphics(scene);
+		for (int i = 0; i < number_of_graphics; i++)
+		{
+			graphics = FIND_BY_IDENTIFIER_IN_LIST(cmzn_graphics, position)(
+				i+1, scene->list_of_graphics);
+
+			if  (graphics && (cmzn_graphics_get_graphics_type(graphics) == data->type) &&
+				((0 == data->scenefilter) || cmzn_scenefilter_evaluate_graphics(data->scenefilter, graphics)))
+			{
+				data->number_of_graphics++;
+			}
+		}
+		return 1;
+	}
+
+	return 0;
+}
+
+int Scene_get_number_of_graphics_with_type_in_tree(
+	cmzn_scene_id scene, cmzn_scenefilter_id scenefilter, enum cmzn_graphics_type type)
+{
+	if (scene)
+	{
+		struct Scene_get_number_of_graphics_data data;
+		data.scenefilter = scenefilter;
+		data.type = type;
+		data.number_of_graphics = 0;
+		for_each_child_scene_in_scene_tree(
+			scene, Scene_get_number_of_graphics_with_type, 	&(data));
+		return data.number_of_graphics;
+	}
+	return 0;
 }

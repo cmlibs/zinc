@@ -16,6 +16,9 @@
 #include <iostream>
 #include <string>
 #include <math.h>
+#include <iostream>
+#include <sstream>
+#include <fstream>
 
 using namespace std;
 
@@ -62,31 +65,25 @@ Threejs_export::~Threejs_export()
 
 int Threejs_export::beginExport()
 {
-	char temp[200];
-	sprintf(temp, "%s.json", filename);
-	threejs_file=fopen(temp,"w");
-	fprintf(threejs_file,"{\n\t\"metadata\" : {\n\t\t\"formatVersion\" : 3,\n");
-	fprintf(threejs_file,"\t\t\"description\" : \"Exported from LibZinc.\"\n\t},\n\n");
 
-	if (threejs_file)
-		return 1;
-	else
-		return 0;
+	outputString += "{\n\t\"metadata\" : {\n\t\t\"formatVersion\" : 3,\n";
+	outputString += "\t\t\"description\" : \"Exported from LibZinc.\"\n\t},\n\n";
+	return 1;
 }
 
 int Threejs_export::endExport()
 {
-	if (threejs_file)
-	{
-		fprintf(threejs_file, "%s", verticesMorphString.c_str());
-		fprintf(threejs_file, "%s", colorsMorphString.c_str());
-		fprintf(threejs_file, "%s", normalMorphString.c_str());
-		fprintf(threejs_file, "%s", facesString.c_str());
-		fprintf(threejs_file, "}\n");
-		return (0 == fclose(threejs_file));
-	}
-	else
-		return 0;
+	outputString += verticesMorphString;
+	outputString += colorsMorphString;
+	outputString += normalMorphString;
+	outputString += facesString;
+	outputString += "}\n";
+	return 1;
+}
+
+std::string *Threejs_export::getExportString()
+{
+	return &outputString;
 }
 
 void Threejs_export::writeIntegerBuffer(const char *output_variable_name,
@@ -95,26 +92,31 @@ void Threejs_export::writeIntegerBuffer(const char *output_variable_name,
 {
 	if (vertex_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
+		char temp[200];
+
 		unsigned int number_of_valid_output =  values_per_vertex;
 		if (number_of_valid_output > 3)
 			number_of_valid_output = 3;
 		int *currentVertex = vertex_buffer;
-		fprintf(threejs_file,"\t\"%s\" : [", output_variable_name);
+		sprintf(temp, "\t\"%s\" : [", output_variable_name);
+		outputString += temp;
+
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
 			if (((i % 10) == 0))
-				fprintf(threejs_file,"\n\t\t");
+				outputString += "\n\t\t";
 			for (unsigned int k = 0; k < number_of_valid_output; k++)
 			{
-				fprintf(threejs_file, "%d", currentVertex[k]);
+				sprintf(temp, "%d", currentVertex[k]);
+				outputString += temp;
 				if (0 == ((k == number_of_valid_output - 1) && (i == vertex_count - 1)))
 				{
-					fprintf(threejs_file, ",");
+					outputString += ",";
 				}
 			}
 			currentVertex+=values_per_vertex;
 		}
-		fprintf(threejs_file,"\n\t],\n\n");
+		outputString += "\n\t],\n\n";
 	}
 }
 
@@ -173,26 +175,31 @@ void Threejs_export::writeVertexBuffer(const char *output_variable_name,
 	{
 		unsigned int number_of_valid_output = 3;
 		GLfloat *currentVertex = vertex_buffer;
-		fprintf(threejs_file,"\t\"%s\" : [", output_variable_name);
+		char new_string[100];
+		sprintf(new_string, "\t\"%s\" : [", output_variable_name);
+		outputString += new_string;
 		for (unsigned int i = 0; i < vertex_count; i++)
 		{
 			if ((i % 10) == 0)
-				fprintf(threejs_file,"\n\t\t");
+				outputString += "\n\t\t";
 			for (unsigned int k = 0; k < number_of_valid_output; k++)
 			{
 				if ((number_of_valid_output > values_per_vertex) &&
 					(k >= values_per_vertex))
-					fprintf(threejs_file, "0.0");
+					outputString += "0.0";
 				else
-					fprintf(threejs_file, "%f", currentVertex[k]);
+				{
+					sprintf(new_string, "%f", currentVertex[k]);
+					outputString += new_string;
+				}
 				if (0 == ((k == number_of_valid_output - 1) && (i == vertex_count - 1)))
 				{
-					fprintf(threejs_file, ",");
+					outputString += ",";
 				}
 			}
 			currentVertex+=values_per_vertex;
 		}
-		fprintf(threejs_file,"\n\t],\n\n");
+		outputString += "\n\t],\n\n";
 	}
 }
 
@@ -256,7 +263,7 @@ void Threejs_export::writeMorphVertexBuffer(const char *output_variable_name,
 
 void Threejs_export::writeIndexBuffer(struct GT_object *object, int typeMask, int number_of_points)
 {
-	if (threejs_file && object)
+	if (object)
 	{
 		facesString += "\t\"faces\": [\n";
 		unsigned int *index_vertex_buffer = 0, index_values_per_vertex = 0, index_vertex_count = 0;
@@ -398,22 +405,25 @@ void Threejs_export::writeIndexBuffer(struct GT_object *object, int typeMask, in
 void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *vertex_buffer,
 	unsigned int values_per_vertex, unsigned int vertex_count)
 {
+	char num_string[100];
+
 	if (vertex_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
-		fprintf(threejs_file,"\t\"colors\" : [");
-		if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE)
+		outputString += "\t\"colors\" : [";
+		if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE)
 		{
 			GLfloat *currentVertex = vertex_buffer;
 			for (unsigned int i = 0; i < vertex_count; i++)
 			{
 				if (((i % 10) == 0))
-					fprintf(threejs_file,"\n\t\t");
+					outputString += "\n\t\t";
 				for (unsigned int k = 0; k < values_per_vertex; k++)
 				{
-					fprintf(threejs_file, "%f", currentVertex[k]);
+					sprintf(num_string, "%f", currentVertex[k]);
+					outputString += num_string;
 					if (0 == ((k == values_per_vertex - 1) && (i == vertex_count - 1)))
 					{
-						fprintf(threejs_file, ",");
+						outputString += ",";
 					}
 				}
 				currentVertex+=values_per_vertex;
@@ -438,7 +448,7 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 				unsigned int index[3];
 				for (unsigned i = 0; i < number_count; i ++)
 				{
-					fprintf(threejs_file,"\n\t\t");
+					outputString += "\n\t\t";
 					points_per_strip = number_buffer[i];
 					for (unsigned int j =0; j< points_per_strip - 2; j++)
 					{
@@ -460,11 +470,12 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 							GLfloat average = (currentVertex[index[0] * values_per_vertex + k] +
 								currentVertex[index[1] * values_per_vertex + k] +
 								currentVertex[index[2] * values_per_vertex + k]) / 3;
-							fprintf(threejs_file, "%f", average);
+							sprintf(num_string, "%f", average);
+							outputString += num_string;
 							if (!((i == number_count - 1) && (k == values_per_vertex - 1) &&
 								 (j == points_per_strip - 3)))
 							{
-								fprintf(threejs_file, ",");
+								outputString += ",";
 							}
 						}
 					}
@@ -479,29 +490,31 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 				for (unsigned int i = 0; i < vertex_count; i += 3)
 				{
 					if (((i % 10) == 0))
-						fprintf(threejs_file,"\n\t\t");
+						outputString += "\n\t\t";
 					for (unsigned int k = 0; k < values_per_vertex; k++)
 					{
 						GLfloat average = (currentVertex[k] + currentVertex[k + values_per_vertex] +
 							currentVertex[k + values_per_vertex * 2]) / 3;
-						fprintf(threejs_file, "%f", average);
+						char num_string[100];
+						sprintf(num_string, "%f", average);
+						outputString += num_string;
 						if (0 == ((k == values_per_vertex - 1) && (i == vertex_count - 1)))
 						{
-							fprintf(threejs_file, ",");
+							outputString += ",";
 						}
 					}
 					currentVertex+=values_per_vertex * 3;
 				}
 			}
 		}
-		fprintf(threejs_file,"\n\t],\n\n");
+		outputString += "\n\t],\n\n";
 	}
 }
 
 
 int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step)
 {
-	if (threejs_file && object)
+	if (object)
 	{
 		int typebitmask = 0;
 		int buffer_binding = object->buffer_binding;
@@ -532,7 +545,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				}
 			}
 
-			if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_COLOUR)
+			if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR)
 			{
 				unsigned int colour_values_per_vertex, colour_vertex_count;
 				GLfloat *colour_buffer = (GLfloat *)NULL;
@@ -566,8 +579,8 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 				}
 			}
-			else if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_VERTEX_VALUE ||
-					CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE)
+			else if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE ||
+					CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE)
 			{
 				GLfloat *data_buffer = NULL;
 				unsigned int data_values_per_vertex, data_vertex_count;
@@ -577,7 +590,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				{
 					if (time_step == 0)
 					{
-						if (mode == CMZN_SCENE_RENDER_THREEJS_DATA_EXPORT_MODE_PER_FACE_VALUE)
+						if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE)
 						{
 							typebitmask |= THREEJS_TYPE_FACE_COLOR;
 						}

@@ -20,4 +20,43 @@
 struct cmzn_scene;
 typedef struct cmzn_scene * cmzn_scene_id;
 
+/**
+ * @brief A scene-specific stream information object.
+ *
+ * A scene-specific stream information object, used to specify one or more
+ * files/resources for a scene to write to, with attributes
+ * specified for them globally.
+ *
+ * @see cmzn_scene_create_streaminformation_scene
+ */
+struct cmzn_streaminformation_scene;
+typedef struct cmzn_streaminformation_scene * cmzn_streaminformation_scene_id;
+
+/**
+ * Enumeration to indicate what the data should written out as.
+ */
+enum cmzn_streaminformation_scene_export_data_type
+{
+	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_INVALID = 0,
+	/*!< Unspecified type */
+	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR = 1,
+	/*!< Export data as colour*/
+	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE = 2,
+	/*!< Export data as field value on per vertex basis*/
+	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE = 3
+	/*!< Export data as field value on per face basis*/
+};
+
+/**
+ * Enumeration of attributes that can be set by generic stream information region
+ * methods.
+ */
+enum cmzn_streaminformation_scene_export_format
+{
+	CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_INVALID = 0,
+	/*!< Unspecified attribute */
+	CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS = 1
+	/*!< Export scene into ThreeJS compatible JSON file.*/
+};
+
 #endif
