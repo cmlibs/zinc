@@ -110,7 +110,8 @@ class GraphicsTestCase(unittest.TestCase):
         result, outputstring = memeory_sr.getBuffer()
         self.assertEqual(1, result)
         stringLoc = outputstring.find('vertices')
-        self.assertGreater(stringLoc, -1)
+        self.assertNotEqual(-1, stringLoc, 'keyword \'vertices\' not found')
+        
 def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
