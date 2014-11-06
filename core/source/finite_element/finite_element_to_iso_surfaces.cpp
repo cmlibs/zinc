@@ -1868,16 +1868,15 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 	unsigned int number_of_available_vertices = 0, insert_vertex_location = 0;
 	GLfloat place_holder[3];
 
+	total_number_of_triangles_to_add = 0;
 	for (Iso_mesh_map_const_iterator mesh_iter = mesh_map.begin();
 		mesh_iter != mesh_map.end(); mesh_iter++)
 	{
 		Iso_mesh& mesh = *(mesh_iter->second);
 		const Iso_triangle_list& triangle_list = mesh.triangle_list;
 		const int number_of_triangles = triangle_list.size();
-		total_number_of_triangles_to_add = 0;
 		if (0 < number_of_triangles)
 		{
-			GLfloat *dataField = NULL;
 			for (Iso_triangle_list_const_iterator triangle_iter = triangle_list.begin();
 				triangle_iter != triangle_list.end(); triangle_iter++)
 			{
