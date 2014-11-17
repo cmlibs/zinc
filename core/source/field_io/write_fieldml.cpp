@@ -352,7 +352,8 @@ int FieldMLWriter::writeMesh(int dimension, bool writeIfEmpty)
 				cmzn_element_shape_type shapeType = cmzn_element_get_shape_type(element);
 				if (shapeType != lastShapeType)
 				{
-					for (int i = 0; i < shapeTypes.size(); ++i)
+					const int shapeTypesSize = static_cast<int>(shapeTypes.size());
+					for (int i = 0; i < shapeTypesSize; ++i)
 						if (shapeTypes[i] == shapeType)
 						{
 							lastShapeType = shapeType;
@@ -378,6 +379,7 @@ int FieldMLWriter::writeMesh(int dimension, bool writeIfEmpty)
 			// ensure we have argument for mesh type and can find argument for elements type
 			// since it uses a special naming pattern e.g. mesh3d.argument.elements
 			FmlObjectHandle fmlMeshArgument = this->getArgumentForType(fmlMeshType);
+			USE_PARAMETER(fmlMeshArgument);
 
 			std::string meshElementsArgumentName(name);
 			meshElementsArgumentName += ".argument.";
@@ -387,9 +389,6 @@ int FieldMLWriter::writeMesh(int dimension, bool writeIfEmpty)
 				return_code = CMZN_ERROR_GENERAL;
 			else
 				this->typeArgument[fmlMeshElementsType] = fmlMeshElementsArgument;
-
-			FmlObjectHandle tmp = Fieldml_GetObjectByName(this->fmlSession, "mesh3d.xi");
-			tmp = Fieldml_GetObjectByName(this->fmlSession, "mesh3d.xi.components");
 
 			// set up shape evaluator, single fixed or indirectly mapped
 			if (1 == shapeTypes.size())
@@ -433,7 +432,8 @@ int FieldMLWriter::writeMesh(int dimension, bool writeIfEmpty)
 					fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlMeshShapeEvaluator, /*index*/1, fmlMeshShapeIdsArgument);
 					if (FML_OK != fmlError)
 						return_code = CMZN_ERROR_GENERAL;
-					for (int i = 0; i < shapeTypes.size(); ++i)
+					const int shapeTypesSize = static_cast<int>(shapeTypes.size());
+					for (int i = 0; i < shapeTypesSize; ++i)
 					{
 						const char *shapeName = getFieldmlNameFromElementShape(shapeTypes[i]);
 						FmlObjectHandle fmlShapeEvaluator = this->libraryImport(shapeName);
