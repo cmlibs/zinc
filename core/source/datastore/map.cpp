@@ -18,11 +18,13 @@ DsMapBase::DsMapBase(int labelsArraySizeIn, DsLabels **labelsArrayIn) :
 	labelsArray(new DsLabels*[labelsArraySizeIn])
 {
 	for (int i = 0; i < labelsArraySize; i++)
-		this->labelsArray[i] = labelsArrayIn[i];
+		this->labelsArray[i] = cmzn::ACCESS(labelsArrayIn[i]);
 }
 
 DsMapBase::~DsMapBase()
 {
+	for (int i = 0; i < labelsArraySize; i++)
+		cmzn::DEACCESS(this->labelsArray[i]);
 	delete[] this->labelsArray;
 }
 

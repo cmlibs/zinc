@@ -76,7 +76,7 @@ void DsLabels::setNotContiguous()
 DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 {
 	if (identifier < 0)
-		return 0;
+		return DS_LABEL_INDEX_INVALID;
 	DsLabelIndex index = DS_LABEL_INDEX_INVALID;
 	if (this->contiguous)
 	{
@@ -381,6 +381,30 @@ void DsLabels::destroyLabelIterator(DsLabelIterator *&iterator)
 			iterator = 0;
 		}
 	}
+}
+
+int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
+{
+	ranges.clear();
+	if (this->getSize() > 0)
+	{
+		DsLabelIterator *iterator = this->createLabelIterator();
+		DsLabelIdentifierRange range = { iterator->getIdentifier(), iterator->getIdentifier() };
+		DsLabelIdentifier identifier;
+		while (iterator->increment())
+		{
+			identifier = iterator->getIdentifier();
+			if (identifier != (range.last + 1))
+			{
+				ranges.push_back(range);
+				range.first = identifier;
+			}
+			range.last = identifier;
+		}
+		ranges.push_back(range);
+		cmzn::DEACCESS(iterator);
+	}
+	return CMZN_OK;
 }
 
 DsLabelIterator::DsLabelIterator() :

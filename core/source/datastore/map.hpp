@@ -43,6 +43,22 @@ public:
 	{
 		this->name = nameIn;
 	}
+
+	int getLabelsArraySize() const
+	{
+		return this->labelsArraySize;
+	}
+
+	/**
+	 * @param labelsNumber  Index from 0 to labelsArraySize-1
+	 * @return  Accessed pointer to DsLabels or 0 if invalid number or error
+	 */
+	DsLabels* getLabels(int labelsNumber) const
+	{
+		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
+			return cmzn::ACCESS(this->labelsArray[labelsNumber]);
+		return 0;
+	}
 };
 
 typedef cmzn::RefHandle<DsMapBase> HDsMapBase;
@@ -83,6 +99,8 @@ public:
 		int *valueExists, int& valuesRead) const;
 
 	int setValues(DsMapIndexing& indexing, DsMapAddressType number_of_values, ValueType *inValues);
+
+	bool isDenseAndCompleteOnLabels(int labelsNumber) const;
 };
 
 template <typename ValueType>
@@ -617,6 +635,19 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 	}
 	// FUTURE_CODE: propagate change message
 	return return_code;
+}
+
+template <typename ValueType>
+bool DsMap<ValueType>::isDenseAndCompleteOnLabels(int labelsNumber) const
+{
+	HDsLabels labels (this->getLabels(labelsNumber));
+	if (labels)
+	{
+		if (this->dense && (this->indexSizes[labelsNumber] == labels->getSize()))
+			return true;
+		// GRC to complete!
+	}
+	return false;
 }
 
 typedef cmzn::RefHandle< DsMap< int > > HDsMapInt;

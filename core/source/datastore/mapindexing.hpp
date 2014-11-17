@@ -331,14 +331,32 @@ public:
 		}
 	}
 
+	int getLabelsArraySize() const
+	{
+		return this->labelsArraySize;
+	}
+
+	/**
+	 * @param labelsNumber  Index from 0 to labelsArraySize-1
+	 * @return  Accessed pointer to DsLabels or 0 if invalid number or error
+	 */
+	DsLabels* getLabels(int labelsNumber) const
+	{
+		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
+			return cmzn::ACCESS(this->indexing[labelsNumber].labels);
+		return 0;
+	}
+
 	/**
 	 * Returns limiting entry index for the indexing of the selected labels.
 	 * Must have called calculateIndexLimits first
-	 * @param labelsNumber  Index from 0 to number_of_labels-1
+	 * @param labelsNumber  Index from 0 to labelsArraySize-1
 	 */
 	DsLabelIndex getIndexLimit(int labelsNumber)
 	{
-		return indexing[labelsNumber].indexLimit;
+		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
+			return indexing[labelsNumber].indexLimit;
+		return 0;
 	}
 
 	/**
@@ -348,7 +366,9 @@ public:
 	 */
 	bool isDenseOnLabels(int labelsNumber)
 	{
-		return indexing[labelsNumber].isDense();
+		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
+			return indexing[labelsNumber].isDense();
+		return false;
 	}
 
 	/**
@@ -360,7 +380,9 @@ public:
 	bool isDenseOnLabelsAbove(int labelsNumber,
 		DsLabelIndex belowIndex)
 	{
-		return indexing[labelsNumber].isDenseAbove(belowIndex);
+		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
+			return indexing[labelsNumber].isDenseAbove(belowIndex);
+		return false;
 	}
 
 	/** obtain iterators pointing at the first indexes in each labels indexing

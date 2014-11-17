@@ -15,6 +15,7 @@
 
 #include <map>
 #include <string>
+#include <vector>
 #include "general/block_array.hpp"
 #include "general/refcounted.hpp"
 #include "general/refhandle.hpp"
@@ -24,6 +25,13 @@
  * Currently restricted to be non-negative integer.
  */
 typedef int DsLabelIdentifier;
+
+struct DsLabelIdentifierRange
+{
+	DsLabelIdentifier first, last;
+};
+
+typedef std::vector<DsLabelIdentifierRange> DsLabelIdentifierRanges;
 
 const DsLabelIdentifier DS_LABEL_IDENTIFIER_INVALID = -1;
 
@@ -86,6 +94,11 @@ private:
 
 public:
 
+	bool isContiguous()
+	{
+		return this->contiguous;
+	}
+
 	std::string getName() const
 	{
 		return this->name;
@@ -143,6 +156,8 @@ public:
 	/** creates an iterator giving a handle to a label at index in the labels
 	 * @return accessed iterator, 0 if no label at index */
 	DsLabelIterator *createLabelIteratorAtIndex(DsLabelIndex index);
+
+	int getIdentifierRanges(DsLabelIdentifierRanges& ranges);
 };
 
 typedef cmzn::RefHandle<DsLabels> HDsLabels;
