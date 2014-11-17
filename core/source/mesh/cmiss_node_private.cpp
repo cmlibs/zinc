@@ -642,7 +642,7 @@ public:
 		struct LIST(FE_node) *node_list = createNodeListWithCondition(conditional_field);
 		int return_code = this->fe_nodeset->remove_FE_node_list(node_list);
 		DESTROY(LIST(FE_node))(&node_list);
-		return return_code;
+		return return_code ? CMZN_OK : CMZN_ERROR_GENERAL;
 	}
 
 	cmzn_node_id findNodeByIdentifier(int identifier) const
@@ -895,14 +895,14 @@ int cmzn_nodeset_get_size(cmzn_nodeset_id nodeset)
 int cmzn_nodeset_destroy_all_nodes(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
-		nodeset->destroyAllNodes();
-	return 0;
+		return nodeset->destroyAllNodes();
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodeset_destroy_node(cmzn_nodeset_id nodeset, cmzn_node_id node)
 {
 	if (nodeset && node)
-		nodeset->destroyNode(node);
+		return nodeset->destroyNode(node);
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -911,7 +911,7 @@ int cmzn_nodeset_destroy_nodes_conditional(cmzn_nodeset_id nodeset,
 {
 	if (nodeset && conditional_field)
 		return nodeset->destroyNodesConditional(conditional_field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_fieldmodule_id cmzn_nodeset_get_fieldmodule(cmzn_nodeset_id nodeset)

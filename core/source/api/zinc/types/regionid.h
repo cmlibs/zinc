@@ -48,4 +48,23 @@ enum cmzn_streaminformation_region_attribute
 	 * reading in or writing to.*/
 };
 
+/**
+ * Describes the format for serialisation of region field data.
+ * @see cmzn_streaminformation_region_set_file_format
+ */
+enum cmzn_streaminformation_region_file_format
+{
+	CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID = 0,
+	/*!< Invalid file format */
+	CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC = 1,
+	/*!< Automatically choose file format. This is the default option.
+	 * On read: determine from internal characteristics
+	 * On write: determine from file extension (case insensitive):
+	 * .ex* -> EX format; .fieldml -> FieldML */
+	CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX = 2,
+	/*!< Zinc/Cmgui EX format */
+	CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML = 3
+	/*!< Latest supported FieldML format */
+};
+
 #endif /* CMZN_REGION_ID_H */

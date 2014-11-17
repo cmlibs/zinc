@@ -30,6 +30,8 @@ extern "C" {
  */
 enum cmzn_status
 {
+	CMZN_ERROR_INCOMPATIBLE_DATA = -5,
+		/*!< Incompatible data or object definitions prevented operation */
 	CMZN_ERROR_ALREADY_EXISTS = -4,
 		/*!< Object already exists or is present in owner/set */
 	CMZN_ERROR_NOT_FOUND = -3,

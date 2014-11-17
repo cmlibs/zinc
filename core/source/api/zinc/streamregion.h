@@ -180,6 +180,29 @@ ZINC_API int cmzn_streaminformation_region_set_resource_attribute_real(
 	double value);
 
 /**
+ * Gets the format for region field data to be read/written using this
+ * stream information.
+ *
+ * @param streaminformation  The region stream information object.
+ * @return  The file format, or FILE_FORMAT_INVALID on failure.
+ */
+ZINC_API enum cmzn_streaminformation_region_file_format
+	cmzn_streaminformation_region_get_file_format(
+		cmzn_streaminformation_region_id streaminformation);
+
+/**
+ * Specifies the format for region field data to be read/written using this
+ * stream information. Applies to all resources managed by stream information. 
+ *
+ * @param streaminformation  The region stream information object.
+ * @param file_format  The region stream file format.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_region_set_file_format(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_file_format file_format);
+
+/**
  * Get the specified domain types for a stream resource in streaminformation.
  *
  * @param streaminformation  Handle to the stream information_region.

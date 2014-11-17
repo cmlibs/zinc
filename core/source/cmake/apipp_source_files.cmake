@@ -51,8 +51,9 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/spectrum.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/status.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/stream.hpp
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamimage.hpp
-		${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamregion.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamimage.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamregion.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/streamscene.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/tessellation.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timenotifier.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/timekeeper.hpp

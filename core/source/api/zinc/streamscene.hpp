@@ -35,7 +35,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_streaminformation_scene_id getId() const
+	cmzn_streaminformation_scene_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_streaminformation_scene_id>(id);
 	}
@@ -56,69 +56,69 @@ public:
 
 	Scenefilter getScenefilter()
 	{
-		return Scenefilter(cmzn_streaminformation_scene_get_scenefilter(getId()));
+		return Scenefilter(cmzn_streaminformation_scene_get_scenefilter(getDerivedId()));
 	}
 
 	int setScenefilter(const Scenefilter& scenefilter)
 	{
-		return cmzn_streaminformation_scene_set_scenefilter(getId(), scenefilter.getId());
+		return cmzn_streaminformation_scene_set_scenefilter(getDerivedId(), scenefilter.getId());
 	}
 
 	ExportDataType getExportDataType()
 	{
-		return static_cast<ExportDataType>(cmzn_streaminformation_scene_get_export_data_type(getId()));
+		return static_cast<ExportDataType>(cmzn_streaminformation_scene_get_export_data_type(getDerivedId()));
 	}
 
 	int setExportDataType(ExportDataType exportDataType)
 	{
-		return cmzn_streaminformation_scene_set_export_data_type(getId(),
+		return cmzn_streaminformation_scene_set_export_data_type(getDerivedId(),
 			static_cast<cmzn_streaminformation_scene_export_data_type>(exportDataType));
 	}
 
 	ExportFormat getExportFormat()
 	{
-		return static_cast<ExportFormat>(cmzn_streaminformation_scene_get_export_format(getId()));
+		return static_cast<ExportFormat>(cmzn_streaminformation_scene_get_export_format(getDerivedId()));
 	}
 
 	int setExportFormat(ExportFormat exportFormat)
 	{
-		return cmzn_streaminformation_scene_set_export_format(getId(),
+		return cmzn_streaminformation_scene_set_export_format(getDerivedId(),
 			static_cast<cmzn_streaminformation_scene_export_format>(exportFormat));
 	}
 
 	int getNumberOfTimeSteps()
 	{
-		return cmzn_streaminformation_scene_get_number_of_time_steps(getId());
+		return cmzn_streaminformation_scene_get_number_of_time_steps(getDerivedId());
 	}
 
 	int setNumberOfTimeSteps(int numberOfTimeSteps)
 	{
-		return cmzn_streaminformation_scene_set_number_of_time_steps(getId(), numberOfTimeSteps);
+		return cmzn_streaminformation_scene_set_number_of_time_steps(getDerivedId(), numberOfTimeSteps);
 	}
 
 	double getFinishTime()
 	{
-		return cmzn_streaminformation_scene_get_finish_time(getId());
+		return cmzn_streaminformation_scene_get_finish_time(getDerivedId());
 	}
 
 	int setFinishTime(double finishTime)
 	{
-		return cmzn_streaminformation_scene_set_finish_time(getId(), finishTime);
+		return cmzn_streaminformation_scene_set_finish_time(getDerivedId(), finishTime);
 	}
 
 	double getInitialTime()
 	{
-		return cmzn_streaminformation_scene_get_initial_time(getId());
+		return cmzn_streaminformation_scene_get_initial_time(getDerivedId());
 	}
 
 	int setInitialTime(double initialTime)
 	{
-		return cmzn_streaminformation_scene_set_initial_time(getId(), initialTime);
+		return cmzn_streaminformation_scene_set_initial_time(getDerivedId(), initialTime);
 	}
 
 	int getNumberOfResourcesRequired()
 	{
-		return cmzn_streaminformation_scene_get_number_of_resources_required(getId());
+		return cmzn_streaminformation_scene_get_number_of_resources_required(getDerivedId());
 	}
 
 };
@@ -136,7 +136,7 @@ inline StreaminformationScene Scene::createStreaminformationScene()
 
 inline int Scene::exportScene(const StreaminformationScene& StreaminformationScene)
 {
-	return cmzn_scene_export_scene(id, StreaminformationScene.getId());
+	return cmzn_scene_export_scene(id, StreaminformationScene.getDerivedId());
 }
 
 
