@@ -71,10 +71,10 @@ struct cmzn_streaminformation_region : cmzn_streaminformation
 public:
 
 	cmzn_streaminformation_region(struct cmzn_region *region_in) :
+		time(0.0),
+		time_enabled(false),
 		region(cmzn_region_access(region_in)),
 		root_region(cmzn_region_access(region_in)),
-		time_enabled(false),
-		time(0.0),
 		fileFormat(CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
 	{
 	}
