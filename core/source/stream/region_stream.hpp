@@ -71,10 +71,12 @@ struct cmzn_streaminformation_region : cmzn_streaminformation
 public:
 
 	cmzn_streaminformation_region(struct cmzn_region *region_in) :
-		region(cmzn_region_access(region_in)), root_region(cmzn_region_access(region_in))
+		region(cmzn_region_access(region_in)),
+		root_region(cmzn_region_access(region_in)),
+		time_enabled(false),
+		time(0.0),
+		fileFormat(CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
 	{
-		time_enabled = false;
-		time = 0.0;
 	}
 
 	virtual ~cmzn_streaminformation_region()
@@ -105,6 +107,19 @@ public:
 		if (resource)
 			return new cmzn_region_resource_properties(resource);
 		return NULL;
+	}
+
+	cmzn_streaminformation_region_file_format getFileFormat() const
+	{
+		return this->fileFormat;
+	}
+
+	int setFileFormat(cmzn_streaminformation_region_file_format fileFormatIn)
+	{
+		if (fileFormatIn == CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID)
+			return CMZN_ERROR_ARGUMENT;
+		this->fileFormat = fileFormatIn;
+		return CMZN_OK;
 	}
 
 	double getTime()
@@ -225,6 +240,7 @@ private:
 	double time;
 	bool time_enabled;
 	struct cmzn_region *region, *root_region;
+	cmzn_streaminformation_region_file_format fileFormat;
 };
 
 cmzn_region_id cmzn_streaminformation_region_get_region_private(

@@ -53,9 +53,13 @@ SET( IO_DEVICES_HDRS
 	source/io_devices/io_device.h )
 
 SET( FIELD_IO_SRCS
-	source/field_io/read_fieldml.cpp )
+	source/field_io/fieldml_common.cpp
+	source/field_io/read_fieldml.cpp
+	source/field_io/write_fieldml.cpp )
 SET( FIELD_IO_HDRS
-	source/field_io/read_fieldml.h )
+	source/field_io/fieldml_common.hpp
+	source/field_io/read_fieldml.hpp
+	source/field_io/write_fieldml.hpp )
 
 SET( IMAGE_IO_SRCS
 	source/image_io/analyze.cpp )

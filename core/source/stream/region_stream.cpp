@@ -11,7 +11,9 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "zinc/streamregion.h"
-#include "field_io/read_fieldml.h"
+#include "field_io/fieldml_common.hpp"
+#include "field_io/read_fieldml.hpp"
+#include "field_io/write_fieldml.hpp"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
@@ -23,7 +25,8 @@ namespace {
 
 int cmzn_region_read_from_memory(struct cmzn_region *region, const void *memory_buffer,
 	const unsigned int memory_buffer_size, struct FE_import_time_index *time_index, int useData,
-	enum cmzn_streaminformation_data_compression_type data_compression_type)
+	enum cmzn_streaminformation_data_compression_type data_compression_type,
+	cmzn_streaminformation_region_file_format fileFormatIn)
 {
 	const char block_name[] = "dataBlock";
 	const char block_name_uri[] = "memory:dataBlock";
@@ -31,54 +34,83 @@ int cmzn_region_read_from_memory(struct cmzn_region *region, const void *memory_
 	struct IO_stream_package *io_stream_package;
 	struct IO_stream *input_stream;
 
-	ENTER(cmzn_region_read_file);
-	return_code = 0;
+	return_code = CMZN_ERROR_ARGUMENT;
 	if (region && memory_buffer && memory_buffer_size && (io_stream_package=CREATE(IO_stream_package)()))
 	{
-		//We should add a way to define a memory block without requiring specifying a name.
-		IO_stream_package_define_memory_block(io_stream_package,
-			block_name, memory_buffer, memory_buffer_size);
-		input_stream = CREATE(IO_stream)(io_stream_package);
-		IO_stream_open_for_read_compression_specified(input_stream, block_name_uri,
-			data_compression_type);
-		if (!useData)
+		cmzn_streaminformation_region_file_format fileFormat = fileFormatIn;
+		if (fileFormat == CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
 		{
-			return_code = read_exregion_file(region, input_stream, time_index);
+			if (is_FieldML_memory_block(memory_buffer_size, memory_buffer))
+				fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML;
+			else
+				fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX;
 		}
-		else
+		switch (fileFormat)
 		{
-			return_code = read_exdata_file(region, input_stream, time_index);
+			case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML:
+				display_message(WARNING_MESSAGE, "cmzn_region_read.  Cannot read FieldML from memory resource");
+				break;
+			case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
+			{
+				// We should add a way to define a memory block without requiring specifying a name.
+				IO_stream_package_define_memory_block(io_stream_package,
+					block_name, memory_buffer, memory_buffer_size);
+				input_stream = CREATE(IO_stream)(io_stream_package);
+				IO_stream_open_for_read_compression_specified(input_stream, block_name_uri,
+					data_compression_type);
+				if (!useData)
+				{
+					return_code = read_exregion_file(region, input_stream, time_index) ? CMZN_OK : CMZN_ERROR_GENERAL;
+				}
+				else
+				{
+					return_code = read_exdata_file(region, input_stream, time_index) ? CMZN_OK : CMZN_ERROR_GENERAL;
+				}
+				IO_stream_close(input_stream);
+				DESTROY(IO_stream)(&input_stream);
+				IO_stream_package_free_memory_block(io_stream_package,
+					block_name);
+				DESTROY(IO_stream_package)(&io_stream_package);
+			} break;
+			case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC:
+			case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID:
+				display_message(WARNING_MESSAGE, "cmzn_region_read.  Invalid file format specified for memory resource");
+				break;
 		}
-		IO_stream_close(input_stream);
-		DESTROY(IO_stream)(&input_stream);
-		IO_stream_package_free_memory_block(io_stream_package,
-			block_name);
-		DESTROY(IO_stream_package)(&io_stream_package);
 	}
-	LEAVE;
-
-	return(return_code);
+	return return_code;
 }
 
-/** attempts to determine type of file: EX or FieldML */
 int cmzn_region_read_field_file_of_name(struct cmzn_region *region, const char *file_name,
 	struct IO_stream_package *io_stream_package,
 	struct FE_import_time_index *time_index, int useData,
-	enum cmzn_streaminformation_data_compression_type data_compression_type)
+	enum cmzn_streaminformation_data_compression_type data_compression_type,
+	cmzn_streaminformation_region_file_format fileFormatIn)
 {
-	int return_code = 0;
-	if (is_FieldML_file(file_name))
+	int return_code = CMZN_ERROR_ARGUMENT;
+	cmzn_streaminformation_region_file_format fileFormat = fileFormatIn;
+	if (fileFormat == CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
 	{
-		if (time_index)
-		{
-			display_message(WARNING_MESSAGE, "cmzn_region_read. Time not supported by FieldML reader");
-		}
-		return_code = parse_fieldml_file(region, file_name);
+		if (is_FieldML_file(file_name))
+			fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML;
+		else
+			fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX;
 	}
-	else
+	switch (fileFormat)
 	{
-		return_code = read_exregion_file_of_name(region, file_name, io_stream_package, time_index,
-			useData, data_compression_type);
+		case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML:
+			if (time_index)
+				display_message(WARNING_MESSAGE, "cmzn_region_read.  Time not supported by FieldML reader");
+			return_code = parse_fieldml_file(region, file_name) ? CMZN_OK : CMZN_ERROR_GENERAL;
+			break;
+		case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
+			return_code = read_exregion_file_of_name(region, file_name, io_stream_package, time_index,
+				useData, data_compression_type) ? CMZN_OK : CMZN_ERROR_GENERAL;
+			break;
+		case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC:
+		case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID:
+			display_message(WARNING_MESSAGE, "cmzn_region_read.  Invalid file format specified");
+			break;
 	}
 	return return_code;
 }
@@ -90,7 +122,7 @@ int cmzn_region_read(cmzn_region_id region,
 {
 	struct FE_import_time_index time_index_value, *time_index = NULL,
 		stream_time_index_value, *stream_time_index = NULL;
-	int return_code = 0;
+	int return_code = CMZN_OK;
 	if (region && streaminformation_region &&
 		(cmzn_streaminformation_region_get_region_private(streaminformation_region) == region))
 	{
@@ -104,7 +136,6 @@ int cmzn_region_read(cmzn_region_id region,
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
-			return_code = 1;
 			if (cmzn_streaminformation_region_has_attribute(streaminformation_region,
 				CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 			{
@@ -112,7 +143,7 @@ int cmzn_region_read(cmzn_region_id region,
 					streaminformation_region, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 				time_index = &time_index_value;
 			}
-			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
+			for (iter = streams_list.begin(); (iter != streams_list.end()) && (return_code == CMZN_OK); ++iter)
 			{
 				data_compression_type = CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE;
 				stream_properties = *iter;
@@ -135,6 +166,8 @@ int cmzn_region_read(cmzn_region_id region,
 				{
 					data_compression_type = cmzn_streaminformation_get_data_compression_type(streaminformation);
 				}
+				cmzn_streaminformation_region_file_format fileFormat =
+					cmzn_streaminformation_region_get_file_format(streaminformation_region);
 				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
 				cmzn_streamresource_memory_id memory_resource = NULL;
 				void *memory_block = NULL;
@@ -151,12 +184,10 @@ int cmzn_region_read(cmzn_region_id region,
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						if (!cmzn_region_read_field_file_of_name(temp_region, file_name, io_stream_package, stream_time_index,
-							readData, data_compression_type))
-						{
-							return_code = 0;
-							display_message(ERROR_MESSAGE, "cmzn_region_read. Cannot read file %s", file_name);
-						}
+						return_code = cmzn_region_read_field_file_of_name(temp_region, file_name, io_stream_package, stream_time_index,
+							readData, data_compression_type, fileFormat);
+						if (return_code != CMZN_OK)
+							display_message(ERROR_MESSAGE, "cmzn_region_read.  Cannot read file %s", file_name);
 						DEALLOCATE(file_name);
 					}
 					cmzn_streamresource_file_destroy(&file_resource);
@@ -166,39 +197,39 @@ int cmzn_region_read(cmzn_region_id region,
 					memory_resource->getBuffer(&memory_block, &buffer_size);
 					if (memory_block)
 					{
-						if (!cmzn_region_read_from_memory(temp_region, memory_block, buffer_size, stream_time_index,
-							readData, data_compression_type))
-						{
-							return_code = 0;
-							display_message(ERROR_MESSAGE, "cmzn_region_read. Cannot read memory");
-						}
+						return_code = cmzn_region_read_from_memory(temp_region, memory_block, buffer_size, stream_time_index,
+							readData, data_compression_type, fileFormat);
+						if (return_code != CMZN_OK)
+							display_message(ERROR_MESSAGE, "cmzn_region_read.  Cannot read memory resource");
 					}
 					cmzn_streamresource_memory_destroy(&memory_resource);
 				}
 				else
 				{
-					return_code = 0;
-					display_message(ERROR_MESSAGE, "cmzn_region_read. Stream error");
-				}
-				if (!return_code)
-				{
-					break;
+					return_code = CMZN_ERROR_GENERAL;
+					display_message(ERROR_MESSAGE, "cmzn_region_read.  Stream error");
 				}
 			}
-			if (return_code && cmzn_region_can_merge(region,temp_region))
+			if (return_code == CMZN_OK)
 			{
-				return_code = cmzn_region_merge(region, temp_region);
+				if (!cmzn_region_can_merge(region, temp_region))
+					return_code = CMZN_ERROR_INCOMPATIBLE_DATA;
+				else if (!cmzn_region_merge(region, temp_region))
+					return_code = CMZN_ERROR_GENERAL;
 			}
 			DEACCESS(cmzn_region)(&temp_region);
 			DESTROY(IO_stream_package)(&io_stream_package);
 		}
+	}
+	else
+	{
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
 	return return_code;
 }
 
 int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
 {
-	int return_code = 0;
 	if (region && file_name)
 	{
 		cmzn_streaminformation_id streaminformation =
@@ -207,37 +238,39 @@ int cmzn_region_read_file(cmzn_region_id region, const char *file_name)
 			streaminformation, file_name);
 		cmzn_streaminformation_region_id streaminformation_region =
 			cmzn_streaminformation_cast_region(streaminformation);
-		return_code = cmzn_region_read(region, streaminformation_region);
+		int return_code = cmzn_region_read(region, streaminformation_region);
 		cmzn_streamresource_destroy(&resource);
 		cmzn_streaminformation_region_destroy(&streaminformation_region);
 		cmzn_streaminformation_destroy(&streaminformation);
+		return return_code;
 	}
-	return return_code;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_region_write(cmzn_region_id region,
 	cmzn_streaminformation_region_id streaminformation_region)
 {
-	int return_code = 0;
+	int return_code = CMZN_OK;
 	double time = 0.0, stream_time = 0.0;
 
 	if (region && streaminformation_region &&
 		(cmzn_streaminformation_region_get_region_private(streaminformation_region) == region))
 	{
 		const cmzn_stream_properties_list streams_list = streaminformation_region->getResourcesList();
-		if (!(streams_list.empty()))
+		if (streams_list.empty())
+			return_code = CMZN_ERROR_ARGUMENT;
+		else
 		{
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
-			return_code = 1;
 			if (cmzn_streaminformation_region_has_attribute(streaminformation_region,
 				CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME))
 			{
 				time = cmzn_streaminformation_region_get_attribute_real(
 					streaminformation_region, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 			}
-			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
+			for (iter = streams_list.begin(); iter != streams_list.end() && (return_code == CMZN_OK); ++iter)
 			{
 				stream_properties = *iter;
 				stream = stream_properties->getResource();
@@ -292,19 +325,40 @@ int cmzn_region_write(cmzn_region_id region,
 						writeElements |= CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION;
 					}
 				}
+				cmzn_streaminformation_region_file_format fileFormat = streaminformation_region->getFileFormat();
 				if (file_resource)
 				{
 					char *file_name = file_resource->getFileName();
 					if (file_name)
 					{
-						if (!write_exregion_file_of_name(file_name, region, (cmzn_field_group_id)0,
-							cmzn_streaminformation_region_get_root_region(streaminformation_region),
-							writeElements,	writeNodes, writeData,
-							FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
-							stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
+						if (fileFormat == CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
 						{
-							return_code = 0;
-							display_message(ERROR_MESSAGE, "cmzn_region_write. Cannot write file %s", file_name);
+							if (filename_has_FieldML_extension(file_name))
+								fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML;
+							else
+								fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX;
+						}
+						switch (fileFormat)
+						{
+							case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
+								if (!write_exregion_file_of_name(file_name, region, (cmzn_field_group_id)0,
+									cmzn_streaminformation_region_get_root_region(streaminformation_region),
+									writeElements,	writeNodes, writeData,
+									FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
+									stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
+								{
+									return_code = CMZN_ERROR_GENERAL;
+									display_message(ERROR_MESSAGE, "cmzn_region_write.  Failed to write EX file %s", file_name);
+								}
+								break;
+							case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML:
+								return_code = write_fieldml_file(region, file_name);
+								break;
+							case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC:
+							case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID:
+								display_message(ERROR_MESSAGE, "cmzn_region_write.  Invalid file format specified for file %s", file_name);
+								return_code = CMZN_ERROR_ARGUMENT;
+								break;
 						}
 						DEALLOCATE(file_name);
 					}
@@ -312,33 +366,48 @@ int cmzn_region_write(cmzn_region_id region,
 				}
 				else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
 				{
-					if (!write_exregion_file_to_memory_block(region, (cmzn_field_group_id)0,
-						cmzn_streaminformation_region_get_root_region(streaminformation_region),
-						writeElements,	writeNodes, writeData,
-						FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
-						stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
+					// for now, FILE_FORMAT_AUTOMATIC means EX as no data or resource name to go on
+					if (fileFormat == CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
+						fileFormat = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX;
+					switch (fileFormat)
 					{
-						return_code = 0;
-						display_message(ERROR_MESSAGE, "cmzn_region_write. Cannot write to memory block");
-					}
-					else
-					{
-						memory_resource->setBuffer(memory_block, buffer_size);
+						case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
+							if (!write_exregion_file_to_memory_block(region, (cmzn_field_group_id)0,
+								cmzn_streaminformation_region_get_root_region(streaminformation_region),
+								writeElements,	writeNodes, writeData,
+								FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
+								stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
+							{
+								return_code = CMZN_ERROR_GENERAL;
+								display_message(ERROR_MESSAGE, "cmzn_region_write.  Failed to write EX format to memory block");
+							}
+							else
+							{
+								memory_resource->setBuffer(memory_block, buffer_size);
+							}
+							break;
+						case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML:
+							display_message(ERROR_MESSAGE, "cmzn_region_write.  Cannot write FieldML to memory block.");
+							return_code = CMZN_ERROR_ARGUMENT;
+							break;
+						case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC:
+						case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID:
+							display_message(ERROR_MESSAGE, "cmzn_region_write.  Invalid file format specified for memory block");
+							return_code = CMZN_ERROR_ARGUMENT;
+							break;
 					}
 					cmzn_streamresource_memory_destroy(&memory_resource);
 				}
 				else
 				{
-					return_code = 0;
-					display_message(ERROR_MESSAGE, "cmzn_region_write. Stream error");
-				}
-				if (!return_code)
-				{
-					break;
+					return_code = CMZN_ERROR_ARGUMENT;
+					display_message(ERROR_MESSAGE, "cmzn_region_write.  Unknown resource type");
 				}
 			}
 		}
 	}
+	else
+		return_code = CMZN_ERROR_ARGUMENT;
 	return return_code;
 }
 
@@ -532,6 +601,23 @@ int cmzn_streaminformation_region_set_resource_attribute_real(
 		}
 	}
 	return return_code;
+}
+
+enum cmzn_streaminformation_region_file_format cmzn_streaminformation_region_get_file_format(
+	cmzn_streaminformation_region_id streaminformation)
+{
+	if (streaminformation)
+		return streaminformation->getFileFormat();
+	return CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_INVALID;
+}
+
+int cmzn_streaminformation_region_set_file_format(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_file_format file_format)
+{
+	if (streaminformation)
+		return streaminformation->setFileFormat(file_format);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_field_domain_types cmzn_streaminformation_region_get_resource_domain_types(

@@ -1,7 +1,7 @@
 /**
  * FILE : read_fieldml.cpp
  * 
- * Functions for importing regions and fields from FieldML 0.4+ documents.
+ * FieldML 0.5 model reader implementation.
  */
 /* OpenCMISS-Zinc Library
 *
@@ -23,7 +23,8 @@
 #include "zinc/region.h"
 #include "zinc/status.h"
 #include "datastore/map.hpp"
-#include "field_io/read_fieldml.h"
+#include "field_io/fieldml_common.hpp"
+#include "field_io/read_fieldml.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
@@ -34,26 +35,6 @@
 namespace {
 
 const FmlObjectHandle FML_INVALID_OBJECT_HANDLE = (const FmlObjectHandle)FML_INVALID_HANDLE;
-
-struct ShapeType
-{
-	const char *fieldmlName;
-	const int dimension;
-	enum cmzn_element_shape_type shape_type;
-};
-
-const ShapeType libraryShapes[] =
-{
-	{ "shape.unit.line",        1, CMZN_ELEMENT_SHAPE_TYPE_LINE },
-	{ "shape.unit.square",      2, CMZN_ELEMENT_SHAPE_TYPE_SQUARE },
-	{ "shape.unit.triangle",    2, CMZN_ELEMENT_SHAPE_TYPE_TRIANGLE },
-	{ "shape.unit.cube",        3, CMZN_ELEMENT_SHAPE_TYPE_CUBE },
-	{ "shape.unit.tetrahedron", 3, CMZN_ELEMENT_SHAPE_TYPE_TETRAHEDRON },
-	{ "shape.unit.wedge12",     3, CMZN_ELEMENT_SHAPE_TYPE_WEDGE12 },
-	{ "shape.unit.wedge13",     3, CMZN_ELEMENT_SHAPE_TYPE_WEDGE13 },
-	{ "shape.unit.wedge23",     3, CMZN_ELEMENT_SHAPE_TYPE_WEDGE23 }
-};
-const int numLibraryShapes = sizeof(libraryShapes) / sizeof(ShapeType);
 
 const char *libraryChartArgumentNames[] =
 {
@@ -234,8 +215,6 @@ private:
 
 	DsMap<int> *getEnsembleParameters(FmlObjectHandle fmlParameters);
 	DsMap<double> *getContinuousParameters(FmlObjectHandle fmlParameters);
-
-	enum cmzn_element_shape_type getElementShapeFromName(const char *shapeName);
 
 	int readMeshes();
 
@@ -823,19 +802,6 @@ DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParamet
 	return parameters;
 }
 
-enum cmzn_element_shape_type FieldMLReader::getElementShapeFromName(const char *shapeName)
-{
-	for (int i = 0; i < numLibraryShapes; i++)
-	{
-		if (0 == strcmp(shapeName, libraryShapes[i].fieldmlName))
-		{
-			return libraryShapes[i].shape_type;
-		}
-	}
-	display_message(ERROR_MESSAGE, "Read FieldML:  Unrecognised element shape %s", shapeName);
-	return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
-}
-
 int FieldMLReader::readMeshes()
 {
 	const int meshCount = Fieldml_GetObjectCount(fmlSession, FHT_MESH_TYPE);
@@ -935,7 +901,7 @@ int FieldMLReader::readMeshes()
 				case FHT_EXTERNAL_EVALUATOR:
 					{
 						// Case 1. single recognised shape external evaluator = all elements same shape
-						const_shape_type = getElementShapeFromName(getName(fmlShapeEvaluator).c_str());
+						const_shape_type = getElementShapeFromFieldmlName(getName(fmlShapeEvaluator).c_str());
 						if (const_shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 						{
 							display_message(ERROR_MESSAGE, "Read FieldML:  Unrecognised element shape evaluator %s for mesh type %s.",
@@ -1023,7 +989,7 @@ int FieldMLReader::readMeshes()
 						}
 						else
 						{
-							shape_type = getElementShapeFromName(getName(fmlElementShapeEvaluator).c_str());
+							shape_type = getElementShapeFromFieldmlName(getName(fmlElementShapeEvaluator).c_str());
 							fmlLastElementShapeEvaluator = fmlElementShapeEvaluator;
 						}
 						if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
@@ -1892,11 +1858,16 @@ int FieldMLReader::parse()
 	return return_code;
 }
 
+bool string_contains_FieldML_tag(const char *text)
+{
+	return (0 != strstr(text, "<Fieldml"));
+}
+
 } // anonymous namespace
 
-int is_FieldML_file(const char *filename)
+bool is_FieldML_file(const char *filename)
 {
-	int return_code = 0;
+	bool result = false;
 	FILE *stream = fopen(filename, "r");
 	if (stream)
 	{
@@ -1904,15 +1875,25 @@ int is_FieldML_file(const char *filename)
 		size_t size = fread((void *)block, sizeof(char), sizeof(block), stream);
 		if (size > 0)
 		{
-			block[size-1] = '\0';
-			if (NULL != strstr(block, "<Fieldml"))
-			{
-				return_code = 1;
-			}
+			block[size - 1] = '\0';
+			result = string_contains_FieldML_tag(block);
 		}
 		fclose(stream);
 	}
-	return return_code;
+	return result;
+}
+
+bool is_FieldML_memory_block(unsigned int memory_buffer_size, const void *memory_buffer)
+{
+	if ((0 == memory_buffer_size) || (!memory_buffer))
+		return false;
+	unsigned int size = memory_buffer_size;
+	if (size > 200)
+		size = 200;
+	char block[200];
+	memcpy(block, memory_buffer, size);
+	block[size - 1] = '\0';
+	return string_contains_FieldML_tag(block);
 }
 
 int parse_fieldml_file(struct cmzn_region *region, const char *filename)

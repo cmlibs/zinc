@@ -34,7 +34,7 @@ public:
 		return (0 != id);
 	}
 
-	cmzn_streaminformation_image_id getId() const
+	cmzn_streaminformation_image_id getDerivedId() const
 	{
 		return reinterpret_cast<cmzn_streaminformation_image_id>(id);
 	}
@@ -73,29 +73,25 @@ public:
 
 	int setAttributeInteger(Attribute attribute, int value)
 	{
-		return cmzn_streaminformation_image_set_attribute_integer(
-			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+		return cmzn_streaminformation_image_set_attribute_integer(getDerivedId(),
 			static_cast<cmzn_streaminformation_image_attribute>(attribute), value);
 	}
 
 	int setAttributeReal(Attribute attribute, double value)
 	{
-		return cmzn_streaminformation_image_set_attribute_real(
-			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+		return cmzn_streaminformation_image_set_attribute_real(getDerivedId(),
 			static_cast<cmzn_streaminformation_image_attribute>(attribute), value);
 	}
 
 	int setFileFormat(FileFormat imageFileFormat)
 	{
-		return cmzn_streaminformation_image_set_file_format(
-			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+		return cmzn_streaminformation_image_set_file_format(getDerivedId(),
 			static_cast<cmzn_streaminformation_image_file_format>(imageFileFormat));
 	}
 
 	int setPixelFormat(PixelFormat imagePixelFormat)
 	{
-		return cmzn_streaminformation_image_set_pixel_format(
-			reinterpret_cast<cmzn_streaminformation_image_id>(id),
+		return cmzn_streaminformation_image_set_pixel_format(getDerivedId(),
 			static_cast<cmzn_streaminformation_image_pixel_format>(imagePixelFormat));
 	}
 
@@ -115,12 +111,12 @@ inline StreaminformationImage FieldImage::createStreaminformationImage()
 
 inline int FieldImage::read(const StreaminformationImage& streaminformationImage)
 {
-  return cmzn_field_image_read(getDerivedId(), streaminformationImage.getId());
+  return cmzn_field_image_read(getDerivedId(), streaminformationImage.getDerivedId());
 }
 
 inline int FieldImage::write(const StreaminformationImage& streaminformationImage)
 {
-  return cmzn_field_image_write(getDerivedId(), streaminformationImage.getId());
+  return cmzn_field_image_write(getDerivedId(), streaminformationImage.getDerivedId());
 }
 
 } // namespace Zinc
