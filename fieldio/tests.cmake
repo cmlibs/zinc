@@ -7,7 +7,8 @@
 SET(CURRENT_TEST fieldio)
 LIST(APPEND API_TESTS ${CURRENT_TEST})
 SET(${CURRENT_TEST}_SRC
-	${CURRENT_TEST}/fieldml_input.cpp
+	${CURRENT_TEST}/fieldml_basic.cpp
+	utilities/fileio.cpp
 	)
 
 SET(FIELDIO_FIELDML_CUBE_RESOURCE "${CMAKE_CURRENT_LIST_DIR}/cube.fieldml")

@@ -32,8 +32,8 @@
    <MemberRange min="1" max="102" />
   </Members>
  </Elements>
- <Chart name="chart">
-  <Components name="mesh3d.chart.component" count="3" />
+ <Chart name="xi">
+  <Components name="mesh3d.xi.components" count="3" />
  </Chart>
  <Shapes evaluator="shape.unit.tetrahedron" />
 </MeshType>
@@ -79,7 +79,7 @@
 
 <ReferenceEvaluator name="mesh3d.trilinearSimplex" evaluator="trilinearSimplex.interpolator" valueType="real.1d">
  <Bindings>
-  <Bind argument="chart.3d.argument" source="mesh3d.argument.chart" />
+  <Bind argument="chart.3d.argument" source="mesh3d.argument.xi" />
   <Bind argument="trilinearSimplex.parameters.argument" source="mesh3d.trilinearSimplex.parameters" />
  </Bindings>
 </ReferenceEvaluator>

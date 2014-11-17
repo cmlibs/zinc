@@ -46,8 +46,8 @@
    <MemberRange min="1" max="12" />
   </Members>
  </Elements>
- <Chart name="chart">
-  <Components name="mesh3d.chart.component" count="3" />
+ <Chart name="xi">
+  <Components name="mesh3d.xi.components" count="3" />
  </Chart>
  <Shapes evaluator="mesh3d.shape" />
 </MeshType>
@@ -173,7 +173,7 @@
 
 <ReferenceEvaluator name="mesh3d.triquadraticWedge12" evaluator="triquadraticWedge12.interpolator" valueType="real.1d">
  <Bindings>
-  <Bind argument="chart.3d.argument" source="mesh3d.argument.chart" />
+  <Bind argument="chart.3d.argument" source="mesh3d.argument.xi" />
   <Bind argument="triquadraticWedge12.parameters.argument" source="mesh3d.triquadraticWedge12.parameters" />
  </Bindings>
 </ReferenceEvaluator>
@@ -188,7 +188,7 @@
 
 <ReferenceEvaluator name="mesh3d.triquadraticLagrange" evaluator="triquadraticLagrange.interpolator" valueType="real.1d">
  <Bindings>
-  <Bind argument="chart.3d.argument" source="mesh3d.argument.chart" />
+  <Bind argument="chart.3d.argument" source="mesh3d.argument.xi" />
   <Bind argument="triquadraticLagrange.parameters.argument" source="mesh3d.triquadraticLagrange.parameters" />
  </Bindings>
 </ReferenceEvaluator>
