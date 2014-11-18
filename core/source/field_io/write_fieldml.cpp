@@ -378,8 +378,7 @@ int FieldMLWriter::writeMesh(int dimension, bool writeIfEmpty)
 		{
 			// ensure we have argument for mesh type and can find argument for elements type
 			// since it uses a special naming pattern e.g. mesh3d.argument.elements
-			FmlObjectHandle fmlMeshArgument = this->getArgumentForType(fmlMeshType);
-			USE_PARAMETER(fmlMeshArgument);
+			this->getArgumentForType(fmlMeshType);
 
 			std::string meshElementsArgumentName(name);
 			meshElementsArgumentName += ".argument.";
