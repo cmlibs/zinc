@@ -20,8 +20,8 @@ namespace cmzn
 
 template <typename T> class RefHandle
 {
-	template<typename T>
-		friend T* GetImpl(const RefHandle<T>& refHandle);
+	template<typename POINTEE>
+		friend POINTEE* GetImpl(const RefHandle<POINTEE>& refHandle);
 
 private:
 	T* object;
@@ -70,7 +70,7 @@ public:
 	}
 };
 
-template<typename T> inline T* GetImpl(const RefHandle<T>& refHandle)
+template<typename POINTEE> inline POINTEE* GetImpl(const RefHandle<POINTEE>& refHandle)
 {
 	return refHandle.object;
 }
