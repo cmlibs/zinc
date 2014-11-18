@@ -15,6 +15,7 @@
 #include "datastore/mapindexing.hpp"
 #include "general/block_array.hpp"
 #include "general/message.h"
+#include "general/refcounted.hpp"
 
 class DsMapBase : public cmzn::RefCounted
 {
@@ -56,7 +57,7 @@ public:
 	DsLabels* getLabels(int labelsNumber) const
 	{
 		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
-			return cmzn::ACCESS(this->labelsArray[labelsNumber]);
+			return cmzn::Access(this->labelsArray[labelsNumber]);
 		return 0;
 	}
 };
@@ -315,7 +316,7 @@ DsMap<ValueType> *DsMap<ValueType>::create(std::vector<HDsLabels>& labelsVector)
 	if (!labelsArray)
 		return 0;
 	for (int i = 0; i < labelsArraySize; ++i)
-		labelsArray[i] = labelsVector[i].getObject();
+		labelsArray[i] = cmzn::GetImpl(labelsVector[i]);
 	DsMap<ValueType> *map = DsMap<ValueType>::create(labelsArraySize, labelsArray);
 	delete[] labelsArray;
 	return map;
