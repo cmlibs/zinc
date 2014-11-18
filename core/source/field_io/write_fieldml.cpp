@@ -409,7 +409,7 @@ int FieldMLWriter::writeMesh(int dimension, bool writeIfEmpty)
 				FmlObjectHandle fmlMeshShapeIdsType = Fieldml_CreateEnsembleType(this->fmlSession, meshShapeIdsName.c_str());
 				if (CMZN_OK == return_code)
 					return_code = this->defineEnsembleFromLabels(fmlMeshShapeIdsType, *meshShapeLabels);
-				DsLabels *tmpElementLabels = elementLabels.getObject();
+				DsLabels *tmpElementLabels = cmzn::GetImpl(elementLabels);
 				HDsMapInt meshShapeMap(DsMap<int>::create(1, &tmpElementLabels));
 				std::string meshShapeMapName(name);
 				meshShapeMapName += ".shapeids.map";

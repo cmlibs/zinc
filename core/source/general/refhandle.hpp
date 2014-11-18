@@ -20,6 +20,9 @@ namespace cmzn
 
 template <typename T> class RefHandle
 {
+	template<typename T>
+		friend T* GetImpl(const RefHandle<T>& refHandle);
+
 private:
 	T* object;
 
@@ -36,18 +39,18 @@ public:
 	}
 
 	RefHandle(const RefHandle<T>& refHandleIn) :
-		object(cmzn::ACCESS(refHandleIn.object))
+		object(cmzn::Access(refHandleIn.object))
 	{
 	}
 
 	~RefHandle()
 	{
-		cmzn::DEACCESS(this->object);
+		cmzn::Deaccess(this->object);
 	}
 
 	RefHandle<T>& operator=(const RefHandle<T>& refHandleIn)
 	{
-		cmzn::REACCESS(this->object, refHandleIn.object);
+		cmzn::Reaccess(this->object, refHandleIn.object);
 		return *this;
 	}
 
@@ -61,16 +64,16 @@ public:
 		return this->object;
 	}
 
-	T* getObject()
-	{
-		return this->object;
-	}
-
 	operator bool()
 	{
 		return (this->object != 0);
 	}
 };
+
+template<typename T> inline T* GetImpl(const RefHandle<T>& refHandle)
+{
+	return refHandle.object;
+}
 
 }
 

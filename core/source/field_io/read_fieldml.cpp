@@ -259,7 +259,7 @@ DsLabels *FieldMLReader::getLabelsForEnsemble(FmlObjectHandle fmlEnsembleType)
 {
 	FmlObjectLabelsMap::iterator iterator = this->labelsMap.find(fmlEnsembleType);
 	if (iterator != labelsMap.end())
-		return cmzn::ACCESS(iterator->second.getObject());
+		return cmzn::Access(cmzn::GetImpl(iterator->second));
 
 	std::string name = this->getName(fmlEnsembleType);
 	if (name.length()==0)
@@ -408,7 +408,7 @@ DsLabels *FieldMLReader::getLabelsForEnsemble(FmlObjectHandle fmlEnsembleType)
 	}
 	if (!return_code)
 		return 0;
-	return cmzn::ACCESS(labels.getObject());
+	return cmzn::Access(cmzn::GetImpl(labels));
 }
 
 // template and full specialisations to read different types with template
@@ -692,7 +692,7 @@ DsMap<int> *FieldMLReader::getEnsembleParameters(FmlObjectHandle fmlParameters)
 {
 	FmlObjectIntParametersMap::iterator iter = this->intParametersMap.find(fmlParameters);
 	if (iter != this->intParametersMap.end())
-		return cmzn::ACCESS(iter->second.getObject());
+		return cmzn::Access(cmzn::GetImpl(iter->second));
 
 	std::string name = getName(fmlParameters);
 	if (Fieldml_GetObjectType(this->fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
@@ -735,7 +735,7 @@ DsMap<int> *FieldMLReader::getEnsembleParameters(FmlObjectHandle fmlParameters)
 	return_code = this->readParametersArray(fmlParameters, *parameters);
 	this->setProcessed(fmlParameters);
 	if (!return_code)
-		cmzn::DEACCESS(parameters);
+		cmzn::Deaccess(parameters);
 	return parameters;
 }
 
@@ -749,7 +749,7 @@ DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParamet
 {
 	FmlObjectDoubleParametersMap::iterator iter = this->doubleParametersMap.find(fmlParameters);
 	if (iter != this->doubleParametersMap.end())
-		return cmzn::ACCESS(iter->second.getObject());
+		return cmzn::Access(cmzn::GetImpl(iter->second));
 
 	std::string name = getName(fmlParameters);
 	if (Fieldml_GetObjectType(this->fmlSession, fmlParameters) != FHT_PARAMETER_EVALUATOR)
@@ -798,7 +798,7 @@ DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParamet
 	return_code = this->readParametersArray(fmlParameters, *parameters);
 	this->setProcessed(fmlParameters);
 	if (!return_code)
-		cmzn::DEACCESS(parameters);
+		cmzn::Deaccess(parameters);
 	return parameters;
 }
 

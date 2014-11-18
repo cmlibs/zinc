@@ -60,12 +60,12 @@ struct DsMapIndexing : public cmzn::RefCounted
 
 		void clearLabelIterator()
 		{
-			cmzn::DEACCESS(this->iterator);
+			cmzn::Deaccess(this->iterator);
 		}
 
 		void clearLabelsGroup()
 		{
-			cmzn::DEACCESS(this->labelsGroup);
+			cmzn::Deaccess(this->labelsGroup);
 		}
 
 	public:
@@ -88,7 +88,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 
 		~Indexing()
 		{
-			cmzn::DEACCESS(this->valuesIterator);
+			cmzn::Deaccess(this->valuesIterator);
 			clearLabelIterator();
 			clearLabelsGroup();
 		}
@@ -128,7 +128,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 
 		void setGroup(DsLabelsGroup *labelsGroupIn)
 		{
-			cmzn::REACCESS(this->labelsGroup, labelsGroupIn);
+			cmzn::Reaccess(this->labelsGroup, labelsGroupIn);
 			clearLabelIterator();
 		}
 
@@ -213,7 +213,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 		void iterationEnd()
 		{
 			if (valuesIterator)
-				cmzn::DEACCESS(this->valuesIterator);
+				cmzn::Deaccess(this->valuesIterator);
 			firstIndex = 0;
 		}
 
@@ -343,7 +343,7 @@ public:
 	DsLabels* getLabels(int labelsNumber) const
 	{
 		if ((0 <= labelsNumber) && (labelsNumber < this->labelsArraySize))
-			return cmzn::ACCESS(this->indexing[labelsNumber].labels);
+			return cmzn::Access(this->indexing[labelsNumber].labels);
 		return 0;
 	}
 

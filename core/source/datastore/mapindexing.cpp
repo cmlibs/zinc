@@ -15,7 +15,7 @@
 
 DsMapIndexing::DsMapIndexing(DsMapBase& mapBaseIn,
 	int labelsArraySizeIn, DsLabels **labelsArrayIn) :
-		mapBase(cmzn::ACCESS(&mapBaseIn)), // GRC circular reference?
+		mapBase(cmzn::Access(&mapBaseIn)), // GRC circular reference?
 		labelsArraySize(labelsArraySizeIn),
 		indexing(new Indexing[labelsArraySize])
 {
@@ -26,7 +26,7 @@ DsMapIndexing::DsMapIndexing(DsMapBase& mapBaseIn,
 DsMapIndexing::~DsMapIndexing()
 {
 	delete[] indexing;
-	cmzn::DEACCESS(this->mapBase);
+	cmzn::Deaccess(this->mapBase);
 }
 
 DsMapIndexing *DsMapIndexing::create(DsMapBase& mapBaseIn,

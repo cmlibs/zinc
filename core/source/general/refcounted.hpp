@@ -22,11 +22,11 @@ namespace cmzn
 class RefCounted
 {
 	template<class REFCOUNTED>
-		friend REFCOUNTED* ACCESS(REFCOUNTED* object);
+		friend REFCOUNTED* Access(REFCOUNTED* object);
 	template<class REFCOUNTED>
-		friend void DEACCESS(REFCOUNTED* &object);
+		friend void Deaccess(REFCOUNTED* &object);
 	template<class REFCOUNTED>
-		friend void REACCESS(REFCOUNTED* &object, REFCOUNTED* newObject);
+		friend void Reaccess(REFCOUNTED* &object, REFCOUNTED* newObject);
 protected:
 	int access_count;
 
@@ -52,14 +52,14 @@ protected:
 	}
 };
 
-template<class REFCOUNTED> inline REFCOUNTED* ACCESS(REFCOUNTED* object)
+template<class REFCOUNTED> inline REFCOUNTED* Access(REFCOUNTED* object)
 {
 	if (object)
 		object->access();
 	return object;
 }
 
-template<class REFCOUNTED> inline void DEACCESS(REFCOUNTED* &object)
+template<class REFCOUNTED> inline void Deaccess(REFCOUNTED* &object)
 {
 	if (object)
 	{
@@ -68,12 +68,12 @@ template<class REFCOUNTED> inline void DEACCESS(REFCOUNTED* &object)
 	}
 }
 
-template<class REFCOUNTED> inline void REACCESS(REFCOUNTED* &object, REFCOUNTED* newObject)
+template<class REFCOUNTED> inline void Reaccess(REFCOUNTED* &object, REFCOUNTED* newObject)
 {
 	// access first to handle object==newObject
 	if (newObject)
 		newObject->access();
-	DEACCESS(object);
+	Deaccess(object);
 	object = newObject;
 }
 

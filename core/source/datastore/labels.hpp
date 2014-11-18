@@ -71,7 +71,7 @@ class DsLabels : public cmzn::RefCounted
 	DsLabelIterator *inactiveIterators;
 
 	template<class REFCOUNTED>
-		friend inline void cmzn::DEACCESS(REFCOUNTED*& labelIterator);
+		friend inline void cmzn::Deaccess(REFCOUNTED*& labelIterator);
 
 public:
 
@@ -212,7 +212,7 @@ namespace cmzn
 {
 
 // specialisation to handle ownership by DsLabels
-template<> inline void DEACCESS(::DsLabelIterator*& labelIterator)
+template<> inline void Deaccess(::DsLabelIterator*& labelIterator)
 {
 	if (labelIterator)
 	{

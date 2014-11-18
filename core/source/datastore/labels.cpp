@@ -402,7 +402,7 @@ int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
 			range.last = identifier;
 		}
 		ranges.push_back(range);
-		cmzn::DEACCESS(iterator);
+		cmzn::Deaccess(iterator);
 	}
 	return CMZN_OK;
 }
