@@ -1173,12 +1173,16 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 
 	if (scene)
 	{
+		cmzn_timekeepermodule *timekeepermodule = cmzn_scene_get_timekeepermodule(scene);
+		cmzn_timekeeper *timekeeper = timekeepermodule ? timekeepermodule->getDefaultTimekeeper() : 0;
+		double original_time = timekeeper->getTime();
 		if (force_rebuild)
 		{
 			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 				cmzn_graphics_flag_for_full_rebuild, (void *)renderer,
 				scene->list_of_graphics);
 		}
+		timekeeper->setTimeQuiet(renderer->time);
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_compile_visible_graphics, (void *)renderer,
 			scene->list_of_graphics);
@@ -1189,6 +1193,8 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_compile_visible_graphics, (void *)renderer,
 			scene->list_of_graphics);
+		timekeeper->setTimeQuiet(original_time);
+		cmzn_timekeepermodule_destroy(&timekeepermodule);
 	}
 	else
 	{
@@ -3649,7 +3655,7 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	if (scene)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
-			file_prefix, number_of_time_steps, begin_time,end_time, export_mode, number_of_entries,
+			file_prefix, number_of_time_steps, begin_time, end_time, export_mode, number_of_entries,
 			output_string);
 		renderer->Scene_compile(scene, scenefilter);
 		delete renderer;

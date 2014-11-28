@@ -363,7 +363,7 @@ DESCRIPTION :
 int Computed_field_time_value::evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache)
 {
 	RealFieldValueCache &valueCache = RealFieldValueCache::cast(inValueCache);
-	valueCache.values[0] = cmzn_timenotifier_get_time(time_object);
+	valueCache.values[0] = (Time_object_get_timekeeper(time_object))->getTime();
 	// spatial derivatives are zero
 	for (int j=0;j<MAXIMUM_ELEMENT_XI_DIMENSIONS;j++)
 	{
