@@ -112,11 +112,15 @@ private:
 	std::stack<Transformation_matrix> transformation_stack;
 
 public:
-	Stl_context(const char *file_name, const char *solid_name) :
-		stl_file(fopen(file_name, "w")),
-		solid_name(duplicate_string(solid_name))
+	Stl_context(const char *file_name, const char *solid_name_in) :
+		stl_file(fopen(file_name, "w"))
 	{
 		/* ASCII STL header */
+		if (solid_name_in == 0)
+			solid_name = duplicate_string("default");
+		else
+			solid_name = duplicate_string(solid_name_in);
+
 		fprintf(stl_file,"solid %s\n",solid_name);
 	}
 
@@ -224,158 +228,235 @@ Module functions
 
 int makestl(Stl_context& stl_context, gtObject *graphics_object, ZnReal time);
 
-/***************************************************************************//**
- * Writes quadrilateral and triangle surface strips to STL file as
- * individual triangles.
- * 
- * @param stl_context output STL file and context data
- * @param surfpts array of points making up the surface
- * @param npts1 number of surface points in first direction
- * @param pnts2 number of surface points in second direction; same as npts1 for
- *   g_TRIANGLE polygon_type.
- * @param surface_type any of enum GT_surface_type 
- * @param polygon_type g_QUADRILATERAL, g_TRIANGLE or g_GENERAL_POLYGON
- * @param normalpts ignored
- * @param texturepts ignored
- * @param number_of_data_components ignored
- * @param data ignored
- * @param material ignored
- * @param spectrum ignored
- * @return 1 on success, 0 on failure
- */
-int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
-	Triple *normalpts, Triple *texturepts, int npts1,int npts2,
-	enum GT_surface_type surface_type, gtPolygonType polygon_type,
-	int number_of_data_components, GLfloat *data,
-	struct Graphical_material *material, struct Spectrum *spectrum)
-{
-	int i, j, return_code = 0;
-	Triple *point = NULL;
 
-	ENTER(draw_surface_stl);
-	/* Keep a similar interface to all the other render implementations */
-	USE_PARAMETER(normalpts);
-	USE_PARAMETER(texturepts);
-	USE_PARAMETER(number_of_data_components);
-	USE_PARAMETER(data);
-	USE_PARAMETER(material);
-	USE_PARAMETER(spectrum);
-	bool continuous = (surface_type == g_SHADED) || (surface_type == g_SHADED_TEXMAP);
-	if (surfpts && ((continuous && (1 < npts1) && (1 < npts2)) ||
-		(!continuous && (0 < npts1) && (2 < npts2))))
+/***************************************************************************//**
+ * Writes a glyph set to STL file.
+ * Only surface glyphs can be output; other primitives are silently ignored.
+ * Transformations are flattened.
+ */
+static int draw_glyph_set_stl(Stl_context& stl_context, gtObject *object)
+{
+	if (object && object->vertex_array && object->primitive_lists)
 	{
-		point=surfpts;
-		switch (surface_type)
+		unsigned int nodeset_index = 0;
+		unsigned int nodeset_count =
+			object->vertex_array->get_number_of_vertices(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+		GT_glyphset_vertex_buffers *glyph_set = object->primitive_lists->gt_glyphset_vertex_buffers;
+		GLfloat *position_buffer = 0, *axis1_buffer = 0, *axis2_buffer = 0,
+			*axis3_buffer = 0, *scale_buffer = 0;
+		unsigned int position_values_per_vertex = 0, position_vertex_count = 0,
+			axis1_values_per_vertex = 0,
+			axis1_vertex_count = 0, axis2_values_per_vertex = 0, axis2_vertex_count = 0,
+			axis3_values_per_vertex = 0, axis3_vertex_count = 0, scale_values_per_vertex = 0,
+			scale_vertex_count = 0;
+		cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
+		GT_object *glyph = glyph_set->glyph;
+		if (glyph)
 		{
-			case g_SHADED:
-			case g_SHADED_TEXMAP:
+			if (0 < nodeset_count)
 			{
-				switch (polygon_type)
-				{
-					case g_TRIANGLE:
-					{
-						/* expecting npts2 == npts1 */
-						for (j=npts2-1; j>0; j--)
-						{
-							for (i=j-1; i>0; i--)
-							{
-								stl_context.write_triangle(point[0], point[1], point[j+1]);
-								stl_context.write_triangle(point[1], point[j+2], point[j+1]);
-								point++;
-							}
-							stl_context.write_triangle(point[0], point[1], point[j+1]);
-							point++;
-							point++;
-						}
-						return_code=1;
-					} break;
-					default:
-					{
-						/* Do nothing */
-					} break;
-				}
-			} break;
-			case g_SH_DISCONTINUOUS:
-			case g_SH_DISCONTINUOUS_STRIP:
-			case g_SH_DISCONTINUOUS_TEXMAP:
-			case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+					&position_buffer, &position_values_per_vertex, &position_vertex_count);
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS1,
+					&axis1_buffer, &axis1_values_per_vertex, &axis1_vertex_count);
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS2,
+					&axis2_buffer, &axis2_values_per_vertex, &axis2_vertex_count);
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_AXIS3,
+					&axis3_buffer, &axis3_values_per_vertex, &axis3_vertex_count);
+				object->vertex_array->get_float_vertex_buffer(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_SCALE,
+					&scale_buffer, &scale_values_per_vertex, &scale_vertex_count);
+			}
+
+			for (nodeset_index = 0; nodeset_index < nodeset_count; nodeset_index++)
 			{
-				int strip=((g_SH_DISCONTINUOUS_STRIP_TEXMAP==surface_type)
-					||(g_SH_DISCONTINUOUS_STRIP==surface_type));
-				for (i=0; i<npts1; i++)
+				unsigned int index_start = 0, index_count = 0;
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					nodeset_index, 1, &index_start);
+				object->vertex_array->get_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					nodeset_index, 1, &index_count);
+				GLfloat *position = position_buffer + position_values_per_vertex * index_start,
+					*axis1 = axis1_buffer + axis1_values_per_vertex * index_start,
+					*axis2 = axis2_buffer + axis2_values_per_vertex * index_start,
+					*axis3 = axis3_buffer + axis3_values_per_vertex * index_start,
+					*scale = scale_buffer + scale_values_per_vertex * index_start;
+				const int number_of_glyphs =
+					cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
+				Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+				for (unsigned int i = 0; i < index_count; i++)
 				{
-					switch (polygon_type)
+					for (int glyph_number = 0; glyph_number < number_of_glyphs; ++glyph_number)
 					{
-						case g_TRIANGLE:
+						resolve_glyph_axes(glyph_repeat_mode, glyph_number,
+							glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
+							position, axis1, axis2, axis3, scale,
+							temp_point, temp_axis1, temp_axis2, temp_axis3);
+						Transformation_matrix matrix(
+							(double)temp_axis1[0], (double)temp_axis2[0], (double)temp_axis3[0], (double)temp_point[0],
+							(double)temp_axis1[1], (double)temp_axis2[1], (double)temp_axis3[1], (double)temp_point[1],
+							(double)temp_axis1[2], (double)temp_axis2[2], (double)temp_axis3[2], (double)temp_point[2],
+							0.0, 0.0, 0.0, 1.0);
+						stl_context.push_multiply_transformation(matrix);
+						struct GT_object *temp_glyph = glyph;
+						/* call the glyph display lists of the linked-list of glyphs */
+						while (temp_glyph)
 						{
-							if (strip)
-							{
-								for (j=0; j<npts2-2; j++)
-								{
-									if (j & 1)
-									{
-										stl_context.write_triangle(point[j+1], point[j], point[j+2]);
-									}
-									else
-									{
-										stl_context.write_triangle(point[j], point[j+1], point[j+2]);
-									}
-								}
-							}
-							else
-							{
-								stl_context.write_triangle(point[0], point[1], point[2]);
-							}
-						} break;
-						default:
-						{
-							/* find polygon centre = average of points */
-							Triple centre = { 0.0f, 0.0f, 0.0f };
-							Triple *temp_point = point;
-							for (j=0; j<npts2; j++)
-							{
-								centre[0] += (*temp_point)[0];
-								centre[1] += (*temp_point)[1];
-								centre[2] += (*temp_point)[2];
-								temp_point++;
-							}
-							centre[0] /= (ZnReal)npts2;
-							centre[1] /= (ZnReal)npts2;
-							centre[2] /= (ZnReal)npts2;
-							for (j=0; j<npts2; j++)
-							{
-								stl_context.write_triangle(point[j], point[(j+1) % npts2], centre);
-							}
+							makestl(stl_context, temp_glyph, 0);
+							temp_glyph = GT_object_get_next_object(temp_glyph);
 						}
+						stl_context.pop_transformation();
 					}
-					point += npts2;
+					position += position_values_per_vertex;
+					axis1 += axis1_values_per_vertex;
+					axis2 += axis2_values_per_vertex;
+					axis3 += axis3_values_per_vertex;
+					scale += scale_values_per_vertex;
 				}
-			} break;
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"draw_surface_stl.  Invalid surface type");
-				return_code=0;
-			} break;
+			}
 		}
+		return 1;
 	}
 	else
 	{
-		if ((1<npts1) && (1<npts2))
-		{
-			display_message(ERROR_MESSAGE,
-				"draw_surface_stl.  Invalid argument(s)");
-			return_code=0;
-		}
-		else
-		{
-			return_code=1;
-		}
+		display_message(ERROR_MESSAGE, "draw_glyph_set_stl. Invalid argument(s)");
 	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* draw_surface_stl */
+/***************************************************************************//**
+ * Writes triangle surface strips to STL file as
+ * individual triangles.
+ *
+ */
+int draw_surface_stl(Stl_context& stl_context, gtObject *object)
+{
+	if (object && object->primitive_lists)
+	{
+		GT_surface_vertex_buffers *vb_surface =
+			object->primitive_lists->gt_surface_vertex_buffers;
+		if (vb_surface)
+		{
+			unsigned int surface_count =
+				object->vertex_array->get_number_of_vertices(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
+			GLfloat *position_buffer = 0;
+			unsigned int position_values_per_vertex = 0, position_vertex_count = 0;
+			object->vertex_array->get_float_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+				&position_buffer, &position_values_per_vertex, &position_vertex_count);
+			unsigned int *index_vertex_buffer, index_values_per_vertex, index_vertex_count;
+			object->vertex_array->get_unsigned_integer_vertex_buffer(
+				GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_ARRAY,
+				&index_vertex_buffer, &index_values_per_vertex,
+				&index_vertex_count);
+			for (unsigned int surface_index = 0; surface_index < surface_count; surface_index++)
+			{
+				int object_name = 0;
+				if (!object->vertex_array->get_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					surface_index, 1, &object_name))
+				{
+					object_name = 0;
+				}
+				if (object_name > -1)
+				{
+					switch (vb_surface->surface_type)
+					{
+						case g_SHADED:
+						case g_SHADED_TEXMAP:
+						{
+							unsigned int number_of_strips = 0;
+							unsigned int strip_start = 0;
+							object->vertex_array->get_unsigned_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_STRIPS,
+								surface_index, 1, &number_of_strips);
+							object->vertex_array->get_unsigned_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_START,
+								surface_index, 1, &strip_start);
+							for (unsigned int i = 0; i < number_of_strips; i++)
+							{
+								unsigned int points_per_strip = 0;
+								unsigned int index_start_for_strip = 0;
+								object->vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_STRIP_INDEX_START,
+									strip_start+i, 1, &index_start_for_strip);
+								object->vertex_array->get_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_POINTS_FOR_STRIP,
+									strip_start+i, 1, &points_per_strip);
+								unsigned int *indices = &index_vertex_buffer[index_start_for_strip];
+								Triple point1, point2, point3;
+								for (unsigned int j =0; j<points_per_strip - 2; j++)
+								{
+									point1[2] = 0.0;
+									point2[2] = 0.0;
+									point3[2] = 0.0;
+									if (0 == (j % 2))
+									{
+										for (unsigned int num = 0; num < position_values_per_vertex; num++)
+										{
+											point1[num] = position_buffer[indices[j]*position_values_per_vertex + num];
+											point2[num] = position_buffer[indices[j + 1]*position_values_per_vertex + num];
+											point3[num] = position_buffer[indices[j + 2]*position_values_per_vertex + num];
+										}
+									}
+									else
+									{
+										for (unsigned int num = 0; num < position_values_per_vertex; num++)
+										{
+											point1[num] = position_buffer[indices[j + 1]*position_values_per_vertex + num];
+											point2[num] = position_buffer[indices[j]*position_values_per_vertex + num];
+											point3[num] = position_buffer[indices[j + 2]*position_values_per_vertex + num];
+										}
+									}
+									stl_context.write_triangle(point1, point2, point3);
+								}
+							}
+						} break;
+						case g_SH_DISCONTINUOUS:
+						case g_SH_DISCONTINUOUS_STRIP:
+						case g_SH_DISCONTINUOUS_TEXMAP:
+						case g_SH_DISCONTINUOUS_STRIP_TEXMAP:
+						{
+							unsigned int index_start, index_count;
+							object->vertex_array->get_unsigned_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+								surface_index, 1, &index_start);
+							object->vertex_array->get_unsigned_integer_attribute(
+								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+								surface_index, 1, &index_count);
+							Triple point1, point2, point3;
+							for (unsigned int i = 0; i < index_count;)
+							{
+								point1[2] = 0.0;
+								point2[2] = 0.0;
+								point3[2] = 0.0;
+								for (unsigned int num = 0; num < position_values_per_vertex; num++)
+								{
+									point1[num] = position_buffer[(index_start+i)*position_values_per_vertex + num];
+									point2[num] = position_buffer[(index_start+i+1)*position_values_per_vertex + num];
+									point3[num] = position_buffer[(index_start+i+2)*position_values_per_vertex + num];
+								}
+								stl_context.write_triangle(point1, point2, point3);
+								i += 3;
+							}
+						}break;
+						default:
+						{
+						} break;
+					}
+				}
+			}
+		}
+		return 1;
+	}
+
+	return 0;
+}
 
 /***************************************************************************//**
  * Writes surface primitives in graphics object to STL file.
@@ -387,84 +468,36 @@ int draw_surface_stl(Stl_context& stl_context, Triple *surfpts,
  */
 int makestl(Stl_context& stl_context, gtObject *object, ZnReal time)
 {
-	ZnReal proportion = 0.0f, *times = NULL;
-	int itime, number_of_times, return_code = 0;
-	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
+	int return_code = 0;
 
-	ENTER(makestl);
 	return_code = 1;
 	if (object)
 	{
-		number_of_times = object->number_of_times;
-		if (0 < number_of_times)
-		{
-			itime = number_of_times;
-			if ((itime>1)&&(times=object->times))
-			{
-				itime--;
-				times += itime;
-				if (time>= *times)
-				{
-					proportion=0;
-				}
-				else
-				{
-					while ((itime>0)&&(time< *times))
-					{
-						itime--;
-						times--;
-					}
-					if (time< *times)
-					{
-						proportion=0;
-					}
-					else
-					{
-						proportion=times[1]-times[0];
-						if (proportion>0)
-						{
-							proportion=time-times[0]/proportion;
-						}
-						else
-						{
-							proportion=0;
-						}
-					}
-				}
-			}
-			else
-			{
-				itime=0;
-				proportion=0;
-			}
-			if (object->primitive_lists &&
-				(primitive_list1 = object->primitive_lists + itime))
-			{
-				if (proportion > 0)
-				{
-					if (!(primitive_list2 = object->primitive_lists + itime + 1))
-					{
-						display_message(ERROR_MESSAGE,
-							"makestl.  Invalid primitive_list");
-						return_code = 0;
-					}
-				}
-				else
-				{
-					primitive_list2 = (union GT_primitive_list *)NULL;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"makestl.  Invalid primitive_lists");
-				return_code = 0;
-			}
-		}
-		if ((0 < number_of_times) && return_code)
+		if (return_code)
 		{
 			switch (object->object_type)
 			{
+				case g_GLYPH_SET_VERTEX_BUFFERS:
+				{
+					if (object->vertex_array)
+					{
+						draw_glyph_set_stl(stl_context,	object);
+					}
+				} break;
+				case g_POINT_SET_VERTEX_BUFFERS:
+				case g_POLYLINE_VERTEX_BUFFERS:
+				{
+					/* not relevant to STL: ignore */
+					return_code=1;
+				} break;
+				case g_SURFACE_VERTEX_BUFFERS:
+				{
+					if (object->vertex_array)
+					{
+						draw_surface_stl(stl_context,	object);
+					}
+					return_code=1;
+				} break;
 				default:
 				{
 					display_message(ERROR_MESSAGE,"makestl.  Invalid object type");
