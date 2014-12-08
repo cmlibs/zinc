@@ -253,6 +253,27 @@ public:
 		}
 		return true;
 	}
+
+	/**
+	 * @return  true if all bits in bool array are either all on or all off over
+	 * all consecutive subarrays of the given size, otherwise false. Used to
+	 * determine sparsity of map indexing.
+	 */
+	bool isBanded(IndexType bandSize, IndexType numberOfBands)
+	{
+		for (IndexType band = 0; band < numberOfBands; ++band)
+		{
+			// GRC this can be made much more efficient
+			IndexType index = band*bandSize;
+			bool firstBool = getBool(index);
+			IndexType indexLimit = (band + 1)*bandSize;
+			for (++index; index < indexLimit; ++index)
+				if (getBool(index) != firstBool)
+					return false;
+		}
+		return true;
+	}
+
 };
 
 #endif /* !defined (BLOCK_ARRAY_HPP) */

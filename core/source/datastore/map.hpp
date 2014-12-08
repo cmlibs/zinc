@@ -94,15 +94,47 @@ public:
 	static DsMap<ValueType> *create(int labelsArraySizeIn, DsLabels **labelsArrayIn);
 	static DsMap<ValueType> *create(std::vector<HDsLabels>& labelsVector);
 
+	DsMap<ValueType> *clone() const;
+
 	int getValues(DsMapIndexing& indexing, DsMapAddressType number_of_values, ValueType *outValues) const;
 
 	int getValuesSparse(DsMapIndexing& indexing, DsMapAddressType number_of_values, ValueType *outValues,
 		int *valueExists, int& valuesRead) const;
 
-	int setValues(DsMapIndexing& indexing, DsMapAddressType number_of_values, ValueType *inValues);
+	int setValues(DsMapIndexing& indexing, DsMapAddressType number_of_values, const ValueType *inValues);
 
-	bool isDenseAndCompleteOnLabels(int labelsNumber) const;
+	/**
+	 * Divides indexing labels into sparse indexed and dense indexed, where dense
+	 * means there is a value for every label in the labels over every permutation
+	 * of sparse indexes.
+	 * Currently restricted to having later/inner indexes dense, so an
+	 * earlier/outer dense & complete index is considered sparse if followed by
+	 * any sparse index.
+	 */
+	void getSparsity(std::vector<HDsLabels>& sparseLabelsArray, std::vector<HDsLabels>& denseLabelsArray);
+
+	/**
+	 * Calls DsMapIndexing::incrementSparseIterators until
+	 * data is found in the map.
+	 * Assumes sparse indexes are first in the indexing.
+	 * @param mapIndexing  Indexing which must be for this map!
+	 * @return  true if more to come, false if past last */
+	bool incrementSparseIterators(DsMapIndexing& mapIndexing);
+
+	bool isDenseAndComplete()
+	{
+		if (!dense)
+			return false;
+		for (int i = 0; i < this->labelsArraySize; ++i)
+			if (this->indexSizes[i] != this->labelsArray[i]->getSize())
+				return false;
+		return true;
+	}
+
 };
+
+typedef cmzn::RefHandle< DsMap< int > > HDsMapInt;
+typedef cmzn::RefHandle< DsMap< double > > HDsMapDouble;
 
 template <typename ValueType>
 DsMap<ValueType>::DsMap(int labelsArraySizeIn, DsLabels **labelsArrayIn) :
@@ -322,6 +354,21 @@ DsMap<ValueType> *DsMap<ValueType>::create(std::vector<HDsLabels>& labelsVector)
 	return map;
 }
 
+template <typename ValueType> DsMap<ValueType> *DsMap<ValueType>::clone() const
+{
+	DsMap<ValueType> *newMap = create(this->labelsArraySize, this->labelsArray);
+	if (newMap)
+	{
+		if (!(newMap->resize(this->indexSizes) &&
+			this->copyValues(/*labelsNumber*/0, /*oldBaseIndex*/0, /*newBaseIndex*/0,
+				this->offsets, /*copySize*/this->indexSizes, newMap->values, newMap->value_exists)))
+			cmzn::Deaccess(newMap);
+	}
+	if (!newMap)
+		display_message(WARNING_MESSAGE, "DsMap::clone  Failed to clone map %s\n", this->name.c_str());
+	return newMap;	
+}
+
 template <typename ValueType>
 int DsMap<ValueType>::getValues(DsMapIndexing& indexing,
 	unsigned int number_of_values, ValueType *outValues) const
@@ -492,7 +539,7 @@ int DsMap<ValueType>::getValuesSparse(DsMapIndexing& indexing,
 // unsigned int may eventually be too small for number_of_values.
 template <typename ValueType>
 int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
-	unsigned int number_of_values, ValueType *inValues)
+	unsigned int number_of_values, const ValueType *inValues)
 {
 	if ((number_of_values == 0) || !(inValues))
 		return 0;
@@ -639,17 +686,102 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 }
 
 template <typename ValueType>
-bool DsMap<ValueType>::isDenseAndCompleteOnLabels(int labelsNumber) const
+void DsMap<ValueType>::getSparsity(std::vector<HDsLabels>& sparseLabelsArray, std::vector<HDsLabels>& denseLabelsArray)
 {
-	HDsLabels labels (this->getLabels(labelsNumber));
-	if (labels)
+	sparseLabelsArray.clear();
+	denseLabelsArray.clear();
+	if (this->dense)
 	{
-		if (this->dense && (this->indexSizes[labelsNumber] == labels->getSize()))
-			return true;
-		// GRC to complete!
+		// even when the map is dense, if the map does not span all labels in an index
+		// those labels are considered sparse.
+		// currently require all sparse indexing to precede dense indexing
+		int lastSparseLabelsNumber;
+		for (lastSparseLabelsNumber = this->labelsArraySize - 1; 0 <= lastSparseLabelsNumber; --lastSparseLabelsNumber)
+			if (this->indexSizes[lastSparseLabelsNumber] != this->labelsArray[lastSparseLabelsNumber]->getSize())
+				break;
+		for (int labelsNumber = 0; labelsNumber < this->labelsArraySize; ++labelsNumber)
+		{
+			HDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
+			if (labelsNumber > lastSparseLabelsNumber)
+				denseLabelsArray.push_back(labels);
+			else
+				sparseLabelsArray.push_back(labels);
+		}
+	}
+	else
+	{
+		// Currently respects the order of labels indexing the map, so sparse labels
+		// always precede dense labels.
+		// Algorithm assumes all labels are densely packed which is sufficient
+		// for current FieldML I/O, however if labels are ever destroyed leaving
+		// holes in labels, either a reclaim must be done before writing, or this
+		// algorithm must be re-written.
+		HDsLabels labels(cmzn::Access(this->labelsArray[0]));
+		sparseLabelsArray.push_back(labels);
+		bool remainingLabelsDense = false;
+		DsMapAddressType numberOfBands = this->indexSizes[0];
+		for (int labelsNumber = 1; labelsNumber < this->labelsArraySize; ++labelsNumber)
+		{
+			HDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
+			if (remainingLabelsDense ||
+				this->value_exists.isBanded(this->offsets[labelsNumber - 1], numberOfBands))
+			{
+				denseLabelsArray.push_back(labels);
+				remainingLabelsDense = true;
+			}
+			else
+			{
+				sparseLabelsArray.push_back(labels);
+				numberOfBands *= this->indexSizes[labelsNumber];
+			}
+		}
+	}
+}
+
+/**
+ * Note the map can be dense, but this is only expected to be called if
+ * it is incomplete in the first indexing labels.
+ * @see getSparsity.
+ */
+template <typename ValueType>
+bool DsMap<ValueType>::incrementSparseIterators(DsMapIndexing& mapIndexing)
+{
+	DsLabelIndex index;
+	if (this->dense)
+	{
+		while (mapIndexing.incrementSparseIterators())
+		{
+			bool hasData = true;
+			for (int i = 0; i < this->labelsArraySize; ++i)
+			{
+				index = mapIndexing.getSparseIndex(i);
+				// logic relies on DS_LABEL_INDEX_INVALID being negative
+				if (index >= this->indexSizes[i])
+				{
+					hasData = false;
+					break;
+				}
+			}
+			if (hasData)
+				return true;
+		}
+	}
+	else
+	{
+		DsMapAddressType valueIndex;
+		while (mapIndexing.incrementSparseIterators())
+		{
+			valueIndex = 0;
+			for (int i = 0; i < this->labelsArraySize; ++i)
+			{
+				index = mapIndexing.getSparseIndex(i);
+				if (index == DS_LABEL_INDEX_INVALID)
+					break;
+				valueIndex += index*this->offsets[i];
+			}
+			if (this->value_exists.getBool(valueIndex))
+				return true;
+		}
 	}
 	return false;
 }
-
-typedef cmzn::RefHandle< DsMap< int > > HDsMapInt;
-typedef cmzn::RefHandle< DsMap< double > > HDsMapDouble;

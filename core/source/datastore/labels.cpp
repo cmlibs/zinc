@@ -243,30 +243,34 @@ DsLabelIndex DsLabels::getFirstIndex()
 
 DsLabelIndex DsLabels::getNextIndex(DsLabelIndex index)
 {
-	if (0 <= index)
+	if (index < 0)
 	{
-		if (this->contiguous)
+		if (index == DS_LABEL_INDEX_INVALID)
+			return this->getFirstIndex();
+		return DS_LABEL_INDEX_INVALID;
+	}
+	if (this->contiguous)
+	{
+		if (index < (this->indexSize - 1))
+			return (index + 1);
+	}
+	else
+	{
+		// would be faster if not iterating in identifier order
+		// otherwise can be made more efficient by passing DsLabelIterator
+		// to this function & keeping iterator in it
+		DsLabelIdentifier identifier = getLabelIdentifier(index);
+		if (0 <= identifier)
 		{
-			if (index < (this->indexSize - 1))
+			// optimisation: check if index+1 -> identifier+1 so it is next
+			if (getLabelIdentifier(index + 1) == (identifier + 1))
 				return (index + 1);
-		}
-		else
-		{
-			DsLabelIdentifier identifier = getLabelIdentifier(index);
-			if (0 <= identifier)
+			// O(logN) slow:
+			DsLabelIdentifierMapIterator iter = identifierMap.find(identifier);
+			iter++;
+			if (iter != identifierMap.end())
 			{
-				// optimisation: check if index+1 -> identifier+1 so it is next
-				if (getLabelIdentifier(index + 1) == (identifier + 1))
-					return (index + 1);
-				// O(logN) slow:
-				// can be made more efficient by passing DsLabelIterator
-				// to this function & keeping iterator in it
-				DsLabelIdentifierMapIterator iter = identifierMap.find(identifier);
-				iter++;
-				if (iter != identifierMap.end())
-				{
-					return iter->second;
-				}
+				return iter->second;
 			}
 		}
 	}
@@ -276,42 +280,55 @@ DsLabelIndex DsLabels::getNextIndex(DsLabelIndex index)
 DsLabelIndex DsLabels::getNextIndexBoolTrue(DsLabelIndex index,
 	bool_array<DsLabelIndex>& boolArray)
 {
-	if (index < 0)
+	// assumes DS_LABEL_INDEX_INVALID is negative
+	if ((index < 0) && (index != DS_LABEL_INDEX_INVALID))
 		return DS_LABEL_INDEX_INVALID;
 	DsLabelIndex newIndex = index;
 	if (this->contiguous)
 	{
+		if (index < 0)
+			newIndex = -1;
 		do
 		{
 			++newIndex;
 			if (newIndex >= this->indexSize)
-			{
-				newIndex = DS_LABEL_INDEX_INVALID;
-				break;
-			}
+				return DS_LABEL_INDEX_INVALID;
 		} while (!boolArray.getBool(newIndex));
 	}
 	else
 	{
-		// can be made more efficient by passing DsLabelIterator
+		// would be faster if not iterating in identifier order
+		// otherwise can be made more efficient by passing DsLabelIterator
 		// to this function & keeping iterator in it
-		DsLabelIdentifier identifier = getLabelIdentifier(newIndex);
-		DsLabelIdentifierMapIterator iter = identifierMap.find(identifier);
+		DsLabelIdentifierMapIterator iter;
+		if (index < 0)
+		{
+			iter = identifierMap.begin();
+			if (iter == identifierMap.end())
+				return DS_LABEL_INDEX_INVALID;
+			newIndex = iter->second;
+			if (boolArray.getBool(newIndex))
+				return newIndex;
+		}
+		else
+		{
+			DsLabelIdentifier identifier = getLabelIdentifier(index);
+			iter = identifierMap.find(identifier);
+			if (iter == identifierMap.end())
+				return DS_LABEL_INDEX_INVALID;
+		}
 		do
 		{
-			iter++;
+			++iter;
 			if (iter == identifierMap.end())
-			{
-				newIndex = DS_LABEL_INDEX_INVALID;
-				break;
-			}
+				return DS_LABEL_INDEX_INVALID;
 			newIndex = iter->second;
 		} while (!boolArray.getBool(newIndex));
 	}
 	return newIndex;
 }
 
-DsLabelIterator *DsLabels::createLabelIteratorPrivate()
+DsLabelIterator *DsLabels::createLabelIterator()
 {
 	DsLabelIterator *iterator = 0;
 	if (this->inactiveIterators)
@@ -334,24 +351,6 @@ DsLabelIterator *DsLabels::createLabelIteratorPrivate()
 			this->activeIterators->previous = iterator;
 		this->activeIterators = iterator;
 	}
-	return iterator;
-}
-
-DsLabelIterator *DsLabels::createLabelIterator()
-{
-	DsLabelIterator *iterator = this->createLabelIteratorPrivate();
-	if (iterator)
-		iterator->index = this->getFirstIndex();
-	return iterator;
-}
-
-DsLabelIterator *DsLabels::createLabelIteratorAtIndex(DsLabelIndex index)
-{
-	if (DS_LABEL_IDENTIFIER_INVALID == getLabelIdentifier(index))
-		return 0;
-	DsLabelIterator *iterator = this->createLabelIteratorPrivate();
-	if (iterator)
-		iterator->index = index;
 	return iterator;
 }
 
@@ -386,11 +385,13 @@ void DsLabels::destroyLabelIterator(DsLabelIterator *&iterator)
 int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
 {
 	ranges.clear();
-	if (this->getSize() > 0)
+	DsLabelIterator *iterator = this->createLabelIterator();
+	if (!iterator)
+		return CMZN_ERROR_MEMORY;
+	if (iterator->increment())
 	{
-		DsLabelIterator *iterator = this->createLabelIterator();
-		DsLabelIdentifierRange range = { iterator->getIdentifier(), iterator->getIdentifier() };
-		DsLabelIdentifier identifier;
+		DsLabelIdentifier identifier = iterator->getIdentifier();
+		DsLabelIdentifierRange range = { identifier, identifier };
 		while (iterator->increment())
 		{
 			identifier = iterator->getIdentifier();
@@ -402,8 +403,8 @@ int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
 			range.last = identifier;
 		}
 		ranges.push_back(range);
-		cmzn::Deaccess(iterator);
 	}
+	cmzn::Deaccess(iterator);
 	return CMZN_OK;
 }
 
