@@ -102,6 +102,22 @@ struct DsMapIndexing : public cmzn::RefCounted
 			return this->labels->getSize();
 		}
 
+		/** Return identifier if singly indexed */
+		DsLabelIdentifier getSparseIdentifier() const
+		{
+			if (this->iterator)
+				return this->iterator->getIdentifier();
+			return DS_LABEL_IDENTIFIER_INVALID;
+		}
+
+		/** Return index if singly indexed */
+		DsLabelIndex getSparseIndex() const
+		{
+			if (this->iterator)
+				return this->iterator->getIndex();
+			return DS_LABEL_INDEX_INVALID;
+		}
+
 		void setAll()
 		{
 			clearLabelIterator();
@@ -110,19 +126,14 @@ struct DsMapIndexing : public cmzn::RefCounted
 
 		void setEntry(DsLabelIterator& iteratorIn)
 		{
-			if (this->iterator)
-				this->iterator->setIndex(iteratorIn.getIndex());
-			else
-				this->iterator = this->labels->createLabelIteratorAtIndex(iteratorIn.getIndex());
-			clearLabelsGroup();
+			this->setIndex(iteratorIn.getIndex());
 		}
 
 		void setIndex(DsLabelIndex indexIn)
 		{
-			if (this->iterator)
-				this->iterator->setIndex(indexIn);
-			else
-				this->iterator = this->labels->createLabelIteratorAtIndex(indexIn);
+			if (!this->iterator)
+				this->iterator = this->labels->createLabelIterator();
+			this->iterator->setIndex(indexIn);
 			clearLabelsGroup();
 		}
 
@@ -170,20 +181,25 @@ struct DsMapIndexing : public cmzn::RefCounted
 			if (this->iterator)
 			{
 				// no valuesIterator when single entry is indexed
-				firstIndex = this->iterator->getIndex();
-				valuesIterator = 0;
+				this->firstIndex = this->iterator->getIndex();
+				this->valuesIterator = 0;
 			}
 			else if (this->labelsGroup)
-			{
-				firstIndex = this->labelsGroup->getFirstIndex();
-				valuesIterator = this->labels->createLabelIteratorAtIndex(firstIndex);
-			}
+				this->firstIndex = this->labelsGroup->getFirstIndex();
 			else
-			{
 				firstIndex = this->labels->getFirstIndex();
-				valuesIterator = this->labels->createLabelIteratorAtIndex(firstIndex);
+			if (firstIndex >= 0)
+			{
+				if (this->iterator)
+					return true;
+				this->valuesIterator = this->labels->createLabelIterator();
+				if (this->valuesIterator)
+				{
+					this->valuesIterator->setIndex(this->firstIndex);
+					return true;
+				}
 			}
-			return (firstIndex >= 0) && (iterator || valuesIterator);
+			return false;
 		}
 
 		DsLabelIndex getIterationIndex()
@@ -347,6 +363,24 @@ public:
 		return 0;
 	}
 
+	/** Get the current label identifier for the labelsNumber, if it is sparsely
+	 * indexed by an iterator.
+	 * @return  The label identifier, or DS_LABEL_IDENTIFIER_INVALID if not
+	 * indexed by an iterator. */
+	DsLabelIdentifier getSparseIdentifier(int labelsNumber) const
+	{
+		return this->indexing[labelsNumber].getSparseIdentifier();
+	}
+
+	/** Get the current label index for the labelsNumber, if it is sparsely
+	 * indexed by an iterator.
+	 * @return  The label index, or DS_LABEL_INDEX_INVALID if not
+	 * indexed by an iterator. */
+	DsLabelIndex getSparseIndex(int labelsNumber) const
+	{
+		return this->indexing[labelsNumber].getSparseIndex();
+	}
+
 	/**
 	 * Returns limiting entry index for the indexing of the selected labels.
 	 * Must have called calculateIndexLimits first
@@ -426,6 +460,44 @@ public:
 			indexing[i].iterationEnd();
 		}			
 	}
+
+	/** Call before iterating with incrementSparseIterators */
+	void resetSparseIterators()
+	{
+		int i = this->labelsArraySize - 1;
+		for (; 0 <= i; --i)
+		{
+			if (this->indexing[i].iterator)
+			{
+				this->indexing[i].iterator->setIndex(DS_LABEL_INDEX_INVALID);
+				--i;
+				break;
+			}
+		}
+		for (; 0 <= i; --i)
+		{
+			if (this->indexing[i].iterator)
+				this->indexing[i].iterator->setIndex(indexing[i].labels->getFirstIndex());
+		}
+	}
+
+	/** @return  true if more to come, false if past last */
+	bool incrementSparseIterators()
+	{
+		for (int i = labelsArraySize - 1; 0 <= i; --i)
+		{
+			if (this->indexing[i].iterator)
+			{
+				if (this->indexing[i].iterator->increment())
+					return true;
+				// reset to start
+				if (!this->indexing[i].iterator->increment())
+					return false; // only happens if no labels
+			}
+		}
+		return false;
+	}
+
 };
 
 typedef cmzn::RefHandle<DsMapIndexing> HDsMapIndexing;

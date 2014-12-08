@@ -153,34 +153,7 @@ public:
 		int *temp = int_basis_type_array + 1;
 		for (int i = 0; i < dimension; i++)
 		{
-			FE_basis_type fe_basis_type = FE_BASIS_TYPE_INVALID;
-			switch (function_types[i])
-			{
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT:
-				fe_basis_type = FE_BASIS_CONSTANT;
-				break;
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE:
-				fe_basis_type = LINEAR_LAGRANGE;
-				break;
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE:
-				fe_basis_type = QUADRATIC_LAGRANGE;
-				break;
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE:
-				fe_basis_type = CUBIC_LAGRANGE;
-				break;
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX:
-				fe_basis_type = LINEAR_SIMPLEX;
-				break;
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX:
-				fe_basis_type = QUADRATIC_SIMPLEX;
-				break;
-			case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE:
-				fe_basis_type = CUBIC_HERMITE;
-				break;
-			default:
-				fe_basis_type = FE_BASIS_TYPE_INVALID;
-				break;
-			}
+			FE_basis_type fe_basis_type = cmzn_elementbasis_function_type_to_FE_basis_type(function_types[i]);
 			*temp = (int)fe_basis_type;
 			++temp;
 			for (int j = i + 1; j < dimension; j++)

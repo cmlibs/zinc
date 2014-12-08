@@ -22,6 +22,8 @@ template <typename T> class RefHandle
 {
 	template<typename POINTEE>
 		friend POINTEE* GetImpl(const RefHandle<POINTEE>& refHandle);
+	template<typename POINTEE>
+		friend void SetImpl(RefHandle<POINTEE>& refHandle, POINTEE* newObject);
 
 private:
 	T* object;
@@ -73,6 +75,13 @@ public:
 template<typename POINTEE> inline POINTEE* GetImpl(const RefHandle<POINTEE>& refHandle)
 {
 	return refHandle.object;
+}
+
+// take ownership of reference in newImpl
+template<typename POINTEE> inline void SetImpl(RefHandle<POINTEE>& refHandle, POINTEE* newObject)
+{
+	Deaccess(refHandle.object);
+	refHandle.object = newObject;
 }
 
 }

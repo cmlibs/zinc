@@ -88,8 +88,6 @@ private:
 
 	DsLabelIndex createLabelPrivate(DsLabelIdentifier identifier);
 
-	DsLabelIterator *createLabelIteratorPrivate();
-
 	static void destroyLabelIterator(DsLabelIterator *&iterator);
 
 public:
@@ -151,11 +149,12 @@ public:
 	DsLabelIndex getFirstIndex();
 	DsLabelIndex getNextIndex(DsLabelIndex index);
 	DsLabelIndex getNextIndexBoolTrue(DsLabelIndex index, bool_array<DsLabelIndex>& boolArray);
-	
+
+	/**
+	 * Create new iterator initially pointing before first label.
+	 * @return accessed iterator, or 0 if failed.
+	 */
 	DsLabelIterator *createLabelIterator();
-	/** creates an iterator giving a handle to a label at index in the labels
-	 * @return accessed iterator, 0 if no label at index */
-	DsLabelIterator *createLabelIteratorAtIndex(DsLabelIndex index);
 
 	int getIdentifierRanges(DsLabelIdentifierRanges& ranges);
 };

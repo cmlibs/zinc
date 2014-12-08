@@ -11,6 +11,7 @@
 #if !defined (FINITE_ELEMENT_BASIS_H)
 #define FINITE_ELEMENT_BASIS_H
 
+#include "zinc/types/elementid.h"
 #include "general/list.h"
 #include "general/manager.h"
 #include "general/object.h"
@@ -170,15 +171,29 @@ Returns the number_of_basis_functions of <basis>.
 If fails, puts zero at <number_of_basis_functions_address>.
 ==============================================================================*/
 
+/** convert from external API basis function type to internal basis type enum */
+FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(
+	cmzn_elementbasis_function_type functionType);
+
+/** convert from internal basis type enum to external API basis function type */
+cmzn_elementbasis_function_type FE_basis_type_to_cmzn_elementbasis_function_type(
+	FE_basis_type feBasistype);
+
+/**
+ * Returns the basis type of <basis> on <xi_number> -- on main diagonal of
+ * type array. The first xi_number is 0.
+ * @return  FE_basis_type
+ */
 int FE_basis_get_xi_basis_type(struct FE_basis *basis,
 	int xi_number, enum FE_basis_type *basis_type_address);
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
 
-DESCRIPTION :
-Returns the basis type of <basis> on <xi_number> -- on main diagonal of
-type array. The first xi_number is 0.
-==============================================================================*/
+/**
+ * Returns the basis type of <basis> on <xi_number> -- on main diagonal of
+ * type array. The first xi number is 0.
+ * @return  cmzn_elementbasis_function_type
+ */
+cmzn_elementbasis_function_type FE_basis_get_xi_elementbasis_function_type(
+	FE_basis *feBasis, int xiNumber);
 
 int FE_basis_get_next_linked_xi_number(
 	struct FE_basis *basis, int xi_number,

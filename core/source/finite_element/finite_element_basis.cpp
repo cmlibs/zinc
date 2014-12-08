@@ -3957,15 +3957,83 @@ If fails, puts zero at <number_of_basis_functions_address>.
 	return (return_code);
 } /* FE_basis_get_number_of_basis_functions */
 
+FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(
+	cmzn_elementbasis_function_type functionType)
+{
+	FE_basis_type feBasisType = FE_BASIS_TYPE_INVALID;
+	switch (functionType)
+	{
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT:
+		feBasisType = FE_BASIS_CONSTANT;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE:
+		feBasisType = LINEAR_LAGRANGE;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE:
+		feBasisType = QUADRATIC_LAGRANGE;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE:
+		feBasisType = CUBIC_LAGRANGE;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX:
+		feBasisType = LINEAR_SIMPLEX;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX:
+		feBasisType = QUADRATIC_SIMPLEX;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE:
+		feBasisType = CUBIC_HERMITE;
+		break;
+	case CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID:
+		break;
+	}
+	return feBasisType;
+}
+
+cmzn_elementbasis_function_type FE_basis_type_to_cmzn_elementbasis_function_type(
+	FE_basis_type feBasisType)
+{
+	cmzn_elementbasis_function_type functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
+	switch (feBasisType)
+	{
+	case FE_BASIS_CONSTANT:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT;
+		break;
+	case LINEAR_LAGRANGE:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE;
+		break;
+	case QUADRATIC_LAGRANGE:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE;
+		break;
+	case CUBIC_LAGRANGE:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE;
+		break;
+	case LINEAR_SIMPLEX:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX;
+		break;
+	case QUADRATIC_SIMPLEX:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX;
+		break;
+	case CUBIC_HERMITE:
+		functionType = CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE;
+		break;
+	case FE_BASIS_TYPE_INVALID:
+	case NO_RELATION:
+	case BSPLINE:
+	case FOURIER:
+	case HERMITE_LAGRANGE:
+	case LAGRANGE_HERMITE:
+	case POLYGON:
+	case SERENDIPITY:
+	case SINGULAR:
+	case TRANSITION:
+		break;
+	}
+	return functionType;
+}
+
 int FE_basis_get_xi_basis_type(struct FE_basis *basis,
 	int xi_number, enum FE_basis_type *basis_type_address)
-/*******************************************************************************
-LAST MODIFIED : 6 November 2002
-
-DESCRIPTION :
-Returns the basis type of <basis> on <xi_number> -- on main diagonal of
-type array. The first xi_number is 0.
-==============================================================================*/
 {
 	int i, offset, return_code;
 
@@ -3991,7 +4059,16 @@ type array. The first xi_number is 0.
 	LEAVE;
 
 	return (return_code);
-} /* FE_basis_get_xi_basis_type */
+}
+
+cmzn_elementbasis_function_type FE_basis_get_xi_elementbasis_function_type(
+	FE_basis *feBasis, int xiNumber)
+{
+	FE_basis_type feBasisType;
+	if (FE_basis_get_xi_basis_type(feBasis, xiNumber, &feBasisType))
+		return FE_basis_type_to_cmzn_elementbasis_function_type(feBasisType);
+	return CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID;
+}
 
 int FE_basis_get_next_linked_xi_number(
 	struct FE_basis *basis, int xi_number,

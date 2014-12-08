@@ -44,45 +44,6 @@ const char *libraryChartArgumentNames[] =
 	"chart.3d.argument"
 };
 
-// map from zienkiewicz winding to cmgui
-//const int triquadraticSimplex_zienkiewicz_swizzle[10] = { 1, 5, 2, 7, 10, 4, 6, 8, 9, 3 };
-const int triquadraticSimplex_zienkiewicz_swizzle[10] = { 1, 3, 6, 10, 2, 4, 7, 5, 9, 8 };
-const int biquadraticSimplex_vtk_swizzle[6] = { 1, 3, 6, 2, 5, 4 };
-
-struct BasisType
-{
-	int dimension;
-	const char *fieldmlBasisEvaluatorName;
-	bool homogeneous;
-	enum cmzn_elementbasis_function_type functionType[3];
-	const int *swizzle;
-};
-
-const BasisType libraryBases[] =
-{
-	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
-	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.trilinearSimplex",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
-	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
-	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
-	// GRC add Hermite!
-	// GRC add vtk, zienkiewicz simplex ordering, swizzle
-};
-
-const int numLibraryBases = sizeof(libraryBases) / sizeof(BasisType);
-
 struct ElementFieldComponent
 {
 	cmzn_elementbasis_id element_basis;
@@ -447,7 +408,6 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 	const int denseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/0);
 
 	std::vector<HDsLabels> denseIndexLabels(denseIndexCount);
-	std::vector<HDsLabelIterator> denseLabelIterators(denseIndexCount);
 	int arrayRank = 0;
 	int *arrayRawSizes = 0;
 	int *arrayOffsets = 0;
@@ -507,7 +467,6 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 				return_code = 0;
 				break;
 			}
-			denseLabelIterators[i] = HDsLabelIterator(denseIndexLabels[i]->createLabelIterator());
 			FmlObjectHandle fmlOrderDataSource = Fieldml_GetParameterIndexOrder(fmlSession, fmlParameters, i + 1);
 			if (fmlOrderDataSource != FML_INVALID_HANDLE)
 			{
@@ -955,15 +914,17 @@ int FieldMLReader::readMeshes()
 		cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
 		cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
 
-		HDsLabelIterator elementsLabelIterator(elementsLabels->createLabelIterator());
 		FmlObjectHandle fmlLastElementShapeEvaluator = FML_INVALID_OBJECT_HANDLE;
 		cmzn_element_shape_type last_shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 
 		HDsMapIndexing elementShapeParametersIndexing(elementShapeParameters ? elementShapeParameters->createIndexing() : 0);
 
-		if (elementsLabelIterator && (elementsLabelIterator->getIdentifier() != DS_LABEL_IDENTIFIER_INVALID))
+		DsLabelIterator *elementsLabelIterator = elementsLabels->createLabelIterator();
+		if (!elementsLabelIterator)
+			return_code = 0;
+		else
 		{
-			while (return_code)
+			while (elementsLabelIterator->increment())
 			{
 				int elementIdentifier = elementsLabelIterator->getIdentifier();
 				cmzn_element_shape_type shape_type = const_shape_type;
@@ -1015,12 +976,9 @@ int FieldMLReader::readMeshes()
 					return_code = 0;
 					break;
 				}
-				if (!elementsLabelIterator->increment())
-					break;
 			}
 		}
-		else if (!elementsLabelIterator)
-			return_code = 0;
+		cmzn::Deaccess(elementsLabelIterator);
 		cmzn_elementtemplate_destroy(&elementtemplate);
 		cmzn_mesh_destroy(&mesh);
 	}
@@ -1295,20 +1253,23 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	if (this->fmlNodesType == FML_INVALID_OBJECT_HANDLE)
 	{
 		this->fmlNodesType = fmlNodeEnsembleType;
-		if (nodesLabels->getSize() > 0)
+		// create the nodes
+		// GRC: Could be made more efficient with bulk call
+		cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodes);
+		DsLabelIterator *nodesLabelIterator = nodesLabels->createLabelIterator();
+		if (!nodesLabelIterator)
+			return_code = CMZN_ERROR_MEMORY;
+		else
 		{
-			// create the nodes
-			// GRC: Could be made more efficient with bulk call
-			cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodes);
-			HDsLabelIterator nodesLabelIterator(nodesLabels->createLabelIterator());
-			do
+			while (nodesLabelIterator->increment())
 			{
 				DsLabelIdentifier nodeIdentifier = nodesLabelIterator->getIdentifier();
 				cmzn_node_id node = cmzn_nodeset_create_node(nodes, nodeIdentifier, nodetemplate);
 				cmzn_node_destroy(&node);
-			} while (nodesLabelIterator->increment());
-			cmzn_nodetemplate_destroy(&nodetemplate);
+			}
 		}
+		cmzn::Deaccess(nodesLabelIterator);
+		cmzn_nodetemplate_destroy(&nodetemplate);
 	}
 
 	HDsMapDouble nodeParameters(this->getContinuousParameters(fmlNodeParameters));
@@ -1319,7 +1280,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 			fieldName.c_str(), getName(fmlNodeParameters).c_str());
 		return_code = 0;
 	}
-	else if ((return_code) && (nodesLabels->getSize() > 0))
+	if (return_code)
 	{
 		cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodes);
 		cmzn_nodetemplate_define_field(nodetemplate, field);
@@ -1328,39 +1289,45 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		int *valueExists = new int[componentCount];
 		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
 		// GRC inefficient to iterate over sparse parameters this way
-		HDsLabelIterator nodesLabelIterator(nodesLabels->createLabelIterator());
-		do
+		DsLabelIterator *nodesLabelIterator = nodesLabels->createLabelIterator();
+		if (!nodesLabelIterator)
+			return_code = CMZN_ERROR_MEMORY;
+		else
 		{
-			DsLabelIdentifier nodeIdentifier = nodesLabelIterator->getIdentifier();
-			cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, nodeIdentifier);
-			nodeParametersIndexing->setEntry(*nodesLabelIterator);
-			int valuesRead = 0;
-			if (nodeParameters->getValuesSparse(*nodeParametersIndexing, componentCount, values, valueExists, valuesRead))
+			while (nodesLabelIterator->increment())
 			{
-				if (0 < valuesRead)
+				DsLabelIdentifier nodeIdentifier = nodesLabelIterator->getIdentifier();
+				cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, nodeIdentifier);
+				nodeParametersIndexing->setEntry(*nodesLabelIterator);
+				int valuesRead = 0;
+				if (nodeParameters->getValuesSparse(*nodeParametersIndexing, componentCount, values, valueExists, valuesRead))
 				{
-					// A current limitation of Zinc is that all nodal component values
-					// must be set if any are set. Set the dummy values to zero.
-					if (valuesRead < componentCount)
+					if (0 < valuesRead)
 					{
-						for (int i = 0; i < componentCount; i++)
+						// A current limitation of Zinc is that all nodal component values
+						// must be set if any are set. Set the dummy values to zero.
+						if (valuesRead < componentCount)
 						{
-							if (!valueExists[i])
-								values[i] = 0.0;
+							for (int i = 0; i < componentCount; i++)
+							{
+								if (!valueExists[i])
+									values[i] = 0.0;
+							}
 						}
+						cmzn_node_merge(node, nodetemplate);
+						cmzn_fieldcache_set_node(field_cache, node);
+						cmzn_field_assign_real(field, field_cache, componentCount, values);
 					}
-					cmzn_node_merge(node, nodetemplate);
-					cmzn_fieldcache_set_node(field_cache, node);
-					cmzn_field_assign_real(field, field_cache, componentCount, values);
 				}
+				else
+				{
+					return_code = 0;
+					break;
+				}
+				cmzn_node_destroy(&node);
 			}
-			else
-			{
-				return_code = 0;
-				break;
-			}
-			cmzn_node_destroy(&node);
-		} while (nodesLabelIterator->increment());
+		}
+		cmzn::Deaccess(nodesLabelIterator);
 		cmzn_fieldcache_destroy(&field_cache);
 		delete[] valueExists;
 		delete[] values;
@@ -1373,7 +1340,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		cmzn_fieldmodule_find_mesh_by_dimension(field_module, meshDimension);
 	cmzn_elementtemplate_id elementtemplate = 0;
 	HDsLabels elementsLabels(getLabelsForEnsemble(fmlElementsType));
-	HDsLabelIterator elementsLabelIterator(elementsLabels->createLabelIterator());
+	DsLabelIterator *elementsLabelIterator = elementsLabels->createLabelIterator();
 	if (!elementsLabelIterator)
 		return_code = 0;
 	std::vector<FmlObjectHandle> fmlElementEvaluators(componentCount, FML_INVALID_OBJECT_HANDLE);
@@ -1398,144 +1365,139 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				return_code = 0;
 		}
 	}
-	if (return_code && (elementsLabels->getSize() > 0))
+	while (return_code && elementsLabelIterator->increment())
 	{
-		do
+		DsLabelIdentifier elementIdentifier = elementsLabelIterator->getIdentifier();
+		bool newElementtemplate = (elementtemplate == 0);
+		bool definedOnAllComponents = true;
+		for (int ic = 0; ic < componentCount; ic++)
 		{
-			DsLabelIdentifier elementIdentifier = elementsLabelIterator->getIdentifier();
-			bool newElementtemplate = (elementtemplate == 0);
-			bool definedOnAllComponents = true;
-			for (int ic = 0; ic < componentCount; ic++)
+			int functionId = elementIdentifier;
+			if (componentFunctionMap[ic])
 			{
-				int functionId = elementIdentifier;
-				if (componentFunctionMap[ic])
-				{
-					// handle indirect element to function map
-					if (!(componentFunctionIndex[ic]->setEntry(*elementsLabelIterator) &&
-						componentFunctionMap[ic]->getValues(*(componentFunctionIndex[ic]), 1, &functionId)))
-					{
-						definedOnAllComponents = false;
-						break;
-					}
-				}
-				FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession,
-					fmlComponentEvaluators[ic], functionId, /*allowDefault*/1);
-				if (fmlElementEvaluator != fmlElementEvaluators[ic])
-				{
-					fmlElementEvaluators[ic] = fmlElementEvaluator;
-					newElementtemplate = true;
-				}
-				if (fmlElementEvaluator == FML_INVALID_OBJECT_HANDLE)
+				// handle indirect element to function map
+				if (!(componentFunctionIndex[ic]->setEntry(*elementsLabelIterator) &&
+					componentFunctionMap[ic]->getValues(*(componentFunctionIndex[ic]), 1, &functionId)))
 				{
 					definedOnAllComponents = false;
 					break;
 				}
 			}
-			if (definedOnAllComponents)
+			FmlObjectHandle fmlElementEvaluator = Fieldml_GetElementEvaluator(fmlSession,
+				fmlComponentEvaluators[ic], functionId, /*allowDefault*/1);
+			if (fmlElementEvaluator != fmlElementEvaluators[ic])
 			{
-				if (newElementtemplate)
-				{
-					if (elementtemplate)
-						cmzn_elementtemplate_destroy(&elementtemplate);
-					elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
-					// do not want to override shape of existing elements:
-					cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
-					int total_local_point_count = 0;
-					for (int ic = 0; ic < componentCount; ic++)
-					{
-						components[ic] = getElementFieldComponent(mesh, fmlElementEvaluators[ic],
-							fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
-						if (!components[ic])
-						{
-							display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d element %d evaluator %s does not reference a supported basis function or mapping",
-								fieldName.c_str(), ic + 1, elementIdentifier, getName(fmlElementEvaluators[ic]).c_str());
-							return_code = 0;
-							break;
-						}
-						bool new_local_point_to_node = true;
-						for (int jc = 0; jc < ic; jc++)
-						{
-							if (components[jc]->local_point_to_node == components[ic]->local_point_to_node)
-							{
-								new_local_point_to_node = false;
-								break;
-							}
-						}
-						if (new_local_point_to_node)
-						{
-							const int *swizzle = components[ic]->swizzle;
-							for (int i = 0; i < components[ic]->local_point_count; i++)
-							{
-								components[ic]->local_point_indexes[i] = total_local_point_count + i + 1;
-								if (swizzle)
-								{
-									components[ic]->swizzled_local_point_indexes[i] = total_local_point_count + swizzle[i];
-								}
-								else
-								{
-									components[ic]->swizzled_local_point_indexes[i] = components[ic]->local_point_indexes[i];
-								}
-							}
-							total_local_point_count += components[ic]->local_point_count;
-							cmzn_elementtemplate_set_number_of_nodes(elementtemplate, total_local_point_count);
-						}
-						if (!cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, field,
-							/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
-							components[ic]->local_point_indexes))
-						{
-							return_code = 0;
-							break;
-						}
-					}
-				}
-				if (!return_code)
-					break;
-
+				fmlElementEvaluators[ic] = fmlElementEvaluator;
+				newElementtemplate = true;
+			}
+			if (fmlElementEvaluator == FML_INVALID_OBJECT_HANDLE)
+			{
+				definedOnAllComponents = false;
+				break;
+			}
+		}
+		if (definedOnAllComponents)
+		{
+			if (newElementtemplate)
+			{
+				if (elementtemplate)
+					cmzn_elementtemplate_destroy(&elementtemplate);
+				elementtemplate = cmzn_mesh_create_elementtemplate(mesh);
+				// do not want to override shape of existing elements:
+				cmzn_elementtemplate_set_element_shape_type(elementtemplate, CMZN_ELEMENT_SHAPE_TYPE_INVALID);
 				int total_local_point_count = 0;
-				for (int ic = 0; (ic < componentCount) && return_code; ic++)
+				for (int ic = 0; ic < componentCount; ic++)
 				{
-					ElementFieldComponent *component = components[ic];
-					if ((total_local_point_count + 1) == component->local_point_indexes[0])
+					components[ic] = getElementFieldComponent(mesh, fmlElementEvaluators[ic],
+						fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
+					if (!components[ic])
 					{
-						total_local_point_count += component->local_point_count;
-						component->indexing->setEntry(*elementsLabelIterator);
-						if (!component->local_point_to_node->getValues(*(component->indexing),
-							component->local_point_count, component->node_identifiers))
+						display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d element %d evaluator %s does not reference a supported basis function or mapping",
+							fieldName.c_str(), ic + 1, elementIdentifier, getName(fmlElementEvaluators[ic]).c_str());
+						return_code = 0;
+						break;
+					}
+					bool new_local_point_to_node = true;
+					for (int jc = 0; jc < ic; jc++)
+					{
+						if (components[jc]->local_point_to_node == components[ic]->local_point_to_node)
 						{
-							display_message(ERROR_MESSAGE, "Read FieldML:  Incomplete local to global map for field %s", fieldName.c_str());
-							return_code = 0;
+							new_local_point_to_node = false;
 							break;
 						}
-						for (int i = 0; i < component->local_point_count; i++)
-						{
-							cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
-							if (!node)
-							{
-								display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
-									component->node_identifiers[i], elementIdentifier, i + 1, component->local_point_to_node->getName().c_str());
-								return_code = 0;
-								break;
-							}
-							cmzn_elementtemplate_set_node(elementtemplate, component->swizzled_local_point_indexes[i], node);
-							cmzn_node_destroy(&node);
-						}
 					}
-				}
-				if (return_code)
-				{
-					cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, elementIdentifier);
-					if (!cmzn_element_merge(element, elementtemplate))
+					if (new_local_point_to_node)
 					{
-						display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
-						return_code = 0;
+						const int *swizzle = components[ic]->swizzle;
+						for (int i = 0; i < components[ic]->local_point_count; i++)
+						{
+							components[ic]->local_point_indexes[i] = total_local_point_count + i + 1;
+							if (swizzle)
+							{
+								components[ic]->swizzled_local_point_indexes[i] = total_local_point_count + swizzle[i];
+							}
+							else
+							{
+								components[ic]->swizzled_local_point_indexes[i] = components[ic]->local_point_indexes[i];
+							}
+						}
+						total_local_point_count += components[ic]->local_point_count;
+						cmzn_elementtemplate_set_number_of_nodes(elementtemplate, total_local_point_count);
 					}
-					cmzn_element_destroy(&element);
+					if (!cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, field,
+						/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
+						components[ic]->local_point_indexes))
+					{
+						return_code = 0;
+						break;
+					}
 				}
 			}
-		} while (elementsLabelIterator->increment());
+			int total_local_point_count = 0;
+			for (int ic = 0; (ic < componentCount) && return_code; ic++)
+			{
+				ElementFieldComponent *component = components[ic];
+				if ((total_local_point_count + 1) == component->local_point_indexes[0])
+				{
+					total_local_point_count += component->local_point_count;
+					component->indexing->setEntry(*elementsLabelIterator);
+					if (!component->local_point_to_node->getValues(*(component->indexing),
+						component->local_point_count, component->node_identifiers))
+					{
+						display_message(ERROR_MESSAGE, "Read FieldML:  Incomplete local to global map for field %s", fieldName.c_str());
+						return_code = 0;
+						break;
+					}
+					for (int i = 0; i < component->local_point_count; i++)
+					{
+						cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
+						if (!node)
+						{
+							display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
+								component->node_identifiers[i], elementIdentifier, i + 1, component->local_point_to_node->getName().c_str());
+							return_code = 0;
+							break;
+						}
+						cmzn_elementtemplate_set_node(elementtemplate, component->swizzled_local_point_indexes[i], node);
+						cmzn_node_destroy(&node);
+					}
+				}
+			}
+			if (return_code)
+			{
+				cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, elementIdentifier);
+				if (!cmzn_element_merge(element, elementtemplate))
+				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Could not merge element %d", elementIdentifier);
+					return_code = 0;
+				}
+				cmzn_element_destroy(&element);
+			}
+		}
 	}
 	if (elementtemplate)
 		cmzn_elementtemplate_destroy(&elementtemplate);
+	cmzn::Deaccess(elementsLabelIterator);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_nodeset_destroy(&nodes);
 	cmzn_field_destroy(&field);
@@ -1787,12 +1749,21 @@ int FieldMLReader::readReferenceFields()
 		// determine if exactly one binding of 'nodal parameters'
 
 		int bindCount = Fieldml_GetBindCount(fmlSession, fmlReference);
+		if (1 != bindCount)
+		{
+			if (verbose)
+			{
+				display_message(WARNING_MESSAGE,
+					"Read FieldML:  Reference %s does not have exactly 1 binding (for nodal parameters). Skipping.",
+					fieldName.c_str());
+			}
+			continue;
+		}
 		FmlObjectHandle fmlNodeParametersArgument = Fieldml_GetBindArgument(fmlSession, fmlReference, 1);
 		FmlObjectHandle fmlNodeParameters = Fieldml_GetBindEvaluator(fmlSession, fmlReference, 1);
 		int nodeParametersIndexCount = Fieldml_GetIndexEvaluatorCount(fmlSession, fmlNodeParameters);
 		FmlObjectHandle fmlNodeParametersIndex1 = Fieldml_GetIndexEvaluator(fmlSession, fmlNodeParameters, 1);
-		if ((1 != bindCount) ||
-			(Fieldml_GetObjectType(fmlSession, fmlNodeParameters) != FHT_PARAMETER_EVALUATOR) ||
+		if ((Fieldml_GetObjectType(fmlSession, fmlNodeParameters) != FHT_PARAMETER_EVALUATOR) ||
 			(Fieldml_GetObjectType(fmlSession, Fieldml_GetValueType(fmlSession, fmlNodeParameters)) != FHT_CONTINUOUS_TYPE) ||
 			(1 != nodeParametersIndexCount) ||
 			(fmlNodeParametersIndex1 == FML_INVALID_OBJECT_HANDLE))
@@ -1800,7 +1771,7 @@ int FieldMLReader::readReferenceFields()
 			if (verbose)
 			{
 				display_message(WARNING_MESSAGE,
-					"Read FieldML:  Reference %s does not bind exactly 1 nodal parameters object. Skipping.",
+					"Read FieldML:  Reference %s does not bind exactly 1 scalar nodal parameters object. Skipping.",
 					fieldName.c_str());
 			}
 			continue;
