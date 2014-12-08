@@ -485,7 +485,7 @@ public:
 	 * Default implementation is for non-node-based map.
 	 * @return  true if successfully evaluated, otherwise false.
 	 */
-	virtual bool evaluateNode(ElementDOFMapEvaluationCache& cache, FE_node*& node)
+	virtual bool evaluateNode(ElementDOFMapEvaluationCache& /*cache*/, FE_node*& node)
 	{
 		node = 0;
 		return true;
@@ -510,7 +510,7 @@ public:
 	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache) = 0;
 
 	/** override to set flag for each local node in use */
-	virtual void setLocalNodeInUse(int numberOfLocalNodes, int *localNodeInUse)
+	virtual void setLocalNodeInUse(int /*numberOfLocalNodes*/, int */*localNodeInUse*/)
 	{
 	}
 };
