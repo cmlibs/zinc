@@ -151,7 +151,7 @@ public:
 	}
 
 	// makes a deep copy of the template with a clone of the elementTemplateMap
-	FieldComponentTemplate *FieldComponentTemplate::clone()
+	FieldComponentTemplate *clone()
 	{
 		FieldComponentTemplate *newTemplate = new FieldComponentTemplate();
 		if (newTemplate)
@@ -1144,7 +1144,7 @@ FmlObjectHandle FieldMLWriter::writeFieldTemplate(FieldComponentTemplate& fieldT
 	return fieldTemplate.fmlFieldTemplateEvaluator;
 }
 
-FmlObjectHandle FieldMLWriter::writeMeshField(std::string& meshName, OutputFieldData& outputField)
+FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& outputField)
 {
 	// get value type
 	FmlObjectHandle fmlValueType = FML_INVALID_OBJECT_HANDLE;
@@ -1248,7 +1248,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string& meshName, OutputField
 	cmzn_nodeset_destroy(&nodeset);
 	if (CMZN_OK != return_code)
 	{
-		display_message(ERROR_MESSAGE, "FieldMLWriter: Can't get nodal parameters for field %s", outputField.name);
+		display_message(ERROR_MESSAGE, "FieldMLWriter: Can't get nodal parameters for field %s", outputField.name.c_str());
 		return FML_INVALID_OBJECT_HANDLE;
 	}
 	FmlObjectHandle fmlRealType = this->libraryImport("real.1d");
@@ -1270,7 +1270,6 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string& meshName, OutputField
 		bool defaultEvaluator = true;
 		for (int c = 1; c < outputField.componentCount; ++c)
 		{
-			FieldComponentTemplate& fieldTemplate = *(outputField.componentTemplates[c]);
 			if (outputField.componentTemplates[c - 1]->fmlFieldTemplateEvaluator !=
 				outputField.componentTemplates[c]->fmlFieldTemplateEvaluator)
 			{
@@ -1311,7 +1310,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 	if (!fieldIter)
 		return_code = CMZN_ERROR_MEMORY;
 	cmzn_field_id field;
-	while (field = cmzn_fielditerator_next_non_access(fieldIter))
+	while (0 != (field = cmzn_fielditerator_next_non_access(fieldIter)))
 	{
 		FE_field *feField = 0;
 		if (Computed_field_get_type_finite_element(field, &feField) && feField)
