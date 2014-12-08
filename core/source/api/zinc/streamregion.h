@@ -235,11 +235,44 @@ ZINC_API cmzn_field_domain_types cmzn_streaminformation_region_get_resource_doma
  *
  * @return   status CMZN_OK if domain types successfully set, any other value if
  *   failed or domain type not valid or unable to be set for this
- * cmzn_streaminformation_region.
+ *   cmzn_streaminformation_region.
  */
 ZINC_API int cmzn_streaminformation_region_set_resource_domain_types(
 	cmzn_streaminformation_region_id streaminformation,
 	cmzn_streamresource_id resource, cmzn_field_domain_types domain_types);
+
+/**
+ * Use this function to choose the fields to be read/written by specifying
+ * name of the fields, this will affect all resources in this streaminformation
+ * unless field names have been set for individual resource.
+ *
+ * @param streaminformation  Handle to the stream information_region.
+ * @param number_of_names  Number of field names provided.
+ * @param fieldNames  The identifier of the double attribute to set.
+ *
+ * @return   status CMZN_OK if successfully set the field names,
+ *   any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_region_set_field_names(
+		cmzn_streaminformation_region_id streaminformation,
+		int number_of_names, const char **field_names);
+
+/**
+ * Use this function to choose the fields to be read/written by specifying
+ * name of the fields for this resource.
+ *
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
+ * @param number_of_names  Number of field names provided.
+ * @param fieldNames  The identifier of the double attribute to set.
+ *
+ * @return   status CMZN_OK if field names are successfully set,
+ *   any other value if failed or attribute not valid or unable to be set
+ *   for this cmzn_streaminformation_region.
+ */
+ZINC_API int cmzn_streaminformation_region_set_resource_field_names(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource, int number_of_names, const char **field_names);
 
 #ifdef __cplusplus
 }
