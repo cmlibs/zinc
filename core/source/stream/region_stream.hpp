@@ -13,9 +13,13 @@
 #if !defined (CMZN_REGION_STREAM_HPP)
 #define CMZN_REGION_STREAM_HPP
 
+#include <string>
+#include <vector>
+#include <stdlib.h>
 #include "zinc/types/fieldid.h"
 #include "zinc/region.h"
 #include "zinc/status.h"
+#include "general/debug.h"
 #include "stream/stream_private.hpp"
 
 struct cmzn_region_resource_properties : cmzn_resource_properties
@@ -60,10 +64,52 @@ public:
 		return CMZN_OK;
 	}
 
+	int clearFieldNames()
+	{
+		strings_vectors.clear();
+		return CMZN_OK;
+	}
+
+	int getFieldNames(char ***fieldNames)
+	{
+		if (fieldNames)
+		{
+			*fieldNames = 0;
+			if (!strings_vectors.empty())
+			{
+				int size = strings_vectors.size();
+				char **names_array = *fieldNames;
+				ALLOCATE(names_array, char *, size);
+				std::vector<std::string>::iterator pos;
+				int location = 0;
+				for (pos = strings_vectors.begin(); pos != strings_vectors.end(); ++pos)
+				{
+					std::string *my_string = &pos[0];
+					names_array[location] = duplicate_string(my_string->c_str());
+					location++;
+				}
+				*fieldNames = names_array;
+				return strings_vectors.size();
+			}
+		}
+		return 0;
+	}
+
+	int setFieldNames(int numberOfNames, const char **fieldNames)
+	{
+		clearFieldNames();
+		for (int i = 0; i < numberOfNames; i++)
+		{
+			strings_vectors.push_back(std::string(fieldNames[i]));
+		}
+		return CMZN_OK;
+	}
+
 private:
 	bool time_enabled;
 	double time;
 	int domain_type;
+	std::vector<std::string> strings_vectors;
 };
 
 struct cmzn_streaminformation_region : cmzn_streaminformation
@@ -212,6 +258,34 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
+	int getResourceFieldNames(cmzn_streamresource_id resource, char ***fieldNames)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->getFieldNames(fieldNames);
+			}
+		}
+		return 0;
+	}
+
+	int setResourceFieldNames(cmzn_streamresource_id resource, int numberOfNames, const char **fieldNames)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->setFieldNames(numberOfNames, fieldNames);
+			}
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
 	cmzn_region_id getRegion()
 	{
 		return region;
@@ -235,12 +309,53 @@ public:
 		return 1;
 	}
 
+	int clearFieldNames()
+	{
+		strings_vectors.clear();
+		return CMZN_OK;
+	}
+
+	int getFieldNames(char ***fieldNames)
+	{
+		if (fieldNames)
+		{
+			*fieldNames = 0;
+			if (!strings_vectors.empty())
+			{
+				int size = strings_vectors.size();
+				char **names_array = *fieldNames;
+				ALLOCATE(names_array, char *, size);
+				std::vector<std::string>::iterator pos;
+				int location = 0;
+				for (pos = strings_vectors.begin(); pos != strings_vectors.end(); ++pos)
+				{
+					std::string *my_string = &pos[0];
+					names_array[location] = duplicate_string(my_string->c_str());
+					location++;
+				}
+				*fieldNames = names_array;
+				return strings_vectors.size();
+			}
+		}
+		return 0;
+	}
+
+	int setFieldNames(int numberOfNames, const char **fieldNames)
+	{
+		clearFieldNames();
+		for (int i = 0; i < numberOfNames; i++)
+		{
+			strings_vectors.push_back(std::string(fieldNames[i]));
+		}
+		return CMZN_OK;
+	}
 
 private:
 	double time;
 	bool time_enabled;
 	struct cmzn_region *region, *root_region;
 	cmzn_streaminformation_region_file_format fileFormat;
+	std::vector<std::string> strings_vectors;
 };
 
 cmzn_region_id cmzn_streaminformation_region_get_region_private(

@@ -121,6 +121,19 @@ public:
 			static_cast<cmzn_field_domain_types>(domainTypes));
 	}
 
+	int setFieldNames(int numberOfNames, const char **fieldNames)
+	{
+		return cmzn_streaminformation_region_set_field_names(getDerivedId(),
+			numberOfNames, fieldNames);
+	}
+
+	int setResourceFieldNames(const Streamresource& resource, int numberOfNames,
+		const char **fieldNames)
+	{
+		return cmzn_streaminformation_region_set_resource_field_names(getDerivedId(),
+			resource.getId(), numberOfNames, fieldNames);
+	}
+
 };
 
 inline StreaminformationRegion Streaminformation::castRegion()

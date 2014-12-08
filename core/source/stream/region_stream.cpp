@@ -270,6 +270,10 @@ int cmzn_region_write(cmzn_region_id region,
 				time = cmzn_streaminformation_region_get_attribute_real(
 					streaminformation_region, CMZN_STREAMINFORMATION_REGION_ATTRIBUTE_TIME);
 			}
+
+			char **informationFieldNames = 0;
+			int informationNumberOfFieldNames = 0;
+			informationNumberOfFieldNames = streaminformation_region->getFieldNames(&informationFieldNames);
 			for (iter = streams_list.begin(); iter != streams_list.end() && (return_code == CMZN_OK); ++iter)
 			{
 				stream_properties = *iter;
@@ -284,6 +288,25 @@ int cmzn_region_write(cmzn_region_id region,
 				{
 					stream_time = time;
 				}
+				enum FE_write_fields_mode write_fields_mode = FE_WRITE_ALL_FIELDS;
+				char **resourceFieldNames = 0, **fieldNames = 0;
+				int resourceNumberOfFieldNames = 0, numberOfFieldNames = 0;
+				resourceNumberOfFieldNames = streaminformation_region->getResourceFieldNames(stream, &resourceFieldNames);
+				if (resourceNumberOfFieldNames > 0)
+				{
+					numberOfFieldNames = resourceNumberOfFieldNames;
+					fieldNames = resourceFieldNames;
+				}
+				else
+				{
+					numberOfFieldNames = informationNumberOfFieldNames;
+					fieldNames = informationFieldNames;
+				}
+				if (numberOfFieldNames > 0 && fieldNames)
+				{
+					write_fields_mode = FE_WRITE_LISTED_FIELDS;
+				}
+
 				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
 				cmzn_streamresource_memory_id memory_resource = NULL;
 				void *memory_block = NULL;
@@ -344,7 +367,7 @@ int cmzn_region_write(cmzn_region_id region,
 								if (!write_exregion_file_of_name(file_name, region, (cmzn_field_group_id)0,
 									cmzn_streaminformation_region_get_root_region(streaminformation_region),
 									writeElements,	writeNodes, writeData,
-									FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
+									write_fields_mode, numberOfFieldNames, fieldNames,
 									stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
 								{
 									return_code = CMZN_ERROR_GENERAL;
@@ -375,7 +398,7 @@ int cmzn_region_write(cmzn_region_id region,
 							if (!write_exregion_file_to_memory_block(region, (cmzn_field_group_id)0,
 								cmzn_streaminformation_region_get_root_region(streaminformation_region),
 								writeElements,	writeNodes, writeData,
-								FE_WRITE_ALL_FIELDS, /* number_of_field_names */0, /*field_names*/ NULL,
+								write_fields_mode, numberOfFieldNames, fieldNames,
 								stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
 							{
 								return_code = CMZN_ERROR_GENERAL;
@@ -403,7 +426,29 @@ int cmzn_region_write(cmzn_region_id region,
 					return_code = CMZN_ERROR_ARGUMENT;
 					display_message(ERROR_MESSAGE, "cmzn_region_write.  Unknown resource type");
 				}
+				if (resourceNumberOfFieldNames > 0)
+				{
+					char *fieldName = 0;
+					for (int i = 0; i < resourceNumberOfFieldNames; i++)
+					{
+						fieldName = resourceFieldNames[i];
+						DEALLOCATE(fieldName);
+					}
+					DEALLOCATE(resourceFieldNames);
+				}
 			}
+			informationNumberOfFieldNames = streaminformation_region->getFieldNames(&informationFieldNames);
+			if (informationNumberOfFieldNames > 0)
+			{
+				char *fieldName = 0;
+				for (int i = 0; i < informationNumberOfFieldNames; i++)
+				{
+					fieldName = informationFieldNames[i];
+					DEALLOCATE(fieldName);
+				}
+				DEALLOCATE(informationFieldNames);
+			}
+
 		}
 	}
 	else
@@ -620,6 +665,15 @@ int cmzn_streaminformation_region_set_file_format(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_streaminformation_region_set_field_names(
+	cmzn_streaminformation_region_id streaminformation,
+	int number_of_names, const char **fieldNames)
+{
+	if (streaminformation)
+		return streaminformation->setFieldNames(number_of_names, fieldNames);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 cmzn_field_domain_types cmzn_streaminformation_region_get_resource_domain_types(
 	cmzn_streaminformation_region_id streaminformation,
 	cmzn_streamresource_id resource)
@@ -637,6 +691,15 @@ int cmzn_streaminformation_region_set_resource_domain_types(
 {
 	if (streaminformation && resource)
 		return streaminformation->setResourceDomainType(resource, domain_types);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_streaminformation_region_set_resource_field_names(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource, int number_of_names, const char **fieldNames)
+{
+	if (streaminformation && resource)
+		return streaminformation->setResourceFieldNames(resource, number_of_names, fieldNames);
 	return CMZN_ERROR_ARGUMENT;
 }
 
