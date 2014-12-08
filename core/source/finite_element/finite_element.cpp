@@ -510,7 +510,7 @@ public:
 	virtual bool matchesWithInfo(ElementDOFMap *otherMap, ElementDOFMapMatchCache& cache) = 0;
 
 	/** override to set flag for each local node in use */
-	virtual void setLocalNodeInUse(int /*numberOfLocalNodes*/, int */*localNodeInUse*/)
+	virtual void setLocalNodeInUse(int /*numberOfLocalNodes*/, int * /*localNodeInUse*/)
 	{
 	}
 };
