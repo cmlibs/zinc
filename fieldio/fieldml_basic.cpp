@@ -165,10 +165,12 @@ void check_tetmesh_model(Fieldmodule& fm)
 	Fieldcache cache = fm.createFieldcache();
 	double outVolume;
 	EXPECT_EQ(OK, result = volume.evaluateReal(cache, 1, &outVolume));
-	ASSERT_DOUBLE_EQ(0.41723178864303812, outVolume);
+	//ASSERT_DOUBLE_EQ(0.41723178864303812, outVolume);
+	EXPECT_NEAR(0.41723178864303812, outVolume, 0.5E-7);
 	double outSurfaceArea;
 	EXPECT_EQ(OK, result = surfaceArea.evaluateReal(cache, 1, &outSurfaceArea));
-	ASSERT_DOUBLE_EQ(2.7717561493468423, outSurfaceArea);
+	//ASSERT_DOUBLE_EQ(2.7717561493468423, outSurfaceArea);
+	EXPECT_NEAR(2.7717561493468423, outSurfaceArea, 1.0E-7);
 }
 
 }
@@ -251,10 +253,12 @@ void check_wheel_model(Fieldmodule& fm)
 	Fieldcache cache = fm.createFieldcache();
 	double outVolume;
 	EXPECT_EQ(OK, result = volume.evaluateReal(cache, 1, &outVolume));
-	ASSERT_DOUBLE_EQ(100.28718664065387, outVolume);
+	//ASSERT_DOUBLE_EQ(100.28718664065387, outVolume);
+	EXPECT_NEAR(100.28718664065387, outVolume, 5.0E-5);
 	double outSurfaceArea;
 	EXPECT_EQ(OK, result = surfaceArea.evaluateReal(cache, 1, &outSurfaceArea));
-	ASSERT_DOUBLE_EQ(150.53218306379620, outSurfaceArea);
+	//ASSERT_DOUBLE_EQ(150.53218306379620, outSurfaceArea);
+	EXPECT_NEAR(150.53218306379620, outSurfaceArea, 1.0E-4);
 }
 
 }
