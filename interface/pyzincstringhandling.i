@@ -68,3 +68,63 @@ free($1);
 		}
 	}
 };
+
+%typemap(in) (int valuesCount, const char **valuesIn)
+{
+	/* Applying in array of variable size typemap */
+	if (PyString_Check($input))
+	{
+		$1 = 1;
+		$2 = new char*[1];
+		PyObject *o = $input;
+		
+		char *temp_string = PyString_AsString(o);
+		int length =strlen(temp_string);
+		$2[0] = new char[length];
+		strcpy($2[0], temp_string);
+	}
+	else if (PyList_Check($input))
+	{
+		$1 = PyList_Size($input);
+		$2 = new char*[$1];
+		for (int i = 0; i < $1; i++)
+		{
+			PyObject *o = PyList_GetItem($input,i);
+			if (PyString_Check(o))
+			{
+				char *temp_string = PyString_AsString(o);
+				int length =strlen(temp_string);
+				$2[i] = new char[length];
+				strcpy($2[i], temp_string);
+			}
+			else
+			{
+				PyErr_SetString(PyExc_TypeError,"list may only contain string");
+				delete[] $2;
+				$2 = 0;
+				return NULL;
+			}
+		}
+	}
+	else
+	{
+		PyErr_SetString(PyExc_TypeError,"not a list, or single value");
+		$2 = 0;
+		return NULL;
+	}
+};
+
+%typemap(freearg) (int valuesCount, const char**valuesIn)
+{
+	if ($2)
+	{
+		for (int i = 0; i < $1; i++)
+		{
+			delete[] $2[i];
+		}
+		delete[] $2;
+	}
+};
+
+%typemap(in) (int numberOfNames, const char **fieldNames) = (int valuesCount, const char**valuesIn);
+%typemap(freearg) (int numberOfNames, const char **fieldNames) = (int valuesCount, const char**valuesIn);
