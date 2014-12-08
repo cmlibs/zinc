@@ -91,7 +91,7 @@ TEST(ZincRegion, read_fieldml_cube)
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/cube.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_cube_model(zinc.fm);
+	check_cube_model(testFm);
 }
 
 // Also reads cube model, but tries to read it as EX format which should fail
@@ -195,7 +195,7 @@ TEST(ZincRegion, read_fieldml_tetmesh)
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/tetmesh.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_tetmesh_model(zinc.fm);
+	check_tetmesh_model(testFm);
 }
 
 namespace {
@@ -292,5 +292,5 @@ TEST(ZincRegion, read_fieldml_wheel_indirect)
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/wheel.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_wheel_model(zinc.fm);
+	check_wheel_model(testFm);
 }
