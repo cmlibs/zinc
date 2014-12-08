@@ -29,21 +29,9 @@ ManageOutputFolder manageOutputFolderFieldML(FIELDML_OUTPUT_FOLDER);
 
 namespace {
 
-void check_cube_model_mesh3d(Fieldmodule& fm)
-{
-	int result;
-	Mesh mesh3d = fm.findMeshByDimension(3);
-	EXPECT_EQ(1, result = mesh3d.getSize());
-	Element element = mesh3d.findElementByIdentifier(1);
-	EXPECT_TRUE(element.isValid());
-	EXPECT_EQ(Element::SHAPE_TYPE_CUBE, element.getShapeType());
-}
-
 void check_cube_model(Fieldmodule& fm)
 {
-	check_cube_model_mesh3d(fm);
 	int result;
-
 	Field coordinates = fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
 	EXPECT_EQ(3, coordinates.getNumberOfComponents());
@@ -63,6 +51,9 @@ void check_cube_model(Fieldmodule& fm)
 	EXPECT_EQ(12, mesh1d.getSize());
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(8, nodes.getSize());
+	Element element = mesh3d.findElementByIdentifier(1);
+	EXPECT_TRUE(element.isValid());
+	EXPECT_EQ(Element::SHAPE_TYPE_CUBE, element.getShapeType());
 
 	const double valueOne = 1.0;
 	Field one = fm.createFieldConstant(1, &valueOne);
@@ -100,7 +91,7 @@ TEST(ZincRegion, read_fieldml_cube)
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/cube.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_cube_model_mesh3d(testFm);
+	check_cube_model(zinc.fm);
 }
 
 // Also reads cube model, but tries to read it as EX format which should fail
@@ -129,23 +120,8 @@ TEST(ZincStreaminformationRegion, fileFormat)
 
 namespace {
 
-void check_tetmesh_model_mesh3d(Fieldmodule& fm)
-{
-	int result;
-	Mesh mesh3d = fm.findMeshByDimension(3);
-	EXPECT_EQ(102, result = mesh3d.getSize());
-	for (int i = 1; i < 102; ++i)
-	{
-		Element element = mesh3d.findElementByIdentifier(1);
-		EXPECT_TRUE(element.isValid());
-		Element::ShapeType shapeType = element.getShapeType();
-		EXPECT_EQ(Element::SHAPE_TYPE_TETRAHEDRON, shapeType);
-	}
-}
-
 void check_tetmesh_model(Fieldmodule& fm)
 {
-	check_tetmesh_model_mesh3d(fm);
 	int result;
 	Field coordinates = fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -161,6 +137,13 @@ void check_tetmesh_model(Fieldmodule& fm)
 	EXPECT_EQ(167, mesh1d.getSize());
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(38, nodes.getSize());
+	for (int i = 1; i < 102; ++i)
+	{
+		Element element = mesh3d.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		Element::ShapeType shapeType = element.getShapeType();
+		EXPECT_EQ(Element::SHAPE_TYPE_TETRAHEDRON, shapeType);
+	}
 
 	const double valueOne = 1.0;
 	Field one = fm.createFieldConstant(1, &valueOne);
@@ -212,31 +195,13 @@ TEST(ZincRegion, read_fieldml_tetmesh)
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/tetmesh.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_tetmesh_model_mesh3d(testFm);
+	check_tetmesh_model(zinc.fm);
 }
 
 namespace {
 
-void check_wheel_model_mesh3d(Fieldmodule& fm)
-{
-	int result;
-	Mesh mesh3d = fm.findMeshByDimension(3);
-	EXPECT_EQ(12, result = mesh3d.getSize());
-	for (int i = 1; i < 12; ++i)
-	{
-		Element element = mesh3d.findElementByIdentifier(i);
-		EXPECT_TRUE(element.isValid());
-		Element::ShapeType shapeType = element.getShapeType();
-		if (i <= 6)
-			EXPECT_EQ(Element::SHAPE_TYPE_WEDGE12, shapeType);
-		else
-			EXPECT_EQ(Element::SHAPE_TYPE_CUBE, shapeType);
-	}
-}
-
 void check_wheel_model(Fieldmodule& fm)
 {
-	check_wheel_model_mesh3d(fm);
 	int result;
 	Field coordinates = fm.findFieldByName("coordinates");
 	EXPECT_TRUE(coordinates.isValid());
@@ -252,6 +217,16 @@ void check_wheel_model(Fieldmodule& fm)
 	EXPECT_EQ(61, mesh1d.getSize());
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(129, nodes.getSize());
+	for (int i = 1; i < 12; ++i)
+	{
+		Element element = mesh3d.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		Element::ShapeType shapeType = element.getShapeType();
+		if (i <= 6)
+			EXPECT_EQ(Element::SHAPE_TYPE_WEDGE12, shapeType);
+		else
+			EXPECT_EQ(Element::SHAPE_TYPE_CUBE, shapeType);
+	}
 
 	const double valueOne = 1.0;
 	Field one = fm.createFieldConstant(1, &valueOne);
@@ -317,6 +292,5 @@ TEST(ZincRegion, read_fieldml_wheel_indirect)
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/wheel.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_wheel_model_mesh3d(testFm);
+	check_wheel_model(zinc.fm);
 }
-
