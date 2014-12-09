@@ -24,6 +24,10 @@ template <typename T> class RefHandle
 		friend POINTEE* GetImpl(const RefHandle<POINTEE>& refHandle);
 	template<typename POINTEE>
 		friend void SetImpl(RefHandle<POINTEE>& refHandle, POINTEE* newObject);
+	template<typename POINTEE>
+		friend bool operator==(RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2);
+	template<typename POINTEE>
+		friend bool operator!=(RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2);
 
 private:
 	T* object;
@@ -82,6 +86,18 @@ template<typename POINTEE> inline void SetImpl(RefHandle<POINTEE>& refHandle, PO
 {
 	Deaccess(refHandle.object);
 	refHandle.object = newObject;
+}
+
+template<typename POINTEE> inline bool operator==(
+	RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2)
+{
+	return refHandle1.object == refHandle2.object;
+}
+
+template<typename POINTEE> inline bool operator!=(
+	RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2)
+{
+	return refHandle1.object != refHandle2.object;
 }
 
 }
