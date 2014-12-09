@@ -408,10 +408,12 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 	const int denseIndexCount = Fieldml_GetParameterIndexCount(fmlSession, fmlParameters, /*isSparse*/0);
 
 	std::vector<HDsLabels> denseIndexLabels(denseIndexCount);
+	const int expectedArrayRank = (dataDescription == FML_DATA_DESCRIPTION_DOK_ARRAY) ? 2 : denseIndexCount;
+	int *arrayRawSizes = new int[expectedArrayRank];
+	int *arrayOffsets = new int[expectedArrayRank];
+	int *arraySizes = new int[expectedArrayRank];
 	int arrayRank = 0;
-	int *arrayRawSizes = 0;
-	int *arrayOffsets = 0;
-	int *arraySizes = 0;
+
 	FmlObjectHandle fmlDataSource = Fieldml_GetDataSource(fmlSession, fmlParameters);
 	if (fmlDataSource == FML_INVALID_HANDLE)
 	{
@@ -423,15 +425,13 @@ template <typename VALUETYPE> int FieldMLReader::readParametersArray(FmlObjectHa
 		display_message(ERROR_MESSAGE, "Read FieldML:  Only supports ArrayDataSource for parameters %s", name.c_str());
 		return_code = 0;
 	}
-	else if ((arrayRank = Fieldml_GetArrayDataSourceRank(fmlSession, fmlDataSource))
-		!= (recordIndexCount + denseIndexCount))
+	else if ((arrayRank = Fieldml_GetArrayDataSourceRank(fmlSession, fmlDataSource)) != expectedArrayRank)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Data source %s has invalid rank for parameters %s",
 			getName(fmlDataSource).c_str(), name.c_str());
 		return_code = 0;
 	}
-	else if ((arrayRank > 0) && ((0 == (arrayRawSizes = new int[arrayRank])) ||
-		(0 == (arrayOffsets = new int[arrayRank])) || (0 == (arraySizes = new int[arrayRank])) ||
+	else if ((arrayRank > 0) && (
 		(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceRawSizes(fmlSession, fmlDataSource, arrayRawSizes)) ||
 		(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceOffsets(fmlSession, fmlDataSource, arrayOffsets)) ||
 		(FML_ERR_NO_ERROR != Fieldml_GetArrayDataSourceSizes(fmlSession, fmlDataSource, arraySizes))))

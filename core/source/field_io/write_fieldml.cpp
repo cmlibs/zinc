@@ -1233,14 +1233,17 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 		cmzn_node_destroy(&node);
 		if (CMZN_OK != return_code)
 			break;
-		return_code = cmzn_field_evaluate_real(outputField.field, fieldcache, outputField.componentCount, values);
-		if (CMZN_OK != return_code)
-			break;
-		nodesFieldParametersMapIndexing->setEntry(*nodesLabelsIterator);
-		if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, outputField.componentCount, values))
+		if (cmzn_field_is_defined_at_location(outputField.field, fieldcache))
 		{
-			return_code = CMZN_ERROR_GENERAL;
-			break;
+			return_code = cmzn_field_evaluate_real(outputField.field, fieldcache, outputField.componentCount, values);
+			if (CMZN_OK != return_code)
+				break;
+			nodesFieldParametersMapIndexing->setEntry(*nodesLabelsIterator);
+			if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, outputField.componentCount, values))
+			{
+				return_code = CMZN_ERROR_GENERAL;
+				break;
+			}
 		}
 	}
 	delete[] values;

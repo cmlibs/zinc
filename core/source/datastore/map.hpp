@@ -489,19 +489,18 @@ int DsMap<ValueType>::getValuesSparse(DsMapIndexing& indexing,
 	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
 	{
 		valueIndex = 0;
+		bool aboveIndexSize = false;
 		for (i = 0; i < labelsArraySize; i++)
 		{
 			index = indexing.getIterationIndex(i);
 			if (index >= this->indexSizes[i])
 			{
-				return_code = 0;
+				aboveIndexSize = true;
 				break;
 			}
 			valueIndex += indexing.getIterationIndex(i)*offsets[i];
 		}
-		if (!return_code)
-			break;
-		if (!dense && !value_exists.getBool(valueIndex))
+		if (aboveIndexSize || (!this->dense && !value_exists.getBool(valueIndex)))
 		{
 			valueExists[value_number] = 0;
 		}
