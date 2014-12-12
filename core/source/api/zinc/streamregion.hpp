@@ -54,6 +54,13 @@ public:
 		FILE_FORMAT_FIELDML = CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_FIELDML
 	};
 
+	enum RecursionMode
+	{
+		RECURSION_MODE_INVALID = CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID,
+		RECURSION_MODE_ON = CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON,
+		RECURSION_MODE_OFF = CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_OFF
+	};
+
 	int hasAttribute(Attribute attribute)
 	{
 		return cmzn_streaminformation_region_has_attribute(getDerivedId(),
@@ -132,6 +139,30 @@ public:
 	{
 		return cmzn_streaminformation_region_set_resource_field_names(getDerivedId(),
 			resource.getId(), numberOfNames, fieldNames);
+	}
+
+	int setRecursionMode(RecursionMode recursionMode)
+	{
+		return cmzn_streaminformation_region_set_recursion_mode(getDerivedId(),
+			static_cast<cmzn_streaminformation_region_recursion_mode>(recursionMode));
+	}
+
+	int setResourceRecursionMode(const Streamresource& resource, RecursionMode recursionMode)
+	{
+		return cmzn_streaminformation_region_set_resource_recursion_mode(getDerivedId(),
+			resource.getId(), static_cast<cmzn_streaminformation_region_recursion_mode>(recursionMode));
+	}
+
+	char *getResourceGroupName(const Streamresource& resource)
+	{
+		return cmzn_streaminformation_region_get_resource_group_name(getDerivedId(),
+			resource.getId());
+	}
+
+	int setResourceGroupName(const Streamresource& resource, const char *groupName)
+	{
+		return cmzn_streaminformation_region_set_resource_group_name(getDerivedId(),
+			resource.getId(), groupName);
 	}
 
 };

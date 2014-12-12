@@ -4402,12 +4402,12 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 				return_code=0;
 			}
 			sprintf(file_name,"%s.curve.exregion",curve->name);
-			if (!write_exregion_file_of_name(file_name, curve->region, (cmzn_field_group_id)0, /*root*/curve->region,
+			if (!write_exregion_file_of_name(file_name, curve->region, /*group name*/0, /*root*/curve->region,
 				/*write_elements*/CMZN_FIELD_DOMAIN_TYPE_MESH1D|CMZN_FIELD_DOMAIN_TYPE_MESH2D|
 				CMZN_FIELD_DOMAIN_TYPE_MESH3D|CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION,
 				/*write_nodes*/1, /*write_data*/0,
 					FE_WRITE_ALL_FIELDS, 0, (char **)NULL, /*time*/0.0,
-				FE_WRITE_COMPLETE_GROUP, FE_WRITE_NON_RECURSIVE))
+				FE_WRITE_COMPLETE_GROUP, CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_OFF))
 			{
 				return_code = 0;
 			}

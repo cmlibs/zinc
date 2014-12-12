@@ -1172,7 +1172,7 @@ bool cmzn_region_is_root(struct cmzn_region *region)
 
 int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
 	const char *path, struct cmzn_region **region_address,
-	char **region_path_address,	char **remainder_address)
+	char **region_path_address, char **remainder_address)
 {
 	char *child_name, *path_copy, *child_name_end, *child_name_start;
 	int length, return_code;
