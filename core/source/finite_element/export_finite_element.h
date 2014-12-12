@@ -19,6 +19,7 @@ Functions for exporting finite element data to a file.
 #include "finite_element/finite_element.h"
 #include "general/enumerator.h"
 #include "region/cmiss_region.h"
+#include "zinc/types/regionid.h"
 
 /*
 Global/Public types
@@ -76,22 +77,22 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(FE_write_recursion);
  * @see write_exregion_to_stream.
  */
 int write_exregion_file_of_name(const char *file_name,
-	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *region, const char *group_name,
 	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion);
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode);
 
 int write_exregion_file_to_memory_block(
-	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *region, const char *group_name,
 	struct cmzn_region *root_region, int write_elements,
 	int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion,
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode,
 	void **memory_block, unsigned int *memory_block_length);
 
 #endif /* !defined (EXPORT_FINITE_ELEMENT_H) */

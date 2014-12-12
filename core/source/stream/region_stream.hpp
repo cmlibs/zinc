@@ -28,12 +28,16 @@ public:
 
 	cmzn_region_resource_properties(cmzn_streamresource_id resource_in) :
 		cmzn_resource_properties(resource_in), time_enabled(false),
-		time(0.0), domain_type((int)CMZN_FIELD_DOMAIN_TYPE_INVALID)
+		time(0.0), domain_type((int)CMZN_FIELD_DOMAIN_TYPE_INVALID),
+		recursion_mode(CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID),
+		groupName(0)
 	{
 	}
 
 	~cmzn_region_resource_properties()
 	{
+		if (groupName)
+			DEALLOCATE(groupName);
 	}
 
 	double getTime()
@@ -61,6 +65,17 @@ public:
 	int setDomainType(int domain_type_in)
 	{
 		domain_type = domain_type_in;
+		return CMZN_OK;
+	}
+
+	enum cmzn_streaminformation_region_recursion_mode getRecursionMode()
+	{
+		return recursion_mode;
+	}
+
+	int setRecursionMode(enum cmzn_streaminformation_region_recursion_mode recursionMode)
+	{
+		recursion_mode = recursionMode;
 		return CMZN_OK;
 	}
 
@@ -105,11 +120,32 @@ public:
 		return CMZN_OK;
 	}
 
+	char *getGroupName()
+	{
+		if (groupName)
+			return duplicate_string(groupName);
+		return 0;
+	}
+
+	int setGroupName(const char *group_name)
+	{
+		if (groupName)
+		{
+			DEALLOCATE(groupName);
+			groupName = 0;
+		}
+		if (group_name)
+			groupName = duplicate_string(group_name);
+		return CMZN_OK;
+	}
+
 private:
 	bool time_enabled;
 	double time;
 	int domain_type;
 	std::vector<std::string> strings_vectors;
+	cmzn_streaminformation_region_recursion_mode recursion_mode;
+	char *groupName;
 };
 
 struct cmzn_streaminformation_region : cmzn_streaminformation
@@ -121,7 +157,9 @@ public:
 		time_enabled(false),
 		region(cmzn_region_access(region_in)),
 		root_region(cmzn_region_access(region_in)),
-		fileFormat(CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC)
+		fileFormat(CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_AUTOMATIC),
+		recursion_mode(CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON),
+		write_no_field(0)
 	{
 	}
 
@@ -258,21 +296,23 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	int getResourceFieldNames(cmzn_streamresource_id resource, char ***fieldNames)
+	enum cmzn_streaminformation_region_recursion_mode getRecursionMode()
 	{
-		if (resource)
-		{
-			cmzn_region_resource_properties *resource_properties =
-				(cmzn_region_resource_properties *)findResourceInList(resource);
-			if (resource_properties)
-			{
-				return resource_properties->getFieldNames(fieldNames);
-			}
-		}
-		return 0;
+		return recursion_mode;
 	}
 
-	int setResourceFieldNames(cmzn_streamresource_id resource, int numberOfNames, const char **fieldNames)
+	int setRecursionMode(enum cmzn_streaminformation_region_recursion_mode recursionMode)
+	{
+		if (recursionMode != CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID)
+		{
+			recursion_mode = recursionMode;
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	enum cmzn_streaminformation_region_recursion_mode getResourceRecursionMode(
+		cmzn_streamresource_id resource)
 	{
 		if (resource)
 		{
@@ -280,7 +320,22 @@ public:
 				(cmzn_region_resource_properties *)findResourceInList(resource);
 			if (resource_properties)
 			{
-				return resource_properties->setFieldNames(numberOfNames, fieldNames);
+				return resource_properties->getRecursionMode();
+			}
+		}
+		return CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID;
+	}
+
+	int setResourceRecursionMode(cmzn_streamresource_id resource,
+		enum cmzn_streaminformation_region_recursion_mode recursionMode)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->setRecursionMode(recursionMode);
 			}
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -350,12 +405,81 @@ public:
 		return CMZN_OK;
 	}
 
+	int getResourceFieldNames(cmzn_streamresource_id resource, char ***fieldNames)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->getFieldNames(fieldNames);
+			}
+		}
+		return 0;
+	}
+
+	int setResourceFieldNames(cmzn_streamresource_id resource, int numberOfNames, const char **fieldNames)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->setFieldNames(numberOfNames, fieldNames);
+			}
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	char *getResourceGroupName(cmzn_streamresource_id resource)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->getGroupName();
+			}
+		}
+		return 0;
+	}
+
+	int setResourceGroupName(cmzn_streamresource_id resource, const char *groupName)
+	{
+		if (resource)
+		{
+			cmzn_region_resource_properties *resource_properties =
+				(cmzn_region_resource_properties *)findResourceInList(resource);
+			if (resource_properties)
+			{
+				return resource_properties->setGroupName(groupName);
+			}
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int getWriteNoField()
+	{
+		return write_no_field;
+	}
+
+	int setWriteNoField(int writeNoField)
+	{
+		write_no_field = writeNoField;
+		return CMZN_OK;
+	}
+
 private:
 	double time;
 	bool time_enabled;
 	struct cmzn_region *region, *root_region;
 	cmzn_streaminformation_region_file_format fileFormat;
 	std::vector<std::string> strings_vectors;
+	cmzn_streaminformation_region_recursion_mode recursion_mode;
+	int write_no_field;
 };
 
 cmzn_region_id cmzn_streaminformation_region_get_region_private(

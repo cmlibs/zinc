@@ -274,6 +274,68 @@ ZINC_API int cmzn_streaminformation_region_set_resource_field_names(
 	cmzn_streaminformation_region_id streaminformation,
 	cmzn_streamresource_id resource, int number_of_names, const char **field_names);
 
+/**
+ * Use this function to select either streaminformation should export
+ * the region and its children or just the region itself. This applies
+ * to all streaminformation resources unless this mode is set for
+ * individuals resources.
+ *
+ * @param streaminformation  Handle to the stream information_region.
+ * @param recursion_mode  Recursion mode to be set for this streaminformation.
+ *
+ * @return   status CMZN_OK if recursion mode is successfully set,
+ *   any other value if failed.
+ */
+ZINC_API int cmzn_streaminformation_region_set_recursion_mode(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode);
+
+/**
+ * Use this function to select either streaminformation resource should export
+ * the region and its children or just the region itself.
+ *
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
+ * @param recursion_mode  Recursion mode to be set for this streaminformation.
+ *
+ * @return   status CMZN_OK if recursion mode is successfully set,
+ *   any other value if failed.
+ */
+ZINC_API int cmzn_streaminformation_region_set_resource_recursion_mode(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode);
+
+/**
+ * Use this function to get the group name set for stream resource.
+ *
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
+ *
+ * @return   Allocated string if group name is successfully returned,
+ *   any other value if failed.
+ */
+ZINC_API char *cmzn_streaminformation_region_get_resource_group_name(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource);
+
+/**
+ * Use this function to set the group to be exported. If a group field with
+ * the provided name is found in the relevant region(s), the fields
+ * information in the group will be exported. If group name is NULL (default),
+ * all field informations will be exported.
+ *
+ * @param streaminformation  Handle to the stream information_region.
+ * @param resource  Handle to the stream resource.
+ * @param group_name  Group name to be set for this streaminformation.
+ *
+ * @return   status CMZN_OK if group name is successfully set,
+ *   any other value if failed.
+ */
+ZINC_API int cmzn_streaminformation_region_set_resource_group_name(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource, const char *group_name);
+
 #ifdef __cplusplus
 }
 #endif

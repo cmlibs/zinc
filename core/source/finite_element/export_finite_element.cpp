@@ -2524,14 +2524,14 @@ FE_WRITE_WITH_ANY_LISTED_FIELDS =
  *   recursively written.
  */
 static int write_cmzn_region(ostream *output_file,
-	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *region, const char * group_name,
 	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, int *field_names_counter,
 	FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion)
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
 {
 	int return_code;
 
@@ -2541,35 +2541,50 @@ static int write_cmzn_region(ostream *output_file,
 		return_code = 1;
 
 		// write region path and/or group name */
-		if (!group || (region != root_region))
+		cmzn_field_group_id group = 0;
+		if (group_name)
 		{
-			char *region_path = cmzn_region_get_relative_path(region, root_region);
-			int len = strlen(region_path);
-			if ((1 < len) && (region_path[len - 1] == CMZN_REGION_PATH_SEPARATOR_CHAR))
+			cmzn_fieldmodule_id fieldmodule =  cmzn_region_get_fieldmodule(region);
+			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, group_name);
+			if (field)
 			{
-				region_path[len - 1] = '\0';
+				group = cmzn_field_cast_group(field);
+				cmzn_field_destroy(&field);
 			}
-			(*output_file) << "Region: " << region_path << "\n";
-			DEALLOCATE(region_path);
-		}
-		if (group)
-		{
-			char *group_name = cmzn_field_get_name(cmzn_field_group_base_cast(group));
-			(*output_file) << " Group name: " << group_name << "\n";
-			DEALLOCATE(group_name);
+			cmzn_fieldmodule_destroy(&fieldmodule);
 		}
 
-		// write finite element fields for this region
-		if (return_code)
+		if (!group_name || group)
 		{
-			return_code = write_cmzn_region_content(output_file, region, group,
-				write_elements, write_nodes, write_data,
-				write_fields_mode, number_of_field_names, field_names,
-				field_names_counter, time, write_criterion);
+			if (!group || (region != root_region))
+			{
+				char *region_path = cmzn_region_get_relative_path(region, root_region);
+				int len = strlen(region_path);
+				if ((1 < len) && (region_path[len - 1] == CMZN_REGION_PATH_SEPARATOR_CHAR))
+				{
+					region_path[len - 1] = '\0';
+				}
+				(*output_file) << "Region: " << region_path << "\n";
+				DEALLOCATE(region_path);
+			}
+			if (group)
+			{
+				char *group_name = cmzn_field_get_name(cmzn_field_group_base_cast(group));
+				(*output_file) << " Group name: " << group_name << "\n";
+				DEALLOCATE(group_name);
+			}
+
+			// write finite element fields for this region
+			if (return_code)
+			{
+				return_code = write_cmzn_region_content(output_file, region, group,
+					write_elements, write_nodes, write_data,
+					write_fields_mode, number_of_field_names, field_names,
+					field_names_counter, time, write_criterion);
+			}
 		}
 
-		if (return_code && !group && ((write_recursion == FE_WRITE_RECURSIVE) ||
-			(write_recursion == FE_WRITE_RECURSE_SUBGROUPS)))
+		if (return_code && !group_name && recursion_mode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
 		{
 			// write group members
 			cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
@@ -2594,24 +2609,17 @@ static int write_cmzn_region(ostream *output_file,
 			cmzn_fieldmodule_destroy(&field_module);
 		}
 
-		if (write_recursion == FE_WRITE_RECURSIVE)
+		if (recursion_mode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON)
 		{
 			// write child regions
 			cmzn_region *child_region = cmzn_region_get_first_child(region);
 			while (child_region)
 			{
-				cmzn_field_group_id child_group = 0;
-				if ((!group) ||
-					(0 != (child_group = cmzn_field_group_get_subregion_field_group(group, child_region))))
-				{
-					return_code = write_cmzn_region(output_file,
-						child_region, child_group, root_region,
-						write_elements, write_nodes, write_data,
-						write_fields_mode, number_of_field_names, field_names,
-						field_names_counter, time, write_criterion, write_recursion);
-					if (child_group)
-						cmzn_field_group_destroy(&child_group);
-				}
+				return_code = write_cmzn_region(output_file,
+					child_region, group_name, root_region,
+					write_elements, write_nodes, write_data,
+					write_fields_mode, number_of_field_names, field_names,
+					field_names_counter, time, write_criterion, recursion_mode);
 				if (!return_code)
 				{
 					cmzn_region_destroy(&child_region);
@@ -2619,6 +2627,10 @@ static int write_cmzn_region(ostream *output_file,
 				}
 				cmzn_region_reaccess_next_sibling(&child_region);
 			}
+		}
+		if (group)
+		{
+			cmzn_field_group_destroy(&group);
 		}
 	}
 	else
@@ -2728,13 +2740,13 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(FE_write_recursion)
  *   recursively written.
  */
 int write_exregion_to_stream(ostream *output_file,
-	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *region, const char *group_name,
 	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion)
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
 {
 	int return_code;
 
@@ -2759,10 +2771,10 @@ int write_exregion_to_stream(ostream *output_file,
 				}
 			}
 			return_code = write_cmzn_region(output_file,
-				region, group, root_region,
+				region, group_name, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, field_names_counter,
-				time, write_criterion, write_recursion);
+				time, write_criterion, recursion_mode);
 			if (field_names_counter)
 			{
 				if (write_fields_mode == FE_WRITE_LISTED_FIELDS)
@@ -2804,13 +2816,13 @@ int write_exregion_to_stream(ostream *output_file,
 } /* write_exregion_to_stream */
 
 int write_exregion_file_of_name(const char *file_name,
-	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *region, const char *group_name,
 	struct cmzn_region *root_region,
 	int write_elements, int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion)	
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
 {
 	int return_code;
 
@@ -2820,10 +2832,10 @@ int write_exregion_file_of_name(const char *file_name,
 		output_file.open(file_name, ios::out);
 		if (output_file.is_open())
 		{
-			return_code = write_exregion_to_stream(&output_file, region, group, root_region,
+			return_code = write_exregion_to_stream(&output_file, region, group_name, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
-				write_criterion, write_recursion);
+				write_criterion, recursion_mode);
 			output_file.close();
 		}
 		else
@@ -2844,13 +2856,13 @@ int write_exregion_file_of_name(const char *file_name,
 } /* write_exregion_file_of_name */
 
 int write_exregion_file_to_memory_block(
-	struct cmzn_region *region, cmzn_field_group_id group,
+	struct cmzn_region *region, const char *group_name,
 	struct cmzn_region *root_region, int write_elements,
 	int write_nodes, int write_data,
 	enum FE_write_fields_mode write_fields_mode,
 	int number_of_field_names, char **field_names, FE_value time,
 	enum FE_write_criterion write_criterion,
-	enum FE_write_recursion write_recursion,
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode,
 	void **memory_block, unsigned int *memory_block_length)
 {
 	int return_code;
@@ -2861,10 +2873,10 @@ int write_exregion_file_to_memory_block(
 		ostringstream stringStream;
 		if (stringStream)
 		{
-			return_code = write_exregion_to_stream(&stringStream, region, group, root_region,
+			return_code = write_exregion_to_stream(&stringStream, region, group_name, root_region,
 				write_elements, write_nodes, write_data,
 				write_fields_mode, number_of_field_names, field_names, time,
-				write_criterion, write_recursion);
+				write_criterion, recursion_mode);
 			string sstring = stringStream.str();
 			*memory_block_length = sstring.size();
 			*memory_block = duplicate_string(sstring.c_str());

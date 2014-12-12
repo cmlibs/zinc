@@ -67,4 +67,15 @@ enum cmzn_streaminformation_region_file_format
 	/*!< Latest supported FieldML format */
 };
 
+enum cmzn_streaminformation_region_recursion_mode
+{
+	CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID = 0,
+	/*!< Invalid recursion mode */
+	CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_ON = 1,
+	/*!< Region will be exported recursively */
+	CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_OFF = 2,
+	/*!< Region will not be exported recursively */
+
+};
+
 #endif /* CMZN_REGION_ID_H */

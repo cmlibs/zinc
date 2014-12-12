@@ -11,6 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include "zinc/streamregion.h"
+#include "zinc/streamregion.h"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/read_fieldml.hpp"
 #include "field_io/write_fieldml.hpp"
@@ -274,6 +275,9 @@ int cmzn_region_write(cmzn_region_id region,
 			char **informationFieldNames = 0;
 			int informationNumberOfFieldNames = 0;
 			informationNumberOfFieldNames = streaminformation_region->getFieldNames(&informationFieldNames);
+			enum cmzn_streaminformation_region_recursion_mode information_recursion_mode =
+				streaminformation_region->getRecursionMode();
+
 			for (iter = streams_list.begin(); iter != streams_list.end() && (return_code == CMZN_OK); ++iter)
 			{
 				stream_properties = *iter;
@@ -292,20 +296,33 @@ int cmzn_region_write(cmzn_region_id region,
 				char **resourceFieldNames = 0, **fieldNames = 0;
 				int resourceNumberOfFieldNames = 0, numberOfFieldNames = 0;
 				resourceNumberOfFieldNames = streaminformation_region->getResourceFieldNames(stream, &resourceFieldNames);
-				if (resourceNumberOfFieldNames > 0)
+				if (streaminformation_region->getWriteNoField())
 				{
-					numberOfFieldNames = resourceNumberOfFieldNames;
-					fieldNames = resourceFieldNames;
+					write_fields_mode = FE_WRITE_NO_FIELDS;
 				}
 				else
 				{
-					numberOfFieldNames = informationNumberOfFieldNames;
-					fieldNames = informationFieldNames;
+					if (resourceNumberOfFieldNames > 0)
+					{
+						numberOfFieldNames = resourceNumberOfFieldNames;
+						fieldNames = resourceFieldNames;
+					}
+					else
+					{
+						numberOfFieldNames = informationNumberOfFieldNames;
+						fieldNames = informationFieldNames;
+					}
+					if (numberOfFieldNames > 0 && fieldNames)
+					{
+						write_fields_mode = FE_WRITE_LISTED_FIELDS;
+					}
 				}
-				if (numberOfFieldNames > 0 && fieldNames)
-				{
-					write_fields_mode = FE_WRITE_LISTED_FIELDS;
-				}
+
+				enum cmzn_streaminformation_region_recursion_mode local_recursion_mode =
+					streaminformation_region->getResourceRecursionMode(stream);
+				if (local_recursion_mode == CMZN_STREAMINFORMATION_REGION_RECURSION_MODE_INVALID)
+					local_recursion_mode = information_recursion_mode;
+				char *group_name = streaminformation_region->getResourceGroupName(stream);
 
 				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
 				cmzn_streamresource_memory_id memory_resource = NULL;
@@ -364,11 +381,11 @@ int cmzn_region_write(cmzn_region_id region,
 						switch (fileFormat)
 						{
 							case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
-								if (!write_exregion_file_of_name(file_name, region, (cmzn_field_group_id)0,
+								if (!write_exregion_file_of_name(file_name, region, group_name,
 									cmzn_streaminformation_region_get_root_region(streaminformation_region),
 									writeElements,	writeNodes, writeData,
 									write_fields_mode, numberOfFieldNames, fieldNames,
-									stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE))
+									stream_time,	FE_WRITE_COMPLETE_GROUP, local_recursion_mode))
 								{
 									return_code = CMZN_ERROR_GENERAL;
 									display_message(ERROR_MESSAGE, "cmzn_region_write.  Failed to write EX file %s", file_name);
@@ -395,11 +412,11 @@ int cmzn_region_write(cmzn_region_id region,
 					switch (fileFormat)
 					{
 						case CMZN_STREAMINFORMATION_REGION_FILE_FORMAT_EX:
-							if (!write_exregion_file_to_memory_block(region, (cmzn_field_group_id)0,
+							if (!write_exregion_file_to_memory_block(region, group_name,
 								cmzn_streaminformation_region_get_root_region(streaminformation_region),
 								writeElements,	writeNodes, writeData,
 								write_fields_mode, numberOfFieldNames, fieldNames,
-								stream_time,	FE_WRITE_COMPLETE_GROUP, FE_WRITE_RECURSIVE, &memory_block, &buffer_size))
+								stream_time,	FE_WRITE_COMPLETE_GROUP, local_recursion_mode, &memory_block, &buffer_size))
 							{
 								return_code = CMZN_ERROR_GENERAL;
 								display_message(ERROR_MESSAGE, "cmzn_region_write.  Failed to write EX format to memory block");
@@ -436,6 +453,8 @@ int cmzn_region_write(cmzn_region_id region,
 					}
 					DEALLOCATE(resourceFieldNames);
 				}
+				if (group_name)
+					DEALLOCATE(group_name);
 			}
 			informationNumberOfFieldNames = streaminformation_region->getFieldNames(&informationFieldNames);
 			if (informationNumberOfFieldNames > 0)
@@ -749,4 +768,49 @@ char *cmzn_streaminformation_region_attribute_enum_to_string(
 		string = duplicate_string(str[attribute - 1]);
 	}
 	return string;
+}
+
+int cmzn_streaminformation_region_set_recursion_mode(
+	cmzn_streaminformation_region_id streaminformation,
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
+{
+	if (streaminformation)
+	{
+		return streaminformation->setRecursionMode(recursion_mode);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_streaminformation_region_set_resource_recursion_mode(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource,
+	enum cmzn_streaminformation_region_recursion_mode recursion_mode)
+{
+	if (streaminformation)
+	{
+		return streaminformation->setResourceRecursionMode(resource, recursion_mode);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_streaminformation_region_get_resource_group_name(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource)
+{
+	if (streaminformation)
+	{
+		return streaminformation->getResourceGroupName(resource);
+	}
+	return 0;
+}
+
+int cmzn_streaminformation_region_set_resource_group_name(
+	cmzn_streaminformation_region_id streaminformation,
+	cmzn_streamresource_id resource, const char *group_name)
+{
+	if (streaminformation)
+	{
+		return streaminformation->setResourceGroupName(resource, group_name);
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
