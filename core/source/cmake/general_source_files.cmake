@@ -29,6 +29,7 @@ SET( GENERAL_SRCS
 	source/general/statistics.cpp
 	source/general/time.cpp
 	source/general/value.cpp
+	source/jsoncpp/jsoncpp.cpp
 	source/stream/stream_private.cpp )
 SET( GENERAL_HDRS
 	source/general/any_object.h
@@ -78,6 +79,8 @@ SET( GENERAL_HDRS
 	source/general/statistics.h
 	source/general/time.h
 	source/general/value.h
+	source/jsoncpp/json.h
+	source/jsoncpp/json-forwards.h
 	source/stream/stream_private.hpp )
 IF( NOT HAVE_VFSCANF )
 	SET( GENERAL_SRCS ${GENERAL_SRCS}
