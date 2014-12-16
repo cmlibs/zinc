@@ -48,3 +48,6 @@ Copyright (C) 2001-3 Henry Maddocks
 
 OPT++ Class Libraries License Version 2.0, November 2001
 Copyright (2001) Sandia Corporation.
+
+JsonCpp
+Copyright (c) 2007-2010 Baptiste Lepilleur
