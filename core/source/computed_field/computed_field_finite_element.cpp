@@ -76,24 +76,27 @@ int calculate_FE_element_field_values_for_element(
 	int return_code = 1;
 	if (field_values_cache && fe_field && element)
 	{
+		// can't trust cached element field values if between manager begin/end change
+		// and this field has been modified.
+		const bool fieldChanged = FE_field_has_cached_changes(fe_field);
 		/* ensure we have FE_element_field_values for element, with
 			 derivatives_calculated if requested */
-		if ((!fe_element_field_values) ||
+		if (fieldChanged || (!fe_element_field_values) ||
 			(!FE_element_field_values_are_for_element_and_time(
 				fe_element_field_values, element, time, top_level_element)) ||
 			(calculate_derivatives &&
 				(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
 		{
-			int need_update = 0;
-			int need_to_add_to_list = 0;
+			bool needUpdate = false;
+			bool addToList = false;
 			if (!(fe_element_field_values = FIND_BY_IDENTIFIER_IN_LIST(
 				FE_element_field_values, element)(element, field_values_cache)))
 			{
-				need_update = 1;
+				needUpdate = true;
 				fe_element_field_values = CREATE(FE_element_field_values)();
 				if (fe_element_field_values)
 				{
-					need_to_add_to_list = 1;
+					addToList = true;
 				}
 				else
 				{
@@ -102,16 +105,17 @@ int calculate_FE_element_field_values_for_element(
 			}
 			else
 			{
-				if ((!FE_element_field_values_are_for_element_and_time(
-						 fe_element_field_values,element,time,top_level_element))||
+				if (fieldChanged ||
+					(!FE_element_field_values_are_for_element_and_time(
+						fe_element_field_values,element,time,top_level_element)) ||
 					(calculate_derivatives&&
 						(!FE_element_field_values_have_derivatives_calculated(fe_element_field_values))))
 				{
-					need_update = 1;
+					needUpdate = true;
 					clear_FE_element_field_values(fe_element_field_values);
 				}
 			}
-			if (return_code && need_update)
+			if (return_code && needUpdate)
 			{
 				/* note that FE_element_field_values accesses the element */
 				if (calculate_FE_element_field_values(element,fe_field,
@@ -125,7 +129,7 @@ int calculate_FE_element_field_values_for_element(
 							differential_xi_indices[i]);
 					}
 
-					if (need_to_add_to_list)
+					if (addToList)
 					{
 						/* Set a cache size limit */
 						if (1000 < NUMBER_IN_LIST(FE_element_field_values)(field_values_cache))
@@ -990,11 +994,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 		result = FIELD_ASSIGNMENT_RESULT_FAIL;
 	}
 	if (result != FIELD_ASSIGNMENT_RESULT_FAIL)
-	{
-		// clear this and dependent field caches due to DOFs changing (wasteful if data points changed):
-		field->clearCaches();
 		valueCache.derivatives_valid = 0;
-	}
 	return result;
 }
 
@@ -2001,8 +2001,6 @@ enum FieldAssignmentResult Computed_field_node_value::assign(cmzn_fieldcache& ca
 		{
 			return FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		}
-		// clear finite element field cache due to DOFs changing (wasteful if data points changed):
-		finite_element_field->clearCaches();
 		FieldAssignmentResult result = FIELD_ASSIGNMENT_RESULT_ALL_VALUES_SET;
 		FE_node *node = node_location->get_node();
 		FE_value time = node_location->get_time();

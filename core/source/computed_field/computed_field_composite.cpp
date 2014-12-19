@@ -99,7 +99,6 @@ public:
 				if (source_value_numbers[0] != component_index)
 				{
 					source_value_numbers[0] = component_index;
-					field->clearCaches();
 					Computed_field_changed(field);
 				}
 				return CMZN_OK;
@@ -307,10 +306,7 @@ enum FieldAssignmentResult Computed_field_composite::assign(cmzn_fieldcache& cac
 			}
 		}
 		if (changed)
-		{
-			field->clearCaches();
 			Computed_field_changed(field);
-		}
 	}
 	return result;
 }

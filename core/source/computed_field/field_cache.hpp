@@ -56,7 +56,7 @@ public:
 
 	virtual ~FieldValueCache();
 
-	void resetEvaluationCounter()
+	inline void resetEvaluationCounter()
 	{
 		evaluationCounter = -1;
 	}
@@ -107,11 +107,7 @@ private:
 		if (locationCounter < 0)
 		{
 			locationCounter = 0;
-			for (unsigned int i = 0; i < valueCaches.size(); ++i)
-			{
-				if (valueCaches[i])
-					valueCaches[i]->resetEvaluationCounter();
-			}
+			this->resetValueCacheEvaluationCounters();
 		}
 	}
 
@@ -168,7 +164,7 @@ public:
 		locationChanged();
 	}
 
-	int getLocationCounter() const
+	inline int getLocationCounter() const
 	{
 		return locationCounter;
 	}
@@ -198,7 +194,7 @@ public:
 		}
 	}
 
-	int getRequestedDerivatives()
+	inline int getRequestedDerivatives()
 	{
 		return requestedDerivatives;
 	}
@@ -265,6 +261,16 @@ public:
 				valueCaches.push_back(0);
 		}
 		valueCaches[cacheIndex] = valueCache;
+	}
+
+	void resetValueCacheEvaluationCounters()
+	{
+		const int size = static_cast<int>(valueCaches.size());
+		for (int i = 0; i < size; ++i)
+		{
+			if (valueCaches[i])
+				valueCaches[i]->resetEvaluationCounter();
+		}
 	}
 
 	bool assignInCacheOnly() const

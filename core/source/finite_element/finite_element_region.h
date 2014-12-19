@@ -305,6 +305,12 @@ int FE_region_begin_change(struct FE_region *fe_region);
 int FE_region_end_change(struct FE_region *fe_region);
 
 /**
+ * Return true if the fe_field's owning fe_region is currently caching changes
+ * and this fe_field has changes that affect its values.
+ */
+bool FE_field_has_cached_changes(FE_field *fe_field);
+
+/**
  * Removes all the fields, nodes and elements from <fe_region>.
  * Note this function uses FE_region_begin/end_change so it sends a single change
  * message if not already in the middle of changes.
@@ -402,19 +408,16 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 	int number_of_times, enum Value_type time_value_type,
 	struct FE_field_external_information *external);
 
+/**
+ * Checks <fe_field> is compatible with <fe_region> and any existing FE_field
+ * using the same identifier, then merges it into <fe_region>.
+ * If no FE_field of the same identifier exists in FE_region, <fe_field> is added
+ * to <fe_region> and returned by this function, otherwise changes are merged into
+ * the existing FE_field and it is returned.
+ * A NULL value is returned on any error.
+ */
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Checks <fe_field> is compatible with <fe_region> and any existing FE_field
-using the same identifier, then merges it into <fe_region>.
-If no FE_field of the same identifier exists in FE_region, <fe_field> is added
-to <fe_region> and returned by this function, otherwise changes are merged into
-the existing FE_field and it is returned.
-A NULL value is returned on any error.
-==============================================================================*/
 
 /**
  * Returns true if field is defined on any nodes or element in fe_region.

@@ -134,8 +134,6 @@ like the number of components.
 #include "general/geometry.h"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
-#include "general/manager.h"
-#include "general/manager_private.h"
 #include "general/matrix_vector.h"
 #include "general/mystring.h"
 #include "general/value.h"
@@ -143,8 +141,6 @@ like the number of components.
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
 #include <typeinfo>
-
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct cmzn_region, struct cmzn_field_change_detail *);
 
 /*
 Module functions
@@ -859,6 +855,12 @@ cmzn_fielditerator_id Computed_field_manager_create_iterator(
 	if (manager)
 		return CREATE_LIST_ITERATOR(Computed_field)(manager->object_list);
 	return 0;
+}
+
+cmzn_fielditerator_id Computed_field_list_create_iterator(
+	struct LIST(Computed_field) *list)
+{
+	return CREATE_LIST_ITERATOR(Computed_field)(list);
 }
 
 int cmzn_field_get_cache_index_private(cmzn_field_id field)

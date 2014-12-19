@@ -60,8 +60,9 @@ struct cmzn_region
 	void *field_manager_callback_id;
 	struct FE_region *fe_region;
 	int field_cache_size; // 1 more than highest field cache index given out
-	std::list<cmzn_fieldcache_id> *field_caches; // all caches currently in use
-		// for this region, needed to add value caches for new fields
+	// all field caches currently in use for this region, for clearing
+	// when fields changed, and adding value caches for new fields.
+	std::list<cmzn_fieldcache_id> *field_caches;
 
 	/* list of objects attached to region */
 	struct LIST(Any_object) *any_object_list;
@@ -96,7 +97,7 @@ DEFINE_CMZN_CALLBACK_FUNCTIONS(cmzn_region_change, \
 /**
  * Computed field manager callback.
  * Calls notifier callbacks, propagates hierarchical field changes to
- * paranet region (currently only for cmzn_field_group).
+ * parent region (currently only for cmzn_field_group).
  *
  * @param message  The changes to the fields in the region's manager.
  * @param region_void  Void pointer to changed region (not the parent).
@@ -108,6 +109,21 @@ static void cmzn_region_Computed_field_change(
 	if (message && region)
 	{
 		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Computed_field)(message);
+		// clear active field caches for changed fields
+		if ((change_summary & MANAGER_CHANGE_RESULT(Computed_field)) &&
+			(0 < region->field_caches->size()))
+		{
+			LIST(Computed_field) *changedFieldList =
+				MANAGER_MESSAGE_GET_CHANGE_LIST(Computed_field)(message, MANAGER_CHANGE_RESULT(Computed_field));
+			cmzn_fielditerator *iter = Computed_field_list_create_iterator(changedFieldList);
+			cmzn_field *field;
+			while (0 != (field = cmzn_fielditerator_next_non_access(iter)))
+			{
+				cmzn_region_clear_field_value_caches(region, field);
+			}
+			cmzn_fielditerator_destroy(&iter);
+			DESTROY(LIST(Computed_field))(&changedFieldList);
+		}
 		if (0 < region->notifier_list->size())
 		{
 			cmzn_fieldmoduleevent_id event = cmzn_fieldmoduleevent::create(region);
@@ -136,7 +152,7 @@ static void cmzn_region_Computed_field_change(
 	}
 }
 
-/***************************************************************************//**
+/**
  * Forwards begin change cache to region fields.
  */
 static int cmzn_region_fields_begin_change(struct cmzn_region *region)
@@ -144,6 +160,13 @@ static int cmzn_region_fields_begin_change(struct cmzn_region *region)
 	int return_code;
 	if (region)
 	{
+		// reset field value caches so always re-evaluated. See cmzn_field::evaluate()
+		for (std::list<cmzn_fieldcache_id>::iterator iter = region->field_caches->begin();
+			iter != region->field_caches->end(); ++iter)
+		{
+			cmzn_fieldcache_id cache = *iter;
+			cache->resetValueCacheEvaluationCounters();
+		}
 		MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
 		FE_region_begin_change(region->fe_region);
 		return_code = 1;
@@ -156,7 +179,7 @@ static int cmzn_region_fields_begin_change(struct cmzn_region *region)
 	return (return_code);
 }
 
-/***************************************************************************//**
+/**
  * Forwards end change cache to region fields.
  */
 static int cmzn_region_fields_end_change(struct cmzn_region *region)
@@ -1235,7 +1258,7 @@ int cmzn_region_get_partial_region_path(struct cmzn_region *root_region,
 			return_code = 0;
 		}
 
-		length = strlen(child_name);
+		length = static_cast<int>(strlen(child_name));
 		if (length == 0)
 		{
 			*remainder_address = NULL;
@@ -1459,7 +1482,7 @@ int cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_re
 		char *target_path = cmzn_region_get_path(target_region);
 		char *source_path = cmzn_region_get_path(source_region);
 		display_message(ERROR_MESSAGE,
-			"Cannot merge incompatible fields from source region %s into %s", source_path, target_path);
+			"Cannot merge source region %s into %s", source_path, target_path);
 		DEALLOCATE(source_path);
 		DEALLOCATE(target_path);
 		return 0;
