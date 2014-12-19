@@ -880,3 +880,138 @@ TEST(ZincFieldEdgeDiscontinuity, invalidEvaluate)
 	double outValues[3];
 	EXPECT_NE(OK, result = edgeDiscontinuityField.evaluateReal(cache, 3, outValues));
 }
+
+// Test changing the basis used in an element
+TEST(ZincFieldFiniteElement, redefine_element_field)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	FieldFiniteElement coordinates = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/2);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(OK, result = coordinates.setName("coordinates"));
+	EXPECT_EQ(OK, result = coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(OK, result = coordinates.setManaged(true));
+	EXPECT_EQ(OK, result = coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(OK, result = coordinates.setComponentName(2, "y"));
+
+	FieldFiniteElement pressure = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/1);
+	EXPECT_TRUE(pressure.isValid());
+	EXPECT_EQ(OK, result = pressure.setName("pressure"));
+	EXPECT_EQ(OK, result = pressure.setManaged(true));
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	Nodetemplate nodetemplate = nodeset.createNodetemplate();
+	EXPECT_EQ(OK, result = nodetemplate.defineField(coordinates));
+	EXPECT_EQ(OK, result = nodetemplate.defineField(pressure));
+	Fieldcache fieldcache = zinc.fm.createFieldcache();
+	for (int j = 0; j < 3; ++j)
+		for (int i = 0; i < 5; ++i)
+		{
+			int identifier = j*5 + i + 1;
+			Node node = nodeset.createNode(identifier, nodetemplate);
+			EXPECT_EQ(OK, fieldcache.setNode(node));
+			double coordinatesValues[2] = { i*0.5, j*0.5 };
+			EXPECT_EQ(OK, coordinates.assignReal(fieldcache, 2, coordinatesValues));
+			double pressureValue = (i == 1) || (i == 3) ? 0.0 : 1.0;
+			EXPECT_EQ(OK, pressure.assignReal(fieldcache, 1, &pressureValue));
+		}
+
+	Mesh mesh = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh.isValid());
+
+	Elementbasis bilinearBasis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(bilinearBasis.isValid());
+	Elementbasis biquadraticBasis = zinc.fm.createElementbasis(2, Elementbasis::FUNCTION_TYPE_QUADRATIC_LAGRANGE);
+	EXPECT_TRUE(biquadraticBasis.isValid());
+
+	int biquadraticLocalNodeIndexes[9] = { 1, 2, 3, 4, 5, 6, 7, 8, 9 };
+	int bilinearLocalNodeIndexes[4] = { 1, 3, 7, 9 };
+	Elementtemplate elementtemplate1 = mesh.createElementtemplate();
+	EXPECT_EQ(OK, result = elementtemplate1.setElementShapeType(Element::SHAPE_TYPE_SQUARE));
+	EXPECT_EQ(OK, result = elementtemplate1.setNumberOfNodes(9));
+	EXPECT_EQ(OK, result = elementtemplate1.defineFieldSimpleNodal(coordinates, /*componentNumber*/-1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
+	EXPECT_EQ(OK, result = elementtemplate1.defineFieldSimpleNodal(pressure, /*componentNumber*/-1, biquadraticBasis, 9, biquadraticLocalNodeIndexes));
+
+	for (int i = 0; i < 2; ++i)
+	{
+		const int baseNodeIdentifier = 2*i + 1;
+		for (int n = 0; n < 9; ++n)
+		{
+			const int nodeIdentifier = baseNodeIdentifier + (n / 3)*5 + (n % 3);
+			Node node = nodeset.findNodeByIdentifier(nodeIdentifier);
+			EXPECT_TRUE(node.isValid());
+			EXPECT_EQ(OK, result = elementtemplate1.setNode(n + 1, node));
+		}
+		const int elementIdentifier = i + 1;
+		EXPECT_EQ(OK, result = mesh.defineElement(elementIdentifier, elementtemplate1));
+	}
+
+	const double xi[2] = { 0.5, 0.5 };
+	double coordinateValuesOut[2];
+	double pressureValueOut;
+	Element element1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	Element element2 = mesh.findElementByIdentifier(2);
+	EXPECT_TRUE(element2.isValid());
+
+	EXPECT_EQ(OK, result = fieldcache.setMeshLocation(element1, 2, xi));
+	EXPECT_EQ(OK, result = coordinates.evaluateReal(fieldcache, 2, coordinateValuesOut));
+	EXPECT_DOUBLE_EQ(0.5, coordinateValuesOut[0]);
+	EXPECT_DOUBLE_EQ(0.5, coordinateValuesOut[1]);
+	EXPECT_EQ(OK, result = pressure.evaluateReal(fieldcache, 1, &pressureValueOut));
+	EXPECT_DOUBLE_EQ(0.0, pressureValueOut);
+	EXPECT_EQ(OK, result = fieldcache.setMeshLocation(element2, 2, xi));
+	EXPECT_EQ(OK, result = coordinates.evaluateReal(fieldcache, 2, coordinateValuesOut));
+	EXPECT_DOUBLE_EQ(1.5, coordinateValuesOut[0]);
+	EXPECT_DOUBLE_EQ(0.5, coordinateValuesOut[1]);
+	EXPECT_EQ(OK, result = pressure.evaluateReal(fieldcache, 1, &pressureValueOut));
+	EXPECT_DOUBLE_EQ(0.0, pressureValueOut);
+
+	// redefine element 1 pressure interpolation to be bilinear
+
+	int bilinearLocalNodeIndexes2[4] = { 1, 2, 3, 4 };
+	Elementtemplate elementtemplate2 = mesh.createElementtemplate();
+	EXPECT_EQ(OK, result = elementtemplate2.setElementShapeType(Element::SHAPE_TYPE_INVALID));
+	EXPECT_EQ(OK, result = elementtemplate2.setNumberOfNodes(4));
+	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(pressure, /*componentNumber*/-1, bilinearBasis, 4, bilinearLocalNodeIndexes2));
+
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(1, nodeset.findNodeByIdentifier(1)));
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(2, nodeset.findNodeByIdentifier(3)));
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(3, nodeset.findNodeByIdentifier(11)));
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(4, nodeset.findNodeByIdentifier(13)));
+	EXPECT_EQ(OK, result = element1.merge(elementtemplate2));
+
+	EXPECT_EQ(OK, result = fieldcache.setMeshLocation(element1, 2, xi));
+	EXPECT_EQ(OK, result = coordinates.evaluateReal(fieldcache, 2, coordinateValuesOut));
+	EXPECT_DOUBLE_EQ(0.5, coordinateValuesOut[0]);
+	EXPECT_DOUBLE_EQ(0.5, coordinateValuesOut[1]);
+	EXPECT_EQ(OK, result = pressure.evaluateReal(fieldcache, 1, &pressureValueOut));
+	EXPECT_DOUBLE_EQ(1.0, pressureValueOut);
+	EXPECT_EQ(OK, result = fieldcache.setMeshLocation(element2, 2, xi));
+	EXPECT_EQ(OK, result = coordinates.evaluateReal(fieldcache, 2, coordinateValuesOut));
+	EXPECT_DOUBLE_EQ(1.5, coordinateValuesOut[0]);
+	EXPECT_DOUBLE_EQ(0.5, coordinateValuesOut[1]);
+	EXPECT_EQ(OK, result = pressure.evaluateReal(fieldcache, 1, &pressureValueOut));
+	EXPECT_DOUBLE_EQ(0.0, pressureValueOut);
+
+	// redefine element 2 pressure interpolation to be bilinear
+	// this time test between begin/end change
+
+	zinc.fm.beginChange();
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(1, nodeset.findNodeByIdentifier(3)));
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(2, nodeset.findNodeByIdentifier(5)));
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(3, nodeset.findNodeByIdentifier(13)));
+	EXPECT_EQ(OK, result = elementtemplate2.setNode(4, nodeset.findNodeByIdentifier(15)));
+	EXPECT_EQ(OK, result = element2.merge(elementtemplate2));
+
+	EXPECT_EQ(OK, result = fieldcache.setMeshLocation(element1, 2, xi));
+	EXPECT_EQ(OK, result = pressure.evaluateReal(fieldcache, 1, &pressureValueOut));
+	EXPECT_DOUBLE_EQ(1.0, pressureValueOut);
+	EXPECT_EQ(OK, result = fieldcache.setMeshLocation(element2, 2, xi));
+	EXPECT_EQ(OK, result = pressure.evaluateReal(fieldcache, 1, &pressureValueOut));
+	EXPECT_DOUBLE_EQ(1.0, pressureValueOut);
+	zinc.fm.endChange();
+}

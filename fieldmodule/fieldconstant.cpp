@@ -53,17 +53,35 @@ TEST(cmzn_field_constant, issue_3348_assign)
 	EXPECT_EQ(expectedSum, value);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f3, cache2, 1, &value));
 	EXPECT_EQ(expectedSum, value);
+
 	const double newValue1 = 5.0;
-	const double newExpectedSum = newValue1 + value2;
+	const double newExpectedSum1 = newValue1 + value2;
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(f1, cache1, 1, &newValue1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, cache1, 1, &value));
 	EXPECT_EQ(newValue1, value);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, cache2, 1, &value));
 	EXPECT_EQ(newValue1, value);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f3, cache1, 1, &value));
-	EXPECT_EQ(newExpectedSum, value);
+	EXPECT_EQ(newExpectedSum1, value);
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f3, cache2, 1, &value));
-	EXPECT_EQ(newExpectedSum, value);
+	EXPECT_EQ(newExpectedSum1, value);
+
+	// test similar change between begin/end change
+
+	const double newValue2 = 7.5;
+	const double newExpectedSum2 = newValue2 + value2;
+	cmzn_fieldmodule_begin_change(zinc.fm);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(f1, cache1, 1, &newValue2));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, cache1, 1, &value));
+	EXPECT_EQ(newValue2, value);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f1, cache2, 1, &value));
+	EXPECT_EQ(newValue2, value);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f3, cache1, 1, &value));
+	EXPECT_EQ(newExpectedSum2, value);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(f3, cache2, 1, &value));
+	EXPECT_EQ(newExpectedSum2, value);
+	cmzn_fieldmodule_end_change(zinc.fm);
+
 	cmzn_fieldcache_destroy(&cache1);
 	cmzn_fieldcache_destroy(&cache2);
 
