@@ -5849,7 +5849,6 @@ public:
 	cmzn_mesh_scale_factor_set *scaleFactorSet;
 	FE_element_node_scale_field_info *info1;
 	FE_element_node_scale_field_info *info2;
-	LIST(FE_node) *globalNodes1;
 	FE_node **nodes1;
 	int numberOfElementNodes1;
 	FE_node **nodes2;
@@ -5872,12 +5871,10 @@ public:
 	 */
 	ElementDOFMapMatchCache(cmzn_mesh_scale_factor_set *scaleFactorSet,
 			FE_element_node_scale_field_info *info1,
-			FE_element_node_scale_field_info *info2,
-			LIST(FE_node) *globalNodes1) :
+			FE_element_node_scale_field_info *info2) :
 		scaleFactorSet(scaleFactorSet),
 		info1(info1),
 		info2(info2),
-		globalNodes1(globalNodes1),
 		numberOfScaleFactors1(0),
 		scaleFactors1(0),
 		numberOfScaleFactors2(0),
@@ -6097,11 +6094,7 @@ public:
 		{
 			FE_node *node1 = (this->nodeIndex < cache.numberOfElementNodes1) ? cache.nodes1[this->nodeIndex] : 0;
 			FE_node *node2 = (this->nodeIndex < cache.numberOfElementNodes2) ? cache.nodes2[this->nodeIndex] : 0;
-			if (node1 && node2 && (
-				((!cache.globalNodes1) && (node1 == node2)) ||
-					(cache.globalNodes1 && (node2 ==
-						FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-							get_FE_node_identifier(node1), cache.globalNodes1)))) &&
+			if (node1 && node2 && (node1 == node2) &&
 				(this->valueType == nodeMap2->valueType) &&
 				(this->version == nodeMap2->version) &&
 				(this->scaleFactorIndex == nodeMap2->scaleFactorIndex))
@@ -8085,7 +8078,13 @@ Function prototype should be in finite_element_private.h, so not public.
 		if (return_code)
 		{
 			REACCESS(FE_field_info)(&(destination->info), source->info);
-			destination->cm_field_type=source->cm_field_type;
+			if (destination->cm_field_type != source->cm_field_type)
+			{
+				display_message(WARNING_MESSAGE, "Changing field %s CM type from %s to %s",
+					source->name, ENUMERATOR_STRING(CM_field_type)(destination->cm_field_type),
+					ENUMERATOR_STRING(CM_field_type)(source->cm_field_type));
+				destination->cm_field_type = source->cm_field_type;
+			}
 			if (destination->external)
 			{
 				if (destination->external->destroy)
@@ -8300,65 +8299,28 @@ those given in the parameters.
 	return (return_code);
 } /* FE_field_matches_description */
 
-int FE_fields_match_fundamental(struct FE_field *field1,
+bool FE_fields_match_fundamental(struct FE_field *field1,
 	struct FE_field *field2)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Returns true if <field1> and <field2> describe the same fundamental quantities
-including number of components, value type etc. which should be sufficient to
-allow field1 and field2 to be interchanged without affecting the rest of the
-program. Check this function fits will with FE_fields_match_exact.
-Does not check the fields have the same name as this is a trivial change.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_fields_match_fundamental);
 	if (field1 && field2)
 	{
-		if ((field1->value_type == field2->value_type) &&
+		return
+			(field1->value_type == field2->value_type) &&
 			(field1->fe_field_type == field2->fe_field_type) &&
 			(field1->number_of_components == field2->number_of_components) &&
-			(field1->cm_field_type == field2->cm_field_type) &&
-			Coordinate_systems_match(&(field1->coordinate_system),
-				&(field2->coordinate_system)))
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
+			(0 != Coordinate_systems_match(&(field1->coordinate_system),
+				&(field2->coordinate_system)));
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_fields_match_fundamental.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+	display_message(ERROR_MESSAGE,
+		"FE_fields_match_fundamental.  Missing field(s)");
+	return false;
+}
 
-	return (return_code);
-} /* FE_fields_match_fundamental */
-
-int FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
-/*******************************************************************************
-LAST MODIFIED : 30 April 2003
-
-DESCRIPTION :
-Returns true if <field1> and <field2> have exactly the same contents.
-==============================================================================*/
+bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2)
 {
-	char *component_name1, *component_name2;
-	int i, return_code;
-
-	ENTER(FE_fields_match_exact);
-	/* does not match until proven so */
-	return_code=0;
 	if (field1 && field2)
 	{
+		// does not match until proven so
 		if ((0 == strcmp(field1->name, field2->name)) &&
 			(field1->fe_field_type == field2->fe_field_type) &&
 			((INDEXED_FE_FIELD != field1->fe_field_type) ||
@@ -8377,118 +8339,62 @@ Returns true if <field1> and <field2> have exactly the same contents.
 			(field1->number_of_times == field2->number_of_times) &&
 			(field1->time_value_type == field2->time_value_type))
 		{
-			/* matches until disproven */
-			return_code = 1;
-			/* check external */
+			// matches until disproven
 			if (field1->external)
 			{
-				if (field2->external)
+				if ((field2->external) && (field1->external->compare) &&
+					(field1->external->compare == field2->external->compare))
 				{
-					if ((field1->external->compare) &&
-						(field1->external->compare == field2->external->compare))
-					{
-						if ((field1->external->compare)(field1->external, field2->external))
-						{
-							return_code = 0;
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
+					if ((field1->external->compare)(field1->external, field2->external))
+						return false;
 				}
 				else
-				{
-					return_code = 0;
-				}
+					return false;
 			}
-			else
+			else if (field2->external)
+				return false;
+			// check component names match
+			for (int i = field1->number_of_components; i <= 0; --i)
 			{
-				if (field2->external)
-				{
-					return_code = 0;
-				}
-			}
-			/* check the component names match */
-			i = field1->number_of_components;
-			while ((i > 0) && return_code)
-			{
-				i--;
-				component_name1 =
-					get_automatic_component_name(field1->component_names, i);
-				component_name2 =
-					get_automatic_component_name(field2->component_names, i);
-				if (component_name1 && component_name2)
-				{
-					if (strcmp(component_name1, component_name2))
-					{
-						return_code = 0;
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
+				char *component_name1 = get_automatic_component_name(field1->component_names, i);
+				char *component_name2 = get_automatic_component_name(field2->component_names, i);
+				bool matching = (component_name1) && (component_name2) &&
+					(0 == strcmp(component_name1, component_name2));
 				DEALLOCATE(component_name2);
 				DEALLOCATE(component_name1);
+				if (!matching)
+					return false;
 			}
-		}
-		else
-		{
-			return_code = 0;
+			return true;
 		}
 	}
 	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_fields_match_exact.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
+		display_message(ERROR_MESSAGE, "FE_fields_match_exact.  Missing field(s)");
+	return false;
+}
 
-	return (return_code);
-} /* FE_fields_match_exact */
-
-int FE_field_can_be_merged(struct FE_field *field, void *field_list_void)
-/*******************************************************************************
-LAST MODIFIED : 14 November 2002
-
-DESCRIPTION :
-Fetches a field with the same name as <field> from <field_list>.
-Returns true if there is either no such field in the list or two fields are
-identically defined.
-==============================================================================*/
+/**
+ * List iterator function which fetches a field with the same name as <field>
+ * from <field_list>. Returns 1 (true) if there is either no such field in the
+ * list or the two fields return true for FE_fields_match_fundamental(),
+ * otherwise returns 0 (false).
+ */
+int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void)
 {
-	int return_code;
-	struct FE_field *other_field;
-	struct LIST(FE_field) *field_list;
-
-	ENTER(FE_field_can_be_merged);
-	return_code = 0;
-	if (field && (field_list = (struct LIST(FE_field) *)field_list_void))
+	struct LIST(FE_field) *field_list = reinterpret_cast<struct LIST(FE_field) *>(field_list_void);
+	if (field && field_list)
 	{
-		if (NULL != (other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->name,
-			field_list)))
-		{
-			if (FE_fields_match_fundamental(field, other_field))
-			{
-				return_code = 1;
-			}
-		}
-		else
-		{
-			return_code = 1;
-		}
+		FE_field *other_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(field->name, field_list);
+		if ((!(other_field)) || FE_fields_match_fundamental(field, other_field))
+			return 1;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_field_can_be_merged.  Invalid argument(s)");
+			"FE_field_can_be_merged_into_list.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_field_can_be_merged */
+	return 0;
+}
 
 int FE_field_has_multiple_times(struct FE_field *fe_field)
 /*******************************************************************************
@@ -16342,20 +16248,12 @@ Returns the type of mapping used by <element_field_component>.
 /**
  * Returns true if <component_1> and <component_2> are equivalent for
  * <info_1> and <info_2>, respectively.
- * If the <global_node_list1> is supplied, instead of matching node pointers from
- * <info_1>, the global node of the same identifier is compared. Used in
- * "can be merged" code when non-global nodes are in the element.
- * If <differences_are_errors> is set, differences are reported as errors. This
- * will be the case for 'can be merged' code, but not for determining if field
- * headers have to change in output files.
  */
 static bool FE_element_field_components_match(
 	struct FE_element_field_component *component_1,
 	struct FE_element_node_scale_field_info *info_1,
-	struct LIST(FE_node) *global_node_list1,
 	struct FE_element_field_component *component_2,
-	struct FE_element_node_scale_field_info *info_2,
-	int differences_are_errors)
+	struct FE_element_node_scale_field_info *info_2)
 {
 	if (component_1 && info_1 && component_2 && info_2)
 	{
@@ -16363,11 +16261,8 @@ static bool FE_element_field_components_match(
 			(component_1->basis != component_2->basis) ||
 			(component_1->modify != component_2->modify))
 		{
-			if (differences_are_errors)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_components_match.  Inconsistent type or basis");
-			}
+			//display_message(ERROR_MESSAGE,
+			//	"FE_element_field_components_match.  Inconsistent type or basis");
 			return false;
 		}
 
@@ -16379,11 +16274,8 @@ static bool FE_element_field_components_match(
 			(scale_factor_set1 && (scale_factor_set1 != scale_factor_set2) &&
 				(0 != strcmp(scale_factor_set1->getName(), scale_factor_set2->getName()))))
 		{
-			if (differences_are_errors)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_field_components_match.  Different scale factor sets");
-			}
+			//display_message(ERROR_MESSAGE,
+			//	"FE_element_field_components_match.  Different scale factor sets");
 			return false;
 		}
 
@@ -16413,11 +16305,8 @@ static bool FE_element_field_components_match(
 				}
 				if (number_of_scale_factors1 != number_of_scale_factors2)
 				{
-					if (differences_are_errors)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  Different numbers of scale factors in sets");
-					}
+					//display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
+					//	"Different numbers of scale factors in sets");
 					return false;
 				}
 
@@ -16434,10 +16323,7 @@ static bool FE_element_field_components_match(
 						if ((*standard_node_map_1) && (*standard_node_map_2) &&
 							(node1 = (info_1->nodes)[(*standard_node_map_1)->node_index]) &&
 							(node2 = (info_2->nodes)[(*standard_node_map_2)->node_index]) &&
-							(((!global_node_list1) && (node1 == node2)) ||
-								(global_node_list1 && (node2 ==
-									FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-										get_FE_node_identifier(node1), global_node_list1)))) &&
+							(node1 == node2) &&
 							((k = (*standard_node_map_1)->number_of_nodal_values) ==
 								(*standard_node_map_2)->number_of_nodal_values) &&
 							(value_index_1 =
@@ -16466,35 +16352,23 @@ static bool FE_element_field_components_match(
 							}
 							else
 							{
-								if (differences_are_errors)
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_field_components_match.  "
-										"Inconsistent indexes in standard node to element map");
-								}
+								// display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
+								//	"Inconsistent indexes in standard node to element map");
 								return false;
 							}
 						}
 						else
 						{
-							if (differences_are_errors)
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_field_components_match.  "
-									"Inconsistent standard node to element maps");
-							}
+							//display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
+							//	"Inconsistent standard node to element maps");
 							return false;
 						}
 					}
 				}
 				else
 				{
-					if (differences_are_errors)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  "
-							"Different or invalid standard node to element maps");
-					}
+					//display_message(ERROR_MESSAGE, "FE_element_field_components_match.  "
+					//	"Different or invalid standard node to element maps");
 					return false;
 				}
 			} break;
@@ -16503,21 +16377,15 @@ static bool FE_element_field_components_match(
 				int numberOfMaps = component_1->map.general_map_based.number_of_maps;
 				if (numberOfMaps != component_2->map.general_map_based.number_of_maps)
 				{
-					if (differences_are_errors)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  Different numbers of element DOF maps");
-					}
+					//display_message(ERROR_MESSAGE,
+					//	"FE_element_field_components_match.  Different numbers of element DOF maps");
 					return false;
 				}
-				ElementDOFMapMatchCache cache(component_1->get_scale_factor_set(), info_1, info_2, global_node_list1);
+				ElementDOFMapMatchCache cache(component_1->get_scale_factor_set(), info_1, info_2);
 				if (cache.numberOfScaleFactors1 != cache.numberOfScaleFactors2)
 				{
-					if (differences_are_errors)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  Different numbers of scale factors for basis");
-					}
+					//display_message(ERROR_MESSAGE,
+					//	"FE_element_field_components_match.  Different numbers of scale factors for basis");
 					return false;
 				}
 				// could compare scale factors here, otherwise make them overwritable
@@ -16527,11 +16395,8 @@ static bool FE_element_field_components_match(
 				{
 					if (!maps1[j]->matchesWithInfo(maps2[j], cache))
 					{
-						if (differences_are_errors)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_field_components_match.  Element DOF map %d is different", j + 1);
-						}
+						//display_message(ERROR_MESSAGE,
+						//	"FE_element_field_components_match.  Element DOF map %d is different", j + 1);
 						return false;
 					}
 				}
@@ -16552,11 +16417,8 @@ static bool FE_element_field_components_match(
 				}
 				if (j)
 				{
-					if (differences_are_errors)
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_field_components_match.  Inconsistent grids");
-					}
+					//display_message(ERROR_MESSAGE,
+					//	"FE_element_field_components_match.  Inconsistent grids");
 					return false;
 				}
 			} break;
@@ -16881,109 +16743,46 @@ the field in <element_field> is already used in the list.
 	return (return_code);
 } /* FE_element_field_add_to_list_no_field_duplication */
 
-static int FE_element_fields_match(struct FE_element_field *element_field_1,
+/**
+ * Returns true if <element_field_1> and <element_field_2> produce equivalent
+ * results with <info_1> and <info_2>, respectively.
+ */
+static bool FE_element_fields_match(struct FE_element_field *element_field_1,
 	struct FE_element_node_scale_field_info *info_1,
-	struct LIST(FE_node) *global_node_list1,
 	struct FE_element_field *element_field_2,
-	struct FE_element_node_scale_field_info *info_2,
-	int ignore_field_and_time_sequence, int differences_are_errors)
-/*******************************************************************************
-LAST MODIFIED : 7 May 2003
-
-DESCRIPTION :
-Returns true if <element_field_1> and <element_field_2> produce equivalent
-results with <info_1> and <info_2>, respectively. No comparison of field and
-time_sequence members will be made if <ignore_field_and_time_sequence> is set.
-If the <global_node_list1> is supplied, instead of matching node pointers from
-<info_1>, the global node of the same identifier is compared. Used in
-"can be merged" code when used non-global nodes are in the element.
-Use with caution!
-If <differences_are_errors> is set, differences are reported as errors. This
-will be the case for 'can be merged' code, but not for determining if field
-headers have to change in output files.
-???RC FE_element_field does not have time_sequence -- yet.
-==============================================================================*/
+	struct FE_element_node_scale_field_info *info_2)
 {
-	int i, number_of_components, return_code;
-	struct FE_element_field_component **component_1,**component_2;
-
-	ENTER(FE_element_fields_match);
 	if (element_field_1 && info_1 && element_field_2 && info_2)
 	{
-		if (ignore_field_and_time_sequence || (element_field_1->field &&
-			(element_field_1->field == element_field_2->field)))
+		FE_field *field = element_field_1->field;
+		if (field && (element_field_2->field == field))
 		{
-			if ((number_of_components =
-				get_FE_field_number_of_components(element_field_1->field)) ==
-				get_FE_field_number_of_components(element_field_2->field))
+			int number_of_components = get_FE_field_number_of_components(field);
+			FE_element_field_component **component_1 = element_field_1->components;
+			FE_element_field_component **component_2 = element_field_2->components;
+			if (component_1 && component_2)
 			{
-				if ((component_1 = element_field_1->components) &&
-					(component_2 = element_field_2->components))
+				// only GENERAL_FE_FIELD has components to check
+				if (GENERAL_FE_FIELD == field->fe_field_type)
 				{
-					return_code = 1;
-					/* only GENERAL_FE_FIELD has components to check */
-					if (GENERAL_FE_FIELD == element_field_1->field->fe_field_type)
+					for (int i = number_of_components; (0 < i); i--)
 					{
-						for (i = number_of_components; (return_code) && (0 < i); i--)
+						if (FE_element_field_components_match(*component_1, info_1,
+							*component_2, info_2))
 						{
-							if (FE_element_field_components_match(*component_1, info_1,
-								global_node_list1, *component_2, info_2, differences_are_errors))
-							{
-								component_1++;
-								component_2++;
-							}
-							else
-							{
-								if (differences_are_errors)
-								{
-									display_message(ERROR_MESSAGE,
-										"Field components do not match");
-								}
-								return_code = 0;
-							}
+							component_1++;
+							component_2++;
 						}
+						else
+							return false;
 					}
 				}
-				else
-				{
-					if (differences_are_errors)
-					{
-						display_message(ERROR_MESSAGE,
-							"Missing element field component arrays");
-					}
-					return_code = 0;
-				}
-			}
-			else
-			{
-				if (differences_are_errors)
-				{
-					display_message(ERROR_MESSAGE,
-						"Number of components in element field do not match");
-				}
-				return_code = 0;
+				return true;
 			}
 		}
-		else
-		{
-			if (differences_are_errors)
-			{
-				display_message(ERROR_MESSAGE,
-					"Fields in element field do not match");
-			}
-			return_code = 0;
-		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_fields_match.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_fields_match */
+	return false;
+}
 
 #if !defined (WINDOWS_DEV_FLAG)
 /***************************************************************************//**
@@ -17370,7 +17169,6 @@ static int merge_FE_element_field_into_list(
 	int i, j, k, *new_number_in_xi, *new_value_index, new_values_storage_size,
 		node_index, *number_in_xi, number_of_values,
 		return_code, *value_index;
-	struct FE_element_field *element_field;
 	struct FE_element_field_component **component, **new_component;
 	struct FE_element_field_lists_merge_data *data;
 	struct FE_element_node_scale_field_info *merge_info, *source_info;
@@ -17379,7 +17177,6 @@ static int merge_FE_element_field_into_list(
 	struct Standard_node_to_element_map **new_standard_node_map,
 		**standard_node_map;
 
-	ENTER(merge_FE_element_field_into_list);
 	if (new_element_field && (field = new_element_field->field) &&
 		(data = (struct FE_element_field_lists_merge_data *)data_void) &&
 		data->list)
@@ -17389,8 +17186,9 @@ static int merge_FE_element_field_into_list(
 
 		return_code = 1;
 		/* check if the new element field is in the existing list */
-		if (NULL != (element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
-			field, data->list)))
+		FE_element_field *element_field =
+			FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(field, data->list);
+		if (element_field)
 		{
 			/* only GENERAL_FE_FIELD has components to check for merge */
 			if (GENERAL_FE_FIELD == field->fe_field_type)
@@ -17407,8 +17205,7 @@ static int merge_FE_element_field_into_list(
 						while (return_code && (i > 0))
 						{
 							if (FE_element_field_components_match(*component, merge_info,
-								/*global_node_list1*/(struct LIST(FE_node) *)NULL,
-								*new_component, source_info, /*differences_are_errors*/1))
+								*new_component, source_info))
 							{
 								component++;
 								new_component++;
@@ -17416,10 +17213,10 @@ static int merge_FE_element_field_into_list(
 							}
 							else
 							{
-								display_message(ERROR_MESSAGE,
-									"merge_FE_element_field_into_list.  "
-									"Inconsistent element field components");
-								return_code = 0;
+								// replace if different
+								REMOVE_OBJECT_FROM_LIST(FE_element_field)(element_field, data->list);
+								element_field = 0;
+								break;
 							}
 						}
 					}
@@ -17439,10 +17236,10 @@ static int merge_FE_element_field_into_list(
 				}
 			}
 		}
-		else
+		if (!element_field)
 		{
-			/* add the new element field */
-			if (NULL != (element_field = CREATE(FE_element_field)(field)))
+			element_field = CREATE(FE_element_field)(field);
+			if (element_field)
 			{
 				/* only GENERAL_FE_FIELD has components to copy for merge */
 				if (GENERAL_FE_FIELD == field->fe_field_type)
@@ -17682,10 +17479,8 @@ static int merge_FE_element_field_into_list(
 			"merge_FE_element_field_into_list.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* merge_FE_element_field_into_list */
+}
 
 int calculate_grid_field_offsets(int element_dimension,
 	int top_level_element_dimension, const int *top_level_number_in_xi,
@@ -18609,47 +18404,42 @@ they are, should follow pattern of FE_node_field_copy_values_storage.
 	return (return_code);
 } /* FE_element_field_copy_values_storage */
 
+/**
+ * For each field in <new_element_field_list> requiring values storage, finds the
+ * equivalent element field in either <element>, <add_element> or both. If only one
+ * of <element> or <add_element> contains an equivalent element field, those values
+ * are copied. If there is an equivalent element field in both, behaviour depends
+ * on whether the element fields have times:
+ * if the element fields have no times, values are taken from <add_element>.
+ * if the element fields have times, the times arrays are allocated, then the
+ * values at times in <element> are copied, followed by those in <add_element>.
+ * Hence, the values in <add_element> take preference over those in <element>.
+ * Notes:
+ * Must be an equivalent element field at either <element> or <add_element>;
+ * <add_element> is optional and used only by merge_FE_element. If NULL then an
+ * element field must be found in <element>;
+ * Values_storage must already be allocated to the appropriate size but is not
+ * assumed to contain any information prior to being filled here;
+ * Any objects or arrays referenced in the values_storage are accessed or
+ * allocated in the new <values_storage> so <element> and <add_element> are
+ * unchanged.
+ * It is up to the calling function to have checked that the element fields in
+ * <element>, <add_element> and <new_element_field_list> are compatible.
+ * ???RC Ignore references to times in the above since not yet implemented; once
+ * they are, should follow pattern of merge_FE_node_values_storage.
+ */
 static int copy_FE_element_values_storage(struct FE_element *element,
 	Value_storage *values_storage,
 	struct LIST(FE_element_field) *new_element_field_list,
 	struct FE_element *add_element)
-/*******************************************************************************
-LAST MODIFIED: 4 November 2002
-
-DESCRIPTION:
-For each field in <new_element_field_list> requiring values storage, finds the
-equivalent element field in either <element>, <add_element> or both. If only one
-of <element> or <add_element> contains an equivalent element field, those values
-are copied. If there is an equivalent element field in both, behaviour depends
-on whether the element fields have times:
-* if the element fields have no times, values are taken from <add_element>.
-* if the element fields have times, the times arrays are allocated, then the
-values at times in <element> are copied, followed by those in <add_element>.
-Hence, the values in <add_element> take preference over those in <element>.
-Notes:
-* must be an equivalent element field at either <element> or <add_element>;
-* <add_element> is optional and used only buy merge_FE_element. If NULL then an
-element field must be found in <element>;
-* Values_storage must already be allocated to the appropriate size but is not
-assumed to contain any information prior to being filled here;
-* Any objects or arrays referenced in the values_storage are accessed or
-allocated in the new <values_storage> so <element> and <add_element> are
-unchanged.
-* It is up to the calling function to have checked that the element fields in
-<element>, <add_element> and <new_element_field_list> are compatible.
-???RC Ignore references to times in the above since not yet implemented; once
-they are, should follow pattern of merge_FE_node_values_storage.
-==============================================================================*/
 {
 	int dimension, return_code;
-	struct FE_element_field_copy_values_storage_data copy_data;
-
-	ENTER(copy_FE_element_values_storage);
 	if (element && (dimension = get_FE_element_dimension(element)) &&
 		element->fields && new_element_field_list &&
 		((!add_element) || (add_element->fields &&
 			(get_FE_element_dimension(add_element) == dimension))))
 	{
+		struct FE_element_field_copy_values_storage_data copy_data;
 		copy_data.dimension = dimension;
 		copy_data.new_values_storage = values_storage;
 		copy_data.old_element_field_list = element->fields->element_field_list;
@@ -18689,10 +18479,8 @@ they are, should follow pattern of merge_FE_node_values_storage.
 			"copy_FE_element_values_storage.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* copy_FE_element_values_storage */
+}
 
 static int free_element_grid_map_values_storage(
 	struct FE_element_field *element_field, void *values_storage_void)
@@ -18842,6 +18630,8 @@ FE_element_node_scale_field_info *FE_element_node_scale_field_info::cloneWithout
  * On successful return the changedScaleFactorSets contains the list of sets
  * whose values have been added or overwritten. It is up to the caller to
  * propagate change messages for all fields using changed scale factors sets.
+ * Note: nodes and scale factors can become 'orphaned' by this merge if
+ * replacing field definitions i.e. they are stored but unused.
  */
 FE_element_node_scale_field_info *FE_element_node_scale_field_info::createMergeWithoutValuesStorage(
 	FE_element_node_scale_field_info& targetInfo,
@@ -24670,47 +24460,27 @@ nine values returned, regardless of the element dimension.
 	return (return_code);
 } /* calculate_FE_element_anatomical */
 
-int equivalent_FE_field_in_elements(struct FE_field *field,
+bool equivalent_FE_field_in_elements(struct FE_field *field,
 	struct FE_element *element_1, struct FE_element *element_2)
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Returns true if <field> is equivalently listed in the field information for
-<element_1> and <element_2>. If neither element has field information or if they
-do but the field is not defined in either, this is also equivalent.
-==============================================================================*/
 {
-	int return_code;
-	struct FE_element_field *element_field_1, *element_field_2;
-
-	ENTER(equivalent_FE_field_in_elements);
-	return_code = 0;
 	if (field && element_1 && element_1->fields && element_2 && element_2->fields)
 	{
 		if (element_1->fields == element_2->fields)
-		{
-			return_code = 1;
-		}
+			return true;
 		else
 		{
-			element_field_1 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
+			FE_element_field *element_field_1 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
 				field, element_1->fields->element_field_list);
-			element_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
+			FE_element_field *element_field_2 = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field, field)(
 				field, element_2->fields->element_field_list);
-			return_code = ((!element_field_1) && (!element_field_2)) || (
-				element_field_1 && element_1->information &&
-				element_field_2 && element_2->information &&
+			if (((!element_field_1) && (!element_field_2)) ||
 				FE_element_fields_match(element_field_1, element_1->information,
-					/*global_node_list1*/(struct LIST(FE_node) *)NULL,
-					element_field_2, element_2->information,
-					/*ignore_field_and_time_sequence*/0, /*differences_are_errors*/0));
+					element_field_2, element_2->information))
+				return true;
 		}
 	}
-	LEAVE;
-
-	return (return_code);
-} /* equivalent_FE_field_in_elements */
+	return false;
+}
 
 int equivalent_FE_fields_in_elements(struct FE_element *element_1,
 	struct FE_element *element_2)
@@ -26571,7 +26341,7 @@ int FE_element_add_faces_not_in_list(struct FE_element *element,
 } /* FE_element_add_faces_not_in_list */
 
 static int FE_element_shape_and_faces_match(struct FE_element *element1,
-	struct FE_region *global_fe_region1,
+	struct FE_region *find_faces_fe_region,
 	struct FE_element *element2)
 /*******************************************************************************
 LAST MODIFIED : 25 March 2003
@@ -26580,9 +26350,9 @@ DESCRIPTION :
 Returns true if <element1> and <element2> have the same shape, and all of their
 faces match. A face match is found if it is either:
 - NULL on either or both of <element1> and <element2>;
-- if <global_element_list1> is NOT supplied, the face pointer is the same;
-- if <global_element_list1> is supplied, the face pointer in <element2> is the
-same as the element from <global_element_list1>.
+- if <find_faces_fe_region> is NOT supplied, the face pointer is the same;
+- if <find_faces_fe_region> is supplied, the face pointer in <element2> is the
+same as the element from <find_faces_fe_region>.
 ==============================================================================*/
 {
 	int i, number_of_faces, return_code;
@@ -26601,9 +26371,9 @@ same as the element from <global_element_list1>.
 					for (i = number_of_faces; (0 < i) && return_code; i--)
 					{
 						if ((!(*face1)) || (!(*face2)) ||
-							((!global_fe_region1) && (*face1 == *face2)) ||
-							(global_fe_region1 &&
-								(FE_region_get_FE_element_from_identifier(global_fe_region1,
+							((!find_faces_fe_region) && (*face1 == *face2)) ||
+							(find_faces_fe_region &&
+								(FE_region_get_FE_element_from_identifier(find_faces_fe_region,
 									element1->shape->dimension - 1, (*face1)->identifier.number)
 									== *face2)))
 						{
@@ -26721,32 +26491,12 @@ static int FE_element_field_FE_field_to_list_if_uses_scale_factor_set(
 
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list)
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Merges the fields from <source> into <destination>. Existing fields in the
-<destination> keep the same element field description as before with new field
-storage following them. Where existing fields in <destination> are passed in
-<source>, values from <source> take precedence, but the element field structure
-remains unchanged.
-Function is atomic; <destination> is unchanged if <source> cannot be merged.
-The <changed_fe_field_list> must be supplied. On return it contains the list
-of FE_fields that have been changed or added to <destination>. Note it is not
-sufficient to assume just the fields in <source> are changed since changes to
-common scale factors affect different fields in <destination>; the
-<change_fe_field_list> includes these fields.
-Note <changed_fe_field_list> is emptied at the start of this function.
-==============================================================================*/
 {
 	int number_of_faces, return_code, values_storage_size;
-	struct FE_element **source_face;
 	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data scale_factor_set_data;
 	struct FE_element_field_info *destination_fields, *element_field_info,
 		*source_fields;
 	struct FE_element_field_lists_merge_data merge_data;
-	struct FE_element_node_scale_field_info *destination_info,
-		*node_scale_field_info, *source_info;
 	struct FE_region *fe_region;
 	struct LIST(FE_element_field) *element_field_list;
 	Value_storage *values_storage;
@@ -26797,9 +26547,9 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 		}
 
 		/* make a merged element node scale field info without values_storage */
-		node_scale_field_info = (struct FE_element_node_scale_field_info *)NULL;
-		destination_info = destination->information;
-		source_info = source->information;
+		FE_element_node_scale_field_info *node_scale_field_info = 0;
+		FE_element_node_scale_field_info *destination_info = destination->information;
+		FE_element_node_scale_field_info *source_info = source->information;
 		if (return_code)
 		{
 			if (destination_info)
@@ -26850,8 +26600,8 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 		}
 		if (return_code)
 		{
-			/* construct an element field list containing the fields from
-				 destination -- these remain unchanged */
+			// create element field list containing fields in destination
+			// these are replaced for new fields from source
 			element_field_list = CREATE_LIST(FE_element_field)();
 			if (COPY_LIST(FE_element_field)(element_field_list,
 				destination_fields->element_field_list))
@@ -26886,14 +26636,12 @@ Note <changed_fe_field_list> is emptied at the start of this function.
 						{
 							/* merge the faces */
 							number_of_faces = source->shape->number_of_faces;
-							source_face = source->faces;
+							struct FE_element **source_face = source->faces;
 							for (int i = 0; i < number_of_faces; i++)
 							{
 								if (*source_face)
-								{
 									set_FE_element_face(destination, i, *source_face);
-								}
-								source_face++;
+								++source_face;
 							}
 							/* put values storage in node_scale_field_info */
 							if (node_scale_field_info)
@@ -28896,221 +28644,41 @@ Returns true if the name of the field in <element_field> matches <field_name>.
 	return (return_code);
 } /* FE_element_field_has_field_with_name */
 
-struct FE_element_field_can_be_merged_data
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Data for passing to FE_element_field_can_be_merged.
-==============================================================================*/
+bool FE_element_can_be_merged(struct FE_element *element,
+	struct FE_region *global_fe_region)
 {
-	struct FE_element_node_scale_field_info *info, *other_info;
-	struct LIST(FE_element_field) *other_element_field_list;
-	/* optional global_node_list1 to be passed when the nodes in <info> are
-		 non-global and need to be substituted with the global node of the same
-		 identifier */
-	struct LIST(FE_node) *global_node_list1;
-};
-
-static int FE_element_field_can_be_merged(
-	struct FE_element_field *element_field, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Fetches an element_field with field of the same name as that in <element_field>
-from <element_field_list>. Returns true if there is either no such element_field
-in the list or the two element_fields are identically defined apart from the
-field itself. Checks first that the FE_fields match.
-<data_void> points at a struct FE_element_field_can_be_merged_data.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_field *other_element_field;
-	struct FE_element_field_can_be_merged_data *data;
-
-	ENTER(FE_element_field_can_be_merged);
-	return_code = 0;
-	if (element_field && element_field->field &&
-		(data = (struct FE_element_field_can_be_merged_data *)data_void))
-	{
-		if (NULL != (other_element_field = FIRST_OBJECT_IN_LIST_THAT(FE_element_field)(
-			FE_element_field_has_field_with_name, (void *)element_field->field->name,
-			data->other_element_field_list)))
-		{
-			if (FE_fields_match_fundamental(element_field->field,
-				other_element_field->field))
-			{
-				if (FE_element_fields_match(element_field, data->info,
-					data->global_node_list1, other_element_field, data->other_info,
-					/*ignore_field_and_time_sequence*/1, /*differences_are_errors*/1))
-				{
-					return_code = 1;
-				}
-			}
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_can_be_merged.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_can_be_merged */
-
-int FE_element_can_be_merged(struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 7 May 2003
-
-DESCRIPTION :
-Fetches an element with the same identifier as <element> from the <data>
-<element_list>. Returns true if either:
-1. There is no namesake element and <element> has a valid shape.
-2. There is a namesake element and <element> has an "unspecified" shape of the
-same dimension as it, but no fields.
-3. There is a namesake element with the same valid shape and all element fields
-in common with the same-named field are defined identically apart from field
-pointer and times.
-Since the element in question may refer to non-global nodes from a separate
-region, the <global_node_list> is provided to substitute the appropriate
-global node when comparing element field components. Note the nodes are
-expected to have already passed their own "can be merged" check.
-Additionally, each nodally-based field in <element> is checked for appropriate
-definition of that field in the nodes in <element>, or if the field is
-undefined there, of the same-named field of the same-numbered node in the
-<global_node_list>.
-After using the function, deallocate data->compatible_element_field_info!
-<data_void> points at a struct FE_element_can_be_merged_data.
-???RC Check on definition of node field has not been written.
-==============================================================================*/
-{
-	int i, return_code, unspecified_element_shape;
-	struct FE_element *global_element;
-	struct FE_element_field_info **element_field_info;
-	struct FE_element_can_be_merged_data *data;
-	struct FE_element_field_can_be_merged_data field_merge_data;
-
-	ENTER(FE_element_can_be_merged);
-	return_code = 0;
-	if (element && element->fields &&
-		(data = (struct FE_element_can_be_merged_data *)data_void) &&
-		data->global_fe_region)
+	if (element && global_fe_region)
 	{
 		int dimension = get_FE_element_dimension(element);
-		global_element = FE_region_get_FE_element_from_identifier(
-			data->global_fe_region, dimension, element->identifier.number);
-		unspecified_element_shape = FE_element_shape_is_unspecified(element->shape);
-		if (unspecified_element_shape)
+		FE_element *global_element = FE_region_get_FE_element_from_identifier(
+			global_fe_region, dimension, element->identifier.number);
+		if (FE_element_shape_is_unspecified(element->shape))
 		{
-			/* unspecified shape used to indicate a dummy element, mainly to indicate
-				 element:xi values in elements not read in from the same file. Element
-				 must have no fields and a global namesake of the same dimension */
-			if (global_element &&
-				(get_FE_element_dimension(global_element) == dimension) &&
-				(0 == NUMBER_IN_LIST(FE_element_field)(
-					element->fields->element_field_list)))
+			// unspecified shape is used for nodal element:xi values when/ element is
+			// not read in from the same file, but could in future be used for
+			// reading field definitions without shape information.
+			// Must find a matching global element.
+			if (!global_element)
 			{
-				return_code = 1;
+				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global region",
+					dimension, element->identifier.number);
+				return false;
 			}
-			else
+		}
+		else if (global_element)
+		{
+			if (!FE_element_shape_and_faces_match(element, global_fe_region, global_element))
 			{
 				display_message(ERROR_MESSAGE,
-					"%s %d is not found in global element list",
-					CM_element_type_string(element->identifier.type), element->identifier.number);
+					"%d-D element %d shape and faces are not compatible with global element.",
+					dimension, element->identifier.number);
+				return false;
 			}
 		}
-		else
-		{
-			if (global_element)
-			{
-				if (FE_element_shape_and_faces_match(element, data->global_fe_region,
-					global_element))
-				{
-					/* check consistency of definitions of fields of the same name in
-						 element and global_element */
-					/* fast path: check if the element_field_info have already been proved
-						 compatible */
-					element_field_info = data->compatible_element_field_info;
-					for (i = 0; (i < data->number_of_compatible_element_field_info) &&
-						(!return_code); i++)
-					{
-						if ((*element_field_info == element->fields) &&
-							(*(element_field_info + 1) == global_element->fields))
-						{
-							return_code = 1;
-						}
-						element_field_info += 2;
-					}
-					if (!return_code)
-					{
-						field_merge_data.info = element->information;
-						field_merge_data.other_info = global_element->information;
-						field_merge_data.other_element_field_list =
-							global_element->fields->element_field_list;
-						field_merge_data.global_node_list1 = data->global_node_list;
-						/* slow path: loop through element fields */
-						if (FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-							FE_element_field_can_be_merged, (void *)&field_merge_data,
-							element->fields->element_field_list))
-						{
-							/* store combination of element field info in compatible list */
-							if (REALLOCATE(element_field_info,
-								data->compatible_element_field_info,
-								struct FE_element_field_info *,
-								2*(data->number_of_compatible_element_field_info + 1)))
-							{
-								element_field_info[
-									data->number_of_compatible_element_field_info*2] =
-									element->fields;
-								element_field_info[
-									data->number_of_compatible_element_field_info*2 + 1] =
-									global_element->fields;
-								data->compatible_element_field_info = element_field_info;
-								data->number_of_compatible_element_field_info++;
-								return_code = 1;
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "FE_element_can_be_merged.  "
-									"Could not reallocate compatible_element_field_info");
-							}
-						}
-					}
-					if (return_code)
-					{
-						/* check fields are appropriately defined on either nodes in
-							 fe_region or nodes in global_fe_region */
-						/*???RC Yet to be written! */
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "FE_element_can_be_merged.  "
-						"%d-D element %d shape and faces are not compatible.",
-						dimension, element->identifier.number);
-				}
-			}
-			else
-			{
-				return_code = 1;
-			}
-		}
+		return true;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_can_be_merged.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_can_be_merged */
+	return false;
+}
 
 int ensure_FE_element_is_in_list(struct FE_element *element,
 	void *element_list_void)

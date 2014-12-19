@@ -2037,16 +2037,13 @@ int FE_element_meets_topological_criteria(struct FE_element *element,
 	int dimension, int exterior, cmzn_element_face_type face,
 	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
 
-int equivalent_FE_field_in_elements(struct FE_field *field,
+/**
+ * Returns true if <field> is equivalently listed in the field information for
+ * <element_1> and <element_2>. If neither element has field information or if they
+ * do but the field is not defined in either, this is also equivalent.
+ */
+bool equivalent_FE_field_in_elements(struct FE_field *field,
 	struct FE_element *element_1, struct FE_element *element_2);
-/*******************************************************************************
-LAST MODIFIED : 10 September 2001
-
-DESCRIPTION :
-Returns true if <field> is equivalently listed in the field information for
-<element_1> and <element_2>. If neither element has field information or if they
-do but the field is not defined in either, this is also equivalent.
-==============================================================================*/
 
 int equivalent_FE_fields_in_elements(struct FE_element *element_1,
 	struct FE_element *element_2);
@@ -2556,25 +2553,19 @@ Data for FE_element_add_faces_not_in_list function.
 int FE_element_add_faces_not_in_list(struct FE_element *element,
 	void *data_void);
 
+/**
+ * Merges/adds fields from <source> into <destination>. Where existing fields
+ * in <destination> are passed in <source>, the <source> definition and values
+ * replace them, otherwise the existing definition and values are maintained.
+ * Function is atomic; <destination> is unchanged if <source> cannot be merged.
+ * The <changed_fe_field_list> must be supplied. On return it contains the list
+ * of FE_fields that have been changed or added to <destination>. Note it is
+ * not sufficient to assume just the fields in <source> are changed since
+ * changes to common scale factors affect different fields in <destination>;
+ * the <change_fe_field_list> includes these fields.
+ */
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list);
-/*******************************************************************************
-LAST MODIFIED : 30 May 2003
-
-DESCRIPTION :
-Merges the fields from <source> into <destination>. Existing fields in the
-<destination> keep the same element field description as before with new field
-storage following them. Where existing fields in <destination> are passed in
-<source>, values from <source> take precedence, but the element field structure
-remains unchanged.
-Function is atomic; <destination> is unchanged if <source> cannot be merged.
-The <changed_fe_field_list> must be supplied. On return it contains the list
-of FE_fields that have been changed or added to <destination>. Note it is not
-sufficient to assume just the fields in <source> are changed since changes to
-common scale factors affect different fields in <destination>; the
-<change_fe_field_list> includes these fields.
-???RC Move to finite_element_private.h?
-==============================================================================*/
 
 /***************************************************************************//**
  * Writes to the console the element identifier and details of the fields
@@ -2743,36 +2734,35 @@ Returns true if <field> has exactly the same <name>, <field_info>... etc. as
 those given in the parameters.
 ==============================================================================*/
 
-int FE_fields_match_fundamental(struct FE_field *field1,
+/**
+ * Returns true if <field1> and <field2> have the same fundamental definition,
+ * namely they:
+ * 1. Have the same value type
+ * 2. Have the same fe field type (general, indexed etc.)
+ * 3. Have the same number of components
+ * 4. Have the same coordinate system
+ * If so, they can be merged without affecting the rest of the model.
+ * Other attributes such as cm field type (field, coordinate, anatomical) are
+ * not considered fundamental. The name is also not compared.
+ * Must ensure this function fits with FE_fields_match_exact.
+ */
+bool FE_fields_match_fundamental(struct FE_field *field1,
 	struct FE_field *field2);
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
 
-DESCRIPTION :
-Returns true if <field1> and <field2> describe the same fundamental quantities
-including number of components, value type etc. which should be sufficient to
-allow field1 and field2 to be interchanged without affecting the rest of the
-program. Check this function fits will with FE_fields_match_exact.
-Does not check the fields have the same name as this is a trivial change.
-==============================================================================*/
+/**
+ * Returns true if <field1> and <field2> have exactly the same definition,
+ * comparing all attributes.
+ * @see FE_fields_match_fundamental
+ */
+bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
 
-int FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
-/*******************************************************************************
-LAST MODIFIED : 16 December 2002
-
-DESCRIPTION :
-Returns true if <field1> and <field2> have exactly the same contents.
-==============================================================================*/
-
-int FE_field_can_be_merged(struct FE_field *field, void *field_list_void);
-/*******************************************************************************
-LAST MODIFIED : 14 November 2002
-
-DESCRIPTION :
-Fetches a field with the same name as <field> from <field_list>.
-Returns true if there is either no such field in the list or two fields are
-identically defined.
-==============================================================================*/
+/**
+ * List iterator function which fetches a field with the same name as <field>
+ * from <field_list>. Returns 1 (true) if there is either no such field in the
+ * list or the two fields return true for FE_fields_match_fundamental(),
+ * otherwise returns 0 (false).
+ */
+int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
 
 int FE_field_has_multiple_times(struct FE_field *fe_field);
 /*******************************************************************************
@@ -3433,59 +3423,18 @@ DESCRIPTION :
 Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
 ==============================================================================*/
 
-struct FE_element_can_be_merged_data
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Data to be passed to FE_element_can_be_merged.
-<number_of_compatible_element_field_info> and <compatible_element_field_info>
-must be cleared before first call to 0 and NULL respectively. After using the
-function, the <compatible_element_field_info> array must be deallocated. Note
-this array grows in increments of 2 since first element_field_info of the pair
-is that of a element passed to the function, every second info is that of its
-counterpart obtained from <element_list>.
-Since the element in question may refer to non-global nodes from a separate
-region, the <global_node_list> is provided to substitute the appropriate
-global node when comparing element field components. Note the nodes are
-expected to have already passed their own "can be merged" check.
-If the field is not defined on the nodes in the element, can alternatively
-accept definition of the same-named field in same-numbered node from
-<global_node_list>.
-==============================================================================*/
-{
-	int number_of_compatible_element_field_info;
-	/* store in pairs in the single array to reduce allocations */
-	struct FE_element_field_info **compatible_element_field_info;
-	struct FE_region *global_fe_region;
-	struct LIST(FE_node) *global_node_list;
-}; /* struct FE_element_can_be_merged_data */
-
-int FE_element_can_be_merged(struct FE_element *element, void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Fetches an element with the same identifier as <element> from the <data>
-<element_list>. Returns true if either:
-1. There is no namesake element and <element> has a valid shape.
-2. There is a namesake element and <element> has an "unspecified" shape of the
-same dimension as it, but no fields.
-3. There is a namesake element with the same valid shape and all element fields
-in common with the same-named field are defined identically apart from field
-pointer and times.
-Since the element in question may refer to non-global nodes from a separate
-region, the <global_node_list> is provided to substitute the appropriate
-global node when comparing element field components. Note the nodes are
-expected to have already passed their own "can be merged" check.
-Additionally, each nodally-based field in <element> is checked for appropriate
-definition of that field in the nodes in <element>, or if the field is
-undefined there, of the same-named field of the same-numbered node in the
-<global_node_list>.
-After using the function, deallocate data->compatible_element_field_info!
-<data_void> points at a struct FE_element_can_be_merged_data.
-???RC Check on definition of node field has not been written.
-==============================================================================*/
+/**
+ * Fetches an element with the same identifier as <element> from the <data>
+ * <element_list>. Returns true if either:
+ * 1. There is no namesake element and <element> has a valid shape.
+ * 2. There is a namesake element and <element> has an "unspecified" shape of the
+ * same dimension as it, but no fields.
+ * 3. There is a namesake element with the same shape and compatible faces
+ * (meaning they match or either element has no faces).
+ * No field checks are made as element field definitions can be replaced during merge.
+ */
+bool FE_element_can_be_merged(struct FE_element *element,
+	struct FE_region *global_fe_region);
 
 int ensure_FE_element_is_in_list(struct FE_element *element,
 	void *element_list_void);

@@ -24,6 +24,7 @@ Types used only internally to computed fields.
 #include "computed_field/field_cache.hpp"
 #include "computed_field/computed_field.h"
 #include "general/debug.h"
+#include "general/manager_private.h"
 #include "region/cmiss_region.h"
 
 /**
@@ -520,20 +521,7 @@ DESCRIPTION :
 		return result;
 	}
 
-	inline FieldValueCache *evaluate(cmzn_fieldcache& cache)
-	{
-		FieldValueCache *valueCache = getValueCache(cache);
-		// GRC: move derivatives to a separate value cache in future
-		if ((valueCache->evaluationCounter < cache.getLocationCounter()) ||
-			(cache.getRequestedDerivatives() && (!valueCache->hasDerivatives())))
-		{
-			if (core->evaluate(cache, *valueCache))
-				valueCache->evaluationCounter = cache.getLocationCounter();
-			else
-				valueCache = 0;
-		}
-		return valueCache;
-	}
+	inline FieldValueCache *evaluate(cmzn_fieldcache& cache);
 
 	/** @param numberOfDerivatives  positive number of xi dimension of element location */
 	inline RealFieldValueCache *evaluateWithDerivatives(cmzn_fieldcache& cache, int numberOfDerivatives)
@@ -665,6 +653,27 @@ struct Computed_field_compare_name
 
 typedef cmzn_set<Computed_field *,Computed_field_compare_name> cmzn_set_cmzn_field;
 
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Computed_field, struct cmzn_region, struct cmzn_field_change_detail *);
+
+inline FieldValueCache *Computed_field::evaluate(cmzn_fieldcache& cache)
+{
+	FieldValueCache *valueCache = getValueCache(cache);
+	// GRC: move derivatives to a separate value cache in future
+	if ((valueCache->evaluationCounter < cache.getLocationCounter()) ||
+		(cache.getRequestedDerivatives() && (!valueCache->hasDerivatives())))
+	{
+		if (core->evaluate(cache, *valueCache))
+		{
+			// this disables field value caching between manager begin/end change
+			if (0 == this->manager->cache)
+				valueCache->evaluationCounter = cache.getLocationCounter();
+		}
+		else
+			valueCache = 0;
+	}
+	return valueCache;
+}
+
 struct cmzn_fielditerator : public cmzn_set_cmzn_field::ext_iterator
 {
 private:
@@ -712,11 +721,17 @@ char *Computed_field_manager_get_unique_field_name(
 	struct MANAGER(Computed_field) *manager, const char *stem_name="temp",
 	const char *separator="", int first_number=-1);
 
-/***************************************************************************//**
+/**
  * Create an iterator for the objects in the manager.
  */
 cmzn_fielditerator_id Computed_field_manager_create_iterator(
 	struct MANAGER(Computed_field) *manager);
+
+/**
+ * Create an iterator for the objects in the list.
+ */
+cmzn_fielditerator_id Computed_field_list_create_iterator(
+	struct LIST(Computed_field) *list);
 
 /***************************************************************************//**
  * Return index of field in field cache.

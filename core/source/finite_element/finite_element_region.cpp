@@ -847,16 +847,13 @@ static struct FE_element_field_info *FE_region_clone_FE_element_field_info(
 	struct FE_region *fe_region,
 	struct FE_element_field_info *fe_element_field_info)
 {
-	struct FE_element_field_info *clone_fe_element_field_info;
-	struct LIST(FE_element_field) *fe_element_field_list;
-
-	ENTER(FE_region_clone_FE_element_field_info);
-	clone_fe_element_field_info = (struct FE_element_field_info *)NULL;
+	FE_element_field_info *clone_fe_element_field_info = 0;
 	if (fe_region && fe_element_field_info)
 	{
-		fe_element_field_list = FE_element_field_list_clone_for_FE_region(
-			FE_element_field_info_get_element_field_list(fe_element_field_info),
-			fe_region);
+		struct LIST(FE_element_field) *fe_element_field_list =
+			FE_element_field_list_clone_for_FE_region(
+				FE_element_field_info_get_element_field_list(fe_element_field_info),
+				fe_region);
 		if (fe_element_field_list)
 		{
 			clone_fe_element_field_info = FE_region_get_FE_element_field_info(
@@ -874,10 +871,8 @@ static struct FE_element_field_info *FE_region_clone_FE_element_field_info(
 		display_message(ERROR_MESSAGE,
 			"FE_region_clone_FE_element_field_info.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (clone_fe_element_field_info);
-} /* FE_region_clone_FE_element_field_info */
+}
 
 int FE_region_remove_FE_element_field_info(struct FE_region *fe_region,
 	struct FE_element_field_info *fe_element_field_info)
@@ -962,6 +957,20 @@ int FE_region_end_change(struct FE_region *fe_region)
 		}
 	}
 	return 0;
+}
+
+bool FE_field_has_cached_changes(FE_field *fe_field)
+{
+	FE_region *fe_region;
+	if (fe_field && (fe_region = FE_field_get_FE_region(fe_field)) && (fe_region->change_level))
+	{
+		int change = 0;
+		CHANGE_LOG_QUERY(FE_field)(fe_region->fe_field_changes, fe_field, &change);
+		if (change & (CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_field) | 
+			CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field)))
+			return true;
+	}
+	return false;
 }
 
 static int FE_region_remove_FE_element_private(struct FE_region *fe_region,
@@ -1233,22 +1242,8 @@ struct FE_field *FE_region_get_FE_field_with_properties(
 
 struct FE_field *FE_region_merge_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field)
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Checks <fe_field> is compatible with <fe_region> and any existing FE_field
-using the same identifier, then merges it into <fe_region>.
-If no FE_field of the same identifier exists in FE_region, <fe_field> is added
-to <fe_region> and returned by this function, otherwise changes are merged into
-the existing FE_field and it is returned.
-A NULL value is returned on any error.
-==============================================================================*/
 {
-	struct FE_field *merged_fe_field;
-
-	ENTER(FE_region_merge_FE_field);
-	merged_fe_field = (struct FE_field *)NULL;
+	struct FE_field *merged_fe_field = 0;
 	if (fe_region && fe_field)
 	{
 		if (FE_field_get_FE_region(fe_field) == fe_region)
@@ -1317,10 +1312,8 @@ A NULL value is returned on any error.
 		display_message(ERROR_MESSAGE,
 			"FE_region_merge_FE_field.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (merged_fe_field);
-} /* FE_region_merge_FE_field */
+}
 
 bool FE_nodeset::is_FE_field_in_use(struct FE_field *fe_field)
 {
@@ -2555,11 +2548,7 @@ struct FE_element *FE_region_create_FE_element_copy(struct FE_region *fe_region,
 struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 	struct FE_element *element)
 {
-	struct FE_element *merged_element;
-	struct LIST(FE_field) *changed_fe_field_list;
-
-	ENTER(FE_region_merge_FE_element);
-	merged_element = (struct FE_element *)NULL;
+	struct FE_element *merged_element = 0;
 	if (fe_region && element)
 	{
 		int dimension = get_FE_element_dimension(element);
@@ -2571,29 +2560,25 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 			merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(&identifier, element_list);
 			if (merged_element)
 			{
-				/* since we use merge to add existing elements to list, often no
-						merge will be necessary, hence the following */
+				// nothing to do if merging existing element; happens when adding faces
 				if (merged_element != element)
 				{
-					changed_fe_field_list = CREATE(LIST(FE_field))();
+					struct LIST(FE_field) *changed_fe_field_list = CREATE(LIST(FE_field))();
 					if (changed_fe_field_list)
 					{
 						/* merge fields from element into global merged_element */
-						if (merge_FE_element(merged_element, element,
-							changed_fe_field_list))
+						if (merge_FE_element(merged_element, element, changed_fe_field_list))
 						{
 #if defined (DEBUG_CODE)
 							/*???debug*/printf("FE_region_merge_FE_element: %p OBJECT_NOT_IDENTIFIER_CHANGED element %p\n",fe_region,merged_element);
 #endif /* defined (DEBUG_CODE) */
-							FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region,
-								merged_element,
+							FE_REGION_FE_ELEMENT_FE_FIELD_LIST_CHANGE(fe_region, merged_element,
 								CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element),
 								changed_fe_field_list);
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-								"FE_region_merge_FE_element.  Could not merge %s %d",
+							display_message(ERROR_MESSAGE, "FE_region_merge_FE_element.  Could not merge %s %d",
 								CM_element_type_string(identifier.type), identifier.number);
 							merged_element = (struct FE_element *)NULL;
 						}
@@ -2620,8 +2605,7 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 				}
 				else
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_region_merge_FE_element.  Could not add %s %d",
+					display_message(ERROR_MESSAGE, "FE_region_merge_FE_element.  Could not add %s %d",
 						CM_element_type_string(identifier.type), identifier.number);
 				}
 			}
@@ -2638,8 +2622,6 @@ struct FE_element *FE_region_merge_FE_element(struct FE_region *fe_region,
 		display_message(ERROR_MESSAGE,
 			"FE_region_merge_FE_element.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (merged_element);
 }
 
@@ -3742,35 +3724,28 @@ struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region)
 	return 0;
 }
 
+/**
+ * FE_field iterator version of FE_region_merge_FE_field.
+ * Assumed to be called from FE_region_merge since transfers ownership of new
+ * field so source region is consumed / made unusable in the process. 
+ */
 static int FE_field_merge_into_FE_region(struct FE_field *fe_field,
 	void *fe_region_void)
-/*******************************************************************************
-LAST MODIFIED : 1 May 2003
-
-DESCRIPTION :
-FE_field iterator version of FE_region_merge_FE_field.
-???RC Not really happy with this; only workable because FE_region merge
-consumes the region being merged in ... otherwise would have to make a clone
-of the FE_field for the new FE_region.
-==============================================================================*/
 {
-	char *indexer_fe_field_name;
-	int number_of_indexed_values, return_code;
-	struct FE_field *indexer_fe_field;
-	struct FE_region *fe_region;
-
-	ENTER(FE_field_merge_into_FE_region);
-	if (fe_field && (fe_region = (struct FE_region *)fe_region_void))
+	int return_code = 1;
+	FE_region *fe_region = reinterpret_cast<struct FE_region *>(fe_region_void);
+	if (fe_field && fe_region)
 	{
-		return_code = 1;
-		indexer_fe_field = (struct FE_field *)NULL;
+		FE_field *indexer_fe_field = 0;
 		/* if the field is indexed, the indexer field needs to be merged first,
 			 and the merged indexer field substituted */
 		if (INDEXED_FE_FIELD == get_FE_field_FE_field_type(fe_field))
 		{
+			int number_of_indexed_values;
 			if (get_FE_field_type_indexed(fe_field,
 				&indexer_fe_field, &number_of_indexed_values))
 			{
+				char *indexer_fe_field_name;
 				if (GET_NAME(FE_field)(indexer_fe_field, &indexer_fe_field_name))
 				{
 					if (FE_field_merge_into_FE_region(indexer_fe_field, fe_region_void))
@@ -3818,10 +3793,8 @@ of the FE_field for the new FE_region.
 			"FE_field_merge_into_FE_region.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_field_merge_into_FE_region */
+}
 
 /***************************************************************************//**
  * When a region containing objects with embedded element_xi values is merged
@@ -4385,13 +4358,12 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 	if (!target_fe_region || !source_fe_region)
 		return false;
 
-	// check fields
-	/* check all fields of the same name have same definitions */
-	if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged,
+	// check fields of the same name have compatible definitions
+	if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged_into_list,
 		(void *)target_fe_region->fe_field_list, source_fe_region->fe_field_list))
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_can_merge.  Fields are not compatible");
+			"Cannot merge field(s) into region due to incompatible definition");
 		return false;
 	}
 
@@ -4402,31 +4374,23 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 			return false;
 	}
 
-	// check elements
+	// check elements match in shape and faces
 	bool result = true;
-	/* check that definition of fields in elements of source_fe_region match that
-			of equivalent fields in equivalent elements of global_fe_region */
-	/* also check shape and that fields are appropriately defined on the
-			either the nodes referenced in the element or global_fe_reigon */
-	/* for efficiency, pairs of FE_element_field_info from the opposing
-			elements are stored if compatible to avoid checks later */
-	struct FE_element_can_be_merged_data check_elements_data;
-	check_elements_data.number_of_compatible_element_field_info = 0;
-	/* store in pairs in the single array to reduce allocations */
-	check_elements_data.compatible_element_field_info =
-		(struct FE_element_field_info **)NULL;
-	check_elements_data.global_fe_region = target_fe_region;
-	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-		target_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	check_elements_data.global_node_list = fe_nodeset->getNodeList();
-	if (!FE_region_for_each_FE_element(source_fe_region,
-		FE_element_can_be_merged, (void *)&check_elements_data))
+	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (0 < dimension) && result; --dimension)
 	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_can_merge.  Elements are not compatible");
-		result = false;
+		cmzn_elementiterator *iter = CREATE_LIST_ITERATOR(cmzn_element)(source_fe_region->get_element_list(dimension));
+		cmzn_element *element;
+		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+		{
+			if (!FE_element_can_be_merged(element, target_fe_region))
+			{
+				display_message(ERROR_MESSAGE, "Cannot merge element(s) into region due to incompatible shape or faces");
+				result = false;
+				break;
+			}
+		}
+		cmzn_elementiterator_destroy(&iter);
 	}
-	DEALLOCATE(check_elements_data.compatible_element_field_info);
 
 	return result;
 }
@@ -4457,33 +4421,24 @@ int FE_nodeset::merge(FE_nodeset &source, FE_region *target_root_fe_region)
 		source.get_FE_region()->fe_field_list))
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_merge.  Could not get embedded fields");
+			"FE_nodeset::merge.  Could not get embedded fields");
 		return_code = 0;
 	}
 
 	if (!source.for_each_FE_node(FE_node_merge_into_FE_nodeset, (void *)&merge_nodes_data))
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_region_merge.  Could not merge nodes");
+			"FE_nodeset::merge.  Could not merge nodes");
 		return_code = 0;
 	}
 	if (merge_nodes_data.matching_node_field_info)
 	{
-		struct FE_node_field_info **matching_node_field_info =
-			merge_nodes_data.matching_node_field_info;
-		for (int i = merge_nodes_data.number_of_matching_node_field_info;
-			0 < i; i--)
-		{
-			DEACCESS(FE_node_field_info)(matching_node_field_info);
-			DEACCESS(FE_node_field_info)(matching_node_field_info + 1);
-			matching_node_field_info += 2;
-		}
+		for (int i = 2*merge_nodes_data.number_of_matching_node_field_info - 1; 0 <= i; --i)
+			DEACCESS(FE_node_field_info)(&(merge_nodes_data.matching_node_field_info[i]));
 		DEALLOCATE(merge_nodes_data.matching_node_field_info);
 	}
 	if (merge_nodes_data.embedded_fields)
-	{
 		DEALLOCATE(merge_nodes_data.embedded_fields);
-	}
 	return return_code;
 }
 
@@ -4533,23 +4488,15 @@ int FE_region_merge(struct FE_region *target_fe_region,
 					FE_element_merge_into_FE_region, (void *)&merge_elements_data,
 					source_fe_region->get_element_list(dimension)))
 				{
-					display_message(ERROR_MESSAGE,
-						"FE_region_merge.  Could not merge elements");
+					display_message(ERROR_MESSAGE, "FE_region_merge.  Could not merge elements");
 					return_code = 0;
 					break;
 				}
 			}
 			if (merge_elements_data.matching_element_field_info)
 			{
-				struct FE_element_field_info **matching_element_field_info =
-					merge_elements_data.matching_element_field_info;
-				for (int i = merge_elements_data.number_of_matching_element_field_info;
-					0 < i; i--)
-				{
-					DEACCESS(FE_element_field_info)(matching_element_field_info);
-					DEACCESS(FE_element_field_info)(matching_element_field_info + 1);
-					matching_element_field_info += 2;
-				}
+				for (int i = 2*merge_elements_data.number_of_matching_element_field_info - 1; 0 <= i; --i)
+					DEACCESS(FE_element_field_info)(&(merge_elements_data.matching_element_field_info[i]));
 				DEALLOCATE(merge_elements_data.matching_element_field_info);
 			}
 		}
