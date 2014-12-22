@@ -22,6 +22,8 @@ SET( GRAPHICS_SRCS
 	source/graphics/glyph_circular.cpp
 	source/graphics/glyph_colour_bar.cpp
 	source/graphics/graphics_json_export.cpp
+	source/graphics/graphics_json_import.cpp
+	source/graphics/graphics_json_io.cpp
 	source/graphics/graphics_vertex_array.cpp
 	source/graphics/import_graphics_object.cpp
 	source/graphics/iso_field_calculation.cpp
@@ -37,6 +39,7 @@ SET( GRAPHICS_SRCS
 	source/graphics/quaternion.cpp
 	source/graphics/scene_coordinate_system.cpp
 	source/graphics/scene_json_export.cpp
+	source/graphics/scene_json_import.cpp
 	source/graphics/scene_viewer.cpp
 	source/graphics/selection.cpp
 	source/graphics/spectrum.cpp
@@ -64,6 +67,8 @@ SET( GRAPHICS_HDRS
 	source/graphics/glyph_circular.hpp
 	source/graphics/glyph_colour_bar.hpp
 	source/graphics/graphics_json_export.hpp
+	source/graphics/graphics_json_import.hpp
+	source/graphics/graphics_json_io.hpp
 	source/graphics/graphics_object.h
 	source/graphics/graphics_object.hpp
 	source/graphics/graphics_object_private.hpp
@@ -87,6 +92,7 @@ SET( GRAPHICS_HDRS
 	source/graphics/render_triangularisation.hpp
 	source/graphics/scene_coordinate_system.hpp
 	source/graphics/scene_json_export.hpp
+	source/graphics/scene_json_import.hpp
 	source/graphics/scenefilter.hpp
 	source/graphics/scene_viewer.h
 	source/graphics/selection.hpp

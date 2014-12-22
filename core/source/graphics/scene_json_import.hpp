@@ -1,5 +1,5 @@
 /***************************************************************************//**
- * FILE : scene_json_export.hpp
+ * FILE : scene_json_import.hpp
  *
  * The interface to scene_json_export.
  *
@@ -10,27 +10,32 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#if !defined (SCENE_JSON_EXPORT_HPP)
-#define SCENE_JSON_EXPORT_HPP
+#if !defined (SCENE_JSON_IMPORT_HPP)
+#define SCENE_JSON_IMPORT_HPP
 
 #include "zinc/scene.h"
 #include "zinc/scene.hpp"
-#include "jsoncpp/json.h"
 #include <string>
+#include "jsoncpp/json.h"
 
-class SceneJsonExport
+class SceneJsonImport
 {
 
 public:
 
-	SceneJsonExport(cmzn_scene_id scene_in) :	scene(cmzn_scene_access(scene_in))
+	SceneJsonImport(cmzn_scene_id scene_in, int overwrite_in) :
+		scene(cmzn_scene_access(scene_in)),
+		overwrite(overwrite_in)
 	{  }
 
-	std::string getExportString();
+	int import(std::string &jsonString);
+
+	void importGraphics(Json::Value &graphicsJson);
 
 private:
 	OpenCMISS::Zinc::Scene scene;
 	Json::Value root;
+	int overwrite;
 };
 
 #endif
