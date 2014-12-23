@@ -137,7 +137,7 @@ public:
 	}
 
 	// override for glyph using spectrum, e.g. colour_bar
-	virtual void spectrumChange(struct MANAGER_MESSAGE(Spectrum) *)
+	virtual void spectrumChange(struct MANAGER_MESSAGE(cmzn_spectrum) *)
 	{
 	}
 

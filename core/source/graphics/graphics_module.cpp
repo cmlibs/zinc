@@ -115,13 +115,13 @@ void cmzn_graphics_module_material_manager_callback(
  * Informs all scenes about the changes.
  */
 void cmzn_graphics_module_spectrum_manager_callback(
-	struct MANAGER_MESSAGE(Spectrum) *message, void *graphics_module_void)
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *graphics_module_void)
 {
 	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Spectrum)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Spectrum))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_spectrum)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_spectrum))
 		{
 			// update colour_bar glyphs, if any
 			graphics_module->glyphmodule->beginChange();
@@ -235,7 +235,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 				MANAGER_REGISTER(Graphical_material)(cmzn_graphics_module_material_manager_callback,
 					(void *)module, cmzn_materialmodule_get_manager(module->materialmodule));
 			module->spectrum_manager_callback_id =
-				MANAGER_REGISTER(Spectrum)(cmzn_graphics_module_spectrum_manager_callback,
+				MANAGER_REGISTER(cmzn_spectrum)(cmzn_graphics_module_spectrum_manager_callback,
 					(void *)module, cmzn_spectrummodule_get_manager(module->spectrummodule));
 			module->timekeepermodule = cmzn_context_get_timekeepermodule(context);
 			module->tessellationmodule = cmzn_tessellationmodule_create();
@@ -330,7 +330,7 @@ int cmzn_graphics_module_destroy(
 			MANAGER_DEREGISTER(Graphical_material)(
 				graphics_module->material_manager_callback_id,
 				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
-			MANAGER_DEREGISTER(Spectrum)(
+			MANAGER_DEREGISTER(cmzn_spectrum)(
 				graphics_module->spectrum_manager_callback_id, cmzn_spectrummodule_get_manager(graphics_module->spectrummodule));
 			MANAGER_DEREGISTER(cmzn_tessellation)(
 				graphics_module->tessellation_manager_callback_id,
@@ -421,7 +421,7 @@ int cmzn_graphics_module_create_scene(
 	return (return_code);
 }
 
-struct MANAGER(Spectrum) *cmzn_graphics_module_get_spectrum_manager(
+struct MANAGER(cmzn_spectrum) *cmzn_graphics_module_get_spectrum_manager(
 	struct cmzn_graphics_module *graphics_module)
 {
 	if (graphics_module && graphics_module->spectrummodule)

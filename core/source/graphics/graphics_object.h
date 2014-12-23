@@ -420,7 +420,7 @@ change to any material in use in the linked graphics objects.
 ==============================================================================*/
 
 int GT_object_Spectrum_change(struct GT_object *graphics_object,
-	struct LIST(Spectrum) *changed_spectrum_list);
+	struct LIST(cmzn_spectrum) *changed_spectrum_list);
 /*******************************************************************************
 LAST MODIFIED : 12 March 2002
 
@@ -749,12 +749,12 @@ Sets the selected_material of a GT_object.
  * Sets the spectrum of a GT_object.
  */
 int set_GT_object_Spectrum(struct GT_object *graphics_object,
-	struct Spectrum *spectrum);
+	struct cmzn_spectrum *spectrum);
 
 /**
  * Gets the spectrum of a GT_object.
  */
-struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object);
+struct cmzn_spectrum *get_GT_object_spectrum(struct GT_object *graphics_object);
 
 struct cmzn_font;
 

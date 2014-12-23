@@ -79,7 +79,7 @@ struct Light_module *cmzn_graphics_module_get_light_module(
  * @return  the spectrum manager in graphics module if successfully called,
  *    otherwise NULL.
  */
-struct MANAGER(Spectrum) *cmzn_graphics_module_get_spectrum_manager(
+struct MANAGER(cmzn_spectrum) *cmzn_graphics_module_get_spectrum_manager(
 	struct cmzn_graphics_module *graphics_module);
 
 /***************************************************************************//**

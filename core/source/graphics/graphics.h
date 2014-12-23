@@ -120,7 +120,7 @@ finite element group scene.
 	struct Graphical_material *material, *selected_material,
 		*secondary_material;
 	struct Computed_field *data_field;
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 	int autorange_spectrum_flag;
 	/* for glyphsets */
 	struct cmzn_font *font;
@@ -556,7 +556,7 @@ int cmzn_material_change(struct cmzn_graphics *graphics,
  * Inform graphics of changes in the spectrum manager. Marks affected
  * graphics for rebuilding and sets flag for informing clients of scene.
  *
- * @param spectrum_manager_message_void  MANAGER_MESSAGE(Spectrum).
+ * @param spectrum_manager_message_void  MANAGER_MESSAGE(cmzn_spectrum).
  */
 int cmzn_graphics_spectrum_change(struct cmzn_graphics *graphics,
 	void *spectrum_manager_message_void);

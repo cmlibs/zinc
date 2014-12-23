@@ -272,7 +272,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->secondary_material=(struct Graphical_material *)NULL;
 			graphics->selected_material=(struct Graphical_material *)NULL;
 			graphics->data_field=(struct Computed_field *)NULL;
-			graphics->spectrum=(struct Spectrum *)NULL;
+			graphics->spectrum=(struct cmzn_spectrum *)NULL;
 			graphics->autorange_spectrum_flag = 0;
 			/* for glyphsets */
 			graphics->font = NULL;
@@ -396,7 +396,7 @@ int DESTROY(cmzn_graphics)(
 		}
 		if (graphics->spectrum)
 		{
-			DEACCESS(Spectrum)(&(graphics->spectrum));
+			DEACCESS(cmzn_spectrum)(&(graphics->spectrum));
 		}
 		if (graphics->font)
 		{
@@ -2156,7 +2156,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 					error=1;
 				}
 				if (graphics->spectrum&&
-					GET_NAME(Spectrum)(graphics->spectrum,&name))
+					GET_NAME(cmzn_spectrum)(graphics->spectrum,&name))
 				{
 					/* put quotes around name if it contains special characters */
 					make_valid_token(&name);
@@ -3787,7 +3787,7 @@ cmzn_spectrum_id cmzn_graphics_get_spectrum(cmzn_graphics_id graphics)
 	{
 		if (graphics->spectrum)
 		{
-			spectrum = ACCESS(Spectrum)(graphics->spectrum);
+			spectrum = ACCESS(cmzn_spectrum)(graphics->spectrum);
 		}
 	}
 	return spectrum;
@@ -3801,7 +3801,7 @@ int cmzn_graphics_set_spectrum(cmzn_graphics_id graphics,
 	{
 		if (spectrum != graphics->spectrum)
 		{
-			REACCESS(Spectrum)(&(graphics->spectrum), spectrum);
+			REACCESS(cmzn_spectrum)(&(graphics->spectrum), spectrum);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
@@ -4008,7 +4008,7 @@ int cmzn_graphics_copy_without_graphics_object(
 			source->secondary_material);
 		cmzn_graphics_set_render_polygon_mode(destination,source->render_polygon_mode);
 		REACCESS(Computed_field)(&(destination->data_field), source->data_field);
-		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
+		REACCESS(cmzn_spectrum)(&(destination->spectrum), source->spectrum);
 		destination->streamline_data_type = source->streamline_data_type;
 		REACCESS(Graphical_material)(&(destination->selected_material),
 			source->selected_material);
@@ -5022,21 +5022,21 @@ int cmzn_graphics_spectrum_change(
 	struct cmzn_graphics *graphics, void *spectrum_manager_message_void)
 {
 	int return_code;
-	struct MANAGER_MESSAGE(Spectrum) *manager_message =
-		(struct MANAGER_MESSAGE(Spectrum) *)spectrum_manager_message_void;
+	struct MANAGER_MESSAGE(cmzn_spectrum) *manager_message =
+		(struct MANAGER_MESSAGE(cmzn_spectrum) *)spectrum_manager_message_void;
 	if (graphics && manager_message)
 	{
 		return_code = 1;
 		if (graphics->spectrum)
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(
 				manager_message, graphics->spectrum);
-			if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
+			if (change_flags & MANAGER_CHANGE_RESULT(cmzn_spectrum))
 			{
 				if (graphics->graphics_object)
 				{
 					GT_object_Spectrum_change(graphics->graphics_object,
-						(struct LIST(Spectrum) *)NULL);
+						(struct LIST(cmzn_spectrum) *)NULL);
 				}
 				/* need a way to tell either graphics is used in any scene or not */
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
@@ -5044,13 +5044,13 @@ int cmzn_graphics_spectrum_change(
 		}
 		/* The material gets it's own notification of the change,
 			it should propagate that to the cmzn_graphics */
-		struct Spectrum *colour_lookup;
+		struct cmzn_spectrum *colour_lookup;
 		if (graphics->material && (colour_lookup =
 				Graphical_material_get_colour_lookup_spectrum(graphics->material)))
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(
 				manager_message, colour_lookup);
-			if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
+			if (change_flags & MANAGER_CHANGE_RESULT(cmzn_spectrum))
 			{
 				if (graphics->graphics_object)
 				{

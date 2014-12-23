@@ -94,7 +94,7 @@ Writes Wavefront object file that defines the material
 } /* activate_material_wavefront */
 
 #if defined (OLD_CODE)
-static int spectrum_start_renderwavefront(struct Binary_wavefront_data *data, struct Spectrum *spectrum, struct Graphical_material *material)
+static int spectrum_start_renderwavefront(struct Binary_wavefront_data *data, struct cmzn_spectrum *spectrum, struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 1 October 1997
 
@@ -122,7 +122,7 @@ Sets WAVEFRONT file for rendering values on the current material.
 	return (return_code);
 } /* spectrum_start_renderwavefront */
 
-static int spectrum_renderwavefront_value(struct Binary_wavefront_data *data, struct Spectrum *spectrum,
+static int spectrum_renderwavefront_value(struct Binary_wavefront_data *data, struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material, float data_value)
 /*******************************************************************************
 LAST MODIFIED :  1 October 1997
@@ -154,7 +154,7 @@ accordance with the spectrum.
 #endif /* defined (OLD_CODE) */
 
 #ifdef MERGE_TIMES
-static int spectrum_renderwavefront_merge(struct Binary_wavefront_data *data, struct Spectrum *spectrum,
+static int spectrum_renderwavefront_merge(struct Binary_wavefront_data *data, struct cmzn_spectrum *spectrum,
 				struct Graphical_material *material,
 				int merge_number, float *data)
 /*******************************************************************************
@@ -209,7 +209,7 @@ in accordance with the spectrum.
 #endif
 
 #if defined (OLD_CODE)
-static int spectrum_end_renderwavefront(struct Binary_wavefront_data *data, struct Spectrum *spectrum)
+static int spectrum_end_renderwavefront(struct Binary_wavefront_data *data, struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 1 October 1997
 

@@ -1105,7 +1105,7 @@ void cmzn_scene_material_change(struct cmzn_scene *scene,
 }
 
 void cmzn_scene_spectrum_change(struct cmzn_scene *scene,
-	struct MANAGER_MESSAGE(Spectrum) *manager_message)
+	struct MANAGER_MESSAGE(cmzn_spectrum) *manager_message)
 {
 	if (scene && manager_message)
 	{
@@ -1995,7 +1995,7 @@ int cmzn_scene_is_visible_hierarchical(
 
 struct cmzn_scene_spectrum_data_range
 {
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 	Graphics_object_data_range range;
 
 	cmzn_scene_spectrum_data_range(cmzn_spectrum *spectrumIn, int valuesCount,

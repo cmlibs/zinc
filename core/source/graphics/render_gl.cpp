@@ -900,7 +900,7 @@ int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 	GLfloat *data_buffer = NULL;
 	int return_code = 1;
 	unsigned int data_values_per_vertex, data_vertex_count;
-	Spectrum *spectrum = 0;
+	struct cmzn_spectrum *spectrum = 0;
 
 	if (object->vertex_array->get_float_vertex_buffer(
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
@@ -1916,7 +1916,7 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 } /* Graphics_object_enable_opengl_client_vertex_arrays */
 
 static int draw_vertexBufferPointset(gtObject *object,
-	struct Graphical_material *material, struct Spectrum *spectrum,
+	struct Graphical_material *material, struct cmzn_spectrum *spectrum,
 	Render_graphics_opengl *renderer,
 	Graphics_object_rendering_type rendering_type)
 {
@@ -2040,7 +2040,7 @@ static int draw_vertexBufferPointset(gtObject *object,
 
 static int draw_vertexBufferGlyphset(gtObject *object,
 	struct Graphical_material *material, struct Graphical_material *secondary_material,
-	struct Spectrum *spectrum,
+	struct cmzn_spectrum *spectrum,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
 	Render_graphics_opengl *renderer, bool &lighting_on,
@@ -2590,7 +2590,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 
 int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 	union GT_primitive_list *primitive_list, int picking_names,
-	Graphics_object_rendering_type rendering_type, struct Spectrum *spectrum,
+	Graphics_object_rendering_type rendering_type, struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material, int draw_selected)
 {
 	int return_code = 1;
@@ -2964,7 +2964,7 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 
 int draw_vertexBufferLine(gtObject *object, Render_graphics_opengl *renderer,
 	union GT_primitive_list *primitive_list, int picking_names,
-	Graphics_object_rendering_type rendering_type, struct Spectrum *spectrum,
+	Graphics_object_rendering_type rendering_type, struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material, int draw_selected)
 {
 	int return_code = 1;
@@ -3183,7 +3183,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	bool lighting_on = true;
 #endif /* defined (OPENGL_API) */
 	struct Graphical_material *material, *secondary_material;
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
 	ENTER(render_GT_object_opengl_immediate)

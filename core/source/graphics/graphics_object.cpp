@@ -1240,7 +1240,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 				object->selected_material=(struct Graphical_material *)NULL;
 				object->secondary_material=(struct Graphical_material *)NULL;
 				object->nextobject=(gtObject *)NULL;
-				object->spectrum=(struct Spectrum *)NULL;
+				object->spectrum=(struct cmzn_spectrum *)NULL;
 				object->number_of_times=0;
 				object->render_line_width = 0.0; // not set: inherit from current state
 				object->render_point_size = 0.0; // not set: inherit from current state
@@ -1321,7 +1321,7 @@ static int DESTROY(GT_object)(struct GT_object **object_ptr)
 			}
 			if (object->spectrum)
 			{
-				DEACCESS(Spectrum)(&(object->spectrum));
+				DEACCESS(cmzn_spectrum)(&(object->spectrum));
 			}
 			if (object->vertex_array)
 			{
@@ -1489,7 +1489,7 @@ change to any material in use in the linked graphics objects.
 } /* GT_object_Graphical_material_change */
 
 int GT_object_Spectrum_change(struct GT_object *graphics_object,
-	struct LIST(Spectrum) *changed_spectrum_list)
+	struct LIST(cmzn_spectrum) *changed_spectrum_list)
 /*******************************************************************************
 LAST MODIFIED : 12 March 2002
 
@@ -1510,7 +1510,7 @@ change to any spectrum in use in the linked graphics objects.
 		while (graphics_object)
 		{
 			if (graphics_object->spectrum &&
-				((!changed_spectrum_list) || IS_OBJECT_IN_LIST(Spectrum)(
+				((!changed_spectrum_list) || IS_OBJECT_IN_LIST(cmzn_spectrum)(
 					graphics_object->spectrum, changed_spectrum_list)))
 			{
 				/* need to rebuild display list when spectrum in use */
@@ -2868,14 +2868,14 @@ Sets the selected_material of a GT_object.
 } /* set_GT_object_selected_material */
 
 int set_GT_object_Spectrum(struct GT_object *graphics_object,
-	struct Spectrum *spectrum)
+	struct cmzn_spectrum *spectrum)
 {
 	int return_code;
 	if (graphics_object)
 	{
 		if (spectrum != graphics_object->spectrum)
 		{
-			REACCESS(Spectrum)(&graphics_object->spectrum, spectrum);
+			REACCESS(cmzn_spectrum)(&graphics_object->spectrum, spectrum);
 			GT_object_changed(graphics_object);
 		}
 		return_code=1;
@@ -2889,9 +2889,9 @@ int set_GT_object_Spectrum(struct GT_object *graphics_object,
 	return (return_code);
 }
 
-struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object)
+struct cmzn_spectrum *get_GT_object_spectrum(struct GT_object *graphics_object)
 {
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 	if (graphics_object)
 	{
 		spectrum = graphics_object->spectrum;
@@ -2900,7 +2900,7 @@ struct Spectrum *get_GT_object_spectrum(struct GT_object *graphics_object)
 	{
 		display_message(ERROR_MESSAGE,
 			"get_GT_object_spectrum.  Invalid graphics object");
-		spectrum = (struct Spectrum *)NULL;
+		spectrum = (struct cmzn_spectrum *)NULL;
 	}
 	return (spectrum);
 }
