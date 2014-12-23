@@ -105,7 +105,7 @@ public:
 
 	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
 
-	virtual void spectrumChange(struct MANAGER_MESSAGE(Spectrum) *message);
+	virtual void spectrumChange(struct MANAGER_MESSAGE(cmzn_spectrum) *message);
 
 };
 

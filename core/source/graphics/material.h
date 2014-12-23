@@ -247,7 +247,7 @@ The properties of a material.
 	struct Material_image_texture fourth_image_texture;
 	/* second stage multitexture (i.e. normals for bump mapping) */
 	/* spectrum used to render this material */
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 	/* callback if the spectrum changes */
 	void *spectrum_manager_callback_id;
 	/* the shared information for Graphical Materials, allowing them to share
@@ -284,12 +284,12 @@ Global functions
 cmzn_material *cmzn_material_create_private();
 
 struct cmzn_materialmodule *cmzn_materialmodule_create(
-	struct MANAGER(Spectrum) *spectrum_manager);
+	struct MANAGER(cmzn_spectrum) *spectrum_manager);
 
 struct MANAGER(Graphical_material) *cmzn_materialmodule_get_manager(
 	struct cmzn_materialmodule *materialmodule);
 
-struct MANAGER(Spectrum) *cmzn_materialmodule_get_spectrum_manager(
+struct MANAGER(cmzn_spectrum) *cmzn_materialmodule_get_spectrum_manager(
 	struct cmzn_materialmodule *materialmodule);
 
 int DESTROY(Graphical_material)(struct Graphical_material **material_address);
@@ -430,7 +430,7 @@ Sets the shininess value of the material.
 ==============================================================================*/
 
 int Graphical_material_set_colour_lookup_spectrum(struct Graphical_material *material,
-	struct Spectrum *spectrum);
+	struct cmzn_spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 6 October 2006
 
@@ -438,7 +438,7 @@ DESCRIPTION :
 Sets the spectrum member of the material.
 ==============================================================================*/
 
-struct Spectrum *Graphical_material_get_colour_lookup_spectrum(
+struct cmzn_spectrum *Graphical_material_get_colour_lookup_spectrum(
 	struct Graphical_material *material);
 /*******************************************************************************
 LAST MODIFIED : 6 October 2006

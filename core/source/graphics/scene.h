@@ -200,7 +200,7 @@ void cmzn_scene_material_change(struct cmzn_scene *scene,
  * Should only be called by cmzn_graphics_module.
  */
 void cmzn_scene_spectrum_change(struct cmzn_scene *scene,
-	struct MANAGER_MESSAGE(Spectrum) *manager_message);
+	struct MANAGER_MESSAGE(cmzn_spectrum) *manager_message);
 
 /***************************************************************************//**
  * Private method for informing scene of tessellation manager changes.

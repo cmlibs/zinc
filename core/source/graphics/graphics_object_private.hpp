@@ -132,7 +132,7 @@ Graphical object data structure.
 	struct Graphical_material *default_material, *secondary_material, 
 		*selected_material;
 	/* spectrum */
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 	/* the object can vary with time.  It is specified at <number_of_times>
 		<times>.  The <times> are in increasing order.  The object varies linearly
 		between <times> and is constant before the first and after the last */

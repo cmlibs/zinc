@@ -261,14 +261,14 @@ DESCRIPTION :
 Allocates memory and assigns fields for a Spectrum object.
 ==============================================================================*/
 {
-	struct Spectrum *spectrum = 0;
-	if (ALLOCATE(spectrum,struct Spectrum,1))
+	struct cmzn_spectrum *spectrum = 0;
+	if (ALLOCATE(spectrum,struct cmzn_spectrum,1))
 	{
 		spectrum->maximum=0;
 		spectrum->minimum=0;
 		spectrum->overwrite_colour = true;
-		spectrum->manager = (struct MANAGER(Spectrum) *)NULL;
-		spectrum->manager_change_status = MANAGER_CHANGE_NONE(Spectrum);
+		spectrum->manager = (struct MANAGER(cmzn_spectrum) *)NULL;
+		spectrum->manager_change_status = MANAGER_CHANGE_NONE(cmzn_spectrum);
 		spectrum->access_count=1;
 		spectrum->colour_lookup_texture = (struct Texture *)NULL;
 		spectrum->is_managed_flag = false;
@@ -279,17 +279,17 @@ Allocates memory and assigns fields for a Spectrum object.
 		if (!spectrum->list_of_components)
 		{
 			DEALLOCATE(spectrum);
-			spectrum=(struct Spectrum *)NULL;
+			spectrum=(struct cmzn_spectrum *)NULL;
 		}
 	}
 	else
 	{
-		spectrum=(struct Spectrum *)NULL;
+		spectrum=(struct cmzn_spectrum *)NULL;
 	}
 	return spectrum;
-} /* CREATE(Spectrum) */
+} /* CREATE(cmzn_spectrum) */
 
-int DESTROY(Spectrum)(struct Spectrum **spectrum_ptr)
+int DESTROY(cmzn_spectrum)(struct cmzn_spectrum **spectrum_ptr)
 /*******************************************************************************
 LAST MODIFIED : 28 October 1997
 
@@ -300,7 +300,7 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 {
 	int return_code;
 
-	ENTER(DESTROY(Spectrum));
+	ENTER(DESTROY(cmzn_spectrum));
 	if (spectrum_ptr)
 	{
 		if (*spectrum_ptr)
@@ -320,44 +320,44 @@ Frees the memory for the fields of <**spectrum>, frees the memory for
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"DESTROY(Spectrum).  Invalid argument");
+		display_message(ERROR_MESSAGE,"DESTROY(cmzn_spectrum).  Invalid argument");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* DESTROY(Spectrum) */
+} /* DESTROY(cmzn_spectrum) */
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Spectrum);
+FULL_DECLARE_INDEXED_LIST_TYPE(cmzn_spectrum);
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Spectrum, cmzn_spectrummodule, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_spectrum, cmzn_spectrummodule, void *);
 
 /*
 Module functions
 ----------------
 */
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Spectrum,name,const char *,strcmp)
+DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(cmzn_spectrum,name,const char *,strcmp)
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Spectrum)
+DECLARE_LOCAL_MANAGER_FUNCTIONS(cmzn_spectrum)
 
 /*
 Global functions
 ----------------
 */
-DECLARE_OBJECT_FUNCTIONS(Spectrum)
+DECLARE_OBJECT_FUNCTIONS(cmzn_spectrum)
 
-DECLARE_INDEXED_LIST_FUNCTIONS(Spectrum)
+DECLARE_INDEXED_LIST_FUNCTIONS(cmzn_spectrum)
 
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Spectrum,name,const char *,strcmp)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(cmzn_spectrum,name,const char *,strcmp)
 
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Spectrum,name)
+DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_spectrum,name)
 
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Spectrum,name)
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(cmzn_spectrum,name)
 {
 	char *name;
 	int return_code = 1;
 
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Spectrum,name));
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(cmzn_spectrum,name));
 	if (source&&destination)
 	{
 		if (source->name)
@@ -366,7 +366,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Spectrum,name)
 			if (!name)
 			{
 				display_message(ERROR_MESSAGE,
-					"MANAGER_COPY_WITH_IDENTIFIER(Spectrum,name).  Insufficient memory");
+					"MANAGER_COPY_WITH_IDENTIFIER(cmzn_spectrum,name).  Insufficient memory");
 				return_code=0;
 			}
 		}
@@ -376,7 +376,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Spectrum,name)
 		}
 		if (return_code)
 		{
-			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name)(destination, source);
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_spectrum,name)(destination, source);
 			if (return_code)
 			{
 				/* copy values */
@@ -387,26 +387,26 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Spectrum,name)
 			{
 				DEALLOCATE(name);
 				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Spectrum,name).  Could not copy without identifier");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_spectrum,name).  Could not copy without identifier");
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Spectrum,name).  Invalid argument(s)");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_spectrum,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Spectrum,name) */
+} /* MANAGER_COPY_WITH_IDENTIFIER(cmzn_spectrum,name) */
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_spectrum,name)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name));
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_spectrum,name));
 	/* check arguments */
 	if (source&&destination)
 	{
@@ -432,20 +432,20 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Spectrum,name)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name).  Invalid argument(s)");
+"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_spectrum,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Spectrum,name) */
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_spectrum,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,const char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(cmzn_spectrum,name,const char *)
 {
 	char *destination_name = NULL;
 	int return_code = 1;
 
-	ENTER(MANAGER_COPY_IDENTIFIER(Spectrum,name));
+	ENTER(MANAGER_COPY_IDENTIFIER(cmzn_spectrum,name));
 	if (name&&destination)
 	{
 		if (name)
@@ -454,7 +454,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,const char *)
 			if (!name)
 			{
 				display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Spectrum,name).  Insufficient memory");
+			"MANAGER_COPY_IDENTIFIER(cmzn_spectrum,name).  Insufficient memory");
 				return_code=0;
 			}
 		}
@@ -472,26 +472,26 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Spectrum,name,const char *)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Spectrum,name).  Invalid argument(s)");
+			"MANAGER_COPY_IDENTIFIER(cmzn_spectrum,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Spectrum,name) */
+} /* MANAGER_COPY_IDENTIFIER(cmzn_spectrum,name) */
 
-DECLARE_MANAGER_FUNCTIONS(Spectrum,manager)
+DECLARE_MANAGER_FUNCTIONS(cmzn_spectrum,manager)
 
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Spectrum,manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_spectrum,manager)
 
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Spectrum,name,const char *,manager)
+DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_spectrum,name,const char *,manager)
 
-DECLARE_MANAGER_OWNER_FUNCTIONS(Spectrum, struct cmzn_spectrummodule)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_spectrum, struct cmzn_spectrummodule)
 
-int Spectrum_manager_set_owner(struct MANAGER(Spectrum) *manager,
+int Spectrum_manager_set_owner(struct MANAGER(cmzn_spectrum) *manager,
 	struct cmzn_spectrummodule *spectrummodule)
 {
-	return MANAGER_SET_OWNER(Spectrum)(manager, spectrummodule);
+	return MANAGER_SET_OWNER(cmzn_spectrum)(manager, spectrummodule);
 }
 /*
 Global functions
@@ -499,7 +499,7 @@ Global functions
 */
 
 struct cmzn_spectrumcomponent *cmzn_spectrum_get_component_at_position(
-	 struct Spectrum *spectrum,int position)
+	 struct cmzn_spectrum *spectrum,int position)
 /*******************************************************************************
 LAST MODIFIED : 30 August 2007
 
@@ -526,7 +526,7 @@ Wrapper for accessing the component in <spectrum>.
 	 return (component);
 } /* get_component_at_position_in_GT_element_group */
 
-int Spectrum_set_simple_type(struct Spectrum *spectrum,
+int Spectrum_set_simple_type(struct cmzn_spectrum *spectrum,
 	enum Spectrum_simple_type type)
 /*******************************************************************************
 LAST MODIFIED : 7 February 2002
@@ -706,7 +706,7 @@ some predetermined simple types.
 	return (return_code);
 } /* Spectrum_set_simple_type */
 
-enum Spectrum_simple_type Spectrum_get_simple_type(struct Spectrum *spectrum)
+enum Spectrum_simple_type Spectrum_get_simple_type(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 18 May 2000
 
@@ -815,7 +815,7 @@ it returns UNKNOWN_SPECTRUM
 	return (type);
 } /* Spectrum_get_simple_type */
 
-int Spectrum_add_component(struct Spectrum *spectrum,
+int Spectrum_add_component(struct cmzn_spectrum *spectrum,
 	struct cmzn_spectrumcomponent *component,int position)
 /*******************************************************************************
 LAST MODIFIED : 24 June 1998
@@ -949,7 +949,7 @@ of all subsequent component.
 } /* cmzn_spectrum_remove_all_spectrumcomponents */
 
 
-int cmzn_spectrum_get_component_position(struct Spectrum *spectrum,
+int cmzn_spectrum_get_component_position(struct cmzn_spectrum *spectrum,
 	struct cmzn_spectrumcomponent *component)
 /*******************************************************************************
 LAST MODIFIED : 16 June 1998
@@ -969,7 +969,7 @@ Returns the position of <component> in <spectrum>.
 
 } /* cmzn_spectrum_get_component_position */
 
-int set_Spectrum_minimum(struct Spectrum *spectrum,ZnReal minimum)
+int set_Spectrum_minimum(struct cmzn_spectrum *spectrum,ZnReal minimum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -1005,7 +1005,7 @@ A function to set the spectrum minimum.
 	return (return_code);
 } /* set_Spectrum_minimum */
 
-int set_Spectrum_maximum(struct Spectrum *spectrum,ZnReal maximum)
+int set_Spectrum_maximum(struct cmzn_spectrum *spectrum,ZnReal maximum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -1041,7 +1041,7 @@ A function to set the spectrum maximum.
 	return (return_code);
 } /* set_Spectrum_maximum */
 
-int Spectrum_get_number_of_data_components(struct Spectrum *spectrum)
+int Spectrum_get_number_of_data_components(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 29 September 2006
 
@@ -1074,7 +1074,7 @@ Returns the number_of_components used by the spectrum.
 } /* Spectrum_get_number_of_data_components */
 
 enum Spectrum_colour_components
-	Spectrum_get_colour_components(struct Spectrum *spectrum)
+	Spectrum_get_colour_components(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -1103,7 +1103,7 @@ Returns a bit mask for the colour components modified by the spectrum.
 	return (colour_components);
 } /* Spectrum_get_colour_components */
 
-char *Spectrum_get_name(struct Spectrum *spectrum)
+char *Spectrum_get_name(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 28 August 2007
 
@@ -1154,7 +1154,7 @@ int cmzn_spectrum_set_material_overwrite(cmzn_spectrum_id spectrum,
 
 #if defined (OPENGL_API)
 struct Spectrum_render_data *spectrum_start_renderGL(
-	struct Spectrum *spectrum,struct Graphical_material *material,
+	struct cmzn_spectrum *spectrum,struct Graphical_material *material,
 	int number_of_data_components)
 /*******************************************************************************
 LAST MODIFIED : 3 June 1999
@@ -1224,7 +1224,7 @@ Initialises the graphics state for rendering values on the current material.
 	return (render_data);
 } /* spectrum_start_renderGL */
 
-int spectrum_renderGL_value(struct Spectrum *spectrum,
+int spectrum_renderGL_value(struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material,struct Spectrum_render_data *render_data,
 	GLfloat *data)
 /*******************************************************************************
@@ -1267,7 +1267,7 @@ accordance with the spectrum.
 	return (return_code);
 } /* spectrum_renderGL_value */
 
-int spectrum_end_renderGL(struct Spectrum *spectrum,
+int spectrum_end_renderGL(struct cmzn_spectrum *spectrum,
 	struct Spectrum_render_data *render_data)
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
@@ -1378,7 +1378,7 @@ functions are in one place and the iterator can have local scope.
 	return (return_code);
 } /* Spectrum_calculate_range_iterator */
 
-int Spectrum_calculate_range(struct Spectrum *spectrum)
+int Spectrum_calculate_range(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -1477,8 +1477,8 @@ static int cmzn_spectrum_inform_clients(cmzn_spectrum_id spectrum)
 	if (spectrum && spectrum->manager)
 	{
 		spectrum->changed = 0;
-		return MANAGED_OBJECT_CHANGE(Spectrum)(spectrum,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Spectrum));
+		return MANAGED_OBJECT_CHANGE(cmzn_spectrum)(spectrum,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_spectrum));
 	}
 	return 0;
 }
@@ -1530,7 +1530,7 @@ int cmzn_spectrum_changed(cmzn_spectrum_id spectrum)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int Spectrum_set_minimum_and_maximum(struct Spectrum *spectrum,
+int Spectrum_set_minimum_and_maximum(struct cmzn_spectrum *spectrum,
 	ZnReal minimum, ZnReal maximum)
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
@@ -1578,7 +1578,7 @@ it contains.  The ratios of the different component are preserved.
 	return (return_code);
 } /* Spectrum_set_minimum_and_maximum */
 
-int Spectrum_render_value_on_material(struct Spectrum *spectrum,
+int Spectrum_render_value_on_material(struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material, int number_of_data_components,
 	GLfloat *data)
 /*******************************************************************************
@@ -1641,7 +1641,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 	return (return_code);
 } /* Spectrum_render_value_on_material */
 
-int Spectrum_value_to_rgba(struct Spectrum *spectrum,int number_of_data_components,
+int Spectrum_value_to_rgba(struct cmzn_spectrum *spectrum,int number_of_data_components,
 	FE_value *data, ZnReal *rgba)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
@@ -1690,7 +1690,7 @@ Uses the <spectrum> to calculate RGBA components to represent the
 	return (return_code);
 } /* spectrum_value_to_rgba */
 
-int Spectrum_end_value_to_rgba(struct Spectrum *spectrum)
+int Spectrum_end_value_to_rgba(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 13 September 2007
 
@@ -1722,7 +1722,7 @@ Resets the caches and graphics state after rendering values.
 } /* Spectrum_end_value_to_rgba */
 
 struct LIST(cmzn_spectrumcomponent) *get_cmzn_spectrumcomponent_list(
-	struct Spectrum *spectrum )
+	struct cmzn_spectrum *spectrum )
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
 
@@ -1750,9 +1750,9 @@ that spectrum.
 	return (component_list);
 } /* get_cmzn_spectrumcomponent_list */
 
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Spectrum)
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_spectrum)
 
-static int Spectrum_render_colour_lookup(struct Spectrum *spectrum)
+static int Spectrum_render_colour_lookup(struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 23 May 2005
 
@@ -1979,7 +1979,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	return (return_code);
 } /* Spectrum_render_colour_lookup */
 
-int Spectrum_compile_colour_lookup(struct Spectrum *spectrum,
+int Spectrum_compile_colour_lookup(struct cmzn_spectrum *spectrum,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2005
@@ -2008,7 +2008,7 @@ Rebuilds the display_list for <spectrum> if it is not current.
 	return (return_code);
 } /* Spectrum_compile_colour_lookup */
 
-int Spectrum_execute_colour_lookup(struct Spectrum *spectrum,
+int Spectrum_execute_colour_lookup(struct cmzn_spectrum *spectrum,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 10 May 2005
@@ -2036,7 +2036,7 @@ If a NULL <spectrum> is supplied, spectrums are disabled.
 	return (return_code);
 } /* Spectrum_execute_colour_lookup */
 
-int Spectrum_get_colour_lookup_sizes(struct Spectrum *spectrum,
+int Spectrum_get_colour_lookup_sizes(struct cmzn_spectrum *spectrum,
 	int *lookup_dimension, int **lookup_sizes)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2007
@@ -2157,14 +2157,14 @@ char *cmzn_spectrum_get_name(cmzn_spectrum_id spectrum)
 cmzn_spectrum_id cmzn_spectrum_access(cmzn_spectrum_id spectrum)
 {
 	if (spectrum)
-		return ACCESS(Spectrum)(spectrum);
+		return ACCESS(cmzn_spectrum)(spectrum);
 	return 0;
 }
 
 int cmzn_spectrum_destroy(cmzn_spectrum_id *spectrum_address)
 {
 	int return_code = 0;
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 
 	ENTER(cmzn_spectrum_destroy);
 	if (spectrum_address && (spectrum = *spectrum_address))
@@ -2172,19 +2172,19 @@ int cmzn_spectrum_destroy(cmzn_spectrum_id *spectrum_address)
 		(spectrum->access_count)--;
 		if (spectrum->access_count <= 0)
 		{
-			return_code = DESTROY(Spectrum)(spectrum_address);
+			return_code = DESTROY(cmzn_spectrum)(spectrum_address);
 		}
 		else if ((!spectrum->is_managed_flag) && (spectrum->manager) &&
 			((1 == spectrum->access_count) || ((2 == spectrum->access_count) &&
-				(MANAGER_CHANGE_NONE(Spectrum) != spectrum->manager_change_status))))
+				(MANAGER_CHANGE_NONE(cmzn_spectrum) != spectrum->manager_change_status))))
 		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(Spectrum)(spectrum, spectrum->manager);
+			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_spectrum)(spectrum, spectrum->manager);
 		}
 		else
 		{
 			return_code = 1;
 		}
-		*spectrum_address = (struct Spectrum *)NULL;
+		*spectrum_address = (struct cmzn_spectrum *)NULL;
 	}
 	LEAVE;
 
@@ -2206,7 +2206,7 @@ int cmzn_spectrum_set_managed(cmzn_spectrum_id spectrum,  bool value)
 		spectrum->is_managed_flag = (value != 0);
 		if (value != old_value)
 		{
-			MANAGED_OBJECT_CHANGE(Spectrum)(spectrum, MANAGER_CHANGE_DEFINITION(Spectrum));
+			MANAGED_OBJECT_CHANGE(cmzn_spectrum)(spectrum, MANAGER_CHANGE_DEFINITION(cmzn_spectrum));
 		}
 		return CMZN_OK;
 	}

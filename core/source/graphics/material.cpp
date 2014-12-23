@@ -3198,15 +3198,15 @@ material results.
 #endif /* defined (OPENGL_API) */
 
 static void Graphical_material_Spectrum_change(
-	struct MANAGER_MESSAGE(Spectrum) *message, void *material_void)
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *material_void)
 {
 	struct Graphical_material *material;
 
 	ENTER(Graphical_material_Spectrum_change);
 	if (message && (material = (struct Graphical_material *)material_void))
 	{
-		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(message, material->spectrum);
-		if (change & MANAGER_CHANGE_RESULT(Spectrum))
+		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(message, material->spectrum);
+		if (change & MANAGER_CHANGE_RESULT(cmzn_spectrum))
 		{
 			material->compile_status = GRAPHICS_NOT_COMPILED;
 		}
@@ -3255,7 +3255,7 @@ private:
 	struct MANAGER(Graphical_material) *materialManager;
 	cmzn_material *defaultMaterial;
 	struct Graphical_material *defaultSelectedMaterial;
-	struct MANAGER(Spectrum) *spectrumManager;
+	struct MANAGER(cmzn_spectrum) *spectrumManager;
 	struct LIST(Material_program) *materialProgramList;
 	int access_count;
 
@@ -3316,7 +3316,7 @@ public:
 	}
 
 
-	void setSpectrumManager(struct MANAGER(Spectrum) *spectrum_manager)
+	void setSpectrumManager(struct MANAGER(cmzn_spectrum) *spectrum_manager)
 	{
 		spectrumManager = spectrum_manager;
 	}
@@ -3326,7 +3326,7 @@ public:
 		return materialProgramList;
 	}
 
-	struct MANAGER(Spectrum) *getSpectrumManager()
+	struct MANAGER(cmzn_spectrum) *getSpectrumManager()
 	{
 		return spectrumManager;
 	}
@@ -3442,7 +3442,7 @@ struct MANAGER(cmzn_material) *cmzn_materialmodule_get_manager(
 	return 0;
 }
 
-struct MANAGER(Spectrum) *cmzn_materialmodule_get_spectrum_manager(
+struct MANAGER(cmzn_spectrum) *cmzn_materialmodule_get_spectrum_manager(
 	struct cmzn_materialmodule *materialmodule)
 {
 	if (materialmodule)
@@ -3688,7 +3688,7 @@ int cmzn_materialmodule_set_default_selected_material(
 }
 
 cmzn_materialmodule_id cmzn_materialmodule_create(
-	struct MANAGER(Spectrum) *spectrum_manager)
+	struct MANAGER(cmzn_spectrum) *spectrum_manager)
 {
 	cmzn_materialmodule *materialmodule =
 		cmzn_materialmodule::create();
@@ -3787,7 +3787,7 @@ cmzn_material *cmzn_material_create_private()
 		(material->specular).green=0;
 		(material->specular).blue=0;
 		material->shininess=0;
-		material->spectrum=(struct Spectrum *)NULL;
+		material->spectrum=(struct cmzn_spectrum *)NULL;
 		material->spectrum_manager_callback_id=NULL;
 		(material->image_texture).texture=(struct Texture *)NULL;
 		(material->image_texture).manager = NULL;
@@ -3889,12 +3889,12 @@ Frees the memory for the material and sets <*material_address> to NULL.
 #endif /* defined (OPENGL_API) */
 			if (material->spectrum)
 			{
-				DEACCESS(Spectrum)(&(material->spectrum));
+				DEACCESS(cmzn_spectrum)(&(material->spectrum));
 			}
 			if (material->module &&
 				material->spectrum_manager_callback_id)
 			{
-				MANAGER_DEREGISTER(Spectrum)(
+				MANAGER_DEREGISTER(cmzn_spectrum)(
 					material->spectrum_manager_callback_id,
 					material->module->getSpectrumManager());
 				material->spectrum_manager_callback_id=NULL;
@@ -4123,14 +4123,14 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 			source->lit_volume_normal_scaling[2];
 		destination->lit_volume_normal_scaling[3] =
 			source->lit_volume_normal_scaling[3];
-		REACCESS(Spectrum)(&(destination->spectrum), source->spectrum);
+		REACCESS(cmzn_spectrum)(&(destination->spectrum), source->spectrum);
 		if (destination->spectrum)
 		{
 			if (destination->module &&
 				(!destination->spectrum_manager_callback_id))
 			{
 				destination->spectrum_manager_callback_id=
-					MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
+					MANAGER_REGISTER(cmzn_spectrum)(Graphical_material_Spectrum_change,
 						(void *)destination, destination->module->getSpectrumManager());
 			}
 		}
@@ -4139,7 +4139,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 			if (destination->module &&
 				destination->spectrum_manager_callback_id)
 			{
-				MANAGER_DEREGISTER(Spectrum)(
+				MANAGER_DEREGISTER(cmzn_spectrum)(
 					destination->spectrum_manager_callback_id,
 					destination->module->getSpectrumManager());
 				destination->spectrum_manager_callback_id=NULL;
@@ -4842,7 +4842,7 @@ Returns the fourth texture of the material.
 } /* Graphical_material_get_fourth_texture */
 
 int Graphical_material_set_colour_lookup_spectrum(struct Graphical_material *material,
-	struct Spectrum *spectrum)
+	struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 6 October 2006
 
@@ -4858,7 +4858,7 @@ Sets the spectrum member of the material.
 #if defined (GL_VERSION_1_3)
 		if (Graphics_library_tentative_check_extension(GL_VERSION_1_3))
 		{
-			REACCESS(Spectrum)(&material->spectrum, spectrum);
+			REACCESS(cmzn_spectrum)(&material->spectrum, spectrum);
 			material->compile_status = GRAPHICS_NOT_COMPILED;
 			Graphical_material_changed(material);
 			return_code=1;
@@ -4889,7 +4889,7 @@ Sets the spectrum member of the material.
 	return (return_code);
 } /* Graphical_material_set_colour_lookup_spectrum */
 
-struct Spectrum *Graphical_material_get_colour_lookup_spectrum(
+struct cmzn_spectrum *Graphical_material_get_colour_lookup_spectrum(
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 6 October 2006
@@ -4898,7 +4898,7 @@ DESCRIPTION :
 Returns the spectrum member of the material.
 ==============================================================================*/
 {
-	struct Spectrum *spectrum;
+	struct cmzn_spectrum *spectrum;
 
 	ENTER(Graphical_material_get_colour_lookup_spectrum);
 	if (material)
@@ -4909,7 +4909,7 @@ Returns the spectrum member of the material.
 	{
 		display_message(ERROR_MESSAGE,
 			"Graphical_material_get_colour_lookup_spectrum.  Missing material");
-		spectrum=(struct Spectrum *)NULL;
+		spectrum=(struct cmzn_spectrum *)NULL;
 	}
 	LEAVE;
 
@@ -5151,7 +5151,7 @@ functions are orginally from the modify_graphical_materil.
 				 (!material_to_be_modified->spectrum_manager_callback_id))
 			{
 				 material_to_be_modified->spectrum_manager_callback_id=
-						MANAGER_REGISTER(Spectrum)(Graphical_material_Spectrum_change,
+						MANAGER_REGISTER(cmzn_spectrum)(Graphical_material_Spectrum_change,
 							 (void *)material_to_be_modified, material_to_be_modified->module->getSpectrumManager());
 			}
 
@@ -5212,7 +5212,7 @@ functions are orginally from the modify_graphical_materil.
 			if (material_to_be_modified->module &&
 				 material_to_be_modified->spectrum_manager_callback_id)
 			{
-				 MANAGER_DEREGISTER(Spectrum)(
+				 MANAGER_DEREGISTER(cmzn_spectrum)(
 						material_to_be_modified->spectrum_manager_callback_id,
 						material_to_be_modified->module->getSpectrumManager());
 				 material_to_be_modified->spectrum_manager_callback_id=NULL;
@@ -5492,7 +5492,7 @@ Writes the properties of the <material> to the command window.
 			display_message(INFORMATION_MESSAGE, "\n");
 			DEALLOCATE(name);
 		}
-		if (material->spectrum&&GET_NAME(Spectrum)(material->spectrum,&name))
+		if (material->spectrum&&GET_NAME(cmzn_spectrum)(material->spectrum,&name))
 		{
 			display_message(INFORMATION_MESSAGE, "  colour lookup spectrum : ");
 			display_message(INFORMATION_MESSAGE, name);
@@ -5604,7 +5604,7 @@ The command is started with the string pointed to by <command_prefix>.
 			display_message(INFORMATION_MESSAGE," fourth_texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->spectrum&&GET_NAME(Spectrum)(material->spectrum,&name))
+		if (material->spectrum&&GET_NAME(cmzn_spectrum)(material->spectrum,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);
@@ -5717,7 +5717,7 @@ The command is started with the string pointed to by <command_prefix>.
 			write_message_to_file(INFORMATION_MESSAGE," fourth_texture %s",name);
 			DEALLOCATE(name);
 		}
-		if (material->spectrum&&GET_NAME(Spectrum)(material->spectrum,&name))
+		if (material->spectrum&&GET_NAME(cmzn_spectrum)(material->spectrum,&name))
 		{
 			/* put quotes around name if it contains special characters */
 			make_valid_token(&name);

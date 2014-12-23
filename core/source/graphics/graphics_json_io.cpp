@@ -10,12 +10,12 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-//#include "zinc/spectrum.hpp"
+#include "zinc/spectrum.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/fieldmodule.hpp"
 #include "general/debug.h"
 #include "graphics/graphics_json_export.hpp"
-#include "graphics/graphics.h"
+#include <string.h>
 
 OpenCMISS::Zinc::Field getFieldByName(OpenCMISS::Zinc::Graphics &graphics, const char *name)
 {
@@ -127,13 +127,13 @@ void GraphicsJsonIO::ioGeneralObjectEntries(Json::Value &graphicsSettings)
 			graphicsSettings["SelectedMaterial"] = name;
 			DEALLOCATE(name);
 		}
-		//	OpenCMISS::Zinc::Spectrum spectrum = graphics.getSpectrum();
-		//	if (spectrum.isValid())
-		//	{
-		//		name = spectrum.getName();
-		//		graphicsSettings["Spectrum"] = name;
-		//		DEALLOCATE(name);
-		//	}
+		OpenCMISS::Zinc::Spectrum spectrum = graphics.getSpectrum();
+		if (spectrum.isValid())
+		{
+			name = spectrum.getName();
+			graphicsSettings["Spectrum"] = name;
+			DEALLOCATE(name);
+		}
 		OpenCMISS::Zinc::Tessellation tessellation = graphics.getTessellation();
 		if (tessellation.isValid())
 		{

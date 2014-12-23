@@ -43,7 +43,7 @@ length by this function.
 @return  Accessed graphics object or 0 on error.
 */
 GT_object *create_Spectrum_colour_bar(
-	const char *name,struct Spectrum *spectrum,int component_number,
+	const char *name,struct cmzn_spectrum *spectrum,int component_number,
 	const double barCentre[3], const double barAxis[3], const double sideAxis[3],
 	GLfloat extend_length,
 	int label_divisions,GLfloat tick_length,const char *number_format,
@@ -624,10 +624,10 @@ void cmzn_glyph_colour_bar::materialChange(struct MANAGER_MESSAGE(Graphical_mate
 	}
 }
 
-void cmzn_glyph_colour_bar::spectrumChange(struct MANAGER_MESSAGE(Spectrum) *message)
+void cmzn_glyph_colour_bar::spectrumChange(struct MANAGER_MESSAGE(cmzn_spectrum) *message)
 {
-	int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Spectrum)(message, this->spectrum);
-	if (change_flags & MANAGER_CHANGE_RESULT(Spectrum))
+	int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(message, this->spectrum);
+	if (change_flags & MANAGER_CHANGE_RESULT(cmzn_spectrum))
 	{
 		this->invalidate();
 	}

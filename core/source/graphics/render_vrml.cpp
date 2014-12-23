@@ -420,7 +420,7 @@ DESCRIPTION :
 	return (return_code);
 } /* activate_material_vrml */
 
-static int spectrum_start_render_vrml(FILE *vrml_file,struct Spectrum *spectrum,
+static int spectrum_start_render_vrml(FILE *vrml_file,struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
@@ -449,7 +449,7 @@ Sets VRML file for rendering values on the current material.
 	return (return_code);
 } /* spectrum_start_render_vrml */
 
-static int spectrum_render_vrml_value(FILE *vrml_file,struct Spectrum *spectrum,
+static int spectrum_render_vrml_value(FILE *vrml_file,struct cmzn_spectrum *spectrum,
 	struct Graphical_material *material,int number_of_data_components,GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
@@ -482,7 +482,7 @@ Writes VRML to represent the value 'data' in accordance with the spectrum.
 	return (return_code);
 } /* spectrum_render_vrml_value */
 
-static int spectrum_end_render_vrml(FILE *vrml_file,struct Spectrum *spectrum)
+static int spectrum_end_render_vrml(FILE *vrml_file,struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
 
@@ -585,7 +585,7 @@ b=(b1,b2,b3) and c=(c1,c2,c3) such that a = b (x) c.
  */
 static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyph_set,
 	Graphics_vertex_array *vertex_array,
-	struct Graphical_material *material, struct Spectrum *spectrum, ZnReal time,
+	struct Graphical_material *material, struct cmzn_spectrum *spectrum, ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 {
 	int return_code = 1;
@@ -1328,7 +1328,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 
 static int draw_point_set_vrml(FILE *vrml_file,int n_pts, GLfloat *point_list,
 	std::string *labels, gtMarkerType marker_type, int number_of_data_components,
-	GLfloat *data, struct Graphical_material *material, struct Spectrum *spectrum)
+	GLfloat *data, struct Graphical_material *material, struct cmzn_spectrum *spectrum)
 {
 	int i, return_code;
 	struct Graphical_material *material_copy;
@@ -1479,7 +1479,7 @@ static int draw_point_set_vrml(FILE *vrml_file,int n_pts, GLfloat *point_list,
 
 static int draw_polyline_vrml(FILE *vrml_file,GLfloat *point_list,
 	int number_of_data_components,GLfloat *data,
-	struct Graphical_material *material,struct Spectrum *spectrum,int n_pts,
+	struct Graphical_material *material,struct cmzn_spectrum *spectrum,int n_pts,
 	enum GT_polyline_type polyline_type)
 /*******************************************************************************
 LAST MODIFIED : 9 May 1999
@@ -1605,7 +1605,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 
 int draw_surface_vrml(FILE *vrml_file,
 	Graphics_vertex_array *vertex_array,
-	struct Graphical_material *material,struct Spectrum *spectrum,
+	struct Graphical_material *material,struct cmzn_spectrum *spectrum,
 	enum GT_surface_type surface_type,enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
