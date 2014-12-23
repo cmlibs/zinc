@@ -79,45 +79,123 @@ struct OutputBasisData
 	}
 };
 
-struct ElementFieldComponentTemplate
+struct MeshNodeConnectivity : public cmzn::RefCounted
+{
+	HDsLabels elementLabels;
+	HDsLabels localNodeLabels;
+	HDsMapInt localToGlobalNode;
+	HDsMapIndexing localToGlobalNodeIndexing;
+	FmlObjectHandle fmlMeshNodeConnectivity;
+	bool checkConsistency;
+	int tmpNodeIdentifiers[64]; // maximum from tricubic Lagrange basis
+
+	MeshNodeConnectivity(HDsLabels& elementLabelsIn, HDsLabels& localNodeLabelsIn) :
+		RefCounted(),
+		elementLabels(elementLabelsIn),
+		localNodeLabels(localNodeLabelsIn),
+		fmlMeshNodeConnectivity(FML_INVALID_OBJECT_HANDLE),
+		checkConsistency(false)
+	{
+		DsLabels *labelsArray[2] = { cmzn::GetImpl(this->elementLabels), cmzn::GetImpl(this->localNodeLabels) };
+		cmzn::SetImpl(this->localToGlobalNode, DsMap<int>::create(2, labelsArray));
+		cmzn::SetImpl(this->localToGlobalNodeIndexing, this->localToGlobalNode->createIndexing());
+	}
+
+	int setElementNodes(DsLabelIterator& elementLabelIterator, int numberOfNodes, int *nodeIdentifiers)
+	{
+		this->localToGlobalNodeIndexing->setEntry(elementLabelIterator);
+		if (this->checkConsistency &&
+			(this->localToGlobalNode->getValues(*(this->localToGlobalNodeIndexing), numberOfNodes, this->tmpNodeIdentifiers)))
+		{
+			// check consistency of local-to-global-node map
+			for (int i = 0; i < numberOfNodes; ++i)
+				if (nodeIdentifiers[i] != this->tmpNodeIdentifiers[i])
+				{
+					display_message(ERROR_MESSAGE, "FieldMLWriter: Inconsistent local-to-global-node maps for same basis. Support for this is not implemented");
+					return CMZN_ERROR_NOT_IMPLEMENTED;
+				}
+		}
+		else if (!this->localToGlobalNode->setValues(*(this->localToGlobalNodeIndexing), numberOfNodes, nodeIdentifiers))
+		{
+			display_message(ERROR_MESSAGE, "FieldMLWriter: Failed to set nodes in element %d", elementLabelIterator.getIdentifier());
+			return CMZN_ERROR_GENERAL;
+		}
+		return CMZN_OK;
+	}
+
+	void setCheckConsistency()
+	{
+		this->checkConsistency = true;
+	}
+};
+
+typedef cmzn::RefHandle<MeshNodeConnectivity> HMeshNodeConnectivity;
+
+struct ElementFieldComponentTemplate : public cmzn::RefCounted
 {
 	OutputBasisData *basisData;
 	HDsLabels elementLabels;
-	HDsMapInt localToGlobalNode;
-	HDsMapIndexing localToGlobalNodeIndexing;
+	HMeshNodeConnectivity nodeConnectivity;
 	std::vector<int> feLocalNodeIndexes;
 	std::vector<int> feScaleFactorIndexes;
 	std::string name;
 	FmlObjectHandle fmlElementTemplateEvaluator; // set once added as FieldML object
 
+private:
+	// the equivalent template is an existing template with the same FieldML serialisation but
+	// internally different scaling or local node indexes.
+	// only the equivalent template is ever output
+	ElementFieldComponentTemplate *equivalentTemplate;
+
 	ElementFieldComponentTemplate() :
+		RefCounted(),
 		basisData(0),
-		fmlElementTemplateEvaluator(FML_INVALID_OBJECT_HANDLE)
+		fmlElementTemplateEvaluator(FML_INVALID_OBJECT_HANDLE),
+		equivalentTemplate(0)
 	{
 	}
 
+public:
+
 	ElementFieldComponentTemplate(OutputBasisData *basisDataIn, DsLabels& elementLabelsIn) :
+		RefCounted(),
 		basisData(basisDataIn),
 		elementLabels(cmzn::Access(&elementLabelsIn)),
 		feLocalNodeIndexes(basisDataIn->localNodeLabels->getSize()),
 		feScaleFactorIndexes(basisDataIn->localNodeLabels->getSize()),
-		fmlElementTemplateEvaluator(FML_INVALID_OBJECT_HANDLE)
+		fmlElementTemplateEvaluator(FML_INVALID_OBJECT_HANDLE),
+		equivalentTemplate(0)
 	{
 	}
 
-	~ElementFieldComponentTemplate()
+	// @return true on success, false on failure
+	bool createNodeConnectivity()
 	{
+		cmzn::SetImpl(this->nodeConnectivity,
+			new MeshNodeConnectivity(this->elementLabels, this->basisData->localNodeLabels));
+		return (this->nodeConnectivity);
 	}
 
-	int createLocalToGlobalNode()
+	// @return true on success, false on failure
+	bool setNodeConnectivity(HMeshNodeConnectivity& otherNodeConnectivity)
 	{
-		DsLabels *labelsArray[2] = { cmzn::GetImpl(this->elementLabels), cmzn::GetImpl(this->basisData->localNodeLabels) };
-		cmzn::SetImpl(this->localToGlobalNode, DsMap<int>::create(2, labelsArray));
-		cmzn::SetImpl(this->localToGlobalNodeIndexing, this->localToGlobalNode ? this->localToGlobalNode->createIndexing() : 0);
-		return (this->localToGlobalNodeIndexing) ? CMZN_OK : CMZN_ERROR_GENERAL;
+		this->nodeConnectivity = otherNodeConnectivity;
+		return (this->nodeConnectivity);
+	}
+
+	ElementFieldComponentTemplate *getEquivalentTemplate()
+	{
+		return this->equivalentTemplate;
+	}
+
+	void setEquivalentTemplate(ElementFieldComponentTemplate *equivalentTemplateIn)
+	{
+		this->equivalentTemplate = equivalentTemplateIn;
 	}
 
 };
+
+typedef cmzn::RefHandle<ElementFieldComponentTemplate> HElementFieldComponentTemplate;
 
 struct FieldComponentTemplate : public cmzn::RefCounted
 {
@@ -169,15 +247,19 @@ public:
 
 	int setElementTemplate(DsLabelIndex elementIndex, ElementFieldComponentTemplate* elementTemplate)
 	{
+		// merge equivalent element templates
+		ElementFieldComponentTemplate* useElementTemplate = elementTemplate->getEquivalentTemplate();
+		if (!useElementTemplate)
+			useElementTemplate = elementTemplate;
 		int i = 0;
 		int size = static_cast<int>(this->elementTemplates.size());
 		for (; i < size; ++i)
-			if (this->elementTemplates[i] == elementTemplate)
+			if (this->elementTemplates[i] == useElementTemplate)
 				break;
 		if (i == size)
-			this->elementTemplates.push_back(elementTemplate);
-		this->mapIndexing->setEntryIndex(*(this->elementLabels), elementIndex);
+			this->elementTemplates.push_back(useElementTemplate);
 		++i;
+		this->mapIndexing->setEntryIndex(*(this->elementLabels), elementIndex);
 		if (this->elementTemplateMap->setValues(*(this->mapIndexing), 1, &i))
 			return CMZN_OK;
 		return CMZN_ERROR_GENERAL;
@@ -195,7 +277,8 @@ struct OutputFieldData
 	FE_field *feField;
 	std::vector<HFieldComponentTemplate> componentTemplates;
 	bool isDefined; // flag set in current working element
-	std::vector<ElementFieldComponentTemplate*> elementComponentTemplates;
+	std::vector<ElementFieldComponentTemplate*> workingElementComponentTemplates;
+	std::vector<ElementFieldComponentTemplate*> outputElementComponentTemplates;
 
 	OutputFieldData() :
 		field(0),
@@ -212,13 +295,17 @@ struct OutputFieldData
 		feField(feFieldIn),
 		componentTemplates(componentCount),
 		isDefined(false),
-		elementComponentTemplates(componentCount)
+		workingElementComponentTemplates(componentCount),
+		outputElementComponentTemplates(componentCount)
 	{
 		char *tmpName = cmzn_field_get_name(field);
 		this->name = tmpName;
 		cmzn_deallocate(tmpName);
 		for (int c = 0; c < this->componentCount; ++c)
-			elementComponentTemplates[c] = 0;
+		{
+			workingElementComponentTemplates[c] = 0;
+			outputElementComponentTemplates[c] = 0;
+		}
 	}
 
 	~OutputFieldData()
@@ -246,7 +333,7 @@ class FieldMLWriter
 	std::map<FmlObjectHandle,FmlObjectHandle> typeArgument;
 	std::map<FE_basis*,OutputBasisData> outputBasisMap;
 	// later: multimap
-	std::map<FE_element_field_component*,ElementFieldComponentTemplate*> elementTemplates;
+	std::map<FE_element_field_component*,HElementFieldComponentTemplate> elementTemplates;
 
 public:
 	FieldMLWriter(struct cmzn_region *region, const char *locationIn, const char *filenameIn) :
@@ -267,7 +354,6 @@ public:
 
 	~FieldMLWriter()
 	{
-		clearElementTemplates();
 		Fieldml_Destroy(fmlSession);
 		cmzn_fieldmodule_destroy(&fieldmodule);
 		cmzn_region_destroy(&region);
@@ -292,19 +378,13 @@ private:
 		DsMap<VALUETYPE>& parameterMap, FmlObjectHandle fmlValueType);
 	int getElementFieldComponentTemplate(FE_element_field_component *feComponent,
 		DsLabels& elementLabels, ElementFieldComponentTemplate*& elementTemplate);
+	FmlObjectHandle writeMeshNodeConnectivity(MeshNodeConnectivity& nodeConnectivity,
+		std::string& meshName, const char *uniqueSuffix);
 	FmlObjectHandle writeElementFieldComponentTemplate(ElementFieldComponentTemplate& elementTemplate,
 		int meshDimension, std::string& meshName, int& nextElementTemplateNumber);
 	FmlObjectHandle writeFieldTemplate(FieldComponentTemplate& fieldTemplate,
 		int meshDimension, std::string& meshName, int& nextFieldTemplateNumber, int& nextElementTemplateNumber);
 	FmlObjectHandle writeMeshField(std::string& meshName, OutputFieldData& outputField);
-
-	void clearElementTemplates()
-	{
-		for (std::map<FE_element_field_component*,ElementFieldComponentTemplate*>::iterator iter =
-				this->elementTemplates.begin(); iter != this->elementTemplates.end(); ++iter)
-			delete iter->second;
-		this->elementTemplates.clear();
-	}
 
 };
 
@@ -709,16 +789,16 @@ int FieldMLWriter::writeMesh(int meshDimension, bool writeIfEmpty)
 			return_code = CMZN_ERROR_GENERAL;
 		else
 		{
-			if (meshDimension > 1)
-			{
-				const char *chartComponentsName = "mesh3d.xi.components";
-				fmlMeshChartComponentsType = Fieldml_CreateContinuousTypeComponents(
-					this->fmlSession, fmlMeshChartType, chartComponentsName, meshDimension);
-				fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlMeshChartComponentsType,
-					1, meshDimension, /*stride*/1);
-				if (fmlMeshChartComponentsType == FML_INVALID_OBJECT_HANDLE)
-					return_code = CMZN_ERROR_GENERAL;
-			}
+			// since chart.1d in the FieldML library has a component ensemble with 1 member,
+			// we are required to do the same for meshes to bind with it.
+			// Hence following is not conditional on: if (meshDimension > 1)
+			const char *chartComponentsName = "mesh3d.xi.components";
+			fmlMeshChartComponentsType = Fieldml_CreateContinuousTypeComponents(
+				this->fmlSession, fmlMeshChartType, chartComponentsName, meshDimension);
+			fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession, fmlMeshChartComponentsType,
+				1, meshDimension, /*stride*/1);
+			if (fmlMeshChartComponentsType == FML_INVALID_OBJECT_HANDLE)
+				return_code = CMZN_ERROR_GENERAL;
 		}
 		const char *meshElementsName = "elements";
 		FmlObjectHandle fmlMeshElementsType = Fieldml_CreateMeshElementsType(this->fmlSession, fmlMeshType, meshElementsName);
@@ -919,11 +999,11 @@ int FieldMLWriter::getElementFieldComponentTemplate(FE_element_field_component *
 	DsLabels& elementLabels, ElementFieldComponentTemplate*& elementTemplate)
 {
 	elementTemplate = 0;
-	std::map<FE_element_field_component*,ElementFieldComponentTemplate*>::iterator iter =
+	std::map<FE_element_field_component*,HElementFieldComponentTemplate>::iterator iter =
 		this->elementTemplates.find(feComponent);
 	if (iter != this->elementTemplates.end())
 	{
-		elementTemplate = iter->second;
+		elementTemplate = cmzn::GetImpl(iter->second);
 		return CMZN_OK;
 	}
 	FE_basis *feBasis;
@@ -947,7 +1027,7 @@ int FieldMLWriter::getElementFieldComponentTemplate(FE_element_field_component *
 		display_message(ERROR_MESSAGE, "FieldMLWriter: Invalid number of nodes for basis in map");
 		return CMZN_ERROR_GENERAL;
 	}
-	ElementFieldComponentTemplate newElementTemplate(basisData, elementLabels);
+	HElementFieldComponentTemplate newElementTemplate(new ElementFieldComponentTemplate(basisData, elementLabels));
 	bool hasScaling = false;
 	for (int n = 0; n < numberOfNodes; ++n)
 	{
@@ -970,68 +1050,90 @@ int FieldMLWriter::getElementFieldComponentTemplate(FE_element_field_component *
 			display_message(ERROR_MESSAGE, "FieldMLWriter: Writing derivatives and versions is not implemented");
 			return CMZN_ERROR_NOT_IMPLEMENTED;
 		}
-		newElementTemplate.feLocalNodeIndexes[n] = localNodeIndex;
-		newElementTemplate.feScaleFactorIndexes[n] = scaleFactorIndex;
+		newElementTemplate->feLocalNodeIndexes[n] = localNodeIndex;
+		newElementTemplate->feScaleFactorIndexes[n] = scaleFactorIndex;
 		if (scaleFactorIndex >= 0)
 			hasScaling = true;
 	}
 	if (!hasScaling)
-		newElementTemplate.feScaleFactorIndexes.clear();
+		newElementTemplate->feScaleFactorIndexes.clear();
 
-	// Search for matching ElementFieldComponentTemplate (for sharing between components)
-	// Currently only supports one template per basis, so different local nodes and scaling fail.
+	// search for element template using this basis
 	for (iter = this->elementTemplates.begin(); iter != this->elementTemplates.end(); ++iter)
 	{
 		if (iter->second->basisData == basisData)
 		{
-			elementTemplate = iter->second;
+			elementTemplate = cmzn::GetImpl(iter->second);
 			break;
 		}
 	}
 	if (elementTemplate)
 	{
-		if (newElementTemplate.feLocalNodeIndexes != elementTemplate->feLocalNodeIndexes)
+		const bool differentNodeIndexes = (newElementTemplate->feLocalNodeIndexes != elementTemplate->feLocalNodeIndexes);
+		if (differentNodeIndexes ||
+			(newElementTemplate->feScaleFactorIndexes != elementTemplate->feScaleFactorIndexes))
 		{
-			display_message(ERROR_MESSAGE, "FieldMLWriter: Use of same basis with different local node indexes is not implemented");
-			elementTemplate = 0;
-			return CMZN_ERROR_NOT_IMPLEMENTED;
+			// use new element field template
+			if (newElementTemplate->setNodeConnectivity(elementTemplate->nodeConnectivity))
+			{
+				newElementTemplate->setEquivalentTemplate(elementTemplate);
+				if (differentNodeIndexes)
+					newElementTemplate->nodeConnectivity->setCheckConsistency();
+				elementTemplate = cmzn::GetImpl(newElementTemplate);
+			}
+			else
+			{
+				elementTemplate = 0;
+				return CMZN_ERROR_MEMORY;
+			}
 		}
-		// GRC this is fairly severe as mixes of template without scale factors and with stored scale factors exist
-		// Need to fix this soon
-		if (newElementTemplate.feScaleFactorIndexes != elementTemplate->feScaleFactorIndexes)
-		{
-			display_message(ERROR_MESSAGE, "FieldMLWriter: Use of same basis with different scale factor indexes is not implemented");
-			elementTemplate = 0;
-			return CMZN_ERROR_NOT_IMPLEMENTED;
-		}
+		else
+			cmzn::SetImpl(newElementTemplate, cmzn::Access(elementTemplate));
 	}
 	else
 	{
-		elementTemplate = new ElementFieldComponentTemplate(newElementTemplate);
-		if (elementTemplate && (CMZN_OK == elementTemplate->createLocalToGlobalNode()))
-			this->elementTemplates[feComponent] = elementTemplate;
+		if (newElementTemplate->createNodeConnectivity())
+			elementTemplate = cmzn::GetImpl(newElementTemplate);
 		else
-		{
-			delete elementTemplate;
-			elementTemplate = 0;
 			return CMZN_ERROR_MEMORY;
-		}
 	}
+	this->elementTemplates[feComponent] = newElementTemplate;
 	return CMZN_OK;
 }
+
+FmlObjectHandle FieldMLWriter::writeMeshNodeConnectivity(MeshNodeConnectivity& nodeConnectivity,
+	std::string& meshName, const char *uniqueSuffix)
+{
+	if (FML_INVALID_OBJECT_HANDLE != nodeConnectivity.fmlMeshNodeConnectivity)
+		return nodeConnectivity.fmlMeshNodeConnectivity;
+	std::string nodeConnectivityName = meshName + ".connectivity" + uniqueSuffix;
+	nodeConnectivity.localToGlobalNode->setName(nodeConnectivityName);
+	nodeConnectivity.fmlMeshNodeConnectivity = this->defineParametersFromMap(
+		*(nodeConnectivity.localToGlobalNode), this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES]);
+	return nodeConnectivity.fmlMeshNodeConnectivity;
+}
+
 
 FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldComponentTemplate& elementTemplate,
 	int meshDimension, std::string& meshName, int& nextElementTemplateNumber)
 {
+	// check if template already written
 	if (FML_INVALID_OBJECT_HANDLE != elementTemplate.fmlElementTemplateEvaluator)
 		return elementTemplate.fmlElementTemplateEvaluator;
+
+	// check if equivalent template already written
+	if (elementTemplate.getEquivalentTemplate())
+	{
+		elementTemplate.fmlElementTemplateEvaluator = this->writeElementFieldComponentTemplate(
+			*elementTemplate.getEquivalentTemplate(), meshDimension, meshName, nextElementTemplateNumber);
+		return elementTemplate.fmlElementTemplateEvaluator;
+	}
+
+	// write new template
 	char temp[20];
 	sprintf(temp, "%d", nextElementTemplateNumber);
 	++nextElementTemplateNumber;
-	std::string elementConnectivityName = meshName + ".connectivity" + temp;
-	elementTemplate.localToGlobalNode->setName(elementConnectivityName);
-	FmlObjectHandle fmlConnectivity = this->defineParametersFromMap(*(elementTemplate.localToGlobalNode),
-		this->fmlNodesTypes[CMZN_FIELD_DOMAIN_TYPE_NODES]);
+	FmlObjectHandle fmlConnectivity = this->writeMeshNodeConnectivity(*(elementTemplate.nodeConnectivity), meshName, temp);
 	if (FML_INVALID_OBJECT_HANDLE == fmlConnectivity)
 		return FML_INVALID_OBJECT_HANDLE;
 	elementTemplate.name = meshName + ".interpolation" + temp;
@@ -1371,14 +1473,16 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 				return_code = this->getElementFieldComponentTemplate(feComponent, elementLabels, elementTemplate);
 				if (CMZN_OK != return_code)
 				{
-					display_message(ERROR_MESSAGE, "FieldMLWriter:  Cannot write definition of field %s at element %d",
-						outputField.name.c_str(), elementNumber);
+					display_message(ERROR_MESSAGE, "FieldMLWriter:  Cannot write definition of field %s component %d at element %d",
+						outputField.name.c_str(), c + 1, elementNumber);
 					break;
 				}
-				outputField.elementComponentTemplates[c] = elementTemplate;
+				outputField.workingElementComponentTemplates[c] = elementTemplate;
+				outputField.outputElementComponentTemplates[c] =
+					elementTemplate->getEquivalentTemplate() ? elementTemplate->getEquivalentTemplate() : elementTemplate;
 				bool firstUseOfElementTemplate = true;
 				for (int oc = 0; oc < c; ++oc)
-					if (elementTemplate == outputField.elementComponentTemplates[oc])
+					if (elementTemplate == outputField.workingElementComponentTemplates[oc])
 					{
 						firstUseOfElementTemplate = false;
 						break;
@@ -1387,7 +1491,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 					for (int of = 0; of < f; ++of)
 						if (outputFields[of].isDefined)
 							for (int oc = outputFields[of].componentCount - 1; 0 <= oc; --oc)
-								if (elementTemplate == outputFields[of].elementComponentTemplates[oc])
+								if (elementTemplate == outputFields[of].workingElementComponentTemplates[oc])
 								{
 									firstUseOfElementTemplate = false;
 									break;
@@ -1403,7 +1507,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 						if (!get_FE_element_node(element, elementTemplate->feLocalNodeIndexes[n], &node) && (node))
 						{
 							display_message(ERROR_MESSAGE, "FieldMLWriter:  Missing local node %d for field %s component %d at element %d",
-								elementTemplate->feLocalNodeIndexes[n] + 1, outputField.name.c_str(), c, elementNumber);
+								elementTemplate->feLocalNodeIndexes[n] + 1, outputField.name.c_str(), c + 1, elementNumber);
 							return_code = CMZN_ERROR_GENERAL;
 							break;
 						}
@@ -1420,8 +1524,8 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 						}
 						if ((scaleFactor < 0.999999) || (scaleFactor > 1.000001))
 						{
-							display_message(ERROR_MESSAGE, "FieldMLWriter: Non-unit scale factors are not implemented (field %s element %d)",
-								outputField.name.c_str(), elementNumber);
+							display_message(ERROR_MESSAGE, "FieldMLWriter: Non-unit scale factors are not implemented (field %s component %d element %d)",
+								outputField.name.c_str(), c + 1, elementNumber);
 							return_code = CMZN_ERROR_NOT_IMPLEMENTED;
 							break;
 						}
@@ -1429,12 +1533,12 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 					if (CMZN_OK != return_code)
 						break;
 					// fill in local to global map
-					elementTemplate->localToGlobalNodeIndexing->setEntry(*elementLabelIterator);
-					if (!elementTemplate->localToGlobalNode->setValues(
-						*(elementTemplate->localToGlobalNodeIndexing), numberOfNodes, elementNodes))
+					return_code = elementTemplate->nodeConnectivity->setElementNodes(*elementLabelIterator, numberOfNodes, elementNodes);
+					if (CMZN_OK != return_code)
 					{
-						display_message(ERROR_MESSAGE, "FieldMLWriter: Failed to set local to global nodes in element %d", elementNumber);
-						return_code = CMZN_ERROR_GENERAL;
+						display_message(ERROR_MESSAGE,
+							"FieldMLWriter:  Failed to set local-to-global-node map for field %s component %d at element %d",
+							outputField.name.c_str(), c + 1, elementNumber);
 						break;
 					}
 				}
@@ -1447,7 +1551,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 				continue;
 			for (int c = 0; c < outputField.componentCount; ++c)
 			{
-				ElementFieldComponentTemplate* elementTemplate = outputField.elementComponentTemplates[c];
+				ElementFieldComponentTemplate* elementTemplate = outputField.outputElementComponentTemplates[c];
 				if (!elementTemplate)
 					continue; // since cleared after field template matched
 				FieldComponentTemplate *oldFieldTemplate = cmzn::GetImpl(outputField.componentTemplates[c]);
@@ -1468,9 +1572,9 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 					for (int of = f; (of < outputFieldsCount) && (!copyFieldTemplate); ++of)
 						if (outputFields[of].isDefined)
 							for (int oc = outputFields[of].componentCount - 1; 0 <= oc; --oc)
-								if ((outputFields[of].elementComponentTemplates[oc]) &&
+								if ((outputFields[of].outputElementComponentTemplates[oc]) &&
 									(cmzn::GetImpl(outputFields[of].componentTemplates[oc]) == oldFieldTemplate) &&
-									(elementTemplate != outputFields[of].elementComponentTemplates[oc]))
+									(elementTemplate != outputFields[of].outputElementComponentTemplates[oc]))
 								{
 									copyFieldTemplate = true;
 									break;
@@ -1492,12 +1596,12 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 				for (int of = f; of < outputFieldsCount; ++of)
 					if (outputFields[of].isDefined)
 						for (int oc = outputFields[of].componentCount - 1; 0 <= oc; --oc)
-							if ((outputFields[of].elementComponentTemplates[oc] == elementTemplate) &&
+							if ((outputFields[of].outputElementComponentTemplates[oc] == elementTemplate) &&
 								(cmzn::GetImpl(outputFields[of].componentTemplates[oc]) == oldFieldTemplate))
 							{
 								if (newFieldTemplate != oldFieldTemplate)
 									cmzn::SetImpl(outputFields[of].componentTemplates[oc], cmzn::Access(newFieldTemplate));
-								outputFields[of].elementComponentTemplates[oc] = 0;
+								outputFields[of].outputElementComponentTemplates[oc] = 0;
 							}
 				cmzn::Deaccess(newFieldTemplate);
 			} // component
@@ -1563,7 +1667,6 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 			}
 		}
 	}
-	clearElementTemplates();
 	return return_code;
 }
 
