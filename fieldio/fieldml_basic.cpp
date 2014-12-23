@@ -558,3 +558,95 @@ TEST(ZincRegion, mixed_template_squares)
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
 	check_mixed_template_squares(testFm2);
 }
+
+namespace {
+
+void check_lines_unit_scale_factors_model(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(2, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+
+	EXPECT_EQ(OK, result = fm.defineAllFaces());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	EXPECT_EQ(4, mesh1d.getSize());
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_EQ(4, nodes.getSize());
+	for (int i = 1; i < 4; ++i)
+	{
+		Element element = mesh1d.findElementByIdentifier(i);
+		EXPECT_TRUE(element.isValid());
+		Element::ShapeType shapeType = element.getShapeType();
+		EXPECT_EQ(Element::SHAPE_TYPE_LINE, shapeType);
+	}
+
+	const double valueOne = 1.0;
+	Field one = fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral length = fm.createFieldMeshIntegral(one, coordinates, mesh1d);
+	EXPECT_TRUE(length.isValid());
+
+	Fieldcache cache = fm.createFieldcache();
+	double outLength;
+	EXPECT_EQ(OK, result = length.evaluateReal(cache, 1, &outLength));
+	ASSERT_DOUBLE_EQ(4.0, outLength);
+}
+
+}
+
+// Many EX files multiply all element parameters by stored unit scale factors
+// even for Lagrange/Simplex bases that do not need them, and these are
+// removed when writing to FieldML.
+// This example reads a 1-D model with a mix of elements interpolating with
+// both stored unit scale factors, and the same basis with no scale factors.
+// It tests matching the different cases to the same element field template
+// and also overwriting the definition when re-reading from FieldML.
+TEST(ZincRegion, lines_unit_scale_factors)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_UNIT_SCALE_FACTORS_RESOURCE)));
+	check_lines_unit_scale_factors_model(zinc.fm);
+
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_unit_scale_factors.fieldml"));
+	// the following tests overwriting element fields using stored unit scale factors
+	// by element fields in the FieldML file which have no scaling
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(FIELDML_OUTPUT_FOLDER "/lines_unit_scale_factors.fieldml"));
+	check_lines_unit_scale_factors_model(zinc.fm);
+}
+
+// Test alternating the local node ordering but maintaining consistent
+// local nodes for the different ordering is output successfully
+TEST(ZincRegion, lines_alternate_node_order)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_ALTERNATE_NODE_ORDER_RESOURCE)));
+	check_lines_unit_scale_factors_model(zinc.fm);
+
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(FIELDML_OUTPUT_FOLDER "/lines_alternate_node_order.fieldml"));
+	check_lines_unit_scale_factors_model(zinc.fm);
+}
+
+// Test cannot yet write models with inconsistent local-to-global-node map
+// for the same basis in an element.
+TEST(ZincRegion, lines_inconsistent_node_order)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDIO_EX_LINES_INCONSISTENT_NODE_ORDER_RESOURCE)));
+	check_lines_unit_scale_factors_model(zinc.fm);
+
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(ERROR_NOT_IMPLEMENTED, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/lines_inconsistent_node_order.fieldml"));
+}
