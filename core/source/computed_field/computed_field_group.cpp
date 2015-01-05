@@ -465,7 +465,9 @@ Computed_field_element_group *Computed_field_group::getElementGroupPrivate(int d
 	{
 		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(this->field);
 		cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
-		cmzn_field_element_group_id element_group = this->create_element_group(mesh);
+		cmzn_field_element_group_id element_group = this->get_element_group(mesh);
+		if (!element_group)
+			element_group = this->create_element_group(mesh);
 		Computed_field_element_group *elementGroupCore = Computed_field_element_group_core_cast(element_group);
 		cmzn_field_element_group_destroy(&element_group);
 		cmzn_mesh_destroy(&mesh);
@@ -496,7 +498,9 @@ Computed_field_node_group *Computed_field_group::getNodeGroupPrivate(cmzn_field_
 	{
 		cmzn_fieldmodule_id fieldmodule = cmzn_field_get_fieldmodule(this->field);
 		cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, domain_type);
-		cmzn_field_node_group_id node_group = this->create_node_group(nodeset);
+		cmzn_field_node_group_id node_group = this->get_node_group(nodeset);
+		if (!node_group)
+			node_group = this->create_node_group(nodeset);
 		Computed_field_node_group *nodeGroupCore = Computed_field_node_group_core_cast(node_group);
 		cmzn_field_node_group_destroy(&node_group);
 		cmzn_nodeset_destroy(&nodeset);
