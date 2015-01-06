@@ -60,6 +60,11 @@ FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh);
  */
 cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh);
 
+/** Internal use only.
+ * @return non-accessed element group field for this mesh, if any.
+ */
+cmzn_field_element_group *cmzn_mesh_get_element_group_field_internal(cmzn_mesh_id mesh);
+
 struct cmzn_meshchanges
 {
 private:

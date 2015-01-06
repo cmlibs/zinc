@@ -952,6 +952,12 @@ public:
 		return (0 != group);
 	}
 
+	// if mesh is a group, return the element group field, otherwise return 0
+	cmzn_field_element_group *getGroupField()
+	{
+		return this->group;
+	}
+
 	bool match(cmzn_mesh& other_mesh)
 	{
 		return ((fe_region == other_mesh.fe_region) &&
@@ -1370,6 +1376,13 @@ cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh)
 	if (!mesh)
 		return 0;
 	return FE_region_get_cmzn_region(mesh->getFeRegion());
+}
+
+cmzn_field_element_group *cmzn_mesh_get_element_group_field_internal(cmzn_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->getGroupField();
+	return 0;
 }
 
 cmzn_elementbasis_id cmzn_elementbasis_access(

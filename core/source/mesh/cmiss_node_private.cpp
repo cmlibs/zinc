@@ -695,6 +695,12 @@ public:
 		return (0 != group);
 	}
 
+	// if nodeset is a group, return the node group field, otherwise return 0
+	cmzn_field_node_group *getGroupField()
+	{
+		return this->group;
+	}
+
 	bool match(cmzn_nodeset& other_nodeset)
 	{
 		return ((fe_nodeset == other_nodeset.fe_nodeset) &&
@@ -1036,6 +1042,13 @@ cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset)
 {
 	if (nodeset)
 		return FE_region_get_cmzn_region(nodeset->getFeRegion());
+	return 0;
+}
+
+cmzn_field_node_group *cmzn_nodeset_get_node_group_field_internal(cmzn_nodeset_id nodeset)
+{
+	if (nodeset)
+		return nodeset->getGroupField();
 	return 0;
 }
 

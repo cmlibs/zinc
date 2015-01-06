@@ -79,6 +79,23 @@ public:
 	int list();
 
 	char* get_command_string();
+
+	// if the nodeset is a nodeset group, also need to propagate changes from it
+	virtual int check_dependency()
+	{
+		int return_code = Computed_field_core::check_dependency();
+		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+		{
+			cmzn_field_node_group *nodeGroupField = cmzn_nodeset_get_node_group_field_internal(this->nodeset);
+			if (nodeGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
+				cmzn_field_node_group_base_cast(nodeGroupField)->manager_change_status))
+			{
+				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+				return_code = this->field->manager_change_status;
+			}
+		}
+		return return_code;
+	}
 };
 
 bool Computed_field_nodeset_operator::is_defined_at_location(cmzn_fieldcache& cache)

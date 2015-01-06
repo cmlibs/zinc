@@ -2844,6 +2844,25 @@ int Computed_field_get_type_embedded(struct Computed_field *field,
 
 namespace {
 
+class Computed_field_find_mesh_location;
+
+// Has a custom implementation of the clear() method to ensure find element xi cache
+// is cleared. Stores owning field to support this; should all FieldValueCaches do this?
+class FindMeshLocationFieldValueCache : public MeshLocationFieldValueCache
+{
+	Computed_field_find_mesh_location* findMeshLocationField;
+
+public:
+
+	FindMeshLocationFieldValueCache(Computed_field_find_mesh_location* findMeshLocationFieldIn) :
+		findMeshLocationField(findMeshLocationFieldIn),
+		MeshLocationFieldValueCache()
+	{
+	}
+
+	virtual void clear();
+};
+
 const char computed_field_find_mesh_location_type_string[] = "find_mesh_location";
 
 class Computed_field_find_mesh_location : public Computed_field_core
@@ -2905,7 +2924,7 @@ private:
 
 	virtual FieldValueCache *createValueCache(cmzn_fieldcache& parentCache)
 	{
-		MeshLocationFieldValueCache *valueCache = new MeshLocationFieldValueCache();
+		MeshLocationFieldValueCache *valueCache = new FindMeshLocationFieldValueCache(this);
 		valueCache->createExtraCache(parentCache, Computed_field_get_region(field));
 		return valueCache;
 	}
@@ -2928,7 +2947,34 @@ private:
 		return CMZN_FIELD_VALUE_TYPE_MESH_LOCATION;
 	}
 
+	// if the mesh is a mesh group, also need to propagate changes from it
+	virtual int check_dependency()
+	{
+		int return_code = Computed_field_core::check_dependency();
+		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+		{
+			cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
+			if (elementGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
+				cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+			{
+				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+				return_code = this->field->manager_change_status;
+			}
+		}
+		return return_code;
+	}
+
 };
+
+void FindMeshLocationFieldValueCache::clear()
+{
+	// clear extra cache value cache for mesh field
+	cmzn_fieldcache& extraCache = *this->getExtraCache();
+	cmzn_field *meshField = this->findMeshLocationField->get_mesh_field();
+	FieldValueCache *meshFieldValueCache = meshField->getValueCache(extraCache);
+	meshFieldValueCache->clear();
+	MeshLocationFieldValueCache::clear();
+}
 
 Computed_field_find_mesh_location::~Computed_field_find_mesh_location()
 {
