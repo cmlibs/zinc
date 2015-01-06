@@ -2855,8 +2855,8 @@ class FindMeshLocationFieldValueCache : public MeshLocationFieldValueCache
 public:
 
 	FindMeshLocationFieldValueCache(Computed_field_find_mesh_location* findMeshLocationFieldIn) :
-		findMeshLocationField(findMeshLocationFieldIn),
-		MeshLocationFieldValueCache()
+		MeshLocationFieldValueCache(),
+		findMeshLocationField(findMeshLocationFieldIn)
 	{
 	}
 
