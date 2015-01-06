@@ -17,6 +17,8 @@
 #include <zinc/fieldfiniteelement.h>
 #include <zinc/fieldgroup.h>
 #include <zinc/fieldlogicaloperators.h>
+#include <zinc/fieldmeshoperators.hpp>
+#include <zinc/fieldnodesetoperators.hpp>
 #include <zinc/fieldsubobjectgroup.h>
 #include <zinc/node.h>
 #include <zinc/region.h>
@@ -947,3 +949,79 @@ TEST(ZincFieldGroup, removeEmptySubgroupsPropagatesChanges)
 	zinc.root_region.endHierarchicalChange();
 	EXPECT_EQ(Selectionevent::CHANGE_FLAG_REMOVE, result = callback.getChangeSummary());
 }
+
+// Issue 3852: Check changes to group propagate to fields depending on mesh/nodeset
+TEST(ZincFieldGroup, issue_3852_dependency_on_mesh_or_nodeset_group)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+
+	Field coordinates = zinc.fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+
+	Mesh mesh = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh.isValid());
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	FieldGroup group = zinc.fm.createFieldGroup();
+	EXPECT_TRUE(group.isValid());
+	EXPECT_EQ(OK, result = group.setName("group"));
+	EXPECT_EQ(OK, result = group.setSubelementHandlingMode(FieldGroup::SUBELEMENT_HANDLING_MODE_FULL));
+
+	FieldElementGroup elementGroup = group.createFieldElementGroup(mesh);
+	EXPECT_TRUE(elementGroup.isValid());
+	MeshGroup meshGroup = elementGroup.getMeshGroup();
+	EXPECT_TRUE(meshGroup.isValid());
+
+	FieldNodeGroup nodeGroup = group.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(nodeGroup.isValid());
+	NodesetGroup nodesetGroup = nodeGroup.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+
+	Element element1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
+	EXPECT_EQ(OK, result = meshGroup.addElement(element1));
+
+	const double valueOne = 1.0;
+	Field one = zinc.fm.createFieldConstant(1, &valueOne);
+	FieldMeshIntegral groupArea = zinc.fm.createFieldMeshIntegral(one, coordinates, meshGroup);
+	EXPECT_TRUE(groupArea.isValid());
+	FieldNodesetSum groupNodes = zinc.fm.createFieldNodesetSum(one, nodesetGroup);
+	EXPECT_TRUE(groupNodes.isValid());
+	FieldFindMeshLocation findMeshLocation = zinc.fm.createFieldFindMeshLocation(coordinates, coordinates, meshGroup);
+	EXPECT_TRUE(findMeshLocation.isValid());
+	EXPECT_EQ(OK, result = findMeshLocation.setSearchMode(FieldFindMeshLocation::SEARCH_MODE_NEAREST));
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	Node node6 = nodeset.findNodeByIdentifier(6);
+	EXPECT_TRUE(node6.isValid());
+	EXPECT_EQ(OK, result = cache.setNode(node6));
+	double area, count, findXi[2];
+	Element findElement;
+
+	EXPECT_EQ(OK, result = groupArea.evaluateReal(cache, 1, &area));
+	EXPECT_DOUBLE_EQ(1.0, area);
+	EXPECT_EQ(OK, result = groupNodes.evaluateReal(cache, 1, &count));
+	EXPECT_DOUBLE_EQ(4.0, count);
+	findElement = findMeshLocation.evaluateMeshLocation(cache, 2, findXi);
+	EXPECT_EQ(element1, findElement);
+	EXPECT_DOUBLE_EQ(0.0, findXi[0]);
+	EXPECT_DOUBLE_EQ(1.0, findXi[1]);
+
+	Element element3 = mesh.findElementByIdentifier(3);
+	EXPECT_TRUE(element3.isValid());
+	EXPECT_EQ(OK, result = meshGroup.addElement(element3));
+
+	EXPECT_EQ(OK, result = groupArea.evaluateReal(cache, 1, &area));
+	EXPECT_DOUBLE_EQ(2.0, area);
+	EXPECT_EQ(OK, result = groupNodes.evaluateReal(cache, 1, &count));
+	EXPECT_DOUBLE_EQ(6.0, count);
+	findElement = findMeshLocation.evaluateMeshLocation(cache, 2, findXi);
+	EXPECT_EQ(element3, findElement);
+	EXPECT_DOUBLE_EQ(1.0, findXi[0]);
+	EXPECT_DOUBLE_EQ(1.0, findXi[1]);
+};
