@@ -83,6 +83,12 @@ char *StringFieldValueCache::getAsString()
 	return duplicate_string(stringValue);
 }
 
+void MeshLocationFieldValueCache::clear()
+{
+	cmzn_element_destroy(&element);
+	FieldValueCache::clear();
+}
+
 char *MeshLocationFieldValueCache::getAsString()
 {
 	if (!element)

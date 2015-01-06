@@ -13,6 +13,7 @@
 #define CMZN_NODE_PRIVATE_HPP
 
 #include "zinc/node.h"
+#include "zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element.h"
 #include "general/list.h"
 
@@ -67,6 +68,11 @@ FE_region *cmzn_nodeset_get_FE_region_internal(cmzn_nodeset_id nodeset);
  * @return non-accessed region for this nodeset.
  */
 cmzn_region_id cmzn_nodeset_get_region_internal(cmzn_nodeset_id nodeset);
+
+/** Internal use only.
+ * @return non-accessed node group field for this nodeset, if any.
+ */
+cmzn_field_node_group *cmzn_nodeset_get_node_group_field_internal(cmzn_nodeset_id nodeset);
 
 /** Internal use only
  * @return  True if nodeset represents data points.

@@ -149,6 +149,23 @@ public:
 
 	virtual int evaluate(cmzn_fieldcache& cache, FieldValueCache& inValueCache);
 
+	// if the mesh is a mesh group, also need to propagate changes from it
+	virtual int check_dependency()
+	{
+		int return_code = Computed_field_core::check_dependency();
+		if (!(return_code & MANAGER_CHANGE_FULL_RESULT(Computed_field)))
+		{
+			cmzn_field_element_group *elementGroupField = cmzn_mesh_get_element_group_field_internal(this->mesh);
+			if (elementGroupField && (MANAGER_CHANGE_NONE(Computed_field) !=
+				cmzn_field_element_group_base_cast(elementGroupField)->manager_change_status))
+			{
+				this->field->setChangedPrivate(MANAGER_CHANGE_FULL_RESULT(Computed_field));
+				return_code = this->field->manager_change_status;
+			}
+		}
+		return return_code;
+	}
+
 protected:
 	template <class ProcessTerm> int evaluateTerms(ProcessTerm &processTerm);
 };

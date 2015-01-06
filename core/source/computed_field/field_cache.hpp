@@ -435,10 +435,7 @@ public:
 		cmzn_element_destroy(&element);
 	}
 
-	virtual void clear()
-	{
-		cmzn_element_destroy(&element);
-	}
+	virtual void clear();
 
 	static MeshLocationFieldValueCache* cast(FieldValueCache* valueCache)
    {

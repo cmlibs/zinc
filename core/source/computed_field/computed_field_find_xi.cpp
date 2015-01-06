@@ -326,6 +326,7 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 					if (cache->values[i] != values[i])
 					{
  						cache->valid_values = 0;
+						break;
 					}
 				}
 			}
@@ -432,15 +433,13 @@ int Computed_field_perform_find_element_xi(struct Computed_field *field,
 					{
 						cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(search_mesh);
 						cmzn_element_id element = 0;
-						while (0 != (element = cmzn_elementiterator_next(iterator)))
+						while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 						{
 							if (Computed_field_iterative_element_conditional(element, &find_element_xi_data))
 							{
 								*element_address = element;
-								cmzn_element_destroy(&element);
 								break;
 							}
-							cmzn_element_destroy(&element);
 						}
 						cmzn_elementiterator_destroy(&iterator);
 					}
