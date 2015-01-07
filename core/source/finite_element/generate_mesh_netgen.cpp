@@ -295,7 +295,15 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		return 0;
 	}
 
-	return_code=Ng_GenerateVolumeMesh(mesh,mp);
+	try
+	{
+		return_code=Ng_GenerateVolumeMesh(mesh,mp);
+	}
+	catch (...)
+	{
+		display_message(ERROR_MESSAGE, "Netgen exception occurred - aborting");
+		return_code = NG_ERROR;
+	}
 	if(return_code!=NG_OK)
 	{
 		Ng_Exit();
