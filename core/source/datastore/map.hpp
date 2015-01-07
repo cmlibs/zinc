@@ -10,6 +10,9 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#if !defined (CMZN_DATASTORE_MAP_HPP)
+#define CMZN_DATASTORE_MAP_HPP
+
 #include <vector>
 #include "datastore/labels.hpp"
 #include "datastore/mapindexing.hpp"
@@ -784,3 +787,5 @@ bool DsMap<ValueType>::incrementSparseIterators(DsMapIndexing& mapIndexing)
 	}
 	return false;
 }
+
+#endif // CMZN_DATASTORE_MAP_HPP
