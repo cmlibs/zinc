@@ -430,7 +430,7 @@ TEST(cmzn_scene, threejs_export_cpp)
 	StreaminformationScene si = zinc.scene.createStreaminformationScene();
 	EXPECT_TRUE(si.isValid());
 
-	EXPECT_EQ(CMZN_OK, result = si.setExportFormat(si.EXPORT_FORMAT_THREEJS));
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_THREEJS));
 
 	EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
 
@@ -440,7 +440,7 @@ TEST(cmzn_scene, threejs_export_cpp)
 	EXPECT_EQ(0.0, double_result = si.getInitialTime());
 	EXPECT_EQ(0.0, double_result = si.getFinishTime());
 
-	EXPECT_EQ(CMZN_OK, result = si.setExportDataType(si.EXPORT_DATA_TYPE_COLOUR));
+	EXPECT_EQ(CMZN_OK, result = si.setIODataType(si.IO_DATA_TYPE_COLOUR));
 
 	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
 
@@ -481,8 +481,8 @@ TEST(cmzn_scene, threejs_export)
 	cmzn_streaminformation_scene_id scene_si = cmzn_streaminformation_cast_scene(streaminformation);
 	EXPECT_NE(static_cast<cmzn_streaminformation_scene_id>(0), scene_si);
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_export_format(
-		scene_si, CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS));
+	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_io_format(
+		scene_si, CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS));
 
 	EXPECT_EQ(1, result = cmzn_streaminformation_scene_get_number_of_resources_required(scene_si));
 	EXPECT_EQ(0, result = cmzn_streaminformation_scene_get_number_of_time_steps(scene_si));
@@ -491,8 +491,8 @@ TEST(cmzn_scene, threejs_export)
 	EXPECT_EQ(0.0, double_result = cmzn_streaminformation_scene_get_initial_time(scene_si));
 	EXPECT_EQ(0.0, double_result = cmzn_streaminformation_scene_get_finish_time(scene_si));
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_export_data_type(
-		scene_si, CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR));
+	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_io_data_type(
+		scene_si, CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR));
 
 	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_memory(streaminformation);
 
