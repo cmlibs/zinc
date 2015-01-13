@@ -446,18 +446,18 @@ struct cmzn_scene *CREATE(cmzn_scene)(struct cmzn_region *cmiss_region,
  */
 void cmzn_scene_detach_from_owner(cmzn_scene_id scene);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_export_data_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_io_data_type);
 
-enum cmzn_streaminformation_scene_export_data_type
-	cmzn_streaminformation_scene_export_data_type_enum_from_string(const char *string);
+enum cmzn_streaminformation_scene_io_data_type
+	cmzn_streaminformation_scene_io_data_type_enum_from_string(const char *string);
 
-char *cmzn_streaminformation_scene_export_data_type_enum_to_string(
-	enum cmzn_streaminformation_scene_export_data_type mode);
+char *cmzn_streaminformation_scene_io_data_type_enum_to_string(
+	enum cmzn_streaminformation_scene_io_data_type mode);
 
 int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *filename,
 	int number_of_time_steps, double begin_time, double end_time,
-	cmzn_streaminformation_scene_export_data_type export_mode,
+	cmzn_streaminformation_scene_io_data_type export_mode,
 	int *number_of_entries, std::string **output_string);
 
 int Scene_render_webgl(cmzn_scene_id scene,

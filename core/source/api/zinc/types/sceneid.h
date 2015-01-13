@@ -35,15 +35,15 @@ typedef struct cmzn_streaminformation_scene * cmzn_streaminformation_scene_id;
 /**
  * Enumeration to indicate what the data should written out as.
  */
-enum cmzn_streaminformation_scene_export_data_type
+enum cmzn_streaminformation_scene_io_data_type
 {
-	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_INVALID = 0,
+	CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_INVALID = 0,
 	/*!< Unspecified type */
-	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR = 1,
+	CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR = 1,
 	/*!< Export data as colour*/
-	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE = 2,
+	CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE = 2,
 	/*!< Export data as field value on per vertex basis*/
-	CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE = 3
+	CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE = 3
 	/*!< Export data as field value on per face basis*/
 };
 
@@ -51,11 +51,11 @@ enum cmzn_streaminformation_scene_export_data_type
  * Enumeration of attributes that can be set by generic stream information region
  * methods.
  */
-enum cmzn_streaminformation_scene_export_format
+enum cmzn_streaminformation_scene_io_format
 {
-	CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_INVALID = 0,
+	CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID = 0,
 	/*!< Unspecified attribute */
-	CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS = 1
+	CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS = 1
 	/*!< Export scene into ThreeJS compatible JSON file.*/
 };
 

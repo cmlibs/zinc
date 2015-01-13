@@ -410,7 +410,7 @@ void Threejs_export::writeSpecialDataBuffer(struct GT_object *object, GLfloat *v
 	if (vertex_buffer && (values_per_vertex > 0)  && (vertex_count > 0))
 	{
 		outputString += "\t\"colors\" : [";
-		if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE)
+		if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE)
 		{
 			GLfloat *currentVertex = vertex_buffer;
 			for (unsigned int i = 0; i < vertex_count; i++)
@@ -545,7 +545,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				}
 			}
 
-			if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR)
+			if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR)
 			{
 				unsigned int colour_values_per_vertex, colour_vertex_count;
 				GLfloat *colour_buffer = (GLfloat *)NULL;
@@ -579,8 +579,8 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 				}
 			}
-			else if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE ||
-					CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE)
+			else if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE ||
+					CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
 			{
 				GLfloat *data_buffer = NULL;
 				unsigned int data_values_per_vertex, data_vertex_count;
@@ -590,7 +590,7 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				{
 					if (time_step == 0)
 					{
-						if (mode == CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE)
+						if (mode == CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE)
 						{
 							typebitmask |= THREEJS_TYPE_FACE_COLOR;
 						}

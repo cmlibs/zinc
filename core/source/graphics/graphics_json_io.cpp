@@ -156,12 +156,12 @@ void GraphicsJsonIO::ioGeneralObjectEntries(Json::Value &graphicsSettings)
 				graphicsSettings["SelectedMaterial"].asCString());
 			graphics.setSelectedMaterial(material);
 		}
-//		if (graphicsSettings["Spectrum"].isString())
-//		{
-//			OpenCMISS::Zinc::Spectrum spectrum = graphics.getScene().getSpectrummodule().findSpectrumByName(
-//				graphicsSettings["Spectrum"].asCString());
-//			graphics.setSpectrum(spectrum);
-//		}
+		if (graphicsSettings["Spectrum"].isString())
+		{
+			OpenCMISS::Zinc::Spectrum spectrum = graphics.getScene().getSpectrummodule().findSpectrumByName(
+				graphicsSettings["Spectrum"].asCString());
+			graphics.setSpectrum(spectrum);
+		}
 		if (graphicsSettings["Tessellation"].isString())
 		{
 			OpenCMISS::Zinc::Tessellation tessellation = graphics.getScene().getTessellationmodule().findTessellationByName(

@@ -1158,8 +1158,10 @@ FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldCo
 		return FML_INVALID_OBJECT_HANDLE;
 
 	this->libraryImport("real.1d"); // implicit type of interpolator
+	FmlObjectHandle valueType = Fieldml_GetValueType( this->fmlSession, elementTemplate.basisData->fmlBasisEvaluator );
+
 	elementTemplate.fmlElementTemplateEvaluator = Fieldml_CreateReferenceEvaluator(this->fmlSession,
-		elementTemplate.name.c_str(), elementTemplate.basisData->fmlBasisEvaluator);
+		elementTemplate.name.c_str(), elementTemplate.basisData->fmlBasisEvaluator, valueType);
 	FmlObjectHandle fmlMeshType = Fieldml_GetObjectByName(this->fmlSession, meshName.c_str());
 	FmlObjectHandle fmlMeshChartType = Fieldml_GetMeshChartType(this->fmlSession, fmlMeshType);
 	FmlObjectHandle fmlMeshChartArgument = getArgumentForType(fmlMeshChartType);
@@ -1367,7 +1369,8 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	{
 		// GRC problem: can't set value type for reference evaluator; should be able to cast
 		FieldComponentTemplate& fieldTemplate = *(outputField.componentTemplates[0]);
-		fmlField = Fieldml_CreateReferenceEvaluator(this->fmlSession, outputField.name.c_str(), fieldTemplate.fmlFieldTemplateEvaluator);
+		FmlObjectHandle valueType = Fieldml_GetValueType( this->fmlSession, fieldTemplate.fmlFieldTemplateEvaluator );
+		fmlField = Fieldml_CreateReferenceEvaluator(this->fmlSession, outputField.name.c_str(), fieldTemplate.fmlFieldTemplateEvaluator, valueType);
 	}
 	else
 	{
