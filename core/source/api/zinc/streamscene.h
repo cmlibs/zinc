@@ -28,8 +28,8 @@ extern "C" {
  * @param string  string of the short enumerator name
  * @return  the correct enum format if a match is found.
  */
-ZINC_API enum cmzn_streaminformation_scene_export_format
-	cmzn_streaminformation_scene_export_format_enum_from_string(const char *string);
+ZINC_API enum cmzn_streaminformation_scene_io_format
+	cmzn_streaminformation_scene_io_format_enum_from_string(const char *string);
 
 /**
  * Return an allocated short name of the enum format from the provided enum.
@@ -38,8 +38,8 @@ ZINC_API enum cmzn_streaminformation_scene_export_format
  * @param format  enum to be converted into string
  * @return  an allocated string which stored the short name of the enum.
  */
-ZINC_API char *cmzn_streaminformation_scene_export_format_enum_to_string(
-	enum cmzn_streaminformation_scene_export_format format);
+ZINC_API char *cmzn_streaminformation_scene_io_format_enum_to_string(
+	enum cmzn_streaminformation_scene_io_format format);
 
 /**
  * Creates a stream information object for specifying files/resources and options
@@ -113,11 +113,11 @@ ZINC_API int cmzn_streaminformation_scene_set_scenefilter(
  * Get the currently set export format of streaminformation_scene.
  *
  * @param streaminformation  The streaminformation_scene to query.
- * @return cmzn_streaminformation_scene_export_format on success,
- * CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_INVALID on failure.
+ * @return cmzn_streaminformation_scene_io_format on success,
+ * CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID on failure.
  */
-ZINC_API enum cmzn_streaminformation_scene_export_format
-	cmzn_streaminformation_scene_get_export_format(
+ZINC_API enum cmzn_streaminformation_scene_io_format
+	cmzn_streaminformation_scene_get_io_format(
 	cmzn_streaminformation_scene_id streaminformation);
 
 /**
@@ -128,19 +128,19 @@ ZINC_API enum cmzn_streaminformation_scene_export_format
  * @param format  The format to export to.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_streaminformation_scene_set_export_format(
+ZINC_API int cmzn_streaminformation_scene_set_io_format(
 	cmzn_streaminformation_scene_id streaminformation,
-	enum cmzn_streaminformation_scene_export_format format);
+	enum cmzn_streaminformation_scene_io_format format);
 
 /**
  * Get the currently set export data type of streaminformation_scene.
  *
  * @param streaminformation  The streaminformation_scene to query.
- * @return cmzn_streaminformation_scene_export_data_type on success,
- * CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_INVALID on failure.
+ * @return cmzn_streaminformation_scene_io_data_type on success,
+ * CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_INVALID on failure.
  */
-ZINC_API enum cmzn_streaminformation_scene_export_data_type
-	cmzn_streaminformation_scene_get_export_data_type(
+ZINC_API enum cmzn_streaminformation_scene_io_data_type
+	cmzn_streaminformation_scene_get_io_data_type(
 	cmzn_streaminformation_scene_id streaminformation);
 
 /**
@@ -151,9 +151,9 @@ ZINC_API enum cmzn_streaminformation_scene_export_data_type
  * @param format  The data type to export.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_streaminformation_scene_set_export_data_type(
+ZINC_API int cmzn_streaminformation_scene_set_io_data_type(
 	cmzn_streaminformation_scene_id streaminformation,
-	enum cmzn_streaminformation_scene_export_data_type data_type);
+	enum cmzn_streaminformation_scene_io_data_type data_type);
 
 /**
  * Get the number of time steps to export.

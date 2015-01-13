@@ -3579,22 +3579,22 @@ cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene)
 	return 0;
 }
 
-class cmzn_streaminformation_scene_export_data_type_conversion
+class cmzn_streaminformation_scene_io_data_type_conversion
 {
 public:
-	static const char *to_string(enum cmzn_streaminformation_scene_export_data_type export_mode)
+	static const char *to_string(enum cmzn_streaminformation_scene_io_data_type export_mode)
 	{
 		const char *enum_string = 0;
 		switch (export_mode)
 		{
-			case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR:
-				enum_string = "EXPORT_DATA_TYPE_COLOUR";
+			case CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR:
+				enum_string = "IO_DATA_TYPE_COLOUR";
 				break;
-			case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE:
-				enum_string = "EXPORT_DATA_TYPE_PER_VERTEX_VALUE";
+			case CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE:
+				enum_string = "IO_DATA_TYPE_PER_VERTEX_VALUE";
 				break;
-			case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE:
-				enum_string = "EXPORT_DATA_TYPE_PER_FACE_VALUE";
+			case CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE:
+				enum_string = "IO_DATA_TYPE_PER_FACE_VALUE";
 				break;
 		default:
 			break;
@@ -3603,35 +3603,35 @@ public:
 	}
 };
 
-enum cmzn_streaminformation_scene_export_data_type
-	cmzn_streaminformation_scene_export_data_type_enum_from_string(const char *string)
+enum cmzn_streaminformation_scene_io_data_type
+	cmzn_streaminformation_scene_io_data_type_enum_from_string(const char *string)
 {
-	return string_to_enum<enum cmzn_streaminformation_scene_export_data_type,
-		cmzn_streaminformation_scene_export_data_type_conversion>(string);
+	return string_to_enum<enum cmzn_streaminformation_scene_io_data_type,
+		cmzn_streaminformation_scene_io_data_type_conversion>(string);
 }
 
-char *cmzn_streaminformation_scene_export_data_type_enum_to_string(
-	enum cmzn_streaminformation_scene_export_data_type mode)
+char *cmzn_streaminformation_scene_io_data_type_enum_to_string(
+	enum cmzn_streaminformation_scene_io_data_type mode)
 {
-	const char *mode_string = cmzn_streaminformation_scene_export_data_type_conversion::to_string(mode);
+	const char *mode_string = cmzn_streaminformation_scene_io_data_type_conversion::to_string(mode);
 	return (mode_string ? duplicate_string(mode_string) : 0);
 }
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_streaminformation_scene_export_data_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_streaminformation_scene_io_data_type)
 {
 	const char *enumerator_string;
 
 	switch (enumerator_value)
 	{
-		case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR:
+		case CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR:
 		{
 			enumerator_string = "data_export_colour";
 		} break;
-		case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE:
+		case CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE:
 		{
 			enumerator_string = "data_export_per_vertex_value";
 		} break;
-		case CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE:
+		case CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE:
 		{
 			enumerator_string = "data_export_per_face_value";
 		} break;
@@ -3644,12 +3644,12 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_streaminformation_scene_export_data_ty
 	return (enumerator_string);
 }
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_export_data_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_streaminformation_scene_io_data_type)
 
 int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *file_prefix,
 	int number_of_time_steps, double begin_time, double end_time,
-	cmzn_streaminformation_scene_export_data_type export_mode,
+	cmzn_streaminformation_scene_io_data_type export_mode,
 	int *number_of_entries, std::string **output_string)
 {
 	if (scene)

@@ -169,7 +169,7 @@ Render_graphics_opengl *Render_graphics_opengl_create_webgl_renderer(const char 
 
 Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(const char *file_prefix,
 	int number_of_time_steps, double begin_time, double end_time,
-	enum cmzn_streaminformation_scene_export_data_type mode,
+	enum cmzn_streaminformation_scene_io_data_type mode,
 	int *number_of_entries, std::string **output_string);
 
 /** Routine that uses the objects material and spectrum to convert

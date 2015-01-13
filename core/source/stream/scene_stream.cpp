@@ -23,7 +23,7 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 	int return_code = CMZN_OK;
 
 	if (scene && streaminformation_scene &&
-		streaminformation_scene->getExportFormat() == CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS)
+		streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 	{
 		const cmzn_stream_properties_list streams_list = streaminformation_scene->getResourcesList();
 		if (!(streams_list.empty()))
@@ -41,7 +41,7 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 				streaminformation_scene->getNumberOfTimeSteps(),
 				streaminformation_scene->getInitialTime(),
 				streaminformation_scene->getFinishTime(),
-				streaminformation_scene->getExportDataType(),
+				streaminformation_scene->getIODataType(),
 				&number_of_entries, &output_string);
 			cmzn_scene_destroy(&scene);
 			cmzn_scenefilter_destroy(&scenefilter);
@@ -200,63 +200,63 @@ int cmzn_streaminformation_scene_set_number_of_time_steps(cmzn_streaminformation
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_streaminformation_scene_export_format
-	cmzn_streaminformation_scene_get_export_format(
+enum cmzn_streaminformation_scene_io_format
+	cmzn_streaminformation_scene_get_io_format(
 	cmzn_streaminformation_scene_id streaminformation)
 {
 	if (streaminformation)
 	{
-		return streaminformation->getExportFormat();
+		return streaminformation->getIOFormat();
 	}
 
-	return CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_INVALID;
+	return CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID;
 }
 
-int cmzn_streaminformation_scene_set_export_format(
+int cmzn_streaminformation_scene_set_io_format(
 	cmzn_streaminformation_scene_id streaminformation,
-	enum cmzn_streaminformation_scene_export_format format)
+	enum cmzn_streaminformation_scene_io_format format)
 {
 	if (streaminformation)
 	{
-		streaminformation->setExportFormat(format);
+		streaminformation->setIOFormat(format);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_streaminformation_scene_export_data_type
-	cmzn_streaminformation_scene_get_export_data_type(
+enum cmzn_streaminformation_scene_io_data_type
+	cmzn_streaminformation_scene_get_io_data_type(
 	cmzn_streaminformation_scene_id streaminformation)
 {
 	if (streaminformation)
 	{
-		return streaminformation->getExportDataType();
+		return streaminformation->getIODataType();
 	}
 
-	return CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_INVALID;
+	return CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_INVALID;
 }
 
-int cmzn_streaminformation_scene_set_export_data_type(
+int cmzn_streaminformation_scene_set_io_data_type(
 	cmzn_streaminformation_scene_id streaminformation,
-	cmzn_streaminformation_scene_export_data_type data_type)
+	cmzn_streaminformation_scene_io_data_type data_type)
 {
 	if (streaminformation)
 	{
-		streaminformation->setExportDataType(data_type);
+		streaminformation->setIODataType(data_type);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-class cmzn_streaminformation_scene_export_format_conversion
+class cmzn_streaminformation_scene_io_format_conversion
 {
 public:
-	static const char *to_string(enum cmzn_streaminformation_scene_export_format format)
+	static const char *to_string(enum cmzn_streaminformation_scene_io_format format)
 	{
 		const char *enum_string = 0;
 		switch (format)
 		{
-			case CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS:
+			case CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS:
 				enum_string = "THREEJS";
 				break;
 			default:
@@ -288,17 +288,17 @@ int cmzn_streaminformation_scene_set_scenefilter(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_streaminformation_scene_export_format
-	cmzn_streaminformation_scene_export_format_enum_from_string(
+enum cmzn_streaminformation_scene_io_format
+	cmzn_streaminformation_scene_io_format_enum_from_string(
 		const char *string)
 {
-	return string_to_enum<enum cmzn_streaminformation_scene_export_format,
-		cmzn_streaminformation_scene_export_format_conversion>(string);
+	return string_to_enum<enum cmzn_streaminformation_scene_io_format,
+		cmzn_streaminformation_scene_io_format_conversion>(string);
 }
 
-char *cmzn_streaminformation_scene_export_format_enum_to_string(
-	enum cmzn_streaminformation_scene_export_format format)
+char *cmzn_streaminformation_scene_io_format_enum_to_string(
+	enum cmzn_streaminformation_scene_io_format format)
 {
-	const char *format_string = cmzn_streaminformation_scene_export_format_conversion::to_string(format);
+	const char *format_string = cmzn_streaminformation_scene_io_format_conversion::to_string(format);
 	return (format_string ? duplicate_string(format_string) : 0);
 }

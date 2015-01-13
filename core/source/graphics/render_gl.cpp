@@ -510,13 +510,13 @@ public:
 	double begin_time, end_time;
 	int number_of_time_steps, current_time_frame;
 	int current_graphics_number;
-	enum cmzn_streaminformation_scene_export_data_type mode;
+	enum cmzn_streaminformation_scene_io_data_type mode;
 	int *number_of_entries;
 	std::string **output_string;
 
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
-		enum cmzn_streaminformation_scene_export_data_type mode_in, int *number_of_entries_in,
+		enum cmzn_streaminformation_scene_io_data_type mode_in, int *number_of_entries_in,
 		std::string **output_string_in) :
 		Render_graphics_opengl_vertex_buffer_object(),
 		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
@@ -691,7 +691,7 @@ public:
 
 Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 	const char *file_prefix, int number_of_time_steps, double begin_time,
-	double end_time, enum cmzn_streaminformation_scene_export_data_type mode,
+	double end_time, enum cmzn_streaminformation_scene_io_data_type mode,
 	int *number_of_entries, std::string **output_string)
 {
 	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,

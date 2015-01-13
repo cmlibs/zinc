@@ -21,7 +21,7 @@ class Threejs_export
 private:
 	char *filename;
 	int number_of_time_steps;
-	cmzn_streaminformation_scene_export_data_type mode;
+	cmzn_streaminformation_scene_io_data_type mode;
 	std::string facesString;
 	std::string verticesMorphString;
 	std::string normalMorphString;
@@ -53,7 +53,7 @@ private:
 public:
 
 	Threejs_export(const char *filename, int number_of_time_steps_in,
-		cmzn_streaminformation_scene_export_data_type mode_in) :
+		cmzn_streaminformation_scene_io_data_type mode_in) :
 		filename(duplicate_string(filename)), number_of_time_steps(number_of_time_steps_in),
 		mode(mode_in)
 	{

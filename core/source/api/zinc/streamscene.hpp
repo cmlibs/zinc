@@ -40,18 +40,18 @@ public:
 		return reinterpret_cast<cmzn_streaminformation_scene_id>(id);
 	}
 
-	enum ExportDataType
+	enum IODataType
 	{
-		EXPORT_DATA_TYPE_INVALID = CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_INVALID,
-		EXPORT_DATA_TYPE_COLOUR = CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR ,
-		EXPORT_DATA_TYPE_PER_VERTEX_VALUE = CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_VERTEX_VALUE,
-		EXPORT_DATA_TYPE_PER_FACE_VALUE = CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_PER_FACE_VALUE
+		IO_DATA_TYPE_INVALID = CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_INVALID,
+		IO_DATA_TYPE_COLOUR = CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR ,
+		IO_DATA_TYPE_PER_VERTEX_VALUE = CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_VERTEX_VALUE,
+		IO_DATA_TYPE_PER_FACE_VALUE = CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_PER_FACE_VALUE
 	};
 
-	enum ExportFormat
+	enum IOFormat
 	{
-		EXPORT_FORMAT_INVALID = CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_INVALID,
-		EXPORT_FORMAT_THREEJS = CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS
+		IO_FORMAT_INVALID = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID,
+		IO_FORMAT_THREEJS = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS
 	};
 
 	Scenefilter getScenefilter()
@@ -64,26 +64,26 @@ public:
 		return cmzn_streaminformation_scene_set_scenefilter(getDerivedId(), scenefilter.getId());
 	}
 
-	ExportDataType getExportDataType()
+	IODataType getIODataType()
 	{
-		return static_cast<ExportDataType>(cmzn_streaminformation_scene_get_export_data_type(getDerivedId()));
+		return static_cast<IODataType>(cmzn_streaminformation_scene_get_io_data_type(getDerivedId()));
 	}
 
-	int setExportDataType(ExportDataType exportDataType)
+	int setIODataType(IODataType ioDataType)
 	{
-		return cmzn_streaminformation_scene_set_export_data_type(getDerivedId(),
-			static_cast<cmzn_streaminformation_scene_export_data_type>(exportDataType));
+		return cmzn_streaminformation_scene_set_io_data_type(getDerivedId(),
+			static_cast<cmzn_streaminformation_scene_io_data_type>(ioDataType));
 	}
 
-	ExportFormat getExportFormat()
+	IOFormat getIOFormat()
 	{
-		return static_cast<ExportFormat>(cmzn_streaminformation_scene_get_export_format(getDerivedId()));
+		return static_cast<IOFormat>(cmzn_streaminformation_scene_get_io_format(getDerivedId()));
 	}
 
-	int setExportFormat(ExportFormat exportFormat)
+	int setIOFormat(IOFormat ioFormat)
 	{
-		return cmzn_streaminformation_scene_set_export_format(getDerivedId(),
-			static_cast<cmzn_streaminformation_scene_export_format>(exportFormat));
+		return cmzn_streaminformation_scene_set_io_format(getDerivedId(),
+			static_cast<cmzn_streaminformation_scene_io_format>(ioFormat));
 	}
 
 	int getNumberOfTimeSteps()

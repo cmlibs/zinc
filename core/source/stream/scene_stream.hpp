@@ -26,8 +26,8 @@ public:
 		scenefilter(0), numberOfTimeSteps(0), initialTime(0.0), finishTime(0.0)
 	{
 		cmzn_scene_access(scene_in);
-		format = CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_INVALID;
-		data_type = CMZN_STREAMINFORMATION_SCENE_EXPORT_DATA_TYPE_COLOUR;
+		format = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID;
+		data_type = CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR;
 	}
 
 	virtual ~cmzn_streaminformation_scene()
@@ -65,7 +65,7 @@ public:
 
 	int getNumberOfResourcesRequired()
 	{
-		if (format == CMZN_STREAMINFORMATION_SCENE_EXPORT_FORMAT_THREEJS)
+		if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 			return Scene_get_number_of_graphics_with_type_in_tree(
 				scene, scenefilter, CMZN_GRAPHICS_TYPE_SURFACES);
 		else
@@ -98,23 +98,23 @@ public:
 		return CMZN_OK;
 	}
 
-	cmzn_streaminformation_scene_export_format getExportFormat()
+	cmzn_streaminformation_scene_io_format getIOFormat()
 	{
 		return format;
 	}
 
-	int setExportFormat(cmzn_streaminformation_scene_export_format formatIn)
+	int setIOFormat(cmzn_streaminformation_scene_io_format formatIn)
 	{
 		format = formatIn;
 		return CMZN_OK;
 	}
 
-	cmzn_streaminformation_scene_export_data_type getExportDataType()
+	cmzn_streaminformation_scene_io_data_type getIODataType()
 	{
 		return data_type;
 	}
 
-	int setExportDataType(cmzn_streaminformation_scene_export_data_type dataTypeIn)
+	int setIODataType(cmzn_streaminformation_scene_io_data_type dataTypeIn)
 	{
 		data_type = dataTypeIn;
 		return CMZN_OK;
@@ -125,8 +125,8 @@ private:
 	cmzn_scenefilter_id scenefilter;
 	int numberOfTimeSteps;
 	double initialTime, finishTime;
-	enum cmzn_streaminformation_scene_export_format format;
-	enum cmzn_streaminformation_scene_export_data_type data_type;
+	enum cmzn_streaminformation_scene_io_format format;
+	enum cmzn_streaminformation_scene_io_data_type data_type;
 };
 
 
