@@ -2065,9 +2065,8 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 	glyphs to minimise state changes.
 	==============================================================================*/
 {
-	GLfloat transformation[16], x, y, z;
-	int draw_all, name_selected = 0, label_bounds_per_glyph = 0,
-		return_code = 1;
+	GLfloat transformation[16];
+	int draw_all, name_selected = 0, return_code = 1;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
 
@@ -2176,10 +2175,6 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 						/* make space for picking name on name stack */
 						glPushName(0);
 					}
-					if (label_bounds)
-					{
-						label_bounds_per_glyph = 1 << glyph_set->label_bounds_dimension;
-					}
 					GT_object *glyph = glyph_set->glyph;
 					cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 
@@ -2244,9 +2239,6 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 								{
 									spectrum_renderGL_value(spectrum,material,render_data,datum);
 								}
-								x = position[0];
-								y = position[1];
-								z = position[2];
 								if (picking_names)
 								{
 									glLoadName((GLuint)(*names));
@@ -2738,8 +2730,7 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 							glLoadName((GLuint)object_name);
 						}
 						unsigned int index_start, index_count;
-						GLfloat *position_vertex = NULL, *data_vertex = NULL, *normal_vertex = NULL,
-							*texture_coordinate0_vertex = NULL, *tangent_vertex = NULL;
+						GLfloat *position_vertex = NULL;
 
 						array->get_unsigned_integer_attribute(
 							GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
@@ -2783,32 +2774,6 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 											glBegin(GL_TRIANGLE_STRIP);
 											for (unsigned int j = 0; j < points_per_strip; j++)
 											{
-												// Only use begin/end mode for picking, draw vertices only
-												//										GLfloat *current_data = 0, *current_normal = 0,
-												//											*current_texture_coordinate0 = 0, *current_tangent = 0;
-												//										if (normal_buffer)
-												//										{
-												//											current_normal = &(normal_buffer[*indices * normal_values_per_vertex]);
-												//											glNormal3fv(current_normal);
-												//										}
-												//#if defined GL_VERSION_1_3
-												//										if (tangent_buffer)
-												//										{
-												//											current_tangent = &(tangent_buffer[*indices * tangent_values_per_vertex]);
-												//											glMultiTexCoord3fv(GL_TEXTURE1_ARB, current_tangent);
-												//										}
-												//#endif /* defined GL_VERSION_1_3 */
-												//										if (texture_coordinate0_buffer)
-												//										{
-												//											current_texture_coordinate0 = &(texture_coordinate0_buffer[*indices * texture_coordinate0_values_per_vertex]);
-												//											glTexCoord3fv(current_texture_coordinate0);
-												//										}
-												//										if (data_buffer)
-												//										{
-												//											current_data = &(data_buffer[*indices * data_values_per_vertex]);
-												//											spectrum_renderGL_value(spectrum, material, spectrum_render_data,
-												//												data_vertex);
-												//										}
 												current_position = &(position_buffer[*indices * position_values_per_vertex]);
 												glVertex3fv(current_position);
 												indices++;
@@ -2819,52 +2784,9 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 									case GL_TRIANGLES:
 									{
 										position_vertex = position_buffer + position_values_per_vertex * index_start;
-										if (data_buffer)
-										{
-											data_vertex = data_buffer +
-												data_values_per_vertex * index_start;
-										}
-										if (normal_buffer)
-										{
-											normal_vertex = normal_buffer +
-												normal_values_per_vertex * index_start;
-										}
-										if (texture_coordinate0_buffer)
-										{
-											texture_coordinate0_vertex = texture_coordinate0_buffer +
-												texture_coordinate0_values_per_vertex * index_start;
-										}
-										if (tangent_buffer)
-										{
-											tangent_vertex = tangent_buffer + tangent_values_per_vertex * index_start;
-										}
 										glBegin(GL_TRIANGLES);
 										for (unsigned int j = 0; j < npts1; j++)
 										{
-											// Only use begin/end mode for picking, draw vertices only
-											//									if (normal_buffer)
-											//									{
-											//										glNormal3fv(normal_vertex);
-											//										normal_vertex += normal_values_per_vertex;
-											//									}
-											//#if defined GL_VERSION_1_3
-											//									if (tangent_buffer)
-											//									{
-											//										glMultiTexCoord3fv(GL_TEXTURE1_ARB, tangent_vertex);
-											//										tangent_vertex += tangent_values_per_vertex;
-											//									}
-											//#endif /* defined GL_VERSION_1_3 */
-											//									if (texture_coordinate0_buffer)
-											//									{
-											//										glTexCoord3fv(texture_coordinate0_vertex);
-											//										texture_coordinate0_buffer += texture_coordinate0_values_per_vertex;
-											//									}
-											//									if (data_buffer)
-											//									{
-											//										spectrum_renderGL_value(spectrum, material, spectrum_render_data,
-											//											data_vertex);
-											//										data_vertex += data_values_per_vertex;
-											//									}
 											glVertex3fv(position_vertex);
 											position_vertex += position_values_per_vertex;
 										}
