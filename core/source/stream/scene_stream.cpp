@@ -15,6 +15,8 @@
 #include "general/mystring.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
+#include "graphics/scene_json_export.hpp"
+#include "graphics/scene_json_import.hpp"
 #include "stream/scene_stream.hpp"
 
 int cmzn_scene_export_scene(cmzn_scene_id scene,
@@ -23,7 +25,7 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 	int return_code = CMZN_OK;
 
 	if (scene && streaminformation_scene &&
-		streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
+		streaminformation_scene->getIOFormat() != CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID)
 	{
 		const cmzn_stream_properties_list streams_list = streaminformation_scene->getResourcesList();
 		if (!(streams_list.empty()))
@@ -33,18 +35,28 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 			int number_of_entries = 0;
 			std::string *output_string = 0;
 
-			cmzn_scenefilter_id scenefilter = streaminformation_scene->getScenefilter();
 			cmzn_scene_id scene = streaminformation_scene->getScene();
-
-			return_code = Scene_render_threejs(scene,
-				scenefilter, /*file_prefix*/"zinc_scene_export",
-				streaminformation_scene->getNumberOfTimeSteps(),
-				streaminformation_scene->getInitialTime(),
-				streaminformation_scene->getFinishTime(),
-				streaminformation_scene->getIODataType(),
-				&number_of_entries, &output_string);
+			if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
+			{
+				cmzn_scenefilter_id scenefilter = streaminformation_scene->getScenefilter();
+				return_code = Scene_render_threejs(scene,
+					scenefilter, /*file_prefix*/"zinc_scene_export",
+					streaminformation_scene->getNumberOfTimeSteps(),
+					streaminformation_scene->getInitialTime(),
+					streaminformation_scene->getFinishTime(),
+					streaminformation_scene->getIODataType(),
+					&number_of_entries, &output_string);
+				cmzn_scenefilter_destroy(&scenefilter);
+			}
+			else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
+			{
+				number_of_entries = 1;
+				SceneJsonExport jsonExport(scene);
+				output_string = new std::string[number_of_entries];
+				output_string[0] = jsonExport.getExportString();
+			}
 			cmzn_scene_destroy(&scene);
-			cmzn_scenefilter_destroy(&scenefilter);
+
 			if (return_code != CMZN_OK)
 				return CMZN_ERROR_GENERAL;
 
@@ -64,9 +76,9 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 						char *file_name = file_resource->getFileName();
 						if (file_name)
 						{
-							FILE *threejs_file = fopen(file_name,"w");
-							fprintf(threejs_file, "%s", output_string[i].c_str());
-							fclose(threejs_file);
+							FILE *export_file = fopen(file_name,"w");
+							fprintf(export_file, "%s", output_string[i].c_str());
+							fclose(export_file);
 							DEALLOCATE(file_name);
 							i++;
 						}
@@ -95,8 +107,99 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 				delete[] output_string;
 		}
 	}
+	else
+	{
+		return_code = CMZN_ERROR_ARGUMENT;
+	}
 	return return_code;
 }
+
+int cmzn_scene_import_scene(cmzn_scene_id scene,
+	cmzn_streaminformation_scene_id streaminformation_scene)
+{
+	int return_code = CMZN_OK;
+
+	if (scene && streaminformation_scene &&
+		streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
+	{
+		const cmzn_stream_properties_list streams_list = streaminformation_scene->getResourcesList();
+		if (!(streams_list.empty()))
+		{
+			int overwrite = streaminformation_scene->getOverwriteSceneGraphics();
+
+			cmzn_stream_properties_list_const_iterator iter;
+			cmzn_resource_properties *stream_properties = NULL;
+
+			cmzn_scene_id scene = streaminformation_scene->getScene();
+
+			cmzn_streamresource_id stream = NULL;
+
+			for (iter = streams_list.begin(); iter != streams_list.end(); ++iter)
+			{
+				stream_properties = *iter;
+				stream = stream_properties->getResource();
+
+				cmzn_streamresource_file_id file_resource = cmzn_streamresource_cast_file(stream);
+				cmzn_streamresource_memory_id memory_resource = NULL;
+				if (file_resource)
+				{
+					char *file_name = file_resource->getFileName();
+					if (file_name)
+					{
+						FILE *import_file = fopen(file_name,"rb");
+						fseek(import_file, 0, SEEK_END);
+						long size = ftell(import_file);
+						fseek(import_file, 0, SEEK_SET);
+						void *source = malloc(size + 1);
+						if (source)
+						{
+							fread(source, size, 1, import_file);
+							fclose(import_file);
+							char *jsonString = (char *)source;
+							jsonString[size] = 0;
+							SceneJsonImport sceneImport(scene, overwrite);
+							std::string inputString(jsonString);
+							return_code = sceneImport.import(inputString);
+							free(source);
+						}
+						else
+						{
+							return_code = CMZN_ERROR_GENERAL;
+						}
+						overwrite = 0;
+					}
+					cmzn_streamresource_file_destroy(&file_resource);
+				}
+				else if (NULL != (memory_resource = cmzn_streamresource_cast_memory(stream)))
+				{
+					void *memory_block = NULL;
+					unsigned int buffer_size = 0;
+					memory_resource->getBuffer(&memory_block, &buffer_size);
+					cmzn_streamresource_memory_destroy(&memory_resource);
+					if (memory_block)
+					{
+						SceneJsonImport sceneImport(scene, overwrite);
+						char *jsonString = static_cast<char *>(memory_block);
+						std::string inputString(jsonString);
+						return_code = sceneImport.import(inputString);
+						overwrite = 0;
+					}
+					else
+					{
+						return_code = CMZN_ERROR_GENERAL;
+					}
+				}
+			}
+			cmzn_scene_destroy(&scene);
+		}
+	}
+	else
+	{
+		return_code = CMZN_ERROR_ARGUMENT;
+	}
+	return return_code;
+}
+
 
 cmzn_streaminformation_id cmzn_scene_create_streaminformation_scene(
 	cmzn_scene_id scene)
@@ -301,4 +404,15 @@ char *cmzn_streaminformation_scene_io_format_enum_to_string(
 {
 	const char *format_string = cmzn_streaminformation_scene_io_format_conversion::to_string(format);
 	return (format_string ? duplicate_string(format_string) : 0);
+}
+
+int cmzn_streaminformation_scene_set_overwrite_scene_graphics(
+	cmzn_streaminformation_scene_id streaminformation, int overwrite)
+{
+	if (streaminformation)
+	{
+		streaminformation->setOverwriteSceneGraphics(overwrite);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }

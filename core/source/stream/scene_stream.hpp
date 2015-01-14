@@ -23,11 +23,12 @@ struct cmzn_streaminformation_scene : cmzn_streaminformation
 public:
 
 	cmzn_streaminformation_scene(cmzn_scene_id scene_in) : scene(scene_in),
-		scenefilter(0), numberOfTimeSteps(0), initialTime(0.0), finishTime(0.0)
+		scenefilter(0), numberOfTimeSteps(0), initialTime(0.0), finishTime(0.0),
+		format(CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID),
+		data_type(CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR),
+		overwriteSceneGraphics(0)
 	{
 		cmzn_scene_access(scene_in);
-		format = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID;
-		data_type = CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR;
 	}
 
 	virtual ~cmzn_streaminformation_scene()
@@ -68,6 +69,8 @@ public:
 		if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
 			return Scene_get_number_of_graphics_with_type_in_tree(
 				scene, scenefilter, CMZN_GRAPHICS_TYPE_SURFACES);
+		else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
+			return 1;
 		else
 			return 0;
 	}
@@ -120,6 +123,17 @@ public:
 		return CMZN_OK;
 	}
 
+	int setOverwriteSceneGraphics(int overwrite)
+	{
+		overwriteSceneGraphics = overwrite;
+		return CMZN_OK;
+	}
+
+	int getOverwriteSceneGraphics()
+	{
+		return overwriteSceneGraphics;
+	}
+
 private:
 	cmzn_scene_id scene;
 	cmzn_scenefilter_id scenefilter;
@@ -127,6 +141,7 @@ private:
 	double initialTime, finishTime;
 	enum cmzn_streaminformation_scene_io_format format;
 	enum cmzn_streaminformation_scene_io_data_type data_type;
+	int overwriteSceneGraphics;
 };
 
 

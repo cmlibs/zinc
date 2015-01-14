@@ -51,7 +51,8 @@ public:
 	enum IOFormat
 	{
 		IO_FORMAT_INVALID = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID,
-		IO_FORMAT_THREEJS = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS
+		IO_FORMAT_THREEJS = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS,
+		IO_FORMAT_GRAPHICS_DESCRIPTION = CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION
 	};
 
 	Scenefilter getScenefilter()
@@ -121,6 +122,12 @@ public:
 		return cmzn_streaminformation_scene_get_number_of_resources_required(getDerivedId());
 	}
 
+	int setOverwriteSceneGraphics(int overwrite)
+	{
+		return cmzn_streaminformation_scene_set_overwrite_scene_graphics(getDerivedId(),
+			overwrite);
+	}
+
 };
 
 inline StreaminformationScene Streaminformation::castScene()
@@ -139,6 +146,10 @@ inline int Scene::exportScene(const StreaminformationScene& StreaminformationSce
 	return cmzn_scene_export_scene(id, StreaminformationScene.getDerivedId());
 }
 
+inline int Scene::importScene(const StreaminformationScene& StreaminformationScene)
+{
+	return cmzn_scene_import_scene(id, StreaminformationScene.getDerivedId());
+}
 
 }  // namespace Zinc
 }

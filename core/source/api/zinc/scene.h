@@ -447,8 +447,8 @@ ZINC_API int cmzn_scene_remove_graphics(cmzn_scene_id scene,
 ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
 
 /**
- * Writes graphics data in scene and all its children to stream resource objects
- * described in the stream information object.
+ * Writes graphics data in scene to stream resource objects described in the stream
+ * information object.
  * @see cmzn_scene_create_streaminformation_scene
  *
  * @param scene  The scene to be written out.
@@ -458,6 +458,19 @@ ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
  * on failure.
  */
 ZINC_API int cmzn_scene_export_scene(cmzn_scene_id scene,
+	cmzn_streaminformation_scene_id streaminformation_scene);
+
+/**
+ * Import graphics data to scene described in the stream information object.
+ * @see cmzn_scene_create_streaminformation_scene
+ *
+ * @param scene  The scene to receive the import data.
+ * @param streaminformation_scene  Handle to the stream information scene containing
+ * 		stream resources.
+ * @return  Status CMZN_OK if data is successfully imported, any other value
+ * 	on failure.
+ */
+ZINC_API int cmzn_scene_import_scene(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene);
 
 #ifdef __cplusplus

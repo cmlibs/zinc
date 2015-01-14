@@ -31,7 +31,6 @@ int SceneJsonImport::import(std::string &jsonString)
 		}
 		if (root.isObject())
 		{
-
 			for (unsigned int index = 1; index < (root.size() + 1); ++index )
 			{
 				char temp_id[10];

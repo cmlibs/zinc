@@ -258,6 +258,8 @@ public:
 
 	inline int exportScene(const StreaminformationScene& streaminformationScene);
 
+	inline int importScene(const StreaminformationScene& streaminformationScene);
+
 	inline StreaminformationScene createStreaminformationScene();
 
 };
