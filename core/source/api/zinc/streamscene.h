@@ -229,6 +229,17 @@ ZINC_API int cmzn_streaminformation_scene_set_initial_time(
 ZINC_API int cmzn_streaminformation_scene_get_number_of_resources_required(
 	cmzn_streaminformation_scene_id streaminformation);
 
+/**
+ * Set a flag which determines graphics should be removed before new graphics
+ * settings are imported into scene.
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @param overwrite  flag to indicate either graphics should be overwrite.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_scene_set_overwrite_scene_graphics(
+	cmzn_streaminformation_scene_id streaminformation, int overwrite);
+
 #ifdef __cplusplus
 }
 #endif
