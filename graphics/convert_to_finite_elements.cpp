@@ -206,6 +206,8 @@ TEST(cmzn_scene_convert_points_to_nodes, element_points)
 	temp[1] = 2;
 	temp[2] = 2;
 	EXPECT_EQ(CMZN_OK, cmzn_tessellation_set_minimum_divisions(default_tessellation, 3, &(temp[0])));
+	cmzn_tessellation_destroy(&default_tessellation);
+	cmzn_tessellationmodule_destroy(&tessellationmodule);
 
 	cmzn_region_id outputRegion = cmzn_region_create_child(zinc.root_region, "output");
 	EXPECT_NE(static_cast<cmzn_region_id>(0), outputRegion);
