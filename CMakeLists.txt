@@ -23,7 +23,7 @@ INCLUDE_DIRECTORIES(
 	)
 
 SET(CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR})
-# Test for pthread requirement
+# Test for pthread requirement, and OS X 10.9
 INCLUDE(GTestChecks)
 
 SET(API_TESTS)
