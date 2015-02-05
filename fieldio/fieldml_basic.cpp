@@ -27,7 +27,9 @@
 
 #define FIELDML_OUTPUT_FOLDER "fieldmltest"
 
+namespace {
 ManageOutputFolder manageOutputFolderFieldML(FIELDML_OUTPUT_FOLDER);
+}
 
 namespace {
 
@@ -132,16 +134,17 @@ void check_tetmesh_model(Fieldmodule& fm)
 
 	EXPECT_EQ(OK, result = fm.defineAllFaces());
 	Mesh mesh3d = fm.findMeshByDimension(3);
-	EXPECT_EQ(102, mesh3d.getSize());
+	const int elementsCount = mesh3d.getSize();
+	EXPECT_EQ(102, elementsCount);
 	Mesh mesh2d = fm.findMeshByDimension(2);
 	EXPECT_EQ(232, mesh2d.getSize());
 	Mesh mesh1d = fm.findMeshByDimension(1);
 	EXPECT_EQ(167, mesh1d.getSize());
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(38, nodes.getSize());
-	for (int i = 1; i < 102; ++i)
+	for (int e = 1; e <= elementsCount; ++e)
 	{
-		Element element = mesh3d.findElementByIdentifier(i);
+		Element element = mesh3d.findElementByIdentifier(e);
 		EXPECT_TRUE(element.isValid());
 		Element::ShapeType shapeType = element.getShapeType();
 		EXPECT_EQ(Element::SHAPE_TYPE_TETRAHEDRON, shapeType);
@@ -214,19 +217,20 @@ void check_wheel_model(Fieldmodule& fm)
 
 	EXPECT_EQ(OK, result = fm.defineAllFaces());
 	Mesh mesh3d = fm.findMeshByDimension(3);
-	EXPECT_EQ(12, mesh3d.getSize());
+	const int elementsCount = mesh3d.getSize();
+	EXPECT_EQ(12, elementsCount);
 	Mesh mesh2d = fm.findMeshByDimension(2);
 	EXPECT_EQ(48, mesh2d.getSize());
 	Mesh mesh1d = fm.findMeshByDimension(1);
 	EXPECT_EQ(61, mesh1d.getSize());
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(129, nodes.getSize());
-	for (int i = 1; i < 12; ++i)
+	for (int e = 1; e <= elementsCount; ++e)
 	{
-		Element element = mesh3d.findElementByIdentifier(i);
+		Element element = mesh3d.findElementByIdentifier(e);
 		EXPECT_TRUE(element.isValid());
 		Element::ShapeType shapeType = element.getShapeType();
-		if (i <= 6)
+		if (e <= 6)
 			EXPECT_EQ(Element::SHAPE_TYPE_WEDGE12, shapeType);
 		else
 			EXPECT_EQ(Element::SHAPE_TYPE_CUBE, shapeType);
@@ -255,11 +259,9 @@ void check_wheel_model(Fieldmodule& fm)
 	Fieldcache cache = fm.createFieldcache();
 	double outVolume;
 	EXPECT_EQ(OK, result = volume.evaluateReal(cache, 1, &outVolume));
-	//ASSERT_DOUBLE_EQ(100.28718664065387, outVolume);
 	EXPECT_NEAR(100.28718664065387, outVolume, 5.0E-5);
 	double outSurfaceArea;
 	EXPECT_EQ(OK, result = surfaceArea.evaluateReal(cache, 1, &outSurfaceArea));
-	//ASSERT_DOUBLE_EQ(150.53218306379620, outSurfaceArea);
 	EXPECT_NEAR(150.53218306379620, outSurfaceArea, 1.0E-4);
 }
 
@@ -450,8 +452,8 @@ void check_mixed_template_squares(Fieldmodule& fm)
 	Mesh mesh3d = fm.findMeshByDimension(3);
 	EXPECT_EQ(0, mesh3d.getSize());
 	Mesh mesh2d = fm.findMeshByDimension(2);
-	int meshSize;
-	EXPECT_EQ(16, meshSize = mesh2d.getSize());
+	int elementsCount = mesh2d.getSize();
+	EXPECT_EQ(16, elementsCount);
 	Mesh mesh1d = fm.findMeshByDimension(1);
 	EXPECT_EQ(40, mesh1d.getSize());
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
@@ -459,7 +461,7 @@ void check_mixed_template_squares(Fieldmodule& fm)
 	EXPECT_EQ(81, nodesetSize = nodes.getSize());
 	Fieldcache fieldcache = fm.createFieldcache();
 	EXPECT_TRUE(fieldcache.isValid());
-	for (int e = 1; e < meshSize; ++e)
+	for (int e = 1; e <= elementsCount; ++e)
 	{
 		Element element = mesh2d.findElementByIdentifier(e);
 		EXPECT_TRUE(element.isValid());
@@ -571,12 +573,13 @@ void check_lines_unit_scale_factors_model(Fieldmodule& fm)
 
 	EXPECT_EQ(OK, result = fm.defineAllFaces());
 	Mesh mesh1d = fm.findMeshByDimension(1);
-	EXPECT_EQ(4, mesh1d.getSize());
+	const int elementsCount = mesh1d.getSize();
+	EXPECT_EQ(4, elementsCount);
 	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
 	EXPECT_EQ(4, nodes.getSize());
-	for (int i = 1; i < 4; ++i)
+	for (int e = 1; e <= elementsCount; ++e)
 	{
-		Element element = mesh1d.findElementByIdentifier(i);
+		Element element = mesh1d.findElementByIdentifier(e);
 		EXPECT_TRUE(element.isValid());
 		Element::ShapeType shapeType = element.getShapeType();
 		EXPECT_EQ(Element::SHAPE_TYPE_LINE, shapeType);
