@@ -1294,75 +1294,74 @@ DESCRIPTION :
 Frees the memory for the map and sets <*map_address> to NULL.
 ==============================================================================*/
 
+/**
+ * Returns the node index from <standard_node_map>.
+ * If fails, sets *<node_index_address> to zero.
+ */
 int Standard_node_to_element_map_get_node_index(
 	struct Standard_node_to_element_map *standard_node_map,
 	int *node_index_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
 
-DESCRIPTION :
-Returns the node index from <standard_node_map>.
-If fails, sets *<node_index_address> to zero.
-==============================================================================*/
-
+/**
+ * Returns the number of nodal values used by <standard_node_map>.
+ * If fails, sets *<number_of_nodal_values_address> to zero.
+ */
 int Standard_node_to_element_map_get_number_of_nodal_values(
 	struct Standard_node_to_element_map *standard_node_map,
 	int *number_of_nodal_values_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
 
-DESCRIPTION :
-Returns the number of nodal values used by <standard_node_map>.
-If fails, sets *<number_of_nodal_values_address> to zero.
-==============================================================================*/
-
+/**
+ * Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
+ * If fails, sets *<nodal_value_index_address> to zero.
+ */
 int Standard_node_to_element_map_get_nodal_value_index(
 	struct Standard_node_to_element_map *standard_node_map,
 	int nodal_value_number, int *nodal_value_index_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
 
-DESCRIPTION :
-Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
-If fails, sets *<nodal_value_index_address> to zero.
-==============================================================================*/
-
+/**
+ * Sets nodal_value_index <nodal_value_number> of <standard_node_map> to
+ * <nodal_value_index>.
+ * Note a negative <nodal_value_index> gives a value of zero without needing to
+ * get a value from the node.
+ */
 int Standard_node_to_element_map_set_nodal_value_index(
 	struct Standard_node_to_element_map *standard_node_map,
 	int nodal_value_number, int nodal_value_index);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
 
-DESCRIPTION :
-Sets nodal_value_index <nodal_value_number> of <standard_node_map> to
-<nodal_value_index>.
-Note a negative <nodal_value_index> gives a value of zero without needing to
-get a value from the node.
-==============================================================================*/
+/**
+ * Returns the nodal value type at <nodal_value_number> in <standard_node_map>.
+ * If none, returns FE_NODAL_UNKNOWN.
+ */
+FE_nodal_value_type Standard_node_to_element_map_get_nodal_value_type(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number);
 
+/**
+ * Returns the version number of the nodal value obtained for
+ * <nodal_value_number> in <standard_node_map>, starting at 1.
+ * If none/error, returns 0.
+ */
+int Standard_node_to_element_map_get_nodal_version(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number);
+
+/**
+ * Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
+ * If fails, sets *<scale_factor_index_address> to zero.
+ */
 int Standard_node_to_element_map_get_scale_factor_index(
 	struct Standard_node_to_element_map *standard_node_map,
 	int nodal_value_number, int *scale_factor_index_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
 
-DESCRIPTION :
-Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
-If fails, sets *<scale_factor_index_address> to zero.
-==============================================================================*/
-
+/**
+ * Sets scale_factor_index <nodal_value_number> of <standard_node_map> to
+ * <scale_factor_index>.
+ * Note a negative <scale_factor_index> gives a unit scale factor without
+ * needing to get a value from the scale factor set.
+ */
 int Standard_node_to_element_map_set_scale_factor_index(
 	struct Standard_node_to_element_map *standard_node_map,
 	int nodal_value_number, int scale_factor_index);
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Sets scale_factor_index <nodal_value_number> of <standard_node_map> to
-<scale_factor_index>.
-Note a negative <scale_factor_index> gives a unit scale factor without
-needing to get a value from the scale factor set.
-==============================================================================*/
 
 struct FE_element_field_component *CREATE(FE_element_field_component)(
 	enum Global_to_element_map_type type,int number_of_maps,
@@ -2763,6 +2762,20 @@ bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
  * otherwise returns 0 (false).
  */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
+
+/**
+ * Check that each Standard_node_to_element_map used to define field has
+ * node_value/version labels as well as offsets into component DOFs and if not
+ * find them and check they are consistently used for all elements i.e. that
+ * each use of the same array offset in an element refers to the same
+ * node_value/version.
+ * @param field  The FE_field to check/update.
+ * @return  CMZN_OK if labels are complete and consistent, any other status if
+ * failed. Failure can occur if nodal value labels are absent at the nodes, or
+ * if the implementation discovers the same element field component uses the
+ * same offsets for different nodal labels but is unable to fix it.
+ */
+int FE_field_check_element_node_value_labels(FE_field *field);
 
 int FE_field_has_multiple_times(struct FE_field *fe_field);
 /*******************************************************************************
