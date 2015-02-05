@@ -124,6 +124,7 @@ struct FieldMLBasisData
 	// @param localNodeIndex  Local node number starting at 0.
 	int getNumberOfLocalNodeDofs(int localNodeIndex) const
 	{
+		USE_PARAMETER(localNodeIndex); // GRC future use
 		DsLabels *localNodeLabels = this->getLocalNodeLabels();
 		if (!localNodeLabels)
 			return 0;

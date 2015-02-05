@@ -338,7 +338,7 @@ private:
 	int defineEnsembleFromLabels(FmlObjectHandle fmlEnsembleType, DsLabels& labels);
 	template <typename VALUETYPE> FmlObjectHandle defineParametersFromMap(
 		DsMap<VALUETYPE>& parameterMap, FmlObjectHandle fmlValueType);
-	int FieldMLWriter::getNodeConnectivityForBasisData(FieldMLBasisData& basisData,
+	int getNodeConnectivityForBasisData(FieldMLBasisData& basisData,
 		DsLabels& elementLabels, MeshNodeConnectivity*& nodeConnectivity);
 	int getElementFieldComponentTemplate(FE_element_field_component *feComponent,
 		DsLabels& elementLabels, ElementFieldComponentTemplate*& elementTemplate);
