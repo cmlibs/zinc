@@ -47,7 +47,7 @@ public:
 		indexLimit = 0;
 	}
 
-	DsLabelIndex getSize()
+	DsLabelIndex getSize() const
 	{
 		return labelsCount;
 	}
