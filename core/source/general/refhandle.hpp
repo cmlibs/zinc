@@ -25,9 +25,9 @@ template <typename T> class RefHandle
 	template<typename POINTEE>
 		friend void SetImpl(RefHandle<POINTEE>& refHandle, POINTEE* newObject);
 	template<typename POINTEE>
-		friend bool operator==(RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2);
+		friend bool operator==(const RefHandle<POINTEE>& refHandle1, const RefHandle<POINTEE>& refHandle2);
 	template<typename POINTEE>
-		friend bool operator!=(RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2);
+		friend bool operator!=(const RefHandle<POINTEE>& refHandle1, const RefHandle<POINTEE>& refHandle2);
 
 private:
 	T* object;
@@ -70,6 +70,11 @@ public:
 		return this->object;
 	}
 
+	const T* operator->() const
+	{
+		return this->object;
+	}
+
 	operator bool()
 	{
 		return (this->object != 0);
@@ -89,13 +94,13 @@ template<typename POINTEE> inline void SetImpl(RefHandle<POINTEE>& refHandle, PO
 }
 
 template<typename POINTEE> inline bool operator==(
-	RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2)
+	const RefHandle<POINTEE>& refHandle1, const RefHandle<POINTEE>& refHandle2)
 {
 	return refHandle1.object == refHandle2.object;
 }
 
 template<typename POINTEE> inline bool operator!=(
-	RefHandle<POINTEE>& refHandle1, RefHandle<POINTEE>& refHandle2)
+	const RefHandle<POINTEE>& refHandle1, const RefHandle<POINTEE>& refHandle2)
 {
 	return refHandle1.object != refHandle2.object;
 }

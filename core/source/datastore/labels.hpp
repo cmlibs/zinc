@@ -107,7 +107,7 @@ public:
 		this->name = nameIn;
 	}
 
-	DsLabelIndex getSize()
+	DsLabelIndex getSize() const
 	{
 		return labelsCount;
 	}
