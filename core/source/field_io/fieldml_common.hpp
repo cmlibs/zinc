@@ -13,6 +13,12 @@
 #define CMZN_FIELDML_COMMON_HPP
 
 #include "zinc/element.h"
+#include "fieldml_api.h"
+#include "datastore/labels.hpp"
+#include "datastore/map.hpp"
+#include "datastore/mapindexing.hpp"
+
+const FmlObjectHandle FML_INVALID_OBJECT_HANDLE = (const FmlObjectHandle)FML_INVALID_HANDLE;
 
 struct FE_basis;
 
@@ -55,12 +61,14 @@ const BasisType libraryBases[] =
 	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	//{ 1, "interpolator.1d.unit.cubicHermite",        true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
+	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
+	//{ 2, "interpolator.2d.unit.bicubicHermite",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
 	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
 	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE }, 0 },
@@ -69,13 +77,62 @@ const BasisType libraryBases[] =
 	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
 	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
 	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
-	// GRC add Hermite!
-	// GRC add vtk, zienkiewicz simplex ordering, swizzle
+	//{ 3, "interpolator.3d.unit.tricubicHermite",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE }, 0 }
 };
 
 const int numLibraryBases = sizeof(libraryBases) / sizeof(BasisType);
 
+struct FieldMLBasisData
+{
+	std::string basisName;
+	bool isHermite;
+	FmlObjectHandle fmlBasisEvaluator;
+	FmlObjectHandle fmlBasisParametersType;
+	FmlObjectHandle fmlBasisParametersComponentType;
+	HDsLabels parametersLabels;
+	FieldMLBasisData *connectivityBasisData;
 
+	FieldMLBasisData()	:
+		basisName(""),
+		isHermite(false),
+		fmlBasisEvaluator(FML_INVALID_OBJECT_HANDLE),
+		fmlBasisParametersType(FML_INVALID_OBJECT_HANDLE),
+		fmlBasisParametersComponentType(FML_INVALID_OBJECT_HANDLE),
+		connectivityBasisData(0)
+	{
+	}
+
+	// @argument connectivityBasisDataIn  Optional data for simpler basis with same connectivity.
+	FieldMLBasisData(FmlSessionHandle fmlSession, const char *basisNameIn, FmlObjectHandle fmlBasisEvaluatorIn,
+		FmlObjectHandle fmlBasisParametersTypeIn, FmlObjectHandle fmlBasisParametersComponentTypeIn,
+		FieldMLBasisData *connectivityBasisDataIn);
+
+	FieldMLBasisData *getConnectivityBasisData()
+	{
+		if (this->connectivityBasisData)
+			return this->connectivityBasisData;
+		return this;
+	}
+
+	DsLabels *getLocalNodeLabels() const
+	{
+		if (this->connectivityBasisData)
+			return this->connectivityBasisData->getLocalNodeLabels();
+		return cmzn::GetImpl(this->parametersLabels);
+	}
+
+	// @param localNodeIndex  Local node number starting at 0.
+	int getNumberOfLocalNodeDofs(int localNodeIndex) const
+	{
+		DsLabels *localNodeLabels = this->getLocalNodeLabels();
+		if (!localNodeLabels)
+			return 0;
+		if (this->isHermite)
+			return this->parametersLabels->getSize() / localNodeLabels->getSize();
+		return 1;
+	}
+
+};
 
 enum cmzn_element_shape_type getElementShapeFromFieldmlName(const char *shapeName);
 

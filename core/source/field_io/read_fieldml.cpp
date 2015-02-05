@@ -22,19 +22,15 @@
 #include "zinc/node.h"
 #include "zinc/region.h"
 #include "zinc/status.h"
-#include "datastore/map.hpp"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/read_fieldml.hpp"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "general/refcounted.hpp"
-#include "fieldml_api.h"
 #include "FieldmlIoApi.h"
 
 namespace {
-
-const FmlObjectHandle FML_INVALID_OBJECT_HANDLE = (const FmlObjectHandle)FML_INVALID_HANDLE;
 
 const char *libraryChartArgumentNames[] =
 {

@@ -2880,18 +2880,9 @@ Frees the memory for the basis and sets <*basis_address> to NULL.
 
 struct FE_basis *make_FE_basis(int *basis_type,
 	struct MANAGER(FE_basis) *basis_manager )
-/*******************************************************************************
-LAST MODIFIED : 2 August 1999
-
-DESCRIPTION :
-Finds the specfied FE_basis in the basis manager. If it isn't there, creates it,
-and adds it to the manager.
-==============================================================================*/
 {
-	struct FE_basis *basis;
-
-	ENTER(make_FE_basis);
-	if (basis_manager)
+	struct FE_basis *basis = 0;
+	if (basis_type && basis_manager)
 	{
 		basis = FIND_BY_IDENTIFIER_IN_MANAGER(FE_basis,type)(basis_type,basis_manager);
 		if (NULL == basis)
@@ -2918,12 +2909,38 @@ and adds it to the manager.
 	else
 	{
 		display_message(ERROR_MESSAGE,"make_FE_basis. Invalid arguments");
-		basis = (struct FE_basis *)NULL;
 	}
-	LEAVE;
-
 	return (basis);
-} /* make_FE_basis */
+}
+
+FE_basis *FE_basis_get_connectivity_basis(FE_basis *feBasis)
+{
+	int basisDimension = 0;
+	if (!FE_basis_get_dimension(feBasis, &basisDimension))
+		return 0;
+	bool differentBasis = false;
+	const int basisTypeSize = 1 + (basisDimension*(basisDimension + 1) / 2);
+	int *basisType = new int[basisTypeSize];
+	basisType[0] = basisDimension;
+	for (int i = 1; i < basisTypeSize; ++i)
+	{
+		switch (feBasis->type[i])
+		{
+			case CUBIC_HERMITE:
+			case LAGRANGE_HERMITE:
+			case HERMITE_LAGRANGE:
+				basisType[i] = LINEAR_LAGRANGE;
+				differentBasis = true;
+				break;
+			default:
+				basisType[i] = feBasis->type[i];
+				break;
+		}
+	}
+	if (differentBasis)
+		return make_FE_basis(basisType, feBasis->manager);
+	return feBasis;
+}
 
 DECLARE_OBJECT_FUNCTIONS(FE_basis)
 
