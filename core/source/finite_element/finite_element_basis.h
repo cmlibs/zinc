@@ -92,15 +92,21 @@ DESCRIPTION :
 Frees the memory for <**basis_address> and sets <*basis_address> to NULL.
 ==============================================================================*/
 
-struct FE_basis *make_FE_basis(int *basis_type,
+/**
+ * Gets or creates the basis from its type description in the basis manager.
+ * Returned basis is NOT accessed.
+ */
+FE_basis *make_FE_basis(int *basis_type,
 	struct MANAGER(FE_basis) *basis_manager);
-/*******************************************************************************
-LAST MODIFIED : 2 August 1999
 
-DESCRIPTION :
-Finds the specfied FE_basis in the basis managed. If it isn't there, creates it,
-and adds it to the manager.
-==============================================================================*/
+/**
+ * Get or create a basis in the same manager that has the same nodal
+ * connectivity as the supplied basis. Essentially just converts cubic Hermite
+ * to linear Lagrange.
+ * If no Hermite interpolation, returned basis will match supplied basis.
+ * Returned basis is NOT accessed.
+ */
+FE_basis *FE_basis_get_connectivity_basis(FE_basis *feBasis);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_basis);
 
