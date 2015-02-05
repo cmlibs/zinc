@@ -86,6 +86,11 @@ public:
 
 	void detach_from_FE_region();
 
+	struct LIST(FE_node_field_info) *get_FE_node_field_info_list_private()
+	{
+		return this->node_field_info_list;
+	}
+
 	struct FE_node_field_info *get_FE_node_field_info(int number_of_values,
 		struct LIST(FE_node_field) *fe_node_field_list);
 	int get_FE_node_field_info_adding_new_field(
