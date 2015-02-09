@@ -21,7 +21,7 @@ Topic :: Scientific/Engineering :: Visualization
 Topic :: Software Development :: Libraries :: Python Modules
 """
 
-from distutils.core import setup
+from setuptools import setup
 
 doclines = __doc__.split("\n")
 

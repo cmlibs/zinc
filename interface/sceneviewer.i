@@ -15,6 +15,7 @@
 %apply double *OUTPUT { double *eyex, double *eyey, double *eyez, double *lookatx, double *lookaty, double *lookatz, double *upx, double *upy, double *upz};
 %apply double *OUTPUT { double *left, double *right, double *bottom, double *top, double *near_plane, double *far_plane};
 %apply double *OUTPUT { double *x, double *y, double *z};
+%apply int *OUTPUT {int *width, int *height};
 
 %import "scene.i"
 
