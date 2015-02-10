@@ -99,10 +99,10 @@ class GraphicsTestCase(unittest.TestCase):
         result = surfaces.setCoordinateField(coordinatesField)
         self.assertEqual(1, result)
         si = self.scene.createStreaminformationScene();
-        si.setExportFormat(si.EXPORT_FORMAT_THREEJS)
+        si.setIOFormat(si.IO_FORMAT_THREEJS)
         result = si.getNumberOfResourcesRequired()
         self.assertEqual(1, result)
-        result = si.setExportDataType(si.EXPORT_DATA_TYPE_COLOUR)
+        result = si.setIODataType(si.IO_DATA_TYPE_COLOUR)
         self.assertEqual(1, result)
         memeory_sr = si.createStreamresourceMemory();
         result = self.scene.exportScene(si)
