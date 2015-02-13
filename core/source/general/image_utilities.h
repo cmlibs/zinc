@@ -669,10 +669,6 @@ int get_magick_image_number_of_consistent_images(Image *magick_image);
  */
 int get_magick_image_parameters(Image *magick_image, int *width,
 	int *height, int *number_of_components, int *number_of_bytes_per_component, int do_IsGrey_test);
-
 #endif
-
-int Cmgui_image_magick_image_channels_range(struct Cmgui_image *image,
-	double *minimum, double *maximum);
 
 #endif /* !defined (IMAGE_UTILITIES_H) */
