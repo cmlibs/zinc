@@ -46,6 +46,15 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_NE(static_cast<cmzn_field_finite_element_id>(0), feField);
 	cmzn_field_finite_element_destroy(&feField);
 
+	cmzn_field_id constant_field = cmzn_fieldmodule_create_field_finite_element(zinc.fm, /*number_of_components*/3);
+	EXPECT_NE(static_cast<cmzn_field_id>(0), constant_field);
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_name(constant_field, "element_constant"));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_set_managed(constant_field, true));
+
+	feField = cmzn_field_cast_finite_element(constant_field);
+	EXPECT_NE(static_cast<cmzn_field_finite_element_id>(0), feField);
+	cmzn_field_finite_element_destroy(&feField);
+
 	char *componentName = cmzn_field_get_component_name(field, 1);
 	EXPECT_STREQ("1", componentName);
 	cmzn_deallocate(componentName);
@@ -105,6 +114,9 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_define_field_simple_nodal(
 		elementtemplate, field, /*component_number*/-1, basis, 4, localNodeIndexes));
 
+	EXPECT_EQ(CMZN_OK, result = cmzn_elementtemplate_define_field_element_constant(
+		elementtemplate, constant_field, /*component_number*/-1));
+
 	// for complex reasons you need to set the element nodes
 	// in the template before creating each element
 	for (int i = 1; i <= 4; ++i)
@@ -117,6 +129,18 @@ TEST(cmzn_field_finite_element, create)
 	cmzn_element_id element = cmzn_mesh_create_element(mesh, -1, elementtemplate);
 	EXPECT_NE(static_cast<cmzn_element_id>(0), element);
 	
+	EXPECT_EQ(CMZN_OK, result = cmzn_fieldcache_set_element(cache, element));
+	double constant_value[3] = {2.0, 3.0, 4.0};
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_assign_real(constant_field, cache, 3, &(constant_value[0])));
+
+	constant_value[0] = 5.0;
+	constant_value[1] = 5.0;
+	constant_value[2] = 5.0;
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_evaluate_real(constant_field, cache, 3, &(constant_value[0])));
+	EXPECT_EQ(2.0, constant_value[0]);
+	EXPECT_EQ(3.0, constant_value[1]);
+	EXPECT_EQ(4.0, constant_value[2]);
+
 	EXPECT_EQ(4, result = cmzn_nodeset_get_size(nodeset));
 	EXPECT_EQ(1, result = cmzn_mesh_get_size(mesh));
 
@@ -143,6 +167,7 @@ TEST(cmzn_field_finite_element, create)
 	EXPECT_EQ(CMZN_OK, result = cmzn_nodeset_destroy(&nodeset));
 	EXPECT_EQ(CMZN_OK, result = cmzn_mesh_destroy(&mesh));
 	EXPECT_EQ(CMZN_OK, result = cmzn_field_destroy(&field));
+	EXPECT_EQ(CMZN_OK, result = cmzn_field_destroy(&constant_field));
 }
 
 TEST(ZincFieldFiniteElement, create)
@@ -158,6 +183,15 @@ TEST(ZincFieldFiniteElement, create)
 
 	Field tmp = field;
 	FieldFiniteElement feField = tmp.castFiniteElement();
+	EXPECT_TRUE(feField.isValid());
+
+	FieldFiniteElement constant_field = zinc.fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(constant_field.isValid());
+	EXPECT_EQ(CMZN_OK, result = constant_field.setName("element_constant"));
+	EXPECT_EQ(OK, result = constant_field.setManaged(true));
+
+	tmp = constant_field;
+	feField = tmp.castFiniteElement();
 	EXPECT_TRUE(feField.isValid());
 
 	char *componentName = field.getComponentName(1);
@@ -218,6 +252,9 @@ TEST(ZincFieldFiniteElement, create)
 	EXPECT_EQ(OK, result = elementtemplate.defineFieldSimpleNodal(
 		field, /*component_number*/-1, basis, 4, localNodeIndexes));
 
+	EXPECT_EQ(CMZN_OK, result = elementtemplate.defineFieldElementConstant(
+		constant_field, /*component_number*/-1));
+
 	// for complex reasons you need to set the element nodes
 	// in the template before creating each element
 	for (int i = 1; i <= 4; ++i)
@@ -229,6 +266,18 @@ TEST(ZincFieldFiniteElement, create)
 	Element element = mesh.createElement(-1, elementtemplate);
 	EXPECT_TRUE(element.isValid());
 	
+	EXPECT_EQ(CMZN_OK, result = cache.setElement(element));
+	double constant_value[3] = {2.0, 3.0, 4.0};
+	EXPECT_EQ(CMZN_OK, result = constant_field.assignReal(cache, 3, &(constant_value[0])));
+
+	constant_value[0] = 5.0;
+	constant_value[1] = 5.0;
+	constant_value[2] = 5.0;
+	EXPECT_EQ(CMZN_OK, result = constant_field.evaluateReal(cache, 3, &(constant_value[0])));
+	EXPECT_EQ(2.0, constant_value[0]);
+	EXPECT_EQ(3.0, constant_value[1]);
+	EXPECT_EQ(4.0, constant_value[2]);
+
 	EXPECT_EQ(4, result = nodeset.getSize());
 	EXPECT_EQ(1, result = mesh.getSize());
 
