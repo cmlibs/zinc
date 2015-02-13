@@ -577,6 +577,22 @@ ZINC_API int cmzn_elementtemplate_set_number_of_nodes(
 	cmzn_elementtemplate_id element_template, int number_of_nodes);
 
 /**
+ * Defines per element constant field or field component in the
+ * element_template.
+ *
+ * @param element_template  Element template to modify.
+ * @param field  The field to define. Must be finite_element type.
+ * @param component_number  The component to define from 1 to the number of
+ * field components, or -1 to define all components with identical basis and
+ * nodal mappings.
+ *
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_elementtemplate_define_field_element_constant(
+	cmzn_elementtemplate_id element_template,
+	cmzn_field_id field, int component_number);
+
+/**
  * Defines a nodally interpolated element field or field component in the
  * element_template. Only Lagrange, simplex and constant basis function types
  * may be used with this function, i.e. where only a simple node value is

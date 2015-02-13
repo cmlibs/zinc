@@ -324,6 +324,12 @@ public:
 		return cmzn_elementtemplate_set_number_of_nodes(id, numberOfNodes);
 	}
 
+	int defineFieldElementConstant(const Field& field, int componentNumber)
+	{
+		return cmzn_elementtemplate_define_field_element_constant(
+			id, field.getId(), componentNumber);
+	}
+
 	int defineFieldSimpleNodal(const Field& field, int componentNumber,
 		const Elementbasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
 	{
