@@ -311,63 +311,59 @@ static int tile_interpolate_triangle(struct GT_surface *new_surface,
 }
 
 static int tile_copy_vertices_to_triangle(
-	struct GT_surface *new_surface, int new_index,
-	struct GT_surface *surface, int index1, int index2, int index3)
+	struct Graphics_vertex_array *tiles_array,
+	int index1, int index2, int index3,
+	GLfloat *position_vertex, unsigned int position_values_per_vertex,
+	GLfloat *texture_vertex, unsigned int texture_values_per_vertex,
+	GLfloat *normal_vertex, unsigned int normal_values_per_vertex,
+	GLfloat *tangent_vertex, unsigned int tangent_values_per_vertex,
+	GLfloat *data_vertex, unsigned int data_values_per_vertex)
 {
-	Triple *texturepoints = surface->texturelist;
-	Triple *points = surface->pointlist;
-	int k;
+	array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+		position_values_per_vertex, 1, position_vertex[position_values_per_vertex * index1]);
+	array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+		position_values_per_vertex, 1, position_vertex[position_values_per_vertex * index2]);
+	array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+		position_values_per_vertex, 1, position_vertex[position_values_per_vertex * index3]);
 
-	if (new_index + 2 >= new_surface->allocated_size)
+	array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+		texture_values_per_vertex, 1, texture_vertex[texture_values_per_vertex * index1]);
+	array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+		texture_values_per_vertex, 1, texture_vertex[texture_values_per_vertex * index2]);
+	array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
+		texture_values_per_vertex, 1, texture_vertex[texture_values_per_vertex * index3]);
+
+	if (normal_vertex)
 	{
-		tile_reallocate_GT_surface(new_surface, 2 * new_surface->allocated_size);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+			normal_values_per_vertex, 1, normal_vertex[normal_values_per_vertex * index1]);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+			normal_values_per_vertex, 1, normal_vertex[normal_values_per_vertex * index2]);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+			normal_values_per_vertex, 1, normal_vertex[normal_values_per_vertex * index3]);
 	}
 
-	for (k = 0 ; k < 3 ; k++)
+	if (tangent_vertex)
 	{
-		new_surface->texturelist[new_index][k] = texturepoints[index1][k];
-		new_surface->texturelist[new_index+1][k] = texturepoints[index2][k];
-		new_surface->texturelist[new_index+2][k] = texturepoints[index3][k];
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+			tangent_values_per_vertex, 1, tangent_vertex[tangent_values_per_vertex * index1]);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+			tangent_values_per_vertex, 1, tangent_vertex[tangent_values_per_vertex * index2]);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+			tangent_values_per_vertex, 1, tangent_vertex[tangent_values_per_vertex * index3]);
+	}
 
-		new_surface->pointlist[new_index][k] = points[index1][k];
-		new_surface->pointlist[new_index+1][k] = points[index2][k];
-		new_surface->pointlist[new_index+2][k] = points[index3][k];
-		if (surface->normallist)
-		{
-			new_surface->normallist[new_index][k] =
-				surface->normallist[index1][k];
-			new_surface->normallist[new_index+1][k] = 
-				surface->normallist[index2][k];
-			new_surface->normallist[new_index+2][k] =
-				surface->normallist[index3][k];
-		}
-		if (surface->tangentlist)
-		{
-			new_surface->tangentlist[new_index][k] =
-				surface->tangentlist[index1][k];
-			new_surface->tangentlist[new_index+1][k] = 
-				surface->tangentlist[index2][k];
-			new_surface->tangentlist[new_index+2][k] =
-				surface->tangentlist[index3][k];
-		}
-	}
-	if (surface->data)
+	if (data_vertex)
 	{
-		new_index *= surface->n_data_components;
- 		index1 *= surface->n_data_components;
- 		index2 *= surface->n_data_components;
- 		index3 *= surface->n_data_components;
-		for (k = 0 ; k < surface->n_data_components ; k++)
-		{
-			new_surface->data[new_index+k] = 
-				surface->data[index1+k];
-			new_surface->data[new_index+surface->n_data_components+k] = 
-				surface->data[index2+k];
-			new_surface->data[new_index+2*surface->n_data_components+k] = 
-				surface->data[index3+k];
-		}
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			data_values_per_vertex, 1, data_vertex[data_values_per_vertex * index1]);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			data_values_per_vertex, 1, data_vertex[data_values_per_vertex * index2]);
+		array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			data_values_per_vertex, 1, data_vertex[data_values_per_vertex * index3]);
 	}
-	return(1);
+
+	return 1;
 }
 
 static int tile_copy_polygon(struct GT_surface *new_surface,
@@ -722,14 +718,13 @@ static int tile_and_bin_GT_surface_triangles(struct GT_surface *surface,
 	struct GT_surface *current_surface, *new_surface;
 	Triple texture_centre, *texturetri, vertexk;
 
-	ENTER(tile_GT_surface);
-
 	if (surface && texture_tiling && triangle_tiles)
 	{
 		return_code = 1;
 		current_surface = surface;
 		for (k = 0 ; return_code && (k < texture_tiling->dimension) ; k++)
 		{
+
 #if defined (DEBUG_CODE)
 			printf("direction %d\n", k);
 #endif /* defined (DEBUG_CODE) */
@@ -1320,25 +1315,43 @@ struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
 		unsigned int surface_index;
 		unsigned int surface_count = array->get_number_of_vertices(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START);
-		GLfloat *position_buffer = 0, *data_buffer = 0, *normal_buffer = 0,
-			*texture_coordinate0_buffer = 0, *tangent_buffer = 0;
-		unsigned int position_values_per_vertex, position_vertex_count,
-		data_values_per_vertex, data_vertex_count, normal_values_per_vertex,
-		normal_vertex_count, texture_coordinate0_values_per_vertex,
-		texture_coordinate0_vertex_count, tangent_values_per_vertex, tangent_vertex_count;
-		unsigned int texture_coordinate0_values_per_vertex,
-			texture_coordinate0_vertex_count;
-		GLfloat *texture_coordinate0_buffer = 0;
+		GLfloat *position_buffer = 0, *normal_buffer = 0, *texture_coordinate0_buffer = 0,
+			*data_buffer = 0, *tangent_buffer = 0;
+		unsigned int position_values_per_vertex, position_vertex_count, normal_values_per_vertex,
+			normal_vertex_count, texture_coordinate0_values_per_vertex,	texture_coordinate0_vertex_count,
+			tangent_values_per_vertex, tangent_vertex_count, data_values_per_vertex, data_vertex_count;
+		array->get_float_vertex_buffer(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
+			position_buffer, &position_values_per_vertex, &position_vertex_count);
+		array->get_float_vertex_buffer(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
+			normal_buffer, &normal_values_per_vertex, &normal_vertex_count);
+		array->get_float_vertex_buffer(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TANGENT,
+			tangent_buffer, &tangent_values_per_vertex, &tangent_vertex_count);
+		array->get_float_vertex_buffer(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
+			data_buffer, &data_values_per_vertex, &data_vertex_count);
 		if (array->get_float_vertex_buffer(
 			GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-			texture_coordinate0_buffer, &texture_coordinate0_values_per_vertex,
+			normal_buffer, &texture_coordinate0_values_per_vertex,
 			&texture_coordinate0_vertex_count)
 			&& (texture_coordinate0_vertex_count == position_vertex_count))
 		{
 			tiles_array = new Graphics_vertex_array(GRAPHICS_VERTEX_ARRAY_TYPE_FLOAT_SEPARATE_DRAW_ARRAYS);
-			GLfloat *texture_coordinate0_vertex = NULL;
+			GLfloat *texture_coordinate0_vertex = 0, *position_vertex = 0, *normal_vertex = 0,
+				*tangent_vertex = 0, *data_vertex = 0;
+
 			for (int surface_index = 0; surface_index < surface_count; i++)
 			{
+				unsigned int tiles_index_start = array->get_number_of_vertices(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
+				unsigned int tiles_npts  = 0;
+				int object_name = 0;
+				if (!array->get_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					surface_index, 1, &object_name))
+				{
+					/* no object name, draw only glyphs provide no object id */
+					object_name = 0;
+				}
+
 				unsigned int index_start, index_count;
 				unsigned int npts1 = 0, npts2 = 0;
 				array->get_unsigned_integer_attribute(
@@ -1355,6 +1368,10 @@ struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
 					surface_index, 1, &npts2);
 				texture_coordinate0_vertex = texture_coordinate0_buffer +
 					texture_coordinate0_values_per_vertex * index_start;
+				position_vertex = position_buffer +	position_values_per_vertex * index_start;
+				normal_vertex = normal_buffer + normal_values_per_vertex * index_start;
+				tangent_vertex = tangent_buffer + tangent_values_per_vertex * index_start;
+				data_vertex = data_buffer + data_values_per_vertex * index_start;
 
 				int initial_points = 100;
 				int index1 = 0;
@@ -1378,19 +1395,19 @@ struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
 						for (k = 0 ; k < kmax ; k++)
 						{
 							/* Determine which tile each vertex belongs too */
-							texturepoints1[0] = texture_coordinate0_vertex[index1 * 3];
-							texturepoints1[1] = texture_coordinate0_vertex[index1 * 3 + 1];
-							texturepoints1[2] = texture_coordinate0_vertex[index1 * 3 + 2];
+							texturepoints1[0] = texture_coordinate0_vertex[index1 * texture_coordinate0_values_per_vertex];
+							texturepoints1[1] = texture_coordinate0_vertex[index1 * texture_coordinate0_values_per_vertex + 1];
+							texturepoints1[2] = texture_coordinate0_vertex[index1 * texture_coordinate0_values_per_vertex + 2];
 							vertex1 = tile_select_tile_bin(texturepoints1,
 								texture_tiling, /*with_modulus*/0, overlap_range);
-							texturepoints2[0] = texture_coordinate0_vertex[index2 * 3];
-							texturepoints2[1] = texture_coordinate0_vertex[index2 * 3 + 1];
-							texturepoints2[2] = texture_coordinate0_vertex[index2 * 3 + 2];
+							texturepoints2[0] = texture_coordinate0_vertex[index2 * texture_coordinate0_values_per_vertex];
+							texturepoints2[1] = texture_coordinate0_vertex[index2 * texture_coordinate0_values_per_vertex + 1];
+							texturepoints2[2] = texture_coordinate0_vertex[index2 * texture_coordinate0_values_per_vertex + 2];
 							vertex2 = tile_select_tile_bin(texturepoints2,
 								texture_tiling, /*with_modulus*/0, overlap_range);
-							texturepoints3[0] = texture_coordinate0_vertex[index3 * 3];
-							texturepoints3[1] = texture_coordinate0_vertex[index3 * 3 + 1];
-							texturepoints3[2] = texture_coordinate0_vertex[index3 * 3 + 2];
+							texturepoints3[0] = texture_coordinate0_vertex[index3 * texture_coordinate0_values_per_vertex];
+							texturepoints3[1] = texture_coordinate0_vertex[index3 * texture_coordinate0_values_per_vertex + 1];
+							texturepoints3[2] = texture_coordinate0_vertex[index3 * texture_coordinate0_values_per_vertex + 2];
 							vertex3 = tile_select_tile_bin(texturepoints3,
 								texture_tiling, /*with_modulus*/0, overlap_range);
 							if ((vertex1 == vertex2) &&
@@ -1398,35 +1415,24 @@ struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
 							{
 								vertex1 = tile_select_tile_bin(texturepoints1,
 									texture_tiling, /*with_modulus*/1, overlap_range);
-								current_surface = tile_create_or_get_tile_bin(
-									triangle_tiles, vertex1, initial_points,
-									/*polygon_size*/3, surface);
-								if (current_surface)
-								{
-									index = 3 * current_surface->n_pts1;
-									tile_copy_vertices_to_triangle(
-										current_surface, index, surface,
-										index1, index2, index3);
-									current_surface->n_pts1++;
-								}
-								else
-								{
-									return_code = 0;
-								}
+								tile_copy_vertices_to_triangle(
+									tiles_array, index1, index2, index3, position_vertex, position_values_per_vertex,
+									texture_vertex, texture_coordinate0_values_per_vertex,
+									normal_vertex, normal_values_per_vertex, tangent_vertex, tangent_values_per_vertex,
+									data_vertex, data_values_per_vertex);
+								tiles_npts++;
 							}
 							else
 							{
-								/* Make a surface to store our triangles as we split them */
-								current_surface = tile_create_GT_surface(surface,
-									initial_points, 3, /*polygon_size*/3);
+								tiles_npts = 1;
 								tile_copy_vertices_to_triangle(
-									current_surface, /*vertex_index*/0, surface,
-									index1, index2, index3);
-								current_surface->n_pts1 = 1;
-								return_code = tile_and_bin_GT_surface_triangles(current_surface,
-									texture_tiling, triangle_tiles,
-									overlap_range, initial_points, number_of_tiles);
-								DESTROY(GT_surface)(&current_surface);
+									tiles_array, index1, index2, index3, position_vertex, position_values_per_vertex,
+									texture_vertex, texture_coordinate0_values_per_vertex,
+									normal_vertex, normal_values_per_vertex, tangent_vertex, tangent_values_per_vertex,
+									data_vertex, data_values_per_vertex);
+							//	return_code = tile_and_bin_GT_surface_triangles(current_surface,
+							//		texture_tiling, triangle_tiles,
+							//		overlap_range, initial_points, number_of_tiles);
 							}
 
 							if (k == 0)
@@ -1439,39 +1445,25 @@ struct Graphics_vertex_array *tile_GT_surface_vertex_buffer(
 					}
 					index1++;
 				}
+				unsigned int tiles_number_of_vertices = tiles_npts * 3;
+				unsigned int number_of_xi2 = 3;
+				tiles_array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
+					1, 1, &(object_name));
+				tiles_array->add_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
+					1, 1, &tiles_number_of_vertices);
+				tiles_array->add_unsigned_integer_attribute(
+					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
+					1, 1, &tiles_index_start);
+				tiles_array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI1,
+					1, 1, &tiles_npts);
+				tiles_array->add_unsigned_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NUMBER_OF_XI2,
+					1, 1, &number_of_xi2);
 			}
 		}
 
-		current_surface = (struct GT_surface *)NULL;
-		return_surface = (struct GT_surface *)NULL;
 		for (i = 0 ; return_code && (i < number_of_tiles) ; i++)
 		{
-			if (surface_tiles[i])
-			{
-				if (current_surface)
-				{
-					current_surface->ptrnext = surface_tiles[i];
-				}
-				else
-				{
-					return_surface = surface_tiles[i];
-				}
-				current_surface = surface_tiles[i];
-				index = current_surface->n_pts1 * current_surface->n_pts2;
-				scale_texture_coordinates(current_surface,
-					texture_tiling);
-				if (index != current_surface->allocated_size)
-				{
-					tile_reallocate_GT_surface(current_surface,
-						index);
-				}
-#if defined (DEBUG_CODE)
-				/* Writing every surface is helpful when using valgrind so that it traps
-				 * earlier.  i.e. now rather than in the opengl render.
-				 */
-				write_GT_surface(current_surface);
-#endif // defined (DEBUG_CODE)
-			}
 			if (triangle_tiles[i])
 			{
 				if (current_surface)

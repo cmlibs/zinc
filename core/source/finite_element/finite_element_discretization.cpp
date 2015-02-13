@@ -880,11 +880,11 @@ Otherwise the routine returns 0.
 		/* check the number_in_xi */
 		for (i = 0; (i < element_dimension) && return_code ; i++)
 		{
-			if (1 > number_in_xi[i])
+			if (0 > number_in_xi[i])
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_element_shape_get_indices_for_xi_location_in_cell_corners.  "
-					"Non-positive number_in_xi");
+					"Negative number_in_xi");
 				return_code = 0;
 			}
 		}
@@ -908,7 +908,7 @@ Otherwise the routine returns 0.
 					for (i = 0 ; i < element_dimension ; i++)
 					{
 						indices[i] = (int)(number_in_xi[i] * xi[i] + 0.5);
-						if (!WITHIN_TOLERANCE((FE_value)indices[i] / (FE_value)number_in_xi[i], xi[i]))
+						if (number_in_xi[i] > 0 && (!WITHIN_TOLERANCE((FE_value)indices[i] / (FE_value)number_in_xi[i], xi[i])))
 						{
 							return_code = 0;
 						}

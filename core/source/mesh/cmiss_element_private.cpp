@@ -366,6 +366,44 @@ public:
 		return CMZN_ERROR_MEMORY;
 	}
 
+	int buildElementConstantComponent(int component_number, FE_basis *fe_basis)
+	{
+		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
+			return CMZN_ERROR_ARGUMENT;
+		FE_element_field_component *component =
+			CREATE(FE_element_field_component)(ELEMENT_GRID_MAP,
+				1, fe_basis, (FE_element_field_component_modify)NULL);
+		if (component)
+		{
+			int basis_dimension = 0;
+			FE_basis_get_dimension(fe_basis, &basis_dimension);
+			for (int i = 0; i < basis_dimension; i++)
+			{
+				FE_element_field_component_set_grid_map_number_in_xi(
+					component, i, 0);
+			}
+		}
+		if (component)
+		{
+			FE_element_field_component_set_grid_map_value_index(
+				component, 0);
+			int first = 0;
+			int limit = number_of_components;
+			if (component_number > 0)
+			{
+				first = component_number - 1;
+				limit = component_number;
+			}
+			for (int i = first; i < limit; i++)
+			{
+				clearComponent(i);
+				components[i] = component;
+			}
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_MEMORY;
+	}
+
 	int defineOnElement(FE_element *element)
 	{
 		return define_FE_field_at_element(element, fe_field, components);
@@ -592,6 +630,51 @@ public:
 			clearTemplateElement();
 		}
 		REACCESS(FE_basis)(&fe_basis, NULL);
+		return return_code;
+	}
+
+	int defineFieldElementConstant(cmzn_field_id field, int component_number)
+	{
+		int return_code = CMZN_OK;
+
+		cmzn_elementbasis_id basis = new cmzn_elementbasis(fe_region, element_dimension, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT);
+		FE_basis *fe_basis = basis->getFeBasis();
+		if (!fe_basis)
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_elementtemplate_define_field_element_constant.  "
+				"Basis is invalid or incomplete");
+			return_code = CMZN_ERROR_ARGUMENT;
+		}
+		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
+		FE_field *fe_field = NULL;
+		if (finite_element_field)
+		{
+			Computed_field_get_type_finite_element(field, &fe_field);
+			if (FE_field_get_FE_region(fe_field) != fe_region)
+			{
+				display_message(ERROR_MESSAGE,
+					"cmzn_elementtemplate_define_field_simple_nodal.  "
+					"Field is from another region");
+				return_code = CMZN_ERROR_ARGUMENT;
+			}
+			cmzn_field_finite_element_destroy(&finite_element_field);
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_elementtemplate_define_field_simple_nodal.  "
+				"Can only define real finite_element field type on elements");
+			return_code = CMZN_ERROR_ARGUMENT;
+		}
+		if (CMZN_OK == return_code)
+		{
+			cmzn_element_field& element_field = getElementField(fe_field);
+			return_code = element_field.buildElementConstantComponent(component_number, fe_basis);
+			clearTemplateElement();
+		}
+		REACCESS(FE_basis)(&fe_basis, NULL);
+		cmzn_elementbasis_destroy(&basis);
 		return return_code;
 	}
 
@@ -1507,6 +1590,17 @@ int cmzn_elementtemplate_set_number_of_nodes(
 	if (element_template)
 		return element_template->setNumberOfNodes(number_of_nodes);
 	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_elementtemplate_define_field_element_constant(cmzn_elementtemplate_id element_template,
+	cmzn_field_id field, int component_number)
+{
+	if (element_template && field)
+	{
+		return element_template->defineFieldElementConstant(field, component_number);
+	}
+	return CMZN_ERROR_ARGUMENT;
+
 }
 
 int cmzn_elementtemplate_define_field_simple_nodal(
