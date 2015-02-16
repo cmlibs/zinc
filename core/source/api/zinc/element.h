@@ -583,8 +583,7 @@ ZINC_API int cmzn_elementtemplate_set_number_of_nodes(
  * @param element_template  Element template to modify.
  * @param field  The field to define. Must be finite_element type.
  * @param component_number  The component to define from 1 to the number of
- * field components, or -1 to define all components with identical basis and
- * nodal mappings.
+ * field components, or -1 to define all components.
  *
  * @return  Status CMZN_OK on success, any other value on failure.
  */
