@@ -75,7 +75,7 @@ public:
 		return this->object;
 	}
 
-	operator bool()
+	operator bool() const
 	{
 		return (this->object != 0);
 	}

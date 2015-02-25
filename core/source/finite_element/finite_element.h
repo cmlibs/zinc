@@ -1346,12 +1346,14 @@ int Standard_node_to_element_map_get_nodal_version(
 	int nodal_value_number);
 
 /**
- * Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
- * If fails, sets *<scale_factor_index_address> to zero.
+ * @return  The index into the scale factors stored for the basis in the
+ * element of the scale factor used in mapping the nodal value number.
+ * A return value of -1 means unscaled i.e. unit scale factor 1.0.
+ * For invalid arguments also returns -1.
  */
 int Standard_node_to_element_map_get_scale_factor_index(
 	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int *scale_factor_index_address);
+	int nodal_value_number);
 
 /**
  * Sets scale_factor_index <nodal_value_number> of <standard_node_map> to

@@ -194,89 +194,17 @@ public:
 
 	int getNumberOfNodes() const
 	{
-		// GRC this should be handled by making an FE_basis and asking it
-		int number_of_nodes = 1;
-		int linearSimplexDimensions =
-			getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX);
-		switch (linearSimplexDimensions)
-		{
-			case 0:
-				// do nothing
-				break;
-			case 2:
-				number_of_nodes *= 3;
-				break;
-			case 3:
-				number_of_nodes *= 4;
-				break;
-			default:
-				number_of_nodes = 0;
-				break;
-		}
-		int quadraticSimplexDimensions =
-			getDimensionsUsingFunction(CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX);
-		switch (quadraticSimplexDimensions)
-		{
-			case 0:
-				// do nothing
-				break;
-			case 2:
-				number_of_nodes *= 6;
-				break;
-			case 3:
-				number_of_nodes *= 10;
-				break;
-			default:
-				number_of_nodes = 0;
-				break;
-		}
-		if (0 == number_of_nodes)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_elementbasis::getNumberOfNodes.  "
-				"Invalid number of chart components linked in simplex");
-			return 0;
-		}
-		for (int i = 0; i < dimension; i++)
-		{
-			switch (function_types[i])
-			{
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT:
-					break;
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE:
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE:
-					number_of_nodes *= 2;
-					break;
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE:
-					number_of_nodes *= 3;
-					break;
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE:
-					number_of_nodes *= 4;
-					break;
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX:
-				case CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX:
-					// handled above
-					break;
-				default:
-					display_message(ERROR_MESSAGE,
-						"cmzn_elementbasis::getNumberOfNodes.  "
-						"Invalid or unsupported basis type: %d", function_types[i]);
-					number_of_nodes = 0;
-					break;
-			}
-		}
-		return number_of_nodes;
+		FE_basis *basis = this->getFeBasis();
+		int numberOfNodes = FE_basis_get_number_of_nodes(basis);
+		DEACCESS(FE_basis)(&basis);
+		return numberOfNodes;
 	}
 
 	int getNumberOfFunctions() const
 	{
-		int numberOfFunctions = 0;
 		FE_basis *basis = this->getFeBasis();
-		if (basis)
-		{
-			FE_basis_get_number_of_basis_functions(basis, &numberOfFunctions);
-			DEACCESS(FE_basis)(&basis);
-		}
+		int numberOfFunctions = FE_basis_get_number_of_functions(basis);
+		DEACCESS(FE_basis)(&basis);
 		return numberOfFunctions;
 	}
 
@@ -323,28 +251,37 @@ public:
 	int buildComponent(int component_number, FE_basis *fe_basis, int number_of_nodes,
 		const int *local_node_indexes)
 	{
-		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components))
+		if ((component_number < -1) || (component_number == 0) || (component_number > number_of_components) ||
+				(FE_basis_get_number_of_nodes(fe_basis) != number_of_nodes))
 			return CMZN_ERROR_ARGUMENT;
 		FE_element_field_component *component =
 			CREATE(FE_element_field_component)(STANDARD_NODE_TO_ELEMENT_MAP,
 				number_of_nodes, fe_basis, (FE_element_field_component_modify)NULL);
-		if (component)
+		for (int nodeIndex = 0; (nodeIndex < number_of_nodes) && component; nodeIndex++)
 		{
-			for (int node_index = 0; node_index < number_of_nodes; node_index++)
+			const int numberOfValues = FE_basis_get_number_of_functions_per_node(fe_basis, nodeIndex);
+			Standard_node_to_element_map *standard_node_map =
+				CREATE(Standard_node_to_element_map)(local_node_indexes[nodeIndex] - 1, numberOfValues);
+			for (int valueNumber = 0; valueNumber < numberOfValues; ++valueNumber)
 			{
-				Standard_node_to_element_map *standard_node_map =
-					CREATE(Standard_node_to_element_map)(local_node_indexes[node_index] - 1, /*number_of_values*/1);
+				// GRC change to support valueType / version labels
+				int nodalValueIndex = valueNumber;
 				if (!(Standard_node_to_element_map_set_nodal_value_index(
-						standard_node_map, /*value_number*/0, /*nodal_value_index*/0) &&
+						standard_node_map, valueNumber, nodalValueIndex) &&
 					Standard_node_to_element_map_set_scale_factor_index(
-						standard_node_map, /*value_number*/0, /*no_scale_factor*/-1) &&
-					FE_element_field_component_set_standard_node_map(component,
-						node_index, standard_node_map)))
+						standard_node_map, valueNumber, /*no_scale_factor*/-1)))
 				{
 					DESTROY(FE_element_field_component)(&component);
 					component = NULL;
 					break;
 				}
+			}
+			if (!FE_element_field_component_set_standard_node_map(component,
+				nodeIndex, standard_node_map))
+			{
+				DESTROY(FE_element_field_component)(&component);
+				component = NULL;
+				break;
 			}
 		}
 		if (component)
@@ -363,7 +300,7 @@ public:
 			}
 			return CMZN_OK;
 		}
-		return CMZN_ERROR_MEMORY;
+		return CMZN_ERROR_GENERAL;
 	}
 
 	int buildElementConstantComponent(int component_number, FE_basis *fe_basis)

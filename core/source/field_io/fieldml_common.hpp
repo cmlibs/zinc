@@ -61,14 +61,14 @@ const BasisType libraryBases[] =
 	{ 1, "interpolator.1d.unit.linearLagrange",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 1, "interpolator.1d.unit.quadraticLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 1, "interpolator.1d.unit.cubicLagrange",       true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
-	//{ 1, "interpolator.1d.unit.cubicHermite",        true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 1, "interpolator.1d.unit.cubicHermite",        true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.bilinearLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.biquadraticLagrange", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.bicubicLagrange",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.bilinearSimplex",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.biquadraticSimplex",  true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 2, "interpolator.2d.unit.biquadraticSimplex.vtk", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, biquadraticSimplex_vtk_swizzle },
-	//{ 2, "interpolator.2d.unit.bicubicHermite",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
+	{ 2, "interpolator.2d.unit.bicubicHermite",      true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_INVALID }, 0 },
 	{ 3, "interpolator.3d.unit.trilinearLagrange",   true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
 	{ 3, "interpolator.3d.unit.triquadraticLagrange",true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
 	{ 3, "interpolator.3d.unit.tricubicLagrange",    true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_LAGRANGE }, 0 },
@@ -77,7 +77,7 @@ const BasisType libraryBases[] =
 	{ 3, "interpolator.3d.unit.triquadraticSimplex.zienkiewicz", true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX }, triquadraticSimplex_zienkiewicz_swizzle },
 	{ 3, "interpolator.3d.unit.trilinearWedge12",    false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_LINEAR_LAGRANGE }, 0 },
 	{ 3, "interpolator.3d.unit.triquadraticWedge12", false,{ CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_SIMPLEX, CMZN_ELEMENTBASIS_FUNCTION_TYPE_QUADRATIC_LAGRANGE }, 0 },
-	//{ 3, "interpolator.3d.unit.tricubicHermite",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE }, 0 }
+	{ 3, "interpolator.3d.unit.tricubicHermite",     true, { CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CUBIC_HERMITE }, 0 }
 };
 
 const int numLibraryBases = sizeof(libraryBases) / sizeof(BasisType);
@@ -91,6 +91,10 @@ struct FieldMLBasisData
 	FmlObjectHandle fmlBasisParametersComponentType;
 	HDsLabels parametersLabels;
 	FieldMLBasisData *connectivityBasisData;
+	HDsMapInt hermiteDofLocalNodeMap;
+	FmlObjectHandle fmlHermiteDofLocalNodeMap;
+	HDsMapInt hermiteDofValueTypeMap;
+	FmlObjectHandle fmlHermiteDofValueTypeMap;
 
 	FieldMLBasisData()	:
 		basisName(""),
@@ -98,7 +102,9 @@ struct FieldMLBasisData
 		fmlBasisEvaluator(FML_INVALID_OBJECT_HANDLE),
 		fmlBasisParametersType(FML_INVALID_OBJECT_HANDLE),
 		fmlBasisParametersComponentType(FML_INVALID_OBJECT_HANDLE),
-		connectivityBasisData(0)
+		connectivityBasisData(0),
+		fmlHermiteDofLocalNodeMap(FML_INVALID_OBJECT_HANDLE),
+		fmlHermiteDofValueTypeMap(FML_INVALID_OBJECT_HANDLE)
 	{
 	}
 
@@ -106,6 +112,16 @@ struct FieldMLBasisData
 	FieldMLBasisData(FmlSessionHandle fmlSession, const char *basisNameIn, FmlObjectHandle fmlBasisEvaluatorIn,
 		FmlObjectHandle fmlBasisParametersTypeIn, FmlObjectHandle fmlBasisParametersComponentTypeIn,
 		FieldMLBasisData *connectivityBasisDataIn);
+
+	void setStandardHermiteMaps(
+		DsMap<int> *hermiteDofLocalNodeMapIn, FmlObjectHandle fmlHermiteDofLocalNodeMapIn,
+		DsMap<int> *hermiteDofValueTypeMapIn, FmlObjectHandle fmlHermiteDofValueTypeMapIn)
+	{
+		cmzn::SetImpl(this->hermiteDofLocalNodeMap, cmzn::Access(hermiteDofLocalNodeMapIn));
+		this->fmlHermiteDofLocalNodeMap = fmlHermiteDofLocalNodeMapIn;
+		cmzn::SetImpl(this->hermiteDofValueTypeMap, cmzn::Access(hermiteDofValueTypeMapIn));
+		this->fmlHermiteDofValueTypeMap = fmlHermiteDofValueTypeMapIn;
+	}
 
 	FieldMLBasisData *getConnectivityBasisData()
 	{
@@ -121,8 +137,22 @@ struct FieldMLBasisData
 		return cmzn::GetImpl(this->parametersLabels);
 	}
 
+	int getLocalNodeCount() const
+	{
+		if (this->connectivityBasisData)
+			return this->connectivityBasisData->getLocalNodeCount();
+		if (this->parametersLabels)
+			return this->parametersLabels->getSize();
+		return 0;
+	}
+
+	int getParameterCount() const
+	{
+		return this->parametersLabels->getSize();
+	}
+
 	// @param localNodeIndex  Local node number starting at 0.
-	int getNumberOfLocalNodeDofs(int localNodeIndex) const
+	int getLocalNodeDofCount(int localNodeIndex) const
 	{
 		USE_PARAMETER(localNodeIndex); // GRC future use
 		DsLabels *localNodeLabels = this->getLocalNodeLabels();

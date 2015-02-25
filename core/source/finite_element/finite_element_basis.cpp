@@ -68,8 +68,6 @@ list.
 	int *type;
 	/* the number of basis functions */
 	int number_of_basis_functions;
-	/* the names for the basis values eg. "0", "dXi1 1,1" */
-	char **value_names;
 	/* the blending matrix is a linear mapping from the basis used (eg. cubic
 		Hermite) to the standard basis (eg. Chebyshev polynomials).  In some cases,
 		for example a non-polynomial basis, this may be NULL, which indicates the
@@ -82,6 +80,12 @@ list.
 	int number_of_standard_basis_functions;
 	void *arguments;
 	Standard_basis_function *standard_basis;
+	// node index for n'th basis function dof: increasing from 0
+	int *parameterNodes;
+	// derivative type for n'th basis function dof
+	// same values as FE_nodal_value_type; bit 0=dxi1, bit 1=dxi2, bit 2=dxi3
+	// will need development if significantly different bases are added
+	int *parameterDerivatives;
 
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(FE_basis) *manager;
@@ -1652,7 +1656,7 @@ returned.
 	FE_value *blending_matrix = NULL,*polygon_blending_matrix,*reorder_1,*reorder_2,
 		*temp_matrix;
 	int *argument,*arguments,*basis_function_number,*basis_function_numbers = NULL,
-		*basis_type = NULL,fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
+		fn,i,j,k,l,need_reorder,new_func_count,new_std_func_count,
 		number_of_basis_functions,
 		number_of_polygon_verticies,number_of_standard_basis_functions,
 		number_of_xi_coordinates,offset_1,offset_2,polygon_offset,*reorder_offsets,
@@ -1680,7 +1684,10 @@ returned.
 			/* assign a (2*<number_of_xi_coordinates>+1)-tuple to each basis function
 				so that can order the basis functions (rows of the blending matrix) with
 				FE_nodal_value_type varying fastest, xi1 varying next fastest, xi2
-				varying next fastest and so on */
+				varying next fastest and so on. These consist of a recorder per function:
+				0 #xi xi1node# xi1deriv# xi2node# xi2deriv# ... xiNnode# xiNderiv#
+				Later, sequential numbers are put in the first column and after sorting
+				these give the index into the blending functions for the sorted index. */
 			basis_function_number=basis_function_numbers;
 			for (i=2*(number_of_xi_coordinates+1);i>0;i--)
 			{
@@ -2552,13 +2559,17 @@ returned.
 			}
 			if (valid_type)
 			{
-				/* allocate memory for the basis */
-				if (ALLOCATE(basis,struct FE_basis,1)&&ALLOCATE(basis_type,int,
-					1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2)&&
-					ALLOCATE(basis->blending_matrix,FE_value,number_of_basis_functions*
-					number_of_standard_basis_functions)&&
-					ALLOCATE(basis->blending_matrix_column_size,int,
-					number_of_standard_basis_functions))
+				ALLOCATE(basis, struct FE_basis, 1);
+				if (basis)
+				{
+					ALLOCATE(basis->type, int, 1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2);
+					ALLOCATE(basis->blending_matrix, FE_value, number_of_basis_functions*number_of_standard_basis_functions);
+					ALLOCATE(basis->blending_matrix_column_size, int, number_of_standard_basis_functions);
+					ALLOCATE(basis->parameterNodes, int, number_of_basis_functions);
+					ALLOCATE(basis->parameterDerivatives, int, number_of_basis_functions);
+				}
+				if ((basis) && (basis->type) && (basis->blending_matrix) && (basis->blending_matrix_column_size) &&
+					(basis->parameterNodes) && (basis->parameterDerivatives))
 				{
 					/* reorder the xi coordinates */
 					need_reorder=0;
@@ -2685,14 +2696,15 @@ returned.
 						}
 						else
 						{
-							display_message(ERROR_MESSAGE,
-							"CREATE(FE_basis).  Could not allocate memory for reordering xi");
+							display_message(ERROR_MESSAGE, "CREATE(FE_basis).  Could not allocate memory for reordering xi");
+							DEALLOCATE(basis->parameterDerivatives);
+							DEALLOCATE(basis->parameterNodes);
 							DEALLOCATE(basis->blending_matrix_column_size);
 							DEALLOCATE(basis->blending_matrix);
-							DEALLOCATE(basis_type);
+							DEALLOCATE(basis->type);
 							DEALLOCATE(arguments);
 							DEALLOCATE(basis);
-							basis=NULL;
+							basis = 0;
 						}
 						DEALLOCATE(reorder_offsets);
 						DEALLOCATE(temp_int_ptr_1);
@@ -2704,10 +2716,9 @@ returned.
 						basis->manager_change_status = MANAGER_CHANGE_NONE(FE_basis);
 
 						/* copy the basis type */
-						basis->type=basis_type;
-						type_entry=type;
-						for (i=1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2-1;
-							i>=0;i--)
+						int *basis_type = basis->type;
+						type_entry = type;
+						for (i = 1+number_of_xi_coordinates*(number_of_xi_coordinates+1)/2-1; i>=0; --i)
 						{
 							*basis_type= *type_entry;
 							basis_type++;
@@ -2738,6 +2749,28 @@ returned.
 								reorder_1++;
 								reorder_2++;
 							}
+							basis_function_number += 2*(number_of_xi_coordinates+1);
+						}
+						// calculate number of nodes and derivative per node */
+						basis_function_number = basis_function_numbers;
+						int *previous_basis_function_number = basis_function_number;
+						int derivativeType;
+						int nodeNumber = 0;
+						for (i = 0; i < number_of_basis_functions; ++i)
+						{
+							for (j = 0; j < number_of_xi_coordinates; ++j)
+								if (basis_function_number[2*j + 2] != previous_basis_function_number[2*j + 2])
+								{
+									++nodeNumber;
+									break;
+								}
+							basis->parameterNodes[i] = nodeNumber;
+							derivativeType = 0;
+							for (j = 0; j < number_of_xi_coordinates; ++j)
+								if (basis_function_number[2*j + 3])
+									derivativeType += (1 << j);
+							basis->parameterDerivatives[i] = derivativeType;
+							previous_basis_function_number = basis_function_number;
 							basis_function_number += 2*(number_of_xi_coordinates+1);
 						}
 						/* calculate the size of column containing non-zero entries, to reduce
@@ -2783,10 +2816,6 @@ returned.
 	printf("%p %p %p\n",standard_basis,monomial_basis_functions,
 		polygon_basis_functions);
 }*/
-						/* create the names for the values that multiply the basis
-							functions */
-							/*???DB.  To be done */
-						basis->value_names=(char **)NULL;
 						basis->arguments=arguments;
 						basis->standard_basis=standard_basis;
 					}
@@ -2797,8 +2826,12 @@ returned.
 						"CREATE(FE_basis).  Could not allocate memory for basis");
 					if (basis)
 					{
+						DEALLOCATE(basis->parameterDerivatives);
+						DEALLOCATE(basis->parameterNodes);
+						DEALLOCATE(basis->blending_matrix_column_size);
+						DEALLOCATE(basis->blending_matrix);
+						DEALLOCATE(basis->type);
 						DEALLOCATE(basis);
-						DEALLOCATE(basis_type);
 					}
 					DEALLOCATE(arguments);
 				}
@@ -2859,6 +2892,8 @@ Frees the memory for the basis and sets <*basis_address> to NULL.
 			DEALLOCATE(basis->type);
 			DEALLOCATE(basis->blending_matrix);
 			DEALLOCATE(basis->blending_matrix_column_size);
+			DEALLOCATE(basis->parameterNodes);
+			DEALLOCATE(basis->parameterDerivatives);
 			DEALLOCATE(basis->arguments);
 			DEALLOCATE(*basis_address);
 			return_code=1;
@@ -2952,178 +2987,35 @@ DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(FE_basis,type)
 
 PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(FE_basis,type)
 {
-	char **destination_value_names,**source_value_name,**value_name;
-	FE_value *blending_matrix;
-	int *argument,*destination_arguments,i,return_code,*source_argument;
-
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type));
-	if (source&&destination)
+	int return_code = 1;
+	if (source && destination)
 	{
-		/* copy the source value names */
-		if (NULL != (source_value_name=source->value_names))
+		// since basis is completely defined by its type,
+		// just recreate source and swap contents with destination
+		FE_basis *tmpBasis;
+		ALLOCATE(tmpBasis, FE_basis, 1);
+		FE_basis *copyBasis = CREATE(FE_basis)(source->type);
+		if (tmpBasis && copyBasis)
 		{
-			i=source->number_of_basis_functions;
-			if (ALLOCATE(destination_value_names,char *,i))
-			{
-				value_name=destination_value_names;
-				return_code=1;
-				while (return_code&&(i>0))
-				{
-					if (*source_value_name)
-					{
-						if (ALLOCATE(*value_name,char,strlen(*source_value_name)+1))
-						{
-							strcpy(*value_name,*source_value_name);
-							value_name++;
-							source_value_name++;
-							i--;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for value name");
-							return_code=0;
-							while (i<source->number_of_basis_functions)
-							{
-								value_name--;
-								if (*value_name)
-								{
-									DEALLOCATE(*value_name);
-								}
-								i++;
-							}
-							DEALLOCATE(destination_value_names);
-						}
-					}
-					else
-					{
-						*value_name=(char *)NULL;
-						value_name++;
-						source_value_name++;
-						i--;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for value names");
-				return_code=0;
-			}
+			*tmpBasis = *destination;
+			*destination = *copyBasis;
+			*copyBasis = *tmpBasis;
 		}
 		else
 		{
-			return_code=1;
-			destination_value_names=(char **)NULL;
+			display_message(ERROR_MESSAGE, "MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Could not allocate temporaries");
+			return_code = 0;
 		}
-		if (return_code)
-		{
-			FE_value *destination_blending_matrix = 0;
-			/* copy the source blending matrix */
-			if (source->blending_matrix)
-			{
-				FE_value *source_blending_matrix = source->blending_matrix;
-				i=(source->number_of_basis_functions)*
-					(source->number_of_standard_basis_functions);
-				if (ALLOCATE(destination_blending_matrix,FE_value,i))
-				{
-					blending_matrix=destination_blending_matrix;
-					while (i>0)
-					{
-						*blending_matrix= *source_blending_matrix;
-						blending_matrix++;
-						source_blending_matrix++;
-						i--;
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for blending matrix");
-					return_code=0;
-					if (NULL != (value_name=destination_value_names))
-					{
-						for (i=source->number_of_basis_functions;i>0;i--)
-						{
-							if (*value_name)
-							{
-								DEALLOCATE(*value_name);
-							}
-							value_name++;
-						}
-						DEALLOCATE(destination_value_names);
-					}
-				}
-			}
-			if (return_code)
-			{
-				i=(source->number_of_standard_basis_functions)+1;
-				if (ALLOCATE(destination_arguments,int,i))
-				{
-					argument=destination_arguments;
-					source_argument=(int *)(source->arguments);
-					while (i>0)
-					{
-						*argument= *source_argument;
-						argument++;
-						source_argument++;
-						i--;
-					}
-					/* clear the destination value names */
-					if (NULL != (value_name=destination->value_names))
-					{
-						for (i=destination->number_of_basis_functions;i>0;i--)
-						{
-							DEALLOCATE(*value_name);
-							value_name++;
-						}
-						DEALLOCATE(destination->value_names);
-					}
-					destination->number_of_basis_functions=
-						source->number_of_basis_functions;
-					destination->value_names=destination_value_names;
-					/* clear the destination blending matrix */
-					DEALLOCATE(destination->blending_matrix);
-					destination->blending_matrix=destination_blending_matrix;
-					destination->number_of_standard_basis_functions=
-						source->number_of_standard_basis_functions;
-					/* clear the destination standard basis function arguments */
-					DEALLOCATE(destination->arguments);
-					destination->arguments=(void *)destination_arguments;
-					source->standard_basis=destination->standard_basis;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Insufficient memory for arguments");
-					return_code=0;
-					DEALLOCATE(destination_blending_matrix);
-					if (NULL != (value_name=destination_value_names))
-					{
-						for (i=source->number_of_basis_functions;i>0;i--)
-						{
-							if (*value_name)
-							{
-								DEALLOCATE(*value_name);
-							}
-							value_name++;
-						}
-						DEALLOCATE(destination_value_names);
-					}
-				}
-			}
-		}
+		DESTROY(FE_basis)(&copyBasis);
+		DEALLOCATE(tmpBasis);
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Invalid argument(s)");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type).  Invalid argument(s)");
+		return_code = 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(FE_basis,type) */
+	return return_code;
+}
 
 PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(FE_basis,type,int *)
 {
@@ -3941,38 +3833,37 @@ If fails, puts zero at <dimension_address>.
 	return (return_code);
 } /* FE_basis_get_dimension */
 
-int FE_basis_get_number_of_basis_functions(struct FE_basis *basis,
-	int *number_of_basis_functions_address)
-/*******************************************************************************
-LAST MODIFIED : 15 May 2003
-
-DESCRIPTION :
-Returns the number_of_basis_functions of <basis>.
-If fails, puts zero at <number_of_basis_functions_address>.
-==============================================================================*/
+int FE_basis_get_number_of_basis_functions(struct FE_basis *basis)
 {
-	int return_code;
+	if (basis)
+		return basis->number_of_basis_functions;
+	return 0;
+}
 
-	ENTER(FE_basis_get_number_of_basis_functions);
-	if (basis && basis->type && number_of_basis_functions_address)
+int FE_basis_get_number_of_nodes(struct FE_basis *basis)
+{
+	if (basis)
+		return basis->parameterNodes[basis->number_of_basis_functions - 1] + 1;
+	return 0;
+}
+
+int FE_basis_get_number_of_functions_per_node(struct FE_basis *basis, int nodeNumber)
+{
+	if ((!basis) || (nodeNumber < 0))
+		return 0;
+	const int functionCount = basis->number_of_basis_functions;
+	for (int f = 0; f < functionCount; ++f)
 	{
-		*number_of_basis_functions_address = basis->number_of_basis_functions;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_basis_get_number_of_basis_functions.  Invalid argument(s)");
-		if (number_of_basis_functions_address)
+		if (basis->parameterNodes[f] == nodeNumber)
 		{
-			*number_of_basis_functions_address = 0;
+			int numberOfFunctions = 1;
+			for (++f; (f < functionCount) && (basis->parameterNodes[f] == nodeNumber); ++f)
+				++numberOfFunctions;
+			return numberOfFunctions;
 		}
-		return_code = 0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_basis_get_number_of_basis_functions */
+	return 0;
+}
 
 FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(
 	cmzn_elementbasis_function_type functionType)

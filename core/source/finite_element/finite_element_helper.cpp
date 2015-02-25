@@ -159,8 +159,7 @@ int FE_element_define_field_simple(struct FE_element *element,
 		}
 
 		// check element has enough nodes to support this basis
-		int number_of_basis_functions = 0;
-		FE_basis_get_number_of_basis_functions(basis, &number_of_basis_functions);
+		int number_of_basis_functions = FE_basis_get_number_of_functions(basis);
 		// following is true for the basis types supported by this function:
 		const int basis_number_of_nodes = number_of_basis_functions;
 		const int max_referenced_nodes = basis_number_of_nodes;

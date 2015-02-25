@@ -167,15 +167,22 @@ Returns the dimension of <basis>.
 If fails, puts zero at <dimension_address>.
 ==============================================================================*/
 
-int FE_basis_get_number_of_basis_functions(struct FE_basis *basis,
-	int *number_of_basis_functions_address);
-/*******************************************************************************
-LAST MODIFIED : 15 May 2003
+/**
+ * Returns the number of basis functions of <basis>, or 0 if invalid basis.
+ */
+int FE_basis_get_number_of_functions(struct FE_basis *basis);
 
-DESCRIPTION :
-Returns the number_of_basis_functions of <basis>.
-If fails, puts zero at <number_of_basis_functions_address>.
-==============================================================================*/
+/**
+ * @return  The number of nodes expected for basis, or 0 if invalid basis.
+ */
+int FE_basis_get_number_of_nodes(struct FE_basis *basis);
+
+/**
+ * Returns the number of parameters needed for the local node with basis.
+ * @param nodeNumber  The local node number starting at 0.
+ * @return  The number of parameters, or 0 if invalid node number.
+ */
+int FE_basis_get_number_of_functions_per_node(struct FE_basis *basis, int nodeNumber);
 
 /** convert from external API basis function type to internal basis type enum */
 FE_basis_type cmzn_elementbasis_function_type_to_FE_basis_type(
