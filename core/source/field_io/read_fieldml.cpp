@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include "zinc/element.h"
+#include "zinc/element.hpp"
 #include "zinc/field.h"
 #include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
@@ -30,6 +31,8 @@
 #include "general/refcounted.hpp"
 #include "FieldmlIoApi.h"
 
+using namespace OpenCMISS;
+
 namespace {
 
 const char *libraryChartArgumentNames[] =
@@ -42,7 +45,7 @@ const char *libraryChartArgumentNames[] =
 
 struct ElementFieldComponent
 {
-	cmzn_elementbasis_id element_basis;
+	cmzn_elementbasis_id elementBasis;
 	HDsMapInt local_point_to_node;
 	HDsMapIndexing indexing;
 	int local_point_count;
@@ -51,11 +54,11 @@ struct ElementFieldComponent
 	int *swizzled_local_point_indexes;
 	int *node_identifiers;
 
-	ElementFieldComponent(cmzn_elementbasis_id element_basis,
+	ElementFieldComponent(cmzn_elementbasis_id elementBasisIn,
 			HDsMapInt local_point_to_nodeIn,
 			HDsMapIndexing indexingIn, int local_point_countIn,
 			const int *swizzleIn) :
-		element_basis(element_basis),
+		elementBasis(elementBasisIn),
 		local_point_to_node(local_point_to_nodeIn),
 		indexing(indexingIn),
 		local_point_count(local_point_countIn),
@@ -68,7 +71,7 @@ struct ElementFieldComponent
 
 	~ElementFieldComponent()
 	{
-		cmzn_elementbasis_destroy(&element_basis);
+		cmzn_elementbasis_destroy(&elementBasis);
 		delete[] local_point_indexes;
 		delete[] swizzled_local_point_indexes;
 		delete[] node_identifiers;
@@ -89,6 +92,10 @@ class FieldMLReader
 	int meshDimension;
 	FmlObjectHandle fmlNodesType;
 	FmlObjectHandle fmlElementsType;
+	FmlObjectHandle fmlNodeDerivativesType;
+	FmlObjectHandle fmlNodeDerivativesArgument;
+	FmlObjectHandle fmlNodeVersionsType;
+	FmlObjectHandle fmlNodeVersionsArgument;
 	EvaluatorElementFieldComponentMap componentMap;
 	FmlObjectLabelsMap labelsMap;
 	FmlObjectIntParametersMap intParametersMap;
@@ -107,6 +114,10 @@ public:
 		meshDimension(0),
 		fmlNodesType(FML_INVALID_OBJECT_HANDLE),
 		fmlElementsType(FML_INVALID_OBJECT_HANDLE),
+		fmlNodeDerivativesType(FML_INVALID_OBJECT_HANDLE),
+		fmlNodeDerivativesArgument(FML_INVALID_OBJECT_HANDLE),
+		fmlNodeVersionsType(FML_INVALID_OBJECT_HANDLE),
+		fmlNodeVersionsArgument(FML_INVALID_OBJECT_HANDLE),
 		verbose(false),
 		nameBufferLength(50),
 		nameBuffer(new char[nameBufferLength])
@@ -173,16 +184,19 @@ private:
 	DsMap<int> *getEnsembleParameters(FmlObjectHandle fmlParameters);
 	DsMap<double> *getContinuousParameters(FmlObjectHandle fmlParameters);
 
+	/** find and read global derivatives and versions types */
+	int readGlobals();
+
 	int readMeshes();
 
 	ElementFieldComponent *getElementFieldComponent(cmzn_mesh_id mesh,
 		FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
-		FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument);
+		FmlObjectHandle fmlNodesArgument, FmlObjectHandle fmlElementArgument);
 
 	int readField(FmlObjectHandle fmlFieldEvaluator,
 		std::vector<FmlObjectHandle> &fmlComponentEvaluators,
 		FmlObjectHandle fmlNodeEnsembleType, FmlObjectHandle fmlNodeParameters,
-		FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodeArgument,
+		FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodesArgument,
 		FmlObjectHandle fmlElementArgument);
 
 	bool evaluatorIsScalarContinuousPiecewiseOverElements(FmlObjectHandle fmlEvaluator,
@@ -685,13 +699,14 @@ DsMap<int> *FieldMLReader::getEnsembleParameters(FmlObjectHandle fmlParameters)
 	}
 	if (!return_code)
 		return 0;
-	DsMap<int> *parameters = DsMap<int>::create(indexingLabelsVector);
+	HDsMapInt parameters(DsMap<int>::create(indexingLabelsVector));
 	parameters->setName(name);
 	return_code = this->readParametersArray(fmlParameters, *parameters);
-	this->setProcessed(fmlParameters);
 	if (!return_code)
-		cmzn::Deaccess(parameters);
-	return parameters;
+		return 0;
+	this->setProcessed(fmlParameters);
+	this->intParametersMap[fmlParameters] = parameters;
+	return cmzn::Access(cmzn::GetImpl(parameters));
 }
 
 /**
@@ -748,13 +763,60 @@ DsMap<double> *FieldMLReader::getContinuousParameters(FmlObjectHandle fmlParamet
 	}
 	if (!return_code)
 		return 0;
-	DsMap<double> *parameters = DsMap<double>::create(indexingLabelsVector);
+	HDsMapDouble parameters(DsMap<double>::create(indexingLabelsVector));
 	parameters->setName(name);
 	return_code = this->readParametersArray(fmlParameters, *parameters);
-	this->setProcessed(fmlParameters);
 	if (!return_code)
-		cmzn::Deaccess(parameters);
-	return parameters;
+		return 0;
+	this->setProcessed(fmlParameters);
+	this->doubleParametersMap[fmlParameters] = parameters;
+	return cmzn::Access(cmzn::GetImpl(parameters));
+}
+
+int FieldMLReader::readGlobals()
+{
+	int return_code = 1;
+	// if following not found, use legacy behaviour i.e. no node derivatives
+	std::string nodeDerivativesTypeName("node_derivatives");
+	std::string nodeDerivativesArgumentName = nodeDerivativesTypeName + ".argument";
+	this->fmlNodeDerivativesType = Fieldml_GetObjectByName(this->fmlSession, nodeDerivativesTypeName.c_str());
+	this->fmlNodeDerivativesArgument = Fieldml_GetObjectByName(this->fmlSession, nodeDerivativesArgumentName.c_str());
+	if ((FML_INVALID_OBJECT_HANDLE != this->fmlNodeDerivativesType) ||
+		(FML_INVALID_OBJECT_HANDLE != this->fmlNodeDerivativesArgument))
+	{
+		if ((FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(this->fmlSession, this->fmlNodeDerivativesType)) ||
+			(FHT_ARGUMENT_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, this->fmlNodeDerivativesArgument)) ||
+			(Fieldml_GetValueType(this->fmlSession, this->fmlNodeDerivativesArgument) != this->fmlNodeDerivativesType))
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Incorrect definition of %s or %s.",
+				nodeDerivativesTypeName.c_str(), nodeDerivativesArgumentName.c_str());
+			return 0;
+		}
+		HDsLabels tmpNodeDerivatives(this->getLabelsForEnsemble(this->fmlNodeDerivativesType));
+		if (!tmpNodeDerivatives)
+			return 0;
+	}
+	// if following not found, use legacy behaviour i.e. no node versions
+	std::string nodeVersionsTypeName("node_versions");
+	std::string nodeVersionsArgumentName = nodeVersionsTypeName + ".argument";
+	this->fmlNodeVersionsType = Fieldml_GetObjectByName(this->fmlSession, nodeVersionsTypeName.c_str());
+	this->fmlNodeVersionsArgument = Fieldml_GetObjectByName(this->fmlSession, nodeVersionsArgumentName.c_str());
+	if ((FML_INVALID_OBJECT_HANDLE != this->fmlNodeVersionsType) ||
+		(FML_INVALID_OBJECT_HANDLE != this->fmlNodeVersionsArgument))
+	{
+		if ((FHT_ENSEMBLE_TYPE != Fieldml_GetObjectType(this->fmlSession, this->fmlNodeVersionsType)) ||
+			(FHT_ARGUMENT_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, this->fmlNodeVersionsArgument)) ||
+			(Fieldml_GetValueType(this->fmlSession, this->fmlNodeVersionsArgument) != this->fmlNodeVersionsType))
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Incorrect definition of %s or %s.",
+				nodeVersionsTypeName.c_str(), nodeVersionsArgumentName.c_str());
+			return 0;
+		}
+		HDsLabels tmpNodeVersions(this->getLabelsForEnsemble(this->fmlNodeVersionsType));
+		if (!tmpNodeVersions)
+			return 0;
+	}
+	return 1;
 }
 
 int FieldMLReader::readMeshes()
@@ -983,7 +1045,7 @@ int FieldMLReader::readMeshes()
 
 ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh,
 	FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
-	FmlObjectHandle fmlNodeArgument, FmlObjectHandle fmlElementArgument)
+	FmlObjectHandle fmlNodesArgument, FmlObjectHandle fmlElementArgument)
 {
 	EvaluatorElementFieldComponentMap::iterator iter = componentMap.find(fmlEvaluator);
 	if (iter != componentMap.end())
@@ -1023,13 +1085,13 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 
 	// Note: external evaluator arguments are assumed to be 'used'
 	int interpolatorArgumentCount = Fieldml_GetArgumentCount(fmlSession, fmlInterpolator, /*isBound*/0, /*isUsed*/1);
+	// GRC Hermite scale factors change here
 	if (interpolatorArgumentCount != 2)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Reference evaluator %s source %s (local name %s) has %d argument(s); 2 are expected.",
 			evaluatorName.c_str(), interpolator_name, interpolatorLocalName.c_str(), interpolatorArgumentCount);
 		return 0;
 	}
-
 	FmlObjectHandle chartArgument = FML_INVALID_OBJECT_HANDLE;
 	FmlObjectHandle parametersArgument = FML_INVALID_OBJECT_HANDLE;
 	for (int i = 1; i <= interpolatorArgumentCount; i++)
@@ -1047,7 +1109,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 		}
 		else
 		{
-			// GRC more logic needed here for Hermite
+			// GRC Hermite scale factors change here
 			parametersArgument = arg;
 		}
 	}
@@ -1085,7 +1147,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 		return_code = 0;
 	}
 	int evaluatorBindCount = Fieldml_GetBindCount(fmlSession, fmlEvaluator);
-	// GRC update for scaled Hermite
+	// GRC Hermite scale factors change here
 	if (2 != evaluatorBindCount)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s has %d bindings; interpolator %s requires 2 bindings to chart and parameters.",
@@ -1106,11 +1168,13 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 			evaluatorName.c_str(), elementParametersName.c_str());
 		return 0;
 	}
-	FmlObjectHandle fmlLocalPointArgument = Fieldml_GetIndexEvaluator(fmlSession, fmlElementParametersEvaluator, 1);
-	if (Fieldml_GetObjectType(fmlSession, fmlLocalPointArgument) != FHT_ARGUMENT_EVALUATOR)
+	FmlObjectHandle fmlElementParametersIndexArgument = Fieldml_GetIndexEvaluator(fmlSession, fmlElementParametersEvaluator, 1);
+	FmlObjectHandle fmlElementParametersIndexType = Fieldml_GetValueType(this->fmlSession, fmlElementParametersIndexArgument);
+	if ((Fieldml_GetObjectType(this->fmlSession, fmlElementParametersIndexArgument) != FHT_ARGUMENT_EVALUATOR) ||
+		(Fieldml_GetObjectType(this->fmlSession, fmlElementParametersIndexType) != FHT_ENSEMBLE_TYPE))
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s index %s must be an ArgumentEvaluator",
-			elementParametersName.c_str(), getName(fmlLocalPointArgument).c_str());
+		display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s index %s must be an ensemble-valued ArgumentEvaluator",
+			elementParametersName.c_str(), getName(fmlElementParametersIndexArgument).c_str());
 		return 0;
 	}
 	FmlObjectHandle fmlTempNodeParameters = Fieldml_GetDefaultEvaluator(fmlSession, fmlElementParametersEvaluator);
@@ -1121,97 +1185,283 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 			evaluatorName.c_str(), elementParametersName.c_str());
 		return 0;
 	}
-	int localParametersBindCount = Fieldml_GetBindCount(fmlSession, fmlElementParametersEvaluator);
-	if (1 != localParametersBindCount)
-	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s has %d bindings, expect 1 for local-to-global map.",
-			evaluatorName.c_str(), elementParametersName.c_str(), localParametersBindCount);
-		return 0;
-	}
-
-	FmlObjectHandle fmlTempNodeArgument = Fieldml_GetBindArgument(fmlSession, fmlElementParametersEvaluator, 1);
-	FmlObjectHandle fmlLocalPointToNode = Fieldml_GetBindEvaluator(fmlSession, fmlElementParametersEvaluator, 1);
-
 	if (fmlTempNodeParameters != fmlNodeParametersArgument)
 	{
 		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s default evaluator %s does not match nodal parameters argument %s",
 			evaluatorName.c_str(), elementParametersName.c_str(), getName(fmlTempNodeParameters).c_str(), getName(fmlNodeParametersArgument).c_str());
-		return_code = 0;
+		return 0;
 	}
-	if (fmlTempNodeArgument != fmlNodeArgument)
+
+	cmzn_elementbasis_id elementBasis = cmzn_fieldmodule_create_elementbasis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
+	if (!libraryBases[basis_index].homogeneous)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s element parameter source %s should bind to node argument %s",
-			evaluatorName.c_str(), elementParametersName.c_str(), getName(fmlNodeArgument).c_str());
-		return_code = 0;
+		for (int dimension = 2; dimension <= meshDimension; dimension++)
+		{
+			cmzn_elementbasis_set_function_type(elementBasis, dimension,
+				libraryBases[basis_index].functionType[dimension - 1]);
+		}
 	}
-	if (2 != Fieldml_GetIndexEvaluatorCount(fmlSession, fmlLocalPointToNode))
+	int basisNodeCount = cmzn_elementbasis_get_number_of_nodes(elementBasis);
+	int basisFunctionCount = cmzn_elementbasis_get_number_of_functions(elementBasis);
+
+	// Handle bindings to element parameters
+	int usedBindCount = 0;
+
+	// 1. Local-to-global node map
+	FmlObjectHandle fmlLocalToGlobalNodeEvaluator =
+		Fieldml_GetBindByArgument(this->fmlSession, fmlElementParametersEvaluator, fmlNodesArgument);
+	FmlObjectHandle fmlLocalNodesArgument = FML_INVALID_OBJECT_HANDLE;
+	HDsMapInt localToGlobalNodeMap;
+	if (FML_INVALID_OBJECT_HANDLE == fmlLocalToGlobalNodeEvaluator)
 	{
-		display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s evaluator %s needs to indexes to be a local point to node map.",
-			elementParametersName.c_str(), getName(fmlLocalPointToNode).c_str());
+		display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s does not bind local-to-global node map to nodes argument %s.",
+			elementParametersName.c_str(), getName(fmlNodesArgument).c_str());
 		return_code = 0;
 	}
 	else
 	{
-		FmlObjectHandle fmlLocalPointToNodeIndex1 = Fieldml_GetIndexEvaluator(fmlSession, fmlLocalPointToNode, 1);
-		FmlObjectHandle fmlLocalPointToNodeIndex2 = Fieldml_GetIndexEvaluator(fmlSession, fmlLocalPointToNode, 2);
-		if (!(((fmlLocalPointToNodeIndex1 == fmlElementArgument) && (fmlLocalPointToNodeIndex2 == fmlLocalPointArgument)) ||
-			((fmlLocalPointToNodeIndex2 == fmlElementArgument) && (fmlLocalPointToNodeIndex1 == fmlLocalPointArgument))))
+		++usedBindCount;
+		if ((FHT_PARAMETER_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, fmlLocalToGlobalNodeEvaluator)) ||
+			(2 != Fieldml_GetIndexEvaluatorCount(fmlSession, fmlLocalToGlobalNodeEvaluator)))
 		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s evaluator %s cannot be interpreted as an element, local point to node map.",
-				elementParametersName.c_str(), getName(fmlLocalPointToNode).c_str());
 			return_code = 0;
+		}
+		else
+		{
+			// element & localnode indexes could be in any order
+			FmlObjectHandle fmlIndexEvaluator1 = Fieldml_GetIndexEvaluator(fmlSession, fmlLocalToGlobalNodeEvaluator, 1);
+			FmlObjectHandle fmlIndexEvaluator2 = Fieldml_GetIndexEvaluator(fmlSession, fmlLocalToGlobalNodeEvaluator, 2);
+			if (fmlIndexEvaluator1 == fmlElementArgument)
+				fmlLocalNodesArgument = fmlIndexEvaluator2;
+			else if (fmlIndexEvaluator2 == fmlElementArgument)
+				fmlLocalNodesArgument = fmlIndexEvaluator1;
+			if ((fmlLocalNodesArgument == FML_INVALID_OBJECT_HANDLE) ||
+				((fmlLocalNodesArgument != fmlElementParametersIndexArgument) && (basisNodeCount == basisFunctionCount)))
+			{
+				return_code = 0;
+			}
+			else
+			{
+				FmlObjectHandle fmlLocalNodesType = Fieldml_GetValueType(fmlSession, fmlLocalNodesArgument);
+				int localNodeCount = Fieldml_GetMemberCount(fmlSession, fmlLocalNodesType);
+				if (localNodeCount != basisNodeCount)
+				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s local-to-global node map %s "
+						"uses %d local nodes, not %d as expected for basis %s",
+						elementParametersName.c_str(), getName(fmlLocalToGlobalNodeEvaluator).c_str(),
+						localNodeCount, basisNodeCount, interpolator_name);
+					return_code = 0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			cmzn::SetImpl(localToGlobalNodeMap, this->getEnsembleParameters(fmlLocalToGlobalNodeEvaluator));
+			if (!localToGlobalNodeMap)
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s local-to-global node map %s could not be read.",
+					elementParametersName.c_str(), getName(fmlLocalToGlobalNodeEvaluator).c_str());
+				return_code = 0;
+			}
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s bound evaluator %s is not a valid local-to-global node map.",
+				elementParametersName.c_str(), getName(fmlLocalToGlobalNodeEvaluator).c_str());
 		}
 	}
 
-	if (!return_code)
-		return 0;
+	// 2. Optional element parameter index to local node map (Hermite only)
+	FmlObjectHandle fmlParameterIndexToLocalNodeEvaluator = FML_INVALID_OBJECT_HANDLE;
+	HDsMapInt parameterIndexToLocalNodeMap;
+	if ((fmlLocalNodesArgument != FML_INVALID_OBJECT_HANDLE) && 
+		(fmlLocalNodesArgument != fmlElementParametersIndexArgument))
+	{
+		FmlObjectHandle fmlParameterIndexToLocalNodeEvaluator =
+			Fieldml_GetBindByArgument(this->fmlSession, fmlElementParametersEvaluator, fmlLocalNodesArgument);
+		if (FML_INVALID_OBJECT_HANDLE == fmlParameterIndexToLocalNodeEvaluator)
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s does not bind parameter-to-local-node map to argument %s.",
+				elementParametersName.c_str(), getName(fmlLocalNodesArgument).c_str());
+			return_code = 0;
+		}
+		else
+		{
+			++usedBindCount;
+			if ((FHT_PARAMETER_EVALUATOR != Fieldml_GetObjectType(this->fmlSession, fmlParameterIndexToLocalNodeEvaluator)) ||
+				(1 != Fieldml_GetIndexEvaluatorCount(fmlSession, fmlParameterIndexToLocalNodeEvaluator)) ||
+				(Fieldml_GetIndexEvaluator(fmlSession, fmlParameterIndexToLocalNodeEvaluator, 1) != fmlElementParametersIndexArgument))
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s bound evaluator %s is not a valid parameter-to-local-node map.",
+					elementParametersName.c_str(), getName(fmlParameterIndexToLocalNodeEvaluator).c_str());
+				return_code = 0;
+			}
+			else
+			{
+				cmzn::SetImpl(parameterIndexToLocalNodeMap, this->getEnsembleParameters(fmlParameterIndexToLocalNodeEvaluator));
+				if (!parameterIndexToLocalNodeMap)
+				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s parameter-to-local-node map %s could not be read.",
+					elementParametersName.c_str(), getName(fmlParameterIndexToLocalNodeEvaluator).c_str());
+					return_code = 0;
+				}
+				else
+				{
+					// Hermite: check parameter-to-local-node map is in order 1 1 1 .. 2 2 2 .. 3 3 3 .. for
+					// Could later add support for different orderings if required
+					int *nodeIdentifiers = new int[basisFunctionCount];
+					HDsMapIndexing mapIndexing(parameterIndexToLocalNodeMap->createIndexing());
+					if (!parameterIndexToLocalNodeMap->getValues(*mapIndexing, basisFunctionCount, nodeIdentifiers))
+					{
+						display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s parameter-to-local-node map %s contents are sparse.",
+							elementParametersName.c_str(), getName(fmlParameterIndexToLocalNodeEvaluator).c_str());
+						return_code = 0;
+					}
+					else
+					{
+						// expect same number of parameters per node; not valid for future quadratic Hermite and other bases
+						const int basisFunctionsPerNode = basisFunctionCount / basisNodeCount;
+						int expectedNodeIdentifier = 0;
+						for (int d = 0; d < basisFunctionCount; ++d)
+						{
+							if ((d % basisFunctionsPerNode) == 0)
+								++expectedNodeIdentifier;
+							if (nodeIdentifiers[d] != expectedNodeIdentifier)
+							{
+								display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s parameter-to-local-node map %s has unsupported sequence.",
+									elementParametersName.c_str(), getName(fmlParameterIndexToLocalNodeEvaluator).c_str());
+								return_code = 0;
+								break;
+							}
+						}
+					}
+					delete[] nodeIdentifiers;
+				}
+			}
+		}
+	}
 
-	// Structure now validated
+	// 3. Optional node derivative constant or map
+	cmzn_node_value_label constantNodeDerivative = CMZN_NODE_VALUE_LABEL_VALUE;
+	HDsMapInt nodeDerivativesMap;
+	FmlObjectHandle fmlNodeDerivativesEvaluator = FML_INVALID_OBJECT_HANDLE;
+	if ((FML_INVALID_OBJECT_HANDLE != this->fmlNodeDerivativesArgument) &&
+		(FML_INVALID_OBJECT_HANDLE != (fmlNodeDerivativesEvaluator =
+			Fieldml_GetBindByArgument(this->fmlSession, fmlElementParametersEvaluator, this->fmlNodeDerivativesArgument))))
+	{
+		++usedBindCount;
+		FieldmlHandleType objectType = Fieldml_GetObjectType(this->fmlSession, fmlNodeDerivativesEvaluator);
+		if (FHT_CONSTANT_EVALUATOR == objectType)
+		{
+			char *valueString = Fieldml_GetConstantEvaluatorValueString(this->fmlSession, fmlNodeDerivativesEvaluator);
+			if (valueString)
+			{
+				int temp;
+				if ((1 == sscanf(valueString, " %d", &temp)) &&
+						(CMZN_NODE_VALUE_LABEL_VALUE <= temp) && (temp <= CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3))
+					constantNodeDerivative = static_cast<cmzn_node_value_label>(temp);
+				else
+					return_code = 0;
+				Fieldml_FreeString(valueString);
+			}
+			else
+				return_code = 0;
+		}
+		else if (FHT_PARAMETER_EVALUATOR == objectType)
+		{
+			if ((1 == Fieldml_GetIndexEvaluatorCount(this->fmlSession, fmlNodeDerivativesEvaluator) &&
+				(Fieldml_GetIndexEvaluator(fmlSession, fmlNodeDerivativesEvaluator, 1) == fmlElementParametersIndexArgument)))
+			{
+				cmzn::SetImpl(nodeDerivativesMap, this->getEnsembleParameters(fmlNodeDerivativesEvaluator));
+				if (!nodeDerivativesMap)
+					return_code = 0;
+			}
+			else
+				return_code = 0;
+		}
+		else
+			return_code = 0;
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s binds invalid node derivatives evaluator %s.",
+				elementParametersName.c_str(), getName(fmlNodeDerivativesEvaluator).c_str());
+		}
+	}
+
+	// 4. Optional node version constant or map
+	int constantNodeVersion = 1;
+	HDsMapInt nodeVersionsMap;
+	FmlObjectHandle fmlNodeVersionsEvaluator = FML_INVALID_OBJECT_HANDLE;
+	if ((FML_INVALID_OBJECT_HANDLE != this->fmlNodeVersionsArgument) &&
+		(FML_INVALID_OBJECT_HANDLE != (fmlNodeVersionsEvaluator =
+			Fieldml_GetBindByArgument(this->fmlSession, fmlElementParametersEvaluator, this->fmlNodeVersionsArgument))))
+	{
+		++usedBindCount;
+		FieldmlHandleType objectType = Fieldml_GetObjectType(this->fmlSession, fmlNodeVersionsEvaluator);
+		if (FHT_CONSTANT_EVALUATOR == objectType)
+		{
+			char *valueString = Fieldml_GetConstantEvaluatorValueString(this->fmlSession, fmlNodeVersionsEvaluator);
+			if (valueString)
+			{
+				if ((1 != sscanf(valueString, " %d", &constantNodeVersion)) || (constantNodeVersion < 1))
+					return_code = 0;
+				Fieldml_FreeString(valueString);
+			}
+			else
+				return_code = 0;
+		}
+		else if (FHT_PARAMETER_EVALUATOR == objectType)
+		{
+			if ((1 == Fieldml_GetIndexEvaluatorCount(this->fmlSession, fmlNodeVersionsEvaluator) &&
+				(Fieldml_GetIndexEvaluator(fmlSession, fmlNodeVersionsEvaluator, 1) == fmlElementParametersIndexArgument)))
+			{
+				cmzn::SetImpl(nodeVersionsMap, this->getEnsembleParameters(fmlNodeVersionsEvaluator));
+				if (!nodeVersionsMap)
+					return_code = 0;
+			}
+			else
+				return_code = 0;
+		}
+		else
+			return_code = 0;
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s binds invalid node versions evaluator %s.",
+				elementParametersName.c_str(), getName(fmlNodeVersionsEvaluator).c_str());
+		}
+	}
+
+	const int elementParametersBindCount = Fieldml_GetBindCount(fmlSession, fmlElementParametersEvaluator);
+	if (usedBindCount != elementParametersBindCount)
+	{
+		display_message(ERROR_MESSAGE, "Read FieldML:  Element parameters evaluator %s used only %d of %d bindings.",
+			elementParametersName.c_str(), usedBindCount, elementParametersBindCount);
+		return_code = 0;
+	}
+	if (!return_code)
+	{
+		cmzn_elementbasis_destroy(&elementBasis);
+		return 0;
+	}
+
+	// element template now validated
 
 	if (verbose)
 	{
 		display_message(INFORMATION_MESSAGE, "Read FieldML:  Interpreting evaluator %s as nodal/element interpolator using basis %s.\n",
 			evaluatorName.c_str(), interpolator_name);
 	}
-
-	HDsMapInt local_point_to_node(this->getEnsembleParameters(fmlLocalPointToNode));
-	HDsMapIndexing indexing(local_point_to_node->createIndexing());
-
-	FmlObjectHandle fmlLocalPointType = Fieldml_GetValueType(fmlSession, fmlLocalPointArgument);
-	int local_point_count = Fieldml_GetMemberCount(fmlSession, fmlLocalPointType);
-
-	cmzn_elementbasis_id element_basis = cmzn_fieldmodule_create_elementbasis(field_module, meshDimension, libraryBases[basis_index].functionType[0]);
-	if (!libraryBases[basis_index].homogeneous)
-	{
-		for (int dimension = 2; dimension <= meshDimension; dimension++)
-		{
-			cmzn_elementbasis_set_function_type(element_basis, dimension,
-				libraryBases[basis_index].functionType[dimension - 1]);
-		}
-	}
-	int basis_number_of_nodes = cmzn_elementbasis_get_number_of_nodes(element_basis);
-	ElementFieldComponent *component = new ElementFieldComponent(element_basis, local_point_to_node, indexing, local_point_count, libraryBases[basis_index].swizzle);
-	if (local_point_to_node && indexing && local_point_count && (local_point_count == basis_number_of_nodes))
-	{
-		componentMap[fmlEvaluator] = component;
-	}
-	else
-	{
-		if (local_point_count != basis_number_of_nodes)
-		{
-			display_message(ERROR_MESSAGE, "Read FieldML:  Evaluator %s basis %s requires %d DOFs which does not match number of local points (%d)",
-				evaluatorName.c_str(), interpolator_name, basis_number_of_nodes, local_point_count);
-		}
-		delete component;
-		component = 0;
-	}
+	HDsMapIndexing indexing(localToGlobalNodeMap->createIndexing());
+	// GRC Hermite to complete
+	ElementFieldComponent *component = new ElementFieldComponent(elementBasis, localToGlobalNodeMap, indexing, basisNodeCount, libraryBases[basis_index].swizzle);
+	componentMap[fmlEvaluator] = component;
 	return component;
 }
 
 int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	std::vector<FmlObjectHandle> &fmlComponentEvaluators,
 	FmlObjectHandle fmlNodeEnsembleType, FmlObjectHandle fmlNodeParameters,
-	FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodeArgument,
+	FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodesArgument,
 	FmlObjectHandle fmlElementArgument)
 {
 	int return_code = 1;
@@ -1405,7 +1655,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 				for (int ic = 0; ic < componentCount; ic++)
 				{
 					components[ic] = getElementFieldComponent(mesh, fmlElementEvaluators[ic],
-						fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
+						fmlNodeParametersArgument, fmlNodesArgument, fmlElementArgument);
 					if (!components[ic])
 					{
 						display_message(ERROR_MESSAGE, "Read FieldML:  Aggregate %s component %d element %d evaluator %s does not reference a supported basis function or mapping",
@@ -1441,7 +1691,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 						cmzn_elementtemplate_set_number_of_nodes(elementtemplate, total_local_point_count);
 					}
 					if (!cmzn_elementtemplate_define_field_simple_nodal(elementtemplate, field,
-						/*component*/ic + 1, components[ic]->element_basis, components[ic]->local_point_count,
+						/*component*/ic + 1, components[ic]->elementBasis, components[ic]->local_point_count,
 						components[ic]->local_point_indexes))
 					{
 						return_code = 0;
@@ -1672,15 +1922,15 @@ int FieldMLReader::readAggregateFields()
 		FmlObjectHandle fmlNodeParametersIndex1Type = Fieldml_GetValueType(fmlSession, fmlNodeParametersIndex1);
 		FmlObjectHandle fmlNodeParametersIndex2Type = Fieldml_GetValueType(fmlSession, fmlNodeParametersIndex2);
 		FmlObjectHandle fmlNodeEnsembleType = FML_INVALID_OBJECT_HANDLE;
-		FmlObjectHandle fmlNodeArgument = FML_INVALID_OBJECT_HANDLE;
+		FmlObjectHandle fmlNodesArgument = FML_INVALID_OBJECT_HANDLE;
 		if (fmlNodeParametersIndex1Type == fmlValueTypeComponentEnsembleType)
 		{
-			fmlNodeArgument = fmlNodeParametersIndex2;
+			fmlNodesArgument = fmlNodeParametersIndex2;
 			fmlNodeEnsembleType = fmlNodeParametersIndex2Type;
 		}
 		else if (fmlNodeParametersIndex2Type == fmlValueTypeComponentEnsembleType)
 		{
-			fmlNodeArgument = fmlNodeParametersIndex1;
+			fmlNodesArgument = fmlNodeParametersIndex1;
 			fmlNodeEnsembleType = fmlNodeParametersIndex1Type;
 		}
 		if (fmlNodeEnsembleType == FML_INVALID_OBJECT_HANDLE)
@@ -1700,7 +1950,7 @@ int FieldMLReader::readAggregateFields()
 		}
 
 		return_code = readField(fmlAggregate, fmlComponentEvaluators, fmlNodeEnsembleType, fmlNodeParameters,
-			fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
+			fmlNodeParametersArgument, fmlNodesArgument, fmlElementArgument);
 	}
 	return return_code;
 }
@@ -1773,7 +2023,7 @@ int FieldMLReader::readReferenceFields()
 			continue;
 		}
 		FmlObjectHandle fmlNodeParametersIndex1Type = Fieldml_GetValueType(fmlSession, fmlNodeParametersIndex1);
-		FmlObjectHandle fmlNodeArgument = fmlNodeParametersIndex1;
+		FmlObjectHandle fmlNodesArgument = fmlNodeParametersIndex1;
 		FmlObjectHandle fmlNodeEnsembleType = fmlNodeParametersIndex1Type;
 		if ((fmlNodesType != FML_INVALID_OBJECT_HANDLE) &&
 			(fmlNodeEnsembleType != fmlNodesType))
@@ -1786,7 +2036,7 @@ int FieldMLReader::readReferenceFields()
 
 		std::vector<FmlObjectHandle> fmlComponentEvaluators(1, fmlComponentEvaluator);
 		return_code = readField(fmlReference, fmlComponentEvaluators, fmlNodeEnsembleType, fmlNodeParameters,
-			fmlNodeParametersArgument, fmlNodeArgument, fmlElementArgument);
+			fmlNodeParametersArgument, fmlNodesArgument, fmlElementArgument);
 	}
 	return return_code;
 }
@@ -1818,9 +2068,10 @@ int FieldMLReader::parse()
 	if (!return_code)
 		return 0;
 	cmzn_region_begin_change(region);
-	return_code = return_code && readMeshes();
-	return_code = return_code && readAggregateFields();
-	return_code = return_code && readReferenceFields();
+	return_code = return_code && this->readGlobals();
+	return_code = return_code && this->readMeshes();
+	return_code = return_code && this->readAggregateFields();
+	return_code = return_code && this->readReferenceFields();
 	cmzn_region_end_change(region);
 	return return_code;
 }

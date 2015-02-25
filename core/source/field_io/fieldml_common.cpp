@@ -25,7 +25,9 @@ FieldMLBasisData::FieldMLBasisData(FmlSessionHandle fmlSession, const char *basi
 	fmlBasisParametersType(fmlBasisParametersTypeIn),
 	fmlBasisParametersComponentType(fmlBasisParametersComponentTypeIn),
 	parametersLabels(new DsLabels()),
-	connectivityBasisData(connectivityBasisDataIn)
+	connectivityBasisData(connectivityBasisDataIn),
+	fmlHermiteDofLocalNodeMap(FML_INVALID_OBJECT_HANDLE),
+	fmlHermiteDofValueTypeMap(FML_INVALID_OBJECT_HANDLE)
 {
 	// assume parameters/local node type has simple contiguous range
 	FmlEnsembleValue min = Fieldml_GetEnsembleMembersMin(fmlSession, this->fmlBasisParametersComponentType);

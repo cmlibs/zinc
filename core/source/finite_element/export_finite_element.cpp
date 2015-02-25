@@ -708,8 +708,7 @@ Writes information describing how <field> is defined at <element>.
 											(*output_file) << "     Scale factor indices:";
 											for (k = 0; k < number_of_nodal_values; k++)
 											{
-												Standard_node_to_element_map_get_scale_factor_index(
-													standard_node_map, k, &scale_factor_index);
+												scale_factor_index = Standard_node_to_element_map_get_scale_factor_index(standard_node_map, k);
 												if (0 <= scale_factor_index)
 												{
 													(*output_file) << " " << write_element_field_data->

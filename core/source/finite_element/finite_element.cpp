@@ -15792,30 +15792,17 @@ int Standard_node_to_element_map_get_nodal_version(
 
 int Standard_node_to_element_map_get_scale_factor_index(
 	struct Standard_node_to_element_map *standard_node_map,
-	int nodal_value_number, int *scale_factor_index_address)
+	int nodal_value_number)
 {
-	int return_code;
 	if (standard_node_map && standard_node_map->scale_factor_indices &&
 		(0 <= nodal_value_number) &&
-		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
-		scale_factor_index_address)
+		(nodal_value_number < standard_node_map->number_of_nodal_values))
 	{
-		*scale_factor_index_address =
-			standard_node_map->scale_factor_indices[nodal_value_number];
-		return_code = 1;
+		return standard_node_map->scale_factor_indices[nodal_value_number];
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_get_scale_factor_index.  "
-			"Invalid argument(s)");
-		if (scale_factor_index_address)
-		{
-			*scale_factor_index_address = 0;
-		}
-		return_code = 0;
-	}
-	return(return_code);
+	display_message(ERROR_MESSAGE,
+		"Standard_node_to_element_map_get_scale_factor_index.  Invalid argument(s)");
+	return -1;
 }
 
 int Standard_node_to_element_map_set_scale_factor_index(
@@ -28822,36 +28809,6 @@ Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
 
 	return (return_code);
 } /* FE_element_is_not_top_level */
-
-static int FE_element_field_has_field_with_name(
-	struct FE_element_field *element_field, void *field_name_void)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2002
-
-DESCRIPTION :
-Returns true if the name of the field in <element_field> matches <field_name>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_field_has_field_with_name);
-	return_code = 0;
-	if (element_field && element_field->field && field_name_void)
-	{
-		if (0 == strcmp(element_field->field->name, (char *)field_name_void))
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_has_field_with_name.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_has_field_with_name */
 
 bool FE_element_can_be_merged(struct FE_element *element,
 	struct FE_region *global_fe_region)
