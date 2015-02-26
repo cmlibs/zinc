@@ -2197,8 +2197,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 
 
 int cmzn_graphics_to_point_vertex_buffer(struct cmzn_graphics *graphics,
-	struct cmzn_graphics_to_graphics_object_data *graphics_to_object_data,
-	GLfloat graphics_object_primitive_time)
+	struct cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
 {
 	int return_code = 1;
 
@@ -2262,10 +2261,7 @@ int cmzn_graphics_to_point_vertex_buffer(struct cmzn_graphics *graphics,
 			ALLOCATE(labels, char *, 1);
 			*labels = cmzn_field_evaluate_string(graphics->label_field, graphics_to_object_data->field_cache);
 		}
-		GT_object_remove_primitives_at_time(
-			graphics->graphics_object, graphics_object_primitive_time,
-			(GT_object_primitive_object_name_conditional_function *)NULL,
-			(void *)NULL);
+		GT_object_clear_primitives(graphics->graphics_object);
 		Triple *point_list, *axis1_list, *axis2_list, *axis3_list,
 			*scale_list;
 		ALLOCATE(point_list, Triple, 1);
@@ -2732,8 +2728,7 @@ static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphics_to_graphics_ob
 int cmzn_graphics_to_graphics_object(
 	struct cmzn_graphics *graphics,void *graphics_to_object_data_void)
 {
-	char *existing_name, *graphics_string;
-	GLfloat time;
+	char *graphics_string;
 	enum GT_object_type graphics_object_type;
 	int return_code;
 
@@ -2743,8 +2738,6 @@ int cmzn_graphics_to_graphics_object(
 	if (graphics && graphics_to_object_data)
 	{
 		int dimension = cmzn_graphics_get_domain_dimension(graphics);
-		/* all primitives added at time 0.0 */
-		time = 0.0;
 		return_code = 1;
 		/* build only if visible... */
 		cmzn_scenefilter_id filter = graphics_to_object_data->scenefilter;
@@ -2827,25 +2820,7 @@ int cmzn_graphics_to_graphics_object(
 						{
 							if (graphics->graphics_object)
 							{
-								/* replace the graphics object name */
-								GT_object_set_name(graphics->graphics_object,
-									graphics_object_name);
-								if (GT_object_has_primitives_at_time(graphics->graphics_object,
-									time))
-								{
-#if defined (DEBUG_CODE)
-									/*???debug*/printf("  EDIT EXISTING GRAPHICS!\n");
-#endif /* defined (DEBUG_CODE) */
-									GET_NAME(GT_object)(graphics->graphics_object, &existing_name);
-									graphics_to_object_data->existing_graphics =
-										CREATE(GT_object)(existing_name,
-											GT_object_get_type(graphics->graphics_object),
-											get_GT_object_default_material(graphics->graphics_object));
-									DEALLOCATE(existing_name);
-									GT_object_transfer_primitives_at_time(
-										graphics_to_object_data->existing_graphics,
-										graphics->graphics_object, time);
-								}
+								GT_object_set_name(graphics->graphics_object, graphics_object_name);
 							}
 							else
 							{
@@ -2971,10 +2946,7 @@ int cmzn_graphics_to_graphics_object(
 								{
 									// all nodes are in a single GT_glyphset_vertex_buffer, so rebuild all even if
 									// editing a single node or element
-									GT_object_remove_primitives_at_time(
-										graphics->graphics_object, time,
-										(GT_object_primitive_object_name_conditional_function *)NULL,
-										(void *)NULL);
+									GT_object_clear_primitives(graphics->graphics_object);
 									cmzn_nodeset_id master_nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
 										graphics_to_object_data->field_module, graphics->domain_type);
 									cmzn_nodeset_id iteration_nodeset = 0;
@@ -3048,8 +3020,7 @@ int cmzn_graphics_to_graphics_object(
 								} break;
 								case CMZN_FIELD_DOMAIN_TYPE_POINT:
 								{
-									cmzn_graphics_to_point_vertex_buffer(
-										graphics, graphics_to_object_data, /*graphics_object_primitive_time*/time);
+									cmzn_graphics_to_point_vertex_buffer(graphics, graphics_to_object_data);
 								} break;
 								default: // ELEMENTS
 								{
@@ -3197,10 +3168,8 @@ int cmzn_graphics_to_graphics_object(
 							} break;
 							case CMZN_GRAPHICS_TYPE_CONTOURS:
 							{
-								GT_object_remove_primitives_at_time(
-									graphics->graphics_object, time,
-									(GT_object_primitive_object_name_conditional_function *)NULL,
-									(void *)NULL);
+								// Used to call GT_object_clear_primitives(graphics->graphics_object) here
+								// which is very expensive when partial editing. Seems to work without it.
 								if (0 < graphics->number_of_isovalues)
 								{
 									if (g_SURFACE_VERTEX_BUFFERS == GT_object_get_type(graphics->graphics_object))
@@ -3692,9 +3661,8 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
 				data.nodeChanges = nodeChanges;
 				/* partial rebuild for few node/element field changes */
-				GT_object_remove_primitives_at_time(graphics->graphics_object,
-					/*time*/(GLfloat)0, FE_element_as_graphics_name_has_changed,
-					static_cast<void*>(&data));
+				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
+					FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
 			}
 		}

@@ -28,6 +28,9 @@ int file_read_graphics_objects(char *file_name,
 	struct cmzn_materialmodule *materialmodule,
 	struct cmzn_glyphmodule *glyphmodule);
 
+// Note the time argument is not used since Cmgui 3.1
+// We may add future support perhaps by having a linked list of graphics objects
+// each with their own time
 int file_read_surface_graphics_object_from_obj(char *file_name,
 	struct IO_stream_package *io_stream_package,
 	char *graphics_object_name, enum cmzn_graphics_render_polygon_mode render_polygon_mode,
