@@ -441,15 +441,6 @@ DESCRIPTION :
 Returns 1 if the time parameter is used by the graphics_object.
 ==============================================================================*/
 
-int GT_object_has_primitives_at_time(struct GT_object *graphics_object,
-	ZnReal time);
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Returns true if <graphics_object> has primitives stored exactly at <time>.
-==============================================================================*/
-
 /***************************************************************************//**
  * Returns the vertex buffer set if the graphics_object has one.
  */
@@ -572,32 +563,19 @@ Returns pointer to the primitive at the given time in graphics_object. \
 typedef int (GT_object_primitive_object_name_conditional_function) \
 	(int object_name, void *user_data);
 
-int GT_object_remove_primitives_at_time(
-	struct GT_object *graphics_object, ZnReal time,
+/*
+ * Mark primitives in the graphics object whose object name integer is matched
+ * by the conditional function + user data as invalid.
+ * This means those objects' primitives must be rebuilt, but others are kept.
+ */
+int GT_object_conditional_invalidate_primitives(struct GT_object *graphics_object,
 	GT_object_primitive_object_name_conditional_function *conditional_function,
 	void *user_data);
-/*******************************************************************************
-LAST MODIFIED : 5 February 2003
 
-DESCRIPTION :
-Removes primitives at <time> from <graphics_object>.
-The optional <conditional_function> allows a subset of the primitives to
-be removed. This function is called with the object_name integer associated
-with each primitive plus the void *<user_data> supplied here. A true result
-from the conditional_function causes the primitive to be removed.
-==============================================================================*/
-
-int GT_object_transfer_primitives_at_time(struct GT_object *destination,
-	struct GT_object *source, ZnReal time);
-/*******************************************************************************
-LAST MODIFIED : 18 March 2003
-
-DESCRIPTION :
-Transfers the primitives stored at exactly <time> in <source> to <time> in
-<destination>. Should already have called GT_object_has_primitives_at_time
-with <source> to verify it has primitives at that time.
-Primitives are added after any in <destination> at <time>.
-==============================================================================*/
+/**
+ * Clears all primitives and vertext arrays from graphics object.
+ */
+int GT_object_clear_primitives(struct GT_object *graphics_object);
 
 #if ! defined (SHORT_NAMES)
 #define GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_(primitive_type) \

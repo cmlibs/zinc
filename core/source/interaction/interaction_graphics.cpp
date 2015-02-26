@@ -103,9 +103,7 @@ int Interaction_volume_make_polyline_extents(
 				/* put all graphics in at time 0 */
 				struct Graphics_vertex_array *array = GT_object_get_vertex_set(
 					graphics_object);
-				GT_object_remove_primitives_at_time(graphics_object,0.0,
-					(GT_object_primitive_object_name_conditional_function *)NULL,
-					NULL);
+				GT_object_clear_primitives(graphics_object);
 				fill_line_graphics_vertex_array(array,	24, points, 0, 0, 0);
 				if (!GT_OBJECT_ADD(GT_polyline_vertex_buffers)(graphics_object, polyline))
 				{

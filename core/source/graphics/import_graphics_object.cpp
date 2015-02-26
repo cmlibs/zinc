@@ -330,9 +330,8 @@ DESCRIPTION :
 						}
 						if (obj)
 						{
-							return_code = GT_object_remove_primitives_at_time(obj, time,
-								(GT_object_primitive_object_name_conditional_function *)NULL,
-								(void *)NULL);
+							// Note: time is now ignored
+							return_code = GT_object_clear_primitives(obj);
 						}
 						else if (return_code)
 						{
@@ -728,9 +727,8 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 				{
 					if (g_SURFACE_VERTEX_BUFFERS==GT_object_get_type(next_obj))
 					{
-						return_code = GT_object_remove_primitives_at_time(next_obj, time,
-							(GT_object_primitive_object_name_conditional_function *)NULL,
-							(void *)NULL);
+						// Note: time is now ignored
+						return_code = GT_object_clear_primitives(next_obj);
 					}
 					else
 					{

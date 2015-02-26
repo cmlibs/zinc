@@ -376,23 +376,12 @@ static int GT_object_mark_vertex_array_primitives_changes(struct GT_object *obje
 	return 0;
 }
 
-static int GT_object_remove_primitives_at_time_number(
-	struct GT_object *graphics_object, int time_number,
-	GT_object_primitive_object_name_conditional_function *conditional_function,
-	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 5 February 2003
-
-DESCRIPTION :
-Removes primitives at <time_number> from <graphics_object>.
-The optional <conditional_function> allows a subset of the primitives to
-be removed. This function is called with the object_name integer associated
-with each primitive plus the void *<user_data> supplied here. A true result
-from the conditional_function causes the primitive to be removed.
-==============================================================================*/
+/**
+ * Removes all primitives at graphics object but leaves vertex arrays intact.
+ */
+static int GT_object_destroy_primitives(struct GT_object *graphics_object)
 {
 	int return_code = 0;
-
 	if (graphics_object)
 	{
 		switch (graphics_object->object_type)
@@ -421,35 +410,24 @@ from the conditional_function causes the primitive to be removed.
 					DEALLOCATE(graphics_object->primitive_lists);
 					DEALLOCATE(graphics_object->times);
 				}
-				if ((graphics_object->object_type != g_POINT_SET_VERTEX_BUFFERS) && conditional_function)
-				{
-					GT_object_mark_vertex_array_primitives_changes(graphics_object,
-						conditional_function, user_data);
-				}
-				else if (graphics_object->vertex_array)
-				{
-					graphics_object->vertex_array->clear_buffers();
-				}
 				return_code = 1;
 			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
-					"GT_object_remove_primitives_at_time_number.  Unknown object type");
+					"GT_object_destroy_primitives.  Unknown object type");
 				return_code = 0;
 			}
 		}
-		GT_object_changed(graphics_object);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"GT_object_remove_primitives_at_time_number.  Invalid arguments");
+			"GT_object_destroy_primitives.  Invalid arguments");
 		return_code = 0;
 	}
-
 	return (return_code);
-} /* GT_object_remove_primitives_at_time_number */
+}
 
 /*
 Global functions
@@ -1285,7 +1263,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
  */
 static int DESTROY(GT_object)(struct GT_object **object_ptr)
 {
-	int i,return_code;
+	int return_code;
 	struct GT_object *object;
 
 	ENTER(DESTROY(GT_object));
@@ -1299,13 +1277,9 @@ static int DESTROY(GT_object)(struct GT_object **object_ptr)
 		}
 		else
 		{
-			/* clean up times and primitives */
-			for (i=object->number_of_times;0<i;i--)
-			{
-				GT_object_remove_primitives_at_time_number(object, i,
-					(GT_object_primitive_object_name_conditional_function *)NULL,
-					(void *)NULL);
-			}
+			GT_object_destroy_primitives(object);
+			if (object->vertex_array)
+				object->vertex_array->clear_buffers();
 			DEALLOCATE(object->name);
 			if (object->default_material)
 			{
@@ -1556,51 +1530,6 @@ Returns 1 if the time parameter is used by the graphics_object.
 
 	return (return_code);
 } /* GT_object_has_time */
-
-int GT_object_has_primitives_at_time(struct GT_object *graphics_object,
-	ZnReal time)
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Returns true if <graphics_object> has primitives stored exactly at <time>.
-==============================================================================*/
-{
-	int return_code, time_number;
-	union GT_primitive_list *primitive_list;
-
-	ENTER(GT_object_has_primitives_at_time);
-	return_code = 0;
-	if (graphics_object)
-	{
-		if (graphics_object->times && graphics_object->primitive_lists)
-		{
-			if (0 < (time_number = GT_object_get_time_number(graphics_object, time)))
-			{
-				/*???RC Note exact real number comparison; could be problematic */
-				if (graphics_object->times[time_number - 1] == time)
-				{
-					primitive_list = graphics_object->primitive_lists + time_number - 1;
-					switch (graphics_object->object_type)
-					{
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"GT_object_remove_primitives_at_time.  Unknown object type");
-						} break;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"GT_object_has_primitives_at_time.  Invalid arguments");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_has_primitives_at_time */
 
 int GT_object_get_number_of_times(struct GT_object *graphics_object)
 {
@@ -2267,46 +2196,46 @@ Returns pointer to the primitive at the given time in graphics_object. \
 	return (primitive); \
 } /* GT_OBJECT_GET(primitive_type) */
 
-int GT_object_remove_primitives_at_time(
-	struct GT_object *graphics_object, ZnReal time,
+int GT_object_conditional_invalidate_primitives(struct GT_object *graphics_object,
 	GT_object_primitive_object_name_conditional_function *conditional_function,
 	void *user_data)
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
-
-DESCRIPTION :
-Removes primitives at <time> from <graphics_object>.
-The optional <conditional_function> allows a subset of the primitives to
-be removed. This function is called with the object_name integer associated
-with each primitive plus the void *<user_data> supplied here. A true result
-from the conditional_function causes the primitive to be removed.
-==============================================================================*/
 {
-	int return_code = 0, time_number;
+	if (!(graphics_object && conditional_function))
+		return 0;
+	switch (graphics_object->object_type)
+	{
+		case g_POINT_SET_VERTEX_BUFFERS:
+			return 1;
+			break;
+		case g_POLYLINE_VERTEX_BUFFERS:
+		case g_SURFACE_VERTEX_BUFFERS:
+		case g_GLYPH_SET_VERTEX_BUFFERS:
+			GT_object_destroy_primitives(graphics_object);
+			GT_object_mark_vertex_array_primitives_changes(graphics_object,
+				conditional_function, user_data);
+			GT_object_changed(graphics_object);
+			return 1;
+			break;
+		default:
+			display_message(ERROR_MESSAGE, "GT_object_conditional_invalidate_primitives.  Unknown object type");
+			break;
+	}
+	return 0;
+}
 
-	ENTER(GT_object_remove_primitives_at_time);
+int GT_object_clear_primitives(struct GT_object *graphics_object)
+{
 	if (graphics_object)
 	{
-		if (0 < (time_number	= GT_object_get_time_number(graphics_object, time)))
-		{
-			return_code = GT_object_remove_primitives_at_time_number(
-				graphics_object, time_number, conditional_function, user_data);
-		}
-		else
-		{
-			/* graphics_object does not have that time, so no need to remove */
-			return_code = 1;
-		}
+		GT_object_destroy_primitives(graphics_object);
+		if (graphics_object->vertex_array)
+			graphics_object->vertex_array->clear_buffers();
+		GT_object_changed(graphics_object);
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_remove_primitives_at_time.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_remove_primitives_at_time */
+	display_message(ERROR_MESSAGE, "GT_object_clear_primitives.  Invalid argument(s)");
+	return 0;
+}
 
 #if ! defined (SHORT_NAMES)
 #define GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER_(primitive_type) \
@@ -2362,48 +2291,6 @@ Transfers the primitives stored at <time_number> in <source> to <time> in \
 \
 	return (return_code); \
 } /* GT_OBJECT_TRANSFER_PRIMITIVES_AT_TIME_NUMBER(primitive_type) */
-
-int GT_object_transfer_primitives_at_time(struct GT_object *destination,
-	struct GT_object *source, ZnReal time)
-/*******************************************************************************
-LAST MODIFIED : 18 March 2003
-
-DESCRIPTION :
-Transfers the primitives stored at exactly <time> in <source> to <time> in
-<destination>. Should already have called GT_object_has_primitives_at_time
-with <source> to verify it has primitives at that time.
-Primitives are added after any in <destination> at <time>.
-==============================================================================*/
-{
-	int return_code, time_number;
-
-	ENTER(GT_object_transfer_primitives_at_time);
-	return_code = 0;
-	if (destination && source &&
-		(destination->object_type == source->object_type) && source->times &&
-		(0 < (time_number = GT_object_get_time_number(source, time))) &&
-		(source->times[time_number - 1] == time))
-	{
-		switch (source->object_type)
-		{
-			default:
-			{
-				display_message(ERROR_MESSAGE,
-					"GT_object_remove_primitives_at_time_number.  "
-					"Not enabled for this object_type");
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"GT_object_transfer_primitives_at_time.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* GT_object_transfer_primitives_at_time */
 
 #define DECLARE_GT_OBJECT_EXTRACT_FIRST_PRIMITIVES_AT_TIME_FUNCTION( \
 	primitive_type,gt_object_type,primitive_var) \
