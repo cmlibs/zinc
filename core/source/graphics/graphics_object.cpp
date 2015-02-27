@@ -857,75 +857,6 @@ enumerator numbers (as text) into the new enumerator values, with a warning.
 	return (return_code);
 } /* get_GT_surface_type_from_string */
 
-struct GT_object *transform_GT_object(struct GT_object *object,
-	ZnReal *transformation)
-/*******************************************************************************
-LAST MODIFIED : 17 March 2003
-
-DESCRIPTION :
-Creates a new GT_object which is the transformation of <object>.
-Only surfaces are implemented at the moment.
-Normals are not updated (wavefront export doesn't use normals anyway).
-==============================================================================*/
-{
-	int i, number_of_times, return_code;
-	struct GT_object *graphics_object;
-	union GT_primitive_list *primitive_list;
-
-	ENTER(transform_GT_object);
-	graphics_object = (struct GT_object *)NULL;
-	if (object)
-	{
-		graphics_object=CREATE(GT_object)(object->name,object->object_type,
-			object->default_material);
-		if (graphics_object)
-		{
-			return_code = 1;
-			number_of_times = object->number_of_times;
-			if ((0 == number_of_times) || object->primitive_lists)
-			{
-				for (i = 0; (i < number_of_times) && return_code; i++)
-				{
-					primitive_list = object->primitive_lists + i;
-					switch (object->object_type)
-					{
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-								"transform_GT_object.  Invalid graphics element type");
-							return_code = 0;
-						} break;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"transform_GT_object.  Invalid primitive_lists");
-				return_code = 0;
-			}
-			if (!return_code)
-			{
-				DEACCESS(GT_object)(&graphics_object);
-				graphics_object = (struct GT_object *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"transform_GT_object.  Could not create gtObject");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"transform_GT_object.  Initial and final objects do not match");
-	}
-	LEAVE;
-
-	return (graphics_object);
-} /* transform_GT_object */
-
 int GT_glyphset_vertex_buffers_setup(GT_glyphset_vertex_buffers *glyphset,
 	struct GT_object *glyph, enum cmzn_glyph_repeat_mode glyph_repeat_mode,
 	Triple base_size, Triple scale_factors, Triple offset, cmzn_font_id font,
@@ -1842,13 +1773,11 @@ int get_graphics_object_data_range(struct GT_object *graphics_object,
 {
 	if (graphics_object && range)
 	{
-		union GT_primitive_list *primitive_list;
 		int number_of_times = graphics_object->number_of_times;
 		if ((0 == number_of_times) || graphics_object->primitive_lists)
 		{
 			for (int j = 0; j < number_of_times; ++j)
 			{
-				primitive_list = graphics_object->primitive_lists + j;
 				switch (graphics_object->object_type)
 				{
 					case g_SURFACE_VERTEX_BUFFERS:

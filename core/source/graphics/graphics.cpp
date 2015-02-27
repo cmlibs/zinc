@@ -491,7 +491,7 @@ int cmzn_element_conditional_field_is_true(cmzn_element_id element,
 	return 0;
 }
 
-/***************************************************************************//**
+/**
  * Converts a finite element into a graphics object with the supplied graphics.
  * @param element  The cmzn_element.
  * @param graphics_to_object_data  Data for converting finite element to graphics.
@@ -501,10 +501,8 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
 {
 	FE_value initial_xi[3];
-	GLfloat time;
-	int element_graphics_name, i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	int i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 		number_of_xi_points, return_code;
-	struct CM_element_information cm;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element;
 	struct cmzn_graphics *graphics;
@@ -517,8 +515,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 	{
 		int element_dimension = get_FE_element_dimension(element);
 		return_code = 1;
-		get_FE_element_identifier(element, &cm);
-		element_graphics_name = cm.number;
 		/* proceed only if graphics uses this element */
 		int draw_element = 1;
 		cmzn_element_conditional_field_data conditional_field_data = { graphics_to_object_data->field_cache, graphics->subgroup_field };
@@ -574,8 +570,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 				graphics->face, native_discretization_field, top_level_number_in_xi,
 				&top_level_element, number_in_xi))
 			{
-				/* g_element scenes use only one time = 0.0. Must take care. */
-				time = 0.0;
 				switch (graphics->graphics_type)
 				{
 					case CMZN_GRAPHICS_TYPE_LINES:
@@ -726,8 +720,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 									graphics->sample_density_field,
 									&number_of_xi_points, &xi_points))
 							{
-								get_FE_element_identifier(element, &cm);
-								element_graphics_name = cm.number;
 								element_point_ranges_identifier.element = element;
 								element_point_ranges_identifier.top_level_element = top_level_element;
 								element_point_ranges_identifier.sampling_mode = graphics->sampling_mode;

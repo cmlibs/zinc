@@ -333,7 +333,8 @@ points  given by the positions in <point_list> and oriented and scaled by
 				transformation[ 7] = 0.0;
 				transformation[11] = 0.0;
 				transformation[15] = 1.0;
-				transformed_object = transform_GT_object(glyph_set->glyph, transformation);
+				// following method was removed, so can't output glyphs at present
+				transformed_object = 0; // transform_GT_object(glyph_set->glyph, transformation);
 				if (transformed_object != 0)
 				{
 					set_GT_object_default_material(transformed_object,

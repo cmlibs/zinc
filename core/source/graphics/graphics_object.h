@@ -341,17 +341,6 @@ get_GT_surface_type_string. For compatibility, also supports converting old
 enumerator numbers (as text) into the new enumerator values, with a warning.
 ==============================================================================*/
 
-struct GT_object *transform_GT_object(struct GT_object *object,
-	ZnReal *transformation);
-/*******************************************************************************
-LAST MODIFIED : 8 July 1999
-
-DESCRIPTION :
-Creates a new GT_object which is the transformation of <object>.
-Only surfaces are implemented at the moment.
-Normals are not updated (wavefront export doesn't use normals anyway).
-==============================================================================*/
-
 PROTOTYPE_OBJECT_FUNCTIONS(GT_object);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(GT_object);
 
