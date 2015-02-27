@@ -954,7 +954,7 @@ cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
 			tessellation = tessellationmodule->createTessellation();
 			tessellation->set_minimum_divisions(useElementDivisionsCount, useElementDivisions);
 			tessellation->set_refinement_factors(useRefinementFactorsCount, useRefinementFactors);
-			tessellation->setCircleDivisions(circleDivisions);
+			tessellation->setCircleDivisions(useCircleDivisions);
 			tessellationmodule->endChange();
 		}
 	}
