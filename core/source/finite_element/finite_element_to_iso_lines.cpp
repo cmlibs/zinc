@@ -215,7 +215,6 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 {
 	int i,return_code;
 	struct Contour_polyline *polyline;
-	Triple *point_list;
 
 	ENTER(Contour_lines_add_to_graphics_object);
 	if (contour_lines&&array)
@@ -230,7 +229,6 @@ Converts the polylines in <contour_lines> to GT_polylines and adds them to
 		{
 			polyline= &(contour_lines->polylines[i]);
 			unsigned int number_of_vertices = (unsigned int)polyline->number_of_points;
-			point_list=(Triple *)NULL;
 
 			array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
 				3, polyline->number_of_points, polyline->point_list[0]);
