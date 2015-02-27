@@ -314,13 +314,6 @@ int cmzn_scene_set_minimum_graphics_defaults(struct cmzn_scene *scene,
 	struct cmzn_graphics *graphics);
 
 /***************************************************************************//**
- * Set additional default attributes for backward compatibility with gfx modify
- * g_element commands: default coordinate, discretization etc.
- */
-int cmzn_scene_set_graphics_defaults_gfx_modify(struct cmzn_scene *scene,
-	struct cmzn_graphics *graphics);
-
-/***************************************************************************//**
  * Adds the <graphics> to <scene> at the given <position>, where 1 is
  * the top of the list (rendered first), and values less than 1 or greater than the
  * last position in the list cause the graphics to be added at its end, with a
@@ -374,7 +367,6 @@ cmzn_field_id cmzn_scene_get_selection_group_private_for_highlighting(
 int cmzn_region_modify_scene(struct cmzn_region *region,
 	struct cmzn_graphics *graphics, int delete_flag, int position);
 
-
 /**
  * Inform scene that it has changed and must be rebuilt.
  * Unless change caching is on, informs clients of scene that it has changed.
@@ -382,9 +374,19 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
  */
 void cmzn_scene_changed(struct cmzn_scene *scene);
 
-int cmzn_scene_set_default_coordinate_field(
-	struct cmzn_scene *scene,
-	struct Computed_field *default_coordinate_field);
+/**
+ * Get legacy default_coordinate_field set in cmgui command
+ * "gfx modify g_element general".
+ * @return  Non-accessed field, or 0 if none.
+ */
+cmzn_field *cmzn_scene_get_default_coordinate_field(cmzn_scene *scene);
+
+/**
+ * Set legacy default_coordinate_field from cmgui command
+ * "gfx modify g_element general".
+ */
+int cmzn_scene_set_default_coordinate_field(cmzn_scene *scene,
+	cmzn_field *default_coordinate_field);
 
 ////  new APIs
 int cmzn_scene_add_total_transformation_callback(struct cmzn_scene *child_scene,
