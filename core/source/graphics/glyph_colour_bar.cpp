@@ -53,7 +53,7 @@ GT_object *create_Spectrum_colour_bar(
 {
 	char **labels;
 	ZnReal cos_theta,extend_fraction,half_final_length,length_factor,
-		sin_theta,spectrum_factor,spectrum_minimum,spectrum_maximum,theta,time,
+		sin_theta,spectrum_factor,spectrum_minimum,spectrum_maximum,theta,
 		unit_factor;
 	int allocated_labels,i,j,number_of_ticks,points_along_bar,points_around_bar,
 		return_code;
@@ -73,8 +73,6 @@ GT_object *create_Spectrum_colour_bar(
 		return_code=1;
 		GT_object *tick_graphics_object = 0;
 		GT_object *label_graphics_object = 0;
-		/* add all graphics objects at time 0.0 */
-		time = 0.0;
 		/* calculate and get range of spectrum */
 		Spectrum_calculate_range(spectrum);
 		spectrum_minimum=cmzn_spectrum_get_minimum(spectrum);

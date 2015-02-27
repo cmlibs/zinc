@@ -203,12 +203,10 @@ struct GT_object *create_GT_object_arrow_solid(const char *name, int primary_axi
 struct GT_object *create_GT_object_cone(const char *name,int number_of_segments_around)
 {
 	struct GT_object *glyph = 0;
-	struct GT_surface_vertex_buffers *surface;
 	Triple *points,*normalpoints;
 
 	if (name&&(2<number_of_segments_around))
 	{
-		surface=(struct GT_surface_vertex_buffers *)NULL;
 		if (ALLOCATE(points,Triple,2*(number_of_segments_around+1))&&
 			ALLOCATE(normalpoints,Triple,2*(number_of_segments_around+1)))
 		{
