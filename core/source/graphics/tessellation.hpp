@@ -110,27 +110,24 @@ int cmzn_tessellation_manager_message_get_object_change_and_detail(
 	const cmzn_tessellation_change_detail **change_detail_address);
 
 /**
- * Internal function finding or creating a tessellation with coarse and fine
- * divisions equal to the fixed divisions supplied, and with matching circle
- * divisions. Match for either can be omitted.
- * Optionally, a base tessellation can be supplied which multiplies the
- * elementDivisions and supplies default refinement factors (unless suppressed).
+ * Find or create a tessellation with divisions equal to the supplied element
+ * and circle divisions and no refinement factors. Either divisions argument
+ * can be omitted in which case values of the fallback tessellation apply (and
+ * (if not supplied, default to element divisions = 1, circle divisions = 12).
  *
  * @param tessellationModule  The tessellation module to search or create in.
  * @param elementDivisionsCount  The size of the fixed_divisions array. 0 to omit.
  * @param elementDivisions  Array of divisions to match. 0 to omit.
  * @param circleDivisions  Number of circle divisions. 0 to omit.
- * @param baseTessellation  Optional tessellation to get defaults from where
- * element or circle divisions are omitted. If both this and elementDivisions
- * are specified, they are multiplied.
- * @param unitRefinement  Set to true to force unit refinements, otherwise use
- * values from baseTessellation.
+ * @param fallbackTessellation  Optional tessellation to get defaults from where
+ * element or circle divisions are omitted. If not supplied, element divisions
+ * default to 1, and circleDivisions to 12.
  * @return  Handle to tessellation or 0 if error. Up to caller to destroy.
  */
 cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
-	cmzn_tessellationmodule_id tessellationModule,
+	cmzn_tessellationmodule_id tessellationmodule,
 	int elementDivisionsCount, int *elementDivisions, int circleDivisions,
-	cmzn_tessellation_id baseTessellation, bool unitRefinement);
+	cmzn_tessellation_id fallbackTessellation);
 
 /***************************************************************************//**
  * Function to process the string to be passed into an tessellation object.
