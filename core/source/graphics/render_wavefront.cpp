@@ -334,7 +334,11 @@ points  given by the positions in <point_list> and oriented and scaled by
 				transformation[11] = 0.0;
 				transformation[15] = 1.0;
 				// following method was removed, so can't output glyphs at present
+				// GRC it would probably be better to just pass the transformation
+				// to makewavefront and transform coordinates there
 				transformed_object = 0; // transform_GT_object(glyph_set->glyph, transformation);
+				display_message(WARNING_MESSAGE, "draw_glyph_set_wavefront.  Can't transform glyphs");
+				break;
 				if (transformed_object != 0)
 				{
 					set_GT_object_default_material(transformed_object,
