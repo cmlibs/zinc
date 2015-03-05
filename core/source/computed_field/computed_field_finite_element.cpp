@@ -4286,11 +4286,11 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 			case CMZN_NODE_VALUE_LABEL_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS3:
-				fe_nodal_value_type = FE_NODAL_D_DS3;
-				break;
 			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
+				break;
+			case CMZN_NODE_VALUE_LABEL_D_DS3:
+				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
 			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;

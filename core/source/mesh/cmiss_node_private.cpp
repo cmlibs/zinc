@@ -206,8 +206,8 @@ public:
 			FE_NODAL_VALUE,
 			FE_NODAL_D_DS1,
 			FE_NODAL_D_DS2,
-			FE_NODAL_D_DS3,
 			FE_NODAL_D2_DS1DS2,
+			FE_NODAL_D_DS3,
 			FE_NODAL_D2_DS1DS3,
 			FE_NODAL_D2_DS2DS3,
 			FE_NODAL_D3_DS1DS2DS3
@@ -521,11 +521,11 @@ private:
 			case CMZN_NODE_VALUE_LABEL_D_DS2:
 				fe_nodal_value_type = FE_NODAL_D_DS2;
 				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS3:
-				fe_nodal_value_type = FE_NODAL_D_DS3;
-				break;
 			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
+				break;
+			case CMZN_NODE_VALUE_LABEL_D_DS3:
+				fe_nodal_value_type = FE_NODAL_D_DS3;
 				break;
 			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
 				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;

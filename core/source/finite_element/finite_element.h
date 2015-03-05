@@ -210,8 +210,8 @@ starts at 0.
 	FE_NODAL_VALUE,
 	FE_NODAL_D_DS1,
 	FE_NODAL_D_DS2,
-	FE_NODAL_D_DS3,
 	FE_NODAL_D2_DS1DS2,
+	FE_NODAL_D_DS3,
 	FE_NODAL_D2_DS1DS3,
 	FE_NODAL_D2_DS2DS3,
 	FE_NODAL_D3_DS1DS2DS3,
@@ -1050,25 +1050,56 @@ Returns the total number of values stored for that field at the node, equals
 sum of (1+num_derivatives)*num_versions for each component.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
+ * Get derivative and version labels for all parameters for all components of
+ * field at node. These are in the same order as returned by
+ * get_FE_nodal_field_FE_value_values, cycling from slowest to fastest:
+ * components, versions, derivatives.
+ *
+ * @param field  The field to query; must be FE_value valued.
+ * @param node  The node to get parameters for.
+ * @param time  The time to get parameters at. If between time indexes the
+ * parameters are interpolated. If outside range of times the nearest (first or
+ * last) time is returned.
+ * @param lastNode  Optional last node for comparing field layout. If node has
+ * same field info, parameter labels are returned as-is for efficiency.
+ * @param componentParameterCounts  Array of component count size for receiving
+ * numbers of parameters per component. Passed in pre-allocated to sufficient size.
+ * @param componentDerivatives  Array of per-component arrays for receiving
+ * derivative / value type arrays. Passed in pre-allocated to sufficient size
+ * for each component. First derivative type is 1 = value.
+ * @param componentVersions  Array of per-component arrays for receiving
+ * version arrays. Passed in pre-allocated to sufficient size for each component.
+ * version numbers start at 1.
+ * @param isHomogeneous  On successful return, set to true if a multicomponent
+ * field with all components having the same number of parameters with labels
+ * in the same order, so the caller can use values for all components together.
+ * @return  CMZN_OK if node parameter labels are correctly returned,
+ * CMZN_ERROR_NOT_FOUND if field not defined, otherwise any other error code.
+ */
+int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value time,
+	FE_node *lastNode, int *componentParameterCounts, int **componentDerivatives, 
+	int **componentVersions, bool &isHomogeneous);
+
+/**
  * Allocates and returns a copy of the <number_of_values>-length <values> array
  * stored at the <node> for all components derivatives and versions of <field>.
- * It is up to the calling function to DEALLOCATE the returned array. It will
- * return the values specified at <time> if time sequence is found on nodal
- * field. If time is out of its range then it will return either the values at
- * minimum or maximum time.
+ * It will return the values specified at <time> if time sequence is found on
+ * node field. If time is out of its range then it will return either the values
+ * at minimum or maximum time.
+ * It is up to the calling function to DEALLOCATE the returned array.
  *
  * @param  field  fields value to be returned from.
  * @param  node  the node which stores the field values.
  * @param  time  returns the values at <time> if nodal field has the concept of
  *    time, otherwise this argument is ignored.
  * @param  values  <number_of_values>-length <values> array to be returned, it
- *   stores all components derivatives and versions of <field> at <node>.
+ *   stores all components derivatives and versions of <field> at <node>. Array
+ *   is allocated by this function and must be be deallocated by the caller.
  * @return  1 if successfully returns a value otherwise 0.
  */
 int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values);
-
 
 int set_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_node *node,FE_value *values, int *number_of_values);
@@ -1119,24 +1150,25 @@ Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Allocates and returns a copy of the <number_of_values>-length <values> array
  * stored at the <node> for all components derivatives and versions of <field>.
- * It is up to the calling function to DEALLOCATE the returned array. It will
- * return the values specified at <time> if time sequence is found on nodal
- * field. If time is out of its range then it will return either the values at
- * minimum or maximum time.
+ * It will return the values specified at <time> if time sequence is found on
+ * node field. If time is out of its range then it will return either the values
+ * at minimum or maximum time.
+ * It is up to the calling function to DEALLOCATE the returned array.
  *
  * @param  field  fields value to be returned from.
  * @param  node  the node which stores the field values.
  * @param  time  returns the values at <time> if nodal field has the concept of
- *   time, otherwise this argument is ignored.
+ *    time, otherwise this argument is ignored.
  * @param  values  <number_of_values>-length <values> array to be returned, it
- *   stores all components derivatives and versions of <field> at <node>.
+ *   stores all components derivatives and versions of <field> at <node>. Array
+ *   is allocated by this function and must be be deallocated by the caller.
  * @return  1 if successfully returns a value otherwise 0.
  */
 int get_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values,FE_value time, int **values);
+	struct FE_node *node, int *number_of_values, FE_value time, int **values);
 
 int set_FE_nodal_field_int_values(struct FE_field *field,
 	struct FE_node *node,int *values, int *number_of_values);
@@ -3087,6 +3119,22 @@ int FE_field_get_element_xi_mesh_dimension(struct FE_field *field);
  */
 int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
 	int mesh_dimension);
+
+/**
+ * Return the highest derivative and version numbers used to label any node
+ * parameter of the finite element field.
+ * @see cmzn_node_value_label
+ *
+ * @param field  The finite element field to query.
+ * @param highest_derivative  On success, set to the highest derivative number
+ * used to label any node parameter, using definition of cmzn_node_value_label
+ * i.e. 1 = value.
+ * @return highest_version  On success, set to the highest version number used
+ * to label any node parameter, starting at 1.
+ * @return  CMZN_OK on success, otherwise any other value.
+ */
+int FE_field_get_highest_node_derivative_and_version(FE_field *field,
+	int& highest_derivative, int& highest_version);
 
 int get_FE_field_max_array_size(struct FE_field *field,
 	int *max_number_of_array_values,enum Value_type *value_type);
