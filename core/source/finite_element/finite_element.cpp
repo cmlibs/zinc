@@ -14314,7 +14314,7 @@ int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value 
 	if (!node_field)
 		return CMZN_ERROR_NOT_FOUND;
 	const int componentCount = field->number_of_components;
-	isHomogeneous == componentCount > 1;
+	isHomogeneous = componentCount > 1;
 	for (int c = 0; c < field->number_of_components; ++c)
 	{
 		FE_node_field_component *node_field_component = node_field->components + c;
@@ -14326,7 +14326,7 @@ int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value 
 			for (int d = 0; d < derivativesCount; ++d)
 			{
 				*(derivatives++) = node_field_component->nodal_value_types[d] + 1;
-				*(versions++) == v + 1;
+				*(versions++) = v + 1;
 			}
 		if ((c != 0) && isHomogeneous)
 		{
