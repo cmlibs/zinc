@@ -9733,6 +9733,62 @@ int FE_field_set_element_xi_mesh_dimension(struct FE_field *field,
 	return return_code;
 }
 
+struct FE_node_field_info_get_highest_node_derivative_and_version_data
+{
+	FE_field *field;
+	int highest_derivative;
+	int highest_version;
+};
+
+int FE_node_field_info_get_highest_node_derivative_and_version(FE_node_field_info *node_field_info, void *data_void)
+{
+	FE_node_field_info_get_highest_node_derivative_and_version_data *data =
+		static_cast<FE_node_field_info_get_highest_node_derivative_and_version_data*>(data_void);
+	FE_node_field *node_field =
+		FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(data->field, node_field_info->node_field_list);
+	if (node_field)
+	{
+		for (int c = 0; c < data->field->number_of_components; ++c)
+		{
+			FE_node_field_component *node_field_component = node_field->components + c;
+			if (!node_field_component->nodal_value_types)
+			{
+				display_message(ERROR_MESSAGE, "FE_node_field_info_get_highest_node_derivative_version.  Missing nodal value types");
+				return 0;
+			}
+			int number_of_values = node_field_component->number_of_derivatives + 1;
+			for (int v = 0; v < number_of_values; ++v)
+			{
+				int derivative = (node_field_component->nodal_value_types[v] - FE_NODAL_VALUE) + 1;
+				if (derivative > data->highest_derivative)
+					data->highest_derivative = derivative;
+			}
+			if (node_field_component->number_of_versions > data->highest_version)
+				data->highest_version = node_field_component->number_of_versions;
+		}
+	}
+	return 1;
+}
+
+int FE_field_get_highest_node_derivative_and_version(FE_field *field,
+	int& highest_derivative, int& highest_version)
+{
+	FE_region *fe_region = FE_field_get_FE_region(field);
+	FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
+	if (!fe_nodeset)
+		return CMZN_ERROR_ARGUMENT;
+	LIST(FE_node_field_info) *node_field_info_list = fe_nodeset->get_FE_node_field_info_list_private();
+	FE_node_field_info_get_highest_node_derivative_and_version_data data = { field, 0, 0 };
+	if (!FOR_EACH_OBJECT_IN_LIST(FE_node_field_info)(
+		FE_node_field_info_get_highest_node_derivative_and_version, &data, node_field_info_list))
+	{
+		return CMZN_ERROR_GENERAL;
+	}
+	highest_derivative = data.highest_derivative;
+	highest_version = data.highest_version;
+	return CMZN_OK;
+}
+
 enum Value_type get_FE_field_time_value_type(struct FE_field *field)
 /*******************************************************************************
 LAST MODIFIED : 9 June 1999
@@ -13752,13 +13808,13 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(FE_nodal_value_type)
 		{
 			enumerator_string = "d/ds2";
 		} break;
-		case FE_NODAL_D_DS3:
-		{
-			enumerator_string = "d/ds3";
-		} break;
 		case FE_NODAL_D2_DS1DS2:
 		{
 			enumerator_string = "d2/ds1ds2";
+		} break;
+		case FE_NODAL_D_DS3:
+		{
+			enumerator_string = "d/ds3";
 		} break;
 		case FE_NODAL_D2_DS1DS3:
 		{
@@ -14242,6 +14298,61 @@ sum of <1+num_derivatives>*num_versions for each component.
 	return (number_of_values);
 } /* get_FE_nodal_field_number_of_values */
 
+int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value time,
+	FE_node *lastNode, int *componentParameterCounts, int **componentDerivatives, 
+	int **componentVersions, bool &isHomogeneous)
+{
+	if (!(field && node))
+		return CMZN_ERROR_ARGUMENT;
+	if (lastNode && (node->fields == lastNode->fields))
+		return CMZN_OK;
+	if (!((field->value_type == FE_VALUE_VALUE) &&
+			componentParameterCounts && componentDerivatives && componentVersions))
+		return CMZN_ERROR_ARGUMENT;
+	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+		field, node->fields->node_field_list);
+	if (!node_field)
+		return CMZN_ERROR_NOT_FOUND;
+	const int componentCount = field->number_of_components;
+	isHomogeneous == componentCount > 1;
+	for (int c = 0; c < field->number_of_components; ++c)
+	{
+		FE_node_field_component *node_field_component = node_field->components + c;
+		const int derivativesCount = node_field_component->number_of_derivatives + 1; // value wasn't counted so add it
+		componentParameterCounts[c] = derivativesCount*node_field_component->number_of_versions;
+		int *derivatives = componentDerivatives[c];
+		int *versions = componentVersions[c];
+		for (int v = 0; v < node_field_component->number_of_versions; ++v)
+			for (int d = 0; d < derivativesCount; ++d)
+			{
+				*(derivatives++) = node_field_component->nodal_value_types[d] + 1;
+				*(versions++) == v + 1;
+			}
+		if ((c != 0) && isHomogeneous)
+		{
+			if (componentParameterCounts[c] != componentParameterCounts[c - 1])
+				isHomogeneous = false;
+			else
+			{
+				derivatives = componentDerivatives[c];
+				versions = componentVersions[c];
+				int *lastDerivatives = componentDerivatives[c - 1];
+				int *lastVersions = componentVersions[c - 1];
+				for (int i = 0; i < componentParameterCounts[c];
+					++i, ++derivatives, ++versions, ++lastDerivatives, ++ lastVersions)
+				{
+					if ((*derivatives != *lastDerivatives) || (*versions != *lastVersions))
+					{
+						isHomogeneous = false;
+						break;
+					}
+				}
+			}
+		}
+	}
+	return CMZN_OK;
+}
+
 int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values)
 {
@@ -14253,7 +14364,6 @@ int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_time_sequence *time_sequence;
 	Value_storage *the_value_storage;
 
-	ENTER(get_FE_nodal_field_FE_value_values);
 	return_code=0;
 	time_sequence = (struct FE_time_sequence *)NULL;
 	if (field&&node&&number_of_values&&values&&node->values_storage)
@@ -14263,7 +14373,7 @@ int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 			if ((node_field=FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
 				node->fields->node_field_list))&&node_field->components)
 			{
-				*number_of_values=FE_node_field_get_number_of_values(node_field);
+				*number_of_values = FE_node_field_get_number_of_values(node_field);
 				if (ALLOCATE(*values,FE_value,*number_of_values))
 				{
 					time_sequence = get_FE_node_field_FE_time_sequence(node,field);
@@ -14341,10 +14451,8 @@ int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 		display_message(ERROR_MESSAGE,"get_FE_nodal_field_FE_value_values.  "
 			"Invalid arguments");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* get_FE_nodal_field_FE_value_values */
+}
 
 int set_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_node *node,FE_value *values,int *number_of_values)
@@ -14593,15 +14701,7 @@ place the values.
 } /* set_FE_nodal_field_float_values */
 
 int get_FE_nodal_field_int_values(struct FE_field *field,
-	struct FE_node *node,int *number_of_values, FE_value time, int **values)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Allocates and returns a copy of the <number_of_values>-length <values> array
-stored at the <node> for all components derivatives and versions of <field>.
-It is up to the calling function to DEALLOCATE the returned array.
-==============================================================================*/
+	struct FE_node *node, int *number_of_values, FE_value time, int **values)
 {
 	int i,j,length,number_of_derivatives,number_of_versions,return_code,
 		time_index,time_index2,size;
@@ -14612,7 +14712,6 @@ It is up to the calling function to DEALLOCATE the returned array.
 	struct FE_time_sequence *time_sequence;
 	Value_storage *the_value_storage;
 
-	ENTER(get_FE_nodal_field_int_values);
 	return_code=0;
 	if (field&&node&&number_of_values&&values&&node->values_storage)
 	{
@@ -14691,10 +14790,8 @@ It is up to the calling function to DEALLOCATE the returned array.
 		display_message(ERROR_MESSAGE,"get_FE_nodal_field_int_values.  "
 			"Invalid arguments");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* get_FE_nodal_field_int_values */
+}
 
 int set_FE_nodal_field_int_values(struct FE_field *field,
 	struct FE_node *node,int *values, int *number_of_values)
@@ -30338,7 +30435,7 @@ Notes:
 - only handles 1 version at nodes.
 ==============================================================================*/
 {
-	FE_value component_value[8], delta, value, *values,
+	FE_value component_value[8], delta, value,
 		xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int element_dimension, i, index, j, k, n, number_of_components,
 		number_of_nodes, number_of_values, return_code, version;
@@ -30408,11 +30505,12 @@ Notes:
 										(struct FE_time_sequence *)NULL, fe_node_field_creator) &&
 									ADD_OBJECT_TO_LIST(FE_node)(copy_node[n], copy_node_list))
 								{
+									FE_value *values;
 									/* assume that element_count_fe_field values are cleared to
 										 zero by define_FE_field_at_node */
 									/* first clear all values for fe_field in copy_node */
 									if (get_FE_nodal_field_FE_value_values(fe_field, node,
-											&number_of_values, time, &values))
+										&number_of_values, time, &values))
 									{
 										for (k = 0; k < number_of_values; k++)
 										{

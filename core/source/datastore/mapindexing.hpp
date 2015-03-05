@@ -290,9 +290,9 @@ public:
 		return count;
 	}
 
-	int setAllLabels(DsLabels *labels)
+	int setAllLabels(DsLabels &labels)
 	{
-		Indexing *indexing = getIndexingForLabels(labels);
+		Indexing *indexing = getIndexingForLabels(&labels);
 		if (!indexing)
 			return 0;
 		indexing->setAll();

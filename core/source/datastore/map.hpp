@@ -692,50 +692,32 @@ void DsMap<ValueType>::getSparsity(std::vector<HDsLabels>& sparseLabelsArray, st
 {
 	sparseLabelsArray.clear();
 	denseLabelsArray.clear();
-	if (this->dense)
+	// Currently respects the order of labels indexing the map, so sparse labels
+	// always precede dense labels i.e. doesn't reorder to get more dense indexes.
+	// For FieldML, if an index does not span all its labels then it is sparse
+	// For sparse map, algorithm assumes all labels are densely packed which is
+	// sufficient for current FieldML I/O, however if labels are ever destroyed
+	// leaving holes in labels, either a reclaim must be done before writing, or
+	// this algorithm must be re-written.
+	int lastIncompleteLabelsNumber;
+	for (lastIncompleteLabelsNumber = this->labelsArraySize - 1; 0 <= lastIncompleteLabelsNumber; --lastIncompleteLabelsNumber)
+		if (this->indexSizes[lastIncompleteLabelsNumber] != this->labelsArray[lastIncompleteLabelsNumber]->getSize())
+			break;
+	DsMapAddressType numberOfBands = 1;
+	bool remainingLabelsDense = false;
+	for (int labelsNumber = 0; labelsNumber < this->labelsArraySize; ++labelsNumber)
 	{
-		// even when the map is dense, if the map does not span all labels in an index
-		// those labels are considered sparse.
-		// currently require all sparse indexing to precede dense indexing
-		int lastSparseLabelsNumber;
-		for (lastSparseLabelsNumber = this->labelsArraySize - 1; 0 <= lastSparseLabelsNumber; --lastSparseLabelsNumber)
-			if (this->indexSizes[lastSparseLabelsNumber] != this->labelsArray[lastSparseLabelsNumber]->getSize())
-				break;
-		for (int labelsNumber = 0; labelsNumber < this->labelsArraySize; ++labelsNumber)
+		HDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
+		if ((labelsNumber > lastIncompleteLabelsNumber) && (this->dense || remainingLabelsDense ||
+			this->value_exists.isBanded(this->offsets[labelsNumber]*this->indexSizes[labelsNumber], numberOfBands)))
 		{
-			HDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
-			if (labelsNumber > lastSparseLabelsNumber)
-				denseLabelsArray.push_back(labels);
-			else
-				sparseLabelsArray.push_back(labels);
+			denseLabelsArray.push_back(labels);
+			remainingLabelsDense = true;
 		}
-	}
-	else
-	{
-		// Currently respects the order of labels indexing the map, so sparse labels
-		// always precede dense labels.
-		// Algorithm assumes all labels are densely packed which is sufficient
-		// for current FieldML I/O, however if labels are ever destroyed leaving
-		// holes in labels, either a reclaim must be done before writing, or this
-		// algorithm must be re-written.
-		HDsLabels labels(cmzn::Access(this->labelsArray[0]));
-		sparseLabelsArray.push_back(labels);
-		bool remainingLabelsDense = false;
-		DsMapAddressType numberOfBands = this->indexSizes[0];
-		for (int labelsNumber = 1; labelsNumber < this->labelsArraySize; ++labelsNumber)
+		else
 		{
-			HDsLabels labels(cmzn::Access(this->labelsArray[labelsNumber]));
-			if (remainingLabelsDense ||
-				this->value_exists.isBanded(this->offsets[labelsNumber - 1], numberOfBands))
-			{
-				denseLabelsArray.push_back(labels);
-				remainingLabelsDense = true;
-			}
-			else
-			{
-				sparseLabelsArray.push_back(labels);
-				numberOfBands *= this->indexSizes[labelsNumber];
-			}
+			sparseLabelsArray.push_back(labels);
+			numberOfBands *= this->indexSizes[labelsNumber];
 		}
 	}
 }

@@ -35,6 +35,7 @@
 #include "general/mystring.h"
 #include "general/refcounted.hpp"
 #include "general/refhandle.hpp"
+#include "mesh/cmiss_node_private.hpp"
 #include "region/cmiss_region.h"
 #include "FieldmlIoApi.h"
 
@@ -341,6 +342,8 @@ public:
 		cmzn_fieldmodule_destroy(&fieldmodule);
 		cmzn_region_destroy(&region);
 	}
+
+	int setMinimumNodeVersions(int minimumNodeVersions);
 
 	int writeNodeset(cmzn_field_domain_type domainType, bool writeIfEmpty);
 	int writeNodesets();
@@ -999,6 +1002,24 @@ int FieldMLWriter::getHighestMeshDimension() const
 	return FE_region_get_highest_dimension(fe_region);
 }
 
+// Ensures the versions ensemble and labels have at least as many entries as the
+// specified minimum.
+int FieldMLWriter::setMinimumNodeVersions(int minimumNodeVersions)
+{
+	int maximumNodeVersions = this->nodeVersions->getSize();
+	if (minimumNodeVersions > maximumNodeVersions)
+	{
+		int result = this->nodeVersions->addLabelsRange(1, minimumNodeVersions);
+		if (result != CMZN_OK)
+			return result;
+		FmlErrorNumber fmlError = Fieldml_SetEnsembleMembersRange(this->fmlSession,
+			this->fmlNodeVersionsType, 1, minimumNodeVersions, /*stride*/1);
+		if (fmlError != FML_OK)
+			return CMZN_ERROR_GENERAL;
+	}
+	return CMZN_OK;
+}
+
 int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfEmpty)
 {
 	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(
@@ -1008,26 +1029,26 @@ int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfE
 	std::string nodesetName(tmpName);
 	cmzn_deallocate(tmpName);
 	tmpName = 0;
-	HDsLabels nodeLabels(new DsLabels());
-	nodeLabels->setName(nodesetName);
+	HDsLabels nodesLabels(new DsLabels());
+	nodesLabels->setName(nodesetName);
 	cmzn_node_id node = 0;
 	cmzn_nodeiterator_id iter = cmzn_nodeset_create_nodeiterator(nodeset);
 	while (0 != (node = cmzn_nodeiterator_next_non_access(iter)))
 	{
-		nodeLabels->createLabel(cmzn_node_get_identifier(node));
+		nodesLabels->createLabel(cmzn_node_get_identifier(node));
 	}
 	cmzn_nodeiterator_destroy(&iter);
 	cmzn_nodeset_destroy(&nodeset);
 	if ((nodesetSize == 0) && (!writeIfEmpty))
 		return CMZN_OK;
-	if (nodeLabels->getSize() != nodesetSize)
+	if (nodesLabels->getSize() != nodesetSize)
 		return CMZN_ERROR_MEMORY;
 	FmlObjectHandle fmlNodesType = Fieldml_CreateEnsembleType(this->fmlSession, nodesetName.c_str());
-	int return_code = this->defineEnsembleFromLabels(fmlNodesType, *nodeLabels);
+	int return_code = this->defineEnsembleFromLabels(fmlNodesType, *nodesLabels);
 	if (CMZN_OK != return_code)
 		return return_code;
 	this->fmlNodesTypes[domainType] = fmlNodesType;
-	this->nodesetLabels[domainType] = nodeLabels;
+	this->nodesetLabels[domainType] = nodesLabels;
 	if (!this->nodeDerivatives)
 	{
 		std::string nodeDerivativesTypeName("node_derivatives");
@@ -1046,9 +1067,10 @@ int FieldMLWriter::writeNodeset(cmzn_field_domain_type domainType, bool writeIfE
 		std::string nodeVersionsDefaultName = nodeVersionsTypeName + ".default";
 		cmzn::SetImpl(this->nodeVersions, new DsLabels());
 		this->nodeVersions->setName(nodeVersionsTypeName);
-		this->nodeVersions->createLabel(1);
 		this->fmlNodeVersionsType = Fieldml_CreateEnsembleType(this->fmlSession, nodeVersionsTypeName.c_str());
-		return_code = this->defineEnsembleFromLabels(this->fmlNodeVersionsType, *this->nodeVersions);
+		if ((!this->nodeVersions) || (FML_INVALID_OBJECT_HANDLE == this->fmlNodeVersionsType))
+			return CMZN_ERROR_GENERAL;
+		return_code = this->setMinimumNodeVersions(1);
 		if (CMZN_OK != return_code)
 			return return_code;
 		this->fmlNodeVersionsDefault = Fieldml_CreateConstantEvaluator(this->fmlSession, nodeVersionsDefaultName.c_str(), "1", this->fmlNodeVersionsType);
@@ -1470,33 +1492,34 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 {
 	// get value type
 	FmlObjectHandle fmlValueType = FML_INVALID_OBJECT_HANDLE;
-	FmlObjectHandle fmlValueComponentsType = FML_INVALID_OBJECT_HANDLE;
-	FmlObjectHandle fmlValueComponentsArgument = FML_INVALID_OBJECT_HANDLE;
+	FmlObjectHandle fmlComponentsType = FML_INVALID_OBJECT_HANDLE;
+	FmlObjectHandle fmlComponentsArgument = FML_INVALID_OBJECT_HANDLE;
 	const bool isCoordinate = cmzn_field_is_type_coordinate(outputField.field);
 	cmzn_field_coordinate_system_type coordinateSystemType = cmzn_field_get_coordinate_system_type(outputField.field);
-	std::string valueComponentsTypeName;
-	if (isCoordinate && (outputField.componentCount <= 3) &&
+	std::string componentsTypeName;
+	const int componentCount = outputField.componentCount;
+	if (isCoordinate && (componentCount <= 3) &&
 		(CMZN_FIELD_COORDINATE_SYSTEM_TYPE_RECTANGULAR_CARTESIAN == coordinateSystemType))
 	{
-		if (1 == outputField.componentCount)
+		if (1 == componentCount)
 			fmlValueType = this->libraryImport("coordinates.rc.1d");
 		else
 		{
-			if (2 == outputField.componentCount)
+			if (2 == componentCount)
 			{
 				fmlValueType = this->libraryImport("coordinates.rc.2d");
-				valueComponentsTypeName = "coordinates.rc.2d.component";
-				fmlValueComponentsType = this->libraryImport(valueComponentsTypeName.c_str());
-				fmlValueComponentsArgument = this->libraryImport("coordinates.rc.2d.component.argument");
+				componentsTypeName = "coordinates.rc.2d.component";
+				fmlComponentsType = this->libraryImport(componentsTypeName.c_str());
+				fmlComponentsArgument = this->libraryImport("coordinates.rc.2d.component.argument");
 			}
 			else // 3-D
 			{
 				fmlValueType = this->libraryImport("coordinates.rc.3d");
-				valueComponentsTypeName = "coordinates.rc.3d.component";
-				fmlValueComponentsType = this->libraryImport(valueComponentsTypeName.c_str());
-				fmlValueComponentsArgument = this->libraryImport("coordinates.rc.3d.component.argument");
+				componentsTypeName = "coordinates.rc.3d.component";
+				fmlComponentsType = this->libraryImport(componentsTypeName.c_str());
+				fmlComponentsArgument = this->libraryImport("coordinates.rc.3d.component.argument");
 			}
-			this->typeArgument[fmlValueComponentsType] = fmlValueComponentsArgument;
+			this->typeArgument[fmlComponentsType] = fmlComponentsArgument;
 		}
 	}
 	else
@@ -1510,65 +1533,159 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 		}
 		std::string fieldDomainName = outputField.name + ".domain";
 		fmlValueType = Fieldml_CreateContinuousType(this->fmlSession, fieldDomainName.c_str());
-		if (1 < outputField.componentCount)
+		if (1 < componentCount)
 		{
-			valueComponentsTypeName = fieldDomainName + ".components";
-			fmlValueComponentsType = Fieldml_CreateContinuousTypeComponents(
-				this->fmlSession, fmlValueType, valueComponentsTypeName.c_str(), outputField.componentCount);
-			fmlValueComponentsArgument = this->getArgumentForType(fmlValueComponentsType);
+			componentsTypeName = fieldDomainName + ".components";
+			fmlComponentsType = Fieldml_CreateContinuousTypeComponents(
+				this->fmlSession, fmlValueType, componentsTypeName.c_str(), componentCount);
+			fmlComponentsArgument = this->getArgumentForType(fmlComponentsType);
 		}
 	}
 	if ((FML_INVALID_OBJECT_HANDLE == fmlValueType) ||
-		((1 < outputField.componentCount) && (FML_INVALID_OBJECT_HANDLE == fmlValueComponentsArgument)))
+		((1 < componentCount) && (FML_INVALID_OBJECT_HANDLE == fmlComponentsArgument)))
 		return FML_INVALID_OBJECT_HANDLE;
 
 	// write nodal parameters
-	HDsLabels nodesLabels(this->nodesetLabels[CMZN_FIELD_DOMAIN_TYPE_NODES]);
-	HDsLabels valueComponentsLabels;
-	if (1 < outputField.componentCount)
+	DsLabels *labelsArray[4];
+	int labelsArraySize = 0;
+	HDsLabels nodesLabels = this->nodesetLabels[CMZN_FIELD_DOMAIN_TYPE_NODES];
+	labelsArray[labelsArraySize++] = cmzn::GetImpl(nodesLabels);
+	HDsLabels derivativesLabels;
+	HDsLabels versionsLabels;
+	int highestNodeDerivative = 0;
+	int highestNodeVersion = 0;
+	FE_field_get_highest_node_derivative_and_version(outputField.feField, highestNodeDerivative, highestNodeVersion);
+	if (highestNodeDerivative > 1)
 	{
-		cmzn::SetImpl(valueComponentsLabels, new DsLabels());
-		valueComponentsLabels->setName(valueComponentsTypeName);
-		valueComponentsLabels->addLabelsRange(1, outputField.componentCount);
+		derivativesLabels = this->nodeDerivatives;
+		labelsArray[labelsArraySize++] = cmzn::GetImpl(derivativesLabels);
 	}
-	DsLabels *labelsArray[2] = { cmzn::GetImpl(nodesLabels), cmzn::GetImpl(valueComponentsLabels) };
-	HDsMapDouble nodesFieldParametersMap(DsMap<double>::create((1 < outputField.componentCount) ? 2 : 1, labelsArray));
+	if (highestNodeVersion > 1)
+	{
+		this->setMinimumNodeVersions(highestNodeVersion);
+		versionsLabels = this->nodeDerivatives;
+		labelsArray[labelsArraySize++] = cmzn::GetImpl(versionsLabels);
+	}
+	// having components as the last index is typically more efficient
+	// since most new meshes use the same structure for all components
+	HDsLabels componentsLabels;
+	if (1 < componentCount)
+	{
+		cmzn::SetImpl(componentsLabels, new DsLabels());
+		// must set name to same as fmlComponentsType for it to be found when writing map
+		componentsLabels->setName(componentsTypeName);
+		componentsLabels->addLabelsRange(1, componentCount);
+		labelsArray[labelsArraySize++] = cmzn::GetImpl(componentsLabels);
+	}
+	HDsMapDouble nodesFieldParametersMap(DsMap<double>::create(labelsArraySize, labelsArray));
+	// Future: for efficiency, resize map for highest versions and derivatives before using
 	std::string nodesFieldParametersMapName("nodes.");
 	nodesFieldParametersMapName += outputField.name;
 	nodesFieldParametersMap->setName(nodesFieldParametersMapName);
 	HDsMapIndexing nodesFieldParametersMapIndexing(nodesFieldParametersMap->createIndexing());
 	cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(this->fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	cmzn_fieldcache *fieldcache = cmzn_fieldmodule_create_fieldcache(this->fieldmodule);
 	HDsLabelIterator nodesLabelsIterator(nodesLabels->createLabelIterator());
 	int return_code = CMZN_OK;
-	double *values = new double[outputField.componentCount];
+	double *homogeneousValues = new double[componentCount];
+	int *componentParameterCounts = new int[componentCount];
+	int **componentDerivatives = new int*[componentCount];
+	int **componentVersions = new int*[componentCount];
+	const int maximumValueCount = highestNodeDerivative*highestNodeVersion;
+	for (int c = 0; c < componentCount; ++c)
+	{
+		componentDerivatives[c] = new int[maximumValueCount];
+		componentVersions[c] = new int[maximumValueCount];
+	}
+
+	cmzn_node *lastNode = 0;
+	cmzn_node *node;
+	bool isHomogeneous;
+	FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
 	while (nodesLabelsIterator->increment())
 	{
-		cmzn_node *node = cmzn_nodeset_find_node_by_identifier(nodeset, nodesLabelsIterator->getIdentifier());
+		node = feNodeset->get_FE_node_from_identifier(nodesLabelsIterator->getIdentifier());
 		if (!node)
 		{
-			return_code = CMZN_ERROR_NOT_FOUND;
+			return_code = CMZN_ERROR_GENERAL;
 			break;
 		}
-		return_code = cmzn_fieldcache_set_node(fieldcache, node);
-		cmzn_node_destroy(&node);
-		if (CMZN_OK != return_code)
-			break;
-		if (cmzn_field_is_defined_at_location(outputField.field, fieldcache))
+		int result = FE_field_get_node_parameter_labels(outputField.feField, node, /*time*/0.0, lastNode,
+			componentParameterCounts, componentDerivatives, componentVersions, isHomogeneous);
+		if (result == CMZN_ERROR_NOT_FOUND)
+			continue;
+		if (result != CMZN_OK)
 		{
-			return_code = cmzn_field_evaluate_real(outputField.field, fieldcache, outputField.componentCount, values);
-			if (CMZN_OK != return_code)
-				break;
-			nodesFieldParametersMapIndexing->setEntry(*nodesLabelsIterator);
-			if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, outputField.componentCount, values))
+			return_code = result;
+			break;
+		}
+		lastNode = node;
+		int parametersCount = 0;
+		FE_value *parameters = 0;
+		if (!get_FE_nodal_field_FE_value_values(outputField.feField, node, &parametersCount, /*time*/0.0, &parameters))
+		{
+			return_code = CMZN_ERROR_GENERAL;
+			break;
+		}
+		nodesFieldParametersMapIndexing->setEntry(*nodesLabelsIterator);
+		if (isHomogeneous)
+		{
+			nodesFieldParametersMapIndexing->setAllLabels(*componentsLabels);
+			int *derivatives = componentDerivatives[0];
+			int *versions = componentVersions[0];
+			const int parameterCount = componentParameterCounts[0];
+			for (int p = 0; p < parameterCount; ++p)
 			{
-				return_code = CMZN_ERROR_GENERAL;
-				break;
+				for (int c = 0; c < componentCount; ++c)
+					homogeneousValues[c] = parameters[c*parameterCount + p];
+				if (derivativesLabels)
+					nodesFieldParametersMapIndexing->setEntryIdentifier(*derivativesLabels, *(derivatives++));
+				if (versionsLabels)
+					nodesFieldParametersMapIndexing->setEntryIdentifier(*versionsLabels, *(versions++));
+				if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, componentCount, homogeneousValues))
+				{
+					return_code = CMZN_ERROR_GENERAL;
+					break;
+				}
 			}
 		}
+		else
+		{
+			FE_value *parameter = parameters;
+			for (int c = 0; c < componentCount; ++c)
+			{
+				nodesFieldParametersMapIndexing->setEntryIndex(*componentsLabels, c);
+				int *derivatives = componentDerivatives[c];
+				int *versions = componentVersions[c];
+				const int parameterCount = componentParameterCounts[c];
+				for (int p = 0; p < parameterCount; ++p)
+				{
+					if (derivativesLabels)
+						nodesFieldParametersMapIndexing->setEntryIdentifier(*derivativesLabels, *(derivatives++));
+					if (versionsLabels)
+						nodesFieldParametersMapIndexing->setEntryIdentifier(*versionsLabels, *(versions++));
+					if (!nodesFieldParametersMap->setValues(*nodesFieldParametersMapIndexing, 1, parameter++))
+					{
+						return_code = CMZN_ERROR_GENERAL;
+						c = componentCount;
+						break;
+					}
+				}
+			}
+		}
+		DEALLOCATE(parameters);
+		if (CMZN_OK != return_code)
+			break;
 	}
-	delete[] values;
-	cmzn_fieldcache_destroy(&fieldcache);
+	delete[] homogeneousValues;
+	delete[] componentParameterCounts;
+	for (int c = 0; c < componentCount; ++c)
+	{
+		delete[] componentDerivatives[c];
+		delete[] componentVersions[c];
+	}
+	delete[] componentDerivatives;
+	delete[] componentVersions;
+
 	cmzn_nodeset_destroy(&nodeset);
 	if (CMZN_OK != return_code)
 	{
@@ -1582,7 +1699,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 
 	FmlObjectHandle fmlField = FML_INVALID_OBJECT_HANDLE;
 	FmlErrorNumber fmlError;
-	if (1 == outputField.componentCount)
+	if (1 == componentCount)
 	{
 		FieldComponentTemplate& fieldTemplate = *(outputField.componentTemplates[0]);
 		fmlField = Fieldml_CreateReferenceEvaluator(this->fmlSession, outputField.name.c_str(), fieldTemplate.fmlFieldTemplateEvaluator, fmlValueType);
@@ -1591,7 +1708,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	{
 		fmlField = Fieldml_CreateAggregateEvaluator(this->fmlSession, outputField.name.c_str(), fmlValueType);
 		bool defaultEvaluator = true;
-		for (int c = 1; c < outputField.componentCount; ++c)
+		for (int c = 1; c < componentCount; ++c)
 		{
 			if (outputField.componentTemplates[c - 1]->fmlFieldTemplateEvaluator !=
 				outputField.componentTemplates[c]->fmlFieldTemplateEvaluator)
@@ -1609,7 +1726,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 		}
 		else
 		{
-			for (int c = 0; c < outputField.componentCount; ++c)
+			for (int c = 0; c < componentCount; ++c)
 			{
 				fmlError = Fieldml_SetEvaluator(this->fmlSession, fmlField, static_cast<FmlEnsembleValue>(c + 1),
 					outputField.componentTemplates[c]->fmlFieldTemplateEvaluator);
