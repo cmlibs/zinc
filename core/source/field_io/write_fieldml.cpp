@@ -17,7 +17,6 @@
 #include "zinc/core.h"
 #include "zinc/element.h"
 #include "zinc/field.h"
-#include "zinc/fieldcache.h"
 #include "zinc/fieldfiniteelement.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/node.h"
@@ -1707,6 +1706,9 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	else
 	{
 		fmlField = Fieldml_CreateAggregateEvaluator(this->fmlSession, outputField.name.c_str(), fmlValueType);
+		fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlField, 1, fmlComponentsArgument);
+		if (FML_OK != fmlError)
+			return FML_INVALID_OBJECT_HANDLE;
 		bool defaultEvaluator = true;
 		for (int c = 1; c < componentCount; ++c)
 		{
