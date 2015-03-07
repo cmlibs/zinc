@@ -1342,7 +1342,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 	if ((fmlLocalNodesArgument != FML_INVALID_OBJECT_HANDLE) && 
 		(fmlLocalNodesArgument != fmlElementParametersIndexArgument))
 	{
-		FmlObjectHandle fmlParameterIndexToLocalNodeEvaluator =
+		fmlParameterIndexToLocalNodeEvaluator =
 			Fieldml_GetBindByArgument(this->fmlSession, fmlElementParametersEvaluator, fmlLocalNodesArgument);
 		if (FML_INVALID_OBJECT_HANDLE == fmlParameterIndexToLocalNodeEvaluator)
 		{
@@ -1862,7 +1862,7 @@ bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 	{
 		if (verbose)
 			display_message(WARNING_MESSAGE, "Read FieldML:  %s is not continuous parameters type so can't be node parameters",
-				this->getName(fmlNodeParameters));
+				this->getName(fmlNodeParameters).c_str());
 		return false;
 	}
 	// check arguments are nodes, components (if any) and optionally derivatives, versions
@@ -1877,14 +1877,14 @@ bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 		FmlObjectHandle fmlIndexEvaluator = Fieldml_GetIndexEvaluator(fmlSession, fmlNodeParameters, i);
 		if (FML_INVALID_OBJECT_HANDLE == fmlIndexEvaluator)
 		{
-			display_message(WARNING_MESSAGE, "Read FieldML:  %s is missing index %d", this->getName(fmlNodeParameters), i);
+			display_message(WARNING_MESSAGE, "Read FieldML:  %s is missing index %d", this->getName(fmlNodeParameters).c_str(), i);
 			return false;
 		}
 		if (fmlIndexEvaluator == fmlComponentsArgument)
 		{
 			if (hasComponents)
 			{
-				display_message(WARNING_MESSAGE, "Read FieldML:  %s binds to components more than once", this->getName(fmlNodeParameters));
+				display_message(WARNING_MESSAGE, "Read FieldML:  %s binds to components more than once", this->getName(fmlNodeParameters).c_str());
 				return false;
 			}
 			hasComponents = true;
@@ -1894,7 +1894,7 @@ bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 		{
 			if (hasDerivatives)
 			{
-				display_message(WARNING_MESSAGE, "Read FieldML:  %s binds to derivatives more than once", this->getName(fmlNodeParameters));
+				display_message(WARNING_MESSAGE, "Read FieldML:  %s binds to derivatives more than once", this->getName(fmlNodeParameters).c_str());
 				return false;
 			}
 			hasDerivatives = true;
@@ -1904,7 +1904,7 @@ bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 		{
 			if (hasVersions)
 			{
-				display_message(WARNING_MESSAGE, "Read FieldML:  %s binds to versions more than once", this->getName(fmlNodeParameters));
+				display_message(WARNING_MESSAGE, "Read FieldML:  %s binds to versions more than once", this->getName(fmlNodeParameters).c_str());
 				return false;
 			}
 			hasVersions = true;
@@ -1918,17 +1918,17 @@ bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 	}
 	if (usedIndexCount != nodeParametersIndexCount)
 	{
-		display_message(WARNING_MESSAGE, "Read FieldML:  %s has unexpected extra index evaluators", this->getName(fmlNodeParameters));
+		display_message(WARNING_MESSAGE, "Read FieldML:  %s has unexpected extra index evaluators", this->getName(fmlNodeParameters).c_str());
 		return false;
 	}
 	if ((fmlComponentsArgument != FML_INVALID_OBJECT_HANDLE) && !hasComponents)
 	{
-		display_message(WARNING_MESSAGE, "Read FieldML:  %s has unexpected extra index evaluators", this->getName(fmlNodeParameters));
+		display_message(WARNING_MESSAGE, "Read FieldML:  %s has unexpected extra index evaluators", this->getName(fmlNodeParameters).c_str());
 		return false;
 	}
 	if (FML_INVALID_OBJECT_HANDLE == fmlPossibleNodesArgument)
 	{
-		display_message(WARNING_MESSAGE, "Read FieldML:  %s is not indexed by nodes", this->getName(fmlNodeParameters));
+		display_message(WARNING_MESSAGE, "Read FieldML:  %s is not indexed by nodes", this->getName(fmlNodeParameters).c_str());
 		return false;
 	}
 	if (fmlPossibleNodesArgument != this->fmlNodesArgument)
@@ -1940,7 +1940,7 @@ bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 		}
 		else
 		{
-			display_message(WARNING_MESSAGE, "Read FieldML:  %s is not indexed by standard nodes argument", this->getName(fmlNodeParameters));
+			display_message(WARNING_MESSAGE, "Read FieldML:  %s is not indexed by standard nodes argument", this->getName(fmlNodeParameters).c_str());
 			return false;
 		}
 	}
