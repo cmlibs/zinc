@@ -110,6 +110,12 @@ public:
 		return this->nodeList;
 	}
 
+	// @return  Non-accessed node
+	FE_node *findNodeByIdentifier(int identifier)
+	{
+		return FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier, this->nodeList);
+	}
+
 	cmzn_field_domain_type getFieldDomainType() const
 	{
 		return this->domainType;
@@ -127,7 +133,6 @@ public:
 
 	void clear();
 	int change_FE_node_identifier(struct FE_node *node, int new_identifier);
-	FE_node *get_FE_node_from_identifier(int identifier);
 	FE_node *get_or_create_FE_node_with_identifier(int identifier);
 	int get_next_FE_node_identifier(int start_identifier);
 	int undefine_FE_field_in_FE_node_list(struct FE_field *fe_field,

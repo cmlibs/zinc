@@ -63,6 +63,17 @@ public:
 			return cmzn::Access(this->labelsArray[labelsNumber]);
 		return 0;
 	}
+
+	int getLabelsIndex(DsLabels& labels)
+	{
+		for (int i = 0; i < this->labelsArraySize; ++i)
+		{
+			if (this->labelsArray[i] == &labels)
+				return i;
+		}
+		return -1;
+	}
+
 };
 
 typedef cmzn::RefHandle<DsMapBase> HDsMapBase;

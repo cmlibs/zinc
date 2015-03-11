@@ -23,12 +23,16 @@
 #include "zinc/node.h"
 #include "zinc/region.h"
 #include "zinc/status.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
 #include "field_io/fieldml_common.hpp"
 #include "field_io/read_fieldml.hpp"
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "general/message.h"
 #include "general/refcounted.hpp"
+#include "mesh/cmiss_node_private.hpp"
 #include "FieldmlIoApi.h"
 
 using namespace OpenCMISS;
@@ -197,7 +201,7 @@ private:
 		FmlObjectHandle fmlEvaluator, FmlObjectHandle fmlNodeParametersArgument,
 		FmlObjectHandle fmlNodesArgument, FmlObjectHandle fmlElementArgument);
 
-	int readField(FmlObjectHandle fmlFieldEvaluator,
+	int readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle fmlComponentsType,
 		std::vector<FmlObjectHandle> &fmlComponentEvaluators, FmlObjectHandle fmlNodeParameters,
 		FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodesArgument,
 		FmlObjectHandle fmlElementArgument);
@@ -1523,7 +1527,8 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 	return component;
 }
 
-int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
+// @param fmlComponentType  Only provide if multi-component, otherwise pass FML_INVALID_OBJECT_HANDLE
+int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle fmlComponentsType,
 	std::vector<FmlObjectHandle> &fmlComponentEvaluators, FmlObjectHandle fmlNodeParameters,
 	FmlObjectHandle fmlNodeParametersArgument, FmlObjectHandle fmlNodesArgument,
 	FmlObjectHandle fmlElementArgument)
@@ -1540,6 +1545,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 	}
 
 	cmzn_field_id field = cmzn_fieldmodule_create_field_finite_element(field_module, componentCount);
+	FE_field *feField = 0;
+	Computed_field_get_type_finite_element(field, &feField);
 	cmzn_field_set_name(field, fieldName.c_str());
 	cmzn_field_set_managed(field, true);
 	if ((componentCount >= meshDimension) && (componentCount <= 3))
@@ -1556,68 +1563,161 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		}
 	}
 
-	// nodes are already created. set node parameters
-	cmzn_nodeset_id nodes = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
-	HDsLabels nodesLabels(getLabelsForEnsemble(this->fmlNodesType));
-
+	// set node parameters (nodes have already been created)
+	cmzn_nodeset_id nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(field_module, CMZN_FIELD_DOMAIN_TYPE_NODES);
 	HDsMapDouble nodeParameters(this->getContinuousParameters(fmlNodeParameters));
 	if (!nodeParameters)
 	{
-		display_message(ERROR_MESSAGE,
-			"Read FieldML:  Field %s nodal parameters %s unable to be read.",
+		display_message(ERROR_MESSAGE, "Read FieldML:  Field %s node parameters %s could not be read.",
 			fieldName.c_str(), getName(fmlNodeParameters).c_str());
 		return_code = 0;
 	}
 	if (return_code)
 	{
-		cmzn_nodetemplate_id nodetemplate = cmzn_nodeset_create_nodetemplate(nodes);
-		cmzn_nodetemplate_define_field(nodetemplate, field);
+		HDsLabels nodesLabels(getLabelsForEnsemble(this->fmlNodesType));
+		HDsLabels componentsLabels;
+		int componentsIndex = -1, componentsSize = 1;
+		if (FML_INVALID_OBJECT_HANDLE != fmlComponentsType)
+		{
+			cmzn::SetImpl(componentsLabels, this->getLabelsForEnsemble(fmlComponentsType));
+			if (!(componentsLabels &&
+				(0 <= (componentsIndex = nodeParameters->getLabelsIndex(*componentsLabels))) &&
+				(0 < (componentsSize = componentsLabels->getSize()))))
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Field %s node parameters %s is missing components index.",
+					fieldName.c_str(), getName(fmlNodeParameters).c_str());
+				return_code = 0;
+			}
+		}
+		HDsLabels nodeDerivativesLabels;
+		int nodeDerivativesIndex = -1, nodeDerivativesSize = 1;
+		if (FML_INVALID_OBJECT_HANDLE != this->fmlNodeDerivativesArgument)
+		{
+			cmzn::SetImpl(nodeDerivativesLabels, this->getLabelsForEnsemble(this->fmlNodeDerivativesType));
+			if (nodeDerivativesLabels)
+			{
+				nodeDerivativesIndex = nodeParameters->getLabelsIndex(*nodeDerivativesLabels);
+				if (0 <= nodeDerivativesIndex)
+					nodeDerivativesSize = nodeDerivativesLabels->getSize();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Missing node derivatives labels");
+				return_code = 0;
+			}
+		}
+		HDsLabels nodeVersionsLabels;
+		int nodeVersionsIndex = -1, nodeVersionsSize = 1;
+		if (FML_INVALID_OBJECT_HANDLE != this->fmlNodeVersionsArgument)
+		{
+			cmzn::SetImpl(nodeVersionsLabels, this->getLabelsForEnsemble(this->fmlNodeVersionsType));
+			if (nodeVersionsLabels)
+			{
+				nodeVersionsIndex = nodeParameters->getLabelsIndex(*nodeVersionsLabels);
+				if (0 <= nodeVersionsIndex)
+					nodeVersionsSize = nodeVersionsLabels->getSize();
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "Read FieldML:  Missing node versions labels");
+				return_code = 0;
+			}
+		}
+		const int valuesSize = componentsSize*nodeDerivativesSize*nodeVersionsSize;
+		int componentsOffset = 1;
+		int nodeDerivativesOffset = 1;
+		int nodeVersionsOffset = 1;
+		int index[3] = { componentsIndex, nodeDerivativesIndex, nodeVersionsIndex };
+		int size[3] = { componentCount, nodeDerivativesSize, nodeVersionsSize };
+		int *offset[3] = { &componentsOffset, &nodeDerivativesOffset, &nodeVersionsOffset };
+		// get offsets for components, derivatives and versions parameters in any order:
+		int highestIndex = 0;
+		for (int j = 0; j < 3; ++j)
+			if (index[j] > highestIndex)
+				highestIndex = index[j];
+		for (int i = 0; i <= highestIndex; ++i)
+			for (int j = 0; j < 3; ++j)
+				if (index[j] == i)
+				{
+					for (int k = 0; k < 3; ++k)
+						if (index[k] > i)
+							*offset[j] *= size[k];
+					break;
+				}
+		double *values = new double[valuesSize];
+		// store both current and last value exists in same array and swap pointers
+		int *allocatedValueExists = new int[2*valuesSize];
+		int *valueExists = allocatedValueExists;
+		valueExists[0] = 0;
+		int *lastValueExists = allocatedValueExists + valuesSize;
+		lastValueExists[0] = -5;
+		cmzn_nodetemplate_id nodetemplate = 0;
 		HDsMapIndexing nodeParametersIndexing(nodeParameters->createIndexing());
-		double *values = new double[componentCount];
-		int *valueExists = new int[componentCount];
-		cmzn_fieldcache_id field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		// GRC inefficient to iterate over sparse parameters this way
 		DsLabelIterator *nodesLabelIterator = nodesLabels->createLabelIterator();
+		FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
 		if (!nodesLabelIterator)
 			return_code = CMZN_ERROR_MEMORY;
 		else
 		{
 			while (nodesLabelIterator->increment())
 			{
-				DsLabelIdentifier nodeIdentifier = nodesLabelIterator->getIdentifier();
-				cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, nodeIdentifier);
 				nodeParametersIndexing->setEntry(*nodesLabelIterator);
 				int valuesRead = 0;
-				if (nodeParameters->getValuesSparse(*nodeParametersIndexing, componentCount, values, valueExists, valuesRead))
+				if (nodeParameters->getValuesSparse(*nodeParametersIndexing, valuesSize, values, valueExists, valuesRead))
 				{
 					if (0 < valuesRead)
 					{
-						// A current limitation of Zinc is that all nodal component values
-						// must be set if any are set. Set the dummy values to zero.
-						if (valuesRead < componentCount)
-						{
-							for (int i = 0; i < componentCount; i++)
+						for (int i = 0; i < valuesSize; ++i)
+							if (valueExists[i] != lastValueExists[i])
 							{
-								if (!valueExists[i])
-									values[i] = 0.0;
+								cmzn_nodetemplate_destroy(&nodetemplate);
+								nodetemplate = cmzn_nodeset_create_nodetemplate(nodeset);
+								cmzn_nodetemplate_define_field(nodetemplate, field);
+								for (int c = 0; c < componentCount; ++c)
+								{
+									int *exists = valueExists + c*componentsOffset;
+									for (int d = 0; d < nodeDerivativesSize; ++d)
+									{
+										for (int v = nodeVersionsSize - 1; 0 <= v; --v)
+											if (exists[v*nodeVersionsOffset])
+											{
+												cmzn_nodetemplate_set_value_number_of_versions(nodetemplate, field, c + 1,
+													static_cast<cmzn_node_value_label>(d + CMZN_NODE_VALUE_LABEL_VALUE), v + 1);
+												break;
+											}
+										exists += nodeDerivativesOffset;
+									}
+								}
+								break;
 							}
+						const int nodeIdentifier = nodesLabelIterator->getIdentifier();
+						cmzn_node *node = feNodeset->findNodeByIdentifier(nodeIdentifier);
+						if (!cmzn_node_merge(node, nodetemplate) ||
+							(CMZN_OK != FE_field_assign_node_parameters_sparse_FE_value(feField, node,
+								valuesSize, values, valueExists, valuesRead, componentCount, componentsOffset,
+								nodeDerivativesSize, nodeDerivativesOffset, nodeVersionsSize, nodeVersionsOffset)))
+						{
+							display_message(ERROR_MESSAGE, "Read FieldML:  Failed to set field %s parameters at node %d",
+								fieldName.c_str(), nodeIdentifier);
+							return_code = 0;
+							break;
 						}
-						cmzn_node_merge(node, nodetemplate);
-						cmzn_fieldcache_set_node(field_cache, node);
-						cmzn_field_assign_real(field, field_cache, componentCount, values);
+						int *tmp = lastValueExists;
+						lastValueExists = valueExists;
+						valueExists = tmp;
 					}
 				}
 				else
 				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Failed to get field %s node parameters at node %d",
+						fieldName.c_str(), nodesLabelIterator->getIdentifier());
 					return_code = 0;
 					break;
 				}
-				cmzn_node_destroy(&node);
 			}
 		}
 		cmzn::Deaccess(nodesLabelIterator);
-		cmzn_fieldcache_destroy(&field_cache);
-		delete[] valueExists;
+		delete[] allocatedValueExists;
 		delete[] values;
 		cmzn_nodetemplate_destroy(&nodetemplate);
 	}
@@ -1758,7 +1858,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 					}
 					for (int i = 0; i < component->local_point_count; i++)
 					{
-						cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodes, component->node_identifiers[i]);
+						cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, component->node_identifiers[i]);
 						if (!node)
 						{
 							display_message(ERROR_MESSAGE, "Read FieldML:  Cannot find node %d for element %d local point %d in local point to node map %s",
@@ -1787,7 +1887,7 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator,
 		cmzn_elementtemplate_destroy(&elementtemplate);
 	cmzn::Deaccess(elementsLabelIterator);
 	cmzn_mesh_destroy(&mesh);
-	cmzn_nodeset_destroy(&nodes);
+	cmzn_nodeset_destroy(&nodeset);
 	cmzn_field_destroy(&field);
 
 	return return_code;
@@ -1852,7 +1952,7 @@ bool FieldMLReader::evaluatorIsScalarContinuousPiecewiseOverElements(FmlObjectHa
 }
 
 /**
- * @param fmlComponentsType  Optional, for multi-component fields only.
+ * @param fmlComponentsArgument  Optional, for multi-component fields only.
  */
 bool FieldMLReader::evaluatorIsNodeParameters(FmlObjectHandle fmlNodeParameters,
 	FmlObjectHandle fmlComponentsArgument)
@@ -1988,7 +2088,6 @@ int FieldMLReader::readAggregateFields()
 		// check components are scalar, piecewise over elements
 		bool validComponents = true;
 		std::vector<FmlObjectHandle> fmlComponentEvaluators(componentCount, FML_INVALID_OBJECT_HANDLE);
-
 		FmlObjectHandle fmlElementArgument = FML_INVALID_OBJECT_HANDLE;
 		for (int componentIndex = 1; componentIndex <= componentCount; componentIndex++)
 		{
@@ -2033,8 +2132,7 @@ int FieldMLReader::readAggregateFields()
 			continue;
 		}
 
-		// determine if exactly one binding of 'nodal parameters'
-
+		// determine if exactly one binding of node parameters
 		int bindCount = Fieldml_GetBindCount(fmlSession, fmlAggregate);
 		if (1 != bindCount)
 		{
@@ -2051,7 +2149,7 @@ int FieldMLReader::readAggregateFields()
 			continue;
 		}
 
-		return_code = readField(fmlAggregate, fmlComponentEvaluators, fmlNodeParameters,
+		return_code = readField(fmlAggregate, fmlComponentsType, fmlComponentEvaluators, fmlNodeParameters,
 			fmlNodeParametersArgument, fmlNodesArgument, fmlElementArgument);
 	}
 	return return_code;
@@ -2094,8 +2192,7 @@ int FieldMLReader::readReferenceFields()
 			continue;
 		}
 
-		// determine if exactly one binding of 'nodal parameters'
-
+		// determine if exactly one binding of node parameters
 		int bindCount = Fieldml_GetBindCount(fmlSession, fmlReference);
 		if (1 != bindCount)
 		{
@@ -2117,8 +2214,8 @@ int FieldMLReader::readReferenceFields()
 		}
 
 		std::vector<FmlObjectHandle> fmlComponentEvaluators(1, fmlComponentEvaluator);
-		return_code = readField(fmlReference, fmlComponentEvaluators, fmlNodeParameters,
-			fmlNodeParametersArgument, fmlNodesArgument, fmlElementArgument);
+		return_code = readField(fmlReference, /*fmlComponentsType*/FML_INVALID_OBJECT_HANDLE,
+			fmlComponentEvaluators, fmlNodeParameters, fmlNodeParametersArgument, fmlNodesArgument, fmlElementArgument);
 	}
 	return return_code;
 }

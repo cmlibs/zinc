@@ -1579,8 +1579,7 @@ int FE_nodeset::change_FE_node_identifier(struct FE_node *node, int new_identifi
 	{
 		if (IS_OBJECT_IN_LIST(FE_node)(node, this->nodeList))
 		{
-			if (FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(
-				new_identifier, this->nodeList))
+			if (this->findNodeByIdentifier(new_identifier))
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_nodeset::change_FE_node_identifier.  "
@@ -1620,14 +1619,6 @@ int FE_nodeset::change_FE_node_identifier(struct FE_node *node, int new_identifi
 			"FE_nodeset::change_FE_node_identifier.  Invalid argument(s)");
 	}
 	return CMZN_ERROR_ARGUMENT;
-}
-
-/**
- * Returns the node of number <identifier> in nodeset, or NULL without error
- */
-FE_node *FE_nodeset::get_FE_node_from_identifier(int identifier)
-{
-	return FIND_BY_IDENTIFIER_IN_LIST(FE_node,cm_node_identifier)(identifier, this->nodeList);
 }
 
 /**
@@ -4211,7 +4202,7 @@ plus nodes from <fe_region> of the same number as those currently used.
 						{
 							if (old_node)
 							{
-								new_node = data->fe_nodeset->get_FE_node_from_identifier(
+								new_node = data->fe_nodeset->findNodeByIdentifier(
 									get_FE_node_identifier(old_node));
 								if (new_node)
 								{

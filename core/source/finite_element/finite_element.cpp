@@ -1837,7 +1837,7 @@ in memory. If pointers weren't DWORD aligned get bus errors on SGIs.
 				if (*array_address)/* if we have a source array*/
 				{
 					source_array = *array_address;
-					array_size = strlen(source_array)+1; /* +1 for null termination */
+					array_size = static_cast<int>(strlen(source_array)) + 1; /* +1 for null termination */
 					/* allocate the dest array */
 					if (ALLOCATE(dest_array,char,array_size))
 					{
@@ -9885,7 +9885,7 @@ max_number_of_array_values. Return the field value_type.
 							/* get the string's length*/
 							str_address = (char **)(values_storage);
 							the_string = *str_address;
-							number_of_array_values = strlen(the_string)+1;/* +1 for null termination*/
+							number_of_array_values = static_cast<int>(strlen(the_string)) + 1;/* +1 for null termination*/
 							if (number_of_array_values > *max_number_of_array_values)
 							{
 								*max_number_of_array_values = number_of_array_values;
@@ -9976,7 +9976,7 @@ Give an error if field->values_storage isn't storing array types.
 					/* get the string*/
 					str_address = (char **)(values_storage);
 					the_string = *str_address;
-					*number_of_array_values = strlen(the_string)+1;/* +1 for null termination*/
+					*number_of_array_values = static_cast<int>(strlen(the_string)) + 1;/* +1 for null termination*/
 				} break;
 				default:
 				{
@@ -10985,37 +10985,27 @@ int FE_node_field_creator_define_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type)
 {
-	enum FE_nodal_value_type *new_nodal_value_types;
-	int number_of_derivatives, return_code;
 	if (node_field_creator && (component_number >= 0) &&
-		 (component_number < node_field_creator->number_of_components))
+		(component_number < node_field_creator->number_of_components))
 	{
-		number_of_derivatives = node_field_creator->numbers_of_derivatives
-			[component_number];
-		if (REALLOCATE(new_nodal_value_types,
-			node_field_creator->nodal_value_types[component_number],
-			enum FE_nodal_value_type, number_of_derivatives + 2))
+		int number_of_derivatives = node_field_creator->numbers_of_derivatives[component_number];
+		FE_nodal_value_type *nodal_value_types = node_field_creator->nodal_value_types[component_number];
+		for (int i = 0; i <= number_of_derivatives; ++i)
 		{
-			node_field_creator->nodal_value_types[component_number] =
-				new_nodal_value_types;
-			node_field_creator->nodal_value_types[component_number][
-				number_of_derivatives + 1] = derivative_type;
-			node_field_creator->numbers_of_derivatives[component_number]++;
-			return_code = 1;
+			if (nodal_value_types[i] == derivative_type)
+				return 1;
 		}
-		else
+		// for compatibility with EX reader, must add new derivative last
+		FE_nodal_value_type *new_nodal_value_types;
+		if (REALLOCATE(new_nodal_value_types, nodal_value_types, enum FE_nodal_value_type, number_of_derivatives + 2))
 		{
-			display_message(ERROR_MESSAGE,
-				"FE_node_field_creator_define_derivative.  "
-				"Unable to REALLOCATE nodal value types array.");
-			return_code = 0;
+			new_nodal_value_types[number_of_derivatives + 1] = derivative_type;
+			node_field_creator->nodal_value_types[component_number] = new_nodal_value_types;
+			++(node_field_creator->numbers_of_derivatives[component_number]);
+			return 1;
 		}
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
+	return 0;
 }
 
 void FE_node_field_creator_undefine_derivative(
@@ -14528,6 +14518,75 @@ place the values.
 
 	return (return_code);
 } /* set_FE_nodal_field_FE_value_values */
+
+int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *node,
+	int arraySize, FE_value *values, int *valueExists, int valuesCount,
+	int componentsSize, int componentsOffset,
+	int derivativesSize, int derivativesOffset,
+	int versionsSize, int versionsOffset)
+{
+	if (!(field && node && (FE_VALUE_VALUE == field->value_type) &&
+		(0 < arraySize) && values && valueExists && (0 < valuesCount) &&
+		(componentsSize == field->number_of_components) &&
+		(componentsSize*derivativesSize*versionsSize == arraySize)))
+	{
+		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Invalid arguments");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field, node->fields->node_field_list);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s is not defined at node %d",
+			field->name, node->cm_node_identifier);
+		return CMZN_ERROR_NOT_FOUND;
+	}
+	if (node_field->time_sequence)
+	{
+		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d is time-varying; case is not implemented",
+			field->name, node->cm_node_identifier);
+		return CMZN_ERROR_NOT_IMPLEMENTED;
+	}
+	int numberAssigned = 0;
+	for (int c = 0; c < componentsSize; ++c)
+	{
+		FE_node_field_component *component = node_field->components + c;
+		if (!component->nodal_value_types)
+		{
+			display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d has no nodal value types",
+				field->name, node->cm_node_identifier);
+			return CMZN_ERROR_ARGUMENT;
+		}
+		const int number_of_versions = component->number_of_versions;
+		const int number_of_derivatives = component->number_of_derivatives + 1;
+		FE_value *source = values + c*componentsOffset;
+		int *sourceExists = valueExists + c*componentsOffset;
+		FE_value *target = reinterpret_cast<FE_value *>(node->values_storage + component->value);
+		for (int v = 0; v < number_of_versions; ++v)
+		{
+			for (int d = 0; d < number_of_derivatives; ++d)
+			{
+				const int od = derivativesOffset*(component->nodal_value_types[d] - FE_NODAL_VALUE);
+				if (sourceExists[od])
+				{
+					*target = source[od];
+					++numberAssigned;
+				}
+				else
+					*target = 0.0; // workaround for redundant parameters
+				++target;
+			}
+			source += versionsOffset;
+			sourceExists += versionsOffset;
+		}
+	}
+	if (numberAssigned != valuesCount)
+	{
+		display_message(ERROR_MESSAGE, "FE_node_assign_FE_value_parameters_sparse.  Field %s at node %d configuration cannot take all parameters supplied",
+			field->name, node->cm_node_identifier);
+		return CMZN_ERROR_INCOMPATIBLE_DATA;
+	}
+	return CMZN_OK;
+}
 
 int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
 	struct FE_node *node,FE_value *values,int *number_of_values,
