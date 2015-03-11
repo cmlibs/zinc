@@ -105,7 +105,7 @@ public:
 		int first = 0;
 		int limit = get_FE_field_number_of_components(fe_field);
 		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > limit))
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		if (componentNumber > 0)
 		{
 			first = componentNumber - 1;
@@ -118,10 +118,10 @@ public:
 		}
 		else
 		{
-			int currentNumberOfVersions = FE_node_field_creator_get_number_of_versions(node_field_creator, componentNumber - 1);
 			for (int i = first; i < limit; i++)
 			{
 				FE_node_field_creator_define_derivative(node_field_creator, i, fe_nodal_value_type);
+				const int currentNumberOfVersions = FE_node_field_creator_get_number_of_versions(node_field_creator, i);
 				if (numberOfVersions > currentNumberOfVersions)
 					FE_node_field_creator_define_versions(node_field_creator, i, numberOfVersions);
 			}
@@ -651,7 +651,7 @@ public:
 		if (group)
 			node = Computed_field_node_group_core_cast(group)->findNodeByIdentifier(identifier);
 		else
-			node = this->fe_nodeset->get_FE_node_from_identifier(identifier);
+			node = this->fe_nodeset->findNodeByIdentifier(identifier);
 		if (node)
 			ACCESS(FE_node)(node);
 		return node;

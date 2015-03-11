@@ -1117,6 +1117,36 @@ Assumes that the nodal fields have been set up, with information to
 place the values.
 ==============================================================================*/
 
+/**
+ * Assigns all parameters for the field at the node, taken from sparse arrays.
+ * Works around current limitations of node fields (that they must have VALUE
+ * parameters for all components, and the same number of versions for all
+ * values/derivatives in a component). Values not found in the sparse 
+ * Note this is not time-aware yet.
+ * @param field  The field whose parameters are to be assigned.
+ * @param node  The node at which the parameters are stored.
+ * @param arraySize  The full size of the values and valueExists arrays, equal
+ * to componentsSize*derivativesSize*versionsSize
+ * @param values  The parameters to set.
+ * @param valueExists  Sparsity array; 1 if value set, 0 if not.
+ * @param valuesCount  The number of valid parameters in the sparse array.
+ * @param componentsSize  Number of components.
+ * @param componentsOffset  Offset in array to next component for same
+ * derivative and version.
+ * @param derivativesSize  Number of derivatives. Derivatives are indexed in
+ * order of FE_nodal_value_type, index 0 = VALUE.
+ * @param derivativesOffset  Offset in array to next derivative for same
+ * component and version.
+ * @param versionsSize  Number of versions.
+ * @param versionsOffset  Offset in array to next version for same
+ * component and derivative.
+ */
+int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *node,
+	int arraySize, FE_value *values, int *valueExists, int valuesCount,
+	int componentsSize, int componentsOffset,
+	int derivativesSize, int derivativesOffset,
+	int versionsSize, int versionsOffset);
+
 int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
   struct FE_node *node,FE_value *values,int *number_of_values,
   FE_value time);

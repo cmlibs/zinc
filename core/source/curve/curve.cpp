@@ -277,7 +277,7 @@ table needs to be used when curve->parameter_table is NULL.
 					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 				for (i=0;(i<=number_of_elements)&&return_code;i++)
 				{
-					if ((node = fe_nodeset->get_FE_node_from_identifier(node_no)) &&
+					if ((node = fe_nodeset->findNodeByIdentifier(node_no)) &&
 						cc_get_node_field_values(node,curve->parameter_field,
 							FE_NODAL_VALUE,&parameter))
 					{
@@ -2263,7 +2263,7 @@ expected to make the element have a finite size.
 					for (i=number_of_nodes;(i>node_no)&&return_code;i--)
 					{
 						if (!fe_nodeset->change_FE_node_identifier(
-							fe_nodeset->get_FE_node_from_identifier(i), i+node_no_increment))
+							fe_nodeset->findNodeByIdentifier(i), i+node_no_increment))
 						{
 							return_code=0;
 						}
@@ -2307,7 +2307,7 @@ expected to make the element have a finite size.
 			{
 				if (get_FE_element_node(element,i,&node))
 				{
-					if (!fe_nodeset->get_FE_node_from_identifier(get_FE_node_identifier(node)))
+					if (!fe_nodeset->findNodeByIdentifier(get_FE_node_identifier(node)))
 					{
 						if (!fe_nodeset->merge_FE_node(node))
 						{
@@ -2485,7 +2485,7 @@ at the other end of the element being deleted.
 					for (i=first_node_to_delete;(i<=last_node_to_delete)&&return_code;i++)
 					{
 						if (CMZN_OK != fe_nodeset->remove_FE_node(
-							fe_nodeset->get_FE_node_from_identifier(i)))
+							fe_nodeset->findNodeByIdentifier(i)))
 						{
 							return_code=0;
 						}
@@ -2517,7 +2517,7 @@ at the other end of the element being deleted.
 			for (i=last_node_to_delete+1;(i<=number_of_nodes)&&return_code;i++)
 			{
 				if (!fe_nodeset->change_FE_node_identifier(
-					fe_nodeset->get_FE_node_from_identifier(i), i - node_no_decrement))
+					fe_nodeset->findNodeByIdentifier(i), i - node_no_decrement))
 				{
 					return_code=0;
 				}

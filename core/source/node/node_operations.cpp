@@ -248,7 +248,7 @@ int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
 					/* check no new numbers are in use by nodes not in node_group */
 					for (i = 0; (i < number_of_nodes) && return_code; i++)
 					{
-						if ((node_with_identifier = fe_nodeset->get_FE_node_from_identifier(
+						if ((node_with_identifier = fe_nodeset->findNodeByIdentifier(
 							node_values[i].new_number)) &&
 							(!cmzn_nodeset_contains_node(nodeset, node_with_identifier)))
 						{
@@ -271,12 +271,12 @@ int cmzn_nodeset_change_node_identifiers(cmzn_nodeset_id nodeset,
 						/* only modify if node doesn't already have correct identifier */
 						if (cmzn_nodeset_contains_node(nodeset, node_values[i].node) &&
 							(node_values[i].node != (node_with_identifier =
-								fe_nodeset->get_FE_node_from_identifier(node_values[i].new_number))))
+								fe_nodeset->findNodeByIdentifier(node_values[i].new_number))))
 						{
 							if (node_with_identifier) 
 							{
 								while ((struct FE_node *)NULL !=
-									fe_nodeset->get_FE_node_from_identifier(next_spare_node_number))
+									fe_nodeset->findNodeByIdentifier(next_spare_node_number))
 								{
 									next_spare_node_number++;
 								}

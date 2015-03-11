@@ -1602,7 +1602,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	FE_nodeset *feNodeset = cmzn_nodeset_get_FE_nodeset_internal(nodeset);
 	while (nodesLabelsIterator->increment())
 	{
-		node = feNodeset->get_FE_node_from_identifier(nodesLabelsIterator->getIdentifier());
+		node = feNodeset->findNodeByIdentifier(nodesLabelsIterator->getIdentifier());
 		if (!node)
 		{
 			return_code = CMZN_ERROR_GENERAL;
