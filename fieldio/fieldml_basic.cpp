@@ -96,6 +96,20 @@ TEST(ZincRegion, fieldml_cube)
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/cube.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
 	check_cube_model(testFm);
+
+	// test having a non-coordinate multi-component field
+	Field coordinates = testFm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+	EXPECT_EQ(OK, result = coordinates.setTypeCoordinate(false));
+	EXPECT_EQ(OK, result = testRegion.writeFile(FIELDML_OUTPUT_FOLDER "/cube_noncoordinate.fieldml"));
+
+	Region testRegion2 = zinc.root_region.createChild("test2");
+	EXPECT_EQ(OK, result = testRegion2.readFile(FIELDML_OUTPUT_FOLDER "/cube_noncoordinate.fieldml"));
+	Fieldmodule testFm2 = testRegion2.getFieldmodule();
+	Field coordinates2 = testFm2.findFieldByName("coordinates");
+	EXPECT_FALSE(coordinates2.isTypeCoordinate());
+	EXPECT_EQ(OK, result = coordinates2.setTypeCoordinate(true));
+	check_cube_model(testFm2);
 }
 
 // Also reads cube model, but tries to read it as EX format which should fail

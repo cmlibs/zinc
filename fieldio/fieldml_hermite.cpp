@@ -111,14 +111,12 @@ TEST(ZincRegion, fieldml_twohermitecubes_noscalefactors)
 		TestResources::getLocation(TestResources::FIELDIO_EX_TWOHERMITECUBES_NOSCALEFACTORS_RESOURCE)));
 	check_twohermitecubes_noscalefactors_model(zinc.fm);
 
-#if 0
 	// test writing and re-reading into different region
 	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/twohermitecubes_noscalefactors.fieldml"));
 	Region testRegion = zinc.root_region.createChild("test");
 	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/twohermitecubes_noscalefactors.fieldml"));
 	Fieldmodule testFm = testRegion.getFieldmodule();
 	check_twohermitecubes_noscalefactors_model(testFm);
-#endif
 }
 
 namespace {
