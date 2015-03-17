@@ -120,10 +120,16 @@ public:
 		{
 			for (int i = first; i < limit; i++)
 			{
-				FE_node_field_creator_define_derivative(node_field_creator, i, fe_nodal_value_type);
+				int result = FE_node_field_creator_define_derivative(node_field_creator, i, fe_nodal_value_type);
+				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+					return CMZN_ERROR_GENERAL;
 				const int currentNumberOfVersions = FE_node_field_creator_get_number_of_versions(node_field_creator, i);
 				if (numberOfVersions > currentNumberOfVersions)
-					FE_node_field_creator_define_versions(node_field_creator, i, numberOfVersions);
+				{
+					result = FE_node_field_creator_define_versions(node_field_creator, i, numberOfVersions);
+					if (result != CMZN_OK)
+						return CMZN_ERROR_GENERAL;
+				}
 			}
 		}
 		return CMZN_OK;

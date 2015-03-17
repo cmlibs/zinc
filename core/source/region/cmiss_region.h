@@ -397,10 +397,12 @@ indented from the left margin by <indent> spaces; this is incremented by
 <indent_increment> for each child level.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Call to confirm compatibility of fields and other object definitions in
  * source region tree versus those in global region. Call this before calling
  * cmzn_region_merge.
+ * Converts finite element field parameter mappings in source_region from using
+ * indexes to derivatives & versions; fails (0 result) if this cannot be done.
  * @param target_region  Target / global region to merge into.
  * @param source_region  Source region to check compatibility of fields for.
  * @return  1 if compatible, 0 if not.

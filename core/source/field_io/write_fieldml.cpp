@@ -1760,17 +1760,8 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 			cmzn_field_finite_element_id field_finite_element = cmzn_field_cast_finite_element(field);
 			if (field_finite_element)
 			{
-				if (CMZN_OK == FE_field_check_element_node_value_labels(feField))
-				{
-					OutputFieldData thisFieldData(field, feField);
-					outputFields.push_back(thisFieldData);
-				}
-				else
-				{
-					display_message(WARNING_MESSAGE, "FieldMLWriter: Cannot write finite element field %s"
-						" because it is not using standard node mapping or is missing element node value labels.",
-						get_FE_field_name(feField));
-				}
+				OutputFieldData thisFieldData(field, feField);
+				outputFields.push_back(thisFieldData);
 			}
 			else
 			{

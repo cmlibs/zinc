@@ -593,11 +593,17 @@ ZINC_API int cmzn_elementtemplate_define_field_element_constant(
 
 /**
  * Defines a nodally interpolated element field or field component in the
- * element_template. Only Lagrange, simplex and constant basis function types
- * may be used with this function, i.e. where only a simple node value is
- * mapped. Shape must be set before calling this function.
+ * element template. For Lagrange, simplex and constant basis function types
+ * there are as many nodes as basis functions and the single parameter per
+ * node has VALUE label. For Hermite bases with multiple functions per node,
+ * default parameters are expected in numerical order of the node value label
+ * e.g. for bicubic Hermite the first four functions are for the first node and
+ * expected in order: VALUE D_DS1 D_DS2 D2_DS1DS2.
+ * By default, versions are initialised to 1, and no scaling is used.
+ * In all cases local nodes cycle fastest in lowest element xi direction.
+ * Shape must be set before calling this function.
  *
- * @param element_template  Element template to modify.
+ * @param elementtemplate  Element template to modify.
  * @param field  The field to define. Must be finite_element type.
  * @param component_number  The component to define from 1 to the number of
  * field components, or -1 to define all components with identical basis and
@@ -613,7 +619,7 @@ ZINC_API int cmzn_elementtemplate_define_field_element_constant(
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_elementtemplate_define_field_simple_nodal(
-	cmzn_elementtemplate_id element_template,
+	cmzn_elementtemplate_id elementtemplate,
 	cmzn_field_id field,  int component_number,
 	cmzn_elementbasis_id basis, int basis_number_of_nodes,
 	const int *local_node_indexes);

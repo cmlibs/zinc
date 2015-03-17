@@ -944,10 +944,9 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 <node>. <field> is returned.
 ==============================================================================*/
 {
-	char *component_name, *derivative_type_name, *location, *nodal_value_type_string,
-		*rest_of_line;
+	char *component_name, *location, *rest_of_line;
 	enum FE_field_type fe_field_type;
-	int component_number, end_of_names, end_of_string, number_of_components,
+	int component_number, number_of_components,
 		number_of_derivatives, number_of_versions, return_code, temp_int;
 	struct FE_field *field, *merged_fe_field;
 	struct FE_node_field_creator *node_field_creator;
@@ -1005,119 +1004,96 @@ Reads a node field from an <input_file>, adding it to the fields defined at
 							/* first number which is the value, is automatically included */
 							if (IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
 							{
-								derivative_type_name = rest_of_line;
+								char *derivative_type_name = rest_of_line;
 								/* skip leading spaces */
 								while (' ' == *derivative_type_name)
-								{
-									derivative_type_name++;
-								}
+									++derivative_type_name;
 								if (0 < number_of_derivatives)
 								{
-									int i = number_of_derivatives;
-									/* optional derivative names will be in brackets */
-									if ('(' == *derivative_type_name)
+									/* derivative names, in brackets () must follow */
+									const char *closing_bracket_location = strchr(derivative_type_name, ')');
+									if (('(' != *derivative_type_name) || !closing_bracket_location)
 									{
-										derivative_type_name++;
-										/* skip leading spaces */
-										while (' ' == *derivative_type_name)
-										{
-											derivative_type_name++;
-										}
-										end_of_names = (')' == *derivative_type_name);
-										end_of_string = ('\0' == *derivative_type_name);
-										while (0 < i)
-										{
-											if (!(end_of_names || end_of_string))
-											{
-												nodal_value_type_string = derivative_type_name;
-												while (('\0' != *derivative_type_name) &&
-													(',' != *derivative_type_name) &&
-													(' ' != *derivative_type_name) &&
-													(')' != *derivative_type_name))
-												{
-													derivative_type_name++;
-												}
-												end_of_names = (')' == *derivative_type_name);
-												end_of_string = ('\0' == *derivative_type_name);
-												*derivative_type_name = '\0';
-												if (!(end_of_names || end_of_string))
-												{
-													derivative_type_name++;
-													while ((',' == *derivative_type_name) ||
-														(' ' == *derivative_type_name))
-													{
-														derivative_type_name++;
-													}
-													end_of_names = (')' == *derivative_type_name);
-													end_of_string = ('\0' == *derivative_type_name);
-												}
-												enum FE_nodal_value_type derivative_type;
-												if (STRING_TO_ENUMERATOR(FE_nodal_value_type)(
-													nodal_value_type_string, &derivative_type))
-												{
-													FE_node_field_creator_define_derivative(
-														node_field_creator, component_number,
-														derivative_type);
-												}
-												else
-												{
-													FE_node_field_creator_define_derivative(
-														node_field_creator, component_number,
-														FE_NODAL_UNKNOWN);
-													location = IO_stream_get_location_string(input_file);
-													display_message(WARNING_MESSAGE,
-														"Unknown derivative type '%s' for field "
-														"component %s.%s .  %s",
-														nodal_value_type_string, get_FE_field_name(field),
-														component_name, location);
-													DEALLOCATE(location);
-												}
-											}
-											else
-											{
-												FE_node_field_creator_define_derivative(
-													node_field_creator, component_number,
-													FE_NODAL_UNKNOWN);
-												location = IO_stream_get_location_string(input_file);
-												display_message(WARNING_MESSAGE,
-													"Missing derivative type for field component "
-													"%s.%s .  %s", get_FE_field_name(field),
-													component_name, location);
-												DEALLOCATE(location);
-											}
-											i--;
-										}
-										if (end_of_names)
-										{
-											derivative_type_name++;
-										}
+										location = IO_stream_get_location_string(input_file);
+										display_message(ERROR_MESSAGE, "Derivative types missing or invalid for field component %s.%s .  %s",
+											get_FE_field_name(field), component_name, location);
+										DEALLOCATE(location);
+										return_code = 0;
 									}
 									else
 									{
-										location = IO_stream_get_location_string(input_file);
-										display_message(WARNING_MESSAGE,
-											"Derivative types missing for field component %s.%s"
-											" .  %s", get_FE_field_name(field), component_name,
-											location);
-										DEALLOCATE(location);
+										++derivative_type_name;
+										/* skip leading spaces */
+										while (' ' == *derivative_type_name)
+											++derivative_type_name;
+										while (derivative_type_name != closing_bracket_location)
+										{
+											const char *nodal_value_type_string = derivative_type_name;
+											while ((',' != *derivative_type_name) &&
+												(' ' != *derivative_type_name) &&
+												(')' != *derivative_type_name))
+											{
+												++derivative_type_name;
+											}
+											*derivative_type_name = '\0';
+											if (derivative_type_name != closing_bracket_location)
+											{
+												++derivative_type_name;
+												while ((',' == *derivative_type_name) || (' ' == *derivative_type_name))
+													++derivative_type_name;
+											}
+											enum FE_nodal_value_type derivative_type;
+											if (!STRING_TO_ENUMERATOR(FE_nodal_value_type)(nodal_value_type_string, &derivative_type))
+											{
+												location = IO_stream_get_location_string(input_file);
+												display_message(ERROR_MESSAGE, "Unknown derivative type '%s' for field component %s.%s .  %s",
+													nodal_value_type_string, get_FE_field_name(field), component_name, location);
+												DEALLOCATE(location);
+												return_code = 0;
+												break;
+											}
+											else
+											{
+												int result = FE_node_field_creator_define_derivative(
+													node_field_creator, component_number, derivative_type);
+												if (result != CMZN_OK)
+												{
+													location = IO_stream_get_location_string(input_file);
+													display_message(ERROR_MESSAGE, "Failed to set derivative type '%s' for field component %s.%s %s.  %s",
+														nodal_value_type_string, get_FE_field_name(field), component_name,
+														(CMZN_ERROR_ALREADY_EXISTS == result) ? "as already defined" : "", location);
+													DEALLOCATE(location);
+													return_code = 0;
+													break;
+												}
+											}
+										}
+										int count = FE_node_field_creator_get_number_of_derivatives(node_field_creator, component_number);
+										if (count != number_of_derivatives)
+										{
+											location = IO_stream_get_location_string(input_file);
+											display_message(ERROR_MESSAGE, "Missing derivative type(s) for field component %s.%s .  %s",
+												get_FE_field_name(field), component_name, location);
+											DEALLOCATE(location);
+											return_code = 0;
+											break;
+										}
 									}
-									/* Make sure we declare any derivatives that weren't
-										given types */
-									while (0 < i)
-									{
-										FE_node_field_creator_define_derivative(
-											node_field_creator, component_number,
-											FE_NODAL_UNKNOWN);
-										i--;
-									}
+									++derivative_type_name;
 								}
 								/* read in the number of versions (if present) */
-								if (1 == sscanf(derivative_type_name, ", #Versions=%d",
-									&number_of_versions))
+								if (return_code && (1 == sscanf(derivative_type_name, ", #Versions=%d", &number_of_versions)))
 								{
-									FE_node_field_creator_define_versions(
-										node_field_creator, component_number,
-										number_of_versions);
+									int result = FE_node_field_creator_define_versions(node_field_creator,
+										component_number, number_of_versions);
+									if (CMZN_OK != result)
+									{
+										location = IO_stream_get_location_string(input_file);
+										display_message(ERROR_MESSAGE, "Invalid #Versions for field component %s.%s .  %s",
+											get_FE_field_name(field), component_name, location);
+										DEALLOCATE(location);
+										return_code = 0;
+									}
 								}
 								DEALLOCATE(rest_of_line);
 							}
@@ -2237,9 +2213,8 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 														{
 															if ((2 == IO_stream_scan(input_file, "%d .  #Values=%d",
 																&node_index, &number_of_values)) &&
-																(standard_node_map =
-																	CREATE(Standard_node_to_element_map)(
-																		node_index - 1, number_of_values)))
+																(standard_node_map = Standard_node_to_element_map_create_legacy(
+																	node_index - 1, number_of_values)))
 															{
 																/* read the value indices */
 																/* Use a %1[:] so that a successful read will return 1 */
@@ -2319,8 +2294,7 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																			display_message(ERROR_MESSAGE,
 																				"read_FE_element_field.  Error setting "
 																				"standard_node_to_element_map");
-																			DESTROY(Standard_node_to_element_map)(
-																				&standard_node_map);
+																			Standard_node_to_element_map_destroy(&standard_node_map);
 																			DEALLOCATE(location);
 																			return_code = 0;
 																		}

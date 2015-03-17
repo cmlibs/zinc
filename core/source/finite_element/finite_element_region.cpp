@@ -4365,6 +4365,15 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 			return false;
 	}
 
+	// check/convert finite element field parameter mappings from indexes to derivatives & versions
+	if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_check_element_node_value_labels_iterator,
+		(void *)target_fe_region, source_fe_region->fe_field_list))
+	{
+		display_message(ERROR_MESSAGE,
+			"Cannot merge field(s) into region as cannot migrate element field mapping indexes to derivatives/versions");
+		return false;
+	}
+
 	// check elements match in shape and faces
 	bool result = true;
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (0 < dimension) && result; --dimension)
