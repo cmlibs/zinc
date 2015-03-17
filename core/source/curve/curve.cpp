@@ -1362,19 +1362,21 @@ value will be zero in its initial state.
 									parameter_basis,modify);
 								if (NULL != parameter_component)
 								{
-									standard_node_map = CREATE(Standard_node_to_element_map)(
+									standard_node_map = Standard_node_to_element_map_create(
 										/*node_number*/0,/*number_of_component_values*/1);
 									if (NULL != standard_node_map)
 									{
 										if (!(Standard_node_to_element_map_set_nodal_value_index(
-											standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+												standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+											Standard_node_to_element_map_set_nodal_value_type(
+												standard_node_map, /*nodal_value_number*/0, FE_NODAL_VALUE) &&
 											/* -1 = use default scale factor of 1 */
 											Standard_node_to_element_map_set_scale_factor_index(
 												standard_node_map, /*nodal_value_number*/0, /*scale_factor_index*/-1) &&
 											FE_element_field_component_set_standard_node_map(
 												parameter_component, /*local_node_number*/0, standard_node_map)))
 										{
-											DESTROY(Standard_node_to_element_map)(&standard_node_map);
+											Standard_node_to_element_map_destroy(&standard_node_map);
 											return_code = 0;
 										}
 									}
@@ -1382,20 +1384,22 @@ value will be zero in its initial state.
 									{
 										return_code=0;
 									}
-									standard_node_map = CREATE(Standard_node_to_element_map)(
+									standard_node_map = Standard_node_to_element_map_create(
 										/*node_number*/curve->value_nodes_per_element - 1,
 										/*number_of_component_values*/1);
 									if (NULL  != standard_node_map)
 									{
 										if (!(Standard_node_to_element_map_set_nodal_value_index(
-											standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+												standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+											Standard_node_to_element_map_set_nodal_value_type(
+												standard_node_map, /*nodal_value_number*/0, FE_NODAL_VALUE) &&
 											/* -1 = use default scale factor of 1 */
 											Standard_node_to_element_map_set_scale_factor_index(
 												standard_node_map, /*nodal_value_number*/0, /*scale_factor_index*/-1) &&
 											FE_element_field_component_set_standard_node_map(
 												parameter_component, /*local_node_number*/1, standard_node_map)))
 										{
-											DESTROY(Standard_node_to_element_map)(&standard_node_map);
+											Standard_node_to_element_map_destroy(&standard_node_map);
 											return_code = 0;
 										}
 									}
@@ -1437,13 +1441,15 @@ value will be zero in its initial state.
 											for (j=0;(j<curve->value_nodes_per_element)&&
 												return_code;j++)
 											{
-												standard_node_map = CREATE(Standard_node_to_element_map)(
+												standard_node_map = Standard_node_to_element_map_create(
 													/*node_number*/j,
 													/*number_of_component_values*/(1 + curve->value_derivatives_per_node));
 												if (NULL != standard_node_map)
 												{
 													if (Standard_node_to_element_map_set_nodal_value_index(
-														standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+															standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
+														Standard_node_to_element_map_set_nodal_value_type(
+															standard_node_map, /*nodal_value_number*/0, FE_NODAL_VALUE) &&
 														/* -1 = use default scale factor of 1 */
 														Standard_node_to_element_map_set_scale_factor_index(
 													   standard_node_map, /*nodal_value_number*/0, /*scale_factor_index*/-1))
@@ -1452,6 +1458,8 @@ value will be zero in its initial state.
 														{
 															Standard_node_to_element_map_set_nodal_value_index(
 																standard_node_map, /*nodal_value_number*/1, /*nodal_value_index*/1);
+															Standard_node_to_element_map_set_nodal_value_type(
+																standard_node_map, /*nodal_value_number*/1, FE_NODAL_D_DS1) &&
 															/* multiply scale factor for derivative */
 															Standard_node_to_element_map_set_scale_factor_index(
 																standard_node_map, /*nodal_value_number*/1, /*scale_factor_index*/j);
@@ -1461,13 +1469,13 @@ value will be zero in its initial state.
 														if (!(FE_element_field_component_set_standard_node_map(
 															value_components[i], /*local_node_number*/j, standard_node_map)))
 														{
-															DESTROY(Standard_node_to_element_map)(&standard_node_map);
+															Standard_node_to_element_map_destroy(&standard_node_map);
 															return_code = 0;
 														}
 													}
 													else
 													{
-														DESTROY(Standard_node_to_element_map)(&standard_node_map);
+														Standard_node_to_element_map_destroy(&standard_node_map);
 														return_code = 0;
 													}
 												}

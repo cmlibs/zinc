@@ -261,18 +261,21 @@ public:
 		{
 			const int numberOfValues = FE_basis_get_number_of_functions_per_node(fe_basis, nodeIndex);
 			Standard_node_to_element_map *standard_node_map =
-				CREATE(Standard_node_to_element_map)(local_node_indexes[nodeIndex] - 1, numberOfValues);
+				Standard_node_to_element_map_create(local_node_indexes[nodeIndex] - 1, numberOfValues);
 			for (int valueNumber = 0; valueNumber < numberOfValues; ++valueNumber)
 			{
 				// GRC change to support valueType / version labels
 				int nodalValueIndex = valueNumber;
 				if (!(Standard_node_to_element_map_set_nodal_value_index(
 						standard_node_map, valueNumber, nodalValueIndex) &&
+					Standard_node_to_element_map_set_nodal_value_type(
+						standard_node_map, valueNumber, static_cast<FE_nodal_value_type>(valueNumber + FE_NODAL_VALUE)) &&
+					Standard_node_to_element_map_set_nodal_version(
+						standard_node_map, valueNumber, static_cast<FE_nodal_value_type>(1)) &&
 					Standard_node_to_element_map_set_scale_factor_index(
 						standard_node_map, valueNumber, /*no_scale_factor*/-1)))
 				{
 					DESTROY(FE_element_field_component)(&component);
-					component = NULL;
 					break;
 				}
 			}
@@ -280,7 +283,7 @@ public:
 				nodeIndex, standard_node_map))
 			{
 				DESTROY(FE_element_field_component)(&component);
-				component = NULL;
+				Standard_node_to_element_map_destroy(&standard_node_map);
 				break;
 			}
 		}
@@ -1541,15 +1544,15 @@ int cmzn_elementtemplate_define_field_element_constant(cmzn_elementtemplate_id e
 }
 
 int cmzn_elementtemplate_define_field_simple_nodal(
-	cmzn_elementtemplate_id element_template,
+	cmzn_elementtemplate_id elementtemplate,
 	cmzn_field_id field,  int component_number,
 	cmzn_elementbasis_id basis, int number_of_nodes,
 	const int *local_node_indexes)
 {
-	if (element_template && field && basis &&
+	if (elementtemplate && field && basis &&
 		((0 == number_of_nodes) || (local_node_indexes)))
 	{
-		return element_template->defineFieldSimpleNodal(
+		return elementtemplate->defineFieldSimpleNodal(
 			field, component_number, basis, number_of_nodes, local_node_indexes);
 	}
 	return CMZN_ERROR_ARGUMENT;

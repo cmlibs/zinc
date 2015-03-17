@@ -495,6 +495,8 @@ Frees the memory for the node field creator and sets
 /**
  * Adds the derivative of specified <derivative_type> to the <component_number>
  * specified.
+ * @return  CMZN_OK on success, CMZN_ERROR_ALREADY_EXISTS if derivative already
+ * defined, CMZN_ERROR_ARGUMENT if invalid argument(s) supplied.
  */
 int FE_node_field_creator_define_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
@@ -508,17 +510,28 @@ void FE_node_field_creator_undefine_derivative(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	enum FE_nodal_value_type derivative_type);
 
+/**
+ * Returns the number of derivatives defined for a given component in the
+ * node field creator (not including value).
+ *
+ * @param node_field_creator  Node field creator to query.
+ * @param component_number  The component from 0 to the number of field
+ * components-1.
+ * @return  Number of versions for component of field, or 0 if field not
+ * defined or invalid arguments are supplied.
+ */
+int FE_node_field_creator_get_number_of_derivatives(
+	struct FE_node_field_creator *node_field_creator, int component_number);
+
+/**
+ * Specifies the <number_of_versions> for <component_number> specified.
+ * @return  CMZN_OK  on success, otherwise any other error.
+ */
 int FE_node_field_creator_define_versions(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	int number_of_versions);
-/*******************************************************************************
-LAST MODIFIED: 16 November 2001
 
-DESCRIPTION:
-Specifies the <number_of_versions> for <component_number> specified.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Returns the number of versions defined for a given component in the
  * node field creator.
  *
@@ -1337,24 +1350,28 @@ void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list);
 
 PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_node);
 
-struct Standard_node_to_element_map *CREATE(Standard_node_to_element_map)(
-	int node_index,int number_of_nodal_values);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
+/**
+ * Creates map with value type and version arrays allocated.
+ * Allocates memory and assigns fields for a standard node to element map.
+ * Allocates storage for the nodal value and scale factor indices and sets to -1.
+ */
+Standard_node_to_element_map *Standard_node_to_element_map_create(
+	int node_index, int number_of_nodal_values);
 
-DESCRIPTION :
-Allocates memory and assigns fields for a standard node to element map.
-Allocates storage for the nodal value and scale factor indices and sets to -1.
-==============================================================================*/
+/**
+ * Legacy variant of Standard_node_to_element_map_create which defines
+ * node value index arrays to be converted into node value type and version
+ * arrays at a later time.
+ * Use only when reading from EX format.
+ */
+Standard_node_to_element_map *Standard_node_to_element_map_create_legacy(
+	int node_index, int number_of_nodal_values);
 
-int DESTROY(Standard_node_to_element_map)(
+/**
+ * Frees the memory for the map and sets <*map_address> to NULL.
+ */
+int Standard_node_to_element_map_destroy(
 	struct Standard_node_to_element_map **map_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the map and sets <*map_address> to NULL.
-==============================================================================*/
 
 /**
  * Returns the node index from <standard_node_map>.
@@ -1399,6 +1416,15 @@ FE_nodal_value_type Standard_node_to_element_map_get_nodal_value_type(
 	int nodal_value_number);
 
 /**
+ * Sets nodal_value_type <nodal_value_number> of <standard_node_map> to
+ * <nodal_value_type>.
+ * Must have allocated value types and versions.
+ */
+int Standard_node_to_element_map_set_nodal_value_type(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, FE_nodal_value_type nodal_value_type);
+
+/**
  * Returns the version number of the nodal value obtained for
  * <nodal_value_number> in <standard_node_map>, starting at 1.
  * If none/error, returns 0.
@@ -1406,6 +1432,16 @@ FE_nodal_value_type Standard_node_to_element_map_get_nodal_value_type(
 int Standard_node_to_element_map_get_nodal_version(
 	struct Standard_node_to_element_map *standard_node_map,
 	int nodal_value_number);
+
+/**
+ * Sets nodal version <nodal_value_number> of <standard_node_map> to
+ * <version>.
+ * Must have allocated value types and versions.
+ * @param nodal_version  The nodal version to get starting at 1.
+ */
+int Standard_node_to_element_map_set_nodal_version(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int nodal_version);
 
 /**
  * @return  The index into the scale factors stored for the basis in the
@@ -2394,19 +2430,15 @@ Gets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
 If fails, sets *<scale_factor_address> to 0.0;
 ==============================================================================*/
 
+/**
+ * Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1
+ * of <element> to <scale_factor>.
+ * <element> must already have a shape and node_scale_field_information.
+ * Should only be called for unmanaged elements.
+ * Dangerous; use with care.
+ */
 int set_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number,FE_value scale_factor);
-/*******************************************************************************
-LAST MODIFIED : 15 November 1999
-
-DESCRIPTION :
-Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
-<element> to <scale_factor>.
-<element> must already have a shape and node_scale_field_information.
-Should only be called for unmanaged elements.
-This function is a bit naughty. Should really use
-FE_element_set_scale_factor_for_nodal_value .
-==============================================================================*/
+	int scale_factor_number, FE_value scale_factor);
 
 int define_FE_field_at_element(struct FE_element *element,
 	struct FE_field *field,struct FE_element_field_component **components);
@@ -2834,12 +2866,19 @@ int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_vo
  * each use of the same array offset in an element refers to the same
  * node_value/version.
  * @param field  The FE_field to check/update.
+ * @param target_fe_region  Optional FE_region where nodes and equivalent field
+ * of same name can be found. Used if field not defined on node in same region.
  * @return  CMZN_OK if labels are complete and consistent, any other status if
  * failed. Failure can occur if nodal value labels are absent at the nodes, or
  * if the implementation discovers the same element field component uses the
  * same offsets for different nodal labels but is unable to fix it.
  */
-int FE_field_check_element_node_value_labels(FE_field *field);
+int FE_field_check_element_node_value_labels(FE_field *field,
+	FE_region *target_fe_region);
+
+/** Field list iterator version of FE_field_check_element_node_value_labels. */
+int FE_field_check_element_node_value_labels_iterator(FE_field *field,
+	void *target_fe_region_void);
 
 int FE_field_has_multiple_times(struct FE_field *fe_field);
 /*******************************************************************************
@@ -4275,30 +4314,6 @@ LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
 As FE_element to previously created FE_element_order_info (passed in dummy)
-==============================================================================*/
-
-int FE_element_get_scale_factor_for_nodal_value(
-	struct FE_element *element, struct FE_node *node, struct FE_field *field,
-	int component_number,	enum FE_nodal_value_type nodal_value_type,
-	FE_value *scale_factor);
-/*******************************************************************************
-LAST MODIFIED : 26 October 2000
-
-DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a
-<node> in an <element>, find the  corresponding <scale_factor>.
-==============================================================================*/
-
-int FE_element_set_scale_factor_for_nodal_value(
-	struct FE_element *element, struct FE_node *node, struct FE_field *field,
-	int component_number,	enum FE_nodal_value_type nodal_value_type,
-	FE_value scale_factor);
-/*******************************************************************************
-LAST MODIFIED : 31 January 2001
-
-DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a
-<node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
 ==============================================================================*/
 
 int FE_element_xi_increment_within_element(struct FE_element *element, FE_value *xi,

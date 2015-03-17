@@ -8405,14 +8405,23 @@ int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_vo
 
 // forward declaraions
 static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_to_element_map *map);
-static bool Standard_node_to_element_map_extract_or_check_node_value_labels(
+static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 	Standard_node_to_element_map *map, FE_field *field, int componentIndex,
-	FE_element *element);
+	FE_element *element, FE_nodeset *target_fe_nodeset, FE_field *target_field);
 
-static int FE_element_field_info_check_field_node_value_labels(
-	struct FE_element_field_info *element_field_info, void *field_void)
+struct FE_field_and_target_node_list_data
 {
-	FE_field *field = static_cast<FE_field*>(field_void);
+	FE_field *field;
+	FE_region *target_fe_region; // optional
+};
+
+// @param data_void  FE_field_and_target_node_list_data
+static int FE_element_field_info_check_field_node_value_labels(
+	struct FE_element_field_info *element_field_info, void *data_void)
+{
+	FE_field_and_target_node_list_data *data =
+		static_cast<FE_field_and_target_node_list_data *>(data_void);
+	FE_field *field = data->field;
 	if (element_field_info && field)
 	{
 		FE_element_field *element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
@@ -8425,14 +8434,14 @@ static int FE_element_field_info_check_field_node_value_labels(
 		{
 			FE_element_field_component *component = element_field->components[i];
 			if (component->type != STANDARD_NODE_TO_ELEMENT_MAP)
-				return 0;
+				continue;
 			const int nodeCount = component->map.standard_node_based.number_of_nodes;
 			for (int n = 0; n < nodeCount; ++n)
 			{
 				Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
 				if (!map)
 					return 0;
-				if (!map->nodal_value_types)
+				if (FE_NODAL_UNKNOWN == map->nodal_value_types[0])
 					needLabels = true;
 			}
 		}
@@ -8444,6 +8453,14 @@ static int FE_element_field_info_check_field_node_value_labels(
 			FE_region *fe_region = field->info->fe_region;
 			int minDimension = 1;
 			bool success = true;
+			FE_nodeset *target_fe_nodeset = 0;
+			FE_field *target_field = 0;
+			if (data->target_fe_region)
+			{
+				target_fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
+					data->target_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
+				target_field = FE_region_get_FE_field_from_name(data->target_fe_region, field->name);
+			}
 			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (minDimension <= dimension) && success; --dimension)
 			{
 				cmzn_elementiterator *elemIter = FE_region_create_elementiterator(fe_region, dimension);
@@ -8458,11 +8475,14 @@ static int FE_element_field_info_check_field_node_value_labels(
 						for (int i = 0; (i < field->number_of_components) && success; ++i)
 						{
 							FE_element_field_component *component = element_field->components[i];
+							if (component->type != STANDARD_NODE_TO_ELEMENT_MAP)
+								continue;
 							const int nodeCount = component->map.standard_node_based.number_of_nodes;
 							for (int n = 0; n < nodeCount; ++n)
 							{
 								Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
-								if (!Standard_node_to_element_map_extract_or_check_node_value_labels(map, field, i, element))
+								if (!Standard_node_to_element_map_determine_or_check_node_value_labels(
+									map, field, i, element, target_fe_nodeset, target_field))
 								{
 									success = false;
 									break;
@@ -8494,7 +8514,8 @@ static int FE_element_field_info_check_field_node_value_labels(
 	return 0;
 }
 
-int FE_field_check_element_node_value_labels(FE_field *field)
+int FE_field_check_element_node_value_labels(FE_field *field,
+	FE_region *target_fe_region)
 {
 	if (!field)
 		return CMZN_ERROR_ARGUMENT;
@@ -8502,14 +8523,26 @@ int FE_field_check_element_node_value_labels(FE_field *field)
 	// fails if not possible to add
 	LIST(FE_element_field_info) *element_field_info_list =
 		FE_region_get_FE_element_field_info_list_private(field->info->fe_region);
+	FE_field_and_target_node_list_data data =
+	{
+		field,
+		target_fe_region
+	};
 	if (0 == FOR_EACH_OBJECT_IN_LIST(FE_element_field_info)(
-		FE_element_field_info_check_field_node_value_labels, (void *)field, element_field_info_list))
+		FE_element_field_info_check_field_node_value_labels, (void *)&data, element_field_info_list))
 	{
 		display_message(ERROR_MESSAGE, "FE_field_check_element_node_value_labels.  "
 			"Field %s element maps cannot be converted to use node value labels", field->name);
 		return CMZN_ERROR_GENERAL;
 	}
 	return CMZN_OK;
+}
+
+int FE_field_check_element_node_value_labels_iterator(FE_field *field,
+	void *target_fe_region_void)
+{
+	return (CMZN_OK == FE_field_check_element_node_value_labels(field,
+		static_cast<FE_region *>(target_fe_region_void)));
 }
 
 int FE_field_has_multiple_times(struct FE_field *fe_field)
@@ -10880,7 +10913,7 @@ Creates an FE_node_field_creator from <node>,<field>
 ==============================================================================*/
 {
 	enum FE_nodal_value_type nodal_value_type;
-	int i,j,number_of_components,number_of_derivatives,number_of_versions,success;
+	int i,j,number_of_components,number_of_derivatives,number_of_versions;
 	struct FE_node_field_component *node_field_components;
 	struct FE_node_field_creator *node_field_creator;
 	struct FE_node_field *node_field;
@@ -10896,31 +10929,24 @@ Creates an FE_node_field_creator from <node>,<field>
 			number_of_components=field->number_of_components;
 			if (NULL != (node_field_creator=CREATE(FE_node_field_creator)(number_of_components)))
 			{
-				success=1;
+				bool success = true;
 				for(i=0;(i<number_of_components)&&success;i++)
 				{
 					number_of_versions=node_field_components[i].number_of_versions;
-					if (!FE_node_field_creator_define_versions(node_field_creator,i,
-						number_of_versions))
-					{
-						success=0;
-					}
+					if (CMZN_OK != FE_node_field_creator_define_versions(node_field_creator, i, number_of_versions))
+						success = false;
 					number_of_derivatives=node_field_components[i].number_of_derivatives;
 					for(j=1;(j<=number_of_derivatives)&&success;j++)
 					{
 						nodal_value_type=node_field_components[i].nodal_value_types[j];
-						if (!FE_node_field_creator_define_derivative(node_field_creator,i,
-							nodal_value_type))
-						{
-							success=0;
-						}
+						if (CMZN_OK != FE_node_field_creator_define_derivative(node_field_creator, i, nodal_value_type))
+							success = false;
 					}
 				}
 				if (!success)
 				{
 					DESTROY(FE_node_field_creator)(&node_field_creator);
-					display_message(ERROR_MESSAGE,
-						"create_FE_node_field_creator_from_node_field.  Failed");
+					display_message(ERROR_MESSAGE, "create_FE_node_field_creator_from_node_field.  Failed");
 				}
 			}
 			else
@@ -10993,7 +11019,7 @@ int FE_node_field_creator_define_derivative(
 		for (int i = 0; i <= number_of_derivatives; ++i)
 		{
 			if (nodal_value_types[i] == derivative_type)
-				return 1;
+				return CMZN_ERROR_ALREADY_EXISTS;
 		}
 		// for compatibility with EX reader, must add new derivative last
 		FE_nodal_value_type *new_nodal_value_types;
@@ -11002,10 +11028,10 @@ int FE_node_field_creator_define_derivative(
 			new_nodal_value_types[number_of_derivatives + 1] = derivative_type;
 			node_field_creator->nodal_value_types[component_number] = new_nodal_value_types;
 			++(node_field_creator->numbers_of_derivatives[component_number]);
-			return 1;
+			return CMZN_OK;
 		}
 	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 void FE_node_field_creator_undefine_derivative(
@@ -11034,29 +11060,29 @@ void FE_node_field_creator_undefine_derivative(
 	}
 }
 
+int FE_node_field_creator_get_number_of_derivatives(
+	struct FE_node_field_creator *node_field_creator, int component_number)
+{
+	if (node_field_creator && (0 <= component_number) &&
+		(component_number < node_field_creator->number_of_components))
+	{
+		return node_field_creator->numbers_of_derivatives[component_number];
+	}
+	return 0;
+}
+
 int FE_node_field_creator_define_versions(
 	struct FE_node_field_creator *node_field_creator, int component_number,
 	int number_of_versions)
-/*******************************************************************************
-LAST MODIFIED: 16 April 2003
-
-DESCRIPTION:
-Specifies the <number_of_versions> for <component_number> specified.
-==============================================================================*/
 {
-	int return_code;
 	if (node_field_creator && (component_number >= 0) &&
 		 (component_number < node_field_creator->number_of_components))
 	{
 		node_field_creator->numbers_of_versions[component_number] =
 			number_of_versions;
-		return_code = 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		return_code = 0;
-	}
-	return (return_code);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int FE_node_field_creator_get_number_of_versions(
@@ -12232,16 +12258,23 @@ and <nodal_value_types> for each component, and only 1 version.
 			{
 				for (j = 0 ; j < number_of_derivatives ; j++)
 				{
-					FE_node_field_creator_define_derivative(node_field_creator,
+					int result = FE_node_field_creator_define_derivative(node_field_creator,
 						/*component_number*/n, derivative_value_types[j]);
+					if (CMZN_OK != result)
+					{
+						display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.   Can't define derivative");
+						return_code = 0;
+					}
 				}
 			}
-			if (!define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
-				node_field_creator))
+			if (return_code)
 			{
-				display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.  "
-					"Could not define field at node");
-				return_code = 0;
+				if (!define_FE_field_at_node(node, field, (struct FE_time_sequence *)NULL,
+					node_field_creator))
+				{
+					display_message(ERROR_MESSAGE, "define_FE_field_at_node_simple.   Could not define field at node");
+					return_code = 0;
+				}
 			}
 			DESTROY(FE_node_field_creator)(&(node_field_creator));
 		}
@@ -15489,84 +15522,69 @@ void FE_node_list_write_btree_statistics(struct LIST(FE_node) *node_list)
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_node)
 
-struct Standard_node_to_element_map *CREATE(Standard_node_to_element_map)(
-	int node_index,int number_of_nodal_values)
-/*******************************************************************************
-LAST MODIFIED : 27 March 2003
-
-DESCRIPTION :
-Allocates memory and assigns fields for a standard node to element map.
-Allocates storage for the nodal value and scale factor indices and sets to -1.
-==============================================================================*/
+Standard_node_to_element_map *Standard_node_to_element_map_create(
+	int node_index, int number_of_nodal_values)
 {
-	int i,*nodal_value_index = NULL,*scale_factor_index;
-	struct Standard_node_to_element_map *map;
-
-	ENTER(CREATE(Standard_node_to_element_map));
-	if ((node_index >= 0) && (number_of_nodal_values > 0))
+	if ((node_index < 0) || (number_of_nodal_values <= 0))
 	{
-		if ((ALLOCATE(map,struct Standard_node_to_element_map,1))&&
-			(ALLOCATE(nodal_value_index,int,number_of_nodal_values))&&
-			(ALLOCATE(scale_factor_index,int,number_of_nodal_values)))
+		display_message(ERROR_MESSAGE,
+			"Standard_node_to_element_map_create.  Invalid argument(s)");
+		return 0;
+	}
+	struct Standard_node_to_element_map *map;
+	ALLOCATE(map, struct Standard_node_to_element_map, 1);
+	if (map)
+	{
+		ALLOCATE(map->nodal_value_indices, int, number_of_nodal_values);
+		ALLOCATE(map->nodal_value_types, FE_nodal_value_type, number_of_nodal_values);
+		ALLOCATE(map->nodal_versions, int, number_of_nodal_values);
+		ALLOCATE(map->scale_factor_indices, int, number_of_nodal_values);
+		if ((map->nodal_value_indices) && (map->scale_factor_indices) &&
+			(map->nodal_value_types) && (map->nodal_versions))
 		{
-			map->node_index=node_index;
-			map->number_of_nodal_values=number_of_nodal_values;
-			map->nodal_value_indices=nodal_value_index;
-			map->nodal_value_types = 0;
-			map->nodal_versions = 0;
-			map->scale_factor_indices=scale_factor_index;
-			for (i=number_of_nodal_values;i>0;i--)
+			map->node_index = node_index;
+			map->number_of_nodal_values = number_of_nodal_values;
+			for (int i = 0; i < number_of_nodal_values; ++i)
 			{
 				/* a nodal_value_index of -1 gives zero values */
-				*nodal_value_index= -1;
+				map->nodal_value_indices[i] = -1;
 				/* a scale_factor_index of -1 gives unit scale factors */
-				*scale_factor_index= -1;
-				nodal_value_index++;
-				scale_factor_index++;
+				map->scale_factor_indices[i] = -1;
+				map->nodal_value_types[i] = FE_NODAL_UNKNOWN;
+				map->nodal_versions[i] = 0; // first version
 			}
 		}
 		else
-		{
-			display_message(ERROR_MESSAGE,
-		"CREATE(Standard_node_to_element_map).  Could not allocate memory for map");
-			if (map)
-			{
-				DEALLOCATE(nodal_value_index);
-				DEALLOCATE(map);
-			}
-		}
+			Standard_node_to_element_map_destroy(&map);
 	}
-	else
+	if (!map)
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(Standard_node_to_element_map).  Invalid argument(s)");
-		map=(struct Standard_node_to_element_map *)NULL;
+			"Standard_node_to_element_map_create.  Could not allocate memory for map");
 	}
-	LEAVE;
+	return map;
+}
 
-	return (map);
-} /* CREATE(Standard_node_to_element_map) */
+Standard_node_to_element_map *Standard_node_to_element_map_create_legacy(
+	int node_index, int number_of_nodal_values)
+{
+	// currently the same as the regular constructor; will change when
+	// nodal_value_indices made optional
+	Standard_node_to_element_map *map =
+		Standard_node_to_element_map_create(node_index, number_of_nodal_values);
+	return map;
+}
 
-int DESTROY(Standard_node_to_element_map)(
+int Standard_node_to_element_map_destroy(
 	struct Standard_node_to_element_map **map_address)
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the map and sets <*map_address> to NULL.
-==============================================================================*/
 {
 	int return_code;
 	struct Standard_node_to_element_map *map;
-
-	ENTER(DESTROY(Standard_node_to_element_map));
 	if ((map_address)&&(map= *map_address))
 	{
 		DEALLOCATE(map->nodal_value_indices);
-		if (map->nodal_value_types)
-			DEALLOCATE(map->nodal_value_types);
-		if (map->nodal_versions)
-			DEALLOCATE(map->nodal_versions);
+		DEALLOCATE(map->nodal_value_types);
+		DEALLOCATE(map->nodal_versions);
 		DEALLOCATE(map->scale_factor_indices);
 		DEALLOCATE(*map_address);
 		*map_address = 0;
@@ -15576,10 +15594,8 @@ Frees the memory for the map and sets <*map_address> to NULL.
 	{
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DESTROY(Standard_node_to_element_map) */
+}
 
 /**
  * @param info_1, info_2  Optional element node scale field info; both or
@@ -15612,33 +15628,21 @@ static bool Standard_node_to_element_maps_match(
 		int *scale_factor_index_2 = standard_node_map_2->scale_factor_indices;
 		FE_nodal_value_type *node_value_types_1 = standard_node_map_1->nodal_value_types;
 		FE_nodal_value_type *node_value_types_2 = standard_node_map_2->nodal_value_types;
-		if (((node_value_types_1) && (!node_value_types_2)) || ((!node_value_types_1) && (node_value_types_2)))
-			return false;
 		int *node_versions_1 = standard_node_map_1->nodal_versions;
 		int *node_versions_2 = standard_node_map_2->nodal_versions;
-		if (((node_versions_1) && (!node_versions_2)) || ((!node_versions_1) && (node_versions_2)))
-			return false;
 		while ((k > 0) && (*value_index_1 == *value_index_2) &&
+			(*node_value_types_1 == *node_value_types_2) &&
+			(*node_versions_1 == *node_versions_2) &&
 			((*scale_factor_index_1) == ((*scale_factor_index_2) + scale_factor_offset_2_to_1)))
 		{
 			++value_index_1;
 			++value_index_2;
 			++scale_factor_index_1;
 			++scale_factor_index_2;
-			if (node_value_types_1)
-			{
-				if ((*node_value_types_1 != *node_value_types_2))
-					return false;
-				++node_value_types_1;
-				++node_value_types_2;
-			}
-			if (node_versions_1)
-			{
-				if ((*node_versions_1 != *node_versions_2))
-					return false;
-				++node_versions_1;
-				++node_versions_2;
-			}
+			++node_value_types_1;
+			++node_value_types_2;
+			++node_versions_1;
+			++node_versions_2;
 			--k;
 		}
 		if (k == 0)
@@ -15650,40 +15654,17 @@ static bool Standard_node_to_element_maps_match(
 }
 
 /**
- * Allocates storage for the optional nodal value types and versions and
- * initialises them to UNKNOWN type and 0 (first version), respectively.
- */
-static int Standard_node_to_element_map_allocate_nodal_value_types_and_versions(
-	Standard_node_to_element_map *map)
-{
-	if (map)
-	{
-		if (ALLOCATE(map->nodal_value_types, FE_nodal_value_type, map->number_of_nodal_values) &&
-			ALLOCATE(map->nodal_versions, int, map->number_of_nodal_values))
-		{
-			for (int i = 0; i < map->number_of_nodal_values; ++i)
-			{
-				map->nodal_value_types[i] = FE_NODAL_UNKNOWN;
-				map->nodal_versions[i] = 0; // first version
-			}
-			return CMZN_OK;
-		}
-		return CMZN_ERROR_MEMORY;
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-/**
  * Clears optional nodal value type and version arrays.
  */
 static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_to_element_map *map)
 {
-	if (map && map->nodal_value_types)
+	if (map)
 	{
-		DEALLOCATE(map->nodal_value_types);
-		map->nodal_value_types = 0;
-		DEALLOCATE(map->nodal_versions);
-		map->nodal_versions = 0;
+		for (int i = 0; i < map->number_of_nodal_values; ++i)
+		{
+			map->nodal_value_types[i] = FE_NODAL_UNKNOWN;
+			map->nodal_versions[i] = 0;
+		}
 	}
 }
 
@@ -15696,16 +15677,18 @@ static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_t
  * @param field  The field to check.
  * @param component  The component numbers, starting at 0.
  * @param element  The element to get local nodes from.
+ * @param target_fe_nodeset  Optional FE_nodeset to get nodes from if field
+ * isn't defined on nodes in local region; used when merging input files.
  * @return  Boolean true on success, false on any failure.
  */
-static bool Standard_node_to_element_map_extract_or_check_node_value_labels(
+static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 	Standard_node_to_element_map *map, FE_field *field, int componentIndex,
-	FE_element *element)
+	FE_element *element, FE_nodeset *target_fe_nodeset, FE_field *target_field)
 {
 	FE_node *node = 0;
 	if (!(get_FE_element_node(element, map->node_index, &node) && (node)))
 	{
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_extract_or_check_node_value_labels.  "
+		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 			"Field %s in %d-D element %d map cannot find global node at local node index %d",
 			field->name, get_FE_element_dimension(element), element->identifier.number,
 			map->node_index + 1);
@@ -15715,17 +15698,27 @@ static bool Standard_node_to_element_map_extract_or_check_node_value_labels(
 		field, node->fields->node_field_list);
 	if (!node_field)
 	{
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_extract_or_check_node_value_labels.  "
-			"Field %s in %d-D element %d indexes global node %d (local node index %d) "
-			"which has no parameters for that field.",
-			field->name, get_FE_element_dimension(element), element->identifier.number,
-			node->cm_node_identifier, map->node_index + 1);
-		return false;
+		if (target_fe_nodeset && target_field)
+		{
+			FE_node *target_node = target_fe_nodeset->findNodeByIdentifier(node->cm_node_identifier);
+			if (target_node)
+				node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+					target_field, target_node->fields->node_field_list);
+		}
+		if (!node_field)
+		{
+			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
+				"Field %s in %d-D element %d indexes global node %d (local node index %d) "
+				"which has no parameters for that field.",
+				field->name, get_FE_element_dimension(element), element->identifier.number,
+				node->cm_node_identifier, map->node_index + 1);
+			return false;
+		}
 	}
 	FE_node_field_component *node_field_component = node_field->components + componentIndex;
 	if (!node_field_component->nodal_value_types)
 	{
-		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_extract_or_check_node_value_labels.  "
+		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 			"Field %s in %d-D element %d indexes global node %d (local node index %d) "
 			"which does not have value type (derivative) labels.",
 			field->name, get_FE_element_dimension(element), element->identifier.number,
@@ -15735,15 +15728,13 @@ static bool Standard_node_to_element_map_extract_or_check_node_value_labels(
 	const int nodeValueTypesCount = 1 + node_field_component->number_of_derivatives;
 	const int nodeVersionsCount = node_field_component->number_of_versions;
 	const int valuesCount = map->number_of_nodal_values;
-	const bool newLabels = !map->nodal_value_types;
-	if (newLabels && (CMZN_OK != Standard_node_to_element_map_allocate_nodal_value_types_and_versions(map)))
-		return false;
+	const bool newLabels = map->nodal_value_types[0] == FE_NODAL_UNKNOWN;
 	for (int v = 0; v < valuesCount; ++v)
 	{
 		const int nodeValueIndex = map->nodal_value_indices[v];
 		if ((nodeValueIndex < 0) || (nodeValueIndex > nodeValueTypesCount*nodeVersionsCount))
 		{
-			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_extract_or_check_node_value_labels.  "
+			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d node value index is out of range for values "
 				"stored in global node %d (local node index %d).",
 				field->name, get_FE_element_dimension(element), element->identifier.number,
@@ -15754,7 +15745,7 @@ static bool Standard_node_to_element_map_extract_or_check_node_value_labels(
 		int version = nodeValueIndex / nodeValueTypesCount;
 		if (FE_NODAL_UNKNOWN == valueType)
 		{
-			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_extract_or_check_node_value_labels.  "
+			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d addresses an 'unknown' value type in global node %d (local node %d).",
 				field->name, get_FE_element_dimension(element), element->identifier.number,
 				node->cm_node_identifier, map->node_index + 1);
@@ -15769,7 +15760,7 @@ static bool Standard_node_to_element_map_extract_or_check_node_value_labels(
 		{
 			if ((valueType != map->nodal_value_types[v]) || (version != map->nodal_versions[v]))
 			{
-				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_extract_or_check_node_value_labels.  "
+				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 					"Field %s in %d-D element %d uses different node value type or version labels to other elements "
 					"using the same element field template. This unexpected case is not yet handled.",
 					field->name, get_FE_element_dimension(element), element->identifier.number);
@@ -15792,25 +15783,15 @@ static struct Standard_node_to_element_map *copy_create_Standard_node_to_element
 	{
 		const int node_index = source->node_index;
 		const int number_of_nodal_values = source->number_of_nodal_values;
-		map = CREATE(Standard_node_to_element_map)(node_index, number_of_nodal_values);
+		map = Standard_node_to_element_map_create(node_index, number_of_nodal_values);
 		if (map)
 		{
-			bool hasNodalValueTypes = (0 != source->nodal_value_types);
-			if (hasNodalValueTypes && (CMZN_OK !=
-				Standard_node_to_element_map_allocate_nodal_value_types_and_versions(map)))
-			{
-				DESTROY(Standard_node_to_element_map)(&map);
-				return 0;
-			}
 			for (int i = 0; i < number_of_nodal_values; i++)
 			{
 				map->nodal_value_indices[i] = source->nodal_value_indices[i];
 				map->scale_factor_indices[i] = source->scale_factor_indices[i];
-				if (hasNodalValueTypes)
-				{
-					map->nodal_value_types[i] = source->nodal_value_types[i];
-					map->nodal_versions[i] = source->nodal_versions[i];
-				}
+				map->nodal_value_types[i] = source->nodal_value_types[i];
+				map->nodal_versions[i] = source->nodal_versions[i];
 			}
 		}
 		else
@@ -15819,6 +15800,26 @@ static struct Standard_node_to_element_map *copy_create_Standard_node_to_element
 	else
 		display_message(ERROR_MESSAGE, "copy_create_Standard_node_to_element_map.  Invalid argument");
 	return(map);
+}
+
+/**
+ * Offset scale factor indices to handle new absolute offsets in element.
+ * Used in merge code.
+ */
+static int Standard_node_to_element_map_offset_scale_factor_indices(
+	struct Standard_node_to_element_map *standard_node_map, int scale_factor_offset)
+{
+	if (!standard_node_map)
+		return CMZN_ERROR_ARGUMENT;
+	const int number_of_nodal_values = standard_node_map->number_of_nodal_values;
+	int *scale_factor_index = standard_node_map->scale_factor_indices;
+	for (int i = 0; i < number_of_nodal_values; i++)
+	{
+		if (0 <= *scale_factor_index) // since -1 == unit scaling
+			*scale_factor_index += scale_factor_offset;
+		++scale_factor_index;
+	}
+	return CMZN_OK;
 }
 
 int Standard_node_to_element_map_get_node_index(
@@ -15842,6 +15843,18 @@ int Standard_node_to_element_map_get_node_index(
 		return_code = 0;
 	}
 	return(return_code);
+}
+
+/**
+ * Use with care in merge code only.
+ */
+int Standard_node_to_element_map_set_node_index(
+	Standard_node_to_element_map *standard_node_map, int node_index)
+{
+	if (!standard_node_map)
+		return CMZN_ERROR_ARGUMENT;
+	standard_node_map->node_index = node_index;
+	return CMZN_OK;
 }
 
 int Standard_node_to_element_map_get_number_of_nodal_values(
@@ -15912,9 +15925,7 @@ int Standard_node_to_element_map_set_nodal_value_index(
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Standard_node_to_element_map_set_nodal_value_index.  "
-			"Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_value_index.  Invalid argument(s)");
 		return_code = 0;
 	}
 	return(return_code);
@@ -15933,6 +15944,23 @@ FE_nodal_value_type Standard_node_to_element_map_get_nodal_value_type(
 	return FE_NODAL_UNKNOWN;
 }
 
+int Standard_node_to_element_map_set_nodal_value_type(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, FE_nodal_value_type nodal_value_type)
+{
+	if (standard_node_map && standard_node_map->nodal_value_types &&
+		(0 <= nodal_value_number) &&
+		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
+		(FE_NODAL_VALUE <= nodal_value_type) &&
+		(nodal_value_type <= FE_NODAL_D3_DS1DS2DS3))
+	{
+		standard_node_map->nodal_value_types[nodal_value_number] = nodal_value_type;
+		return 1;
+	}
+	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_value_index.  Invalid argument(s)");
+	return 0;
+}
+
 int Standard_node_to_element_map_get_nodal_version(
 	struct Standard_node_to_element_map *standard_node_map,
 	int nodal_value_number)
@@ -15943,6 +15971,22 @@ int Standard_node_to_element_map_get_nodal_version(
 	{
 		return standard_node_map->nodal_versions[nodal_value_number] + 1;
 	}
+	return 0;
+}
+
+int Standard_node_to_element_map_set_nodal_version(
+	struct Standard_node_to_element_map *standard_node_map,
+	int nodal_value_number, int nodal_version)
+{
+	if (standard_node_map && standard_node_map->nodal_versions &&
+		(0 <= nodal_value_number) &&
+		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
+		(0 < nodal_version))
+	{
+		standard_node_map->nodal_versions[nodal_value_number] = nodal_version;
+		return 1;
+	}
+	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_version.  Invalid argument(s)");
 	return 0;
 }
 
@@ -16193,7 +16237,7 @@ int DESTROY(FE_element_field_component)(
 					component->map.standard_node_based.node_to_element_maps;
 				for (int i=component->map.standard_node_based.number_of_nodes;i>0;i--)
 				{
-					DESTROY(Standard_node_to_element_map)(standard_node_map);
+					Standard_node_to_element_map_destroy(standard_node_map);
 					standard_node_map++;
 				}
 				DEALLOCATE(component->map.standard_node_based.node_to_element_maps);
@@ -16616,7 +16660,7 @@ On successful return <standard_node_map> will be owned by the component.
 		(0 <= node_number) && (node_number <
 			element_field_component->map.standard_node_based.number_of_nodes) &&
 		(!element_field_component->map.standard_node_based.node_to_element_maps[
-			node_number]))
+			node_number]) && standard_node_map)
 	{
 		element_field_component->map.standard_node_based.
 			node_to_element_maps[node_number] = standard_node_map;
@@ -17233,24 +17277,40 @@ static int list_FE_element_field(struct FE_element *element,
 											number_of_nodal_values=(*node_to_element_map)->
 												number_of_nodal_values;
 											display_message(INFORMATION_MESSAGE,"      %d.  #Values=%d\n",
-												(*node_to_element_map)->node_index,
+												(*node_to_element_map)->node_index + 1,
 												number_of_nodal_values);
 											if (NULL != (nodal_value_index=(*node_to_element_map)->nodal_value_indices))
 											{
 												display_message(INFORMATION_MESSAGE,"        Value indices:");
-												for (k=number_of_nodal_values;k>0;k--)
+												for (k = number_of_nodal_values; 0 < k; --k)
 												{
-													display_message(INFORMATION_MESSAGE," %d",*nodal_value_index);
+													display_message(INFORMATION_MESSAGE," %d", *nodal_value_index + 1);
 													nodal_value_index++;
+												}
+												display_message(INFORMATION_MESSAGE,"\n");
+											}
+											FE_nodal_value_type *nodal_value_type = (*node_to_element_map)->nodal_value_types;
+											int *nodal_version = (*node_to_element_map)->nodal_versions;
+											if ((nodal_value_type) && (nodal_version))
+											{
+												display_message(INFORMATION_MESSAGE,"        Value types (Versions > 1):");
+												for (k = number_of_nodal_values; 0 < k; --k)
+												{
+													display_message(INFORMATION_MESSAGE, " %s",
+														ENUMERATOR_STRING(FE_nodal_value_type)(*nodal_value_type));
+													if (*nodal_version > 0)
+														display_message(INFORMATION_MESSAGE, "(%d)", *nodal_version + 1);
+													++nodal_value_type;
+													++nodal_version;
 												}
 												display_message(INFORMATION_MESSAGE,"\n");
 											}
 											if (NULL != (scale_factor_index=(*node_to_element_map)->scale_factor_indices))
 											{
 												display_message(INFORMATION_MESSAGE,"        Scale factor indices:");
-												for (k=number_of_nodal_values;k>0;k--)
+												for (k = number_of_nodal_values; 0 < k; --k)
 												{
-													display_message(INFORMATION_MESSAGE," %d",*scale_factor_index);
+													display_message(INFORMATION_MESSAGE, " %d", *scale_factor_index + 1);
 													scale_factor_index++;
 												}
 												display_message(INFORMATION_MESSAGE,"\n");
@@ -17518,9 +17578,9 @@ struct FE_element_field_lists_merge_data
 static int merge_FE_element_field_into_list(
 	struct FE_element_field *new_element_field, void *data_void)
 {
-	int i, j, k, *new_number_in_xi, *new_value_index, new_values_storage_size,
+	int i, j, *new_number_in_xi, new_values_storage_size,
 		node_index, *number_in_xi, number_of_values,
-		return_code, *value_index;
+		return_code;
 	struct FE_element_field_component **component, **new_component;
 	struct FE_element_field_lists_merge_data *data;
 	struct FE_element_node_scale_field_info *merge_info, *source_info;
@@ -17640,16 +17700,9 @@ static int merge_FE_element_field_into_list(
 												(*new_component)->basis, (*new_component)->modify)))
 										{
 											standard_node_map = (*component)->map.standard_node_based.node_to_element_maps;
-											int *new_scale_factor_index;
 											while (return_code && (j > 0))
 											{
-												if ((*new_standard_node_map) &&
-													((k = (*new_standard_node_map)->
-														number_of_nodal_values) > 0) &&
-													(new_value_index =
-														(*new_standard_node_map)->nodal_value_indices) &&
-													(new_scale_factor_index =
-														(*new_standard_node_map)->scale_factor_indices))
+												if (*new_standard_node_map)
 												{
 													/* check that the new node_index is actually for a
 														 real node */
@@ -17674,29 +17727,15 @@ static int merge_FE_element_field_into_list(
 																node++;
 															}
 														}
-														if ((*node == new_node) &&
-															(*standard_node_map =
-																CREATE(Standard_node_to_element_map)(node_index, k)))
+														if ((*node == new_node) && (*standard_node_map =
+															copy_create_Standard_node_to_element_map(*new_standard_node_map)))
 														{
-															value_index = (*standard_node_map)->nodal_value_indices;
-															int *scale_factor_index = (*standard_node_map)->scale_factor_indices;
-															while (k > 0)
-															{
-																*value_index = *new_value_index;
-																if (0 <= *new_scale_factor_index)
-																{
-																	*scale_factor_index = *new_scale_factor_index + scale_factor_offset;
-																}
-																/* else default = -1 =  unit scale factor */
-																value_index++;
-																new_value_index++;
-																scale_factor_index++;
-																new_scale_factor_index++;
-																k--;
-															}
-															standard_node_map++;
-															new_standard_node_map++;
-															j--;
+															Standard_node_to_element_map_set_node_index(*standard_node_map, node_index);
+															if (0 != scale_factor_offset)
+																Standard_node_to_element_map_offset_scale_factor_indices(*standard_node_map, scale_factor_offset);
+															++standard_node_map;
+															++new_standard_node_map;
+															--j;
 														}
 														else
 														{
@@ -25691,22 +25730,9 @@ If fails, sets *<scale_factor_address> to 0.0;
 } /* get_FE_element_scale_factor */
 
 int set_FE_element_scale_factor(struct FE_element *element,
-	int scale_factor_number,FE_value scale_factor)
-/*******************************************************************************
-LAST MODIFIED : 13 May 2003
-
-DESCRIPTION :
-Sets scale_factor <scale_factor_number>, from 0 to number_of_scale_factors-1 of
-<element> to <scale_factor>.
-<element> must already have a shape and node_scale_field_information.
-Should only be called for unmanaged elements.
-This function is a bit naughty. Should really use
-FE_element_set_scale_factor_for_nodal_value .
-==============================================================================*/
+	int scale_factor_number, FE_value scale_factor)
 {
 	int return_code;
-
-	ENTER(set_FE_element_scale_factor);
 	if (element && element->information&&
 		element->information->scale_factors&&(0<=scale_factor_number)&&
 		(scale_factor_number<element->information->number_of_scale_factors))
@@ -25720,10 +25746,8 @@ FE_element_set_scale_factor_for_nodal_value .
 			"set_FE_element_scale_factor.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* set_FE_element_scale_factor */
+}
 
 int define_FE_field_at_element(struct FE_element *element,
 	struct FE_field *field, struct FE_element_field_component **components)
@@ -32134,340 +32158,6 @@ Called iteratively.
 	return (return_code);
 } /* fill_FE_element_order_info */
 
-int FE_element_get_scale_factor_for_nodal_value(
-	struct FE_element *element, struct FE_node *node, struct FE_field *field,
-	int component_number,	enum FE_nodal_value_type nodal_value_type,
-	FE_value *scale_factor)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a
-<node> in an <element>, find the  corresponding <scale_factor>.
-===============================================================================*/
-{
-	int i, nodal_value_index, nodal_value_number, number_of_nodes,
-		number_of_versions, return_code,	scale_factor_index;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *element_field_component;
-	struct FE_node **nodes;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	struct Standard_node_to_element_map *node_to_element_map,
-		**node_to_element_maps;
-
-	ENTER(FE_element_get_scale_factor_for_nodal_value);
-	return_code = 0;
-	if (element && node && field && (0 <= component_number) &&
-		(component_number < field->number_of_components) && scale_factor)
-	{
-		/* get the element field*/
-		if (element->information && element->fields &&
-			(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-				field, element->fields->element_field_list)) &&
-			(element_field_component = element_field->components[component_number]))
-		{
-			/* ensure element has nodes*/
-			if (NULL != (nodes = element->information->nodes))
-			{
-				switch (element_field_component->type)
-				{
-					case STANDARD_NODE_TO_ELEMENT_MAP:
-					{
-						/* get the node_to_element map*/
-						node_to_element_maps = element_field_component->
-							map.standard_node_based.node_to_element_maps;
-						node_to_element_map = (struct Standard_node_to_element_map *)NULL;
-						number_of_nodes =
-							element_field_component->map.standard_node_based.number_of_nodes;
-						for (i = 0; (!node_to_element_map) && (i < number_of_nodes); i++)
-						{
-							if (node_to_element_maps[i] &&
-								(node == nodes[node_to_element_maps[i]->node_index]))
-							{
-								node_to_element_map = node_to_element_maps[i];
-							}
-						}
-						if (node_to_element_map &&
-							node_to_element_map->nodal_value_indices &&
-							node_to_element_map->scale_factor_indices)
-						{
-							/* ensure element field is defined in node */
-							if (node->fields && (node_field =
-								FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-									field, node->fields->node_field_list)) &&
-								(node_field_component =
-									&(node_field->components[component_number])))
-							{
-								/* ensure node field has nodal value types */
-								if (node_field_component->nodal_value_types &&
-									(number_of_versions=node_field_component->number_of_versions))
-								{
-									/* find the nodal value in the field*/
-									nodal_value_number = -1;
-									for (i = 0; (0 > nodal_value_number) &&
-										(i < node_to_element_map->number_of_nodal_values); i++)
-									{
-										nodal_value_index =
-											node_to_element_map->nodal_value_indices[i];
-										if (nodal_value_type == node_field_component->
-											nodal_value_types[nodal_value_index /	number_of_versions])
-										{
-											nodal_value_number = i;
-										}
-									}
-									/* find the scale factor corresponding to the nodal value */
-									if (0 <= nodal_value_number)
-									{
-										scale_factor_index = node_to_element_map->
-											scale_factor_indices[nodal_value_number];
-										if (-1 == scale_factor_index)
-										{
-											*scale_factor = 1.0;
-											return_code = 1;
-										}
-										else if ((0 <= scale_factor_index) && (scale_factor_index <
-											element->information->number_of_scale_factors))
-										{
-											*scale_factor =
-												element->information->scale_factors[scale_factor_index];
-											return_code = 1;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"FE_element_get_scale_factor_for_nodal_value.  "
-												"Scale factor index out of range");
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_get_scale_factor_for_nodal_value.  "
-											"Nodal value type not used for field");
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_get_scale_factor_for_nodal_value.  "
-										"Node field has no nodal value types");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_get_scale_factor_for_nodal_value.  "
-									"Element field is corrupt as not defined in node it uses");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_get_scale_factor_for_nodal_value.  "
-								"Node not used by field in element");
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_get_scale_factor_for_nodal_value.  "
-							"Currently Only supports STANDARD_NODE_TO_ELEMENT_MAP"
-							" Write the code");
-					} break;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_get_scale_factor_for_nodal_value.  Element has no nodes");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_get_scale_factor_for_nodal_value.  "
-				"Field is not defined in this element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_get_scale_factor_for_nodal_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_get_scale_factor_for_nodal_value */
-
-int FE_element_set_scale_factor_for_nodal_value(
-	struct FE_element *element, struct FE_node *node, struct FE_field *field,
-	int component_number,	enum FE_nodal_value_type nodal_value_type,
-	FE_value scale_factor)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Given  <component_number>  and <nodal_value_type> of <field> at a
-<node> in an <element>, set the  corresponding scale_factor to <scale_factor>.
-===============================================================================*/
-{
-	int i, nodal_value_index, nodal_value_number, number_of_nodes,
-		number_of_versions, return_code,	scale_factor_index;
-	struct FE_element_field *element_field;
-	struct FE_element_field_component *element_field_component;
-	struct FE_node **nodes;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *node_field_component;
-	struct Standard_node_to_element_map *node_to_element_map,
-		**node_to_element_maps;
-
-	ENTER(FE_element_set_scale_factor_for_nodal_value);
-	return_code = 0;
-	if (element && node && field && (0 <= component_number) &&
-		(component_number < field->number_of_components) && scale_factor)
-	{
-		/* get the element field */
-		if (element->information && element->fields &&
-			(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
-				field, element->fields->element_field_list)) &&
-			(element_field_component = element_field->components[component_number]))
-		{
-			/* ensure element has nodes*/
-			if (NULL != (nodes = element->information->nodes))
-			{
-				switch (element_field_component->type)
-				{
-					case STANDARD_NODE_TO_ELEMENT_MAP:
-					{
-						/* get the node_to_element map*/
-						node_to_element_maps = element_field_component->
-							map.standard_node_based.node_to_element_maps;
-						node_to_element_map = (struct Standard_node_to_element_map *)NULL;
-						number_of_nodes =
-							element_field_component->map.standard_node_based.number_of_nodes;
-						for (i = 0; (!node_to_element_map) && (i < number_of_nodes); i++)
-						{
-							if (node_to_element_maps[i] &&
-								(node == nodes[node_to_element_maps[i]->node_index]))
-							{
-								node_to_element_map = node_to_element_maps[i];
-							}
-						}
-						if (node_to_element_map &&
-							node_to_element_map->nodal_value_indices &&
-							node_to_element_map->scale_factor_indices)
-						{
-							/* ensure element field is defined in node */
-							if (node->fields && (node_field =
-								FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
-									field, node->fields->node_field_list)) &&
-								(node_field_component =
-									&(node_field->components[component_number])))
-							{
-								/* ensure node field has nodal value types */
-								if (node_field_component->nodal_value_types &&
-									(number_of_versions=node_field_component->number_of_versions))
-								{
-									/* find the nodal value in the field*/
-									nodal_value_number = -1;
-									for (i = 0; (0 > nodal_value_number) &&
-										(i < node_to_element_map->number_of_nodal_values); i++)
-									{
-										nodal_value_index =
-											node_to_element_map->nodal_value_indices[i];
-										if (nodal_value_type == node_field_component->
-											nodal_value_types[nodal_value_index /	number_of_versions])
-										{
-											nodal_value_number = i;
-										}
-									}
-									/* find the scale factor corresponding to the nodal value */
-									if (0 <= nodal_value_number)
-									{
-										scale_factor_index = node_to_element_map->
-											scale_factor_indices[nodal_value_number];
-										if (-1 == scale_factor_index)
-										{
-											display_message(WARNING_MESSAGE,
-												"FE_element_set_scale_factor_for_nodal_value.  "
-												"scale_factor_index = -1. can't set scale_factor ");
-											return_code = 1;
-
-										}
-										else if ((0 <= scale_factor_index) && (scale_factor_index <
-											element->information->number_of_scale_factors))
-										{
-											element->information->scale_factors[scale_factor_index]=scale_factor;
-											return_code = 1;
-										}
-										else
-										{
-											display_message(ERROR_MESSAGE,
-												"FE_element_set_scale_factor_for_nodal_value.  "
-												"Scale factor index out of range");
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_set_scale_factor_for_nodal_value.  "
-											"Nodal value type not used for field");
-									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,
-										"FE_element_set_scale_factor_for_nodal_value.  "
-										"Node field has no nodal value types");
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE,
-									"FE_element_set_scale_factor_for_nodal_value.  "
-									"Element field is corrupt as not defined in node it uses");
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_element_set_scale_factor_for_nodal_value.  "
-								"Node not used by field in element");
-						}
-					} break;
-					default:
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_set_scale_factor_for_nodal_value.  "
-							"Currently Only supports STANDARD_NODE_TO_ELEMENT_MAP"
-							" Write the code");
-					} break;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_set_scale_factor_for_nodal_value.  Element has no nodes");
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"FE_element_set_scale_factor_for_nodal_value.  "
-				"Field is not defined in this element");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_set_scale_factor_for_nodal_value.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_set_scale_factor_for_nodal_value */
-
 int FE_element_xi_increment_within_element(struct FE_element *element,
 	FE_value *xi,FE_value *increment,FE_value *fraction,int *face_number,
 	FE_value *xi_face)
@@ -32986,13 +32676,6 @@ Creates an element that has a line shape product of the specified <dimension>.
 
 int FE_element_define_tensor_product_basis(struct FE_element *element,
 	int dimension, enum FE_basis_type basis_type, struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 1 December 2004
-
-DESCRIPTION :
-Defines a tensor product basis on <element> with the specified <dimension>
-and <basis_type>.  This does not support mixed basis types in the tensor product.
-==============================================================================*/
 {
 	int *basis_type_array,i,j,k,number_of_components,number_of_nodes,
 		number_of_nodes_per_xi,number_of_scale_factors,
@@ -33006,6 +32689,10 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 	return_code=1;
 	FE_region *fe_region = FE_element_get_FE_region(element);
 	if (element && (dimension > 0) && fe_region &&
+		((LINEAR_LAGRANGE == basis_type) ||
+		 (QUADRATIC_LAGRANGE == basis_type) ||
+		 (CUBIC_LAGRANGE == basis_type) ||
+		 (CUBIC_HERMITE == basis_type)) &&
 		(dimension == element->shape->dimension) && field)
 	{
 		/* make basis */
@@ -33076,17 +32763,13 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 			{
 				number_of_nodes *= number_of_nodes_per_xi;
 			}
-			switch (basis_type)
+			int number_of_values_per_node = 1;
+			if (CUBIC_HERMITE == basis_type)
 			{
-				case CUBIC_HERMITE:
-				{
-					number_of_scale_factors = number_of_nodes * 4;
-				} break;
-				default:
-				{
-					number_of_scale_factors = number_of_nodes;
-				} break;
+				for (i = 0; i < dimension; ++i)
+					number_of_values_per_node *= 2;
 			}
+			number_of_scale_factors = number_of_nodes*number_of_values_per_node;
 			if (get_FE_element_number_of_nodes(element,&old_number_of_nodes) &&
 				get_FE_element_number_of_scale_factor_sets(element,
 					&old_number_of_scale_factor_sets))
@@ -33149,68 +32832,37 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 								{
 									for (j=0;j<number_of_nodes;j++)
 									{
-										switch (basis_type)
+										standard_node_map = Standard_node_to_element_map_create(/*node_index*/j, number_of_values_per_node);
+										if (!standard_node_map)
 										{
-											case CUBIC_HERMITE:
+											return_code = 0;
+											break;
+										}
+										for (k = 0; k < number_of_values_per_node; ++k)
+										{
+											if (!(Standard_node_to_element_map_set_nodal_value_index(
+													standard_node_map, k, k) &&
+												Standard_node_to_element_map_set_nodal_value_type(
+													standard_node_map, k, static_cast<FE_nodal_value_type>(FE_NODAL_VALUE + k)) &&
+												Standard_node_to_element_map_set_scale_factor_index(
+													standard_node_map, k, j * number_of_values_per_node + k) &&
+												/* set scale_factors to 1 */
+												set_FE_element_scale_factor(element,
+													/*scale_factor_number*/j * number_of_values_per_node + k, 1.0)))
 											{
-												if (NULL != (standard_node_map =
-													CREATE(Standard_node_to_element_map)(
-														/*node_index*/j, /*number_of_values*/4)))
-												{
-													for (k = 0 ; return_code && (k < 4) ; k++)
-													{
-														if (!(Standard_node_to_element_map_set_nodal_value_index(
-																	standard_node_map, k, k) &&
-																Standard_node_to_element_map_set_scale_factor_index(
-																	standard_node_map, k, j * 4 + k) &&
-																/* set scale_factors to 1 */
-																set_FE_element_scale_factor(element,
-																	/*scale_factor_number*/j * 4 + k, 1.0)))
-														{
-															return_code = 0;
-														}
-													}
-													if (return_code)
-													{
-														return_code = FE_element_field_component_set_standard_node_map(
-															component, /*node_number*/j, standard_node_map);
-													}
-													else
-													{
-														DESTROY(Standard_node_to_element_map)(&standard_node_map);
-													}
-												}
-												else
-												{
-													return_code=0;
-												}
-											} break;
-											default:
-											{
-												if (NULL != (standard_node_map =
-													CREATE(Standard_node_to_element_map)(
-														/*node_index*/j, /*number_of_values*/1)))
-												{
-													if (!(Standard_node_to_element_map_set_nodal_value_index(
-																standard_node_map, 0, 0) &&
-															Standard_node_to_element_map_set_scale_factor_index(
-																standard_node_map, 0, j) &&
-															/* set scale_factors to 1 */
-															set_FE_element_scale_factor(element,
-																/*scale_factor_number*/j, 1.0) &&
-															FE_element_field_component_set_standard_node_map(
-																component, /*node_number*/j, standard_node_map)))
-													{
-														DESTROY(Standard_node_to_element_map)(
-															&standard_node_map);
-														return_code = 0;
-													}
-												}
-												else
-												{
-													return_code=0;
-												}
-											} break;
+												return_code = 0;
+												break;
+											}
+										}
+										if (return_code)
+										{
+											return_code = FE_element_field_component_set_standard_node_map(
+												component, /*node_number*/j, standard_node_map);
+										}
+										else
+										{
+											Standard_node_to_element_map_destroy(&standard_node_map);
+											break;
 										}
 									}
 								}
@@ -33222,8 +32874,7 @@ and <basis_type>.  This does not support mixed basis types in the tensor product
 							}
 							if (return_code)
 							{
-								if (!define_FE_field_at_element(
-										 element,field,components))
+								if (!define_FE_field_at_element(element, field, components))
 								{
 									display_message(ERROR_MESSAGE,
 										"FE_element_define_tensor_product_basis.  "
