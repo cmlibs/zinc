@@ -8424,6 +8424,8 @@ static int FE_element_field_info_check_field_node_value_labels(
 	FE_field *field = data->field;
 	if (element_field_info && field)
 	{
+		if (field->fe_field_type != GENERAL_FE_FIELD)
+			return 1; // only GENERAL field has components array
 		FE_element_field *element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
 			field, element_field_info->element_field_list);
 		if (!element_field)
