@@ -448,11 +448,8 @@ struct Standard_node_to_element_map
 	int *nodal_value_indices;
 	// The following describe nodal DOFs by value type and version and are used
 	// for serialisation and in the API to more usefully describe the mapping than
-	// by the nodal_value_indices. Note however that only nodal_value_indices are
-	// actually used to obtain element parameters.
-	// In the interim they will be determined on request from nodal_value_indices,
-	// and once created are required to be matched when comparing standard node
-	// maps. They can only be found if nodal parameters are properly labelled.
+	// by the nodal_value_indices.
+	// When reading old EX files they are determined from the nodal value indices.
 	// @see FE_field_check_element_node_value_labels
 	FE_nodal_value_type *nodal_value_types;
 	int *nodal_versions;
@@ -8443,7 +8440,8 @@ static int FE_element_field_info_check_field_node_value_labels(
 				Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
 				if (!map)
 					return 0;
-				if (FE_NODAL_UNKNOWN == map->nodal_value_types[0])
+				// GRC future: change to detect whether nodal_value_indices present
+				if (-1 == map->nodal_versions[0])
 					needLabels = true;
 			}
 		}
@@ -15574,6 +15572,8 @@ Standard_node_to_element_map *Standard_node_to_element_map_create_legacy(
 	// nodal_value_indices made optional
 	Standard_node_to_element_map *map =
 		Standard_node_to_element_map_create(node_index, number_of_nodal_values);
+	// if nodal_versions[0] is -1, need to find new labels
+	map->nodal_versions[0] = -1;
 	return map;
 }
 
@@ -15667,6 +15667,8 @@ static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_t
 			map->nodal_value_types[i] = FE_NODAL_UNKNOWN;
 			map->nodal_versions[i] = 0;
 		}
+		// if nodal_versions[0] is -1, need to find new labels
+		map->nodal_versions[0] = -1;
 	}
 }
 
@@ -15729,12 +15731,14 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 	}
 	const int nodeValueTypesCount = 1 + node_field_component->number_of_derivatives;
 	const int nodeVersionsCount = node_field_component->number_of_versions;
+	const int totalNodeValuesCount = nodeValueTypesCount*nodeVersionsCount;
 	const int valuesCount = map->number_of_nodal_values;
-	const bool newLabels = map->nodal_value_types[0] == FE_NODAL_UNKNOWN;
+	// if nodal_versions[0] is -1, need to find new labels, otherwise compare
+	const bool newLabels = (-1 == map->nodal_versions[0]);
 	for (int v = 0; v < valuesCount; ++v)
 	{
 		const int nodeValueIndex = map->nodal_value_indices[v];
-		if ((nodeValueIndex < 0) || (nodeValueIndex > nodeValueTypesCount*nodeVersionsCount))
+		if (nodeValueIndex > totalNodeValuesCount)
 		{
 			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d node value index is out of range for values "
@@ -15743,15 +15747,26 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 				node->cm_node_identifier, map->node_index + 1);
 			return false;
 		}
-		FE_nodal_value_type valueType = node_field_component->nodal_value_types[nodeValueIndex % nodeValueTypesCount];
-		int version = nodeValueIndex / nodeValueTypesCount;
-		if (FE_NODAL_UNKNOWN == valueType)
+		FE_nodal_value_type valueType;
+		int version;
+		if (nodeValueIndex < 0)
 		{
-			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
-				"Field %s in %d-D element %d addresses an 'unknown' value type in global node %d (local node %d).",
-				field->name, get_FE_element_dimension(element), element->identifier.number,
-				node->cm_node_identifier, map->node_index + 1);
-			return false;
+			// encode special legacy case for zero parameter
+			valueType = FE_NODAL_UNKNOWN;
+			version = 1;
+		}
+		else
+		{
+			valueType = node_field_component->nodal_value_types[nodeValueIndex % nodeValueTypesCount];
+			version = nodeValueIndex / nodeValueTypesCount;
+			if (FE_NODAL_UNKNOWN == valueType)
+			{
+				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
+					"Field %s in %d-D element %d addresses an 'unknown' value type in global node %d (local node %d).",
+					field->name, get_FE_element_dimension(element), element->identifier.number,
+					node->cm_node_identifier, map->node_index + 1);
+				return false;
+			}
 		}
 		if (newLabels)
 		{
