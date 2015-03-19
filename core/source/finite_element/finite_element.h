@@ -1437,7 +1437,7 @@ int Standard_node_to_element_map_get_nodal_version(
  * Sets nodal version <nodal_value_number> of <standard_node_map> to
  * <version>.
  * Must have allocated value types and versions.
- * @param nodal_version  The nodal version to get starting at 1.
+ * @param nodal_version  The nodal version to set, starting at 1.
  */
 int Standard_node_to_element_map_set_nodal_version(
 	struct Standard_node_to_element_map *standard_node_map,

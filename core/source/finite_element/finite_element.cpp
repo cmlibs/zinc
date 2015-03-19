@@ -6302,23 +6302,20 @@ static int global_to_element_map_values(struct FE_element *element,
 			case STANDARD_NODE_TO_ELEMENT_MAP:
 				/* global values are associated with nodes */
 			{
-				FE_value *array, *element_value, *scale_factors = 0, xi;
-				int *global_value_index,j,k,
-					number_of_element_nodes,
+				FE_value *fe_value_array, *element_value, *scale_factors = 0;
+				int number_of_element_nodes,
 					number_of_global_values,number_of_map_values = 0,
 					number_of_scale_factors,*scale_factor_index,scale_index,
-					time_index_one, time_index_two, value_index;
+					value_index;
 				short *short_array;
 				struct FE_node *node = NULL,**nodes;
 				struct FE_node_field *node_field;
 				struct FE_node_field_component *node_field_component;
 				struct FE_node_field_info *node_field_info;
-				struct FE_time_sequence *time_sequence;
 				struct Standard_node_to_element_map *standard_node_map,
 					**standard_node_map_address;
 				void *global_values;
 				/* check information */
-				/*???RC 18 Nov 1999 allowed having no scale factors */
 				if ((element->information)&&(nodes=element->information->nodes)&&
 					((number_of_element_nodes=element->information->number_of_nodes)>0)&&
 					((0==(number_of_scale_factors=
@@ -6331,7 +6328,7 @@ static int global_to_element_map_values(struct FE_element *element,
 					number_of_element_values=0;
 					standard_node_map_address=
 						component->map.standard_node_based.node_to_element_maps;
-					j=component->map.standard_node_based.number_of_nodes;
+					int j = component->map.standard_node_based.number_of_nodes;
 					return_code=1;
 					while (return_code&&(j>0))
 					{
@@ -6341,9 +6338,7 @@ static int global_to_element_map_values(struct FE_element *element,
 							(0<=standard_node_map->node_index)&&
 							(standard_node_map->node_index<number_of_element_nodes)&&
 							(node=nodes[standard_node_map->node_index])&&
-							(node->values_storage)&&(node->fields)&&
-							(standard_node_map->nodal_value_indices)&&
-							(standard_node_map->scale_factor_indices))
+							(node->values_storage)&&(node->fields))
 						{
 							number_of_element_values += number_of_map_values;
 							standard_node_map_address++;
@@ -6418,32 +6413,30 @@ static int global_to_element_map_values(struct FE_element *element,
 								get node_field_component each time if it is not changing */
 							node_field_info=(struct FE_node_field_info *)NULL;
 							node_field_component=(struct FE_node_field_component *)NULL;
-							time_sequence = (struct FE_time_sequence *)NULL;
+							FE_time_sequence *time_sequence = 0;
+							int time_index_one, time_index_two;
+							FE_value time_xi;
 							while (return_code&&(j>0))
 							{
 								/* retrieve the scaled nodal values */
 								standard_node_map= *standard_node_map_address;
 								node=nodes[standard_node_map->node_index];
 								number_of_global_values=node->fields->number_of_values;
-								global_value_index=standard_node_map->nodal_value_indices;
 								scale_factor_index=standard_node_map->scale_factor_indices;
 								/* get node_field_component for absolute offsets into nodes */
 								if (node_field_info != node->fields)
 								{
-									if (node->fields&&(node_field=FIND_BY_IDENTIFIER_IN_LIST(
-										FE_node_field,field)(field,node->fields->node_field_list))&&
+									if (node->fields && (node_field =
+										FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field, node->fields->node_field_list)) &&
 										node_field->components)
 									{
-										node_field_component=
-											node_field->components + component_number;
-
-										node_field_info=node->fields;
-										time_sequence = node_field->time_sequence;
-										if (time_sequence)
+										node_field_component = node_field->components + component_number;
+										node_field_info = node->fields;
+										if ((node_field->time_sequence != time_sequence) &&
+											(time_sequence = node_field->time_sequence))
 										{
-											FE_time_sequence_get_interpolation_for_time(
-												time_sequence, time, &time_index_one, &time_index_two,
-												&xi);
+											FE_time_sequence_get_interpolation_for_time(time_sequence,
+												time, &time_index_one, &time_index_two, &time_xi);
 										}
 									}
 									else
@@ -6456,108 +6449,97 @@ static int global_to_element_map_values(struct FE_element *element,
 								{
 									/* add absolute value offset from node_field_component and
 										cast address into FE_value type */
-									global_values=
-										node->values_storage+node_field_component->value;
-									k=standard_node_map->number_of_nodal_values;
-									while (k>0)
+									global_values = node->values_storage + node_field_component->value;
+									FE_nodal_value_type *nodal_value_type_address = standard_node_map->nodal_value_types;
+									int *nodal_version_address = standard_node_map->nodal_versions;
+									int number_of_node_value_types = node_field_component->number_of_derivatives + 1;
+									int number_of_node_versions = node_field_component->number_of_versions;
+									int k = standard_node_map->number_of_nodal_values;
+									while (0 < k)
 									{
-										/* if there is not a nodal value use 0 */
-										if ((0<=(value_index= *global_value_index))&&
-											(value_index<number_of_global_values))
+										FE_nodal_value_type nodal_value_type = *nodal_value_type_address;
+										int version = *nodal_version_address;
+										if (FE_NODAL_UNKNOWN == nodal_value_type)
 										{
+											// special case of zero DOF
+											*element_value = 0;
+										}
+										else
+										{
+											int i = 0;
+											while ((node_field_component->nodal_value_types[i] != nodal_value_type) &&
+												(i < number_of_node_value_types))
+											{
+												++i;
+											}
+											if (i >= number_of_node_value_types)
+											{
+												display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+													"Parameter '%s' not found for field %s at node %d, used from element %d",
+													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type), field->name,
+													node->cm_node_identifier, element->identifier.number);
+												return_code = 0;
+												break;
+											}
+											if ((version < 0) || (version > number_of_node_versions))
+											{
+												display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+													"Parameter '%s' version %d is out of range (%d) for field %s at node %d, used from element %d",
+													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type),
+													version + 1, number_of_node_versions, field->name,
+													node->cm_node_identifier, element->identifier.number);
+												return_code = 0;
+												break;
+											}
+											// GRC future: versions per derivative change
+											value_index = version*number_of_node_value_types + i;
 											switch (field->value_type)
 											{
 												case FE_VALUE_VALUE:
 												{
 													if (time_sequence)
 													{
-														array = *(((FE_value **)global_values+value_index));
-														/* if there is not a scale factor use 1 as the scale
-															factor */
-														if ((0<=(scale_index= *scale_factor_index))&&
-															(scale_index<number_of_scale_factors))
-														{
-															*element_value=((1.0 - xi)*array[time_index_one]
-																+xi*array[time_index_two])*
-																scale_factors[scale_index];
-														}
-														else
-														{
-															*element_value=((1.0 - xi)*array[time_index_one]
-																+xi*array[time_index_two]);
-														}
+														fe_value_array = *((static_cast<FE_value **>(global_values) + value_index));
+														*element_value = (1.0 - time_xi)*fe_value_array[time_index_one]
+															+ time_xi*fe_value_array[time_index_two];
 													}
 													else
 													{
-														/* if there is not a scale factor use 1 as the scale
-															factor */
-														if ((0<=(scale_index= *scale_factor_index))&&
-															(scale_index<number_of_scale_factors))
-														{
-															*element_value=((FE_value *)global_values)[value_index]*
-																scale_factors[scale_index];
-														}
-														else
-														{
-															*element_value=((FE_value *)global_values)[value_index];
-														}
+														*element_value = static_cast<FE_value *>(global_values)[value_index];
 													}
 												} break;
 												case SHORT_VALUE:
 												{
 													if (time_sequence)
 													{
-														short_array = *(((short **)global_values+value_index));
-														/* if there is not a scale factor use 1 as the scale
-															factor */
-														if ((0<=(scale_index= *scale_factor_index))&&
-															(scale_index<number_of_scale_factors))
-														{
-															*element_value=((1.0 - xi)*(FE_value)short_array[time_index_one]
-																+xi*(FE_value)short_array[time_index_two])*
-																scale_factors[scale_index];
-														}
-														else
-														{
-															*element_value=((1.0 - xi)*(FE_value)short_array[time_index_one]
-																+xi*(FE_value)short_array[time_index_two]);
-														}
+														short_array = *((static_cast<short **>(global_values)+value_index));
+														*element_value = (1.0 - time_xi)*(FE_value)short_array[time_index_one]
+															+ time_xi*static_cast<FE_value>(short_array[time_index_two]);
 													}
 													else
 													{
-														/* if there is not a scale factor use 1 as the scale
-															factor */
-														if ((0<=(scale_index= *scale_factor_index))&&
-															(scale_index<number_of_scale_factors))
-														{
-															*element_value=(FE_value)(((short *)global_values)[value_index])*
-																scale_factors[scale_index];
-														}
-														else
-														{
-															*element_value=(FE_value)(((short *)global_values)[value_index]);
-														}
+														*element_value = static_cast<FE_value>(static_cast<short *>(global_values)[value_index]);
 													}
 												} break;
 												default:
 												{
-													display_message(ERROR_MESSAGE,
-														"global_to_element_map_values.  "
-														"Unsupported value type %s in finite_element field",
+													display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
+														"Unsupported value type %s in finite element field",
 														Value_type_string(field->value_type));
-													return_code=0;
-												}
+													return_code = 0;
+												} break;
 											}
-
+											if ((0 <= (scale_index = *scale_factor_index)) &&
+												(scale_index < number_of_scale_factors))
+											{
+												(*element_value) *= scale_factors[scale_index];
+											}
 										}
-										else
-										{
-											*element_value=0;
-										}
-										element_value++;
-										global_value_index++;
-										scale_factor_index++;
-										k--;
+										++element_value;
+										++nodal_value_type_address;
+										++nodal_version_address;
+										++scale_factor_index;
+										--k;
 									}
 								}
 								else
@@ -6722,9 +6704,7 @@ static int global_to_element_map_nodes(
 							(0<=standard_node_map->node_index)&&
 							(standard_node_map->node_index<number_of_element_nodes)&&
 							(node=nodes[standard_node_map->node_index])&&
-							(node->values_storage)&&(node->fields)&&
-							(standard_node_map->nodal_value_indices)&&
-							(standard_node_map->scale_factor_indices))
+							(node->values_storage)&&(node->fields))
 						{
 							number_of_element_values += number_of_map_values;
 							standard_node_map_address++;
@@ -15753,7 +15733,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 		{
 			// encode special legacy case for zero parameter
 			valueType = FE_NODAL_UNKNOWN;
-			version = 1;
+			version = 0;
 		}
 		else
 		{
@@ -16000,7 +15980,7 @@ int Standard_node_to_element_map_set_nodal_version(
 		(nodal_value_number < standard_node_map->number_of_nodal_values) &&
 		(0 < nodal_version))
 	{
-		standard_node_map->nodal_versions[nodal_value_number] = nodal_version;
+		standard_node_map->nodal_versions[nodal_value_number] = nodal_version - 1;
 		return 1;
 	}
 	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_version.  Invalid argument(s)");
