@@ -4346,23 +4346,26 @@ bool FE_nodeset::canMerge(FE_nodeset &source)
 bool FE_region_can_merge(struct FE_region *target_fe_region,
 	struct FE_region *source_fe_region)
 {
-	if (!target_fe_region || !source_fe_region)
+	if (!source_fe_region)
 		return false;
 
-	// check fields of the same name have compatible definitions
-	if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged_into_list,
-		(void *)target_fe_region->fe_field_list, source_fe_region->fe_field_list))
+	if (target_fe_region)
 	{
-		display_message(ERROR_MESSAGE,
-			"Cannot merge field(s) into region due to incompatible definition");
-		return false;
-	}
-
-	// check nodes (nodesets)
-	for (int n = 0; n < 2; ++n)
-	{
-		if (!target_fe_region->nodesets[n]->canMerge(*(source_fe_region->nodesets[n])))
+		// check fields of the same name have compatible definitions
+		if (!FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_can_be_merged_into_list,
+			(void *)target_fe_region->fe_field_list, source_fe_region->fe_field_list))
+		{
+			display_message(ERROR_MESSAGE,
+				"Cannot merge field(s) into region due to incompatible definition");
 			return false;
+		}
+
+		// check nodes (nodesets)
+		for (int n = 0; n < 2; ++n)
+		{
+			if (!target_fe_region->nodesets[n]->canMerge(*(source_fe_region->nodesets[n])))
+				return false;
+		}
 	}
 
 	// check/convert finite element field parameter mappings from indexes to derivatives & versions
@@ -4374,25 +4377,27 @@ bool FE_region_can_merge(struct FE_region *target_fe_region,
 		return false;
 	}
 
-	// check elements match in shape and faces
-	bool result = true;
-	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (0 < dimension) && result; --dimension)
+	if (target_fe_region)
 	{
-		cmzn_elementiterator *iter = CREATE_LIST_ITERATOR(cmzn_element)(source_fe_region->get_element_list(dimension));
-		cmzn_element *element;
-		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+		// check elements match in shape and faces
+		for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (0 < dimension); --dimension)
 		{
-			if (!FE_element_can_be_merged(element, target_fe_region))
+			cmzn_elementiterator *iter = CREATE_LIST_ITERATOR(cmzn_element)(source_fe_region->get_element_list(dimension));
+			cmzn_element *element;
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
-				display_message(ERROR_MESSAGE, "Cannot merge element(s) into region due to incompatible shape or faces");
-				result = false;
-				break;
+				if (!FE_element_can_be_merged(element, target_fe_region))
+				{
+					display_message(ERROR_MESSAGE, "Cannot merge element(s) into region due to incompatible shape or faces");
+					cmzn_elementiterator_destroy(&iter);
+					return false;
+				}
 			}
+			cmzn_elementiterator_destroy(&iter);
 		}
-		cmzn_elementiterator_destroy(&iter);
 	}
 
-	return result;
+	return true;
 }
 
 int FE_nodeset::merge(FE_nodeset &source, FE_region *target_root_fe_region)

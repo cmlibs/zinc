@@ -1469,10 +1469,10 @@ Destroys the <region> and sets the pointer to NULL.
 	return (return_code);
 } /* cmzn_region_destroy */
 
-int cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_region)
+bool cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_region)
 {
-	if (!target_region || !source_region)
-		return 0;
+	if (!source_region)
+		return false;
 
 	// check FE_regions
 	FE_region *target_fe_region = cmzn_region_get_FE_region(target_region);
@@ -1485,28 +1485,25 @@ int cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_re
 			"Cannot merge source region %s into %s", source_path, target_path);
 		DEALLOCATE(source_path);
 		DEALLOCATE(target_path);
-		return 0;
+		return false;
 	}
 
 	// check child regions can be merged
 	cmzn_region_id source_child = cmzn_region_get_first_child(source_region);
 	while (NULL != source_child)
 	{
-		cmzn_region_id target_child = cmzn_region_find_child_by_name(target_region, source_child->name);
-		if (target_child)
+		cmzn_region_id target_child = 0;
+		if (target_region)
+			target_child = cmzn_region_find_child_by_name_internal(target_region, source_child->name);
+		if (!cmzn_region_can_merge(target_child, source_child))
 		{
-			if (!cmzn_region_can_merge(target_child, source_child))
-			{
-				cmzn_region_destroy(&target_child);
-				cmzn_region_destroy(&source_child);
-				return 0;
-			}
+			cmzn_region_destroy(&source_child);
+			return 0;
 		}
-		cmzn_region_destroy(&target_child);
 		cmzn_region_reaccess_next_sibling(&source_child);
 	}
 
-	return 1;
+	return true;
 }
 
 /** currently just merges group fields */
