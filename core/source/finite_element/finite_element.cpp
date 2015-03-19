@@ -6303,8 +6303,7 @@ static int global_to_element_map_values(struct FE_element *element,
 				/* global values are associated with nodes */
 			{
 				FE_value *fe_value_array, *element_value, *scale_factors = 0;
-				int number_of_element_nodes,
-					number_of_global_values,number_of_map_values = 0,
+				int number_of_element_nodes, number_of_map_values = 0,
 					number_of_scale_factors,*scale_factor_index,scale_index,
 					value_index;
 				short *short_array;
@@ -6421,7 +6420,6 @@ static int global_to_element_map_values(struct FE_element *element,
 								/* retrieve the scaled nodal values */
 								standard_node_map= *standard_node_map_address;
 								node=nodes[standard_node_map->node_index];
-								number_of_global_values=node->fields->number_of_values;
 								scale_factor_index=standard_node_map->scale_factor_indices;
 								/* get node_field_component for absolute offsets into nodes */
 								if (node_field_info != node->fields)
