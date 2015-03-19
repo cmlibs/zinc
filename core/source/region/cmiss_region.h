@@ -398,23 +398,31 @@ indented from the left margin by <indent> spaces; this is incremented by
 ==============================================================================*/
 
 /**
- * Call to confirm compatibility of fields and other object definitions in
- * source region tree versus those in global region. Call this before calling
- * cmzn_region_merge.
- * Converts finite element field parameter mappings in source_region from using
- * indexes to derivatives & versions; fails (0 result) if this cannot be done.
- * @param target_region  Target / global region to merge into.
- * @param source_region  Source region to check compatibility of fields for.
- * @return  1 if compatible, 0 if not.
+ * Check that fields and other object definitions in source region are properly
+ * defined and compatible with definitions in target region.
+ * Converts legacy field representations e.g. read from older EX files, hence
+ * source region can be modified, and function fails if conversion is not
+ * possible.
+ * Successful from this function is prerequisite for calling cmzn_region_merge.
+ * @see cmzn_region_merge
+ * @param target_region  Optional target/global region to check compatibility
+ * with. Omit to confirm conversion of legacy field representations only.
+ * Not modified.
+ * @param source_region  Source region to check. Can be modified.
+ * @return  True if compatible and conversions successful, false if failed or
+ * source region is missing.
  */
-int cmzn_region_can_merge(cmzn_region_id target_region, cmzn_region_id source_region);
+bool cmzn_region_can_merge(cmzn_region_id target_region,
+	cmzn_region_id source_region);
 
-/***************************************************************************//**
- * Merge fields and other objects from source region tree into global region.
- * Source must be destroyed afterwards as some of its objects may be transfered
- * to global region.
+/**
+ * Merge fields and other objects from source region tree into target region,
+ * transferring objects in some cases for efficiency.
+ * @see cmzn_region_can_merge
  * @param target_region  Target / global region to merge into.
- * @param source_region  Source region to merge from.
+ * @param source_region  Source region to merge from. Modified and left in an
+ * in an unusable state by this function as some of its objects, hence must be
+ * destroyed after calling.
  * @return  1 on success, 0 on failure.
  */
 int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region);

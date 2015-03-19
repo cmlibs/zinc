@@ -892,16 +892,22 @@ void FE_region_set_cmzn_region_private(struct FE_region *fe_region,
 struct cmzn_region *FE_region_get_cmzn_region(struct FE_region *fe_region);
 
 /**
- * Returns true if definitions of fields, nodes and elements in
- * <source_fe_region> are compatible with those in <target_fe_region>, such that
- * FE_region_merge should succeed.
- * Converts finite element field parameter mappings in source_region from using
- * indexes to derivatives & versions; fails if this cannot be done.
+ * Check that fields and other object definitions in source FE_region are
+ * properly defined and compatible with definitions in target FE_region.
+ * Converts legacy field representations e.g. read from older EX files, hence
+ * source_fe_region can be modified, and function fails if conversion is not
+ * possible.
+ * @param target_fe_region  Optional target/global FE_region to check
+ * compatibility with. Omit to confirm conversion of legacy field
+ * representations only.
+ * @param source_fe_region  Source region to check. Can be modified.
+ * @return  True if compatible and conversions successful, false if failed or
+ * source region is missing.
  */
 bool FE_region_can_merge(struct FE_region *target_fe_region,
 	struct FE_region *source_fe_region);
 
-/***************************************************************************//**
+/**
  * Merges into <target_fe_region> the fields, nodes and elements from
  * <source_fe_region>. Note that <source_fe_region> is left in a polluted state
  * containing objects that partly belong to the <target_fe_region> and partly to
