@@ -22,6 +22,9 @@ quadratic Lagrange, cubic Lagrange.
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "zinc/region.h"
+#include "zinc/stream.h"
+#include "zinc/streamregion.h"
 #include "curve/curve.h"
 #include "general/enumerator_private.hpp"
 #include "general/object.h"
@@ -4361,14 +4364,7 @@ Curve iterator function for writing out the names of curves.
 	return (return_code);
 } /* list_Curve */
 
-int write_Curve(struct Curve *curve,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-Writes <curve> to filename(s) stemming from the name of the curve,
-eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
-==============================================================================*/
+int write_Curve(struct Curve *curve, void *dummy_void)
 {
 	char *file_name;
 	FILE *out_file;
@@ -4440,80 +4436,57 @@ eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
 } /* write_Curve */
 
 struct Curve *create_Curve_from_file(const char *curve_name,
-	const char *file_name_stem, struct IO_stream_package *io_stream_package)
-/*******************************************************************************
-LAST MODIFIED : 23 May 2008
-
-DESCRIPTION :
-Appends extension '.curve.exnode' on to <file_name_stem> and reads in nodes from
-it. Similarly reads elements in from <file_name_stem>.curve.exelem. Creates
-temporary managers to use import_finite_element functions. Mesh is checked for
-appropriateness to curve usage.
-???RC Later autorange
-==============================================================================*/
+	const char *file_name_stem)
 {
-	char *file_name;
-	enum FE_basis_type fe_basis_type;
-	int number_of_components = 0,return_code = 0;
-	struct cmzn_region *child_region;
-	struct Curve *curve;
-	struct FE_basis *fe_basis;
-	struct IO_stream *element_file,*node_file, *region_file;
-
-	ENTER(create_Curve_from_file);
-	curve=(struct Curve *)NULL;
-	if (curve_name&&file_name_stem)
+	struct Curve *curve = 0;
+	if (curve_name && file_name_stem)
 	{
 		curve = cc_create_blank(curve_name);
 		if (NULL != curve)
 		{
-			if (ALLOCATE(file_name,char,strlen(file_name_stem)+sizeof(".curve.exregion")))
+			int return_code = 1;
+			char *file_name = 0;
+			if (ALLOCATE(file_name, char, strlen(file_name_stem) + sizeof(".curve.exregion")))
 			{
-				return_code=1;
-				if (sprintf(file_name,"%s.curve.exnode",file_name_stem) &&
-					(node_file=CREATE(IO_stream)(io_stream_package)) &&
-					(IO_stream_open_for_read(node_file, file_name)) &&
-					sprintf(file_name,"%s.curve.exelem",file_name_stem) &&
-					(element_file=CREATE(IO_stream)(io_stream_package)) &&
-					(IO_stream_open_for_read(element_file, file_name)))
+				cmzn_streaminformation_id si = cmzn_region_create_streaminformation_region(curve->region);
+				cmzn_streaminformation_region_id sir = cmzn_streaminformation_cast_region(si);
+				sprintf(file_name, "%s.curve.exregion", file_name_stem);
+				FILE *regionFile = fopen(file_name, "r");
+				cmzn_streamresource_id stream = 0;
+				if (regionFile)
 				{
-					if (!(read_exregion_file(curve->region, node_file,
-						(struct FE_import_time_index *)NULL) &&
-						read_exregion_file(curve->region, element_file,
-							(struct FE_import_time_index *)NULL)))
-					{
+					fclose(regionFile);
+					stream = cmzn_streaminformation_create_streamresource_file(si, file_name);
+					if (!stream)
 						return_code = 0;
-					}
-					IO_stream_close(node_file);
-					DESTROY(IO_stream)(&node_file);
-					IO_stream_close(element_file);
-					DESTROY(IO_stream)(&element_file);
+					cmzn_streamresource_destroy(&stream);
 				}
 				else
 				{
-					if (sprintf(file_name,"%s.curve.exregion",file_name_stem) &&
-						(region_file=CREATE(IO_stream)(io_stream_package)) &&
-						(IO_stream_open_for_read(region_file, file_name)))
-					{
-						if (!read_exregion_file(curve->region, region_file,
-							(struct FE_import_time_index *)NULL))
-						{
-							return_code = 0;
-						}
-						IO_stream_close(region_file);
-						DESTROY(IO_stream)(&region_file);
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,"create_Curve_from_file.  "
-							"Unable to read .exnode and .exelem or .exregion from template %s",
-							file_name_stem);
+					sprintf(file_name, "%s.curve.exnode", file_name_stem);
+					stream = cmzn_streaminformation_create_streamresource_file(si, file_name);
+					if (!stream)
 						return_code = 0;
-					}
+					cmzn_streamresource_destroy(&stream);
+					sprintf(file_name, "%s.curve.exelem", file_name_stem);
+					stream = cmzn_streaminformation_create_streamresource_file(si, file_name);
+					if (!stream)
+						return_code = 0;
+					cmzn_streamresource_destroy(&stream);
 				}
+				if ((!return_code) || (CMZN_OK != cmzn_region_read(curve->region, sir)))
+				{
+					display_message(ERROR_MESSAGE, "create_Curve_from_file.  "
+						"Unable to read .exnode and .exelem or .exregion from template %s",
+						file_name_stem);
+					return_code = 0;
+				}
+				cmzn_streaminformation_region_destroy(&sir);
+				cmzn_streaminformation_destroy(&si);
 				if (return_code)
 				{
 					/* remove child groups */
+					cmzn_region *child_region;
 					while (NULL != (child_region = cmzn_region_get_first_child(curve->region)))
 					{
 						cmzn_region_remove_child(curve->region, child_region);
@@ -4541,6 +4514,7 @@ appropriateness to curve usage.
 						{
 							return_code=0;
 						}
+						int number_of_components = 0;
 						if (!((curve->value_field=ACCESS(FE_field)(
 							FE_region_get_FE_field_from_name(curve->fe_region, "value")))&&
 							(0<(number_of_components=
@@ -4548,13 +4522,15 @@ appropriateness to curve usage.
 						{
 							return_code=0;
 						}
+						struct FE_basis *fe_basis;
+						enum FE_basis_type fe_basis_type;
 						if ((1==get_FE_element_dimension(curve->template_element))&&
 							FE_element_field_is_standard_node_based(curve->template_element,
 							curve->value_field) &&
 							FE_element_field_get_component_FE_basis(curve->template_element,
 							curve->value_field, /*component_number*/0, &fe_basis))
 						{
-						   FE_basis_get_xi_basis_type(fe_basis, /*xi_number*/0,
+							FE_basis_get_xi_basis_type(fe_basis, /*xi_number*/0,
 								&fe_basis_type);
 						}
 						else
@@ -4584,18 +4560,12 @@ appropriateness to curve usage.
 						return_code=0;
 					}
 				}
+				DEALLOCATE(file_name);
 			}
 			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_Curve_from_file.  Could not create managers");
 				return_code=0;
-			}
 			if (!return_code)
-			{
 				DESTROY(Curve)(&curve);
-			}
-			DEALLOCATE(file_name);
 		}
 		else
 		{
@@ -4608,7 +4578,5 @@ appropriateness to curve usage.
 		display_message(ERROR_MESSAGE,
 			"create_Curve_from_file.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (curve);
-} /* create_Curve_from_file */
+}
