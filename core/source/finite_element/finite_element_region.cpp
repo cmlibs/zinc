@@ -4469,7 +4469,8 @@ int FE_region_merge(struct FE_region *target_fe_region,
 		if (return_code)
 		{
 			for (int n = 0; n < 2; ++n)
-				target_fe_region->nodesets[n]->merge(*(source_fe_region->nodesets[n]), target_root_fe_region);
+				if (!target_fe_region->nodesets[n]->merge(*(source_fe_region->nodesets[n]), target_root_fe_region))
+					return_code = 0;
 		}
 
 		/* merge elements */

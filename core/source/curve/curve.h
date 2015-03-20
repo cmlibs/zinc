@@ -129,36 +129,8 @@ It is designed to be flexible rather than fast.
 	int access_count;
 }; /* struct Curve */
 
-struct Curve_definition
-/*******************************************************************************
-LAST MODIFIED : 29 November 1999
-
-DESCRIPTION :
-==============================================================================*/
-{
-	char *name;
-	enum FE_basis_type fe_basis_type;
-	int fe_basis_type_set;
-	int number_of_components;
-	int number_of_components_set;
-	struct Curve *curve,*curve_to_be_modified;
-	struct IO_stream_package *io_stream_package;
-}; /* struct Curve_definition */
-
 DECLARE_LIST_TYPES(Curve);
 DECLARE_MANAGER_TYPES(Curve);
-
-struct Curve_command_data
-/*******************************************************************************
-LAST MODIFIED : 3 September 2004
-
-DESCRIPTION :
-Objects for the control curve commands.
-==============================================================================*/
-{
-	struct MANAGER(Curve) *curve_manager;
-	struct IO_stream_package *io_stream_package;
-}; /* struct Curve_command_data */
 
 /*
 Global functions
@@ -722,27 +694,19 @@ DESCRIPTION :
 Curve iterator function for writing out the names of curves.
 ==============================================================================*/
 
-int write_Curve(struct Curve *curve,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 25 November 1999
+/**
+ * Writes <curve> to filename(s) stemming from the name of the curve,
+ * eg. "name" -> name.curve.com name.curve.exregion
+ */
+int write_Curve(struct Curve *curve, void *dummy_void);
 
-DESCRIPTION :
-Writes <curve> to filename(s) stemming from the name of the curve,
-eg. "name" -> name.curve.com name.curve.exnode name.curve.exelem
-==============================================================================*/
-
+/**
+ * Appends extension .curve.exregion OR .curve.exnode and .curve.exelem on to
+ * file_name_stem and reads curve definition from these files.
+ * Mesh is checked for appropriateness to curve usage.
+ */
 struct Curve *create_Curve_from_file(const char *curve_name,
-	const char *file_name_stem, struct IO_stream_package *io_stream_package);
-/*******************************************************************************
-LAST MODIFIED : 3 September 2004
-
-DESCRIPTION :
-Appends extension '.curve.exnode' on to <file_name_stem> and reads in nodes from
-it. Similarly reads elements in from <file_name_stem>.curve.exelem. Creates
-temporary managers to use import_finite_element functions. Mesh is checked for
-appropriateness to curve usage.
-???RC Later autorange
-==============================================================================*/
+	const char *file_name_stem);
 
 int cc_copy_convert_without_name(struct Curve *destination,
 	enum FE_basis_type fe_basis_type,int number_of_components,
