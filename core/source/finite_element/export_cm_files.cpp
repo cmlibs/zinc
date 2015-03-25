@@ -909,7 +909,7 @@ DESCRIPTION :
 Writes the element to an ipelem file.
 ==============================================================================*/
 {
-	int basis_dimension, basis_number, derivatives_in_node, dimension,
+	int basis_dimension, basis_number, dimension,
 		first_basis, i, j, k,
 		node_index, *node_number_array, number_of_element_field_nodes,
 		number_of_nodal_values, occurrences, return_code, version, *versions_array;
@@ -1001,10 +1001,7 @@ Writes the element to an ipelem file.
 										standard_node_map, &node_index);
 									Standard_node_to_element_map_get_number_of_nodal_values(
 										standard_node_map, &number_of_nodal_values);
-
 									get_FE_element_node(element, node_index, &node);
-									derivatives_in_node =
-										get_FE_node_field_component_number_of_derivatives(node, data->field, /*component*/0);
 
 									// Get the nodal_value_index of the first value and use that to specify version
 									// cannot support mixes or mismatches anyway, so warn if different versions found

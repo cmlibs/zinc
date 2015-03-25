@@ -264,8 +264,6 @@ public:
 				Standard_node_to_element_map_create(local_node_indexes[nodeIndex] - 1, numberOfValues);
 			for (int valueNumber = 0; valueNumber < numberOfValues; ++valueNumber)
 			{
-				// GRC change to support valueType / version labels
-				int nodalValueIndex = valueNumber;
 				if (!(Standard_node_to_element_map_set_nodal_value_type(
 						standard_node_map, valueNumber, static_cast<FE_nodal_value_type>(valueNumber + FE_NODAL_VALUE)) &&
 					Standard_node_to_element_map_set_nodal_version(
