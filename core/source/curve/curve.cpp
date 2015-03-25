@@ -1369,9 +1369,7 @@ value will be zero in its initial state.
 										/*node_number*/0,/*number_of_component_values*/1);
 									if (NULL != standard_node_map)
 									{
-										if (!(Standard_node_to_element_map_set_nodal_value_index(
-												standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
-											Standard_node_to_element_map_set_nodal_value_type(
+										if (!(Standard_node_to_element_map_set_nodal_value_type(
 												standard_node_map, /*nodal_value_number*/0, FE_NODAL_VALUE) &&
 											/* -1 = use default scale factor of 1 */
 											Standard_node_to_element_map_set_scale_factor_index(
@@ -1392,9 +1390,7 @@ value will be zero in its initial state.
 										/*number_of_component_values*/1);
 									if (NULL  != standard_node_map)
 									{
-										if (!(Standard_node_to_element_map_set_nodal_value_index(
-												standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
-											Standard_node_to_element_map_set_nodal_value_type(
+										if (!(Standard_node_to_element_map_set_nodal_value_type(
 												standard_node_map, /*nodal_value_number*/0, FE_NODAL_VALUE) &&
 											/* -1 = use default scale factor of 1 */
 											Standard_node_to_element_map_set_scale_factor_index(
@@ -1449,9 +1445,7 @@ value will be zero in its initial state.
 													/*number_of_component_values*/(1 + curve->value_derivatives_per_node));
 												if (NULL != standard_node_map)
 												{
-													if (Standard_node_to_element_map_set_nodal_value_index(
-															standard_node_map, /*nodal_value_number*/0, /*nodal_value_index*/0) &&
-														Standard_node_to_element_map_set_nodal_value_type(
+													if (Standard_node_to_element_map_set_nodal_value_type(
 															standard_node_map, /*nodal_value_number*/0, FE_NODAL_VALUE) &&
 														/* -1 = use default scale factor of 1 */
 														Standard_node_to_element_map_set_scale_factor_index(
@@ -1459,8 +1453,6 @@ value will be zero in its initial state.
 													{
 														if (CUBIC_HERMITE==curve->fe_basis_type)
 														{
-															Standard_node_to_element_map_set_nodal_value_index(
-																standard_node_map, /*nodal_value_number*/1, /*nodal_value_index*/1);
 															Standard_node_to_element_map_set_nodal_value_type(
 																standard_node_map, /*nodal_value_number*/1, FE_NODAL_D_DS1) &&
 															/* multiply scale factor for derivative */

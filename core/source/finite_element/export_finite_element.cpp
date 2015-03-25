@@ -695,6 +695,8 @@ Writes information describing how <field> is defined at <element>.
 											(*output_file) << "   " <<
 												write_element_field_data->output_node_indices[node_index] + 1 <<
 												". #Values=" << number_of_nodal_values << "\n";
+#ifdef CMZN_OLD_VALUE_INDICES
+											// this code is kept for documenting old EX format only
 											/* nodal value indices are all relative so output as is */
 											(*output_file) << "     Value indices:";
 											for (k = 0; k < number_of_nodal_values; k++)
@@ -702,6 +704,27 @@ Writes information describing how <field> is defined at <element>.
 												Standard_node_to_element_map_get_nodal_value_index(
 													standard_node_map, k, &nodal_value_index);
 												(*output_file) << " " << nodal_value_index + 1;
+											}
+											(*output_file) << "\n";
+#endif CMZN_OLD_VALUE_INDICES
+											/* nodal value labels(versions) e.g. d/ds1(2) */
+											(*output_file) << "     Value labels:";
+											for (k = 0; k < number_of_nodal_values; k++)
+											{
+												FE_nodal_value_type valueType =
+													Standard_node_to_element_map_get_nodal_value_type(standard_node_map, k);
+												if (FE_NODAL_UNKNOWN == valueType)
+												{
+													(*output_file) << " zero";
+												}
+												else
+												{
+													const char *valueTypeString = ENUMERATOR_STRING(FE_nodal_value_type)(valueType);
+													(*output_file) << " " << valueTypeString;
+													int nodalVersion = Standard_node_to_element_map_get_nodal_version(standard_node_map, k);
+													if (1 != nodalVersion)
+														(*output_file) << "(" << nodalVersion << ")";
+												}
 											}
 											(*output_file) << "\n";
 											/* scale factor indices are renumbered */

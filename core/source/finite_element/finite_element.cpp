@@ -429,9 +429,7 @@ FULL_DECLARE_CHANGE_LOG_TYPES(FE_node);
 
 /**
  * Stores the information for calculating element values by choosing nodal
- * values and applying a diagonal scale factor matrix.  The <nodal_values> and
- * <scale_factors> are stored as offsets so that the arrays stored with the
- * nodes and elements can be reallocated.
+ * values and applying a diagonal scale factor matrix.
  */
 struct Standard_node_to_element_map
 {
@@ -441,22 +439,23 @@ struct Standard_node_to_element_map
 	/* the number of nodal values used (which is also the number of element values
 		calculated) */
 	int number_of_nodal_values;
-	/* array of indices for the nodal values, within the list of all values at
+	/* Legacy array only allocated and used when reading legacy EX files.
+		array of indices for the nodal values, within the list of all values at
 		the node - index is an offset in whole FE_values relative to the absolute
 		value offset in the FE_node_field_component for the associated node (which
-		is a values storage/unsigned char). See: global_to_element_map_values() */
+		is a values storage/unsigned char). */
 	int *nodal_value_indices;
-	// The following describe nodal DOFs by value type and version and are used
-	// for serialisation and in the API to more usefully describe the mapping than
-	// by the nodal_value_indices.
-	// When reading old EX files they are determined from the nodal value indices.
+	// Arrays specifying the nodal value type and version for the nodal values.
+	// Special case: FE_NODAL_UNKNOWN is used to mean use a zero parameter
+	// Internally, the first version is 0.
+	// When reading legacy EX files they are determined from the nodal value indices.
 	// @see FE_field_check_element_node_value_labels
 	FE_nodal_value_type *nodal_value_types;
 	int *nodal_versions;
 	/* array of indices for the scale factors.
 		 Note a negative index indicates a unit scale factor */
 	int *scale_factor_indices;
-}; /* struct Standard_node_to_element_map */
+};
 
 struct FE_element_node_scale_field_info;
 
@@ -6363,22 +6362,22 @@ static int global_to_element_map_values(struct FE_element *element,
 											else
 											{
 												display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-													"Node %d used in element %d has no fields defined.",
-													node->cm_node_identifier, element->identifier.number);
+													"Node %d used by field %s in element %d has no field parameters.",
+													node->cm_node_identifier, field->name, element->identifier.number);
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-												"Node reference missing for element %d.",
-												element->identifier.number);
+												"Node reference missing for field %s at element %d.",
+												field->name, element->identifier.number);
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
-											"Node element map specifies a node index out of range for element %d.",
-											element->identifier.number);
+											"Node element map for field %s specifies a node index out of range for element %d.",
+											field->name, element->identifier.number);
 									}
 								}
 								else
@@ -8418,8 +8417,7 @@ static int FE_element_field_info_check_field_node_value_labels(
 				Standard_node_to_element_map *map = component->map.standard_node_based.node_to_element_maps[n];
 				if (!map)
 					return 0;
-				// GRC future: change to detect whether nodal_value_indices present
-				if (-1 == map->nodal_versions[0])
+				if (map->nodal_value_indices)
 					needLabels = true;
 			}
 		}
@@ -15513,23 +15511,19 @@ Standard_node_to_element_map *Standard_node_to_element_map_create(
 	ALLOCATE(map, struct Standard_node_to_element_map, 1);
 	if (map)
 	{
-		ALLOCATE(map->nodal_value_indices, int, number_of_nodal_values);
+		map->nodal_value_indices = 0; // only used for reading legacy EX files
 		ALLOCATE(map->nodal_value_types, FE_nodal_value_type, number_of_nodal_values);
 		ALLOCATE(map->nodal_versions, int, number_of_nodal_values);
 		ALLOCATE(map->scale_factor_indices, int, number_of_nodal_values);
-		if ((map->nodal_value_indices) && (map->scale_factor_indices) &&
-			(map->nodal_value_types) && (map->nodal_versions))
+		if ((map->scale_factor_indices) && (map->nodal_value_types) && (map->nodal_versions))
 		{
 			map->node_index = node_index;
 			map->number_of_nodal_values = number_of_nodal_values;
 			for (int i = 0; i < number_of_nodal_values; ++i)
 			{
-				/* a nodal_value_index of -1 gives zero values */
-				map->nodal_value_indices[i] = -1;
-				/* a scale_factor_index of -1 gives unit scale factors */
-				map->scale_factor_indices[i] = -1;
-				map->nodal_value_types[i] = FE_NODAL_UNKNOWN;
-				map->nodal_versions[i] = 0; // first version
+				map->nodal_value_types[i] = FE_NODAL_UNKNOWN; // gives a zero parameter
+				map->nodal_versions[i] = 0; // first version; not used for zero parameter
+				map->scale_factor_indices[i] = -1; // -1 means unit scale factor
 			}
 		}
 		else
@@ -15546,12 +15540,21 @@ Standard_node_to_element_map *Standard_node_to_element_map_create(
 Standard_node_to_element_map *Standard_node_to_element_map_create_legacy(
 	int node_index, int number_of_nodal_values)
 {
-	// currently the same as the regular constructor; will change when
-	// nodal_value_indices made optional
 	Standard_node_to_element_map *map =
 		Standard_node_to_element_map_create(node_index, number_of_nodal_values);
-	// if nodal_versions[0] is -1, need to find new labels
-	map->nodal_versions[0] = -1;
+	if (map)
+	{
+		ALLOCATE(map->nodal_value_indices, int, number_of_nodal_values);
+		if (map->nodal_value_indices)
+		{
+			for (int i = 0; i < number_of_nodal_values; ++i)
+				map->nodal_value_indices[i] = -1; // -1 means zero value
+			// if nodal_versions[0] is -1, need to find new labels
+			map->nodal_versions[0] = -1;
+		}
+		else
+			Standard_node_to_element_map_destroy(&map);
+	}
 	return map;
 }
 
@@ -15562,7 +15565,8 @@ int Standard_node_to_element_map_destroy(
 	struct Standard_node_to_element_map *map;
 	if ((map_address)&&(map= *map_address))
 	{
-		DEALLOCATE(map->nodal_value_indices);
+		if (map->nodal_value_indices)
+			DEALLOCATE(map->nodal_value_indices);
 		DEALLOCATE(map->nodal_value_types);
 		DEALLOCATE(map->nodal_versions);
 		DEALLOCATE(map->scale_factor_indices);
@@ -15604,25 +15608,32 @@ static bool Standard_node_to_element_maps_match(
 			return false;
 		int *value_index_1 = standard_node_map_1->nodal_value_indices;
 		int *value_index_2 = standard_node_map_2->nodal_value_indices;
+		if (((value_index_1) && (!value_index_2)) || ((!value_index_1) && (value_index_2)))
+			return false;
+		const bool checkValueIndices = (0 != value_index_1);
 		int *scale_factor_index_1 = standard_node_map_1->scale_factor_indices;
 		int *scale_factor_index_2 = standard_node_map_2->scale_factor_indices;
 		FE_nodal_value_type *node_value_types_1 = standard_node_map_1->nodal_value_types;
 		FE_nodal_value_type *node_value_types_2 = standard_node_map_2->nodal_value_types;
 		int *node_versions_1 = standard_node_map_1->nodal_versions;
 		int *node_versions_2 = standard_node_map_2->nodal_versions;
-		while ((k > 0) && (*value_index_1 == *value_index_2) &&
-			(*node_value_types_1 == *node_value_types_2) &&
+		while ((k > 0) && (*node_value_types_1 == *node_value_types_2) &&
 			(*node_versions_1 == *node_versions_2) &&
 			((*scale_factor_index_1) == ((*scale_factor_index_2) + scale_factor_offset_2_to_1)))
 		{
-			++value_index_1;
-			++value_index_2;
-			++scale_factor_index_1;
-			++scale_factor_index_2;
+			if (checkValueIndices)
+			{
+				if (*value_index_1 != *value_index_2)
+					break;
+				++value_index_1;
+				++value_index_2;
+			}
 			++node_value_types_1;
 			++node_value_types_2;
 			++node_versions_1;
 			++node_versions_2;
+			++scale_factor_index_1;
+			++scale_factor_index_2;
 			--k;
 		}
 		if (k == 0)
@@ -15634,7 +15645,7 @@ static bool Standard_node_to_element_maps_match(
 }
 
 /**
- * Clears optional nodal value type and version arrays.
+ * Clears nodal value type and version arrays. Used only on failed conversion from nodal_value_indices.
  */
 static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_to_element_map *map)
 {
@@ -15778,15 +15789,19 @@ static struct Standard_node_to_element_map *copy_create_Standard_node_to_element
 	{
 		const int node_index = source->node_index;
 		const int number_of_nodal_values = source->number_of_nodal_values;
-		map = Standard_node_to_element_map_create(node_index, number_of_nodal_values);
+		if (source->nodal_value_indices)
+			map = Standard_node_to_element_map_create_legacy(node_index, number_of_nodal_values);
+		else
+			map = Standard_node_to_element_map_create(node_index, number_of_nodal_values);
 		if (map)
 		{
 			for (int i = 0; i < number_of_nodal_values; i++)
 			{
-				map->nodal_value_indices[i] = source->nodal_value_indices[i];
-				map->scale_factor_indices[i] = source->scale_factor_indices[i];
+				if (map->nodal_value_indices)
+					map->nodal_value_indices[i] = source->nodal_value_indices[i];
 				map->nodal_value_types[i] = source->nodal_value_types[i];
 				map->nodal_versions[i] = source->nodal_versions[i];
+				map->scale_factor_indices[i] = source->scale_factor_indices[i];
 			}
 		}
 		else
@@ -15952,7 +15967,7 @@ int Standard_node_to_element_map_set_nodal_value_type(
 		standard_node_map->nodal_value_types[nodal_value_number] = nodal_value_type;
 		return 1;
 	}
-	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_value_index.  Invalid argument(s)");
+	display_message(ERROR_MESSAGE, "Standard_node_to_element_map_set_nodal_value_type.  Invalid argument(s)");
 	return 0;
 }
 
@@ -32835,9 +32850,7 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 										}
 										for (k = 0; k < number_of_values_per_node; ++k)
 										{
-											if (!(Standard_node_to_element_map_set_nodal_value_index(
-													standard_node_map, k, k) &&
-												Standard_node_to_element_map_set_nodal_value_type(
+											if (!(Standard_node_to_element_map_set_nodal_value_type(
 													standard_node_map, k, static_cast<FE_nodal_value_type>(FE_NODAL_VALUE + k)) &&
 												Standard_node_to_element_map_set_scale_factor_index(
 													standard_node_map, k, j * number_of_values_per_node + k) &&
