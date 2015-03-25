@@ -413,7 +413,7 @@ Hermite basis over it.
 											/*nodal_value_number*/0, /*scale_factor_index*/j*2) &&
 										Standard_node_to_element_map_set_nodal_value_type(
 											standard_node_map,
-											/*nodal_value_number*/0, FE_NODAL_D_DS1) &&
+											/*nodal_value_number*/1, FE_NODAL_D_DS1) &&
 										Standard_node_to_element_map_set_scale_factor_index(
 											standard_node_map,
 											/*nodal_value_number*/1, /*scale_factor_index*/j*2 + 1) &&
