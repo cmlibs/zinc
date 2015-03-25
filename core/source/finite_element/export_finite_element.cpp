@@ -604,7 +604,7 @@ Writes information describing how <field> is defined at <element>.
 	enum Global_to_element_map_type component_type;
 	FE_element_field_component_modify modify;
 	ostream *output_file;
-	int i, j, k, nodal_value_index, node_index, number_in_xi,
+	int i, j, k, node_index, number_in_xi,
 		number_of_components, number_of_nodal_values,
 		number_of_nodes, number_of_xi_coordinates, return_code, scale_factor_index;
 	struct FE_basis *basis;
@@ -701,12 +701,13 @@ Writes information describing how <field> is defined at <element>.
 											(*output_file) << "     Value indices:";
 											for (k = 0; k < number_of_nodal_values; k++)
 											{
+												int nodal_value_index;
 												Standard_node_to_element_map_get_nodal_value_index(
 													standard_node_map, k, &nodal_value_index);
 												(*output_file) << " " << nodal_value_index + 1;
 											}
 											(*output_file) << "\n";
-#endif CMZN_OLD_VALUE_INDICES
+#endif // CMZN_OLD_VALUE_INDICES
 											/* nodal value labels(versions) e.g. d/ds1(2) */
 											(*output_file) << "     Value labels:";
 											for (k = 0; k < number_of_nodal_values; k++)
