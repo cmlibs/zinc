@@ -202,10 +202,31 @@ TEST(ZincRegion, fieldml_figure8)
 
 #if 0
 	// test writing and re-reading into different region
-	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/figure8.fieldml"));
-	Region testRegion = zinc.root_region.createChild("test");
-	EXPECT_EQ(OK, result = testRegion.readFile(FIELDML_OUTPUT_FOLDER "/figure8.fieldml"));
-	Fieldmodule testFm = testRegion.getFieldmodule();
-	check_figure8_model(testFm);
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/figure8.fieldml"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_figure8_model(testFm1);
 #endif
+
+	// test writing and re-reading EX format, via a memory buffer
+	StreaminformationRegion sir = zinc.root_region.createStreaminformationRegion();
+	EXPECT_TRUE(sir.isValid());
+	EXPECT_EQ(OK, result = sir.setFileFormat(StreaminformationRegion::FILE_FORMAT_EX));
+	StreamresourceMemory resource = sir.createStreamresourceMemory();
+	EXPECT_TRUE(resource.isValid());
+	EXPECT_EQ(OK, result = zinc.root_region.write(sir));
+	void *buffer;
+	unsigned int bufferSize;
+	EXPECT_EQ(OK, result = resource.getBuffer(&buffer, &bufferSize));
+
+	Region testRegion2 = zinc.root_region.createChild("test2");
+	EXPECT_TRUE(testRegion2.isValid());
+	StreaminformationRegion sir2 = testRegion2.createStreaminformationRegion();
+	EXPECT_TRUE(sir2.isValid());
+	EXPECT_EQ(OK, result = sir2.setFileFormat(StreaminformationRegion::FILE_FORMAT_EX));
+	StreamresourceMemory resource2 = sir2.createStreamresourceMemoryBuffer(buffer, bufferSize);
+	EXPECT_TRUE(resource2.isValid());
+	EXPECT_EQ(OK, result = testRegion2.read(sir2));
+	Fieldmodule testFm2 = testRegion2.getFieldmodule();
+	check_figure8_model(testFm2);
 }
