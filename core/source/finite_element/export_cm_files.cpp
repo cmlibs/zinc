@@ -307,7 +307,8 @@ Writes text for an <ipbase_file> to support <field>.
 					for (xi_number = 0 ; (node_flags[xi_number] > number_of_nodes[xi_number]) && (xi_number < dimension) ; xi_number++)
 					{
 						node_flags[xi_number] = 1;
-						node_flags[xi_number + 1]++;
+						if ((xi_number + 1) < dimension)
+							node_flags[xi_number + 1]++;
 					}
 					if (xi_number == dimension)
 					{
@@ -337,7 +338,8 @@ Writes text for an <ipbase_file> to support <field>.
 							  xi_number++)
 						{
 							node_flags[xi_number] = 1;
-							node_flags[xi_number + 1]++;
+							if ((xi_number + 1) < dimension)
+								node_flags[xi_number + 1]++;
 						}
 						if (xi_number == dimension)
 						{
@@ -908,9 +910,9 @@ Writes the element to an ipelem file.
 ==============================================================================*/
 {
 	int basis_dimension, basis_number, derivatives_in_node, dimension,
-		first_basis, i, j, k, nodal_value_index,
+		first_basis, i, j, k,
 		node_index, *node_number_array, number_of_element_field_nodes,
-		number_of_nodal_values, occurences, return_code, version, *versions_array;
+		number_of_nodal_values, occurrences, return_code, version, *versions_array;
 	struct CM_element_information element_id;
 	struct FE_basis *fe_basis;
 	struct FE_element_field_component *component;
@@ -1004,19 +1006,26 @@ Writes the element to an ipelem file.
 									derivatives_in_node =
 										get_FE_node_field_component_number_of_derivatives(node, data->field, /*component*/0);
 
-									/* Get the nodal_value_index of the first value and use that to specify version,
-										cannot support mixes or mismatches anyway, could check all values the same */
-									Standard_node_to_element_map_get_nodal_value_index(
-										standard_node_map, /*k*/0, &nodal_value_index);
-									version = nodal_value_index / (derivatives_in_node + 1);
+									// Get the nodal_value_index of the first value and use that to specify version
+									// cannot support mixes or mismatches anyway, so warn if different versions found
+									version = Standard_node_to_element_map_get_nodal_version(standard_node_map, 0);
+									for (int v = 1; v < number_of_nodal_values; ++v)
+									{
+										int tempVersion = Standard_node_to_element_map_get_nodal_version(standard_node_map, v);
+										if (tempVersion != version)
+										{
+											display_message(WARNING_MESSAGE,
+												"Element %d field %s gets mixed versions from node %d which is not supported in ipelem format; using first value found.",
+												cmzn_element_get_identifier(element), get_FE_field_name(data->field), cmzn_node_get_identifier(node));
+											break;
+										}
+									}
 
-									occurences = 1;
+									occurrences = 1;
 									for (k = j - 1 ; k >= 0 ; k--)
 									{
 										if (node_number_array[k] == node_number_array[j])
-										{
-											occurences++;
-										}
+											++occurrences;
 									}
 									/* Required to specify version to use for each different coordinate,
 										just specify the same versions for now. */
@@ -1024,7 +1033,7 @@ Writes the element to an ipelem file.
 									{
 										fprintf(data->ipelem_file,
 											" The version number for occurrence  %d of node %5d"
-											", njj=%d is [ 1]: %d\n", occurences, node_number_array[j],
+											", njj=%d is [ 1]: %d\n", occurrences, node_number_array[j],
 											k + 1, version + 1);
 									}
 								}

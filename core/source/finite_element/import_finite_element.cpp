@@ -2208,32 +2208,217 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 													{
 														// set scale factor set only if there are scale factors in use
 														bool noScaleFactors = true;
-														for (i = 0; (i < number_of_nodes) && return_code;
-															i++)
+														for (i = 0; (i < number_of_nodes) && return_code; ++i)
 														{
-															if ((2 == IO_stream_scan(input_file, "%d .  #Values=%d",
-																&node_index, &number_of_values)) &&
-																(standard_node_map = Standard_node_to_element_map_create_legacy(
-																	node_index - 1, number_of_values)))
+															if (2 != IO_stream_scan(input_file, "%d .  #Values=%d",
+																&node_index, &number_of_values))
 															{
-																/* read the value indices */
+																location = IO_stream_get_location_string(input_file);
+																display_message(ERROR_MESSAGE,
+																	"Invalid read of node index and #Values.  %s", location);
+																DEALLOCATE(location);
+																return_code = 0;
+																break;
+															}
+															char *dofMappingTypeString = 0;
+															// old EX files use indices into nodal values
+															// new EX files use value labels e.g. value d/ds1(2) zero
+															bool readValueIndices = false;
+															if (IO_stream_read_string(input_file, "[^:]", &dofMappingTypeString))
+															{
+																if (1 == sscanf(dofMappingTypeString, " Value indice%1[s] ", test_string))
+																	readValueIndices = true;
+																else if (1 != sscanf(dofMappingTypeString, " Value label%1[s] ", test_string))
+																	return_code = 0;
+															}
+															else
+																return_code = 0;
+															DEALLOCATE(dofMappingTypeString);
+															if (!return_code)
+															{
+																location = IO_stream_get_location_string(input_file);
+																display_message(ERROR_MESSAGE,
+																	"Missing \" Value indices: \" or \" Value labels: \" token in file.  %s", location);
+																DEALLOCATE(location);
+																return_code = 0;
+																break;
+															}
+															if (readValueIndices)
+																standard_node_map = Standard_node_to_element_map_create_legacy(node_index - 1, number_of_values);
+															else
+																standard_node_map = Standard_node_to_element_map_create(node_index - 1, number_of_values);
+															if (!standard_node_map)
+															{
+																location = IO_stream_get_location_string(input_file);
+																display_message(ERROR_MESSAGE,
+																	"Failed to create standard node to element map from file.  %s", location);
+																DEALLOCATE(location);
+																return_code = 0;
+																break;
+															}
+															IO_stream_scan(input_file, ": ");
+															if (readValueIndices)
+															{
+																for (j = 0; j < number_of_values; ++j)
+																{
+																	if (!((1 == IO_stream_scan(input_file, "%d", &index)) &&
+																		Standard_node_to_element_map_set_nodal_value_index(
+																			standard_node_map, j, index - 1)))
+																	{
+																		location = IO_stream_get_location_string(input_file);
+																		display_message(ERROR_MESSAGE,
+																			"Error reading nodal value index from file.  %s", location);
+																		DEALLOCATE(location);
+																		return_code = 0;
+																		break;
+																	}
+																}
+															}
+															else // read value labels value type (versions) e.g. value d/ds1(2) d2/ds1ds2
+															{
+																if (!IO_stream_read_string(input_file, "[^\n\r]", &rest_of_line))
+																{
+																	location = IO_stream_get_location_string(input_file);
+																	display_message(ERROR_MESSAGE, "Missing node value labels.  %s", location);
+																	DEALLOCATE(location);
+																	return_code = 0;
+																	break;
+																}
+																char *label = rest_of_line;
+																j = 0;
+																for (j = 0; j < number_of_values; ++j)
+																{
+																	while (isspace(*label))
+																		++label;
+																	if ('\0' == *label)
+																	{
+																		location = IO_stream_get_location_string(input_file);
+																		display_message(ERROR_MESSAGE, "Only %d out of %d value labels found.  %s",
+																			j, number_of_values, location);
+																		DEALLOCATE(location);
+																		return_code = 0;
+																		break;
+																	}
+																	const char *valueTypeString = label;
+																	bool readVersion = false;
+																	while (('\0' != *label) && (!isspace(*label)))
+																	{
+																		if ('(' == *label)
+																		{
+																			readVersion = true;
+																			break;
+																		}
+																		++label;
+																	}
+																	if ('\0' != *label)
+																	{
+																		*label = '\0';
+																		++label;
+																	}
+																	enum FE_nodal_value_type valueType = FE_NODAL_UNKNOWN;
+																	if (!(STRING_TO_ENUMERATOR(FE_nodal_value_type)(valueTypeString, &valueType) &&
+																		(FE_NODAL_UNKNOWN != valueType) &&
+																		Standard_node_to_element_map_set_nodal_value_type(standard_node_map, j, valueType)))
+																	{
+																		// the special 'zero' label means parameter=0
+																		// stored as default FE_NODAL_UNKNOWN type, so no need to set
+																		if (0 != strcmp(valueTypeString, "zero"))
+																		{
+																			location = IO_stream_get_location_string(input_file);
+																			display_message(ERROR_MESSAGE, "Invalid nodal value label '%s'.  %s",
+																				valueTypeString, location);
+																			DEALLOCATE(location);
+																			return_code = 0;
+																			break;
+																		}
+																	}
+																	if (readVersion)
+																	{
+																		const char *versionString = label;
+																		while (('\0' != *label) && (')' != *label))
+																		{
+																			++label;
+																		}
+																		if (')' == *label)
+																		{
+																			*label = '\0';
+																			++label;
+																			int version = 0;
+																			if ((1 != sscanf(versionString, "%d", &version)) ||
+																				!Standard_node_to_element_map_set_nodal_version(standard_node_map, j, version))
+																			{
+																				return_code = 0;
+																			}
+																		}
+																		else
+																			return_code = 0;
+																		if (!return_code)
+																		{
+																			location = IO_stream_get_location_string(input_file);
+																			display_message(ERROR_MESSAGE, "Invalid version number or format.  %s", location);
+																			DEALLOCATE(location);
+																			return_code = 0;
+																			break;
+																		}
+																	}
+																}
+																if (return_code)
+																{
+																	// check for unexpected additional text
+																	while ('\0' != *label)
+																	{
+																		if (!isspace(*label))
+																		{
+																			location = IO_stream_get_location_string(input_file);
+																			display_message(ERROR_MESSAGE, "Unexpected text '%s' after labels.  %s",
+																				label, location);
+																			DEALLOCATE(location);
+																			return_code = 0;
+																			break;
+																		}
+																		++label;
+																	}
+																}
+																DEALLOCATE(rest_of_line);
+															}
+															if (return_code)
+															{
+																/* read the scale factor indices */
 																/* Use a %1[:] so that a successful read will return 1 */
-																if (1 != IO_stream_scan(input_file," Value indices%1[:] ", test_string))
+																if (1 != IO_stream_scan(input_file," Scale factor indices%1[:] ", test_string))
 																{
 																	display_message(WARNING_MESSAGE,
-																		"Truncated read of required \" Value indices: \" token in element file.");
+																		"Truncated read of required \" Scale factor indices: \" token in element file.");
 																}
 																for (j = 0; (j < number_of_values) &&
 																	return_code; j++)
 																{
-																	if (!((1 == IO_stream_scan(input_file, "%d",
-																		&index)) &&
-																		Standard_node_to_element_map_set_nodal_value_index(
-																		standard_node_map, j, index - 1)))
+																	if ((1 == IO_stream_scan(input_file, "%d", &index)) &&
+																		Standard_node_to_element_map_set_scale_factor_index(
+																			standard_node_map, j, index - 1))
+																	{
+																		if (noScaleFactors && (index > 0))
+																		{
+																			noScaleFactors = false;
+																			char *scale_factor_set_name = FE_basis_get_description_string(basis);
+																			cmzn_mesh_scale_factor_set *scale_factor_set =
+																				FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+																			if (!scale_factor_set)
+																			{
+																				scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+																				scale_factor_set->setName(scale_factor_set_name);
+																			}
+																			FE_element_field_component_set_scale_factor_set(
+																				components[component_number], scale_factor_set);
+																			cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
+																			DEALLOCATE(scale_factor_set_name);
+																		}
+																	}
+																	else
 																	{
 																		location = IO_stream_get_location_string(input_file);
 																		display_message(ERROR_MESSAGE,
-																			"Error reading nodal value index from "
+																			"Error reading scale factor index from "
 																			"file.  %s",
 																			location);
 																		DEALLOCATE(location);
@@ -2242,74 +2427,19 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																}
 																if (return_code)
 																{
-																	/* read the scale factor indices */
-																	/* Use a %1[:] so that a successful read will return 1 */
-																	if (1 != IO_stream_scan(input_file," Scale factor indices%1[:] ", test_string))
+																	if (!FE_element_field_component_set_standard_node_map(
+																		components[component_number],
+																		/*node_number*/i, standard_node_map))
 																	{
-																		display_message(WARNING_MESSAGE,
-																			"Truncated read of required \" Scale factor indices: \" token in element file.");
-																	}
-																	for (j = 0; (j < number_of_values) &&
-																		return_code; j++)
-																	{
-																		if ((1 == IO_stream_scan(input_file, "%d", &index)) &&
-																			Standard_node_to_element_map_set_scale_factor_index(
-																				standard_node_map, j, index - 1))
-																		{
-																			if (noScaleFactors && (index > 0))
-																			{
-																				noScaleFactors = false;
-																				char *scale_factor_set_name = FE_basis_get_description_string(basis);
-																				cmzn_mesh_scale_factor_set *scale_factor_set =
-																					FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
-																				if (!scale_factor_set)
-																				{
-																					scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
-																					scale_factor_set->setName(scale_factor_set_name);
-																				}
-																				FE_element_field_component_set_scale_factor_set(
-																					components[component_number], scale_factor_set);
-																				cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
-																				DEALLOCATE(scale_factor_set_name);
-																			}
-																		}
-																		else
-																		{
-																			location = IO_stream_get_location_string(input_file);
-																			display_message(ERROR_MESSAGE,
-																				"Error reading scale factor index from "
-																				"file.  %s",
-																				location);
-																			DEALLOCATE(location);
-																			return_code = 0;
-																		}
-																	}
-																	if (return_code)
-																	{
-																		if (!FE_element_field_component_set_standard_node_map(
-																			components[component_number],
-																			/*node_number*/i, standard_node_map))
-																		{
-																			location = IO_stream_get_location_string(input_file);
-																			display_message(ERROR_MESSAGE,
-																				"read_FE_element_field.  Error setting "
-																				"standard_node_to_element_map");
-																			Standard_node_to_element_map_destroy(&standard_node_map);
-																			DEALLOCATE(location);
-																			return_code = 0;
-																		}
+																		location = IO_stream_get_location_string(input_file);
+																		display_message(ERROR_MESSAGE,
+																			"read_FE_element_field.  Error setting "
+																			"standard_node_to_element_map");
+																		Standard_node_to_element_map_destroy(&standard_node_map);
+																		DEALLOCATE(location);
+																		return_code = 0;
 																	}
 																}
-															}
-															else
-															{
-																location = IO_stream_get_location_string(input_file);
-																display_message(ERROR_MESSAGE,
-																	"Error creating standard node to element map "
-																	"from file.  %s",
-																	location);
-																DEALLOCATE(location);
-																return_code = 0;
 															}
 														}
 													}

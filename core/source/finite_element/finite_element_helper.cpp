@@ -195,8 +195,6 @@ int FE_element_define_field_simple(struct FE_element *element,
 						const int element_node_index = i;
 						Standard_node_to_element_map *standard_node_map =
 							Standard_node_to_element_map_create(element_node_index, /*number_of_values*/1);
-						Standard_node_to_element_map_set_nodal_value_index(
-							standard_node_map, /*element_value_index*/0, /*node_value_index*/0);
 						Standard_node_to_element_map_set_nodal_value_type(
 							standard_node_map, /*element_value_index*/0, FE_NODAL_VALUE);
 						/* scale_factor_index of -1 means use default unit scale factor */

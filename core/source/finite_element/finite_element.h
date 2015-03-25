@@ -1392,6 +1392,7 @@ int Standard_node_to_element_map_get_number_of_nodal_values(
 /**
  * Returns the nodal value index at <nodal_value_number> in <standard_node_map>.
  * If fails, sets *<nodal_value_index_address> to zero.
+ * Legacy function, currently not called, but kept to help debug old EX files.
  */
 int Standard_node_to_element_map_get_nodal_value_index(
 	struct Standard_node_to_element_map *standard_node_map,
@@ -1402,6 +1403,7 @@ int Standard_node_to_element_map_get_nodal_value_index(
  * <nodal_value_index>.
  * Note a negative <nodal_value_index> gives a value of zero without needing to
  * get a value from the node.
+ * Legacy function only used when reading old EX files.
  */
 int Standard_node_to_element_map_set_nodal_value_index(
 	struct Standard_node_to_element_map *standard_node_map,
