@@ -2226,6 +2226,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 						{
 							name_selected=highlight_functor->call(object_name);
 						}
+						glMatrixMode(GL_MODELVIEW);
 						for (unsigned i=0;i<index_count;i++)
 						{
 							if ((object_name < 0) && ((names) && highlight_functor))
@@ -2243,10 +2244,29 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 								{
 									glLoadName((GLuint)(*names));
 								}
+								glPushMatrix();
 								resolve_glyph_axes(glyph_repeat_mode, /*glyph_number*/0,
 									glyph_set->base_size, glyph_set->scale_factors, glyph_set->offset,
 									position, axis1, axis2, axis3, scale,
 									temp_point, temp_axis1, temp_axis2, temp_axis3);
+								/* make transformation matrix for manipulating glyph */
+								transformation[ 0] = 1.0;
+								transformation[ 1] = 0.0;
+								transformation[ 2] = 0.0;
+								transformation[ 3] = 0.0;
+								transformation[ 4] = 0.0;
+								transformation[ 5] = 1.0;
+								transformation[ 6] = 0.0;
+								transformation[ 7] = 0.0;
+								transformation[ 8] = 0.0;
+								transformation[ 9] = 0.0;
+								transformation[10] = 1.0;
+								transformation[11] = 0.0;
+								transformation[12] = glyph_set->offset[0];
+								transformation[13] = glyph_set->offset[1];
+								transformation[14] = glyph_set->offset[2];
+								transformation[15] = 1.0;
+								glMultMatrixf(transformation);
 								switch (rendering_type)
 								{
 									case GRAPHICS_OBJECT_RENDERING_TYPE_GLBEGINEND:
@@ -2258,18 +2278,13 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 									case GRAPHICS_OBJECT_RENDERING_TYPE_CLIENT_VERTEX_ARRAYS:
 									case GRAPHICS_OBJECT_RENDERING_TYPE_VERTEX_BUFFER_OBJECT:
 									{
-										glBindBuffer(GL_ARRAY_BUFFER, object->position_vertex_buffer_object);
-										GLintptr bytesStart = 0;
-										GLsizeiptr size = 0;
-										bytesStart = sizeof(GLfloat)*position_values_per_vertex*(index_start+i);
-										size = sizeof(GLfloat)*position_values_per_vertex;
-										glBufferSubData(GL_ARRAY_BUFFER, bytesStart, size, &(temp_point[0]));
 										glDrawArrays(GL_POINTS, index_start+i, 1);
-									} break;
+									}break;
 									default:
 									{
 									} break;
 								}
+								glPopMatrix();
 
 								if (label || static_labels)
 								{
@@ -3216,7 +3231,6 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 					}
 					else
 					{
-						/*???debug*/printf("! render_GT_object_opengl_immediate.  Missing point");
 						display_message(ERROR_MESSAGE,"render_GT_object_opengl_immediate.  Missing point");
 						return_code=0;
 					}
