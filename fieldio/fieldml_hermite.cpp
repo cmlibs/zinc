@@ -253,7 +253,7 @@ class Bifurcation
 public:
 	Bifurcation(Fieldmodule& fm, int maxGeneration);
 
-	void Bifurcation::addElement(int generation, const Node& node1,
+	void addElement(int generation, const Node& node1,
 		const double *coordinates1, const double *direction1, double radius1, int version1,
 		const double *coordinates2);
 };
