@@ -723,6 +723,8 @@ template <typename VALUETYPE> FmlObjectHandle FieldMLWriter::defineParametersFro
 				}
 				else
 				{
+					display_message(ERROR_MESSAGE, "FieldMLWriter::defineParametersFromMap.  "
+						"Failed to get sparsely indexed values from map %s", parameterMap.getName().c_str());
 					return_code = CMZN_ERROR_GENERAL;
 					break;
 				}
@@ -1562,7 +1564,7 @@ FmlObjectHandle FieldMLWriter::writeMeshField(std::string&, OutputFieldData& out
 	if (highestNodeVersion > 1)
 	{
 		this->setMinimumNodeVersions(highestNodeVersion);
-		versionsLabels = this->nodeDerivatives;
+		versionsLabels = this->nodeVersions;
 		labelsArray[labelsArraySize++] = cmzn::GetImpl(versionsLabels);
 	}
 	// having components as the last index is typically more efficient

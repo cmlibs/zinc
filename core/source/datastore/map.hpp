@@ -100,6 +100,7 @@ class DsMap : public DsMapBase
 		DsLabelIndex *copySize, block_array<DsMapAddressType, ValueType>& dest_values,
 		bool_array<DsMapAddressType>& dest_value_exists) const;
 	bool resize(DsLabelIndex *newIndexSizes);
+	void print() const;
 	int validIndexCount(DsMapIndexing& indexing, DsMapAddressType number_of_values,
 		const char *methodName) const;
 
@@ -217,38 +218,39 @@ bool DsMap<ValueType>::copyValues(int labelsNumber,
 	block_array<DsMapAddressType, ValueType>& dest_values,
 	bool_array<DsMapAddressType>& dest_value_exists) const
 {
-	DsLabelIndex thisCopySize = copySize[labelsNumber];
+	DsLabelIndex indexCopySize = copySize[labelsNumber];
 	DsMapAddressType oldIndex = oldBaseIndex;
 	DsMapAddressType newIndex = newBaseIndex;
 	DsLabelIndex index;
 	if (labelsNumber == (labelsArraySize - 1))
 	{
 		ValueType value;
-		for (index = 0; index < thisCopySize; index++)
+		for (index = 0; index < indexCopySize; ++index)
 		{
-			if (!dense && !value_exists.getBool(oldIndex))
-				continue;
-			if (!values.getValue(oldIndex, value))
+			if (this->dense || this->value_exists.getBool(oldIndex))
 			{
-				display_message(ERROR_MESSAGE, "DsMap::copyValues  Map %s is missing a value\n",
-					this->name.c_str());
-				return false;
+				if (!values.getValue(oldIndex, value))
+				{
+					display_message(ERROR_MESSAGE, "DsMap::copyValues  Map %s is missing a value\n",
+						this->name.c_str());
+					return false;
+				}
+				if (!dest_values.setValue(newIndex, value))
+					return false;
+				bool oldValue;
+				if (!(this->dense || dest_value_exists.setBool(newIndex, true, oldValue)))
+					return false;
 			}
-			if (!dest_values.setValue(newIndex, value))
-				return false;
-			bool oldValue;
-			if (!dense && !dest_value_exists.setBool(oldIndex, true, oldValue))
-				return false;
-      newIndex++;
-      oldIndex++;
+			++oldIndex;
+			++newIndex;
 		}
 	}
 	else
 	{
-		for (index = 0; index < thisCopySize; index++)
+		for (index = 0; index < indexCopySize; ++index)
 		{
 			if (!copyValues(labelsNumber + 1, oldIndex, newIndex,
-				newOffsets, copySize, dest_values, dest_value_exists))
+					newOffsets, copySize, dest_values, dest_value_exists))
 				return false;
 			oldIndex += offsets[labelsNumber];
 			newIndex += newOffsets[labelsNumber];
@@ -267,12 +269,14 @@ template <typename ValueType>
 bool DsMap<ValueType>::resize(DsLabelIndex *newIndexSizes)
 {
 #if defined (DEBUG_CODE)
-	display_message(INFORMATION_MESSAGE, "DsMap::resize  %s\n", this->name.c_str());
+	display_message(INFORMATION_MESSAGE, "DsMap::resize  %s %s\n", this->name.c_str(), this->dense ? "(dense)" : "(not dense)");
 	for (int i = 0; i < labelsArraySize; i++)
 	{
 		display_message(INFORMATION_MESSAGE, "    Labels %s: %u -> %u\n",
 			this->labelsArray[i]->getName().c_str(), this->indexSizes[i], newIndexSizes[i]);
 	}
+	display_message(INFORMATION_MESSAGE, "before:\n");
+	this->print();
 #endif /* defined (DEBUG_CODE) */
 
 	// values to copy is minimum of this->indexSizes and newIndexSizes
@@ -316,7 +320,44 @@ bool DsMap<ValueType>::resize(DsLabelIndex *newIndexSizes)
 	}
 	delete[] copySize;
 	delete[] newOffsets;
+#if defined (DEBUG_CODE)
+	display_message(INFORMATION_MESSAGE, "after:\n");
+	this->print();
+	display_message(INFORMATION_MESSAGE, "\n");
+#endif /* defined (DEBUG_CODE) */
 	return true;
+}
+
+template <typename ValueType> void DsMap<ValueType>::print() const
+{
+	display_message(INFORMATION_MESSAGE, "Map %s %s\n", this->name.c_str(), this->dense ? "(dense)" : "(not dense)");
+	for (int i = 0; i < labelsArraySize; i++)
+	{
+		display_message(INFORMATION_MESSAGE, "    Labels %s size: %u\n",
+			this->labelsArray[i]->getName().c_str(), this->indexSizes[i]);
+	}
+	DsMapAddressType maxIndex = this->getMaxDenseSize();
+	for (DsMapAddressType index = 0; index < maxIndex; ++index)
+	{
+		if (dense || this->value_exists.getBool(index))
+		{
+			ValueType value;
+			if (this->values.getValue(index, value))
+			{
+				const double doubleValue = static_cast<double>(value);
+				display_message(INFORMATION_MESSAGE, "%10g", doubleValue);
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, "     ERROR");
+			}
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, "         -");
+		}
+	}
+	display_message(INFORMATION_MESSAGE, "\n");
 }
 
 template <typename ValueType>
@@ -772,10 +813,19 @@ bool DsMap<ValueType>::incrementSparseIterators(DsMapIndexing& mapIndexing)
 				index = mapIndexing.getSparseIndex(i);
 				if (index == DS_LABEL_INDEX_INVALID)
 					break;
+				if (index >= this->indexSizes[i])
+				{
+					if (this->labelsArray[i]->isContiguous())
+						if (!mapIndexing.advanceSparseIterator(i))
+							return false;
+					goto tryagain;
+				}
 				valueIndex += index*this->offsets[i];
 			}
 			if (this->value_exists.getBool(valueIndex))
 				return true;
+			tryagain:
+				;
 		}
 	}
 	return false;
