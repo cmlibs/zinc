@@ -461,11 +461,13 @@ public:
 		}			
 	}
 
-	/** Call before iterating with incrementSparseIterators */
-	void resetSparseIterators()
+	/** Call before iterating with incrementSparseIterators
+	 * Optional labelNumber is used to partially reset
+	 */
+	void resetSparseIterators(int labelsNumber = 0)
 	{
 		int i = this->labelsArraySize - 1;
-		for (; 0 <= i; --i)
+		for (; labelsNumber <= i; --i)
 		{
 			if (this->indexing[i].iterator)
 			{
@@ -474,7 +476,7 @@ public:
 				break;
 			}
 		}
-		for (; 0 <= i; --i)
+		for (; labelsNumber <= i; --i)
 		{
 			if (this->indexing[i].iterator)
 				this->indexing[i].iterator->setIndex(indexing[i].labels->getFirstIndex());
@@ -485,6 +487,26 @@ public:
 	bool incrementSparseIterators()
 	{
 		for (int i = labelsArraySize - 1; 0 <= i; --i)
+		{
+			if (this->indexing[i].iterator)
+			{
+				if (this->indexing[i].iterator->increment())
+					return true;
+				// reset to start
+				if (!this->indexing[i].iterator->increment())
+					return false; // only happens if no labels
+			}
+		}
+		return false;
+	}
+
+	// call when a sparse iterator goes beyond index size for contiguous labels.
+	// saves iterating over all permutations of inner indices to get next values.
+	// @return true if more iteration to do, false if iteration finished
+	bool advanceSparseIterator(int labelsNumber)
+	{
+		resetSparseIterators(labelsNumber);
+		for (int i = labelsNumber - 1; 0 <= i; --i)
 		{
 			if (this->indexing[i].iterator)
 			{
