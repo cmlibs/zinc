@@ -386,7 +386,7 @@ public:
 		int nodeFunctionIndex, int versionNumber)
 	{
 		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > this->number_of_components) ||
-				(basisNodeIndex < 1) || (nodeFunctionIndex < 1) && (0 < versionNumber))
+				(basisNodeIndex < 1) || (nodeFunctionIndex < 1) || (versionNumber < 1))
 			return CMZN_ERROR_ARGUMENT;
 		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
 		const int limit = (componentNumber > 0) ? 1 : this->number_of_components;
@@ -871,7 +871,6 @@ private:
 
 	cmzn_element_field *getElementField(FE_field *fe_field)
 	{
-		cmzn_element_field *element_field = NULL;
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
 			if (fields[i]->getFeField() == fe_field)
