@@ -31,6 +31,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
+#include "mesh/cmiss_node_private.hpp"
 
 #if defined (DEBUG_CODE)
 /* SAB This field is useful for debugging when things don't clean up properly
@@ -255,6 +256,10 @@ public:
 
 	virtual ~Computed_field_finite_element();
 
+	int setNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
+		cmzn_node_value_label nodeValueLabel, int versionNumber,
+		int numberOfValues, const double *valuesIn);
+
 private:
 	Computed_field_core *copy();
 
@@ -405,6 +410,13 @@ private:
 	}
 
 };
+
+inline Computed_field_finite_element *cmzn_field_finite_element_core_cast(
+	cmzn_field_finite_element_id finite_element_field)
+{
+	return (static_cast<Computed_field_finite_element*>(
+		reinterpret_cast<Computed_field*>(finite_element_field)->core));
+}
 
 Computed_field_finite_element::~Computed_field_finite_element()
 /*******************************************************************************
@@ -817,6 +829,33 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 	return return_code;
 }
 
+int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
+	int componentNumber, cmzn_node_value_label nodeValueLabel, int versionNumber,
+	int numberOfValues, const double *valuesIn)
+{
+	const int first = (componentNumber > 0) ? (componentNumber - 1) : 0; 
+	const int limit = (componentNumber > 0) ? 1 : this->field->number_of_components;
+	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber < this->field->number_of_components))) &&
+			(0 < versionNumber) && (numberOfValues >= limit) && valuesIn))
+		return CMZN_ERROR_ARGUMENT;
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	if (!node_location)
+		return CMZN_ERROR_ARGUMENT;
+	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	if (FE_VALUE_VALUE != value_type)
+		return CMZN_ERROR_NOT_IMPLEMENTED;
+	FE_nodal_value_type nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
+	FE_node *node = node_location->get_node();
+	FE_value time = node_location->get_time();
+	for (int i = first; i < limit; ++i)
+	{
+		if (!set_FE_nodal_FE_value_value(node, this->fe_field, /*component_number*/i,
+				versionNumber - 1, nodal_value_type, time, valuesIn[i]))
+			return CMZN_ERROR_GENERAL;
+	}
+	return CMZN_OK;
+}
+
 enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache& cache, RealFieldValueCache& valueCache)
 {
 	if (cache.assignInCacheOnly())
@@ -1174,19 +1213,6 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-inline Computed_field *Computed_field_cast(
-	cmzn_field_finite_element *finite_element_field)
-{
-	return (reinterpret_cast<Computed_field*>(finite_element_field));
-}
-
-inline Computed_field_finite_element *Computed_field_finite_element_core_cast(
-	cmzn_field_finite_element *finite_element_field)
-{
-	return (static_cast<Computed_field_finite_element*>(
-		reinterpret_cast<Computed_field*>(finite_element_field)->core));
-}
-
 cmzn_field *Computed_field_create_finite_element_internal(
 	struct cmzn_fieldmodule *field_module, struct FE_field *fe_field)
 {
@@ -1290,6 +1316,17 @@ int cmzn_field_finite_element_destroy(
 	cmzn_field_finite_element_id *finite_element_field_address)
 {
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(finite_element_field_address));
+}
+
+int cmzn_field_finite_element_set_node_parameters(
+	cmzn_field_finite_element *finite_element_field, cmzn_fieldcache_id cache,
+	int component_number, enum cmzn_node_value_label node_value_label,
+	int version_number, int number_of_values, const double *values_in)
+{
+	if (finite_element_field && cache)
+		return cmzn_field_finite_element_core_cast(finite_element_field)->setNodeParameters(*cache,
+			component_number, node_value_label, version_number, number_of_values, values_in);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_field_id cmzn_fieldmodule_create_field_stored_mesh_location(
@@ -4271,47 +4308,11 @@ cmzn_field_id cmzn_fieldmodule_create_field_node_value(
 {
 	if (field_module && field && (Computed_field_is_type_finite_element(field)) && (version > 0))
 	{
-		enum FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
-		switch (node_value_label)
-		{
-			case CMZN_NODE_VALUE_LABEL_INVALID:
-				fe_nodal_value_type = FE_NODAL_UNKNOWN;
-				break;
-			case CMZN_NODE_VALUE_LABEL_VALUE:
-				fe_nodal_value_type = FE_NODAL_VALUE;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS1:
-				fe_nodal_value_type = FE_NODAL_D_DS1;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS2:
-				fe_nodal_value_type = FE_NODAL_D_DS2;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
-				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS3:
-				fe_nodal_value_type = FE_NODAL_D_DS3;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
-				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
-				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
-				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
-				break;
-		}
-		if (FE_NODAL_UNKNOWN == fe_nodal_value_type)
-		{
-			return NULL;
-		}
-		return Computed_field_create_node_value(field_module, field, fe_nodal_value_type, version-1);
+		FE_nodal_value_type fe_nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(node_value_label);
+		if (FE_NODAL_UNKNOWN != fe_nodal_value_type)
+			return Computed_field_create_node_value(field_module, field, fe_nodal_value_type, version - 1);
 	}
-	else
-	{
-		return NULL;
-	}
+	return 0;
 }
 
 namespace {

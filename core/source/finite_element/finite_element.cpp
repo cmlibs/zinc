@@ -16040,100 +16040,6 @@ int Standard_node_to_element_map_set_scale_factor_index(
 }
 
 /**
- * Creates and returns a copy of the struct FE_element_field_component
- * <source_component>, but with any scale factor sets or time sequences
- * substituted with equivalents from fe_region.
- */
-static struct FE_element_field_component *copy_create_FE_element_field_component(
-	struct FE_element_field_component *source_component, FE_region *fe_region)
-{
-	struct FE_element_field_component *component = 0;
-	if (source_component && fe_region)
-	{
-		int i, number_of_maps = 0;
-		switch(source_component->type)
-		{
-			case STANDARD_NODE_TO_ELEMENT_MAP:
-			{
-				number_of_maps=source_component->map.standard_node_based.number_of_nodes;
-			}	break;
-			case GENERAL_ELEMENT_MAP:
-			{
-				number_of_maps = source_component->map.general_map_based.number_of_maps;
-			}	break;
-			case ELEMENT_GRID_MAP:
-			{
-				number_of_maps=1;
-			}	break;
-		}/* switch(source_component->type) */
-		/*create the component*/
-		component=CREATE(FE_element_field_component)(source_component->type,number_of_maps,
-			source_component->basis,source_component->modify);
-		/* fill in the interior of component */
-		if(component)
-		{
-			cmzn_mesh_scale_factor_set *sourceScaleFactorSet = source_component->get_scale_factor_set();
-			if (sourceScaleFactorSet)
-			{
-				cmzn_mesh_scale_factor_set *targetScaleFactorSet =
-					FE_region_find_mesh_scale_factor_set_by_name(fe_region, sourceScaleFactorSet->getName());
-				if (!targetScaleFactorSet)
-				{
-					targetScaleFactorSet = FE_region_create_mesh_scale_factor_set(fe_region);
-					targetScaleFactorSet->setName(sourceScaleFactorSet->getName());
-				}
-				component->set_scale_factor_set(targetScaleFactorSet);
-				cmzn_mesh_scale_factor_set::deaccess(targetScaleFactorSet);
-			}
-			switch(source_component->type)
-			{
-				case STANDARD_NODE_TO_ELEMENT_MAP:
-				{
-					for(i=0;i<number_of_maps;i++)
-					{
-						component->map.standard_node_based.node_to_element_maps[i]=
-							copy_create_Standard_node_to_element_map(
-								source_component->map.standard_node_based.node_to_element_maps[i]);
-					}
-				}	break;
-				case GENERAL_ELEMENT_MAP:
-				{
-					component->map.general_map_based.number_of_maps = number_of_maps;
-					for(i=0;i<number_of_maps;i++)
-					{
-						component->map.general_map_based.maps[i] = 
-							source_component->map.general_map_based.maps[i]->clone();
-					}
-				} break;
-				case ELEMENT_GRID_MAP:
-				{
-					int number_of_xi_coordinates = 0;
-					FE_basis_get_dimension(source_component->basis, &number_of_xi_coordinates);
-					for(i = 0; i < number_of_xi_coordinates; i++)
-					{
-						component->map.element_grid_based.number_in_xi[i]=
-							source_component->map.element_grid_based.number_in_xi[i];
-					}
-					component->map.element_grid_based.value_index=
-						source_component->map.element_grid_based.value_index;
-				}	break;
-			}/* switch(source_component->type) */
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"copy_create_FE_element_field_component, failed to create component");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-				"copy_create_FE_element_field_component, Invalid argument");
-	}
-	return(component);
-}
-
-/**
  * Allocates memory and enters values for a component of a element field.
  * Allocates storage for the global to element maps and sets to NULL.
  */
@@ -16273,6 +16179,119 @@ int DESTROY(FE_element_field_component)(
 		return_code = 0;
 	}
 	return (return_code);
+}
+
+/**
+ * Creates and returns a copy of the supplied element field component. Due to
+ * references to scale factor sets, the component is valid for use in the
+ * current FE_region only.
+ * @see FE_element_field_component_switch_FE_region
+ */
+struct FE_element_field_component *copy_create_FE_element_field_component(
+	struct FE_element_field_component *source_component)
+{
+	struct FE_element_field_component *component = 0;
+	if (source_component)
+	{
+		int i, number_of_maps = 0;
+		switch(source_component->type)
+		{
+			case STANDARD_NODE_TO_ELEMENT_MAP:
+			{
+				number_of_maps=source_component->map.standard_node_based.number_of_nodes;
+			}	break;
+			case GENERAL_ELEMENT_MAP:
+			{
+				number_of_maps = source_component->map.general_map_based.number_of_maps;
+			}	break;
+			case ELEMENT_GRID_MAP:
+			{
+				number_of_maps=1;
+			}	break;
+		}/* switch(source_component->type) */
+		/*create the component*/
+		component=CREATE(FE_element_field_component)(source_component->type,number_of_maps,
+			source_component->basis,source_component->modify);
+		/* fill in the interior of component */
+		if (component)
+		{
+			cmzn_mesh_scale_factor_set *scaleFactorSet = source_component->get_scale_factor_set();
+			if (scaleFactorSet)
+				component->set_scale_factor_set(scaleFactorSet);
+			switch(source_component->type)
+			{
+				case STANDARD_NODE_TO_ELEMENT_MAP:
+				{
+					for(i=0;i<number_of_maps;i++)
+					{
+						component->map.standard_node_based.node_to_element_maps[i]=
+							copy_create_Standard_node_to_element_map(
+								source_component->map.standard_node_based.node_to_element_maps[i]);
+					}
+				}	break;
+				case GENERAL_ELEMENT_MAP:
+				{
+					component->map.general_map_based.number_of_maps = number_of_maps;
+					for(i=0;i<number_of_maps;i++)
+					{
+						component->map.general_map_based.maps[i] = 
+							source_component->map.general_map_based.maps[i]->clone();
+					}
+				} break;
+				case ELEMENT_GRID_MAP:
+				{
+					int number_of_xi_coordinates = 0;
+					FE_basis_get_dimension(source_component->basis, &number_of_xi_coordinates);
+					for(i = 0; i < number_of_xi_coordinates; i++)
+					{
+						component->map.element_grid_based.number_in_xi[i]=
+							source_component->map.element_grid_based.number_in_xi[i];
+					}
+					component->map.element_grid_based.value_index=
+						source_component->map.element_grid_based.value_index;
+				}	break;
+			} /* switch(source_component->type) */
+		}
+		else
+		{
+			display_message(ERROR_MESSAGE,
+				"copy_create_FE_element_field_component.  failed to create component");
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE,
+				"copy_create_FE_element_field_component.  Invalid argument");
+	}
+	return(component);
+}
+
+/**
+ * Switches references to FE_region-specific objects, notably
+ * scale factor sets, to the supplied fe_region.
+ * @return  CMZN_OK on success, any other value on failure.
+ */
+static int FE_element_field_component_switch_FE_region(
+	FE_element_field_component *component, FE_region *fe_region)
+{
+	if (!(component && fe_region))
+		return CMZN_ERROR_ARGUMENT;
+	cmzn_mesh_scale_factor_set *sourceScaleFactorSet = component->get_scale_factor_set();
+	if (sourceScaleFactorSet)
+	{
+		cmzn_mesh_scale_factor_set *targetScaleFactorSet =
+			FE_region_find_mesh_scale_factor_set_by_name(fe_region, sourceScaleFactorSet->getName());
+		if (!targetScaleFactorSet)
+		{
+			targetScaleFactorSet = FE_region_create_mesh_scale_factor_set(fe_region);
+			if (!targetScaleFactorSet)
+				return CMZN_ERROR_MEMORY;
+			targetScaleFactorSet->setName(sourceScaleFactorSet->getName());
+		}
+		component->set_scale_factor_set(targetScaleFactorSet);
+		cmzn_mesh_scale_factor_set::deaccess(targetScaleFactorSet);
+	}
+	return CMZN_OK;
 }
 
 int FE_element_field_component_get_basis(
@@ -18106,8 +18125,8 @@ static int FE_element_field_copy_for_FE_region(
 					{
 						if (*component)
 						{
-							if (!(*copy_component =
-								copy_create_FE_element_field_component(*component, data->fe_region)))
+							*copy_component = copy_create_FE_element_field_component(*component);
+							if (CMZN_OK != FE_element_field_component_switch_FE_region(*copy_component, data->fe_region))
 							{
 								return_code = 0;
 							}

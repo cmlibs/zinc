@@ -480,6 +480,18 @@ ZINC_API int cmzn_elementbasis_get_number_of_functions(
 	cmzn_elementbasis_id element_basis);
 
 /**
+ * Gets the number of functions / parameters for a given basis node.
+ * @see cmzn_elementbasis_get_number_of_nodes
+ *
+ * @param element_basis  Element basis to query.
+ * @param basis_node_index  The basis node index starting at 1, up to number
+ * used by basis.
+ * @return  The number of functions/parameters, or 0 if invalid arguments.
+ */
+ZINC_API int cmzn_elementbasis_get_number_of_functions_per_node(
+	cmzn_elementbasis_id element_basis, int basis_node_index);
+
+/**
  * Returns a new handle to the element iterator with reference count incremented.
  *
  * @param mesh  The element iterator to obtain a new handle to.
@@ -623,6 +635,56 @@ ZINC_API int cmzn_elementtemplate_define_field_simple_nodal(
 	cmzn_field_id field,  int component_number,
 	cmzn_elementbasis_id basis, int basis_number_of_nodes,
 	const int *local_node_indexes);
+
+/**
+ * For a field defined by node interpolation, sets the node value label (value
+ * or derivative) mapped to one function parameter in the element basis.
+ * Note that any values set by this function are reset if the field is
+ * re-defined at the node.
+ * @see cmzn_elementtemplate_define_field_simple_nodal
+ *
+ * @param elementtemplate  Element template to modify.
+ * @param field  The field to modify mapping for.
+ * @param component_number  The component to modify mapping for, from 1 to the
+ * number of field components, or -1 to set all components identically.
+ * @param basis_node_index  The basis node index starting at 1, up to number
+ * used by basis.
+ * @see cmzn_elementbasis_get_number_of_nodes
+ * @param node_function_index  The function index starting at 1, up to the
+ * number per node in the element basis.
+ * @see cmzn_elementbasis_get_number_of_functions_per_node
+ * @param node_value_label  The node value label to set.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_elementtemplate_set_map_node_value_label(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field,
+	int component_number, int basis_node_index, int node_function_index,
+	enum cmzn_node_value_label node_value_label);
+
+/**
+ * For a field defined by node interpolation, sets the version number of the
+ * value mapped to one function parameter in the element basis.
+ * Note that any values set by this function are reset if the field is
+ * re-defined at the node.
+ * @see cmzn_elementtemplate_define_field_simple_nodal
+ *
+ * @param elementtemplate  Element template to modify.
+ * @param field  The field to modify mapping for.
+ * @param component_number  The component to modify mapping for, from 1 to the
+ * number of field components, or -1 to set all components identically.
+ * @param basis_node_index  The basis node index starting at 1, up to number
+ * used by basis.
+ * @see cmzn_elementbasis_get_number_of_nodes
+ * @param node_function_index  The function index starting at 1, up to the
+ * number per node in the element basis.
+ * @see cmzn_elementbasis_get_number_of_functions_per_node
+ * @param node_version  The version number to set, starting at 1.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_elementtemplate_set_map_node_version(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field,
+	int component_number, int basis_node_index, int node_function_index,
+	int version_number);
 
 /**
  * Gets the global node at a given local node index in the element_template.

@@ -208,6 +208,14 @@ public:
 		return numberOfFunctions;
 	}
 
+	int getNumberOfFunctionsPerNode(int basisNodeIndex) const
+	{
+		FE_basis *basis = this->getFeBasis();
+		int numberOfFunctionsPerNode = FE_basis_get_number_of_functions_per_node(basis, basisNodeIndex);
+		DEACCESS(FE_basis)(&basis);
+		return numberOfFunctionsPerNode;
+	}
+
 private:
 	~cmzn_elementbasis()
 	{
@@ -295,7 +303,7 @@ public:
 			for (int i = first; i < limit; i++)
 			{
 				clearComponent(i);
-				components[i] = component;
+				this->components[i] = component;
 			}
 			return CMZN_OK;
 		}
@@ -340,6 +348,71 @@ public:
 		return CMZN_ERROR_MEMORY;
 	}
 
+	/** @param component_number  -1 for all components, or positive for single component */
+	int setMapNodeValueLabel(int componentNumber, int basisNodeIndex,
+		int nodeFunctionIndex, cmzn_node_value_label nodeValueLabel)
+	{
+		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > this->number_of_components) ||
+				(basisNodeIndex < 1) || (nodeFunctionIndex < 1))
+			return CMZN_ERROR_ARGUMENT;
+		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
+		const int limit = (componentNumber > 0) ? 1 : this->number_of_components;
+		for (int i = first; i < limit; i++)
+		{
+			Global_to_element_map_type mapType;
+			if ((0 == this->components[i]) ||
+					(!FE_element_field_component_get_type(this->components[i], &mapType)) ||
+					(STANDARD_NODE_TO_ELEMENT_MAP != mapType))
+				return CMZN_ERROR_ARGUMENT;
+		}
+		int result = componentCopyOnWrite(componentNumber);
+		if (CMZN_OK != result)
+			return result;
+		for (int i = first; i < limit; i++)
+		{
+			FE_element_field_component *component = this->components[i];
+			Standard_node_to_element_map *standard_node_map;
+			if (!FE_element_field_component_get_standard_node_map(component, basisNodeIndex - 1, &standard_node_map))
+				return CMZN_ERROR_ARGUMENT;
+			FE_nodal_value_type fe_nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
+			if (!Standard_node_to_element_map_set_nodal_value_type(standard_node_map, nodeFunctionIndex - 1, fe_nodal_value_type))
+				return CMZN_ERROR_GENERAL;
+		}
+		return CMZN_OK;
+	}
+
+	/** @param component_number  -1 for all components, or positive for single component */
+	int setMapNodeVersion(int componentNumber, int basisNodeIndex,
+		int nodeFunctionIndex, int versionNumber)
+	{
+		if ((componentNumber < -1) || (componentNumber == 0) || (componentNumber > this->number_of_components) ||
+				(basisNodeIndex < 1) || (nodeFunctionIndex < 1) && (0 < versionNumber))
+			return CMZN_ERROR_ARGUMENT;
+		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
+		const int limit = (componentNumber > 0) ? 1 : this->number_of_components;
+		for (int i = first; i < limit; i++)
+		{
+			Global_to_element_map_type mapType;
+			if ((0 == this->components[i]) ||
+					(!FE_element_field_component_get_type(this->components[i], &mapType)) ||
+					(STANDARD_NODE_TO_ELEMENT_MAP != mapType))
+				return CMZN_ERROR_ARGUMENT;
+		}
+		int result = componentCopyOnWrite(componentNumber);
+		if (CMZN_OK != result)
+			return result;
+		for (int i = first; i < limit; i++)
+		{
+			FE_element_field_component *component = this->components[i];
+			Standard_node_to_element_map *standard_node_map;
+			if (!FE_element_field_component_get_standard_node_map(component, basisNodeIndex - 1, &standard_node_map))
+				return CMZN_ERROR_ARGUMENT;
+			if (!Standard_node_to_element_map_set_nodal_version(standard_node_map, nodeFunctionIndex - 1, versionNumber))
+				return CMZN_ERROR_GENERAL;
+		}
+		return CMZN_OK;
+	}
+
 	int defineOnElement(FE_element *element)
 	{
 		return define_FE_field_at_element(element, fe_field, components);
@@ -372,6 +445,28 @@ private:
 		DESTROY(FE_element_field_component)(&component);
 		return;
 	}
+
+	/** copy component map if shared by another component not being modified */
+	int componentCopyOnWrite(int componentNumber)
+	{
+		if ((1 != this->number_of_components) && (componentNumber > 0))
+		{
+			const int index = (componentNumber > 0) ? (componentNumber - 1) : 0;
+			FE_element_field_component *component = this->components[index];
+			for (int i = 0; i < this->number_of_components; i++)
+			{
+				if ((i != index) && (this->components[i] == component))
+				{
+					component = copy_create_FE_element_field_component(component);
+					if (!component)
+						return CMZN_ERROR_MEMORY;
+					break;
+				}
+			}
+		}
+		return CMZN_OK;		
+	}
+
 };
 
 }
@@ -561,7 +656,7 @@ public:
 		}
 		if (CMZN_OK == return_code)
 		{
-			cmzn_element_field& element_field = getElementField(fe_field);
+			cmzn_element_field& element_field = getOrCreateElementField(fe_field);
 			return_code = element_field.buildComponent(component_number, fe_basis, basis_number_of_nodes, local_node_indexes);
 			clearTemplateElement();
 		}
@@ -605,13 +700,39 @@ public:
 		}
 		if (CMZN_OK == return_code)
 		{
-			cmzn_element_field& element_field = getElementField(fe_field);
+			cmzn_element_field& element_field = getOrCreateElementField(fe_field);
 			return_code = element_field.buildElementConstantComponent(component_number, fe_basis);
 			clearTemplateElement();
 		}
 		REACCESS(FE_basis)(&fe_basis, NULL);
 		cmzn_elementbasis_destroy(&basis);
 		return return_code;
+	}
+
+	int setMapNodeValueLabel(cmzn_field_id field, int componentNumber,
+		int basisNodeIndex, int nodeFunctionIndex, cmzn_node_value_label nodeValueLabel)
+	{
+		FE_field *fe_field = 0;
+		if (Computed_field_get_type_finite_element(field, &fe_field))
+		{
+			cmzn_element_field *element_field = this->getElementField(fe_field);
+			if (element_field)
+				return element_field->setMapNodeValueLabel(componentNumber, basisNodeIndex, nodeFunctionIndex, nodeValueLabel);
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int setMapNodeVersion(cmzn_field_id field, int componentNumber,
+		int basisNodeIndex, int nodeFunctionIndex, int versionNumber)
+	{
+		FE_field *fe_field = 0;
+		if (Computed_field_get_type_finite_element(field, &fe_field))
+		{
+			cmzn_element_field *element_field = this->getElementField(fe_field);
+			if (element_field)
+				return element_field->setMapNodeVersion(componentNumber, basisNodeIndex, nodeFunctionIndex, versionNumber);
+		}
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 	int validate()
@@ -748,17 +869,20 @@ private:
 
 	FE_element *getTemplateElement() { return template_element; }
 
-	cmzn_element_field& getElementField(FE_field *fe_field)
+	cmzn_element_field *getElementField(FE_field *fe_field)
 	{
 		cmzn_element_field *element_field = NULL;
 		for (unsigned int i = 0; i < fields.size(); i++)
 		{
 			if (fields[i]->getFeField() == fe_field)
-			{
-				element_field = fields[i];
-				break;
-			}
+				return fields[i];
 		}
+		return 0;
+	}
+
+	cmzn_element_field& getOrCreateElementField(FE_field *fe_field)
+	{
+		cmzn_element_field *element_field = this->getElementField(fe_field);
 		if (!element_field)
 		{
 			element_field = new cmzn_element_field(fe_field);
@@ -1457,6 +1581,15 @@ int cmzn_elementbasis_get_number_of_functions(
 		return element_basis->getNumberOfFunctions();
 	return 0;
 }
+
+int cmzn_elementbasis_get_number_of_functions_per_node(
+	cmzn_elementbasis_id element_basis, int basis_node_index)
+{
+	if (element_basis)
+		return element_basis->getNumberOfFunctionsPerNode(basis_node_index);
+	return 0;
+}
+
 cmzn_elementtemplate_id cmzn_elementtemplate_access(
 	cmzn_elementtemplate_id element_template)
 {
@@ -1551,6 +1684,28 @@ int cmzn_elementtemplate_define_field_simple_nodal(
 		return elementtemplate->defineFieldSimpleNodal(
 			field, component_number, basis, number_of_nodes, local_node_indexes);
 	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_elementtemplate_set_map_node_value_label(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field,
+	int component_number, int basis_node_index, int node_function_index,
+	enum cmzn_node_value_label node_value_label)
+{
+	if (elementtemplate)
+		return elementtemplate->setMapNodeValueLabel(field, component_number,
+			basis_node_index, node_function_index, node_value_label);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_elementtemplate_set_map_node_version(
+	cmzn_elementtemplate_id elementtemplate, cmzn_field_id field,
+	int component_number, int basis_node_index, int node_function_index,
+	int version_number)
+{
+	if (elementtemplate)
+		return elementtemplate->setMapNodeVersion(field, component_number,
+			basis_node_index, node_function_index, version_number);
 	return CMZN_ERROR_ARGUMENT;
 }
 
