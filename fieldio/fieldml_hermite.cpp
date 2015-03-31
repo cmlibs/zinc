@@ -8,8 +8,10 @@
 
 #include <gtest/gtest.h>
 #include <cmath>
+#include <vector>
 
 #include <zinc/field.hpp>
+#include <zinc/fieldarithmeticoperators.hpp>
 #include <zinc/fieldcache.hpp>
 #include <zinc/fieldconstant.hpp>
 #include <zinc/fieldfiniteelement.hpp>
@@ -229,4 +231,270 @@ TEST(ZincRegion, fieldml_figure8)
 	EXPECT_EQ(OK, result = testRegion2.read(sir2));
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
 	check_figure8_model(testFm2);
+}
+
+namespace {
+
+class Bifurcation
+{
+	Fieldmodule& fm;
+	int maxGeneration;
+	// number nodes and elements by generation otherwise EX file is huge
+	std::vector<int> nextNodeIndentifier;
+	std::vector<int> nextElementIdentifier;
+	FieldFiniteElement coordinates;
+	FieldFiniteElement radius;
+	Mesh mesh1d;
+	Nodeset nodes;
+	Nodetemplate nodetemplate1, nodetemplate3;
+	Elementtemplate elementtemplate1, elementtemplate2, elementtemplate3;
+	Fieldcache fieldcache;
+
+public:
+	Bifurcation(Fieldmodule& fm, int maxGeneration);
+
+	void Bifurcation::addElement(int generation, const Node& node1,
+		const double *coordinates1, const double *direction1, double radius1, int version1,
+		const double *coordinates2);
+};
+
+Bifurcation::Bifurcation(Fieldmodule& fmIn, int maxGenerationIn) :
+	fm(fmIn),
+	maxGeneration(maxGenerationIn),
+	nextNodeIndentifier(maxGenerationIn + 1),
+	nextElementIdentifier(maxGenerationIn + 1)
+{
+	int generationSize = 1;
+	for (int g = 1; g <= maxGenerationIn; ++g)
+	{
+		nextNodeIndentifier[g] = generationSize + 1;
+		nextElementIdentifier[g] = generationSize;
+		generationSize *= 2;
+	}
+
+	fm.beginChange();
+	int result;
+
+	coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/3);
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(OK, result = coordinates.setName("coordinates"));
+	EXPECT_EQ(OK, result = coordinates.setTypeCoordinate(true));
+	EXPECT_EQ(OK, result = coordinates.setManaged(true));
+	EXPECT_EQ(OK, result = coordinates.setComponentName(1, "x"));
+	EXPECT_EQ(OK, result = coordinates.setComponentName(2, "y"));
+	EXPECT_EQ(OK, result = coordinates.setComponentName(3, "z"));
+
+	radius = fm.createFieldFiniteElement(/*numberOfComponents*/1);
+	EXPECT_TRUE(radius.isValid());
+	EXPECT_EQ(OK, result = radius.setName("radius"));
+	EXPECT_EQ(OK, result = radius.setManaged(true));
+
+	nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodes.isValid());
+
+	nodetemplate1 = nodes.createNodetemplate();
+	EXPECT_EQ(OK, result = nodetemplate1.defineField(coordinates));
+	EXPECT_EQ(OK, result = nodetemplate1.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS1, 1));
+	EXPECT_EQ(OK, result = nodetemplate1.defineField(radius));
+	nodetemplate3 = nodes.createNodetemplate();
+	EXPECT_EQ(OK, result = nodetemplate3.defineField(coordinates));
+	EXPECT_EQ(OK, result = nodetemplate3.setValueNumberOfVersions(coordinates, -1, Node::VALUE_LABEL_D_DS1, 3));
+	EXPECT_EQ(OK, result = nodetemplate3.defineField(radius));
+	EXPECT_EQ(OK, result = nodetemplate3.setValueNumberOfVersions(radius, -1, Node::VALUE_LABEL_VALUE, 3));
+
+	mesh1d = fm.findMeshByDimension(1);
+	EXPECT_TRUE(mesh1d.isValid());
+
+	Elementbasis linearBasis = fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_LINEAR_LAGRANGE);
+	EXPECT_TRUE(linearBasis.isValid());
+	Elementbasis cubicHermiteBasis = fm.createElementbasis(1, Elementbasis::FUNCTION_TYPE_CUBIC_HERMITE);
+	EXPECT_TRUE(cubicHermiteBasis.isValid());
+
+	const int localNodeIndexes[2] = { 1, 2 };
+	elementtemplate1 = mesh1d.createElementtemplate();
+	EXPECT_EQ(OK, result = elementtemplate1.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(OK, result = elementtemplate1.setNumberOfNodes(2));
+	EXPECT_EQ(OK, result = elementtemplate1.defineFieldSimpleNodal(coordinates, -1, cubicHermiteBasis, 2, localNodeIndexes));
+	EXPECT_EQ(OK, result = elementtemplate1.setMapNodeValueLabel(coordinates, -1, /*node*/1, /*function*/2, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(OK, result = elementtemplate1.setMapNodeVersion(coordinates, -1, /*node*/1, /*function*/2, 1));
+	EXPECT_EQ(OK, result = elementtemplate1.defineFieldSimpleNodal(radius, -1, linearBasis, 2, localNodeIndexes));
+	elementtemplate2 = mesh1d.createElementtemplate();
+	EXPECT_EQ(OK, result = elementtemplate2.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(OK, result = elementtemplate2.setNumberOfNodes(2));
+	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(coordinates, -1, cubicHermiteBasis, 2, localNodeIndexes));
+	EXPECT_EQ(OK, result = elementtemplate2.setMapNodeVersion(coordinates, -1, /*node*/1, /*function*/2, 2));
+	EXPECT_EQ(OK, result = elementtemplate2.defineFieldSimpleNodal(radius, -1, linearBasis, 2, localNodeIndexes));
+	EXPECT_EQ(OK, result = elementtemplate2.setMapNodeVersion(radius, -1, /*node*/1, /*function*/1, 2));
+	elementtemplate3 = mesh1d.createElementtemplate();
+	EXPECT_EQ(OK, result = elementtemplate3.setElementShapeType(Element::SHAPE_TYPE_LINE));
+	EXPECT_EQ(OK, result = elementtemplate3.setNumberOfNodes(2));
+	EXPECT_EQ(OK, result = elementtemplate3.defineFieldSimpleNodal(coordinates, -1, cubicHermiteBasis, 2, localNodeIndexes));
+	EXPECT_EQ(OK, result = elementtemplate3.setMapNodeVersion(coordinates, -1, /*node*/1, /*function*/2, 3));
+	EXPECT_EQ(OK, result = elementtemplate3.defineFieldSimpleNodal(radius, -1, linearBasis, 2, localNodeIndexes));
+	EXPECT_EQ(OK, result = elementtemplate3.setMapNodeVersion(radius, -1, /*node*/1, /*function*/1, 3));
+
+	fieldcache = fm.createFieldcache();
+
+	int generation = 1;
+	const int nodeIdentifier = 1;
+	Node node1 = nodes.createNode(nodeIdentifier, nodetemplate1);
+	EXPECT_TRUE(node1.isValid());
+	const double coordinates1[3] = { 0.0, 0.0, 0.0 };
+	const double direction1[3] = { 0.0, 0.0, 1.0 };
+	const double radius = 0.1;
+	addElement(generation, node1, coordinates1, direction1, radius, /*version1*/1, direction1);
+	fm.endChange();
+}
+
+void Bifurcation::addElement(int generation, const Node& node1,
+	const double *coordinates1, const double *direction1, double radius1, int version1,
+	const double *direction2)
+{
+	EXPECT_EQ(OK, fieldcache.setNode(node1));
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 3, coordinates1));
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, version1, 3, direction1));
+	EXPECT_EQ(OK, radius.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 1, &radius1));
+
+	double coordinates2[3];
+	for (int i = 0; i < 3; ++i)
+		coordinates2[i] = coordinates1[i] + 0.5*direction1[i] + 0.4*direction2[i];
+	double radius2 = radius1*0.8;
+	const int nodeIdentifier = (nextNodeIndentifier[generation])++;
+	Node node2 = this->nodes.createNode(nodeIdentifier, (generation < maxGeneration) ? nodetemplate3 : nodetemplate1);
+	EXPECT_TRUE(node2.isValid());
+	EXPECT_EQ(OK, fieldcache.setNode(node2));
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 3, coordinates2));
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, /*version*/1, 3, direction2));
+	EXPECT_EQ(OK, radius.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, /*version*/1, 1, &radius2));
+
+	Elementtemplate elementtemplate =
+		(version1 == 1) ? elementtemplate1 :
+		(version1 == 2) ? elementtemplate2 : elementtemplate3;
+	EXPECT_EQ(OK, elementtemplate.setNode(1, node1));
+	EXPECT_EQ(OK, elementtemplate.setNode(2, node2));
+	int elementIdentifier = nextElementIdentifier[generation];
+	// keep different versions together to reduce EX file size
+	if (version1 == 3)
+		elementIdentifier += (1 << (generation - 2)) - 1;
+	else
+		++(nextElementIdentifier[generation]);
+	Element element = mesh1d.createElement(elementIdentifier, elementtemplate);
+	EXPECT_TRUE(element.isValid());
+
+	if (generation < maxGeneration)
+	{
+		double normal[3] =
+		{
+			direction1[1]*direction2[2] - direction1[2]*direction2[1],
+			direction1[2]*direction2[0] - direction1[0]*direction2[2],
+			direction1[0]*direction2[1] - direction1[1]*direction2[0]
+		};
+		if (generation == 1)
+		{
+			normal[0] = 0.0;
+			normal[1] = 1.0;
+			normal[2] = 0.0;
+		}
+		else
+		{
+			double normalLength = 0.0;
+			double directionLength = 0.0;
+			for (int i = 0; i < 3; ++i)
+			{
+				normalLength += normal[i]*normal[i];
+				directionLength += direction2[i]*direction2[i];
+			}
+			double factor = sqrt(directionLength) / sqrt(normalLength);
+			for (int i = 0; i < 3; ++i)
+				normal[i] *= factor;
+		}
+		double direction1Child1[3];
+		double direction1Child2[3];
+		double direction2Child1[3];
+		double direction2Child2[3];
+		for (int i = 0; i < 3; ++i)
+		{
+			direction1Child1[i] = 0.6*direction2[i] - 0.2*normal[i];
+			direction1Child2[i] = 0.6*direction2[i] + 0.2*normal[i];
+			direction2Child1[i] = 0.4*direction2[i] - 0.65*normal[i];
+			direction2Child2[i] = 0.4*direction2[i] + 0.65*normal[i];
+		}
+		double radiusChild = sqrt(0.5*radius2*radius2)/0.8;
+		addElement(generation + 1, node2, coordinates2, direction1Child1, radiusChild, /*version1*/2, direction2Child1);
+		addElement(generation + 1, node2, coordinates2, direction1Child2, radiusChild, /*version1*/3, direction2Child2);
+	}
+}
+
+void check_bifurcation(Fieldmodule& fm)
+{
+	int result;
+	Field coordinates = fm.findFieldByName("coordinates");
+	EXPECT_TRUE(coordinates.isValid());
+	EXPECT_EQ(3, coordinates.getNumberOfComponents());
+	EXPECT_TRUE(coordinates.isTypeCoordinate());
+	Field radius = fm.findFieldByName("radius");
+	EXPECT_TRUE(radius.isValid());
+	EXPECT_EQ(1, radius.getNumberOfComponents());
+
+	EXPECT_EQ(OK, result = fm.defineAllFaces());
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	int elementsCount = mesh1d.getSize();
+	EXPECT_EQ(1023, elementsCount);
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	int nodesCount = nodes.getSize();
+	EXPECT_EQ(1024, nodesCount);
+	for (int e = 1; e <= elementsCount; ++e)
+	{
+		Element element = mesh1d.findElementByIdentifier(e);
+		EXPECT_TRUE(element.isValid());
+		Element::ShapeType shapeType = element.getShapeType();
+		EXPECT_EQ(Element::SHAPE_TYPE_LINE, shapeType);
+	}
+
+	// integrate to get volume of vessels
+	const double piConstant = 3.14159265358979323846;
+	FieldConstant pi = fm.createFieldConstant(1, &piConstant);
+	EXPECT_TRUE(pi.isValid());
+	Field area = pi*radius*radius;
+	EXPECT_TRUE(area.isValid());
+	FieldMeshIntegral volume = fm.createFieldMeshIntegral(area, coordinates, mesh1d);
+	EXPECT_TRUE(volume.isValid());
+	const int numberOfGaussPoints = 4;
+	EXPECT_EQ(OK, result = volume.setNumbersOfPoints(1, &numberOfGaussPoints));
+
+	Fieldcache fieldcache = fm.createFieldcache();
+	EXPECT_TRUE(fieldcache.isValid());
+	double volumeOut;
+	EXPECT_EQ(OK, result = volume.evaluateReal(fieldcache, 1, &volumeOut));
+	EXPECT_NEAR(volumeOut, 0.081574031223926702, 1E-12);
+}
+
+}
+
+// 1D bifurcating network using Hermite for curving geometry
+// and versions of coordinate derivatives and radius fields to give different
+// directions and sizes at bifurations.
+TEST(ZincRegion, bifurcation)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	Bifurcation model(zinc.fm, /*maxGenerations*/10);
+	check_bifurcation(zinc.fm);
+
+	// test writing and re-reading in EX format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.exregion"));
+	Region testRegion1 = zinc.root_region.createChild("test1");
+	EXPECT_EQ(OK, result = testRegion1.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.exregion"));
+	Fieldmodule testFm1 = testRegion1.getFieldmodule();
+	check_bifurcation(testFm1);
+
+#if 0
+	// test writing and re-reading in FieldML format
+	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
+	Region testRegion2 = zinc.root_region.createChild("test2");
+	EXPECT_EQ(OK, result = testRegion2.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
+	Fieldmodule testFm2 = testRegion2.getFieldmodule();
+	check_bifurcation(testFm2);
+#endif
 }

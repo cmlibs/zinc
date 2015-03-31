@@ -321,6 +321,7 @@ namespace {
 
 void create_mixed_template_squares(Fieldmodule& fm)
 {
+	fm.beginChange();
 	int result;
 
 	FieldFiniteElement coordinates = fm.createFieldFiniteElement(/*numberOfComponents*/2);
@@ -446,6 +447,7 @@ void create_mixed_template_squares(Fieldmodule& fm)
 			const int elementIdentifier = j*4 + i + 1;
 			EXPECT_EQ(OK, result = mesh.defineElement(elementIdentifier, elementtemplate));
 		}
+	fm.endChange();
 }
 
 void check_mixed_template_squares(Fieldmodule& fm)
