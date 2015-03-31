@@ -351,7 +351,9 @@ void Bifurcation::addElement(int generation, const Node& node1,
 	const double *direction2)
 {
 	EXPECT_EQ(OK, fieldcache.setNode(node1));
-	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 3, coordinates1));
+	const double zeroCoordinates[3] = { 0.0, 0.0, 0.0 };
+	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 3,
+		(version1 == 1) ? coordinates1 : zeroCoordinates));
 	EXPECT_EQ(OK, coordinates.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_D_DS1, version1, 3, direction1));
 	EXPECT_EQ(OK, radius.setNodeParameters(fieldcache, /*component*/-1, Node::VALUE_LABEL_VALUE, version1, 1, &radius1));
 
@@ -489,9 +491,9 @@ TEST(ZincRegion, bifurcation)
 	Fieldmodule testFm1 = testRegion1.getFieldmodule();
 	check_bifurcation(testFm1);
 
-#if 0
 	// test writing and re-reading in FieldML format
 	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
+#if 0
 	Region testRegion2 = zinc.root_region.createChild("test2");
 	EXPECT_EQ(OK, result = testRegion2.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
