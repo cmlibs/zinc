@@ -74,6 +74,31 @@ ZINC_API int cmzn_field_finite_element_destroy(
 	cmzn_field_finite_element_id *finite_element_field_address);
 
 /**
+ * Set parameters for finite element field at node.
+ * Note that the node and other part locations such as time must be set in the
+ * field cache passed to this function.
+ * @see cmzn_fieldcache_set_node
+ *
+ * @param field  The finite element field to set parameters for.
+ * @param cache  Store of location to assign at and working cache. Must have
+ * set the node in the cache, and time if field is time-varying.
+ * @param component_number  The component to set parameters for, from 1 to the
+ * number of field components, or -1 to set all components together.
+ * @param node_value_label  The nodal value / derivative label to set
+ * parameters for.
+ * @param version_number  The nodal version number to set parameters for,
+ * starting at 1.
+ * @param number_of_values  Size of values array. Checked that it equals or
+ * exceeds the number of components of field, or 1 if setting one component.
+ * @param values_in  Array of real values to be assigned to the parameters.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_field_finite_element_set_node_parameters(
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
+	int component_number, enum cmzn_node_value_label node_value_label,
+	int version_number, int number_of_values, const double *values_in);
+
+/**
  * Creates a field producing a value on 1-D line elements with as many
  * components as the source field, which gives the discontinuity of that field
  * between two adjacent surfaces by a chosen measure. An optional conditional

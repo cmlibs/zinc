@@ -508,43 +508,6 @@ private:
 		cmzn_field_stored_string_destroy(&stored_string_field);
 		return result;
 	}
-
-	FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
-		enum cmzn_node_value_label nodal_value_label)
-	{
-		FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
-		switch (nodal_value_label)
-		{
-			case CMZN_NODE_VALUE_LABEL_INVALID:
-				fe_nodal_value_type = FE_NODAL_UNKNOWN;
-				break;
-			case CMZN_NODE_VALUE_LABEL_VALUE:
-				fe_nodal_value_type = FE_NODAL_VALUE;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS1:
-				fe_nodal_value_type = FE_NODAL_D_DS1;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS2:
-				fe_nodal_value_type = FE_NODAL_D_DS2;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
-				fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D_DS3:
-				fe_nodal_value_type = FE_NODAL_D_DS3;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
-				fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
-				fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
-				break;
-			case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
-				fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
-				break;
-		}
-		return fe_nodal_value_type;
-	}
 };
 
 /*============================================================================*/
@@ -1341,4 +1304,41 @@ cmzn_node_change_flags cmzn_nodesetchanges_get_summary_node_change_flags(
 	if (nodesetchanges)
 		return nodesetchanges->getSummaryNodeChangeFlags();
 	return CMZN_NODE_CHANGE_FLAG_NONE;
+}
+
+FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
+	enum cmzn_node_value_label nodal_value_label)
+{
+	FE_nodal_value_type fe_nodal_value_type = FE_NODAL_UNKNOWN;
+	switch (nodal_value_label)
+	{
+		case CMZN_NODE_VALUE_LABEL_INVALID:
+			fe_nodal_value_type = FE_NODAL_UNKNOWN;
+			break;
+		case CMZN_NODE_VALUE_LABEL_VALUE:
+			fe_nodal_value_type = FE_NODAL_VALUE;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS1:
+			fe_nodal_value_type = FE_NODAL_D_DS1;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS2:
+			fe_nodal_value_type = FE_NODAL_D_DS2;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS2:
+			fe_nodal_value_type = FE_NODAL_D2_DS1DS2;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D_DS3:
+			fe_nodal_value_type = FE_NODAL_D_DS3;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D2_DS1DS3:
+			fe_nodal_value_type = FE_NODAL_D2_DS1DS3;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D2_DS2DS3:
+			fe_nodal_value_type = FE_NODAL_D2_DS2DS3;
+			break;
+		case CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3:
+			fe_nodal_value_type = FE_NODAL_D3_DS1DS2DS3;
+			break;
+	}
+	return fe_nodal_value_type;
 }

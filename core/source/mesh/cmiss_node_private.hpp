@@ -135,4 +135,10 @@ public:
 	}
 };
 
+/**
+ * Convert external node value label to internal finite element value type.
+ */
+FE_nodal_value_type cmzn_node_value_label_to_FE_nodal_value_type(
+	enum cmzn_node_value_label nodal_value_label);
+
 #endif /* !defined (CMZN_NODE_PRIVATE_HPP) */

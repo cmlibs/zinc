@@ -107,6 +107,11 @@ public:
 		return cmzn_elementbasis_get_number_of_functions(id);
 	}
 
+	int getNumberOfFunctionsPerNode(int nodeNumber)
+	{
+		return cmzn_elementbasis_get_number_of_functions_per_node(id, nodeNumber);
+	}
+
 };
 
 class Fieldmodule;
@@ -334,8 +339,23 @@ public:
 		const Elementbasis& basis, int nodeIndexesCount, const int *nodeIndexesIn)
 	{
 		return cmzn_elementtemplate_define_field_simple_nodal(
-			id, field.getId(),  componentNumber, basis.getId(),
+			id, field.getId(), componentNumber, basis.getId(),
 			nodeIndexesCount, nodeIndexesIn);
+	}
+
+	int setMapNodeValueLabel(const Field& field, int componentNumber,
+		int basisNodeIndex, int nodeFunctionIndex, Node::ValueLabel nodeValueLabel)
+	{
+		return cmzn_elementtemplate_set_map_node_value_label(id, field.getId(),
+			componentNumber, basisNodeIndex, nodeFunctionIndex,
+			static_cast<cmzn_node_value_label>(nodeValueLabel));
+	}
+
+	int setMapNodeVersion(const Field& field, int componentNumber,
+		int basisNodeIndex, int nodeFunctionIndex, int versionNumber)
+	{
+		return cmzn_elementtemplate_set_map_node_version(id, field.getId(),
+			componentNumber, basisNodeIndex, nodeFunctionIndex, versionNumber);
 	}
 
 	Node getNode(int localNodeIndex)

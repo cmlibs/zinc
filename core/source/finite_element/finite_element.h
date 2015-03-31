@@ -1485,6 +1485,15 @@ DESCRIPTION :
 Frees the memory for the component and sets <*component_address> to NULL.
 ==============================================================================*/
 
+/**
+ * Creates and returns a copy of the supplied element field component. Due to
+ * references to scale factor sets, the component is valid for use in the
+ * current FE_region only.
+ * @see FE_element_field_component_switch_FE_region
+ */
+struct FE_element_field_component *copy_create_FE_element_field_component(
+	struct FE_element_field_component *source_component);
+
 int FE_element_field_component_get_basis(
 	struct FE_element_field_component *element_field_component,
 	struct FE_basis **basis_address);

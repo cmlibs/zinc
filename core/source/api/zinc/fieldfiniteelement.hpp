@@ -11,6 +11,7 @@
 
 #include "zinc/fieldfiniteelement.h"
 #include "zinc/field.hpp"
+#include "zinc/fieldcache.hpp"
 #include "zinc/fieldmodule.hpp"
 #include "zinc/element.hpp"
 
@@ -30,6 +31,19 @@ public:
 	explicit FieldFiniteElement(cmzn_field_finite_element_id field_finite_element_id) :
 		Field(reinterpret_cast<cmzn_field_id>(field_finite_element_id))
 	{	}
+
+	inline cmzn_field_finite_element_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_field_finite_element_id>(this->id);
+	}
+
+	int setNodeParameters(const Fieldcache& cache, int componentNumber,
+		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, const double *valuesIn)
+	{
+		return cmzn_field_finite_element_set_node_parameters(this->getDerivedId(),
+			cache.getId(), componentNumber, static_cast<cmzn_node_value_label>(nodeValueLabel),
+			versionNumber, valuesCount, valuesIn);
+	}
 };
 
 class FieldEdgeDiscontinuity : public Field
