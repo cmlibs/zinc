@@ -2800,7 +2800,7 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 									{
 										position_vertex = position_buffer + position_values_per_vertex * index_start;
 										glBegin(GL_TRIANGLES);
-										for (unsigned int j = 0; j < npts1; j++)
+										for (unsigned int j = 0; j < index_count; j++)
 										{
 											glVertex3fv(position_vertex);
 											position_vertex += position_values_per_vertex;
