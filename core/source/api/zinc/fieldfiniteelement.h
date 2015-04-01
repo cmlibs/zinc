@@ -15,6 +15,7 @@
 
 #include "types/elementid.h"
 #include "types/fieldid.h"
+#include "types/fieldcacheid.h"
 #include "types/fieldfiniteelementid.h"
 #include "types/fieldmoduleid.h"
 #include "types/nodeid.h"
