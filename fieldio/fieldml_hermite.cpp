@@ -493,10 +493,8 @@ TEST(ZincRegion, bifurcation)
 
 	// test writing and re-reading in FieldML format
 	EXPECT_EQ(OK, result = zinc.root_region.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
-#if 0
 	Region testRegion2 = zinc.root_region.createChild("test2");
 	EXPECT_EQ(OK, result = testRegion2.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
 	check_bifurcation(testFm2);
-#endif
 }
