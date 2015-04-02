@@ -833,10 +833,21 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 	int componentNumber, cmzn_node_value_label nodeValueLabel, int versionNumber,
 	int numberOfValues, const double *valuesIn)
 {
-	const int first = (componentNumber > 0) ? (componentNumber - 1) : 0; 
-	const int limit = (componentNumber > 0) ? 1 : this->field->number_of_components;
+	int first, limit, expectedNumberOfValues;
+	if (componentNumber > 0)
+	{
+		first = componentNumber - 1;
+		limit = componentNumber;
+		expectedNumberOfValues = 1;
+	}
+	else
+	{
+		first = 0;
+		limit = this->field->number_of_components;
+		expectedNumberOfValues = this->field->number_of_components;
+	}
 	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber < this->field->number_of_components))) &&
-			(0 < versionNumber) && (numberOfValues >= limit) && valuesIn))
+			(0 < versionNumber) && (numberOfValues >= expectedNumberOfValues) && valuesIn))
 		return CMZN_ERROR_ARGUMENT;
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (!node_location)

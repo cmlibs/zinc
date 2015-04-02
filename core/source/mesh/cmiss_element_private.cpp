@@ -211,7 +211,7 @@ public:
 	int getNumberOfFunctionsPerNode(int basisNodeIndex) const
 	{
 		FE_basis *basis = this->getFeBasis();
-		int numberOfFunctionsPerNode = FE_basis_get_number_of_functions_per_node(basis, basisNodeIndex);
+		int numberOfFunctionsPerNode = FE_basis_get_number_of_functions_per_node(basis, basisNodeIndex - 1);
 		DEACCESS(FE_basis)(&basis);
 		return numberOfFunctionsPerNode;
 	}
@@ -356,7 +356,7 @@ public:
 				(basisNodeIndex < 1) || (nodeFunctionIndex < 1))
 			return CMZN_ERROR_ARGUMENT;
 		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
-		const int limit = (componentNumber > 0) ? 1 : this->number_of_components;
+		const int limit = (componentNumber > 0) ? componentNumber : this->number_of_components;
 		for (int i = first; i < limit; i++)
 		{
 			Global_to_element_map_type mapType;
@@ -389,7 +389,7 @@ public:
 				(basisNodeIndex < 1) || (nodeFunctionIndex < 1) || (versionNumber < 1))
 			return CMZN_ERROR_ARGUMENT;
 		const int first = (componentNumber > 0) ? (componentNumber - 1) : 0;
-		const int limit = (componentNumber > 0) ? 1 : this->number_of_components;
+		const int limit = (componentNumber > 0) ? componentNumber : this->number_of_components;
 		for (int i = first; i < limit; i++)
 		{
 			Global_to_element_map_type mapType;
