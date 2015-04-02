@@ -1483,7 +1483,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 				else
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Invalid node derivative '%s' in constant evaluator %s",
-						valueString, this->getName(fmlNodeDerivativesEvaluator));
+						valueString, this->getName(fmlNodeDerivativesEvaluator).c_str());
 					return_code = 0;
 				}
 				Fieldml_FreeString(valueString);
@@ -1530,7 +1530,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 				if ((1 != sscanf(valueString, " %d", &constantNodeVersion)) || (constantNodeVersion < 1))
 				{
 					display_message(ERROR_MESSAGE, "Read FieldML:  Invalid node version '%s' in constant evaluator %s",
-						valueString, this->getName(fmlNodeVersionsEvaluator));
+						valueString, this->getName(fmlNodeVersionsEvaluator).c_str());
 					return_code = 0;
 				}
 				Fieldml_FreeString(valueString);
