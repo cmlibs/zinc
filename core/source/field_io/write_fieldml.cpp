@@ -97,7 +97,7 @@ struct ElementFieldComponentTemplate : public cmzn::RefCounted
 	FieldMLBasisData *basisData;
 	HDsLabels elementLabels;
 	std::vector<int> feLocalNodeIndexes;
-	std::vector<FE_nodal_value_type> feNodalValueTypes;
+	std::vector<int> feNodalValueTypes;
 	std::vector<int> feNodalVersions;
 	std::vector<int> feScaleFactorIndexes;
 	std::string name;
@@ -497,8 +497,8 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 	{
 		// define the standard hermite dof to local node and hermite dof to node value type maps
 		// note other custom ones can be defined for element field component templates
-		int dofLocalNodes[64];
-		int dofValueTypes[64];
+		std::vector<int> dofLocalNodes;
+		std::vector<int> dofValueTypes;
 		int localNodeCount = connectivityBasisData->getLocalNodeCount();
 		int dofCount = 0;
 		// GRC this needs checking
@@ -507,8 +507,8 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 			const int localNodeDofCount = newBasisData.getLocalNodeDofCount(n);
 			for (int d = 0; d < localNodeDofCount; ++d)
 			{
-				dofLocalNodes[dofCount] = n + 1;
-				dofValueTypes[dofCount] = d + 1;
+				dofLocalNodes.push_back(n + 1);
+				dofValueTypes.push_back(d + 1);
 				++dofCount;
 			}
 		}
@@ -516,7 +516,7 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 		HDsMapInt hermiteDofLocalNodeMap(DsMap<int>::create(1, &hermiteDofLabels));
 		HDsMapIndexing hermiteDofLocalNodeMapIndexing(hermiteDofLocalNodeMap->createIndexing());
 		hermiteDofLocalNodeMap->setName(basisParametersTypeName + ".localnode");
-		if (!hermiteDofLocalNodeMap->setValues(*hermiteDofLocalNodeMapIndexing, dofCount, dofLocalNodes))
+		if (!hermiteDofLocalNodeMap->setValues(*hermiteDofLocalNodeMapIndexing, dofCount, dofLocalNodes.data()))
 			return 0;
 		FmlObjectHandle fmlHermiteDofLocalNodeMap = this->defineParametersFromMap(
 			*hermiteDofLocalNodeMap, connectivityBasisData->fmlBasisParametersComponentType);
@@ -526,7 +526,7 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 		HDsMapInt hermiteDofValueTypeMap(DsMap<int>::create(1, &hermiteDofLabels));
 		HDsMapIndexing hermiteDofValueTypeMapIndexing(hermiteDofValueTypeMap->createIndexing());
 		hermiteDofValueTypeMap->setName(basisParametersTypeName + ".node_derivatives");
-		if (!hermiteDofValueTypeMap->setValues(*hermiteDofValueTypeMapIndexing, dofCount, dofValueTypes))
+		if (!hermiteDofValueTypeMap->setValues(*hermiteDofValueTypeMapIndexing, dofCount, dofValueTypes.data()))
 			return 0;
 		FmlObjectHandle fmlHermiteDofValueTypeMap = this->defineParametersFromMap(
 			*hermiteDofValueTypeMap, this->fmlNodeDerivativesType);
@@ -534,7 +534,7 @@ FieldMLBasisData *FieldMLWriter::getOutputBasisData(FE_basis *feBasis)
 			return 0;
 		newBasisData.setStandardHermiteMaps(
 			cmzn::GetImpl(hermiteDofLocalNodeMap), fmlHermiteDofLocalNodeMap,
-			cmzn::GetImpl(hermiteDofValueTypeMap), fmlHermiteDofValueTypeMap);
+			cmzn::GetImpl(hermiteDofValueTypeMap), fmlHermiteDofValueTypeMap, dofValueTypes);
 	}
 	this->outputBasisMap[feBasis] = newBasisData;
 	iter = this->outputBasisMap.find(feBasis);
@@ -1218,14 +1218,24 @@ int FieldMLWriter::getElementFieldComponentTemplate(FE_element_field_component *
 		{
 			FE_nodal_value_type valueType = Standard_node_to_element_map_get_nodal_value_type(standardNodeMap, v);
 			if (valueType != FE_NODAL_VALUE)
+			{
+				if (valueType == FE_NODAL_UNKNOWN)
+				{
+					char *description = FE_basis_get_description_string(feBasis);
+					display_message(ERROR_MESSAGE, "FieldMLWriter: Writing special zero parameter at node %d of basis %s is not yet supported",
+						n + 1, description);
+					DEALLOCATE(description);
+					return CMZN_ERROR_NOT_IMPLEMENTED;
+				}
 				usesDerivatives = true;
+			}
 			int version = Standard_node_to_element_map_get_nodal_version(standardNodeMap, v);
 			if (version != 1)
 				usesVersions = true;
 			int scaleFactorIndex = Standard_node_to_element_map_get_scale_factor_index(standardNodeMap, v);
 			if (scaleFactorIndex >= 0)
 				usesScaling = true;
-			newElementTemplate->feNodalValueTypes[numberOfElementDofs] = valueType;
+			newElementTemplate->feNodalValueTypes[numberOfElementDofs] = valueType + 1;
 			newElementTemplate->feNodalVersions[numberOfElementDofs] = version;
 			newElementTemplate->feScaleFactorIndexes[numberOfElementDofs] = scaleFactorIndex;
 			++numberOfElementDofs;
@@ -1329,6 +1339,51 @@ FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldCo
 	char temp[20];
 	sprintf(temp, "%d", nextElementTemplateNumber);
 	++nextElementTemplateNumber;
+	elementTemplate.name = meshName + ".interpolation" + temp;
+
+	// precede by optional derivative/value type and version maps
+	FmlObjectHandle fmlElementDofsArgument = this->getArgumentForType(elementTemplate.basisData->fmlBasisParametersComponentType);
+	DsLabels *parametersLabels = cmzn::GetImpl(elementTemplate.basisData->parametersLabels);
+
+	FmlObjectHandle fmlNodeDerivativesArgument = this->getArgumentForType(this->fmlNodeDerivativesType);
+	FmlObjectHandle fmlNodeDerivativesEvaluator = this->fmlNodeDerivativesDefault;
+	if (0 < elementTemplate.feNodalValueTypes.size())
+	{
+		if (elementTemplate.feNodalValueTypes == elementTemplate.basisData->hermiteDofValueTypes)
+		{
+			// standard derivatives map
+			fmlNodeDerivativesEvaluator = elementTemplate.basisData->fmlHermiteDofValueTypeMap;
+		}
+		else
+		{
+			// custom derivatives map
+			std::string nodeDerivativesMapName = elementTemplate.name + ".node_derivatives";
+			HDsMapInt nodeDerivativesMap(DsMap<int>::create(1, &parametersLabels));
+			HDsMapIndexing nodeDerivativesMapIndexing(nodeDerivativesMap->createIndexing());
+			nodeDerivativesMap->setName(nodeDerivativesMapName);
+			if (!nodeDerivativesMap->setValues(*nodeDerivativesMapIndexing, parametersLabels->getSize(), elementTemplate.feNodalValueTypes.data()))
+				return 0;
+			fmlNodeDerivativesEvaluator = this->defineParametersFromMap(*nodeDerivativesMap, this->fmlNodeDerivativesType);
+			if (fmlNodeDerivativesEvaluator == FML_INVALID_OBJECT_HANDLE)
+				return 0;
+		}
+	}
+
+	FmlObjectHandle fmlNodeVersionsArgument = this->getArgumentForType(this->fmlNodeVersionsType);
+	FmlObjectHandle fmlNodeVersionsEvaluator = this->fmlNodeVersionsDefault;
+	if (0 < elementTemplate.feNodalVersions.size())
+	{
+		// custom versions map
+		std::string nodeVersionsMapName = elementTemplate.name + ".node_versions";
+		HDsMapInt nodeVersionsMap(DsMap<int>::create(1, &parametersLabels));
+		HDsMapIndexing nodeVersionsMapIndexing(nodeVersionsMap->createIndexing());
+		nodeVersionsMap->setName(nodeVersionsMapName);
+		if (!nodeVersionsMap->setValues(*nodeVersionsMapIndexing, parametersLabels->getSize(), elementTemplate.feNodalVersions.data()))
+			return 0;
+		fmlNodeVersionsEvaluator = this->defineParametersFromMap(*nodeVersionsMap, this->fmlNodeVersionsType);
+		if (fmlNodeVersionsEvaluator == FML_INVALID_OBJECT_HANDLE)
+			return 0;
+	}
 
 	MeshNodeConnectivity *nodeConnectivity = elementTemplate.getNodeConnectivity();
 	FmlObjectHandle fmlConnectivity = FML_INVALID_OBJECT_HANDLE;
@@ -1338,7 +1393,6 @@ FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldCo
 		if (FML_INVALID_OBJECT_HANDLE == fmlConnectivity)
 			return FML_INVALID_OBJECT_HANDLE;
 	}
-	elementTemplate.name = meshName + ".interpolation" + temp;
 	std::string elementDofsName = elementTemplate.name + ".dofs";
 	FmlObjectHandle fmlElementDofs = Fieldml_CreateAggregateEvaluator(this->fmlSession, elementDofsName.c_str(), 
 		elementTemplate.basisData->fmlBasisParametersType);
@@ -1349,7 +1403,6 @@ FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldCo
 		this->fmlNodesParametersArguments[CMZN_FIELD_DOMAIN_TYPE_NODES]);
 	if (FML_OK != fmlError)
 		return FML_INVALID_OBJECT_HANDLE;
-	FmlObjectHandle fmlElementDofsArgument = this->getArgumentForType(elementTemplate.basisData->fmlBasisParametersComponentType);
 	fmlError = Fieldml_SetIndexEvaluator(this->fmlSession, fmlElementDofs, /*index*/1, fmlElementDofsArgument);
 	if (FML_OK != fmlError)
 		return FML_INVALID_OBJECT_HANDLE;
@@ -1369,33 +1422,9 @@ FmlObjectHandle FieldMLWriter::writeElementFieldComponentTemplate(ElementFieldCo
 		if (FML_OK != fmlError)
 			return FML_INVALID_OBJECT_HANDLE;
 	}
-	FmlObjectHandle fmlNodeDerivativesArgument = this->getArgumentForType(this->fmlNodeDerivativesType);
-	FmlObjectHandle fmlNodeDerivativesEvaluator = this->fmlNodeDerivativesDefault;
-	if (0 < elementTemplate.feNodalValueTypes.size())
-	{
-#if 0
-		// GRC Hermite change - handle non-standard DOF value type map
-		// map dof index to derivative; use custom map if not equal to standard
-		FmlObjectHandle fmlHermiteDofValueTypeMap = elementTemplate.basisData->fmlHermiteDofValueTypeMap;
-		const int numberOfElementDofs = elementTemplate.basisData->getParameterCount();
-		int dofValueTypes[64];
-		if (!elementTemplate.basisData->hermiteDofValueTypeMap->getValues
-#endif
-		// temporary; use standard map
-		fmlNodeDerivativesEvaluator = elementTemplate.basisData->fmlHermiteDofValueTypeMap;
-	}
 	fmlError = Fieldml_SetBind(this->fmlSession, fmlElementDofs, fmlNodeDerivativesArgument, fmlNodeDerivativesEvaluator);
 	if (FML_OK != fmlError)
 		return FML_INVALID_OBJECT_HANDLE;
-
-	FmlObjectHandle fmlNodeVersionsArgument = this->getArgumentForType(this->fmlNodeVersionsType);
-	FmlObjectHandle fmlNodeVersionsEvaluator = this->fmlNodeVersionsDefault;
-	if (0 < elementTemplate.feNodalVersions.size())
-	{
-#if 0
-		// GRC Hermite change, map dof index to version
-#endif // GRC
-	}
 	fmlError = Fieldml_SetBind(this->fmlSession, fmlElementDofs, fmlNodeVersionsArgument, fmlNodeVersionsEvaluator);
 	if (FML_OK != fmlError)
 		return FML_INVALID_OBJECT_HANDLE;

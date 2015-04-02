@@ -12,6 +12,7 @@
 #if !defined (CMZN_FIELDML_COMMON_HPP)
 #define CMZN_FIELDML_COMMON_HPP
 
+#include <vector>
 #include "zinc/element.h"
 #include "fieldml_api.h"
 #include "datastore/labels.hpp"
@@ -93,6 +94,7 @@ struct FieldMLBasisData
 	FieldMLBasisData *connectivityBasisData;
 	HDsMapInt hermiteDofLocalNodeMap;
 	FmlObjectHandle fmlHermiteDofLocalNodeMap;
+	std::vector<int> hermiteDofValueTypes;
 	HDsMapInt hermiteDofValueTypeMap;
 	FmlObjectHandle fmlHermiteDofValueTypeMap;
 
@@ -115,12 +117,14 @@ struct FieldMLBasisData
 
 	void setStandardHermiteMaps(
 		DsMap<int> *hermiteDofLocalNodeMapIn, FmlObjectHandle fmlHermiteDofLocalNodeMapIn,
-		DsMap<int> *hermiteDofValueTypeMapIn, FmlObjectHandle fmlHermiteDofValueTypeMapIn)
+		DsMap<int> *hermiteDofValueTypeMapIn, FmlObjectHandle fmlHermiteDofValueTypeMapIn,
+		std::vector<int> &hermiteDofValueTypesIn)
 	{
 		cmzn::SetImpl(this->hermiteDofLocalNodeMap, cmzn::Access(hermiteDofLocalNodeMapIn));
 		this->fmlHermiteDofLocalNodeMap = fmlHermiteDofLocalNodeMapIn;
 		cmzn::SetImpl(this->hermiteDofValueTypeMap, cmzn::Access(hermiteDofValueTypeMapIn));
 		this->fmlHermiteDofValueTypeMap = fmlHermiteDofValueTypeMapIn;
+		this->hermiteDofValueTypes = hermiteDofValueTypesIn;
 	}
 
 	FieldMLBasisData *getConnectivityBasisData()
