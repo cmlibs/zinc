@@ -57,6 +57,11 @@ struct ElementFieldComponent
 	int *local_point_indexes;
 	int *swizzled_local_point_indexes;
 	int *node_identifiers;
+	cmzn_node_value_label constantNodeDerivative;
+	HDsMapInt nodeDerivativesMap;
+	int constantNodeVersion;
+	HDsMapInt nodeVersionsMap;
+
 
 	ElementFieldComponent(cmzn_elementbasis_id elementBasisIn,
 			HDsMapInt local_point_to_nodeIn,
@@ -69,7 +74,9 @@ struct ElementFieldComponent
 		swizzle(swizzleIn),
 		local_point_indexes(new int[local_point_count]),
 		swizzled_local_point_indexes(new int[local_point_count]),
-		node_identifiers(new int[local_point_count])
+		node_identifiers(new int[local_point_count]),
+		constantNodeDerivative(CMZN_NODE_VALUE_LABEL_VALUE),
+		constantNodeVersion(1)
 	{
 	}
 
@@ -80,6 +87,47 @@ struct ElementFieldComponent
 		delete[] swizzled_local_point_indexes;
 		delete[] node_identifiers;
 	}
+
+	void setNodeDerivativesMap(DsMap<int> *nodeDerivativesMapIn)
+	{
+		cmzn::SetImpl(this->nodeDerivativesMap, cmzn::Access(nodeDerivativesMapIn));
+	}
+
+	DsMap<int> *getNodeDerivativesMap() const
+	{
+		return cmzn::GetImpl(this->nodeDerivativesMap);
+	}
+
+	void setConstantNodeDerivative(cmzn_node_value_label constantNodeDerivativeIn)
+	{
+		this->constantNodeDerivative = constantNodeDerivativeIn;
+	}
+
+	cmzn_node_value_label getConstantNodeDerivative() const
+	{
+		return this->constantNodeDerivative;
+	}
+
+	void setNodeVersionsMap(DsMap<int> *nodeVersionsMapIn)
+	{
+		cmzn::SetImpl(this->nodeVersionsMap, cmzn::Access(nodeVersionsMapIn));
+	}
+
+	DsMap<int> *getNodeVersionsMap() const
+	{
+		return cmzn::GetImpl(this->nodeVersionsMap);
+	}
+
+	void setConstantNodeVersion(int constantNodeVersionIn)
+	{
+		this->constantNodeVersion = constantNodeVersionIn;
+	}
+
+	int getConstantNodeVersion() const
+	{
+		return this->constantNodeVersion;
+	}
+
 };
 
 typedef std::map<FmlObjectHandle,ElementFieldComponent*> EvaluatorElementFieldComponentMap;
@@ -1389,6 +1437,7 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 					else
 					{
 						// expect same number of parameters per node; not valid for future quadratic Hermite and other bases
+						// GRC to fix
 						const int basisFunctionsPerNode = basisFunctionCount / basisNodeCount;
 						int expectedNodeIdentifier = 0;
 						for (int d = 0; d < basisFunctionCount; ++d)
@@ -1427,10 +1476,16 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 			{
 				int temp;
 				if ((1 == sscanf(valueString, " %d", &temp)) &&
-						(CMZN_NODE_VALUE_LABEL_VALUE <= temp) && (temp <= CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3))
+					(CMZN_NODE_VALUE_LABEL_VALUE <= temp) && (temp <= CMZN_NODE_VALUE_LABEL_D3_DS1DS2DS3))
+				{
 					constantNodeDerivative = static_cast<cmzn_node_value_label>(temp);
+				}
 				else
+				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Invalid node derivative '%s' in constant evaluator %s",
+						valueString, this->getName(fmlNodeDerivativesEvaluator));
 					return_code = 0;
+				}
 				Fieldml_FreeString(valueString);
 			}
 			else
@@ -1473,7 +1528,11 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 			if (valueString)
 			{
 				if ((1 != sscanf(valueString, " %d", &constantNodeVersion)) || (constantNodeVersion < 1))
+				{
+					display_message(ERROR_MESSAGE, "Read FieldML:  Invalid node version '%s' in constant evaluator %s",
+						valueString, this->getName(fmlNodeVersionsEvaluator));
 					return_code = 0;
+				}
 				Fieldml_FreeString(valueString);
 			}
 			else
@@ -1521,9 +1580,19 @@ ElementFieldComponent *FieldMLReader::getElementFieldComponent(cmzn_mesh_id mesh
 			evaluatorName.c_str(), interpolator_name);
 	}
 	HDsMapIndexing indexing(localToGlobalNodeMap->createIndexing());
-	// GRC Hermite to complete
 	ElementFieldComponent *component = new ElementFieldComponent(elementBasis, localToGlobalNodeMap, indexing, basisNodeCount, libraryBases[basis_index].swizzle);
-	componentMap[fmlEvaluator] = component;
+	if (component)
+	{
+		if (nodeDerivativesMap)
+			component->setNodeDerivativesMap(cmzn::GetImpl(nodeDerivativesMap));
+		else
+			component->setConstantNodeDerivative(constantNodeDerivative);
+		if (nodeVersionsMap)
+			component->setNodeVersionsMap(cmzn::GetImpl(nodeVersionsMap));
+		else
+			component->setConstantNodeVersion(constantNodeVersion);
+		componentMap[fmlEvaluator] = component;
+	}
 	return component;
 }
 
@@ -1839,6 +1908,69 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 						return_code = 0;
 						break;
 					}
+					// set derivative/version mappings
+					DsMap<int> *nodeDerivativesMap = components[ic]->getNodeDerivativesMap();
+					HDsMapIndexing nodeDerivativesMapIndexing;
+					if (nodeDerivativesMap)
+						cmzn::SetImpl(nodeDerivativesMapIndexing, nodeDerivativesMap->createIndexing());
+					cmzn_node_value_label nodeDerivative = components[ic]->getConstantNodeDerivative();
+					DsMap<int> *nodeVersionsMap = components[ic]->getNodeVersionsMap();
+					HDsMapIndexing nodeVersionsMapIndexing;
+					if (nodeVersionsMap)
+						cmzn::SetImpl(nodeVersionsMapIndexing, nodeVersionsMap->createIndexing());
+					int nodeVersion = components[ic]->getConstantNodeVersion();
+					const int basisNodeCount = cmzn_elementbasis_get_number_of_nodes(components[ic]->elementBasis);
+					// should be a more convenient way to get the basis dof labels
+					DsLabels *dofLabels = 0;
+					if (nodeDerivativesMap)
+						dofLabels = nodeDerivativesMap->getLabels(0);
+					else if (nodeVersionsMap)
+						dofLabels = nodeVersionsMap->getLabels(0);
+					int dofIndex = 0;
+					for (int n = 1; n <= basisNodeCount; ++n)
+					{
+						const int functionCount = cmzn_elementbasis_get_number_of_functions_per_node(components[ic]->elementBasis, n);
+						for (int f = 1; f <= functionCount; ++f)
+						{
+							if (nodeDerivativesMap)
+							{
+								int value;
+								if (!(nodeDerivativesMapIndexing->setEntryIndex(*dofLabels, dofIndex) &&
+									nodeDerivativesMap->getValues(*nodeDerivativesMapIndexing, 1, &value)))
+								{
+									display_message(ERROR_MESSAGE, "Read FieldML:  Invalid derivative mapping for field %s in element %d",
+										fieldName.c_str(), elementIdentifier);
+									goto fail;
+								}
+								nodeDerivative = static_cast<cmzn_node_value_label>(CMZN_NODE_VALUE_LABEL_VALUE + value - 1);
+							}
+							if (CMZN_OK != cmzn_elementtemplate_set_map_node_value_label(elementtemplate, field,
+								/*component*/ic + 1, n, f, nodeDerivative))
+							{
+								display_message(ERROR_MESSAGE, "Read FieldML:  Invalid derivative %d for field %s in element %d",
+									nodeDerivative, fieldName.c_str(), elementIdentifier);
+								goto fail;
+							}
+							if (nodeVersionsMap)
+							{
+								if (!(nodeVersionsMapIndexing->setEntryIndex(*dofLabels, dofIndex) &&
+									nodeVersionsMap->getValues(*nodeVersionsMapIndexing, 1, &nodeVersion)))
+								{
+									display_message(ERROR_MESSAGE, "Read FieldML:  Invalid version mapping for field %s in element %d",
+										fieldName.c_str(), elementIdentifier);
+									goto fail;
+								}
+							}
+							if (CMZN_OK != cmzn_elementtemplate_set_map_node_version(elementtemplate, field,
+								/*component*/ic + 1, n, f, nodeVersion))
+							{
+								display_message(ERROR_MESSAGE, "Read FieldML:  Invalid version %d for field %s in element %d",
+									nodeVersion, fieldName.c_str(), elementIdentifier);
+								goto fail;
+							}
+							++dofIndex;
+						}
+					}
 				}
 			}
 			int total_local_point_count = 0;
@@ -1883,8 +2015,8 @@ int FieldMLReader::readField(FmlObjectHandle fmlFieldEvaluator, FmlObjectHandle 
 			}
 		}
 	}
-	if (elementtemplate)
-		cmzn_elementtemplate_destroy(&elementtemplate);
+fail:
+	cmzn_elementtemplate_destroy(&elementtemplate);
 	cmzn::Deaccess(elementsLabelIterator);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_nodeset_destroy(&nodeset);
