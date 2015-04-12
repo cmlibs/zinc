@@ -1216,6 +1216,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
 		int vertex_location = array->find_first_fast_search_id_location(cm.number);
+
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -1223,10 +1224,10 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 				vertex_location, 1, &replaceRequired);
 		}
 		if ((vertex_location < 0 || replaceRequired) &&
-			(data||(!n_data_components))&&
-			(ALLOCATE(normalpoints,Triple,number_of_points))&&
-			(ALLOCATE(points,Triple,number_of_points))&&
-			(ALLOCATE(texturepoints,Triple,number_of_points))&&
+			(data||(!n_data_components)) &&
+			(ALLOCATE(normalpoints,Triple,number_of_points)) &&
+			(ALLOCATE(points,Triple,number_of_points)) &&
+			(ALLOCATE(texturepoints,Triple,number_of_points)) &&
 			(ALLOCATE(radius_array,FE_value,3*(number_of_segments_along+1))))
 		{
 			FE_value constant_radius = 0.5*base_size[0];
@@ -1653,8 +1654,10 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 				normal=normalpoints;
 				point = points;
 				datum = original_data;
+				unsigned int offset = 0;
 				for (i=number_of_points;i>0;i--)
 				{
+					offset = number_of_points - i;
 					normal_1=(*normal)[0];
 					normal_2=(*normal)[1];
 					normal_3=(*normal)[2];
@@ -1676,7 +1679,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 					else
 					{
 						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
-							vertex_start + i, 3, 1, floatField);
+							vertex_start + offset, 3, 1, floatField);
 					}
 					normal++;
 					floatField[0] = (GLfloat)(*point)[0];
@@ -1690,7 +1693,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 					else
 					{
 						array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION,
-							vertex_start + i, 3, 1, floatField);
+							vertex_start + offset, 3, 1, floatField);
 					}
 					point++;
 					if (data_field && data)
@@ -1703,7 +1706,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 						else
 						{
 							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
-								vertex_start + i, n_data_components, 1, datum);
+								vertex_start + offset, n_data_components, 1, datum);
 						}
 						datum += n_data_components;
 					}
@@ -1711,8 +1714,8 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 				}
 				/* calculate the texture coordinates */
 				/* the texture coordinate along the length has been set above but must
-					 be propagated to vertices around the cylinder. The second texture
-					 coordinate ranges from from 0 to 1 around the circumference */
+				   be propagated to vertices around the cylinder. The second texture
+				   coordinate ranges from from 0 to 1 around the circumference */
 				texture_coordinate = texturepoints;
 				for (i = 0; i <= number_of_segments_along; i++)
 				{
@@ -1731,7 +1734,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 						else
 						{
 							array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_TEXTURE_COORDINATE_ZERO,
-								vertex_start + i * number_of_segments_around + j, 3, 1, floatField);
+								vertex_start + offset * number_of_segments_around + j, 3, 1, floatField);
 						}
 						texture_coordinate++;
 					}
