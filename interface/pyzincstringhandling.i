@@ -41,7 +41,9 @@ free($1);
 %typemap(argout)(void **memory_buffer_references, unsigned int *memory_buffer_sizes)
 {
 	const char *mystring = (char *)(*$1);
-	PyObject *o = PyString_FromString(mystring);
+	PyObject *o = Py_None;
+	if (mystring)
+		o = PyString_FromString(mystring);
 	if ((!$result) || ($result == Py_None))
 	{
 		$result = o;
