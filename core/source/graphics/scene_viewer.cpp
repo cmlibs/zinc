@@ -4421,7 +4421,7 @@ Sets the Scene_viewer light_model.
 } /* Scene_viewer_set_light_model */
 
 int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
-	double const *eyeValuesIn3)
+	const double *eyeValuesIn3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
 	if (scene_viewer && eyeValuesIn3)
@@ -4450,7 +4450,7 @@ int cmzn_sceneviewer_get_eye_position(cmzn_sceneviewer_id scene_viewer,
 }
 
 int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id scene_viewer,
-	double const *lookatValuesIn3)
+	const double *lookatValuesIn3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
 	if (scene_viewer && lookatValuesIn3)
@@ -4480,7 +4480,7 @@ int cmzn_sceneviewer_get_lookat_position(cmzn_sceneviewer_id scene_viewer,
 }
 
 int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id scene_viewer,
-	double const *upVectorValuesIn3)
+	const double *upVectorValuesIn3)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
 	if (scene_viewer && upVectorValuesIn3)
@@ -4586,8 +4586,8 @@ int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
 }
 
 int cmzn_sceneviewer_set_lookat_parameters_non_skew(
-	cmzn_sceneviewer_id sceneviewer, double const *eyeValuesIn3,
-	double const *lookatValuesIn3, double const *upVectorValuesIn3)
+	cmzn_sceneviewer_id sceneviewer, const double *eyeValuesIn3,
+	const double *lookatValuesIn3, const double *upVectorValuesIn3)
 {
 	double tempv[3],upv[3],viewv[3];
 	if (sceneviewer)

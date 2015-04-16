@@ -101,7 +101,7 @@ ZINC_API int cmzn_sceneviewer_set_interact_mode(cmzn_sceneviewer_id sceneviewer,
  * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id sceneviewer,
-	double const *eyeValuesIn3);
+	const double *eyeValuesIn3);
 
 /**
  * Get the eye position of the scene viewer.
@@ -121,7 +121,7 @@ ZINC_API int cmzn_sceneviewer_get_eye_position(cmzn_sceneviewer_id sceneviewer,
  * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id sceneviewer,
-	double const *lookatValuesIn3);
+	const double *lookatValuesIn3);
 
 /**
  * Get the lookat position of the scene viewer.
@@ -142,7 +142,7 @@ ZINC_API int cmzn_sceneviewer_get_lookat_position(cmzn_sceneviewer_id sceneviewe
  * @return Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id sceneviewer,
-	double const *upVectorValuesIn3);
+	const double *upVectorValuesIn3);
 
 /**
  * Get the up vector of the scene viewer.
@@ -188,8 +188,8 @@ ZINC_API int cmzn_sceneviewer_get_lookat_parameters(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_sceneviewer_set_lookat_parameters_non_skew(
-	cmzn_sceneviewer_id sceneviewer, double const *eyeValuesIn3,
-	double const *lookatValuesIn3, double const *upVectorValuesIn3);
+	cmzn_sceneviewer_id sceneviewer, const double *eyeValuesIn3,
+	const double *lookatValuesIn3, const double *upVectorValuesIn3);
 
 /**
  * Gets the distance from the eye_point to the near clipping plane in the scene viewer.
