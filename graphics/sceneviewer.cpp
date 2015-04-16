@@ -44,7 +44,7 @@ TEST(cmzn_sceneviewer_api, set_background_invalid_args)
 
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_background_colour_component_rgb(sv, -1.0, 0.2, 0.8));
 
-	double rgb[3] = {-0.3, -1.0, 2.99};
+	const double rgb[3] = {-0.3, -1.0, 2.99};
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_background_colour_rgb(sv, rgb));
 
 	cmzn_sceneviewer_destroy(&sv);
@@ -60,7 +60,7 @@ TEST(cmzn_sceneviewer_api, set_background_valid_args)
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_background_colour_component_rgb(sv, 0.5, 0.2, 0.8));
 
-	double rgb[3] = {0.3, 1.0, 0.99};
+	const double rgb[3] = {0.3, 1.0, 0.99};
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_background_colour_rgb(sv, rgb));
 
 	cmzn_sceneviewer_destroy(&sv);
@@ -164,7 +164,7 @@ TEST(cmzn_sceneviewer_api, eye_position_valid_args)
 	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
 
-	double eye[] = {3.0, 4.5, 6.7};
+	const double eye[] = {3.0, 4.5, 6.7};
 	double eyeOut[3];
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_eye_position(sv, eye));
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_get_eye_position(sv, eyeOut));
@@ -197,7 +197,7 @@ TEST(cmzn_sceneviewer_api, lookat_position_valid_args)
 	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
 
-	double lookat[] = {-2.0, 1.5, 16.7};
+	const double lookat[] = {-2.0, 1.5, 16.7};
 	double lookatOut[3];
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_lookat_position(sv, lookat));
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_get_lookat_position(sv, lookatOut));
@@ -230,7 +230,7 @@ TEST(cmzn_sceneviewer_api, up_vector_valid_args)
 	cmzn_sceneviewermodule_id svm = cmzn_context_get_sceneviewermodule(z.context);
 	cmzn_sceneviewer_id sv = cmzn_sceneviewermodule_create_sceneviewer(svm, CMZN_SCENEVIEWER_BUFFERING_MODE_DEFAULT, CMZN_SCENEVIEWER_STEREO_MODE_DEFAULT);
 
-	double upVector[] = {2.0, 0.0, 0.0};
+	const double upVector[] = {2.0, 0.0, 0.0};
 	double upVectorOut[3];
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_set_up_vector(sv, upVector));
 	EXPECT_EQ(CMZN_OK, cmzn_sceneviewer_get_up_vector(sv, upVectorOut));
