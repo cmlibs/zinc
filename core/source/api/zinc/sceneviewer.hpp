@@ -338,7 +338,7 @@ public:
 		return cmzn_sceneviewer_get_eye_position(id, eyeValuesOut3);
 	}
 
-	int setEyePosition(double const *eyeValuesIn3)
+	int setEyePosition(const double *eyeValuesIn3)
 	{
 		return cmzn_sceneviewer_set_eye_position(id, eyeValuesIn3);
 	}
@@ -359,7 +359,7 @@ public:
 		return cmzn_sceneviewer_get_lookat_position(id, lookatValuesOut3);
 	}
 
-	int setLookatPosition(double const *lookatValuesIn3)
+	int setLookatPosition(const double *lookatValuesIn3)
 	{
 		return cmzn_sceneviewer_set_lookat_position(id, lookatValuesIn3);
 	}
@@ -420,7 +420,7 @@ public:
 		return cmzn_sceneviewer_get_up_vector(id, upVectorValuesOut3);
 	}
 
-	int setUpVector(double const *upVectorValuesIn3)
+	int setUpVector(const double *upVectorValuesIn3)
 	{
 		return cmzn_sceneviewer_set_up_vector(id, upVectorValuesIn3);
 	}
@@ -431,7 +431,7 @@ public:
 			eyeValuesOut3, lookatValuesOut3, upVectorValuesOut3);
 	}
 
-	int setLookatParametersNonSkew(double const *eyeValuesIn3, double const *lookatValuesIn3, double const *upVectorValuesIn3)
+	int setLookatParametersNonSkew(const double *eyeValuesIn3, const double *lookatValuesIn3, const double *upVectorValuesIn3)
 	{
 		return cmzn_sceneviewer_set_lookat_parameters_non_skew(id,
 			eyeValuesIn3, lookatValuesIn3, upVectorValuesIn3);
