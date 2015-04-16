@@ -995,17 +995,26 @@ DESCRIPTION :
 Returns the actual projection matrix applied to fill the window.
 ==============================================================================*/
 
-int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
-	double axis[3],double angle);
-/*******************************************************************************
-LAST MODIFIED : 26 November 1997
+/**
+ * Translate sceneviewer eye and lookat by supplied offset vector.
+ * @param scene_viewer  The scene viewer to modify.
+ * @param offset  Offset vector to apply.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+int Scene_viewer_translate(struct Scene_viewer *scene_viewer, const double offset[3]);
 
-DESCRIPTION :
-Rotates the eye <angle> radians about unit vector axis <a> stemming from the
-<scene_viewer> lookat point. Up vector is also reoriented to remain normal to
-the eye-to-lookat direction. Rotation is in a clockwise sense. Also, if <a> is
-not already a unit vector, it will be made one by this function.
-==============================================================================*/
+/**
+ * Rotates the eye by angle radians about axis vector bound to the scene viewer
+ * lookat point. Up vector is also reoriented to remain normal to the
+ * eye-to-lookat direction. Rotation is in a right-handed sense about axis.
+ * @param scene_viewer  The scene viewer to modify.
+ * @param axis  Vector giving axis of rotation. Does not need to be unit vector
+ * as copied and normalised before use in function.
+ * @param angle  Rotation angle in radians.
+ * @return  CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
+	const double axis[3], double angle);
 
 int for_each_Light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
 	LIST_ITERATOR_FUNCTION(Light) *iterator_function,void *user_data);

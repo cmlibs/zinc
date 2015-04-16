@@ -3242,22 +3242,19 @@ cmzn_sceneviewer_id cmzn_sceneviewermodule_create_sceneviewer(
 	return (scene_viewer);
 }
 
+/**
+ * Converts mouse button-press and motion events into viewing transformations
+ * in scene viewer.
+ */
 int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 	struct Graphics_buffer_input *input)
-/*******************************************************************************
-LAST MODIFIED : 1 July 2002
-
-DESCRIPTION :
-Converts mouse button-press and motion events into viewing transformations in
-<scene_viewer>.
-==============================================================================*/
 {
 	int width,height;
-	double near_x,near_y,near_z,far_x,far_y,far_z,dx,dy,dz;
+	double near_x,near_y,near_z,far_x,far_y,far_z;
 	double old_near_x,old_near_y,old_near_z,old_far_x,old_far_y,old_far_z;
-	double radius,fact,a[3],b[3],c[3],e[3],eye_distance,tangent_dist,d,phi,
+	double radius,fact,a[3],b[3],c[3],e[3],eye_distance,tangent_dist,phi,
 		axis[3],angle;
-	int return_code,pointer_x,pointer_y,i,delta_x,delta_y,view_changed;
+	int return_code,pointer_x,pointer_y,i,delta_x,delta_y;
 
 	ENTER(Scene_viewer_input_transform);
 	if (scene_viewer && input)
@@ -3390,7 +3387,6 @@ Converts mouse button-press and motion events into viewing transformations in
 						scene_viewer->previous_pointer_y, &old_near_x,&old_near_y,
 						&old_near_z,&old_far_x,&old_far_y,&old_far_z))
 				{
-					view_changed=0;
 					switch (scene_viewer->drag_mode)
 					{
 						case SV_DRAG_NOTHING:
@@ -3418,10 +3414,10 @@ Converts mouse button-press and motion events into viewing transformations in
 								if (0<(tangent_dist=sqrt((double)(delta_x*delta_x+delta_y*delta_y))))
 								{
 									/* get unit vector dx,dy normal to drag line */
-									dx=-(double)delta_y/tangent_dist;
-									dy= (double)delta_x/tangent_dist;
+									double dx = -(double)delta_y/tangent_dist;
+									double dy =  (double)delta_x/tangent_dist;
 									/* get shortest distance to centre along drag line normal */
-									d=dx*(pointer_x-0.5*(width-1))+dy*(0.5*(height-1)-pointer_y);
+									double d = dx*(pointer_x-0.5*(width-1))+dy*(0.5*(height-1)-pointer_y);
 									/* limit d to radius so twists about view direction */
 									if (d > radius)
 									{
@@ -3462,8 +3458,7 @@ Converts mouse button-press and motion events into viewing transformations in
 									axis[0]=sin(phi)*a[0]+cos(phi)*e[0];
 									axis[1]=sin(phi)*a[1]+cos(phi)*e[1];
 									axis[2]=sin(phi)*a[2]+cos(phi)*e[2];
-									if (Scene_viewer_rotate_about_lookat_point(scene_viewer,axis,
-										-angle))
+									if (CMZN_OK == Scene_viewer_rotate_about_lookat_point(scene_viewer, axis, -angle))
 									{
 										//-- if (Interactive_tool_is_Transform_tool(
 										//-- 	scene_viewer->interactive_tool) &&
@@ -3484,7 +3479,6 @@ Converts mouse button-press and motion events into viewing transformations in
 											scene_viewer->tumble_angle = 0;
 											scene_viewer->tumble_active = 0;
 										}
-										view_changed=1;
 									}
 								}
 							}
@@ -3510,21 +3504,13 @@ Converts mouse button-press and motion events into viewing transformations in
 							}
 							/* get translation at eye distance between near and far */
 							/* apply the translate_rate to slow/hasten translate */
-							dx=scene_viewer->translate_rate*
-								((1.0-fact)*(near_x-old_near_x) + fact*(far_x-old_far_x));
-							dy=scene_viewer->translate_rate*
-								((1.0-fact)*(near_y-old_near_y) + fact*(far_y-old_far_y));
-							dz=scene_viewer->translate_rate*
-								((1.0-fact)*(near_z-old_near_z) + fact*(far_z-old_far_z));
-							scene_viewer->eyex -= dx;
-							scene_viewer->eyey -= dy;
-							scene_viewer->eyez -= dz;
-							scene_viewer->lookatx -= dx;
-							scene_viewer->lookaty -= dy;
-							scene_viewer->lookatz -= dz;
-							cmzn_sceneviewer_request_changes(scene_viewer,
-								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
-							view_changed=1;
+							double offset[3] =
+							{
+								-scene_viewer->translate_rate*((1.0-fact)*(near_x-old_near_x) + fact*(far_x-old_far_x)),
+								-scene_viewer->translate_rate*((1.0-fact)*(near_y-old_near_y) + fact*(far_y-old_far_y)),
+								-scene_viewer->translate_rate*((1.0-fact)*(near_z-old_near_z) + fact*(far_z-old_far_z))
+							};
+							Scene_viewer_translate(scene_viewer, offset);
 						} break;
 						case SV_DRAG_ZOOM:
 						{
@@ -3548,7 +3534,9 @@ Converts mouse button-press and motion events into viewing transformations in
 							scene_viewer->right=radius;
 							scene_viewer->bottom=-radius;
 							scene_viewer->top=radius;
-							view_changed=1;
+							cmzn_sceneviewer_request_changes(scene_viewer,
+								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+								CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 						} break;
 						case SV_DRAG_FLY:
 						{
@@ -3604,19 +3592,12 @@ Converts mouse button-press and motion events into viewing transformations in
 										scene_viewer->near_plane_fly_debt += dy*dist;
 									}
 									cmzn_sceneviewer_set_view_angle(scene_viewer, angle);
-									view_changed = 1;
 								}
 							}
 						} break;
 						default:
 						{
 						} break;
-					}
-					if (view_changed)
-					{
-						cmzn_sceneviewer_request_changes(scene_viewer,
-							CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-							CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 					}
 					scene_viewer->previous_pointer_x=pointer_x;
 					scene_viewer->previous_pointer_y=pointer_y;
@@ -5831,6 +5812,8 @@ Sets the width and height of the Scene_viewers drawing area.
 	{
 		Graphics_buffer_set_width(scene_viewer->graphics_buffer, width);
 		Graphics_buffer_set_height(scene_viewer->graphics_buffer, height);
+		// Note: do not set flag CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED
+		// as repaint is invariably forced by window invalidation
 		cmzn_sceneviewer_request_changes(scene_viewer,
 			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
 		return_code = 1;
@@ -5879,89 +5862,89 @@ Returns the actual projection matrix applied to fill the window.
 	return (return_code);
 } /* Scene_viewer_get_window_projection_matrix */
 
-int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
-	double a[3],double angle)
-/*******************************************************************************
-LAST MODIFIED : 26 November 1997
-
-DESCRIPTION :
-Rotates the eye <angle> radians about unit vector axis <a> stemming from the
-<scene_viewer> lookat point. Up vector is also reoriented to remain normal to
-the eye-to-lookat direction. Rotation is in a clockwise sense. Also, if <a> is
-not already a unit vector, it will be made one by this function.
-==============================================================================*/
+int Scene_viewer_translate(struct Scene_viewer *scene_viewer, const double offset[3])
 {
-	double b[3],c[3],v[3],rel_eyex,rel_eyey,rel_eyez,rel_eyea,rel_eyeb,rel_eyec,
-		upa,upb,upc,new_b[3],new_c[3],cos_angle,sin_angle;
-	int return_code;
+	if (!scene_viewer)
+		return CMZN_ERROR_ARGUMENT;
+	scene_viewer->eyex += offset[0];
+	scene_viewer->eyey += offset[1];
+	scene_viewer->eyez += offset[2];
+	scene_viewer->lookatx += offset[0];
+	scene_viewer->lookaty += offset[1];
+	scene_viewer->lookatz += offset[2];
+	cmzn_sceneviewer_request_changes(scene_viewer,
+		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	return CMZN_OK;
+}
 
-	ENTER(Scene_viewer_rotate_about_lookat_point);
-	if (scene_viewer&&a&&(0<normalize3(a)))
-	{
-		/* get coordinate system moving with rotation, consisting of the axis a */
-		/* and two othogonal vectors b and c in the plane normal to a. */
-		/* v = vector towards viewer */
-		v[0]=rel_eyex=scene_viewer->eyex-scene_viewer->lookatx;
-		v[1]=rel_eyey=scene_viewer->eyey-scene_viewer->lookaty;
-		v[2]=rel_eyez=scene_viewer->eyez-scene_viewer->lookatz;
-		normalize3(v);
-		/* check v is not too closely in line with a */
-		if (0.8 < fabs(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]))
-		{
-			/* use up-vector instead */
-			v[0]=scene_viewer->upx;
-			v[1]=scene_viewer->upy;
-			v[2]=scene_viewer->upz;
-		}
-		/* b = axis (x) a, a vector in plane of rotation */
-		b[0]=a[1]*v[2]-a[2]*v[1];
-		b[1]=a[2]*v[0]-a[0]*v[2];
-		b[2]=a[0]*v[1]-a[1]*v[0];
-		normalize3(b);
-		/* c = b (x) axis, another unit vector in plane of rotation */
-		c[0]=a[1]*b[2]-a[2]*b[1];
-		c[1]=a[2]*b[0]-a[0]*b[2];
-		c[2]=a[0]*b[1]-a[1]*b[0];
-		/* define eye position and up vector relative to a, b and c */
-		rel_eyea=a[0]*rel_eyex+a[1]*rel_eyey+a[2]*rel_eyez;
-		rel_eyeb=b[0]*rel_eyex+b[1]*rel_eyey+b[2]*rel_eyez;
-		rel_eyec=c[0]*rel_eyex+c[1]*rel_eyey+c[2]*rel_eyez;
-		upa=a[0]*scene_viewer->upx+a[1]*scene_viewer->upy+a[2]*scene_viewer->upz;
-		upb=b[0]*scene_viewer->upx+b[1]*scene_viewer->upy+b[2]*scene_viewer->upz;
-		upc=c[0]*scene_viewer->upx+c[1]*scene_viewer->upy+c[2]*scene_viewer->upz;
-		/* get new b and c from clockwise rotation by <angle> radians about a */
-		cos_angle=cos(angle);
-		sin_angle=sin(angle);
-		new_b[0]=cos_angle*b[0]+sin_angle*c[0];
-		new_b[1]=cos_angle*b[1]+sin_angle*c[1];
-		new_b[2]=cos_angle*b[2]+sin_angle*c[2];
-		new_c[0]=cos_angle*c[0]-sin_angle*b[0];
-		new_c[1]=cos_angle*c[1]-sin_angle*b[1];
-		new_c[2]=cos_angle*c[2]-sin_angle*b[2];
-		/* get eye position and up vector back in world coordinates */
-		scene_viewer->eyex=scene_viewer->lookatx+
-			a[0]*rel_eyea+new_b[0]*rel_eyeb+new_c[0]*rel_eyec;
-		scene_viewer->eyey=scene_viewer->lookaty+
-			a[1]*rel_eyea+new_b[1]*rel_eyeb+new_c[1]*rel_eyec;
-		scene_viewer->eyez=scene_viewer->lookatz+
-			a[2]*rel_eyea+new_b[2]*rel_eyeb+new_c[2]*rel_eyec;
-		scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
-		scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
-		scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
-		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
-		return_code=1;
-	}
-	else
+int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
+	const double axis[3], double angle)
+{
+	double a[3] = { axis[0], axis[1], axis[2] };
+	if (!(scene_viewer && (0 < normalize3(a))))
 	{
 		display_message(ERROR_MESSAGE,
 			"Scene_viewer_rotate_about_lookat_point.  Invalid argument(s)");
-		return_code=0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_rotate_about_lookat_point */
+	double b[3],c[3],v[3],rel_eyex,rel_eyey,rel_eyez,rel_eyea,rel_eyeb,rel_eyec,
+		upa,upb,upc,new_b[3],new_c[3],cos_angle,sin_angle;
+	/* get coordinate system moving with rotation, consisting of the axis a */
+	/* and two othogonal vectors b and c in the plane normal to a. */
+	/* v = vector towards viewer */
+	v[0]=rel_eyex=scene_viewer->eyex-scene_viewer->lookatx;
+	v[1]=rel_eyey=scene_viewer->eyey-scene_viewer->lookaty;
+	v[2]=rel_eyez=scene_viewer->eyez-scene_viewer->lookatz;
+	normalize3(v);
+	/* check v is not too closely in line with a */
+	if (0.8 < fabs(v[0]*a[0]+v[1]*a[1]+v[2]*a[2]))
+	{
+		/* use up-vector instead */
+		v[0]=scene_viewer->upx;
+		v[1]=scene_viewer->upy;
+		v[2]=scene_viewer->upz;
+	}
+	/* b = axis (x) a, a vector in plane of rotation */
+	b[0]=a[1]*v[2]-a[2]*v[1];
+	b[1]=a[2]*v[0]-a[0]*v[2];
+	b[2]=a[0]*v[1]-a[1]*v[0];
+	normalize3(b);
+	/* c = b (x) axis, another unit vector in plane of rotation */
+	c[0]=a[1]*b[2]-a[2]*b[1];
+	c[1]=a[2]*b[0]-a[0]*b[2];
+	c[2]=a[0]*b[1]-a[1]*b[0];
+	/* define eye position and up vector relative to a, b and c */
+	rel_eyea=a[0]*rel_eyex+a[1]*rel_eyey+a[2]*rel_eyez;
+	rel_eyeb=b[0]*rel_eyex+b[1]*rel_eyey+b[2]*rel_eyez;
+	rel_eyec=c[0]*rel_eyex+c[1]*rel_eyey+c[2]*rel_eyez;
+	upa=a[0]*scene_viewer->upx+a[1]*scene_viewer->upy+a[2]*scene_viewer->upz;
+	upb=b[0]*scene_viewer->upx+b[1]*scene_viewer->upy+b[2]*scene_viewer->upz;
+	upc=c[0]*scene_viewer->upx+c[1]*scene_viewer->upy+c[2]*scene_viewer->upz;
+	/* get new b and c from clockwise rotation by <angle> radians about a */
+	cos_angle=cos(angle);
+	sin_angle=sin(angle);
+	new_b[0]=cos_angle*b[0]+sin_angle*c[0];
+	new_b[1]=cos_angle*b[1]+sin_angle*c[1];
+	new_b[2]=cos_angle*b[2]+sin_angle*c[2];
+	new_c[0]=cos_angle*c[0]-sin_angle*b[0];
+	new_c[1]=cos_angle*c[1]-sin_angle*b[1];
+	new_c[2]=cos_angle*c[2]-sin_angle*b[2];
+	/* get eye position and up vector back in world coordinates */
+	scene_viewer->eyex=scene_viewer->lookatx+
+		a[0]*rel_eyea+new_b[0]*rel_eyeb+new_c[0]*rel_eyec;
+	scene_viewer->eyey=scene_viewer->lookaty+
+		a[1]*rel_eyea+new_b[1]*rel_eyeb+new_c[1]*rel_eyec;
+	scene_viewer->eyez=scene_viewer->lookatz+
+		a[2]*rel_eyea+new_b[2]*rel_eyeb+new_c[2]*rel_eyec;
+	scene_viewer->upx=a[0]*upa+new_b[0]*upb+new_c[0]*upc;
+	scene_viewer->upy=a[1]*upa+new_b[1]*upb+new_c[1]*upc;
+	scene_viewer->upz=a[2]*upa+new_b[2]*upb+new_c[2]*upc;
+	cmzn_sceneviewer_request_changes(scene_viewer,
+		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+		CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	return CMZN_OK;
+}
 
 int for_each_Light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
 	LIST_ITERATOR_FUNCTION(Light) *iterator_function,void *user_data)
@@ -6340,7 +6323,8 @@ Scales of the absolute image while keeping the same centre point.
 		scene_viewer->user_viewport_top -= 0.5*(zoom_ratio-1.0)*
 			(height/scene_viewer->user_viewport_pixels_per_unit_y);
 		cmzn_sceneviewer_request_changes(scene_viewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code=1;
 	}
 	else
@@ -6739,7 +6723,8 @@ int cmzn_sceneviewer_set_viewport_mode(cmzn_sceneviewer_id sceneviewer,
 	{
 		sceneviewer->viewport_mode = viewport_mode;
 		cmzn_sceneviewer_request_changes(sceneviewer,
-			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM);
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
