@@ -2029,6 +2029,12 @@ access this function.
 			rendering_data.renderer->set_world_view_matrix(scene_viewer->modelview_matrix);
 			rendering_data.renderer->viewport_width = (double)rendering_data.viewport_width;
 			rendering_data.renderer->viewport_height = (double)rendering_data.viewport_height;
+			double NDC_left, NDC_top, NDC_width, NDC_height;
+			Scene_viewer_get_NDC_info(scene_viewer, &NDC_left,&NDC_top,&NDC_width,&NDC_height);
+			rendering_data.renderer->NDC_width = NDC_width;
+			rendering_data.renderer->NDC_height = NDC_height;
+			rendering_data.renderer->NDC_left = NDC_left;
+			rendering_data.renderer->NDC_top = NDC_top;
 			rendering_data.renderer->Scene_compile(scene_viewer->scene, scene_viewer->filter);
 
 			rendering_data.render_callstack = CREATE(LIST(Scene_viewer_render_object))();

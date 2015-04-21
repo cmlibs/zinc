@@ -243,6 +243,23 @@ public:
 					  if (cmzn_scenecoordinatesystem_get_viewport(coordinate_system,
 						  viewport_width, viewport_height, &left, &right, &bottom, &top))
 					  {
+						  if (!(NDC_width == 2.0 && NDC_height == 2.0))
+						  {
+							  double xScale = 2 / NDC_width, yScale = 2 / NDC_height;
+							  double xDiff = 1.0, yDiff = 1.0;
+							  if (xScale > yScale)
+							  {
+								  yDiff = xScale / yScale;
+								  yScale = xScale;
+							  }
+							  else
+							  {
+								  xDiff = yScale / xScale;
+								  xScale = yScale;
+							  }
+							  glScalef(xScale, yScale, 1.0f);
+							  glTranslatef(-1.0 * (NDC_left * yDiff + 1.0 / xScale), -1.0 * ((NDC_top - 2.0) * xDiff + 1.0 / yScale) , 0.0);
+						  }
 						  /* near = 1.0 and far = 3.0 gives -1 to be the near clipping plane
 						   * and +1 to be the far clipping plane */
 						  glOrtho(left, right, bottom, top, /*nearVal*/1.0, /*farVal*/3.0);
