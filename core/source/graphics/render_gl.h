@@ -31,7 +31,7 @@ public:
 	Texture_tiling *texture_tiling;  /** If a given texture is compiled into tiles
 													 then this field is filled in and expected to
 													 be used when compiling graphics that use that material. */
-	double viewport_width, viewport_height;
+	double viewport_width, viewport_height, NDC_width, NDC_height, NDC_top, NDC_left;
 
 	int current_layer, number_of_layers;
 
@@ -52,6 +52,10 @@ public:
 		texture_tiling(0),
 		viewport_width(1.0),
 		viewport_height(1.0),
+		NDC_width(1.0),
+		NDC_height(1.0),
+		NDC_top(0),
+		NDC_left(0),
 		current_layer(0),
 		number_of_layers(1),
 		use_display_list(0),
