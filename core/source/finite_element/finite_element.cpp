@@ -25303,35 +25303,23 @@ there is no face. Element must have a shape and face.
 	return (return_code);
 } /* get_FE_element_face */
 
-int set_FE_element_face(struct FE_element *element,int face_number,
+int set_FE_element_face(struct FE_element *element, int face_number,
 	struct FE_element *face_element)
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-Sets face <face_number> of <element> to <face_element>, ensuring the
-<face_element> has <element> as a parent. <face_element> may be NULL = no face.
-Must have set the shape with set_FE_element_shape first.
-Note it is legal to have the same face more than once on an element -
-consider a toroidal element covering 360 degrees over polar coordinate theta.
-Should only be called for unmanaged elements.
-==============================================================================*/
 {
-	int i, j, return_code;
-	struct FE_element **new_parents, *old_face_element;
+	int return_code;
 
-	ENTER(set_FE_element_face);
 	if (element && element->shape && element->faces && (0 <= face_number) &&
 		(face_number < element->shape->number_of_faces))
 	{
 		return_code = 1;
 		/* check this face not already set, else following logic will fail! */
-		old_face_element = element->faces[face_number];
+		FE_element *old_face_element = element->faces[face_number];
 		if (face_element != old_face_element)
 		{
 			if (face_element)
 			{
 				/* set up new face->parent relationship */
+				FE_element **new_parents;
 				if (REALLOCATE(new_parents, face_element->parents,
 					struct FE_element *, face_element->number_of_parents + 1))
 				{
@@ -25351,12 +25339,12 @@ Should only be called for unmanaged elements.
 				if (old_face_element)
 				{
 					/* remove first instance of element from face->parents array */
-					for (i = 0; i < old_face_element->number_of_parents; i++)
+					for (int i = 0; i < old_face_element->number_of_parents; i++)
 					{
 						if (old_face_element->parents[i] == element)
 						{
 							old_face_element->number_of_parents--;
-							for (j = i; j < old_face_element->number_of_parents; j++)
+							for (int j = i; j < old_face_element->number_of_parents; j++)
 							{
 								old_face_element->parents[j] = old_face_element->parents[j + 1];
 							}
@@ -25375,13 +25363,56 @@ Should only be called for unmanaged elements.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_FE_element_face.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "set_FE_element_face.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* set_FE_element_face */
+}
+
+int set_FE_element_face_no_parents(struct FE_element *element, int face_number,
+	struct FE_element *face_element)
+{
+	int return_code;
+
+	if (element && element->shape && element->faces && (0 <= face_number) &&
+		(face_number < element->shape->number_of_faces))
+	{
+		return_code = 1;
+		/* check this face not already set, else following logic will fail! */
+		FE_element *old_face_element = element->faces[face_number];
+		if (face_element != old_face_element)
+		{
+			if (old_face_element)
+			{
+				/* remove first instance of element from face->parents array */
+				for (int i = 0; i < old_face_element->number_of_parents; i++)
+				{
+					if (old_face_element->parents[i] == element)
+					{
+						old_face_element->number_of_parents--;
+						for (int j = i; j < old_face_element->number_of_parents; j++)
+						{
+							old_face_element->parents[j] = old_face_element->parents[j + 1];
+						}
+						break;
+					}
+				}
+				if (0 == old_face_element->number_of_parents)
+				{
+					DEALLOCATE(old_face_element->parents);
+				}
+			}
+			/* set the new face */
+			REACCESS(FE_element)(&(element->faces[face_number]), face_element);
+		}
+	}
+	else
+	{
+		display_message(ERROR_MESSAGE, "set_FE_element_face_no_parents.  Invalid argument(s)");
+		return_code = 0;
+	}
+	return (return_code);
+}
 
 int get_FE_element_face_number(struct FE_element *element, struct FE_element *face)
 {

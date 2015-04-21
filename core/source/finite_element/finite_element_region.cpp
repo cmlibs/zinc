@@ -959,6 +959,16 @@ int FE_region_end_change(struct FE_region *fe_region)
 	return 0;
 }
 
+int FE_region_end_change_no_notify(struct FE_region *fe_region)
+{
+	if (fe_region)
+	{
+		--(fe_region->change_level);
+		return 1;
+	}
+	return 0;
+}
+
 bool FE_field_has_cached_changes(FE_field *fe_field)
 {
 	FE_region *fe_region;
@@ -4111,7 +4121,7 @@ plus nodes from <fe_region> of the same number as those currently used.
 {
 	int element_dimension, i, number_of_faces, number_of_nodes, return_code;
 	struct CM_element_information element_identifier;
-	struct FE_element *old_face, *other_element, *new_face;
+	struct FE_element *old_face, *new_face;
 	struct FE_element_merge_into_FE_region_data *data;
 	struct FE_element_field_info *current_element_field_info, *element_field_info,
 		**matching_element_field_info;
@@ -4127,13 +4137,13 @@ plus nodes from <fe_region> of the same number as those currently used.
 		(fe_region = data->fe_region))
 	{
 		element_dimension = get_FE_element_dimension(element);
+		get_FE_element_identifier(element, &element_identifier);
+		FE_element *global_element = FE_region_get_FE_element_from_identifier(fe_region,
+			element_dimension, element_identifier.number);
 		if (FE_element_shape_is_unspecified(element_shape))
 		{
-			/* must find an existing element of the same dimension */
-			get_FE_element_identifier(element, &element_identifier);
-			other_element = FE_region_get_FE_element_from_identifier(fe_region,
-				element_dimension, element_identifier.number);
-			if (other_element)
+			/* must have a corresponding global element */
+			if (global_element)
 			{
 				return_code = 1;
 			}
@@ -4250,7 +4260,8 @@ plus nodes from <fe_region> of the same number as those currently used.
 				{
 					return_code = 0;
 				}
-				/* substitute global faces */
+				// substitute global faces, but add parent pointers only if this element will become global
+				bool willBeGlobal = (!global_element) || (element == global_element);
 				if (get_FE_element_number_of_faces(element, &number_of_faces))
 				{
 					int face_dimension = element_dimension - 1;
@@ -4264,9 +4275,15 @@ plus nodes from <fe_region> of the same number as those currently used.
 									(new_face = FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
 										&element_identifier, fe_region->get_element_list(face_dimension))))
 								{
-									if (!set_FE_element_face(element, i, new_face))
+									if (willBeGlobal)
 									{
-										return_code = 0;
+										if (!set_FE_element_face(element, i, new_face))
+											return_code = 0;
+									}
+									else
+									{
+										if (!set_FE_element_face_no_parents(element, i, new_face))
+											return_code = 0;
 									}
 								}
 								else
