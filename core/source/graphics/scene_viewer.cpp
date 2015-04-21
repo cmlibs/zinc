@@ -4429,6 +4429,9 @@ int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
 		scene_viewer->eyex = eyeValuesIn3[0];
 		scene_viewer->eyey = eyeValuesIn3[1];
 		scene_viewer->eyez = eyeValuesIn3[2];
+		cmzn_sceneviewer_request_changes(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code = CMZN_OK;
 	}
 
@@ -4458,6 +4461,9 @@ int cmzn_sceneviewer_set_lookat_position(cmzn_sceneviewer_id scene_viewer,
 		scene_viewer->lookatx = lookatValuesIn3[0];
 		scene_viewer->lookaty = lookatValuesIn3[1];
 		scene_viewer->lookatz = lookatValuesIn3[2];
+		cmzn_sceneviewer_request_changes(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code = CMZN_OK;
 	}
 
@@ -4490,6 +4496,9 @@ int cmzn_sceneviewer_set_up_vector(cmzn_sceneviewer_id scene_viewer,
 		scene_viewer->upx = upVectorUnit[0];
 		scene_viewer->upy = upVectorUnit[1];
 		scene_viewer->upz = upVectorUnit[2];
+		cmzn_sceneviewer_request_changes(scene_viewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		return_code = CMZN_OK;
 	}
 
