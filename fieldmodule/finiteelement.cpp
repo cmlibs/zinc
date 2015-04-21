@@ -1064,3 +1064,57 @@ TEST(ZincFieldFiniteElement, redefine_element_field)
 	EXPECT_DOUBLE_EQ(1.0, pressureValueOut);
 	zinc.fm.endChange();
 }
+
+class FieldmodulecallbackCheckExterior : public Fieldmodulecallback
+{
+public:
+	Fieldcache& cache;
+	FieldIsExterior& isExteriorField;
+	Fieldmoduleevent lastEvent;
+
+	FieldmodulecallbackCheckExterior(Fieldcache& cacheIn, FieldIsExterior& isExteriorFieldIn) :
+		cache(cacheIn),
+		isExteriorField(isExteriorFieldIn)
+	{ }
+
+	virtual void operator()(const Fieldmoduleevent &event)
+	{
+		double isExteriorValue;
+		EXPECT_EQ(OK, this->isExteriorField.evaluateReal(this->cache, 1, &isExteriorValue));
+		EXPECT_DOUBLE_EQ(1.0, isExteriorValue);
+		this->lastEvent = event;
+	}
+};
+
+// Test merging a mesh in does not leave faces with temporary elements as
+// additional parents, which stops the 'is exterior' logic from working.
+TEST(ZincFieldFiniteElement, issue_3892_temporary_element_parents)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
+	EXPECT_TRUE(mesh2d.isValid());
+	FieldIsExterior isExteriorField = zinc.fm.createFieldIsExterior();
+	EXPECT_TRUE(isExteriorField.isValid());
+
+	Element face1 = mesh2d.findElementByIdentifier(1);
+	EXPECT_TRUE(face1.isValid());
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+	cache.setElement(face1);
+	double isExteriorValue;
+	EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &isExteriorValue));
+	EXPECT_DOUBLE_EQ(1.0, isExteriorValue);
+
+	Fieldmodulenotifier notifier = zinc.fm.createFieldmodulenotifier();
+	EXPECT_TRUE(notifier.isValid());
+	FieldmodulecallbackCheckExterior checkExteriorCallback(cache, isExteriorField);
+	EXPECT_EQ(CMZN_OK, result = notifier.setCallback(checkExteriorCallback));
+
+	EXPECT_EQ(OK, result = zinc.root_region.readFile(TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE)));
+	EXPECT_TRUE(checkExteriorCallback.lastEvent.isValid());
+	EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &isExteriorValue));
+	EXPECT_DOUBLE_EQ(1.0, isExteriorValue);
+}
