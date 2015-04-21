@@ -131,9 +131,11 @@ int cmzn_region_read(cmzn_region_id region,
 			CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_NONE;
 		const cmzn_stream_properties_list streams_list = streaminformation_region->getResourcesList();
 		struct IO_stream_package *io_stream_package = CREATE(IO_stream_package)();
+		cmzn_region_begin_hierarchical_change(region);
 		struct cmzn_region *temp_region = cmzn_region_create_region(region);
 		if (!(streams_list.empty()) && io_stream_package && temp_region)
 		{
+			cmzn_region_begin_hierarchical_change(temp_region);
 			cmzn_stream_properties_list_const_iterator iter;
 			cmzn_resource_properties *stream_properties = NULL;
 			cmzn_streamresource_id stream = NULL;
@@ -211,6 +213,9 @@ int cmzn_region_read(cmzn_region_id region,
 					display_message(ERROR_MESSAGE, "cmzn_region_read.  Stream error");
 				}
 			}
+			// end change before merge otherwise there will be callbacks for changes
+			// to half-temporary, half-global objects, leading to errors
+			cmzn_region_end_hierarchical_change(temp_region);
 			if (return_code == CMZN_OK)
 			{
 				if (!cmzn_region_can_merge(region, temp_region))
@@ -218,9 +223,10 @@ int cmzn_region_read(cmzn_region_id region,
 				else if (!cmzn_region_merge(region, temp_region))
 					return_code = CMZN_ERROR_GENERAL;
 			}
-			DEACCESS(cmzn_region)(&temp_region);
-			DESTROY(IO_stream_package)(&io_stream_package);
 		}
+		DEACCESS(cmzn_region)(&temp_region);
+		cmzn_region_end_hierarchical_change(region);
+		DESTROY(IO_stream_package)(&io_stream_package);
 	}
 	else
 	{

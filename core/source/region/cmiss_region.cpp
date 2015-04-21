@@ -644,31 +644,18 @@ int cmzn_fieldmodule_define_all_faces(cmzn_fieldmodule_id field_module)
 
 int cmzn_region_begin_change(struct cmzn_region *region)
 {
-	int return_code;
-
-	ENTER(cmzn_region_begin_change);
 	if (region)
 	{
 		region->change_level++;
 		cmzn_region_fields_begin_change(region);
-		return_code = 1;
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_begin_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	display_message(ERROR_MESSAGE, "cmzn_region_begin_change.  Invalid argument(s)");
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_region_end_change(struct cmzn_region *region)
 {
-	int return_code;
-
-	ENTER(cmzn_region_end_change);
 	if (region)
 	{
 		if (0 < region->change_level)
@@ -679,25 +666,36 @@ int cmzn_region_end_change(struct cmzn_region *region)
 			{
 				cmzn_region_update(region);
 			}
-			return_code = 1;
+			return CMZN_OK;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_region_end_change.  Change count is already zero");
-			return_code = 0;
+			return CMZN_ERROR_GENERAL;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_region_end_change.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
+	display_message(ERROR_MESSAGE, "cmzn_region_end_change.  Invalid argument(s)");
+	return CMZN_ERROR_ARGUMENT;
 }
+
+namespace {
+
+// special version for use during merge
+void cmzn_region_begin_change_no_notify(struct cmzn_region *region)
+{
+	++region->change_level;
+	FE_region_begin_change(region->fe_region);
+}
+
+// special version for use during merge
+void cmzn_region_end_change_no_notify(struct cmzn_region *region)
+{
+	--region->change_level;
+	FE_region_end_change_no_notify(region->fe_region);
+}
+
+} // namespace
 
 /***************************************************************************//**
  * Returns the sum of the hierarchical_change_level members of region and all
@@ -1640,6 +1638,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 	cmzn_region_id source_region, cmzn_region_id root_region)
 {
 	int return_code = 1;
+	cmzn_region_begin_change_no_notify(source_region);
 
 	// merge FE_region
 	FE_region *target_fe_region = cmzn_region_get_FE_region(target_region);
@@ -1680,6 +1679,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 		cmzn_region_destroy(&target_child);
 	}
 	cmzn_region_destroy(&source_child);
+	cmzn_region_end_change_no_notify(source_region);
 	return (return_code);
 }
 

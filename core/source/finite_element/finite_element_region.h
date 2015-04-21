@@ -315,6 +315,12 @@ int FE_region_begin_change(struct FE_region *fe_region);
 int FE_region_end_change(struct FE_region *fe_region);
 
 /**
+ * Decrements the change counter in <region>. Special version which does not
+ * invoke update callbacks, for use during merge
+ */
+int FE_region_end_change_no_notify(struct FE_region *fe_region);
+
+/**
  * Return true if the fe_field's owning fe_region is currently caching changes
  * and this fe_field has changes that affect its values.
  */

@@ -2297,17 +2297,24 @@ Returns the <face_element> for face <face_number> of <element>, where NULL means
 there is no face. Element must have a shape and face.
 ==============================================================================*/
 
-int set_FE_element_face(struct FE_element *element,int face_number,
+/**
+ * Sets face <face_number> of <element> to <face_element>, ensuring the
+ * <face_element> has <element> as a parent. <face_element> may be NULL = no face.
+ * Must have set the shape with set_FE_element_shape first.
+ * Should only be called for unmanaged elements.
+ */
+int set_FE_element_face(struct FE_element *element, int face_number,
 	struct FE_element *face_element);
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
 
-DESCRIPTION :
-Sets face <face_number> of <element> to <face_element>, ensuring the
-<face_element> has <element> as a parent. <face_element> may be NULL = no face.
-Must have set the shape with set_FE_element_shape first.
-Should only be called for unmanaged elements.
-==============================================================================*/
+/**
+ * Private variant of set_FE_element_face which does not set this element as a 
+ * a parent. Used when merging elements from a temporary region.
+ * If not done this way then the face_element will temporarily have both the
+ * global and temporary elements as parents.
+ * Must have set the shape with set_FE_element_shape first.
+ */
+int set_FE_element_face_no_parents(struct FE_element *element, int face_number,
+	struct FE_element *face_element);
 
 /**
  * Return the face number of the face in element >= 0, or -1 if not found.
