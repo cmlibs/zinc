@@ -429,7 +429,8 @@ int draw_surface_stl(Stl_context& stl_context, gtObject *object)
 							object->vertex_array->get_unsigned_integer_attribute(
 								GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_COUNT,
 								surface_index, 1, &index_count);
-							Triple point1, point2, point3;
+							Triple point1 = {0.0, 0.0, 0.0} , point2 = {0.0, 0.0, 0.0},
+								point3 = {0.0, 0.0, 0.0};
 							for (unsigned int i = 0; i < index_count;)
 							{
 								point1[2] = 0.0;
