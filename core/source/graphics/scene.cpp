@@ -3605,10 +3605,11 @@ struct Scene_get_number_of_graphics_data
 {
 	cmzn_scenefilter_id scenefilter;
 	enum cmzn_graphics_type type;
+	enum GT_object_type graphics_object_type;
 	int number_of_graphics;
 };
 
-int Scene_get_number_of_graphics_with_type(cmzn_scene_id scene, void *Scene_get_number_of_graphics_data_void)
+int Scene_get_number_of_graphics_with_condition(cmzn_scene_id scene, void *Scene_get_number_of_graphics_data_void)
 {
 	struct Scene_get_number_of_graphics_data *data = 0;
 	if (scene && (0 != (data = (Scene_get_number_of_graphics_data *)Scene_get_number_of_graphics_data_void)))
@@ -3620,7 +3621,10 @@ int Scene_get_number_of_graphics_with_type(cmzn_scene_id scene, void *Scene_get_
 			graphics = FIND_BY_IDENTIFIER_IN_LIST(cmzn_graphics, position)(
 				i+1, scene->list_of_graphics);
 
-			if  (graphics && (cmzn_graphics_get_graphics_type(graphics) == data->type) &&
+			if  (graphics &&
+				((data->type == CMZN_GRAPHICS_TYPE_INVALID) || (cmzn_graphics_get_graphics_type(graphics) == data->type)) &&
+				((data->graphics_object_type == CMZN_GRAPHICS_TYPE_INVALID) ||
+				 (cmzn_graphics_get_graphics_object_type(graphics) == data->graphics_object_type)) &&
 				((0 == data->scenefilter) || cmzn_scenefilter_evaluate_graphics(data->scenefilter, graphics)))
 			{
 				data->number_of_graphics++;
@@ -3640,9 +3644,27 @@ int Scene_get_number_of_graphics_with_type_in_tree(
 		struct Scene_get_number_of_graphics_data data;
 		data.scenefilter = scenefilter;
 		data.type = type;
+		data.graphics_object_type = g_OBJECT_TYPE_INVALID;
 		data.number_of_graphics = 0;
 		for_each_child_scene_in_scene_tree(
-			scene, Scene_get_number_of_graphics_with_type, 	&(data));
+			scene, Scene_get_number_of_graphics_with_condition, &(data));
+		return data.number_of_graphics;
+	}
+	return 0;
+}
+
+int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter)
+{
+	if (scene)
+	{
+		struct Scene_get_number_of_graphics_data data;
+		data.scenefilter = scenefilter;
+		data.type = CMZN_GRAPHICS_TYPE_INVALID;
+		data.graphics_object_type = g_SURFACE_VERTEX_BUFFERS;
+		data.number_of_graphics = 0;
+		for_each_child_scene_in_scene_tree(
+			scene, Scene_get_number_of_graphics_with_condition, &(data));
 		return data.number_of_graphics;
 	}
 	return 0;

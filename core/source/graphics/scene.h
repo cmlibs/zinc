@@ -468,5 +468,8 @@ int Scene_render_webgl(cmzn_scene_id scene,
 int Scene_get_number_of_graphics_with_type_in_tree(
 	cmzn_scene_id scene, cmzn_scenefilter_id scenefilter, enum cmzn_graphics_type type);
 
+int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id scene,
+	cmzn_scenefilter_id scenefilter);
+
 #endif /* !defined (SCENE_H) */
 
