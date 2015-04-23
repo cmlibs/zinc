@@ -95,7 +95,7 @@ public:
 	/***************************************************************************//**
 	 * Compile the Material.
 	 */
-	virtual int Material_compile(Graphical_material *material)
+	virtual int Material_compile(cmzn_material *material)
 	{
 		USE_PARAMETER(material);
 		return 1;
@@ -104,7 +104,7 @@ public:
 	/***************************************************************************//**
 	 * Execute the Material.
 	 */
-	virtual int Material_execute(Graphical_material *material)
+	virtual int Material_execute(cmzn_material *material)
 	{
 		USE_PARAMETER(material);
 		return 1;

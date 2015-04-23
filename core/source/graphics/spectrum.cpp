@@ -1154,7 +1154,7 @@ int cmzn_spectrum_set_material_overwrite(cmzn_spectrum_id spectrum,
 
 #if defined (OPENGL_API)
 struct Spectrum_render_data *spectrum_start_renderGL(
-	struct cmzn_spectrum *spectrum,struct Graphical_material *material,
+	struct cmzn_spectrum *spectrum,cmzn_material *material,
 	int number_of_data_components)
 /*******************************************************************************
 LAST MODIFIED : 3 June 1999
@@ -1225,7 +1225,7 @@ Initialises the graphics state for rendering values on the current material.
 } /* spectrum_start_renderGL */
 
 int spectrum_renderGL_value(struct cmzn_spectrum *spectrum,
-	struct Graphical_material *material,struct Spectrum_render_data *render_data,
+	cmzn_material *material,struct Spectrum_render_data *render_data,
 	GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 1 June 1999
@@ -1579,7 +1579,7 @@ it contains.  The ratios of the different component are preserved.
 } /* Spectrum_set_minimum_and_maximum */
 
 int Spectrum_render_value_on_material(struct cmzn_spectrum *spectrum,
-	struct Graphical_material *material, int number_of_data_components,
+	cmzn_material *material, int number_of_data_components,
 	GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006

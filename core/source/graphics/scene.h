@@ -167,7 +167,7 @@ cmzn_field_id cmzn_scene_guess_coordinate_field(
  * Iterates through every material used by the scene.
  */
 int cmzn_scene_for_each_material(struct cmzn_scene *scene,
-	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
+	MANAGER_ITERATOR_FUNCTION(cmzn_material) *iterator_function,
 	void *user_data);
 
 /***************************************************************************//**
@@ -193,7 +193,7 @@ void cmzn_scene_glyph_change(struct cmzn_scene *scene,
  * Should only be called by cmzn_graphics_module.
  */
 void cmzn_scene_material_change(struct cmzn_scene *scene,
-	struct MANAGER_MESSAGE(Graphical_material) *manager_message);
+	struct MANAGER_MESSAGE(cmzn_material) *manager_message);
 
 /***************************************************************************//**
  * Private method for informing scene of spectrum manager changes.

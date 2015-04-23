@@ -51,6 +51,22 @@ ZINC_API cmzn_material_id cmzn_materialmodule_create_material(
 	cmzn_materialmodule_id materialmodule);
 
 /**
+ * Create a material iterator object for iterating through the materials in the
+ * material module, in alphabetical order of name. The iterator initially
+ * points at the position before the first material, so the first call to the
+ * material iterator next() method returns the first material and advances the
+ * iterator. Iterator becomes invalid if materials are added, removed or
+ * renamed while in use.
+ * @see cmzn_materialiterator_next
+ *
+ * @param materialmodule  Handle to the material module whose materials are to
+ * be iterated over.
+ * @return  Handle to material iterator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_materialiterator_id cmzn_materialmodule_create_materialiterator(
+	cmzn_materialmodule_id materialmodule);
+
+/**
  * Begin caching or increment cache level for this material module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
@@ -292,6 +308,33 @@ ZINC_API cmzn_field_id cmzn_material_get_texture_field(
  */
 ZINC_API int cmzn_material_set_texture_field(cmzn_material_id material,
 	int texture_number, cmzn_field_id texture_field);
+
+/**
+ * Returns a new handle to the iterator with reference count incremented.
+ *
+ * @param iterator  The material iterator to obtain a new handle to.
+ * @return  New handle to material iterator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_materialiterator_id cmzn_materialiterator_access(
+	cmzn_materialiterator_id iterator);
+
+/**
+ * Destroys this handle to the material iterator and sets it to NULL.
+ *
+ * @param iterator_address  Address of handle to material_iterator to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_materialiterator_destroy(cmzn_materialiterator_id *iterator_address);
+
+/**
+ * Returns a handle to the next material in the container being iterated over then
+ * advances the iterator position. The caller is required to destroy the
+ * returned material handle.
+ *
+ * @param iterator  Material iterator to query and advance.
+ * @return  Handle to the next material, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_material_id cmzn_materialiterator_next(cmzn_materialiterator_id iterator);
 
 #ifdef __cplusplus
 }

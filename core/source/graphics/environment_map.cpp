@@ -85,7 +85,7 @@ map to the list of all environment maps.
 			for (i=5;i>=0;i--)
 			{
 				(environment_map->face_material)[i]=
-					(struct Graphical_material *)NULL;
+					(cmzn_material *)NULL;
 			}
 		}
 		else
@@ -273,7 +273,7 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Environment_map,name)
 		/* copy values */
 		for (i=0;i<6;i++)
 		{
-			REACCESS(Graphical_material)(&(destination->face_material[i]),
+			REACCESS(cmzn_material)(&(destination->face_material[i]),
 				source->face_material[i]);
 		}
 		return_code=1;

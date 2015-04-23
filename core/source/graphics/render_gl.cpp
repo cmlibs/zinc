@@ -103,7 +103,7 @@ int Render_graphics_opengl::Graphics_compile(cmzn_graphics *graphics)
 		graphics), this);
 }
 
-int Render_graphics_opengl::Material_compile(Graphical_material *material)
+int Render_graphics_opengl::Material_compile(cmzn_material *material)
 {
 	return Material_compile_members_opengl(material, this);
 }
@@ -178,7 +178,7 @@ public:
 		  return cmzn_scene_render_child_scene(scene, this);
 	  }
 
-	  int Material_execute(Graphical_material *material)
+	  int Material_execute(cmzn_material *material)
 	  {
 		  return Material_render_opengl(material, this);
 	  }
@@ -806,20 +806,20 @@ public:
 			// do nothing so point size and line width not in display_list
 		}
 
-	  int Material_execute_parent(Graphical_material *material)
+	  int Material_execute_parent(cmzn_material *material)
 	  {
 		  return Render_immediate::Material_execute(material);
 	  }
 
-	  int Material_compile(Graphical_material *material)
+	  int Material_compile(cmzn_material *material)
 	  {
 		  int return_code;
 
 		  return_code = Render_immediate::Material_compile(material);
 		  if (return_code)
 		  {
-			  Callback_member_callback< Graphical_material*, Render_graphics_opengl_display_list,
-				  int (Render_graphics_opengl_display_list::*)(Graphical_material*) >
+			  Callback_member_callback< cmzn_material*, Render_graphics_opengl_display_list,
+				  int (Render_graphics_opengl_display_list::*)(cmzn_material*) >
 				  execute_method(static_cast<Render_graphics_opengl_display_list*>(this),
 				  &Render_graphics_opengl_display_list::Material_execute_parent);
 			  return_code = Material_compile_opengl_display_list(material,
@@ -828,7 +828,7 @@ public:
 		  return (return_code);
 	  }
 
-	  int Material_execute(Graphical_material *material)
+	  int Material_execute(cmzn_material *material)
 	  {
 		  return Material_execute_opengl_display_list(material, this);
 	  }
@@ -924,7 +924,7 @@ int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 		&data_buffer, &data_values_per_vertex, &data_vertex_count) &&
 		(0 != (spectrum = get_GT_object_spectrum(object))))
 	{
-		Graphical_material *material = get_GT_object_default_material(object);
+		cmzn_material *material = get_GT_object_default_material(object);
 		/* Ignoring selected state here so we don't need to refer to primitive */
 		if (object->buffer_binding || (object->compile_status == GRAPHICS_NOT_COMPILED))
 		{
@@ -1438,7 +1438,7 @@ static int Graphics_object_generate_vertex_positions_from_secondary_material(GT_
 		glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, 0);
 
 
-		renderer->Material_execute((Graphical_material *)NULL);
+		renderer->Material_execute((cmzn_material *)NULL);
 	}
 
 	return (return_code);
@@ -1933,7 +1933,7 @@ static int Graphics_object_disable_opengl_vertex_buffer_object(GT_object *object
 } /* Graphics_object_enable_opengl_client_vertex_arrays */
 
 static int draw_vertexBufferPointset(gtObject *object,
-	struct Graphical_material *material, struct cmzn_spectrum *spectrum,
+	cmzn_material *material, struct cmzn_spectrum *spectrum,
 	Render_graphics_opengl *renderer,
 	Graphics_object_rendering_type rendering_type)
 {
@@ -2056,7 +2056,7 @@ static int draw_vertexBufferPointset(gtObject *object,
 }
 
 static int draw_vertexBufferGlyphset(gtObject *object,
-	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	cmzn_material *material, cmzn_material *secondary_material,
 	struct cmzn_spectrum *spectrum,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
 	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
@@ -2615,7 +2615,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 	union GT_primitive_list *primitive_list, int picking_names,
 	Graphics_object_rendering_type rendering_type, struct cmzn_spectrum *spectrum,
-	struct Graphical_material *material, int draw_selected)
+	cmzn_material *material, int draw_selected)
 {
 	int return_code = 1;
 	if (object && renderer && primitive_list)
@@ -2919,7 +2919,7 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 int draw_vertexBufferLine(gtObject *object, Render_graphics_opengl *renderer,
 	union GT_primitive_list *primitive_list, int picking_names,
 	Graphics_object_rendering_type rendering_type, struct cmzn_spectrum *spectrum,
-	struct Graphical_material *material, int draw_selected)
+	cmzn_material *material, int draw_selected)
 {
 	int return_code = 1;
 	GT_polyline_vertex_buffers *line = primitive_list->gt_polyline_vertex_buffers;
@@ -3136,7 +3136,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 #if defined (OPENGL_API)
 	bool lighting_on = true;
 #endif /* defined (OPENGL_API) */
-	struct Graphical_material *material, *secondary_material;
+	cmzn_material *material, *secondary_material;
 	struct cmzn_spectrum *spectrum;
 	union GT_primitive_list *primitive_list1 = NULL, *primitive_list2 = NULL;
 
@@ -3565,7 +3565,7 @@ struct GT_object *graphics_object,
 							graphics_object_item->selected_material);
 						render_GT_object_opengl_immediate(graphics_object_item,
 							/*draw_selected*/1, renderer, rendering_type);
-						renderer->Material_execute((Graphical_material *)NULL);
+						renderer->Material_execute((cmzn_material *)NULL);
 					}
 				}
 				else
@@ -3586,7 +3586,7 @@ struct GT_object *graphics_object,
 					/*draw_selected*/0, renderer, rendering_type);
 				if (graphics_object_item->default_material)
 				{
-					renderer->Material_execute((Graphical_material *)NULL);
+					renderer->Material_execute((cmzn_material *)NULL);
 				}
 			}
 		}

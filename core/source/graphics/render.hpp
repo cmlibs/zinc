@@ -17,7 +17,7 @@ struct cmzn_graphics;
 struct cmzn_scene;
 struct GT_element_group;
 struct Texture;
-struct Graphical_material;
+struct cmzn_material;
 struct Light;
 struct Light_model;
 class SubObjectGroupHighlightFunctor;
@@ -104,12 +104,12 @@ public:
 	/***************************************************************************//**
 	 * Compile the Material.
 	 */
-	virtual int Material_compile(Graphical_material *material) = 0;
+	virtual int Material_compile(cmzn_material *material) = 0;
 	
 	/***************************************************************************//**
 	 * Execute the Material.
 	 */
-	virtual int Material_execute(Graphical_material *material) = 0;
+	virtual int Material_execute(cmzn_material *material) = 0;
 
 	/***************************************************************************//**
 	 * Compile the Texture.
@@ -329,7 +329,7 @@ public:
 		return 1;
 	}
 
-	virtual int Material_execute(Graphical_material * /*material*/)
+	virtual int Material_execute(cmzn_material * /*material*/)
 	{
 		return 1;
 	}
@@ -339,7 +339,7 @@ public:
 	 * Could implement a Material_compile_members that isn't OpenGL but we don't need
 	 * it at the moment.
 	 */
-	virtual int Material_compile(Graphical_material * /*material*/)
+	virtual int Material_compile(cmzn_material * /*material*/)
 	{
 		return 1;
 	}

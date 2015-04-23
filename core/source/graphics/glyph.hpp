@@ -132,7 +132,7 @@ public:
 	}
 
 	// override for glyphs that use their own materials
-	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *)
+	virtual void materialChange(struct MANAGER_MESSAGE(cmzn_material) *)
 	{
 	}
 
@@ -256,7 +256,7 @@ public:
 		return ACCESS(GT_object)(graphicsObject);
 	}
 
-	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
+	virtual void materialChange(struct MANAGER_MESSAGE(cmzn_material) *message);
 };
 
 struct cmzn_glyphmodule

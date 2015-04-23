@@ -47,8 +47,8 @@ GT_object *create_Spectrum_colour_bar(
 	const double barCentre[3], const double barAxis[3], const double sideAxis[3],
 	GLfloat extend_length,
 	int label_divisions,GLfloat tick_length,const char *number_format,
-	struct Graphical_material *bar_material,
-	struct Graphical_material *tick_label_material,
+	cmzn_material *bar_material,
+	cmzn_material *tick_label_material,
 	struct cmzn_font *font)
 {
 	char **labels;
@@ -527,7 +527,7 @@ int cmzn_glyph_colour_bar::setLabelMaterial(cmzn_material_id material)
 {
 	if (material != this->labelMaterial)
 	{
-		REACCESS(Graphical_material)(&(this->labelMaterial), material);
+		REACCESS(cmzn_material)(&(this->labelMaterial), material);
 		this->invalidate();
 	}
 	return CMZN_OK;
@@ -610,12 +610,12 @@ void cmzn_glyph_colour_bar::fontChange()
 	this->invalidate();
 }
 
-void cmzn_glyph_colour_bar::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+void cmzn_glyph_colour_bar::materialChange(struct MANAGER_MESSAGE(cmzn_material) *message)
 {
 	if (this->labelMaterial)
 	{
-		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, this->labelMaterial);
-		if (change_flags & MANAGER_CHANGE_RESULT(Graphical_material))
+		int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(message, this->labelMaterial);
+		if (change_flags & MANAGER_CHANGE_RESULT(cmzn_material))
 		{
 			this->invalidate();
 		}

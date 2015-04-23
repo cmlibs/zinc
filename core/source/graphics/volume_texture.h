@@ -380,7 +380,7 @@ DESCRIPTION :
 {
 	struct IO_stream_package *io_stream_package;
 	struct MANAGER(Environment_map) *environment_map_manager;
-	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct MANAGER(cmzn_material) *graphical_material_manager;
 	struct MANAGER(VT_volume_texture) *volume_texture_manager;
 	char **example_directory_address;
 }; /* struct Modify_VT_volume_texture_data */

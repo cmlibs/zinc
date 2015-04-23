@@ -237,7 +237,7 @@ int cmzn_glyph_axes::setAxisMaterial(int axisNumber, cmzn_material *material)
 	{
 		if (this->axisMaterials[axisNumber - 1] != material)
 		{
-			REACCESS(Graphical_material)(&(this->axisMaterials[axisNumber - 1]), material);
+			REACCESS(cmzn_material)(&(this->axisMaterials[axisNumber - 1]), material);
 			this->invalidate();
 		}
 		return CMZN_OK;
@@ -253,14 +253,14 @@ void cmzn_glyph_axes::fontChange()
 	}
 }
 
-void cmzn_glyph_axes::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+void cmzn_glyph_axes::materialChange(struct MANAGER_MESSAGE(cmzn_material) *message)
 {
 	for (int i = 0; i < 3; ++i)
 	{
 		if (this->axisMaterials[i])
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, this->axisMaterials[i]);
-			if (change_flags & MANAGER_CHANGE_RESULT(Graphical_material))
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(message, this->axisMaterials[i]);
+			if (change_flags & MANAGER_CHANGE_RESULT(cmzn_material))
 			{
 				this->invalidate();
 				return;

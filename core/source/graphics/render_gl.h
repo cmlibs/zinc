@@ -82,7 +82,7 @@ public:
 	/***************************************************************************//**
 	 * @see Render_graphics::Material_compile
 	 */
-	virtual int Material_compile(Graphical_material *material);
+	virtual int Material_compile(cmzn_material *material);
 
 	virtual int rendering_layer(int layer)
 	{
