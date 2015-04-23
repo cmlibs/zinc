@@ -67,8 +67,10 @@ public:
 	int getNumberOfResourcesRequired()
 	{
 		if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS)
-			return Scene_get_number_of_graphics_with_type_in_tree(
-				scene, scenefilter, CMZN_GRAPHICS_TYPE_SURFACES);
+		{
+			return Scene_get_number_of_graphics_with_surface_vertices_in_tree(
+				scene, scenefilter);
+		}
 		else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
 			return 1;
 		else

@@ -631,4 +631,6 @@ int cmzn_graphics_remove_renderer_highlight_functor(struct cmzn_graphics *graphi
 int cmzn_graphics_flag_for_full_rebuild(
 	struct cmzn_graphics *graphics,void *dummy_void);
 
+enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics *graphics);
+
 #endif

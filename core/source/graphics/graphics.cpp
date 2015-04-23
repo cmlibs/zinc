@@ -2729,7 +2729,6 @@ int cmzn_graphics_to_graphics_object(
 		reinterpret_cast<struct cmzn_graphics_to_graphics_object_data *>(graphics_to_object_data_void);
 	if (graphics && graphics_to_object_data)
 	{
-		int dimension = cmzn_graphics_get_domain_dimension(graphics);
 		return_code = 1;
 		/* build only if visible... */
 		cmzn_scenefilter_id filter = graphics_to_object_data->scenefilter;
@@ -2816,74 +2815,9 @@ int cmzn_graphics_to_graphics_object(
 							}
 							else
 							{
-								switch (graphics->graphics_type)
-								{
-								case CMZN_GRAPHICS_TYPE_LINES:
-								{
-									if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
-									{
-										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
-									}
-									else
-									{
-										graphics_object_type = g_SURFACE_VERTEX_BUFFERS;
-									}
-								} break;
-								case CMZN_GRAPHICS_TYPE_SURFACES:
-								{
-									graphics_object_type = g_SURFACE_VERTEX_BUFFERS;
-								} break;
-								case CMZN_GRAPHICS_TYPE_CONTOURS:
-								{
-									switch (dimension)
-									{
-									case 3:
-									{
-										graphics_object_type = g_SURFACE_VERTEX_BUFFERS; // for new isosurfaces
-									} break;
-									case 2:
-									{
-										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
-									} break;
-									case 1:
-									{
-										display_message(ERROR_MESSAGE,
-											"cmzn_graphics_to_graphics_object.  "
-											"Contours of 1-D elements is not supported");
-										return_code = 0;
-									} break;
-									default:
-									{
-										display_message(ERROR_MESSAGE,
-											"cmzn_graphics_to_graphics_object.  "
-											"Invalid dimension for contours");
-										return_code = 0;
-									} break;
-									}
-								} break;
-								case CMZN_GRAPHICS_TYPE_POINTS:
-								{
-									graphics_object_type = g_GLYPH_SET_VERTEX_BUFFERS;
-								} break;
-								case CMZN_GRAPHICS_TYPE_STREAMLINES:
-								{
-									if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
-									{
-										graphics_object_type = g_POLYLINE_VERTEX_BUFFERS;
-									}
-									else
-									{
-										graphics_object_type = g_SURFACE_VERTEX_BUFFERS;
-									}
-								} break;
-								default:
-								{
-									display_message(ERROR_MESSAGE,
-										"cmzn_graphics_to_graphics_object.  "
-										"Unknown graphics type");
-									return_code = 0;
-								} break;
-								}
+								graphics_object_type = cmzn_graphics_get_graphics_object_type(graphics);
+								if (graphics_object_type == g_OBJECT_TYPE_INVALID)
+									return_code = 1;
 								if (return_code)
 								{
 									graphics->graphics_object = CREATE(GT_object)(
@@ -6568,4 +6502,64 @@ int cmzn_graphics_flag_for_full_rebuild(
 	}
 
 	return (return_code);
+}
+
+enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics *graphics)
+{
+	if (graphics)
+	{
+		int dimension = cmzn_graphics_get_domain_dimension(graphics);
+		switch (graphics->graphics_type)
+		{
+		case CMZN_GRAPHICS_TYPE_LINES:
+		{
+			if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
+			{
+				return g_POLYLINE_VERTEX_BUFFERS;
+			}
+			else
+			{
+				return g_SURFACE_VERTEX_BUFFERS;
+			}
+		} break;
+		case CMZN_GRAPHICS_TYPE_SURFACES:
+		{
+			return g_SURFACE_VERTEX_BUFFERS;
+		} break;
+		case CMZN_GRAPHICS_TYPE_CONTOURS:
+		{
+			switch (dimension)
+			{
+			case 3:
+			{
+				return g_SURFACE_VERTEX_BUFFERS;
+			} break;
+			case 2:
+			{
+				return g_POLYLINE_VERTEX_BUFFERS;
+			} break;
+			default:
+			{
+				return g_OBJECT_TYPE_INVALID;
+			} break;
+			}
+		} break;
+		case CMZN_GRAPHICS_TYPE_POINTS:
+		{
+			return g_GLYPH_SET_VERTEX_BUFFERS;
+		} break;
+		case CMZN_GRAPHICS_TYPE_STREAMLINES:
+		{
+			if (CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE == graphics->line_shape)
+			{
+				return g_POLYLINE_VERTEX_BUFFERS;
+			}
+			else
+			{
+				return g_SURFACE_VERTEX_BUFFERS;
+			}
+		} break;
+		}
+	}
+	return g_OBJECT_TYPE_INVALID;
 }
