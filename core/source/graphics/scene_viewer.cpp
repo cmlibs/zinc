@@ -2549,7 +2549,7 @@ Creates a cmzn_sceneviewermodule.
 		{
 			sceneviewermodule->access_count = 1;
 			sceneviewermodule->graphics_buffer_package = CREATE(Graphics_buffer_package)();
-			sceneviewermodule->background_colour = background_colour;
+			sceneviewermodule->background_colour = *background_colour;
 			sceneviewermodule->interactive_tool_manager = interactive_tool_manager;
 			sceneviewermodule->default_light = ACCESS(Light)(default_light);
 			sceneviewermodule->default_light_model = ACCESS(Light_model)(default_light_model);
@@ -3168,7 +3168,7 @@ struct Scene_viewer *create_Scene_viewer_from_module(
 		cmzn_scenefilter_id filter = cmzn_scenefiltermodule_get_default_scenefilter(
 			sceneviewermodule->filterModule);
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
-			sceneviewermodule->background_colour,
+			&sceneviewermodule->background_colour,
 			sceneviewermodule->default_light,
 			sceneviewermodule->default_light_model,
 			filter);

@@ -223,7 +223,7 @@ The default data used to create cmzn_sceneviewers.
 {
 	int access_count;
 	struct Graphics_buffer_package *graphics_buffer_package;
-	struct Colour *background_colour;
+	struct Colour background_colour;
 	struct MANAGER(Interactive_tool) *interactive_tool_manager;
 	Light_module *lightModule;
 	struct Light *default_light;
