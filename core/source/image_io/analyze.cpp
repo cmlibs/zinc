@@ -862,7 +862,7 @@ void AnalyzeImageHandler::readImageInternal(unsigned int sz)
 			case ANALYZE_DT_SIGNED_INT:
 			{
 				hdr.dime.glmax = 2147483647;
-				hdr.dime.glmin = -2147483648;
+				hdr.dime.glmin = -2147483647;
 			} break;
 			case ANALYZE_DT_BINARY:
 			{
