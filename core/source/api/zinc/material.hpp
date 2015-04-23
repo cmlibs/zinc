@@ -134,6 +134,61 @@ public:
 
 };
 
+inline bool operator==(const Material& a, const Material& b)
+{
+	return a.getId() == b.getId();
+}
+
+class Materialiterator
+{
+private:
+
+	cmzn_materialiterator_id id;
+
+public:
+
+	Materialiterator() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Materialiterator(cmzn_materialiterator_id iterator_id) :
+		id(iterator_id)
+	{ }
+
+	Materialiterator(const Materialiterator& materialiterator) :
+		id(cmzn_materialiterator_access(materialiterator.id))
+	{ }
+
+	Materialiterator& operator=(const Materialiterator& materialiterator)
+	{
+		cmzn_materialiterator_id temp_id = cmzn_materialiterator_access(materialiterator.id);
+		if (0 != id)
+		{
+			cmzn_materialiterator_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Materialiterator()
+	{
+		if (0 != id)
+		{
+			cmzn_materialiterator_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	Material next()
+	{
+		return Material(cmzn_materialiterator_next(id));
+	}
+};
+
 class Materialmodule
 {
 protected:
@@ -186,6 +241,11 @@ public:
 	Material createMaterial()
 	{
 		return Material(cmzn_materialmodule_create_material(id));
+	}
+
+	Materialiterator createMaterialiterator()
+	{
+		return Materialiterator(cmzn_materialmodule_create_materialiterator(id));
 	}
 
 	Material findMaterialByName(const char *name)

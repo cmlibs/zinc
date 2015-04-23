@@ -116,7 +116,7 @@ struct GT_object *create_GT_object_arrow_solid(const char *name, int primary_axi
 	if (name&&(2<number_of_segments_around)&&(0<shaft_radius)&&(1>shaft_radius)&&
 		(0<shaft_length)&&(1>shaft_length))
 	{
-		glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+		glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(cmzn_material *)NULL);
 		GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
 			g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 		for (i=0;(i<4)&&glyph;i++)
@@ -212,7 +212,7 @@ struct GT_object *create_GT_object_cone(const char *name,int number_of_segments_
 		{
 			construct_tube(number_of_segments_around, 0.0, 0.5, 1.0, 0.0, 0.0, 0.0, 1,
 				points,normalpoints);
-			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(cmzn_material *)NULL);
 			GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
 				g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 			if (fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
@@ -256,7 +256,7 @@ struct GT_object *create_GT_object_cone_solid(const char *name,int number_of_seg
 
 	if (name&&(2<number_of_segments_around))
 	{
-		glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+		glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,	(cmzn_material *)NULL);
 		GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
 			g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 		if (glyph)
@@ -331,7 +331,7 @@ struct GT_object *create_GT_object_cylinder(const char *name,int number_of_segme
 		{
 			construct_tube(number_of_segments_around,0.0,0.5,1.0,0.5,0.0,0.0,1,
 				points,normalpoints);
-			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(cmzn_material *)NULL);
 			GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
 				g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 			if (fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),
@@ -376,7 +376,7 @@ struct GT_object *create_GT_object_cylinder_solid(const char *name,int number_of
 
 	if (name&&(2<number_of_segments_around))
 	{
-		glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+		glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS, (cmzn_material *)NULL);
 		GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
 			g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 		if (glyph && surface)
@@ -491,7 +491,7 @@ struct GT_object *create_GT_object_sphere(const char *name,int number_of_segment
 					normal += (number_of_segments_down+1);
 				}
 			}
-			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name, g_SURFACE_VERTEX_BUFFERS,	(cmzn_material *)NULL);
 			GT_surface_vertex_buffers *surface = CREATE(GT_surface_vertex_buffers)(
 				g_SHADED_TEXMAP,CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 			if (fill_surface_graphics_vertex_array(GT_object_get_vertex_set(glyph),

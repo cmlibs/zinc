@@ -1079,7 +1079,7 @@ int DESTROY(GT_pointset_vertex_buffers)(GT_pointset_vertex_buffers **pointset)
 } /* DESTROY(GT_pointset_vertex_buffers) */
 
 struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_type,
-	struct Graphical_material *default_material)
+	cmzn_material *default_material)
 {
 	struct GT_object *object;
 	int return_code;
@@ -1144,10 +1144,10 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 				}
 				else
 				{
-					object->default_material=(struct Graphical_material *)NULL;
+					object->default_material=(cmzn_material *)NULL;
 				}
-				object->selected_material=(struct Graphical_material *)NULL;
-				object->secondary_material=(struct Graphical_material *)NULL;
+				object->selected_material=(cmzn_material *)NULL;
+				object->secondary_material=(cmzn_material *)NULL;
 				object->nextobject=(gtObject *)NULL;
 				object->spectrum=(struct cmzn_spectrum *)NULL;
 				object->number_of_times=0;
@@ -1325,7 +1325,7 @@ void GT_object_changed(struct GT_object *graphics_object)
 }
 
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
-	struct LIST(Graphical_material) *changed_material_list)
+	struct LIST(cmzn_material) *changed_material_list)
 /*******************************************************************************
 LAST MODIFIED : 20 March 2002
 
@@ -1347,13 +1347,13 @@ change to any material in use in the linked graphics objects.
 		while (graphics_object)
 		{
 			if ((graphics_object->default_material &&
-				((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
+				((!changed_material_list) || IS_OBJECT_IN_LIST(cmzn_material)(
 					graphics_object->default_material, changed_material_list))) ||
 				(graphics_object->selected_material &&
-					((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
+					((!changed_material_list) || IS_OBJECT_IN_LIST(cmzn_material)(
 						graphics_object->selected_material, changed_material_list))) ||
 				(graphics_object->secondary_material &&
-					((!changed_material_list) || IS_OBJECT_IN_LIST(Graphical_material)(
+					((!changed_material_list) || IS_OBJECT_IN_LIST(cmzn_material)(
 						graphics_object->secondary_material, changed_material_list))))
 			{
 				if (graphics_object->spectrum)
@@ -2478,7 +2478,7 @@ int set_GT_object_render_point_size(struct GT_object *graphics_object,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct Graphical_material *get_GT_object_default_material
+cmzn_material *get_GT_object_default_material
 	(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 4 June 1999
@@ -2487,7 +2487,7 @@ DESCRIPTION :
 Gets the default_material of a GT_object.
 ==============================================================================*/
 {
-	struct Graphical_material *material;
+	cmzn_material *material;
 
 	ENTER(get_GT_object_default_material);
 	if (graphics_object)
@@ -2498,7 +2498,7 @@ Gets the default_material of a GT_object.
 	{
 		display_message(ERROR_MESSAGE,
 			"get_GT_object_default_material.  Invalid graphics object");
-		material = (struct Graphical_material *)NULL;
+		material = (cmzn_material *)NULL;
 	}
 	LEAVE;
 
@@ -2506,7 +2506,7 @@ Gets the default_material of a GT_object.
 } /* get_GT_object_default_material */
 
 int set_GT_object_default_material(struct GT_object *graphics_object,
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2000
 
@@ -2523,7 +2523,7 @@ Sets the default_material of a GT_object.
 			the material changes with the data */
 		if (material != graphics_object->default_material)
 		{
-			REACCESS(Graphical_material)(&(graphics_object->default_material),
+			REACCESS(cmzn_material)(&(graphics_object->default_material),
 				material);
 			GT_object_changed(graphics_object);
 		}
@@ -2540,7 +2540,7 @@ Sets the default_material of a GT_object.
 	return (return_code);
 } /* set_GT_object_default_material */
 
-struct Graphical_material *get_GT_object_secondary_material
+cmzn_material *get_GT_object_secondary_material
 	(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 4 June 1999
@@ -2549,7 +2549,7 @@ DESCRIPTION :
 Gets the secondary_material of a GT_object.
 ==============================================================================*/
 {
-	struct Graphical_material *material;
+	cmzn_material *material;
 
 	ENTER(get_GT_object_secondary_material);
 	if (graphics_object)
@@ -2560,7 +2560,7 @@ Gets the secondary_material of a GT_object.
 	{
 		display_message(ERROR_MESSAGE,
 			"get_GT_object_secondary_material.  Invalid graphics object");
-		material = (struct Graphical_material *)NULL;
+		material = (cmzn_material *)NULL;
 	}
 	LEAVE;
 
@@ -2568,7 +2568,7 @@ Gets the secondary_material of a GT_object.
 } /* get_GT_object_secondary_material */
 
 int set_GT_object_secondary_material(struct GT_object *graphics_object,
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2000
 
@@ -2585,7 +2585,7 @@ Sets the secondary_material of a GT_object.
 			the material changes with the data */
 		if (material != graphics_object->secondary_material)
 		{
-			REACCESS(Graphical_material)(&(graphics_object->secondary_material),
+			REACCESS(cmzn_material)(&(graphics_object->secondary_material),
 				material);
 			GT_object_changed(graphics_object);
 		}
@@ -2614,7 +2614,7 @@ int GT_object_set_name(struct GT_object *gt_object, const char *name)
 	return 0;
 }
 
-struct Graphical_material *get_GT_object_selected_material
+cmzn_material *get_GT_object_selected_material
 	(struct GT_object *graphics_object)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -2623,7 +2623,7 @@ DESCRIPTION :
 Gets the selected_material of a GT_object.
 ==============================================================================*/
 {
-	struct Graphical_material *material;
+	cmzn_material *material;
 
 	ENTER(get_GT_object_selected_material);
 	if (graphics_object)
@@ -2634,7 +2634,7 @@ Gets the selected_material of a GT_object.
 	{
 		display_message(ERROR_MESSAGE,
 			"get_GT_object_selected_material.  Invalid graphics object");
-		material = (struct Graphical_material *)NULL;
+		material = (cmzn_material *)NULL;
 	}
 	LEAVE;
 
@@ -2642,7 +2642,7 @@ Gets the selected_material of a GT_object.
 } /* get_GT_object_selected_material */
 
 int set_GT_object_selected_material(struct GT_object *graphics_object,
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 20 February 2000
 
@@ -2659,7 +2659,7 @@ Sets the selected_material of a GT_object.
 		{
 			if (material != graphics_object->selected_material)
 			{
-				REACCESS(Graphical_material)(&(graphics_object->selected_material),
+				REACCESS(cmzn_material)(&(graphics_object->selected_material),
 					material);
 				GT_object_changed(graphics_object);
 			}
@@ -3017,7 +3017,7 @@ type.
 			display_message(INFORMATION_MESSAGE,graphics_object->name);
 			display_message(INFORMATION_MESSAGE," = %s",
 				get_GT_object_type_string(graphics_object->object_type));
-			if (graphics_object->default_material&&GET_NAME(Graphical_material)(
+			if (graphics_object->default_material&&GET_NAME(cmzn_material)(
 				graphics_object->default_material,&material_name))
 			{
 				display_message(INFORMATION_MESSAGE," material %s",

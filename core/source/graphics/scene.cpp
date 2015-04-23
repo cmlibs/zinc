@@ -1009,7 +1009,7 @@ void cmzn_scene_glyph_change(struct cmzn_scene *scene,
 }
 
 void cmzn_scene_material_change(struct cmzn_scene *scene,
-	struct MANAGER_MESSAGE(Graphical_material) *manager_message)
+	struct MANAGER_MESSAGE(cmzn_material) *manager_message)
 {
 	if (scene && manager_message)
 	{
@@ -1526,7 +1526,7 @@ int cmzn_scene_remove_callback(struct cmzn_scene *scene,
 } /* cmzn_scene_remove_callback */
 
 int cmzn_scene_for_each_material(struct cmzn_scene *scene,
-	MANAGER_ITERATOR_FUNCTION(Graphical_material) *iterator_function,
+	MANAGER_ITERATOR_FUNCTION(cmzn_material) *iterator_function,
 	void *user_data)
 {
 	int return_code;
@@ -1538,7 +1538,7 @@ int cmzn_scene_for_each_material(struct cmzn_scene *scene,
 			scene, however for now just do every material in the manager */
 		cmzn_materialmodule_id materialmodule =
 			cmzn_graphics_module_get_materialmodule(scene->graphics_module);
-		return_code = FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+		return_code = FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 			iterator_function, user_data, cmzn_materialmodule_get_manager(materialmodule));
 		cmzn_materialmodule_destroy(&materialmodule);
 	}

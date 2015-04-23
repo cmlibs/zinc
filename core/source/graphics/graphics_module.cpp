@@ -87,13 +87,13 @@ void cmzn_graphics_module_glyph_manager_callback(
  * Informs all scenes about the changes.
  */
 void cmzn_graphics_module_material_manager_callback(
-	struct MANAGER_MESSAGE(Graphical_material) *message, void *graphics_module_void)
+	struct MANAGER_MESSAGE(cmzn_material) *message, void *graphics_module_void)
 {
 	cmzn_graphics_module *graphics_module = reinterpret_cast<cmzn_graphics_module *>(graphics_module_void);
 	if (message && graphics_module)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Graphical_material)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Graphical_material))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_material)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_material))
 		{
 			std::list<cmzn_region*>::iterator region_iter;
 			for (region_iter = graphics_module->member_regions_list->begin();
@@ -232,7 +232,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 				MANAGER_REGISTER(cmzn_glyph)(cmzn_graphics_module_glyph_manager_callback,
 					(void *)module, cmzn_glyphmodule_get_manager(module->glyphmodule));
 			module->material_manager_callback_id =
-				MANAGER_REGISTER(Graphical_material)(cmzn_graphics_module_material_manager_callback,
+				MANAGER_REGISTER(cmzn_material)(cmzn_graphics_module_material_manager_callback,
 					(void *)module, cmzn_materialmodule_get_manager(module->materialmodule));
 			module->spectrum_manager_callback_id =
 				MANAGER_REGISTER(cmzn_spectrum)(cmzn_graphics_module_spectrum_manager_callback,
@@ -327,7 +327,7 @@ int cmzn_graphics_module_destroy(
 			MANAGER_DEREGISTER(cmzn_glyph)(
 				graphics_module->glyph_manager_callback_id,
 				cmzn_glyphmodule_get_manager(graphics_module->glyphmodule));
-			MANAGER_DEREGISTER(Graphical_material)(
+			MANAGER_DEREGISTER(cmzn_material)(
 				graphics_module->material_manager_callback_id,
 				cmzn_materialmodule_get_manager(graphics_module->materialmodule));
 			MANAGER_DEREGISTER(cmzn_spectrum)(

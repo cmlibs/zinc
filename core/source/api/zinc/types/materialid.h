@@ -23,6 +23,14 @@ struct cmzn_material;
 typedef struct cmzn_material * cmzn_material_id;
 
 /**
+ * @brief An iterator for looping through all the materials in a materialmodule.
+ *
+ * An iterator for looping through all the materials in a materialmodule.
+ */
+struct cmzn_materialiterator;
+typedef struct cmzn_materialiterator * cmzn_materialiterator_id;
+
+/**
  * @brief Module managing all materials.
  *
  * Module managing all materials. Note that only default and default selected

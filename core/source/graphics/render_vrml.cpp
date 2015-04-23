@@ -50,7 +50,7 @@ PROTOtyping is very slow so has been phased out.
 {
 	char *name;
 	struct Texture *texture;
-	struct Graphical_material *material;
+	cmzn_material *material;
 	struct GT_object *graphics_object;
 	/* time only needed for graphics_object prototype */
 	ZnReal time;
@@ -109,7 +109,7 @@ Protects us from errors due to numbers being close but outside the range of
 
 static struct VRML_prototype *CREATE(VRML_prototype)(char *name,
 	struct Texture *texture,
-	struct Graphical_material *material,
+	cmzn_material *material,
 	struct GT_object *graphics_object,ZnReal time)
 /*******************************************************************************
 LAST MODIFIED : 9 May 1999
@@ -235,7 +235,7 @@ material is already in the list.
 static int write_graphics_object_vrml(FILE *vrml_file,
 	struct GT_object *gt_object,ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list,
-	int object_is_glyph,struct Graphical_material *default_material,
+	int object_is_glyph,cmzn_material *default_material,
 	int gt_object_already_prototyped);
 
 static int write_texture_vrml(FILE *file,struct Texture *texture)
@@ -287,7 +287,7 @@ Writes VRML that defines the texture.
 } /* write_texture_vrml */
 
 static int write_material_node_vrml(FILE *vrml_file,
-	struct Graphical_material *material,int emissive_only)
+	cmzn_material *material,int emissive_only)
 /*******************************************************************************
 LAST MODIFIED : 5 May 1999
 
@@ -360,7 +360,7 @@ with no lighting/normals.
 } /* write_material_node_vrml */
 
 static int activate_material_vrml(FILE *vrml_file,
-	struct Graphical_material *material,
+	cmzn_material *material,
 	struct LIST(VRML_prototype) *vrml_prototype_list,
 	int no_define,int emissive_only)
 /*******************************************************************************
@@ -382,7 +382,7 @@ DESCRIPTION :
 		}
 		else
 		{
-			if (GET_NAME(Graphical_material)(material,&material_name))
+			if (GET_NAME(cmzn_material)(material,&material_name))
 			{
 				/* Can't have . in a name */
 				while (NULL != (dot_pointer = strchr(material_name, '.')))
@@ -421,7 +421,7 @@ DESCRIPTION :
 } /* activate_material_vrml */
 
 static int spectrum_start_render_vrml(FILE *vrml_file,struct cmzn_spectrum *spectrum,
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
 
@@ -450,7 +450,7 @@ Sets VRML file for rendering values on the current material.
 } /* spectrum_start_render_vrml */
 
 static int spectrum_render_vrml_value(FILE *vrml_file,struct cmzn_spectrum *spectrum,
-	struct Graphical_material *material,int number_of_data_components,GLfloat *data)
+	cmzn_material *material,int number_of_data_components,GLfloat *data)
 /*******************************************************************************
 LAST MODIFIED : 6 May 1999
 
@@ -585,7 +585,7 @@ b=(b1,b2,b3) and c=(c1,c2,c3) such that a = b (x) c.
  */
 static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyph_set,
 	Graphics_vertex_array *vertex_array,
-	struct Graphical_material *material, struct cmzn_spectrum *spectrum, ZnReal time,
+	cmzn_material *material, struct cmzn_spectrum *spectrum, ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 {
 	int return_code = 1;
@@ -665,7 +665,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 			c_magnitude, s1, s2, s3, x = 0.0, y = 0.0, z = 0.0;
 			int j, number_of_skew_glyph_axes, skewed_axes;
 			unsigned int i;
-			struct Graphical_material *material_copy;
+			cmzn_material *material_copy;
 			GT_object *glyph = glyph_set->glyph;
 			cmzn_glyph_repeat_mode glyph_repeat_mode = glyph_set->glyph_repeat_mode;
 			/* try to draw points and lines faster */
@@ -872,7 +872,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 				}
 				else
 				{
-					material_copy = (struct Graphical_material *)NULL;
+					material_copy = (cmzn_material *)NULL;
 				}
 				number_of_skew_glyph_axes=0;
 				const int number_of_glyphs =
@@ -1120,7 +1120,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 							/* set the spectrum for this datum, if any */
 							if (material_copy)
 							{
-								MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
+								MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name)
 									(material_copy, material);
 								Spectrum_render_value_on_material(spectrum,material_copy,
 									data_values_per_vertex,datum+i*data_values_per_vertex);
@@ -1192,7 +1192,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 				}
 				else
 				{
-					material_copy = (struct Graphical_material *)NULL;
+					material_copy = (cmzn_material *)NULL;
 				}
 				const int number_of_glyphs =
 					cmzn_glyph_repeat_mode_get_number_of_glyphs(glyph_repeat_mode);
@@ -1244,7 +1244,7 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 								fprintf(vrml_file,"  material\n");
 								if (material_copy)
 								{
-									MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
+									MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name)
 										(material_copy, material);
 									Spectrum_render_value_on_material(spectrum,material_copy,
 										data_values_per_vertex,datum+i*data_values_per_vertex);
@@ -1328,10 +1328,10 @@ static int draw_glyph_set_vrml(FILE *vrml_file, GT_glyphset_vertex_buffers *glyp
 
 static int draw_point_set_vrml(FILE *vrml_file,int n_pts, GLfloat *point_list,
 	std::string *labels, gtMarkerType marker_type, int number_of_data_components,
-	GLfloat *data, struct Graphical_material *material, struct cmzn_spectrum *spectrum)
+	GLfloat *data, cmzn_material *material, struct cmzn_spectrum *spectrum)
 {
 	int i, return_code;
-	struct Graphical_material *material_copy;
+	cmzn_material *material_copy;
 
 	if (vrml_file&&point_list&&(1<n_pts)&&
 		((0==number_of_data_components)||(data&&material&&spectrum)))
@@ -1401,7 +1401,7 @@ static int draw_point_set_vrml(FILE *vrml_file,int n_pts, GLfloat *point_list,
 			}
 			else
 			{
-				material_copy = (struct Graphical_material *)NULL;
+				material_copy = (cmzn_material *)NULL;
 			}
 			for (i=0;i<n_pts;i++)
 			{
@@ -1419,7 +1419,7 @@ static int draw_point_set_vrml(FILE *vrml_file,int n_pts, GLfloat *point_list,
 					fprintf(vrml_file,"  material\n");
 					if (material_copy)
 					{
-						MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)
+						MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name)
 							(material_copy, material);
 						Spectrum_render_value_on_material(spectrum,material_copy,
 							number_of_data_components,data+i*number_of_data_components);
@@ -1479,7 +1479,7 @@ static int draw_point_set_vrml(FILE *vrml_file,int n_pts, GLfloat *point_list,
 
 static int draw_polyline_vrml(FILE *vrml_file,GLfloat *point_list,
 	int number_of_data_components,GLfloat *data,
-	struct Graphical_material *material,struct cmzn_spectrum *spectrum,int n_pts,
+	cmzn_material *material,struct cmzn_spectrum *spectrum,int n_pts,
 	enum GT_polyline_type polyline_type)
 /*******************************************************************************
 LAST MODIFIED : 9 May 1999
@@ -1605,7 +1605,7 @@ continuous polyline. If data or spectrum are NULL they are ignored.
 
 int draw_surface_vrml(FILE *vrml_file,
 	Graphics_vertex_array *vertex_array,
-	struct Graphical_material *material,struct cmzn_spectrum *spectrum,
+	cmzn_material *material,struct cmzn_spectrum *spectrum,
 	enum GT_surface_type surface_type,enum cmzn_graphics_render_polygon_mode render_polygon_mode,
 	struct LIST(VRML_prototype) *vrml_prototype_list)
 /*******************************************************************************
@@ -2079,7 +2079,7 @@ Only writes the geometry field.
 static int write_graphics_object_vrml(FILE *vrml_file,
 	struct GT_object *gt_object,ZnReal time,
 	struct LIST(VRML_prototype) *vrml_prototype_list,
-	int object_is_glyph,struct Graphical_material *default_material,
+	int object_is_glyph,cmzn_material *default_material,
 	int gt_object_already_prototyped)
 /*******************************************************************************
 LAST MODIFIED : 21 June 2001
@@ -2117,7 +2117,7 @@ DESCRIPTION :
 		{
 			temp_string[0] = '_';
 		}
-		if (GET_NAME(Graphical_material)(default_material, &material_name)&&
+		if (GET_NAME(cmzn_material)(default_material, &material_name)&&
 			ALLOCATE(prototype_name,char,strlen(parsed_name)+strlen(num_string)+10+strlen(material_name)))
 		{
 			if (object_is_glyph)
@@ -2179,7 +2179,7 @@ DESCRIPTION :
 						temp_gt_object->default_material = default_material;
 						return_code=
 							makevrml(vrml_file,temp_gt_object,time,vrml_prototype_list);
-						temp_gt_object->default_material = (struct Graphical_material *)NULL;
+						temp_gt_object->default_material = (cmzn_material *)NULL;
 					}
 					temp_gt_object=GT_object_get_next_object(temp_gt_object);
 				}

@@ -206,7 +206,7 @@ DESCRIPTION :
 	enum GT_object_type object_type;
 	gtMatrix transform;
 	gtTransformType transtype;
-	struct Graphical_material *object_material;
+	cmzn_material *object_material;
 	struct IO_stream *stream;
 	int version;
 	double time;
@@ -686,7 +686,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 		n_obj_normal_vertices, n_obj_texture_vertices, n_texture_coordinates, return_code,
 		*vertex_reindex, warning_multiple_normals;
 	gtObject *new_obj, *next_obj, *obj;
-	struct Graphical_material *scanned_material;
+	cmzn_material *scanned_material;
 	GT_surface_vertex_buffers *surfaces = 0;
 	struct IO_stream *file;
 	struct VT_iso_vertex *vertex, **vertex_list;
@@ -759,7 +759,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 			{
 				warning_multiple_normals = 0;
 				/* default material is NULL so that it gets controlled by the graphics_object */
-				scanned_material=(struct Graphical_material *)NULL;
+				scanned_material=(cmzn_material *)NULL;
 
 				line_number = 0;
 				number_of_vertices = 0;
@@ -869,24 +869,24 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 								strncpy(matname, word, strlen(word));
 								matname[strlen(word)] = 0;
 								scanned_material=FIND_BY_IDENTIFIER_IN_MANAGER(
-									Graphical_material,name)(matname,
+									cmzn_material,name)(matname,
 										cmzn_materialmodule_get_manager(materialmodule));
 								if (scanned_material)
-									ACCESS(Graphical_material)(scanned_material);
+									ACCESS(cmzn_material)(scanned_material);
 								if (!(scanned_material ||
 										fuzzy_string_compare_same_length(matname,"NONE")))
 								{
 									scanned_material = cmzn_material_create_private();
 									cmzn_material_set_name(scanned_material, matname);
 									if(scanned_material &&
-										(ADD_OBJECT_TO_MANAGER(Graphical_material)
+										(ADD_OBJECT_TO_MANAGER(cmzn_material)
 											(scanned_material, cmzn_materialmodule_get_manager(materialmodule))))
 									{
 										cmzn_material_set_managed(scanned_material, true);
 									}
 									else
 									{
-										scanned_material = (struct Graphical_material *)NULL;
+										scanned_material = (cmzn_material *)NULL;
 									}
 								}
 								new_obj = GT_object_get_next_object(obj);

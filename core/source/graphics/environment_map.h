@@ -36,7 +36,7 @@ The properties of a environment map.
 	/* the name of the environment map */
 	const char *name;
 	/* the graphical materials to use for each face of the cube */
-	struct Graphical_material *face_material[6];
+	cmzn_material *face_material[6];
 
 	/* after clearing in create, following to be modified only by manager */
 	struct MANAGER(Environment_map) *manager;
@@ -59,7 +59,7 @@ DESCRIPTION :
 ==============================================================================*/
 {
 	struct MANAGER(Environment_map) *environment_map_manager;
-	struct MANAGER(Graphical_material) *graphical_material_manager;
+	struct MANAGER(cmzn_material) *graphical_material_manager;
 }; /* struct Modify_environment_map_data */
 
 /*

@@ -103,7 +103,7 @@ public:
 
 	virtual void fontChange();
 
-	virtual void materialChange(struct MANAGER_MESSAGE(Graphical_material) *message);
+	virtual void materialChange(struct MANAGER_MESSAGE(cmzn_material) *message);
 
 	virtual void spectrumChange(struct MANAGER_MESSAGE(cmzn_spectrum) *message);
 

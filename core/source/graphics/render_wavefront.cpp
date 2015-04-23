@@ -213,8 +213,8 @@ DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(
 	position,struct Wavefront_vertex_position *,compare_vertex_location)
 
 static int activate_material_wavefront(FILE *file,
-	struct Graphical_material *material,
-	struct Graphical_material **current_material)
+	cmzn_material *material,
+	cmzn_material **current_material)
 /*******************************************************************************
 LAST MODIFIED : 2 October 2000
 
@@ -262,7 +262,7 @@ static int makewavefront(FILE *wavefront_file, int full_comments,
 
 int draw_glyph_set_wavefront(FILE *wavefront_file,
 	GT_glyphset_vertex_buffers *glyph_set,	Graphics_vertex_array *vertex_array,
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 11 May 1999
 
@@ -366,8 +366,8 @@ points  given by the positions in <point_list> and oriented and scaled by
 int draw_surface_wavefront(FILE *file,
 	GT_surface_vertex_buffers *surface,
 	Graphics_vertex_array *vertex_array,
-	struct Graphical_material *material,
-	struct Graphical_material **current_material)
+	cmzn_material *material,
+	cmzn_material **current_material)
 /*******************************************************************************
 LAST MODIFIED : 3 October 2000
 
@@ -534,11 +534,11 @@ Convert graphical object into Wavefront object file.
 ==============================================================================*/
 {
 	int number_of_times, return_code;
-	struct Graphical_material *current_material;
+	cmzn_material *current_material;
 
 	/* check arguments */
 	return_code = 1;
-	current_material = (struct Graphical_material *)NULL;
+	current_material = (cmzn_material *)NULL;
 	if (object)
 	{
 		number_of_times = object->number_of_times;

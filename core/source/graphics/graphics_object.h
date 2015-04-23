@@ -29,7 +29,6 @@ Global types
 ------------
 */
 
-struct Graphical_material;
 struct cmzn_font;
 struct cmzn_scene;
 
@@ -386,7 +385,7 @@ Sets the integer identifier used by the graphics to distinguish this object.
  * Use DEACCESS(GT_object) to destroy.
  */
 struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_type,
-	struct Graphical_material *default_material);
+	cmzn_material *default_material);
 
 /**
  * Mark graphics object as changed so it is recompiled at next redraw.
@@ -394,7 +393,7 @@ struct GT_object *CREATE(GT_object)(const char *name,enum GT_object_type object_
 void GT_object_changed(struct GT_object *graphics_object);
 
 int GT_object_Graphical_material_change(struct GT_object *graphics_object,
-	struct LIST(Graphical_material) *changed_material_list);
+	struct LIST(cmzn_material) *changed_material_list);
 /*******************************************************************************
 LAST MODIFIED : 12 March 2002
 
@@ -650,7 +649,7 @@ double get_GT_object_render_point_size(struct GT_object *graphics_object);
 int set_GT_object_render_point_size(struct GT_object *graphics_object,
 	double size);
 
-struct Graphical_material *get_GT_object_default_material(
+cmzn_material *get_GT_object_default_material(
 	struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 4 June 1999
@@ -660,7 +659,7 @@ Gets the default_material of a GT_object.
 ==============================================================================*/
 
 int set_GT_object_default_material(struct GT_object *graphics_object,
-	struct Graphical_material *material);
+	cmzn_material *material);
 /*******************************************************************************
 LAST MODIFIED : 11 June 1998
 
@@ -668,7 +667,7 @@ DESCRIPTION :
 Sets the default_material of a GT_object.
 ==============================================================================*/
 
-struct Graphical_material *get_GT_object_secondary_material(
+cmzn_material *get_GT_object_secondary_material(
 	struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 30 September 2005
@@ -678,7 +677,7 @@ Gets the secondary_material of a GT_object.
 ==============================================================================*/
 
 int set_GT_object_secondary_material(struct GT_object *graphics_object,
-	struct Graphical_material *material);
+	cmzn_material *material);
 /*******************************************************************************
 LAST MODIFIED : 30 September 2005
 
@@ -694,7 +693,7 @@ DESCRIPTION :
 Changes the name of <graphics_object> to a copy of <name>.
 ==============================================================================*/
 
-struct Graphical_material *get_GT_object_selected_material(
+cmzn_material *get_GT_object_selected_material(
 	struct GT_object *graphics_object);
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
@@ -704,7 +703,7 @@ Gets the selected_material of a GT_object.
 ==============================================================================*/
 
 int set_GT_object_selected_material(struct GT_object *graphics_object,
-	struct Graphical_material *material);
+	cmzn_material *material);
 /*******************************************************************************
 LAST MODIFIED : 18 February 2000
 

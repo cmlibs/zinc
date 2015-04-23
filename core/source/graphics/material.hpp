@@ -12,7 +12,7 @@
 #include "general/callback_class.hpp"
 
 class Render_graphics_opengl;
-struct Graphical_material;
+cmzn_material;
 
 struct Material_order_independent_transparency
 /*******************************************************************************
@@ -26,17 +26,17 @@ Data for compiling materials specially for order independent transparency.
 	Render_graphics_opengl *renderer;
 }; /* struct Material_order_independent_transparency */
 
-int Material_render_opengl(struct Graphical_material *material,
+int Material_render_opengl(cmzn_material *material,
 	Render_graphics_opengl *renderer);
 
-int Material_compile_members_opengl(Graphical_material *material,
+int Material_compile_members_opengl(cmzn_material *material,
 	Render_graphics_opengl *renderer);
 
-int Material_compile_opengl_display_list(Graphical_material *material,
-	Callback_base< Graphical_material* > *execute_function,
+int Material_compile_opengl_display_list(cmzn_material *material,
+	Callback_base< cmzn_material* > *execute_function,
 	Render_graphics_opengl *renderer);
 
-int Material_execute_opengl_display_list(Graphical_material *material,
+int Material_execute_opengl_display_list(cmzn_material *material,
 	Render_graphics_opengl *renderer);
 
 #endif // MATERIAL_HPP

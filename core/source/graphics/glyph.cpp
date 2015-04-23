@@ -92,60 +92,44 @@ cmzn_glyph::~cmzn_glyph()
 
 int cmzn_glyph::setName(const char *newName)
 {
-	int return_code;
-	if (newName)
+	if (!newName)
+		return CMZN_ERROR_ARGUMENT;
+	if (this->name && (0 == strcmp(this->name, newName)))
+		return CMZN_OK;
+	cmzn_set_cmzn_glyph *allGlyphs = 0;
+	bool restoreObjectToLists = false;
+	if (this->manager)
 	{
-		if (this->name && (0 == strcmp(this->name, newName)))
+		allGlyphs = reinterpret_cast<cmzn_set_cmzn_glyph *>(this->manager->object_list);
+		cmzn_glyph *existingGlyph = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph, name)(newName, this->manager);
+		if (existingGlyph)
 		{
-			return CMZN_OK;
+			display_message(ERROR_MESSAGE, "cmzn_glyph::setName.  Glyph named '%s' already exists.", newName);
+			return CMZN_ERROR_ARGUMENT;
 		}
-		return_code = CMZN_OK;
-		cmzn_set_cmzn_glyph *allGlyphs = 0;
-		bool restore_changed_object_to_lists = false;
-		if (this->manager)
+		else
 		{
-			allGlyphs = reinterpret_cast<cmzn_set_cmzn_glyph *>(this->manager->object_list);
-			cmzn_glyph *existingGlyph = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph, name)(newName, this->manager);
-			if (existingGlyph)
+			// this temporarily removes the object from all related lists
+			restoreObjectToLists = allGlyphs->begin_identifier_change(this);
+			if (!restoreObjectToLists)
 			{
-				display_message(ERROR_MESSAGE, "cmzn_glyph::setName.  Glyph named '%s' already exists.", newName);
-				return_code = CMZN_ERROR_ARGUMENT;
-			}
-			else
-			{
-				// this temporarily removes the object from all related lists
-				restore_changed_object_to_lists = allGlyphs->begin_identifier_change(this);
-				if (!restore_changed_object_to_lists)
-				{
-					display_message(ERROR_MESSAGE, "cmzn_glyph::setName.  "
-						"Could not safely change identifier in manager");
-					return_code = CMZN_ERROR_GENERAL;
-				}
+				display_message(ERROR_MESSAGE, "cmzn_glyph::setName.  "
+					"Could not safely change identifier in manager");
+				return CMZN_ERROR_GENERAL;
 			}
 		}
-		if (CMZN_OK == return_code)
-		{
-			if (this->name)
-				DEALLOCATE(this->name);
-			this->name = duplicate_string(newName);
-		}
-		if (restore_changed_object_to_lists)
-		{
-			allGlyphs->end_identifier_change();
-		}
-		if (this->manager && return_code)
-		{
-			MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_glyph));
-		}
 	}
-	else
-	{
-		return_code = CMZN_ERROR_ARGUMENT;
-	}
-	return (return_code);
+	if (this->name)
+		DEALLOCATE(this->name);
+	this->name = duplicate_string(newName);
+	if (restoreObjectToLists)
+		allGlyphs->end_identifier_change();
+	if (this->manager)
+		MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_glyph));
+	return CMZN_OK;
 }
 
-void cmzn_glyph_static::materialChange(struct MANAGER_MESSAGE(Graphical_material) *message)
+void cmzn_glyph_static::materialChange(struct MANAGER_MESSAGE(cmzn_material) *message)
 {
 	GT_object *object = this->graphicsObject;
 	bool changed = false;
@@ -154,8 +138,8 @@ void cmzn_glyph_static::materialChange(struct MANAGER_MESSAGE(Graphical_material
 		cmzn_material *material = get_GT_object_default_material(object);
 		if (material)
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(message, material);
-			if (change_flags & MANAGER_CHANGE_RESULT(Graphical_material))
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(message, material);
+			if (change_flags & MANAGER_CHANGE_RESULT(cmzn_material))
 			{
 				GT_object_changed(object);
 				changed = true;
@@ -248,7 +232,7 @@ static int draw_glyph_axes_general(Triple *coordinate_scaling,
 	ZnReal major_cross_min, ZnReal major_cross_max,
 	ZnReal minor_cross_min, ZnReal minor_cross_max, FE_value minor_grid_size,
 	int minor_grids_per_major, FE_value min_minor_grid, FE_value min_major_grid,
-	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	cmzn_material *material, cmzn_material *secondary_material,
 	struct cmzn_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
@@ -580,7 +564,7 @@ Renders the label_bounds as lines and labels.
 static int draw_glyph_axes_ticks(Triple *coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
-	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	cmzn_material *material, cmzn_material *secondary_material,
 	struct cmzn_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
@@ -620,7 +604,7 @@ so only the first component of the label_bounds is drawn.
 static int draw_glyph_grid_lines(Triple *coordinate_scaling, 
 	int label_bounds_dimension, int label_bounds_components, ZnReal *label_bounds,
 	Triple *label_density,
-	struct Graphical_material *material, struct Graphical_material *secondary_material,
+	cmzn_material *material, cmzn_material *secondary_material,
 	struct cmzn_font *font, Render_graphics *renderer)
 /*******************************************************************************
 LAST MODIFIED : 22 November 2005
@@ -883,7 +867,7 @@ struct GT_object *create_GT_object_arrow_line(const char *name,ZnReal head_lengt
 		GT_polyline_vertex_buffers *lines =
 			CREATE(GT_polyline_vertex_buffers)(
 				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
-		glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS,(struct Graphical_material *)NULL);
+		glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS,(cmzn_material *)NULL);
 		GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph, lines);
 		if (ALLOCATE(points,Triple,10))
 		{
@@ -954,7 +938,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 	char *glyph_name,**text;
 	int j;
 	struct Colour colour;
-	struct Graphical_material *material;
+	cmzn_material *material;
 	struct GT_object *glyph = 0, *labels_object, *last_object = 0;
 	Triple *points,*vertex;
 
@@ -1070,7 +1054,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				points[29][1]=-half_head_width;
 				GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
 					g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
-				glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+				glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (cmzn_material *)NULL);
 				if (glyph)
 				{
 					GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
@@ -1121,7 +1105,7 @@ struct GT_object *create_GT_object_axes(const char *name, int make_solid, ZnReal
 				GT_pointset_vertex_buffers *pointsets = CREATE(GT_pointset_vertex_buffers)(
 					font, g_NO_MARKER, 0.0);
 				labels_object=CREATE(GT_object)(glyph_name,g_POINT_SET_VERTEX_BUFFERS,
-					(struct Graphical_material *)NULL);
+					(cmzn_material *)NULL);
 				if (labels_object)
 				{
 					GT_OBJECT_ADD(GT_pointset_vertex_buffers)(labels_object,pointsets);
@@ -1189,7 +1173,7 @@ struct GT_object *create_GT_object_cross(const char *name)
 			points[5][2]=+0.5;
 			GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
 				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
-			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (cmzn_material *)NULL);
 			if (glyph)
 			{
 				GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
@@ -1315,7 +1299,7 @@ struct GT_object *create_GT_object_cube_solid(const char *name)
 			unsigned int number_of_xi1 = 6, number_of_xi2 = 6, number_of_vertices = 36,
 				vertex_start = 0;
 			GLfloat floatField[3];
-			glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,(struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,(cmzn_material *)NULL);
 			GT_surface_vertex_buffers *surfaces = CREATE(GT_surface_vertex_buffers)(
 				g_SH_DISCONTINUOUS, CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 			GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surfaces);
@@ -1412,7 +1396,7 @@ struct GT_object *create_GT_object_cube_wireframe(const char *name)
 			}
 			GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
 				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
-			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (cmzn_material *)NULL);
 			if (glyph)
 			{
 				GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
@@ -1472,7 +1456,7 @@ struct GT_object *create_GT_object_line(const char *name)
 			points[1][2]=0.0;
 			GT_polyline_vertex_buffers *lines = CREATE(GT_polyline_vertex_buffers)(
 				g_PLAIN_DISCONTINUOUS, /*line_width=default*/0);
-			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name,g_POLYLINE_VERTEX_BUFFERS, (cmzn_material *)NULL);
 			if (glyph)
 			{
 				GT_OBJECT_ADD(GT_polyline_vertex_buffers)(glyph,lines);
@@ -1528,7 +1512,7 @@ struct GT_object *create_GT_object_point(const char *name,gtMarkerType marker_ty
 			(*points)[1]=0.0;
 			(*points)[2]=0.0;
 			glyph=CREATE(GT_object)(name,g_POINT_SET_VERTEX_BUFFERS,
-				(struct Graphical_material *)NULL);
+				(cmzn_material *)NULL);
 			GT_pointset_vertex_buffers *pointsets = CREATE(GT_pointset_vertex_buffers)(
 				NULL, marker_type, marker_size);
 			GT_OBJECT_ADD(GT_pointset_vertex_buffers)(glyph,pointsets);
@@ -1650,7 +1634,7 @@ struct GT_object *create_GT_object_sheet(const char *name, int define_texturepoi
 			int polygonType = (int)g_TRIANGLE;
 			Triple *vertex=points, *normal=normalpoints, *texpoints = texturepoints;
 			GLfloat floatField[3];
-			glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,(struct Graphical_material *)NULL);
+			glyph=CREATE(GT_object)(name,g_SURFACE_VERTEX_BUFFERS,(cmzn_material *)NULL);
 			GT_surface_vertex_buffers *surfaces = CREATE(GT_surface_vertex_buffers)(
 				g_SH_DISCONTINUOUS_TEXMAP, CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED);
 			GT_OBJECT_ADD(GT_surface_vertex_buffers)(glyph, surfaces);
@@ -1730,7 +1714,7 @@ char *cmzn_glyph_get_name(cmzn_glyph_id glyph)
 
 int cmzn_glyph_set_name(cmzn_glyph_id glyph, const char *name)
 {
-	if (glyph && name)
+	if (glyph)
 		return glyph->setName(name);
 	return CMZN_ERROR_ARGUMENT;
 }

@@ -129,7 +129,7 @@ Graphical object data structure.
 		/*???DB.  Default is a bit of a misnomer.  Here it means the unhighlighted
 			colour */
 	int default_colourindex;
-	struct Graphical_material *default_material, *secondary_material, 
+	cmzn_material *default_material, *secondary_material, 
 		*selected_material;
 	/* spectrum */
 	struct cmzn_spectrum *spectrum;

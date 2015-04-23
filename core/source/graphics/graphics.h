@@ -117,7 +117,7 @@ finite element group scene.
 	/* appearance settings */
 	/* for all graphics types */
 	bool visibility_flag;
-	struct Graphical_material *material, *selected_material,
+	cmzn_material *material, *selected_material,
 		*secondary_material;
 	struct Computed_field *data_field;
 	struct cmzn_spectrum *spectrum;

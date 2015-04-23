@@ -32,7 +32,6 @@ return to direct rendering, as described with these routines.
 
 #include "zinc/status.h"
 #include "zinc/zincconfigure.h"
-
 #include "zinc/fieldmodule.h"
 #include "zinc/material.h"
 #include "computed_field/computed_field.h"
@@ -40,6 +39,7 @@ return to direct rendering, as described with these routines.
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
+#include "general/indexed_list_stl_private.hpp"
 #include "general/io_stream.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
@@ -74,14 +74,144 @@ FULL_DECLARE_INDEXED_LIST_TYPE(Material_program_uniform);
 
 FULL_DECLARE_INDEXED_LIST_TYPE(Material_program);
 
-FULL_DECLARE_INDEXED_LIST_TYPE(Graphical_material);
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with cmzn_set.
+ */
+class cmzn_material_identifier : private cmzn_material
+{
+public:
+	cmzn_material_identifier(const char *nameIn)
+	{
+		cmzn_material::name = nameIn;
+	}
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(Graphical_material, cmzn_materialmodule, void *);
+	~cmzn_material_identifier()
+	{
+		cmzn_material::name = 0;
+	}
+
+	cmzn_material *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering cmzn_set<Computed_field> by field name */
+struct cmzn_material_compare_name_functor
+{
+	bool operator() (const cmzn_material* material1, const cmzn_material* material2) const
+	{
+		return strcmp(material1->name, material2->name) < 0;
+	}
+};
+
+typedef cmzn_set<cmzn_material *,cmzn_material_compare_name_functor> cmzn_set_cmzn_material;
+
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_material, cmzn_materialmodule, void *);
+
+struct cmzn_materialiterator : public cmzn_set_cmzn_material::ext_iterator
+{
+private:
+	cmzn_materialiterator(cmzn_set_cmzn_material *container);
+	cmzn_materialiterator(const cmzn_materialiterator&);
+	~cmzn_materialiterator();
+
+public:
+
+		static cmzn_materialiterator *create(cmzn_set_cmzn_material *container)
+		{
+			return static_cast<cmzn_materialiterator *>(cmzn_set_cmzn_material::ext_iterator::create(container));
+		}
+
+		cmzn_materialiterator *access()
+		{
+			return static_cast<cmzn_materialiterator *>(this->cmzn_set_cmzn_material::ext_iterator::access());
+		}
+
+		static int deaccess(cmzn_materialiterator* &iterator)
+		{
+			cmzn_set_cmzn_material::ext_iterator* baseIterator = static_cast<cmzn_set_cmzn_material::ext_iterator*>(iterator);
+			iterator = 0;
+			return cmzn_set_cmzn_material::ext_iterator::deaccess(baseIterator);
+		}
+
+};
 
 /*
 Module functions
 ----------------
 */
+
+int cmzn_material::deaccess(cmzn_material **materialAddress)
+{
+	int return_code;
+	struct cmzn_material *material;
+	if (materialAddress && (material = *materialAddress))
+	{
+		--(material->access_count);
+		if (material->access_count <= 0)
+		{
+			delete material;
+			return_code = 1;
+		}
+		else if ((!material->isManagedFlag) && (material->manager) &&
+			((1 == material->access_count) || ((2 == material->access_count) &&
+			(MANAGER_CHANGE_NONE(cmzn_material) != material->manager_change_status))))
+		{
+			return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_material)(material, material->manager);
+		}
+		else
+		{
+			return_code = 1;
+		}
+		*materialAddress = 0;
+	}
+	else
+	{
+		return_code = 0;
+	}
+	return (return_code);
+}
+
+int cmzn_material::setName(const char *newName)
+{
+	if (!newName)
+		return CMZN_ERROR_ARGUMENT;
+	if (this->name && (0 == strcmp(this->name, newName)))
+		return CMZN_OK;
+	cmzn_set_cmzn_material *allMaterials = 0;
+	bool restoreObjectToLists = false;
+	if (this->manager)
+	{
+		allMaterials = reinterpret_cast<cmzn_set_cmzn_material *>(this->manager->object_list);
+		cmzn_material *existingMaterial = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material, name)(newName, this->manager);
+		if (existingMaterial)
+		{
+			display_message(ERROR_MESSAGE, "cmzn_material::setName.  material named '%s' already exists.", newName);
+			return CMZN_ERROR_ARGUMENT;
+		}
+		else
+		{
+			// this temporarily removes the object from all related lists
+			restoreObjectToLists = allMaterials->begin_identifier_change(this);
+			if (!restoreObjectToLists)
+			{
+				display_message(ERROR_MESSAGE, "cmzn_material::setName.  "
+					"Could not safely change identifier in manager");
+				return CMZN_ERROR_GENERAL;
+			}
+		}
+	}
+	if (this->name)
+		DEALLOCATE(this->name);
+	this->name = duplicate_string(newName);
+	if (restoreObjectToLists)
+		allMaterials->end_identifier_change();
+	if (this->manager)
+		MANAGED_OBJECT_CHANGE(cmzn_material)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_material));
+	return CMZN_OK;
+}
 
 static struct Material_program *CREATE(Material_program)(enum Material_program_type type)
 /*******************************************************************************
@@ -368,8 +498,8 @@ static int Material_program_uniform_write_glsl_values(Material_program_uniform *
 	void *material_void)
 {
 	int return_code;
-	Graphical_material *material;
-	if (uniform && (material = static_cast<Graphical_material*>(material_void)))
+	cmzn_material *material;
+	if (uniform && (material = static_cast<cmzn_material*>(material_void)))
 	{
 		GLint location = glGetUniformLocation(material->program->glsl_current_program,
 			uniform->name);
@@ -2933,12 +3063,57 @@ DESCRIPTION :
 } /* Material_program_execute */
 #endif /* defined (OPENGL_API) */
 
-DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(Graphical_material,name,const char *,strcmp)
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_material)
+{
+	return object->access();
+}
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Graphical_material)
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_material)
+{
+	return cmzn_material::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_material)
+{
+	if (object_address)
+	{
+		if (new_object)
+			new_object->access();
+		if (*object_address)
+			cmzn_material::deaccess(object_address);
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
+
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_material)
+
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_material)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_material,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_material,name)
+
+DECLARE_LOCAL_MANAGER_FUNCTIONS(cmzn_material)
+
+DECLARE_MANAGER_FUNCTIONS(cmzn_material, manager)
+
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_material, manager)
+
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_material, name, const char *, manager)
+DECLARE_MANAGER_MODIFY_NOT_IDENTIFIER_FUNCTION(cmzn_material, name)
+
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_material,cmzn_materialiterator)
+
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_material, struct cmzn_materialmodule)
+
+int Material_manager_set_owner(struct MANAGER(cmzn_material) *manager,
+	struct cmzn_materialmodule *materialmodule)
+{
+	return MANAGER_SET_OWNER(cmzn_material)(manager, materialmodule);
+}
 
 #if defined (OPENGL_API)
-int direct_render_Graphical_material(Graphical_material *material,
+int direct_render_Graphical_material(cmzn_material *material,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 8 August 2002
@@ -3200,10 +3375,10 @@ material results.
 static void Graphical_material_Spectrum_change(
 	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *material_void)
 {
-	struct Graphical_material *material;
+	cmzn_material *material;
 
 	ENTER(Graphical_material_Spectrum_change);
-	if (message && (material = (struct Graphical_material *)material_void))
+	if (message && (material = (cmzn_material *)material_void))
 	{
 		int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(message, material->spectrum);
 		if (change & MANAGER_CHANGE_RESULT(cmzn_spectrum))
@@ -3224,7 +3399,7 @@ Global functions
 ----------------
 */
 
-static int Graphical_material_remove_module_if_matching(struct Graphical_material *material,
+static int Graphical_material_remove_module_if_matching(cmzn_material *material,
 	void *materialmodule_void)
 {
 	int return_code;
@@ -3252,15 +3427,15 @@ struct cmzn_materialmodule
 
 private:
 
-	struct MANAGER(Graphical_material) *materialManager;
+	struct MANAGER(cmzn_material) *materialManager;
 	cmzn_material *defaultMaterial;
-	struct Graphical_material *defaultSelectedMaterial;
+	cmzn_material *defaultSelectedMaterial;
 	struct MANAGER(cmzn_spectrum) *spectrumManager;
 	struct LIST(Material_program) *materialProgramList;
 	int access_count;
 
 	cmzn_materialmodule() :
-		materialManager(CREATE(MANAGER(Graphical_material))()),
+		materialManager(CREATE(MANAGER(cmzn_material))()),
 		defaultMaterial(0),
 		defaultSelectedMaterial(0),
 		spectrumManager(0),
@@ -3281,10 +3456,10 @@ private:
 		}
 		DESTROY(LIST(Material_program))(&materialProgramList);
 		/* Make sure each material no longer points at this module */
-		FOR_EACH_OBJECT_IN_MANAGER(Graphical_material)(
+		FOR_EACH_OBJECT_IN_MANAGER(cmzn_material)(
 			Graphical_material_remove_module_if_matching, (void *)this,
 			materialManager);
-		DESTROY(MANAGER(Graphical_material))(&materialManager);
+		DESTROY(MANAGER(cmzn_material))(&materialManager);
 	}
 
 public:
@@ -3368,6 +3543,11 @@ public:
 		return material;
 	}
 
+	cmzn_materialiterator *createMaterialiterator()
+	{
+		return CREATE_LIST_ITERATOR(cmzn_material)(this->materialManager->object_list);
+	}
+
 	cmzn_material *findMaterialByName(const char *name)
 	{
 		cmzn_material *material = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material,name)(name,
@@ -3431,6 +3611,14 @@ cmzn_material_id cmzn_materialmodule_create_material(
 {
 	if (materialmodule)
 		return materialmodule->createMaterial();
+	return 0;
+}
+
+cmzn_materialiterator_id cmzn_materialmodule_create_materialiterator(
+	cmzn_materialmodule_id materialmodule)
+{
+	if (materialmodule)
+		return materialmodule->createMaterialiterator();
 	return 0;
 }
 
@@ -3767,7 +3955,7 @@ cmzn_material *cmzn_material_create_private()
 	cmzn_material *material = 0;
 
 	/* allocate memory for structure */
-	if (ALLOCATE(material,struct Graphical_material,1))
+	if (ALLOCATE(material,cmzn_material,1))
 	{
 		material->name = 0;
 		material->access_count=1;
@@ -3816,18 +4004,17 @@ cmzn_material *cmzn_material_create_private()
 		material->lit_volume_normal_scaling[3] = 1.0;
 		material->program = (struct Material_program *)NULL;
 		material->program_uniforms = (LIST(Material_program_uniform) *)NULL;
-		material->is_managed_flag = false;
-		material->manager = (struct MANAGER(Graphical_material) *)NULL;
-		material->manager_change_status = MANAGER_CHANGE_NONE(Graphical_material);
+		material->isManagedFlag = false;
+		material->manager = (struct MANAGER(cmzn_material) *)NULL;
+		material->manager_change_status = MANAGER_CHANGE_NONE(cmzn_material);
 #if defined (OPENGL_API)
 				material->display_list=0;
 				material->brightness_texture_id=0;
 #endif /* defined (OPENGL_API) */
 				material->compile_status = GRAPHICS_NOT_COMPILED;
 	}
-
 	return (material);
-} /* CREATE(Graphical_material) */
+}
 
 /*******************************************************************************
  * Reset the material_image_texture to hold NULL object.
@@ -3864,7 +4051,7 @@ int Material_image_texture_reset(struct Material_image_texture *image_texture)
 	return return_code;
 }
 
-int DESTROY(Graphical_material)(struct Graphical_material **material_address)
+int DESTROY(cmzn_material)(struct cmzn_material **material_address)
 /*******************************************************************************
 LAST MODIFIED : 3 August 1998
 
@@ -3873,9 +4060,8 @@ Frees the memory for the material and sets <*material_address> to NULL.
 ==============================================================================*/
 {
 	int return_code;
-	struct Graphical_material *material;
+	cmzn_material *material;
 
-	ENTER(DESTROY(Graphical_material));
 	if (material_address&&(material= *material_address))
 	{
 		if (0==material->access_count)
@@ -3917,7 +4103,7 @@ Frees the memory for the material and sets <*material_address> to NULL.
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"DESTROY(Graphical_material).  Graphical_material %s has non-zero access count",
+				"DESTROY(cmzn_material).  Graphical material %s has non-zero access count",
 				material->name);
 			return_code=0;
 		}
@@ -3925,13 +4111,11 @@ Frees the memory for the material and sets <*material_address> to NULL.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"DESTROY(Graphical_material).  Missing material");
+			"DESTROY(cmzn_material).  Missing material");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DESTROY(Graphical_material) */
+}
 
 /***************************************************************************//**
  * Something has changed in the regional computed field manager.
@@ -3953,13 +4137,13 @@ static void Material_image_field_change(
 				image_texture->material->compile_status = CHILD_GRAPHICS_NOT_COMPILED;
 			}
 			if (image_texture->material->manager)
-				MANAGER_BEGIN_CACHE(Graphical_material)(image_texture->material->manager);
+				MANAGER_BEGIN_CACHE(cmzn_material)(image_texture->material->manager);
 			REACCESS(Texture)(&(image_texture->texture),
 			cmzn_field_image_get_texture(image_texture->field));
-			MANAGED_OBJECT_CHANGE(Graphical_material)(image_texture->material,
-				MANAGER_CHANGE_FULL_RESULT(Graphical_material));
+			MANAGED_OBJECT_CHANGE(cmzn_material)(image_texture->material,
+				MANAGER_CHANGE_FULL_RESULT(cmzn_material));
 			if (image_texture->material->manager)
-				MANAGER_END_CACHE(Graphical_material)(image_texture->material->manager);
+				MANAGER_END_CACHE(cmzn_material)(image_texture->material->manager);
 		}
 	}
 	else
@@ -3968,7 +4152,6 @@ static void Material_image_field_change(
 			"Material_image_field_change.  Invalid argument(s)");
 	}
 }
-
 
 /***************************************************************************//**
  * Set the field and update all the related objects in material_image_texture.
@@ -4020,19 +4203,12 @@ int Material_image_texture_set_field(struct Material_image_texture *image_textur
 	return return_code;
 }
 
-DECLARE_OBJECT_FUNCTIONS(Graphical_material)
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Graphical_material)
-DECLARE_INDEXED_LIST_FUNCTIONS(Graphical_material)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(Graphical_material,name,
-	const char *,strcmp)
-DECLARE_INDEXED_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Graphical_material,name)
-
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
+PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(cmzn_material,name)
 {
 	char *name;
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name));
+	ENTER(MANAGER_COPY_WITH_IDENTIFIER(cmzn_material,name));
 	/* check arguments */
 	if (source&&destination)
 	{
@@ -4046,7 +4222,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name).  Insufficient memory");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_material,name).  Insufficient memory");
 				return_code=0;
 			}
 		}
@@ -4057,7 +4233,7 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
 		}
 		if (return_code)
 		{
-			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name)(destination, source);
+			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name)(destination, source);
 			if (return_code)
 			{
 				/* copy values */
@@ -4068,26 +4244,26 @@ PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Graphical_material,name)
 			{
 				DEALLOCATE(name);
 				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name).  Could not copy without identifier");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_material,name).  Could not copy without identifier");
 			}
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name).  Invalid argument(s)");
+"MANAGER_COPY_WITH_IDENTIFIER(cmzn_material,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Graphical_material,name) */
+} /* MANAGER_COPY_WITH_IDENTIFIER(cmzn_material,name) */
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
+PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(cmzn_material,name)
 {
 	int return_code;
 
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name));
+	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name));
 	/* check arguments */
 	if (source&&destination)
 	{
@@ -4176,20 +4352,20 @@ PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Graphical_material,name)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name).  Invalid argument(s)");
+"MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Graphical_material,name) */
+} /* MANAGER_COPY_WITHOUT_IDENTIFIER(cmzn_material,name) */
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
+PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(cmzn_material,name,const char *)
 {
 	char *destination_name = NULL;
 	int return_code;
 
-	ENTER(MANAGER_COPY_IDENTIFIER(Graphical_material,name));
+	ENTER(MANAGER_COPY_IDENTIFIER(cmzn_material,name));
 	/* check arguments */
 	if (name&&destination)
 	{
@@ -4203,7 +4379,7 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
 			else
 			{
 				display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Graphical_material,name).  Insufficient memory");
+			"MANAGER_COPY_IDENTIFIER(cmzn_material,name).  Insufficient memory");
 				return_code=0;
 			}
 		}
@@ -4222,30 +4398,15 @@ PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Graphical_material,name,const char *)
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Graphical_material,name).  Invalid argument(s)");
+			"MANAGER_COPY_IDENTIFIER(cmzn_material,name).  Invalid argument(s)");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Graphical_material,name) */
-
-DECLARE_MANAGER_FUNCTIONS(Graphical_material, manager)
-
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Graphical_material,manager)
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS( \
-	Graphical_material, name, const char *, manager)
-
-DECLARE_MANAGER_OWNER_FUNCTIONS(Graphical_material, struct cmzn_materialmodule)
-
-int Material_manager_set_owner(struct MANAGER(Graphical_material) *manager,
-	struct cmzn_materialmodule *materialmodule)
-{
-	return MANAGER_SET_OWNER(Graphical_material)(manager, materialmodule);
 }
 
-const char *Graphical_material_name(struct Graphical_material *material)
+const char *Graphical_material_name(cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 29 November 1997
 
@@ -4287,18 +4448,18 @@ Be careful with the returned value: esp. do not modify or DEALLOCATE it!
  * Broadcast changes in the graphical material to be propagated to objects that
  * uses it through manager that owns it.
  *
- * @param material  Modified Graphical_material to be broadcast.
+ * @param material  Modified material to be broadcast.
  * @return 1 on success, 0 on failure
  */
-int Graphical_material_changed(struct Graphical_material *material)
+int Graphical_material_changed(cmzn_material *material)
 {
 	int return_code;
 
 	ENTER(Graphical_material_changed);
 	if (material)
 	{
-		return_code = MANAGED_OBJECT_CHANGE(Graphical_material)(material,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Graphical_material));
+		return_code = MANAGED_OBJECT_CHANGE(cmzn_material)(material,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_material));
 	}
 	else
 	{
@@ -4311,7 +4472,7 @@ int Graphical_material_changed(struct Graphical_material *material)
 	return (return_code);
 }
 
-int Graphical_material_get_ambient(struct Graphical_material *material,
+int Graphical_material_get_ambient(cmzn_material *material,
 	struct Colour *ambient)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4341,7 +4502,7 @@ Returns the ambient colour of the material.
 	return (return_code);
 } /* Graphical_material_get_ambient */
 
-int Graphical_material_set_ambient(struct Graphical_material *material,
+int Graphical_material_set_ambient(cmzn_material *material,
 	struct Colour *ambient)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -4374,7 +4535,7 @@ Sets the ambient colour of the material.
 	return (return_code);
 } /* Graphical_material_set_ambient */
 
-int Graphical_material_get_diffuse(struct Graphical_material *material,
+int Graphical_material_get_diffuse(cmzn_material *material,
 	struct Colour *diffuse)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4404,7 +4565,7 @@ Returns the diffuse colour of the material.
 	return (return_code);
 } /* Graphical_material_get_diffuse */
 
-int Graphical_material_set_diffuse(struct Graphical_material *material,
+int Graphical_material_set_diffuse(cmzn_material *material,
 	struct Colour *diffuse)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -4437,7 +4598,7 @@ Sets the diffuse colour of the material.
 	return (return_code);
 } /* Graphical_material_set_diffuse */
 
-int Graphical_material_get_emission(struct Graphical_material *material,
+int Graphical_material_get_emission(cmzn_material *material,
 	struct Colour *emission)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4467,7 +4628,7 @@ Returns the emission colour of the material.
 	return (return_code);
 } /* Graphical_material_get_emission */
 
-int Graphical_material_set_emission(struct Graphical_material *material,
+int Graphical_material_set_emission(cmzn_material *material,
 	struct Colour *emission)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -4500,7 +4661,7 @@ Sets the emission colour of the material.
 	return (return_code);
 } /* Graphical_material_set_emission */
 
-int Graphical_material_get_specular(struct Graphical_material *material,
+int Graphical_material_get_specular(cmzn_material *material,
 	struct Colour *specular)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4530,7 +4691,7 @@ Returns the specular colour of the material.
 	return (return_code);
 } /* Graphical_material_get_specular */
 
-int Graphical_material_set_specular(struct Graphical_material *material,
+int Graphical_material_set_specular(cmzn_material *material,
 	struct Colour *specular)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -4563,7 +4724,7 @@ Sets the specular colour of the material.
 	return (return_code);
 } /* Graphical_material_set_specular */
 
-int Graphical_material_get_alpha(struct Graphical_material *material,
+int Graphical_material_get_alpha(cmzn_material *material,
 	MATERIAL_PRECISION *alpha)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4591,7 +4752,7 @@ Returns the alpha value of the material.
 	return (return_code);
 } /* Graphical_material_get_alpha */
 
-int Graphical_material_set_alpha(struct Graphical_material *material,
+int Graphical_material_set_alpha(cmzn_material *material,
 	MATERIAL_PRECISION alpha)
 /*******************************************************************************
 LAST MODIFIED : 15 October 1998
@@ -4622,7 +4783,7 @@ Sets the alpha value of the material.
 	return (return_code);
 } /* Graphical_material_set_alpha */
 
-int Graphical_material_get_shininess(struct Graphical_material *material,
+int Graphical_material_get_shininess(cmzn_material *material,
 	MATERIAL_PRECISION *shininess)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4650,7 +4811,7 @@ Returns the shininess value of the material.
 	return (return_code);
 } /* Graphical_material_get_shininess */
 
-int Graphical_material_set_shininess(struct Graphical_material *material,
+int Graphical_material_set_shininess(cmzn_material *material,
 	MATERIAL_PRECISION shininess)
 /*******************************************************************************
 LAST MODIFIED : 28 November 1997
@@ -4681,7 +4842,7 @@ Sets the shininess value of the material.
 	return (return_code);
 } /* Graphical_material_set_shininess */
 
-int Graphical_material_get_bump_mapping_flag(struct Graphical_material *material)
+int Graphical_material_get_bump_mapping_flag(cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2007
 
@@ -4707,7 +4868,7 @@ Returns the flag set for bump_mapping.
 	return (return_code);
 }
 
-int Graphical_material_get_per_pixel_lighting_flag(struct Graphical_material *material)
+int Graphical_material_get_per_pixel_lighting_flag(cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 5 December 2007
 
@@ -4734,7 +4895,7 @@ Returns the flag set for per_pixel_lighting.
 }
 
 struct Texture *Graphical_material_get_texture(
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 12 February 1998
 
@@ -4761,7 +4922,7 @@ Returns the texture member of the material.
 } /* Graphical_material_get_texture */
 
 struct Texture *Graphical_material_get_second_texture(
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 5 Dec 2007
 
@@ -4788,7 +4949,7 @@ Returns the second texture of the material.
 } /* Graphical_material_get_second_texture */
 
 struct Texture *Graphical_material_get_third_texture(
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 5 Dec 2007
 
@@ -4815,7 +4976,7 @@ Returns the third texture of the material.
 } /* Graphical_material_get_third_texture */
 
 struct Texture *Graphical_material_get_fourth_texture(
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 5 Dec 2007
 
@@ -4841,7 +5002,7 @@ Returns the fourth texture of the material.
 	return (texture);
 } /* Graphical_material_get_fourth_texture */
 
-int Graphical_material_set_colour_lookup_spectrum(struct Graphical_material *material,
+int Graphical_material_set_colour_lookup_spectrum(cmzn_material *material,
 	struct cmzn_spectrum *spectrum)
 /*******************************************************************************
 LAST MODIFIED : 6 October 2006
@@ -4890,7 +5051,7 @@ Sets the spectrum member of the material.
 } /* Graphical_material_set_colour_lookup_spectrum */
 
 struct cmzn_spectrum *Graphical_material_get_colour_lookup_spectrum(
-	struct Graphical_material *material)
+	cmzn_material *material)
 /*******************************************************************************
 LAST MODIFIED : 6 October 2006
 
@@ -4983,7 +5144,7 @@ int cmzn_material_set_texture_field(cmzn_material_id material,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int set_material_program_type_texture_mode(struct Graphical_material *material_to_be_modified,
+int set_material_program_type_texture_mode(cmzn_material *material_to_be_modified,
 	 int *type, int return_code)
 {
 	 int dimension;
@@ -5056,7 +5217,7 @@ int set_material_program_type_texture_mode(struct Graphical_material *material_t
 	 return return_code;
 }
 
-int set_material_program_type_second_texture(struct Graphical_material *material_to_be_modified,
+int set_material_program_type_second_texture(cmzn_material *material_to_be_modified,
 	 int *type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
@@ -5100,7 +5261,7 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int set_material_program_type_bump_mapping(struct Graphical_material *material_to_be_modified,
+int set_material_program_type_bump_mapping(cmzn_material *material_to_be_modified,
 	 int *type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
@@ -5128,7 +5289,7 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int set_material_program_type_spectrum(struct Graphical_material *material_to_be_modified,
+int set_material_program_type_spectrum(cmzn_material *material_to_be_modified,
 	 int *type, int red_flag, int green_flag, int blue_flag,
 	 int alpha_flag, int return_code)
 /******************************************************************************
@@ -5223,7 +5384,7 @@ functions are orginally from the modify_graphical_materil.
 	 return return_code;
 }
 
-int material_update_material_program(struct Graphical_material *material_to_be_modified,
+int material_update_material_program(cmzn_material *material_to_be_modified,
 	 struct cmzn_materialmodule *materialmodule, enum Material_program_type type, int return_code)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
@@ -5265,7 +5426,7 @@ DESCRIPTION : Check the material program and renew it if necessary.
 	 return return_code;
 }
 
-int set_material_program_type(struct Graphical_material *material_to_be_modified,
+int set_material_program_type(cmzn_material *material_to_be_modified,
 	 int bump_mapping_flag, int colour_lookup_red_flag, int colour_lookup_green_flag,
 	 int colour_lookup_blue_flag,  int colour_lookup_alpha_flag,
 	 int lit_volume_intensity_normal_texture_flag, int lit_volume_finite_difference_normal_flag,
@@ -5325,8 +5486,8 @@ NOTE: I use the pointer to the materialmodule from the material.
 	 return return_code;
 }
 
-int material_copy_bump_mapping_and_per_pixel_lighting_flag(struct Graphical_material *material,
-	 struct Graphical_material *material_to_be_modified)
+int material_copy_bump_mapping_and_per_pixel_lighting_flag(cmzn_material *material,
+	 cmzn_material *material_to_be_modified)
 /******************************************************************************
 LAST MODIFIED : 5 Dec 2007
 
@@ -5358,7 +5519,7 @@ the one in material, it is used for setting up the GUI.
  * Sets the material to use a #Material_program with user specified strings
  * for the vertex_program and fragment_program.
  */
-int Material_set_material_program_strings(struct Graphical_material *material_to_be_modified,
+int Material_set_material_program_strings(cmzn_material *material_to_be_modified,
 	char *vertex_program_string, char *fragment_program_string, char *geometry_program_string)
 {
 	int return_code;
@@ -5404,7 +5565,7 @@ int Material_set_material_program_strings(struct Graphical_material *material_to
 	return return_code;
 }
 
-int list_Graphical_material(struct Graphical_material *material,void *dummy)
+int list_Graphical_material(cmzn_material *material,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 24 November 1999
 
@@ -5512,7 +5673,7 @@ Writes the properties of the <material> to the command window.
 	return (return_code);
 } /* list_Graphical_material */
 
-int list_Graphical_material_commands(struct Graphical_material *material,
+int list_Graphical_material_commands(cmzn_material *material,
 	 void *command_prefix_void)
 /*******************************************************************************
 LAST MODIFIED : 15 August 2007
@@ -5625,7 +5786,7 @@ The command is started with the string pointed to by <command_prefix>.
 	return (return_code);
 } /* list_Graphical_material_commands */
 
-int write_Graphical_material_commands_to_comfile(struct Graphical_material *material,
+int write_Graphical_material_commands_to_comfile(cmzn_material *material,
 	 void *command_prefix_void)
 /*******************************************************************************
 LAST MODIFIED : 15 August 2007
@@ -5739,7 +5900,7 @@ The command is started with the string pointed to by <command_prefix>.
 } /* write_Graphical_material_commands_to_comfile */
 
 
-/* int list_Graphical_material_commands(struct Graphical_material *material, */
+/* int list_Graphical_material_commands(cmzn_material *material, */
 /* 	void *command_prefix_void) */
 /* ****************************************************************************** */
 /* LAST MODIFIED : 15 August 2007 */
@@ -5761,7 +5922,7 @@ The command is started with the string pointed to by <command_prefix>.
 /* 	return (return_code); */
 /* }  write_Graphical_material_commands_to_comfile */
 
-/* int write_Graphical_material_commands_to_comfile(struct Graphical_material *material, */
+/* int write_Graphical_material_commands_to_comfile(cmzn_material *material, */
 /* 	void *command_prefix_void) */
 /* ****************************************************************************** */
 /* LAST MODIFIED : 15 August 2007 */
@@ -5784,8 +5945,8 @@ The command is started with the string pointed to by <command_prefix>.
 /* } write_Graphical_material_commands_to_comfile */
 
 int file_read_Graphical_material_name(struct IO_stream *stream,
-	struct Graphical_material **material_address,
-	struct MANAGER(Graphical_material) *graphical_material_manager)
+	cmzn_material **material_address,
+	struct MANAGER(cmzn_material) *graphical_material_manager)
 /*******************************************************************************
 LAST MODIFIED : 6 December 2004
 
@@ -5797,7 +5958,7 @@ specified name and the default properties.
 {
 	char *material_name;
 	int return_code;
-	struct Graphical_material *material;
+	cmzn_material *material;
 
 	ENTER(file_read_Graphical_material_name);
 	/* check the arguments */
@@ -5808,7 +5969,7 @@ specified name and the default properties.
 			/*???DB.  Should this read function be in another module ? */
 			/* either find an existing material of that name, use no material if the
 				 name is "none", or make a material of the given name */
-			material=FIND_BY_IDENTIFIER_IN_MANAGER(Graphical_material,name)(
+			material=FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_material,name)(
 				material_name,graphical_material_manager);
 			if (material || fuzzy_string_compare_same_length(material_name,"NONE"))
 			{
@@ -5822,7 +5983,7 @@ specified name and the default properties.
 				if (material)
 				{
 					cmzn_material_set_managed(material, true);
-					if (ADD_OBJECT_TO_MANAGER(Graphical_material)(material,
+					if (ADD_OBJECT_TO_MANAGER(cmzn_material)(material,
 						graphical_material_manager))
 					{
 						*material_address=material;
@@ -5862,7 +6023,7 @@ specified name and the default properties.
 } /* file_read_Graphical_material_name */
 
 #if defined (OPENGL_API)
-int Material_compile_members_opengl(Graphical_material *material,
+int Material_compile_members_opengl(cmzn_material *material,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
@@ -5941,8 +6102,8 @@ int Material_compile_members_opengl(Graphical_material *material,
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-int Material_compile_opengl_display_list(Graphical_material *material,
-	Callback_base< Graphical_material* > *execute_function,
+int Material_compile_opengl_display_list(cmzn_material *material,
+	Callback_base< cmzn_material* > *execute_function,
 	Render_graphics_opengl *renderer)
 {
 	int return_code;
@@ -5986,7 +6147,7 @@ int Material_compile_opengl_display_list(Graphical_material *material,
 
 #if defined (OPENGL_API)
 int compile_Graphical_material_for_order_independent_transparency(
-	struct Graphical_material *material,
+	cmzn_material *material,
 	void *material_order_independent_data_void)
 /*******************************************************************************
 LAST MODIFIED : 2 May 2005
@@ -6232,7 +6393,7 @@ will work with order_independent_transparency.
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-int Material_render_opengl(Graphical_material *material,
+int Material_render_opengl(cmzn_material *material,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 19 November 2007
@@ -6365,7 +6526,7 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 #endif /* defined (OPENGL_API) */
 
 #if defined (OPENGL_API)
-int Material_execute_opengl_display_list(Graphical_material *material,
+int Material_execute_opengl_display_list(cmzn_material *material,
 	Render_graphics_opengl *renderer)
 /*******************************************************************************
 LAST MODIFIED : 13 March 2002
@@ -6423,7 +6584,7 @@ direct_render_Graphical_material.
 } /* execute_Graphical_material */
 #endif /* defined (OPENGL_API) */
 
-int material_deaccess_material_program(struct Graphical_material *material_to_be_modified)
+int material_deaccess_material_program(cmzn_material *material_to_be_modified)
 /******************************************************************************
 LAST MODIFIED : 4 Dec 2007
 
@@ -6450,7 +6611,7 @@ deaccess the material program from the material.
 }
 
 int cmzn_material_set_texture(
-	Graphical_material *material, Texture *texture)
+	cmzn_material *material, Texture *texture)
 {
 	int return_code = 0;
 
@@ -6469,48 +6630,28 @@ int cmzn_material_set_texture(
 	return return_code;
 }
 
-struct Graphical_material *cmzn_material_access(struct Graphical_material *material)
+cmzn_material_id cmzn_material_access(cmzn_material_id material)
 {
 	if (material)
-		++(material->access_count);
+		material->access();
 	return material;
 }
 
-int cmzn_material_destroy(Graphical_material **material_address)
+int cmzn_material_destroy(cmzn_material_id *material_address)
 {
-	int return_code = 0;
-	struct Graphical_material *material;
-
-	ENTER(cmzn_material_destroy);
-	if (material_address && (material = *material_address))
+	if (material_address)
 	{
-		(material->access_count)--;
-		if (material->access_count <= 0)
-		{
-			return_code = DESTROY(Graphical_material)(material_address);
-		}
-		else if ((!material->is_managed_flag) && (material->manager) &&
-			((1 == material->access_count) || ((2 == material->access_count) &&
-				(MANAGER_CHANGE_NONE(Graphical_material) != material->manager_change_status))))
-		{
-			return_code = REMOVE_OBJECT_FROM_MANAGER(Graphical_material)(material, material->manager);
-		}
-		else
-		{
-			return_code = 1;
-		}
-		*material_address = (struct Graphical_material *)NULL;
+		cmzn_material::deaccess(material_address);
+		return CMZN_OK;
 	}
-	LEAVE;
-
-	return return_code;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_material_is_managed(cmzn_material_id material)
 {
 	if (material)
 	{
-		return material->is_managed_flag;
+		return material->isManagedFlag;
 	}
 	return 0;
 }
@@ -6519,47 +6660,21 @@ int cmzn_material_set_managed(cmzn_material_id material, bool value)
 {
 	if (material)
 	{
-		bool old_value = material->is_managed_flag;
-		material->is_managed_flag = (value != 0);
-		if (value != old_value)
+		if (value != material->isManagedFlag)
 		{
-			MANAGED_OBJECT_CHANGE(Graphical_material)(material, MANAGER_CHANGE_DEFINITION(Graphical_material));
+			material->isManagedFlag = value;
+			MANAGED_OBJECT_CHANGE(cmzn_material)(material, MANAGER_CHANGE_DEFINITION(cmzn_material));
 		}
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_material_set_name(
-	Graphical_material *material, const char *name)
+int cmzn_material_set_name(cmzn_material *material, const char *name)
 {
-	int return_code = 0;
-
-	if (material && name)
-	{
-		return_code = 1;
-		if (material->manager)
-		{
-			return_code = MANAGER_MODIFY_IDENTIFIER(cmzn_material, name)(
-				material, name, material->manager);
-		}
-		else
-		{
-			char *new_name = duplicate_string(name);
-			if (new_name)
-			{
-				if (material->name)
-					DEALLOCATE(material->name);
-				material->name = new_name;
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-	}
-
-	return return_code;
+	if (material)
+		return material->setName(name);
+	return CMZN_ERROR_ARGUMENT;
 }
 
 char *cmzn_material_get_name(cmzn_material_id material)
@@ -6758,4 +6873,32 @@ char *cmzn_material_attribute_enum_to_string(
 {
 	const char *attribute_string = cmzn_material_attribute_conversion::to_string(attribute);
 	return (attribute_string ? duplicate_string(attribute_string) : 0);
+}
+
+cmzn_materialiterator_id cmzn_materialiterator_access(cmzn_materialiterator_id iterator)
+{
+	if (iterator)
+		return iterator->access();
+	return 0;
+}
+
+int cmzn_materialiterator_destroy(cmzn_materialiterator_id *iterator_address)
+{
+	if (!iterator_address)
+		return 0;
+	return cmzn_materialiterator::deaccess(*iterator_address);
+}
+
+cmzn_material_id cmzn_materialiterator_next(cmzn_materialiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next();
+	return 0;
+}
+
+cmzn_material_id cmzn_materialiterator_next_non_access(cmzn_materialiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next_non_access();
+	return 0;
 }

@@ -268,9 +268,9 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			/* appearance settings defaults */
 			/* for all graphics types */
 			graphics->visibility_flag = true;
-			graphics->material=(struct Graphical_material *)NULL;
-			graphics->secondary_material=(struct Graphical_material *)NULL;
-			graphics->selected_material=(struct Graphical_material *)NULL;
+			graphics->material=(cmzn_material *)NULL;
+			graphics->secondary_material=(cmzn_material *)NULL;
+			graphics->selected_material=(cmzn_material *)NULL;
 			graphics->data_field=(struct Computed_field *)NULL;
 			graphics->spectrum=(struct cmzn_spectrum *)NULL;
 			graphics->autorange_spectrum_flag = 0;
@@ -1496,7 +1496,7 @@ cmzn_material_id cmzn_graphics_get_material(
 {
 	if (graphics)
 	{
-		return ACCESS(Graphical_material)(graphics->material);
+		return ACCESS(cmzn_material)(graphics->material);
 	}
 	return 0;
 }
@@ -1508,7 +1508,7 @@ int cmzn_graphics_set_material(cmzn_graphics_id graphics,
 	{
 		if (material != graphics->material)
 		{
-			REACCESS(Graphical_material)(&(graphics->material), material);
+			REACCESS(cmzn_material)(&(graphics->material), material);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
 		}
@@ -1517,12 +1517,12 @@ int cmzn_graphics_set_material(cmzn_graphics_id graphics,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct Graphical_material *cmzn_graphics_get_selected_material(
+cmzn_material *cmzn_graphics_get_selected_material(
 	struct cmzn_graphics *graphics)
 {
 	if (graphics)
 	{
-		return ACCESS(Graphical_material)(graphics->selected_material);
+		return ACCESS(cmzn_material)(graphics->selected_material);
 	}
 	return 0;
 }
@@ -1534,7 +1534,7 @@ int cmzn_graphics_set_selected_material(cmzn_graphics_id graphics,
 	{
 		if (selected_material != graphics->selected_material)
 		{
-			REACCESS(Graphical_material)(&(graphics->selected_material),
+			REACCESS(cmzn_material)(&(graphics->selected_material),
 				selected_material);
 			cmzn_graphics_update_graphics_object_trivial(graphics);
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
@@ -2099,7 +2099,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 				append_string(&graphics_string," invisible",&error);
 			}
 			if (graphics->material&&
-				GET_NAME(Graphical_material)(graphics->material,&name))
+				GET_NAME(cmzn_material)(graphics->material,&name))
 			{
 				/* put quotes around name if it contains special characters */
 				make_valid_token(&name);
@@ -2108,7 +2108,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 				DEALLOCATE(name);
 			}
 			if (graphics->secondary_material&&
-				GET_NAME(Graphical_material)(graphics->secondary_material,&name))
+				GET_NAME(cmzn_material)(graphics->secondary_material,&name))
 			{
 				/* put quotes around name if it contains special characters */
 				make_valid_token(&name);
@@ -2158,7 +2158,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 				}
 			}
 			if (graphics->selected_material&&
-				GET_NAME(Graphical_material)(graphics->selected_material,&name))
+				GET_NAME(cmzn_material)(graphics->selected_material,&name))
 			{
 				/* put quotes around name if it contains special characters */
 				make_valid_token(&name);
@@ -3963,14 +3963,14 @@ int cmzn_graphics_copy_without_graphics_object(
 		destination->visibility_flag = source->visibility_flag;
 		destination->render_line_width = source->render_line_width;
 		destination->render_point_size = source->render_point_size;
-		REACCESS(Graphical_material)(&(destination->material),source->material);
-		REACCESS(Graphical_material)(&(destination->secondary_material),
+		REACCESS(cmzn_material)(&(destination->material),source->material);
+		REACCESS(cmzn_material)(&(destination->secondary_material),
 			source->secondary_material);
 		cmzn_graphics_set_render_polygon_mode(destination,source->render_polygon_mode);
 		REACCESS(Computed_field)(&(destination->data_field), source->data_field);
 		REACCESS(cmzn_spectrum)(&(destination->spectrum), source->spectrum);
 		destination->streamline_data_type = source->streamline_data_type;
-		REACCESS(Graphical_material)(&(destination->selected_material),
+		REACCESS(cmzn_material)(&(destination->selected_material),
 			source->selected_material);
 		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
 		REACCESS(cmzn_font)(&(destination->font), source->font);
@@ -4930,29 +4930,29 @@ int cmzn_material_change(
 	struct cmzn_graphics *graphics, void *material_manager_message_void)
 {
 	int return_code;
-	struct MANAGER_MESSAGE(Graphical_material) *manager_message =
-		(struct MANAGER_MESSAGE(Graphical_material) *)material_manager_message_void;
+	struct MANAGER_MESSAGE(cmzn_material) *manager_message =
+		(struct MANAGER_MESSAGE(cmzn_material) *)material_manager_message_void;
 	if (graphics && manager_message)
 	{
 		return_code = 1;
 		bool material_change = false;
 		if (graphics->material)
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(
 				manager_message, graphics->material);
-			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
+			material_change = (change_flags & MANAGER_CHANGE_RESULT(cmzn_material)) != 0;
 		}
 		if (!material_change && graphics->secondary_material)
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(
 				manager_message, graphics->secondary_material);
-			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
+			material_change = (change_flags & MANAGER_CHANGE_RESULT(cmzn_material)) != 0;
 		}
 		if (!material_change && graphics->selected_material)
 		{
-			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Graphical_material)(
+			int change_flags = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_material)(
 				manager_message, graphics->selected_material);
-			material_change = (change_flags & MANAGER_CHANGE_RESULT(Graphical_material)) != 0;
+			material_change = (change_flags & MANAGER_CHANGE_RESULT(cmzn_material)) != 0;
 		}
 		if (graphics->glyph)
 		{
@@ -4963,7 +4963,7 @@ int cmzn_material_change(
 			if (graphics->graphics_object)
 			{
 				GT_object_Graphical_material_change(graphics->graphics_object,
-					(struct LIST(Graphical_material) *)NULL);
+					(struct LIST(cmzn_material) *)NULL);
 			}
 			/* need a way to tell either graphics is used in any scene or not */
 			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
@@ -5015,7 +5015,7 @@ int cmzn_graphics_spectrum_change(
 				if (graphics->graphics_object)
 				{
 					GT_object_Graphical_material_change(graphics->graphics_object,
-						(struct LIST(Graphical_material) *)NULL);
+						(struct LIST(cmzn_material) *)NULL);
 				}
 				/* need a way to tell either graphics is used in any scene or not */
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_RECOMPILE);
