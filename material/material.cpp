@@ -309,3 +309,38 @@ TEST(ZincMaterial, unmanage)
 	material = materialmodule.findMaterialByName(name);
 	EXPECT_FALSE(material.isValid());
 }
+
+TEST(ZincMaterialiterator, iteration)
+{
+	ZincTestSetupCpp zinc;
+
+	Materialmodule materialmodule = zinc.context.getMaterialmodule();
+	EXPECT_TRUE(materialmodule.isValid());
+
+	Material xxx = materialmodule.createMaterial();
+	EXPECT_TRUE(xxx.isValid());
+	EXPECT_EQ(OK, xxx.setName("xxx"));
+
+	Material zzz = materialmodule.createMaterial();
+	EXPECT_TRUE(zzz.isValid());
+	EXPECT_EQ(OK, zzz.setName("zzz"));
+
+	Material aaa = materialmodule.createMaterial();
+	EXPECT_TRUE(aaa.isValid());
+	EXPECT_EQ(OK, aaa.setName("aaa"));
+
+	Material defaultMaterial = materialmodule.getDefaultMaterial();
+	EXPECT_TRUE(defaultMaterial.isValid());
+	Material defaultSelectedMaterial = materialmodule.getDefaultSelectedMaterial();
+	EXPECT_TRUE(defaultSelectedMaterial.isValid());
+
+	Materialiterator iter = materialmodule.createMaterialiterator();
+	EXPECT_TRUE(iter.isValid());
+	Material m;
+	EXPECT_EQ(aaa, m = iter.next());
+	EXPECT_EQ(defaultMaterial, m = iter.next());
+	EXPECT_EQ(defaultSelectedMaterial, m = iter.next());
+	EXPECT_EQ(xxx, m = iter.next());
+	EXPECT_EQ(zzz, m = iter.next());
+	EXPECT_FALSE((m = iter.next()).isValid());
+}
