@@ -10,9 +10,9 @@
 #define MATERIAL_HPP
 
 #include "general/callback_class.hpp"
+#include "zinc/material.h"
 
 class Render_graphics_opengl;
-cmzn_material;
 
 struct Material_order_independent_transparency
 /*******************************************************************************
