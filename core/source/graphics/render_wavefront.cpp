@@ -272,7 +272,6 @@ points  given by the positions in <point_list> and oriented and scaled by
 <axis1_list>, <axis2_list> and <axis3_list>.
 ==============================================================================*/
 {
-	ZnReal transformation[16];
 	int return_code = 0;
 	struct GT_object *transformed_object = 0;
 
@@ -317,22 +316,6 @@ points  given by the positions in <point_list> and oriented and scaled by
 				&axis3_buffer, &axis3_values_per_vertex, &axis3_vertex_count);
 			for (unsigned int i=0;i<position_vertex_count;i++)
 			{
-				transformation[ 0] = axis1_buffer[0];
-				transformation[ 1] = axis1_buffer[1];
-				transformation[ 2] = axis1_buffer[2];
-				transformation[ 4] = axis2_buffer[0];
-				transformation[ 5] = axis2_buffer[1];
-				transformation[ 6] = axis2_buffer[2];
-				transformation[ 8] = axis3_buffer[0];
-				transformation[ 9] = axis3_buffer[1];
-				transformation[10] = axis3_buffer[2];
-				transformation[12] = position_buffer[0];
-				transformation[13] = position_buffer[1];
-				transformation[14] = position_buffer[2];
-				transformation[ 3] = 0.0;
-				transformation[ 7] = 0.0;
-				transformation[11] = 0.0;
-				transformation[15] = 1.0;
 				// following method was removed, so can't output glyphs at present
 				// GRC it would probably be better to just pass the transformation
 				// to makewavefront and transform coordinates there
