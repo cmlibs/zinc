@@ -6559,6 +6559,9 @@ enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics 
 				return g_SURFACE_VERTEX_BUFFERS;
 			}
 		} break;
+		default:
+		{
+		}break;
 		}
 	}
 	return g_OBJECT_TYPE_INVALID;

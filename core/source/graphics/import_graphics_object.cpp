@@ -683,7 +683,7 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 		*new_normal_vertices, *normal_vertices, *new_texture_vertices, *texture_vertices;
 	int face_index,face_vertex[MAX_OBJ_VERTICES][3], i, j, k, line_number,
 		number_of_triangles,  number_of_vertices, n_face_vertices,  n_obj_coordinate_vertices,
-		n_obj_normal_vertices, n_obj_texture_vertices, n_texture_coordinates, return_code,
+		n_obj_normal_vertices, n_obj_texture_vertices, return_code,
 		*vertex_reindex, warning_multiple_normals;
 	gtObject *new_obj, *next_obj, *obj;
 	cmzn_material *scanned_material;
@@ -767,7 +767,6 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 				n_obj_coordinate_vertices = 0;
 				n_obj_texture_vertices = 0;
 				n_obj_normal_vertices = 0;
-				n_texture_coordinates = 0;  /* The number of texture coordinates per vertex */
 				vertex_list = (struct VT_iso_vertex **)NULL;
 				triangle_list = (struct VT_iso_triangle **)NULL;
 				coordinate_vertices = (ZnReal *)NULL;
@@ -861,7 +860,6 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 								}
 								number_of_vertices = 0;
 								number_of_triangles = 0;
-								n_texture_coordinates = 0;
 								vertex_list = (struct VT_iso_vertex **)NULL;
 								triangle_list = (struct VT_iso_triangle **)NULL;
 
@@ -1162,8 +1160,6 @@ int file_read_surface_graphics_object_from_obj(char *file_name,
 														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 1];
 													vertex->texture_coordinates[2] =
 														texture_vertices[3 * (face_vertex[face_index][1] - 1) + 2];
-
-													n_texture_coordinates = 3;
 												}
 												else
 												{

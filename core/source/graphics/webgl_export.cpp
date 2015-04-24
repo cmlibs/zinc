@@ -323,7 +323,6 @@ int Webgl_export::exportGraphicsObject(struct GT_object *object,	const char *exp
 				position_string = writeVertexBuffer(variable_name,
 					position_vertex_buffer, position_values_per_vertex,
 					position_vertex_count);
-				GLfloat *position = position_vertex_buffer;
 				if (position_string)
 					fprintf(webgl_file,"var %s_buffer;\n", variable_name);
 			}

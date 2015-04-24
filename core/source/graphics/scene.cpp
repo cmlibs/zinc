@@ -3623,7 +3623,7 @@ int Scene_get_number_of_graphics_with_condition(cmzn_scene_id scene, void *Scene
 
 			if  (graphics &&
 				((data->type == CMZN_GRAPHICS_TYPE_INVALID) || (cmzn_graphics_get_graphics_type(graphics) == data->type)) &&
-				((data->graphics_object_type == CMZN_GRAPHICS_TYPE_INVALID) ||
+				((data->graphics_object_type == g_OBJECT_TYPE_INVALID) ||
 				 (cmzn_graphics_get_graphics_object_type(graphics) == data->graphics_object_type)) &&
 				((0 == data->scenefilter) || cmzn_scenefilter_evaluate_graphics(data->scenefilter, graphics)))
 			{
