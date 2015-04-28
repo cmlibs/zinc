@@ -360,8 +360,8 @@ int cmzn_field_imagefilter_binary_threshold_destroy(
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(imagefilter_binary_threshold_address));
 }
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_binary_threshold(
-	struct cmzn_fieldmodule *field_module, struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_threshold(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
 {
 	Computed_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))

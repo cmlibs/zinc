@@ -354,11 +354,10 @@ int cmzn_field_imagefilter_discrete_gaussian_set_max_kernel_width(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(
-	struct cmzn_fieldmodule *field_module, struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_discrete_gaussian(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
 		field = Computed_field_create_generic(field_module,

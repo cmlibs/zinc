@@ -332,13 +332,12 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_connected_threshold(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field,
-  double lower_threshold, double upper_threshold, double replace_value,
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_connected_threshold(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	double lower_threshold, double upper_threshold, double replace_value,
 	int num_seed_points, int dimension, const double *seed_points)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	USE_PARAMETER(dimension);
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{

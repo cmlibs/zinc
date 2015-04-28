@@ -272,9 +272,9 @@ void Computed_field_mean_image_filter::create_functor()
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_mean(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int radius_sizes_count, const int *radius_sizes)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_mean(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	int radius_sizes_count, const int *radius_sizes)
 {
 	cmzn_field_id field = 0;
 	if (source_field && (0 < radius_sizes_count) && radius_sizes)

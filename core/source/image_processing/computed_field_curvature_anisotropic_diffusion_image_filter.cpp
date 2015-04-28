@@ -253,11 +253,11 @@ void Computed_field_curvature_anisotropic_diffusion_image_filter::create_functor
 
 } //namespace
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, double timeStep, double conductance, int numIterations)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_curvature_anisotropic_diffusion(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	double timeStep, double conductance, int numIterations)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
 		field = Computed_field_create_generic(field_module,

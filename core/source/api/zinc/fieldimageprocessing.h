@@ -40,8 +40,8 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_dilate(
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_binary_erode(
-		cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-		int radius, double erode_value);
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	int radius, double erode_value);
 
 /**
  * Creates a field which applies an ITK binary threshold image filter on source.

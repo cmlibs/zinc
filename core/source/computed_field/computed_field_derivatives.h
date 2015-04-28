@@ -17,9 +17,4 @@ as derivatives w.r.t. Xi, gradient, curl, divergence etc.
 
 #include "zinc/fieldderivatives.h"
 
-#define Computed_field_create_gradient cmzn_fieldmodule_create_field_gradient
-#define Computed_field_create_divergence cmzn_fieldmodule_create_field_divergence
-#define Computed_field_create_curl cmzn_fieldmodule_create_field_curl
-#define Computed_field_create_derivative cmzn_fieldmodule_create_field_derivative
-
 #endif /* !defined (COMPUTED_FIELD_DERIVATIVES_H) */

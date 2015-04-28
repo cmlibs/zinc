@@ -466,11 +466,11 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_derivative(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, int xi_index)
+cmzn_field_id cmzn_fieldmodule_create_field_derivative(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field, int xi_index)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (source_field && (0 < xi_index) && (xi_index <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
 		field = Computed_field_create_generic(field_module,
@@ -483,7 +483,7 @@ struct Computed_field *Computed_field_create_derivative(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_derivative.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_derivative.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -738,16 +738,16 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_curl(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
+cmzn_field_id cmzn_fieldmodule_create_field_curl(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
-	struct Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (vector_field && (3 == vector_field->number_of_components) &&
 		coordinate_field && (3 == coordinate_field->number_of_components) &&
 		(RECTANGULAR_CARTESIAN == vector_field->coordinate_system.type))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
 		field = Computed_field_create_generic(field_module,
@@ -760,7 +760,7 @@ struct Computed_field *Computed_field_create_curl(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_curl.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_curl.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -1020,18 +1020,18 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_divergence(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *vector_field, struct Computed_field *coordinate_field)
+cmzn_field_id cmzn_fieldmodule_create_field_divergence(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id vector_field, cmzn_field_id coordinate_field)
 {
-	struct Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (vector_field && coordinate_field &&
 		(3 >= coordinate_field->number_of_components) &&
 		(vector_field->number_of_components ==
 			coordinate_field->number_of_components) &&
 		(RECTANGULAR_CARTESIAN == vector_field->coordinate_system.type))
 	{
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = vector_field;
 		source_fields[1] = coordinate_field;
 		field = Computed_field_create_generic(field_module,
@@ -1044,7 +1044,7 @@ struct Computed_field *Computed_field_create_divergence(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_divergence.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_divergence.  Invalid argument(s)");
 	}
 
 	return (field);
@@ -1407,17 +1407,17 @@ Returns allocated command string for reproducing field. Includes type.
 
 } //namespace
 
-struct Computed_field *Computed_field_create_gradient(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field, struct Computed_field *coordinate_field)
+cmzn_field_id cmzn_fieldmodule_create_field_gradient(
+	cmzn_fieldmodule_id field_module,
+	cmzn_field_id source_field, cmzn_field_id coordinate_field)
 {
-	struct Computed_field *field = NULL;
+	cmzn_field *field = 0;
 	if (source_field && coordinate_field &&
 		(3 >= coordinate_field->number_of_components))
 	{
 		int number_of_components = source_field->number_of_components *
 			coordinate_field->number_of_components;
-		Computed_field *source_fields[2];
+		cmzn_field *source_fields[2];
 		source_fields[0] = source_field;
 		source_fields[1] = coordinate_field;
 		field = Computed_field_create_generic(field_module,
@@ -1430,7 +1430,7 @@ struct Computed_field *Computed_field_create_gradient(
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_create_gradient.  Invalid argument(s)");
+			"cmzn_fieldmodule_create_field_gradient.  Invalid argument(s)");
 	}
 
 	return (field);

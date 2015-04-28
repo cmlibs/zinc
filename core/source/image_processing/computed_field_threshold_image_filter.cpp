@@ -558,11 +558,10 @@ int cmzn_field_imagefilter_threshold_set_upper_threshold(cmzn_field_imagefilter_
 	return CMZN_ERROR_ARGUMENT;
 }
 
-struct Computed_field *cmzn_fieldmodule_create_field_imagefilter_threshold(
-	struct cmzn_fieldmodule *field_module,
-	struct Computed_field *source_field)
+cmzn_field_id cmzn_fieldmodule_create_field_imagefilter_threshold(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field)
 {
-	Computed_field *field = NULL;
+	cmzn_field *field = NULL;
 	if (source_field && Computed_field_is_scalar(source_field, (void *)NULL))
 	{
 		field = Computed_field_create_generic(field_module,
