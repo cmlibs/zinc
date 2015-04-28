@@ -117,6 +117,11 @@ public:
 
 };
 
+inline bool operator==(const Tessellation& a, const Tessellation& b)
+{
+	return a.getId() == b.getId();
+}
+
 class Tessellationmodule
 {
 protected:

@@ -145,6 +145,11 @@ public:
 	}
 };
 
+inline bool operator==(const Font& a, const Font& b)
+{
+	return a.getId() == b.getId();
+}
+
 class Fontmodule
 {
 protected:

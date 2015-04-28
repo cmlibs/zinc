@@ -391,6 +391,11 @@ public:
 
 };
 
+inline bool operator==(const Spectrum& a, const Spectrum& b)
+{
+	return a.getId() == b.getId();
+}
+
 class Spectrummodule
 {
 protected:

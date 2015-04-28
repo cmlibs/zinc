@@ -314,6 +314,11 @@ public:
 	inline GraphicsSurfaces castSurfaces();
 };
 
+inline bool operator==(const Graphics& a, const Graphics& b)
+{
+	return a.getId() == b.getId();
+}
+
 class GraphicsContours : public Graphics
 {
 friend class Scene;
