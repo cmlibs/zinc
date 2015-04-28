@@ -107,6 +107,11 @@ public:
 	inline ScenefilterOperator castOperator();
 };
 
+inline bool operator==(const Scenefilter& a, const Scenefilter& b)
+{
+	return a.getId() == b.getId();
+}
+
 class ScenefilterOperator : public Scenefilter
 {
 public:

@@ -126,6 +126,11 @@ public:
 
 };
 
+inline bool operator==(const Context& a, const Context& b)
+{
+	return a.getId() == b.getId();
+}
+
 }  // namespace Zinc
 }
 

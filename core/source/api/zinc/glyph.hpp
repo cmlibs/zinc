@@ -135,6 +135,11 @@ public:
 	inline GlyphColourBar castColourBar();
 };
 
+inline bool operator==(const Glyph& a, const Glyph& b)
+{
+	return a.getId() == b.getId();
+}
+
 class GlyphAxes : public Glyph
 {
 private:
