@@ -19,6 +19,13 @@
 %import "field.i"
 %import "font.i"
 
+%extend OpenCMISS::Zinc::Material {
+	bool operator==(const OpenCMISS::Zinc::Material& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/material.hpp"
 #include "zinc/fieldconditional.hpp"

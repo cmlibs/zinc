@@ -16,6 +16,20 @@
 
 %import "field.i"
 
+%extend OpenCMISS::Zinc::Node {
+	bool operator==(const OpenCMISS::Zinc::Node& other) const
+	{
+		return *($self) == other;
+	}
+}
+
+%extend OpenCMISS::Zinc::Nodeset {
+	bool operator==(const OpenCMISS::Zinc::Nodeset& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/node.hpp"
 #include "zinc/field.hpp"

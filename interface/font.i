@@ -16,6 +16,13 @@
 
 %import "graphics.i"
 
+%extend OpenCMISS::Zinc::Font {
+	bool operator==(const OpenCMISS::Zinc::Font& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/font.hpp"
 #include "zinc/fieldconditional.hpp"

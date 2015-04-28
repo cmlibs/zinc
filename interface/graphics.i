@@ -23,6 +23,13 @@
 %import "spectrum.i"
 %import "tessellation.i"
 
+%extend OpenCMISS::Zinc::Graphics {
+	bool operator==(const OpenCMISS::Zinc::Graphics& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/fieldmodule.hpp"
 #include "zinc/graphics.hpp"

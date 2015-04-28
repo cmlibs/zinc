@@ -18,6 +18,20 @@
 %import "field.i"
 %import "node.i"
 
+%extend OpenCMISS::Zinc::Element {
+	bool operator==(const OpenCMISS::Zinc::Element& other) const
+	{
+		return *($self) == other;
+	}
+}
+
+%extend OpenCMISS::Zinc::Mesh {
+	bool operator==(const OpenCMISS::Zinc::Mesh& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/fieldimage.hpp"
 #include "zinc/element.hpp"

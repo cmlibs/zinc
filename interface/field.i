@@ -74,4 +74,3 @@
 %include "zinc/fieldtrigonometry.hpp"
 %include "zinc/fieldarithmeticoperators.hpp"
 %include "zinc/fieldalias.hpp"
-

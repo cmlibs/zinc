@@ -17,6 +17,13 @@
 %import "graphics.i"
 %import "region.i"
 
+%extend OpenCMISS::Zinc::Scenefilter {
+	bool operator==(const OpenCMISS::Zinc::Scenefilter& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/scenefilter.hpp"
 #include "zinc/fieldconditional.hpp"

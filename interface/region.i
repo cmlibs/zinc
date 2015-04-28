@@ -19,6 +19,13 @@
 %import "scene.i"
 %import "streamregion.i"
 
+%extend OpenCMISS::Zinc::Region {
+	bool operator==(const OpenCMISS::Zinc::Region& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/fieldmodule.hpp"
 #include "zinc/region.hpp"

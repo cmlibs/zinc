@@ -15,6 +15,13 @@
 %include "integervaluesarraytypemap.i"
 %include "pyzincstringhandling.i"
 
+%extend OpenCMISS::Zinc::Tessellation {
+	bool operator==(const OpenCMISS::Zinc::Tessellation& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/tessellation.hpp"
 %}

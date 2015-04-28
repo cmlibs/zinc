@@ -15,6 +15,13 @@
 %import "material.i"
 %import "spectrum.i"
 
+%extend OpenCMISS::Zinc::Glyph {
+	bool operator==(const OpenCMISS::Zinc::Glyph& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/glyph.hpp"
 %}

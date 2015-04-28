@@ -19,6 +19,13 @@
 %import "scenepicker.i"
 %import "streamscene.i"
 
+%extend OpenCMISS::Zinc::Scene {
+	bool operator==(const OpenCMISS::Zinc::Scene& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/scene.hpp"
 #include "zinc/scenepicker.hpp"

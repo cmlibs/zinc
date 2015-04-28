@@ -14,6 +14,13 @@
 
 %include "pyzincstringhandling.i"
 
+%extend OpenCMISS::Zinc::Spectrum {
+	bool operator==(const OpenCMISS::Zinc::Spectrum& other) const
+	{
+		return *($self) == other;
+	}
+}
+
 %{
 #include "zinc/spectrum.hpp"
 %}
