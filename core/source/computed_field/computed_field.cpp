@@ -2975,16 +2975,17 @@ int cmzn_field_set_name(struct Computed_field *field, const char *name)
 		}
 		if (return_code)
 		{
-			// allow core type to change name of wrapped objects e.g. FE_field
-			field->core->set_name(name);
-		}
-		if (field->manager)
-		{
-			if (return_code)
+			if (field->manager)
 			{
+				// begin/end cache to avoid two messages if core implements set_name
+				MANAGER_BEGIN_CACHE(Computed_field)(field->manager);
 				MANAGED_OBJECT_CHANGE(Computed_field)(field,
 					MANAGER_CHANGE_IDENTIFIER(Computed_field));
 			}
+			// allow core type to change name of wrapped objects e.g. FE_field
+			field->core->set_name(name);
+			if (field->manager)
+				MANAGER_END_CACHE(Computed_field)(field->manager);
 		}
 	}
 	else
