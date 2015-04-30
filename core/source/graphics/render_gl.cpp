@@ -462,7 +462,7 @@ public:
 	/**
 	 * Compile the Graphics_object.
 	 */
-	int Graphics_object_compile(GT_object */*graphics_object*/)
+	int Graphics_object_compile(GT_object *)
 	{
 		return true;
 	}
@@ -554,7 +554,7 @@ public:
 
 	int write_output_string()
 	{
-		*number_of_entries = exports_map.size();
+		*number_of_entries = static_cast<int>(exports_map.size());
 		if (*number_of_entries > 0)
 		{
 			int i = 0;
@@ -624,7 +624,7 @@ public:
 	/**
 	 * Compile the Graphics_object.
 	 */
-	int Graphics_object_compile(GT_object */*graphics_object*/)
+	int Graphics_object_compile(GT_object *)
 	{
 		return true;
 	}
@@ -2613,7 +2613,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 } /* draw_glyphsetGL */
 
 int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
-	union GT_primitive_list *primitive_list, int picking_names,
+	union GT_primitive_list *primitive_list, bool picking_names,
 	Graphics_object_rendering_type rendering_type, struct cmzn_spectrum *spectrum,
 	cmzn_material *material, int draw_selected)
 {
@@ -2917,7 +2917,7 @@ int drawGLSurfaces(gtObject *object, Render_graphics_opengl *renderer,
 }
 
 int draw_vertexBufferLine(gtObject *object, Render_graphics_opengl *renderer,
-	union GT_primitive_list *primitive_list, int picking_names,
+	union GT_primitive_list *primitive_list, bool picking_names,
 	Graphics_object_rendering_type rendering_type, struct cmzn_spectrum *spectrum,
 	cmzn_material *material, int draw_selected)
 {
@@ -3132,7 +3132,8 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 	Graphics_object_rendering_type rendering_type)
 {
 	ZnReal proportion = 0.0,*times;
-	int itime, number_of_times, picking_names, return_code;
+	bool picking_names;
+	int itime, number_of_times, return_code;
 #if defined (OPENGL_API)
 	bool lighting_on = true;
 #endif /* defined (OPENGL_API) */
