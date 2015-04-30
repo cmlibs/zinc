@@ -9,4 +9,5 @@ LIST(APPEND API_TESTS ${CURRENT_TEST})
 SET(${CURRENT_TEST}_SRC
     ${CURRENT_TEST}/axes.cpp
     ${CURRENT_TEST}/colour_bar.cpp
+    ${CURRENT_TEST}/glyph.cpp
     )
