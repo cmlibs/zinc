@@ -429,7 +429,7 @@ public:
 
 	virtual bool match(struct cmzn_graphics *graphics)
 	{
-		return (!isInverse() == (graphics_type == cmzn_graphics_get_graphics_type(graphics)));
+		return (!isInverse() == (graphics_type == cmzn_graphics_get_type(graphics)));
 	}
 
 	virtual void list_type_specific() const

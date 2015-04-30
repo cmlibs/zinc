@@ -563,7 +563,7 @@ int cmzn_scene_set_minimum_graphics_defaults(struct cmzn_scene *scene,
 	int return_code = 1;
 	if (scene && graphics)
 	{
-		cmzn_graphics_type graphics_type = cmzn_graphics_get_graphics_type(graphics);
+		cmzn_graphics_type graphics_type = cmzn_graphics_get_type(graphics);
 
 		cmzn_tessellationmodule_id tessellationModule =
 			cmzn_graphics_module_get_tessellationmodule(scene->graphics_module);
@@ -1397,7 +1397,7 @@ int cmzn_region_modify_scene(struct cmzn_region *region,
 				{
 					return_code = 0;
 					if (NULL != (same_graphics = CREATE(cmzn_graphics)(
-								 cmzn_graphics_get_graphics_type(graphics))))
+						cmzn_graphics_get_type(graphics))))
 					{
 						if (cmzn_graphics_copy_without_graphics_object(
 							same_graphics, graphics))
@@ -3622,7 +3622,7 @@ int Scene_get_number_of_graphics_with_condition(cmzn_scene_id scene, void *Scene
 				i+1, scene->list_of_graphics);
 
 			if  (graphics &&
-				((data->type == CMZN_GRAPHICS_TYPE_INVALID) || (cmzn_graphics_get_graphics_type(graphics) == data->type)) &&
+				((data->type == CMZN_GRAPHICS_TYPE_INVALID) || (cmzn_graphics_get_type(graphics) == data->type)) &&
 				((data->graphics_object_type == g_OBJECT_TYPE_INVALID) ||
 				 (cmzn_graphics_get_graphics_object_type(graphics) == data->graphics_object_type)) &&
 				((0 == data->scenefilter) || cmzn_scenefilter_evaluate_graphics(data->scenefilter, graphics)))

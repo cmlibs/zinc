@@ -340,18 +340,6 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics);
 int cmzn_graphics_selects_cad_primitives(struct cmzn_graphics *graphics);
 #endif /* defined (USE_OPENCASCADE) */
 
-/***************************************************************************//**
- *Returns the settings type of the <graphics>, eg. CMZN_GRAPHICS_TYPE_LINES.
- */
-enum cmzn_graphics_type cmzn_graphics_get_graphics_type(
-	struct cmzn_graphics *graphics);
-
-/***************************************************************************//**
- *Returns 1 if the graphics type of the <graphics> is same as the one specified.
- */
-int cmzn_graphics_is_graphics_type(struct cmzn_graphics *graphics,
-	enum cmzn_graphics_type graphics_type);
-
 int cmzn_graphics_to_graphics_object(
 	struct cmzn_graphics *graphics,void *graphics_to_object_data_void);
 
