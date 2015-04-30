@@ -29,6 +29,7 @@ TEST(cmzn_graphics_streamlines, create_cast)
 
 	cmzn_graphics_id gr = cmzn_scene_create_graphics(zinc.scene, CMZN_GRAPHICS_TYPE_STREAMLINES);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_STREAMLINES, cmzn_graphics_get_type(gr));
 
 	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
 	EXPECT_EQ(reinterpret_cast<cmzn_graphics_streamlines *>(gr), st);
@@ -47,6 +48,7 @@ TEST(cmzn_graphics_streamlines, create_cpp)
 
 	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
 	EXPECT_TRUE(st.isValid());
+	EXPECT_EQ(Graphics::TYPE_STREAMLINES, st.getType());
 }
 
 TEST(cmzn_graphics_streamlines, cast_cpp)

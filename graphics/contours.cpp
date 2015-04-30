@@ -18,6 +18,7 @@
 #include <zinc/graphics.h>
 
 #include "zinctestsetup.hpp"
+#include "zinctestsetupcpp.hpp"
 
 TEST(cmzn_graphics_contours, create_cast)
 {
@@ -25,6 +26,7 @@ TEST(cmzn_graphics_contours, create_cast)
 
 	cmzn_graphics_id gr = cmzn_scene_create_graphics_contours(zinc.scene);
 	EXPECT_NE(static_cast<cmzn_graphics *>(0), gr);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_CONTOURS, cmzn_graphics_get_type(gr));
 
 	cmzn_graphics_contours_id is = cmzn_graphics_cast_contours(gr);
 	EXPECT_NE(static_cast<cmzn_graphics_contours *>(0), is);
@@ -34,6 +36,15 @@ TEST(cmzn_graphics_contours, create_cast)
 
 	EXPECT_EQ(CMZN_OK, cmzn_graphics_contours_destroy(&is));
 	EXPECT_EQ(CMZN_OK, cmzn_graphics_destroy(&gr));
+}
+
+TEST(ZincGraphicsContours, create)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicsContours co = zinc.scene.createGraphicsContours();
+	EXPECT_TRUE(co.isValid());
+	EXPECT_EQ(Graphics::TYPE_CONTOURS, co.getType());
 }
 
 TEST(cmzn_graphics_contours, isoscalar_field)

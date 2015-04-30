@@ -24,6 +24,45 @@
 #include "zinc/fieldconstant.hpp"
 #include "zinc/font.hpp"
 
+TEST(cmzn_graphics, create_type)
+{
+	ZincTestSetup zinc;
+
+	cmzn_graphics_id gr;
+	gr = cmzn_scene_create_graphics_points(zinc.scene);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_POINTS, cmzn_graphics_get_type(gr));
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_create_graphics_lines(zinc.scene);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_LINES, cmzn_graphics_get_type(gr));
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_create_graphics_surfaces(zinc.scene);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_SURFACES, cmzn_graphics_get_type(gr));
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_create_graphics_contours(zinc.scene);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_CONTOURS, cmzn_graphics_get_type(gr));
+	cmzn_graphics_destroy(&gr);
+	gr = cmzn_scene_create_graphics_streamlines(zinc.scene);
+	EXPECT_EQ(CMZN_GRAPHICS_TYPE_STREAMLINES, cmzn_graphics_get_type(gr));
+	cmzn_graphics_destroy(&gr);
+}
+
+TEST(ZincGraphics, create_type)
+{
+	ZincTestSetupCpp zinc;
+
+	Graphics gr;
+	gr = zinc.scene.createGraphicsPoints();
+	EXPECT_EQ(Graphics::TYPE_POINTS, gr.getType());
+	gr = zinc.scene.createGraphicsLines();
+	EXPECT_EQ(Graphics::TYPE_LINES, gr.getType());
+	gr = zinc.scene.createGraphicsSurfaces();
+	EXPECT_EQ(Graphics::TYPE_SURFACES, gr.getType());
+	gr = zinc.scene.createGraphicsContours();
+	EXPECT_EQ(Graphics::TYPE_CONTOURS, gr.getType());
+	gr = zinc.scene.createGraphicsStreamlines();
+	EXPECT_EQ(Graphics::TYPE_STREAMLINES, gr.getType());
+}
+
 TEST(cmzn_graphics_api, set_use_element_type)
 {
 	ZincTestSetup zinc;
