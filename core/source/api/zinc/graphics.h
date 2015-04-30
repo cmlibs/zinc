@@ -277,6 +277,14 @@ ZINC_API int cmzn_graphics_set_subgroup_field(cmzn_graphics_id graphics,
 	cmzn_field_id subgroup_field);
 
 /**
+ * Get the graphics type: POINTS, LINES, SURFACES, CONTOURS, STREAMLINES
+ *
+ * @param graphics  The graphics to query.
+ * @return  The enumerated graphics type, or TYPE_INVALID on error.
+ */
+ZINC_API enum cmzn_graphics_type cmzn_graphics_get_type(cmzn_graphics_id graphics);
+
+/**
  * Returns the tessellation object of the graphics.
  * Caller must destroy returned handle.
  *

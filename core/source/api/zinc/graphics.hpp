@@ -226,6 +226,11 @@ public:
 		return cmzn_graphics_set_spectrum(id, spectrum.getId());
 	}
 
+	enum Type getType()
+	{
+		return static_cast<Type>(cmzn_graphics_get_type(id));
+	}
+
 	Tessellation getTessellation()
 	{
 		return Tessellation(cmzn_graphics_get_tessellation(id));
