@@ -4487,6 +4487,13 @@ int cmzn_graphics_set_subgroup_field(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+enum cmzn_graphics_type cmzn_graphics_get_type(cmzn_graphics_id graphics)
+{
+	if (graphics)
+		return graphics->graphics_type;
+	return CMZN_GRAPHICS_TYPE_INVALID;
+}
+
 cmzn_tessellation_id cmzn_graphics_get_tessellation(
 	cmzn_graphics_id graphics)
 {
