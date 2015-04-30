@@ -1181,55 +1181,6 @@ int cmzn_graphics_set_scenecoordinatesystem(
 	return CMZN_ERROR_ARGUMENT;
 }
 
-enum cmzn_graphics_type cmzn_graphics_get_graphics_type(
-	struct cmzn_graphics *graphics)
-{
-	enum cmzn_graphics_type graphics_type;
-
-	ENTER(cmzn_graphics_get_graphics_type);
-	if (graphics)
-	{
-		graphics_type=graphics->graphics_type;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_get_graphics_type.  Invalid argument(s)");
-		graphics_type = CMZN_GRAPHICS_TYPE_LINES;
-	}
-	LEAVE;
-
-	return (graphics_type);
-}
-
-int cmzn_graphics_is_graphics_type(struct cmzn_graphics *graphics,
-	enum cmzn_graphics_type graphics_type)
-{
-	int return_code = 0;
-
-	ENTER(cmzn_graphics_is_graphics_type);
-	if (graphics)
-	{
-		if (graphics->graphics_type==graphics_type)
-		{
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_graphics_is_graphics_type.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 bool cmzn_graphics_get_visibility_flag(struct cmzn_graphics *graphics)
 {
 	if (graphics)

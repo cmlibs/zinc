@@ -27,7 +27,7 @@ void GraphicsJsonExport::addEntries()
 		graphicsSettings["id"] = name;
 		DEALLOCATE(name);
 	}
-	enum cmzn_graphics_type type = cmzn_graphics_get_graphics_type(c_graphics);
+	enum cmzn_graphics_type type = cmzn_graphics_get_type(c_graphics);
 	char *type_string = cmzn_graphics_type_enum_to_string(type);
 	graphicsSettings["Type"] = type_string;
 	ioTypeEntries(graphicsSettings);
