@@ -294,6 +294,56 @@ inline GlyphColourBar Glyph::castColourBar()
 	return GlyphColourBar(cmzn_glyph_cast_colour_bar(id));
 }
 
+class Glyphiterator
+{
+private:
+
+	cmzn_glyphiterator_id id;
+
+public:
+
+	Glyphiterator() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Glyphiterator(cmzn_glyphiterator_id iterator_id) :
+		id(iterator_id)
+	{ }
+
+	Glyphiterator(const Glyphiterator& glyphiterator) :
+		id(cmzn_glyphiterator_access(glyphiterator.id))
+	{ }
+
+	Glyphiterator& operator=(const Glyphiterator& glyphiterator)
+	{
+		cmzn_glyphiterator_id temp_id = cmzn_glyphiterator_access(glyphiterator.id);
+		if (0 != id)
+		{
+			cmzn_glyphiterator_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Glyphiterator()
+	{
+		if (0 != id)
+		{
+			cmzn_glyphiterator_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	Glyph next()
+	{
+		return Glyph(cmzn_glyphiterator_next(id));
+	}
+};
+
 class Glyphmodule
 {
 protected:
@@ -362,6 +412,11 @@ public:
 	{
 		return GlyphColourBar(reinterpret_cast<cmzn_glyph_colour_bar_id>(
 			cmzn_glyphmodule_create_glyph_colour_bar(id, spectrum.getId())));
+	}
+
+	Glyphiterator createGlyphiterator()
+	{
+		return Glyphiterator(cmzn_glyphmodule_create_glyphiterator(id));
 	}
 
 	int defineStandardGlyphs()

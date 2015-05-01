@@ -212,6 +212,34 @@ struct cmzn_glyph_compare_name_functor
 
 typedef cmzn_set<cmzn_glyph *,cmzn_glyph_compare_name_functor> cmzn_set_cmzn_glyph;
 
+struct cmzn_glyphiterator : public cmzn_set_cmzn_glyph::ext_iterator
+{
+private:
+	cmzn_glyphiterator(cmzn_set_cmzn_glyph *container);
+	cmzn_glyphiterator(const cmzn_glyphiterator&);
+	~cmzn_glyphiterator();
+
+public:
+
+	static cmzn_glyphiterator *create(cmzn_set_cmzn_glyph *container)
+	{
+		return static_cast<cmzn_glyphiterator *>(cmzn_set_cmzn_glyph::ext_iterator::create(container));
+	}
+
+	cmzn_glyphiterator *access()
+	{
+		return static_cast<cmzn_glyphiterator *>(this->cmzn_set_cmzn_glyph::ext_iterator::access());
+	}
+
+	static int deaccess(cmzn_glyphiterator* &iterator)
+	{
+		cmzn_set_cmzn_glyph::ext_iterator* baseIterator = static_cast<cmzn_set_cmzn_glyph::ext_iterator*>(iterator);
+		iterator = 0;
+		return cmzn_set_cmzn_glyph::ext_iterator::deaccess(baseIterator);
+	}
+
+};
+
 struct cmzn_glyph_static : public cmzn_glyph
 {
 private:
@@ -314,6 +342,8 @@ public:
 	{
 		return MANAGER_END_CACHE(cmzn_glyph)(this->manager);
 	}
+
+	cmzn_glyphiterator *createGlyphiterator();
 
 	int defineStandardGlyphs();
 

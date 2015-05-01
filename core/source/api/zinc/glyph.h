@@ -68,6 +68,22 @@ ZINC_API int cmzn_glyphmodule_begin_change(cmzn_glyphmodule_id glyphmodule);
 ZINC_API int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule);
 
 /**
+ * Create a glyph iterator object for iterating through the glyphs in the
+ * glyph module, in alphabetical order of name. The iterator initially
+ * points at the position before the first glyph, so the first call to the
+ * glyph iterator next() method returns the first glyph and advances the
+ * iterator. Iterator becomes invalid if glyphs are added, removed or
+ * renamed while in use.
+ * @see cmzn_glyphiterator_next
+ *
+ * @param glyphmodule  Handle to the glyph module whose glyphs are to
+ * be iterated over.
+ * @return  Handle to glyph iterator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_glyphiterator_id cmzn_glyphmodule_create_glyphiterator(
+	cmzn_glyphmodule_id glyphmodule);
+
+/**
  * Defines a selection of standard glyphs for visualising points, vectors etc.
  * Graphics for all standard glyphs fit in a unit cube which:
  * 1. for orientable glyphs e.g. line, arrow, cylinder: span [0,1] on axis 1,
@@ -556,6 +572,33 @@ ZINC_API double cmzn_glyph_colour_bar_get_tick_length(
  */
 ZINC_API int cmzn_glyph_colour_bar_set_tick_length(
 	cmzn_glyph_colour_bar_id colour_bar, double tickLength);
+
+/**
+ * Returns a new handle to the iterator with reference count incremented.
+ *
+ * @param iterator  The glyph iterator to obtain a new handle to.
+ * @return  New handle to glyph iterator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_glyphiterator_id cmzn_glyphiterator_access(
+	cmzn_glyphiterator_id iterator);
+
+/**
+ * Destroys this handle to the glyph iterator and sets it to NULL.
+ *
+ * @param iterator_address  Address of handle to glyph_iterator to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_glyphiterator_destroy(cmzn_glyphiterator_id *iterator_address);
+
+/**
+ * Returns a handle to the next glyph in the container being iterated over then
+ * advances the iterator position. The caller is required to destroy the
+ * returned glyph handle.
+ *
+ * @param iterator  Material iterator to query and advance.
+ * @return  Handle to the next glyph, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_glyph_id cmzn_glyphiterator_next(cmzn_glyphiterator_id iterator);
 
 #ifdef __cplusplus
 }

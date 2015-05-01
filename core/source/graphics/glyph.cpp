@@ -72,7 +72,8 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_glyph)
 
 DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_glyph)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_glyph,name,const char *)
-DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_glyph,name);
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_glyph,name)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_glyph,cmzn_glyphiterator)
 
 FULL_DECLARE_MANAGER_TYPE(cmzn_glyph);
 
@@ -1754,6 +1755,11 @@ cmzn_glyphmodule::~cmzn_glyphmodule()
 	DESTROY(MANAGER(cmzn_glyph))(&(this->manager));
 }
 
+cmzn_glyphiterator *cmzn_glyphmodule::createGlyphiterator()
+{
+	return CREATE_LIST_ITERATOR(cmzn_glyph)(this->manager->object_list);
+}
+
 /**
   * If name is not already used by an existing glyph, set name, managed flag
 	* and add to glyph module.
@@ -2022,6 +2028,14 @@ int cmzn_glyphmodule_end_change(cmzn_glyphmodule_id glyphmodule)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_glyphiterator_id cmzn_glyphmodule_create_glyphiterator(
+	cmzn_glyphmodule_id glyphmodule)
+{
+	if (glyphmodule)
+		return glyphmodule->createGlyphiterator();
+	return 0;
+}
+
 int cmzn_glyphmodule_define_standard_glyphs(
 	cmzn_glyphmodule_id glyphmodule)
 {
@@ -2092,5 +2106,33 @@ cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 		glyphmodule->addGlyph(glyph);
 		return glyph;
 	}
+	return 0;
+}
+
+cmzn_glyphiterator_id cmzn_glyphiterator_access(cmzn_glyphiterator_id iterator)
+{
+	if (iterator)
+		return iterator->access();
+	return 0;
+}
+
+int cmzn_glyphiterator_destroy(cmzn_glyphiterator_id *iterator_address)
+{
+	if (!iterator_address)
+		return 0;
+	return cmzn_glyphiterator::deaccess(*iterator_address);
+}
+
+cmzn_glyph_id cmzn_glyphiterator_next(cmzn_glyphiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next();
+	return 0;
+}
+
+cmzn_glyph_id cmzn_glyphiterator_next_non_access(cmzn_glyphiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next_non_access();
 	return 0;
 }
