@@ -36,6 +36,14 @@ struct cmzn_glyph;
 typedef struct cmzn_glyph *cmzn_glyph_id;
 
 /**
+ * @brief An iterator for looping through all the glyphs in a glyphmodule.
+ *
+ * An iterator for looping through all the glyphs in a glyphmodule.
+ */
+struct cmzn_glyphiterator;
+typedef struct cmzn_glyphiterator * cmzn_glyphiterator_id;
+
+/**
  * @brief A specialised glyph type which renders 3-D axes.
  *
  * A specialised glyph type which renders 3-D axes with arbitrary labels and
