@@ -391,15 +391,17 @@ ZINC_API int cmzn_graphics_set_exterior(cmzn_graphics_id graphics, bool exterior
  * Gets the element face type the graphics is limited to generating graphics for.
  *
  * @param graphics  The graphics to query.
- * @return  The face type of the graphics, or CMZN_ELEMENT_FACE_TYPE_INVALID if the
- * graphics is invalid.
+ * @return  The face type of the graphics. This includes FACE_TYPE_INVALID
+ * which means the face check is disabled, also returned for invalid graphics.
  */
 ZINC_API enum cmzn_element_face_type cmzn_graphics_get_element_face_type(cmzn_graphics_id graphics);
 
 /**
  * Sets the element face type the graphics is limited to generating graphics for.
- * e.g. CMZN_ELEMENT_FACE_TYPE_XI1_0 generates graphics only on faces and lines
- * where the top-level element 'xi' coordinate equals 0.
+ * e.g. FACE_TYPE_XI1_0 generates graphics only on faces and lines where the
+ * top-level element 'xi1' coordinate equals 0.
+ * Pass FACE_TYPE_INVALID to disable the face check which means all elements of
+ * dimension - face or non-face - are accepted.
  *
  * @param graphics  The graphics to modify.
  * @param face_type  A valid element face type.

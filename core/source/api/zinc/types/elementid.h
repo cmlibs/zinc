@@ -53,8 +53,9 @@ typedef struct cmzn_element *cmzn_element_id;
  */
 enum cmzn_element_face_type
 {
-	CMZN_ELEMENT_FACE_TYPE_INVALID = -1, /**< Unspecified element face type */
-	CMZN_ELEMENT_FACE_TYPE_ALL,   /*!< include all faces */
+	CMZN_ELEMENT_FACE_TYPE_INVALID = -1,
+	/*!< Unspecified element face type. Set to disable face check i.e. include all elements */
+	CMZN_ELEMENT_FACE_TYPE_ALL,   /*!< include all faces of higher dimension elements */
 	CMZN_ELEMENT_FACE_TYPE_XI1_0, /*!< only faces where top-level xi1 == 0 */
 	CMZN_ELEMENT_FACE_TYPE_XI1_1, /*!< only faces where top-level xi1 == 1 */
 	CMZN_ELEMENT_FACE_TYPE_XI2_0, /*!< only faces where top-level xi2 == 0 */
