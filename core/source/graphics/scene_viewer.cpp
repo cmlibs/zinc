@@ -3565,7 +3565,7 @@ int Scene_viewer_input_transform(struct Scene_viewer *scene_viewer,
 									scene_viewer->eyex += (a[0]*dy*dist);
 									scene_viewer->eyey += (a[1]*dy*dist);
 									scene_viewer->eyez += (a[2]*dy*dist);
-									double near_far_minimum_ratio = 0.00001;
+									double near_far_minimum_ratio = 0.0001;
 									if ((near_far_minimum_ratio * scene_viewer->far_plane) <
 										(scene_viewer->near_plane + dy*dist + scene_viewer->near_plane_fly_debt))
 									{
@@ -5292,16 +5292,6 @@ For PARALLEL and PERSPECTIVE projection modes only.
 int Scene_viewer_set_view_simple(struct Scene_viewer *scene_viewer,
 	double centre_x,double centre_y,double centre_z,double radius,
 	double view_angle,double clip_distance)
-/*******************************************************************************
-LAST MODIFIED : 13 October 1998
-
-DESCRIPTION :
-Adjusts the viewing parameters of <scene_viewer> so that it is looking at the
-<centre_pt> of a sphere of the given <radius> with the given <view_angle>.
-The function also adjusts the far clipping plane to be clip_distance behind
-the interest point, and the near plane to by the minimum of clip_distance or
-eye_distance*0.99 in front of it.
-==============================================================================*/
 {
 	double eyex,eyey,eyez,fact,eye_distance;
 	int return_code;
@@ -5331,13 +5321,14 @@ eye_distance*0.99 in front of it.
 		scene_viewer->bottom= -radius;
 		scene_viewer->top= radius;
 		scene_viewer->far_plane=eye_distance+clip_distance;
-		if (clip_distance>=eye_distance)
+		const double nearClippingFactor = 0.95;
+		if (clip_distance > nearClippingFactor*eye_distance)
 		{
-			scene_viewer->near_plane=0.01*eye_distance;
+			scene_viewer->near_plane = (1.0 - nearClippingFactor)*eye_distance;
 		}
 		else
 		{
-			scene_viewer->near_plane=eye_distance-clip_distance;
+			scene_viewer->near_plane = eye_distance - clip_distance;
 		}
 		scene_viewer->far_plane_fly_debt = 0.0;
 		scene_viewer->near_plane_fly_debt = 0.0;
@@ -6299,7 +6290,7 @@ with commands for setting these.
 			radius *= width_factor;
 		}
 		/*???RC clip_factor should be read in from defaults file: */
-		clip_factor = 10.0;
+		clip_factor = 4.0;
 		return_code = Scene_viewer_set_view_simple(scene_viewer, centre_x, centre_y,
 			centre_z, radius, 40, clip_factor*radius);
 	}

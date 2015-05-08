@@ -871,19 +871,16 @@ View angle is measured across the normalized device coordinates - NDCs.
 For PARALLEL and PERSPECTIVE projection modes only.
 ==============================================================================*/
 
+/**
+ * Adjusts the viewing parameters of scene_viewer so that it is looking at
+ * the centre of a sphere of the given radius with the given view_angle.
+ * The function also adjusts the far clipping plane to be clip_distance behind
+ * the interest point, and the near plane to by the minimum of clip_distance or
+ * eye_distance*0.95 in front of it.
+ */
 int Scene_viewer_set_view_simple(struct Scene_viewer *scene_viewer,
 	double centre_x,double centre_y,double centre_z,double radius,
 	double view_angle,double clip_distance);
-/*******************************************************************************
-LAST MODIFIED : 28 February 1998
-
-DESCRIPTION :
-Adjusts the viewing parameters of <scene_viewer> so that it is looking at the
-<centre_pt> of a sphere of the given <radius> with the given <view_angle>.
-The function also adjusts the far clipping plane to be clip_distance behind
-the interest point, and the near plane to by the minimum of clip_distance or
-eye_distance*0.99 in front of it.
-==============================================================================*/
 
 int Scene_viewer_get_viewing_volume(struct Scene_viewer *scene_viewer,
 	double *left,double *right,double *bottom,double *top,double *near,
