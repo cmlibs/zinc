@@ -63,7 +63,7 @@ TEST(ZincGraphics, create_type)
 	EXPECT_EQ(Graphics::TYPE_STREAMLINES, gr.getType());
 }
 
-TEST(cmzn_graphics_api, set_use_element_type)
+TEST(cmzn_graphics_api, set_field_domain_type)
 {
 	ZincTestSetup zinc;
 

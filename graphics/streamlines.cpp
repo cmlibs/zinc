@@ -70,6 +70,38 @@ TEST(cmzn_graphics_streamlines, cast_cpp)
 	ASSERT_TRUE(material.isValid());
 }
 
+TEST(cmzn_graphics_streamlines, colour_data_type)
+{
+	ZincTestSetup zinc;
+
+	cmzn_graphics_id gr = cmzn_scene_create_graphics_streamlines(zinc.scene);
+	cmzn_graphics_streamlines_id st = cmzn_graphics_cast_streamlines(gr);
+	cmzn_graphics_destroy(&gr);
+	EXPECT_NE(static_cast<cmzn_graphics_streamlines *>(0), st);
+
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD, cmzn_graphics_streamlines_get_colour_data_type(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_colour_data_type(st, CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE));
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE, cmzn_graphics_streamlines_get_colour_data_type(st));
+	EXPECT_EQ(CMZN_OK, cmzn_graphics_streamlines_set_colour_data_type(st, CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME));
+	EXPECT_EQ(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME, cmzn_graphics_streamlines_get_colour_data_type(st));
+
+	cmzn_graphics_streamlines_destroy(&st);
+}
+
+TEST(ZincGraphicsStreamlines, colourDataType)
+{
+	ZincTestSetupCpp zinc;
+
+	GraphicsStreamlines st = zinc.scene.createGraphicsStreamlines();
+	EXPECT_TRUE(st.isValid());
+
+	EXPECT_EQ(GraphicsStreamlines::COLOUR_DATA_TYPE_FIELD, st.getColourDataType());
+	EXPECT_EQ(OK, st.setColourDataType(GraphicsStreamlines::COLOUR_DATA_TYPE_MAGNITUDE));
+	EXPECT_EQ(GraphicsStreamlines::COLOUR_DATA_TYPE_MAGNITUDE, st.getColourDataType());
+	EXPECT_EQ(OK, st.setColourDataType(GraphicsStreamlines::COLOUR_DATA_TYPE_TRAVEL_TIME));
+	EXPECT_EQ(GraphicsStreamlines::COLOUR_DATA_TYPE_TRAVEL_TIME, st.getColourDataType());
+}
+
 TEST(cmzn_graphics_streamlines, stream_vector_field)
 {
 	ZincTestSetup zinc;
