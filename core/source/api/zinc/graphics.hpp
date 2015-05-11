@@ -330,6 +330,11 @@ friend class Scene;
 private:
 	explicit GraphicsContours(cmzn_graphics_id graphics_id) : Graphics(graphics_id) {}
 
+	inline cmzn_graphics_contours_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_graphics_contours_id>(this->id);
+	}
+
 public:
 	GraphicsContours() : Graphics(0) {}
 
@@ -339,47 +344,44 @@ public:
 
 	Field getIsoscalarField()
 	{
-		return Field(cmzn_graphics_contours_get_isoscalar_field(reinterpret_cast<cmzn_graphics_contours_id>(id)));
+		return Field(cmzn_graphics_contours_get_isoscalar_field(this->getDerivedId()));
 	}
 
 	int setIsoscalarField(const Field& field)
 	{
-		return cmzn_graphics_contours_set_isoscalar_field(reinterpret_cast<cmzn_graphics_contours_id>(id), field.getId());
+		return cmzn_graphics_contours_set_isoscalar_field(this->getDerivedId(), field.getId());
 	}
 
 	int getListIsovalues(int valuesCount, double *valuesOut)
 	{
-		return cmzn_graphics_contours_get_list_isovalues(reinterpret_cast<cmzn_graphics_contours_id>(id),
+		return cmzn_graphics_contours_get_list_isovalues(this->getDerivedId(),
 			valuesCount, valuesOut);
 	}
 
 	int setListIsovalues(int valuesCount, const double *valuesIn)
 	{
-		return cmzn_graphics_contours_set_list_isovalues(reinterpret_cast<cmzn_graphics_contours_id>(id),
+		return cmzn_graphics_contours_set_list_isovalues(this->getDerivedId(),
 			valuesCount, valuesIn);
 	}
 
 	double getRangeFirstIsovalue()
 	{
-		return cmzn_graphics_contours_get_range_first_isovalue(
-			reinterpret_cast<cmzn_graphics_contours_id>(id));
+		return cmzn_graphics_contours_get_range_first_isovalue(this->getDerivedId());
 	}
 
 	double getRangeLastIsovalue()
 	{
-		return cmzn_graphics_contours_get_range_last_isovalue(
-			reinterpret_cast<cmzn_graphics_contours_id>(id));
+		return cmzn_graphics_contours_get_range_last_isovalue(this->getDerivedId());
 	}
 
 	int getRangeNumberOfIsovalues()
 	{
-		return cmzn_graphics_contours_get_range_number_of_isovalues(
-			reinterpret_cast<cmzn_graphics_contours_id>(id));
+		return cmzn_graphics_contours_get_range_number_of_isovalues(this->getDerivedId());
 	}
 
 	int setRangeIsovalues(int numberOfValues, double firstIsovalue, double lastIsovalue)
 	{
-		return cmzn_graphics_contours_set_range_isovalues(reinterpret_cast<cmzn_graphics_contours_id>(id),
+		return cmzn_graphics_contours_set_range_isovalues(this->getDerivedId(),
 			numberOfValues, firstIsovalue, lastIsovalue);
 	}
 
@@ -419,12 +421,25 @@ friend class Scene;
 private:
 	explicit GraphicsStreamlines(cmzn_graphics_id graphics_id) : Graphics(graphics_id) {}
 
+	inline cmzn_graphics_streamlines_id getDerivedId()
+	{
+		return reinterpret_cast<cmzn_graphics_streamlines_id>(this->id);
+	}
+
 public:
 	GraphicsStreamlines() : Graphics(0) {}
 
 	explicit GraphicsStreamlines(cmzn_graphics_streamlines_id streamlines_id)
 		: Graphics(reinterpret_cast<cmzn_graphics_id>(streamlines_id))
 	{}
+
+	enum ColourDataType
+	{
+		COLOUR_DATA_TYPE_INVALID = CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_INVALID,
+		COLOUR_DATA_TYPE_FIELD = CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD,
+		COLOUR_DATA_TYPE_MAGNITUDE = CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE,
+		COLOUR_DATA_TYPE_TRAVEL_TIME = CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME
+	};
 
 	enum TrackDirection
 	{
@@ -433,36 +448,47 @@ public:
 		TRACK_DIRECTION_REVERSE = CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE
 	};
 
+	ColourDataType getColourDataType()
+	{
+		return static_cast<ColourDataType>(cmzn_graphics_streamlines_get_colour_data_type(this->getDerivedId()));
+	}
+
+	int setColourDataType(ColourDataType dataType)
+	{
+		return cmzn_graphics_streamlines_set_colour_data_type(this->getDerivedId(),
+			static_cast<cmzn_graphics_streamlines_colour_data_type>(dataType));
+	}
+
 	Field getStreamVectorField()
 	{
-		return Field(cmzn_graphics_streamlines_get_stream_vector_field(reinterpret_cast<cmzn_graphics_streamlines_id>(id)));
+		return Field(cmzn_graphics_streamlines_get_stream_vector_field(this->getDerivedId()));
 	}
 
 	int setStreamVectorField(const Field& field)
 	{
-		return cmzn_graphics_streamlines_set_stream_vector_field(reinterpret_cast<cmzn_graphics_streamlines_id>(id), field.getId());
+		return cmzn_graphics_streamlines_set_stream_vector_field(this->getDerivedId(), field.getId());
 	}
 
 	TrackDirection getTrackDirection()
 	{
 		return static_cast<TrackDirection>(
-			cmzn_graphics_streamlines_get_track_direction(reinterpret_cast<cmzn_graphics_streamlines_id>(id)));
+			cmzn_graphics_streamlines_get_track_direction(this->getDerivedId()));
 	}
 
 	int setTrackDirection(TrackDirection trackDirection)
 	{
-		return cmzn_graphics_streamlines_set_track_direction(reinterpret_cast<cmzn_graphics_streamlines_id>(id),
+		return cmzn_graphics_streamlines_set_track_direction(this->getDerivedId(),
 			static_cast<cmzn_graphics_streamlines_track_direction>(trackDirection));
 	}
 
 	double getTrackLength()
 	{
-		return cmzn_graphics_streamlines_get_track_length(reinterpret_cast<cmzn_graphics_streamlines_id>(id));
+		return cmzn_graphics_streamlines_get_track_length(this->getDerivedId());
 	}
 
 	int setTrackLength(double length)
 	{
-		return cmzn_graphics_streamlines_set_track_length(reinterpret_cast<cmzn_graphics_streamlines_id>(id), length);
+		return cmzn_graphics_streamlines_set_track_length(this->getDerivedId(), length);
 	}
 
 };

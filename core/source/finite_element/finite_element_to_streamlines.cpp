@@ -687,7 +687,7 @@ accurate if small), also ensuring that the element is updated.
 static int track_streamline_from_FE_element(struct FE_element **element,
 	FE_value *xi, cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	FE_value length,enum Streamline_data_type data_type,
+	FE_value length, enum cmzn_graphics_streamlines_colour_data_type colour_data_type,
 	struct Computed_field *data_field,int *number_of_points,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
 	GLfloat **stream_data, struct FE_region *fe_region)
@@ -701,8 +701,8 @@ dynamically allocated and reallocated arrays:
 <*stream_points> = points along the streamline;
 <*stream_vectors> = stream vectors at each point on the streamline;
 <*stream_normals> = unit normals to the vectors, appropriate to field tracked;
-<*stream_data> (if data_type not STREAM_NO_DATA)=scalar values at each point on
-  the line. STREAM_FIELD_SCALAR calculates the <field_scalar> along the line.
+<*stream_data> = streamline data along the streamlines according to colour_data_type
+and data_field.
 The <*element> and <xi> values are updated to where the stream is tracked to, so
 that tracking can be continued.
 On unsuccessful return the above arrays are deallocated.
@@ -739,6 +739,8 @@ in that region.
 	Triple *stream_point,*stream_vector,*stream_normal,*tmp_triples = NULL;
 
 	ENTER(track_streamline_from_FE_element);
+	const bool hasData =
+		(colour_data_type != CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD) || (data_field);
 	if (element&&(*element)&&FE_element_is_top_level(*element, NULL)&&
 		(element_dimension = get_FE_element_dimension(*element))&&
 		((3 == element_dimension) || (2 == element_dimension)) &&
@@ -753,10 +755,10 @@ in that region.
 		(9==number_of_stream_vector_components)))
 		|| ((2 == number_of_coordinate_components) &&
 		(2==number_of_stream_vector_components)))&&
-		(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) ||
-		(data_field&&(1==Computed_field_get_number_of_components(data_field))))&&
+		(0.0<length) && ((colour_data_type != CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD) ||
+		(0 == data_field) || (1 == cmzn_field_get_number_of_components(data_field))) &&
 		number_of_points&&stream_points&&stream_vectors&&stream_normals&&
-		((STREAM_NO_DATA==data_type)|| stream_data))
+		((!hasData) || stream_data))
 	{
 		/*	step_size of zero indicates first step */
 		step_size = 0;
@@ -778,8 +780,7 @@ in that region.
 		if (ALLOCATE(*stream_points,Triple,allocated_number_of_points)&&
 			ALLOCATE(*stream_vectors,Triple,allocated_number_of_points)&&
 			ALLOCATE(*stream_normals,Triple,allocated_number_of_points)&&
-			((STREAM_NO_DATA==data_type)||
-				ALLOCATE(*stream_data,GLfloat,allocated_number_of_points)))
+			((!hasData) || ALLOCATE(*stream_data, GLfloat, allocated_number_of_points)))
 		{
 			stream_point= *stream_points;
 			stream_vector= *stream_vectors;
@@ -1143,42 +1144,33 @@ in that region.
 							} break;
 						}
 						/* calculate data */
-						switch (data_type)
+						switch (colour_data_type)
 						{
-							case STREAM_NO_DATA:
+							case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD:
 							{
-								/* do nothing */
-							} break;
-							case STREAM_MAGNITUDE_SCALAR:
+								if (data_field)
+								{
+									// cache location should be unchanged from earlier
+									if (CMZN_OK != cmzn_field_evaluate_real(data_field, field_cache, /*number_of_values*/1, &data_value))
+									{
+										display_message(ERROR_MESSAGE,
+											"track_streamline_from_FE_element.   Error calculating data field");
+										return_code = 0;
+									}
+								}
+							}	break;
+							case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE:
 							{
 								data_value = vector_magnitude;
 							} break;
-							case STREAM_FIELD_SCALAR:
+							case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME:
 							{
-								// cache location should be unchanged from earlier
-								if (CMZN_OK != cmzn_field_evaluate_real(data_field, field_cache, /*number_of_values*/1, &data_value))
-								{
-									display_message(ERROR_MESSAGE,
-										"track_streamline_from_FE_element.  "
-										"Error calculating data field");
-									return_code = 0;
-								}
-							} break;
-							case STREAM_TRAVEL_SCALAR:
-							{
-								if (reverse_track)
-								{
-									data_value = -total_stepped;
-								}
-								else
-								{
-									data_value = total_stepped;
-								}
+								data_value = (reverse_track) ? -total_stepped : total_stepped;
 							} break;
 							default:
 							{
 								display_message(ERROR_MESSAGE,
-									"track_streamline_from_FE_element.  Unknown data type");
+									"track_streamline_from_FE_element.  Unknown streamlines data type");
 								return_code = 0;
 							} break;
 						}
@@ -1195,7 +1187,7 @@ in that region.
 						(*stream_normal)[1] = GLfloat(normal2[1]);
 						(*stream_normal)[2] = GLfloat(normal2[2]);
 						stream_normal++;
-						if (STREAM_NO_DATA != data_type)
+						if (hasData)
 						{
 							*stream_datum = (ZnReal)data_value;
 							stream_datum++;
@@ -1286,7 +1278,7 @@ in that region.
 						{
 							return_code = 0;
 						}
-						if (STREAM_NO_DATA != data_type)
+						if (hasData)
 						{
 							if (REALLOCATE(tmp_stream_data,*stream_data,GLfloat,
 								allocated_number_of_points))
@@ -1362,7 +1354,7 @@ int create_polyline_streamline_FE_element_vertex_array(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	FE_value length,enum Streamline_data_type data_type,
+	FE_value length, enum cmzn_graphics_streamlines_colour_data_type colour_data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region,
 	struct Graphics_vertex_array *array)
 {
@@ -1385,12 +1377,12 @@ int create_polyline_streamline_FE_element_vertex_array(
 			(9==number_of_stream_vector_components)))
 			|| ((2 == number_of_coordinate_components) &&
 			(2==number_of_stream_vector_components)))&&
-			(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field) && array)
+			(0.0<length) && array)
 		{
 			/* track points and normals on streamline, and data if requested */
 			if (track_streamline_from_FE_element(&element,start_xi,
 				field_cache, coordinate_field,stream_vector_field,reverse_track,length,
-				data_type,data_field,&number_of_stream_points,&stream_points,
+				colour_data_type,data_field,&number_of_stream_points,&stream_points,
 					&stream_vectors,&stream_normals,&stream_data, fe_region))
 			{
 				if (0<number_of_stream_points)
@@ -1445,7 +1437,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 	enum cmzn_graphicslineattributes_shape_type line_shape, int circleDivisions,
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
-	enum Streamline_data_type data_type,struct Computed_field *data_field,
+	enum cmzn_graphics_streamlines_colour_data_type colour_data_type, struct Computed_field *data_field,
 	struct FE_region *fe_region, struct Graphics_vertex_array *array)
 {
 	double cosw,magnitude,sinw;
@@ -1473,15 +1465,17 @@ int create_surface_streamribbon_FE_element_vertex_array(
 						(9==number_of_stream_vector_components)))
 						|| ((2 == number_of_coordinate_components) &&
 							(2==number_of_stream_vector_components)))&&
-							(0.0<length)&&((data_type!=STREAM_FIELD_SCALAR) || data_field) && array)
+							(0.0<length) && array)
 		{
+			const bool hasData =
+				(colour_data_type != CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD) || (data_field);
 			const FE_value width = line_base_size[0];
 			const FE_value thickness = line_base_size[1];
 
 			/* track points and normals on streamline, and data if requested */
 			if (track_streamline_from_FE_element(&element,start_xi,
 				field_cache, coordinate_field,stream_vector_field,reverse_track,length,
-				data_type,data_field,&number_of_stream_points,&stream_points,
+				colour_data_type,data_field,&number_of_stream_points,&stream_points,
 				&stream_vectors,&stream_normals,&stream_data, fe_region))
 			{
 				if (0<number_of_stream_points)
@@ -1561,7 +1555,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && (stream_data))
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1578,7 +1572,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1614,7 +1608,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 									CAST_TO_OTHER(floatField,normal,GLfloat,3);
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 										3, 1, floatField);
-									if ((STREAM_NO_DATA != data_type) && stream_data)
+									if (hasData && stream_data)
 									{
 										array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 											1, 1, &stream_datum);
@@ -1635,7 +1629,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1652,7 +1646,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1670,7 +1664,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1687,7 +1681,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1705,7 +1699,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1722,7 +1716,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1740,7 +1734,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);
@@ -1757,7 +1751,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 								CAST_TO_OTHER(floatField,normal,GLfloat,3);
 								array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_NORMAL,
 									3, 1, floatField);
-								if ((STREAM_NO_DATA != data_type) && stream_data)
+								if (hasData && stream_data)
 								{
 									array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_DATA,
 										1, 1, &stream_datum);

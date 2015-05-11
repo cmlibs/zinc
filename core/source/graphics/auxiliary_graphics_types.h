@@ -65,27 +65,6 @@ intermediate storage systems.
 	GRAPHICS_NOT_COMPILED
 }; /* enum Graphics_compile_status */
 
-enum Streamline_data_type
-/*******************************************************************************
-LAST MODIFIED : 19 March 2001
-
-DESCRIPTION :
-Note: the first value will be 0 by the ANSI standard, with each subsequent entry
-incremented by 1. This pattern is expected by the ENUMERATOR macros.
-Must ensure the ENUMERATOR_STRING function returns a string for each value here.
-for automatic creation of choose_enumerator widgets.
-==============================================================================*/
-{
-	STREAM_DATA_INVALID = 0,
-	STREAM_NO_DATA = 1,          /* The code relies on NODATA being zero as the
-												  field creation types test if(data_type) */
-	STREAM_FIELD_SCALAR = 2,     /* Generalised scalar as in other graphics objects */
-	STREAM_MAGNITUDE_SCALAR = 3, /* The vector is necessarily calculated already
-												  so can save computation by no using the scalar */
-	STREAM_TRAVEL_SCALAR = 4     /* Integrate time along the curve so that you can
-												  see how long each bit is */
-};
-
 /*
 Global functions
 ----------------
@@ -99,7 +78,7 @@ PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphicslineattributes_shape_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_track_direction);
 
-PROTOTYPE_ENUMERATOR_FUNCTIONS(Streamline_data_type);
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_colour_data_type);
 
 int check_Circle_discretization(int *circle_discretization);
 

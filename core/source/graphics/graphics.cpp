@@ -279,7 +279,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			/* for surface rendering */
 			graphics->render_polygon_mode = CMZN_GRAPHICS_RENDER_POLYGON_MODE_SHADED;
 			/* for streamlines only */
-			graphics->streamline_data_type=STREAM_NO_DATA;
+			graphics->streamlines_colour_data_type = CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD;
 			graphics->render_line_width = 1.0;
 			graphics->render_point_size = 1.0;
 
@@ -779,7 +779,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												graphics_to_object_data->wrapper_stream_vector_field,
 												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 												graphics->streamline_length,
-												graphics->streamline_data_type, graphics->data_field,
+												graphics->streamlines_colour_data_type, graphics->data_field,
 												graphics_to_object_data->fe_region,
 												GT_object_get_vertex_set(graphics->graphics_object));
 									}
@@ -802,7 +802,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												graphics->line_shape, cmzn_tessellation_get_circle_divisions(graphics->tessellation),
 												graphics->line_base_size, graphics->line_scale_factors,
 												graphics->line_orientation_scale_field,
-												graphics->streamline_data_type, graphics->data_field,
+												graphics->streamlines_colour_data_type, graphics->data_field,
 												graphics_to_object_data->fe_region,
 												GT_object_get_vertex_set(graphics->graphics_object));
 									}
@@ -884,7 +884,7 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 							graphics_to_object_data->wrapper_stream_vector_field,
 							static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 							graphics->streamline_length,
-							graphics->streamline_data_type, graphics->data_field,
+							graphics->streamlines_colour_data_type, graphics->data_field,
 							graphics_to_object_data->fe_region, GT_object_get_vertex_set(graphics->graphics_object));
 				} break;
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
@@ -900,7 +900,7 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 						graphics->line_shape, cmzn_tessellation_get_circle_divisions(graphics->tessellation),
 						graphics->line_base_size, graphics->line_scale_factors,
 						graphics->line_orientation_scale_field,
-						graphics->streamline_data_type, graphics->data_field,
+						graphics->streamlines_colour_data_type, graphics->data_field,
 						graphics_to_object_data->fe_region,
 						GT_object_get_vertex_set(graphics->graphics_object));
 				} break;
@@ -2010,7 +2010,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			sprintf(temp_string," length %g ", graphics->streamline_length);
 			append_string(&graphics_string,temp_string,&error);
 			append_string(&graphics_string,
-				ENUMERATOR_STRING(Streamline_data_type)(graphics->streamline_data_type),&error);
+				ENUMERATOR_STRING(cmzn_graphics_streamlines_colour_data_type)(graphics->streamlines_colour_data_type),&error);
 			if (graphics->seed_nodeset)
 			{
 				append_string(&graphics_string, " seed_nodeset ", &error);
@@ -3150,9 +3150,9 @@ int cmzn_graphics_to_graphics_object(
 							if (return_code)
 							{
 								/* set the spectrum in the graphics object - if required */
-								if ((graphics->data_field)||
+								if ((graphics->data_field) ||
 									((CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type) &&
-										(STREAM_NO_DATA != graphics->streamline_data_type)))
+										(CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD != graphics->streamlines_colour_data_type)))
 								{
 									set_GT_object_Spectrum(graphics->graphics_object, graphics->spectrum);
 								}
@@ -3655,32 +3655,6 @@ int cmzn_graphics_set_spectrum(cmzn_graphics_id graphics,
 	return return_code;
 }
 
-enum Streamline_data_type cmzn_graphics_get_streamline_data_type(
-	cmzn_graphics_id graphics)
-{
-	if (graphics && (CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type))
-	{
-		return graphics->streamline_data_type;
-	}
-	return STREAM_DATA_INVALID;
-}
-
-int cmzn_graphics_set_streamline_data_type(cmzn_graphics_id graphics,
-	enum Streamline_data_type streamline_data_type)
-{
-	int return_code = 0;
-	if (graphics && (CMZN_GRAPHICS_TYPE_STREAMLINES == graphics->graphics_type))
-	{
-		if (streamline_data_type != graphics->streamline_data_type)
-		{
-			graphics->streamline_data_type = streamline_data_type;
-			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-		}
-		return_code = 1;
-	}
-	return return_code;
-}
-
 int cmzn_graphics_copy_without_graphics_object(
 	struct cmzn_graphics *destination, struct cmzn_graphics *source)
 {
@@ -3854,7 +3828,7 @@ int cmzn_graphics_copy_without_graphics_object(
 		cmzn_graphics_set_render_polygon_mode(destination,source->render_polygon_mode);
 		REACCESS(Computed_field)(&(destination->data_field), source->data_field);
 		REACCESS(cmzn_spectrum)(&(destination->spectrum), source->spectrum);
-		destination->streamline_data_type = source->streamline_data_type;
+		destination->streamlines_colour_data_type = source->streamlines_colour_data_type;
 		REACCESS(cmzn_material)(&(destination->selected_material),
 			source->selected_material);
 		destination->autorange_spectrum_flag = source->autorange_spectrum_flag;
@@ -4087,7 +4061,7 @@ int cmzn_graphics_same_non_trivial(cmzn_graphics *graphics,
 				(graphics->data_field==second_graphics->data_field)&&
 				(graphics->texture_coordinate_field==second_graphics->texture_coordinate_field)&&
 				((CMZN_GRAPHICS_TYPE_STREAMLINES != graphics->graphics_type) ||
-				 (graphics->streamline_data_type==second_graphics->streamline_data_type));
+				 (graphics->streamlines_colour_data_type==second_graphics->streamlines_colour_data_type));
 		}
 	}
 	else
@@ -5557,6 +5531,33 @@ cmzn_graphics_streamlines_id cmzn_graphics_cast_streamlines(cmzn_graphics_id gra
 int cmzn_graphics_streamlines_destroy(cmzn_graphics_streamlines_id *streamlines_address)
 {
 	return cmzn_graphics_destroy(reinterpret_cast<cmzn_graphics_id *>(streamlines_address));
+}
+
+enum cmzn_graphics_streamlines_colour_data_type
+	cmzn_graphics_streamlines_get_colour_data_type(
+		cmzn_graphics_streamlines_id streamlines)
+{
+	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(streamlines);
+	if (graphics)
+		return graphics->streamlines_colour_data_type;
+	return CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_INVALID;
+}
+
+int cmzn_graphics_streamlines_set_colour_data_type(
+	cmzn_graphics_streamlines_id streamlines,
+	enum cmzn_graphics_streamlines_colour_data_type streamlines_colour_data_type)
+{
+	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(streamlines);
+	if (graphics && (streamlines_colour_data_type != CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_INVALID))
+	{
+		if (streamlines_colour_data_type != graphics->streamlines_colour_data_type)
+		{
+			graphics->streamlines_colour_data_type = streamlines_colour_data_type;
+			cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
+		}
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_field_id cmzn_graphics_streamlines_get_stream_vector_field(
