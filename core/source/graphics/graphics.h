@@ -109,7 +109,7 @@ finite element group scene.
 	struct Computed_field *stream_vector_field;
 	enum cmzn_graphics_streamlines_track_direction streamlines_track_direction;
 	FE_value streamline_length;
-	enum Streamline_data_type streamline_data_type;
+	enum cmzn_graphics_streamlines_colour_data_type streamlines_colour_data_type;
 	/* streamline seed nodeset and field giving mesh location */
 	cmzn_nodeset_id seed_nodeset;
 	struct Computed_field *seed_node_mesh_location_field;
@@ -369,21 +369,6 @@ int cmzn_graphics_get_visible_graphics_object_range(
 
 struct GT_object *cmzn_graphics_get_graphics_object(
 	struct cmzn_graphics *graphics);
-
-/**
- * Gets the streamline data type which allows extended options for colouring
- * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
- */
-enum Streamline_data_type cmzn_graphics_get_streamline_data_type(
-	cmzn_graphics_id graphics);
-
-/**
- * Sets the streamline data type which allows extended options for colouring
- * streamlines beyond the data field, particularly STREAM_TRAVEL_SCALAR.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-int cmzn_graphics_set_streamline_data_type(cmzn_graphics_id graphics,
-	enum Streamline_data_type streamline_data_type);
 
 /**
  * Fills the top_level_number_in_xi array with the discretization computed for

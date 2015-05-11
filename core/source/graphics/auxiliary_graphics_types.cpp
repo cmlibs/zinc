@@ -180,26 +180,21 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_streamlines_track_direction)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_track_direction)
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_streamlines_colour_data_type)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Streamline_data_type));
 	switch (enumerator_value)
 	{
-		case STREAM_NO_DATA:
-		{
-			enumerator_string = "no_data";
-		} break;
-		case STREAM_FIELD_SCALAR:
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD:
 		{
 			enumerator_string = "field_scalar";
 		} break;
-		case STREAM_MAGNITUDE_SCALAR:
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE:
 		{
 			enumerator_string = "magnitude_scalar";
 		} break;
-		case STREAM_TRAVEL_SCALAR:
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME:
 		{
 			enumerator_string = "travel_scalar";
 		} break;
@@ -211,9 +206,9 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Streamline_data_type)
 	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Streamline_data_type) */
+}
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Streamline_data_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_graphics_streamlines_colour_data_type)
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_graphics_render_polygon_mode)
 {

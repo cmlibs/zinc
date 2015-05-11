@@ -58,26 +58,23 @@ Global functions
 */
 
 
+/**
+ * Creates a <GT_polyline_vertex_buffers> streamline from the <coordinate_field> tracking
+ * <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
+ * the xi coordinates supplied. If <reverse_track> is true, the reverse of the
+ * stream vector is tracked, and the travel_scalar is made negative.
+ * If <fe_region> is not NULL then the function will restrict itself to elements
+ * in that region.
+ * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
+ * expected to have been set in the field_cache if needed.
+ */
 int create_polyline_streamline_FE_element_vertex_array(
 	struct FE_element *element,FE_value *start_xi,
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	FE_value length,enum Streamline_data_type data_type,
+	FE_value length, enum cmzn_graphics_streamlines_colour_data_type colour_data_type,
 	struct Computed_field *data_field, struct FE_region *fe_region,
 	struct Graphics_vertex_array *array);
-/*******************************************************************************
-LAST MODIFIED : 23 June 2004
-
-DESCRIPTION :
-Creates a <GT_polyline_vertex_buffers> streamline from the <coordinate_field> following
-<stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
-the xi coordinates supplied. If <reverse_track> is true, the reverse of the
-stream vector is tracked, and the travel_scalar is made negative.
-If <fe_region> is not NULL then the function will restrict itself to elements
-in that region.
-@param field_cache  cmzn_fieldcache for evaluating fields with. Time is
-expected to have been set in the field_cache if needed.
-==============================================================================*/
 
 /**
  * Fills the array with coordinates of the streamline from the <coordinate_field> following
@@ -100,7 +97,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 	enum cmzn_graphicslineattributes_shape_type line_shape, int circleDivisions,
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
-	enum Streamline_data_type data_type,struct Computed_field *data_field,
+	enum cmzn_graphics_streamlines_colour_data_type colour_data_type, struct Computed_field *data_field,
 	struct FE_region *fe_region, struct Graphics_vertex_array *array);
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,

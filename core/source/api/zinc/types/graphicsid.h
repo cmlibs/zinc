@@ -79,6 +79,23 @@ struct cmzn_graphics_streamlines;
 typedef struct cmzn_graphics_streamlines *cmzn_graphics_streamlines_id;
 
 /**
+ * Streamlines graphics algorithm specific methods for colouring by data.
+ */ 
+enum cmzn_graphics_streamlines_colour_data_type
+{
+	CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_INVALID = 0,
+		/*!< Invalid streamlines colour data type */
+	CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD = 1,
+		/*!< Default: use the generic graphics data field, or no colouring if none */
+	CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE = 2,
+		/*!< Use the magnitude of the stream vector field. More efficient than using
+		  a separate magnitude field since already computed in algorithm. */
+	CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME = 3
+	  /*!< Integrate time along the streamline to show how long it took to reach
+		  a point and how long each bit takes. Negated for reverse track direction */
+};
+
+/**
  * Enumeration giving the direction streamlines are tracked relative to
  * the stream vector field.
  *

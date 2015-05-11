@@ -736,6 +736,31 @@ ZINC_C_INLINE cmzn_graphics_id cmzn_graphics_streamlines_base_cast(cmzn_graphics
 ZINC_API int cmzn_graphics_streamlines_destroy(cmzn_graphics_streamlines_id *streamlines_address);
 
 /**
+ * Gets the type of data visualised with spectrum colour on the streamlines.
+ *
+ * @param streamlines  The streamlines graphics to query.
+ * @return  The current data type for colouring, or DATA_TYPE_INVALID on error.
+ */
+ZINC_API enum cmzn_graphics_streamlines_colour_data_type
+	cmzn_graphics_streamlines_get_colour_data_type(
+		cmzn_graphics_streamlines_id streamlines);
+
+/**
+ * Sets the type of data visualised with spectrum colour on the streamlines,
+ * including algorithm-specific types such as TRAVEL_TIME, as well as
+ * colouring by the generic graphics data field.
+ * Spectrum must be set for any colouring.
+ * @see cmzn_graphics_streamlines_colour_data_type
+ *
+ * @param streamlines  The streamlines graphics to modify.
+ * @param streamlines_colour_data_type  The new streamlines colour data type.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_graphics_streamlines_set_colour_data_type(
+	cmzn_graphics_streamlines_id streamlines,
+	enum cmzn_graphics_streamlines_colour_data_type streamlines_colour_data_type);
+
+/**
  * Gets the vector field the streamline is tracking along.
  *
  * @param streamlines  The streamlines graphics to query.
@@ -784,21 +809,21 @@ ZINC_API int cmzn_graphics_streamlines_set_track_direction(
 	enum cmzn_graphics_streamlines_track_direction track_direction);
 
 /**
- * Gets the maximum length streamlines are tracked along.
+ * Gets the maximum length of time streamlines are tracked along.
  *
  * @param streamlines  The streamlines graphics to query.
- * @return  The track length, or 0.0 if invalid streamlines graphics.
+ * @return  The track length/time, or 0.0 if invalid streamlines graphics.
  */
 ZINC_API double cmzn_graphics_streamlines_get_track_length(
 	cmzn_graphics_streamlines_id streamlines);
 
 /**
- * Sets the maximum length to track streamlines along.
- * Default value is 1.0; generally need to adjust this for scale of model
+ * Sets the maximum length of time to track streamlines along.
+ * Default value is 1.0; generally need to adjust this for time scale of model
  * as streamlines can be slow to evaluate.
  *
  * @param streamlines  The streamlines graphics to modify.
- * @param length  The maximum length to track streamlines along >= 0.
+ * @param length  The maximum length of time to track streamlines along >= 0.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_graphics_streamlines_set_track_length(
