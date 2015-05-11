@@ -5548,7 +5548,7 @@ int cmzn_graphics_streamlines_set_colour_data_type(
 	enum cmzn_graphics_streamlines_colour_data_type streamlines_colour_data_type)
 {
 	cmzn_graphics *graphics = reinterpret_cast<cmzn_graphics *>(streamlines);
-	if (graphics && (streamlines_colour_data_type != CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_INVALID))
+	if (graphics && (streamlines_colour_data_type != CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_INVALID))
 	{
 		if (streamlines_colour_data_type != graphics->streamlines_colour_data_type)
 		{
