@@ -250,3 +250,42 @@ TEST(cmzn_tessellation_api, valid_args_cpp)
 	result = tessellation.getRefinementFactors(3, &outValues[0]);
 	EXPECT_EQ(3, result);
 }
+
+TEST(ZincTessellationiterator, iteration)
+{
+	ZincTestSetupCpp zinc;
+
+	Tessellationmodule tm = zinc.context.getTessellationmodule();
+	EXPECT_TRUE(tm.isValid());
+	Tessellation defaultTessellation = tm.getDefaultTessellation();
+	EXPECT_TRUE(defaultTessellation.isValid());
+	Tessellation defaultPointsTessellation = tm.getDefaultPointsTessellation();
+	EXPECT_TRUE(defaultPointsTessellation.isValid());
+
+	Tessellation zzz = tm.createTessellation();
+	EXPECT_TRUE(zzz.isValid());
+	EXPECT_EQ(OK, zzz.setName("zzz"));
+	char *name = zzz.getName();
+	EXPECT_STREQ("zzz", name);
+	cmzn_deallocate(name);
+	name = 0;
+
+	Tessellation aaa = tm.createTessellation();
+	EXPECT_TRUE(aaa.isValid());
+	EXPECT_EQ(OK, aaa.setName("aaa"));
+
+	Tessellation aab = tm.createTessellation();
+	EXPECT_TRUE(aab.isValid());
+	EXPECT_EQ(OK, aab.setName("aab"));
+
+	Tessellationiterator iter = tm.createTessellationiterator();
+	EXPECT_TRUE(iter.isValid());
+	Tessellation g;
+	EXPECT_EQ(aaa, g = iter.next());
+	EXPECT_EQ(aab, g = iter.next());
+	EXPECT_EQ(defaultTessellation, g = iter.next());
+	EXPECT_EQ(defaultPointsTessellation, g = iter.next());
+	EXPECT_EQ(zzz, g = iter.next());
+	g = iter.next();
+	EXPECT_FALSE(g.isValid());
+}
