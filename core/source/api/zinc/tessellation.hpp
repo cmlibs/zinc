@@ -122,6 +122,57 @@ inline bool operator==(const Tessellation& a, const Tessellation& b)
 	return a.getId() == b.getId();
 }
 
+
+class Tessellationiterator
+{
+private:
+
+	cmzn_tessellationiterator_id id;
+
+public:
+
+	Tessellationiterator() : id(0)
+	{ }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Tessellationiterator(cmzn_tessellationiterator_id iterator_id) :
+		id(iterator_id)
+	{ }
+
+	Tessellationiterator(const Tessellationiterator& tessellationiterator) :
+		id(cmzn_tessellationiterator_access(tessellationiterator.id))
+	{ }
+
+	Tessellationiterator& operator=(const Tessellationiterator& tessellationiterator)
+	{
+		cmzn_tessellationiterator_id temp_id = cmzn_tessellationiterator_access(tessellationiterator.id);
+		if (0 != id)
+		{
+			cmzn_tessellationiterator_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Tessellationiterator()
+	{
+		if (0 != id)
+		{
+			cmzn_tessellationiterator_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	Tessellation next()
+	{
+		return Tessellation(cmzn_tessellationiterator_next(id));
+	}
+};
+
 class Tessellationmodule
 {
 protected:
@@ -174,6 +225,11 @@ public:
 	Tessellation createTessellation()
 	{
 		return Tessellation(cmzn_tessellationmodule_create_tessellation(id));
+	}
+
+	Tessellationiterator createTessellationiterator()
+	{
+		return Tessellationiterator(cmzn_tessellationmodule_create_tessellationiterator(id));
 	}
 
 	Tessellation findTessellationByName(const char *name)

@@ -54,6 +54,22 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
 	cmzn_tessellationmodule_id tessellationmodule);
 
 /**
+ * Create a tessellation iterator object for iterating through the
+ * tessellations in the tessellation module, in alphabetical order of name. The
+ * iterator initially points at the position before the first tessellation, so
+ * the first call to the iterator next() method returns the first tessellation
+ * and advances the iterator. The iterator becomes invalid if tessellations are
+ * added, removed or renamed while in use.
+ * @see cmzn_tessellationiterator_next
+ *
+ * @param tessellationmodule  Handle to the tessellation module whose
+ * tessellations are to be iterated over.
+ * @return  Handle to tessellation iterator, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationiterator_id cmzn_tessellationmodule_create_tessellationiterator(
+	cmzn_tessellationmodule_id tessellationmodule);
+
+/**
  * Begin caching or increment cache level for this tessellation module. Call this
  * function before making multiple changes to minimise number of change messages
  * sent to clients. Must remember to end_change after completing changes.
@@ -292,6 +308,36 @@ ZINC_API int cmzn_tessellation_get_refinement_factors(
  */
 ZINC_API int cmzn_tessellation_set_refinement_factors(
 	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+
+/**
+ * Returns a new handle to the iterator with reference count incremented.
+ *
+ * @param iterator  The tessellation iterator to obtain a new handle to.
+ * @return  New handle to tessellation iterator, or NULL/invalid handle on
+ * failure.
+ */
+ZINC_API cmzn_tessellationiterator_id cmzn_tessellationiterator_access(
+	cmzn_tessellationiterator_id iterator);
+
+/**
+ * Destroys this handle to the tessellation iterator and sets it to NULL.
+ *
+ * @param iterator_address  Address of handle to tessellation_iterator to
+ * destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_tessellationiterator_destroy(cmzn_tessellationiterator_id *iterator_address);
+
+/**
+ * Returns a handle to the next tessellation in the container being iterated
+ * over then advances the iterator position. The caller is required to destroy
+ * the returned tessellation handle.
+ *
+ * @param iterator  Material iterator to query and advance.
+ * @return  Handle to the next tessellation, or NULL/invalid handle if none or
+ * failed.
+ */
+ZINC_API cmzn_tessellation_id cmzn_tessellationiterator_next(cmzn_tessellationiterator_id iterator);
 
 #ifdef __cplusplus
 }
