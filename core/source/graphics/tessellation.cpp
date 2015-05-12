@@ -118,6 +118,8 @@ public:
 		return tessellation;
 	}
 
+	cmzn_tessellationiterator *createTessellationiterator();
+
 	cmzn_tessellation *findTessellationByName(const char *name)
 	{
 		cmzn_tessellation *tessellation = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_tessellation,name)(name,
@@ -485,6 +487,34 @@ struct cmzn_tessellation_compare_name
 
 typedef cmzn_set<cmzn_tessellation *,cmzn_tessellation_compare_name> cmzn_set_cmzn_tessellation;
 
+struct cmzn_tessellationiterator : public cmzn_set_cmzn_tessellation::ext_iterator
+{
+private:
+	cmzn_tessellationiterator(cmzn_set_cmzn_tessellation *container);
+	cmzn_tessellationiterator(const cmzn_tessellationiterator&);
+	~cmzn_tessellationiterator();
+
+public:
+
+	static cmzn_tessellationiterator *create(cmzn_set_cmzn_tessellation *container)
+	{
+		return static_cast<cmzn_tessellationiterator *>(cmzn_set_cmzn_tessellation::ext_iterator::create(container));
+	}
+
+	cmzn_tessellationiterator *access()
+	{
+		return static_cast<cmzn_tessellationiterator *>(this->cmzn_set_cmzn_tessellation::ext_iterator::access());
+	}
+
+	static int deaccess(cmzn_tessellationiterator* &iterator)
+	{
+		cmzn_set_cmzn_tessellation::ext_iterator* baseIterator = static_cast<cmzn_set_cmzn_tessellation::ext_iterator*>(iterator);
+		iterator = 0;
+		return cmzn_set_cmzn_tessellation::ext_iterator::deaccess(baseIterator);
+	}
+
+};
+
 FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_tessellation, cmzn_tessellationmodule, cmzn_tessellation_change_detail *);
 
 /*
@@ -551,11 +581,18 @@ DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_tessellation)
 
 DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_tessellation)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_tessellation,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_tessellation,name) 
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_tessellation,cmzn_tessellationiterator) 
 
 DECLARE_MANAGER_FUNCTIONS(cmzn_tessellation,manager)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_tessellation,manager)
 DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_tessellation,name,const char *,manager)
 DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_tessellation, struct cmzn_tessellationmodule)
+
+cmzn_tessellationiterator *cmzn_tessellationmodule::createTessellationiterator()
+{
+	return CREATE_LIST_ITERATOR(cmzn_tessellation)(this->tessellationManager->object_list);
+}
 
 int cmzn_tessellation_manager_set_owner_private(struct MANAGER(cmzn_tessellation) *manager,
 	struct cmzn_tessellationmodule *tessellationmodule)
@@ -599,6 +636,14 @@ cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
 {
 	if (tessellationmodule)
 		return tessellationmodule->createTessellation();
+	return 0;
+}
+
+cmzn_tessellationiterator_id cmzn_tessellationmodule_create_tessellationiterator(
+	cmzn_tessellationmodule_id tessellationmodule)
+{
+	if (tessellationmodule)
+		return tessellationmodule->createTessellationiterator();
 	return 0;
 }
 
@@ -1019,13 +1064,40 @@ int string_to_divisions(const char *input, int **values_in, int *size_in)
 	return return_code;
 }
 
-int list_cmzn_tessellation_iterator(struct cmzn_tessellation *tessellation, void *dummy_void)
+int list_cmzn_tessellation(struct cmzn_tessellation *tessellation)
 {
-	USE_PARAMETER(dummy_void);
 	if (tessellation)
 	{
 		tessellation->list();
 		return 1;
 	}
+	return 0;
+}
+
+cmzn_tessellationiterator_id cmzn_tessellationiterator_access(cmzn_tessellationiterator_id iterator)
+{
+	if (iterator)
+		return iterator->access();
+	return 0;
+}
+
+int cmzn_tessellationiterator_destroy(cmzn_tessellationiterator_id *iterator_address)
+{
+	if (!iterator_address)
+		return 0;
+	return cmzn_tessellationiterator::deaccess(*iterator_address);
+}
+
+cmzn_tessellation_id cmzn_tessellationiterator_next(cmzn_tessellationiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next();
+	return 0;
+}
+
+cmzn_tessellation_id cmzn_tessellationiterator_next_non_access(cmzn_tessellationiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next_non_access();
 	return 0;
 }

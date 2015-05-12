@@ -32,4 +32,14 @@ typedef struct cmzn_tessellationmodule * cmzn_tessellationmodule_id;
 struct cmzn_tessellation;
 typedef struct cmzn_tessellation * cmzn_tessellation_id;
 
+/**
+ * @brief An iterator for looping through all the tessellations in a
+ * tessellation module.
+ *
+ * An iterator for looping through all the tessellations in a tessellation
+ * module.
+ */
+struct cmzn_tessellationiterator;
+typedef struct cmzn_tessellationiterator * cmzn_tessellationiterator_id;
+
 #endif

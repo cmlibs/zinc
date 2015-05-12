@@ -141,6 +141,6 @@ int string_to_divisions(const char *input, int **values_in, int *size_in);
 
 void list_divisions(int size, int *divisions);
 
-int list_cmzn_tessellation_iterator(struct cmzn_tessellation *tessellation, void *dummy_void);
+int list_cmzn_tessellation(struct cmzn_tessellation *tessellation);
 
 #endif
