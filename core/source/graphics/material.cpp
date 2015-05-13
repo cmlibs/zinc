@@ -4007,6 +4007,8 @@ cmzn_material *cmzn_material_create_private()
 		material->isManagedFlag = false;
 		material->manager = (struct MANAGER(cmzn_material) *)NULL;
 		material->manager_change_status = MANAGER_CHANGE_NONE(cmzn_material);
+		material->executed_as_order_independent = 0;
+		material->order_program = (struct Material_program *)NULL;
 #if defined (OPENGL_API)
 				material->display_list=0;
 				material->brightness_texture_id=0;
@@ -4092,6 +4094,10 @@ Frees the memory for the material and sets <*material_address> to NULL.
 			if (material->program)
 			{
 				DEACCESS(Material_program)(&(material->program));
+			}
+			if (material->order_program)
+			{
+				DEACCESS(Material_program)(&(material->order_program));
 			}
 			if (material->program_uniforms)
 			{
@@ -6031,6 +6037,8 @@ int Material_compile_members_opengl(cmzn_material *material,
 	ENTER(Material_compile_members_opengl);
 	if (material)
 	{
+		material->executed_as_order_independent = 0;
+		DEACCESS(Material_program)(&material->order_program);
 		return_code = 1;
 		if (GRAPHICS_COMPILED != material->compile_status)
 		{
@@ -6080,6 +6088,7 @@ int Material_compile_members_opengl(cmzn_material *material,
 			{
 				Material_program_compile(material->program, renderer);
 			}
+			material->compile_status = GRAPHICS_COMPILED;
 		}
 		else
 		{
@@ -6336,46 +6345,8 @@ will work with order_independent_transparency.
 			}
 			else
 			{
-				if (material->program)
-				{
-					if (material->image_texture.texture)
-					{
-						if (material->program->shader_type != MATERIAL_PROGRAM_SHADER_ARB &&
-								material->program->glsl_current_program)
-						{
-							Texture_execute_vertex_program_environment(material->image_texture.texture,
-								material->program->glsl_current_program);
-							GLint loc1 = glGetUniformLocation(material->program->glsl_current_program,"texture0");
-							if (loc1 != (GLint)-1)
-								 glUniform1i(loc1, 0);
-						}
-						else
-						{
-							Texture_execute_vertex_program_environment(material->image_texture.texture,
-								0);
-						}
-					}
-				}
-				direct_render_Graphical_material(material, data->renderer);
-				if (material->program)
-				{
-					if (material->program->shader_type != MATERIAL_PROGRAM_SHADER_ARB)
-					{
-						GLint loc1=-1;
-						loc1 = glGetUniformLocation(material->program->glsl_current_program,"texturesize");
-						if (loc1>-1)
-						{
-							glUniform4f(loc1, static_cast<GLfloat>(data->renderer->viewport_width),
-									static_cast<GLfloat>(data->renderer->viewport_height), 1.0, 1.0);
-						}
-						loc1 = glGetUniformLocation(material->program->glsl_current_program,"samplertex");
-						if (loc1 != (GLint)-1)
-						{
-
-							glUniform1i(loc1, 3);
-						}
-					}
-				}
+				material->executed_as_order_independent = 1;
+				REACCESS(Material_program)(&material->order_program, material->program);
 			}
 			material->program = unmodified_program;
 		}
@@ -6419,101 +6390,150 @@ execute_Graphical_material should just call direct_render_Graphical_material.
 	ENTER(Material_render_opengl);
 	if (material)
 	{
-		if (material->program)
+		if (material->executed_as_order_independent && material->order_program)
 		{
-			/* Load up the texture scaling into the vertex program
-				environment and the texel size into the fragment
-				program environment. */
-			if (material->image_texture.texture)
+			if (material->order_program)
 			{
-				Texture_execute_vertex_program_environment(material->image_texture.texture,
-					0);
-			}
-			else if (material->second_image_texture.texture)
-			{
-				Texture_execute_vertex_program_environment(material->second_image_texture.texture,
-					0);
-			}
-			else if (material->third_image_texture.texture)
-			{
-				Texture_execute_vertex_program_environment(material->third_image_texture.texture,
-					0);
-			}
-			else if (material->fourth_image_texture.texture)
-			{
-				Texture_execute_vertex_program_environment(material->fourth_image_texture.texture,
-					0);
-			}
-#if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
-			if (material->spectrum && (
-					material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
-					material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
-			{
-				int i, lookup_dimensions, *lookup_sizes;
-				GLfloat values[4];
-
-				Spectrum_get_colour_lookup_sizes(material->spectrum,
-						&lookup_dimensions, &lookup_sizes);
-				/* Set the offsets = 0.5 / size */
-				for (i = 0 ; i < lookup_dimensions ; i++)
+				if (material->image_texture.texture)
 				{
-					values[i] = 0.5 / ((double)lookup_sizes[i]);
+					if (material->order_program->shader_type != MATERIAL_PROGRAM_SHADER_ARB &&
+							material->order_program->glsl_current_program)
+					{
+						Texture_execute_vertex_program_environment(material->image_texture.texture,
+							material->order_program->glsl_current_program);
+						GLint loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"texture0");
+						if (loc1 != (GLint)-1)
+							 glUniform1i(loc1, 0);
+					}
+					else
+					{
+						Texture_execute_vertex_program_environment(material->image_texture.texture,
+							0);
+					}
 				}
-				for (; i < 4 ; i++)
-				{
-					values[i] = 0.0;
-				}
-				if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
-				{
-					glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
-							values[0], values[1], values[2], values[3]);
-				}
-				else
+			}
+			struct Material_program *temp_program = material->program;
+			if (material->order_program)
+				material->program = material->order_program;
+			return_code = direct_render_Graphical_material(material, renderer);
+			material->program = temp_program;
+			if (material->order_program)
+			{
+				if (material->order_program->shader_type != MATERIAL_PROGRAM_SHADER_ARB)
 				{
 					GLint loc1=-1;
-					if (glIsProgram(material->program->glsl_current_program))
+					loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"texturesize");
+					if (loc1>-1)
 					{
-						loc1 = glGetUniformLocation(material->program->glsl_current_program,"lookup_offsets");
-						if (loc1 != (GLint)-1)
-						{
-							glUniform4f(loc1, values[0], values[1],
-									values[2], values[3]);
-						}
+						glUniform4f(loc1, static_cast<GLfloat>(renderer->viewport_width),
+								static_cast<GLfloat>(renderer->viewport_height), 1.0, 1.0);
 					}
-				}
-				/* Set the scales = (size - 1) / (size) */
-				for (i = 0 ; i < lookup_dimensions ; i++)
-				{
-					values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
-				}
-				for (; i < 4 ; i++)
-				{
-					values[i] = 1.0;
-				}
-				if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
-				{
-					glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
-							values[0], values[1], values[2], values[3]);
-				}
-				else
-				{
-					GLint loc2=-1;
-					if (glIsProgram(material->program->glsl_current_program))
+					loc1 = glGetUniformLocation(material->order_program->glsl_current_program,"samplertex");
+					if (loc1 != (GLint)-1)
 					{
-						loc2 = glGetUniformLocation(material->program->glsl_current_program,"lookup_scales");
-						if (loc2 != (GLint)-1)
-						{
-							glUniform4f(loc2, values[0], values[1],
-									values[2], values[3]);
-						}
-					}
-				}
-				DEALLOCATE(lookup_sizes);
-			}
 
+						glUniform1i(loc1, 3);
+					}
+				}
+			}
+		}
+		else
+		{
+			if (material->program)
+			{
+				/* Load up the texture scaling into the vertex program
+				environment and the texel size into the fragment
+				program environment. */
+				if (material->image_texture.texture)
+				{
+					Texture_execute_vertex_program_environment(material->image_texture.texture,
+						0);
+				}
+				else if (material->second_image_texture.texture)
+				{
+					Texture_execute_vertex_program_environment(material->second_image_texture.texture,
+						0);
+				}
+				else if (material->third_image_texture.texture)
+				{
+					Texture_execute_vertex_program_environment(material->third_image_texture.texture,
+						0);
+				}
+				else if (material->fourth_image_texture.texture)
+				{
+					Texture_execute_vertex_program_environment(material->fourth_image_texture.texture,
+						0);
+				}
+#if defined GL_ARB_fragment_program || defined GL_VERSION_2_0
+				if (material->spectrum && (
+					material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB ||
+					material->program->shader_type == MATERIAL_PROGRAM_SHADER_GLSL))
+				{
+					int i, lookup_dimensions, *lookup_sizes;
+					GLfloat values[4];
+
+					Spectrum_get_colour_lookup_sizes(material->spectrum,
+						&lookup_dimensions, &lookup_sizes);
+					/* Set the offsets = 0.5 / size */
+					for (i = 0 ; i < lookup_dimensions ; i++)
+					{
+						values[i] = 0.5 / ((double)lookup_sizes[i]);
+					}
+					for (; i < 4 ; i++)
+					{
+						values[i] = 0.0;
+					}
+					if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+					{
+						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 1,
+							values[0], values[1], values[2], values[3]);
+					}
+					else
+					{
+						GLint loc1=-1;
+						if (glIsProgram(material->program->glsl_current_program))
+						{
+							loc1 = glGetUniformLocation(material->program->glsl_current_program,"lookup_offsets");
+							if (loc1 != (GLint)-1)
+							{
+								glUniform4f(loc1, values[0], values[1],
+									values[2], values[3]);
+							}
+						}
+					}
+					/* Set the scales = (size - 1) / (size) */
+					for (i = 0 ; i < lookup_dimensions ; i++)
+					{
+						values[i] = ((double)(lookup_sizes[i] - 1)) / ((double)lookup_sizes[i]);
+					}
+					for (; i < 4 ; i++)
+					{
+						values[i] = 1.0;
+					}
+					if (material->program->shader_type == MATERIAL_PROGRAM_SHADER_ARB)
+					{
+						glProgramEnvParameter4fARB(GL_FRAGMENT_PROGRAM_ARB, 2,
+							values[0], values[1], values[2], values[3]);
+					}
+					else
+					{
+						GLint loc2=-1;
+						if (glIsProgram(material->program->glsl_current_program))
+						{
+							loc2 = glGetUniformLocation(material->program->glsl_current_program,"lookup_scales");
+							if (loc2 != (GLint)-1)
+							{
+								glUniform4f(loc2, values[0], values[1],
+									values[2], values[3]);
+							}
+						}
+					}
+					DEALLOCATE(lookup_sizes);
+				}
+			}
+			return_code = direct_render_Graphical_material(material, renderer);
 		}
 #endif /* defined GL_ARB_fragment_program */
-		return_code = direct_render_Graphical_material(material, renderer);
 	}
 	else
 	{

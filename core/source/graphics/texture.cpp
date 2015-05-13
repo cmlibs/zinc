@@ -6888,7 +6888,7 @@ by vertex programs.
 			texel_size[3] = 0.0;
 			if (Graphics_library_check_extension(GL_shading_language) && glIsProgram((GLuint)program))
 			{
-				loc1 = glGetUniformLocation((GLuint)program,"texture_size");
+				loc1 = glGetUniformLocation((GLuint)program,"texturesize");
 				if (loc1 > (GLint)-1)
 					glUniform4f(loc1, texel_size[0], texel_size[1],
 						texel_size[2], texel_size[3]);
