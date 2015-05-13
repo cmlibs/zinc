@@ -262,6 +262,8 @@ The properties of a material.
 		 then this material will not be removed from the manager after destroy.
 	 */
 	bool isManagedFlag;
+	int executed_as_order_independent;
+	struct Material_program *order_program;
 
 public:
 
