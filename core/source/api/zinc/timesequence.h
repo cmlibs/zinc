@@ -70,7 +70,7 @@ ZINC_API int cmzn_timesequence_get_number_of_times(
  *
  * @param timesequence  The time sequence to query.
  * @param time_index  The index of the time to get, starting at 1.
- * @return  The time or -0 if error.
+ * @return  The time or 0 if error.
  */
 ZINC_API double cmzn_timesequence_get_time(cmzn_timesequence_id timesequence,
 	int time_index);

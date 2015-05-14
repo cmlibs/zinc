@@ -64,7 +64,7 @@ public:
 		return id;
 	}
 
-	double getNumberOfTimes()
+	int getNumberOfTimes()
 	{
 		return cmzn_timesequence_get_number_of_times(id);
 	}

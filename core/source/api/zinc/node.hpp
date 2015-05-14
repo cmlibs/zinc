@@ -177,6 +177,16 @@ public:
 		return cmzn_nodetemplate_define_field(id, field.getId());
 	}
 
+	int defineFieldFromNode(const Field& field, const Node& node)
+	{
+		return cmzn_nodetemplate_define_field_from_node(id, field.getId(), node.getId());
+	}
+
+	Timesequence getTimesequence(const Field& field)
+	{
+		return Timesequence(cmzn_nodetemplate_get_timesequence(id, field.getId()));
+	}
+
 	int setTimesequence(const Field& field, const Timesequence& timesequence)
 	{
 		return cmzn_nodetemplate_set_timesequence(id, field.getId(), timesequence.getId());
