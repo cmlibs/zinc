@@ -933,6 +933,7 @@ int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 				GLfloat *data_vertex;
 				GLfloat *colour_vertex;
 				unsigned int i;
+				ZnReal colData[4];
 				if (!cmzn_spectrum_is_material_overwrite(spectrum))
 				{
 					Colour diffuse_colour;
@@ -940,21 +941,17 @@ int Graphics_object_create_colour_buffer_from_data(GT_object *object,
 					MATERIAL_PRECISION prec;
 					Graphical_material_get_alpha(material, &prec);
 					GLfloat alpha = prec;
-
-					colour_vertex = *colour_buffer;
 					for (i = 0 ; i < data_vertex_count ; i++)
 					{
-						colour_vertex[0] = diffuse_colour.red;
-						colour_vertex[1] = diffuse_colour.green;
-						colour_vertex[2] = diffuse_colour.blue;
-						colour_vertex[3] = alpha;
-						colour_vertex += 4;
+						colData[0] = diffuse_colour.red;
+						colData[1] = diffuse_colour.green;
+						colData[2] = diffuse_colour.blue;
+						colData[3] = alpha;
 					}
 				}
 				colour_vertex = *colour_buffer;
 				data_vertex = data_buffer;
 				FE_value *feData = new FE_value[data_values_per_vertex];
-				ZnReal colData[4];
 				for (i = 0 ; i < data_vertex_count ; i++)
 				{
 					CAST_TO_FE_VALUE(feData,data_vertex,(int)data_values_per_vertex);
