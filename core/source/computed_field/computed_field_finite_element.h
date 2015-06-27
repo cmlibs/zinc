@@ -16,6 +16,7 @@ Implements computed fields which interface to finite element fields.
 
 #include "zinc/fieldfiniteelement.h"
 #include "general/enumerator.h"
+#include "general/list.h"
 
 /*
 Global functions

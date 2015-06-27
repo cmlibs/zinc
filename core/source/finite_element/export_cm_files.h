@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : export_cm_files.h
-
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Functions for exporting finite element data to a file.
-==============================================================================*/
+/**
+ * FILE : export_cm_files.h
+ *
+ * Functions for exporting finite element data to CMISS IP files.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -15,27 +12,27 @@ Functions for exporting finite element data to a file.
 #define EXPORT_CM_FILES_H
 
 #include <stdio.h>
-#include "finite_element/finite_element.h"
-#include "finite_element/finite_element_region.h"
-#include "general/enumerator.h"
-#include "region/cmiss_region.h"
+#include "zinc/types/fieldid.h"
+#include "zinc/types/fieldgroupid.h"
+#include "zinc/types/regionid.h"
 
 /*
 Global/Public functions
 -----------------------
 */
 
+/**
+ * Writes the set of <ipcoor_file>, <ipbase_file>, <ipnode_file> and
+ * <ipelem_file> that defines elements of <field> in <region>.
+ * The <ipmap_file> is optional, all the others are required.
+ * @param region  Region from which to export.
+ * @param group  Optional group within region to restrict output to.
+ * @param field  Finite element field to export.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
 int write_cm_files(FILE *ipcoor_file, FILE *ipbase_file,
 	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
-	struct cmzn_region *root_region, char *write_path,
-	struct FE_field *field);
-/*******************************************************************************
-LAST MODIFIED : 21 April 2006
-
-DESCRIPTION :
-Writes the set of <ipcoor_file>, <ipbase_file>, <ipnode_file> and <ipelem_file>
-that defines elements of <field> in <write_path>.  The <ipmap_file> is 
-optional, all the others are required.
-==============================================================================*/
+	cmzn_region *region, cmzn_field_group *group,
+	cmzn_field *field);
 
 #endif /* !defined (EXPORT_CM_FILES_H) */

@@ -1,11 +1,8 @@
-/*******************************************************************************
-FILE : export_cm_files.c
-
-LAST MODIFIED : 21 April 2006
-
-DESCRIPTION :
-Functions for exporting finite element data to a file.
-==============================================================================*/
+/**
+ * FILE : export_cm_files.c
+ *
+ * Functions for exporting finite element data to CMISS IP files.
+ */
 /* OpenCMISS-Zinc Library
 *
 * This Source Code Form is subject to the terms of the Mozilla Public
@@ -13,11 +10,17 @@ Functions for exporting finite element data to a file.
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <stdio.h>
 
+#include "zinc/fieldmodule.h"
+#include "zinc/fieldsubobjectgroup.h"
+#include "computed_field/computed_field.h"
+#include "computed_field/computed_field_finite_element.h"
+#include "finite_element/export_cm_files.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "general/geometry.h"
 #include "general/message.h"
-#include "finite_element/export_cm_files.h"
+#include "region/cmiss_region.h"
 
 /*
 Module types
@@ -99,26 +102,20 @@ struct FE_element_field_add_basis_data
 {
 	int number_of_components;
 	struct FE_field *field;
-	struct FE_region *region;
+	struct FE_region *fe_region;
 	struct LIST(FE_basis) *basis_types;
 }; /* struct FE_element_field_add_basis_data */
 
+/**
+ * FE_element iterator which adds the FE_basis representing data->field to the
+ * data->basis_list if it isn't there already.
+ */
 static int FE_element_field_add_basis_to_list(
-	struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-FE_element iterator which adds the FE_basis representing data->field to the
-data->basis_list if it isn't there already.
-==============================================================================*/
+	struct FE_element *element, FE_element_field_add_basis_data *data)
 {
 	int basis_type_array[4], dimension, i, return_code, xi1, xi2;
 	struct FE_basis *face_basis, *fe_basis;
-	struct FE_element_field_add_basis_data *data;
-
-	ENTER(FE_element_field_add_basis_to_list);
-	if (element && (data = (struct FE_element_field_add_basis_data *)data_void))
+	if (element && data)
 	{
 		return_code = 1;
 		if (FE_element_field_is_standard_node_based(element, data->field))
@@ -145,7 +142,7 @@ data->basis_list if it isn't there already.
 							{
 								FE_basis_get_xi_basis_type(fe_basis, xi2,  reinterpret_cast<FE_basis_type *>(&basis_type_array[3]));
 								face_basis = make_FE_basis(basis_type_array,
-									FE_region_get_basis_manager(data->region));
+									FE_region_get_basis_manager(data->fe_region));
 								if (!IS_OBJECT_IN_LIST(FE_basis)(face_basis, data->basis_types))
 								{
 									return_code = ADD_OBJECT_TO_LIST(FE_basis)(face_basis,
@@ -161,42 +158,69 @@ data->basis_list if it isn't there already.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_field_add_FE_field_to_list.  Missing element_field");
+			"FE_element_field_add_basis_to_list.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_field_add_FE_field_to_list */
+}
 
-static int write_ipbase_file(FILE *ipbase_file, struct FE_region *region,
-	struct FE_field *field, struct write_cm_files_data *data)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Writes text for an <ipbase_file> to support <field>.
-==============================================================================*/
+/**
+ * Writes text for an <ipbase_file> to support <field>.
+ */
+static int write_ipbase_file(FILE *ipbase_file, cmzn_region *region,
+	cmzn_field_group *group, struct FE_field *field, struct write_cm_files_data *data)
 {
 	enum FE_basis_type basis_type;
 	int any_derivatives, basis_number, dimension, finished,
 		has_derivatives[MAXIMUM_ELEMENT_XI_DIMENSIONS], interpolant_index,
 		node_flags[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_gauss_points,
 		number_of_nodes[MAXIMUM_ELEMENT_XI_DIMENSIONS], return_code, xi_number;
-	struct FE_element_field_add_basis_data add_basis_data;
 	struct FE_basis *basis;
 
-	ENTER(write_ipbase_file);
 	if (ipbase_file && field)
 	{
 		return_code = 1;
 
+		FE_element_field_add_basis_data add_basis_data;
 		add_basis_data.basis_types = CREATE(LIST(FE_basis))();
 		add_basis_data.field = field;
-		add_basis_data.region = region;
+		add_basis_data.fe_region = cmzn_region_get_FE_region(region);
 		add_basis_data.number_of_components = get_FE_field_number_of_components(field);
-		FE_region_for_each_FE_element(region,
-			FE_element_field_add_basis_to_list, (void *)&add_basis_data);
+
+		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
+		for (dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
+		{
+			cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
+			cmzn_elementiterator *iterator = 0;
+			if (group)
+			{
+				cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
+				if (element_group)
+				{
+					cmzn_mesh_group *mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
+					iterator = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(mesh_group));
+					cmzn_mesh_group_destroy(&mesh_group);
+					cmzn_field_element_group_destroy(&element_group);
+				}
+			}
+			else
+				iterator = cmzn_mesh_create_elementiterator(mesh);
+			if (iterator)
+			{
+				cmzn_element *element;
+				while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+				{
+					if (!FE_element_field_add_basis_to_list(element, &add_basis_data))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+				cmzn_elementiterator_destroy(&iterator);
+			}
+			cmzn_mesh_destroy(&mesh);
+		}
+		cmzn_fieldmodule_destroy(&fieldmodule);
 
 		data->number_of_bases = NUMBER_IN_LIST(FE_basis)(add_basis_data.basis_types);
 
@@ -375,10 +399,8 @@ Writes text for an <ipbase_file> to support <field>.
 		display_message(ERROR_MESSAGE, "write_ipbase_file.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_ipbase_file */
+}
 
 struct FE_node_write_cm_check_node_values_data
 {
@@ -393,26 +415,20 @@ struct FE_node_write_cm_check_node_values_data
 	FILE *ipmap_file;
 }; /* struct FE_node_write_cm_check_node_values_data */
 
+/**
+ * Counts how many nodes have the field defined and checks that the nodes
+ * for which the field is defined are consistent in the number of derivatives
+ * for each component.
+ * Also sets a flag if any of components of the field have versions.
+ */
 static int FE_node_write_cm_check_node_values(
-	struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Counts how many nodes have the field defined and checks that the nodes
-for which the field is defined are consistent in the number of derivatives for
-each component.
-Also sets a flag if any of components of the field have versions.
-==============================================================================*/
+	struct FE_node *node, FE_node_write_cm_check_node_values_data *data)
 {
-	int has_versions, i, return_code;
-	struct FE_node_write_cm_check_node_values_data *data;
-
-	ENTER(FE_node_write_cm_check_node_values);
-	if (node && (data = (struct FE_node_write_cm_check_node_values_data *)data_void))
+	int return_code = 1;
+	if (node && data)
 	{
-		return_code = 1;
-		has_versions = 0;
+		int i;
+		int has_versions = 0;
 		if (FE_field_is_defined_at_node(data->field,node))
 		{
 			if (data->number_of_nodes)
@@ -466,19 +482,14 @@ Also sets a flag if any of components of the field have versions.
 			"FE_node_write_cm_check_node_values.  Missing element_field");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_node_write_cm_check_node_values */
+}
 
+/**
+ * Writes the node to an ipnode file.
+ */
 static int write_cm_FE_node(
-	struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Writes the node to an ipnode file.
-==============================================================================*/
+	struct FE_node *node, FE_node_write_cm_check_node_values_data *data)
 {
 	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
@@ -487,10 +498,8 @@ Writes the node to an ipnode file.
 		FE_NODAL_D2_DS2DS3, FE_NODAL_D3_DS1DS2DS3};
 	FE_value value;
 	int i, j, k, number_of_versions, return_code;
-	struct FE_node_write_cm_check_node_values_data *data;
 
-	ENTER(FE_node_write_cm_check_node_values);
-	if (node && (data = (struct FE_node_write_cm_check_node_values_data *)data_void))
+	if (node && data)
 	{
 		return_code = 1;
 		if (FE_field_is_defined_at_node(data->field, node))
@@ -534,23 +543,17 @@ Writes the node to an ipnode file.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"write_cm_FE_node.  Missing element_field");
+		display_message(ERROR_MESSAGE, "write_cm_FE_node.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_cm_FE_node */
+}
 
+/**
+ * Writes the node to an ipmap file.
+ */
 static int write_cm_FE_nodal_mapping(
-	struct FE_node *node, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2006
-
-DESCRIPTION :
-Writes the node to an ipmap file.
-==============================================================================*/
+	struct FE_node *node, FE_node_write_cm_check_node_values_data *data)
 {
 	const char *value_strings[] = {" 1", " 2", "s 1 & 2", " 3", "s 1 & 3", "s 2 & 3",
 		"s 1, 2 & 3"};
@@ -561,10 +564,8 @@ Writes the node to an ipmap file.
 	int component_number_of_versions, i, inverse_match, inverse_match_version,
 		j, k, m, n, map_derivatives, match_version, match, node_number,
 		number_of_versions, return_code;
-	struct FE_node_write_cm_check_node_values_data *data;
 
-	ENTER(FE_node_write_cm_check_node_mappings);
-	if (node && (data = (struct FE_node_write_cm_check_node_values_data *)data_void))
+	if (node && data)
 	{
 		return_code = 1;
 		map_derivatives = 1;
@@ -750,31 +751,23 @@ Writes the node to an ipmap file.
 			"write_cm_FE_nodal_mapping.  Missing element_field");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_cm_FE_nodal_mapping */
+}
 
+/**
+ * Writes text for an <ipnode_file> to support <field>, with optional <ipmap>.
+ */
 static int write_ipnode_file(FILE *ipnode_file, FILE *ipmap_file,
-	struct FE_region *region, struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Writes text for an <ipbase_file> to support <field>.
-==============================================================================*/
+	cmzn_region *region, cmzn_field_group *group, struct FE_field *field)
 {
-	int i, return_code;
-	struct FE_node_write_cm_check_node_values_data cm_node_data;
-
-	ENTER(write_ipnode_file);
+	int return_code = 1;
 	if (ipnode_file && region && field)
 	{
-		return_code = 1;
-
+		int i;
 		fprintf(ipnode_file, " CMISS Version 1.21 ipnode File Version 2\n");
 		fprintf(ipnode_file, " Heading: cmgui generated file\n\n");
 
+		struct FE_node_write_cm_check_node_values_data cm_node_data;
 		cm_node_data.number_of_nodes = 0;
 		cm_node_data.field = field;
 		cm_node_data.number_of_components = get_FE_field_number_of_components(field);
@@ -787,10 +780,44 @@ Writes text for an <ipbase_file> to support <field>.
 		cm_node_data.maximum_number_of_derivatives = 0;
 		cm_node_data.ipnode_file = ipnode_file;
 		cm_node_data.ipmap_file = ipmap_file;
-		FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-			region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-		if (0 != (return_code = fe_nodeset->for_each_FE_node(
-			FE_node_write_cm_check_node_values, (void *)&cm_node_data)))
+
+		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
+		cmzn_nodeset *nodeset = cmzn_fieldmodule_find_nodeset_by_field_domain_type(fieldmodule, CMZN_FIELD_DOMAIN_TYPE_NODES);
+		cmzn_fieldmodule_destroy(&fieldmodule);
+		if (group)
+		{
+			cmzn_field_node_group *node_group = cmzn_field_group_get_field_node_group(group, nodeset);
+			cmzn_nodeset_destroy(&nodeset);
+			if (node_group)
+			{
+				nodeset = cmzn_nodeset_group_base_cast(cmzn_field_node_group_get_nodeset_group(node_group));
+				cmzn_field_node_group_destroy(&node_group);
+			}
+		}
+
+		cmzn_nodeiterator *iterator;
+		cmzn_node *node;
+
+		if (nodeset)
+		{
+			iterator = cmzn_nodeset_create_nodeiterator(nodeset);
+			if (iterator)
+			{
+				while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+				{
+					if (!FE_node_write_cm_check_node_values(node, &cm_node_data))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+				cmzn_nodeiterator_destroy(&iterator);
+			}
+			else
+				return_code = 0;
+		}
+
+		if (return_code)
 		{
 			for (i = 0 ; i < cm_node_data.number_of_components ; i++)
 			{
@@ -825,7 +852,19 @@ Writes text for an <ipbase_file> to support <field>.
 					i + 1, cm_node_data.number_of_derivatives[i]);
 			}
 
-			return_code = fe_nodeset->for_each_FE_node(write_cm_FE_node, (void *)&cm_node_data);
+			if (nodeset)
+			{
+				iterator = cmzn_nodeset_create_nodeiterator(nodeset);
+				while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+				{
+					if (!write_cm_FE_node(node, &cm_node_data))
+					{
+						return_code = 0;
+						break;
+					}
+				}
+				cmzn_nodeiterator_destroy(&iterator);
+			}
 
 			if (ipmap_file)
 			{
@@ -836,8 +875,19 @@ Writes text for an <ipbase_file> to support <field>.
 				fprintf(ipmap_file, " The number of nodes with special mappings is [    1]: %d\n",
 					cm_node_data.number_of_nodes_with_versions);
 
-				return_code = fe_nodeset->for_each_FE_node(
-					write_cm_FE_nodal_mapping, (void *)&cm_node_data);
+				if (nodeset)
+				{
+					iterator = cmzn_nodeset_create_nodeiterator(nodeset);
+					while (0 != (node = cmzn_nodeiterator_next_non_access(iterator)))
+					{
+						if (!write_cm_FE_nodal_mapping(node, &cm_node_data))
+						{
+							return_code = 0;
+							break;
+						}
+					}
+					cmzn_nodeiterator_destroy(&iterator);
+				}
 			}
 		}
 		else
@@ -846,16 +896,15 @@ Writes text for an <ipbase_file> to support <field>.
 				"Nodes do not have the required consistency to write an ipnode file.");
 			return_code = 0;
 		}
+		cmzn_nodeset_destroy(&nodeset);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE, "write_ipnode_file.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_ipnode_file */
+}
 
 struct FE_element_write_cm_check_element_values_data
 {
@@ -867,20 +916,14 @@ struct FE_element_write_cm_check_element_values_data
 	FILE *ipelem_file;
 }; /* struct FE_element_write_cm_check_element_values_data */
 
+/**
+ * Counts how many elements have the field defined.
+ */
 static int FE_element_write_cm_check_element_values(
-	struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Counts how many elements have the field defined.
-==============================================================================*/
+	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
 	int return_code;
-	struct FE_element_write_cm_check_element_values_data *data;
-
-	ENTER(FE_element_write_cm_check_element_values);
-	if (element && (data = (struct FE_element_write_cm_check_element_values_data *)data_void))
+	if (element && data)
 	{
 		return_code = 1;
 		if (FE_field_is_defined_in_element(data->field,element) &&
@@ -895,19 +938,14 @@ Counts how many elements have the field defined.
 			"FE_element_write_cm_check_element_values.  Missing element_field");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_write_cm_check_element_values */
+}
 
+/**
+ * Writes the element to an ipelem file.
+ */
 static int write_cm_FE_element(
-	struct FE_element *element, void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Writes the element to an ipelem file.
-==============================================================================*/
+	struct FE_element *element, FE_element_write_cm_check_element_values_data *data)
 {
 	int basis_dimension, basis_number, dimension,
 		first_basis, i, j, k,
@@ -916,12 +954,10 @@ Writes the element to an ipelem file.
 	struct CM_element_information element_id;
 	struct FE_basis *fe_basis;
 	struct FE_element_field_component *component;
-	struct FE_element_write_cm_check_element_values_data *data;
 	struct FE_node *node;
 	struct Standard_node_to_element_map *standard_node_map;
 
-	ENTER(FE_element_write_cm_check_element_values);
-	if (element && (data = (struct FE_element_write_cm_check_element_values_data *)data_void))
+	if (element && data)
 	{
 		return_code = 1;
 		if (FE_field_is_defined_in_element(data->field, element) &&
@@ -1051,117 +1087,89 @@ Writes the element to an ipelem file.
 			"write_cm_FE_element.  Missing element_field");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_cm_FE_element */
+}
 
-static int write_ipelem_file(FILE *ipelem_file, struct FE_region *region,
-	struct FE_field *field, struct write_cm_files_data *data)
-/*******************************************************************************
-LAST MODIFIED : 22 March 2006
-
-DESCRIPTION :
-Writes text for an <ipbase_file> to support <field>.
-==============================================================================*/
+/**
+ * Writes text for an <ipelem_file> to support <field>.
+ */
+static int write_ipelem_file(FILE *ipelem_file,
+	cmzn_region *region, cmzn_field_group *group, struct FE_field *field,
+	struct write_cm_files_data *data)
 {
-	int return_code;
-	struct FE_element_write_cm_check_element_values_data cm_element_data;
-
-	ENTER(write_ipelem_file);
+	int return_code = 1;
 	if (ipelem_file && region && field)
 	{
 		fprintf(ipelem_file, " CMISS Version 1.21 ipelem File Version 2\n");
 		fprintf(ipelem_file, " Heading: cmgui generated file\n\n");
 
+		struct FE_element_write_cm_check_element_values_data cm_element_data;
 		cm_element_data.number_of_elements = 0;
 		cm_element_data.field = field;
 		cm_element_data.number_of_components = get_FE_field_number_of_components(field);
 		cm_element_data.number_of_bases = data->number_of_bases;
 		cm_element_data.basis_array = data->basis_array;
 		cm_element_data.ipelem_file = ipelem_file;
-		return_code = FE_region_for_each_FE_element(region,
-			FE_element_write_cm_check_element_values, (void *)&cm_element_data);
-		if (return_code)
-		{
-			fprintf(ipelem_file, " The number of elements is [1]: %d\n\n",
-				cm_element_data.number_of_elements);
 
-			return_code = FE_region_for_each_FE_element(region,
-				write_cm_FE_element, (void *)&cm_element_data);
-		}
-		else
+		cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
+		// stage 1 = check, stage 2 = write
+		for (int stage = 1; stage <= 2; ++stage)
 		{
-			display_message(ERROR_MESSAGE, "write_ipelem_file.  "
-				"Elements do not have the required consistency to write an ipelem file.");
-			return_code = 0;
+			if (stage == 2)
+			{
+				fprintf(ipelem_file, " The number of elements is [1]: %d\n\n",
+					cm_element_data.number_of_elements);
+			}
+			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
+			{
+				cmzn_mesh *mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, dimension);
+				cmzn_elementiterator *iterator = 0;
+				if (group)
+				{
+					cmzn_field_element_group *element_group = cmzn_field_group_get_field_element_group(group, mesh);
+					if (element_group)
+					{
+						cmzn_mesh_group *mesh_group = cmzn_field_element_group_get_mesh_group(element_group);
+						iterator = cmzn_mesh_create_elementiterator(cmzn_mesh_group_base_cast(mesh_group));
+						cmzn_mesh_group_destroy(&mesh_group);
+						cmzn_field_element_group_destroy(&element_group);
+					}
+				}
+				else
+					iterator = cmzn_mesh_create_elementiterator(mesh);
+				if (iterator)
+				{
+					cmzn_element *element;
+					while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+					{
+						if (stage == 1)
+							return_code = FE_element_write_cm_check_element_values(element, &cm_element_data);
+						else
+							return_code = write_cm_FE_element(element, &cm_element_data);
+						if (!return_code)
+						{
+							if (stage == 1)
+							{
+								display_message(ERROR_MESSAGE, "write_ipelem_file.  "
+									"Elements do not have the required consistency to write an ipelem file.");
+								return_code = 0;
+							}
+							break;
+						}
+					}
+					cmzn_elementiterator_destroy(&iterator);
+				}
+			}
 		}
+		cmzn_fieldmodule_destroy(&fieldmodule);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE, "write_ipelem_file.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* write_ipelem_file */
-
-static int write_cm_FE_region(FILE *ipcoor_file, FILE *ipbase_file,
-	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
-	struct FE_region *fe_region, struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2006
-
-DESCRIPTION :
-Writes <field> of <fe_region> to the <output_file>.  The <ipmap_file> is
-optional, all the others are required.
-==============================================================================*/
-{
-	int return_code;
-	struct write_cm_files_data data;
-
-	ENTER(write_cm_FE_region);
-	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && fe_region && field)
-	{
-		data.number_of_bases = 0;
-		data.basis_array = (struct FE_basis **)NULL;
-
-		return_code = write_ipcoor_file(ipcoor_file, field);
-		if (return_code)
-		{
-			return_code = write_ipbase_file(ipbase_file, fe_region, field, &data);
-		}
-		if (return_code)
-		{
-			return_code = write_ipnode_file(ipnode_file, ipmap_file,
-				fe_region, field);
-		}
-		if (return_code)
-		{
-			return_code = write_ipelem_file(ipelem_file, fe_region, field, &data);
-		}
-		if (!return_code)
-		{
-			display_message(ERROR_MESSAGE, "write_cm_FE_region.  Failed");
-			return_code = 0;
-		}
-
-		if (data.basis_array)
-		{
-			DEALLOCATE(data.basis_array);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"write_cm_FE_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_cm_FE_region */
+}
 
 /*
 Global functions
@@ -1170,51 +1178,49 @@ Global functions
 
 int write_cm_files(FILE *ipcoor_file, FILE *ipbase_file,
 	FILE *ipnode_file, FILE *ipelem_file, FILE *ipmap_file,
-	struct cmzn_region *root_region, char *write_path,
-	struct FE_field *field)
-/*******************************************************************************
-LAST MODIFIED : 21 April 2006
-
-DESCRIPTION :
-Writes the set of <ipcoor_file>, <ipbase_file>, <ipnode_file> and <ipelem_file>
-that defines elements of <field> in <write_path>.  The <ipmap_file> is
-optional, all the others are required.
-==============================================================================*/
+	cmzn_region *region, cmzn_field_group *group,
+	cmzn_field *field)
 {
 	int return_code;
-	struct cmzn_region *write_region;
-	struct FE_region *fe_region;
-
-	ENTER(write_exregion_file);
-	write_region = (struct cmzn_region *)NULL;
-	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && root_region &&
-		(NULL != (write_region = cmzn_region_find_subregion_at_path(root_region, write_path))))
+	FE_field *fe_field = 0;
+	Computed_field_get_type_finite_element(field, &fe_field);
+	if (ipcoor_file && ipbase_file && ipnode_file && ipelem_file && region && fe_field)
 	{
-		return_code = 1;
-		if (NULL != (fe_region = cmzn_region_get_FE_region(write_region)))
+		write_cm_files_data data;
+		data.number_of_bases = 0;
+		data.basis_array = (struct FE_basis **)NULL;
+
+		return_code = write_ipcoor_file(ipcoor_file, fe_field);
+		if (return_code)
 		{
-			return_code = write_cm_FE_region(ipcoor_file, ipbase_file,
-				ipnode_file, ipelem_file, ipmap_file, fe_region, field);
+			return_code = write_ipbase_file(ipbase_file, region, group, fe_field, &data);
 		}
-		else
+		if (return_code)
 		{
-			display_message(ERROR_MESSAGE, "write_cm_files.  "
-				"Specified region %s has no finite elements.", write_path);
+			return_code = write_ipnode_file(ipnode_file, ipmap_file,
+				region, group, fe_field);
+		}
+		if (return_code)
+		{
+			return_code = write_ipelem_file(ipelem_file, region, group, fe_field, &data);
 		}
 		if (!return_code)
 		{
-			display_message(ERROR_MESSAGE,
-				"write_cm_files.  Error writing region");
+			display_message(ERROR_MESSAGE, "write_cm_FE_region.  Failed");
+			return_code = 0;
 		}
+		if (data.basis_array)
+			DEALLOCATE(data.basis_array);
+		if (return_code)
+			return_code = CMZN_OK;
+		else
+			return_code = CMZN_ERROR_GENERAL;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"write_cm_files.  Invalid argument(s)");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	cmzn_region_destroy(&write_region);
-	LEAVE;
-
 	return (return_code);
-} /* write_cm_files */
+}
