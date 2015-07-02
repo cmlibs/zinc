@@ -190,7 +190,7 @@ cmzn_fieldcache_id cmzn_fieldcache_access(cmzn_fieldcache_id cache)
 int cmzn_fieldcache_destroy(cmzn_fieldcache_id *cache_address)
 {
 	if (!cache_address)
-		return 0;
+		return CMZN_ERROR_ARGUMENT;
 	return cmzn_fieldcache::deaccess(*cache_address);
 }
 
