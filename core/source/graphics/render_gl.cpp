@@ -530,11 +530,13 @@ public:
 	enum cmzn_streaminformation_scene_io_data_type mode;
 	int *number_of_entries;
 	std::string **output_string;
+	int morphVertices, morphColours, morphNormals;
+
 
 	Render_graphics_opengl_threejs(const char *file_prefix_in,
 		int number_of_time_steps_in, double begin_time_in,  double end_time_in,
 		enum cmzn_streaminformation_scene_io_data_type mode_in, int *number_of_entries_in,
-		std::string **output_string_in) :
+		std::string **output_string_in, int morphVerticesIn, int morphColoursIn, int morphNormalsIn) :
 		Render_graphics_opengl_vertex_buffer_object(),
 		file_prefix(duplicate_string(file_prefix_in)), begin_time(begin_time_in),
 		end_time(end_time_in), number_of_time_steps(number_of_time_steps_in),
@@ -544,6 +546,9 @@ public:
 		current_graphics_number = 0;
 		current_time_frame = 0;
 		output_string = output_string_in;
+		morphVertices = morphVerticesIn;
+		morphColours = morphColoursIn;
+		morphNormals = morphNormalsIn;
 	}
 
 	~Render_graphics_opengl_threejs()
@@ -592,7 +597,7 @@ public:
 		else
 		{
 			int current_time = this->time;
-			if (begin_time == end_time)
+			if (begin_time == end_time || ((morphVertices == 0) && (morphColours == 0) && (morphNormals == 0)))
 			{
 				this->time = begin_time;
 				cmzn_scene_compile_graphics(scene, this,/*force_rebuild*/1);
@@ -658,7 +663,8 @@ public:
 					sprintf(new_file_prefix, "%s_%s_%s", file_prefix, region_name, graphics_name);
 				else
 					sprintf(new_file_prefix, "%s_%s", file_prefix, graphics_name);
-				threejs_export = new Threejs_export(new_file_prefix, number_of_time_steps, mode);
+				threejs_export = new Threejs_export(new_file_prefix, number_of_time_steps, mode,
+					morphVertices, morphColours, morphNormals);
 				threejs_export->beginExport();
 				DEALLOCATE(graphics_name);
 				if (region_name)
@@ -709,10 +715,12 @@ public:
 Render_graphics_opengl *Render_graphics_opengl_create_threejs_renderer(
 	const char *file_prefix, int number_of_time_steps, double begin_time,
 	double end_time, enum cmzn_streaminformation_scene_io_data_type mode,
-	int *number_of_entries, std::string **output_string)
+	int *number_of_entries, std::string **output_string,
+	int morphVertices, int morphColours, int morphNormals)
 {
 	return new Render_graphics_opengl_threejs(file_prefix, number_of_time_steps,
-		begin_time, end_time, mode, number_of_entries, output_string);
+		begin_time, end_time, mode, number_of_entries, output_string,
+		morphVertices, morphColours, morphNormals);
 }
 
 /**

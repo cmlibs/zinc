@@ -460,7 +460,8 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *filename,
 	int number_of_time_steps, double begin_time, double end_time,
 	cmzn_streaminformation_scene_io_data_type export_mode,
-	int *number_of_entries, std::string **output_string);
+	int *number_of_entries, std::string **output_string,
+	int morphColours, int morphNormals, int morphVertices);
 
 int Scene_render_webgl(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *name_prefix);

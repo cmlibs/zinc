@@ -22,6 +22,7 @@ private:
 	char *filename;
 	int number_of_time_steps;
 	cmzn_streaminformation_scene_io_data_type mode;
+	int morphVertices, morphColours, morphNormals;
 	std::string facesString;
 	std::string verticesMorphString;
 	std::string normalMorphString;
@@ -33,7 +34,7 @@ private:
 		unsigned int vertex_count);
 
 	void writeMorphVertexBuffer(const char *output_variable_name,
-		std::string *output,	GLfloat *vertex_buffer, unsigned int values_per_vertex,
+		std::string *output, GLfloat *vertex_buffer, unsigned int values_per_vertex,
 		unsigned int vertex_count, int time_step);
 
 	void writeIntegerBuffer(const char *output_variable_name,
@@ -53,9 +54,11 @@ private:
 public:
 
 	Threejs_export(const char *filename, int number_of_time_steps_in,
-		cmzn_streaminformation_scene_io_data_type mode_in) :
+		cmzn_streaminformation_scene_io_data_type mode_in,
+		int morphVerticesIn, int morphColoursIn, int morphNormalsIn) :
 		filename(duplicate_string(filename)), number_of_time_steps(number_of_time_steps_in),
-		mode(mode_in)
+		mode(mode_in), morphVertices(morphVerticesIn), morphColours(morphColoursIn),
+		morphNormals(morphNormalsIn)
 	{
 		verticesMorphString.clear();
 		colorsMorphString.clear();

@@ -240,6 +240,78 @@ ZINC_API int cmzn_streaminformation_scene_get_number_of_resources_required(
 ZINC_API int cmzn_streaminformation_scene_set_overwrite_scene_graphics(
 	cmzn_streaminformation_scene_id streaminformation, int overwrite);
 
+/**
+ * Get the flag which specifies vertices should be output for each time step;
+ * The default value is 1;
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @return  1 if vertices are set to be output for each time step, otherwise 0.
+ */
+ZINC_API int cmzn_streaminformation_scene_get_output_time_dependent_vertices(
+	cmzn_streaminformation_scene_id streaminformation);
+
+/**
+ * Set the flag which specifies vertices should be output for each time step;
+ * If this flag is set to 1, vertices will be output at times determined by
+ * initial_time, finish_time and number_of_time_steps set by the caller.
+ * The default value is 1;
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @param outputTimeDependentVertices  value to be assigned to the flag.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_scene_set_output_time_dependent_vertices(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputTimeDependentVertices);
+
+/**
+ * Get the flag which specifies colours should be output for each time step;
+ * The default value is 0;
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @return  1 if colours are set to be output for each time step, otherwise 0.
+ */
+ZINC_API int cmzn_streaminformation_scene_get_output_time_dependent_colours(
+	cmzn_streaminformation_scene_id streaminformation);
+
+/**
+ * Set the flag which specifies colours should be output for each time step;
+ * If this flag is set to 1, colours will be output at times determined by
+ * initial_time, finish_time and number_of_time_steps set by the caller.
+ * The default value is 0;
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @param outputTimeDependentColours  value to be assigned to the flag.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_scene_set_output_time_dependent_colours(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputTimeDependentColours);
+
+/**
+ * Get the flag which specifies normals should be output for each time step;
+ * The default value is 0;
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @return  1 if normals are set to be output for each time step, otherwise 0.
+ */
+ZINC_API int cmzn_streaminformation_scene_get_output_time_dependent_normals(
+	cmzn_streaminformation_scene_id streaminformation);
+
+/**
+ * Set the flag which specifies normals should be output for each time step;
+ * If this flag is set to 1, normals will be output at times determined by
+ * initial_time, finish_time and number_of_time_steps set by the caller.
+ * The default value is 0;
+ *
+ * @param streaminformation  The streaminformation_scene to modify.
+ * @param outputTimeDependentNormals  value to be assigned to the flag.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_streaminformation_scene_set_output_time_dependent_normals(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputTimeDependentNormals);
+
 #ifdef __cplusplus
 }
 #endif

@@ -539,9 +539,12 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				}
 				if (number_of_time_steps > 1)
 				{
-					writeMorphVertexBuffer("vertices", &verticesMorphString,
-						position_vertex_buffer, position_values_per_vertex,
-						position_vertex_count, time_step);
+					if (morphVertices)
+					{
+						writeMorphVertexBuffer("vertices", &verticesMorphString,
+							position_vertex_buffer, position_values_per_vertex,
+							position_vertex_count, time_step);
+					}
 				}
 			}
 
@@ -569,8 +572,11 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 					}
 					if (number_of_time_steps > 1)
 					{
-						writeMorphIntegerBuffer("colors", &colorsMorphString,
-							hex_colours, 1, colour_vertex_count, time_step);
+						if (morphColours)
+						{
+							writeMorphIntegerBuffer("colors", &colorsMorphString,
+								hex_colours, 1, colour_vertex_count, time_step);
+						}
 					}
 					delete[] hex_colours;
 					if (colour_buffer)
@@ -620,9 +626,12 @@ int Threejs_export::exportGraphicsObject(struct GT_object *object, int time_step
 				}
 				if (number_of_time_steps > 1)
 				{
-					writeMorphVertexBuffer("normals", &normalMorphString,
-						normal_buffer, normal_values_per_vertex,
-						normal_vertex_count, time_step);
+					if (morphNormals)
+					{
+						writeMorphVertexBuffer("normals", &normalMorphString,
+							normal_buffer, normal_values_per_vertex,
+							normal_vertex_count, time_step);
+					}
 				}
 			}
 /*
