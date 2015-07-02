@@ -45,7 +45,11 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 					streaminformation_scene->getInitialTime(),
 					streaminformation_scene->getFinishTime(),
 					streaminformation_scene->getIODataType(),
-					&number_of_entries, &output_string);
+					&number_of_entries, &output_string,
+					streaminformation_scene->getOutputTimeDependentVertices(),
+					streaminformation_scene->getOutputTimeDependentColours(),
+					streaminformation_scene->getOutputTimeDependentNormals()
+				);
 				cmzn_scenefilter_destroy(&scenefilter);
 			}
 			else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
@@ -412,6 +416,72 @@ int cmzn_streaminformation_scene_set_overwrite_scene_graphics(
 	if (streaminformation)
 	{
 		streaminformation->setOverwriteSceneGraphics(overwrite);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_streaminformation_scene_get_output_time_dependent_vertices(
+	cmzn_streaminformation_scene_id streaminformation)
+{
+	if (streaminformation)
+	{
+		return streaminformation->getOutputTimeDependentVertices();
+	}
+	return 0;
+}
+
+int cmzn_streaminformation_scene_set_output_time_dependent_vertices(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputTimeDependentVertices)
+{
+	if (streaminformation)
+	{
+		streaminformation->setOutputTimeDependentVertices(outputTimeDependentVertices);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_streaminformation_scene_get_output_time_dependent_colours(
+	cmzn_streaminformation_scene_id streaminformation)
+{
+	if (streaminformation)
+	{
+		return streaminformation->getOutputTimeDependentColours();
+	}
+	return 0;
+}
+
+int cmzn_streaminformation_scene_set_output_time_dependent_colours(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputTimeDependentColours)
+{
+	if (streaminformation)
+	{
+		streaminformation->setOutputTimeDependentColours(outputTimeDependentColours);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_streaminformation_scene_get_output_time_dependent_normals(
+	cmzn_streaminformation_scene_id streaminformation)
+{
+	if (streaminformation)
+	{
+		return streaminformation->getOutputTimeDependentNormals();
+	}
+	return 0;
+}
+
+int cmzn_streaminformation_scene_set_output_time_dependent_normals(
+	cmzn_streaminformation_scene_id streaminformation,
+	int outputTimeDependentNormals)
+{
+	if (streaminformation)
+	{
+		streaminformation->setOutputTimeDependentNormals(outputTimeDependentNormals);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;

@@ -128,6 +128,38 @@ public:
 			overwrite);
 	}
 
+	int getOutputTimeDependentVertices()
+	{
+		return cmzn_streaminformation_scene_get_output_time_dependent_vertices(getDerivedId());
+	}
+
+	int setOutputTimeDependentVertices(int outputTimeDependentVertices)
+	{
+		return cmzn_streaminformation_scene_set_output_time_dependent_vertices(getDerivedId(),
+			outputTimeDependentVertices);
+	}
+
+	int getOutputTimeDependentColours()
+	{
+		return cmzn_streaminformation_scene_get_output_time_dependent_colours(getDerivedId());
+	}
+
+	int setOutputTimeDependentColours(int outputTimeDependentColours)
+	{
+		return cmzn_streaminformation_scene_set_output_time_dependent_colours(getDerivedId(),
+			outputTimeDependentColours);
+	}
+
+	int getOutputTimeDependentNormals()
+	{
+		return cmzn_streaminformation_scene_get_output_time_dependent_normals(getDerivedId());
+	}
+
+	int setOutputTimeDependentNormals(int outputTimeDependentNormals)
+	{
+		return cmzn_streaminformation_scene_set_output_time_dependent_normals(getDerivedId(),
+				outputTimeDependentNormals);
+	}
 };
 
 inline StreaminformationScene Streaminformation::castScene()

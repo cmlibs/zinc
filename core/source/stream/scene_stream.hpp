@@ -26,7 +26,8 @@ public:
 		scenefilter(0), numberOfTimeSteps(0), initialTime(0.0), finishTime(0.0),
 		format(CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_INVALID),
 		data_type(CMZN_STREAMINFORMATION_SCENE_IO_DATA_TYPE_COLOUR),
-		overwriteSceneGraphics(0)
+		overwriteSceneGraphics(0),  outputTimeDependentVertices(1),
+		outputTimeDependentColours(0), outputTimeDependentNormals(0)
 	{
 		cmzn_scene_access(scene_in);
 	}
@@ -136,6 +137,39 @@ public:
 		return overwriteSceneGraphics;
 	}
 
+	int getOutputTimeDependentVertices()
+	{
+		return outputTimeDependentVertices;
+	}
+
+	int setOutputTimeDependentVertices(int outputTimeDependentVerticesIn)
+	{
+		outputTimeDependentVertices = outputTimeDependentVerticesIn;
+		return CMZN_OK;
+	}
+
+	int getOutputTimeDependentColours()
+	{
+		return outputTimeDependentColours;
+	}
+
+	int setOutputTimeDependentColours(int outputTimeDependentColoursIn)
+	{
+		outputTimeDependentColours = outputTimeDependentColoursIn;
+		return CMZN_OK;
+	}
+
+	int getOutputTimeDependentNormals()
+	{
+		return outputTimeDependentNormals;
+	}
+
+	int setOutputTimeDependentNormals(int outputTimeDependentNormalsIn)
+	{
+		outputTimeDependentNormals = outputTimeDependentNormalsIn;
+		return CMZN_OK;
+	}
+
 private:
 	cmzn_scene_id scene;
 	cmzn_scenefilter_id scenefilter;
@@ -144,6 +178,7 @@ private:
 	enum cmzn_streaminformation_scene_io_format format;
 	enum cmzn_streaminformation_scene_io_data_type data_type;
 	int overwriteSceneGraphics;
+	int outputTimeDependentVertices, outputTimeDependentColours, outputTimeDependentNormals;
 };
 
 

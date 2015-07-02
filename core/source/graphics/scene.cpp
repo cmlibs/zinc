@@ -3575,13 +3575,14 @@ int Scene_render_threejs(cmzn_scene_id scene,
 	cmzn_scenefilter_id scenefilter, const char *file_prefix,
 	int number_of_time_steps, double begin_time, double end_time,
 	cmzn_streaminformation_scene_io_data_type export_mode,
-	int *number_of_entries, std::string **output_string)
+	int *number_of_entries, std::string **output_string,
+	 int morphVertices, int morphColours, int morphNormals)
 {
 	if (scene)
 	{
 		Render_graphics_opengl *renderer = Render_graphics_opengl_create_threejs_renderer(
 			file_prefix, number_of_time_steps, begin_time, end_time, export_mode, number_of_entries,
-			output_string);
+			output_string, morphVertices, morphColours, morphNormals);
 		renderer->Scene_compile(scene, scenefilter);
 		delete renderer;
 
