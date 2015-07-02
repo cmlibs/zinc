@@ -16,6 +16,7 @@
 #include "types/fieldcacheid.h"
 #include "types/fieldid.h"
 #include "types/fieldmoduleid.h"
+#include "types/fieldsmoothingid.h"
 #include "types/nodeid.h"
 
 #include "zinc/zincsharedobject.h"
@@ -370,6 +371,17 @@ ZINC_API enum cmzn_field_value_type cmzn_field_get_value_type(cmzn_field_id fiel
  */
 ZINC_API bool cmzn_field_is_defined_at_location(cmzn_field_id field,
 	cmzn_fieldcache_id cache);
+
+/**
+ * Smooth the field according to the supplied smoothing specification.
+ *
+ * @param field  The field to modify. Only interpolated finite element fields
+ * are supported by this function.
+ * @param fieldsmoothing  Specification of smoothing algorithm and parameters.
+ * @return  Status CMZN_OK on success, otherwise any other error code.
+ */
+ZINC_API int cmzn_field_smooth(cmzn_field_id field,
+	cmzn_fieldsmoothing_id fieldsmoothing);
 
 /**
  * Returns a new handle to the iterator with reference count incremented.

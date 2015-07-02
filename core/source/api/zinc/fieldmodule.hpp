@@ -112,6 +112,7 @@ class FieldImagefilterThreshold;
 class FieldSceneviewerProjection;
 class Fieldcache;
 class Fieldmodulenotifier;
+class Fieldsmoothing;
 class Timekeeper;
 class Optimisation;
 class Sceneviewer;
@@ -193,6 +194,8 @@ public:
 	}
 
 	Fieldmodulenotifier createFieldmodulenotifier();
+
+	inline Fieldsmoothing createFieldsmoothing();
 
 	Elementbasis createElementbasis(int dimension, enum Elementbasis::FunctionType functionType)
 	{

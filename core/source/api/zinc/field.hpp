@@ -36,6 +36,7 @@ class FieldNodeGroup;
 class FieldStoredMeshLocation;
 class FieldStoredString;
 class Fieldmodule;
+class Fieldsmoothing;
 
 class Field
 {
@@ -245,6 +246,8 @@ public:
 		const Fieldcache& cache, int valuesCount, double *valuesOut);
 
 	inline bool isDefinedAtLocation(const Fieldcache& cache);
+
+	inline int smooth(const Fieldsmoothing& fieldsmoothing);
 
 	// casting functions: must check isValid()
 	inline FieldComponent castComponent();

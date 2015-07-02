@@ -31,6 +31,7 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldmeshoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldnodesetoperators.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsceneviewerprojection.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsmoothing.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldsubobjectgroup.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtime.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/fieldtrigonometry.hpp
