@@ -49,6 +49,7 @@
 #include "zinc/fieldtrigonometry.hpp"
 #include "zinc/field.hpp"
 #include "zinc/fieldcache.hpp"
+#include "zinc/fieldsmoothing.hpp"
 #include "zinc/streamimage.hpp"
 %}
 

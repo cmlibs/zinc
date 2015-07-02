@@ -73,6 +73,7 @@
 #include "zinc/fieldtrigonometry.hpp"
 #include "zinc/fieldvectoroperators.hpp"
 #include "zinc/fieldmodule.hpp"
+#include "zinc/fieldsmoothing.hpp"
 #include "zinc/optimisation.hpp"
 
 static void fieldmoduleCallbackToPython(cmzn_fieldmoduleevent_id fieldmoduleevent, void *user_data)
