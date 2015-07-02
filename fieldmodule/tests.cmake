@@ -21,6 +21,7 @@ SET(${CURRENT_TEST}_SRC
 	${CURRENT_TEST}/fieldlogicaloperators.cpp
 	${CURRENT_TEST}/fieldmeshoperators.cpp
 	${CURRENT_TEST}/fieldmodulenotifier.cpp
+	${CURRENT_TEST}/fieldsmoothing.cpp
 	${CURRENT_TEST}/finiteelement.cpp
 	${CURRENT_TEST}/nodesandelements.cpp
 	${CURRENT_TEST}/timesequence.cpp
