@@ -363,7 +363,7 @@ literal:
                         /* take only those things in the class */
                         if (flags & SUPPRESS) {
                                 n = 0;
-                                while (ccltab[(unsigned int) *fp->_ptr]) {
+                                while (ccltab[(unsigned char) *fp->_ptr]) {
                                         n++, fp->_cnt--, fp->_ptr++;
                                         if (--width == 0)
                                                 break;
@@ -378,7 +378,7 @@ literal:
                         } else {
                                 p0 = va_arg(ap, char *);
                                 p = p0;
-                                while (ccltab[(unsigned int) *fp->_ptr]) {
+                                while (ccltab[(unsigned char) *fp->_ptr]) {
                                         fp->_cnt--;
                                         *p++ = *fp->_ptr++;
                                         if (--width == 0)
