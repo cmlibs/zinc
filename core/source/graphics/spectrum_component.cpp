@@ -237,8 +237,8 @@ Allocates memory and assigns fields for a struct cmzn_spectrumcomponent.
 		component->maximum = 1;
 		component->fix_maximum = false;
 		component->fix_minimum = false;
-		component->extend_above = 0;
-		component->extend_below = 0;
+		component->extend_above = 1;
+		component->extend_below = 1;
 		component->min_value = 0;
 		component->max_value = 1;
 		component->colour_mapping_type = CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW;
