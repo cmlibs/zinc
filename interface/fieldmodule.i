@@ -48,6 +48,7 @@
 %import "optimisation.i"
 %import "field.i"
 %import "fieldcache.i"
+%import "fieldsmoothing.i"
 
 %{
 #include "zinc/fieldalias.hpp"

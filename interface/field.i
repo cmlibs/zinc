@@ -20,10 +20,11 @@
 
 %import "differentialoperator.i"
 %import "element.i"
-%import "streamimage.i"
-%import "fieldmodule.i"
 %import "fieldcache.i"
+%import "fieldmodule.i"
+%import "fieldsmoothing.i"
 %import "region.i"
+%import "streamimage.i"
 
 %{
 #include "zinc/fieldalias.hpp"
