@@ -237,7 +237,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 							nodal_values[4 * k + 3] = 0.0; // nodal_values[4 * k + 1] * nodal_values[4 * k + 2];
 						}
 						set_FE_nodal_field_FE_value_values(destination_fe_fields[j],
-							nodes[i], nodal_values, &number_of_values);
+							nodes[i], nodal_values, &number_of_values, /*time*/0.0);
 					}
 					else
 					{
@@ -347,7 +347,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 								if (node)
 								{
 									set_FE_nodal_field_FE_value_values(destination_fe_fields[j],
-										node, values, &number_of_values);
+										node, values, &number_of_values, /*time*/0.0);
 									if (destination_fe_nodeset->merge_FE_node(node))
 									{
 										nodes[i] = node;
@@ -372,7 +372,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 						else
 						{
 							set_FE_nodal_field_FE_value_values(destination_fe_fields[j],
-								nodes[i], values, &number_of_values);
+								nodes[i], values, &number_of_values, /*time*/0.0);
 						}
 					}
 					else

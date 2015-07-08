@@ -14454,79 +14454,73 @@ int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 }
 
 int set_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node,FE_value *values,int *number_of_values)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the FE_values in values.
-Returns the number of FE_values copied in number_of_values.
-Assumes that values is set up with the correct number of FE_values.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
+	struct FE_node *node, FE_value *values, int *number_of_values, FE_value time)
 {
-	int return_code,number_of_components,number_of_versions,number_of_derivatives,
-		length,i,j,the_number_of_values=0;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-	FE_value *dest,*source;
-
-	ENTER(set_FE_nodal_field_FE_value_values);
-	return_code=0;
-	if (field&&node&&values&&(node->values_storage))
+	if (!(field && node && values && (node->values_storage)))
 	{
-		if (field->value_type==FE_VALUE_VALUE)
+		display_message(ERROR_MESSAGE,
+			"set_FE_nodal_field_FE_value_values.  Invalid arguments.  %p %p %p", field, node, values);
+		return 0;
+	}
+	if (field->value_type != FE_VALUE_VALUE)
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_nodal_field_FE_value_values.  Field %s is not FE_value type", field->name);
+		return 0;
+	}
+	FE_node_field *node_field = FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(
+		field, node->fields->node_field_list);
+	if (!node_field)
+	{
+		display_message(ERROR_MESSAGE,
+			"set_FE_nodal_field_FE_value_values.  Field %s is not define at node %d", field->name, node->cm_node_identifier);
+		return 0;
+	}
+	int time_index;
+	if (node_field->time_sequence)
+	{
+		if (!FE_time_sequence_get_index_for_time(node_field->time_sequence, time, &time_index))
 		{
-			if (NULL != (node_field =FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node->fields->node_field_list)))
+			display_message(ERROR_MESSAGE,
+				"set_FE_nodal_field_FE_value_values.  "
+				"Field %s does not store parameters at time %g", field->name, time);
+			return 0;
+		}
+	}
+	const int number_of_components = node_field->field->number_of_components;
+	int the_number_of_values = 0;
+	FE_value *source = values;
+	for (int i = 0; i < number_of_components; ++i)
+	{
+		FE_node_field_component &component = node_field->components[i];
+		const int number_of_versions = component.number_of_versions;
+		const int number_of_derivatives = component.number_of_derivatives;
+		const int length = (1 + number_of_derivatives)*number_of_versions;
+		if (node_field->time_sequence)
+		{
+			FE_value **destArray = (FE_value **)(node->values_storage + component.value);
+			for (int j = 0; j < length; ++j)
 			{
-				return_code=1;
-				number_of_components = node_field->field->number_of_components;
-				source = values;
-				for (i=0;i<number_of_components;i++)
-				{
-					j=0;
-					component = &(node_field->components[i]);
-					dest = (FE_value *)(node->values_storage + component->value);
-					number_of_versions = component->number_of_versions;
-					number_of_derivatives = component->number_of_derivatives;
-					length =(1+number_of_derivatives)*number_of_versions;
-					while (j<length)
-					{
-						*dest = *source;
-						j++;
-						dest++;
-						source++;
-					}
-					the_number_of_values += length;
-				}
-				*number_of_values = the_number_of_values;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,"set_FE_nodal_field_FE_value_values.  "
-					"Can't find field in node");
+				(*destArray)[time_index] = *source;
+				++destArray;
+				++source;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"set_FE_nodal_field_FE_value_values.  "
-				"field->value_type not FE_VALUE_VALUE");
+			FE_value *dest = (FE_value *)(node->values_storage + component.value);
+			for (int j = 0; j < length; ++j)
+			{
+				*dest = *source;
+				++dest;
+				++source;
+			}
 		}
+		the_number_of_values += length;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_nodal_field_FE_value_values.  "
-			"Invalid arguments.  %p %p %p",field,node,values);
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_field_FE_value_values */
+	*number_of_values = the_number_of_values;
+	return 1;
+}
 
 int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *node,
 	int arraySize, FE_value *values, int *valueExists, int valuesCount,
@@ -14596,102 +14590,6 @@ int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *no
 	}
 	return CMZN_OK;
 }
-
-int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
-	struct FE_node *node,FE_value *values,int *number_of_values,
-	FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 15 November 2001
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the FE_values in values.
-Returns the number of FE_values copied in number_of_values.
-Assumes that values is set up with the correct number of FE_values.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
-{
-	int return_code,number_of_components,number_of_versions,number_of_derivatives,
-		length,i,j,the_number_of_values, time_index;
-	FE_value *array,**dest,*source;
-	struct FE_node_field *node_field;
-	struct FE_node_field_component *component;
-
-	ENTER(set_FE_nodal_field_FE_value_values);
-	return_code = 0;
-	the_number_of_values = 0;
-	if (field&&node&&values&&(node->values_storage))
-	{
-		if (field->value_type==FE_VALUE_VALUE)
-		{
-			if (NULL != (node_field =FIND_BY_IDENTIFIER_IN_LIST(FE_node_field,field)(field,
-				node->fields->node_field_list)))
-			{
-				if ((node_field->time_sequence) &&
-					(FE_time_sequence_get_index_for_time(
-					node_field->time_sequence, time, &time_index)))
-				{
-					return_code=1;
-					number_of_components = node_field->field->number_of_components;
-					source = values;
-					for (i=0;(i<number_of_components)&&return_code;i++)
-					{
-						j=0;
-						component = &(node_field->components[i]);
-						dest = (FE_value **)(node->values_storage + component->value);
-						number_of_versions = component->number_of_versions;
-						number_of_derivatives = component->number_of_derivatives;
-						length =(1+number_of_derivatives)*number_of_versions;
-						while ((j<length) && return_code)
-						{
-							array = *dest;
-							array[time_index] = *source;
-							j++;
-							dest++;
-							source++;
-						}
-						the_number_of_values += length;
-					}
-					*number_of_values = the_number_of_values;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_FE_nodal_field_FE_values_at_time.  "
-						"Either the field does not depend on time or the specified time (%f) has not been defined.", time);
-					return_code = 0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_nodal_field_FE_values_at_time.  "
-					"Can't find field in node.");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_nodal_field_FE_values_at_time.  "
-				"field->value_type not FE_VALUE_VALUE");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_nodal_field_FE_values_at_time.  "
-			"Invalid arguments.  %p %p %p",field,node,values);
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_nodal_field_FE_values_at_time */
 
 int set_FE_nodal_field_float_values(struct FE_field *field,
 	struct FE_node *node,float *values, int *number_of_values)
@@ -30426,54 +30324,45 @@ If <field> is standard node based in <element>, returns the <fe_basis> used for
 
 int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
 	FE_value time, struct FE_field *element_count_fe_field)
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-Partner function to FE_element_smooth_FE_field.
-Divides the nodal first derivatives of <fe_field> at <time> in <node> by the
-corresponding integer from <element_count_fe_field>, then undefines
-<element_count_fe_field>.
-<node> is not a global object, as from FE_element_smooth_FE_field.
-==============================================================================*/
 {
-	enum FE_nodal_value_type type;
-	enum FE_nodal_value_type types[3] =
-		{FE_NODAL_D_DS1, FE_NODAL_D_DS2, FE_NODAL_D_DS3};
-	FE_value value;
-	int count, i, j, number_of_components, return_code, version;
+	int return_code;
 
-	ENTER(FE_node_smooth_FE_field);
-	if (node && fe_field && element_count_fe_field &&
-		(number_of_components = get_FE_field_number_of_components(fe_field)))
+	if (node && fe_field && element_count_fe_field)
 	{
+		const FE_nodal_value_type types[3] =
+			{FE_NODAL_D_DS1, FE_NODAL_D_DS2, FE_NODAL_D_DS3};
+		const int number_of_components = get_FE_field_number_of_components(fe_field);
+		FE_value value;
+		int count;
 		return_code = 1;
-		version = 0;
-		for (i = 0; (i < number_of_components) && return_code; i++)
+		for (int component = 0; (component < number_of_components) && return_code; ++component)
 		{
-			for (j = 0; (j < 3) && return_code; j++)
+			// Note: number of versions will eventually depend on value type
+			const int number_of_versions =
+				get_FE_node_field_component_number_of_versions(node, fe_field, component);
+			for (int j = 0; (j < 3) && return_code; j++)
 			{
-				type = types[j];
-				if (FE_nodal_value_version_exists(node, fe_field, /*component_number*/i,
-					version, type))
+				const FE_nodal_value_type type = types[j];
+				for (int version = 0; (version < number_of_versions) && return_code; ++version)
 				{
-					if (get_FE_nodal_FE_value_value(node, fe_field, /*component_number*/i,
-						version, type, time, &value) &&
-						get_FE_nodal_int_value(node, element_count_fe_field, /*component_number*/i,
-						version, type, time, &count))
+					if (FE_nodal_value_version_exists(node, fe_field, component, version, type))
 					{
-						if (0 < count)
+						if (get_FE_nodal_FE_value_value(node, fe_field, component, version, type, time, &value) &&
+							get_FE_nodal_int_value(node, element_count_fe_field, component, version, type, time, &count))
 						{
-							if (!set_FE_nodal_FE_value_value(node, fe_field, /*component_number*/i,
-								version, type, time, value / (FE_value)count))
+							if (0 < count)
 							{
-								return_code = 0;
+								if (!set_FE_nodal_FE_value_value(node, fe_field, component,
+									version, type, time, value / (FE_value)count))
+								{
+									return_code = 0;
+								}
 							}
 						}
-					}
-					else
-					{
-						return_code = 0;
+						else
+						{
+							return_code = 0;
+						}
 					}
 				}
 			}
@@ -30490,28 +30379,22 @@ corresponding integer from <element_count_fe_field>, then undefines
 			"FE_node_smooth_FE_field.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_node_smooth_FE_field */
+}
 
+/**
+ * Used by FE_element_smooth_FE_field.
+ * Adds <delta> to the identified quantity in <fe_field> and increments the
+ * integer counter for the corresponding quantity in <count_fe_field>.
+ */
 static int FE_node_field_component_accumulate_value(struct FE_node *node,
 	struct FE_field *fe_field, struct FE_field *count_fe_field,
 	int component_number, int version, enum FE_nodal_value_type type,
 	FE_value time, FE_value delta)
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
-
-DESCRIPTION :
-Used by FE_element_smooth_FE_field.
-Adds <delta> to the identified quantity in <fe_field> and increments the
-integer counter for the corresponding quantity in <count_fe_field>.
-==============================================================================*/
 {
 	FE_value value;
 	int int_value, return_code;
 
-	ENTER(FE_node_field_component_accumulate_value);
 	if (node && fe_field && count_fe_field && (0 <= component_number) &&
 		(component_number <= get_FE_field_number_of_components(fe_field)) &&
 		(0 <= version))
@@ -30540,55 +30423,81 @@ integer counter for the corresponding quantity in <count_fe_field>.
 			"FE_node_field_component_accumulate_value.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_node_field_component_accumulate_value */
+}
+
+class FE_element_accumulate_node_values
+{
+	FE_element *element;
+	Standard_node_to_element_map **standard_node_maps;
+	FE_node **copy_nodes;
+	FE_field *fe_field, *element_count_fe_field;
+	int component_number;
+	FE_value time;
+	FE_value *component_values;
+
+public:
+	FE_element_accumulate_node_values(FE_element *elementIn,
+			Standard_node_to_element_map **standard_node_mapsIn,
+			FE_node **copy_nodesIn, FE_field *fe_fieldIn, FE_field *element_count_fe_fieldIn,
+			int component_numberIn, FE_value timeIn, FE_value *component_valuesIn) :
+		element(elementIn),
+		standard_node_maps(standard_node_mapsIn),
+		copy_nodes(copy_nodesIn),
+		fe_field(fe_fieldIn),
+		element_count_fe_field(element_count_fe_fieldIn),
+		component_number(component_numberIn),
+		time(timeIn),
+		component_values(component_valuesIn)
+	{
+	}
+
+	/**
+	 * @param xiIndex  Element chart xi index starting at 0.
+	 * @param localNode1  Local node index into copy_nodes array for edge node 1.
+	 * @param localNode2  Local node index into copy_nodes array for edge node 2.
+	 */
+	void accumulate_edge(int xiIndex, int localNode1, int localNode2)
+	{
+		const int valueIndex =
+			(xiIndex == 0) ? 1 :
+			(xiIndex == 1) ? 2 :
+			(xiIndex == 2) ? 4 :
+			0;
+		if (valueIndex == 0)
+			return;
+		FE_value delta = this->component_values[localNode2] - this->component_values[localNode1];
+		for (int n = 0; n < 2; ++n)
+		{
+			const int localNode = (n == 0) ? localNode1 : localNode2;
+			Standard_node_to_element_map *standard_node_map = this->standard_node_maps[localNode];
+			FE_nodal_value_type derivativeType = Standard_node_to_element_map_get_nodal_value_type(standard_node_map, valueIndex);
+			if ((derivativeType == FE_NODAL_D_DS1) || (derivativeType == FE_NODAL_D_DS2) || (derivativeType == FE_NODAL_D_DS3))
+			{
+				int version = Standard_node_to_element_map_get_nodal_version(standard_node_map, valueIndex);
+				FE_node_field_component_accumulate_value(this->copy_nodes[localNode],
+					this->fe_field, this->element_count_fe_field, this->component_number,
+					version - 1, derivativeType, this->time, delta);
+			}
+		}
+	}
+};
 
 int FE_element_smooth_FE_field(struct FE_element *element,
 	struct FE_field *fe_field, FE_value time,
 	struct FE_field *element_count_fe_field,
 	struct LIST(FE_node) *copy_node_list)
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-For each node contributing to <fe_field> in <element> either its copy is found
-in <copy_node_list> or one is made and added to this list. The copy node will
-have <fe_field> defined on it in the same way as the original, plus the integer
-<element_count_fe_field> with the same number of components as <fe_field> for
-accumulating the number of elements each first derivative of <fe_field> is
-referenced by. The copy node starts with all derivatives set to zero.
-
-After making calls to this function for all the intended elements, call
-FE_node_smooth_FE_field for each node to divide the accumulated derivatives
-by the number of elements they are over and to undefine the
-<element_count_fe_field>.
-It is up to the calling funcion to merge the copied information into global
-elements and nodes.
-
-Sets all scale factors used for <fe_field> to 1.
-
-Notes:
-- Only works for "line" shapes with Hermite basis functions.
-- <element> shold not be global = not merged into an FE_region.
-- <fe_field> should be of type FE_VALUE_VALUE.
-- returns 1 without errors if fe_field is not defined on this element or the
-  element has no field information, or the field cannot be smoothed.
-- only handles 1 version at nodes.
-==============================================================================*/
 {
-	FE_value component_value[8], delta, value,
+	FE_value component_value[8], value,
 		xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int element_dimension, i, index, j, k, n, number_of_components,
-		number_of_nodes, number_of_values, return_code, version;
+		number_of_nodes, number_of_values, return_code;
 	struct FE_element_field *element_field;
 	struct FE_element_field_component *element_field_component;
 	struct FE_element_field_values *fe_element_field_values;
 	struct FE_node *copy_node[8], *node;
 	struct FE_node_field_creator *fe_node_field_creator;
 	struct LIST(FE_field) *fe_field_list;
-	struct Standard_node_to_element_map *node_to_element_map;
 
 	ENTER(FE_element_smooth_FE_field);
 	if (element && fe_field && element_count_fe_field && copy_node_list &&
@@ -30599,7 +30508,6 @@ Notes:
 			number_of_components))
 	{
 		return_code = 1;
-		version = 0;
 		/* work out if element has this fe_field defined and if it is a "square"
 			 shape */
 		if (element->information && element->fields &&
@@ -30625,9 +30533,10 @@ Notes:
 					for (n = 0; (n < number_of_nodes) && return_code; n++)
 					{
 						/* get the node_to_element_map and hence the node */
-						if ((node_to_element_map = element_field_component->map.
-							standard_node_based.node_to_element_maps[n]) &&
-							get_FE_element_node(element, node_to_element_map->node_index,
+						Standard_node_to_element_map *standard_node_map =
+							element_field_component->map.standard_node_based.node_to_element_maps[n];
+						if ((standard_node_map) &&
+							get_FE_element_node(element, standard_node_map->node_index,
 								&node) && node)
 						{
 							copy_node[n] =
@@ -30660,27 +30569,32 @@ Notes:
 											values[k] = 0.0;
 										}
 										if (!set_FE_nodal_field_FE_value_values(fe_field,
-											copy_node[n], values, &number_of_values))
+											copy_node[n], values, &number_of_values, time))
 										{
 											display_message(ERROR_MESSAGE,
 												"FE_element_smooth_FE_field.  Could clear node values");
 											return_code = 0;
 										}
 										DEALLOCATE(values);
-										/* restore the nodal values */
+										/* restore the nodal values, all versions */
 										for (j = 0; j < number_of_components; j++)
 										{
-											if (!(get_FE_nodal_FE_value_value(node,
-												fe_field, /*component_number*/j, version,
-												FE_NODAL_VALUE, time, &value) &&
-												set_FE_nodal_FE_value_value(copy_node[n],
-													fe_field, /*component_number*/j, version,
-													FE_NODAL_VALUE, time, value)))
+											const int number_of_versions =
+												get_FE_node_field_component_number_of_versions(node, fe_field, /*component*/j);
+											for (int v = 0; v < number_of_versions; ++v)
 											{
-												display_message(ERROR_MESSAGE,
-													"FE_element_smooth_FE_field.  "
-													"Could not copy node value");
-												return_code = 0;
+												if (!(get_FE_nodal_FE_value_value(node,
+													fe_field, /*component_number*/j, v,
+													FE_NODAL_VALUE, time, &value) &&
+													set_FE_nodal_FE_value_value(copy_node[n],
+														fe_field, /*component_number*/j, v,
+														FE_NODAL_VALUE, time, value)))
+												{
+													display_message(ERROR_MESSAGE,
+														"FE_element_smooth_FE_field.  "
+														"Could not copy node value");
+													return_code = 0;
+												}
 											}
 										}
 									}
@@ -30704,13 +30618,13 @@ Notes:
 								}
 							}
 							/* set unit scale factors */
-							if (return_code && node_to_element_map->scale_factor_indices)
+							if (return_code && standard_node_map->scale_factor_indices)
 							{
-								for (k = 0; (k < node_to_element_map->number_of_nodal_values) &&
+								for (k = 0; (k < standard_node_map->number_of_nodal_values) &&
 									return_code; k++)
 								{
 									if (0 <=
-										(index = node_to_element_map->scale_factor_indices[k]))
+										(index = standard_node_map->scale_factor_indices[k]))
 									{
 										if (!set_FE_element_scale_factor(element, index, 1.0))
 										{
@@ -30733,193 +30647,60 @@ Notes:
 					if (return_code)
 					{
 						/* get nodal values */
-						if (element_field_component->modify)
-						{
-							/* need to calculate field values so that modify function can
-								 make its changes */
-							fe_element_field_values = CREATE(FE_element_field_values)();
-							if (calculate_FE_element_field_values(element, fe_field, time,
-								/*calculate_derivatives*/0, fe_element_field_values,
-								/*top_level_element*/(struct FE_element *)NULL))
-							{
-								for (n = 0; (n < number_of_nodes) && return_code; n++)
-								{
-									xi[0] = (FE_value)(n & 1);
-									xi[1] = (FE_value)((n & 2)/2);
-									xi[2] = (FE_value)((n & 4)/4);
-									if (!calculate_FE_element_field(/*component_number*/i,
-										fe_element_field_values, xi, &(component_value[n]),
-										/*jacobian*/(FE_value *)NULL))
-									{
-										display_message(ERROR_MESSAGE,
-											"FE_element_smooth_FE_field.  "
-											"Could not calculate element field");
-										return_code = 0;
-									}
-								}
-							}
-							else
-							{
-								display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  "
-									"Could not get element field values");
-								return_code = 0;
-							}
-							DESTROY(FE_element_field_values)(&fe_element_field_values);
-						}
-						else
+						/* need to calculate field values so that optional modify function can
+								make its changes, and also to handle version mapping */
+						fe_element_field_values = CREATE(FE_element_field_values)();
+						if (calculate_FE_element_field_values(element, fe_field, time,
+							/*calculate_derivatives*/0, fe_element_field_values,
+							/*top_level_element*/(struct FE_element *)NULL))
 						{
 							for (n = 0; (n < number_of_nodes) && return_code; n++)
 							{
-								if (!get_FE_nodal_FE_value_value(copy_node[n],
-										fe_field, /*component_number*/i, version, FE_NODAL_VALUE,
-									time, &(component_value[n])))
+								xi[0] = (FE_value)(n & 1);
+								xi[1] = (FE_value)((n & 2)/2);
+								xi[2] = (FE_value)((n & 4)/4);
+								if (!calculate_FE_element_field(/*component_number*/i,
+									fe_element_field_values, xi, &(component_value[n]),
+									/*jacobian*/(FE_value *)NULL))
 								{
-									display_message(ERROR_MESSAGE, "FE_element_smooth_FE_field.  "
-										"Could not get node field component value");
+									display_message(ERROR_MESSAGE,
+										"FE_element_smooth_FE_field.  Could not calculate element field");
 									return_code = 0;
 								}
 							}
 						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_element_smooth_FE_field.  Could not get element field values");
+							return_code = 0;
+						}
+						DESTROY(FE_element_field_values)(&fe_element_field_values);
 					}
 					if (return_code)
 					{
-						/* d/ds1 between nodes 0 and 1 */
-						delta = component_value[1] - component_value[0];
-						if (!(FE_node_field_component_accumulate_value(copy_node[0],
-							fe_field, element_count_fe_field, /*component_number*/i,
-							version, FE_NODAL_D_DS1, time, delta) &&
-							FE_node_field_component_accumulate_value(copy_node[1],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS1, time, delta)))
-						{
-							return_code = 0;
-						}
+						Standard_node_to_element_map **standard_node_maps =
+							element_field_component->map.standard_node_based.node_to_element_maps;
+						FE_element_accumulate_node_values element_accumulate_node_values(element,
+							element_field_component->map.standard_node_based.node_to_element_maps,
+							copy_node, fe_field, element_count_fe_field, /*component_number*/i, time,
+							component_value);
+						element_accumulate_node_values.accumulate_edge(/*xi*/0, 0, 1);
 						if (1 < element_dimension)
 						{
-							/* d/ds1 between nodes 2 and 3 */
-							delta = component_value[3] - component_value[2];
-							if (!(FE_node_field_component_accumulate_value(copy_node[2],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS1, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[3],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS1, time, delta)))
+							element_accumulate_node_values.accumulate_edge(/*xi*/0, 2, 3);
+							element_accumulate_node_values.accumulate_edge(/*xi*/1, 0, 2);
+							element_accumulate_node_values.accumulate_edge(/*xi*/1, 1, 3);
+							if (2 < element_dimension)
 							{
-								return_code = 0;
-							}
-							/* d/ds2 between nodes 0 and 2 */
-							delta = component_value[2] - component_value[0];
-							if (!(FE_node_field_component_accumulate_value(copy_node[0],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS2, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[2],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS2, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds2 between nodes 1 and 3 */
-							delta = component_value[3] - component_value[1];
-							if (!(FE_node_field_component_accumulate_value(copy_node[1],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS2, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[3],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS2, time, delta)))
-							{
-								return_code = 0;
-							}
-						}
-						if (2 < element_dimension)
-						{
-							/* d/ds1 between nodes 4 and 5 */
-							delta = component_value[5] - component_value[4];
-							if (!(FE_node_field_component_accumulate_value(copy_node[4],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS1, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[5],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS1, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds1 between nodes 6 and 7 */
-							delta = component_value[7] - component_value[6];
-							if (!(FE_node_field_component_accumulate_value(copy_node[6],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS1, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[7],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS1, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds2 between nodes 4 and 6 */
-							delta = component_value[6] - component_value[4];
-							if (!(FE_node_field_component_accumulate_value(copy_node[4],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS2, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[6],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS2, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds2 between nodes 5 and 7 */
-							delta = component_value[7] - component_value[5];
-							if (!(FE_node_field_component_accumulate_value(copy_node[5],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS2, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[7],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS2, time, delta)))
-							{
-								return_code = 0;
-							}
-
-							/* d/ds3 between nodes 0 and 4 */
-							delta = component_value[4] - component_value[0];
-							if (!(FE_node_field_component_accumulate_value(copy_node[0],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS3, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[4],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS3, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds3 between nodes 1 and 5 */
-							delta = component_value[5] - component_value[1];
-							if (!(FE_node_field_component_accumulate_value(copy_node[1],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS3, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[5],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS3, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds3 between nodes 2 and 6 */
-							delta = component_value[6] - component_value[2];
-							if (!(FE_node_field_component_accumulate_value(copy_node[2],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS3, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[6],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS3, time, delta)))
-							{
-								return_code = 0;
-							}
-							/* d/ds3 between nodes 3 and 7 */
-							delta = component_value[7] - component_value[3];
-							if (!(FE_node_field_component_accumulate_value(copy_node[3],
-								fe_field, element_count_fe_field, /*component_number*/i,
-								version, FE_NODAL_D_DS3, time, delta) &&
-								FE_node_field_component_accumulate_value(copy_node[7],
-									fe_field, element_count_fe_field, /*component_number*/i,
-									version, FE_NODAL_D_DS3, time, delta)))
-							{
-								return_code = 0;
+								element_accumulate_node_values.accumulate_edge(/*xi*/0, 4, 5);
+								element_accumulate_node_values.accumulate_edge(/*xi*/0, 6, 7);
+								element_accumulate_node_values.accumulate_edge(/*xi*/1, 4, 6);
+								element_accumulate_node_values.accumulate_edge(/*xi*/1, 5, 7);
+								element_accumulate_node_values.accumulate_edge(/*xi*/2, 0, 4);
+								element_accumulate_node_values.accumulate_edge(/*xi*/2, 1, 5);
+								element_accumulate_node_values.accumulate_edge(/*xi*/2, 2, 6);
+								element_accumulate_node_values.accumulate_edge(/*xi*/2, 3, 7);
 							}
 						}
 					}

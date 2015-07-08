@@ -1114,21 +1114,21 @@ int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value 
 int get_FE_nodal_field_FE_value_values(struct FE_field *field,
 	struct FE_node *node,int *number_of_values,FE_value time, FE_value **values);
 
+/**
+ * Sets all FE_value-type parameters for field at node.
+ * Assumes that values is set up with the correct number of FE_values.
+ * Assumes that the node->values_storage has been allocated with enough
+ * memory to hold all the values.
+ * Assumes that the nodal fields have been set up, with information to
+ * place the values.
+ *
+ * @param time  The time to set values at, ignored for non-time-varying field.
+ * For a time-varying field, must exactly equal a time at which parameters are
+ * stored.
+ * @param number_of_values  On return equals the number of values set.
+ */
 int set_FE_nodal_field_FE_value_values(struct FE_field *field,
-	struct FE_node *node,FE_value *values, int *number_of_values);
-/*******************************************************************************
-LAST MODIFIED : 30 August 1999
-
-DESCRIPTION :
-Sets the node field's values storage (at node->values_storage, NOT
-field->values_storage) with the FE_values in values.
-Returns the number of FE_values copied in number_of_values.
-Assumes that values is set up with the correct number of FE_values.
-Assumes that the node->values_storage has been allocated with enough
-memory to hold all the values.
-Assumes that the nodal fields have been set up, with information to
-place the values.
-==============================================================================*/
+	struct FE_node *node, FE_value *values, int *number_of_values, FE_value time);
 
 /**
  * Assigns all parameters for the field at the node, taken from sparse arrays.
@@ -1159,23 +1159,6 @@ int FE_field_assign_node_parameters_sparse_FE_value(FE_field *field, FE_node *no
 	int componentsSize, int componentsOffset,
 	int derivativesSize, int derivativesOffset,
 	int versionsSize, int versionsOffset);
-
-int set_FE_nodal_field_FE_values_at_time(struct FE_field *field,
-  struct FE_node *node,FE_value *values,int *number_of_values,
-  FE_value time);
-/*******************************************************************************
-LAST MODIFIED : 15 November 2001
-
-DESCRIPTION :
-Sets The Node Field'S Values Storage (At Node->Values_Storage, Not
-Field->Values_Storage) With The Fe_Values In Values.
-Returns The Number Of Fe_Values Copied In Number_Of_Values.
-Assumes That Values Is Set Up With The Correct Number Of Fe_Values.
-Assumes That The Node->Values_Storage Has Been Allocated With Enough
-Memory To Hold All The Values.
-Assumes That The Nodal Fields Have Been Set Up, With Information To
-Place The Values.
-==============================================================================*/
 
 int set_FE_nodal_field_float_values(struct FE_field *field,
 	struct FE_node *node,float *values, int *number_of_values);
@@ -3883,51 +3866,49 @@ If <field> is standard node based in <element>, returns the <fe_basis> used for
 <component_number>.
 ==============================================================================*/
 
+/**
+ * Partner function to FE_element_smooth_FE_field.
+ * Divides the nodal first derivatives of <fe_field> at <time> in <node> by the
+ * corresponding integer from <element_count_fe_field>, then undefines
+ * <element_count_fe_field>.
+ * <node> is not a global object, as from FE_element_smooth_FE_field.
+ * Handles multiple versions.
+ */
 int FE_node_smooth_FE_field(struct FE_node *node, struct FE_field *fe_field,
 	FE_value time, struct FE_field *element_count_fe_field);
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
 
-DESCRIPTION :
-Partner function to FE_element_smooth_FE_field.
-Divides the nodal first derivatives of <fe_field> at <time> in <node> by the
-corresponding integer from <element_count_fe_field>, then undefines
-<element_count_fe_field>.
-<node> is not a global object, as from FE_element_smooth_FE_field.
-==============================================================================*/
-
+/**
+ * For each node contributing to <fe_field> in <element> either its copy is found
+ * in <copy_node_list> or one is made and added to this list. The copy node will
+ * have <fe_field> defined on it in the same way as the original, plus the integer
+ * <element_count_fe_field> with the same number of components as <fe_field> for
+ * accumulating the number of elements each first derivative of <fe_field> is
+ * referenced by. The copy node starts with all derivatives set to zero.
+ *
+ * After making calls to this function for all the intended elements, call
+ * FE_node_smooth_FE_field for each node to divide the accumulated derivatives
+ * by the number of elements they are over and to undefine the
+ * <element_count_fe_field>.
+ * It is up to the calling funcion to merge the copied information into global
+ * elements and nodes.
+ *
+ * Sets all scale factors used for <fe_field> to 1.
+ *
+ * Notes:
+ * Only works for "line" shapes with Hermite basis functions.
+ * - <element> shold not be global = not merged into an FE_region.
+ * - <fe_field> should be of type FE_VALUE_VALUE.
+ * - returns 1 without errors if fe_field is not defined on this element or the
+ *   element has no field information, or the field cannot be smoothed.
+ * - handles multiple versions at nodes.
+ * - may not handle obscure tensor product combinations such as linear in xi1,
+ *   cubic Hermite in xi2, since indexing of element parameters assumes order:
+ *   value d/dxi1 d/dxi2 d2/dxi1dxi2 d/dxi3 d2/dxi1dxi3 d2/dxi2dxi3 d3/dxi1dxi2dxi3
+ */
 int FE_element_smooth_FE_field(struct FE_element *element,
 	struct FE_field *fe_field, FE_value time,
 	struct FE_field *element_count_fe_field,
 	struct LIST(FE_node) *copy_node_list);
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
-
-DESCRIPTION :
-For each node contributing to <fe_field> in <element> either its copy is found
-in <copy_node_list> or one is made and added to this list. The copy node will
-have <fe_field> defined on it in the same way as the original, plus the integer
-<element_count_fe_field> with the same number of components as <fe_field> for
-accumulating the number of elements each first derivative of <fe_field> is
-referenced by. The copy node starts with all derivatives set to zero.
-
-After making calls to this function for all the intended elements, call
-FE_node_smooth_FE_field for each node to divide the accumulated derivatives
-by the number of elements they are over and to undefine the
-<element_count_fe_field>.
-It is up to the calling funcion to merge the copied information into global
-elements and nodes.
-
-Sets all scale factors used for <fe_field> to 1.
-
-Notes:
-- Only works for "line" shapes with Hermite basis functions.
-- <element> shold not be global = not merged into an FE_region.
-- <fe_field> should be of type FE_VALUE_VALUE.
-- returns 1 without errors if fe_field is not defined on this element or the
-  element has no field information, or the field cannot be smoothed.
-- only handles 1 version at nodes.
-==============================================================================*/
 
 int FE_element_shape_find_face_number_for_xi(struct FE_element_shape *shape,
 	FE_value *xi, int *face_number);

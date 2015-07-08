@@ -830,7 +830,7 @@ basis type, however every element type will be converted to a cubic.
 							get_data->field_cache, number_of_components, values)))
 					{
 						if (!set_FE_nodal_field_FE_value_values(get_data->fe_field,
-							get_data->nodes[i * 4 + j], values, &number_of_values))
+							get_data->nodes[i * 4 + j], values, &number_of_values, /*time*/0.0))
 						{
 							display_message(ERROR_MESSAGE,
 								"get_iges_entity_as_cubic_from_any_2D_element.  "
