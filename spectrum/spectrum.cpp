@@ -152,11 +152,19 @@ TEST(cmzn_spectrum_api, valid_args)
 	bool_result = cmzn_spectrumcomponent_is_colour_reverse(component1);
 	EXPECT_TRUE(bool_result);
 
+	// check on by default
+	bool_result = cmzn_spectrumcomponent_is_extend_above(component1);
+	EXPECT_TRUE(bool_result);
+
 	EXPECT_EQ(CMZN_OK, result = cmzn_spectrumcomponent_set_extend_above(
 		component1, false));
 
 	bool_result = cmzn_spectrumcomponent_is_extend_above(component1);
 	EXPECT_FALSE(bool_result);
+
+	// check on by default
+	bool_result = cmzn_spectrumcomponent_is_extend_below(component1);
+	EXPECT_TRUE(bool_result);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_spectrumcomponent_set_extend_below(component1, false));
 
@@ -258,15 +266,19 @@ TEST(cmzn_spectrum_api, valid_args_cpp)
 	bool_result = component1.isColourReverse();
 	EXPECT_TRUE(bool_result);
 
+	// check on by default
+	bool_result = component1.isExtendAbove();
+	EXPECT_TRUE(bool_result);
 	result = component1.setExtendAbove(false);
 	EXPECT_EQ(CMZN_OK, result);
-
 	bool_result = component1.isExtendAbove();
 	EXPECT_FALSE(bool_result);
 
+	// check on by default
+	bool_result = component1.isExtendBelow();
+	EXPECT_TRUE(bool_result);
 	result = component1.setExtendBelow(false);
 	EXPECT_EQ(CMZN_OK, result);
-
 	bool_result = component1.isExtendBelow();
 	EXPECT_FALSE(bool_result);
 
