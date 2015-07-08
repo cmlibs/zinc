@@ -30679,8 +30679,6 @@ int FE_element_smooth_FE_field(struct FE_element *element,
 					}
 					if (return_code)
 					{
-						Standard_node_to_element_map **standard_node_maps =
-							element_field_component->map.standard_node_based.node_to_element_maps;
 						FE_element_accumulate_node_values element_accumulate_node_values(element,
 							element_field_component->map.standard_node_based.node_to_element_maps,
 							copy_node, fe_field, element_count_fe_field, /*component_number*/i, time,
