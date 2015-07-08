@@ -530,9 +530,9 @@ ZINC_API int cmzn_spectrumcomponent_set_colour_reverse(
 	cmzn_spectrumcomponent_id component, bool reverse);
 
 /**
- * Get the extend_above flag of a spectrum component, an extend above spectrum component
- * will have the spectrum component colour rendered even when field value exceeds
- * spectrum maximum range.
+ * Get the 'extend above' flag of a spectrum component, which controls
+ * whether values above the maximum are rendered for this component.
+ * @see cmzn_spectrumcomponent_set_extend_above
  *
  * @param component  Handle to the zinc spectrum component.
  * @return  true if spectrum component extends above, false if
@@ -542,9 +542,11 @@ ZINC_API bool cmzn_spectrumcomponent_is_extend_above(
 	cmzn_spectrumcomponent_id component);
 
 /**
- * Set the extend_above flag of a spectrum component, an extend_above
- * spectrum component will have the colour rendered even when field value exceeds
- * spectrum maximum range.
+ * Set the 'extend above' flag of a spectrum component.
+ * When on (true), values above the maximum are rendered with the same colour
+ * as the maximum value. When off, no colour is set for this component for
+ * values above the maximum value.
+ * By default, extend above is on (true).
  *
  * @param component  Handle to the zinc spectrum component.
  * @param extend_above  Value to be set to the zinc spectrum component.
@@ -555,9 +557,9 @@ ZINC_API int cmzn_spectrumcomponent_set_extend_above(
 	cmzn_spectrumcomponent_id component, bool extend_above);
 
 /**
- * Get the extend_below flag of a spectrum component, an extend below spectrum component
- * will have the spectrum component colour rendered even when field value is below
- * spectrum minimum range.
+ * Get the 'extend below' flag of a spectrum component, which controls
+ * whether values below the minimum are rendered for this component.
+ * @see cmzn_spectrumcomponent_set_extend_below
  *
  * @param component  Handle to the zinc spectrum component.
  * @return  true if spectrum component extends below, false if
@@ -567,9 +569,11 @@ ZINC_API bool cmzn_spectrumcomponent_is_extend_below(
 	cmzn_spectrumcomponent_id component);
 
 /**
- * Set the extend_below flag of a spectrum component, an extend below spectrum component
- * will have the spectrum component colour rendered even when field value is below
- * spectrum minimum range.
+ * Set the 'extend below' flag of a spectrum component.
+ * When on (true), values below the minimum are rendered with the same colour
+ * as the minimum value. When off, no colour is set for this component for
+ * values below the minimum value.
+ * By default, extend below is on (true).
  *
  * @param component  Handle to the zinc spectrum component.
  * @param extend_below  Value to be set to the zinc spectrum component.
