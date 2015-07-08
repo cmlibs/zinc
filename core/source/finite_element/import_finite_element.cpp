@@ -1419,42 +1419,20 @@ static struct FE_node *read_FE_node(struct IO_stream *input_file,
 											}
 											if (return_code)
 											{
-												if (time_index)
+												return_code = set_FE_nodal_field_FE_value_values(field, node,
+													values, &length, (time_index) ? time_index->time : 0.0);
+												if (return_code)
 												{
-													return_code = set_FE_nodal_field_FE_values_at_time(field, node,
-														values, &length, time_index->time);
-													if (return_code)
+													if (length != number_of_values)
 													{
-														if (length != number_of_values)
-														{
-															location = IO_stream_get_location_string(input_file);
-															display_message(ERROR_MESSAGE,
-																"node %d field '%s' took %d values from %d"
-																" expected.  %s", node_number,
-																get_FE_field_name(field), length,
-																number_of_values, location);
-															DEALLOCATE(location);
-															return_code = 0;
-														}
-													}
-												}
-												else
-												{
-													return_code = set_FE_nodal_field_FE_value_values(
-														field, node, values, &length);
-													if (return_code)
-													{
-														if (length != number_of_values)
-														{
-															location = IO_stream_get_location_string(input_file);
-															display_message(ERROR_MESSAGE,
-																"node %d field '%s' took %d values from %d"
-																" expected.  %s", node_number,
-																get_FE_field_name(field), length,
-																number_of_values, location);
-															DEALLOCATE(location);
-															return_code = 0;
-														}
+														location = IO_stream_get_location_string(input_file);
+														display_message(ERROR_MESSAGE,
+															"node %d field '%s' took %d values from %d"
+															" expected.  %s", node_number,
+															get_FE_field_name(field), length,
+															number_of_values, location);
+														DEALLOCATE(location);
+														return_code = 0;
 													}
 												}
 											}

@@ -3606,21 +3606,12 @@ Must call FE_region_smooth_FE_node for copy_node_list afterwards.
 
 int FE_region_smooth_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field, FE_value time)
-/*******************************************************************************
-LAST MODIFIED : 29 April 2003
-
-DESCRIPTION :
-Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_region_smooth_FE_field);
+	int return_code = 1;
 	if (fe_region && fe_field)
 	{
 		if (IS_OBJECT_IN_LIST(FE_field)(fe_field, fe_region->fe_field_list))
 		{
-			return_code = 1;
 			// use highest dimension non-empty element list
 			int dimension = FE_region_get_highest_dimension(fe_region);
 			if (dimension)
@@ -3632,7 +3623,7 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 				smooth_element_data.fe_field = fe_field;
 				/* create a field to store an integer value per component of fe_field */
 				smooth_element_data.element_count_fe_field =
-					CREATE(FE_field)("count", fe_region);
+					CREATE(FE_field)("cmzn_smooth_element_count", fe_region);
 				set_FE_field_number_of_components(
 					smooth_element_data.element_count_fe_field,
 					get_FE_field_number_of_components(fe_field));
@@ -3678,12 +3669,10 @@ Smooths node-based <fe_field> over its nodes and elements in <fe_region>.
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_region_smooth_FE_field.  Invalid argument(s)");
-		return_code = 0;;
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_region_smooth_FE_field */
+}
 
 struct FE_time_sequence *FE_region_get_FE_time_sequence_matching_series(
 	struct FE_region *fe_region, int number_of_times, const FE_value *times)
