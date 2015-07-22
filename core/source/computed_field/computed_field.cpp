@@ -2917,10 +2917,7 @@ char *cmzn_field_get_name(cmzn_field_id field)
 int cmzn_field_set_name(struct Computed_field *field, const char *name)
 {
 	int return_code;
-
-	ENTER(cmzn_field_set_name);
-	// GRC temp disable '-'
-	if (field && name && (0 == strchr(name, '-')))
+	if (field && name)
 	{
 		return_code = 1;
 		cmzn_set_cmzn_field *manager_field_list = 0;
