@@ -1118,3 +1118,96 @@ TEST(ZincFieldFiniteElement, issue_3892_temporary_element_parents)
 	EXPECT_EQ(OK, result = isExteriorField.evaluateReal(cache, 1, &isExteriorValue));
 	EXPECT_DOUBLE_EQ(1.0, isExteriorValue);
 }
+
+TEST(ZincFieldFiniteElement, get_setNodeParameters)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement feField = zinc.fm.createFieldFiniteElement(3);
+	EXPECT_TRUE(feField.isValid());
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+	Nodetemplate nodetemplate = nodeset.createNodetemplate();
+	EXPECT_EQ(OK, nodetemplate.defineField(feField));
+	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 2));
+	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_VALUE, 3));
+	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_D_DS1, 1));
+	EXPECT_EQ(OK, nodetemplate.setValueNumberOfVersions(feField, 1, Node::VALUE_LABEL_D_DS1, 2));
+
+	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 3, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
+
+	// currently restricted to same number of versions for all derivatives of component
+	// hence get the following get as many versions as for VALUE
+	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 1, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, 2, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(2, nodetemplate.getValueNumberOfVersions(feField, 3, Node::VALUE_LABEL_D_DS1));
+	EXPECT_EQ(3, nodetemplate.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_D_DS1));
+
+	Fieldcache cache = zinc.fm.createFieldcache();
+	EXPECT_TRUE(cache.isValid());
+
+	Node node = nodeset.createNode(-1, nodetemplate);
+	EXPECT_TRUE(node.isValid());
+	EXPECT_EQ(OK, cache.setNode(node));
+
+	// set/get all components
+
+	const double valuesIn1[3] = { 2, 3, 4 };
+	double valuesOut1[3];
+	const double valuesIn2[3] = { 1, 6, 5 };
+	double valuesOut2[3];
+	const double valuesIn3[3] = { 7, 8, 9 };
+	double valuesOut3[3];
+	const double derivativesIn1[3] = { 2.1, 3.2, 4.3 };
+	double derivativesOut1[3];
+	const double derivativesIn2[3] = { 1.0, 6.7, 5.8 };
+	double derivativesOut2[3];
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, valuesIn1));
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 2, 3, valuesIn2));
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 3, 3, valuesIn3));
+	EXPECT_EQ(ERROR_NOT_FOUND, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 4, 3, valuesIn3));
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 1, 3, derivativesIn1));
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 2, 3, derivativesIn2));
+
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 1, 3, valuesOut1));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 2, 3, valuesOut2));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_VALUE, 3, 3, valuesOut3));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 1, 3, derivativesOut1));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, -1, Node::VALUE_LABEL_D_DS1, 2, 3, derivativesOut2));
+	EXPECT_DOUBLE_EQ(valuesIn1[0], valuesOut1[0]);
+	EXPECT_DOUBLE_EQ(valuesIn1[1], valuesOut1[1]);
+	EXPECT_DOUBLE_EQ(valuesIn1[2], valuesOut1[2]);
+	EXPECT_DOUBLE_EQ(valuesIn2[0], valuesOut2[0]);
+	EXPECT_DOUBLE_EQ(valuesIn2[1], valuesOut2[1]);
+	EXPECT_DOUBLE_EQ(valuesIn2[2], valuesOut2[2]);
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[0]);
+	EXPECT_DOUBLE_EQ(valuesIn3[1], valuesOut3[1]);
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[2]);
+	EXPECT_DOUBLE_EQ(derivativesIn1[0], derivativesOut1[0]);
+	EXPECT_DOUBLE_EQ(derivativesIn1[1], derivativesOut1[1]);
+	EXPECT_DOUBLE_EQ(derivativesIn1[2], derivativesOut1[2]);
+	EXPECT_DOUBLE_EQ(derivativesIn2[0], derivativesOut2[0]);
+	// these values should be zero, but are actually stored due to number of versions
+	// being same for all value types in component. Change once fixed
+	EXPECT_DOUBLE_EQ(derivativesIn2[1], derivativesOut2[1]);
+	EXPECT_DOUBLE_EQ(derivativesIn2[2], derivativesOut2[2]);
+
+	// set/get individual components
+
+	const double valueIn1 = 2.34;
+	double valueOut1;
+	const double valueIn2 = 3.45;
+	double valueOut2;
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 1, 1, &valueIn1));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 1, 1, &valueOut1));
+	EXPECT_DOUBLE_EQ(valueIn1, valueOut1);
+	// test invalid version:
+	EXPECT_EQ(ERROR_NOT_FOUND, feField.setNodeParameters(cache, 1, Node::VALUE_LABEL_VALUE, 3, 1, &valueIn1));
+	EXPECT_EQ(OK, feField.setNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 3, 1, &valueIn2));
+	EXPECT_EQ(OK, feField.getNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 3, 1, &valueOut2));
+	EXPECT_DOUBLE_EQ(valueIn2, valueOut2);
+}
