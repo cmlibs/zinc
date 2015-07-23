@@ -178,36 +178,33 @@ public:
 
 	int defineField(cmzn_field_id field)
 	{
-		if (!checkValidFieldForDefine(field))
-			return 0;
-		FE_field *fe_field = NULL;
+		int result = this->checkValidFieldForDefine(field);
+		if (result != CMZN_OK)
+			return result;
+		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (getNodeField(fe_field))
-		{
-			return 0;
-		}
-		if (getUndefineNodeField(fe_field))
-		{
-			return 0;
-		}
 		clearTemplateNode();
 		cmzn_node_field *node_field = createNodeField(fe_field);
-		return (node_field != NULL);
+		if (!node_field)
+			result = CMZN_ERROR_GENERAL;
+		return result;
 	}
 
 	int defineFieldFromNode(cmzn_field_id field, cmzn_node_id node)
 	{
-		if (!checkValidFieldForDefine(field))
-			return 0;
-		if (!fe_nodeset->containsNode(node))
-			return 0;
+		if (!((node) && fe_nodeset->containsNode(node)))
+			return CMZN_ERROR_ARGUMENT;
+		int result = this->checkValidFieldForDefine(field);
+		if (result != CMZN_OK)
+			return result;
 		FE_field *fe_field = 0;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (getNodeField(fe_field))
-			return 0;
-		if (getUndefineNodeField(fe_field))
-			return 0;
-
+		if (!FE_field_is_defined_at_node(fe_field, node))
+		{
+			this->removeDefineField(fe_field);
+			this->removeUndefineField(fe_field);
+			return CMZN_ERROR_NOT_FOUND;
+		}
 		const enum FE_nodal_value_type all_fe_nodal_value_types[] = {
 			FE_NODAL_VALUE,
 			FE_NODAL_D_DS1,
@@ -236,10 +233,8 @@ public:
 		}
 		struct FE_time_sequence *timesequence = get_FE_node_field_FE_time_sequence(node, fe_field);
 		if (timesequence)
-		{
 			node_field->setTimesequence(timesequence);
-		}
-		return (node_field != NULL);
+		return (node_field) ? CMZN_OK : CMZN_ERROR_GENERAL;
 	}
 
 	cmzn_timesequence_id getTimesequence(cmzn_field_id field)
@@ -268,18 +263,14 @@ public:
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_nodetemplate_set_timesequence.  Field must be real finite_element type");
-			return 0;
+			return CMZN_ERROR_ARGUMENT;
 		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		cmzn_node_field *node_field = getNodeField(fe_field);
 		if (!node_field)
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_set_timesequence.  Field is not defined yet");
-			return 0;
-		}
+			return CMZN_ERROR_NOT_FOUND;
 		clearTemplateNode();
 		return node_field->setTimesequence(reinterpret_cast<struct FE_time_sequence *>(timesequence));
 	}
@@ -306,59 +297,45 @@ public:
 	{
 		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
 		if (!finite_element_field)
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_nodetemplate_set_value_number_of_versions.  Field must be real finite_element type");
 			return CMZN_ERROR_ARGUMENT;
+		}
 		cmzn_field_finite_element_destroy(&finite_element_field);
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
 		cmzn_node_field *node_field = this->getNodeField(fe_field);
 		if (!node_field)
-			return CMZN_ERROR_ARGUMENT;
+			return CMZN_ERROR_NOT_FOUND;
 		enum FE_nodal_value_type fe_nodal_value_type =
 			cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
 		return node_field->setValueNumberOfVersions(componentNumber, fe_nodal_value_type, numberOfVersions);
 	}
 
-	int undefineField(cmzn_field_id field)
+	int removeField(cmzn_field_id field)
 	{
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		cmzn_field_stored_mesh_location_id stored_mesh_location_field = cmzn_field_cast_stored_mesh_location(field);
-		cmzn_field_stored_string_id stored_string_field = cmzn_field_cast_stored_string(field);
-		if (!(finite_element_field || stored_mesh_location_field || stored_string_field))
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_undefine_field.  "
-				"Field must be finite_element, stored_mesh_location or stored_string type");
-			return 0;
-		}
-		int return_code = 1;
+		int result = this->checkValidFieldForDefine(field);
+		if (result != CMZN_OK)
+			return result;
 		FE_field *fe_field = NULL;
 		Computed_field_get_type_finite_element(field, &fe_field);
-		if (FE_field_get_FE_region(fe_field) != this->fe_nodeset->get_FE_region())
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_undefine_field.  Field is from another region");
-			return_code = 0;
-		}
-		if (getNodeField(fe_field))
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_undefine_field.  Field is already being defined");
-			return_code = 0;
-		}
-		if (getUndefineNodeField(fe_field))
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_undefine_field.  Field is already being undefined");
-			return_code = 0;
-		}
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		cmzn_field_stored_mesh_location_destroy(&stored_mesh_location_field);
-		cmzn_field_stored_string_destroy(&stored_string_field);
-		if (!return_code)
-			return 0;
+		clearTemplateNode();
+		if (this->removeDefineField(fe_field) || this->removeUndefineField(fe_field))
+			return CMZN_OK;
+		return CMZN_ERROR_NOT_FOUND;
+	}
+
+	int undefineField(cmzn_field_id field)
+	{
+		int result = this->checkValidFieldForDefine(field);
+		if (result != CMZN_OK)
+			return result;
+		FE_field *fe_field = NULL;
+		Computed_field_get_type_finite_element(field, &fe_field);
 		clearTemplateNode();
 		setUndefineNodeField(fe_field);
-		return 1;
+		return CMZN_OK;
 	}
 
 	int validate()
@@ -436,41 +413,71 @@ private:
 
 	cmzn_node_field *getNodeField(FE_field *fe_field)
 	{
-		for (unsigned int i = 0; i < fields.size(); i++)
-		{
+		for (unsigned int i = 0; i < fields.size(); ++i)
 			if (fields[i]->getFeField() == fe_field)
-			{
 				return fields[i];
-			}
-		}
-		return NULL;
+		return 0;
 	}
 
-	/** Must call getNodeField first to confirm not already being defined */
+	bool removeDefineField(FE_field *fe_field)
+	{
+		for (std::vector<cmzn_node_field*>::iterator iter = this->fields.begin(); iter != this->fields.end(); ++iter)
+			if ((*iter)->getFeField() == fe_field)
+			{
+				delete *iter;
+				this->fields.erase(iter);
+				return true;
+			}
+		return false;
+	}
+
+	/** Replaces any existing define or undefine field for fe_field */
 	cmzn_node_field *createNodeField(FE_field *fe_field)
 	{
 		cmzn_node_field *node_field = new cmzn_node_field(fe_field);
+		// replace existing field in fields list
+		for (unsigned int i = 0; i < fields.size(); ++i)
+			if (this->fields[i]->getFeField() == fe_field)
+			{
+				delete fields[i];
+				fields[i] = node_field;
+				return node_field;
+			}
+		this->removeUndefineField(fe_field);
 		fields.push_back(node_field);
 		return node_field;
 	}
 
-	bool getUndefineNodeField(FE_field *fe_field)
+	bool isUndefineNodeField(FE_field *fe_field)
 	{
-		for (unsigned int i = 0; i < undefine_fields.size(); i++)
-		{
+		for (unsigned int i = 0; i < undefine_fields.size(); ++i)
 			if (undefine_fields[i] == fe_field)
-			{
 				return true;
-			}
-		}
 		return false;
 	}
 
-	/** Must call getUndefineNodeField first to confirm not already being undefined */
+	bool removeUndefineField(FE_field *fe_field)
+	{
+		for (std::vector<FE_field*>::iterator iter = this->undefine_fields.begin(); iter != this->undefine_fields.end(); ++iter)
+			if ((*iter) == fe_field)
+			{
+				DEACCESS(FE_field)(&fe_field);
+				this->undefine_fields.erase(iter);
+				return true;
+			}
+		return false;
+	}
+
+	/** Replaces any existing define or undefine field for fe_field */
 	void setUndefineNodeField(FE_field *fe_field)
 	{
+		// if already in undefine list, nothing to do
+		for (unsigned int i = 0; i < this->undefine_fields.size(); ++i)
+			if (this->undefine_fields[i] == fe_field)
+				return;
+		this->removeDefineField(fe_field);
 		ACCESS(FE_field)(fe_field);
-		undefine_fields.push_back(fe_field);
+		this->undefine_fields.push_back(fe_field);
 	}
 
 	void clearTemplateNode()
@@ -478,35 +485,15 @@ private:
 		REACCESS(FE_node)(&template_node, NULL);
 	}
 
-	bool checkValidFieldForDefine(cmzn_field_id field)
+	int checkValidFieldForDefine(cmzn_field_id field)
 	{
-		bool result = true;
-		cmzn_field_finite_element_id finite_element_field = cmzn_field_cast_finite_element(field);
-		cmzn_field_stored_mesh_location_id stored_mesh_location_field = cmzn_field_cast_stored_mesh_location(field);
-		cmzn_field_stored_string_id stored_string_field = cmzn_field_cast_stored_string(field);
-		if (finite_element_field || stored_mesh_location_field || stored_string_field)
-		{
-			FE_field *fe_field = 0;
-			Computed_field_get_type_finite_element(field, &fe_field);
-			if (FE_field_get_FE_region(fe_field) != this->fe_nodeset->get_FE_region())
-			{
-				display_message(ERROR_MESSAGE,
-					"cmzn_nodetemplate_define_field.  "
-					"Field is from another region");
-				result = false;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"cmzn_nodetemplate_define_field.  "
-				"Field must be finite_element, stored_mesh_location or stored_string type");
-			result = false;
-		}
-		cmzn_field_finite_element_destroy(&finite_element_field);
-		cmzn_field_stored_mesh_location_destroy(&stored_mesh_location_field);
-		cmzn_field_stored_string_destroy(&stored_string_field);
-		return result;
+		FE_field *fe_field = 0;
+		Computed_field_get_type_finite_element(field, &fe_field);
+		if (!fe_field)
+			return CMZN_ERROR_ARGUMENT;
+		if (FE_field_get_FE_region(fe_field) != this->fe_nodeset->get_FE_region())
+			return CMZN_ERROR_INCOMPATIBLE_DATA;
+		return CMZN_OK;
 	}
 };
 
@@ -1081,22 +1068,18 @@ int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_address)
 int cmzn_nodetemplate_define_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field)
 {
-	if (node_template && field)
-	{
+	if (node_template)
 		return node_template->defineField(field);
-	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_nodetemplate_define_field_from_node(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field,
 	cmzn_node_id node)
 {
-	if (node_template && field && node)
-	{
+	if (node_template)
 		return node_template->defineFieldFromNode(field, node);
-	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_timesequence_id cmzn_nodetemplate_get_timesequence(
@@ -1134,14 +1117,20 @@ int cmzn_nodetemplate_set_value_number_of_versions(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int cmzn_nodetemplate_remove_field(cmzn_nodetemplate_id node_template,
+	cmzn_field_id field)
+{
+	if (node_template)
+		return node_template->removeField(field);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_nodetemplate_undefine_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field)
 {
-	if (node_template && field)
-	{
+	if (node_template)
 		return node_template->undefineField(field);
-	}
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_node_id cmzn_node_access(cmzn_node_id node)
