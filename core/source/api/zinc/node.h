@@ -370,7 +370,8 @@ ZINC_API int cmzn_nodetemplate_destroy(cmzn_nodetemplate_id *node_template_addre
 
 /**
  * Defines the field on the node_template with just a single node value per
- * field component with no time variation.
+ * field component with no time variation. Replaces any existing definition
+ * (or undefine state) of the field in the template.
  * Per-component derivatives and multiple versions can be added subsequently.
  *
  * @param node_template  Node template to modify.
@@ -382,14 +383,17 @@ ZINC_API int cmzn_nodetemplate_define_field(cmzn_nodetemplate_id node_template,
 	cmzn_field_id field);
 
 /**
- * Defines the field on the node_template based on its definition in the
- * supplied node.
+ * Defines the field on the node template based on its definition in the
+ * supplied node. Replaces any existing definition (or undefine state) in the
+ * template. If the field is not defined on the node it is removed as a
+ * defined/undefined field in the template.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to define. May be finite_element, stored_string or
  * stored_mesh_location type only.
  * @param node  The node to obtain the field definition from.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @return  Status CMZN_OK on success, CMZN_ERROR_NOT_FOUND if field was not
+ * defined on node, and any other value on failure.
  */
 ZINC_API int cmzn_nodetemplate_define_field_from_node(
 	cmzn_nodetemplate_id node_template, cmzn_field_id field,
@@ -472,9 +476,19 @@ ZINC_API int cmzn_nodetemplate_set_timesequence(
 	struct cmzn_timesequence *timesequence);
 
 /**
- * Sets field to be undefined when next merged into an existing node. Has no
- * effect on newly created nodes. It is illegal to define and undefine the same
- * field in a node template.
+ * Removes field from list of fields defined at node, or list of fields marked
+ * for undefining.
+ *
+ * @param node_template  Node template to modify.
+ * @param field  The field to remove.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_nodetemplate_remove_field(cmzn_nodetemplate_id node_template,
+	cmzn_field_id field);
+
+/**
+ * Marks field to be undefined when next merged into an existing node. Has no
+ * effect on newly created nodes. Removes field from define list if present.
  *
  * @param node_template  Node template to modify.
  * @param field  The field to undefine. May be finite_element, stored_string or

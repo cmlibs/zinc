@@ -206,6 +206,10 @@ public:
 			componentNumber, static_cast<cmzn_node_value_label>(valueLabel), numberOfVersions);
 	}
 
+	int removeField(const Field& field)
+	{
+		return cmzn_nodetemplate_remove_field(id, field.getId());
+	}
 	int undefineField(const Field& field)
 	{
 		return cmzn_nodetemplate_undefine_field(id, field.getId());
