@@ -256,9 +256,13 @@ public:
 
 	virtual ~Computed_field_finite_element();
 
+	int getNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
+		cmzn_node_value_label nodeValueLabel, int versionNumber,
+		int valuesCount, double *valuesOut);
+
 	int setNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
 		cmzn_node_value_label nodeValueLabel, int versionNumber,
-		int numberOfValues, const double *valuesIn);
+		int valuesCount, const double *valuesIn);
 
 private:
 	Computed_field_core *copy();
@@ -829,25 +833,23 @@ int Computed_field_finite_element::evaluate(cmzn_fieldcache& cache, FieldValueCa
 	return return_code;
 }
 
-int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
-	int componentNumber, cmzn_node_value_label nodeValueLabel, int versionNumber,
-	int numberOfValues, const double *valuesIn)
+int Computed_field_finite_element::getNodeParameters(cmzn_fieldcache& cache, int componentNumber, 
+	cmzn_node_value_label nodeValueLabel, int versionNumber,
+	int valuesCount, double *valuesOut)
 {
-	int first, limit, expectedNumberOfValues;
+	int firstComponent, copyValuesCount;
 	if (componentNumber > 0)
 	{
-		first = componentNumber - 1;
-		limit = componentNumber;
-		expectedNumberOfValues = 1;
+		firstComponent = componentNumber - 1;
+		copyValuesCount = 1;
 	}
 	else
 	{
-		first = 0;
-		limit = this->field->number_of_components;
-		expectedNumberOfValues = this->field->number_of_components;
+		firstComponent = 0;
+		copyValuesCount = this->field->number_of_components;
 	}
 	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber < this->field->number_of_components))) &&
-			(0 < versionNumber) && (numberOfValues >= expectedNumberOfValues) && valuesIn))
+			(0 < versionNumber) && (valuesCount >= copyValuesCount) && valuesOut))
 		return CMZN_ERROR_ARGUMENT;
 	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
 	if (!node_location)
@@ -858,12 +860,62 @@ int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
 	FE_nodal_value_type nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
 	FE_node *node = node_location->get_node();
 	FE_value time = node_location->get_time();
-	for (int i = first; i < limit; ++i)
+	int successCount = 0;
+	for (int v = 0; v < copyValuesCount; ++v)
 	{
-		if (!set_FE_nodal_FE_value_value(node, this->fe_field, /*component_number*/i,
-				versionNumber - 1, nodal_value_type, time, valuesIn[i]))
-			return CMZN_ERROR_GENERAL;
+		FE_value outValue;
+		if (get_FE_nodal_FE_value_value(node, this->fe_field, firstComponent + v,
+			versionNumber - 1, nodal_value_type, time, &outValue))
+		{
+			valuesOut[v] = static_cast<double>(outValue);
+			++successCount;
+		}
+		else
+			valuesOut[v] = 0.0;
 	}
+	if (successCount == 0)
+		return CMZN_ERROR_NOT_FOUND;
+	return CMZN_OK;
+}
+
+int Computed_field_finite_element::setNodeParameters(cmzn_fieldcache& cache,
+	int componentNumber, cmzn_node_value_label nodeValueLabel, int versionNumber,
+	int valuesCount, const double *valuesIn)
+{
+	int firstComponent, copyValuesCount;
+	if (componentNumber > 0)
+	{
+		firstComponent = componentNumber - 1;
+		copyValuesCount = 1;
+	}
+	else
+	{
+		firstComponent = 0;
+		copyValuesCount = this->field->number_of_components;
+	}
+	if (!(((-1 == componentNumber) || ((0 < componentNumber) && (componentNumber < this->field->number_of_components))) &&
+			(0 < versionNumber) && (valuesCount >= copyValuesCount) && valuesIn))
+		return CMZN_ERROR_ARGUMENT;
+	Field_node_location *node_location = dynamic_cast<Field_node_location*>(cache.getLocation());
+	if (!node_location)
+		return CMZN_ERROR_ARGUMENT;
+	enum Value_type value_type = get_FE_field_value_type(this->fe_field);
+	if (FE_VALUE_VALUE != value_type)
+		return CMZN_ERROR_NOT_IMPLEMENTED;
+	FE_nodal_value_type nodal_value_type = cmzn_node_value_label_to_FE_nodal_value_type(nodeValueLabel);
+	FE_node *node = node_location->get_node();
+	FE_value time = node_location->get_time();
+	int successCount = 0;
+	for (int v = 0; v < copyValuesCount; ++v)
+	{
+		if (set_FE_nodal_FE_value_value(node, this->fe_field, firstComponent + v,
+			versionNumber - 1, nodal_value_type, time, valuesIn[v]))
+		{
+			++successCount;
+		}
+	}
+	if (successCount == 0)
+		return CMZN_ERROR_NOT_FOUND;
 	return CMZN_OK;
 }
 
@@ -1329,14 +1381,25 @@ int cmzn_field_finite_element_destroy(
 	return cmzn_field_destroy(reinterpret_cast<cmzn_field_id *>(finite_element_field_address));
 }
 
+int cmzn_field_finite_element_get_node_parameters(
+	cmzn_field_finite_element_id finite_element_field, cmzn_fieldcache_id cache,
+	int component_number, enum cmzn_node_value_label node_value_label,
+	int version_number, int values_count, double *values_out)
+{
+	if (finite_element_field && cache)
+		return cmzn_field_finite_element_core_cast(finite_element_field)->getNodeParameters(*cache,
+			component_number, node_value_label, version_number, values_count, values_out);
+	return CMZN_ERROR_ARGUMENT;
+}
+
 int cmzn_field_finite_element_set_node_parameters(
 	cmzn_field_finite_element *finite_element_field, cmzn_fieldcache_id cache,
 	int component_number, enum cmzn_node_value_label node_value_label,
-	int version_number, int number_of_values, const double *values_in)
+	int version_number, int values_count, const double *values_in)
 {
 	if (finite_element_field && cache)
 		return cmzn_field_finite_element_core_cast(finite_element_field)->setNodeParameters(*cache,
-			component_number, node_value_label, version_number, number_of_values, values_in);
+			component_number, node_value_label, version_number, values_count, values_in);
 	return CMZN_ERROR_ARGUMENT;
 }
 

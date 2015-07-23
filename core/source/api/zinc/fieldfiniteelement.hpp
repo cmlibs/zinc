@@ -37,6 +37,14 @@ public:
 		return reinterpret_cast<cmzn_field_finite_element_id>(this->id);
 	}
 
+	int getNodeParameters(const Fieldcache& cache, int componentNumber,
+		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, double *valuesOut)
+	{
+		return cmzn_field_finite_element_get_node_parameters(this->getDerivedId(),
+			cache.getId(), componentNumber, static_cast<cmzn_node_value_label>(nodeValueLabel),
+			versionNumber, valuesCount, valuesOut);
+	}
+
 	int setNodeParameters(const Fieldcache& cache, int componentNumber,
 		Node::ValueLabel nodeValueLabel, int versionNumber, int valuesCount, const double *valuesIn)
 	{
