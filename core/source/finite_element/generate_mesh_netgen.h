@@ -8,8 +8,8 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
-#if !defined (GENERATE_MESN_NETGEN_H)
-#define GENERATE_MESH_NETGEN_H
+#if !defined (__CMZN_GENERATE_MESH_NETGEN_H)
+#define __CMZN_GENERATE_MESH_NETGEN_H
 
 struct Generate_netgen_parameters;
 
@@ -93,5 +93,5 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void);
  */
 int set_netgen_parameters_meshsize_filename(struct Generate_netgen_parameters *para,
 	const char* meshsize_filename);
-#endif /* GENERATE_MESH_NETGEN_H */
+#endif /* __CMZN_GENERATE_MESH_NETGEN_H */
 
