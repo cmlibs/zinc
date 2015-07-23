@@ -1211,3 +1211,67 @@ TEST(ZincFieldFiniteElement, get_setNodeParameters)
 	EXPECT_EQ(OK, feField.getNodeParameters(cache, 2, Node::VALUE_LABEL_VALUE, 3, 1, &valueOut2));
 	EXPECT_DOUBLE_EQ(valueIn2, valueOut2);
 }
+
+
+TEST(ZincNodetemplate, define_undefineField)
+{
+	ZincTestSetupCpp zinc;
+
+	FieldFiniteElement feField = zinc.fm.createFieldFiniteElement(1);
+	EXPECT_TRUE(feField.isValid());
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	EXPECT_TRUE(nodeset.isValid());
+
+	Nodetemplate nodetemplate1 = nodeset.createNodetemplate();
+	EXPECT_EQ(ERROR_ARGUMENT, nodetemplate1.defineField(Field()));
+	EXPECT_EQ(OK, nodetemplate1.defineField(feField));
+
+	Nodetemplate nodetemplate2 = nodeset.createNodetemplate();
+	EXPECT_EQ(OK, nodetemplate2.defineField(feField));
+	EXPECT_EQ(OK, nodetemplate2.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 2));
+
+	Nodetemplate nodetemplate3 = nodeset.createNodetemplate();
+	EXPECT_EQ(ERROR_ARGUMENT, nodetemplate3.undefineField(Field()));
+	EXPECT_EQ(OK, nodetemplate3.undefineField(feField));
+
+	Nodetemplate nodetemplate4 = nodeset.createNodetemplate();
+	EXPECT_EQ(OK, nodetemplate4.defineField(feField));
+	EXPECT_EQ(ERROR_ARGUMENT, nodetemplate4.removeField(Field()));
+	EXPECT_EQ(OK, nodetemplate4.removeField(feField));
+
+	Node node1 = nodeset.createNode(-1, nodetemplate1);
+	EXPECT_TRUE(node1.isValid());
+	Node node2 = nodeset.createNode(-1, nodetemplate2);
+	EXPECT_TRUE(node2.isValid());
+	Node node3 = nodeset.createNode(-1, nodetemplate3);
+	EXPECT_TRUE(node3.isValid());
+	Node node4 = nodeset.createNode(-1, nodetemplate4);
+	EXPECT_TRUE(node4.isValid());
+
+	Nodetemplate nodetemplate5 = nodeset.createNodetemplate();
+	EXPECT_EQ(ERROR_ARGUMENT, nodetemplate5.defineFieldFromNode(Field(), node1));
+	EXPECT_EQ(ERROR_ARGUMENT, nodetemplate5.defineFieldFromNode(feField, Node()));
+	EXPECT_EQ(OK, nodetemplate5.defineFieldFromNode(feField, node1));
+	EXPECT_EQ(1, nodetemplate5.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(OK, nodetemplate5.defineFieldFromNode(feField, node2));
+	EXPECT_EQ(2, nodetemplate5.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.defineFieldFromNode(feField, node3));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
+
+	EXPECT_EQ(OK, node1.merge(nodetemplate3));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.defineFieldFromNode(feField, node1));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(OK, node3.merge(nodetemplate2));
+	EXPECT_EQ(OK, nodetemplate5.defineFieldFromNode(feField, node3));
+	EXPECT_EQ(2, nodetemplate5.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
+
+	EXPECT_EQ(OK, nodetemplate5.undefineField(feField));
+	EXPECT_EQ(OK, node2.merge(nodetemplate5));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.defineFieldFromNode(feField, node2));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
+	EXPECT_EQ(OK, nodetemplate5.defineFieldFromNode(feField, node3));
+	EXPECT_EQ(2, nodetemplate5.getValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.defineFieldFromNode(feField, node4));
+	EXPECT_EQ(ERROR_NOT_FOUND, nodetemplate5.setValueNumberOfVersions(feField, -1, Node::VALUE_LABEL_VALUE, 1));
+}
