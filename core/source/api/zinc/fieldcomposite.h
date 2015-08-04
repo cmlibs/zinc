@@ -36,28 +36,34 @@ ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_identity(cmzn_fieldmodule_i
 	cmzn_field_id source_field);
 
 /**
- * Creates a field returning the component of the source field with the given
- * component_index, starting at 1.
+ * Creates a component-type field returning a single component of the source
+ * field.
  *
- * @param field_module  Region field module which will own new field.
+ * @param field_module  Region field module which will own the new field.
  * @param source_field  The field the component value is copied from.
- * @param component_index  The component index from 1 to number of components.
+ * @param source_component_index  The component index from 1 to number of
+ * components of the source field.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_component(cmzn_fieldmodule_id field_module,
-	cmzn_field_id source_field, int component_index);
+	cmzn_field_id source_field, int source_component_index);
 
 /**
- * Creates a field which concatenates the components of all source fields, in
- * order, into a single vector.
+ * Creates a component-type field returning one or more components of a source
+ * field in a specified order.
  *
- * @param field_module  Region field module which will own new field.
- * @param number_of_source_fields  The number of source fields in the array.
- * @param source_fields  The array of fields to be concatenating together.
+ * @param field_module  Region field module which will own the new field.
+ * @param source_field  The field the component values are copied from.
+ * @param source_component_indexes_count  The size of the source component
+ * indexes array. Equals the number of components of the returned field.
+ * @param source_component_indexes_in  Array of component indexes, each from
+ * 1 to number of components of source field, in required order for resulting
+ * field. Component indexes can be repeated.
  * @return  Handle to new field, or NULL/invalid handle on failure.
  */
-ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodule_id field_module,
-	int number_of_source_fields, cmzn_field_id *source_fields);
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	int source_component_indexes_count, const int *source_component_indexes_in);
 
 /**
  * If the field is of component type, then this function returns the derived
@@ -85,22 +91,45 @@ ZINC_C_INLINE cmzn_field_id cmzn_field_component_base_cast(cmzn_field_component_
 }
 
 /**
- * Get the component number of the source field returned by this field.
+ * Get the source field component index for the first component of this field.
  *
  * @param component  Handle to component field to query.
- * @return  The component number from 1 to number of components, or 0 on error.
+ * @return  The source field component index starting at 1, 0 on error.
  */
 ZINC_API int cmzn_field_component_get_component_index(cmzn_field_component_id component);
 
 /**
- * Modify the field to return the component with the given index of the source field.
+ * Set the source field component index for the first component of this field.
  *
  * @param component  Handle to component field to modify.
- * @param component_index  The component index from 1 to number of components.
- * @return  Status CMZN_OK if component index is successfully set, any other value on failure.
+ * @param source_component_index  The source field component index, starting at 1.
+ * @return  Status CMZN_OK if component index is successfully set, any other
+ * value on failure.
  */
 ZINC_API int cmzn_field_component_set_component_index(cmzn_field_component_id component,
-	int component_index);
+	int source_component_index);
+
+/**
+ * Get the source field component index for the given component index of this field.
+ *
+ * @param component  Handle to component field to query.
+ * @param index  The component index for this field, starting at 1.
+ * @return  The source field component index starting at 1, 0 on error.
+ */
+ZINC_API int cmzn_field_component_get_source_component_index(
+	cmzn_field_component_id component, int index);
+
+/**
+ * Set the source field component index for the given component index of this field.
+ *
+ * @param component  Handle to component field to modify.
+ * @param index  The component index for this field, starting at 1.
+ * @param source_component_index  The source field component index, starting at 1.
+ * @return  Status CMZN_OK if component index is successfully set, any other
+ * value on failure.
+ */
+ZINC_API int cmzn_field_component_set_source_component_index(
+	cmzn_field_component_id component, int index, int source_component_index);
 
 /**
  * Destroys handle to the component field (and sets it to NULL).
@@ -111,6 +140,18 @@ ZINC_API int cmzn_field_component_set_component_index(cmzn_field_component_id co
  * 		any other value on failure.
  */
 ZINC_API int cmzn_field_component_destroy(cmzn_field_component_id *component_address);
+
+/**
+ * Creates a field which concatenates the components of all source fields, in
+ * order, into a single vector.
+ *
+ * @param field_module  Region field module which will own new field.
+ * @param number_of_source_fields  The number of source fields in the array.
+ * @param source_fields  The array of fields to be concatenating together.
+ * @return  Handle to new field, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_field_id cmzn_fieldmodule_create_field_concatenate(cmzn_fieldmodule_id field_module,
+	int number_of_source_fields, cmzn_field_id *source_fields);
 
 #ifdef __cplusplus
 }

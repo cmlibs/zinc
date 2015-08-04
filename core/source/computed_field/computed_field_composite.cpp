@@ -80,29 +80,27 @@ public:
 
 	char *get_source_string(int commands);
 
-	// for component field only. Component index starts at 0.
-	int getComponentIndex()
+	// for component field only; index and source component index start at 0.
+	// @return -1 if invalid argument
+	int getSourceComponentIndex(int index)
 	{
-		if (field->number_of_components == 1)
-			return this->source_value_numbers[0];
-		return 0;
+		if ((0 <= index) && (index < field->number_of_components))
+			return this->source_value_numbers[index];
+		return -1;
 	}
 
-	// for component field only. Component index starts at 0.
-	int setComponentIndex(int component_index)
+	// for component field only; index and source component index start at 0.
+	int setSourceComponentIndex(int index, int source_component_index)
 	{
-		if (field->number_of_components == 1 && component_index > -1)
+		if ((0 <= index) && (index < field->number_of_components) && (0 <= source_component_index) &&
+			(source_component_index < cmzn_field_get_number_of_components(getSourceField(0))))
 		{
-			int number_of_source_components = Computed_field_get_number_of_components(getSourceField(0));
-			if (number_of_source_components > component_index)
+			if (source_value_numbers[index] != source_component_index)
 			{
-				if (source_value_numbers[0] != component_index)
-				{
-					source_value_numbers[0] = component_index;
-					Computed_field_changed(field);
-				}
-				return CMZN_OK;
+				source_value_numbers[index] = source_component_index;
+				Computed_field_changed(field);
 			}
+			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
@@ -548,8 +546,10 @@ Returns allocated command string for reproducing field. Includes type.
 inline Computed_field_composite *Computed_field_composite_core_cast(
 	cmzn_field_component_id composite_field)
 {
-	return (static_cast<Computed_field_composite*>(
-		reinterpret_cast<Computed_field*>(composite_field)->core));
+	if (composite_field)
+		return (static_cast<Computed_field_composite*>(
+			reinterpret_cast<Computed_field*>(composite_field)->core));
+	return 0;
 }
 
 } //namespace
@@ -1046,20 +1046,59 @@ Changes <field> into type composite with one input field, the <source_field>.
 
 cmzn_field_id cmzn_fieldmodule_create_field_component(
 	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
-	int component_number)
+	int source_component_index)
 {
 	cmzn_field_id field = 0;
-	if (source_field && source_field->isNumerical() && (0 < component_number) &&
-		(component_number <= Computed_field_get_number_of_components(source_field)))
+	if (source_field && source_field->isNumerical() && (0 < source_component_index) &&
+		(source_component_index <= Computed_field_get_number_of_components(source_field)))
 	{
 		const int source_field_number = 0;
-		const int source_value_number = component_number - 1; // external numbering starts at 1
+		const int source_value_number = source_component_index - 1; // external numbering starts at 1
 		field =
 			Computed_field_create_composite(field_module,
 			/*number_of_components*/1,
 			/*number_of_source_fields*/1, /*source_fields*/&source_field,
 			/*number_of_source_values*/0, /*source_values*/(double *)0,
 			&source_field_number, &source_value_number);
+	}
+	return field;
+}
+
+cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
+	cmzn_fieldmodule_id field_module, cmzn_field_id source_field,
+	int source_component_indexes_count, const int *source_component_indexes_in)
+{
+	cmzn_field *field = 0;
+	if (source_field && source_field->isNumerical() &&
+		(0 < source_component_indexes_count) && (source_component_indexes_in))
+	{
+		const int source_number_of_components = Computed_field_get_number_of_components(source_field);
+		for (int i = 0; i < source_component_indexes_count; ++i)
+		{
+			if ((source_component_indexes_in[i] < 1) || 
+					(source_component_indexes_in[i] > source_number_of_components))
+				return 0;
+		}
+		const int source_field_number = 0;
+		int *source_field_numbers;
+		int *source_value_numbers;
+		ALLOCATE(source_field_numbers, int, source_component_indexes_count);
+		ALLOCATE(source_value_numbers, int, source_component_indexes_count);
+		if ((source_value_numbers) && (source_value_numbers))
+		{
+			for (int i = 0; i < source_component_indexes_count; ++i)
+			{
+				source_field_numbers[i] = 0;
+				source_value_numbers[i] = source_component_indexes_in[i] - 1; // external numbering starts at 1
+			}
+			field = Computed_field_create_composite(field_module,
+				/*number_of_components*/source_component_indexes_count,
+				/*number_of_source_fields*/1, /*source_fields*/&source_field,
+				/*number_of_source_values*/0, /*source_values*/(double *)0,
+				source_field_numbers, source_value_numbers);
+		}
+		DEALLOCATE(source_field_numbers);
+		DEALLOCATE(source_value_numbers);
 	}
 	return field;
 }
@@ -1120,8 +1159,8 @@ cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 {
 	if (field && dynamic_cast<Computed_field_composite*>(field->core))
 	{
-		// ensure composite field is just a single component of source field
-		if ((1 == field->number_of_components) && (1 == field->number_of_source_fields))
+		// ensure composite field has one source field and no values
+		if ((1 == field->number_of_source_fields) && (0 == field->number_of_source_values))
 		{
 			cmzn_field_access(field);
 			return (reinterpret_cast<cmzn_field_component_id>(field));
@@ -1132,26 +1171,35 @@ cmzn_field_component *cmzn_field_cast_component(cmzn_field_id field)
 
 int cmzn_field_component_get_component_index(cmzn_field_component_id component)
 {
-	if (component)
-	{
-		Computed_field_composite *composite_core = Computed_field_composite_core_cast(component);
-		if (composite_core)
-			return composite_core->getComponentIndex() + 1;
-	}
+	Computed_field_composite *composite_core = Computed_field_composite_core_cast(component);
+	if (composite_core)
+		return composite_core->getSourceComponentIndex(0) + 1;
 	return 0;
 }
 
-int cmzn_field_component_set_component_index(cmzn_field_component_id component, int component_index)
+int cmzn_field_component_set_component_index(cmzn_field_component_id component, int source_component_index)
 {
-	if (component)
-	{
-		Computed_field_composite *composite_core =
-			Computed_field_composite_core_cast(component);
-		if (composite_core)
-		{
-			return composite_core->setComponentIndex(component_index - 1);
-		}
-	}
+	Computed_field_composite *composite_core = Computed_field_composite_core_cast(component);
+	if (composite_core)
+		return composite_core->setSourceComponentIndex(0, source_component_index - 1);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_field_component_get_source_component_index(
+	cmzn_field_component_id component, int index)
+{
+	Computed_field_composite *composite_core = Computed_field_composite_core_cast(component);
+	if (composite_core)
+		return composite_core->getSourceComponentIndex(index - 1) + 1;
+	return 0;
+}
+
+int cmzn_field_component_set_source_component_index(
+	cmzn_field_component_id component, int index, int source_component_index)
+{
+	Computed_field_composite *composite_core = Computed_field_composite_core_cast(component);
+	if (composite_core)
+		return composite_core->setSourceComponentIndex(index - 1, source_component_index - 1);
 	return CMZN_ERROR_ARGUMENT;
 }
 

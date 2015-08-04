@@ -12,9 +12,11 @@
 #define CMZN_FIELDCOMPOSITEID_H__
 
 /**
- * @brief A field returning a single component of a source field as a scalar.
+ * @brief A field returning one or more components of a source field in a
+ * specified order.
  *
- * A field returning a single component of a source field as a scalar.
+ * A field returning one or more components of a source field in a specified
+ * order.
  */
 struct cmzn_field_component;
 typedef struct cmzn_field_component *cmzn_field_component_id;
