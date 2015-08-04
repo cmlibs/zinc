@@ -37,6 +37,8 @@
 }
 
 %ignore OpenCMISS::Zinc::Fieldmodulenotifier::clearCallback();
+// ignore following as array overload works the same
+%ignore OpenCMISS::Zinc::Fieldmodule::createFieldComponent(const Field& sourceField, int sourceComponentIndex);
 
 %include "doublevaluesarraytypemap.i"
 %include "integervaluesarraytypemap.i"

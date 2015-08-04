@@ -130,6 +130,8 @@
 %typemap(freearg) (int radiusSizesCount, const int *radiusSizesIn) = (int valuesCount, const int *valuesIn);
 %typemap(in) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
 %typemap(freearg) (int nodeIndexesCount, const int *nodeIndexesIn) = (int valuesCount, const int *valuesIn);
+%typemap(in) (int sourceComponentIndexesCount, const int *sourceComponentIndexesIn) = (int valuesCount, const int *valuesIn);
+%typemap(freearg) (int sourceComponentIndexesCount, const int *sourceComponentIndexesIn) = (int valuesCount, const int *valuesIn);
 
 // array getter in-handler expects an integer array size only
 // and allocates array to accept output; see argout-handler
