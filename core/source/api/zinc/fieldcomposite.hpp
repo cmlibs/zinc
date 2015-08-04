@@ -63,6 +63,16 @@ public:
 		return cmzn_field_component_set_component_index(getDerivedId(), componentIndex);
 	}
 
+	int getSourceComponentIndex(int index)
+	{
+		return cmzn_field_component_get_source_component_index(getDerivedId(), index);
+	}
+
+	int setSourceComponentIndex(int index, int sourceComponentIndex)
+	{
+		return cmzn_field_component_set_source_component_index(getDerivedId(), index, sourceComponentIndex);
+	}
+
 };
 
 class FieldConcatenate : public Field
@@ -87,10 +97,18 @@ inline FieldIdentity Fieldmodule::createFieldIdentity(const Field& sourceField)
 	return FieldIdentity(cmzn_fieldmodule_create_field_identity(id, sourceField.getId()));
 }
 
-inline FieldComponent Fieldmodule::createFieldComponent(const Field& sourceField, int componentIndex)
+inline FieldComponent Fieldmodule::createFieldComponent(const Field& sourceField, int sourceComponentIndex)
 {
 	return FieldComponent(reinterpret_cast<cmzn_field_component_id>(
-		cmzn_fieldmodule_create_field_component(id, sourceField.getId(), componentIndex)));
+		cmzn_fieldmodule_create_field_component(this->id, sourceField.getId(), sourceComponentIndex)));
+}
+
+inline FieldComponent Fieldmodule::createFieldComponent(const Field& sourceField,
+	int sourceComponentIndexesCount, const int *sourceComponentIndexesIn)
+{
+	return FieldComponent(reinterpret_cast<cmzn_field_component_id>(
+		cmzn_fieldmodule_create_field_component_multiple(this->id, sourceField.getId(),
+			sourceComponentIndexesCount, sourceComponentIndexesIn)));
 }
 
 inline FieldComponent Field::castComponent()

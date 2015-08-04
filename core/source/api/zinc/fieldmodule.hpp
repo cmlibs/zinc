@@ -262,7 +262,10 @@ public:
 
 	inline FieldIdentity createFieldIdentity(const Field& sourceField);
 
-	inline FieldComponent createFieldComponent(const Field& sourceField, int componentIndex);
+	inline FieldComponent createFieldComponent(const Field& sourceField, int sourceComponentIndex);
+
+	inline FieldComponent createFieldComponent(const Field& sourceField,
+		int sourceComponentIndexesCount, const int *sourceComponentIndexesIn);
 
 	inline FieldConcatenate createFieldConcatenate(int fieldsCount, const Field *sourceFields);
 
