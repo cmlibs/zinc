@@ -1079,7 +1079,6 @@ cmzn_field_id cmzn_fieldmodule_create_field_component_multiple(
 					(source_component_indexes_in[i] > source_number_of_components))
 				return 0;
 		}
-		const int source_field_number = 0;
 		int *source_field_numbers;
 		int *source_value_numbers;
 		ALLOCATE(source_field_numbers, int, source_component_indexes_count);
