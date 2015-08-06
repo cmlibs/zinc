@@ -1106,11 +1106,13 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 				cmzn_graphics_flag_for_full_rebuild, (void *)renderer,
 				scene->list_of_graphics);
+			/* this will force time dependent field to evaluate at the right time */
+			timekeeper->setTimeQuiet(renderer->time);
+			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
+				cmzn_graphics_compile_visible_graphics, (void *)renderer,
+				scene->list_of_graphics);
 		}
-		timekeeper->setTimeQuiet(renderer->time);
-		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
-			cmzn_graphics_compile_visible_graphics, (void *)renderer,
-			scene->list_of_graphics);
+
 		/* check whether scene contents need building */
 		return_code = cmzn_scene_build_graphics_objects(scene,
 			renderer->getScenefilter(), renderer->time, renderer->name_prefix);
@@ -1118,7 +1120,10 @@ int cmzn_scene_compile_graphics(cmzn_scene *scene,
 		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(
 			cmzn_graphics_compile_visible_graphics, (void *)renderer,
 			scene->list_of_graphics);
-		timekeeper->setTimeQuiet(original_time);
+		if (force_rebuild)
+		{
+			timekeeper->setTimeQuiet(original_time);
+		}
 		cmzn_timekeepermodule_destroy(&timekeepermodule);
 	}
 	else
