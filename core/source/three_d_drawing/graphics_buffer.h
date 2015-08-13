@@ -165,4 +165,18 @@ DESCRIPTION :
 
 int DESTROY(Graphics_buffer)(struct Graphics_buffer **buffer_ptr);
 
+#if defined (OPENGL_API) && defined (GL_EXT_framebuffer_object)
+void Graphics_buffer_initialise_framebuffer(struct Graphics_buffer *buffer, int width, int height);
+
+void Graphics_buffer_bind_framebuffer(struct Graphics_buffer *buffer);
+#endif
+
+#if defined (OPENGL_API) && defined (USE_MSAA)
+int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer *buffer, int preferred_antialias);
+
+void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer);
+
+void Graphics_buffer_reset_multisample_framebuffer(struct Graphics_buffer *buffer);
+#endif
+
 #endif /* !defined (GRAPHICS_BUFFER_H) */
