@@ -5989,66 +5989,106 @@ int Scene_viewer_get_frame_pixels(struct Scene_viewer *scene_viewer,
 LAST MODIFIED : 18 September 2002
 
 DESCRIPTION :
-Returns the contents of the scene viewer as pixels.  <width> and <height>
+Returns the contents of the graphics window as pixels.  <width> and <height>
 will be respected if the window is drawn offscreen and they are non zero,
-otherwise they are set in accordance with current size of the scene viewer.
+otherwise they are set in accordance with current size of the graphics window.
 If <preferred_antialias> or <preferred_transparency_layers> are non zero then they
 attempt to override the default values for just this call.
 If <force_onscreen> is non zero then the pixels will always be grabbed from the
-scene viewer on screen.
+graphics window on screen.
 ==============================================================================*/
 {
-	int number_of_components, return_code;
-#if defined (GTK_USER_INTERFACE)
-	struct Graphics_buffer *offscreen_buffer;
-#endif /* defined (GTK_USER_INTERFACE) */
+	int frame_width, frame_height, number_of_components, return_code, antialias;
+	int panel_width, panel_height;
+#if defined (OPENGL_API) && defined (USE_MSAA)
+	int multisample_framebuffer_flag = 0;
+#endif
 
-	ENTER(Scene_viewer_get_frame_pixels);
-
-#if ! defined (GTK_USER_INTERFACE)
-	USE_PARAMETER(force_onscreen);
-#endif /* ! defined (GTK_USER_INTERFACE) */
 	if (scene_viewer && width && height)
 	{
-#if defined (GTK_USER_INTERFACE)
-		if ((!*width) || (!*height))
+		panel_width = scene_viewer->right - scene_viewer->left;
+		panel_height = scene_viewer->top - scene_viewer->bottom;
+		antialias = preferred_antialias;
+		if (antialias == -1)
 		{
-			/* Only use the scene viewer size if either dimension is zero */
-			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
-			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
+			antialias = scene_viewer->antialias;
+		}
+		if ((*width) && (*height))
+		{
+			frame_width = *width;
+			frame_height = *height;
+		}
+		else
+		{
+			/* Only use the window size if either dimension is zero */
+			frame_width = panel_width;
+			frame_height = panel_height;
+			*width = frame_width;
+			*height = frame_height;
 		}
 		/* If working offscreen try and allocate as large an area as possible */
-		if (!force_onscreen && (offscreen_buffer = create_Graphics_buffer_offscreen_from_buffer(
-			*width, *height, Scene_viewer_get_graphics_buffer(
-			scene_viewer))))
+		struct Graphics_buffer *graphics_buffer = CREATE(Graphics_buffer)(
+			0,	GRAPHICS_BUFFER_ONSCREEN_TYPE,
+			GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO);
+		graphics_buffer->width = frame_width;
+		graphics_buffer->height = frame_height;
+#if defined (OPENGL_API) && (GL_EXT_framebuffer_object)
+		if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
 		{
-			Graphics_buffer_make_current(offscreen_buffer);
-			Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
-				/*left*/0, /*bottom*/0, /*right*/*width, /*top*/*height,
-				preferred_antialias, preferred_transparency_layers,
-				/*drawing_offscreen*/1);
+			graphics_buffer->type = GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE;
+		}
+		Graphics_buffer_initialise_framebuffer(graphics_buffer, frame_width, frame_height);
+		Graphics_buffer_bind_framebuffer(graphics_buffer);
+#endif
+		if (!force_onscreen)
+		{
+			cmzn_sceneviewer_render_scene(scene_viewer);
 			number_of_components =
 				Texture_storage_type_get_number_of_components(storage);
 			if (ALLOCATE(*frame_data, unsigned char,
-				number_of_components * (*width) * (*height)))
+				number_of_components * (frame_width) * (frame_height)))
 			{
-				if (!(return_code=Graphics_library_read_pixels(*frame_data, *width,
-					*height, storage, /*front_buffer*/0)))
+				return_code = 1;
+#if defined (OPENGL_API)
+#if defined (USE_MSAA)
+				if (antialias > 1)
 				{
-					DEALLOCATE(*frame_data);
+						multisample_framebuffer_flag =
+							Graphics_buffer_set_multisample_framebuffer(graphics_buffer, antialias);
 				}
+				Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+					/*left*/0, /*bottom*/0, /*right*/frame_width, /*top*/frame_height,
+					antialias, preferred_transparency_layers,
+					/*drawing_offscreen*/1);
+				if (multisample_framebuffer_flag)
+				{
+					Graphics_buffer_blit_framebuffer(graphics_buffer);
+				}
+#else
+				Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+					/*left*/0, /*bottom*/0, /*right*/frame_width, /*top*/frame_height,
+					/*preferred_antialias*/0, preferred_transparency_layers,
+					/*drawing_offscreen*/1);
+#endif
+#endif /* defined (OPENGL_API) */
+				return_code=Graphics_library_read_pixels(*frame_data,
+					frame_width, frame_height, storage, /*front_buffer*/0);
+#if defined (OPENGL_API) && defined (USE_MSAA)
+				if (multisample_framebuffer_flag)
+				{
+					Graphics_buffer_reset_multisample_framebuffer(graphics_buffer);
+				}
+#endif
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
+					"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-			DEACCESS(Graphics_buffer)(&offscreen_buffer);
 		}
 		else
 		{
-#endif /* defined (GTK_USER_INTERFACE) */
 			/* Always use the window size if grabbing from screen */
 			*width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
 			*height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
@@ -6073,20 +6113,18 @@ scene viewer on screen.
 					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
-#if defined (GTK_USER_INTERFACE)
 		}
-#endif /* defined (GTK_USER_INTERFACE) */
+		DEACCESS(Graphics_buffer)(&graphics_buffer);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_frame_pixels.  Invalid argument(s)");
+			"Graphics_window_get_frame_pixels.  Invalid argument(s)");
 		return_code=0;
 	}
-	LEAVE;
 
 	return return_code;
-} /* Scene_viewer_get_frame_pixels */
+} /* Graphics_window_get_frame_pixels */
 
 struct Cmgui_image *Scene_viewer_get_image(struct Scene_viewer *scene_viewer,
 	int force_onscreen, int preferred_width, int preferred_height,

@@ -533,6 +533,13 @@ public:
 		return cmzn_sceneviewer_set_near_clipping_plane(id, nearClippingPlane);
 	}
 
+	int writeImageToFile(const char *file_name, int force_onscreen, int preferred_width,
+		int preferred_height, int preferred_antialias, int preferred_transparency_layers)
+	{
+		return cmzn_sceneviewer_write_image_to_file(id, file_name, force_onscreen, preferred_width,
+			preferred_height, preferred_antialias, preferred_transparency_layers);
+	}
+
 	Sceneviewernotifier createSceneviewernotifier()
 	{
 		return Sceneviewernotifier(cmzn_sceneviewer_create_sceneviewernotifier(id));

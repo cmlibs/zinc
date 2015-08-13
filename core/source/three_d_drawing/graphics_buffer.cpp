@@ -596,5 +596,183 @@ Closes a Graphics buffer instance
 	return (return_code);
 } /* DEACCESS(Graphics_buffer) */
 
+
+#if defined (OPENGL_API) && defined (GL_EXT_framebuffer_object)
+void Graphics_buffer_initialise_framebuffer(struct Graphics_buffer *buffer, int width, int height)
+{
+	if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+	{
+		GLint buffer_size;
+		glGenFramebuffersEXT(1,&buffer->fbo);
+		glGenRenderbuffersEXT(1, &buffer->depthbuffer);
+		glGetIntegerv(GL_MAX_RENDERBUFFER_SIZE_EXT, &buffer_size);
+		if (height > buffer_size)
+		{
+			display_message(WARNING_MESSAGE,"Graphics_buffer_initialise_framebuffer.  "
+							"Request height is larger than allowed, set height to maximum possible"
+							"height.");
+			buffer->height = buffer_size;
+		}
+		else
+		{
+			buffer->height = height;
+		}
+		if (width > buffer_size)
+		{
+			display_message(WARNING_MESSAGE,"Graphics_buffer_initialise_framebuffer.  "
+							"Request width is larger than allowed, set width to maximum possible"
+							"width.");
+			buffer->width = buffer_size;
+		}
+		else
+		{
+			buffer->width = width;
+		}
+		glGenTextures(1, &buffer->img);
+		glBindTexture(GL_TEXTURE_2D, buffer->img);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glTexImage2D(GL_TEXTURE_2D, 0,GL_RGBA8, width, height, 0,
+					 GL_RGBA,GL_UNSIGNED_BYTE,NULL);
+	}
+}
+
+void Graphics_buffer_bind_framebuffer(struct Graphics_buffer *buffer)
+{
+	if (Graphics_library_check_extension(GL_EXT_framebuffer_object))
+	{
+		if (buffer->fbo && buffer->depthbuffer && buffer->img)
+		{
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
+			glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->depthbuffer);
+			glRenderbufferStorageEXT(GL_RENDERBUFFER_EXT, GL_DEPTH_COMPONENT,
+				buffer->width, buffer->height);
+			glFramebufferTexture2DEXT(GL_FRAMEBUFFER_EXT,
+				GL_COLOR_ATTACHMENT0_EXT,GL_TEXTURE_2D, buffer->img, 0);
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT,
+				GL_DEPTH_ATTACHMENT_EXT, GL_RENDERBUFFER_EXT, buffer->depthbuffer);
+			GLenum status;
+			status = glCheckFramebufferStatusEXT(GL_FRAMEBUFFER_EXT);
+			switch(status)
+			{
+				case GL_FRAMEBUFFER_COMPLETE_EXT:
+				{
+				}
+				break;
+				default:
+				{
+					display_message(ERROR_MESSAGE,
+						"Graphics_buffer_bind_framebuffer."
+						"Framebuffer object not supported.\n");
+				}
+			}
+		}
+	}
+}
+
+#endif
+
+#if defined (OPENGL_API) && defined (USE_MSAA)
+void Graphics_buffer_reset_multisample_framebuffer(struct Graphics_buffer *buffer)
+{
+	 if (buffer->multi_fbo)
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->multi_fbo);
+}
+
+void Graphics_buffer_blit_framebuffer(struct Graphics_buffer *buffer)
+{
+#ifdef GL_EXT_framebuffer_blit
+	int renderbuffer_width, renderbuffer_height;
+	unsigned int max_renderbuffer_size = 2048;
+
+	if (buffer->width > max_renderbuffer_size)
+	{
+		renderbuffer_width = max_renderbuffer_size;
+	}
+	else
+	{
+		renderbuffer_width = buffer->width;
+	}
+	if (buffer->height > max_renderbuffer_size)
+	{
+			renderbuffer_height = max_renderbuffer_size;
+	}
+	else
+	{
+			renderbuffer_height = buffer->height;
+	}
+	if (Graphics_library_check_extension(GL_EXT_framebuffer_blit))
+	{
+			glBindFramebufferEXT(GL_READ_FRAMEBUFFER_EXT, buffer->multi_fbo);
+			glBindFramebufferEXT(GL_DRAW_FRAMEBUFFER_EXT, buffer->fbo);
+			glBlitFramebufferEXT(0, 0, renderbuffer_width, renderbuffer_height,
+				0, 0, renderbuffer_width, renderbuffer_height,
+				GL_COLOR_BUFFER_BIT|GL_DEPTH_BUFFER_BIT, GL_NEAREST);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->fbo);
+	}
+	else
+	{
+		 display_message(INFORMATION_MESSAGE,
+			 "Graphics_buffer_blit_framebuffer. glBlitFramebufferEXT not supported\n");
+	}
+#endif /* defined (GL_EXT_framebuffer_blit) */
+}
+
+int Graphics_buffer_set_multisample_framebuffer(struct Graphics_buffer *buffer, int preferred_antialias)
+{
+#ifdef GL_EXT_framebuffer_multisample
+
+	 int antialias;
+	 if (Graphics_library_check_extension(GL_EXT_framebuffer_multisample) &&
+			preferred_antialias > 0)
+	 {
+			int max_samples;
+			glGetIntegerv(GL_MAX_SAMPLES_EXT, &max_samples);
+			glGenFramebuffersEXT(1, &buffer->multi_fbo);
+			glBindFramebufferEXT(GL_FRAMEBUFFER_EXT, buffer->multi_fbo);
+			if (buffer->img > 0) {
+				 glBindTexture(GL_TEXTURE_2D, buffer->img);
+			}
+			if (preferred_antialias > max_samples)
+			{
+				 antialias = max_samples;
+				 display_message(INFORMATION_MESSAGE,
+						"Preferred antialias exceed the hardware capability.\n"
+						"Max number of multisample framebuffer is: %d\n"
+						"cmgui will set the antialiasing to max.\n",
+						antialias);
+			}
+			else
+			{
+				 antialias = preferred_antialias;
+			}
+			glGenRenderbuffersEXT(1, &buffer->msbuffer);
+			glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->msbuffer);
+			glRenderbufferStorageMultisampleEXT(
+				 GL_RENDERBUFFER_EXT, antialias, GL_RGBA,
+				 buffer->width, buffer->height);
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_COLOR_ATTACHMENT0_EXT,
+				 GL_RENDERBUFFER_EXT, buffer->msbuffer);
+			glGenRenderbuffersEXT(1, &buffer->multi_depthbuffer);
+			glBindRenderbufferEXT(GL_RENDERBUFFER_EXT,buffer->multi_depthbuffer);
+			glRenderbufferStorageMultisampleEXT(GL_RENDERBUFFER_EXT, antialias, GL_DEPTH_COMPONENT,
+				  buffer->width,  buffer->height);
+			glFramebufferRenderbufferEXT(GL_FRAMEBUFFER_EXT, GL_DEPTH_ATTACHMENT_EXT,
+				 GL_RENDERBUFFER_EXT, buffer->multi_depthbuffer);
+			return 1;
+	 }
+	 else
+	 {
+			display_message(INFORMATION_MESSAGE,
+				 "multisample_framebuffer EXT not available\n");
+			return 0;
+	 }
+#endif /* defined (GL_EXT_framebuffer_multisample) */
+	 return 0;
+}
+#endif /* defined (OPENGL_API) */
+
 DECLARE_OBJECT_FUNCTIONS(Graphics_buffer)
 
