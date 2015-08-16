@@ -5998,21 +5998,33 @@ If <force_onscreen> is non zero then the pixels will always be grabbed from the
 graphics window on screen.
 ==============================================================================*/
 {
-	int frame_width, frame_height, number_of_components, return_code, antialias;
-	int panel_width, panel_height;
+	int frame_width, frame_height, number_of_components, return_code, antialias, i, j,
+		panel_width, panel_height, tile_height, tile_width, tiles_across, tiles_down,
+		patch_width, patch_height;
+	double bottom = 0.0, fraction_across, fraction_down, left,
+		NDC_left = 0.0, NDC_top = 0.0, NDC_width = 0.0, NDC_height = 0.0,
+		original_NDC_left, original_NDC_top, original_NDC_width, original_NDC_height,
+		original_left, original_right, original_bottom, original_top,
+		original_near_plane, original_far_plane, right, top = 0.0,
+		viewport_left, viewport_top = 0.0, viewport_pixels_per_x = 0.0, viewport_pixels_per_y = 0.0,
+		original_viewport_left, original_viewport_top,
+		original_viewport_pixels_per_x, original_viewport_pixels_per_y,
+		real_left, real_right, real_bottom, real_top,
+		scaled_NDC_width,scaled_NDC_height ;
 #if defined (OPENGL_API) && defined (USE_MSAA)
 	int multisample_framebuffer_flag = 0;
 #endif
 
 	if (scene_viewer && width && height)
 	{
-		panel_width = scene_viewer->right - scene_viewer->left;
-		panel_height = scene_viewer->top - scene_viewer->bottom;
+		panel_width = Graphics_buffer_get_width(scene_viewer->graphics_buffer);
+		panel_height = Graphics_buffer_get_height(scene_viewer->graphics_buffer);
 		antialias = preferred_antialias;
 		if (antialias == -1)
 		{
-			antialias = scene_viewer->antialias;
+			antialias = 0;
 		}
+
 		if ((*width) && (*height))
 		{
 			frame_width = *width;
@@ -6026,18 +6038,42 @@ graphics window on screen.
 			*width = frame_width;
 			*height = frame_height;
 		}
+		if (frame_width <= panel_width)
+		{
+			tile_width = panel_width;
+			fraction_across = 1.0;
+			tiles_across = 1;
+		}
+		else
+		{
+			tile_width = panel_width;
+			fraction_across = (double)frame_width / (double)tile_width;
+			tiles_across = (int)ceil(fraction_across);
+		}
+		if (frame_height <= panel_height)
+		{
+			tile_height = frame_height;
+			fraction_down = 1.0;
+			tiles_down = 1;
+		}
+		else
+		{
+			tile_height = panel_height;
+			fraction_down = (double)frame_height / (double)tile_height;
+			tiles_down = (int)ceil(fraction_down);
+		}
 		/* If working offscreen try and allocate as large an area as possible */
 		struct Graphics_buffer *graphics_buffer = CREATE(Graphics_buffer)(
 			0,	GRAPHICS_BUFFER_ONSCREEN_TYPE,
 			GRAPHICS_BUFFER_DOUBLE_BUFFERING, GRAPHICS_BUFFER_MONO);
-		graphics_buffer->width = frame_width;
-		graphics_buffer->height = frame_height;
+		graphics_buffer->width = panel_width;
+		graphics_buffer->height = panel_height;
 #if defined (OPENGL_API) && (GL_EXT_framebuffer_object)
 		if (Graphics_library_load_extension("GL_EXT_framebuffer_object"))
 		{
 			graphics_buffer->type = GRAPHICS_BUFFER_GL_EXT_FRAMEBUFFER_TYPE;
 		}
-		Graphics_buffer_initialise_framebuffer(graphics_buffer, frame_width, frame_height);
+		Graphics_buffer_initialise_framebuffer(graphics_buffer, tile_width, tile_height);
 		Graphics_buffer_bind_framebuffer(graphics_buffer);
 #endif
 		if (!force_onscreen)
@@ -6056,34 +6092,124 @@ graphics window on screen.
 						multisample_framebuffer_flag =
 							Graphics_buffer_set_multisample_framebuffer(graphics_buffer, antialias);
 				}
-				Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
-					/*left*/0, /*bottom*/0, /*right*/frame_width, /*top*/frame_height,
-					antialias, preferred_transparency_layers,
-					/*drawing_offscreen*/1);
-				if (multisample_framebuffer_flag)
+#endif
+				if (tiles_across > 1)
 				{
-					Graphics_buffer_blit_framebuffer(graphics_buffer);
+					glPixelStorei(GL_PACK_ROW_LENGTH, frame_width);
 				}
+#endif
+				if ((tiles_across > 1) || (tiles_down > 1))
+				{
+					Scene_viewer_get_viewing_volume(scene_viewer,
+						&original_left, &original_right, &original_bottom, &original_top,
+						&original_near_plane, &original_far_plane);
+					Scene_viewer_get_NDC_info(scene_viewer,
+						&original_NDC_left, &original_NDC_top, &original_NDC_width, &original_NDC_height);
+					Scene_viewer_get_viewport_info(scene_viewer,
+						&original_viewport_left, &original_viewport_top,
+						&original_viewport_pixels_per_x, &original_viewport_pixels_per_y);
+					Scene_viewer_get_viewing_volume_and_NDC_info_for_specified_size(scene_viewer,
+							frame_width, frame_height, panel_width, panel_height, &real_left,
+						&real_right, &real_bottom, &real_top, &scaled_NDC_width, &scaled_NDC_height);
+					NDC_width = scaled_NDC_width / fraction_across;
+					NDC_height = scaled_NDC_height / fraction_down ;
+					viewport_pixels_per_x = original_viewport_pixels_per_x;
+					viewport_pixels_per_y = original_viewport_pixels_per_y;
+				}
+				for (j = 0 ; return_code && (j < tiles_down) ; j++)
+				{
+					if ((tiles_across > 1) || (tiles_down > 1))
+					{
+						bottom = real_bottom + (double)j * (real_top - real_bottom) / fraction_down;
+						top = real_bottom
+							+ (double)(j + 1) * (real_top - real_bottom) / fraction_down;
+						NDC_top = original_NDC_top + (double)j * original_NDC_height / fraction_down;
+						viewport_top = ((j + 1) * tile_height - frame_height) / viewport_pixels_per_y;
+					}
+					for (i = 0 ; return_code && (i < tiles_across) ; i++)
+					{
+						if ((tiles_across > 1) || (tiles_down > 1))
+						{
+							left = real_left + (double)i * (real_right - real_left) / fraction_across;
+							right = real_left +
+								(double)(i + 1) * (real_right - real_left) / fraction_across;
+							NDC_left = original_NDC_left + (double)i *
+								original_NDC_width / fraction_across;
+							viewport_left = i * tile_width / viewport_pixels_per_x;
+
+							Scene_viewer_set_viewing_volume(scene_viewer,
+								left, right, bottom, top,
+								original_near_plane, original_far_plane);
+							Scene_viewer_set_NDC_info(scene_viewer,
+								NDC_left, NDC_top, NDC_width, NDC_height);
+							Scene_viewer_set_viewport_info(scene_viewer,
+								viewport_left, viewport_top,
+								viewport_pixels_per_x, viewport_pixels_per_y);
+						}
+#if defined (OPENGL_API)
+#if !defined (USE_MSAA)
+						Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+							/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
+							antialias, preferred_transparency_layers,
+							/*drawing_offscreen*/1);
 #else
-				Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
-					/*left*/0, /*bottom*/0, /*right*/frame_width, /*top*/frame_height,
-					/*preferred_antialias*/0, preferred_transparency_layers,
-					/*drawing_offscreen*/1);
+						Scene_viewer_render_scene_in_viewport_with_overrides(scene_viewer,
+							/*left*/0, /*bottom*/0, /*right*/tile_width, /*top*/tile_height,
+							/*preferred_antialias*/0, preferred_transparency_layers,
+							/*drawing_offscreen*/1);
 #endif
-#endif /* defined (OPENGL_API) */
-				return_code=Graphics_library_read_pixels(*frame_data,
-					frame_width, frame_height, storage, /*front_buffer*/0);
+#endif
+						if (i < tiles_across - 1)
+						{
+							patch_width = tile_width;
+						}
+						else
+						{
+							patch_width = frame_width - tile_width * (tiles_across - 1);
+						}
+						if (j < tiles_down - 1)
+						{
+							patch_height = tile_height;
+						}
+						else
+						{
+							patch_height = frame_height - tile_height * (tiles_down - 1);
+						}
 #if defined (OPENGL_API) && defined (USE_MSAA)
-				if (multisample_framebuffer_flag)
-				{
-					Graphics_buffer_reset_multisample_framebuffer(graphics_buffer);
-				}
+						if (multisample_framebuffer_flag)
+						{
+							Graphics_buffer_blit_framebuffer(graphics_buffer);
+						}
 #endif
+						return_code=Graphics_library_read_pixels(*frame_data +
+							(i * tile_width + (j * tile_height )* frame_width) * number_of_components,
+							patch_width, patch_height, storage, /*front_buffer*/0);
+#if defined (OPENGL_API) && defined (USE_MSAA)
+						if (multisample_framebuffer_flag)
+						{
+							Graphics_buffer_reset_multisample_framebuffer(graphics_buffer);
+						}
+#endif
+					}
+				}
+				if (tiles_across > 1)
+				{
+					glPixelStorei(GL_PACK_ROW_LENGTH, 0);
+				}
+				if ((tiles_across > 1) || (tiles_down > 1))
+				{
+					Scene_viewer_set_viewing_volume(scene_viewer,
+						original_left, original_right, original_bottom, original_top,
+						original_near_plane, original_far_plane);
+					Scene_viewer_set_NDC_info(scene_viewer,
+						original_NDC_left, original_NDC_top, original_NDC_width, original_NDC_height);
+					Scene_viewer_set_viewport_info(scene_viewer,
+						original_viewport_left, original_viewport_top,
+						original_viewport_pixels_per_x, original_viewport_pixels_per_y);
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Graphics_window_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
 		}
@@ -6109,8 +6235,6 @@ graphics window on screen.
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"Scene_viewer_get_frame_pixels.  Unable to allocate pixels");
 				return_code=0;
 			}
 		}
@@ -6118,8 +6242,6 @@ graphics window on screen.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"Graphics_window_get_frame_pixels.  Invalid argument(s)");
 		return_code=0;
 	}
 
