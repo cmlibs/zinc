@@ -962,7 +962,12 @@ int fill_glyph_graphics_vertex_array(struct Graphics_vertex_array *array, int ve
 			Triple *points = point_list, *axis1s = axis1_list, *axis2s = axis2_list,
 				*axis3s = axis3_list, *scales = scale_list, *label_densities = label_density_list;
 			GLfloat floatValue[3];
+			GLfloat *labelBoundsFloatValue = 0;
 			int label_bounds_per_points = label_bounds_components * label_bounds_values;
+			if (label_bounds_per_points > 0)
+			{
+				labelBoundsFloatValue = new GLfloat[label_bounds_per_points];
+			}
 			for (unsigned int i=0;i<number_of_points;i++)
 			{
 				if (points)
@@ -1009,12 +1014,14 @@ int fill_glyph_graphics_vertex_array(struct Graphics_vertex_array *array, int ve
 				}
 				if (label_bounds)
 				{
-					CAST_TO_OTHER(floatValue,label_bounds,GLfloat,label_bounds_per_points);
+					CAST_TO_OTHER(labelBoundsFloatValue,label_bounds,GLfloat,label_bounds_per_points);
 					array->add_float_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL_BOUND,
-						label_bounds_per_points, 1, floatValue);
+						label_bounds_per_points, 1, labelBoundsFloatValue);
 					label_bounds += label_bounds_per_points;
 				}
 			}
+			if (labelBoundsFloatValue)
+				delete[] labelBoundsFloatValue;
 			if (labels && number_of_points)
 			{
 				std::string *labels_string = new std::string[number_of_points];
@@ -1054,7 +1061,12 @@ int fill_glyph_graphics_vertex_array(struct Graphics_vertex_array *array, int ve
 			Triple *points = point_list, *axis1s = axis1_list, *axis2s = axis2_list,
 				*axis3s = axis3_list, *scales = scale_list, *label_densities = label_density_list;
 			GLfloat floatValue[3];
+			GLfloat *labelBoundsFloatValue = 0;
 			int label_bounds_per_points = label_bounds_components * label_bounds_values;
+			if (label_bounds_per_points > 0)
+			{
+				labelBoundsFloatValue = new GLfloat[label_bounds_per_points];
+			}
 			for (unsigned int i=0;i<number_of_points;i++)
 			{
 				if (points)
@@ -1101,12 +1113,14 @@ int fill_glyph_graphics_vertex_array(struct Graphics_vertex_array *array, int ve
 				}
 				if (label_bounds)
 				{
-					CAST_TO_OTHER(floatValue,label_bounds,GLfloat,label_bounds_per_points);
+					CAST_TO_OTHER(labelBoundsFloatValue,label_bounds,GLfloat,label_bounds_per_points);
 					array->replace_float_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_LABEL_BOUND,
-						vertex_start + i, label_bounds_per_points, 1, floatValue);
+						vertex_start + i, label_bounds_per_points, 1, labelBoundsFloatValue);
 					label_bounds += label_bounds_per_points;
 				}
 			}
+			if (labelBoundsFloatValue)
+				delete[] labelBoundsFloatValue;
 			if (names)
 			{
 				array->replace_integer_vertex_buffer_at_position(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_VERTEX_ID,
