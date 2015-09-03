@@ -27,6 +27,9 @@ streams.
 #include <stdlib.h>
 #define HAVE_ZLIB
 #include <zlib.h>
+#if ZLIB_VER_REVISION == 3
+	#define ZLIB_OLD
+#endif
 #define HAVE_BZLIB
 #include <bzlib.h>
 #include "general/debug.h"
@@ -127,7 +130,11 @@ DESCRIPTION :
 
 #if defined (HAVE_ZLIB)
 	/* IO_STREAM_GZIP_FILE_TYPE */
+#ifdef ZLIB_OLD
 	gzFile *gzip_file_handle;
+#else
+	gzFile gzip_file_handle;
+#endif
 	z_stream gzStream;
 	int last_gzip_return;
 #endif /* defined (HAVE_ZLIB) */
@@ -445,7 +452,11 @@ DESCRIPTION :
 
 #if defined (HAVE_ZLIB)
 			/* IO_STREAM_GZIP_FILE_TYPE */
+#ifdef ZLIB_OLD
 			io_stream->gzip_file_handle = (gzFile *)NULL;
+#else
+			io_stream->gzip_file_handle = (gzFile)NULL;
+#endif
 			io_stream->last_gzip_return = Z_OK;
 #endif /* defined (HAVE_ZLIB) */
 
@@ -576,7 +587,11 @@ int IO_stream_open_for_read_compression_specified(struct IO_stream *stream, cons
 #if defined (HAVE_ZLIB)
 				if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP == data_compression_type)
 				{
+#ifdef ZLIB_OLD
 					stream->gzip_file_handle = (gzFile_s **)gzopen(filename, "rb");
+#else
+					stream->gzip_file_handle = (gzFile)gzopen(filename, "rb");
+#endif
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
@@ -740,7 +755,11 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
+#ifdef ZLIB_OLD
 					stream->gzip_file_handle = (gzFile_s **)gzopen(filename, "rb");
+#else
+					stream->gzip_file_handle = (gzFile)gzopen(filename, "rb");
+#endif
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;

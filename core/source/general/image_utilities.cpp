@@ -5504,7 +5504,7 @@ Clears 'valid' flag if fails.
 
 int Cmgui_image_information_set_file_name_series(
 	struct Cmgui_image_information *cmgui_image_information,
-	const char *file_name_template, const char *file_number_pattern, int start_file_number,
+	char *file_name_template, const char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2002
@@ -5520,8 +5520,8 @@ replaces andy existing file list in the <cmgui_image_information>.
 Clears 'valid' flag if fails.
 ==============================================================================*/
 {
-	char *file_number_string, format[20], *pattern_position, *prefix,
-		*temp_file_name, **temp_file_names, *suffix;
+	char *file_number_string, format[20], *pattern_position, *prefix, *suffix,
+		*temp_file_name, **temp_file_names;
 	int error, file_number, i, new_number_of_file_names, pattern_width, return_code;
 
 	ENTER(Cmgui_image_information_set_file_name_series);
