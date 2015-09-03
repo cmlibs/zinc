@@ -1004,35 +1004,6 @@ faces or lines of other elements not being destroyed.
 	return (return_code);
 } /* Element_point_ranges_is_wholly_within_element_list_tree */
 
-int Element_point_ranges_element_is_in_FE_region(
-	struct Element_point_ranges *element_point_ranges, void *fe_region_void)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Returns true if the element for <element_point_ranges> is in <fe_region>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region *fe_region;
-
-	ENTER(Element_point_ranges_element_is_in_FE_region);
-	if (element_point_ranges && (fe_region = (struct FE_region *)fe_region_void))
-	{
-		return_code = FE_region_contains_FE_element(fe_region,
-			element_point_ranges->id.element);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_element_is_in_FE_region.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_ranges_element_is_in_FE_region */
-
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges)

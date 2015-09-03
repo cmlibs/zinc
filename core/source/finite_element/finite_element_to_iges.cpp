@@ -24,6 +24,7 @@ to file.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
 #include "general/debug.h"
@@ -771,7 +772,7 @@ basis type, however every element type will be converted to a cubic.
 				if (return_code)
 				{
 					if ((get_data->element = create_FE_element_with_line_shape(
-							  /*identifier*/1,get_data->fe_region, /*dimension*/2)) &&
+							  /*identifier*/1, FE_region_find_FE_mesh_by_dimension(get_data->fe_region, /*dimension*/2))) &&
 						FE_element_define_tensor_product_basis(get_data->element,
 						/*dimension*/2,/*basis_type*/CUBIC_LAGRANGE, get_data->fe_field))
 					{
@@ -802,7 +803,7 @@ basis type, however every element type will be converted to a cubic.
 					{
 						face_shape = get_FE_element_shape_of_face(element_shape, i, get_data->fe_region);
 						face = CREATE(FE_element)(&cm, face_shape,
-								 get_data->fe_region, (struct FE_element *)NULL);
+							FE_region_find_FE_mesh_by_dimension(get_data->fe_region, 1), (struct FE_element *)NULL);
 						if (face != NULL)
 						{
 							/* must put the face in the element to inherit fields */
@@ -859,8 +860,8 @@ basis type, however every element type will be converted to a cubic.
 				if (!(true_face && get_FE_element_identifier(true_face, &cm)))
 				{
 					cm.type = CM_LINE;
-					cm.number = FE_region_get_next_FE_element_identifier(get_data->fe_region,
-						/*dimension*/1, get_data->extra_line_number + 1);
+					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(get_data->fe_region, /*dimension*/1);
+					cm.number = fe_mesh->get_next_FE_element_identifier(get_data->extra_line_number + 1);
 					get_data->extra_line_number = cm.number;
 				}
 				set_FE_element_identifier(face, &cm);

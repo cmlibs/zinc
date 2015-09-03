@@ -15,6 +15,7 @@
 #include "zinc/fieldsubobjectgroup.h"
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_group.hpp"
@@ -480,16 +481,15 @@ public:
 		{
 			if (field)
 			{
-				FE_region *fe_region = cmzn_mesh_get_FE_region_internal(this->master_mesh);
-				CHANGE_LOG(cmzn_element) *fe_element_changes =
-					FE_region_get_FE_element_changes(fe_region, this->dimension);
+				FE_mesh *fe_mesh = cmzn_mesh_get_FE_mesh_internal(this->master_mesh);
+				CHANGE_LOG(cmzn_element) *fe_element_changes = fe_mesh->getChangeLog();
 				int change_summary = 0;
 				CHANGE_LOG_GET_CHANGE_SUMMARY(cmzn_element)(fe_element_changes, &change_summary);
 				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(cmzn_element))
 				{
 					const int old_size = NUMBER_IN_LIST(cmzn_element)(object_list);
-					REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_element)(
-						FE_element_is_not_in_FE_region, (void *)fe_region, object_list);
+					REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_element)(FE_element_is_not_in_FE_mesh,
+						(void *)fe_mesh, object_list);
 					const int new_size = NUMBER_IN_LIST(cmzn_element)(object_list);
 					if (new_size != old_size)
 					{
@@ -504,11 +504,7 @@ public:
 
 		bool isElementCompatible(cmzn_element_id element)
 		{
-			if (get_FE_element_dimension(element) != dimension)
-				return false;
-			FE_region *fe_region = cmzn_mesh_get_FE_region_internal(master_mesh);
-			FE_region *element_fe_region = FE_element_get_FE_region(element);
-			return (element_fe_region == fe_region);
+			return cmzn_mesh_get_FE_mesh_internal(master_mesh) == FE_element_get_FE_mesh(element);
 		}
 
 		bool isParentElementCompatible(cmzn_element_id element)

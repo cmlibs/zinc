@@ -53,6 +53,11 @@ struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mes
 /** Internal use only
  * @return non-accessed fe_region for this mesh.
  */
+FE_mesh *cmzn_mesh_get_FE_mesh_internal(cmzn_mesh_id mesh);
+
+/** Internal use only
+ * @return non-accessed fe_region for this mesh.
+ */
 FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh);
 
 /** Internal use only.

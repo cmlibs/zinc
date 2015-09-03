@@ -18,6 +18,7 @@ Functions for exporting finite element data to a file.
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/export_finite_element.h"
 #include "general/compare.h"
@@ -1509,7 +1510,8 @@ Returns true if the <write_criterion> -- some options of which require the
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
-						FE_region_element_or_parent_has_field(fe_region, element, field)))
+						FE_element_or_parent_has_field(element, field,
+							(LIST_CONDITIONAL_FUNCTION(FE_element) *)0, (void *)0)))
 					{
 						return_code = 0;
 					}
@@ -1532,7 +1534,8 @@ Returns true if the <write_criterion> -- some options of which require the
 				for (i = 0; (i < number_of_fields) && (!return_code); i++)
 				{
 					if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
-						FE_region_element_or_parent_has_field(fe_region, element, field))
+						FE_element_or_parent_has_field(element, field,
+							(LIST_CONDITIONAL_FUNCTION(FE_element) *)0, (void *)0))
 					{
 						return_code = 1;
 					}

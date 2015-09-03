@@ -26,15 +26,6 @@ Global types
 ------------
 */
 
-struct FE_region;
-/*******************************************************************************
-LAST MODIFIED : 28 January 2003
-
-DESCRIPTION :
-Forward declaration of FE_region for FE_node and FE_element to maintain a
-pointer to it -- indirectly through their FE_node/element_field_info.
-==============================================================================*/
-
 struct FE_node_field;
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
@@ -364,32 +355,29 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field,field, \
 /**
  * Returns a new FE_element_field list that is identical to <element_field_list>
  * except that it references equivalent same-name fields and scale factor sets
- * from <fe_region>.
+ * from <fe_mesh>.
  * It is an error if an equivalent FE_field is not found.
  */
 struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
-	struct LIST(FE_element_field) *element_field_list, struct FE_region *fe_region);
+	struct LIST(FE_element_field) *element_field_list, FE_mesh *fe_mesh);
 
+/**
+ * Creates a struct FE_element_field_info with a pointer to <fe_region> and a
+ * copy of the <fe_element_field_list>.
+ * Fails if more than one FE_element_field in the list references the same field.
+ * If <fe_element_field_list> is omitted, an empty list is assumed.
+ * Note:
+ * This should only be called by FE_region functions, and the FE_region must be
+ * its own master. The returned object is added to the list of
+ * FE_element_field_info in the FE_region and is therefore owned by the FE_region.
+ * It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
+ * will clear before it is destroyed. If it becomes necessary to have other owners
+ * of these objects, the common parts of it and FE_region should be extracted to a
+ * common object.
+ */
 struct FE_element_field_info *CREATE(FE_element_field_info)(
-	struct FE_region *fe_region, 
+	FE_mesh *fe_mesh,
 	struct LIST(FE_element_field) *fe_element_field_list);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_element_field_info with a pointer to <fe_region> and a copy
-of the <fe_element_field_list>.
-Fails if more than one FE_element_field in the list references the same field.
-If <fe_element_field_list> is omitted, an empty list is assumed.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is added to the list of
-FE_element_field_info in the FE_region and is therefore owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
 
 int DESTROY(FE_element_field_info)(
 	struct FE_element_field_info **fe_element_field_info_address);
@@ -405,15 +393,12 @@ PROTOTYPE_OBJECT_FUNCTIONS(FE_element_field_info);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element_field_info);
 
-int FE_element_field_info_clear_FE_region(
+/**
+ * Clears the pointer to FE_mesh in <element_field_info>.
+ * Private function only to be called by ~FE_mesh.
+ */
+int FE_element_field_info_clear_FE_mesh(
 	struct FE_element_field_info *element_field_info, void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <element_field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
 
 int FE_element_field_info_has_FE_field(
 	struct FE_element_field_info *element_field_info, void *fe_field_void);
@@ -500,6 +485,25 @@ Note it is very important that the old and the new FE_element_field_info
 structures describe the same data layout in the element information!
 Private function only to be called by FE_region when merging FE_regions!
 ==============================================================================*/
+
+/**
+ * Check that each Standard_node_to_element_map used to define field has
+ * node_value/version labels as well as offsets into component DOFs and if not
+ * find them and check they are consistently used for all elements i.e. that
+ * each use of the same array offset in an element refers to the same
+ * node_value/version.
+ * @param element_field_info  The FE_element_field_info to check against.
+ * @param field  The FE_field to check/update.
+ * @param target_fe_region  Optional FE_region where nodes and equivalent field
+ * of same name can be found. Used if field not defined on node in same region.
+ * @return  CMZN_OK if labels are complete and consistent, any other status if
+ * failed. Failure can occur if nodal value labels are absent at the nodes, or
+ * if the implementation discovers the same element field component uses the
+ * same offsets for different nodal labels but is unable to fix it.
+ */
+int FE_element_field_info_check_field_node_value_labels(
+	struct FE_element_field_info *element_field_info, FE_field *field,
+	struct FE_region *target_fe_region);
 
 struct FE_element_type_node_sequence
 	*CREATE(FE_element_type_node_sequence)(struct FE_element *element);

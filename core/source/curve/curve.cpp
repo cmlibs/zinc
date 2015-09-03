@@ -30,6 +30,7 @@ quadratic Lagrange, cubic Lagrange.
 #include "general/object.h"
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
@@ -74,7 +75,7 @@ Returns the element at position element_no in the curve.
 	ENTER(cc_get_element);
 	if (curve)
 	{
-		element=FE_region_get_FE_element_from_identifier(curve->fe_region, 1, element_no);
+		element = curve->fe_mesh->findElementByIdentifier(element_no);
 	}
 	else
 	{
@@ -389,6 +390,7 @@ but it is at least destroyable when returned from this function.
 
 			curve->region=cmzn_region_create_internal();
 			curve->fe_region=ACCESS(FE_region)(cmzn_region_get_FE_region(curve->region));
+			curve->fe_mesh=FE_region_find_FE_mesh_by_dimension(curve->fe_region, 1);
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
 			curve->template_node=(struct FE_node *)NULL;
@@ -408,7 +410,7 @@ but it is at least destroyable when returned from this function.
 
 			curve->access_count=0;
 
-			if (!(curve->name && curve->region && curve->fe_region))
+			if (!(curve->name && curve->region && curve->fe_region && curve->fe_mesh))
 			{
 				display_message(ERROR_MESSAGE,
 					"cc_create_blank.  Could not create curve region");
@@ -1332,10 +1334,10 @@ value will be zero in its initial state.
 							{
 								char *scale_factor_set_name = FE_basis_get_description_string(value_basis);
 								cmzn_mesh_scale_factor_set *scale_factor_set =
-									FE_region_find_mesh_scale_factor_set_by_name(curve->fe_region, scale_factor_set_name);
+									curve->fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 								if (!scale_factor_set)
 								{
-									scale_factor_set = FE_region_create_mesh_scale_factor_set(curve->fe_region);
+									scale_factor_set = curve->fe_mesh->create_scale_factor_set();
 									scale_factor_set->setName(scale_factor_set_name);
 								}
 								DEALLOCATE(scale_factor_set_name);
@@ -1352,7 +1354,7 @@ value will be zero in its initial state.
 							/* curve must access template_element */
 							if ((curve->template_element = ACCESS(FE_element)(
 								CREATE(FE_element)(&element_identifier, element_shape,
-							   curve->fe_region, (struct FE_element *)NULL))) &&
+							   curve->fe_mesh, (struct FE_element *)NULL))) &&
 								set_FE_element_number_of_nodes(curve->template_element,
 									curve->value_nodes_per_element) &&
 								(CMZN_OK == set_FE_element_number_of_scale_factor_sets(
@@ -2171,7 +2173,7 @@ expected to make the element have a finite size.
 		cm.type = CM_ELEMENT;
 		cm.number=element_no;
 		element = CREATE(FE_element)(&cm, (struct FE_element_shape *)NULL,
-			(struct FE_region *)NULL, curve->template_element);
+			(FE_mesh *)NULL, curve->template_element);
 		if (NULL != element)
 		{
 			return_code=1;
@@ -2200,8 +2202,7 @@ expected to make the element have a finite size.
 			{
 				/* last element: share last node of last element, make new nodes as
 					 copy of it */
-				if ((last_element=FE_region_get_FE_element_from_identifier(
-					curve->fe_region, 1, number_of_elements))&&
+				if ((last_element=curve->fe_mesh->findElementByIdentifier(number_of_elements))&&
 					get_FE_element_node(last_element,curve->value_nodes_per_element-1,
 						&node_to_copy))
 				{
@@ -2240,8 +2241,7 @@ expected to make the element have a finite size.
 					 nodes and elements to keep sequential */
 				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				if ((existing_element=FE_region_get_FE_element_from_identifier
-					(curve->fe_region, 1, element_no))&&
+				if ((existing_element=curve->fe_mesh->findElementByIdentifier(element_no))&&
 					get_FE_element_node(existing_element,0,&node_to_copy)&&
 					(node_no=get_FE_node_identifier(node_to_copy))&&
 					(number_of_nodes = fe_nodeset->get_number_of_FE_nodes()))
@@ -2249,11 +2249,10 @@ expected to make the element have a finite size.
 					/* increment numbers of elements to follow */
 					for (i=number_of_elements;(i>=element_no)&&return_code;i--)
 					{
-						existing_element = FE_region_get_FE_element_from_identifier(curve->fe_region, 1, i);
+						existing_element = curve->fe_mesh->findElementByIdentifier(i);
 						if (NULL != existing_element)
 						{
-							if (!FE_region_change_FE_element_identifier(
-								curve->fe_region, existing_element, i + 1))
+							if (!curve->fe_mesh->change_FE_element_identifier(existing_element, i + 1))
 							{
 								return_code=0;
 							}
@@ -2325,7 +2324,7 @@ expected to make the element have a finite size.
 			}
 			if (return_code)
 			{
-				if (!FE_region_merge_FE_element(curve->fe_region, element))
+				if (!curve->fe_mesh->merge_FE_element(element))
 				{
 					return_code = 0;
 				}
@@ -2388,16 +2387,13 @@ at the other end of the element being deleted.
 		(0<element_no)&&(element_no <= number_of_elements))
 	{
 		return_code=1;
-		if ((element_to_delete=FE_region_get_FE_element_from_identifier(
-			curve->fe_region, 1, element_no))&&
+		if ((element_to_delete=curve->fe_mesh->findElementByIdentifier(element_no))&&
 			get_FE_element_node(element_to_delete,0,&left_node)&&
 			get_FE_element_node(element_to_delete,curve->value_nodes_per_element-1,
 				&right_node))
 		{
-			left_element=FE_region_get_FE_element_from_identifier(
-				curve->fe_region, 1, element_no - 1);
-			right_element=FE_region_get_FE_element_from_identifier(
-				curve->fe_region, 1, element_no + 1);
+			left_element=curve->fe_mesh->findElementByIdentifier(element_no - 1);
+			right_element=curve->fe_mesh->findElementByIdentifier(element_no + 1);
 			first_node_to_delete=get_FE_node_identifier(left_node);
 			last_node_to_delete=get_FE_node_identifier(right_node);
 			if (1==element_no)
@@ -2483,7 +2479,7 @@ at the other end of the element being deleted.
 				/* remove the element and nodes */
 				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				if (FE_region_remove_FE_element(curve->fe_region, element_to_delete))
+				if (curve->fe_mesh->remove_FE_element(element_to_delete))
 				{
 					for (i=first_node_to_delete;(i<=last_node_to_delete)&&return_code;i++)
 					{
@@ -2502,12 +2498,10 @@ at the other end of the element being deleted.
 			/* decrement numbers of elements to follow */
 			for (i=element_no+1;(i<=number_of_elements)&&return_code;i++)
 			{
-				existing_element = FE_region_get_FE_element_from_identifier(
-					curve->fe_region, 1, i);
+				existing_element = curve->fe_mesh->findElementByIdentifier(i);
 				if (NULL != existing_element)
 				{
-					if (!FE_region_change_FE_element_identifier(curve->fe_region,
-						existing_element, i - 1))
+					if (!curve->fe_mesh->change_FE_element_identifier(existing_element, i - 1))
 					{
 						return_code=0;
 					}

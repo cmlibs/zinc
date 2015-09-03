@@ -306,15 +306,6 @@ since faces and lines are destroyed with their parents if they are not also
 faces or lines of other elements not being destroyed.
 ==============================================================================*/
 
-int Element_point_ranges_element_is_in_FE_region(
-	struct Element_point_ranges *element_point_ranges, void *fe_region_void);
-/*******************************************************************************
-LAST MODIFIED : 23 January 2003
-
-DESCRIPTION :
-Returns true if the element for <element_point_ranges> is in <fe_region>.
-==============================================================================*/
-
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges);

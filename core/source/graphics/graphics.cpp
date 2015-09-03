@@ -3417,8 +3417,7 @@ cmzn_field_change_flags cmzn_graphics_get_most_significant_field_change(
 /** data for passing to FE_element_as_graphics_name_has_changed */
 struct FE_element_as_graphics_name_has_changed_data
 {
-	FE_region *fe_region;
-	int domainDimension;
+	FE_mesh *fe_mesh;
 	struct CHANGE_LOG(FE_element) *elementChanges[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CHANGE_LOG(FE_node) *nodeChanges;
 };
@@ -3431,7 +3430,7 @@ int FE_element_as_graphics_name_has_changed(int elementIdentifier, void *data_vo
 {
 	FE_element_as_graphics_name_has_changed_data *data =
 		reinterpret_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
-	FE_element *element = FE_region_get_FE_element_from_identifier(data->fe_region, data->domainDimension, elementIdentifier);
+	FE_element *element = data->fe_mesh->findElementByIdentifier(elementIdentifier);
 	// won't find element if it has been removed
 	if (element)
 		return FE_element_or_parent_changed(element, data->elementChanges, data->nodeChanges);
@@ -3532,15 +3531,23 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 					return 1;
 				}
 				FE_element_as_graphics_name_has_changed_data data;
-				data.fe_region = cmzn_region_get_FE_region(graphics->scene->region);
-				data.domainDimension = domainDimension;
-				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-					data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
-				data.nodeChanges = nodeChanges;
-				/* partial rebuild for few node/element field changes */
-				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
-					FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
+				data.fe_mesh = FE_region_find_FE_mesh_by_dimension(
+					cmzn_region_get_FE_region(graphics->scene->region), domainDimension);
+				if (data.fe_mesh)
+				{
+					for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+						data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
+					data.nodeChanges = nodeChanges;
+					/* partial rebuild for few node/element field changes */
+					GT_object_conditional_invalidate_primitives(graphics->graphics_object,
+						FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
+					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "cmzn_graphics_field_change.  Missing FE_mesh");
+					return 0;
+				}
 			}
 		}
 	}

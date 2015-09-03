@@ -21,6 +21,7 @@ data points.
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/snake.h"
 #include "general/debug.h"
@@ -310,7 +311,7 @@ Returns second derivatives of 1-D Hermite basis functions at <xi> in [0.0, 1.0].
 	return (return_code);
 } /* calculate_Hermite_basis_1d_second_derivatives */
 
-struct FE_element *create_1d_hermite_element(struct FE_region *fe_region,
+struct FE_element *create_1d_hermite_element(FE_mesh *fe_mesh,
 	int number_of_fields, struct FE_field **field_array)
 /*******************************************************************************
 LAST MODIFIED : 29 March 2006
@@ -329,12 +330,15 @@ Hermite basis over it.
 	struct FE_element *element;
 	struct FE_element_field_component *component, **components;
 	struct FE_element_shape *element_shape;
+	struct FE_region *fe_region;
 	struct MANAGER(FE_basis) *basis_manager;
 	struct Standard_node_to_element_map *standard_node_map;
 
 	ENTER(create_1d_hermite_element);
 	element = (struct FE_element *)NULL;
-	if (fe_region && (basis_manager = FE_region_get_basis_manager(fe_region)) &&
+	if (fe_mesh && (1 == fe_mesh->getDimension()) &&
+		(fe_region = fe_mesh->get_FE_region()) &&
+		(basis_manager = FE_region_get_basis_manager(fe_region)) &&
 		(0 < number_of_fields) && field_array)
 	{
 		return_code = 1;
@@ -344,18 +348,17 @@ Hermite basis over it.
 		/* make 1-d cubic Hermite basis */
 		element_basis = make_FE_basis(basis_type, basis_manager);
 		char *scale_factor_set_name = FE_basis_get_description_string(element_basis);
-		cmzn_mesh_scale_factor_set *scale_factor_set =
-			FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+		cmzn_mesh_scale_factor_set *scale_factor_set = fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 		if (!scale_factor_set)
 		{
-			scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+			scale_factor_set = fe_mesh->create_scale_factor_set();
 			scale_factor_set->setName(scale_factor_set_name);
 		}
 		DEALLOCATE(scale_factor_set_name);
 
 		cm.type = CM_ELEMENT;
 		cm.number = 0;
-		if (NULL != (element = CREATE(FE_element)(&cm, element_shape, fe_region,
+		if (NULL != (element = CREATE(FE_element)(&cm, element_shape, fe_mesh,
 			/*template*/(struct FE_element *)NULL)))
 		{
 			number_of_scale_factors = 4;
@@ -955,18 +958,17 @@ int create_FE_element_snake_from_data_points(
 				}
 				if (return_code)
 				{
-					if (NULL != (template_element = create_1d_hermite_element(fe_region,
+					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, /*dimension*/1);
+					if (NULL != (template_element = create_1d_hermite_element(fe_mesh,
 						number_of_fe_fields, fe_field_array)))
 					{
 						cm.type = CM_ELEMENT;
 						cm.number = 1;
 						for (j = 0; (j < number_of_elements) && return_code; j++)
 						{
-							/* get next unused element identifier from fe_region */
-							cm.number = FE_region_get_next_FE_element_identifier(
-								fe_region, /*dimension*/1, cm.number);
+							cm.number = fe_mesh->get_next_FE_element_identifier(cm.number);
 							if (NULL != (element = CREATE(FE_element)(&cm,
-								(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+								(struct FE_element_shape *)NULL, (FE_mesh *)NULL,
 								template_element)))
 							{
 								ACCESS(FE_element)(element);
@@ -977,7 +979,7 @@ int create_FE_element_snake_from_data_points(
 								}
 								if (return_code)
 								{
-									if (FE_region_merge_FE_element(fe_region, element))
+									if (fe_mesh->merge_FE_element(element))
 									{
 										if (mesh_group)
 										{

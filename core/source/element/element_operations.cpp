@@ -21,7 +21,9 @@
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_group.hpp"
 #include "element/element_operations.h"
+#include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "general/message.h"
@@ -629,13 +631,13 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int i, number_of_elements, number_of_values, return_code;
 	struct FE_element *element_with_identifier;
 	struct FE_element_values_number *element_values;
+	FE_mesh *fe_mesh;
 
 	ENTER(FE_region_change_element_identifiers);
-	if (fe_region)
+	if (fe_region && (fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
 	{
 		return_code = 1;
-		number_of_elements = FE_region_get_number_of_FE_elements_of_dimension(
-			fe_region, dimension);
+		number_of_elements = fe_mesh->get_number_of_FE_elements();
 		if ((0 < number_of_elements) && return_code)
 		{
 			if (sort_by_field)
@@ -677,9 +679,7 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					array_data.field_cache = field_cache;
 					array_data.element_values = element_values;
 					array_data.sort_by_field = sort_by_field;
-					if (!FE_region_for_each_FE_element_of_dimension(fe_region,
-						dimension, FE_element_and_values_to_array,
-						(void *) &array_data))
+					if (!fe_mesh->for_each_FE_element(FE_element_and_values_to_array, (void *)&array_data))
 					{
 						display_message(ERROR_MESSAGE,
 							"FE_region_change_element_identifiers.  "
@@ -737,25 +737,6 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 						}
 					}
 				}
-				if (return_code)
-				{
-					/* check none of the new numbers are in use by other elements
-					 in the fe_region */
-					for (i = 0; (i < number_of_elements) && return_code; i++)
-					{
-						element_with_identifier = FE_region_get_FE_element_from_identifier(
-							fe_region, dimension, element_values[i].new_number);
-						if ((element_with_identifier) &&
-							(!FE_region_contains_FE_element(fe_region,
-								element_with_identifier)))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_region_change_element_identifiers.  "
-								"Element using new number already exists in master region");
-							return_code = 0;
-						}
-					}
-				}
 
 				if (return_code)
 				{
@@ -767,11 +748,9 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					cmzn_mesh_group_id mesh = cmzn_field_element_group_get_mesh_group(element_group);
 					for (i = 0; (i < number_of_elements) && return_code; i++)
 					{
-						element_with_identifier = FE_region_get_FE_element_from_identifier(
-							fe_region, dimension, element_values[i].new_number);
+						element_with_identifier = fe_mesh->findElementByIdentifier(element_values[i].new_number);
 						/* only modify if element doesn't already have correct identifier */
-						if (element_with_identifier
-							!= element_values[i].element)
+						if (element_with_identifier != element_values[i].element)
 						{
 							if ((mesh == NULL) || (((element_with_identifier == NULL) ||
 								cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(mesh),
@@ -782,18 +761,17 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 								if (element_with_identifier)
 								{
 									while ((struct FE_element *)NULL !=
-										FE_region_get_FE_element_from_identifier(
-											fe_region, dimension, next_spare_element_number))
+										fe_mesh->findElementByIdentifier(next_spare_element_number))
 									{
 										++next_spare_element_number;
 									}
-									if (!FE_region_change_FE_element_identifier(fe_region,
+									if (!fe_mesh->change_FE_element_identifier(
 										element_with_identifier, next_spare_element_number))
 									{
 										return_code = 0;
 									}
 								}
-								if (!FE_region_change_FE_element_identifier(fe_region,
+								if (!fe_mesh->change_FE_element_identifier(
 									element_values[i].element, element_values[i].new_number))
 								{
 									display_message(ERROR_MESSAGE,

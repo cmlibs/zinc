@@ -13,6 +13,7 @@
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "finite_element/import_finite_element.h"
@@ -158,8 +159,9 @@ is in the root_region itself. The REGION_PATH must end in
 				{
 					/* get existing element and check it has the dimension, or create
 						 a dummy element with unspecified shape and the dimension */
-					if (NULL != (element = FE_region_get_or_create_FE_element_with_identifier(
-						fe_region, dimension, cm.number, static_cast<FE_element_shape *>(0))))
+					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
+					if (fe_mesh && (NULL != (element = fe_mesh->get_or_create_FE_element_with_identifier(
+						cm.number, static_cast<FE_element_shape *>(0)))))
 					{
 						*element_address = element;
 						/* now read the xi position */
@@ -2065,8 +2067,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 	{
 		*field_address = (struct FE_field *)NULL;
 	}
+	FE_mesh *fe_mesh = 0;
 	if (input_file && fe_region && element && field_address &&
-		(0 < (dimension = get_FE_element_dimension(element))))
+		(0 < (dimension = get_FE_element_dimension(element))) &&
+		(fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
 	{
 		if (NULL != (field = read_FE_field(input_file, fe_region)))
 		{
@@ -2380,10 +2384,10 @@ Reads an element field from an <input_file>, adding it to the fields defined at
 																			noScaleFactors = false;
 																			char *scale_factor_set_name = FE_basis_get_description_string(basis);
 																			cmzn_mesh_scale_factor_set *scale_factor_set =
-																				FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+																				fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 																			if (!scale_factor_set)
 																			{
-																				scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+																				scale_factor_set = fe_mesh->create_scale_factor_set();
 																				scale_factor_set->setName(scale_factor_set_name);
 																			}
 																			FE_element_field_component_set_scale_factor_set(
@@ -2698,10 +2702,13 @@ from a previous call to this function.
 	struct CM_element_information element_identifier;
 	struct FE_element *element;
 	struct FE_field *field;
+	FE_mesh *fe_mesh;
 
 	ENTER(read_FE_element_field_info);
 	element = (struct FE_element *)NULL;
-	if (input_file && fe_region && element_shape && field_order_info)
+	if (input_file && fe_region && element_shape && field_order_info &&
+		get_FE_element_shape_dimension(element_shape, &dimension) && (0 < dimension) &&
+		(fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
 	{
 		if (*field_order_info)
 		{
@@ -2712,10 +2719,9 @@ from a previous call to this function.
 		element_identifier.number = 0;
 		element_identifier.type = CM_ELEMENT;
 		if (NULL != (element = CREATE(FE_element)(&element_identifier, element_shape,
-			fe_region, (struct FE_element *)NULL)))
+			fe_mesh, (struct FE_element *)NULL)))
 		{
 			return_code = 1;
-			get_FE_element_shape_dimension(element_shape, &dimension);
 			/* read in the scale factor information */
 			if (!((1 == IO_stream_scan(input_file, "Scale factor sets=%d ",
 				&number_of_scale_factor_sets)) && (0 <= number_of_scale_factor_sets)))
@@ -2748,11 +2754,10 @@ from a previous call to this function.
 						{
 							char *scale_factor_set_name = remove_leading_trailing_blanks(scale_factor_set_text);
 							DEALLOCATE(scale_factor_set_text);
-							cmzn_mesh_scale_factor_set *scale_factor_set =
-								FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+							cmzn_mesh_scale_factor_set *scale_factor_set = fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 							if (!scale_factor_set)
 							{
-								scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+								scale_factor_set = fe_mesh->create_scale_factor_set();
 								scale_factor_set->setName(scale_factor_set_name);
 							}
 							DEALLOCATE(scale_factor_set_name);
@@ -2954,7 +2959,7 @@ in a grid field.
 		{
 			/* create element based on template element; read and fill in contents */
 			if (NULL != (element = CREATE(FE_element)(&element_identifier,
-				(struct FE_element_shape *)NULL, (struct FE_region *)NULL,
+				(struct FE_element_shape *)NULL, (FE_mesh *)NULL,
 				template_element)))
 			{
 				if (get_FE_element_number_of_faces(element, &number_of_faces))
@@ -2964,6 +2969,15 @@ in a grid field.
 					IO_stream_scan(input_file, " Faces:%n", &face_token_length);
 					if (0 < face_token_length)
 					{
+						FE_mesh *face_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension - 1);
+						if ((!face_mesh) && (0 < number_of_faces))
+						{
+							location = IO_stream_get_location_string(input_file);
+							display_message(ERROR_MESSAGE, "read_FE_element.  Faces token without face mesh of dimension %d. %s",
+								dimension - 1, location);
+							DEALLOCATE(location);
+							return_code = 0;
+						}
 						for (i = 0; (i < number_of_faces) && return_code; i++)
 						{
 							/* file input */
@@ -3004,17 +3018,17 @@ in a grid field.
 									/* get existing face and check it has the dimension less 1,
 										 or create a dummy face element with unspecified shape and
 										 with dimension one less than parent element */
-									if (NULL != (face_element =
-										FE_region_get_or_create_FE_element_with_identifier(
-											fe_region, dimension - 1, face_identifier.number, static_cast<FE_element_shape *>(0))))
+									// ???GRC shouldn't be null shape
+									if (NULL != (face_element = face_mesh->get_or_create_FE_element_with_identifier(
+										face_identifier.number, static_cast<FE_element_shape *>(0))))
 									{
 										if (!set_FE_element_face(element, i, face_element))
 										{
 											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,"read_FE_element.  "
-												"Could not set face %d of %s %d", i,
+												"Could not set face %d of %s %d.  %s", i,
 												CM_element_type_string(element_identifier.type),
-												element_identifier.number);
+												element_identifier.number, location);
 											DEALLOCATE(location);
 											return_code = 0;
 										}
@@ -3592,8 +3606,10 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 									/* create the initial template element for no fields */
 									element_identifier.type = CM_ELEMENT;
 									element_identifier.number = 0;
+									int dimension;
+									get_FE_element_shape_dimension(element_shape, &dimension);
 									template_element = CREATE(FE_element)(&element_identifier,
-										element_shape, fe_region, (struct FE_element *)NULL);
+										element_shape, FE_region_find_FE_mesh_by_dimension(fe_region, dimension), (struct FE_element *)NULL);
 									ACCESS(FE_element)(template_element);
 									use_data_meta_flag = 0;
 									// elements have nodes not datapoints:
@@ -3824,7 +3840,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 								if (tmp_element)
 								{
 									ACCESS(FE_element)(tmp_element);
-									FE_element *element = FE_region_merge_FE_element(fe_region, tmp_element);
+									FE_element *element = FE_element_get_FE_mesh(tmp_element)->merge_FE_element(tmp_element);
 									if (element)
 									{
 										if (group && (!mesh_group))

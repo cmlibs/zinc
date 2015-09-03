@@ -25,75 +25,38 @@
 #include "general/value.h"
 
 /*
+Global defines
+--------------
+*/
+
+// GRC temporary until CM_element_type removed from FE_element identifier
+#define DIMENSION_TO_CM_ELEMENT_TYPE(dimension) \
+	((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE))
+
+/*
 Global types
 ------------
 */
 
 /**
- * FE_node has pointer to owning FE_nodeset in share field info.
+ * FE_node has pointer to owning FE_nodeset in shared field info.
  */
 class FE_nodeset;
+
+/**
+ * FE_element has pointer to owning FE_mesh in shared field info.
+ */
+class FE_mesh;
+
+/**
+ * Set of scale factors stored by mesh.
+ */
+struct cmzn_mesh_scale_factor_set;
 
 /**
  * FE_field and FE_element haves pointers to owning FE_region in shared field info.
  */
 struct FE_region;
-
-struct cmzn_mesh_scale_factor_set;
-/** Handle to a set of scale factors for a mesh.
- * Scale factors are used to scale global field parameters before use.
- * Actual values are stored under this handle in each element. */
-typedef struct cmzn_mesh_scale_factor_set *cmzn_mesh_scale_factor_set_id;
-
-/**
- * Identifier of set of scale factors, under which scale factors are stored,
- * e.g. in elements.
- */
-struct cmzn_mesh_scale_factor_set
-{
-private:
-	FE_region *fe_region; // non-accessed pointer to owner
-	char *name;
-	int access_count;
-
-	cmzn_mesh_scale_factor_set();
-
-	~cmzn_mesh_scale_factor_set();
-
-	cmzn_mesh_scale_factor_set(FE_region *fe_regionIn, const char *nameIn);
-
-public:
-
-	static cmzn_mesh_scale_factor_set *create(FE_region *fe_regionIn, const char *nameIn)
-	{
-		return new cmzn_mesh_scale_factor_set(fe_regionIn, nameIn);
-	}
-
-	cmzn_mesh_scale_factor_set *access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_mesh_scale_factor_set* &scale_factor_set)
-	{
-		if (!scale_factor_set)
-			return CMZN_ERROR_ARGUMENT;
-		--(scale_factor_set->access_count);
-		if (scale_factor_set->access_count <= 0)
-			delete scale_factor_set;
-		scale_factor_set = 0;
-		return CMZN_OK;
-	}
-
-	/** @return  Internal name, not a copy */
-	const char *getName() const
-	{
-		return this->name;
-	}
-
-	int setName(const char *nameIn);
-};
 
 enum CM_field_type
 /*******************************************************************************
@@ -1471,8 +1434,8 @@ Frees the memory for the component and sets <*component_address> to NULL.
 /**
  * Creates and returns a copy of the supplied element field component. Due to
  * references to scale factor sets, the component is valid for use in the
- * current FE_region only.
- * @see FE_element_field_component_switch_FE_region
+ * current FE_mesh only.
+ * @see FE_element_field_component_switch_FE_mesh
  */
 struct FE_element_field_component *copy_create_FE_element_field_component(
 	struct FE_element_field_component *source_component);
@@ -2057,23 +2020,20 @@ Writes the element as an allocated string containing TYPE NUMBER. Now does not
 write element for CM_ELEMENT types.
 ==============================================================================*/
 
+/**
+ * Creates and returns an element with the specified <cm> identifier.
+ * If <fe_mesh> is supplied a blank element with the given identifier but no
+ * fields is returned. If <template_element> is supplied, a copy of it, including
+ * all fields and values but with the new identifier, is returned.
+ * Exactly one of <fe_mesh> or <template_element> must be supplied.
+ * The <element_shape> is required unless a <template_element> is supplied.
+ * The new element is set to belong to fe_mesh if supplied, or to the same master
+ * FE_mesh as <template_element> if supplied.
+ * Note that the element number in <cm> must be non-negative.
+ */
 struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
 	struct FE_element_shape *element_shape,
-	struct FE_region *fe_region, struct FE_element *template_element);
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Creates and returns an element with the specified <cm> identifier.
-If <fe_region> is supplied a blank element with the given identifier but no
-fields is returned. If <template_element> is supplied, a copy of it, including
-all fields and values but with the new identifier, is returned.
-Exactly one of <fe_region> or <template_element> must be supplied.
-The <element_shape> is required unless a <template_element> is supplied.
-The new element is set to belong to the ultimate master FE_region of <fe_region>
-if supplied, or to the same master FE_region as <template_element> if supplied.
-Note that the element number in <cm> must be non-negative.
-==============================================================================*/
+	FE_mesh *fe_mesh, struct FE_element *template_element);
 
 int DESTROY(FE_element)(struct FE_element **element_address);
 /*******************************************************************************
@@ -2185,7 +2145,7 @@ To enable identifier changes, must wrap calls to this function between
 LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
 element is temporarily removed from all the indexed lists it is in and re-added
 afterwards.
-If <element> is in an FE_region, FE_region_change_FE_element_identifier should
+If <element> is in an FE_mesh, FE_mesh::change_FE_element_identifier should
 be called to handle the above complications.
 ==============================================================================*/
 
@@ -2549,31 +2509,6 @@ An FE_element iterator that returns 1 when an appropriate default_coordinate
 fe_field is found.  The fe_field found is returned as fe_field_void.
 ==============================================================================*/
 
-struct FE_element_conditional_iterator_data
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-Data for passing to FE_element_conditional_iterator function.
-==============================================================================*/
-{
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function;
-	void *conditional_user_data;
-	LIST_ITERATOR_FUNCTION(FE_element) *iterator_function;
-	void *iterator_user_data;
-}; /* struct FE_element_conditional_iterator_data */
-
-int FE_element_conditional_iterator(struct FE_element *element,
-	void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-If <element> satisfies the <conditional_function> with <conditional_user_data>,
-calls <iterator_function> with it and the <iterator_user_data>.
-<data_void> points at a struct FE_element_conditional_iterator_data.
-==============================================================================*/
-
 /***************************************************************************//**
  * Conditional function returning true if <element> number is in the
  * multi range.
@@ -2859,27 +2794,6 @@ bool FE_fields_match_exact(struct FE_field *field1, struct FE_field *field2);
  * otherwise returns 0 (false).
  */
 int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_void);
-
-/**
- * Check that each Standard_node_to_element_map used to define field has
- * node_value/version labels as well as offsets into component DOFs and if not
- * find them and check they are consistently used for all elements i.e. that
- * each use of the same array offset in an element refers to the same
- * node_value/version.
- * @param field  The FE_field to check/update.
- * @param target_fe_region  Optional FE_region where nodes and equivalent field
- * of same name can be found. Used if field not defined on node in same region.
- * @return  CMZN_OK if labels are complete and consistent, any other status if
- * failed. Failure can occur if nodal value labels are absent at the nodes, or
- * if the implementation discovers the same element field component uses the
- * same offsets for different nodal labels but is unable to fix it.
- */
-int FE_field_check_element_node_value_labels(FE_field *field,
-	FE_region *target_fe_region);
-
-/** Field list iterator version of FE_field_check_element_node_value_labels. */
-int FE_field_check_element_node_value_labels_iterator(FE_field *field,
-	void *target_fe_region_void);
 
 int FE_field_has_multiple_times(struct FE_field *fe_field);
 /*******************************************************************************
@@ -3390,13 +3304,15 @@ specified component is calculated, otherwise all components are calculated.  The
 storage for the <value> should have been allocated outside the function.
 ==============================================================================*/
 
-struct FE_region *FE_element_get_FE_region(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
+/**
+ * Returns the FE_mesh that <element> belongs to.
+ */
+FE_mesh *FE_element_get_FE_mesh(struct FE_element *element);
 
-DESCRIPTION :
-Returns the FE_region that <element> belongs to.
-==============================================================================*/
+/**
+ * Returns the FE_region that <element> belongs to.
+ */
+struct FE_region *FE_element_get_FE_region(struct FE_element *element);
 
 int FE_element_has_top_level_element(struct FE_element *element,
 	void *top_level_element_void);
@@ -3557,8 +3473,8 @@ Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
 ==============================================================================*/
 
 /**
- * Fetches an element with the same identifier as <element> from the <data>
- * <element_list>. Returns true if either:
+ * Fetches an element with the same identifier as supplied element from the
+ * target mesh. Returns true if either:
  * 1. There is no namesake element and <element> has a valid shape.
  * 2. There is a namesake element and <element> has an "unspecified" shape of the
  * same dimension as it, but no fields.
@@ -3566,8 +3482,7 @@ Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
  * (meaning they match or either element has no faces).
  * No field checks are made as element field definitions can be replaced during merge.
  */
-bool FE_element_can_be_merged(struct FE_element *element,
-	struct FE_region *global_fe_region);
+bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mesh);
 
 int ensure_FE_element_is_in_list(struct FE_element *element,
 	void *element_list_void);
@@ -4342,7 +4257,7 @@ to take account of rotations and flipping.
 
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
-	struct FE_region *fe_region, int permutation);
+	int permutation);
 /*******************************************************************************
 LAST MODIFIED : 31 May 2006
 
@@ -4353,8 +4268,6 @@ If <xi> is not NULL then the <xi_face> coordinates are converted to an xi
 location in the new element.
 If <increment> is not NULL then it is converted into an equvalent increment
 in the new element.
-If <fe_region> is not NULL then the function will restrict itself to elements
-in that region.
 <permutation> is used to resolve the possible rotation and flipping of the
 local face xi coordinates between the two parents.
 The shape mapping from parents are reused for all elements of the same shape
@@ -4376,14 +4289,12 @@ no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
 
+/**
+ * Creates an element that has a line shape product of the specified mesh
+ * dimension.
+ */
 struct FE_element *create_FE_element_with_line_shape(int identifier,
-	struct FE_region *fe_region, int dimension);
-/*******************************************************************************
-LAST MODIFIED : 1 December 2004
-
-DESCRIPTION :
-Creates an element that has a line shape product of the specified <dimension>.
-==============================================================================*/
+	FE_mesh *fe_mesh);
 
 int FE_element_define_tensor_product_basis(struct FE_element *element,
 	int dimension, enum FE_basis_type basis_type, struct FE_field *field);

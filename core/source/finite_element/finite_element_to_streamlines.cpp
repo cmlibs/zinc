@@ -521,8 +521,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 				/* The last increment should have been the most accurate, if
 				it wants to change then change element if we can */
 				return_code = FE_element_change_to_adjacent_element(element,
-					xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
-					/*permutation*/0);
+					xiF, (FE_value *)NULL, &face_number, xi_face, /*permutation*/0);
 				if (face_number == -1)
 				{
 					/* There is no adjacent element */
@@ -556,8 +555,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 						xiF[1]=xiD[1];
 						xiF[2]=xiD[2];
 						return_code = FE_element_change_to_adjacent_element(element,
-							xiF, (FE_value *)NULL, &face_number, xi_face, fe_region,
-							permutation);
+							xiF, (FE_value *)NULL, &face_number, xi_face, permutation);
 						return_code = (CMZN_OK == cmzn_fieldcache_set_mesh_location(field_cache, *element, element_dimension, xiF)) &&
 							(CMZN_OK == cmzn_field_evaluate_real(coordinate_field, field_cache, vector_dimension, point1));
 						coordinate_point_error = 0.0;

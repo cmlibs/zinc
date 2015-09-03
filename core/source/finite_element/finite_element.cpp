@@ -23,6 +23,7 @@
 #include "general/list_btree_private.hpp"
 #include <math.h>
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/change_log_private.h"
@@ -64,45 +65,6 @@ if (new_values_storage_size % 8) \
 Module types
 ------------
 */
-
-cmzn_mesh_scale_factor_set::~cmzn_mesh_scale_factor_set()
-{
-	DEALLOCATE(name);
-}
-
-cmzn_mesh_scale_factor_set::cmzn_mesh_scale_factor_set(FE_region *fe_regionIn, const char *nameIn) :
-	fe_region(fe_regionIn),
-	name(duplicate_string(nameIn)),
-	access_count(1)
-{
-}
-
-int cmzn_mesh_scale_factor_set::setName(const char *nameIn)
-{
-	if (nameIn)
-	{
-		cmzn_mesh_scale_factor_set *existingSet =
-			FE_region_find_mesh_scale_factor_set_by_name(this->fe_region, nameIn);
-		if (existingSet)
-		{
-			bool noChange = (existingSet == this);
-			cmzn_mesh_scale_factor_set::deaccess(existingSet);
-			if (noChange)
-			{
-				return CMZN_OK;
-			}
-		}
-		else
-		{
-			// Note: assumes FE_region does not store sets in a map
-			// Hence can change name in object
-			DEALLOCATE(this->name);
-			this->name = duplicate_string(nameIn);
-			return CMZN_OK;
-		}
-	}
-	return CMZN_ERROR_ARGUMENT;
-}
 
 struct FE_field_info
 /*******************************************************************************
@@ -449,7 +411,7 @@ struct Standard_node_to_element_map
 	// Special case: FE_NODAL_UNKNOWN is used to mean use a zero parameter
 	// Internally, the first version is 0.
 	// When reading legacy EX files they are determined from the nodal value indices.
-	// @see FE_field_check_element_node_value_labels
+	// @see FE_element_field_info_check_field_node_value_labels
 	FE_nodal_value_type *nodal_value_types;
 	int *nodal_versions;
 	/* array of indices for the scale factors.
@@ -717,20 +679,16 @@ calculated from the element field as required and are then destroyed.
 
 FULL_DECLARE_INDEXED_LIST_TYPE(FE_element_field_values);
 
+/**
+ * The element fields defined on an element and how to calculate them.
+ */
 struct FE_element_field_info
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-The element fields defined on an element and how to calculate them.
-==============================================================================*/
 {
 	/* list of the  element fields */
 	struct LIST(FE_element_field) *element_field_list;
 
-	/* the FE_region this FE_element_field_info and all elements using it
-		 belong to */
-  struct FE_region *fe_region;
+	/* the FE_mesh this FE_element_field_info and all elements using it belong to */
+	FE_mesh *fe_mesh;
 
 	/* the number of structures that point to this information.  The information
 		cannot be destroyed while this is greater than 0 */
@@ -8377,25 +8335,16 @@ int FE_field_can_be_merged_into_list(struct FE_field *field, void *field_list_vo
 	return 0;
 }
 
-// forward declaraions
+// forward declarations
 static void Standard_node_to_element_map_clear_node_value_labels(Standard_node_to_element_map *map);
 static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 	Standard_node_to_element_map *map, FE_field *field, int componentIndex,
 	FE_element *element, FE_nodeset *target_fe_nodeset, FE_field *target_field);
 
-struct FE_field_and_target_node_list_data
+int FE_element_field_info_check_field_node_value_labels(
+	struct FE_element_field_info *element_field_info, FE_field *field,
+	struct FE_region *target_fe_region)
 {
-	FE_field *field;
-	FE_region *target_fe_region; // optional
-};
-
-// @param data_void  FE_field_and_target_node_list_data
-static int FE_element_field_info_check_field_node_value_labels(
-	struct FE_element_field_info *element_field_info, void *data_void)
-{
-	FE_field_and_target_node_list_data *data =
-		static_cast<FE_field_and_target_node_list_data *>(data_void);
-	FE_field *field = data->field;
 	if (element_field_info && field)
 	{
 		if (field->fe_field_type != GENERAL_FE_FIELD)
@@ -8431,15 +8380,16 @@ static int FE_element_field_info_check_field_node_value_labels(
 			bool success = true;
 			FE_nodeset *target_fe_nodeset = 0;
 			FE_field *target_field = 0;
-			if (data->target_fe_region)
+			if (target_fe_region)
 			{
 				target_fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-					data->target_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				target_field = FE_region_get_FE_field_from_name(data->target_fe_region, field->name);
+					target_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
+				target_field = FE_region_get_FE_field_from_name(target_fe_region, field->name);
 			}
 			for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; (minDimension <= dimension) && success; --dimension)
 			{
-				cmzn_elementiterator *elemIter = FE_region_create_elementiterator(fe_region, dimension);
+				FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
+				cmzn_elementiterator *elemIter = fe_mesh->createElementiterator();
 				cmzn_element *element;
 				while ((element = cmzn_elementiterator_next_non_access(elemIter)) && success)
 				{
@@ -8488,37 +8438,6 @@ static int FE_element_field_info_check_field_node_value_labels(
 		return 1;
 	}
 	return 0;
-}
-
-int FE_field_check_element_node_value_labels(FE_field *field,
-	FE_region *target_fe_region)
-{
-	if (!field)
-		return CMZN_ERROR_ARGUMENT;
-	// following checks element fields for field have node value labels, adding if necessary
-	// fails if not possible to add
-	LIST(FE_element_field_info) *element_field_info_list =
-		FE_region_get_FE_element_field_info_list_private(field->info->fe_region);
-	FE_field_and_target_node_list_data data =
-	{
-		field,
-		target_fe_region
-	};
-	if (0 == FOR_EACH_OBJECT_IN_LIST(FE_element_field_info)(
-		FE_element_field_info_check_field_node_value_labels, (void *)&data, element_field_info_list))
-	{
-		display_message(ERROR_MESSAGE, "FE_field_check_element_node_value_labels.  "
-			"Field %s element maps cannot be converted to use node value labels", field->name);
-		return CMZN_ERROR_GENERAL;
-	}
-	return CMZN_OK;
-}
-
-int FE_field_check_element_node_value_labels_iterator(FE_field *field,
-	void *target_fe_region_void)
-{
-	return (CMZN_OK == FE_field_check_element_node_value_labels(field,
-		static_cast<FE_region *>(target_fe_region_void)));
 }
 
 int FE_field_has_multiple_times(struct FE_field *fe_field)
@@ -8589,11 +8508,15 @@ int FE_field_uses_non_linear_basis(struct FE_field *fe_field)
 {
 	if (fe_field && fe_field->info && fe_field->info->fe_region)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field_info)(
-			FE_element_field_info_FE_field_uses_non_linear_basis, (void *)fe_field,
-			FE_region_get_FE_element_field_info_list_private(fe_field->info->fe_region)))
+		for (int dimension = 1; dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dimension)
 		{
-			return 1;
+			FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_field->info->fe_region, dimension);
+			if (FIRST_OBJECT_IN_LIST_THAT(FE_element_field_info)(
+				FE_element_field_info_FE_field_uses_non_linear_basis, (void *)fe_field,
+				fe_mesh->get_FE_element_field_info_list_private()))
+			{
+				return 1;
+			}
 		}
 	}
 	return 0;
@@ -16083,7 +16006,7 @@ int DESTROY(FE_element_field_component)(
  * Creates and returns a copy of the supplied element field component. Due to
  * references to scale factor sets, the component is valid for use in the
  * current FE_region only.
- * @see FE_element_field_component_switch_FE_region
+ * @see FE_element_field_component_switch_FE_mesh
  */
 struct FE_element_field_component *copy_create_FE_element_field_component(
 	struct FE_element_field_component *source_component)
@@ -16169,19 +16092,19 @@ struct FE_element_field_component *copy_create_FE_element_field_component(
  * scale factor sets, to the supplied fe_region.
  * @return  CMZN_OK on success, any other value on failure.
  */
-static int FE_element_field_component_switch_FE_region(
-	FE_element_field_component *component, FE_region *fe_region)
+static int FE_element_field_component_switch_FE_mesh(
+	FE_element_field_component *component, FE_mesh *fe_mesh)
 {
-	if (!(component && fe_region))
+	if (!(component && fe_mesh))
 		return CMZN_ERROR_ARGUMENT;
 	cmzn_mesh_scale_factor_set *sourceScaleFactorSet = component->get_scale_factor_set();
 	if (sourceScaleFactorSet)
 	{
 		cmzn_mesh_scale_factor_set *targetScaleFactorSet =
-			FE_region_find_mesh_scale_factor_set_by_name(fe_region, sourceScaleFactorSet->getName());
+			fe_mesh->find_scale_factor_set_by_name(sourceScaleFactorSet->getName());
 		if (!targetScaleFactorSet)
 		{
-			targetScaleFactorSet = FE_region_create_mesh_scale_factor_set(fe_region);
+			targetScaleFactorSet = fe_mesh->create_scale_factor_set();
 			if (!targetScaleFactorSet)
 				return CMZN_ERROR_MEMORY;
 			targetScaleFactorSet->setName(sourceScaleFactorSet->getName());
@@ -17982,10 +17905,10 @@ DECLARE_INDEXED_LIST_FUNCTIONS(FE_element_field)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION(FE_element_field, field, \
 	struct FE_field *, compare_FE_field)
 
-/** Data for passing to FE_element_field_copy_for_FE_region. */
-struct FE_element_field_copy_for_FE_region_data
+/** Data for passing to FE_element_field_copy_for_FE_mesh. */
+struct FE_element_field_copy_for_FE_mesh_data
 {
-	struct FE_region *fe_region;
+	FE_mesh *fe_mesh;
 	struct LIST(FE_element_field) *element_field_list;
 };
 
@@ -17993,24 +17916,24 @@ struct FE_element_field_copy_for_FE_region_data
  * Creates a copy of <element_field> using the same named fields, scale factor
  * sets etc. from <fe_region> and adds it to <element_field_list>.
  *Checks fields are equivalent.
- * <data_void> points at a struct FE_element_field_copy_for_FE_region_data.
+ * <data_void> points at a struct FE_element_field_copy_for_FE_mesh_data.
  */
-static int FE_element_field_copy_for_FE_region(
+static int FE_element_field_copy_for_FE_mesh(
 	struct FE_element_field *element_field, void *data_void)
 {
 	int i, return_code;
 	struct FE_field *equivalent_field;
 	struct FE_element_field *copy_element_field;
-	struct FE_element_field_copy_for_FE_region_data *data;
 	struct FE_element_field_component **component, **copy_component;
 
-	ENTER(FE_element_field_copy_for_FE_region);
-	if (element_field && element_field->field && (data =
-		(struct FE_element_field_copy_for_FE_region_data *)data_void))
+	ENTER(FE_element_field_copy_for_FE_mesh);
+	FE_element_field_copy_for_FE_mesh_data *data =
+		static_cast<FE_element_field_copy_for_FE_mesh_data *>(data_void);
+	if (element_field && element_field->field && data)
 	{
 		return_code = 1;
 		if (NULL != (equivalent_field = FIND_BY_IDENTIFIER_IN_LIST(FE_field,name)(
-			element_field->field->name, FE_region_get_FE_field_list(data->fe_region))))
+			element_field->field->name, FE_region_get_FE_field_list(data->fe_mesh->get_FE_region()))))
 		{
 			if (FE_fields_match_fundamental(element_field->field, equivalent_field))
 			{
@@ -18024,7 +17947,7 @@ static int FE_element_field_copy_for_FE_region(
 						if (*component)
 						{
 							*copy_component = copy_create_FE_element_field_component(*component);
-							if (CMZN_OK != FE_element_field_component_switch_FE_region(*copy_component, data->fe_region))
+							if (CMZN_OK != FE_element_field_component_switch_FE_mesh(*copy_component, data->fe_mesh))
 							{
 								return_code = 0;
 							}
@@ -18043,7 +17966,7 @@ static int FE_element_field_copy_for_FE_region(
 					if (!return_code)
 					{
 						display_message(ERROR_MESSAGE,
-							"FE_element_field_copy_for_FE_region.  "
+							"FE_element_field_copy_for_FE_mesh.  "
 							"Could not copy element field component");
 						DESTROY(FE_element_field)(&copy_element_field);
 					}
@@ -18051,7 +17974,7 @@ static int FE_element_field_copy_for_FE_region(
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"FE_element_field_copy_for_FE_region.  "
+						"FE_element_field_copy_for_FE_mesh.  "
 						"Could not create element field");
 					return_code = 0;
 				}
@@ -18059,7 +17982,7 @@ static int FE_element_field_copy_for_FE_region(
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_element_field_copy_for_FE_region.  "
+					"FE_element_field_copy_for_FE_mesh.  "
 					"Fields not equivalent");
 				return_code = 0;
 			}
@@ -18067,32 +17990,32 @@ static int FE_element_field_copy_for_FE_region(
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"FE_element_field_copy_for_FE_region.  No equivalent field");
+				"FE_element_field_copy_for_FE_mesh.  No equivalent field");
 			return_code = 0;
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"FE_element_field_copy_for_FE_region.  Invalid argument(s)");
+			"FE_element_field_copy_for_FE_mesh.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* FE_element_field_copy_for_FE_region */
+}
 
 struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
-	struct LIST(FE_element_field) *element_field_list, struct FE_region *fe_region)
+	struct LIST(FE_element_field) *element_field_list, FE_mesh *fe_mesh)
 {
 	struct LIST(FE_element_field) *return_element_field_list = 0;
-	if (element_field_list && fe_region)
+	if (element_field_list && fe_mesh)
 	{
-		struct FE_element_field_copy_for_FE_region_data data;
-		data.fe_region = fe_region;
+		struct FE_element_field_copy_for_FE_mesh_data data;
+		data.fe_mesh = fe_mesh;
 		data.element_field_list = CREATE(LIST(FE_element_field))();
 		if (FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_copy_for_FE_region, (void *)&data,
+			FE_element_field_copy_for_FE_mesh, (void *)&data,
 			element_field_list))
 		{
 			return_element_field_list = data.element_field_list;
@@ -18113,31 +18036,14 @@ struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
 }
 
 struct FE_element_field_info *CREATE(FE_element_field_info)(
-	struct FE_region *fe_region,
+	FE_mesh *fe_mesh,
 	struct LIST(FE_element_field) *fe_element_field_list)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_element_field_info with a pointer to <fe_region> and a copy
-of the <fe_element_field_list>.
-Fails if more than one FE_element_field in the list references the same field.
-If <fe_element_field_list> is omitted, an empty list is assumed.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is added to the list of
-FE_element_field_info in the FE_region and is therefore owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
 {
 	struct FE_element_field_info *fe_element_field_info;
 
 	ENTER(CREATE(FE_element_field_info));
 	fe_element_field_info = (struct FE_element_field_info *)NULL;
-	if (fe_region)
+	if (fe_mesh)
 	{
 		if (ALLOCATE(fe_element_field_info, struct FE_element_field_info, 1))
 		{
@@ -18146,7 +18052,7 @@ common object.
 			/* maintain pointer to the the FE_region this information belongs to.
 				 It is not ACCESSed since FE_region is the owning object and it
 				 would prevent the FE_region from being destroyed. */
-			fe_element_field_info->fe_region = fe_region;
+			fe_element_field_info->fe_mesh = fe_mesh;
 			fe_element_field_info->access_count = 0;
 
 			if (!(fe_element_field_info->element_field_list &&
@@ -18230,7 +18136,7 @@ LAST MODIFIED : 29 January 2003
 DESCRIPTION :
 Special version of DEACCESS which if the FE_element_field_info access_count
 reaches 1 and it has an fe_region member, calls
-FE_region_remove_FE_element_field_info.
+FE_mesh::remove_FE_element_field_info.
 Since the FE_region accesses the info once, this indicates no other object is
 using it so it should be flushed from the FE_region. When the owning FE_region
 deaccesses the info, it is destroyed in this function.
@@ -18248,11 +18154,8 @@ deaccesses the info, it is destroyed in this function.
 		{
 			if (1 == object->access_count)
 			{
-				if (object->fe_region)
-				{
-					return_code =
-						FE_region_remove_FE_element_field_info(object->fe_region, object);
-				}
+				if (object->fe_mesh)
+					return_code = object->fe_mesh->remove_FE_element_field_info(object);
 			}
 			else
 			{
@@ -18277,7 +18180,7 @@ LAST MODIFIED : 20 February 2003
 DESCRIPTION :
 Special version of REACCESS which if the FE_element_field_info access_count
 reaches 1 and it has an fe_region member, calls
-FE_region_remove_FE_element_field_info.
+FE_mesh::remove_FE_element_field_info.
 Since the FE_region accesses the info once, this indicates no other object is
 using it so it should be flushed from the FE_region. When the owning FE_region
 deaccesses the info, it is destroyed in this function.
@@ -18303,11 +18206,8 @@ deaccesses the info, it is destroyed in this function.
 			{
 				if (1 == current_object->access_count)
 				{
-					if (current_object->fe_region)
-					{
-						return_code = FE_region_remove_FE_element_field_info(
-							current_object->fe_region, current_object);
-					}
+					if (current_object->fe_mesh)
+						return_code = current_object->fe_mesh->remove_FE_element_field_info(current_object);
 				}
 				else
 				{
@@ -18331,35 +18231,17 @@ deaccesses the info, it is destroyed in this function.
 
 DECLARE_LIST_FUNCTIONS(FE_element_field_info)
 
-int FE_element_field_info_clear_FE_region(
+int FE_element_field_info_clear_FE_mesh(
 	struct FE_element_field_info *element_field_info, void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <element_field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_element_field_info_clear_FE_region);
 	USE_PARAMETER(dummy_void);
 	if (element_field_info)
 	{
-		element_field_info->fe_region = (struct FE_region *)NULL;
-		return_code = 1;
+		element_field_info->fe_mesh = 0;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_field_info_clear_FE_region.  Invalid argument");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_field_info_clear_FE_region */
+	return 0;
+}
 
 int FE_element_field_info_has_FE_field(
 	struct FE_element_field_info *element_field_info, void *fe_field_void)
@@ -21501,35 +21383,17 @@ int set_FE_element_shape(struct FE_element *element,
 	return (return_code);
 } /* set_FE_element_shape */
 
-// GRC temporary until CM_element_type removed from FE_element identifier
-#define DIMENSION_TO_CM_ELEMENT_TYPE(dimension) \
-	((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE))
-
 struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
 	struct FE_element_shape *element_shape,
-	struct FE_region *fe_region, struct FE_element *template_element)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Creates and returns an element with the specified <cm> identifier.
-If <fe_region> is supplied a blank element with the given identifier but no
-fields is returned. If <template_element> is supplied, a copy of it, including
-all fields and values but with the new identifier, is returned.
-Exactly one of <fe_region> or <template_element> must be supplied.
-The <element_shape> is required unless a <template_element> is supplied.
-The new element is set to belong to the ultimate master FE_region of <fe_region>
-if supplied, or to the same master FE_region as <template_element> if supplied.
-Note that the element number in <cm> must be non-negative.
-==============================================================================*/
+	FE_mesh *fe_mesh, struct FE_element *template_element)
 {
 	int i, number_of_faces, return_code;
 	struct FE_element *element;
 
 	ENTER(CREATE(FE_element));
 	element = (struct FE_element *)NULL;
-	if (cm && (0 <= cm->number) && ((template_element && (!fe_region)) ||
-		((!template_element) && fe_region && element_shape)))
+	if (cm && (0 <= cm->number) && ((template_element && (!fe_mesh)) ||
+		((!template_element) && fe_mesh && element_shape)))
 	{
 		int dimension = 0;
 		if (template_element)
@@ -21618,8 +21482,7 @@ Note that the element number in <cm> must be non-negative.
 					return_code = 0;
 				}
 				if (!(element->fields = ACCESS(FE_element_field_info)(
-					FE_region_get_FE_element_field_info(fe_region,
-						(struct LIST(FE_element_field) *)NULL))))
+					fe_mesh->get_FE_element_field_info((struct LIST(FE_element_field) *)NULL))))
 				{
 					display_message(ERROR_MESSAGE, "CREATE(FE_element).  "
 						"FE_region could not supply element field info");
@@ -25735,6 +25598,7 @@ Should only be called for unmanaged elements.
 	struct FE_element_field_info *existing_element_field_info,
 		*new_element_field_info;
 	struct FE_element_field_lists_merge_data merge_data;
+	FE_mesh *fe_mesh;
 	struct FE_region *fe_region;
 	struct LIST(FE_element_field) *element_field_list;
 	Value_storage *values_storage;
@@ -25744,7 +25608,8 @@ Should only be called for unmanaged elements.
 	if (element && (dimension = get_FE_element_dimension(element)) &&
 		field && (fe_region = FE_field_get_FE_region(field)) &&
 		(existing_element_field_info = element->fields) &&
-		(existing_element_field_info->fe_region = fe_region) &&
+		(fe_mesh = existing_element_field_info->fe_mesh) &&
+		(fe_mesh->get_FE_region() == fe_region) &&
 		element->information &&
 		(0 < (number_of_components = get_FE_field_number_of_components(field))) &&
 		components)
@@ -25944,8 +25809,8 @@ Should only be called for unmanaged elements.
 					}
 					if (return_code)
 					{
-						if (NULL != (new_element_field_info = FE_region_get_FE_element_field_info(
-							fe_region, element_field_list)))
+						if (NULL != (new_element_field_info =
+							fe_mesh->get_FE_element_field_info(element_field_list)))
 						{
 							REACCESS(FE_element_field_info)(&(element->fields),
 								new_element_field_info);
@@ -26304,7 +26169,7 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	{
 		// get list of all fields in default alphabetical order
 		field_order_info = CREATE(FE_field_order_info)();
-		fe_region = element->fields->fe_region;
+		fe_region = element->fields->fe_mesh->get_FE_region();
 		return_code = FE_region_for_each_FE_field(fe_region,
 			FE_field_add_to_FE_field_order_info, (void *)field_order_info);
 		FE_field_order_info_prioritise_indexer_fields(field_order_info);
@@ -26397,46 +26262,6 @@ fe_field is found.  The fe_field found is returned as fe_field_void.
 
 	return (return_code);
 } /* FE_element_find_default_coordinate_field_iterator */
-
-int FE_element_conditional_iterator(struct FE_element *element,
-	void *data_void)
-/*******************************************************************************
-LAST MODIFIED : 15 January 2003
-
-DESCRIPTION :
-If <element> satisfies the <conditional_function> with <conditional_user_data>,
-calls <iterator_function> with it and the <iterator_user_data>.
-<data_void> points at a struct FE_element_conditional_iterator_data.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_conditional_iterator_data *data;
-
-	ENTER(FE_element_conditional_iterator);
-	if (element &&
-		(data = (struct FE_element_conditional_iterator_data *)data_void) &&
-		data->conditional_function && data->iterator_function)
-	{
-		if ((data->conditional_function)(element, data->conditional_user_data))
-		{
-			return_code =
-				(data->iterator_function)(element, data->iterator_user_data);
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_conditional_iterator.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_conditional_iterator */
 
 int FE_element_number_is_in_Multi_range(struct FE_element *element,
 	void *multi_range_void)
@@ -26674,25 +26499,20 @@ int FE_element_add_faces_not_in_list(struct FE_element *element,
 	return (return_code);
 } /* FE_element_add_faces_not_in_list */
 
+/**
+ * Returns true if <element1> and <element2> have the same shape, and all of
+ * their faces match. A face match is found if it is either:
+ * - NULL on either or both of <element1> and <element2>;
+ * - if <find_face_mesh> is NOT supplied, the face pointer is the same;
+ * - if <find_face_mesh> is supplied, the face pointer in <element2> is the
+ * same as the element from <find_face_mesh>.
+ */
 static int FE_element_shape_and_faces_match(struct FE_element *element1,
-	struct FE_region *find_faces_fe_region,
-	struct FE_element *element2)
-/*******************************************************************************
-LAST MODIFIED : 25 March 2003
-
-DESCRIPTION :
-Returns true if <element1> and <element2> have the same shape, and all of their
-faces match. A face match is found if it is either:
-- NULL on either or both of <element1> and <element2>;
-- if <find_faces_fe_region> is NOT supplied, the face pointer is the same;
-- if <find_faces_fe_region> is supplied, the face pointer in <element2> is the
-same as the element from <find_faces_fe_region>.
-==============================================================================*/
+	struct FE_element *element2, FE_mesh *find_face_mesh)
 {
 	int i, number_of_faces, return_code;
 	struct FE_element **face1, **face2;
 
-	ENTER(FE_element_shape_and_faces_match);
 	if (element1 && element1->shape && element2)
 	{
 		if (element1->shape == element2->shape)
@@ -26705,10 +26525,9 @@ same as the element from <find_faces_fe_region>.
 					for (i = number_of_faces; (0 < i) && return_code; i--)
 					{
 						if ((!(*face1)) || (!(*face2)) ||
-							((!find_faces_fe_region) && (*face1 == *face2)) ||
-							(find_faces_fe_region &&
-								(FE_region_get_FE_element_from_identifier(find_faces_fe_region,
-									element1->shape->dimension - 1, (*face1)->identifier.number)
+							((!find_face_mesh) && (*face1 == *face2)) ||
+							((find_face_mesh) &&
+								(find_face_mesh->findElementByIdentifier((*face1)->identifier.number)
 									== *face2)))
 						{
 							face1++;
@@ -26741,10 +26560,9 @@ same as the element from <find_faces_fe_region>.
 			"FE_element_shape_and_faces_match.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* FE_element_shape_and_faces_match */
+}
 
 static int FE_element_field_add_FE_field_to_list(
 	struct FE_element_field *element_field, void *fe_field_list_void)
@@ -26831,15 +26649,15 @@ int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct FE_element_field_info *destination_fields, *element_field_info,
 		*source_fields;
 	struct FE_element_field_lists_merge_data merge_data;
-	struct FE_region *fe_region;
+	FE_mesh *fe_mesh;
 	struct LIST(FE_element_field) *element_field_list;
 	Value_storage *values_storage;
 
 	ENTER(merge_FE_element);
 	if (destination && (destination_fields = destination->fields) &&
-		(fe_region = destination_fields->fe_region) &&
+		(fe_mesh = destination_fields->fe_mesh) &&
 		source && (source_fields = source->fields) &&
-		(source_fields->fe_region == fe_region) && changed_fe_field_list)
+		(source_fields->fe_mesh == fe_mesh) && changed_fe_field_list)
 	{
 		return_code = 1;
 		/* changed_fe_field_list should start with all the fields in <source> */
@@ -26865,8 +26683,8 @@ int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 					}
 				}
 			}
-			else if (!FE_element_shape_and_faces_match(source,
-				/*global_fe_region*/(struct FE_region *)NULL, destination))
+			else if (!FE_element_shape_and_faces_match(source, destination,
+				/*find_face_mesh*/(FE_mesh *)0))
 			{
 				display_message(ERROR_MESSAGE,
 					"merge_FE_element.  Inconsistent element shapes");
@@ -26965,8 +26783,8 @@ int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 							element_field_list, source)))
 					{
 						/* create an element field info for the combined list */
-						if (NULL != (element_field_info = FE_region_get_FE_element_field_info(
-							fe_region, element_field_list)))
+						if (NULL != (element_field_info =
+							fe_mesh->get_FE_element_field_info(element_field_list)))
 						{
 							/* merge the faces */
 							number_of_faces = source->shape->number_of_faces;
@@ -28050,31 +27868,23 @@ Private function only to be called by FE_region when merging FE_regions!
 	return (return_code);
 } /* FE_element_set_FE_element_field_info */
 
-struct FE_region *FE_element_get_FE_region(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns the FE_region that <element> belongs to.
-==============================================================================*/
+FE_mesh *FE_element_get_FE_mesh(struct FE_element *element)
 {
-	struct FE_region *fe_region;
-
-	ENTER(FE_element_get_FE_element_field_info);
 	if (element && element->fields)
 	{
-		fe_region = element->fields->fe_region;
+		return element->fields->fe_mesh;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_get_FE_region.  Invalid argument(s)");
-		fe_region = (struct FE_region *)NULL;
-	}
-	LEAVE;
+	return 0;
+}
 
-	return (fe_region);
-} /* FE_element_get_FE_region */
+struct FE_region *FE_element_get_FE_region(struct FE_element *element)
+{
+	if (element && element->fields)
+	{
+		return element->fields->fe_mesh->get_FE_region();
+	}
+	return 0;
+}
 
 int FE_element_has_top_level_element(struct FE_element *element,
 	void *top_level_element_void)
@@ -28948,34 +28758,31 @@ Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
 	return (return_code);
 } /* FE_element_is_not_top_level */
 
-bool FE_element_can_be_merged(struct FE_element *element,
-	struct FE_region *global_fe_region)
+bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mesh)
 {
-	if (element && global_fe_region)
+	if (element && target_fe_mesh)
 	{
-		int dimension = get_FE_element_dimension(element);
-		FE_element *global_element = FE_region_get_FE_element_from_identifier(
-			global_fe_region, dimension, element->identifier.number);
+		FE_element *target_element = target_fe_mesh->findElementByIdentifier(element->identifier.number);
 		if (FE_element_shape_is_unspecified(element->shape))
 		{
 			// unspecified shape is used for nodal element:xi values when/ element is
 			// not read in from the same file, but could in future be used for
 			// reading field definitions without shape information.
 			// Must find a matching global element.
-			if (!global_element)
+			if (!target_element)
 			{
-				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global region",
-					dimension, element->identifier.number);
+				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global mesh",
+					get_FE_element_dimension(element), element->identifier.number);
 				return false;
 			}
 		}
-		else if (global_element)
+		else if (target_element)
 		{
-			if (!FE_element_shape_and_faces_match(element, global_fe_region, global_element))
+			if (!FE_element_shape_and_faces_match(element, target_element, target_fe_mesh->getFaceMesh()))
 			{
 				display_message(ERROR_MESSAGE,
 					"%d-D element %d shape and faces are not compatible with global element.",
-					dimension, element->identifier.number);
+					get_FE_element_dimension(element), element->identifier.number);
 				return false;
 			}
 		}
@@ -30230,7 +30037,7 @@ get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastes
 						} \
 						if (return_code) \
 						{ \
-							FE_region_notify_FE_element_field_change(element->fields->fe_region, element, field); \
+							element->fields->fe_mesh->elementFieldChange(element, field); \
 						} \
 					} \
 					else \
@@ -32085,7 +31892,7 @@ element at face <face_number>.
 
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
-	struct FE_region *fe_region, int permutation)
+	int permutation)
 /*******************************************************************************
 LAST MODIFIED : 8 June 2006
 
@@ -32133,8 +31940,7 @@ and do not take into account the relative orientation of the parents.
 				new_element = (struct FE_element *)NULL;
 				for (i = 0; i < face->number_of_parents; i++)
 				{
-					if ((face->parents[i] != element) && ((NULL == fe_region) ||
-						FE_region_contains_FE_element(fe_region, face->parents[i])))
+					if (face->parents[i] != element)
 					{
 						new_element = face->parents[i];
 						break;
@@ -32383,8 +32189,7 @@ the <increment> will contain the fraction of the increment not used.
 				if (return_code && (fraction < 1.0))
 				{
 					return_code = FE_element_change_to_adjacent_element(&element,
-						local_xi, local_increment, &face_number, xi_face,
-						(struct FE_region *)NULL, /*permutation*/0);
+						local_xi, local_increment, &face_number, xi_face, /*permutation*/0);
 					if (face_number == -1)
 					{
 						/* No adjacent face could be found, so stop */
@@ -32427,15 +32232,9 @@ the <increment> will contain the fraction of the increment not used.
 } /* FE_element_xi_increment */
 
 struct FE_element *create_FE_element_with_line_shape(int identifier,
-	struct FE_region *fe_region, int dimension)
-/*******************************************************************************
-LAST MODIFIED : 1 December 2004
-
-DESCRIPTION :
-Creates an element that has a line shape product of the specified <dimension>.
-==============================================================================*/
+	FE_mesh *fe_mesh)
 {
-	int i,j,return_code,*type,*type_entry;
+	int dimension, i,j,return_code,*type,*type_entry;
 	struct CM_element_information element_identifier;
 	struct FE_element *element;
 	struct FE_element_shape *element_shape;
@@ -32443,7 +32242,7 @@ Creates an element that has a line shape product of the specified <dimension>.
 	ENTER(create_FE_element_with_tensor_product_basis);
 	return_code=1;
 	element = (struct FE_element *)NULL;
-	if (identifier && fe_region && (dimension > 0))
+	if (identifier && fe_mesh && ((dimension = fe_mesh->getDimension()) > 0))
 	{
 		/* make shape */
 		element_shape=(struct FE_element_shape *)NULL;
@@ -32463,7 +32262,7 @@ Creates an element that has a line shape product of the specified <dimension>.
 				}
 			}
 			if (NULL != (element_shape=CREATE(FE_element_shape)(dimension,type,
-					fe_region)))
+					fe_mesh->get_FE_region())))
 			{
 				ACCESS(FE_element_shape)(element_shape);
 			}
@@ -32487,7 +32286,7 @@ Creates an element that has a line shape product of the specified <dimension>.
 			element_identifier.type=CM_ELEMENT;
 			element_identifier.number=identifier;
 			if (!(element = CREATE(FE_element)(
-				&element_identifier, element_shape, fe_region, (struct FE_element *)NULL)))
+				&element_identifier, element_shape, fe_mesh, (struct FE_element *)NULL)))
 			{
 				display_message(ERROR_MESSAGE,
 					"create_FE_element_with_line_shape.  "
@@ -32526,8 +32325,8 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 
 	ENTER(FE_element_define_tensor_product_basis);
 	return_code=1;
-	FE_region *fe_region = FE_element_get_FE_region(element);
-	if (element && (dimension > 0) && fe_region &&
+	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	if (element && (dimension > 0) && fe_mesh &&
 		((LINEAR_LAGRANGE == basis_type) ||
 		 (QUADRATIC_LAGRANGE == basis_type) ||
 		 (CUBIC_LAGRANGE == basis_type) ||
@@ -32561,7 +32360,7 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 					}
 				}
 				if (NULL != (element_basis = make_FE_basis(basis_type_array,
-						FE_region_get_basis_manager(fe_region))))
+					FE_region_get_basis_manager(fe_mesh->get_FE_region()))))
 				{
 					ACCESS(FE_basis)(element_basis);
 				}
@@ -32614,11 +32413,10 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 					&old_number_of_scale_factor_sets))
 			{
 				char *scale_factor_set_name = FE_basis_get_description_string(element_basis);
-				cmzn_mesh_scale_factor_set *scale_factor_set =
-					FE_region_find_mesh_scale_factor_set_by_name(fe_region, scale_factor_set_name);
+				cmzn_mesh_scale_factor_set *scale_factor_set = fe_mesh->find_scale_factor_set_by_name(scale_factor_set_name);
 				if (!scale_factor_set)
 				{
-					scale_factor_set = FE_region_create_mesh_scale_factor_set(fe_region);
+					scale_factor_set = fe_mesh->create_scale_factor_set();
 					scale_factor_set->setName(scale_factor_set_name);
 				}
 				DEALLOCATE(scale_factor_set_name);
@@ -32762,21 +32560,14 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 
 int cmzn_node_set_identifier(cmzn_node_id node, int identifier)
 {
-	if (node && node->fields && (identifier >= 0))
+	if (node && node->fields)
 		return node->fields->fe_nodeset->change_FE_node_identifier(node, identifier);
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_element_set_identifier(cmzn_element_id element, int identifier)
 {
-	if (element && element->fields &&(identifier > 0))
-	{
-		FE_region *fe_region = element->fields->fe_region;
-		FE_region_begin_change(fe_region);
-		int return_code = FE_region_change_FE_element_identifier(fe_region,
-			element, identifier);
-		FE_region_end_change(fe_region);
-		return return_code;
-	}
+	if (element && element->fields)
+		return element->fields->fe_mesh->change_FE_element_identifier(element, identifier);
 	return CMZN_ERROR_ARGUMENT;
 }

@@ -18,6 +18,7 @@
 #include "general/debug.h"
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "computed_field/field_module.hpp"
@@ -477,8 +478,7 @@ struct cmzn_elementtemplate
 {
 	friend struct cmzn_mesh; // to obtain template_element
 private:
-	FE_region *fe_region;
-	int element_dimension;
+	FE_mesh *fe_mesh;
 	cmzn_element_shape_type shape_type;
 	bool shape_is_set;
 	int element_number_of_nodes;
@@ -489,9 +489,8 @@ private:
 	ScaleFactorSetIntMap scale_factor_set_sizes;
 
 public:
-	cmzn_elementtemplate(FE_region *fe_region, int element_dimension) :
-		fe_region(ACCESS(FE_region)(fe_region)),
-		element_dimension(element_dimension),
+	cmzn_elementtemplate(FE_mesh *fe_mesh_in) :
+		fe_mesh(fe_mesh_in->access()),
 		shape_type(CMZN_ELEMENT_SHAPE_TYPE_INVALID),
 		shape_is_set(false),
 		element_number_of_nodes(0),
@@ -524,7 +523,7 @@ public:
 		if (in_shape_type != CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 		{
 			int shape_dimension = cmzn_element_shape_type_get_dimension(in_shape_type);
-			if (shape_dimension != element_dimension)
+			if (shape_dimension != this->fe_mesh->getDimension())
 			{
 				display_message(ERROR_MESSAGE,
 					"cmzn_elementtemplate::setShapeType.  Shape dimension is different from mesh");
@@ -595,7 +594,7 @@ public:
 		const int *local_node_indexes)
 	{
 		int return_code = CMZN_OK;
-		if (basis->getDimension() != element_dimension)
+		if (basis->getDimension() != this->fe_mesh->getDimension())
 		{
 			display_message(ERROR_MESSAGE,
 				"cmzn_elementtemplate_define_field_simple_nodal.  "
@@ -638,7 +637,7 @@ public:
 		if (finite_element_field)
 		{
 			Computed_field_get_type_finite_element(field, &fe_field);
-			if (FE_field_get_FE_region(fe_field) != fe_region)
+			if (FE_field_get_FE_region(fe_field) != this->fe_mesh->get_FE_region())
 			{
 				display_message(ERROR_MESSAGE,
 					"cmzn_elementtemplate_define_field_simple_nodal.  "
@@ -668,7 +667,8 @@ public:
 	{
 		int return_code = CMZN_OK;
 
-		cmzn_elementbasis_id basis = new cmzn_elementbasis(fe_region, element_dimension, CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT);
+		cmzn_elementbasis_id basis = new cmzn_elementbasis(
+			this->fe_mesh->get_FE_region(), this->fe_mesh->getDimension(), CMZN_ELEMENTBASIS_FUNCTION_TYPE_CONSTANT);
 		FE_basis *fe_basis = basis->getFeBasis();
 		if (!fe_basis)
 		{
@@ -682,7 +682,7 @@ public:
 		if (finite_element_field)
 		{
 			Computed_field_get_type_finite_element(field, &fe_field);
-			if (FE_field_get_FE_region(fe_field) != fe_region)
+			if (FE_field_get_FE_region(fe_field) != this->fe_mesh->get_FE_region())
 			{
 				display_message(ERROR_MESSAGE,
 					"cmzn_elementtemplate_define_field_simple_nodal.  "
@@ -763,17 +763,17 @@ public:
 			FE_element_shape *fe_element_shape = NULL;
 			if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
 			{
-				fe_element_shape = FE_element_shape_create_unspecified(fe_region, element_dimension);
+				fe_element_shape = FE_element_shape_create_unspecified(this->fe_mesh->get_FE_region(), this->fe_mesh->getDimension());
 			}
 			else
 			{
-				fe_element_shape = FE_element_shape_create_simple_type(fe_region, shape_type);
+				fe_element_shape = FE_element_shape_create_simple_type(this->fe_mesh->get_FE_region(), shape_type);
 			}
 			if (fe_element_shape)
 			{
 				CM_element_information cm = { CM_ELEMENT, 0 };
 				template_element = ACCESS(FE_element)(CREATE(FE_element)(&cm,
-					fe_element_shape, fe_region, /*template_element*/NULL));
+					fe_element_shape, this->fe_mesh, /*template_element*/NULL));
 				set_FE_element_number_of_nodes(template_element, element_number_of_nodes);
 				const int number_of_scale_factor_sets = static_cast<int>(scale_factor_set_sizes.size());
 				if (0 < number_of_scale_factor_sets)
@@ -844,8 +844,7 @@ public:
 				get_FE_element_shape(element, &element_shape);
 				set_FE_element_shape(template_element, element_shape);
 			}
-			return_code = FE_region_merge_FE_element_existing(
-				FE_element_get_FE_region(element), element, template_element);
+			return_code = FE_element_get_FE_mesh(element)->merge_FE_element_existing(element, template_element);
 		}
 		return return_code;
 	}
@@ -864,7 +863,7 @@ private:
 			delete fields[i];
 		}
 		REACCESS(FE_element)(&template_element, NULL);
-		DEACCESS(FE_region)(&fe_region);
+		FE_mesh::deaccess(this->fe_mesh);
 	}
 
 	FE_element *getTemplateElement() { return template_element; }
@@ -903,15 +902,14 @@ private:
 struct cmzn_mesh
 {
 protected:
-	FE_region *fe_region;
-	const int dimension;
+	FE_mesh *fe_mesh;
 	cmzn_field_element_group_id group;
 	int access_count;
 
 	cmzn_mesh(cmzn_field_element_group_id group) :
-		fe_region(ACCESS(FE_region)(cmzn_region_get_FE_region(
-			Computed_field_get_region(cmzn_field_element_group_base_cast(group))))),
-		dimension(Computed_field_element_group_core_cast(group)->getDimension()),
+		fe_mesh(FE_region_find_FE_mesh_by_dimension(
+			cmzn_region_get_FE_region(Computed_field_get_region(cmzn_field_element_group_base_cast(group))),
+			Computed_field_element_group_core_cast(group)->getDimension())->access()),
 		group(group),
 		access_count(1)
 	{
@@ -920,9 +918,8 @@ protected:
 	}
 
 public:
-	cmzn_mesh(cmzn_region_id region, int mesh_dimension) :
-		fe_region(ACCESS(FE_region)(cmzn_region_get_FE_region(region))),
-		dimension(mesh_dimension),
+	cmzn_mesh(FE_mesh *fe_mesh_in) :
+		fe_mesh(fe_mesh_in->access()),
 		group(0),
 		access_count(1)
 	{
@@ -949,18 +946,7 @@ public:
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->containsObject(element);
-		int element_dimension = get_FE_element_dimension(element);
-		if (element_dimension == dimension)
-		{
-			FE_region *element_fe_region = FE_element_get_FE_region(element);
-			if ((element_fe_region == fe_region) ||
-				// special 'group region' check:
-				FE_region_contains_FE_element(fe_region, element))
-			{
-				return true;
-			}
-		}
-		return false;
+		return FE_element_get_FE_mesh(element) == this->fe_mesh;
 	}
 
 	cmzn_element_id createElement(int identifier,
@@ -970,8 +956,7 @@ public:
 		if (element_template->validate())
 		{
 			FE_element *template_element = element_template->getTemplateElement();
-			element = ACCESS(FE_element)(FE_region_create_FE_element_copy(
-				fe_region, identifier, template_element));
+			element = ACCESS(FE_element)(this->fe_mesh->create_FE_element_copy(identifier, template_element));
 			if (group)
 				Computed_field_element_group_core_cast(group)->addObject(element);
 		}
@@ -985,14 +970,14 @@ public:
 
 	cmzn_elementtemplate_id createElementtemplate()
 	{
-		return new cmzn_elementtemplate(fe_region, dimension);
+		return new cmzn_elementtemplate(this->fe_mesh);
 	}
 
 	cmzn_elementiterator_id createIterator()
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->createIterator();
-		return FE_region_create_elementiterator(fe_region, dimension);
+		return this->fe_mesh->createElementiterator();
 	}
 
 	int destroyAllElements()
@@ -1003,15 +988,15 @@ public:
 	int destroyElement(cmzn_element_id element)
 	{
 		if (containsElement(element))
-			return FE_region_remove_FE_element(fe_region, element);
+			return this->fe_mesh->remove_FE_element(element);
 		return 0;
 	}
 
 	int destroyElementsConditional(cmzn_field_id conditional_field)
 	{
-		struct LIST(FE_element) *element_list = createElementListWithCondition(conditional_field);
-		int return_code = FE_region_remove_FE_element_list(fe_region, element_list);
-		DESTROY(LIST(FE_element))(&element_list);
+		struct LIST(FE_element) *remove_element_list = createElementListWithCondition(conditional_field);
+		int return_code = this->fe_mesh->remove_FE_element_list(remove_element_list);
+		DESTROY(LIST(FE_element))(&remove_element_list);
 		return return_code;
 	}
 
@@ -1024,25 +1009,25 @@ public:
 		}
 		else
 		{
-			element = FE_region_get_FE_element_from_identifier(fe_region, dimension, identifier);
+			element = this->fe_mesh->findElementByIdentifier(identifier);
 		}
 		if (element)
 			ACCESS(FE_element)(element);
 		return element;
 	}
 
-	int getDimension() const { return dimension; }
+	int getDimension() const { return this->fe_mesh->getDimension(); }
 
-	FE_region *getFeRegion() const { return fe_region; }
+	FE_mesh *get_FE_mesh() const { return this->fe_mesh; }
 
 	cmzn_mesh_scale_factor_set *findMeshScaleFactorSetByName(const char *name)
 	{
-		return FE_region_find_mesh_scale_factor_set_by_name(this->fe_region, name);
+		return this->fe_mesh->find_scale_factor_set_by_name(name);
 	}
 
 	cmzn_mesh_scale_factor_set *createMeshScaleFactorSet()
 	{
-		return FE_region_create_mesh_scale_factor_set(this->fe_region);
+		return this->fe_mesh->create_scale_factor_set();
 	}
 
 	char *getName()
@@ -1054,7 +1039,7 @@ public:
 		}
 		else
 		{
-			switch (dimension)
+			switch (this->fe_mesh->getDimension())
 			{
 			case 1:
 				name = duplicate_string("mesh1d");
@@ -1076,17 +1061,14 @@ public:
 	{
 		if (!isGroup())
 			return access();
-		cmzn_region_id region = FE_region_get_cmzn_region(fe_region);
-		if (region)
-			return new cmzn_mesh(region, dimension);
-		return 0;
+		return new cmzn_mesh(this->fe_mesh);
 	}
 
 	int getSize() const
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->getSize();
-		return FE_region_get_number_of_FE_elements_of_dimension(fe_region, dimension);
+		return this->fe_mesh->get_number_of_FE_elements();
 	}
 
 	int isGroup()
@@ -1102,8 +1084,7 @@ public:
 
 	bool match(cmzn_mesh& other_mesh)
 	{
-		return ((fe_region == other_mesh.fe_region) &&
-			(dimension == other_mesh.dimension) &&
+		return ((this->fe_mesh == other_mesh.fe_mesh) &&
 			(group == other_mesh.group));
 	}
 
@@ -1112,18 +1093,17 @@ protected:
 	{
 		if (group)
 			cmzn_field_element_group_destroy(&group);
-		DEACCESS(FE_region)(&fe_region);
+		FE_mesh::deaccess(this->fe_mesh);
 	}
 
 	struct LIST(FE_element) *createElementListWithCondition(cmzn_field_id conditional_field)
 	{
-		cmzn_region_id region = FE_region_get_cmzn_region(fe_region);
+		cmzn_region_id region = FE_region_get_cmzn_region(this->fe_mesh->get_FE_region());
 		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
 		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
 		cmzn_elementiterator_id iterator = createIterator();
 		cmzn_element_id element = 0;
-		struct LIST(FE_element) *element_list =
-			FE_region_create_related_element_list_for_dimension(fe_region, dimension);
+		struct LIST(FE_element) *element_list = this->fe_mesh->createRelatedElementList();
 		while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
 		{
 			cmzn_fieldcache_set_element(cache, element);
@@ -1211,7 +1191,8 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_dimension(
 	cmzn_mesh_id mesh = NULL;
 	if (fieldmodule && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		mesh = new cmzn_mesh(cmzn_fieldmodule_get_region_internal(fieldmodule), dimension);
+		FE_region *fe_region = cmzn_region_get_FE_region(cmzn_fieldmodule_get_region_internal(fieldmodule));
+		mesh = new cmzn_mesh(FE_region_find_FE_mesh_by_dimension(fe_region, dimension));
 	}
 	return mesh;
 }
@@ -1245,7 +1226,7 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 				mesh_dimension = 1;
 			if (0 < mesh_dimension)
 			{
-				mesh = new cmzn_mesh(region, mesh_dimension);
+				mesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, mesh_dimension);
 			}
 		}
 	}
@@ -1379,7 +1360,7 @@ cmzn_differentialoperator_id cmzn_mesh_get_chart_differentialoperator(
 	cmzn_mesh_id mesh, int order, int term)
 {
 	if (mesh && (1 == order) && (1 <= term) && (term <= mesh->getDimension()))
-		return new cmzn_differentialoperator(mesh->getFeRegion(), mesh->getDimension(), term);
+		return new cmzn_differentialoperator(mesh->get_FE_mesh()->get_FE_region(), mesh->getDimension(), term);
 	return 0;
 }
 
@@ -1394,7 +1375,7 @@ cmzn_fieldmodule_id cmzn_mesh_get_fieldmodule(cmzn_mesh_id mesh)
 {
 	if (mesh)
 	{
-		cmzn_region *region = FE_region_get_cmzn_region(mesh->getFeRegion());
+		cmzn_region *region = FE_region_get_cmzn_region(mesh->get_FE_mesh()->get_FE_region());
 		return cmzn_fieldmodule_create(region);
 	}
 	return 0;
@@ -1502,14 +1483,21 @@ cmzn_mesh_group_id cmzn_field_element_group_get_mesh_group(
 struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mesh)
 {
 	if (mesh)
-		return FE_region_create_related_element_list_for_dimension(mesh->getFeRegion(), mesh->getDimension());
+		return mesh->get_FE_mesh()->createRelatedElementList();
+	return 0;
+}
+
+FE_mesh *cmzn_mesh_get_FE_mesh_internal(cmzn_mesh_id mesh)
+{
+	if (mesh)
+		return mesh->get_FE_mesh();
 	return 0;
 }
 
 FE_region *cmzn_mesh_get_FE_region_internal(cmzn_mesh_id mesh)
 {
 	if (mesh)
-		return mesh->getFeRegion();
+		return mesh->get_FE_mesh()->get_FE_region();
 	return 0;
 }
 
@@ -1517,7 +1505,7 @@ cmzn_region_id cmzn_mesh_get_region_internal(cmzn_mesh_id mesh)
 {
 	if (!mesh)
 		return 0;
-	return FE_region_get_cmzn_region(mesh->getFeRegion());
+	return FE_region_get_cmzn_region(mesh->get_FE_mesh()->get_FE_region());
 }
 
 cmzn_field_element_group *cmzn_mesh_get_element_group_field_internal(cmzn_mesh_id mesh)
@@ -1830,9 +1818,9 @@ cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 {
 	if (element)
 	{
-		cmzn_region *region = FE_region_get_cmzn_region(FE_element_get_FE_region(element));
-		if (region)
-			return new cmzn_mesh(region, get_FE_element_dimension(element));
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		if (fe_mesh)
+			return new cmzn_mesh(fe_mesh);
 	}
 	return 0;
 }
@@ -1855,7 +1843,7 @@ int cmzn_element_merge(cmzn_element_id element,
 {
 	if (element && element_template)
 		return element_template->mergeIntoElement(element);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 class cmzn_element_shape_type_conversion
