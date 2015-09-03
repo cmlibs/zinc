@@ -169,7 +169,7 @@ calculating the inverse of the Jacobian matrix <dxdxi> and multiplying.
 static int update_adaptive_imp_euler(cmzn_fieldcache_id field_cache,
 	struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
-	struct FE_region *fe_region,struct FE_element **element,FE_value *xi,
+	struct FE_element **element,FE_value *xi,
 	FE_value *point,FE_value *step_size,
 	FE_value *total_stepped, int *keep_tracking)
 /*******************************************************************************
@@ -688,7 +688,7 @@ static int track_streamline_from_FE_element(struct FE_element **element,
 	FE_value length, enum cmzn_graphics_streamlines_colour_data_type colour_data_type,
 	struct Computed_field *data_field,int *number_of_points,
 	Triple **stream_points,Triple **stream_vectors,Triple **stream_normals,
-	GLfloat **stream_data, struct FE_region *fe_region)
+	GLfloat **stream_data)
 /*******************************************************************************
 LAST MODIFIED : 23 June 2004
 
@@ -718,9 +718,6 @@ following way:
     from cross product);
 9 = 3 3-D vectors (2nd vector is lateral direction; 3rd vector is stream ribbon
     normal).
-
-If <fe_region> is not NULL then the function will restrict itself to elements
-in that region.
 ==============================================================================*/
 {
 	FE_value angle,coordinates[3],cos_angle,curl[3],curl_component,data_value,
@@ -1203,7 +1200,7 @@ in that region.
 							previous_element_B = previous_element_A;
 							previous_element_A = *element;
 							return_code=update_adaptive_imp_euler(field_cache,coordinate_field,
-								stream_vector_field,reverse_track,fe_region,element,xi,
+								stream_vector_field,reverse_track,element,xi,
 								coordinates,&step_size,&total_stepped,&keep_tracking);
 							/* If we haven't gone anywhere and are changing back to the previous
 								element then we are stuck */
@@ -1353,7 +1350,7 @@ int create_polyline_streamline_FE_element_vertex_array(
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length, enum cmzn_graphics_streamlines_colour_data_type colour_data_type,
-	struct Computed_field *data_field, struct FE_region *fe_region,
+	struct Computed_field *data_field,
 	struct Graphics_vertex_array *array)
 {
 	GLfloat *stream_data;
@@ -1381,7 +1378,7 @@ int create_polyline_streamline_FE_element_vertex_array(
 			if (track_streamline_from_FE_element(&element,start_xi,
 				field_cache, coordinate_field,stream_vector_field,reverse_track,length,
 				colour_data_type,data_field,&number_of_stream_points,&stream_points,
-					&stream_vectors,&stream_normals,&stream_data, fe_region))
+					&stream_vectors,&stream_normals,&stream_data))
 			{
 				if (0<number_of_stream_points)
 				{
@@ -1436,7 +1433,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum cmzn_graphics_streamlines_colour_data_type colour_data_type, struct Computed_field *data_field,
-	struct FE_region *fe_region, struct Graphics_vertex_array *array)
+	struct Graphics_vertex_array *array)
 {
 	double cosw,magnitude,sinw;
 	GLfloat *stream_data,stream_datum= 0.0;
@@ -1474,7 +1471,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 			if (track_streamline_from_FE_element(&element,start_xi,
 				field_cache, coordinate_field,stream_vector_field,reverse_track,length,
 				colour_data_type,data_field,&number_of_stream_points,&stream_points,
-				&stream_vectors,&stream_normals,&stream_data, fe_region))
+				&stream_vectors,&stream_normals,&stream_data))
 			{
 				if (0<number_of_stream_points)
 				{

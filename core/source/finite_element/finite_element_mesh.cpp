@@ -929,7 +929,11 @@ int FE_mesh::begin_define_faces()
 
 void FE_mesh::end_define_faces()
 {
-	DESTROY(LIST(FE_element_type_node_sequence))(&this->element_type_node_sequence_list);
+	if (this->element_type_node_sequence_list)
+		DESTROY(LIST(FE_element_type_node_sequence))(&this->element_type_node_sequence_list);
+	else
+		display_message(ERROR_MESSAGE, "FE_mesh::end_define_faces.  Wasn't defining faces");
+	this->definingFaces = false;
 }
 
 /**
@@ -1048,6 +1052,7 @@ int FE_mesh::remove_FE_element_list(struct LIST(FE_element) *remove_element_list
 				break;
 			}
 		}
+		cmzn_elementiterator_destroy(&iter);
 		FE_region_end_change(fe_region);
 	}
 	else
@@ -1061,19 +1066,19 @@ int FE_mesh::remove_FE_element_list(struct LIST(FE_element) *remove_element_list
 bool FE_mesh::canMerge(FE_mesh &source)
 {
 	cmzn_elementiterator *iter = source.createElementiterator();
-	CREATE_LIST_ITERATOR(cmzn_element)(source.elementList);
 	cmzn_element *element;
+	bool result = true;
 	while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 	{
 		if (!FE_element_can_be_merged(element, this))
 		{
 			display_message(ERROR_MESSAGE, "Cannot merge element into mesh due to incompatible shape or faces");
-			cmzn_elementiterator_destroy(&iter);
-			return false;
+			result = false;
+			break;
 		}
 	}
 	cmzn_elementiterator_destroy(&iter);
-	return true;
+	return result;
 }
 
 /**
@@ -1294,11 +1299,10 @@ int FE_mesh::merge(FE_mesh &source)
 	if (source.dimension == this->dimension)
 	{
 		Merge_FE_element_external_data data;
-		/* swap elements for global equivalents */
 		data.fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
 			this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 		/* use following array and number to build up matching pairs of old
-				element field info what they become in the global_fe_region */
+		   element field info what they become in the global_fe_region */
 		data.matching_element_field_info =
 			(struct FE_element_field_info **)NULL;
 		data.number_of_matching_element_field_info = 0;
@@ -1313,6 +1317,7 @@ int FE_mesh::merge(FE_mesh &source)
 				break;
 			}
 		}
+		cmzn_elementiterator_destroy(&iter);
 		if (data.matching_element_field_info)
 		{
 			for (int i = 2*data.number_of_matching_element_field_info - 1; 0 <= i; --i)
@@ -1330,7 +1335,7 @@ int FE_mesh::merge(FE_mesh &source)
 int FE_element_is_not_in_FE_mesh(struct FE_element *element,
 	void *fe_mesh_void)
 {
-	if (fe_mesh_void)
-		return static_cast<FE_mesh *>(fe_mesh_void)->containsElement(element);
+	if (fe_mesh_void && (!static_cast<FE_mesh *>(fe_mesh_void)->containsElement(element)))
+		return 1;
 	return 0;
 }

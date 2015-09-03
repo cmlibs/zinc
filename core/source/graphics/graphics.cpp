@@ -780,7 +780,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 												graphics->streamline_length,
 												graphics->streamlines_colour_data_type, graphics->data_field,
-												graphics_to_object_data->fe_region,
 												GT_object_get_vertex_set(graphics->graphics_object));
 									}
 								} break;
@@ -803,7 +802,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 												graphics->line_base_size, graphics->line_scale_factors,
 												graphics->line_orientation_scale_field,
 												graphics->streamlines_colour_data_type, graphics->data_field,
-												graphics_to_object_data->fe_region,
 												GT_object_get_vertex_set(graphics->graphics_object));
 									}
 								} break;
@@ -885,7 +883,7 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 							static_cast<int>(graphics->streamlines_track_direction == CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE),
 							graphics->streamline_length,
 							graphics->streamlines_colour_data_type, graphics->data_field,
-							graphics_to_object_data->fe_region, GT_object_get_vertex_set(graphics->graphics_object));
+							GT_object_get_vertex_set(graphics->graphics_object));
 				} break;
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
@@ -901,7 +899,6 @@ static int cmzn_node_to_streamline(struct FE_node *node,
 						graphics->line_base_size, graphics->line_scale_factors,
 						graphics->line_orientation_scale_field,
 						graphics->streamlines_colour_data_type, graphics->data_field,
-						graphics_to_object_data->fe_region,
 						GT_object_get_vertex_set(graphics->graphics_object));
 				} break;
 			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_INVALID:
