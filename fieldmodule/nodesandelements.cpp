@@ -73,7 +73,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_TRUE(cmzn_nodeset_match(nodeset, tmpNodeset));
 	cmzn_nodeset_destroy(&tmpNodeset);
 
-	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_node_set_identifier(node, 3));
+	EXPECT_EQ(CMZN_ERROR_ALREADY_EXISTS, result = cmzn_node_set_identifier(node, 3));
 	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node, 9));
 
 	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(cubeFm, 3);
@@ -90,7 +90,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_TRUE(cmzn_mesh_match(mesh, tmpMesh));
 	cmzn_mesh_destroy(&tmpMesh);
 
-	EXPECT_EQ(CMZN_ERROR_GENERAL, result = cmzn_element_set_identifier(element, 1));
+	EXPECT_EQ(CMZN_ERROR_ALREADY_EXISTS, result = cmzn_element_set_identifier(element, 1));
 	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element, 2));
 
 	cmzn_element_destroy(&element);
@@ -134,7 +134,7 @@ TEST(ZincNodesElements, setIdentifier)
 
 	EXPECT_EQ(nodeset, node.getNodeset());
 
-	EXPECT_EQ(ERROR_GENERAL, result = node.setIdentifier(3));
+	EXPECT_EQ(ERROR_ALREADY_EXISTS, result = node.setIdentifier(3));
 	EXPECT_EQ(OK, result = node.setIdentifier(9));
 
 	Mesh mesh = cubeFm.findMeshByDimension(3);
@@ -147,7 +147,7 @@ TEST(ZincNodesElements, setIdentifier)
 
 	EXPECT_EQ(mesh, element.getMesh());
 
-	EXPECT_EQ(ERROR_GENERAL, result = element.setIdentifier(1));
+	EXPECT_EQ(ERROR_ALREADY_EXISTS, result = element.setIdentifier(1));
 	EXPECT_EQ(OK, result = element.setIdentifier(2));
 }
 
