@@ -740,7 +740,7 @@ DESCRIPTION :
 #if defined (HAVE_ZLIB)
 				if (!strncmp(".gz", filename + strlen(filename) - 3, 3))
 				{
-					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					stream->gzip_file_handle = (gzFile_s **)gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;

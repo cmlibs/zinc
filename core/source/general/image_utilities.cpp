@@ -1056,7 +1056,7 @@ Returns 1 if a size is successfully determined, and zero without error if not.
 } /* get_yuv_resolution_from_file_size */
 
 #if ! defined (USE_IMAGEMAGICK)
-int write_rgb_image_file(char *file_name,
+int write_rgb_image_file(const char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	long unsigned *image)
@@ -1278,7 +1278,7 @@ Writes an image in SGI rgb file format.
 	return (return_code);
 } /* write_rgb_image_file */
 
-int write_postscript_image_file(char *file_name,
+int write_postscript_image_file(const char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	ZnReal pixel_aspect_ratio,
@@ -1932,7 +1932,7 @@ Uses pack bits compression to compress a stream of bytes to a file.
 #if defined (USE_PNG)
 #include <png.h>
 
-int write_png_image_file(char *file_name,
+int write_png_image_file(const char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	unsigned long *image)
@@ -2031,7 +2031,7 @@ int write_png_image_file(char *file_name,
 }
 #endif /* defined (USE_PNG) */
 
-int write_tiff_image_file(char *file_name,
+int write_tiff_image_file(const char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	enum Tiff_image_compression compression, long unsigned *image)
@@ -2722,7 +2722,7 @@ Not working for 64 bit as assumes a long is 4 bytes!
 	return (return_code);
 } /* write_tiff_image_file */
 
-int read_raw_image_file(char *file_name,
+int read_raw_image_file(const char *file_name,
 	enum Raw_image_storage raw_image_storage,
 	int *width_address, int *height_address, int *number_of_components_address,
 	int *number_of_bytes_per_component_address, unsigned char **image_address)
@@ -2884,7 +2884,7 @@ from the file size. Note indexed RAW files are not supported.
 	return (return_code);
 } /* read_raw_image_file */
 
-int read_rgb_image_file(char *file_name,
+int read_rgb_image_file(const char *file_name,
 	int *width_address, int *height_address, int *number_of_components_address,
 	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
@@ -3266,7 +3266,7 @@ number_of_components=4, RGBA
 	return (return_code);
 } /* read_rgb_image_file */
 
-int read_tiff_image_file(char *file_name,
+int read_tiff_image_file(const char *file_name,
 	int *width_address, int *height_address, int *number_of_components_address,
 	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
@@ -4497,7 +4497,7 @@ present in some files */
 	return (return_code);
 } /* read_tiff_image_file */
 
-int read_yuv_image_file(char *file_name,
+int read_yuv_image_file(const char *file_name,
 	int *width_address, int *height_address, int *number_of_components_address,
 	int *number_of_bytes_per_component_address, unsigned char **image_address)
 /*******************************************************************************
@@ -4690,7 +4690,7 @@ If just the width is specified, the height is computed from the file size.
 #if defined (SAVE_CODE)
 
 #if defined (USE_IMAGEMAGICK)
-int read_image_file(char *filename,int *number_of_components,
+int read_image_file(const char *filename,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,
 	long int *width, long unsigned **image)
 /*******************************************************************************
@@ -4831,7 +4831,7 @@ be specified in the <width> and <height> arguments.
 	return (return_code);
 } /* read_image_file */
 #else /* defined (USE_IMAGEMAGICK) */
-int read_image_file(char *file_name,int *number_of_components,
+int read_image_file(const char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,long int *width,
 	enum Raw_image_storage raw_image_storage, long unsigned **image)
 /*******************************************************************************
@@ -5441,7 +5441,7 @@ enum Image_file_format Cmgui_image_information_get_image_file_format(
 }
 
 int Cmgui_image_information_add_file_name(
-	struct Cmgui_image_information *cmgui_image_information, char *file_name)
+	struct Cmgui_image_information *cmgui_image_information, const char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
@@ -5504,7 +5504,7 @@ Clears 'valid' flag if fails.
 
 int Cmgui_image_information_set_file_name_series(
 	struct Cmgui_image_information *cmgui_image_information,
-	char *file_name_template, char *file_number_pattern, int start_file_number,
+	const char *file_name_template, const char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2002
@@ -5638,7 +5638,7 @@ Clears 'valid' flag if fails.
 
 int Cmgui_image_information_set_file_name(
 	struct Cmgui_image_information *cmgui_image_information,
-	int file_name_number, char *file_name)
+	int file_name_number, const char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2002
 
