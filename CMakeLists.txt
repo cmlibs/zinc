@@ -72,7 +72,6 @@ ENDIF()
 # Must have dependencies
 #FIND_PACKAGE( LibXml2 REQUIRED ) <-- pulled in by fieldml
 FIND_PACKAGE( fieldml-api REQUIRED )
-message(STATUS "ahelkre;: ${CMAKE_MODULE_PATH}")
 FIND_PACKAGE( FTGL REQUIRED )
 FIND_PACKAGE( Opt++ REQUIRED COMPONENTS opt newton base constraints gss pds utils newmat )
 
