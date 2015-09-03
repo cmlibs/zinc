@@ -272,7 +272,7 @@ public:
 	bool canMerge(FE_mesh &source);
 
 	struct Merge_FE_element_external_data;
-	int FE_mesh::merge_FE_element_external(struct FE_element *element,
+	int merge_FE_element_external(struct FE_element *element,
 		Merge_FE_element_external_data &data);
 
 	int merge(FE_mesh &source);

@@ -1216,7 +1216,6 @@ cmzn_mesh_id cmzn_fieldmodule_find_mesh_by_name(
 		}
 		else
 		{
-			cmzn_region_id region = cmzn_fieldmodule_get_region_internal(fieldmodule);
 			int mesh_dimension = 0;
 			if      (0 == strcmp(mesh_name, "mesh3d"))
 				mesh_dimension = 3;
