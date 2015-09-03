@@ -901,7 +901,7 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 	return (file_format_extension);
 } /* Image_file_format_extension */
 
-int Image_file_format_from_file_name(char *file_name,
+int Image_file_format_from_file_name(const char *file_name,
 	enum Image_file_format *image_file_format_address)
 /*******************************************************************************
 LAST MODIFIED : 3 May 2001
@@ -911,7 +911,7 @@ Returns the <Image_file_format> determined from the file_extension in
 <file_name>, or UNKNOWN_IMAGE_FILE_FORMAT if none found or no match made.
 ==============================================================================*/
 {
-	char *file_extension;
+	const char *file_extension;
 	const char *other_file_extension;
 	enum Image_file_format image_file_format;
 	int return_code;

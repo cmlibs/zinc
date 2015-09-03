@@ -576,7 +576,7 @@ int IO_stream_open_for_read_compression_specified(struct IO_stream *stream, cons
 #if defined (HAVE_ZLIB)
 				if (CMZN_STREAMINFORMATION_DATA_COMPRESSION_TYPE_GZIP == data_compression_type)
 				{
-					stream->gzip_file_handle = (void **)gzopen(filename, "rb");
+					stream->gzip_file_handle = (gzFile_s **)gzopen(filename, "rb");
 					if (NULL != stream->gzip_file_handle)
 					{
 						stream->type = IO_STREAM_GZIP_FILE_TYPE;
