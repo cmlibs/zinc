@@ -10,22 +10,17 @@
 cmake_minimum_required( VERSION 3.0 )
 
 # This is the project name and shows up in IDEs
-project(OpenCMISS-Zinc VERSION 3.0.1 LANGUAGES C CXX)
+project(Zinc VERSION 3.0.1 LANGUAGES C CXX)
+
+option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
+option(BUILD_EXAMPLES "${PROJECT_NAME} - Build examples" ON)
+set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
 INCLUDE(cmake/MacroDefinitions.cmake)
 INCLUDE(cmake/FunctionDefinitions.cmake)
-
-# Used in the generate version string cmake script at compile time.
-#set(ZINC_SVN_REPOSITORY_DIR "${CMAKE_SOURCE_DIR}" )
-#Subversion_GET_REVISION( "${ZINC_SVN_REPOSITORY_DIR}" ZINC_REVISION )
-#PRN_MSG("svn repo revision is '${ZINC_REVISION}'")
-
-# Define the following if you want to see some debug information output.
-#set(ZINC_DEBUG_PRINT TRUE )
-#set(ZINC_DEBUG_PRINT_VERBOSE TRUE )
 
 # Set ZINC_RELEASE to TRUE when building a release binary, most othertimes it should
 # be set to FALSE.  The ZINC_RELEASE flag affects the name of the created library.
@@ -39,19 +34,12 @@ set(ZINC_MINOR_VERSION_STRING "\"${ZINC_MINOR_VERSION}\"" )
 set(ZINC_PATCH_VERSION_STRING "\"${ZINC_PATCH_VERSION}\"" )
 set(ZINC_REVISION_STRING "\"${ZINC_REVISION}\"" )
 
-
-set(ZINC_VERSION "${ZINC_MAJOR_VERSION}.${ZINC_MINOR_VERSION}.${ZINC_PATCH_VERSION}" )
-if(ZINC_RELEASE )
+set(ZINC_VERSION ${Zinc_VERSION})
+if(ZINC_RELEASE)
 	set(ZINC_DEVELOPER_VERSION "" )
 ELSE()
 	set(ZINC_DEVELOPER_VERSION ".r${ZINC_REVISION}" )
 endif()
-
-# Offer the user the choice of overriding the installation directories
-set(ZINC_INSTALL_LIB_DIR "lib" )# "Installation directory for libraries"
-set(ZINC_INSTALL_BIN_DIR "bin" )# "Installation directory for executables"
-set(ZINC_INSTALL_INC_DIR "include" )# "Installation directory for header files"
-set(ZINC_INSTALL_CMAKE_DIR "cmake" )# "Installation directory for CMake files"
 
 # Make relative paths absolute (needed later on)
 foreach( p LIB BIN INC CMAKE )
@@ -65,7 +53,7 @@ option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." TRUE )
 option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." FALSE )
 
 if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
-	MESSAGE( FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
+	message(FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
 endif()
 
 # Optional libraries
@@ -210,7 +198,7 @@ if(ZINC_USE_OCE )
 		set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OCE_LIBRARIES} )
 		set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OCE_INCLUDE_DIRS} )
 	ELSE( OCE_FOUND )
-		MESSAGE( FATAL_ERROR "OCE was requested but not found." )
+		message(FATAL_ERROR "OCE was requested but not found." )
 	endif(OCE_FOUND )
 endif(ZINC_USE_OCE )
 
@@ -243,7 +231,7 @@ if(ZINC_USE_OPENCASCADE )
 		set(DEPENDENT_CONFIGS "${DEPENDENT_CONFIGS}\nINCLUDE(${OpenCASCADE_DIR}/opencascade-config.cmake)" )
 		set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} ${OPENCASCADE_DEFINITIONS} )
 	ELSE( OPENCASCADE_FOUND )
-		MESSAGE( FATAL_ERROR "OpenCASCADE was requested but not found." )
+		message(FATAL_ERROR "OpenCASCADE was requested but not found." )
 	endif(OPENCASCADE_FOUND )
 endif(ZINC_USE_OPENCASCADE )
 
@@ -253,9 +241,7 @@ if(ZINC_USE_IMAGEMAGICK)
     list(APPEND DEPENDENT_LIBS MagickCore)
 endif()
 
-if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
-	#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -W -Wall -Werror" )
-	#set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -W -Wall -Werror" )
+if(UNIX)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
 	set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --as-needed" )
@@ -263,66 +249,54 @@ if(${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
 		set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-parameter" )
 		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-unused-parameter" )
 	endif(${CMAKE_BUILD_TYPE} MATCHES [Rr]elease )
-ELSEif(${CMAKE_SYSTEM_NAME} MATCHES "Windows" )
-	if(DEFINED MSVC )
-		set(PLATFORM_COMPILER_DEFINITIONS ${PLATFORM_COMPILER_DEFINITIONS} _CRT_SECURE_NO_WARNINGS _CRTDBG_MAP_ALLOC )
-	endif(DEFINED MSVC )
-endif(${CMAKE_SYSTEM_NAME} MATCHES "Linux" )
+elseif(MSVC)
+	set(PLATFORM_COMPILER_DEFINITIONS ${PLATFORM_COMPILER_DEFINITIONS} _CRT_SECURE_NO_WARNINGS _CRTDBG_MAP_ALLOC)
+endif()
 
 TEST_FOR_VFSCANF( HAVE_VFSCANF )
-INCLUDE( CheckFunctionExists )
+include( CheckFunctionExists )
 CHECK_FUNCTION_EXISTS( heapsort HAVE_HEAPSORT )
 
-FOREACH( DEF ${DEPENDENT_DEFINITIONS} ${PLATFORM_COMPILER_DEFINITIONS} )
-	ADD_DEFINITIONS( -D${DEF} )
-ENDFOREACH()
+foreach(DEF ${DEPENDENT_DEFINITIONS} ${PLATFORM_COMPILER_DEFINITIONS})
+	add_definitions(-D${DEF})
+endforeach()
 set(ZINC_STATIC_DEFINITIONS )
-FOREACH( DEF ${DEPENDENT_DEFINITIONS} )
+foreach( DEF ${DEPENDENT_DEFINITIONS} )
 	LIST( APPEND ZINC_STATIC_DEFINITIONS -D${DEF} )
-ENDFOREACH()
+endforeach()
 set(ZINC_SHARED_DEFINITIONS )
 
-INCLUDE_DIRECTORIES( ${PROJECT_BINARY_DIR}/core/source/api )
+include_directories(${PROJECT_BINARY_DIR}/core/source/api)
 
-set(ZINC_LIBRARY_DEPENDS_GROUP "ZincLibraryDepends" )
-ADD_SUBDIRECTORY(core) # Defines ZINC_LIBRARY_TARGETS
+# Set those before we define libraries in subfolders
+set(ZINC_INSTALL_LIB_DIR lib)# "Installation directory for libraries"
+set(ZINC_INSTALL_BIN_DIR bin)# "Installation directory for executables"
+set(ZINC_INSTALL_INC_DIR include)# "Installation directory for header files"
+set(ZINC_EXPORT_SET_NAME zinc-config)
 
-STRING( REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
-STRING( REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}" )
+add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
+
+string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
+string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
 
 # Create the ZincConfig.cmake and ZincConfigVersion.cmake files
-FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${ZINC_INSTALL_CMAKE_DIR_ABSOLUTE}"
-	"${ZINC_INSTALL_INC_DIR_ABSOLUTE}" )
-set(ZINC_CONFIG_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake" )
-CONFIGURE_FILE( cmake/ZincConfig.in.cmake
-	"${ZINC_CONFIG_FILE_NAME}" @ONLY )
-set(ZINC_CONFIG_VERSION_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfigVersion.cmake" )
-CONFIGURE_FILE( cmake/ZincConfigVersion.in.cmake
-	"${ZINC_CONFIG_VERSION_FILE_NAME}" @ONLY )
+#FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${PACKAGE_CONFIG_DIR_ABSOLUTE}"
+#	"${ZINC_INSTALL_INC_DIR_ABSOLUTE}" )
+#set(ZINC_CONFIG_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake" )
+#CONFIGURE_FILE( cmake/ZincConfig.in.cmake
+#	"${ZINC_CONFIG_FILE_NAME}" @ONLY )
+#set(ZINC_CONFIG_VERSION_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfigVersion.cmake" )
+#CONFIGURE_FILE( cmake/ZincConfigVersion.in.cmake
+#	"${ZINC_CONFIG_VERSION_FILE_NAME}" @ONLY )
 # Create a ZincBuildTreeSettings.cmake file for the use from the build tree
-CONFIGURE_FILE( cmake/ZincBuildTreeSettings.in.cmake
-	"${PROJECT_BINARY_DIR}/ZincBuildTreeSettings.cmake" @ONLY )
-# Create a ZincLibrarySetup.cmake file for defining the available libraries
-set(ZINC_LIBRARY_SETUP_FILE_NAME "${PROJECT_BINARY_DIR}/ZincLibrarySetup.cmake" )
-if(ZINC_SHARED_TARGET AND ZINC_STATIC_TARGET )
-	CONFIGURE_FILE( cmake/ZincLibrarySetup.both.in.cmake
-		"${ZINC_LIBRARY_SETUP_FILE_NAME}" @ONLY )
-ELSE()
-	if(ZINC_SHARED_TARGET )
-		CONFIGURE_FILE( cmake/ZincLibrarySetup.shared.in.cmake
-			"${ZINC_LIBRARY_SETUP_FILE_NAME}" @ONLY )
-	endif()
-	if(ZINC_STATIC_TARGET )
-		CONFIGURE_FILE( cmake/ZincLibrarySetup.static.in.cmake
-			"${ZINC_LIBRARY_SETUP_FILE_NAME}" @ONLY )
-	endif()
-endif()
+#CONFIGURE_FILE( cmake/ZincBuildTreeSettings.in.cmake
+#	"${PROJECT_BINARY_DIR}/ZincBuildTreeSettings.cmake" @ONLY )
 
 # We want the version header to be configured at compile time and not just configure time.
 set(ZINC_VERSION_HDR ${CMAKE_CURRENT_BINARY_DIR}/core/source/configure/version.h )
 
-ADD_CUSTOM_TARGET( version_hdr ALL DEPENDS "version header" )
-ADD_CUSTOM_COMMAND( OUTPUT "version header"
+add_custom_target( version_hdr ALL DEPENDS "version header" )
+add_custom_command( OUTPUT "version header"
 	COMMAND ${CMAKE_COMMAND}
 		-DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DVERSION_HDR=${ZINC_VERSION_HDR}
 		-DZINC_MAJOR_VERSION_STRING=${ZINC_MAJOR_VERSION_STRING}
@@ -331,107 +305,87 @@ ADD_CUSTOM_COMMAND( OUTPUT "version header"
 		-DZINC_REVISION_STRING=${ZINC_REVISION_STRING}
 		-DZINC_BUILD_TYPE_STRING=${ZINC_BUILD_TYPE_STRING}
 		-P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ConfigureVersion.cmake )
-SET_SOURCE_FILES_PROPERTIES( ${ZINC_VERSION_HDR} PROPERTIES GENERATED TRUE )
+set_source_files_properties( ${ZINC_VERSION_HDR} PROPERTIES GENERATED TRUE )
 
-if(ZINC_SHARED_TARGET )
-	ADD_DEPENDENCIES( ${ZINC_SHARED_TARGET} version_hdr )
+if(ZINC_SHARED_TARGET)
+	add_dependencies(${ZINC_SHARED_TARGET} version_hdr)
 endif()
-if(ZINC_STATIC_TARGET )
-	ADD_DEPENDENCIES( ${ZINC_STATIC_TARGET} version_hdr )
+if(ZINC_STATIC_TARGET)
+	add_dependencies(${ZINC_STATIC_TARGET} version_hdr)
 endif()
 
-#set(ZINC_LIBRARY_DEPENDS_FILE_NAME "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake" )
 # Create the build tree imported targets
-EXPORT( TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake" )
+export(TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}
+    FILE "${PROJECT_BINARY_DIR}/ZincLibraryDepends.cmake")
 
 # Register the Zinc project with the CMake database
-EXPORT( PACKAGE ${ZINC_BASE_NAME} )
+export(PACKAGE ${ZINC_BASE_NAME})
 
 # Install ZincLibraryDepends.cmake to the install destination
-INSTALL( EXPORT ${ZINC_LIBRARY_DEPENDS_GROUP} DESTINATION "${ZINC_INSTALL_CMAKE_DIR}" )
-
-# Install Zinc CMake config files to the install location
-INSTALL( FILES "${ZINC_CONFIG_FILE_NAME}" "${ZINC_CONFIG_VERSION_FILE_NAME}" "${ZINC_LIBRARY_SETUP_FILE_NAME}"
-	DESTINATION "${ZINC_INSTALL_CMAKE_DIR}" )
+install(EXPORT ${ZINC_EXPORT_SET_NAME}
+    DESTINATION ${PACKAGE_CONFIG_DIR}
+)
+include(CMakePackageConfigHelpers)
+WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
+    COMPATIBILITY AnyNewerVersion)
+set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
+set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
+    IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
+file(WRITE ${DEPFILE} 
+    "include(CMakeFindDependencyMacro)\r\n"
+	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
+)
+foreach(ZINCDEP ${ZINC_DEPS})
+    if (${ZINCDEP}_FOUND)
+        file(APPEND ${DEPFILE} "find_dependency(${ZINCDEP})\r\n")
+    endif()
+endforeach()
+file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
+install(FILES 
+        ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
+        ${DEPFILE}
+        DESTINATION ${PACKAGE_CONFIG_DIR}
+)
 
 # Packaging for the Zinc library
-INCLUDE(cmake/ZincPackaging.cmake)
+include(cmake/ZincPackaging.cmake)
 
 # Output configuration information if requested
-#if(ZINC_PRINT_CONFIG_SUMMARY )
-	macro(LIBRARY_SUMMARY_STRING LIBRARY_NAME OUTPUT_STRING )
-		if(USE_${LIBRARY_NAME} )
-			set(${OUTPUT_STRING} "system" )
-			foreach(LIB ${${LIBRARY_NAME}_LIBRARIES} )
-				get_target_property(TARGET_ILR ${LIB} IMPORTED_LOCATION_RELEASE)
-				set(SEARCH_LIB_STRING ${LIB} )
-				# If we can get a target imported location use
-				# that for the test string.
-				if(TARGET_ILR )
-					set(SEARCH_LIB_STRING ${TARGET_ILR} )
-				endif(TARGET_ILR )
-				STRING( REGEX MATCH "${ZINC_DEPENDENCIES_INSTALL_PREFIX}" REGEX_RESULT ${SEARCH_LIB_STRING} )
-				if("x${REGEX_RESULT}" STREQUAL "x${ZINC_DEPENDENCIES_INSTALL_PREFIX}" )
-					set(${OUTPUT_STRING} "third_party" )
-				endif()
-			endforeach()
-		else()
-			set(${OUTPUT_STRING} "n/a" )
-		endif()
-	endmacro( LIBRARY_SUMMARY_STRING LIBRARY_NAME OUTPUT_STRING )
-
-	#LIBRARY_SUMMARY_STRING( BZIP2 BZIP2_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( FIELDML FIELDML_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( FTGL FTGL_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( GLEW GLEW_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( IMAGEMAGICK IMAGEMAGICK_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( ITK INSIGHTTOOLKIT_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( JPEG JPEG_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( NETGEN NETGEN_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( OPENCASCADE OPENCASCADE_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( OPTPP OPT++_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( PNG PNG_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( TIFF TIFF_LIB_STRING )
-	#LIBRARY_SUMMARY_STRING( ZLIB ZLIB_LIB_STRING )
-	if(ZINC_BUILD_SHARED_LIBRARY AND ZINC_BUILD_STATIC_LIBRARY )
-		set(ZINC_BUILD_STRING "shared and static libraries" )
-	ELSEif(ZINC_BUILD_SHARED_LIBRARY )
-		set(ZINC_BUILD_STRING "shared library" )
-	ELSEif(ZINC_BUILD_STATIC_LIBRARY )
-		set(ZINC_BUILD_STRING "static library" )
-	ELSE()
-		set(ZINC_BUILD_STRING "<something else>" )
-	endif()
-	MESSAGE( STATUS "")
-	MESSAGE( STATUS "=====================================================")
-	MESSAGE( STATUS "Zinc has been configured with the following settings:")
-	MESSAGE( STATUS "")
-	MESSAGE( STATUS "     Source revision: '${ZINC_REVISION}'")
-	MESSAGE( STATUS "         Target type: '${ZINC_BUILD_STRING}'")
-	MESSAGE( STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")
-	MESSAGE( STATUS "    Architecture dir: '${ARCHITECTURE_DIR}'")
-	MESSAGE( STATUS "")
-	MESSAGE( STATUS " Dependent libraries: ${DEPENDENT_LIBS}")
-	#foreach(DEPLIB ${DEPENDENT_LIBS})
-	#    if (TARGET ${DEPLIB})
-	#        get_target_property(TARGET_ILR ${DEPLIB} IMPORTED_LOCATION_RELEASE)
-	#        get_target_property(TARGET_ILL ${DEPLIB} IMPORTED_INTERFACE_LINK_LIBRARIES)
-	#        MESSAGE( STATUS "               ${DEPLIB}: '${TARGET_ILR}' (${TARGET_ILL})")
-	#    endif() 
-	#endforeach()
-	MESSAGE( STATUS "             FIELDML: '${FIELDML_LIB_STRING}'")
-	MESSAGE( STATUS "                FTGL: '${FTGL_LIB_STRING}'")
-	MESSAGE( STATUS "                GLEW: '${GLEW_LIB_STRING}'")
-	MESSAGE( STATUS "         IMAGEMAGICK: '${IMAGEMAGICK_LIB_STRING}'")
-	MESSAGE( STATUS "      INSIGHTTOOLKIT: '${INSIGHTTOOLKIT_LIB_STRING}'")
-	MESSAGE( STATUS "                JPEG: '${JPEG_LIB_STRING}'")
-	MESSAGE( STATUS "              NETGEN: '${NETGEN_LIB_STRING}'")
-	MESSAGE( STATUS "         OPENCASCADE: '${OPENCASCADE_LIB_STRING}'")
-	MESSAGE( STATUS "               OPT++: '${OPT++_LIB_STRING}'")
-	MESSAGE( STATUS "                 PNG: '${PNG_LIB_STRING}'")
-	MESSAGE( STATUS "                TIFF: '${TIFF_LIB_STRING}'")
-	MESSAGE( STATUS "                ZLIB: '${ZLIB_LIB_STRING}'")
-	MESSAGE( STATUS "=====================================================")
-	MESSAGE( STATUS "")
-#endif(ZINC_PRINT_CONFIG_SUMMARY )
-
+if(ZINC_BUILD_SHARED_LIBRARY )
+	set(ZINC_BUILD_STRING "shared")
+endif()
+if(ZINC_BUILD_STATIC_LIBRARY )
+	set(ZINC_BUILD_STRING "${ZINC_BUILD_STRING} static")
+endif()
+message(STATUS "")
+message(STATUS "=====================================================")
+message(STATUS "Zinc has been configured with the following settings:")
+message(STATUS "")
+message(STATUS "     Source revision: '${ZINC_REVISION}'")
+message(STATUS "         Target type: '${ZINC_BUILD_STRING}'")
+message(STATUS "          Build type: '${CMAKE_BUILD_TYPE}'")
+message(STATUS "         Install dir: '${CMAKE_INSTALL_PREFIX}'")
+foreach(ZINCDEP ${ZINC_DEPS})
+    if (${ZINCDEP}_FOUND)
+        string(SUBSTRING "${ZINCDEP}              " 0 11 ZINCDEP_FIXED_SIZE)
+        message(STATUS "         ${ZINCDEP_FIXED_SIZE}: YES")
+    endif()
+endforeach()
+foreach(DEPLIB ${DEPENDENT_LIBS})
+    if (TARGET ${DEPLIB})
+        get_target_property(TARGET_TYPE ${DEPLIB} TYPE)
+        if (TARGET_TYPE STREQUAL INTERFACE_LIBRARY)
+            get_target_property(TARGET_ILR ${DEPLIB} INTERFACE_LINK_LIBRARIES)
+            set(TARGET_ILR "Interface to ${TARGET_ILR}")
+        else()
+            get_target_property(TARGET_ILR ${DEPLIB} IMPORTED_LOCATION_RELEASE)
+            if (NOT TARGET_ILR)
+                get_target_property(TARGET_ILR ${DEPLIB} IMPORTED_LOCATION_DEBUG)
+            endif()
+        endif()
+        string(SUBSTRING "${DEPLIB}              " 0 11 DEPLIB_FIXED_SIZE)
+        message(STATUS "         ${DEPLIB_FIXED_SIZE}: '${TARGET_ILR}'")
+    endif() 
+endforeach()
+message(STATUS "=====================================================")
+message(STATUS "")

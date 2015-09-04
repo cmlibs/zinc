@@ -29,75 +29,75 @@ SET( ZINC_CONFIGURE_HDRS ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} )
 # CMake variables see comments for a list of _SRCS included from
 # a particular file (similarly that file defines a _HDRS variable).
 # Defines API_HDRS, API_TYPES_HDRS
-INCLUDE( source/cmake/api_source_files.cmake )
+include(source/cmake/api_source_files.cmake )
 
 # Defines APIPP_HDRS, APIPP_TYPES_HDRS
-INCLUDE( source/cmake/apipp_source_files.cmake )
+include(source/cmake/apipp_source_files.cmake )
 
 # Defines COMMAND_SRCS, CONTEXT_SRCS
-INCLUDE( source/cmake/command_source_files.cmake )
+include(source/cmake/command_source_files.cmake )
 
 # Defines COMPUTED_FIELD_CORE_SRCS, COMPUTED_FIELD_GRAPHICS_SRCS,
 # COMPUTED_FIELD_SRCS (contains previous two)
-INCLUDE( source/cmake/computed_field_source_files.cmake )
+include(source/cmake/computed_field_source_files.cmake )
 
 # Defines FINITE_ELEMENT_CORE_SRCS, FINITE_ELEMENT_GRAPHICS_SRCS,
 # FINITE_ELEMENT_ADDITIONAL_SRCS, FINITE_ELEMENT_SRCS
 # (group definition which includes the previous three)
-INCLUDE( source/cmake/finite_element_source_files.cmake )
+include(source/cmake/finite_element_source_files.cmake )
 
 # Defines GENERAL_SRCS
-INCLUDE( source/cmake/general_source_files.cmake )
+include(source/cmake/general_source_files.cmake )
 
 # Defines GRAPHICS_SRCS
-INCLUDE( source/cmake/graphics_source_files.cmake )
+include(source/cmake/graphics_source_files.cmake )
 
 # Defines IMAGE_PROCESSING_SRCS
-INCLUDE( source/cmake/image_processing_source_files.cmake )
+include(source/cmake/image_processing_source_files.cmake )
 
 # Defines COMFILE_SRCS, CURVE_SRCS, ELEMENT_SRCS, EMOTER_SRCS
 # FIELD_IO_SRCS, INTERACTION_SRCS, IO_DEVICES_SRCS, MESH_SRCS, NODE_SRCS,
 # REGION_SRCS, SELECTION_SRCS, THREE_D_DRAWING_SRCS, TIME_SRCS
-INCLUDE( source/cmake/misc_source_files.cmake )
+include(source/cmake/misc_source_files.cmake )
 
 # Defines OPENCASCADE_SRCS
-INCLUDE( source/cmake/opencascade_source_files.cmake )
+#include(source/cmake/opencascade_source_files.cmake )
 
 # Defines ZINC_LIB_SRCS, ZINC_LIB_HDRS
-INCLUDE( source/cmake/zinc_lib_source_files.cmake )
+include(source/cmake/zinc_lib_source_files.cmake)
 
-PRINT_LIST_DUPLICATIONS( ZINC_LIB_SRCS )
-PRINT_LIST_DUPLICATIONS( ZINC_LIB_HDRS )
+print_list_duplications( ZINC_LIB_SRCS )
+print_list_duplications( ZINC_LIB_HDRS )
 
-INCLUDE_DIRECTORIES( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
+include_directories( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
 	${CMAKE_CURRENT_BINARY_DIR}/source/api ${INCLUDE_DIRS} )
 
-IF( MSVC_IDE )
+if( MSVC_IDE )
 	# I want to group the source files by the directory layout for Visual Studio
 	GROUP_SOURCE_FILES(${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS})
-	ADD_DEFINITIONS( "/wd4244 /nologo" )
-ENDIF()
+	add_definitions( "/wd4244 /nologo" )
+endif()
 
-SET( ZINC_LIBRARY_NAME zinc )
-IF( ZINC_BUILD_SHARED_LIBRARY )
+set(ZINC_LIBRARY_NAME zinc)
+if( ZINC_BUILD_SHARED_LIBRARY )
 	SET( ZINC_SHARED_TARGET ${ZINC_LIBRARY_NAME} )
 	add_library(${ZINC_SHARED_TARGET} SHARED ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS})
-	LIST( APPEND ZINC_SHARED_DEFINITIONS -DZINC_SHARED_OBJECT )
-	SET( ZINC_SHARED_DEFINITIONS ${ZINC_SHARED_DEFINITIONS} PARENT_SCOPE )
+	list( APPEND ZINC_SHARED_DEFINITIONS -DZINC_SHARED_OBJECT )
+	set( ZINC_SHARED_DEFINITIONS ${ZINC_SHARED_DEFINITIONS} PARENT_SCOPE )
 	target_link_libraries(${ZINC_LIBRARY_NAME} PRIVATE ${DEPENDENT_LIBS})
-	IF( WIN32 )
+	if( WIN32 )
 		target_link_libraries( ${ZINC_LIBRARY_NAME} ${LINK_PUBLIC} winmm.lib )
-	ENDIF()
+	endif()
 
 	set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
 		COMPILE_DEFINITIONS "ZINC_SHARED_OBJECT"
 		DEFINE_SYMBOL "ZINC_EXPORTS" )
 
 	# Location of shared target
-	get_property( SHARED_TARGET_LOCATION TARGET ${ZINC_SHARED_TARGET} PROPERTY VERSION )
-ENDIF()
+	get_property(SHARED_TARGET_LOCATION TARGET ${ZINC_SHARED_TARGET} PROPERTY VERSION )
+endif()
 
-IF( ZINC_BUILD_STATIC_LIBRARY )
+if( ZINC_BUILD_STATIC_LIBRARY )
 	SET( ZINC_STATIC_TARGET ${ZINC_LIBRARY_NAME}-static )
 	ADD_LIBRARY( ${ZINC_STATIC_TARGET} STATIC ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS} )
 	target_link_libraries(${ZINC_STATIC_TARGET} PUBLIC ${DEPENDENT_LIBS})
@@ -106,67 +106,43 @@ IF( ZINC_BUILD_STATIC_LIBRARY )
 	endif()
 	set_target_properties( ${ZINC_STATIC_TARGET} PROPERTIES
 		OUTPUT_NAME "${ZINC_LIBRARY_NAME}" PREFIX "lib" )
-ENDIF()
+endif()
 
-SET_TARGET_PROPERTIES( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES
+set_target_properties( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES
 	OUTPUT_NAME_RELEASE ${ZINC_LIBRARY_NAME}${ZINC_DEVELOPER_VERSION}
 	OUTPUT_NAME_DEBUG ${ZINC_LIBRARY_NAME}d${ZINC_DEVELOPER_VERSION}
 	VERSION ${ZINC_VERSION}
 	SOVERSION ${ZINC_MAJOR_VERSION} )
 # VERSION property doesn't work on Windows so we will fake it here.
-IF( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
-	SET_TARGET_PROPERTIES( ${ZINC_SHARED_TARGET} PROPERTIES
+if( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
+	set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
 		OUTPUT_NAME_RELEASE ${ZINC_SHARED_TARGET}${ZINC_DEVELOPER_VERSION}.${ZINC_VERSION}
 		OUTPUT_NAME_DEBUG ${ZINC_SHARED_TARGET}d${ZINC_DEVELOPER_VERSION}.${ZINC_VERSION} )
-ENDIF()
-
-# Remove old versions of the Zinc library.  Normally old versions would be overwritten
-# but because we insert a revision number into the target name this doesn't happen.  So
-# we manually remove old versions when configuring.
-#IF( ZINC_BUILD_SHARED_LIBRARY )
-#	GET_TARGET_PROPERTY(TARGET_LOCATION_RELEASE ${ZINC_SHARED_TARGET} LOCATION_RELEASE)
-#	GET_TARGET_PROPERTY(TARGET_LOCATION_DEBUG ${ZINC_SHARED_TARGET} LOCATION_DEBUG)
-#ELSEIF( ZINC_BUILD_STATIC_LIBRARY )
-#	GET_TARGET_PROPERTY(TARGET_LOCATION_RELEASE ${ZINC_STATIC_TARGET} LOCATION_RELEASE)
-#	GET_TARGET_PROPERTY(TARGET_LOCATION_DEBUG ${ZINC_STATIC_TARGET} LOCATION_DEBUG)
-#ENDIF()
-
-# For multi-configuration IDEs the release and debug locations can be different
-#GET_FILENAME_COMPONENT(TARGET_PATH_RELEASE ${TARGET_LOCATION_RELEASE} PATH)
-#GET_FILENAME_COMPONENT(TARGET_PATH_DEBUG ${TARGET_LOCATION_DEBUG} PATH)
-#IF( "x${TARGET_PATH_RELEASE}" STREQUAL "x${TARGET_PATH_DEBUG}" )
-	#FILE( GLOB OLD_ZINCS ${TARGET_PATH_RELEASE}/libzinc* ${TARGET_PATH_RELEASE}/zinc* )
-#ELSE()
-#	FILE( GLOB OLD_ZINCS ${TARGET_PATH_RELEASE}/libzinc* ${TARGET_PATH_RELEASE}/zinc*
-#		${TARGET_PATH_DEBUG}/libzinc* ${TARGET_PATH_DEBUG}/zinc* )
-#ENDIF()
-#
-#FOREACH( OLD_ZINC ${OLD_ZINCS} )#
-#	MESSAGE( STATUS "Removing old Zinc library: ${OLD_ZINC}" )
-#	EXECUTE_PROCESS( COMMAND ${CMAKE_COMMAND} -E remove ${OLD_ZINC} )
-#ENDFOREACH()
+endif()
 
 # Install rules for Zinc
-INSTALL( TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} EXPORT ${ZINC_LIBRARY_DEPENDS_GROUP}
+install(TARGETS 
+    ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} 
+    EXPORT ${ZINC_EXPORT_SET_NAME}
 	ARCHIVE DESTINATION ${ZINC_INSTALL_LIB_DIR}
 	LIBRARY DESTINATION ${ZINC_INSTALL_LIB_DIR}
-	RUNTIME DESTINATION ${ZINC_INSTALL_BIN_DIR} )
+	RUNTIME DESTINATION ${ZINC_INSTALL_BIN_DIR}
+	INCLUDES DESTINATION ${ZINC_INSTALL_INC_DIR}
+)
 
 # Zinc API header install rules
-INSTALL( FILES
+install(FILES
 	${ZINC_SHARED_OBJECT_HDR}
 	${API_HDRS}
 	${APIPP_HDRS}
-	DESTINATION "${ZINC_INSTALL_INC_DIR}/zinc" )
+	DESTINATION ${ZINC_INSTALL_INC_DIR}/zinc )
 
-INSTALL( FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
-	DESTINATION "${ZINC_INSTALL_INC_DIR}/zinc/types" )
+install(FILES ${API_TYPES_HDRS} ${APIPP_TYPES_HDRS}
+	DESTINATION ${ZINC_INSTALL_INC_DIR}/zinc/types)
 
-IF( ZINC_SHARED_TARGET )
-	SET( ZINC_SHARED_TARGET ${ZINC_SHARED_TARGET} PARENT_SCOPE )
-ENDIF()
-IF( ZINC_STATIC_TARGET )
-	SET( ZINC_STATIC_TARGET ${ZINC_STATIC_TARGET} PARENT_SCOPE )
-ENDIF()
-
-
+#if( ZINC_SHARED_TARGET )
+#	set( ZINC_SHARED_TARGET ${ZINC_SHARED_TARGET} PARENT_SCOPE )
+#endif()
+#if( ZINC_STATIC_TARGET )
+#	set( ZINC_STATIC_TARGET ${ZINC_STATIC_TARGET} PARENT_SCOPE )
+#endif()
