@@ -16,6 +16,7 @@
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_group_base.hpp"
 #include "computed_field/computed_field_group.hpp"

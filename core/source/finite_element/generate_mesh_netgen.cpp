@@ -26,6 +26,7 @@ the volume mesh, CMGUI will visualize them to the user.
 #include "general/mystring.h"
 #include "finite_element/generate_mesh_netgen.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_helper.h"
 #include "computed_field/computed_field.h"

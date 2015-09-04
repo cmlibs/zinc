@@ -13,16 +13,8 @@
 
 #include "finite_element/finite_element.h"
 #include "general/change_log.h"
-#include "general/object.h"
-#include "general/manager.h"
+#include "general/list.h"
 #include <vector>
-
-/*
-Global types
-------------
-*/
-
-struct FE_region;
 
 class FE_mesh;
 

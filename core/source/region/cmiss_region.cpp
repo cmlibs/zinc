@@ -1635,7 +1635,7 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 }
 
 static int cmzn_region_merge_private(cmzn_region_id target_region,
-	cmzn_region_id source_region, cmzn_region_id root_region)
+	cmzn_region_id source_region)
 {
 	int return_code = 1;
 	cmzn_region_begin_change_no_notify(source_region);
@@ -1643,7 +1643,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 	// merge FE_region
 	FE_region *target_fe_region = cmzn_region_get_FE_region(target_region);
 	FE_region *source_fe_region = cmzn_region_get_FE_region(source_region);
-	if (!FE_region_merge(target_fe_region, source_fe_region, cmzn_region_get_FE_region(root_region)))
+	if (!FE_region_merge(target_fe_region, source_fe_region))
 	{
 		char *target_path = cmzn_region_get_path(target_region);
 		char *source_path = cmzn_region_get_path(source_region);
@@ -1666,7 +1666,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 		cmzn_region_id target_child = cmzn_region_find_child_by_name(target_region, source_child->name);
 		if (target_child)
 		{
-			return_code = cmzn_region_merge_private(target_child, source_child, root_region);
+			return_code = cmzn_region_merge_private(target_child, source_child);
 			cmzn_region_reaccess_next_sibling(&source_child);
 		}
 		else
@@ -1688,7 +1688,7 @@ int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region
 	if (!target_region || !source_region)
 		return 0;
 	cmzn_region_begin_hierarchical_change(target_region);
-	int return_code = cmzn_region_merge_private(target_region, source_region, /*root_region*/target_region);
+	int return_code = cmzn_region_merge_private(target_region, source_region);
 	cmzn_region_end_hierarchical_change(target_region);
 	return return_code;
 }

@@ -31,6 +31,7 @@ quadratic Lagrange, cubic Lagrange.
 #include "finite_element/export_finite_element.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/import_finite_element.h"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"

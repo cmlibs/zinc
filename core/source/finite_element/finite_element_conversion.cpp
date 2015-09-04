@@ -25,6 +25,7 @@ Functions for converting one finite_element representation to another.
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_helper.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_conversion.h"
 #include "general/debug.h"

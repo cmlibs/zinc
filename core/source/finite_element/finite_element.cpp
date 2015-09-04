@@ -24,6 +24,7 @@
 #include <math.h>
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_private.h"
 #include "finite_element/finite_element_region_private.h"
 #include "general/change_log_private.h"
