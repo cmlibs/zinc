@@ -241,7 +241,7 @@ if(ZINC_USE_IMAGEMAGICK)
     list(APPEND DEPENDENT_LIBS MagickCore)
 endif()
 
-if(UNIX)
+if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
 	set(CMAKE_LD_FLAGS "${CMAKE_LD_FLAGS} --as-needed" )
