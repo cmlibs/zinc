@@ -280,7 +280,7 @@ enum Image_file_format Cmgui_image_information_get_image_file_format(
  * Clears 'valid' flag if fails.
  */
 int Cmgui_image_information_add_file_name(
-	struct Cmgui_image_information *cmgui_image_information, char *file_name);
+	struct Cmgui_image_information *cmgui_image_information, const char *file_name);
 
 /**
  * Adds a series of file names based on the <file_name_template> to the
