@@ -22,6 +22,10 @@ set(ZINC_BASE_NAME zinc)
 INCLUDE(cmake/MacroDefinitions.cmake)
 INCLUDE(cmake/FunctionDefinitions.cmake)
 
+GET_GIT_HASH( )
+SET(ZINC_REVISION ${PROJECT_SOURCE_VERSION})
+STRING(SUBSTRING ${PROJECT_SOURCE_VERSION} 0 7 ZINC_REVISION)
+
 # Set ZINC_RELEASE to TRUE when building a release binary, most othertimes it should
 # be set to FALSE.  The ZINC_RELEASE flag affects the name of the created library.
 set(ZINC_RELEASE FALSE )
