@@ -947,12 +947,12 @@ public:
 	 */
 	struct ext_iterator
 	{
-		cmzn_btree *container;
+		cmzn_btree *container; // non-accessed pointer to owning btree, cleared if container destroyed
 		int_iterator iter;
 		ext_iterator *next_iterator; // for linked list of active_iterators in btree to invalidate on change
 
 		ext_iterator(cmzn_btree *container) :
-			container(container->access()),
+			container(container),
 			iter(container->index),
 			next_iterator(0)
 		{
@@ -961,8 +961,8 @@ public:
 
 		~ext_iterator()
 		{
-			container->removeIterator(this);
-			container->deaccess(&container);
+			if (container)
+				container->removeIterator(this);
 		}
 
 		object_type *next()
@@ -990,7 +990,11 @@ public:
 		void invalidate()
 		{
 			iter.set_to_end();
-			container->removeIterator(this);
+			if (container)
+			{
+				container->removeIterator(this);
+				container = 0;
+			}
 		}
 
 	};
@@ -1002,7 +1006,7 @@ private:
 	int access_count;
 	mutable cmzn_btree *next, *prev; // linked list of related sets
 	object_type *temp_removed_object; // removed while changing identifier
-	ext_iterator *active_iterators; // linked-list of iterators to invalidate if btree is modified
+	ext_iterator *active_iterators; // linked-list of iterators to invalidate if btree is modified or destroyed
 
 	cmzn_btree() :
 		index(0),
@@ -1047,6 +1051,7 @@ private:
 
 	~cmzn_btree()
 	{
+		this->invalidateIterators();
 		delete index;
 		index = 0;
 		prev->next = next;

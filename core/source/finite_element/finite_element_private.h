@@ -449,19 +449,16 @@ Marks each FE_field in <fe_element_field_info> as RELATED_OBJECT_CHANGED
 in <fe_field_change_log>.
 ==============================================================================*/
 
+/**
+ * Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
+ * <fe_field_change_log>.
+ * @param recurseParents  Set to true to recursively mark parent element fields
+ * as changed. This is only needed if element is being added or removed since
+ * graphics built on mesh of element dimension may be affected due to using
+ * inherited fields.
+ */
 int FE_element_log_FE_field_changes(struct FE_element *element,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log,
-	struct FE_element_field_info **last_fe_element_field_info_address);
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
-
-DESCRIPTION :
-Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
-<fe_field_change_log>. Recursively calls the same for each parent element.
-For efficiency, maintains in <last_fe_element_field_info_address> the last
-FE_element_field_info which had fields in it and was output. The last such
-output FE_element_field_info is expected to be at this address too.
-==============================================================================*/
+	struct CHANGE_LOG(FE_field) *fe_field_change_log, bool recurseParents);
 
 PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier);
 

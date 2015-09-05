@@ -151,11 +151,24 @@ public:
 		}
 	}
 
+	// use only by FE_element_log_FE_field_changes
+	FE_element_field_info *get_last_fe_element_field_info() const
+	{
+		return this->last_fe_element_field_info;
+	}
+
+	// use only by FE_element_log_FE_field_changes
+	void set_last_fe_element_field_info(FE_element_field_info *fe_element_field_info)
+	{
+		this->last_fe_element_field_info = fe_element_field_info;
+	}
+
 	void elementChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) change, FE_element *field_info_element);
 	void elementFieldListChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) change,
 		struct LIST(FE_field) *changed_fe_field_list);
 	void elementFieldChange(FE_element *element, FE_field *fe_field);
 	void elementIdentifierChange(FE_element *element);
+	void elementAddedChange(FE_element *element);
 	void elementRemovedChange(FE_element *element);
 
 	int getDimension() const

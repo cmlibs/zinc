@@ -11125,6 +11125,7 @@ Frees the memory for the node, sets <*node_address> to NULL.
 		if (0 == node->access_count)
 		{
 			/* free the node values_storage */
+			//  following is also done by FE_node_invalidate:
 			if (node->fields)
 			{
 				FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
@@ -11151,6 +11152,21 @@ Frees the memory for the node, sets <*node_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(FE_node) */
+
+void FE_node_invalidate(struct FE_node *node)
+{
+	if (node)
+	{
+		if (node->fields)
+		{
+			FOR_EACH_OBJECT_IN_LIST(FE_node_field)(
+				FE_node_field_free_values_storage_arrays,
+				(void *)node->values_storage,node->fields->node_field_list);
+			DEACCESS(FE_node_field_info)(&(node->fields));
+		}
+		DEALLOCATE(node->values_storage);
+	}
+}
 
 DECLARE_OBJECT_FUNCTIONS(FE_node)
 
@@ -21536,10 +21552,9 @@ Frees the memory for the element, sets <*element_address> to NULL.
 				DEALLOCATE(element->faces);
 			}
 			DEACCESS(FE_element_shape)(&(element->shape));
+			// following is also done by FE_element_invalidate
 			if (element->information)
-			{
 				FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
-			}
 			DEACCESS(FE_element_field_info)(&(element->fields));
 			/* parent elements are not ACCESSed */
 			if (element->parents)
@@ -21567,6 +21582,16 @@ Frees the memory for the element, sets <*element_address> to NULL.
 
 	return (return_code);
 } /* DESTROY(FE_element) */
+
+void FE_element_invalidate(struct FE_element *element)
+{
+	if (element)
+	{
+		if (element->information)
+			FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
+		DEACCESS(FE_element_field_info)(&(element->fields));
+	}
+}
 
 DECLARE_OBJECT_FUNCTIONS(FE_element)
 
@@ -21964,49 +21989,39 @@ int adjacent_FE_element(struct FE_element *element,
 } /* adjacent_FE_element */
 
 int FE_element_log_FE_field_changes(struct FE_element *element,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log,
-	struct FE_element_field_info **last_fe_element_field_info_address)
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
-
-DESCRIPTION :
-Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
-<fe_field_change_log>. Recursively calls the same for each parent element.
-For efficiency, maintains in <last_fe_element_field_info_address> the last
-FE_element_field_info which had fields in it and was output. The last such
-output FE_element_field_info is expected to be at this address too.
-==============================================================================*/
+	struct CHANGE_LOG(FE_field) *fe_field_change_log, bool recurseParents)
 {
-	int i, return_code;
-
-	ENTER(FE_element_log_FE_field_changes);
-	if (element && element->fields && fe_field_change_log &&
-		last_fe_element_field_info_address)
+	int return_code = 1;
+	if (element && fe_field_change_log)
 	{
-		return_code = 1;
-		/* log fields in this element, if any, and if different set from last */
-		if (element->fields != (*last_fe_element_field_info_address))
+		// elements that have been orphaned from parent mesh have no fields member
+		if (element->fields)
 		{
-			if (0 < NUMBER_IN_LIST(FE_element_field)(
-				element->fields->element_field_list))
+			/* log fields in this element, if any, and if different set from last */
+			if (element->fields != element->fields->fe_mesh->get_last_fe_element_field_info())
 			{
-				if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-					FE_element_field_log_FE_field_change, (void *)fe_field_change_log,
+				if (0 < NUMBER_IN_LIST(FE_element_field)(
 					element->fields->element_field_list))
 				{
-					return_code = 0;
+					if (!FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
+						FE_element_field_log_FE_field_change, (void *)fe_field_change_log,
+						element->fields->element_field_list))
+					{
+						return_code = 0;
+					}
+					element->fields->fe_mesh->set_last_fe_element_field_info(element->fields);
 				}
-				*last_fe_element_field_info_address = element->fields;
 			}
-		}
-		/* log fields in parent elements */
-		for (i = 0; i < element->number_of_parents; i++)
-		{
-			if (!FE_element_log_FE_field_changes(element->parents[i],
-				fe_field_change_log, last_fe_element_field_info_address))
+			if (recurseParents)
 			{
-				return_code = 0;
-				break;
+				for (int i = 0; i < element->number_of_parents; i++)
+				{
+					if (!FE_element_log_FE_field_changes(element->parents[i], fe_field_change_log, recurseParents))
+					{
+						return_code = 0;
+						break;
+					}
+				}
 			}
 		}
 	}
@@ -22016,10 +22031,8 @@ output FE_element_field_info is expected to be at this address too.
 			"FE_element_log_FE_field_changes.  Invalid argument(s)");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_log_FE_field_changes */
+}
 
 int FE_element_meets_topological_criteria(struct FE_element *element,
 	int dimension, int exterior, cmzn_element_face_type face,

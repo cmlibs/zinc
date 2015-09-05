@@ -256,6 +256,8 @@ struct FE_node_field_info *FE_nodeset::clone_FE_node_field_info(
  */
 int FE_nodeset::remove_FE_node_field_info(struct FE_node_field_info *fe_node_field_info)
 {
+	if (fe_node_field_info == this->last_fe_node_field_info)
+		this->last_fe_node_field_info = 0;
 	return REMOVE_OBJECT_FROM_LIST(FE_node_field_info)(
 		fe_node_field_info, this->node_field_info_list);
 }
@@ -739,7 +741,12 @@ int FE_nodeset::remove_FE_node_list(struct LIST(FE_node) *remove_node_list)
 				if (IS_OBJECT_IN_LIST(cmzn_node)(node, exclusion_node_list))
 					continue;
 				if (REMOVE_OBJECT_FROM_LIST(cmzn_node)(node, this->nodeList))
+				{
+					// must notify of change before invalidating node otherwise has no fields
+					// OK since between begin/end change
 					this->nodeRemovedChange(node);
+					FE_node_invalidate(node);
+				}
 				else
 				{
 					return_code = CMZN_ERROR_GENERAL;

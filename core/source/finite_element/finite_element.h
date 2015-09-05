@@ -540,6 +540,13 @@ struct FE_node *CREATE(FE_node)(int cm_node_identifier,
  */
 int DESTROY(FE_node)(struct FE_node **node_address);
 
+/**
+ * Clear content of node and disconnect it from owning nodeset.
+ * Use when removing node from nodeset or deleting nodeset to safely orphan any
+ * externally accessed nodes.
+ */
+void FE_node_invalidate(struct FE_node *node);
+
 PROTOTYPE_OBJECT_FUNCTIONS(FE_node);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_node);
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(FE_node);
@@ -2042,6 +2049,13 @@ LAST MODIFIED : 23 September 1995
 DESCRIPTION :
 Frees the memory for the element, sets <*element_address> to NULL.
 ==============================================================================*/
+
+/**
+ * Clear content of element and disconnect it from owning mesh.
+ * Use when removing element from mesh or deleting mesh to safely orphan any
+ * externally accessed elements.
+ */
+void FE_element_invalidate(struct FE_element *element);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);

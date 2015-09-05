@@ -1815,12 +1815,9 @@ int cmzn_element_get_identifier(struct cmzn_element *element)
 
 cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)
 {
-	if (element)
-	{
-		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
-		if (fe_mesh)
-			return new cmzn_mesh(fe_mesh);
-	}
+	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	if (fe_mesh)
+		return new cmzn_mesh(fe_mesh);
 	return 0;
 }
 

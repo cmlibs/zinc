@@ -110,8 +110,7 @@ void FE_mesh::elementChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) c
 	{
 		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element, change);
 		// for efficiency, the following marks field changes only if field info changes
-		FE_element_log_FE_field_changes(field_info_element,
-			fe_region->fe_field_changes, &(this->last_fe_element_field_info));
+		FE_element_log_FE_field_changes(field_info_element, fe_region->fe_field_changes, /*recurseParents*/false);
 		this->fe_region->update();
 	}
 }
@@ -158,6 +157,19 @@ void FE_mesh::elementFieldChange(FE_element *element, FE_field *fe_field)
 	}
 }
 
+void FE_mesh::elementAddedChange(FE_element *element)
+{
+	if (this->fe_region)
+	{
+		this->next_fe_element_identifier_cache = 0;
+		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
+			CHANGE_LOG_OBJECT_ADDED(FE_element));
+		// for efficiency, the following marks field changes only if field info changes
+		FE_element_log_FE_field_changes(element, fe_region->fe_field_changes, /*recurseParents*/true);
+		this->fe_region->update();
+	}
+}
+
 void FE_mesh::elementRemovedChange(FE_element *element)
 {
 	if (this->fe_region)
@@ -166,11 +178,11 @@ void FE_mesh::elementRemovedChange(FE_element *element)
 		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
 			CHANGE_LOG_OBJECT_REMOVED(FE_element));
 		// for efficiency, the following marks field changes only if field info changes
-		FE_element_log_FE_field_changes(element,
-			fe_region->fe_field_changes, &(this->last_fe_element_field_info));
+		FE_element_log_FE_field_changes(element, fe_region->fe_field_changes, /*recurseParents*/true);
 		this->fe_region->update();
 	}
 }
+
 // NOTE! Only to be called by FE_region_clear
 // Expects change cache to be on, otherwise very inefficient
 void FE_mesh::clear()
@@ -298,19 +310,10 @@ struct FE_element_field_info *FE_mesh::clone_FE_element_field_info(
 int FE_mesh::remove_FE_element_field_info(
 	struct FE_element_field_info *fe_element_field_info)
 {
-	int return_code;
-	if (fe_element_field_info)
-	{
-		return_code = REMOVE_OBJECT_FROM_LIST(FE_element_field_info)(
-			fe_element_field_info, this->element_field_info_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_mesh::remove_FE_element_field_info.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
+	if (fe_element_field_info == this->last_fe_element_field_info)
+		this->last_fe_element_field_info = 0;
+	return REMOVE_OBJECT_FROM_LIST(FE_element_field_info)(
+		fe_element_field_info, this->element_field_info_list);
 }
 
 struct FE_element_field_info_check_field_node_value_labels_data
@@ -645,7 +648,7 @@ struct FE_element *FE_mesh::create_FE_element_copy(int identifier, struct FE_ele
 			{
 				if (this->definingFaces)
 					FE_region_begin_change(fe_region);
-				this->elementChange(new_element, CHANGE_LOG_OBJECT_ADDED(FE_element), new_element); 
+				this->elementAddedChange(new_element); 
 				if (this->definingFaces)
 				{
 					this->merge_FE_element_and_faces(new_element);
@@ -751,7 +754,7 @@ struct FE_element *FE_mesh::merge_FE_element(struct FE_element *element)
 				if (ADD_OBJECT_TO_LIST(FE_element)(element, this->elementList))
 				{
 					merged_element = element;
-					this->elementChange(merged_element, CHANGE_LOG_OBJECT_ADDED(FE_element), merged_element); 
+					this->elementAddedChange(merged_element);
 				}
 				else
 				{
@@ -972,6 +975,10 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 	{
 		/* access element in case it is only accessed here */
 		ACCESS(FE_element)(element);
+		// must notify of change before invalidating element otherwise has no fields
+		// assumes within begin/end change
+		this->elementRemovedChange(element);
+		FE_element_invalidate(element);
 		REMOVE_OBJECT_FROM_LIST(FE_element)(element, this->elementList);
 		if (this->parentMesh)
 		{
@@ -1003,7 +1010,6 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 						return_code = this->faceMesh->remove_FE_element_private(face);
 				}
 		}
-		this->elementRemovedChange(element);
 		DEACCESS(FE_element)(&element);
 	}
 	else
