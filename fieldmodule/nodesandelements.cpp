@@ -184,6 +184,85 @@ TEST(ZincElementiterator, iteration)
 	EXPECT_EQ(200, e.getIdentifier());
 }
 
+TEST(ZincElementiterator, invalidation)
+{
+	ZincTestSetupCpp zinc;
+
+	Region childRegion = zinc.root_region.createChild("temp");
+	Fieldmodule fm = childRegion.getFieldmodule();
+
+	Mesh mesh = fm.findMeshByDimension(3);
+	Elementtemplate elementTemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementTemplate.isValid());
+	EXPECT_EQ(OK, elementTemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+
+	Element e1 = mesh.createElement(1, elementTemplate);
+	EXPECT_TRUE(e1.isValid());
+	Element e2 = mesh.createElement(2, elementTemplate);
+	EXPECT_TRUE(e2.isValid());
+	Element e3 = mesh.createElement(3, elementTemplate);
+	EXPECT_TRUE(e3.isValid());
+
+	Elementiterator iter;
+	Element e;
+
+	// test that creating a new node safely invalidates iterator
+	iter = mesh.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	e = iter.next();
+	EXPECT_EQ(e1, e);
+	e = iter.next();
+	EXPECT_EQ(e2, e);
+	EXPECT_EQ(3, mesh.getSize());
+	Element e4 = mesh.createElement(4, elementTemplate);
+	EXPECT_TRUE(e4.isValid());
+	EXPECT_EQ(4, mesh.getSize());
+	e = iter.next();
+	EXPECT_FALSE(e.isValid());
+
+	// test that removing a node safely invalidates iterator
+	elementTemplate = Elementtemplate();
+	fm = Fieldmodule();
+	iter = mesh.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	e = iter.next();
+	EXPECT_EQ(e1, e);
+	e = iter.next();
+	EXPECT_EQ(e2, e);
+	EXPECT_EQ(OK, mesh.destroyElement(e4));
+	EXPECT_EQ(3, mesh.getSize());
+	Mesh tmpMesh = e4.getMesh();
+	EXPECT_FALSE(tmpMesh.isValid());
+	e = iter.next();
+	EXPECT_FALSE(e.isValid());
+
+	// test that renumbering a node safely invalidates iterator
+	iter = mesh.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	e = iter.next();
+	EXPECT_EQ(e1, e);
+	e = iter.next();
+	EXPECT_EQ(e2, e);
+	EXPECT_EQ(OK, e3.setIdentifier(5));
+	e = iter.next();
+	EXPECT_FALSE(e.isValid());
+
+	// test that destroying child region and safely invalidates iterator
+	iter = mesh.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	e = iter.next();
+	EXPECT_EQ(e1, e);
+	e = iter.next();
+	EXPECT_EQ(e2, e);
+	EXPECT_EQ(OK, zinc.root_region.removeChild(childRegion));
+	childRegion = Region(); // clear handle so it can be destoyed
+	mesh = Mesh(); // clear handle
+	e = iter.next();
+	EXPECT_FALSE(e.isValid());
+	tmpMesh = e3.getMesh();
+	EXPECT_FALSE(tmpMesh.isValid());
+}
+
 TEST(ZincNodeiterator, iteration)
 {
 	ZincTestSetupCpp zinc;
@@ -211,4 +290,82 @@ TEST(ZincNodeiterator, iteration)
 	n = iter.next();
 	EXPECT_EQ(n200, n);
 	EXPECT_EQ(200, n.getIdentifier());
+}
+
+TEST(ZincNodeiterator, invalidation)
+{
+	ZincTestSetupCpp zinc;
+
+	Region childRegion = zinc.root_region.createChild("temp");
+	Fieldmodule fm = childRegion.getFieldmodule();
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodetemplate nodeTemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodeTemplate.isValid());
+
+	Node n1 = nodeset.createNode(1, nodeTemplate);
+	EXPECT_TRUE(n1.isValid());
+	Node n2 = nodeset.createNode(2, nodeTemplate);
+	EXPECT_TRUE(n2.isValid());
+	Node n3 = nodeset.createNode(3, nodeTemplate);
+	EXPECT_TRUE(n3.isValid());
+
+	Nodeiterator iter;
+	Node n;
+
+	// test that creating a new node safely invalidates iterator
+	iter = nodeset.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	n = iter.next();
+	EXPECT_EQ(n1, n);
+	n = iter.next();
+	EXPECT_EQ(n2, n);
+	EXPECT_EQ(3, nodeset.getSize());
+	Node n4 = nodeset.createNode(4, nodeTemplate);
+	EXPECT_TRUE(n4.isValid());
+	EXPECT_EQ(4, nodeset.getSize());
+	n = iter.next();
+	EXPECT_FALSE(n.isValid());
+
+	// test that removing a node safely invalidates iterator
+	nodeTemplate = Nodetemplate();
+	fm = Fieldmodule();
+	iter = nodeset.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	n = iter.next();
+	EXPECT_EQ(n1, n);
+	n = iter.next();
+	EXPECT_EQ(n2, n);
+	EXPECT_EQ(OK, nodeset.destroyNode(n4));
+	EXPECT_EQ(3, nodeset.getSize());
+	Nodeset tmpNodeset = n4.getNodeset();
+	EXPECT_FALSE(tmpNodeset.isValid());
+	n = iter.next();
+	EXPECT_FALSE(n.isValid());
+
+	// test that renumbering a node safely invalidates iterator
+	iter = nodeset.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	n = iter.next();
+	EXPECT_EQ(n1, n);
+	n = iter.next();
+	EXPECT_EQ(n2, n);
+	EXPECT_EQ(OK, n3.setIdentifier(5));
+	n = iter.next();
+	EXPECT_FALSE(n.isValid());
+
+	// test that destroying child region and safely invalidates iterator
+	iter = nodeset.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	n = iter.next();
+	EXPECT_EQ(n1, n);
+	n = iter.next();
+	EXPECT_EQ(n2, n);
+	EXPECT_EQ(OK, zinc.root_region.removeChild(childRegion));
+	childRegion = Region(); // clear handle so it can be destoyed
+	nodeset = Nodeset(); // clear handle
+	n = iter.next();
+	EXPECT_FALSE(n.isValid());
+	tmpNodeset = n3.getNodeset();
+	EXPECT_FALSE(tmpNodeset.isValid());
 }
