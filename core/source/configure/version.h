@@ -7,9 +7,12 @@
 #if !defined GENERATED_VERSION_H
 #define GENERATED_VERSION_H
 
-extern static const int ZINC_MAJOR_VERSION;
-extern static const int ZINC_MINOR_VERSION;
-extern static const int ZINC_PATCH_VERSION;
+extern const int ZINC_MAJOR_VERSION;
+extern const int ZINC_MINOR_VERSION;
+extern const int ZINC_PATCH_VERSION;
+extern const char* ZINC_REVISION;
+extern const char* ZINC_BUILD_TYPE;
+
 //#define ZINC_MAJOR_VERSION @ZINC_MAJOR_VERSION_STRING@
 //#define ZINC_MINOR_VERSION @ZINC_MINOR_VERSION_STRING@
 //#define ZINC_PATCH_VERSION @ZINC_PATCH_VERSION_STRING@
