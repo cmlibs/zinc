@@ -868,32 +868,6 @@ DESCRIPTION :
 If <node> is in <node_list> it is taken out, otherwise it is added.
 ==============================================================================*/
 
-struct FE_node_is_embedded_in_changed_element_data
-/*******************************************************************************
-LAST MODIFIED : 25 May 2001
-
-DESCRIPTION :
-Data for passing to FE_node_is_embedded_in_changed_element function.
-Keeps the current <node> and the <changed_element_list> or <changed_node_list>.
-==============================================================================*/
-{
-	/* node is used internally; do not have to set it */
-	struct FE_node *node;
-	struct LIST(FE_element) *changed_element_list;
-	struct LIST(FE_node) *changed_node_list;
-}; /* struct FE_node_is_embedded_in_changed_element_data */
-
-int FE_node_is_embedded_in_changed_element(struct FE_node *node,
-	void *data_void);
-/*******************************************************************************
-LAST MODIFIED : 25 May 2001
-
-DESCRIPTION :
-Returns true if <node> contains a field which is embedded in one of the elements
-in the <changed_element_list>, or in any elements using nodes from the
-<changed_node_list>, both passed in the <data_void>.
-==============================================================================*/
-
 /**
  * Clears any embedded locations from nodes in nodeset for fields in
  * field_list. This is to avoid circular dependencies which prevent clean-up.
