@@ -5,42 +5,46 @@
 # License, v. 2.0. If a copy of the MPL was not distributed with this
 # file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
-# Set the minimum version of cmake required to 2.8.1
-# The FATAL_ERROR is needed if using cmake < 2.4
-cmake_minimum_required( VERSION 3.0 )
+cmake_minimum_required(VERSION 3.0)
 
 # This is the project name and shows up in IDEs
 project(Zinc VERSION 3.0.1 LANGUAGES C CXX)
 
 set(PACKAGE_CONFIG_DIR "lib/cmake" CACHE STRING "Directory for package config files (relative to CMAKE_INSTALL_PREFIX)")
+option(BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
+option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." ON)
+option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." OFF)
+option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
+# Optional libraries
+option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)
+option(ZINC_USE_ZLIB "Use zLib" YES)
+option(ZINC_USE_BZIP2 "Use BZip2" YES)
+option(ZINC_USE_NETGEN "Use NetGen" YES)
+option(ZINC_USE_JPEG "Use JPEG" YES)
+option(ZINC_USE_PNG "Use PNG" YES)
+option(ZINC_USE_TIFF "Use TIFF" YES)
+option(ZINC_USE_ITK "Use ITK" YES)
 
 # The name for the project seen in directory paths
 set(ZINC_BASE_NAME zinc)
 
-INCLUDE(cmake/MacroDefinitions.cmake)
-INCLUDE(cmake/FunctionDefinitions.cmake)
+if (BUILD_TESTS)
+    set(ZINC_BUILD_TESTS TRUE)
+endif()
+if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
+	message(FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
+endif()
 
-GET_GIT_HASH( )
-SET(ZINC_REVISION ${PROJECT_SOURCE_VERSION})
-STRING(SUBSTRING ${PROJECT_SOURCE_VERSION} 0 7 ZINC_REVISION)
+include(cmake/MacroDefinitions.cmake)
+include(cmake/FunctionDefinitions.cmake)
 
-# Set ZINC_RELEASE to TRUE when building a release binary, most othertimes it should
-# be set to FALSE.  The ZINC_RELEASE flag affects the name of the created library.
-set(ZINC_RELEASE FALSE )
-set(ZINC_MAJOR_VERSION ${PROJECT_VERSION_MAJOR} )
-set(ZINC_MINOR_VERSION ${PROJECT_VERSION_MINOR} )
-set(ZINC_PATCH_VERSION ${PROJECT_VERSION_PATCH} )
-
-set(ZINC_MAJOR_VERSION_STRING "\"${ZINC_MAJOR_VERSION}\"" )
-set(ZINC_MINOR_VERSION_STRING "\"${ZINC_MINOR_VERSION}\"" )
-set(ZINC_PATCH_VERSION_STRING "\"${ZINC_PATCH_VERSION}\"" )
-set(ZINC_REVISION_STRING "\"${ZINC_REVISION}\"" )
-
-set(ZINC_VERSION ${Zinc_VERSION})
-if(ZINC_RELEASE)
-	set(ZINC_DEVELOPER_VERSION "" )
-else()
-    set(ZINC_DEVELOPER_VERSION ".r${ZINC_REVISION}" )
+find_package(Git QUIET)
+set(ZINC_REVISION "no-rev")
+if (GIT_FOUND)
+    getGitRevision(ZINC_REVISION)
+endif()
+if(CMAKE_BUILD_TYPE MATCHES Debug)
+    set(ZINC_DEVELOPER_VERSION ".r${ZINC_REVISION}")
 endif()
 
 # Make relative paths absolute (needed later on)
@@ -50,15 +54,6 @@ foreach( p LIB BIN INC CMAKE )
         set(${var}_ABSOLUTE "${CMAKE_INSTALL_PREFIX}/${${var}}" )
     endif()
 endforeach()
-
-option(ZINC_BUILD_TESTS "${PROJECT_NAME} - Build tests" ON)
-option(ZINC_BUILD_SHARED_LIBRARY "Build a shared zinc library." TRUE )
-option(ZINC_BUILD_STATIC_LIBRARY "Build a static zinc library." FALSE )
-option(ZINC_PRINT_CONFIG_SUMMARY "Show a summary of the configuration." TRUE)
-
-if(NOT ZINC_BUILD_SHARED_LIBRARY AND NOT ZINC_BUILD_STATIC_LIBRARY )
-	message(FATAL_ERROR "You have to build at least one of the types of libraries (shared or static)." )
-endif()
 
 # Must have dependencies
 find_package(LibXml2 ${LIBXML2_VERSION} REQUIRED)
@@ -70,21 +65,11 @@ find_package(OPTPP ${OPTPP_VERSION} REQUIRED)
 set(DEPENDENT_LIBS xml2 fieldml-api ftgl optpp)
 find_package(GLEW ${GLEW_VERSION} REQUIRED)
 set(USE_GLEW TRUE)
-set(USE_MSAA TRUE)
 if(WIN32)
     set(GLEW_STATIC TRUE)
 endif()
 list(APPEND DEPENDENT_LIBS glew)
-
-# Optional libraries
-option(ZINC_USE_IMAGEMAGICK "Use ImageMagick" YES)
-option(ZINC_USE_ZLIB "Use zLib" YES)
-option(ZINC_USE_BZIP2 "Use BZip2" YES)
-option(ZINC_USE_NETGEN "Use NetGen" YES)
-option(ZINC_USE_JPEG "Use JPEG" YES)
-option(ZINC_USE_PNG "Use PNG" YES)
-option(ZINC_USE_TIFF "Use TIFF" YES)
-option(ZINC_USE_ITK "Use ITK" YES)
+set(USE_MSAA TRUE)
 
 # Define variables to false that need to be at least defined for passsing to option_with_default macro.
 # Use options
@@ -172,7 +157,6 @@ if(ZINC_USE_PNG)
     list(APPEND DEPENDENT_LIBS png)
 endif()
 
-# ImageMagick - is a config file therefore I cannot find twice
 if(ZINC_USE_IMAGEMAGICK)
     find_package(ImageMagick ${IMAGEMAGICK_VERSION} CONFIG REQUIRED)
     list(APPEND DEPENDENT_LIBS MagickCore)
@@ -180,61 +164,58 @@ endif()
 
 if(ZINC_USE_ITK )
     find_package(ITK ${ITK_VERSION} CONFIG REQUIRED)
-    #MARK_AS_ADVANCED(ITK_DIR)
-    #set(USE_ITK TRUE )
     list(APPEND DEPENDENT_LIBS itk)
-endif(ZINC_USE_ITK )
+endif()
 
-# OCE - is a config file therefore I cannot find twice
-if(ZINC_USE_OCE )
-	if(OCE_FOUND )
-		MARK_AS_ADVANCED( OCE_DIR )
-		set(USE_OPENCASCADE TRUE )
-		set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} USE_CAD_FIELDS HAVE_CONFIG_H )
-		set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OCE_LIBRARIES} )
-		set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OCE_INCLUDE_DIRS} )
-	else( OCE_FOUND )
-		message(FATAL_ERROR "OCE was requested but not found." )
-	endif(OCE_FOUND )
-endif(ZINC_USE_OCE )
+#if(ZINC_USE_OCE )
+#	if(OCE_FOUND )
+#		MARK_AS_ADVANCED( OCE_DIR )
+#		set(USE_OPENCASCADE TRUE )
+#		set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} USE_CAD_FIELDS HAVE_CONFIG_H )
+#		set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OCE_LIBRARIES} )
+#		set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OCE_INCLUDE_DIRS} )
+#	else( OCE_FOUND )
+#		message(FATAL_ERROR "OCE was requested but not found." )
+#	endif(OCE_FOUND )
+#endif(ZINC_USE_OCE )
 
 # OpenCASCADE - is a config file therefore I cannot find twice
-if(ZINC_USE_OPENCASCADE )
-	if(OPENCASCADE_FOUND )
+#if(ZINC_USE_OPENCASCADE )
+#	if(OPENCASCADE_FOUND )
 		# Subset of OpenCASCADE libraries Zinc is dependent on
 		# TKernel, TKMath, TKAdvTools, TKGeomBase, TKGeomAlgo, TKBRep, TKPrim,
 		# TKBO, TKBool, TKG2d, TKG3d, PTKernel, TKOffset, TKFillet, TKMESH, TKIGES,
 		# TKXCAF, TKCAF, TKV3d, TKLCAF, TKTopAlgo, TKCDF, TKV2d, TKHLR, TKService,
 		# TKShHealing, TKXSBase, TKSTEP, TKSTEPBase, TKSTEPAttr, TKSTEP209,
 		# TKXDEIGES, TKXDESTEP
-		mark_as_advanced( OpenCASCADE_DIR )
-		set(USE_OPENCASCADE TRUE )
-		set(OPENCASCADE_DEFINITIONS USE_CAD_FIELDS )
-		if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" )
+#		mark_as_advanced( OpenCASCADE_DIR )
+#		set(USE_OPENCASCADE TRUE )
+#		set(OPENCASCADE_DEFINITIONS USE_CAD_FIELDS )
+#		if(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" )
 			# 64-bit architecture
-			set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} _OCC64 )
-			set(OPENCASCADE_CXX_FLAGS -m64 )
-		endif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" )
-		if(WIN32 )
-			set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} WNT HAVE_NO_DLL )
-		else( WIN32 )
-			set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} HAVE_OCC_CONFIG_H )
-		endif(WIN32 )
-		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENCASCADE_CXX_FLAGS}" )
-
-		set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENCASCADE_LIBRARIES} )
-		set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OPENCASCADE_INCLUDE_DIRS} )
-		set(DEPENDENT_CONFIGS "${DEPENDENT_CONFIGS}\nINCLUDE(${OpenCASCADE_DIR}/opencascade-config.cmake)" )
-		set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} ${OPENCASCADE_DEFINITIONS} )
-	else( OPENCASCADE_FOUND )
-		message(FATAL_ERROR "OpenCASCADE was requested but not found." )
-	endif(OPENCASCADE_FOUND )
-endif(ZINC_USE_OPENCASCADE )
+#			set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} _OCC64 )
+#			set(OPENCASCADE_CXX_FLAGS -m64 )
+#		endif(${CMAKE_SYSTEM_PROCESSOR} MATCHES "x86_64" )
+#		if(WIN32 )
+#			set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} WNT HAVE_NO_DLL )
+#		else( WIN32 )
+#			set(OPENCASCADE_DEFINITIONS ${OPENCASCADE_DEFINITIONS} HAVE_OCC_CONFIG_H )
+#		endif(WIN32 )
+#		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OPENCASCADE_CXX_FLAGS}" )
+#
+#		set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENCASCADE_LIBRARIES} )
+#		set(INCLUDE_DIRS ${INCLUDE_DIRS} ${OPENCASCADE_INCLUDE_DIRS} )
+#		set(DEPENDENT_CONFIGS "${DEPENDENT_CONFIGS}\nINCLUDE(${OpenCASCADE_DIR}/opencascade-config.cmake)" )
+#		set(DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} ${OPENCASCADE_DEFINITIONS} )
+#	else( OPENCASCADE_FOUND )
+#		message(FATAL_ERROR "OpenCASCADE was requested but not found." )
+#	endif(OPENCASCADE_FOUND )
+#endif(ZINC_USE_OPENCASCADE )
 
 if(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
     find_package(OpenGL REQUIRED )
     set(DEPENDENT_LIBS ${DEPENDENT_LIBS} ${OPENGL_LIBRARIES} )
-endif(${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
+endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX)
 	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wextra -Wall -fvisibility=hidden -Wl,--as-needed" )
@@ -273,41 +254,6 @@ add_subdirectory(core) # Defines ZINC_LIBRARY_TARGETS
 
 string(REGEX REPLACE ";" " " INCLUDE_DIRS "${INCLUDE_DIRS}" )
 string(REGEX REPLACE ";" " " DEPENDENT_DEFINITIONS "${DEPENDENT_DEFINITIONS}")
-
-# Create the ZincConfig.cmake and ZincConfigVersion.cmake files
-#FILE( RELATIVE_PATH CONF_REL_INCLUDE_DIR "${PACKAGE_CONFIG_DIR_ABSOLUTE}"
-#	"${ZINC_INSTALL_INC_DIR_ABSOLUTE}" )
-#set(ZINC_CONFIG_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfig.cmake" )
-#CONFIGURE_FILE( cmake/ZincConfig.in.cmake
-#	"${ZINC_CONFIG_FILE_NAME}" @ONLY )
-#set(ZINC_CONFIG_VERSION_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/ZincConfigVersion.cmake" )
-#CONFIGURE_FILE( cmake/ZincConfigVersion.in.cmake
-#	"${ZINC_CONFIG_VERSION_FILE_NAME}" @ONLY )
-# Create a ZincBuildTreeSettings.cmake file for the use from the build tree
-#CONFIGURE_FILE( cmake/ZincBuildTreeSettings.in.cmake
-#	"${PROJECT_BINARY_DIR}/ZincBuildTreeSettings.cmake" @ONLY )
-
-# We want the version header to be configured at compile time and not just configure time.
-set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/core/source/configure/version.cpp )
-
-ADD_CUSTOM_TARGET( doversion ALL DEPENDS "version source" )
-ADD_CUSTOM_COMMAND( OUTPUT "version source"
-    COMMAND ${CMAKE_COMMAND}
-        -DSOURCE_DIR=${CMAKE_CURRENT_SOURCE_DIR} -DVERSION_SRC=${ZINC_VERSION_SRC}
-        -DZINC_MAJOR_VERSION=${ZINC_MAJOR_VERSION}
-        -DZINC_MINOR_VERSION=${ZINC_MINOR_VERSION}
-        -DZINC_PATCH_VERSION=${ZINC_PATCH_VERSION}
-        -DZINC_REVISION=${ZINC_REVISION}
-        -DZINC_BUILD_TYPE=${ZINC_BUILD_TYPE}
-        -P ${CMAKE_CURRENT_SOURCE_DIR}/cmake/ConfigureVersion.cmake )
-SET_SOURCE_FILES_PROPERTIES( ${ZINC_VERSION_SRC} PROPERTIES GENERATED TRUE )
-
-if(ZINC_SHARED_TARGET )
-    ADD_DEPENDENCIES( ${ZINC_SHARED_TARGET} doversion )
-endif()
-if(ZINC_STATIC_TARGET )
-    ADD_DEPENDENCIES( ${ZINC_STATIC_TARGET} doversion )
-endif()
 
 # Create the build tree imported targets
 export(TARGETS ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET}

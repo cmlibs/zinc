@@ -9,7 +9,7 @@
 # The FATAL_ERROR is needed if using cmake < 2.4
 
 # This is the project name and shows up in ides
-PROJECT( ZincCore )
+project(ZincCore)
 
 IF( MSVC )
 	SET( ZINC_C_INLINE __inline )
@@ -17,13 +17,13 @@ ELSE()
 	SET( ZINC_C_INLINE "static inline" )
 ENDIF()
 
-SET( ZINC_CONFIGURE_HDR ${PROJECT_BINARY_DIR}/source/api/zinc/zincconfigure.h )
-SET( ZINC_SHARED_OBJECT_HDR ${PROJECT_BINARY_DIR}/source/api/zinc/zincsharedobject.h )
-CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
+set( ZINC_CONFIGURE_HDR ${PROJECT_BINARY_DIR}/source/api/zinc/zincconfigure.h )
+set( ZINC_SHARED_OBJECT_HDR ${PROJECT_BINARY_DIR}/source/api/zinc/zincsharedobject.h )
+configure_file( ${PROJECT_SOURCE_DIR}/source/configure/zincconfigure.h.cmake
 	${ZINC_CONFIGURE_HDR} )
-CONFIGURE_FILE( ${PROJECT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
+configure_file( ${PROJECT_SOURCE_DIR}/source/configure/zincsharedobject.h.cmake
 	${ZINC_SHARED_OBJECT_HDR} )
-SET( ZINC_CONFIGURE_HDRS ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} )
+set( ZINC_CONFIGURE_HDRS ${ZINC_CONFIGURE_HDR} ${ZINC_SHARED_OBJECT_HDR} )
 
 # Load in source files, each source file list may contain several
 # CMake variables see comments for a list of _SRCS included from
@@ -66,11 +66,17 @@ include(source/cmake/misc_source_files.cmake )
 # Defines ZINC_LIB_SRCS, ZINC_LIB_HDRS
 include(source/cmake/zinc_lib_source_files.cmake)
 
-print_list_duplications( ZINC_LIB_SRCS )
-print_list_duplications( ZINC_LIB_HDRS )
+# Generate the version.cpp / version.h files
+set(ZINC_VERSION_SRC ${CMAKE_CURRENT_BINARY_DIR}/version.cpp)
+configure_file(${CMAKE_CURRENT_SOURCE_DIR}/source/configure/version.cpp.cmake
+    ${ZINC_VERSION_SRC})
+list(APPEND ZINC_LIB_SRCS ${ZINC_VERSION_SRC})
+
+#print_list_duplications( ZINC_LIB_SRCS )
+#print_list_duplications( ZINC_LIB_HDRS )
 
 include_directories( source source/api ${CMAKE_CURRENT_BINARY_DIR}/source
-	${CMAKE_CURRENT_BINARY_DIR}/source/api ${INCLUDE_DIRS} )
+	${CMAKE_CURRENT_BINARY_DIR}/source/api ${INCLUDE_DIRS})
 
 if( MSVC_IDE )
 	# I want to group the source files by the directory layout for Visual Studio
@@ -80,7 +86,7 @@ endif()
 
 set(ZINC_LIBRARY_NAME zinc)
 if( ZINC_BUILD_SHARED_LIBRARY )
-	SET( ZINC_SHARED_TARGET ${ZINC_LIBRARY_NAME} )
+	set( ZINC_SHARED_TARGET ${ZINC_LIBRARY_NAME} )
 	add_library(${ZINC_SHARED_TARGET} SHARED ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS})
 	list( APPEND ZINC_SHARED_DEFINITIONS -DZINC_SHARED_OBJECT )
 	set( ZINC_SHARED_DEFINITIONS ${ZINC_SHARED_DEFINITIONS} PARENT_SCOPE )
@@ -91,15 +97,12 @@ if( ZINC_BUILD_SHARED_LIBRARY )
 
 	set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
 		COMPILE_DEFINITIONS "ZINC_SHARED_OBJECT"
-		DEFINE_SYMBOL "ZINC_EXPORTS" )
-
-	# Location of shared target
-	get_property(SHARED_TARGET_LOCATION TARGET ${ZINC_SHARED_TARGET} PROPERTY VERSION )
+		DEFINE_SYMBOL "ZINC_EXPORTS")
 endif()
 
 if( ZINC_BUILD_STATIC_LIBRARY )
 	SET( ZINC_STATIC_TARGET ${ZINC_LIBRARY_NAME}-static )
-	ADD_LIBRARY( ${ZINC_STATIC_TARGET} STATIC ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS} )
+	add_library( ${ZINC_STATIC_TARGET} STATIC ${ZINC_LIB_SRCS} ${ZINC_LIB_HDRS} ${ZINC_CONFIGURE_HDRS} )
 	target_link_libraries(${ZINC_STATIC_TARGET} PUBLIC ${DEPENDENT_LIBS})
 	if(WIN32)
 		target_link_libraries( ${ZINC_STATIC_TARGET} winmm.lib )
@@ -111,8 +114,8 @@ endif()
 set_target_properties( ${ZINC_SHARED_TARGET} ${ZINC_STATIC_TARGET} PROPERTIES
 	OUTPUT_NAME_RELEASE ${ZINC_LIBRARY_NAME}${ZINC_DEVELOPER_VERSION}
 	OUTPUT_NAME_DEBUG ${ZINC_LIBRARY_NAME}d${ZINC_DEVELOPER_VERSION}
-	VERSION ${ZINC_VERSION}
-	SOVERSION ${ZINC_MAJOR_VERSION} )
+	VERSION ${Zinc_VERSION}
+	SOVERSION ${Zinc_VERSION_MAJOR} )
 # VERSION property doesn't work on Windows so we will fake it here.
 if( WIN32 AND ZINC_BUILD_SHARED_LIBRARY )
 	set_target_properties( ${ZINC_SHARED_TARGET} PROPERTIES
