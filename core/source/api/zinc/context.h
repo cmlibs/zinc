@@ -168,12 +168,12 @@ ZINC_API cmzn_timekeepermodule_id cmzn_context_get_timekeepermodule(
 ZINC_API int cmzn_context_get_version(cmzn_context_id context, int *version_out);
 
 /**
- * Get the revision number of this Zinc library.
+ * Get the revision string of this Zinc library.
  *
  * @param context  Handle to the context.
  * @return  Revision of this Zinc library on success, 0 on failure.
  */
-ZINC_API int cmzn_context_get_revision(cmzn_context_id context);
+ZINC_API const char* cmzn_context_get_revision(cmzn_context_id context);
 
 /**
  * Get the version string of this Zinc library. The version string will
