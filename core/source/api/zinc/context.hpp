@@ -94,7 +94,7 @@ public:
 		return cmzn_context_get_version(id, versionOut3);
 	}
 
-	int getRevision()
+	const char* getRevision()
 	{
 		return cmzn_context_get_revision(id);
 	}
