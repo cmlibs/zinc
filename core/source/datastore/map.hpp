@@ -446,8 +446,8 @@ int DsMap<ValueType>::getValues(DsMapIndexing& indexing,
 	DsMapAddressType valueIndex = 0;
 	unsigned int value_number;
 	DsLabelIndex index;
-	bool iterResult = true;
-	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
+	bool iterResult;
+	for (value_number = 0; (iterResult = indexing.iterationNext()) && (value_number < number_of_values); value_number++)
 	{
 		valueIndex = 0;
 		for (i = 0; i < labelsArraySize; i++)
@@ -496,7 +496,6 @@ int DsMap<ValueType>::getValues(DsMapIndexing& indexing,
 			return_code = 0;
 			break;
 		}
-		iterResult = indexing.iterationNext();
 	}
 	indexing.iterationEnd();
 
@@ -540,8 +539,8 @@ int DsMap<ValueType>::getValuesSparse(DsMapIndexing& indexing,
 	DsMapAddressType valueIndex = 0;
 	unsigned int value_number;
 	DsLabelIndex index;
-	bool iterResult = true;
-	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
+	bool iterResult;
+	for (value_number = 0; (iterResult = indexing.iterationNext()) && (value_number < number_of_values); value_number++)
 	{
 		valueIndex = 0;
 		bool aboveIndexSize = false;
@@ -569,7 +568,6 @@ int DsMap<ValueType>::getValuesSparse(DsMapIndexing& indexing,
 			return_code = 0;
 			break;
 		}
-		iterResult = indexing.iterationNext();
 	}
 	indexing.iterationEnd();
 
@@ -690,8 +688,8 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 	}
 	bool oldValue;
 	int return_code = 1;
-	bool iterResult = true;
-	for (value_number = 0; iterResult && (value_number < number_of_values); value_number++)
+	bool iterResult;
+	for (value_number = 0; (iterResult = indexing.iterationNext()) && (value_number < number_of_values); value_number++)
 	{
 		valueIndex = 0;
 		for (i = 0; i < labelsArraySize; i++)
@@ -717,7 +715,6 @@ int DsMap<ValueType>::setValues(DsMapIndexing& indexing,
 				break;
 			}
 		}
-		iterResult = indexing.iterationNext();
 	}
 	indexing.iterationEnd();
 

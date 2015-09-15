@@ -112,24 +112,9 @@ public:
 		return 0;
 	}
 
-	/**
-	 * Get first label index in group or DS_LABEL_INDEX_INVALID if none.
-	 * Currently returns index with the lowest identifier in set
-	 */
-	DsLabelIndex getFirstIndex()
-	{
-		DsLabelIndex index = this->labels->getFirstIndex();
-		if (this->hasIndex(index))
-			return index;
-		return this->labels->getNextIndexBoolTrue(index, values);
-	}
+	DsLabelIndex getFirstIndex(DsLabelIterator &iterator);
 
-	DsLabelIndex getNextIndex(DsLabelIndex index)
-	{
-		return this->labels->getNextIndexBoolTrue(index, values);
-	}
-
-	int incrementLabelIterator(DsLabelIterator *iterator);
+	bool incrementLabelIterator(DsLabelIterator &iterator);
 
 };
 

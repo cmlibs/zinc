@@ -28,10 +28,29 @@ DsLabelsGroup *DsLabelsGroup::create(DsLabels *labelsIn)
 	return new DsLabelsGroup(labelsIn);
 }
 
-int DsLabelsGroup::incrementLabelIterator(DsLabelIterator *iterator)
+/**
+ * Get first label index in group or DS_LABEL_INDEX_INVALID if none.
+ * Currently returns index with the lowest identifier in set.
+ * Must pass in a newly initialised iterator, point to start.
+ */
+DsLabelIndex DsLabelsGroup::getFirstIndex(DsLabelIterator &iterator)
 {
-	if (!iterator || (iterator->getLabels() != this->labels))
+	DsLabelIndex index = iterator.getIndex();
+	while ((index != DS_LABEL_INDEX_INVALID) && (!this->hasIndex(index)))
+		index = iterator.nextIndex();
+	return index;
+}
+
+bool DsLabelsGroup::incrementLabelIterator(DsLabelIterator &iterator)
+{
+	if (iterator.getLabels() != this->labels)
 		return 0;
-	iterator->setIndex(getNextIndex(iterator->index));
-	return (iterator->getIndex() >= 0);
+	// this can be made more efficient
+	DsLabelIndex index;
+	while ((index = iterator.nextIndex()) != DS_LABEL_INDEX_INVALID)
+	{
+		if (this->values.getBool(index))
+			return true;
+	}
+	return false;
 }

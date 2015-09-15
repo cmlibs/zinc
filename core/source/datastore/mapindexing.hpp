@@ -53,7 +53,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 		DsLabelsGroup *labelsGroup;
 		// following mutable members are used by DsMap<>::setValues
 		mutable DsLabelIndex indexLimit;
-		mutable DsLabelIndex firstIndex;
+		mutable bool firstIndexValid;
 		mutable DsLabelIterator *valuesIterator;
 
 	private:
@@ -75,7 +75,7 @@ struct DsMapIndexing : public cmzn::RefCounted
 			iterator(0),
 			labelsGroup(0),
 			indexLimit(0),
-			firstIndex(DS_LABEL_INDEX_INVALID),
+			firstIndexValid(false),
 			valuesIterator(0)
 		{
 		}
@@ -176,28 +176,33 @@ struct DsMapIndexing : public cmzn::RefCounted
 			return true;
 		}
 
-		bool iterationBegin()
+		inline bool incrementValuesIterator()
+		{
+			if (labelsGroup)
+				return labelsGroup->incrementLabelIterator(*valuesIterator);
+			return valuesIterator->increment();
+		}
+
+		/**
+		 * @param innerIndexing unless true, advance to first value
+		 */
+		bool iterationBegin(bool innerIndexing)
 		{
 			if (this->iterator)
 			{
+				// flag ensures inner indexing returns at least one valid value
+				this->firstIndexValid = innerIndexing;
 				// no valuesIterator when single entry is indexed
-				this->firstIndex = this->iterator->getIndex();
 				this->valuesIterator = 0;
+				return true;
 			}
-			else if (this->labelsGroup)
-				this->firstIndex = this->labelsGroup->getFirstIndex();
-			else
-				firstIndex = this->labels->getFirstIndex();
-			if (firstIndex >= 0)
+			// must prove there is at least one value in indexing	
+			if ((this->valuesIterator = this->labels->createLabelIterator()) &&
+				this->incrementValuesIterator())
 			{
-				if (this->iterator)
-					return true;
-				this->valuesIterator = this->labels->createLabelIterator();
-				if (this->valuesIterator)
-				{
-					this->valuesIterator->setIndex(this->firstIndex);
-					return true;
-				}
+				if (innerIndexing)
+					this->valuesIterator->setIndex(DS_LABEL_INDEX_INVALID); // so next increment is to first
+				return true;
 			}
 			return false;
 		}
@@ -207,22 +212,26 @@ struct DsMapIndexing : public cmzn::RefCounted
 			return (this->iterator ? this->iterator->getIndex() : this->valuesIterator->getIndex());
 		}
 
-		/** @return  true if more to come, false if last */
+		/**
+		 * @return  true if more to come, false if last
+		 * Automatically sets to recycle.
+		 */
 		bool iterationNext()
 		{
 			if (iterator)
-				return false;
-			if (labelsGroup)
 			{
-				if (labelsGroup->incrementLabelIterator(valuesIterator))
+				if (this->firstIndexValid)
+				{
+					this->firstIndexValid = false;
 					return true;
+				}
+				return this->firstIndexValid;
 			}
-			else
-			{
-				if (valuesIterator->increment())
-					return true;
-			}
-			valuesIterator->setIndex(firstIndex);
+			if (this->incrementValuesIterator())
+				return true;
+			// set before start and iterate to first valid object
+			valuesIterator->setIndex(DS_LABEL_INDEX_INVALID);
+			this->incrementValuesIterator();
 			return false;
 		}
 
@@ -230,7 +239,6 @@ struct DsMapIndexing : public cmzn::RefCounted
 		{
 			if (valuesIterator)
 				cmzn::Deaccess(this->valuesIterator);
-			firstIndex = 0;
 		}
 
 	};
@@ -419,20 +427,23 @@ public:
 		return false;
 	}
 
-	/** obtain iterators pointing at the first indexes in each labels indexing
-	 * also remember firstIndex for reiteration.
+	/** obtain iterators ready to point to first indexes in each labels indexing
+	 * at next call to iterationNext().
 	 * Callers must invoke iterationEnd() after successful call!
 	 * @return  true on success, false on failure with temporaries cleaned up.
 	 */
 	bool iterationBegin()
 	{
-		for (int i = 0; i < labelsArraySize; i++)
+		bool innerIndexing = true;
+		for (int i = labelsArraySize - 1; i >= 0; --i)
 		{
-			if (!indexing[i].iterationBegin())
+			// only inner indexing points before first, so first increment is valid
+			if (!indexing[i].iterationBegin(innerIndexing))
 			{
 				iterationEnd();
 				return false;
 			}
+			innerIndexing = false;
 		}
 		return true;
 	}
@@ -445,7 +456,7 @@ public:
 	/** @return  true if more to come, false if past last */
 	bool iterationNext()
 	{
-		for (int i = labelsArraySize - 1; 0 <= i; i--)
+		for (int i = labelsArraySize - 1; i >= 0; --i)
 		{
 			if (indexing[i].iterationNext())
 				return true;

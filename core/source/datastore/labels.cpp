@@ -12,6 +12,7 @@
 
 #include "zinc/status.h"
 #include "datastore/labels.hpp"
+#include "general/message.h"
 
 DsLabels::DsLabels() :
 	cmzn::RefCounted(),
@@ -35,11 +36,11 @@ DsLabels::~DsLabels()
 		delete inactiveIterators;
 		inactiveIterators = iterator;
 	}
-	// can't free externally held objects, hence just clear labels pointer for safety
+	// can't free externally held objects, hence just invalidate for safety
 	iterator = activeIterators;
 	while (iterator)
 	{
-		iterator->labels = 0;
+		iterator->invalidate();
 		iterator = iterator->next;
 	}
 }
@@ -56,20 +57,26 @@ void DsLabels::updateFirstFreeIdentifier()
 	}
 }
 
-void DsLabels::setNotContiguous()
+int DsLabels::setNotContiguous()
 {
 	if (this->contiguous)
 	{
-		this->contiguous = false;
 		// this can be optimised:
 		DsLabelIdentifier identifier = this->firstIdentifier;
 		for (DsLabelIndex index = 0; index < this->indexSize; ++index)
 		{
-			this->identifiers.setValue(index, identifier);
-			identifierMap[identifier] = index;
+			if (!(this->identifiers.setValue(index, identifier) &&
+					this->identifierToIndexMap.insert(*this, index)))
+			{
+				display_message(ERROR_MESSAGE, "DsLabels::setNotContiguous.  Failed");
+				return CMZN_ERROR_MEMORY;
+			}
 			++identifier;
 		}
+		this->contiguous = false;
+		return CMZN_OK;
 	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 /** private: caller must have checked identifier is not in use! */
@@ -86,7 +93,8 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 		}
 		else if ((identifier < this->firstIdentifier) || (identifier > (this->lastIdentifier + 1)))
 		{
-			setNotContiguous();
+			if (CMZN_OK != this->setNotContiguous())
+				return index;
 		}
 		if (this->contiguous)
 		{
@@ -104,14 +112,23 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 	if (this->identifiers.setValue(this->indexSize, identifier))
 	{
 		index = this->indexSize;
-		this->identifierMap[identifier] = index;
+		// must increase these now to allow identifiers to be queried by map
+		++this->labelsCount;
+		++this->indexSize;
+		if (!this->identifierToIndexMap.insert(*this, index))
+		{
+			display_message(ERROR_MESSAGE, "DsLabels::createLabelPrivate. Failed to insert index into map");
+			--this->labelsCount;
+			--this->indexSize;
+			return DS_LABEL_INDEX_INVALID;
+		}
 		if (identifier > this->lastIdentifier)
 			this->lastIdentifier = identifier;
 		if (identifier == this->firstFreeIdentifier)
 			++this->firstFreeIdentifier;
-		++this->labelsCount;
-		++this->indexSize;
 	}
+	else
+		display_message(ERROR_MESSAGE, "DsLabels::createLabelPrivate. Failed to set identifier");
 	return index;
 }
 
@@ -145,12 +162,23 @@ int DsLabels::addLabelsRange(DsLabelIdentifier min, DsLabelIdentifier max,
 {
 	if ((max < min) || (stride < 1))
 		return CMZN_ERROR_ARGUMENT;
-	// GRC This can be made more efficient
-	for (DsLabelIdentifier identifier = min; identifier <= max; identifier += stride)
+	if (this->contiguous && (stride == 1) && (0 == this->labelsCount))
 	{
-		DsLabelIndex index = this->findOrCreateLabel(identifier);
-		if (index < 0)
-			return CMZN_ERROR_GENERAL;
+		// fast case
+		this->firstIdentifier = min;
+		this->lastIdentifier = max;
+		this->firstFreeIdentifier = max + 1;
+		this->labelsCount = max - min + 1;
+		this->indexSize = max - min + 1;
+	}
+	else
+	{
+		for (DsLabelIdentifier identifier = min; identifier <= max; identifier += stride)
+		{
+			DsLabelIndex index = this->findOrCreateLabel(identifier);
+			if (index < 0)
+				return CMZN_ERROR_GENERAL;
+		}
 	}
 	return CMZN_OK;
 }
@@ -185,7 +213,7 @@ int DsLabels::removeLabel(DsLabelIndex index)
 	{
 		if (identifier >= 0)
 		{
-			identifierMap.erase(identifier);
+			this->identifierToIndexMap.erase(*this, index);
 			this->identifiers.setValue(index, DS_LABEL_IDENTIFIER_INVALID);
 			if (identifier <= this->firstFreeIdentifier)
 				this->firstFreeIdentifier = identifier;
@@ -200,9 +228,8 @@ int DsLabels::removeLabel(DsLabelIndex index)
 				}
 				else
 				{
-					DsLabelIdentifierMapReverseIterator iter = identifierMap.rbegin();
-					DsLabelIndex lastIndex = iter->second;
-					this->identifiers.getValue(lastIndex, this->lastIdentifier);
+					DsLabelIndex lastIndex = this->identifierToIndexMap.get_last_object();
+					this->lastIdentifier = this->getIdentifier(lastIndex);
 				}
 			}
 			return 1;
@@ -219,113 +246,13 @@ int DsLabels::removeLabelWithIdentifier(DsLabelIdentifier identifier)
 	return 0;
 }
 
-DsLabelIdentifier DsLabels::getLabelIdentifier(DsLabelIndex index)
-{
-	DsLabelIdentifier identifier = DS_LABEL_IDENTIFIER_INVALID;
-	if ((0 <= index) && (index < this->indexSize))
-	{
-		if (this->contiguous)
-			identifier = this->firstIdentifier + static_cast<DsLabelIdentifier>(index);
-		else
-			this->identifiers.getValue(index, identifier);
-	}
-	return identifier;
-}
-
 DsLabelIndex DsLabels::getFirstIndex()
 {
 	if (0 == this->labelsCount)
 		return DS_LABEL_INDEX_INVALID;
 	if (this->contiguous)
 		return 0;
-	return identifierMap.begin()->second;
-}
-
-DsLabelIndex DsLabels::getNextIndex(DsLabelIndex index)
-{
-	if (index < 0)
-	{
-		if (index == DS_LABEL_INDEX_INVALID)
-			return this->getFirstIndex();
-		return DS_LABEL_INDEX_INVALID;
-	}
-	if (this->contiguous)
-	{
-		if (index < (this->indexSize - 1))
-			return (index + 1);
-	}
-	else
-	{
-		// would be faster if not iterating in identifier order
-		// otherwise can be made more efficient by passing DsLabelIterator
-		// to this function & keeping iterator in it
-		DsLabelIdentifier identifier = getLabelIdentifier(index);
-		if (0 <= identifier)
-		{
-			// optimisation: check if index+1 -> identifier+1 so it is next
-			if (getLabelIdentifier(index + 1) == (identifier + 1))
-				return (index + 1);
-			// O(logN) slow:
-			DsLabelIdentifierMapIterator iter = identifierMap.find(identifier);
-			iter++;
-			if (iter != identifierMap.end())
-			{
-				return iter->second;
-			}
-		}
-	}
-	return DS_LABEL_INDEX_INVALID;
-}
-
-DsLabelIndex DsLabels::getNextIndexBoolTrue(DsLabelIndex index,
-	bool_array<DsLabelIndex>& boolArray)
-{
-	// assumes DS_LABEL_INDEX_INVALID is negative
-	if ((index < 0) && (index != DS_LABEL_INDEX_INVALID))
-		return DS_LABEL_INDEX_INVALID;
-	DsLabelIndex newIndex = index;
-	if (this->contiguous)
-	{
-		if (index < 0)
-			newIndex = -1;
-		do
-		{
-			++newIndex;
-			if (newIndex >= this->indexSize)
-				return DS_LABEL_INDEX_INVALID;
-		} while (!boolArray.getBool(newIndex));
-	}
-	else
-	{
-		// would be faster if not iterating in identifier order
-		// otherwise can be made more efficient by passing DsLabelIterator
-		// to this function & keeping iterator in it
-		DsLabelIdentifierMapIterator iter;
-		if (index < 0)
-		{
-			iter = identifierMap.begin();
-			if (iter == identifierMap.end())
-				return DS_LABEL_INDEX_INVALID;
-			newIndex = iter->second;
-			if (boolArray.getBool(newIndex))
-				return newIndex;
-		}
-		else
-		{
-			DsLabelIdentifier identifier = getLabelIdentifier(index);
-			iter = identifierMap.find(identifier);
-			if (iter == identifierMap.end())
-				return DS_LABEL_INDEX_INVALID;
-		}
-		do
-		{
-			++iter;
-			if (iter == identifierMap.end())
-				return DS_LABEL_INDEX_INVALID;
-			newIndex = iter->second;
-		} while (!boolArray.getBool(newIndex));
-	}
-	return newIndex;
+	return this->identifierToIndexMap.get_first_object();
 }
 
 DsLabelIterator *DsLabels::createLabelIterator()
@@ -344,6 +271,7 @@ DsLabelIterator *DsLabels::createLabelIterator()
 	if (iterator)
 	{
 		iterator->labels = this;
+		iterator->iter = (this->contiguous) ? 0 : new DsLabelIdentifierToIndexMapIterator(&this->identifierToIndexMap);
 		iterator->index = DS_LABEL_INDEX_INVALID;
 		iterator->next = this->activeIterators;
 		iterator->previous = 0;
@@ -372,13 +300,13 @@ void DsLabels::destroyLabelIterator(DsLabelIterator *&iterator)
 			if (iterator->next)
 				iterator->next->previous = iterator;
 			iterator->labels->inactiveIterators = iterator;
-			iterator->labels = 0;
+			iterator->invalidate();
 		}
 		else
 		{
 			delete iterator;
-			iterator = 0;
 		}
+		iterator = 0;
 	}
 }
 
@@ -388,11 +316,11 @@ int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
 	DsLabelIterator *iterator = this->createLabelIterator();
 	if (!iterator)
 		return CMZN_ERROR_MEMORY;
-	if (iterator->increment())
+	if (iterator->nextIndex() != DS_LABEL_INDEX_INVALID)
 	{
 		DsLabelIdentifier identifier = iterator->getIdentifier();
 		DsLabelIdentifierRange range = { identifier, identifier };
-		while (iterator->increment())
+		while (iterator->nextIndex() != DS_LABEL_INDEX_INVALID)
 		{
 			identifier = iterator->getIdentifier();
 			if (identifier != (range.last + 1))
@@ -411,7 +339,8 @@ int DsLabels::getIdentifierRanges(DsLabelIdentifierRanges& ranges)
 DsLabelIterator::DsLabelIterator() :
 	cmzn::RefCounted(),
 	labels(0),
-	index(0),
+	iter(0),
+	index(DS_LABEL_INDEX_INVALID),
 	next(0),
 	previous(0)
 {
@@ -419,4 +348,15 @@ DsLabelIterator::DsLabelIterator() :
 
 DsLabelIterator::~DsLabelIterator()
 {
+	delete this->iter;
+}
+
+void DsLabelIterator::invalidate()
+{
+	if (this->labels)
+	{
+		delete this->iter;
+		this->iter = 0;
+		this->labels = 0;
+	}
 }

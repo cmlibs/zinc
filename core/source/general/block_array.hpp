@@ -100,9 +100,9 @@ public:
 	 * Get a value from the block_array.
 	 * @param index  The index of the value to retrieve, starting at 0.
 	 * @param value  On success, filled with value held at index.
-	 * @return  1 if value returned, 0 if no value at index.
+	 * @return  Boolean true if value returned, false if no value at index.
 	 */
-	int getValue(IndexType index, EntryType& value) const
+	bool getValue(IndexType index, EntryType& value) const
 	{
 		IndexType blockIndex = index / blockLength;
 		if (blockIndex < blockCount)
@@ -112,27 +112,27 @@ public:
 			{
 				IndexType entryIndex = index % blockLength;
 				value = block[entryIndex];
-				return 1;
+				return true;
 			}
 		}
-		return 0;
+		return false;
 	}
 
 	/**
 	 * Set a value in the block_array.
 	 * @param index  The index of the value to set, starting at 0.
 	 * @param value  Value to set at index.
-	 * @return  1 if value set, 0 if failed.
+	 * @return  Boolean true on success, false on failure.
 	 */
-	int setValue(IndexType index, EntryType value)
+	bool setValue(IndexType index, EntryType value)
 	{
 		IndexType blockIndex = index / blockLength;
 		EntryType* block = getOrCreateBlock(blockIndex);
 		if (!block)
-			return 0;
+			return false;
 		IndexType entryIndex = index % blockLength;
 		block[entryIndex] = value;
-		return 1;
+		return true;
 	}
 
 	bool setValues(IndexType minIndex, IndexType maxIndex, EntryType value)
@@ -168,11 +168,11 @@ public:
 	using block_array<IndexType, unsigned int, intBlockLength>::setValues;
 
 	/** @param oldValue  Returns old value so client can determine if status changed */
-	int setBool(IndexType index, bool value, bool& oldValue)
+	bool setBool(IndexType index, bool value, bool& oldValue)
 	{
 		IndexType intIndex = index >> 5;
 		unsigned int intValue = 0;
-		int hasValue = getValue(intIndex, intValue);
+		bool hasValue = getValue(intIndex, intValue);
 		if (hasValue || value)
 		{
 			unsigned int mask = (1 << (index & 0x1F));
@@ -186,7 +186,7 @@ public:
 		{
 			oldValue = false;
 		}
-		return 1;
+		return true;
 	}
 
 	bool getBool(IndexType index) const
