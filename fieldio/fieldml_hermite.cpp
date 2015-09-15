@@ -427,7 +427,44 @@ void Bifurcation::addElement(int generation, const Node& node1,
 	}
 }
 
-void check_bifurcation(Fieldmodule& fm)
+/*
+ * To test non-contiguous indexing, offset node and element identifiers
+ * to be in idBlockSize blocks offset by idBlockSpan, starting at idFirst
+ * e.g. idFirst = 1, idBlockSize = 5, idBlockSpan = 7 gives:
+ * 1 2 3 4 5 8 9 10 11 12 15 16 ...
+ * Note: only call once as expects identifiers to initially be consecutive from 1
+ */
+void offset_identifiers(Fieldmodule& fm, int idFirst, int idBlockSize, int idBlockSpan)
+{
+	fm.beginChange();
+	Mesh mesh1d = fm.findMeshByDimension(1);
+	int elementsCount = mesh1d.getSize();
+	for (int e = elementsCount - 1; e >= 0; --e)
+	{
+		Element element = mesh1d.findElementByIdentifier(e + 1);
+		EXPECT_TRUE(element.isValid());
+		const int identifier = (e / idBlockSize)*idBlockSpan + (e % idBlockSize) + idFirst;
+		EXPECT_EQ(OK, element.setIdentifier(identifier));
+	}
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	int nodesCount = nodes.getSize();
+	for (int n = nodesCount - 1; n >= 0; --n)
+	{
+		Node node = nodes.findNodeByIdentifier(n + 1);
+		EXPECT_TRUE(node.isValid());
+		const int identifier = (n / idBlockSize)*idBlockSpan + (n % idBlockSize) + idFirst;
+		EXPECT_EQ(OK, node.setIdentifier(identifier));
+	}
+	fm.endChange();
+}
+
+/*
+ * To test non-contiguous indexing, node and element identifiers are
+ * expected to be in idBlockSize blocks offset by idBlockSpan
+ * e.g. idBlockSize = 5, idBlockSpan = 7 gives:
+ * 1 2 3 4 5 8 9 10 11 12 15 16 ...
+ */
+void check_bifurcation(Fieldmodule& fm, int idFirst = 1, int idBlockSize = 1, int idBlockSpan = 1)
 {
 	int result;
 	Field coordinates = fm.findFieldByName("coordinates");
@@ -438,19 +475,27 @@ void check_bifurcation(Fieldmodule& fm)
 	EXPECT_TRUE(radius.isValid());
 	EXPECT_EQ(1, radius.getNumberOfComponents());
 
-	EXPECT_EQ(OK, result = fm.defineAllFaces());
 	Mesh mesh1d = fm.findMeshByDimension(1);
 	int elementsCount = mesh1d.getSize();
-	EXPECT_EQ(1023, elementsCount);
-	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
-	int nodesCount = nodes.getSize();
-	EXPECT_EQ(1024, nodesCount);
-	for (int e = 1; e <= elementsCount; ++e)
+	EXPECT_EQ(255, elementsCount); // 8 generations
+	//EXPECT_EQ(1023, elementsCount); // 10 generations
+	for (int e = 0; e < elementsCount; ++e)
 	{
-		Element element = mesh1d.findElementByIdentifier(e);
+		const int identifier = (e / idBlockSize)*idBlockSpan + (e % idBlockSize) + idFirst;
+		Element element = mesh1d.findElementByIdentifier(identifier);
 		EXPECT_TRUE(element.isValid());
 		Element::ShapeType shapeType = element.getShapeType();
 		EXPECT_EQ(Element::SHAPE_TYPE_LINE, shapeType);
+	}
+	Nodeset nodes = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	int nodesCount = nodes.getSize();
+	EXPECT_EQ(256, nodesCount); // 8 generations
+	//EXPECT_EQ(1024, nodesCount); // 10 generations
+	for (int n = 0; n < nodesCount; ++n)
+	{
+		const int identifier = (n / idBlockSize)*idBlockSpan + (n % idBlockSize) + idFirst;
+		Node node = nodes.findNodeByIdentifier(identifier);
+		EXPECT_TRUE(node.isValid());
 	}
 
 	// integrate to get volume of vessels
@@ -468,7 +513,8 @@ void check_bifurcation(Fieldmodule& fm)
 	EXPECT_TRUE(fieldcache.isValid());
 	double volumeOut;
 	EXPECT_EQ(OK, result = volume.evaluateReal(fieldcache, 1, &volumeOut));
-	EXPECT_NEAR(volumeOut, 0.081574031223926702, 1E-12);
+	EXPECT_NEAR(volumeOut, 0.077529809577001507, 1E-12); // 8 generations
+	//EXPECT_NEAR(volumeOut, 0.081574031223926702, 1E-12); // 10 generations
 }
 
 }
@@ -481,7 +527,7 @@ TEST(ZincRegion, bifurcation)
 	ZincTestSetupCpp zinc;
 	int result;
 
-	Bifurcation model(zinc.fm, /*maxGenerations*/10);
+	Bifurcation model(zinc.fm, /*maxGenerations*/8);
 	check_bifurcation(zinc.fm);
 
 	// test writing and re-reading in EX format
@@ -497,4 +543,13 @@ TEST(ZincRegion, bifurcation)
 	EXPECT_EQ(OK, result = testRegion2.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation.fieldml"));
 	Fieldmodule testFm2 = testRegion2.getFieldmodule();
 	check_bifurcation(testFm2);
+
+	// test writing and re-reading in FieldML format, with non-contiguous
+	// element and node identifiers to test different code used in that case
+	offset_identifiers(testFm2, /*idFirst*/2, /*idBlockSize*/6, /*idBlockSpan*/8);
+	EXPECT_EQ(OK, result = testRegion2.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
+	Region testRegion3 = zinc.root_region.createChild("test3");
+	EXPECT_EQ(OK, result = testRegion3.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
+	Fieldmodule testFm3 = testRegion3.getFieldmodule();
+	check_bifurcation(testFm3, /*idFirst*/2, /*idBlockSize*/6, /*idBlockSpan*/8);
 }
