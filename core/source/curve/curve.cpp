@@ -2264,6 +2264,7 @@ expected to make the element have a finite size.
 							return_code=0;
 						}
 						/* create copies of this node for rest of new element */
+						node = 0;
 						for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
 						{
 							node = curve->fe_nodeset->create_FE_node_copy(node_no + i, node_to_copy);

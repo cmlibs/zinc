@@ -1077,7 +1077,7 @@ int export_to_iges(char *file_name, struct cmzn_region *region,
 			FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(iges_entity_info_data.fe_region, 2);
 			cmzn_elementiterator *iter = fe_mesh->createElementiterator();
 			cmzn_element *element;
-			while (element = cmzn_elementiterator_next_non_access(iter))
+			while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 			{
 				if (!get_iges_entity_as_cubic_from_any_2D_element(element, &iges_entity_info_data))
 					break;

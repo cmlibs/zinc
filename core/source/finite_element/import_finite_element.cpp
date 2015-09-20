@@ -2956,7 +2956,8 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 		}
 		if (return_code)
 		{
-			if (return_element = fe_mesh->findElementByIdentifier(element_identifier))
+			return_element = fe_mesh->findElementByIdentifier(element_identifier);
+			if (return_element)
 			{
 				existingElement = true;
 				ACCESS(FE_element)(return_element);
