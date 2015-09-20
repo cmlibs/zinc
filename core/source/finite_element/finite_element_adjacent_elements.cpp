@@ -44,8 +44,7 @@ Adds the references to the <element> to each node index belonging to each node
 the <element> has.
 ==============================================================================*/
 {
-	int element_number, node_index, node_number, number_of_nodes, return_code;
-	struct CM_element_information cm;
+	int node_index, node_number, number_of_nodes, return_code;
 	struct FE_node *node;
 	struct Index_multi_range *node_elements;
 
@@ -53,10 +52,9 @@ the <element> has.
 	if (element && node_element_list)
 	{
 		return_code = 1;
-		if (get_FE_element_identifier(element, &cm) &&
-			get_FE_element_number_of_nodes(element, &number_of_nodes))
+		if (get_FE_element_number_of_nodes(element, &number_of_nodes))
 		{
-			element_number = cm.number;
+			const int element_number = get_FE_element_identifier(element);
 			for (node_index = 0 ; return_code && (node_index < number_of_nodes) ; 
 				node_index++)
 			{
@@ -115,9 +113,8 @@ For a 1D top level element this routine will return the list of
 correct size and should be DEALLOCATED when calls to this function are finished.
 ==============================================================================*/
 {
-	int element_number, i, j, node_number, number_of_elements,
+	int i, j, node_number, number_of_elements,
 		number_of_ranges, range_no, return_code, start, stop;
-	struct CM_element_information element_id;
 	struct FE_element *adjacent_element;
 	struct FE_node *node;
 	struct Index_multi_range *node_elements;
@@ -126,8 +123,7 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	if (element && node_element_list && mesh)
 	{
 		return_code = 1;
-		get_FE_element_identifier(element, &element_id);
-		element_number = element_id.number;
+		const int element_number = get_FE_element_identifier(element);
 		if (get_FE_element_node(element, node_index, &node) && node)
 		{
 			node_number = get_FE_node_identifier(node);

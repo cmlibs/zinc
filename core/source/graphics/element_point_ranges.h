@@ -335,7 +335,7 @@ Note that there may legitimately be none if <grid_field> is not grid-based in
 The structure is then added to the <element_point_ranges_list>.
 select_data_void should point to a
 struct FE_element_grid_to_Element_point_ranges_list_data.
-Uses only top level elements, type CM_ELEMENT.
+Uses only top level elements.
 ==============================================================================*/
 
 int Element_point_ranges_grid_to_multi_range(

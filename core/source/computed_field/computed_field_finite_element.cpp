@@ -1575,9 +1575,7 @@ int Computed_field_cmiss_number::evaluate(cmzn_fieldcache& cache,
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
 		FE_element* element = element_xi_location->get_element();
-		CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
-		valueCache.values[0] = (FE_value)cm.number;
+		valueCache.values[0] = static_cast<FE_value>(get_FE_element_identifier(element));
 		/* derivatives are always zero for this type, hence always calculated */
 		int element_dimension = get_FE_element_dimension(element);
 		for (int i = 0; i < element_dimension; i++)

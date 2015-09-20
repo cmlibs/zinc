@@ -11,7 +11,10 @@
 #if !defined (FINITE_ELEMENT_MESH_HPP)
 #define FINITE_ELEMENT_MESH_HPP
 
+#include "datastore/labels.hpp"
+#include "datastore/maparray.hpp"
 #include "finite_element/finite_element.h"
+#include "general/block_array.hpp"
 #include "general/change_log.h"
 #include "general/list.h"
 #include <vector>
@@ -76,12 +79,89 @@ public:
 };
 
 /**
+ * Template for creating a new element in the given FE_mesh
+ * @see FE_mesh::create_FE_element()
+ */
+class FE_element_template : public cmzn::RefCounted
+{
+	friend class FE_mesh;
+
+	FE_mesh *mesh; // Note: accessed: prevents mesh from being destroyed
+	FE_element_shape *element_shape;
+	FE_element *template_element;
+
+	/** Caller must ensure element_shape is of same dimension as mesh */
+	FE_element_template(FE_mesh *mesh_in, struct FE_element_field_info *element_field_info);
+
+	/** Creates a template copying from an existing element */
+	FE_element_template(FE_mesh *mesh_in, struct FE_element *element);
+
+	~FE_element_template();
+
+	FE_element_template(); // not implemented
+	FE_element_template(const FE_element_template&); // not implemented
+
+public:
+
+	FE_mesh *get_mesh() const
+	{
+		return this->mesh;
+	}
+
+	FE_element *get_template_element() const
+	{
+		return this->template_element;
+	}
+
+	FE_element_shape *get_element_shape() const
+	{
+		return this->element_shape;
+	}
+
+	bool set_element_shape(struct FE_element_shape *element_shape_in);
+};
+
+/**
  * A set of elements in the FE_region.
  */
 class FE_mesh
 {
+
+	/** Stores element shape and face/neighbour maps for that shape */
+	class ElementShapeFaces
+	{
+		FE_element_shape *shape;
+		cmzn_element_shape_type shape_type;
+		const int faceCount;
+		DsMapArrayLabelIndex faces; // map to connected elements of face mesh
+		DsMapArrayLabelIndex neighbours; // map to adjacent elements of this mesh
+
+	public:
+		ElementShapeFaces(DsLabels *labels, FE_element_shape *shapeIn) :
+			shape(ACCESS(FE_element_shape)(shapeIn)),
+			shape_type(FE_element_shape_get_simple_type(shapeIn)),
+			faceCount(FE_element_shape_get_number_of_faces(shapeIn)),
+			faces(labels, faceCount),
+			neighbours(labels, faceCount)
+		{
+		}
+
+		~ElementShapeFaces()
+		{
+			DEACCESS(FE_element_shape)(&this->shape);
+		}
+	};
+
 	FE_region *fe_region; // not accessed
 	int dimension;
+
+	DsLabels labels; // element identifiers
+
+	// element shape and face/parent mappings
+	int elementShapeFacesCount;
+	ElementShapeFaces **elementShapeFaces;
+	int defaultElementShapeFacesIndex; // index into elementShapeFaces if all shapes are the same
+	block_array<DsLabelIndex, char> elementShapeMap; // map element -> shape faces index, if not shapes are the same
 
 	// set of elements in this mesh
 	struct LIST(FE_element) *elementList;
@@ -124,6 +204,8 @@ private:
 	int find_or_create_face(struct FE_element *parent_element, int face_number);
 
 	int remove_FE_element_private(struct FE_element *element);
+
+	int merge_FE_element_existing(struct FE_element *destination, struct FE_element *source);
 
 public:
 
@@ -253,16 +335,25 @@ public:
 
 	int change_FE_element_identifier(struct FE_element *element, int new_identifier);
 
+	FE_element_template *create_FE_element_template(FE_element *element);
+
+	FE_element_template *create_FE_element_template(FE_element_shape *element_shape);
+
 	struct FE_element *get_or_create_FE_element_with_identifier(int identifier,
 		struct FE_element_shape *element_shape);
 
-	struct FE_element *create_FE_element_copy(int identifier, struct FE_element *source);
+	FE_element *create_FE_element(int identifier, FE_element_template *element_template);
 
-	int merge_FE_element_existing(struct FE_element *destination, struct FE_element *source);
+	int merge_FE_element_template(struct FE_element *destination, FE_element_template *fe_element_template);
 
 	struct FE_element *merge_FE_element(struct FE_element *element);
 
 	int merge_FE_element_and_faces(struct FE_element *element);
+
+	bool is_defining_faces() const
+	{
+		return this->definingFaces;
+	}
 
 	int begin_define_faces();
 

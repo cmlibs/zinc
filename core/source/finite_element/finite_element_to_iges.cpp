@@ -25,6 +25,7 @@ to file.
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_to_iges.h"
 #include "general/debug.h"
@@ -42,7 +43,8 @@ LAST MODIFIED : 7 June 2002
 DESCRIPTION :
 ==============================================================================*/
 {
-	struct CM_element_information cm;
+	int element_dimension;
+	int element_identifier;
 	int directory_pointer,parameter_pointer,type;
 	struct
 	{
@@ -108,6 +110,10 @@ LAST MODIFIED : 6 June 2002
 DESCRIPTION :
 ==============================================================================*/
 {
+	cmzn_region *destination_region;
+	FE_region *destination_fe_region;
+	FE_mesh *destination_fe_mesh;
+	FE_nodeset *destination_fe_nodeset;
 	cmzn_fieldcache_id field_cache;
 	struct IGES_entity_info *head,*tail;
 	struct Computed_field *field;
@@ -154,7 +160,8 @@ DESCRIPTION :
 			}
 			entity->next=(struct IGES_entity_info *)NULL;
 			/* fill in values */
-			get_FE_element_identifier(element, &(entity->cm));
+			entity->element_dimension = get_FE_element_dimension(element);
+			entity->element_identifier = get_FE_element_identifier(element);
 			entity->type=0;
 			entity->directory_pointer=directory_pointer;
 			entity->parameter_pointer=parameter_pointer;
@@ -197,7 +204,6 @@ DESCRIPTION :
 		number_of_component_values, number_of_faces,
 		outer_boundary_directory_pointer,*reorder_faces,return_code,
 		surface_directory_pointer,world_curve_directory_pointer;
-	struct CM_element_information cm;
 	struct FE_element *face;
 	struct FE_field *coordinate_field;
 	struct FE_element_field_values *coordinate_element_field_values;
@@ -368,9 +374,10 @@ DESCRIPTION :
 						i=0;
 						while (return_code&&(i<number_of_faces))
 						{
-							if (get_FE_element_face(element, i, &face) && face &&
-								get_FE_element_identifier(face, &cm))
+							if (get_FE_element_face(element, i, &face) && (face))
 							{
+								int face_dimension = get_FE_element_dimension(face);
+								int face_identifier = get_FE_element_identifier(face);
 								/* create an entity for the edge in material coordinates */
 								entity = create_iges_entity_info(face,&(get_data->head),
 									&(get_data->tail));
@@ -427,8 +434,8 @@ DESCRIPTION :
 									((entity->parameter).type_110.start)[2]=0.;
 									((entity->parameter).type_110.end)[2]=0.;
 									entity=get_data->head;
-									while (entity && !((cm.type == (entity->cm).type) &&
-										(cm.number == (entity->cm).number) &&
+									while (entity && !((face_dimension == entity->element_dimension) &&
+										(face_identifier == entity->element_identifier) &&
 										(112 == entity->type)))
 									{
 										entity=entity->next;
@@ -688,7 +695,7 @@ DESCRIPTION :
 } /* get_iges_entity_info */
 
 static int get_iges_entity_as_cubic_from_any_2D_element(struct FE_element *element,
-	void *get_data_void)
+	struct Get_iges_entity_info_data *get_data)
 /******************************************************************************
 LAST MODIFIED : 5 August 2003
 
@@ -702,16 +709,13 @@ basis type, however every element type will be converted to a cubic.
 {
 	FE_value values[3], xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int i, j, number_of_components, number_of_values, return_code;
-	struct CM_element_information cm;
 	struct FE_element *face, *true_face;
-	struct FE_element_shape *element_shape, *face_shape;
 	struct FE_node_field_creator *node_field_creator;
-	struct Get_iges_entity_info_data *get_data;
 
 	ENTER(get_iges_entity_info);
 	return_code = 0;
 	/* check arguments */
-	if (element && (get_data = (struct Get_iges_entity_info_data *)get_data_void))
+	if (element && get_data)
 	{
 		return_code = 1;
 		if ((2 == get_FE_element_dimension(element)) &&
@@ -722,11 +726,12 @@ basis type, however every element type will be converted to a cubic.
 			{
 				/* Then we presume we have made nothing */
 				/* Make a suitable FE_field */
-				if ((get_data->fe_field = CREATE(FE_field)("coordinates", get_data->fe_region)) &&
+				if ((get_data->fe_field = CREATE(FE_field)("coordinates", get_data->destination_fe_region)) &&
 					set_FE_field_value_type(get_data->fe_field, FE_VALUE_VALUE) &&
 					set_FE_field_number_of_components(get_data->fe_field, /*number_of_components*/3))
 				{
-					ACCESS(FE_field)(get_data->fe_field);
+					get_data->fe_field = ACCESS(FE_field)(
+						FE_region_merge_FE_field(get_data->destination_fe_region, get_data->fe_field));
 				}
 				else
 				{
@@ -739,44 +744,40 @@ basis type, however every element type will be converted to a cubic.
 
 				node_field_creator = CREATE(FE_node_field_creator)(
 						 /*number_of_components*/3);
-				if (node_field_creator != NULL)
-				{
-					FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(get_data->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-					for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
-					{
-						get_data->nodes[i] = CREATE(FE_node)(/*node_number*/0,
-							fe_nodeset, (struct FE_node *)NULL);
-						if (get_data->nodes[i] != NULL)
-						{
-							ACCESS(FE_node)(get_data->nodes[i]);
-							if (!define_FE_field_at_node(get_data->nodes[i], get_data->fe_field,
-									 (struct FE_time_sequence *)NULL, node_field_creator))
-							{
-								display_message(ERROR_MESSAGE,
-									"get_iges_entity_as_cubic_from_any_2D_element.  "
-									"Could not define coordinate field in node_1");
-								DEACCESS(FE_node)(&(get_data->nodes[i]));
-								return_code=0;
-							}
-						}
-					}
-					DESTROY(FE_node_field_creator)(&(node_field_creator));
-				}
-				else
+				FE_node *template_node = CREATE(FE_node)(/*node_number*/0,
+					get_data->destination_fe_nodeset, (struct FE_node *)NULL);
+				ACCESS(FE_node)(template_node);
+				if (!define_FE_field_at_node(template_node, get_data->fe_field,
+					(struct FE_time_sequence *)NULL, node_field_creator))
 				{
 					display_message(ERROR_MESSAGE,
 						"get_iges_entity_as_cubic_from_any_2D_element.  "
-						"Could not create node field creator");
-					return_code=0;
+						"Could not define node field");
+					return_code = 0;
 				}
+				DESTROY(FE_node_field_creator)(&(node_field_creator));
+				for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
+				{
+					get_data->nodes[i] = get_data->destination_fe_nodeset->create_FE_node_copy(-1, template_node);
+					if (get_data->nodes[i] == NULL)
+					{
+						display_message(ERROR_MESSAGE,
+							"get_iges_entity_as_cubic_from_any_2D_element.  "
+							"Failed to create node");
+						return_code = 0;
+					}
+				}
+				DEACCESS(FE_node)(&template_node);
 				if (return_code)
 				{
-					if ((get_data->element = create_FE_element_with_line_shape(
-							  /*identifier*/1, FE_region_find_FE_mesh_by_dimension(get_data->fe_region, /*dimension*/2))) &&
-						FE_element_define_tensor_product_basis(get_data->element,
-						/*dimension*/2,/*basis_type*/CUBIC_LAGRANGE, get_data->fe_field))
+					int shape_type[3] = { LINE_SHAPE, 0, LINE_SHAPE };
+					FE_element_shape *element_shape = CREATE(FE_element_shape)(/*dimension*/2, shape_type, get_data->destination_fe_region);
+					FE_element_template *element_template = (get_data->destination_fe_mesh) ?
+						get_data->destination_fe_mesh->create_FE_element_template(element_shape) : 0;
+					if ((element_template) && FE_element_define_tensor_product_basis(element_template->get_template_element(),
+						/*dimension*/2,/*basis_type*/CUBIC_LAGRANGE, get_data->fe_field) &&
+						(0 != (get_data->element = get_data->destination_fe_mesh->create_FE_element(1, element_template))))
 					{
-						ACCESS(FE_element)(get_data->element);
 						for (i = 0 ; return_code && (i < NUMBER_OF_NODES) ; i++)
 						{
 							if (!set_FE_element_node(get_data->element, i, get_data->nodes[i]))
@@ -792,28 +793,13 @@ basis type, however every element type will be converted to a cubic.
 					{
 						return_code = 0;
 					}
+					cmzn::Deaccess(element_template);
 				}
 				if (return_code)
 				{
-					/* Add four faces */
-					get_FE_element_shape(element, &element_shape);
-					cm.type = CM_LINE;
-					cm.number = 0;
-					for (i = 0 ; return_code && (i < 4) ; i++)
-					{
-						face_shape = get_FE_element_shape_of_face(element_shape, i, get_data->fe_region);
-						face = CREATE(FE_element)(&cm, face_shape,
-							FE_region_find_FE_mesh_by_dimension(get_data->fe_region, 1), (struct FE_element *)NULL);
-						if (face != NULL)
-						{
-							/* must put the face in the element to inherit fields */
-							set_FE_element_face(get_data->element, i, face);
-						}
-						else
-						{
-							return_code = 0;
-						}
-					}
+					cmzn_fieldmodule *destination_fieldmodule = cmzn_region_get_fieldmodule(get_data->destination_region);
+					cmzn_fieldmodule_define_all_faces(destination_fieldmodule);
+					cmzn_fieldmodule_destroy(&destination_fieldmodule);
 				}
 			}
 			xi[2] = 0.0;
@@ -849,27 +835,26 @@ basis type, however every element type will be converted to a cubic.
 				}
 			}
 			/* Set the correct element number into the template element */
-			get_FE_element_identifier(element, &cm);
-			cm.type = CM_ELEMENT;
-			set_FE_element_identifier(get_data->element, &cm);
+			cmzn_element_set_identifier(get_data->element, cmzn_element_get_identifier(element));
 			/* Set the correct element numbers into the faces */
 			for (i = 0 ; i < 4 ; i++)
 			{
 				get_FE_element_face(element, i, &true_face);
 				get_FE_element_face(get_data->element, i, &face);
-				if (!(true_face && get_FE_element_identifier(true_face, &cm)))
+				int face_identifier;
+				if (true_face)
+					face_identifier = get_FE_element_identifier(true_face);
+				else
 				{
-					cm.type = CM_LINE;
-					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(get_data->fe_region, /*dimension*/1);
-					cm.number = fe_mesh->get_next_FE_element_identifier(get_data->extra_line_number + 1);
-					get_data->extra_line_number = cm.number;
+					face_identifier = get_data->destination_fe_mesh->get_next_FE_element_identifier(get_data->extra_line_number + 1);
+					get_data->extra_line_number = face_identifier;
 				}
-				set_FE_element_identifier(face, &cm);
+				cmzn_element_set_identifier(face, face_identifier);
 			}
 			/* Add the element entity info for the element we just made */
 			if (return_code)
 			{
-				get_iges_entity_info(get_data->element, get_data_void);
+				get_iges_entity_info(get_data->element, (void *)get_data);
 			}
 		}
 	}
@@ -889,14 +874,8 @@ struct Write_iges_parameter_data_data
 	int count;
 }; /* struct Write_iges_parameter_data_data */
 
-int export_to_iges(char *file_name, struct FE_region *fe_region,
-	char *region_path, struct Computed_field *field)
-/******************************************************************************
-LAST MODIFIED : 5 August 2003
-
-DESCRIPTION :
-Write bicubic elements to an IGES file.
-==============================================================================*/
+int export_to_iges(char *file_name, struct cmzn_region *region,
+	char *region_path, struct cmzn_field *field)
 {
 	char *out_string, numeric_string[20], *temp_string, time_string[14];
 	FILE *iges;
@@ -912,7 +891,7 @@ Write bicubic elements to an IGES file.
 	ENTER(export_to_iges);
 	return_code=0;
 	USE_PARAMETER(field);
-	if (file_name && fe_region && region_path)
+	if (file_name && region && region_path)
 	{
 		iges = fopen(file_name,"w");
 		if (iges != NULL)
@@ -1071,12 +1050,17 @@ Write bicubic elements to an IGES file.
 			/* get entity information */
 			field_module = cmzn_field_get_fieldmodule(field);
 			field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
+			// convert surface elements to bicubic in temporary region
+			iges_entity_info_data.destination_region = cmzn_region_create_region(region);
+			iges_entity_info_data.destination_fe_region = cmzn_region_get_FE_region(iges_entity_info_data.destination_region);
+			iges_entity_info_data.destination_fe_mesh = FE_region_find_FE_mesh_by_dimension(iges_entity_info_data.destination_fe_region, 2);
+			iges_entity_info_data.destination_fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(iges_entity_info_data.destination_fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			iges_entity_info_data.field_cache = field_cache;
 			iges_entity_info_data.head=(struct IGES_entity_info *)NULL;
 			iges_entity_info_data.tail=(struct IGES_entity_info *)NULL;
 			iges_entity_info_data.field=Computed_field_begin_wrap_coordinate_field(field);
 			iges_entity_info_data.fe_field=(struct FE_field *)NULL;
-			iges_entity_info_data.fe_region=fe_region;
+			iges_entity_info_data.fe_region=cmzn_region_get_FE_region(region);
 			iges_entity_info_data.element=(struct FE_element *)NULL;
 			iges_entity_info_data.extra_line_number = 999000; /* Start somewhere random although
 														  we will still check that it doesn't conflict */
@@ -1090,9 +1074,16 @@ Write bicubic elements to an IGES file.
 				&iges_entity_info_data);
 			USE_PARAMETER(get_iges_entity_as_cubic_from_any_2D_element);
 #endif /* defined (NEW_CODE) */
-			FE_region_for_each_FE_element(fe_region, get_iges_entity_as_cubic_from_any_2D_element,
-				&iges_entity_info_data);
-		 Computed_field_end_wrap(&(iges_entity_info_data.field));
+			FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(iges_entity_info_data.fe_region, 2);
+			cmzn_elementiterator *iter = fe_mesh->createElementiterator();
+			cmzn_element *element;
+			while (element = cmzn_elementiterator_next_non_access(iter))
+			{
+				if (!get_iges_entity_as_cubic_from_any_2D_element(element, &iges_entity_info_data))
+					break;
+			}
+			cmzn_elementiterator_destroy(&iter);
+			Computed_field_end_wrap(&(iges_entity_info_data.field));
 			if (iges_entity_info_data.fe_field)
 			{
 				DEACCESS(FE_field)(&iges_entity_info_data.fe_field);
@@ -1352,6 +1343,7 @@ Write bicubic elements to an IGES file.
 				DEALLOCATE(entity);
 			}
 			fclose(iges);
+			cmzn_region_destroy(&iges_entity_info_data.destination_region);
 			cmzn_fieldcache_destroy(&field_cache);
 			cmzn_fieldmodule_destroy(&field_module);
 		}
@@ -1365,7 +1357,7 @@ Write bicubic elements to an IGES file.
 	else
 	{
 		display_message(ERROR_MESSAGE,"gfx_export_iges.  "
-			"Invalid argument(s).  %p %p %p",file_name,fe_region,region_path);
+			"Invalid argument(s).  %p %p %p",file_name,region,region_path);
 		return_code=0;
 	}
 	LEAVE;

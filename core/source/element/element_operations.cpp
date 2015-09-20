@@ -549,7 +549,6 @@ static int FE_element_and_values_to_array(struct FE_element *element,
  DESCRIPTION :
  ==============================================================================*/
 {
-	struct CM_element_information cm_element_identifier;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_xi_points;
 	int dimension, i, return_code;
 	struct FE_element_and_values_to_array_data *array_data;
@@ -557,9 +556,8 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 	FE_value_triple *xi_points;
 
 	ENTER(FE_element_and_values_to_array);
-	if (element && get_FE_element_identifier(element, &cm_element_identifier)
-			&& (array_data
-				= (struct FE_element_and_values_to_array_data *) array_data_void)
+	if (element
+			&& (array_data = (struct FE_element_and_values_to_array_data *) array_data_void)
 			&& array_data->element_values)
 	{
 		return_code = 1;
@@ -708,13 +706,8 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 						/* offset element numbers by element_offset */
 						for (i = 0; (i < number_of_elements) && return_code; i++)
 						{
-							struct CM_element_information tmp_cm;
-							if (get_FE_element_identifier(
-								element_values[i].element, &tmp_cm))
-							{
-								element_values[i].new_number = tmp_cm.number
-									+ element_offset;
-							}
+							element_values[i].new_number =
+								get_FE_element_identifier(element_values[i].element) + element_offset;
 						}
 					}
 					/* check element numbers are positive and ascending */

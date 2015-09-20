@@ -312,23 +312,18 @@ Returns second derivatives of 1-D Hermite basis functions at <xi> in [0.0, 1.0].
 	return (return_code);
 } /* calculate_Hermite_basis_1d_second_derivatives */
 
-struct FE_element *create_1d_hermite_element(FE_mesh *fe_mesh,
+/**
+ * Creates and returns a 1-D line element template with <field_array> defined
+ * using a 1-D cubic Hermite basis over it.
+ */
+FE_element_template *create_1d_hermite_element_template(FE_mesh *fe_mesh,
 	int number_of_fields, struct FE_field **field_array)
-/*******************************************************************************
-LAST MODIFIED : 29 March 2006
-
-DESCRIPTION :
-Creates and returns a 1-D line element with <field_array> defined using a 1-D cubic
-Hermite basis over it.
-==============================================================================*/
 {
 	int basis_type[2] = {1, CUBIC_HERMITE};
 	int shape_type[1] = {LINE_SHAPE};
 	int i, j, maximum_number_of_components, n, number_of_components, 
 		number_of_nodes, number_of_scale_factors, return_code;
-	struct CM_element_information cm;
 	struct FE_basis *element_basis;
-	struct FE_element *element;
 	struct FE_element_field_component *component, **components;
 	struct FE_element_shape *element_shape;
 	struct FE_region *fe_region;
@@ -336,7 +331,7 @@ Hermite basis over it.
 	struct Standard_node_to_element_map *standard_node_map;
 
 	ENTER(create_1d_hermite_element);
-	element = (struct FE_element *)NULL;
+	FE_element_template *element_template = 0;
 	if (fe_mesh && (1 == fe_mesh->getDimension()) &&
 		(fe_region = fe_mesh->get_FE_region()) &&
 		(basis_manager = FE_region_get_basis_manager(fe_region)) &&
@@ -357,11 +352,10 @@ Hermite basis over it.
 		}
 		DEALLOCATE(scale_factor_set_name);
 
-		cm.type = CM_ELEMENT;
-		cm.number = 0;
-		if (NULL != (element = CREATE(FE_element)(&cm, element_shape, fe_mesh,
-			/*template*/(struct FE_element *)NULL)))
+		element_template = fe_mesh->create_FE_element_template(element_shape);
+		if (element_template)
 		{
+			FE_element *element = element_template->get_template_element();
 			number_of_scale_factors = 4;
 			number_of_nodes = 2;
 			if (set_FE_element_number_of_nodes(element, number_of_nodes) &&
@@ -445,7 +439,7 @@ Hermite basis over it.
 						{
 							if (!define_FE_field_at_element(element, field_array[i], components))
 							{
-								display_message(ERROR_MESSAGE,"create_1d_hermite_element.  "
+								display_message(ERROR_MESSAGE,"create_1d_hermite_element_template.  "
 									"Could not define field on element");
 								return_code = 0;
 							}
@@ -454,7 +448,7 @@ Hermite basis over it.
 					else
 					{
 						display_message(ERROR_MESSAGE,
-							"create_1d_hermite_element.  Could not create components");
+							"create_1d_hermite_element_template.  Could not create components");
 					}
 					for (n = 0; n < maximum_number_of_components; n++)
 					{
@@ -465,26 +459,24 @@ Hermite basis over it.
 				else
 				{
 					display_message(ERROR_MESSAGE,
-						"create_1d_hermite_element.  Could not allocate components");
+						"create_1d_hermite_element_template.  Could not allocate components");
 					return_code = 0;
 				}
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"create_1d_hermite_element.  "
+					"create_1d_hermite_element_template.  "
 					"Could not set element shape and field info");
 				return_code = 0;
 			}
 			if (!return_code)
-			{
-				DESTROY(FE_element)(&element);
-			}
+				cmzn::Deaccess(element_template);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"create_1d_hermite_element.  Could not create element");
+				"create_1d_hermite_element_template.  Could not create element template");
 		}
 		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 		/* deaccess basis and shape so at most used by template element */
@@ -500,12 +492,12 @@ Hermite basis over it.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_1d_hermite_element.  Invalid argument(s)");
+			"create_1d_hermite_element_template.  Invalid argument(s)");
 	}
 	LEAVE;
 
-	return (element);
-} /* create_1d_hermite_element */
+	return (element_template);
+}
 
 struct FE_field_initialise_array_data
 {
@@ -568,8 +560,7 @@ int create_FE_element_snake_from_data_points(
 	int component, element_number, i, *indx = NULL, j, local_components, m, n, node_number, 
 		number_of_components, number_of_coordinate_components, number_of_data,
 		number_of_fe_fields, number_of_rows, return_code, row, start_row;
-	struct CM_element_information cm;
-	struct FE_element *element, *template_element;
+	struct FE_element *element;
 	struct FE_node **nodes, *template_node;
  	struct FE_node_accumulate_length_data accumulate_data;
  	struct FE_field_initialise_array_data initialise_array_data;
@@ -871,7 +862,7 @@ int create_FE_element_snake_from_data_points(
 			}
 #endif /* defined (DEBUG_CODE) */
 			template_node = (struct FE_node *)NULL;
-			template_element = (struct FE_element *)NULL;
+			FE_element_template *element_template = 0;
 			nodes = (struct FE_node **)NULL;
 			if (ALLOCATE(nodes, struct FE_node *, number_of_elements + 1))
 			{
@@ -960,19 +951,15 @@ int create_FE_element_snake_from_data_points(
 				if (return_code)
 				{
 					FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, /*dimension*/1);
-					if (NULL != (template_element = create_1d_hermite_element(fe_mesh,
-						number_of_fe_fields, fe_field_array)))
+					element_template = create_1d_hermite_element_template(fe_mesh,
+						number_of_fe_fields, fe_field_array);
+					if (element_template)
 					{
-						cm.type = CM_ELEMENT;
-						cm.number = 1;
 						for (j = 0; (j < number_of_elements) && return_code; j++)
 						{
-							cm.number = fe_mesh->get_next_FE_element_identifier(cm.number);
-							if (NULL != (element = CREATE(FE_element)(&cm,
-								(struct FE_element_shape *)NULL, (FE_mesh *)NULL,
-								template_element)))
+							element = fe_mesh->create_FE_element(-1, element_template);
+							if (element)
 							{
-								ACCESS(FE_element)(element);
 								if (!(set_FE_element_node(element, 0, nodes[j]) &&
 									set_FE_element_node(element, 1, nodes[j + 1])))
 								{
@@ -980,19 +967,9 @@ int create_FE_element_snake_from_data_points(
 								}
 								if (return_code)
 								{
-									if (fe_mesh->merge_FE_element(element))
+									if (mesh_group)
 									{
-										if (mesh_group)
-										{
-											cmzn_mesh_group_add_element(mesh_group, element);
-										}
-									}
-									else
-									{
-										display_message(ERROR_MESSAGE,
-											"create_FE_element_snake_from_data_points.  "
-											"Could not merge element into region");
-										return_code = 0;
+										cmzn_mesh_group_add_element(mesh_group, element);
 									}
 								}
 								DEACCESS(FE_element)(&element);
@@ -1030,9 +1007,9 @@ int create_FE_element_snake_from_data_points(
 			{
 				DESTROY(FE_node)(&template_node);
 			}
-			if (template_element)
+			if (element_template)
 			{
-				DESTROY(FE_element)(&template_element);
+				cmzn::Deaccess(element_template);
 			}
 			FE_region_end_change(fe_region);
 		}

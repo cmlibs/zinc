@@ -14,36 +14,33 @@
 #if !defined (CMZN_BTREE_INDEX_HPP)
 #define CMZN_BTREE_INDEX_HPP
 
-#include <functional>
-
-template<class owner_type, typename object_type, typename identifier_type, int invalid_object = -1, int B_TREE_ORDER = 5> class cmzn_btree_index
+template<class owner_type, typename object_type, typename identifier_type,
+	int invalid_object = -1, int btreeOrder = 10> class cmzn_btree_index
 {
 private:
-	typedef int CONDITIONAL_FUNCTION(object_type object,void *user_data);
-	typedef int ITERATOR_FUNCTION(object_type object,void *user_data);
 
-	class INDEX_NODE
+	class BTreeNode
 	{
 	private:
 		int number_of_indices;
 		// break point indices (identifiers accessed through indices)
 		// all actual objects are stored in leaf nodes only, elsewhere they are sorting indices
-		object_type indices[2*B_TREE_ORDER];
-		INDEX_NODE *parent;
-		INDEX_NODE **children;
+		object_type indices[2*btreeOrder];
+		BTreeNode *parent;
+		BTreeNode **children;
 
-		INDEX_NODE(bool leaf) :
+		BTreeNode(bool leaf) :
 			number_of_indices(0),
 			parent(0),
-			children(leaf ? 0 : new INDEX_NODE*[2*B_TREE_ORDER + 1])
+			children(leaf ? 0 : new BTreeNode*[2*btreeOrder + 1])
 		{
 		}
 
 		/** deep copy constructor */
-		INDEX_NODE(const INDEX_NODE &source) :
+		BTreeNode(const BTreeNode &source) :
 			number_of_indices(source.number_of_indices),
 			parent(0),
-			children(source.children ? new INDEX_NODE*[2*B_TREE_ORDER + 1] : 0)
+			children(source.children ? new BTreeNode*[2*btreeOrder + 1] : 0)
 		{
 			bool leaf = !children;
 			const object_type *source_index = source.indices;
@@ -59,11 +56,11 @@ private:
 			}
 			else
 			{
-				INDEX_NODE **source_child = source.children;
-				INDEX_NODE **duplicate_child = children;
+				BTreeNode **source_child = source.children;
+				BTreeNode **duplicate_child = children;
 				for (int i = number_of_indices; i >= 0; --i)
 				{
-					*duplicate_child = new INDEX_NODE(**source_child);
+					*duplicate_child = new BTreeNode(**source_child);
 					(*duplicate_child)->parent = this;
 					++source_child;
 					++duplicate_child;
@@ -79,7 +76,7 @@ private:
 
 	public:
 
-		~INDEX_NODE()
+		~BTreeNode()
 		{
 			if (children)
 			{
@@ -91,27 +88,27 @@ private:
 			}
 		}
 
-		static inline INDEX_NODE *createLeaf()
+		static inline BTreeNode *createLeaf()
 		{
-			return new INDEX_NODE(true);
+			return new BTreeNode(true);
 		}
 
-		static inline INDEX_NODE *createStem()
+		static inline BTreeNode *createStem()
 		{
-			return new INDEX_NODE(false);
+			return new BTreeNode(false);
 		}
 
-		INDEX_NODE *duplicate() const
+		BTreeNode *duplicate() const
 		{
-			return new INDEX_NODE(*this);
+			return new BTreeNode(*this);
 		}
 
 		/** Finds the leaf node that should contain the object with the specified identifier */
-		INDEX_NODE *FIND_LEAF_NODE_IN_INDEX(owner_type& owner, identifier_type identifier)
+		BTreeNode *findLeafNode(owner_type& owner, identifier_type identifier)
 		{
 			if (children)
 			{
-				INDEX_NODE **child = this->children + this->number_of_indices;
+				BTreeNode **child = this->children + this->number_of_indices;
 				int i = number_of_indices;
 				object_type *object_index = this->indices + (this->number_of_indices - 1);
 				while ((i > 0) && !(owner.getIdentifier(*object_index) < identifier))
@@ -120,18 +117,18 @@ private:
 					--child;
 					--i;
 				}
-				return (*child)->FIND_LEAF_NODE_IN_INDEX(owner, identifier);
+				return (*child)->findLeafNode(owner, identifier);
 			}
 			return this;
 		}
 
 		/** Removes an <object> from the <index>. */
-		static int REMOVE_OBJECT_FROM_INDEX(owner_type& owner, object_type object, INDEX_NODE **index_address)
+		static int removeObject(owner_type& owner, object_type object, BTreeNode **index_address)
 		{
 			int return_code = 0;
 			if (index_address)
 			{
-				INDEX_NODE *child, *index;
+				BTreeNode *child, *index;
 				if (0 != (index= *index_address))
 				{
 					/* find the object within the node */
@@ -143,7 +140,7 @@ private:
 					}
 					if (index->children)
 					{
-						if (0 != (return_code = REMOVE_OBJECT_FROM_INDEX(owner, object,
+						if (0 != (return_code = removeObject(owner, object,
 							&(index->children[i]))))
 						{
 							/* shuffle down any NULL children */
@@ -214,14 +211,14 @@ private:
 			}
 			else
 			{
-				//display_message(ERROR_MESSAGE, "REMOVE_OBJECT_FROM_INDEX.  Invalid argument(s)");
+				//display_message(ERROR_MESSAGE, "BTreeNode::removeObject.  Invalid argument(s)");
 			}
 			return (return_code);
 		}
 
 		/** Removes each object that pred returns true for. */
 		template <class UnaryPredicate>
-		static int REMOVE_OBJECTS_FROM_INDEX_THAT(INDEX_NODE **index_address,
+		static int removeObjectsConditional(BTreeNode **index_address,
 			UnaryPredicate& pred)
 		{
 			int count = 0;
@@ -229,7 +226,7 @@ private:
 			if (index_address)
 			{
 				int i, j, original_number_of_indices;
-				INDEX_NODE *child, *index;
+				BTreeNode *child, *index;
 				if (0 != (index= *index_address))
 				{
 					if (index->children)
@@ -237,7 +234,7 @@ private:
 						original_number_of_indices = index->number_of_indices;
 						for (i = 0; i <= original_number_of_indices; i++)
 						{
-							count += REMOVE_OBJECTS_FROM_INDEX_THAT(&(index->children[i]), pred);
+							count += removeObjectsConditional(&(index->children[i]), pred);
 						}
 						j=0;
 						/* shuffle down any NULL children */
@@ -322,20 +319,20 @@ private:
 			}
 			else
 			{
-				//display_message(ERROR_MESSAGE, "REMOVE_OBJECTS_FROM_INDEX_THAT.  Invalid argument(s)");
+				//display_message(ERROR_MESSAGE, "BTreeNode::removeObjectsConditional.  Invalid argument(s)");
 			}
 			return (count);
 		}
 
 		/** Adds the <add_index> (and the <add_node>) to the parent of the <node>. */
-		static int ADD_INDEX_TO_NODE_PARENT(owner_type &owner, object_type add_index,
-			INDEX_NODE *add_node, INDEX_NODE *node)
+		static int addToParent(owner_type &owner, object_type add_index,
+			BTreeNode *add_node, BTreeNode *node)
 		{
 			int return_code = 0;
-			INDEX_NODE *parent = node->parent;
+			BTreeNode *parent = node->parent;
 			if (parent)
 			{
-				INDEX_NODE **child, **new_child;
+				BTreeNode **child, **new_child;
 				object_type *index,*new_index;
 				/* find place in index node */
 				index=parent->indices;
@@ -346,7 +343,7 @@ private:
 					i--;
 					index++;
 				}
-				if (2*B_TREE_ORDER>parent->number_of_indices)
+				if (2*btreeOrder>parent->number_of_indices)
 				{
 					/* add object to node (node does not need splitting) */
 					add_node->parent=parent;
@@ -369,24 +366,24 @@ private:
 				{
 					/* node needs splitting */
 					/* create a new node */
-					INDEX_NODE *new_parent = createStem();
+					BTreeNode *new_parent = createStem();
 					if (new_parent)
 					{
 						object_type split_index = add_index;
 						if (i == 0)
 						{
 							// see optimisation comment below
-							split_index = (parent->indices)[2*B_TREE_ORDER - 1];
+							split_index = (parent->indices)[2*btreeOrder - 1];
 						}
-						else if (i > B_TREE_ORDER)
+						else if (i > btreeOrder)
 						{
-							split_index = (parent->indices)[B_TREE_ORDER - 1];
+							split_index = (parent->indices)[btreeOrder - 1];
 						}
-						else if (i < B_TREE_ORDER)
+						else if (i < btreeOrder)
 						{
-							split_index = (parent->indices)[B_TREE_ORDER];
+							split_index = (parent->indices)[btreeOrder];
 						}
-						if (ADD_INDEX_TO_NODE_PARENT(owner, split_index, new_parent, parent))
+						if (addToParent(owner, split_index, new_parent, parent))
 						{
 							if (i == 0)
 							{
@@ -400,13 +397,13 @@ private:
 								new_parent->number_of_indices = 1;
 								--parent->number_of_indices;
 							}
-							else if (i<B_TREE_ORDER)
+							else if (i<btreeOrder)
 							{
-								index=(parent->indices)+(2*B_TREE_ORDER);
-								child=(parent->children)+(2*B_TREE_ORDER);
-								new_index=(new_parent->indices)+B_TREE_ORDER;
-								new_child=(new_parent->children)+B_TREE_ORDER;
-								int j = B_TREE_ORDER - i - 1;
+								index=(parent->indices)+(2*btreeOrder);
+								child=(parent->children)+(2*btreeOrder);
+								new_index=(new_parent->indices)+btreeOrder;
+								new_child=(new_parent->children)+btreeOrder;
+								int j = btreeOrder - i - 1;
 								while (i>0)
 								{
 									index--;
@@ -436,16 +433,16 @@ private:
 								new_child--;
 								*new_child= *child;
 								(*child)->parent=new_parent;
-								new_parent->number_of_indices=B_TREE_ORDER;
-								parent->number_of_indices=B_TREE_ORDER;
+								new_parent->number_of_indices=btreeOrder;
+								parent->number_of_indices=btreeOrder;
 							}
 							else
 							{
-								index=(parent->indices)+B_TREE_ORDER;
-								child=(parent->children)+B_TREE_ORDER;
+								index=(parent->indices)+btreeOrder;
+								child=(parent->children)+btreeOrder;
 								new_index=new_parent->indices;
 								new_child=new_parent->children;
-								for (int j = B_TREE_ORDER; j > 0; j--)
+								for (int j = btreeOrder; j > 0; j--)
 								{
 									*new_index= *index;
 									index++;
@@ -455,18 +452,18 @@ private:
 									*new_child= *child;
 									(*child)->parent=new_parent;
 								}
-								i -= B_TREE_ORDER;
+								i -= btreeOrder;
 								if (0==i)
 								{
-									(parent->children)[B_TREE_ORDER]=node;
+									(parent->children)[btreeOrder]=node;
 									(new_parent->children)[0]=add_node;
 									add_node->parent=new_parent;
 								}
 								else
 								{
 									i--;
-									index=(parent->indices)+(B_TREE_ORDER-1);
-									child=(parent->children)+B_TREE_ORDER;
+									index=(parent->indices)+(btreeOrder-1);
+									child=(parent->children)+btreeOrder;
 									(new_parent->children)[0]= *child;
 									(*child)->parent=new_parent;
 									while (i>0)
@@ -481,15 +478,15 @@ private:
 									*child=add_node;
 									add_node->parent=parent;
 								}
-								new_parent->number_of_indices=B_TREE_ORDER;
-								parent->number_of_indices=B_TREE_ORDER;
+								new_parent->number_of_indices=btreeOrder;
+								parent->number_of_indices=btreeOrder;
 							}
 							return_code=1;
 						}
 					}
 					else
 					{
-						// display_message(ERROR_MESSAGE,"ADD_INDEX_TO_NODE_PARENT.  Could not create new index node");
+						// display_message(ERROR_MESSAGE,"BTreeNode::addToParent.  Could not create new index node");
 					}
 				}
 			}
@@ -508,19 +505,19 @@ private:
 				}
 				else
 				{
-					// display_message(ERROR_MESSAGE,"ADD_INDEX_TO_NODE_PARENT.  Could not create new root node");
+					// display_message(ERROR_MESSAGE,"BTreeNode::addToParent.  Could not create new root node");
 				}
 			}
 			return (return_code);
 		}
 
 		/** Adds an <object> to the <index>. */
-		static int ADD_OBJECT_TO_INDEX(owner_type &owner, object_type object, INDEX_NODE **index)
+		static int addObject(owner_type &owner, object_type object, BTreeNode **index)
 		{
 			int return_code = 0;
 			/* find the leaf node that should contain the object */
 			identifier_type add_identifier = owner.getIdentifier(object);
-			INDEX_NODE *leaf_node = (*index)->FIND_LEAF_NODE_IN_INDEX(owner, add_identifier);
+			BTreeNode *leaf_node = (*index)->findLeafNode(owner, add_identifier);
 			/* check that the object is not already in the leaf node */
 			object_type *leaf_index = leaf_node->indices + (leaf_node->number_of_indices - 1);
 			int i = leaf_node->number_of_indices;
@@ -532,11 +529,11 @@ private:
 			i = leaf_node->number_of_indices - i;
 			if ((i > 0) && !(add_identifier < owner.getIdentifier(leaf_index[1])))
 			{
-				// display_message(ERROR_MESSAGE, "ADD_OBJECT_TO_INDEX.  Object already in index");
+				// display_message(ERROR_MESSAGE, "BTreeNode::addObject.  Object already in index");
 			}
 			else
 			{
-				if (2*B_TREE_ORDER > leaf_node->number_of_indices)
+				if (2*btreeOrder > leaf_node->number_of_indices)
 				{
 					/* add object to leaf node (leaf node does not need splitting) */
 					leaf_index=(leaf_node->indices)+(leaf_node->number_of_indices);
@@ -553,20 +550,20 @@ private:
 				else
 				{
 					/* leaf node needs splitting */
-					INDEX_NODE *new_node = createLeaf();
+					BTreeNode *new_node = createLeaf();
 					if (new_node)
 					{
 						object_type split_index;
 						if (i == 0)
 						{
 							// see optimisation comment below
-							split_index = (leaf_node->indices)[2*B_TREE_ORDER - 1];
+							split_index = (leaf_node->indices)[2*btreeOrder - 1];
 						}
 						else
 						{
-							split_index = (leaf_node->indices)[B_TREE_ORDER - 1];
+							split_index = (leaf_node->indices)[btreeOrder - 1];
 						}
-						if (ADD_INDEX_TO_NODE_PARENT(owner,split_index,new_node,leaf_node))
+						if (addToParent(owner,split_index,new_node,leaf_node))
 						{
 							return_code=1;
 							if ((*index)->parent)
@@ -581,11 +578,11 @@ private:
 								new_node->indices[0] = object;
 								new_node->number_of_indices = 1;
 							}
-							else if (i<=B_TREE_ORDER)
+							else if (i<=btreeOrder)
 							{
-								leaf_index=(leaf_node->indices)+(2*B_TREE_ORDER);
-								object_type *new_index=(new_node->indices)+B_TREE_ORDER;
-								int j=B_TREE_ORDER-i;
+								leaf_index=(leaf_node->indices)+(2*btreeOrder);
+								object_type *new_index=(new_node->indices)+btreeOrder;
+								int j=btreeOrder-i;
 								while (i>0)
 								{
 									leaf_index--;
@@ -601,22 +598,22 @@ private:
 									*new_index= *leaf_index;
 									j--;
 								}
-								new_node->number_of_indices=B_TREE_ORDER+1;
-								leaf_node->number_of_indices=B_TREE_ORDER;
+								new_node->number_of_indices=btreeOrder+1;
+								leaf_node->number_of_indices=btreeOrder;
 							}
 							else
 							{
-								leaf_index=(leaf_node->indices)+B_TREE_ORDER;
+								leaf_index=(leaf_node->indices)+btreeOrder;
 								object_type *new_index=new_node->indices;
-								for (int j=B_TREE_ORDER;j>0;j--)
+								for (int j=btreeOrder;j>0;j--)
 								{
 									*new_index= *leaf_index;
 									leaf_index++;
 									new_index++;
 								}
-								new_node->number_of_indices=B_TREE_ORDER;
-								i -= B_TREE_ORDER;
-								leaf_index=(leaf_node->indices)+B_TREE_ORDER;
+								new_node->number_of_indices=btreeOrder;
+								i -= btreeOrder;
+								leaf_index=(leaf_node->indices)+btreeOrder;
 								while (i>0)
 								{
 									leaf_index--;
@@ -624,25 +621,25 @@ private:
 									i--;
 								}
 								*leaf_index = object;
-								leaf_node->number_of_indices=B_TREE_ORDER+1;
+								leaf_node->number_of_indices=btreeOrder+1;
 							}
 						}
 					}
 					else
 					{
-						// display_message(ERROR_MESSAGE, "ADD_OBJECT_TO_INDEX.  Could not create new leaf node");
+						// display_message(ERROR_MESSAGE, "BTreeNode::addObject.  Could not create new leaf node");
 					}
 				}
 			}
 			return (return_code);
 		}
 
-		/** Returns true if the <object> is in the INDEX_NODE. */
-		inline bool IS_OBJECT_IN_INDEX(owner_type &owner, object_type object)
+		/** Returns true if the <object> is in the BTreeNode. */
+		inline bool containsObject(owner_type &owner, object_type object)
 		{
 			
 			identifier_type identifier = owner.getIdentifier(object);
-			INDEX_NODE *leaf_node = FIND_LEAF_NODE_IN_INDEX(owner, identifier);
+			BTreeNode *leaf_node = findLeafNode(owner, identifier);
 			if (leaf_node)
 			{
 				object_type *leaf_index = leaf_node->indices;
@@ -661,9 +658,9 @@ private:
 		}
 
 		/** find the object with the specified identifier */
-		inline object_type FIND_BY_IDENTIFIER_IN_INDEX(owner_type &owner, identifier_type identifier)
+		inline object_type findObjectByIdentifier(owner_type &owner, identifier_type identifier)
 		{
-			INDEX_NODE *leaf_node = FIND_LEAF_NODE_IN_INDEX(owner, identifier);
+			BTreeNode *leaf_node = findLeafNode(owner, identifier);
 			if (leaf_node)
 			{
 				object_type *leaf_index = leaf_node->indices;
@@ -681,17 +678,17 @@ private:
 			return invalid_object;
 		}
 
-		object_type GET_FIRST_OBJECT()
+		object_type getFirstObject()
 		{
 			if (this->children)
-				return this->children[0]->GET_FIRST_OBJECT();
+				return this->children[0]->getFirstObject();
 			return this->indices[0];
 		}
 
-		object_type GET_LAST_OBJECT()
+		object_type getLastObject()
 		{
 			if (this->children)
-				return this->children[this->number_of_indices]->GET_LAST_OBJECT();
+				return this->children[this->number_of_indices]->getLastObject();
 			return this->indices[this->number_of_indices - 1];
 		}
 
@@ -699,15 +696,15 @@ private:
 		 * @return the first object in the <index> for which pred is true
 		 */
 		template <class UnaryPredicate>
-		object_type FIRST_OBJECT_IN_INDEX_THAT(UnaryPredicate& pred)
+		object_type findFirstObjectConditional(UnaryPredicate& pred)
 		{
 			if (children)
 			{
 				object_type object;
-				INDEX_NODE **child = children;
+				BTreeNode **child = children;
 				for (int i = this->number_of_indices; i >= 0; --i)
 				{
-					object = (*child)->FIRST_OBJECT_IN_INDEX_THAT(pred);
+					object = (*child)->findFirstObjectConditional(pred);
 					if (object != invalid_object)
 						return object;
 					++child;
@@ -731,14 +728,14 @@ private:
 		 * @return  Boolean true on success, false on error
 		 */
 		template <class UnaryPredicate>
-		bool FOR_EACH_OBJECT_IN_INDEX(UnaryPredicate &iterator)
+		bool forEachObject(UnaryPredicate &iterator)
 		{
 			if (children)
 			{
-				INDEX_NODE **child = children;
+				BTreeNode **child = children;
 				for (int i = this->number_of_indices; i >= 0; --i)
 				{
-					if (!(*child)->FOR_EACH_OBJECT_IN_INDEX(iterator))
+					if (!(*child)->forEachObject(iterator))
 						return false;
 					++child;
 				}
@@ -764,7 +761,7 @@ private:
 			if (children)
 			{
 				++stem_count;
-				cumulative_stem_occupancy += (double)number_of_indices / (double)(2*B_TREE_ORDER + 1);
+				cumulative_stem_occupancy += (double)number_of_indices / (double)(2*btreeOrder + 1);
 				for (int i = 0; i <= number_of_indices; ++i)
 				{
 					children[i]->get_statistics(current_depth + 1, stem_count, leaf_count,
@@ -776,7 +773,7 @@ private:
 			{
 				++leaf_count;
 				cumulative_leaf_depth += (double)current_depth;
-				cumulative_leaf_occupancy += (double)number_of_indices / (double)(2*B_TREE_ORDER);
+				cumulative_leaf_occupancy += (double)number_of_indices / (double)(2*btreeOrder);
 				if ((current_depth < min_leaf_depth) || (0 == min_leaf_depth))
 				{
 					min_leaf_depth = current_depth;
@@ -790,11 +787,11 @@ private:
 
 		struct iterator
 		{
-			INDEX_NODE *node;
+			BTreeNode *node;
 			int index;
 			int parent_index;
 
-			iterator(INDEX_NODE *index) :
+			iterator(BTreeNode *index) :
 				node(index),
 				index(-1), // before start
 				parent_index(0)
@@ -835,7 +832,7 @@ private:
 							else
 							{
 								node = node->parent;
-								INDEX_NODE *parent = node->parent;
+								BTreeNode *parent = node->parent;
 								while (parent)
 								{
 									for (parent_index = parent->number_of_indices; 0 <= parent_index; --parent_index)
@@ -893,7 +890,7 @@ private:
 				index = -1; // ready to start again
 			}
 
-			inline void set_to_start(INDEX_NODE *root_node)
+			inline void set_to_start(BTreeNode *root_node)
 			{
 				this->node = root_node;
 				this->index = -1;
@@ -904,7 +901,7 @@ private:
 				}
 			}
 			
-			bool set_object(owner_type &owner, INDEX_NODE *root_node, object_type object)
+			bool set_object(owner_type &owner, BTreeNode *root_node, object_type object)
 			{
 				if (object == invalid_object)
 				{
@@ -913,7 +910,7 @@ private:
 				}
 				if (root_node)
 				{
-					this->node = root_node->FIND_LEAF_NODE_IN_INDEX(owner, owner.getIdentifier(object));
+					this->node = root_node->findLeafNode(owner, owner.getIdentifier(object));
 					if (this->node)
 					{
 						object_type *leaf_index = this->node->indices;
@@ -928,7 +925,7 @@ private:
 							this->index = this->node->number_of_indices - i;
 							if (this->node->parent)
 							{
-								INDEX_NODE **child = this->node->parent->children;
+								BTreeNode **child = this->node->parent->children;
 								i = this->node->parent->number_of_indices;
 								while (i >= 0)
 								{
@@ -955,9 +952,9 @@ private:
 
 		};
 
-	}; // INDEX_NODE
+	}; // BTreeNode
 
-	typedef typename INDEX_NODE::iterator int_iterator;
+	typedef typename BTreeNode::iterator int_iterator;
 
 public:
 
@@ -1019,7 +1016,7 @@ public:
 
 private:
 
-	INDEX_NODE *index;
+	BTreeNode *index;
 	int count;
 	int access_count;
 	mutable cmzn_btree_index *next, *prev; // linked list of related sets
@@ -1187,7 +1184,7 @@ public:
 
 	inline bool erase(owner_type &owner, object_type object)
 	{
-		if (INDEX_NODE::REMOVE_OBJECT_FROM_INDEX(owner, object, &index))
+		if (BTreeNode::removeObject(owner, object, &index))
 		{
 			--count;
 			invalidateIterators();
@@ -1199,7 +1196,7 @@ public:
 	template <class UnaryPredicate>
 	inline bool erase_conditional(UnaryPredicate& pred)
 	{
-		int number_removed = INDEX_NODE::REMOVE_OBJECTS_FROM_INDEX_THAT(&index, pred);
+		int number_removed = BTreeNode::removeObjectsConditional(&index, pred);
 		if (number_removed > 0)
 		{
 			count -= number_removed;
@@ -1221,11 +1218,11 @@ public:
 	{
 		if (!index)
 		{
-			index = INDEX_NODE::createLeaf();
+			index = BTreeNode::createLeaf();
 		}
 		if (index)
 		{
-			if (INDEX_NODE::ADD_OBJECT_TO_INDEX(owner, object, &index))
+			if (BTreeNode::addObject(owner, object, &index))
 			{
 				++count;
 				invalidateIterators();
@@ -1243,7 +1240,7 @@ public:
 	inline bool contains(owner_type &owner, object_type object) const
 	{
 		if (index)
-			return index->IS_OBJECT_IN_INDEX(owner, object);
+			return index->containsObject(owner, object);
 		return false;
 	}
 
@@ -1251,7 +1248,7 @@ public:
 	inline object_type find_first_object_that(UnaryPredicate& pred) const
 	{
 		if (index)
-			return index->FIRST_OBJECT_IN_INDEX_THAT(pred);
+			return index->findFirstObjectConditional(pred);
 		return invalid_object;
 	}
 
@@ -1259,28 +1256,28 @@ public:
 	inline bool for_each_object(UnaryPredicate& iterator) const
 	{
 		if (index)
-			return index->FOR_EACH_OBJECT_IN_INDEX(iterator);
+			return index->forEachObject(iterator);
 		return true;
 	}
 
 	inline object_type find_object_by_identifier(owner_type &owner, identifier_type identifier)
 	{
 		if (index)
-			return index->FIND_BY_IDENTIFIER_IN_INDEX(owner, identifier);
+			return index->findObjectByIdentifier(owner, identifier);
 		return invalid_object;
 	}
 
 	inline object_type get_first_object()
 	{
 		if (index)
-			return index->GET_FIRST_OBJECT();
+			return index->getFirstObject();
 		return invalid_object;
 	}
 
 	inline object_type get_last_object()
 	{
 		if (index)
-			return index->GET_LAST_OBJECT();
+			return index->getLastObject();
 		return invalid_object;
 	}
 

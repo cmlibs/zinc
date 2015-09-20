@@ -42,7 +42,11 @@ const DsLabelIdentifier DS_LABEL_IDENTIFIER_INVALID = -1;
  */
 typedef int DsLabelIndex;
 
+// following is used to mark an invalid index i.e. not set
 const DsLabelIndex DS_LABEL_INDEX_INVALID = -1;
+
+// following is used to mark an array of indexes as invalid
+const DsLabelIndex DS_LABEL_INDEX_UNALLOCATED = -2;
 
 class DsLabels;
 
@@ -81,6 +85,8 @@ public:
 	DsLabels(const DsLabels&); // not implemented
 	~DsLabels();
 	DsLabels& operator=(const DsLabels&); // not implemented
+
+	void clear();
 
 private:
 

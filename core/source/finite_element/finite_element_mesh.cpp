@@ -61,9 +61,44 @@ int cmzn_mesh_scale_factor_set::setName(const char *nameIn)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element_field_info *element_field_info) :
+	cmzn::RefCounted(),
+	mesh(mesh_in->access()),
+	element_shape(0),
+	template_element(create_template_FE_element(element_field_info))
+{
+}
+
+FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element *element) :
+	cmzn::RefCounted(),
+	mesh(mesh_in->access()),
+	element_shape(0),
+	template_element(create_FE_element_from_template(/*identifier*/-1, element))
+{
+}
+
+FE_element_template::~FE_element_template()
+{
+	FE_mesh::deaccess(this->mesh);
+	DEACCESS(FE_element)(&(this->template_element));
+	if (this->element_shape)
+		DEACCESS(FE_element_shape)(&(this->element_shape));
+}
+
+/** @return  Boolean true on success */
+bool FE_element_template::set_element_shape(struct FE_element_shape *element_shape_in)
+{
+	this->element_shape = ACCESS(FE_element_shape)(element_shape_in);
+	return (0 != set_FE_element_shape(this->template_element, element_shape_in));
+}
+
 FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	fe_region(fe_regionIn),
 	dimension(dimensionIn),
+	elementShapeFacesCount(0),
+	elementShapeFaces(0),
+	defaultElementShapeFacesIndex(-1), // negative == no default
+	elementShapeMap(/*default*/),
 	elementList(CREATE(LIST(FE_element)())),
 	element_field_info_list(CREATE(LIST(FE_element_field_info))()),
 	parentMesh(0),
@@ -94,6 +129,9 @@ FE_mesh::~FE_mesh()
 		cmzn_mesh_scale_factor_set *scale_factor_set = this->scale_factor_sets[i];
 		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 	}
+	for (int i = 0; i < this->elementShapeFacesCount; ++i)
+		delete this->elementShapeFaces[i];
+	delete[] this->elementShapeFaces;
 }
 
 /**
@@ -110,7 +148,7 @@ void FE_mesh::elementChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) c
 	{
 		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element, change);
 		// for efficiency, the following marks field changes only if field info changes
-		FE_element_log_FE_field_changes(field_info_element, fe_region->fe_field_changes, /*recurseParents*/false);
+		FE_element_log_FE_field_changes(field_info_element, fe_region->fe_field_changes, /*recurseParents*/true);
 		this->fe_region->update();
 	}
 }
@@ -161,7 +199,6 @@ void FE_mesh::elementAddedChange(FE_element *element)
 {
 	if (this->fe_region)
 	{
-		this->next_fe_element_identifier_cache = 0;
 		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
 			CHANGE_LOG_OBJECT_ADDED(FE_element));
 		// for efficiency, the following marks field changes only if field info changes
@@ -196,6 +233,16 @@ void FE_mesh::clear()
 	cmzn_elementiterator_destroy(&iter);
 	REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)((LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,
 		(void *)NULL, this->elementList);
+
+	for (int i = 0; i < this->elementShapeFacesCount; ++i)
+		delete this->elementShapeFaces[i];
+	delete[] this->elementShapeFaces;
+	this->elementShapeFacesCount = 0;
+	this->elementShapeFaces = 0;
+	this->defaultElementShapeFacesIndex = -1; // negative == no default
+	this->elementShapeMap.clear();
+
+	this->labels.clear();
 }
 
 void FE_mesh::createChangeLog()
@@ -441,28 +488,24 @@ int FE_mesh::get_number_of_FE_elements()
  */
 int FE_mesh::get_next_FE_element_identifier(int start_identifier)
 {
-	struct CM_element_information cm =
-	{
-		DIMENSION_TO_CM_ELEMENT_TYPE(this->dimension),
-		(start_identifier <= 0) ? 1 : start_identifier
-	};
+	int identifier = (start_identifier <= 0) ? 1 : start_identifier;
 	if (this->next_fe_element_identifier_cache)
 	{
-		if (this->next_fe_element_identifier_cache > cm.number)
+		if (this->next_fe_element_identifier_cache > identifier)
 		{
-			cm.number = this->next_fe_element_identifier_cache;
+			identifier = this->next_fe_element_identifier_cache;
 		}
 	}
-	while (FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(&cm, this->elementList))
+	while (FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(identifier, this->elementList))
 	{
-		++cm.number;
+		++identifier;
 	}
 	if (start_identifier <= 1)
 	{
 		/* Don't cache the value if we didn't start at the beginning */
-		this->next_fe_element_identifier_cache = cm.number;
+		this->next_fe_element_identifier_cache = identifier;
 	}
-	return cm.number;
+	return identifier;
 }
 
 void FE_mesh::list_btree_statistics()
@@ -482,8 +525,7 @@ bool FE_mesh::containsElement(FE_element *element)
 /** @return  Non-accessed element */
 FE_element *FE_mesh::findElementByIdentifier(int identifier) const
 {
-	CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(this->dimension), identifier };
-	return FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(&cm, this->elementList);
+	return FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(identifier, this->elementList);
 }
 
 /**
@@ -532,8 +574,7 @@ int FE_mesh::change_FE_element_identifier(struct FE_element *element, int new_id
 			if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_element, identifier)(
 				this->elementList, element))
 			{
-				CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(this->dimension), new_identifier };
-				set_FE_element_identifier(element, &cm);
+				set_FE_element_identifier(element, new_identifier);
 				LIST_END_IDENTIFIER_CHANGE(FE_element, identifier)(this->elementList);
 				this->elementIdentifierChange(element);
 				return CMZN_OK;
@@ -560,58 +601,63 @@ int FE_mesh::change_FE_element_identifier(struct FE_element *element, int new_id
 	return CMZN_ERROR_ARGUMENT;
 }
 
+/** Creates a template that is a copy of the existing element */
+FE_element_template *FE_mesh::create_FE_element_template(FE_element *element)
+{
+	if (FE_element_get_FE_mesh(element) != this)
+		return 0;
+	FE_element_template *element_template = new FE_element_template(this, element);
+	FE_element_shape *element_shape;
+	get_FE_element_shape(element, &element_shape);
+	if (element_template && !element_template->set_element_shape(element_shape))
+		cmzn::Deaccess(element_template);
+	return element_template;
+}
+
+/** @param element_shape  Element shape, must match mesh dimension */
+FE_element_template *FE_mesh::create_FE_element_template(FE_element_shape *element_shape)
+{
+	int shape_dimension = 0;
+	if (!((element_shape) && get_FE_element_shape_dimension(element_shape, &shape_dimension) &&
+			(shape_dimension == this->dimension)))
+		return 0;
+	FE_element_template *element_template = new FE_element_template(this, this->get_FE_element_field_info((struct LIST(FE_element_field) *)NULL));
+	if (element_template && !element_template->set_element_shape(element_shape))
+		cmzn::Deaccess(element_template);
+	return element_template;
+}
+
 /**
-	* Convenience function returning an existing element with the identifier
-	* from the mesh. If no existing element is found, a new element is created
-	* with the given identifier and the supplied shape, or unspecified shape of
-	* the given dimension if no shape provided.
-	* If the returned element is not already in fe_region it is merged.
-	* It is expected that the calling function has wrapped calls to this function
-	* with FE_region_begin/end_change.
-	*/
+ * Convenience function returning an existing element with the identifier
+ * from the mesh, or if none found or if identifier is -1, a new element with
+ * with the identifier (or the first available identifier if -1), and with the
+ * supplied shape or if none, unspecified shape of the same dimension as the
+ * mesh.
+ * It is expected that the calling function has wrapped calls to this function
+ * with FE_region_begin/end_change.
+ * @return  Accessed element, or 0 on error.
+ */
 struct FE_element *FE_mesh::get_or_create_FE_element_with_identifier(int identifier,
 	struct FE_element_shape *element_shape)
 {
 	struct FE_element *element = 0;
 	int element_shape_dimension = 0;
-	if (((!element_shape) || (get_FE_element_shape_dimension(element_shape, &element_shape_dimension) &&
+	if ((-1 <= identifier) && ((!element_shape) ||
+		(get_FE_element_shape_dimension(element_shape, &element_shape_dimension) &&
 		(element_shape_dimension == this->dimension))))
 	{
-		element = this->findElementByIdentifier(identifier);
-		if (!element)
+		if (identifier >= 0)
+			element = this->findElementByIdentifier(identifier);
+		if (element)
 		{
-			struct FE_element_shape *temp_element_shape = 0;
-			if (!element_shape)
-			{
-				element_shape = temp_element_shape = CREATE(FE_element_shape)(
-					dimension, /*type*/(int *)NULL, fe_region);
-				ACCESS(FE_element_shape)(temp_element_shape);
-			}
-			if (element_shape)
-			{
-				CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(dimension), identifier};
-				element = CREATE(FE_element)(&cm, element_shape,
-					this, /*template_element*/(struct FE_element *)NULL);
-				if (temp_element_shape)
-				{
-					DEACCESS(FE_element_shape)(&temp_element_shape);
-				}
-			}
-			if (!element)
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_mesh::get_or_create_FE_element_with_identifier.  Could not create element");
-			}
-			if (element)
-			{
-				if (!this->merge_FE_element(element))
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_mesh::get_or_create_FE_element_with_identifier.   Could not merge element");
-					/* following cleans up element if newly created, and clears pointer */
-					REACCESS(FE_element)(&element, (struct FE_element *)NULL);
-				}
-			}
+			ACCESS(FE_element)(element);
+		}
+		else
+		{
+			FE_element_template *element_template = this->create_FE_element_template(
+				element_shape ? element_shape : CREATE(FE_element_shape)(dimension, /*type*/(int *)0, fe_region));
+			element = this->create_FE_element(identifier, element_template);
+			cmzn::Deaccess(element_template);
 		}
 	}
 	else
@@ -624,48 +670,40 @@ struct FE_element *FE_mesh::get_or_create_FE_element_with_identifier(int identif
 }
 
 /**
- * Checks the source element is compatible with mesh & that there is no
+ * Checks the element_template is compatible with mesh & that there is no
  * existing element of supplied identifier, then creates element of that
- * identifier as a copy of source and adds it to the fe_region.
+ * identifier as a copy of element_template and adds it to the mesh.
  *
  * @param identifier  Non-negative integer identifier of new element, or -1 to
  * automatically generate (starting at 1). Fails if supplied identifier already
  * used by an existing element.
- * @return  New element (non-accessed), or NULL if failed.
+ * @return  Accessed element, or 0 on error.
  */
-struct FE_element *FE_mesh::create_FE_element_copy(int identifier, struct FE_element *source)
+FE_element *FE_mesh::create_FE_element(int identifier, FE_element_template *element_template)
 {
 	struct FE_element *new_element = 0;
-	if (source && (-1 <= identifier))
+	if ((-1 <= identifier) && element_template)
 	{
-		if (FE_element_get_FE_mesh(source) == this)
+		if (element_template->mesh == this)
 		{
 			int number = (identifier < 0) ? this->get_next_FE_element_identifier(0) : identifier;
-			struct CM_element_information cm = { DIMENSION_TO_CM_ELEMENT_TYPE(this->dimension), number };
-			new_element = CREATE(FE_element)(&cm, (struct FE_element_shape *)NULL,
-				(FE_mesh *)NULL, source);
+			new_element = ::create_FE_element_from_template(number, element_template->get_template_element());
+			// Future: set mapped shape here
 			if (ADD_OBJECT_TO_LIST(FE_element)(new_element, this->elementList))
 			{
-				if (this->definingFaces)
-					FE_region_begin_change(fe_region);
-				this->elementAddedChange(new_element); 
-				if (this->definingFaces)
-				{
-					this->merge_FE_element_and_faces(new_element);
-					FE_region_end_change(fe_region);
-				}
+				this->elementAddedChange(new_element);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_mesh::create_FE_element_copy.  element identifier in use.");
-				DESTROY(FE_element)(&new_element);
+					"FE_mesh::create_FE_element.  Identifier is in use.");
+				DEACCESS(FE_element)(&new_element);
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element_copy.  "
-				"Source element is incompatible with region");
+			display_message(ERROR_MESSAGE,
+				"FE_mesh::create_FE_element.  Element template is incompatible with mesh");
 		}
 	}
 	return (new_element);
@@ -721,6 +759,13 @@ int FE_mesh::merge_FE_element_existing(struct FE_element *destination, struct FE
 	return CMZN_ERROR_ARGUMENT;
 }
 
+int FE_mesh::merge_FE_element_template(struct FE_element *destination, FE_element_template *fe_element_template)
+{
+	if (fe_element_template)
+		return this->merge_FE_element_existing(destination, fe_element_template->get_template_element());
+	return CMZN_ERROR_ARGUMENT;
+}
+
 /**
  * Checks <element> is compatible with this mesh and any existing FE_element
  * using the same identifier, then merges it in.
@@ -740,9 +785,7 @@ struct FE_element *FE_mesh::merge_FE_element(struct FE_element *element)
 	{
 		if (FE_element_get_FE_mesh(element) == this)
 		{
-			struct CM_element_information cm;
-			get_FE_element_identifier(element, &cm);
-			merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(&cm, this->elementList);
+			merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(get_FE_element_identifier(element), this->elementList);
 			if (merged_element)
 			{
 				int return_code = this->merge_FE_element_existing(merged_element, element);
@@ -783,56 +826,49 @@ struct FE_element *FE_mesh::merge_FE_element(struct FE_element *element)
  *
  * @param parent_element  The parent element to find or create a face for.
  * @param face_number  Face number on parent, starting at 0.
- * @return  CMZN_OK on success.
+ * @return  CMZN_OK on success, any other value on failure.
  */
 int FE_mesh::find_or_create_face(struct FE_element *parent_element, int face_number)
 {
-	struct FE_element_shape *parent_shape;
-	get_FE_element_shape(parent_element, &parent_shape);
-	FE_element_shape *face_shape = get_FE_element_shape_of_face(parent_shape, face_number, fe_region);
-	if (!face_shape)
-		return CMZN_ERROR_GENERAL;
-
-	int new_face_number = this->get_next_FE_element_identifier(0);
-	CM_element_information face_identifier =
-		{ DIMENSION_TO_CM_ELEMENT_TYPE(this->dimension), new_face_number };
-	FE_element *face = CREATE(FE_element)(&face_identifier, face_shape,	this, (struct FE_element *)NULL);
-	if (!face)
-		return CMZN_ERROR_GENERAL;
-
-	/* must put the face in the element to inherit fields */
-	set_FE_element_face(parent_element, face_number, face);
-	/* try to find existing face with same shape and nodes */
-	FE_element_type_node_sequence *element_type_node_sequence = CREATE(FE_element_type_node_sequence)(face);
+	FE_element_type_node_sequence *element_type_node_sequence =
+		CREATE(FE_element_type_node_sequence)(parent_element, face_number);
 	if (!element_type_node_sequence)
-	{
-		set_FE_element_face(parent_element, face_number, (FE_element *)0);
 		return CMZN_ERROR_GENERAL;
-	}
 
 	int return_code = CMZN_OK;
 	ACCESS(FE_element_type_node_sequence)(element_type_node_sequence);
-	if (FE_element_type_node_sequence_is_collapsed(element_type_node_sequence))
-	{
-		set_FE_element_face(parent_element, face_number, (FE_element *)0);
-	}
-	else
+	if (!FE_element_type_node_sequence_is_collapsed(element_type_node_sequence))
 	{
 		FE_element_type_node_sequence *existing_element_type_node_sequence =
-			FIND_BY_IDENTIFIER_IN_LIST(FE_element_type_node_sequence, identifier)(
-				FE_element_type_node_sequence_get_identifier(element_type_node_sequence),
-					this->element_type_node_sequence_list);
+			FE_element_type_node_sequence_list_find_match(
+			this->element_type_node_sequence_list, element_type_node_sequence);
 		if (existing_element_type_node_sequence)
 		{
-			face = FE_element_type_node_sequence_get_FE_element(existing_element_type_node_sequence);
-			set_FE_element_face(parent_element, face_number, face);
+			set_FE_element_face(parent_element, face_number,
+				FE_element_type_node_sequence_get_FE_element(existing_element_type_node_sequence));
 		}
 		else
 		{
-			// merge face and remember this sequence
-			if ((0 == this->merge_FE_element(face)) || (!ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
-					element_type_node_sequence, this->element_type_node_sequence_list)))
+			struct FE_element_shape *parent_shape;
+			get_FE_element_shape(parent_element, &parent_shape);
+			FE_element_shape *face_shape = get_FE_element_shape_of_face(parent_shape, face_number, fe_region);
+			if (!face_shape)
 				return_code = CMZN_ERROR_GENERAL;
+			else
+			{
+				FE_element *face = this->get_or_create_FE_element_with_identifier(/*identifier*/-1, face_shape);
+				if (!face)
+					return_code = CMZN_ERROR_GENERAL;
+				else
+				{
+					FE_element_type_node_sequence_set_FE_element(element_type_node_sequence, face);
+					if (!(set_FE_element_face(parent_element, face_number, face) &&
+						ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
+							element_type_node_sequence, this->element_type_node_sequence_list)))
+						return_code = CMZN_ERROR_GENERAL;
+					DEACCESS(FE_element)(&face);
+				}
+			}
 		}
 	}
 	DEACCESS(FE_element_type_node_sequence)(&element_type_node_sequence);
@@ -905,6 +941,11 @@ int FE_mesh::merge_FE_element_and_faces(struct FE_element *element)
 	return (return_code);
 }
 
+/**
+ * Creates a list of FE_element_type_node_sequence, and
+ * if mesh dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS fills it with sequences
+ * for this element. Fails if any two faces have the same shape and nodes.
+ */
 int FE_mesh::begin_define_faces()
 {
 	if (this->element_type_node_sequence_list)
@@ -919,16 +960,45 @@ int FE_mesh::begin_define_faces()
 		return CMZN_ERROR_MEMORY;
 	}
 	this->definingFaces = true;
-	if (!FOR_EACH_OBJECT_IN_LIST(FE_element)(
-		FE_element_face_line_to_element_type_node_sequence_list,
-		(void *)(this->element_type_node_sequence_list),
-		this->elementList))
+	int return_code = CMZN_OK;
+	if (this->dimension < MAXIMUM_ELEMENT_XI_DIMENSIONS)
 	{
-		display_message(ERROR_MESSAGE, "FE_mesh::begin_define_faces.  "
-			"May not be able to share faces properly - perhaps two existing faces have same shape and node list?");
-		return CMZN_ERROR_GENERAL;
+		cmzn_elementiterator_id iter = this->createElementiterator();
+		cmzn_element_id element = 0;
+		FE_element_type_node_sequence *element_type_node_sequence;
+		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+		{
+			element_type_node_sequence = CREATE(FE_element_type_node_sequence)(element);
+			if (!element_type_node_sequence)
+			{
+				display_message(ERROR_MESSAGE, "FE_mesh::begin_define_faces.  "
+					"Could not create FE_element_type_node_sequence for %d-D element %d",
+					this->dimension, get_FE_element_identifier(element));
+				return_code = CMZN_ERROR_GENERAL;
+				break;
+			}
+			if (!ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
+				element_type_node_sequence, this->element_type_node_sequence_list))
+			{
+				display_message(WARNING_MESSAGE, "FE_mesh::begin_define_faces.  "
+					"Could not add FE_element_type_node_sequence for %d-D element %d.",
+					this->dimension, get_FE_element_identifier(element));
+				FE_element_type_node_sequence *existing_element_type_node_sequence =
+					FE_element_type_node_sequence_list_find_match(
+						this->element_type_node_sequence_list, element_type_node_sequence);
+				if (existing_element_type_node_sequence)
+				{
+					display_message(WARNING_MESSAGE,
+						"Reason: Existing %d-D element %d uses same node list, and will be used for face matching.",
+						this->dimension, get_FE_element_identifier(
+							FE_element_type_node_sequence_get_FE_element(existing_element_type_node_sequence)));
+				}
+				DESTROY(FE_element_type_node_sequence)(&element_type_node_sequence);
+			}
+		}
+		cmzn_elementiterator_destroy(&iter);
 	}
-	return CMZN_OK;
+	return return_code;
 }
 
 void FE_mesh::end_define_faces()
@@ -1118,9 +1188,7 @@ int FE_mesh::merge_FE_element_external(struct FE_element *element,
 	if (element && (current_element_field_info = FE_element_get_FE_element_field_info(element)) &&
 		get_FE_element_shape(element, &element_shape))
 	{
-		struct CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
-		FE_element *global_element = this->findElementByIdentifier(cm.number);
+		FE_element *global_element = this->findElementByIdentifier(get_FE_element_identifier(element));
 		if (FE_element_shape_is_unspecified(element_shape))
 		{
 			if (!global_element)

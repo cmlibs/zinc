@@ -21,6 +21,7 @@ SET( DATASTORE_HDRS
 	source/datastore/labels.hpp
 	source/datastore/labelsgroup.hpp
 	source/datastore/map.hpp
+	source/datastore/maparray.hpp
 	source/datastore/mapindexing.hpp )
 
 SET( ELEMENT_SRCS

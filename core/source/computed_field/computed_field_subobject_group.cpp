@@ -1076,7 +1076,6 @@ int cmzn_field_cad_primitive_group_template_is_cad_primitive_selected(
 	cmzn_field_cad_primitive_group_template_id cad_primitive_group, cmzn_cad_identifier_id cad_primitive)
 {
 	int return_code = 0;
-	//struct CM_element_information cm_identifier;
 	if (cad_primitive_group && cad_primitive)
 	{
 		Computed_field_sub_group_object<cmzn_cad_identifier_id> *group_core =

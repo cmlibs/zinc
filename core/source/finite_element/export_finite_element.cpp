@@ -99,29 +99,20 @@ E<lement>/F<ace>/L<ine> ELEMENT_NUMBER DIMENSION xi1 xi2... xiDIMENSION
 ==============================================================================*/
 {
 	char element_char;
-	int dimension, i, return_code;
-	struct CM_element_information cm;
+	int i, return_code;
 
 	ENTER(write_element_xi_value);
-	if (output_file && element && get_FE_element_identifier(element, &cm)
-		&& (0 < (dimension = get_FE_element_dimension(element))))
+	int dimension = get_FE_element_dimension(element);
+	if (output_file && (0 < dimension))
 	{
-		switch (cm.type)
-		{
-			case CM_FACE:
-			{
-				element_char = 'F';
-			} break;
-			case CM_LINE:
-			{
-				element_char = 'L';
-			} break;
-			default:
-			{
-				element_char = 'E';
-			} break;
-		}
-		(*output_file) << " " << element_char << " " <<  cm.number << " " << dimension;
+		int identifier = get_FE_element_identifier(element);
+		if (dimension == 2)
+			element_char = 'F';
+		else if (dimension == 1)
+			element_char = 'L';
+		else
+			element_char = 'E';
+		(*output_file) << " " << element_char << " " <<  identifier << " " << dimension;
 		for (i = 0; i < dimension; i++)
 		{
 			char num_string[100];
@@ -512,28 +503,28 @@ output contains no characters before or after the printed numbers.
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_element_information cm;
 
 	ENTER(write_FE_element_identifier);
-	if (output_file && element && get_FE_element_identifier(element, &cm))
+	if (output_file && element)
 	{
 		return_code = 1;
 		int dimension = get_FE_element_dimension(element);
+		int identifier = get_FE_element_identifier(element);
 		if ((3 == dimension) || FE_element_is_top_level(element, (void *)NULL))
 		{
-			(*output_file) << cm.number << " 0 0";
+			(*output_file) << identifier << " 0 0";
 		}
 		else if (2 == dimension)
 		{
-			(*output_file) << "0 " << cm.number << " 0";
+			(*output_file) << "0 " << identifier << " 0";
 		}
 		else if (1 == dimension)
 		{
-			(*output_file) << "0 0 " << cm.number;
+			(*output_file) << "0 0 " << identifier;
 		}
 		else
 		{
-			(*output_file) << cm.number << " 0 0";
+			(*output_file) << identifier << " 0 0";
 		}
 	}
 	else

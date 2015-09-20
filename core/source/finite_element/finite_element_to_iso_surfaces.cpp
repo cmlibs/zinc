@@ -1858,11 +1858,10 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 	unsigned int total_number_of_triangles_to_add = 0;
 	int polygonType = (int)g_TRIANGLE;
-	struct CM_element_information cm;
-	get_FE_element_identifier(element, &cm);
+	const int identifier = get_FE_element_identifier(element);
 	int current_location = 0, number_of_locations = 0, *locations = 0;
 	/* get all surface entries of this elements */
-	array->get_all_fast_search_id_locations(cm.number,
+	array->get_all_fast_search_id_locations(identifier,
 		&number_of_locations, &locations);
 	int vertex_location = 0;
 	unsigned int number_of_available_vertices = 0, insert_vertex_location = 0;
@@ -1897,7 +1896,7 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 					/*validate these vertices */
 					array->replace_integer_vertex_buffer_at_position(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-						&(cm.number));
+						&identifier);
 					int updated = 0;
 					array->replace_integer_vertex_buffer_at_position(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
@@ -1996,14 +1995,13 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 	}
 	if (total_number_of_triangles_to_add > 0)
 	{
-		struct CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
+		const int identifier = get_FE_element_identifier(element);
 		unsigned int number_of_vertices = total_number_of_triangles_to_add * 3;
 		unsigned int number_of_xi1 = total_number_of_triangles_to_add;
 		unsigned int number_of_xi2 = 3;
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-			1, 1, &(cm.number));
-		array->add_fast_search_id(cm.number);
+			1, 1, &identifier);
+		array->add_fast_search_id(identifier);
 		int modificationRequired = 0;
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
 			1, 1, &modificationRequired);
@@ -2129,11 +2127,9 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 		(0 < number_in_xi[0]) && (0 < number_in_xi[1]) && (0 < number_in_xi[2]) &&
 		(NULL != specification) && array)
 	{
-		struct CM_element_information cm;
-		get_FE_element_identifier(element, &cm);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(get_FE_element_identifier(element));
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{

@@ -979,6 +979,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 													{
 														return_code = 0;
 													}
+													DEACCESS(FE_element)(&global_element);
 												}
 												else
 												{

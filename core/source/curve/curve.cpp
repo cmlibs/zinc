@@ -337,7 +337,7 @@ Used for copy operations and as part of the DESTROY function.
 	ENTER(cc_clean_up);
 	if (curve)
 	{
-		DEACCESS(FE_element)(&(curve->template_element));
+		cmzn::Deaccess(curve->element_template);
 		DEACCESS(FE_node)(&(curve->template_node));
 		DEACCESS(FE_field)(&curve->parameter_field);
 		DEACCESS(FE_field)(&curve->value_field);
@@ -392,10 +392,11 @@ but it is at least destroyable when returned from this function.
 			curve->region=cmzn_region_create_internal();
 			curve->fe_region=ACCESS(FE_region)(cmzn_region_get_FE_region(curve->region));
 			curve->fe_mesh=FE_region_find_FE_mesh_by_dimension(curve->fe_region, 1);
+			curve->fe_nodeset=FE_region_find_FE_nodeset_by_field_domain_type(curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 			curve->parameter_field=(struct FE_field *)NULL;
 			curve->value_field=(struct FE_field *)NULL;
 			curve->template_node=(struct FE_node *)NULL;
-			curve->template_element=(struct FE_element *)NULL;
+			curve->element_template = 0;
 
 			curve->max_value=(FE_value *)NULL;
 			curve->min_value=(FE_value *)NULL;
@@ -411,7 +412,7 @@ but it is at least destroyable when returned from this function.
 
 			curve->access_count=0;
 
-			if (!(curve->name && curve->region && curve->fe_region && curve->fe_mesh))
+			if (!(curve->name && curve->region && curve->fe_region && curve->fe_mesh && curve->fe_nodeset))
 			{
 				display_message(ERROR_MESSAGE,
 					"cc_create_blank.  Could not create curve region");
@@ -901,7 +902,7 @@ Works even when <destination> and <source> are the same.
 				destination->parameter_field=temp_curve->parameter_field;
 				destination->value_field=temp_curve->value_field;
 				destination->template_node=temp_curve->template_node;
-				destination->template_element=temp_curve->template_element;
+				destination->element_template=temp_curve->element_template;
 				destination->max_value=temp_curve->max_value;
 				destination->min_value=temp_curve->min_value;
 				destination->parameter_grid=temp_curve->parameter_grid;
@@ -1195,7 +1196,6 @@ value will be zero in its initial state.
 	FE_element_field_component_modify modify;
 	int number_of_scale_factor_sets,numbers_in_scale_factor_sets[1];
 	int basis_type[2],i,j,return_code,shape_type[1];
-	struct CM_element_information element_identifier;
 	struct FE_basis *parameter_basis,*value_basis;
 	struct FE_element_shape *element_shape;
 	struct FE_element_field_component *parameter_component,**value_components;
@@ -1269,11 +1269,9 @@ value will be zero in its initial state.
 				}
 				if (return_code)
 				{
-					FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-						curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
 					/* curve must access template_node */
 					curve->template_node = ACCESS(FE_node)(CREATE(FE_node)(
-						/*node_identifier*/0,fe_nodeset,(struct FE_node *)NULL));
+						/*node_identifier*/0,curve->fe_nodeset,(struct FE_node *)NULL));
 					if (NULL != curve->template_node)
 					{
 						node_field_creator = CREATE(FE_node_field_creator)(
@@ -1307,8 +1305,6 @@ value will be zero in its initial state.
 						DESTROY(FE_node_field_creator)(&(node_field_creator));
 						if (return_code)
 						{
-							element_identifier.type=CM_ELEMENT;
-							element_identifier.number=0;
 							shape_type[0]=LINE_SHAPE;
 							modify=(FE_element_field_component_modify)NULL;
 							element_shape=ACCESS(FE_element_shape)(
@@ -1352,17 +1348,16 @@ value will be zero in its initial state.
 							{
 								number_of_scale_factor_sets=0;
 							}
-							/* curve must access template_element */
-							if ((curve->template_element = ACCESS(FE_element)(
-								CREATE(FE_element)(&element_identifier, element_shape,
-							   curve->fe_mesh, (struct FE_element *)NULL))) &&
-								set_FE_element_number_of_nodes(curve->template_element,
+							/* curve must access element_template */
+							curve->element_template = curve->fe_mesh->create_FE_element_template(element_shape);
+							if ((curve->element_template) &&
+								set_FE_element_number_of_nodes(curve->element_template->get_template_element(),
 									curve->value_nodes_per_element) &&
 								(CMZN_OK == set_FE_element_number_of_scale_factor_sets(
-									curve->template_element, number_of_scale_factor_sets,
+									curve->element_template->get_template_element(), number_of_scale_factor_sets,
 									scale_factor_set_identifiers, numbers_in_scale_factor_sets)))
 							{
-								/* define parameter_field in template_element */
+								/* define parameter_field in element_template */
 								parameter_component = CREATE(FE_element_field_component)(
 									STANDARD_NODE_TO_ELEMENT_MAP,/*parameter_nodes_per_element*/2,
 									parameter_basis,modify);
@@ -1411,7 +1406,7 @@ value will be zero in its initial state.
 									}
 									if (return_code)
 									{
-										if (!define_FE_field_at_element(curve->template_element,
+										if (!define_FE_field_at_element(curve->element_template->get_template_element(),
 											curve->parameter_field,&parameter_component))
 										{
 											return_code=0;
@@ -1423,7 +1418,7 @@ value will be zero in its initial state.
 								{
 									return_code=0;
 								}
-								/* define value_field in template_element */
+								/* define value_field in element_template */
 								if (ALLOCATE(value_components,
 									struct FE_element_field_component *,number_of_components))
 								{
@@ -1462,7 +1457,7 @@ value will be zero in its initial state.
 															Standard_node_to_element_map_set_scale_factor_index(
 																standard_node_map, /*nodal_value_number*/1, /*scale_factor_index*/j);
 															/* default scale factor of zero for derivative */
-															set_FE_element_scale_factor(curve->template_element,j,0.0);
+															set_FE_element_scale_factor(curve->element_template->get_template_element(),j,0.0);
 														}
 														if (!(FE_element_field_component_set_standard_node_map(
 															value_components[i], /*local_node_number*/j, standard_node_map)))
@@ -1490,7 +1485,7 @@ value will be zero in its initial state.
 									}
 									if (return_code)
 									{
-										if (!define_FE_field_at_element(curve->template_element,
+										if (!define_FE_field_at_element(curve->element_template->get_template_element(),
 											curve->value_field,value_components))
 										{
 											return_code=0;
@@ -1509,14 +1504,14 @@ value will be zero in its initial state.
 								if (!return_code)
 								{
 									display_message(ERROR_MESSAGE,"CREATE(Curve).  "
-										"Could not define fields in template_element");
+										"Could not define fields in element_template");
 									return_code=0;
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,
-									"CREATE(Curve).  Could not create template_element");
+									"CREATE(Curve).  Could not create element_template");
 								return_code=0;
 							}
 							if (number_of_scale_factor_sets)
@@ -2162,7 +2157,6 @@ expected to make the element have a finite size.
 {
 	int i,node_no,node_no_increment,number_of_elements,number_of_nodes,
 		return_code;
-	struct CM_element_information cm;
 	struct FE_node *node,*node_to_copy;
 	struct FE_element *element,*existing_element,*last_element;
 
@@ -2171,26 +2165,71 @@ expected to make the element have a finite size.
 		FE_region_get_number_of_FE_elements_of_dimension(curve->fe_region, 1)))&&
 		(0<element_no)&&((element_no <= number_of_elements+1)))
 	{
-		cm.type = CM_ELEMENT;
-		cm.number=element_no;
-		element = CREATE(FE_element)(&cm, (struct FE_element_shape *)NULL,
-			(FE_mesh *)NULL, curve->template_element);
-		if (NULL != element)
+		return_code = 1;
+		FE_region_begin_change(curve->fe_region);
+		/* increment numbers of elements to follow */
+		for (i=number_of_elements;(i>=element_no)&&return_code;i--)
 		{
-			return_code=1;
-			if (0==number_of_elements)
+			existing_element = curve->fe_mesh->findElementByIdentifier(i);
+			if (NULL != existing_element)
 			{
-				/* first element: all new nodes from curve->template_node */
-				for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
+				if (!curve->fe_mesh->change_FE_element_identifier(existing_element, i + 1))
 				{
-					node = CREATE(FE_node)(i+1, (FE_nodeset *)NULL,
-						curve->template_node);
-					if (NULL != node)
+					return_code=0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			element = curve->fe_mesh->create_FE_element(element_no, curve->element_template);
+			if (element)
+			{
+				if (0==number_of_elements)
+				{
+					/* first element: all new nodes from curve->template_node */
+					for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
 					{
-						if (!set_FE_element_node(element,i,node))
+						node = curve->fe_nodeset->create_FE_node_copy(i + 1, curve->template_node);
+						if (NULL != node)
 						{
-							DESTROY(FE_node)(&node);
+							if (!set_FE_element_node(element,i,node))
+							{
+								return_code=0;
+							}
+						}
+						else
+						{
 							return_code=0;
+						}
+					}
+				}
+				else if (element_no>number_of_elements)
+				{
+					/* last element: share last node of last element, make new nodes as
+						 copy of it */
+					if ((last_element=curve->fe_mesh->findElementByIdentifier(number_of_elements))&&
+						get_FE_element_node(last_element,curve->value_nodes_per_element-1,
+							&node_to_copy))
+					{
+						if (!set_FE_element_node(element,0,node_to_copy))
+						{
+							return_code=0;
+						}
+						node_no=get_FE_node_identifier(node_to_copy);
+						for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
+						{
+							node = curve->fe_nodeset->create_FE_node_copy(node_no + i, node_to_copy);
+							if (NULL != node)
+							{
+								if (!set_FE_element_node(element,i,node))
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
 						}
 					}
 					else
@@ -2198,152 +2237,71 @@ expected to make the element have a finite size.
 						return_code=0;
 					}
 				}
-			}
-			else if (element_no>number_of_elements)
-			{
-				/* last element: share last node of last element, make new nodes as
-					 copy of it */
-				if ((last_element=curve->fe_mesh->findElementByIdentifier(number_of_elements))&&
-					get_FE_element_node(last_element,curve->value_nodes_per_element-1,
-						&node_to_copy))
+				else
 				{
-					if (!set_FE_element_node(element,0,node_to_copy))
+					/* interior elements: take first node of element_at_pos + 1 for new element
+						 and add copies of it for remainder of nodes. Set first node of
+						 element_at_pos to last new node for continuity. Renumber subsequent
+						 nodes and elements to keep sequential */
+					if ((existing_element=curve->fe_mesh->findElementByIdentifier(element_no + 1))&&
+						get_FE_element_node(existing_element,0,&node_to_copy)&&
+						(node_no=get_FE_node_identifier(node_to_copy))&&
+						(number_of_nodes = curve->fe_nodeset->get_number_of_FE_nodes()))
 					{
-						return_code=0;
-					}
-					node_no=get_FE_node_identifier(node_to_copy);
-					for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
-					{
-						node = CREATE(FE_node)(node_no+i, (FE_nodeset *)NULL, node_to_copy);
-						if (NULL != node)
+						/* increment numbers of nodes to follow - not node_no though! */
+						node_no_increment=curve->value_nodes_per_element-1;
+						for (i=number_of_nodes;(i>node_no)&&return_code;i--)
 						{
-							if (!set_FE_element_node(element,i,node))
+							if (!curve->fe_nodeset->change_FE_node_identifier(
+								curve->fe_nodeset->findNodeByIdentifier(i), i+node_no_increment))
 							{
-								DESTROY(FE_node)(&node);
 								return_code=0;
 							}
 						}
-						else
+						/* take first node of existing_element */
+						if (!set_FE_element_node(element,0,node_to_copy))
 						{
 							return_code=0;
 						}
+						/* create copies of this node for rest of new element */
+						for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
+						{
+							node = curve->fe_nodeset->create_FE_node_copy(node_no + i, node_to_copy);
+							if (NULL != node)
+							{
+								if (!set_FE_element_node(element,i,node))
+								{
+									return_code=0;
+								}
+							}
+							else
+							{
+								return_code=0;
+							}
+						}
+						if (return_code)
+						{
+							/* for continuity, existing_element must get last new node */
+							if (!set_FE_element_node(existing_element,0,node))
+							{
+								return_code=0;
+							}
+						}
 					}
 				}
-				else
-				{
-					return_code=0;
-				}
+				if (!return_code)
+					display_message(ERROR_MESSAGE, "Curve_add_element.  Failed");
+				cc_clear_parameter_table(curve);
+				DEACCESS(FE_element)(&element);
 			}
 			else
 			{
-				/* interior elements: take first node of element_at_pos for new element
-					 and add copies of it for remainder of nodes. Set first node of
-					 element_at_pos to last new node for continuity. Renumber subsequent
-					 nodes and elements to keep sequential */
-				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-					curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-				if ((existing_element=curve->fe_mesh->findElementByIdentifier(element_no))&&
-					get_FE_element_node(existing_element,0,&node_to_copy)&&
-					(node_no=get_FE_node_identifier(node_to_copy))&&
-					(number_of_nodes = fe_nodeset->get_number_of_FE_nodes()))
-				{
-					/* increment numbers of elements to follow */
-					for (i=number_of_elements;(i>=element_no)&&return_code;i--)
-					{
-						existing_element = curve->fe_mesh->findElementByIdentifier(i);
-						if (NULL != existing_element)
-						{
-							if (!curve->fe_mesh->change_FE_element_identifier(existing_element, i + 1))
-							{
-								return_code=0;
-							}
-						}
-					}
-					/* increment numbers of nodes to follow - not node_no though! */
-					FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-						curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-					node_no_increment=curve->value_nodes_per_element-1;
-					for (i=number_of_nodes;(i>node_no)&&return_code;i--)
-					{
-						if (!fe_nodeset->change_FE_node_identifier(
-							fe_nodeset->findNodeByIdentifier(i), i+node_no_increment))
-						{
-							return_code=0;
-						}
-					}
-					/* take first node of existing_element */
-					if (!set_FE_element_node(element,0,node_to_copy))
-					{
-						return_code=0;
-					}
-					/* create copies of this node for rest of new element */
-					for (i=1;(i<curve->value_nodes_per_element)&&return_code;i++)
-					{
-						node = CREATE(FE_node)(node_no+i, (FE_nodeset *)NULL, node_to_copy);
-						if (NULL != node)
-						{
-							if (!set_FE_element_node(element,i,node))
-							{
-								DESTROY(FE_node)(&node);
-								return_code=0;
-							}
-						}
-						else
-						{
-							return_code=0;
-						}
-					}
-					if (return_code)
-					{
-						/* for continuity, existing_element must get last new node */
-						if (!set_FE_element_node(existing_element,0,node))
-						{
-							return_code=0;
-						}
-					}
-				}
-			}
-			/* make sure new nodes are in nodeset */
-			FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-				curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-			for (i=0;(i<curve->value_nodes_per_element)&&return_code;i++)
-			{
-				if (get_FE_element_node(element,i,&node))
-				{
-					if (!fe_nodeset->findNodeByIdentifier(get_FE_node_identifier(node)))
-					{
-						if (!fe_nodeset->merge_FE_node(node))
-						{
-							return_code=0;
-						}
-					}
-				}
-				else
-				{
-					return_code=0;
-				}
-			}
-			if (return_code)
-			{
-				if (!curve->fe_mesh->merge_FE_element(element))
-				{
-					return_code = 0;
-				}
-			}
-			if (!return_code)
-			{
 				display_message(ERROR_MESSAGE,
-					"Curve_add_element.  Could not put element in curve");
-				DESTROY(FE_element)(&element);
+					"Curve_add_element.  Could not create new element");
+				return_code=0;
 			}
-			cc_clear_parameter_table(curve);
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Curve_add_element.  Could not create new element");
-			return_code=0;
-		}
+		FE_region_end_change(curve->fe_region);
 	}
 	else
 	{
@@ -4480,13 +4438,12 @@ struct Curve *create_Curve_from_file(const char *curve_name,
 						cmzn_region_destroy(&child_region);
 					}
 					/* now check mesh is appropriate for a Curve */
-					curve->template_element = FE_region_get_first_FE_element_that(curve->fe_region,
-						(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,(void *)NULL);
-					if (NULL != curve->template_element)
+					curve->element_template = curve->fe_mesh->create_FE_element_template(
+						curve->fe_mesh->findElementByIdentifier(1));
+					if (NULL != curve->element_template)
 					{
-						ACCESS(FE_element)(curve->template_element);
-						get_FE_element_node(curve->template_element,0,
-							&(curve->template_node));
+						curve->template_node = CREATE(FE_node)(/*identifier*/0, (FE_nodeset *)0,
+							curve->fe_nodeset->findNodeByIdentifier(1));
 						if (curve->template_node)
 						{
 							ACCESS(FE_node)(curve->template_node);
@@ -4511,10 +4468,10 @@ struct Curve *create_Curve_from_file(const char *curve_name,
 						}
 						struct FE_basis *fe_basis;
 						enum FE_basis_type fe_basis_type;
-						if ((1==get_FE_element_dimension(curve->template_element))&&
-							FE_element_field_is_standard_node_based(curve->template_element,
+						if ((1==get_FE_element_dimension(curve->element_template->get_template_element()))&&
+							FE_element_field_is_standard_node_based(curve->element_template->get_template_element(),
 							curve->value_field) &&
-							FE_element_field_get_component_FE_basis(curve->template_element,
+							FE_element_field_get_component_FE_basis(curve->element_template->get_template_element(),
 							curve->value_field, /*component_number*/0, &fe_basis))
 						{
 							FE_basis_get_xi_basis_type(fe_basis, /*xi_number*/0,

@@ -476,13 +476,13 @@ private:
 
 struct cmzn_elementtemplate
 {
-	friend struct cmzn_mesh; // to obtain template_element
+	friend struct cmzn_mesh; // to obtain internal FE_element_template
 private:
 	FE_mesh *fe_mesh;
 	cmzn_element_shape_type shape_type;
 	bool shape_is_set;
 	int element_number_of_nodes;
-	FE_element *template_element;
+	FE_element_template *fe_element_template;
 	std::vector<cmzn_element_field*> fields;
 	int access_count;
 	typedef std::map<cmzn_mesh_scale_factor_set*,int> ScaleFactorSetIntMap;
@@ -494,7 +494,7 @@ public:
 		shape_type(CMZN_ELEMENT_SHAPE_TYPE_INVALID),
 		shape_is_set(false),
 		element_number_of_nodes(0),
-		template_element(NULL),
+		fe_element_template(0),
 		access_count(1)
 	{
 	}
@@ -534,7 +534,7 @@ public:
 		if (in_shape_type == shape_type)
 			return 1;
 		shape_type = in_shape_type;
-		clearTemplateElement();
+		this->invalidate();
 		return 1;
 	}
 
@@ -551,7 +551,7 @@ public:
 					cmzn_mesh_scale_factor_set *temp = scale_factor_set;
 					cmzn_mesh_scale_factor_set::deaccess(temp);
 					scale_factor_set_sizes.erase(iter);
-					clearTemplateElement();
+					this->invalidate();
 				}
 				else if (numberOfScaleFactors != iter->second)
 				{
@@ -564,7 +564,7 @@ public:
 			{
 				scale_factor_set->access();
 				scale_factor_set_sizes[scale_factor_set] = numberOfScaleFactors;
-				clearTemplateElement();
+				this->invalidate();
 			}
 		}
 		else
@@ -585,7 +585,7 @@ public:
 			return CMZN_ERROR_ARGUMENT;
 		}
 		element_number_of_nodes = in_element_number_of_nodes;
-		clearTemplateElement();
+		this->invalidate();
 		return CMZN_OK;
 	}
 
@@ -657,7 +657,7 @@ public:
 		{
 			cmzn_element_field& element_field = getOrCreateElementField(fe_field);
 			return_code = element_field.buildComponent(component_number, fe_basis, basis_number_of_nodes, local_node_indexes);
-			clearTemplateElement();
+			this->invalidate();
 		}
 		REACCESS(FE_basis)(&fe_basis, NULL);
 		return return_code;
@@ -702,7 +702,7 @@ public:
 		{
 			cmzn_element_field& element_field = getOrCreateElementField(fe_field);
 			return_code = element_field.buildElementConstantComponent(component_number, fe_basis);
-			clearTemplateElement();
+			this->invalidate();
 		}
 		REACCESS(FE_basis)(&fe_basis, NULL);
 		cmzn_elementbasis_destroy(&basis);
@@ -737,7 +737,7 @@ public:
 
 	int validate()
 	{
-		if (template_element)
+		if (this->fe_element_template)
 			return 1;
 		int return_code = 1;
 		if (!shape_is_set)
@@ -771,10 +771,8 @@ public:
 			}
 			if (fe_element_shape)
 			{
-				CM_element_information cm = { CM_ELEMENT, 0 };
-				template_element = ACCESS(FE_element)(CREATE(FE_element)(&cm,
-					fe_element_shape, this->fe_mesh, /*template_element*/NULL));
-				set_FE_element_number_of_nodes(template_element, element_number_of_nodes);
+				this->fe_element_template = this->fe_mesh->create_FE_element_template(fe_element_shape);
+				set_FE_element_number_of_nodes(this->fe_element_template->get_template_element(), element_number_of_nodes);
 				const int number_of_scale_factor_sets = static_cast<int>(scale_factor_set_sizes.size());
 				if (0 < number_of_scale_factor_sets)
 				{
@@ -789,25 +787,25 @@ public:
 						numbers_in_scale_factor_sets[i] = iter->second;
 						++i;
 					}
-					set_FE_element_number_of_scale_factor_sets(template_element, number_of_scale_factor_sets,
+					set_FE_element_number_of_scale_factor_sets(this->fe_element_template->get_template_element(), number_of_scale_factor_sets,
 						scale_factor_set_identifiers, numbers_in_scale_factor_sets);
 					delete[] scale_factor_set_identifiers;
 					delete[] numbers_in_scale_factor_sets;
 				}
 				for (unsigned int i = 0; i < fields.size(); i++)
 				{
-					if (!fields[i]->defineOnElement(template_element))
+					if (!fields[i]->defineOnElement(this->fe_element_template->get_template_element()))
 					{
-						DEACCESS(FE_element)(&template_element);
+						cmzn::Deaccess(this->fe_element_template);
 						break;
 					}
 				}
 				DEACCESS(FE_element_shape)(&fe_element_shape);
 			}
-			if (!template_element)
+			if (!this->fe_element_template)
 			{
 				display_message(ERROR_MESSAGE,
-					"cmzn_elementtemplate_validate.  Failed to create template element");
+					"cmzn_elementtemplate_validate.  Failed to create fe_element_template");
 				return_code = 0;
 			}
 		}
@@ -819,7 +817,7 @@ public:
 		if (validate())
 		{
 			cmzn_node_id node = NULL;
-			if (get_FE_element_node(getTemplateElement(), local_node_index - 1, &node))
+			if (get_FE_element_node(this->fe_element_template->get_template_element(), local_node_index - 1, &node))
 				return ACCESS(FE_node)(node);
 		}
 		return 0;
@@ -827,7 +825,7 @@ public:
 
 	int setNode(int local_node_index, cmzn_node_id node)
 	{
-		if (validate() && set_FE_element_node(getTemplateElement(), local_node_index - 1, node))
+		if (validate() && set_FE_element_node(this->fe_element_template->get_template_element(), local_node_index - 1, node))
 			return CMZN_OK;
 		return CMZN_ERROR_GENERAL;
 	}
@@ -842,9 +840,9 @@ public:
 				// leave the element shape intact
 				struct FE_element_shape *element_shape = 0;
 				get_FE_element_shape(element, &element_shape);
-				set_FE_element_shape(template_element, element_shape);
+				this->fe_element_template->set_element_shape(element_shape);
 			}
-			return_code = FE_element_get_FE_mesh(element)->merge_FE_element_existing(element, template_element);
+			return_code = FE_element_get_FE_mesh(element)->merge_FE_element_template(element, this->fe_element_template);
 		}
 		return return_code;
 	}
@@ -862,11 +860,11 @@ private:
 		{
 			delete fields[i];
 		}
-		REACCESS(FE_element)(&template_element, NULL);
+		cmzn::Deaccess(this->fe_element_template);
 		FE_mesh::deaccess(this->fe_mesh);
 	}
 
-	FE_element *getTemplateElement() { return template_element; }
+	FE_element_template *getElementTemplate() { return this->fe_element_template; }
 
 	cmzn_element_field *getElementField(FE_field *fe_field)
 	{
@@ -891,9 +889,9 @@ private:
 
 	bool hasFields() { return (0 < fields.size()); }
 
-	void clearTemplateElement()
+	void invalidate()
 	{
-		REACCESS(FE_element)(&template_element, NULL);
+		cmzn::Deaccess(this->fe_element_template);
 	}
 };
 
@@ -955,10 +953,16 @@ public:
 		FE_element *element = NULL;
 		if (element_template->validate())
 		{
-			FE_element *template_element = element_template->getTemplateElement();
-			element = ACCESS(FE_element)(this->fe_mesh->create_FE_element_copy(identifier, template_element));
+			const bool definingFaces = this->fe_mesh->is_defining_faces();
+			if ((group) || definingFaces)
+				FE_region_begin_change(this->fe_mesh->get_FE_region());
+			element = this->fe_mesh->create_FE_element(identifier, element_template->getElementTemplate());
+			if (definingFaces)
+				this->fe_mesh->merge_FE_element_and_faces(element);
 			if (group)
 				Computed_field_element_group_core_cast(group)->addObject(element);
+			if ((group) || definingFaces)
+				FE_region_end_change(this->fe_mesh->get_FE_region());		
 		}
 		else
 		{
@@ -1803,14 +1807,7 @@ int cmzn_element_get_dimension(cmzn_element_id element)
 
 int cmzn_element_get_identifier(struct cmzn_element *element)
 {
-	int return_code = -1;
-	struct CM_element_information cm;
-	if (get_FE_element_identifier(element, &cm))
-	{
-		/* CM_element_type is understood from mesh */
-		return_code = cm.number;
-	}
-	return (return_code);
+	return get_FE_element_identifier(element);
 }
 
 cmzn_mesh_id cmzn_element_get_mesh(cmzn_element_id element)

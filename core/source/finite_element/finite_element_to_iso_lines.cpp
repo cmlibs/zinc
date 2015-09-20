@@ -866,7 +866,6 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 	int adjusted_number_of_points_in_xi2,n_data_components,i,j,number_of_points,
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		simplex_element,return_code;
-	struct CM_element_information cm_identifier;
 	struct Contour_lines *contour_lines;
 	Triple *point,*points;
 
@@ -999,9 +998,8 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 			if (return_code)
 			{
 				Contour_lines_link_ends(contour_lines);
-				get_FE_element_identifier(element, &cm_identifier);
 				if (!Contour_lines_add_to_vertex_array(contour_lines,
-						array, cm_identifier.number))
+						array, get_FE_element_identifier(element)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");

@@ -19,7 +19,6 @@
 #include "general/mystring.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_region.h"
-#include "finite_element/finite_element_region_private.h"
 #include "computed_field/computed_field_finite_element.h"
 #include "node/node_operations.h"
 #include "general/message.h"

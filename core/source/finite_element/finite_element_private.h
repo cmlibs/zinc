@@ -86,7 +86,7 @@ Structure for storing an element with its identifier being its cm_type and the
 number and list - in ascending order - of the nodes referred to by the default
 coordinate field of the element. Indexed lists, indexed using function
 compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
+face with the same nodes is extremely rapid. FE_mesh
 uses them to find faces and lines for elements without them, if they exist.
 ==============================================================================*/
 
@@ -450,6 +450,36 @@ in <fe_field_change_log>.
 ==============================================================================*/
 
 /**
+ * Creates and returns a non-global element to be used as a template for
+ * creating other elements in the supplied mesh.
+ * @param element_field_info  A struct FE_element_field_info linking to the
+ * mesh. Should have no fields.
+ * @return  Accessed element, or 0 on error. Do not merge into FE_mesh!
+ */
+struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info);
+
+/**
+ * Creates and returns a non-global element with the specified identifier,
+ * that is a copy of the supplied template element i.e. with all fields
+ * and values from it.
+ * The returned element is ready to be added or merged into the FE_mesh the
+ * template element was created by.
+ * Faces are not copied from the template element.
+ * @param identifier  Identifier for the new element. Must be non-negative,
+ * or -1 only when called from FE_element_template::FE_element_template().
+ * @param template_element  Element to copy.
+ * @return  Accessed element, or 0 on error.
+ */
+struct FE_element *create_FE_element_from_template(int identifier, struct FE_element *template_element);
+
+/**
+ * Clear content of element and disconnect it from owning mesh.
+ * Use when removing element from mesh or deleting mesh to safely orphan any
+ * externally accessed elements.
+ */
+void FE_element_invalidate(struct FE_element *element);
+
+/**
  * Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
  * <fe_field_change_log>.
  * @param recurseParents  Set to true to recursively mark parent element fields
@@ -502,19 +532,22 @@ int FE_element_field_info_check_field_node_value_labels(
 	struct FE_element_field_info *element_field_info, FE_field *field,
 	struct FE_region *target_fe_region);
 
-struct FE_element_type_node_sequence
-	*CREATE(FE_element_type_node_sequence)(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Structure for storing an element with its identifier being its cm_type and the
-number and list - in ascending order - of the nodes referred to by the default
-coordinate field of the element. Indexed lists, indexed using function
-compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
-uses them to find faces and lines for elements without them, if they exist.
-==============================================================================*/
+/**
+ * Create structure storing an element with its identifier being its cm_type
+ * and the number and list - in ascending order - of the nodes referred to by
+ * the default coordinate field of the element. Indexed lists, indexed using
+ * function compare_FE_element_type_node_sequence_identifier ensure that
+ * recalling a line or face with the same nodes is extremely rapid.
+ * FE_mesh uses them to find faces and lines for elements without them,
+ * if they exist.
+ * @param face_number  If non-negative, calculate nodes for face number of
+ * element, as if the face element were supplied to this function. If so, the
+ * returned structure accesses the supplied element. It is assumed this is
+ * only used when creating new faces, and the face should be set as soon as
+ * created.
+ */
+struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
+	struct FE_element *element, int face_number = -1);
 
 int DESTROY(FE_element_type_node_sequence)(
 	struct FE_element_type_node_sequence **element_type_node_sequence_address);
@@ -539,41 +572,34 @@ array twice, facilitating the simple logic in this function. If they were, then
 this function would have to be modified extensively.
 ==============================================================================*/
 
+/**
+ * Gets the FE_element from the <element_type_node_sequence>.
+ */
 struct FE_element *FE_element_type_node_sequence_get_FE_element(
 	struct FE_element_type_node_sequence *element_type_node_sequence);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
 
-DESCRIPTION :
-Returns the FE_element from the <element_type_node_sequence>.
-==============================================================================*/
+/**
+ * Sets the FE_element in the <element_type_node_sequence>. Use only to
+ * substitute face element when sequence was created from face number of
+ * parent element.
+ */
+void FE_element_type_node_sequence_set_FE_element(
+	struct FE_element_type_node_sequence *element_type_node_sequence,
+	struct FE_element *element);
 
-struct FE_element_type_node_sequence_identifier
-	*FE_element_type_node_sequence_get_identifier(
-		struct FE_element_type_node_sequence *element_type_node_sequence);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns a pointer to the identifier of the <element_type_node_sequence>.
-==============================================================================*/
-
-int FE_element_face_line_to_element_type_node_sequence_list(
-	struct FE_element *element,void *element_type_node_sequence_list_void);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Iterator function; if <element> is type CM_LINE or CM_FACE, creates a struct
-FE_element_type_node_sequence for it and adds it to the given list. Note that
-function fails if two faces have the same shape and share the same nodes.
-==============================================================================*/
+/**
+ * Returns existing FE_element_type_node_sequence from list with matching
+ * identifier to supplied one.
+ */
+FE_element_type_node_sequence *FE_element_type_node_sequence_list_find_match(
+	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list,
+	FE_element_type_node_sequence *element_type_node_sequence);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element_type_node_sequence);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element_type_node_sequence);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_type_node_sequence, \
-	identifier, struct FE_element_type_node_sequence_identifier *);
+	identifier, FE_element_type_node_sequence_identifier&);
 
 #endif /* !defined (FINITE_ELEMENT_PRIVATE_H) */

@@ -40,9 +40,6 @@ The functions for creating graphical objects from finite elements.
 #include "graphics/graphics_object.hpp"
 #include "mesh/cmiss_node_private.hpp"
 
-/* following used for encoding a CM_element_information as an integer */
-#define HALF_INT_MAX (INT_MAX/2)
-
 /*
 Module types
 ------------
@@ -352,7 +349,6 @@ but are indirectly connected (e.g. mesh with slit)
 *******************************************************************************/
 {
 	int number_of_elements, return_code;
-	struct CM_element_information cm;
 	struct FE_element **elements, *element_ptr;
 
 	ENTER(fill_table);
@@ -371,8 +367,7 @@ but are indirectly connected (e.g. mesh with slit)
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
-				get_FE_element_identifier(element_ptr, &cm);
-				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+1] = cm.number;
+				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+1] = get_FE_element_identifier(element_ptr);
 				fill_table(element_block,adjacency_table,element_ptr,i+1,j,k,n_xi);
 				DEALLOCATE(elements);
 			}
@@ -385,8 +380,7 @@ but are indirectly connected (e.g. mesh with slit)
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
-				get_FE_element_identifier(element_ptr, &cm);
-				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3] = cm.number;
+				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+3] = get_FE_element_identifier(element_ptr);
 				fill_table(element_block,adjacency_table,element_ptr,i,j+1,k,n_xi);
 				DEALLOCATE(elements);
 			}
@@ -399,8 +393,7 @@ but are indirectly connected (e.g. mesh with slit)
 			{
 				/* Just use the first one */
 				element_ptr=elements[0];
-				get_FE_element_identifier(element_ptr, &cm);
-				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+5] = cm.number;
+				adjacency_table[(k*n_xi[0]*n_xi[1]+j*n_xi[0]+i)*6+5] = get_FE_element_identifier(element_ptr);
 				fill_table(element_block,adjacency_table,element_ptr,i,j,k+1,n_xi);
 				DEALLOCATE(elements);
 			}
@@ -977,7 +970,6 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 {
 	FE_value distance, xi;
 	int graphics_name, return_code;
-	struct CM_element_information cm;
 	unsigned int i, vertex_start, number_of_vertices;
 	GLfloat *floatData = 0;
 	double *data_buffer = 0;
@@ -995,8 +987,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 		/* clear coordinates in case coordinate field is not 3 component */
 
 		/* for selective editing of GT_object primitives, record element ID */
-		get_FE_element_identifier(element, &cm);
-		graphics_name = cm.number;
+		graphics_name = get_FE_element_identifier(element);
 
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
@@ -1170,7 +1161,6 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 	ZnReal texture_coordinate1;
 	GLfloat *data = 0, *datum = 0, *original_data = 0;
 	int facet_offset,i,j,k,n_data_components,number_of_points, return_code;
-	struct CM_element_information cm;
 	Triple *derivative, *normal = NULL, *normalpoints, *point, *points, *texturepoints, *previous_point,
 		*previous_normal, *texture_coordinate;
 	unsigned int vertex_start = 0;
@@ -1212,10 +1202,10 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 			}
 			original_data = data;
 		}
-		get_FE_element_identifier(element, &cm);
+		const int identifier = get_FE_element_identifier(element);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(identifier);
 
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
@@ -1235,9 +1225,9 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 			/* for selective editing of GT_object primitives, record element ID */
 			if (vertex_location < 0)
 			{
-				array->add_fast_search_id(cm.number);
+				array->add_fast_search_id(identifier);
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-					1, 1, &(cm.number));
+					1, 1, &identifier);
 				int modificationRequired = 0;
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
 					1, 1, &modificationRequired);
@@ -1249,7 +1239,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 				/* case for modification */
 				array->replace_integer_vertex_buffer_at_position(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-					&(cm.number));
+					&identifier);
 				array->get_unsigned_integer_attribute(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
 					vertex_location, 1, &vertex_start);
@@ -1929,7 +1919,6 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 	int calculate_tangent_points, i,j,n_data_components,number_of_points,
 		number_of_points_in_xi1,number_of_points_in_xi2,number_of_polygon_vertices,
 		return_code;
-	struct CM_element_information cm;
 	Triple *normal, *normalpoints, *tangent = NULL, *tangentpoints, temp_normal;
 	unsigned int vertex_start;
 	GLfloat floatField[3];
@@ -1980,12 +1969,12 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 		{
 			n_data_components = Computed_field_get_number_of_components(data_field);
 		}
-		get_FE_element_identifier(element, &cm);
+		const int identifier = get_FE_element_identifier(element);
 		GLfloat *floatData = data_field ? new GLfloat[n_data_components] : 0;
 		FE_value *xi_points = new FE_value[2*number_of_points];
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(identifier);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -2001,9 +1990,9 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 			/* for selective editing of GT_object primitives, record element ID */
 			if (vertex_location < 0)
 			{
-				array->add_fast_search_id(cm.number);
+				array->add_fast_search_id(identifier);
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-					1, 1, &(cm.number));
+					1, 1, &identifier);
 				vertex_start = array->get_number_of_vertices(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 				int modificationRequired = 0;
@@ -2014,7 +2003,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 			{
 				array->replace_integer_vertex_buffer_at_position(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-					&(cm.number));
+					&identifier);
 				array->get_unsigned_integer_attribute(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
 					vertex_location, 1, &vertex_start);
@@ -2676,7 +2665,6 @@ int add_glyphset_vertex_from_FE_element(
 	int draw_all, i, j, n_data_components, return_code = 1,
 		number_of_orientation_scale_components, number_of_variable_scale_components,
 		point_number, point_selected, points_to_draw, *names = 0,  *name = 0;
-	struct CM_element_information cm;
 	Triple *axis1, *axis1_list, *axis2, *axis2_list, *axis3, *axis3_list,
 		*point, *point_list, *scale, *scale_list;
 	struct Graphics_vertex_array *array;
@@ -2740,10 +2728,10 @@ int add_glyphset_vertex_from_FE_element(
 			}
 		}
 		/* store element number as object_name for editing GT_object primitives */
-		get_FE_element_identifier(element, &cm);
+		const int identifier = get_FE_element_identifier(element);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(cm.number);
+		int vertex_location = array->find_first_fast_search_id_location(identifier);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -2881,7 +2869,7 @@ int add_glyphset_vertex_from_FE_element(
 				return_code = fill_glyph_graphics_vertex_array(
 					array, vertex_location, (unsigned int)points_to_draw, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list,
-					n_data_components, data, 0, cm.number, names, labels, 0, 0, 0);
+					n_data_components, data, 0, identifier, names, labels, 0, 0, 0);
 				DEALLOCATE(point_list);
 				DEALLOCATE(axis1_list);
 				DEALLOCATE(axis2_list);

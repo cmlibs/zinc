@@ -351,10 +351,7 @@ public:
 		/** @return  non-accessed element with that identifier, or 0 if none */
 		inline cmzn_element_id findElementByIdentifier(int identifier)
 		{
-			struct CM_element_information cm;
-			cm.type = ((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE));
-			cm.number = identifier;
-			return FIND_BY_IDENTIFIER_IN_LIST(cmzn_element,identifier)(&cm, object_list);
+			return FIND_BY_IDENTIFIER_IN_LIST(cmzn_element,identifier)(identifier, object_list);
 		}
 
 		int getSize()

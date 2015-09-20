@@ -14,13 +14,14 @@
 
 #include "general/debug.h"
 
-template <typename IndexType, typename EntryType, int blockLength = 256 >
+template <typename IndexType, typename EntryType, IndexType defaultBlockLength = 256 >
 	class block_array
 {
 private:
 	// Note: any new attributes must be handled by swap()
 	EntryType **blocks;
 	IndexType blockCount;
+	IndexType blockLength;
 
 	EntryType* getOrCreateBlock(IndexType blockIndex)
 	{
@@ -58,9 +59,10 @@ private:
 
 public:
 	
-	block_array() :
+	block_array(IndexType blockLengthIn = defaultBlockLength) :
 		blocks(0),
-		blockCount(0)
+		blockCount(0),
+		blockLength(blockLengthIn)
 	{
 	}
 
@@ -94,6 +96,57 @@ public:
 		blockCount = other.blockCount;
 		other.blocks = temp_blocks;
 		other.blockCount = temp_blockCount;
+	}
+
+	/**
+	 * @param index  The index of the address to retrieve, starting at 0.
+	 * @return  The address for value for given index, or 0 if none.
+	 */
+	EntryType *getAddress(IndexType index) const
+	{
+		IndexType blockIndex = index / blockLength;
+		if (blockIndex < blockCount)
+		{
+			EntryType *block = blocks[blockIndex];
+			if (block)
+				return block + (index % blockLength);
+		}
+		return 0;
+	}
+
+	/**
+	 * Iff no block exists for index, create and initialise it as described below
+	 * then return the address of value for index as for getAddress(). Caller
+	 * is expected to have called and obtained 0 for getAddress() first.
+	 * @param index  The index of the address to create.
+	 * @param initValue  Value to initialise entries in block to.
+	 * @param initIndexSpacing  Spacing of value to be initialised; 0 or negative to
+	 * not initialise values, 1 to set all, any other value is amount offset from 0 to
+	 * blockLength to set to initValue, e.g. 10 initialises:
+	 * 0 10 20 ... blockLength (truncated to nearest multiple of 10)
+	 * @return  The address for value for given index, or 0 if already exists of failed.
+	 */
+	EntryType *createAddressInitialise(IndexType index, EntryType initValue = 0, IndexType initIndexSpacing = 0)
+	{
+		IndexType blockIndex = index / blockLength;
+		if (blockIndex < blockCount)
+		{
+			EntryType *block = blocks[blockIndex];
+			if (!block)
+			{
+				block = getOrCreateBlock(blockIndex);
+				if (block)
+				{
+					if (initIndexSpacing > 0)
+					{
+						for (IndexType i = 0; i < blockLength; i += initIndexSpacing)
+							block[i] = initValue;
+					}
+					return block + (index % blockLength);
+				}
+			}
+		}
+		return 0;
 	}
 
 	/**
@@ -149,7 +202,7 @@ public:
 };
 
 /** stores boolean values as individual bits, with no value equivalent to false */
-template <typename IndexType, int intBlockLength = 32>
+template <typename IndexType, IndexType intBlockLength = 32>
 	class bool_array : private block_array<IndexType, unsigned int, intBlockLength>
 {
 public:

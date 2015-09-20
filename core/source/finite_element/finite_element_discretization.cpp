@@ -1876,7 +1876,6 @@ int FE_element_get_xi_points(struct FE_element *element,
 	int *number_of_xi_points_address, FE_value_triple **xi_points_address)
 {
 	int return_code;
-	struct CM_element_information identifier;
 	struct FE_element_shape *element_shape;
 	FE_value_triple *xi_points;
 
@@ -1901,8 +1900,7 @@ int FE_element_get_xi_points(struct FE_element *element,
 			{
 				/* seed random number generator with the element number so "random"
 					 layout is consistent for the same element */
-				get_FE_element_identifier(element, &identifier);
-				CMGUI_SEED_RANDOM(identifier.number);
+				CMGUI_SEED_RANDOM(get_FE_element_identifier(element));
 				return_code = FE_element_get_xi_points_cell_random(element,
 					sampling_mode, number_in_xi, field_cache, coordinate_field, density_field,
 					number_of_xi_points_address, xi_points_address);
@@ -2020,7 +2018,6 @@ a return value here indicates that the xi_points have been converted.
 		line_direction, linked_xi_directions[2], number_of_polygon_sides,
 		number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_in_xi1, return_code,
 		top_level_element_dimension, *top_level_xi_point_numbers;
-	struct CM_element_information identifier;
 	struct FE_element *temp_element;
 	struct FE_element_shape *element_shape, *top_level_element_shape;
 
@@ -2037,7 +2034,6 @@ a return value here indicates that the xi_points have been converted.
 	{
 		return_code = 1;
 		element_dimension = get_FE_element_dimension(element);
-		get_FE_element_identifier(element, &identifier);
 		top_level_element_dimension = get_FE_element_dimension(top_level_element);
 		/* extract useful information about the element_shape */
 		if (!categorize_FE_element_shape(top_level_element_shape,
@@ -2050,7 +2046,7 @@ a return value here indicates that the xi_points have been converted.
 			return_code = 0;
 		}
 		/* check if descended from a line*line or line*line*line element */
-		if (return_code && (CM_ELEMENT != identifier.type) &&
+		if (return_code &&
 			(element_dimension < top_level_element_dimension) &&
 			((ELEMENT_CATEGORY_2D_SQUARE == top_level_element_shape_category) ||
 				(ELEMENT_CATEGORY_3D_CUBE == top_level_element_shape_category)))

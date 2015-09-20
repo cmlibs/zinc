@@ -20,13 +20,13 @@ Global functions
 ----------------
 */
 
-int export_to_iges(char *file_name, struct FE_region *fe_region,
-	char *region_path, struct Computed_field *field);
-/******************************************************************************
-LAST MODIFIED : 5 August 2003
+struct cmzn_region;
+struct cmzn_field;
 
-DESCRIPTION :
-Write bicubic elements to an IGES file.
-==============================================================================*/
+/**
+ * Write bicubic elements to an IGES file.
+ */
+int export_to_iges(char *file_name, struct cmzn_region *region,
+	char *region_path, struct cmzn_field *field);
 
 #endif /* !defined (FINITE_ELEMENT_TO_IGES_H) */

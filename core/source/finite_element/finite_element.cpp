@@ -298,64 +298,6 @@ DESCRIPTION :
 	}
 }; /* struct FE_node */
 
-#ifdef NODE_STL_CONTAINER
-/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
- * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with cmzn_set.
- */
-class FE_node_identifier : private FE_node
-{
-public:
-	FE_node_identifier(int identifier)
-	{
-		FE_node::cm_node_identifier = identifier;
-	}
-
-	FE_node *getPseudoObject()
-	{
-		return this;
-	}
-};
-
-/** functor for ordering cmzn_set<FE_node *> by cm_node_identifier */
-struct FE_node_compare_number
-{
-	bool operator() (const FE_node* node1, const FE_node* node2) const
-	{
-		return node1->cm_node_identifier < node2->cm_node_identifier;
-	}
-};
-
-typedef cmzn_set<cmzn_node *,FE_node_compare_number> cmzn_set_cmzn_node;
-
-struct cmzn_nodeiterator : public cmzn_set_cmzn_node::ext_iterator
-{
-	int access_count;
-	cmzn_nodeiterator(cmzn_set_cmzn_node *container) :
-		cmzn_set_cmzn_node::ext_iterator(container),
-		access_count(1)
-	{
-	}
-
-	cmzn_nodeiterator access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_nodeiterator_id &iterator)
-	{
-		if (!iterator)
-			return 0;
-		--(iterator->access_count);
-		if (iterator->access_count <= 0)
-			delete iterator;
-		iterator = 0;
-		return 1;
-	}
-};
-#endif // NODE_STL_CONTAINER
-
 /** can tweak this to vary performance */
 const int CMZN_NODE_BTREE_ORDER = 10;
 
@@ -971,10 +913,11 @@ parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
 {
-	// @todo: can replace with just an integer identifier now that elements of
-	// different dimension are in separate lists
-	/* unique identifier of element in region as CM_element_type, number */
-	struct CM_element_information identifier;
+	/* unique identifier of element in mesh */
+	int identifier;
+	/* the number of structures that point to this element.  The element cannot be
+		destroyed while this is greater than 0 */
+	int access_count;
 
 	/* a description of the shape/geometry of the element in Xi space */
 	struct FE_element_shape *shape;
@@ -993,9 +936,6 @@ variables.
 	/* parent pointers are non-ACCESSed so parent element able to be destroyed */
 	struct FE_element **parents;
 	int number_of_parents;
-	/* the number of structures that point to this element.  The element cannot be
-		destroyed while this is greater than 0 */
-	int access_count;
 
 	inline FE_element *access()
 	{
@@ -1008,90 +948,24 @@ variables.
 		return DEACCESS(FE_element)(element_address);
 	}
 
-	inline const CM_element_information *get_identifier() const
+	inline int get_identifier() const
 	{
-		return &identifier;
+		return identifier;
 	}
 }; /* struct FE_element */
 
-#ifdef ELEMENT_STL_CONTAINER
-/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
- * Creates a pseudo object with name identifier suitable for finding
- * objects by identifier with cmzn_set.
- */
-class FE_element_identifier : private FE_element
-{
-public:
-	FE_element_identifier(struct CM_element_information *identifier)
-	{
-		FE_element::identifier = *identifier;
-	}
-
-	FE_element *getPseudoObject()
-	{
-		return this;
-	}
-};
-
-/** functor for ordering cmzn_set<FE_element *> by struct CM_element_information */
-struct FE_element_compare_identifier
-{
-	bool operator() (const FE_element* element1, const FE_element* element2) const
-	{
-		if (element1->identifier.type < element2->identifier.type)
-			return true;
-		else if (element1->identifier.type > element2->identifier.type)
-			return false;
-		return (element1->identifier.number < element2->identifier.number);
-	}
-};
-
-typedef cmzn_set<FE_element *,FE_element_compare_identifier> cmzn_set_cmzn_element;
-
-struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
-{
-	int access_count;
-
-	cmzn_elementiterator(cmzn_set_cmzn_element *container) :
-		cmzn_set_cmzn_element::ext_iterator(container),
-		access_count(1)
-	{
-	}
-
-	cmzn_elementiterator_id access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_elementiterator_id &iterator)
-	{
-		if (!iterator)
-			return 0;
-		--(iterator->access_count);
-		if (iterator->access_count <= 0)
-			delete iterator;
-		iterator = 0;
-		return 1;
-	}
-};
-#endif
-
 struct cmzn_element_identifier_less
 {
-	bool operator() (const CM_element_information *identifier1, const CM_element_information *identifier2) const
+	bool operator() (int identifier1, int identifier2) const
 	{
-		// @todo can remove type comparison now that elements of different dimension are in separate lists
-		if (identifier1->type == identifier2->type)
-			return (identifier1->number < identifier2->number);
-		return (identifier1->type < identifier2->type);
+		return (identifier1 < identifier2);
 	}
 };
 
 /** can tweak this to vary performance */
 const int CMZN_ELEMENT_BTREE_ORDER = 10;
 
-typedef cmzn_btree<cmzn_element,const CM_element_information *,CMZN_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
+typedef cmzn_btree<cmzn_element,int,CMZN_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
 
 struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
 {
@@ -1123,12 +997,11 @@ struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
 
 FULL_DECLARE_CHANGE_LOG_TYPES(FE_element);
 
-/***************************************************************************//**
+/**
  * @see struct FE_element_type_node_sequence.
  */
 struct FE_element_type_node_sequence_identifier
 {
-	int dimension;
 	/* node_numbers must be ordered from lowest to highest to work! */
 	int *node_numbers,number_of_nodes;
 };
@@ -1142,7 +1015,7 @@ Structure for storing an element with its identifier being its cm_type and the
 number and list - in ascending order - of the nodes referred to by the default
 coordinate field of the element. Indexed lists, indexed using function
 compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
+face with the same nodes is extremely rapid. FE_mesh
 uses them to find faces and lines for elements without them, if they exist.
 
 ???RC Can only match faces correctly for coordinate fields with standard node
@@ -1155,8 +1028,9 @@ trivial rejection, narrowing down to a single face or list of faces to compare
 against.
 ==============================================================================*/
 {
-	struct FE_element_type_node_sequence_identifier *identifier;
+	struct FE_element_type_node_sequence_identifier identifier;
 	struct FE_element *element;
+	int dimension; // can be different from element dimension if created with face number
 	int access_count;
 }; /* struct FE_element_line_face_node_sequence */
 
@@ -4677,93 +4551,49 @@ DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_node)
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_element)
 
+/**
+ * Compare functions for listing struct FE_element_type_node_sequence in order:
+ * - number_of_nodes changing slowest;
+ * - node numbers in numerical order (nodes must be in ascending order).
+ * Returns values like strcmp:
+ * -1 = identifier 1 < identifier 2
+ * 0 = identifier 1 = identifier 2
+ * 1 = identifier 1 > identifier 2
+ */
 static int compare_FE_element_type_node_sequence_identifier(
-	struct FE_element_type_node_sequence_identifier *identifier1,
-	struct FE_element_type_node_sequence_identifier *identifier2)
-/*******************************************************************************
-LAST MODIFIED : 29 April 1999
-
-DESCRIPTION :
-Compare functions for listing struct FE_element_type_node_sequence in order:
-- cm_type changing slowest;
-- number_of_nodes changing next slowest;
-- node numbers in numerical order (nodes must be in ascending order).
-Returns values like strcmp:
--1 = identifier 1 < identifier 2
- 0 = identifier 1 = identifier 2
- 1 = identifier 1 > identifier 2
-==============================================================================*/
+	FE_element_type_node_sequence_identifier &identifier1,
+	FE_element_type_node_sequence_identifier &identifier2)
 {
-	int i,number_of_nodes,return_code;
-
-	ENTER(compare_FE_element_type_node_sequence_identifier);
-	if (identifier1&&identifier2)
+	/* 1. compare number_of_nodes */
+	int number_of_nodes = identifier1.number_of_nodes;
+	if (number_of_nodes < identifier2.number_of_nodes)
 	{
-		/* 1. compare dimension */
-		if (identifier1->dimension < identifier2->dimension)
-		{
-			return_code=-1;
-		}
-		else if (identifier1->dimension > identifier2->dimension)
-		{
-			return_code=1;
-		}
-		else
-		{
-			/* 2. compare number_of_nodes */
-			number_of_nodes=identifier1->number_of_nodes;
-			if (number_of_nodes < identifier2->number_of_nodes)
-			{
-				return_code=-1;
-			}
-			else if (number_of_nodes > identifier2->number_of_nodes)
-			{
-				return_code=1;
-			}
-			else
-			{
-				/* 3. compare node_numbers - assumed in ascending order */
-				return_code=0;
-				/*???RC.  Assumes the identifiers have nodes - as required by
-					CREATE(FE_element_type_node_sequence */
-				for (i=0;(!return_code)&&(i<number_of_nodes);i++)
-				{
-					if (identifier1->node_numbers[i]<identifier2->node_numbers[i])
-					{
-						return_code=-1;
-					}
-					else if (identifier1->node_numbers[i]>identifier2->node_numbers[i])
-					{
-						return_code=1;
-					}
-				}
-			}
-		}
+		return -1;
+	}
+	else if (number_of_nodes > identifier2.number_of_nodes)
+	{
+		return 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,
-			"compare_FE_element_type_node_sequence_identifier.  Invalid argument(s)");
-		return_code=0;
+		/* 2. compare node_numbers - assumed in ascending order */
+		for (int i = 0; i < number_of_nodes; ++i)
+		{
+			if (identifier1.node_numbers[i] < identifier2.node_numbers[i])
+			{
+				return -1;
+			}
+			else if (identifier1.node_numbers[i] > identifier2.node_numbers[i])
+			{
+				return 1;
+			}
+		}
 	}
-	LEAVE;
+	return 0;
+}
 
-	return (return_code);
-} /* compare_FE_element_type_node_sequence_identifier */
-
-struct FE_element_type_node_sequence
-	*CREATE(FE_element_type_node_sequence)(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 20 February 2003
-
-DESCRIPTION :
-Structure for storing an element with its identifier being its cm_type and the
-number and list - in ascending order - of the nodes referred to by the default
-coordinate field of the element. Indexed lists, indexed using function
-compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
-uses them to find faces and lines for elements without them, if they exist.
-==============================================================================*/
+struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
+	struct FE_element *element, int face_number)
 {
 	int i,node_number,*node_numbers,number_of_nodes,placed,j,k;
 	struct FE_element_type_node_sequence *element_type_node_sequence;
@@ -4772,21 +4602,20 @@ uses them to find faces and lines for elements without them, if they exist.
 	ENTER(CREATE(FE_element_type_node_sequence));
 	if (element)
 	{
-		/* get list of nodes used by default coordinate field in element */
-		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
-			&number_of_nodes, &nodes_in_element,
+		/* get list of nodes used by default coordinate field in element/face */
+		if (calculate_FE_element_field_nodes(element, face_number,
+			(struct FE_field *)NULL, &number_of_nodes, &nodes_in_element,
 			/*top_level_element*/(struct FE_element *)NULL) && (0 < number_of_nodes))
 		{
-			if (ALLOCATE(element_type_node_sequence,
-				struct FE_element_type_node_sequence,1)&&
-				ALLOCATE(element_type_node_sequence->identifier,
-				struct FE_element_type_node_sequence_identifier,1)&&
-				ALLOCATE(node_numbers,int,number_of_nodes))
+			if (ALLOCATE(element_type_node_sequence, struct FE_element_type_node_sequence, 1) &&
+				ALLOCATE(node_numbers, int, number_of_nodes))
 			{
-				element_type_node_sequence->identifier->dimension = get_FE_element_dimension(element);
-				element_type_node_sequence->identifier->number_of_nodes=number_of_nodes;
-				element_type_node_sequence->identifier->node_numbers=node_numbers;
+				element_type_node_sequence->identifier.number_of_nodes = number_of_nodes;
+				element_type_node_sequence->identifier.node_numbers = node_numbers;
 				element_type_node_sequence->element=ACCESS(FE_element)(element);
+				element_type_node_sequence->dimension = get_FE_element_dimension(element);
+				if (face_number >= 0)
+					--(element_type_node_sequence->dimension);
 				element_type_node_sequence->access_count=0;
 				/* put the nodes in the identifier in ascending order */
 				for (i=0;element_type_node_sequence&&(i<number_of_nodes);i++)
@@ -4822,8 +4651,8 @@ uses them to find faces and lines for elements without them, if they exist.
 				}
 #if defined (DEBUG_CODE)
 				/*???debug*/
-				printf("FE_element_type_node_sequence  %s %d has nodes: ",
-					CM_element_type_string(element->identifier.type), element->identifier.number);
+				printf("FE_element_type_node_sequence  %d-D element %d has nodes: ",
+					get_FE_element_dimension(element), element->identifier);
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
@@ -4835,14 +4664,7 @@ uses them to find faces and lines for elements without them, if they exist.
 			{
 				display_message(ERROR_MESSAGE,
 					"CREATE(FE_element_type_node_sequence).  Not enough memory");
-				if (element_type_node_sequence)
-				{
-					if (element_type_node_sequence->identifier)
-					{
-						DEALLOCATE(element_type_node_sequence->identifier);
-					}
-					DEALLOCATE(element_type_node_sequence);
-				}
+				DEALLOCATE(element_type_node_sequence);
 			}
 			for (i=0;i<number_of_nodes;i++)
 			{
@@ -4888,11 +4710,7 @@ Cleans up memory used by the FE_element_type_node_sequence.
 		{
 			/* must deaccess element */
 			DEACCESS(FE_element)(&(element_type_node_sequence->element));
-			if (element_type_node_sequence->identifier)
-			{
-				DEALLOCATE(element_type_node_sequence->identifier->node_numbers);
-				DEALLOCATE(element_type_node_sequence->identifier);
-			}
+			DEALLOCATE(element_type_node_sequence->identifier.node_numbers);
 			DEALLOCATE(*element_type_node_sequence_address);
 			return_code=1;
 		}
@@ -4920,14 +4738,14 @@ Cleans up memory used by the FE_element_type_node_sequence.
 DECLARE_OBJECT_FUNCTIONS(FE_element_type_node_sequence)
 
 DECLARE_INDEXED_LIST_MODULE_FUNCTIONS(FE_element_type_node_sequence, \
-	identifier, struct FE_element_type_node_sequence_identifier *, \
+	identifier, FE_element_type_node_sequence_identifier&, \
 	compare_FE_element_type_node_sequence_identifier)
 
 DECLARE_INDEXED_LIST_FUNCTIONS(FE_element_type_node_sequence)
 
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( \
 	FE_element_type_node_sequence,identifier, \
-	struct FE_element_type_node_sequence_identifier *, \
+	FE_element_type_node_sequence_identifier&, \
 	compare_FE_element_type_node_sequence_identifier)
 
 int FE_element_type_node_sequence_is_collapsed(
@@ -4947,12 +4765,12 @@ this function would have to be modified extensively.
 	int return_code;
 
 	ENTER(FE_element_type_node_sequence_is_collapsed);
-	if (element_type_node_sequence&&element_type_node_sequence->identifier)
+	if (element_type_node_sequence)
 	{
-		return_code=((2 == element_type_node_sequence->identifier->dimension)&&
-			(2 >= element_type_node_sequence->identifier->number_of_nodes))||
-			((1 == element_type_node_sequence->identifier->dimension)&&
-				(1 == element_type_node_sequence->identifier->number_of_nodes));
+		return_code=((2 == element_type_node_sequence->dimension)&&
+			(2 >= element_type_node_sequence->identifier.number_of_nodes))||
+			((1 == element_type_node_sequence->dimension)&&
+				(1 == element_type_node_sequence->identifier.number_of_nodes));
 	}
 	else
 	{
@@ -4967,58 +4785,29 @@ this function would have to be modified extensively.
 
 struct FE_element *FE_element_type_node_sequence_get_FE_element(
 	struct FE_element_type_node_sequence *element_type_node_sequence)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns the FE_element from the <element_type_node_sequence>.
-==============================================================================*/
 {
-	struct FE_element *element;
-
-	ENTER(FE_element_type_node_sequence_get_FE_element);
 	if (element_type_node_sequence)
-	{
-		element = element_type_node_sequence->element;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_type_node_sequence_get_FE_element.  Invalid argument(s)");
-		element = (struct FE_element *)NULL;
-	}
-	LEAVE;
+		return element_type_node_sequence->element;
+	return 0;
+}
 
-	return (element);
-} /* FE_element_type_node_sequence_get_FE_element */
-
-struct FE_element_type_node_sequence_identifier
-	*FE_element_type_node_sequence_get_identifier(
-		struct FE_element_type_node_sequence *element_type_node_sequence)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns a pointer to the identifier of the <element_type_node_sequence>.
-==============================================================================*/
+void FE_element_type_node_sequence_set_FE_element(
+	struct FE_element_type_node_sequence *element_type_node_sequence,
+	struct FE_element *element)
 {
-	struct FE_element_type_node_sequence_identifier *identifier;
-
-	ENTER(FE_element_type_node_sequence_get_identifier);
 	if (element_type_node_sequence)
-	{
-		identifier = element_type_node_sequence->identifier;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_type_node_sequence_get_identifier.  Invalid argument(s)");
-		identifier = (struct FE_element_type_node_sequence_identifier *)NULL;
-	}
-	LEAVE;
+		REACCESS(FE_element)(&element_type_node_sequence->element, element);
+}
 
-	return (identifier);
-} /* FE_element_type_node_sequence_get_identifier */
+FE_element_type_node_sequence *FE_element_type_node_sequence_list_find_match(
+	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list,
+	FE_element_type_node_sequence *element_type_node_sequence)
+{
+	if (element_type_node_sequence_list && element_type_node_sequence)
+		return FIND_BY_IDENTIFIER_IN_LIST(FE_element_type_node_sequence, identifier)(
+			element_type_node_sequence->identifier, element_type_node_sequence_list);
+	return 0;
+}
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_field)
 
@@ -5532,10 +5321,9 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 												embedding_element = *((struct FE_element **)values_storage);
 												if (embedding_element)
 												{
-													display_message(INFORMATION_MESSAGE,"%s %d xi",
-															CM_element_type_string(embedding_element->identifier.type),
-															embedding_element->identifier.number);
 													xi_dimension=embedding_element->shape->dimension;
+													display_message(INFORMATION_MESSAGE,"%d-D %d xi",
+														xi_dimension, embedding_element->identifier);
 													value=values_storage+sizeof(struct FE_element *);
 													for (xi_index=0;xi_index<xi_dimension;xi_index++)
 													{
@@ -5941,7 +5729,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 				"Element %d field %s component %d: local node index %d out of range %d",
-				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 				this->nodeIndex + 1, cache.numberOfElementNodes);
 			return false;
 		}
@@ -5954,7 +5742,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 					"Element %d field %s component %d: Field not defined on global node %d at local node index %d",
-					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 					node->cm_node_identifier, this->nodeIndex + 1);
 				return false;
 			}
@@ -5967,7 +5755,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 				"Element %d field %s component %d: Global node %d has no value/derivative types",
-				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 				node->cm_node_identifier);
 			return false;
 		}
@@ -5981,7 +5769,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 				"Element %d field %s component %d: Global node %d has no %s version %d",
-				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 				node->cm_node_identifier, ENUMERATOR_STRING(FE_nodal_value_type)(this->valueType),
 				this->version + 1);
 			return false;
@@ -5999,7 +5787,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 					"Element %d field %s component %d: Scale factor index %d is out of range %d",
-					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 					this->scaleFactorIndex + 1, cache.numberOfScaleFactors);
 				return false;
 			}
@@ -6025,7 +5813,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluateNode.  "
 				"Element %d field %s component %d: local node index %d out of range %d",
-				cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 				this->nodeIndex + 1, cache.numberOfElementNodes);
 			return false;
 		}
@@ -6161,7 +5949,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluate.  "
 					"Element %d field %s component %d:  Could not evaluate map %d of sum",
-					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 					i + 1);
 				return false;
 			}
@@ -6180,7 +5968,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluateNode.  "
 					"Element %d field %s component %d:  Could not evaluate map %d of sum",
-					cache.element->identifier.number, cache.field->name, cache.componentNumber + 1,
+					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
 					i + 1);
 				return false;
 			}
@@ -6322,35 +6110,35 @@ static int global_to_element_map_values(struct FE_element *element,
 											{
 												display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 													"Node %d used by field %s in element %d has no field parameters.",
-													node->cm_node_identifier, field->name, element->identifier.number);
+													node->cm_node_identifier, field->name, element->identifier);
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 												"Node reference missing for field %s at element %d.",
-												field->name, element->identifier.number);
+												field->name, element->identifier);
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 											"Node element map for field %s specifies a node index out of range for element %d.",
-											field->name, element->identifier.number);
+											field->name, element->identifier);
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 										"No map values for element %d.",
-										element->identifier.number);
+										element->identifier);
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 									"No standard node map for element %d.",
-									element->identifier.number);
+									element->identifier);
 							}
 						}
 					}
@@ -6433,7 +6221,7 @@ static int global_to_element_map_values(struct FE_element *element,
 												display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
 													"Parameter '%s' not found for field %s at node %d, used from element %d",
 													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type), field->name,
-													node->cm_node_identifier, element->identifier.number);
+													node->cm_node_identifier, element->identifier);
 												return_code = 0;
 												break;
 											}
@@ -6443,7 +6231,7 @@ static int global_to_element_map_values(struct FE_element *element,
 													"Parameter '%s' version %d is out of range (%d) for field %s at node %d, used from element %d",
 													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type),
 													version + 1, number_of_node_versions, field->name,
-													node->cm_node_identifier, element->identifier.number);
+													node->cm_node_identifier, element->identifier);
 												return_code = 0;
 												break;
 											}
@@ -6503,7 +6291,7 @@ static int global_to_element_map_values(struct FE_element *element,
 									display_message(ERROR_MESSAGE,
 										"global_to_element_map_values.  Cannot evaluate field %s "
 										"in element %d because it is not defined at node %d",
-										field->name,element->identifier.number,node->cm_node_identifier);
+										field->name,element->identifier,node->cm_node_identifier);
 									return_code=0;
 								}
 								standard_node_map_address++;
@@ -7020,64 +6808,6 @@ It is up to the calling function to deallocate the returned string.
 
 	return (component_name);
 } /* get_automatic_component_name */
-
-int FE_element_face_line_to_element_type_node_sequence_list(
-	struct FE_element *element,void *element_type_node_sequence_list_void)
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Iterator function; if <element> is type CM_LINE or CM_FACE, creates a struct
-FE_element_type_node_sequence for it and adds it to the given list. Note that
-function fails if two faces have the same shape and share the same nodes.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
-	struct FE_element_type_node_sequence *element_type_node_sequence;
-
-	ENTER(FE_element_face_line_to_element_type_node_sequence_list);
-	if (element&&(element_type_node_sequence_list=
-		(struct LIST(FE_element_type_node_sequence) *)
-		element_type_node_sequence_list_void))
-	{
-		return_code=1;
-		if ((element->identifier.type==CM_LINE)||(element->identifier.type==CM_FACE))
-		{
-			if (NULL != (element_type_node_sequence=
-				CREATE(FE_element_type_node_sequence)(element)))
-			{
-				if (!ADD_OBJECT_TO_LIST(FE_element_type_node_sequence)(
-					element_type_node_sequence,element_type_node_sequence_list))
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_face_line_to_element_type_node_sequence_list.  "
-						"Could not add FE_element_type_node_sequence to list for element %s %d",
-						CM_element_type_string(element->identifier.type), element->identifier.number);
-					DESTROY(FE_element_type_node_sequence)(&element_type_node_sequence);
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_element_face_line_to_element_type_node_sequence_list.  "
-					"Could not create FE_element_type_node_sequence");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_face_line_to_element_type_node_sequence_list.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_face_line_to_element_type_node_sequence_list */
 
 static int node_on_axis(struct FE_node *node,struct FE_field *field,
 	FE_value time, enum Coordinate_system_type coordinate_system_type)
@@ -8358,6 +8088,8 @@ int FE_element_field_info_check_field_node_value_labels(
 				for (int i = 0; i < field->number_of_components; ++i)
 				{
 					FE_element_field_component *component = element_field->components[i];
+					if (component->type != STANDARD_NODE_TO_ELEMENT_MAP)
+						continue;
 					const int nodeCount = component->map.standard_node_based.number_of_nodes;
 					for (int n = 0; n < nodeCount; ++n)
 					{
@@ -11922,7 +11654,7 @@ defined on it, ensures those nodes contributing to <fe_field> are not in the
 				FE_field_is_defined_in_element(node_list_field_data->fe_field, element))
 			{
 				/* get the nodes used by this element field */
-				if (calculate_FE_element_field_nodes(element, node_list_field_data->fe_field,
+				if (calculate_FE_element_field_nodes(element, /*face_number*/-1, node_list_field_data->fe_field,
 					&number_of_element_field_nodes, &element_field_nodes,
 					/*top_level_element*/(struct FE_element *)NULL))
 				{
@@ -12568,26 +12300,13 @@ It is up to the calling function to DEALLOCATE the returned string.
 					component_number,version,type,&element,xi)&&element&&element->shape)
 				{
 					error=0;
-					switch (element->identifier.type)
-					{
-						case CM_ELEMENT:
-						{
-							append_string(string,"E",&error);
-						} break;
-						case CM_FACE:
-						{
-							append_string(string,"F",&error);
-						} break;
-						case CM_LINE:
-						{
-							append_string(string,"L",&error);
-						} break;
-						default:
-						{
-							error=1;
-						} break;
-					}
-					sprintf(temp_string," %d",element->identifier.number);
+					if (element->shape->dimension == 1)
+						append_string(string,"L",&error);
+					else if (element->shape->dimension == 2)
+						append_string(string,"F",&error);
+					else
+						append_string(string,"E",&error);
+					sprintf(temp_string," %d",element->identifier);
 					append_string(string,temp_string,&error);
 					for (i=0;i<element->shape->dimension;i++)
 					{
@@ -13057,7 +12776,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		{
 			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  "
 				"Field %s is restricted to mesh dimension %d; cannot set location in %d-D element number %d.",
-				field->name, field->element_xi_mesh_dimension, element->shape->dimension, element->identifier.number);
+				field->name, field->element_xi_mesh_dimension, element->shape->dimension, element->identifier);
 			return_code = 0;
 		}
 	}
@@ -15412,7 +15131,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 	{
 		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 			"Field %s in %d-D element %d map cannot find global node at local node index %d",
-			field->name, get_FE_element_dimension(element), element->identifier.number,
+			field->name, get_FE_element_dimension(element), element->identifier,
 			map->node_index + 1);
 		return false;
 	}
@@ -15432,7 +15151,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d indexes global node %d (local node index %d) "
 				"which has no parameters for that field.",
-				field->name, get_FE_element_dimension(element), element->identifier.number,
+				field->name, get_FE_element_dimension(element), element->identifier,
 				node->cm_node_identifier, map->node_index + 1);
 			return false;
 		}
@@ -15443,7 +15162,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 			"Field %s in %d-D element %d indexes global node %d (local node index %d) "
 			"which does not have value type (derivative) labels.",
-			field->name, get_FE_element_dimension(element), element->identifier.number,
+			field->name, get_FE_element_dimension(element), element->identifier,
 			node->cm_node_identifier, map->node_index + 1);
 		return false;
 	}
@@ -15461,7 +15180,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d node value index is out of range for values "
 				"stored in global node %d (local node index %d).",
-				field->name, get_FE_element_dimension(element), element->identifier.number,
+				field->name, get_FE_element_dimension(element), element->identifier,
 				node->cm_node_identifier, map->node_index + 1);
 			return false;
 		}
@@ -15481,7 +15200,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 			{
 				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 					"Field %s in %d-D element %d addresses an 'unknown' value type in global node %d (local node %d).",
-					field->name, get_FE_element_dimension(element), element->identifier.number,
+					field->name, get_FE_element_dimension(element), element->identifier,
 					node->cm_node_identifier, map->node_index + 1);
 				return false;
 			}
@@ -15498,7 +15217,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 					"Field %s in %d-D element %d uses different node value type or version labels to other elements "
 					"using the same element field template. This unexpected case is not yet handled.",
-					field->name, get_FE_element_dimension(element), element->identifier.number);
+					field->name, get_FE_element_dimension(element), element->identifier);
 				return false;
 			}
 		}
@@ -20254,6 +19973,13 @@ struct FE_element_shape *FE_element_shape_create_simple_type(
 	return fe_element_shape;
 }
 
+int FE_element_shape_get_number_of_faces(FE_element_shape *element_shape)
+{
+	if (element_shape)
+		return element_shape->number_of_faces;
+	return 0;
+}
+
 enum cmzn_element_shape_type FE_element_shape_get_simple_type(
 	struct FE_element_shape *element_shape)
 {
@@ -21160,83 +20886,6 @@ struct FE_element *FE_element_get_parent_on_face(
 	return (NULL);
 }
 
-const char *CM_element_type_string(enum CM_element_type cm_element_type)
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Returns a static string describing the <cm_element_type>, eg. CM_LINE = 'line'.
-Returned string must not be deallocated!
-==============================================================================*/
-{
-	const char *return_string;
-
-	ENTER(CM_element_type_string);
-	switch (cm_element_type)
-	{
-		case CM_ELEMENT:
-		{
-			return_string="element";
-		} break;
-		case CM_FACE:
-		{
-			return_string="face";
-		} break;
-		case CM_LINE:
-		{
-			return_string="line";
-		} break;
-		default:
-		{
-			display_message(ERROR_MESSAGE,
-				"CM_element_type_string.  Unknown CM element type");
-			return_string=0;
-		} break;
-	}
-	LEAVE;
-
-	return (return_string);
-} /* CM_element_type_string */
-
-int FE_element_to_any_element_string(struct FE_element *element,
-	char **name_ptr)
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Writes the element as an allocated string containing TYPE NUMBER. Now does not
-write element for CM_ELEMENT types.
-==============================================================================*/
-{
-	char temp_string[30];
-	int return_code;
-
-	ENTER(FE_element_to_any_element_string);
-	if (element&&name_ptr)
-	{
-		if (CM_ELEMENT==element->identifier.type)
-		{
-			sprintf(temp_string,"%d",element->identifier.number);
-		}
-		else
-		{
-			sprintf(temp_string,"%s %d",CM_element_type_string(element->identifier.type),
-				element->identifier.number);
-		}
-		*name_ptr=duplicate_string(temp_string);
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_to_any_element_string.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_to_any_element_string */
-
 int set_FE_element_shape(struct FE_element *element,
 	struct FE_element_shape *shape)
 {
@@ -21291,132 +20940,30 @@ int set_FE_element_shape(struct FE_element *element,
 	return (return_code);
 } /* set_FE_element_shape */
 
-struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
-	struct FE_element_shape *element_shape,
-	FE_mesh *fe_mesh, struct FE_element *template_element)
+/**
+ * Creates a blank element with access count of 1.
+ */
+struct FE_element *CREATE(FE_element)()
 {
-	int i, number_of_faces, return_code;
 	struct FE_element *element;
-
-	ENTER(CREATE(FE_element));
-	element = (struct FE_element *)NULL;
-	if (cm && (0 <= cm->number) && ((template_element && (!fe_mesh)) ||
-		((!template_element) && fe_mesh && element_shape)))
+	if (ALLOCATE(element, struct FE_element, 1))
 	{
-		int dimension = 0;
-		if (template_element)
-		{
-			dimension = get_FE_element_dimension(template_element);
-		}
-		else
-		{
-			get_FE_element_shape_dimension(element_shape, &dimension);
-		}
-		if (ALLOCATE(element, struct FE_element, 1))
-		{
-			return_code = 1;
-			/* clear the new element so we can destroy it if anything fails */
-			// GRC overriding the supplied element type until removed from FE_element
-			element->identifier.type = DIMENSION_TO_CM_ELEMENT_TYPE(dimension);
-			element->identifier.number = cm->number;
-			element->shape = (struct FE_element_shape *)NULL;
-			element->faces = (struct FE_element **)NULL;
-			element->fields = (struct FE_element_field_info *)NULL;
-			element->information = (struct FE_element_node_scale_field_info *)NULL;
-			element->parents = (struct FE_element **)NULL;
-			element->number_of_parents = 0;
-			element->access_count = 0;
-			if (template_element)
-			{
-				if (set_FE_element_shape(element, template_element->shape))
-				{
-					if (0 < (number_of_faces =
-						template_element->shape->number_of_faces))
-					{
-						if (template_element->faces)
-						{
-							for (i = 0; (i < number_of_faces) && return_code; i++)
-							{
-								if (template_element->faces[i])
-								{
-									if (!set_FE_element_face(element, i,
-										template_element->faces[i]))
-									{
-										display_message(ERROR_MESSAGE, "CREATE(FE_element).  "
-											"Could not set face from template element");
-										return_code = 0;
-									}
-								}
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"CREATE(FE_element).  Invalid faces in template element");
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_element).  Could not set shape from template element");
-					return_code = 0;
-				}
-				if (!(element->fields =
-					ACCESS(FE_element_field_info)(template_element->fields)))
-				{
-					display_message(ERROR_MESSAGE, "CREATE(FE_element).  "
-						"Could not set field info from template element");
-					return_code = 0;
-				}
-				if (template_element->information)
-				{
-					element->information = template_element->information->clone(template_element->fields);
-					if (!element->information)
-					{
-						display_message(ERROR_MESSAGE,"CREATE(FE_element).  "
-							"Could not copy node scale field info from template element");
-						return_code = 0;
-					}
-				}
-			}
-			else
-			{
-				if (!set_FE_element_shape(element, element_shape))
-				{
-					display_message(ERROR_MESSAGE,
-						"CREATE(FE_element).  Could not set element shape");
-					return_code = 0;
-				}
-				if (!(element->fields = ACCESS(FE_element_field_info)(
-					fe_mesh->get_FE_element_field_info((struct LIST(FE_element_field) *)NULL))))
-				{
-					display_message(ERROR_MESSAGE, "CREATE(FE_element).  "
-						"FE_region could not supply element field info");
-					return_code = 0;
-				}
-			}
-			if (!return_code)
-			{
-				DESTROY(FE_element)(&element);
-				element = (struct FE_element *)NULL;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"CREATE(FE_element).  Could not allocate memory for element");
-		}
+		element->identifier = -1;
+		element->shape = (struct FE_element_shape *)NULL;
+		element->faces = (struct FE_element **)NULL;
+		element->fields = (struct FE_element_field_info *)NULL;
+		element->information = (struct FE_element_node_scale_field_info *)NULL;
+		element->parents = (struct FE_element **)NULL;
+		element->number_of_parents = 0;
+		element->access_count = 1;
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "CREATE(FE_element).  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "CREATE(FE_element).  Could not allocate memory for element");
+		return 0;
 	}
-	LEAVE;
-
 	return (element);
-} /* CREATE(FE_element) */
+}
 
 int DESTROY(FE_element)(struct FE_element **element_address)
 /*******************************************************************************
@@ -21474,6 +21021,57 @@ Frees the memory for the element, sets <*element_address> to NULL.
 	return (return_code);
 } /* DESTROY(FE_element) */
 
+struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info)
+{
+	if (!element_field_info)
+	{
+		display_message(ERROR_MESSAGE, "create_template_FE_element.  Invalid argument");
+		return 0;
+	}
+	struct FE_element *template_element = CREATE(FE_element)();
+	if (!template_element)
+		return 0;
+	template_element->fields = ACCESS(FE_element_field_info)(element_field_info);
+	return template_element;
+}
+
+struct FE_element *create_FE_element_from_template(int identifier, struct FE_element *template_element)
+{
+	if ((identifier < -1) || (0 == template_element))
+	{
+		display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Invalid argument(s)");
+		return 0;
+	}
+	struct FE_element *element = CREATE(FE_element)();
+	if (element)
+	{
+		bool success = true;
+		element->identifier = identifier;
+		if (!set_FE_element_shape(element, template_element->shape))
+		{
+			display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not set shape from template element");
+			success = false;
+		}
+		if (!(element->fields = ACCESS(FE_element_field_info)(template_element->fields)))
+		{
+			display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not set field info from template element");
+			success = false;
+		}
+		if (template_element->information)
+		{
+			element->information = template_element->information->clone(template_element->fields);
+			if (!element->information)
+			{
+				display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not copy node scale field info from template element");
+				success = false;
+			}
+		}
+		if (!success)
+			DEACCESS(FE_element)(&element);
+	}
+	return element;
+}
+
 void FE_element_invalidate(struct FE_element *element)
 {
 	if (element)
@@ -21487,7 +21085,7 @@ void FE_element_invalidate(struct FE_element *element)
 DECLARE_OBJECT_FUNCTIONS(FE_element)
 
 DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_element)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,const CM_element_information *)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,int)
 DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
 DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator)
 
@@ -21526,31 +21124,31 @@ void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_lis
 
 DECLARE_CHANGE_LOG_FUNCTIONS(FE_element)
 
-int inherit_FE_element_field(struct FE_element *element,struct FE_field *field,
+/**
+ * If <field> is NULL, element values are calculated for the coordinate field.
+ * The optional <top_level_element> forces inheritance from it as needed.
+ * If the dimension of <element> is less than that of the <field_element> from
+ * which the field is inherited, then a <coordinate_transformation> is returned.
+ * This consist of a matrix of dimension(field_element) rows X dimension(element)+1
+ * columns. This represents an affine transformation, b + A xi for calculating the
+ * field_element xi coordinates from those of <element>, where b is the first
+ * column of the <coordinate_transformation> matrix.
+ * @param inherit_face_number  If non-negative, inherit onto this face number
+ * of element, as if the face element were supplied to this function.
+ */
+int inherit_FE_element_field(struct FE_element *element,
+	int inherit_face_number, struct FE_field *field,
 	struct FE_element_field **element_field_address,
 	struct FE_element **field_element_address,
 	FE_value **coordinate_transformation_address,
 	struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 23 November 2001
-
-DESCRIPTION :
-If <field> is NULL, element values are calculated for the coordinate field.
-The optional <top_level_element> forces inheritance from it as needed.
-If the dimension of <element> is less than that of the <field_element> from
-which the field is inherited, then a <coordinate_transformation> is returned.
-This consist of a matrix of dimension(field_element) rows X dimension(element)+1
-columns. This represents an affine transformation, b + A xi for calculating the
-field_element xi coordinates from those of <element>, where b is the first
-column of the <coordinate_transformation> matrix.
-==============================================================================*/
 {
 	FE_value *coordinate_transformation,*coordinate_transformation_value,
 		*face_to_element,*face_to_element_value,*new_coordinate_transformation,
 		*new_coordinate_transformation_value;
-	int dimension,dimension_minus_1,face_number,field_element_dimension,i,j,k,
+	int dimension,dimension_minus_1,field_element_dimension,i,j,k,
 		parent_number, return_code,transformation_size;
-	struct FE_element *field_element,*parent;
+	struct FE_element *field_element;
 	struct FE_element_field *element_field;
 	struct FE_element_field_info *field_info;
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
@@ -21566,7 +21164,8 @@ column of the <coordinate_transformation> matrix.
 #endif /* defined (DEBUG_CODE) */
 	/* check the arguments */
 	if (element&&(element->shape)&&element_field_address&&field_element_address&&
-		coordinate_transformation_address)
+		coordinate_transformation_address &&
+		(inherit_face_number < element->shape->number_of_faces))
 	{
 		/* initialize values to be returned on success */
 		element_field=(struct FE_element_field *)NULL;
@@ -21574,7 +21173,7 @@ column of the <coordinate_transformation> matrix.
 		coordinate_transformation=(FE_value *)NULL;
 #if defined (DEBUG_CODE)
 		/*???debug */
-		printf("element %d \n",element->identifier.number);
+		printf("element %d \n",element->identifier);
 #endif /* defined (DEBUG_CODE) */
 		/* check if the field is defined for the element */
 		if ((field_info = element->fields) && element->information)
@@ -21600,14 +21199,27 @@ column of the <coordinate_transformation> matrix.
 		}
 		if (return_code)
 		{
+			FE_element *parent = (inherit_face_number >= 0) ? element : 0;
+			int face_number = inherit_face_number;
 			if (element_field)
 			{
 				coordinate_transformation=(FE_value *)NULL;
 				field_element=element;
 			}
+			else if (parent)
+			{
+				// inherit from parent's parent
+				if (!(((NULL == top_level_element) || (parent == top_level_element) ||
+						FE_element_ancestor_matches_recursive(parent, top_level_element)) &&
+					inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
+						&element_field, &field_element, &coordinate_transformation, top_level_element)))
+				{
+					return_code = 0;
+					parent = 0;
+				}
+			}
 			else
 			{
-				parent = NULL;
 				return_code = 0;
 				/* check if the field is defined for any of the element's parents */
 				for (parent_number = 0; parent_number < element->number_of_parents; parent_number++)
@@ -21616,7 +21228,7 @@ column of the <coordinate_transformation> matrix.
 					if ((NULL == top_level_element) || (parent == top_level_element) ||
 						FE_element_ancestor_matches_recursive(parent, top_level_element))
 					{
-						return_code = inherit_FE_element_field(parent, field,
+						return_code = inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
 							&element_field, &field_element, &coordinate_transformation, top_level_element);
 						if (return_code)
 						{
@@ -21624,71 +21236,100 @@ column of the <coordinate_transformation> matrix.
 						}
 					}
 				}
-				if (return_code && (parent) && (element_field))
-				{
+				if (return_code)
 					face_number = FE_element_get_child_face_number(parent, element);
-					dimension=parent->shape->dimension;
-					field_element_dimension=field_element->shape->dimension;
+				else
+					parent = 0;
+			}
+			if (parent)
+			{
+				dimension=parent->shape->dimension;
+				field_element_dimension=field_element->shape->dimension;
 #if defined (DEBUG_CODE)
-					/*???debug */
-					printf("shape %p\n",parent->shape);
-					face_to_element_value=(parent->shape->face_to_element);
-					printf("face_number = %d\n",face_number);
-					for (i=0;i<parent->shape->number_of_faces;i++)
+				/*???debug */
+				printf("shape %p\n",parent->shape);
+				face_to_element_value=(parent->shape->face_to_element);
+				printf("face_number = %d\n",face_number);
+				for (i=0;i<parent->shape->number_of_faces;i++)
+				{
+					printf("face %d\n",i);
+					for (j=dimension;j>0;j--)
 					{
-						printf("face %d\n",i);
-						for (j=dimension;j>0;j--)
+						for (k=dimension;k>0;k--)
 						{
-							for (k=dimension;k>0;k--)
+							printf(" %g",*face_to_element_value);
+							face_to_element_value++;
+						}
+						printf("\n");
+					}
+				}
+#endif /* defined (DEBUG_CODE) */
+				if (coordinate_transformation)
+				{
+					if (ALLOCATE(new_coordinate_transformation,FE_value,
+						field_element_dimension*dimension))
+					{
+						/* incorporate the face to element map in the coordinate
+							transformation */
+						face_to_element=(parent->shape->face_to_element)+
+							(face_number*dimension*dimension);
+#if defined (DEBUG_CODE)
+						/*???debug */
+						printf("face to element:\n");
+						face_to_element_value=face_to_element;
+						for (i=dimension;i>0;i--)
+						{
+							for (j=dimension;j>0;j--)
 							{
 								printf(" %g",*face_to_element_value);
 								face_to_element_value++;
 							}
 							printf("\n");
 						}
-					}
 #endif /* defined (DEBUG_CODE) */
-					if (coordinate_transformation)
-					{
-						if (ALLOCATE(new_coordinate_transformation,FE_value,
-							field_element_dimension*dimension))
+#if defined (DEBUG_CODE)
+						/*???debug */
+						printf("new coordinate transformation:\n");
+#endif /* defined (DEBUG_CODE) */
+						coordinate_transformation_value=coordinate_transformation;
+						new_coordinate_transformation_value=
+							new_coordinate_transformation;
+						dimension_minus_1=dimension-1;
+						for (i=field_element_dimension;i>0;i--)
 						{
-							/* incorporate the face to element map in the coordinate
-								transformation */
-							face_to_element=(parent->shape->face_to_element)+
-								(face_number*dimension*dimension);
-#if defined (DEBUG_CODE)
-							/*???debug */
-							printf("face to element:\n");
-							face_to_element_value=face_to_element;
-							for (i=dimension;i>0;i--)
-							{
-								for (j=dimension;j>0;j--)
-								{
-									printf(" %g",*face_to_element_value);
-									face_to_element_value++;
-								}
-								printf("\n");
-							}
-#endif /* defined (DEBUG_CODE) */
-#if defined (DEBUG_CODE)
-							/*???debug */
-							printf("new coordinate transformation:\n");
-#endif /* defined (DEBUG_CODE) */
-							coordinate_transformation_value=coordinate_transformation;
-							new_coordinate_transformation_value=
-								new_coordinate_transformation;
-							dimension_minus_1=dimension-1;
-							for (i=field_element_dimension;i>0;i--)
-							{
-								/* calculate b entry for this row */
+							/* calculate b entry for this row */
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
-								sum=(double)(*coordinate_transformation_value);
+							sum=(double)(*coordinate_transformation_value);
 #else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								sum= *coordinate_transformation_value;
+							sum= *coordinate_transformation_value;
+#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+							coordinate_transformation_value++;
+							face_to_element_value=face_to_element;
+							for (k=dimension;k>0;k--)
+							{
+#if defined (DOUBLE_FOR_DOT_PRODUCT)
+								sum += (double)(*coordinate_transformation_value)*
+									(double)(*face_to_element_value);
+#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+								sum += (*coordinate_transformation_value)*
+									(*face_to_element_value);
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 								coordinate_transformation_value++;
+								face_to_element_value += dimension;
+							}
+							*new_coordinate_transformation_value=(FE_value)sum;
+#if defined (DEBUG_CODE)
+							/*???debug */
+							printf(" %g",sum);
+#endif /* defined (DEBUG_CODE) */
+							new_coordinate_transformation_value++;
+							/* calculate A entries for this row */
+							for (j=dimension_minus_1;j>0;j--)
+							{
+								face_to_element++;
 								face_to_element_value=face_to_element;
+								coordinate_transformation_value -= dimension;
+								sum=0;
 								for (k=dimension;k>0;k--)
 								{
 #if defined (DOUBLE_FOR_DOT_PRODUCT)
@@ -21707,94 +21348,64 @@ column of the <coordinate_transformation> matrix.
 								printf(" %g",sum);
 #endif /* defined (DEBUG_CODE) */
 								new_coordinate_transformation_value++;
-								/* calculate A entries for this row */
-								for (j=dimension_minus_1;j>0;j--)
-								{
-									face_to_element++;
-									face_to_element_value=face_to_element;
-									coordinate_transformation_value -= dimension;
-									sum=0;
-									for (k=dimension;k>0;k--)
-									{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-										sum += (double)(*coordinate_transformation_value)*
-											(double)(*face_to_element_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										sum += (*coordinate_transformation_value)*
-											(*face_to_element_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-										coordinate_transformation_value++;
-										face_to_element_value += dimension;
-									}
-									*new_coordinate_transformation_value=(FE_value)sum;
-#if defined (DEBUG_CODE)
-									/*???debug */
-									printf(" %g",sum);
-#endif /* defined (DEBUG_CODE) */
-									new_coordinate_transformation_value++;
-								}
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf("\n");
-#endif /* defined (DEBUG_CODE) */
-								face_to_element -= dimension_minus_1;
 							}
-							DEALLOCATE(coordinate_transformation);
-							coordinate_transformation=new_coordinate_transformation;
+#if defined (DEBUG_CODE)
+							/*???debug */
+							printf("\n");
+#endif /* defined (DEBUG_CODE) */
+							face_to_element -= dimension_minus_1;
 						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"inherit_FE_element_field.  Insufficient memory");
-							DEALLOCATE(coordinate_transformation);
-							return_code=0;
-						}
+						DEALLOCATE(coordinate_transformation);
+						coordinate_transformation=new_coordinate_transformation;
 					}
 					else
 					{
-#if defined (DEBUG_CODE)
-						/*???debug */
-						printf("new coordinate transformation %d %d :\n",dimension,
-							field_element_dimension);
-#endif /* defined (DEBUG_CODE) */
-						/* use the face to element map as the transformation */
-						transformation_size=field_element_dimension*dimension;
-						if (ALLOCATE(coordinate_transformation,FE_value,
-							transformation_size))
-						{
-							coordinate_transformation_value=coordinate_transformation;
-							face_to_element_value=(parent->shape->face_to_element)+
-								(face_number*transformation_size);
-							while (transformation_size>0)
-							{
-								*coordinate_transformation_value= *face_to_element_value;
-#if defined (DEBUG_CODE)
-								/*???debug */
-								printf(" %g",*face_to_element_value);
-#endif /* defined (DEBUG_CODE) */
-								coordinate_transformation_value++;
-								face_to_element_value++;
-								transformation_size--;
-#if defined (DEBUG_CODE)
-								/*???debug */
-								if (0==transformation_size%dimension)
-								{
-									printf("\n");
-								}
-#endif /* defined (DEBUG_CODE) */
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE,
-								"inherit_FE_element_field.  Insufficient memory");
-							return_code=0;
-						}
+						display_message(ERROR_MESSAGE,
+							"inherit_FE_element_field.  Insufficient memory");
+						DEALLOCATE(coordinate_transformation);
+						return_code=0;
 					}
 				}
 				else
 				{
-					return_code=0;
+#if defined (DEBUG_CODE)
+					/*???debug */
+					printf("new coordinate transformation %d %d :\n",dimension,
+						field_element_dimension);
+#endif /* defined (DEBUG_CODE) */
+					/* use the face to element map as the transformation */
+					transformation_size=field_element_dimension*dimension;
+					if (ALLOCATE(coordinate_transformation,FE_value,
+						transformation_size))
+					{
+						coordinate_transformation_value=coordinate_transformation;
+						face_to_element_value=(parent->shape->face_to_element)+
+							(face_number*transformation_size);
+						while (transformation_size>0)
+						{
+							*coordinate_transformation_value= *face_to_element_value;
+#if defined (DEBUG_CODE)
+							/*???debug */
+							printf(" %g",*face_to_element_value);
+#endif /* defined (DEBUG_CODE) */
+							coordinate_transformation_value++;
+							face_to_element_value++;
+							transformation_size--;
+#if defined (DEBUG_CODE)
+							/*???debug */
+							if (0==transformation_size%dimension)
+							{
+								printf("\n");
+							}
+#endif /* defined (DEBUG_CODE) */
+						}
+					}
+					else
+					{
+						display_message(ERROR_MESSAGE,
+							"inherit_FE_element_field.  Insufficient memory");
+						return_code=0;
+					}
 				}
 			}
 		}
@@ -22089,14 +21700,14 @@ The optional <top_level_element> forces inheritance from it as needed.
 		element_field=(struct FE_element_field *)NULL;
 		field_element=(struct FE_element *)NULL;
 		coordinate_transformation=(FE_value *)NULL;
-		if (inherit_FE_element_field(element,field,&element_field,&field_element,
-			&coordinate_transformation,top_level_element))
+		if (inherit_FE_element_field(element, /*inherit_face_number*/-1, field, &element_field,
+			&field_element, &coordinate_transformation, top_level_element))
 		{
 			return_code=1;
 #if defined (DEBUG_CODE)
 			/*???debug */
-			printf("element : %d \n",element->identifier.number);
-			printf("field element : %d \n",field_element->identifier.number);
+			printf("element : %d \n",element->identifier);
+			printf("field element : %d \n",field_element->identifier);
 #endif /* defined (DEBUG_CODE) */
 			element_dimension=element->shape->dimension;
 			field_element_dimension=field_element->shape->dimension;
@@ -22715,14 +22326,14 @@ The optional <top_level_element> forces inheritance from it as needed.
 			if (field)
 			{
 				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_values.  %s not defined for (%d)",
-					field->name,(element->identifier).number);
+					"calculate_FE_element_field_values.  %s not defined for %d-D element %d",
+					field->name, get_FE_element_dimension(element), element->identifier);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"calculate_FE_element_field_values.  "
-					"No coordinate fields defined for (%d)",
-					(element->identifier).number);
+					"No coordinate fields defined for %d-D element %d",
+					get_FE_element_dimension(element), element->identifier);
 			}
 			return_code=0;
 #if defined (DEBUG_CODE)
@@ -23164,21 +22775,10 @@ the following numbers are the order of the monomial in each direction, where
 } /* FE_element_field_values_get_monomial_component_info */
 
 int calculate_FE_element_field_nodes(struct FE_element *element,
-	struct FE_field *field,int *number_of_element_field_nodes_address,
+	int face_number, struct FE_field *field,
+	int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address,
 	struct FE_element *top_level_element)
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-If <field> is NULL, element nodes are calculated for the coordinate field.  The
-function allocates an array, <*element_field_nodes_array_address> to store the
-pointers to the ACCESS'd element nodes.  Components that are not node-based are
-ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
-fastest in xi2 and so on).
-The optional <top_level_element> forces inheritance from it as needed.
-NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
-==============================================================================*/
 {
 	FE_value *blending_matrix, *combined_blending_matrix,
 		*coordinate_transformation, *transformation;
@@ -23204,13 +22804,15 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 			and calculate the affine transformation from the element xi coordinates
 			to the xi coordinates for the element field */
 		coordinate_transformation=(FE_value *)NULL;
-		if (inherit_FE_element_field(element,field,&element_field,&field_element,
+		if (inherit_FE_element_field(element, face_number,field,&element_field,&field_element,
 			&coordinate_transformation,top_level_element)&&element_field)
 		{
 			return_code=1;
 			number_of_element_field_nodes=0;
 			element_field_nodes_array=(struct FE_node **)NULL;
 			element_dimension=element->shape->dimension;
+			if (face_number >= 0)
+				--element_dimension;
 			number_of_components=element_field->field->number_of_components;
 			/* for each component */
 			component_address=element_field->components;
@@ -23363,14 +22965,14 @@ NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
 			if (field)
 			{
 				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_nodes.  %s not defined for (%d )",
-					field->name,(element->identifier).number);
+					"calculate_FE_element_field_nodes.  %s not defined for %d-D element %d",
+					field->name, get_FE_element_dimension(element), element->identifier);
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"calculate_FE_element_field_nodes.  No coordinate fields defined for (%d )",
-					(element->identifier).number);
+					"calculate_FE_element_field_nodes.  No coordinate fields defined for %d-D element %d",
+					get_FE_element_dimension(element), element->identifier);
 			}
 			return_code=0;
 		}
@@ -23514,10 +23116,10 @@ the derivatives will start at the first position of <jacobian>.
 				else
 				{
 					display_message(ERROR_MESSAGE,"calculate_FE_element_field.  "
-						"Could not calculate index field %s for field %s at %s %",
+						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element_field_values->element->identifier.type),
-						element_field_values->element->identifier.number);
+						get_FE_element_dimension(element_field_values->element),
+						element_field_values->element->identifier);
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -24052,10 +23654,10 @@ single component, the value will be put in the first position of <values>.
 				{
 					display_message(ERROR_MESSAGE,
 						"calculate_FE_element_field_int_values.  "
-						"Could not calculate index field %s for field %s at %s %",
+						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element_field_values->element->identifier.type),
-						element_field_values->element->identifier.number);
+						get_FE_element_dimension(element_field_values->element),
+						element_field_values->element->identifier);
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -24212,10 +23814,10 @@ It is up to the calling function to deallocate the returned string values.
 				{
 					display_message(ERROR_MESSAGE,
 						"calculate_FE_element_field_string_values.  "
-						"Could not calculate index field %s for field %s at %s %",
+						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
-						CM_element_type_string(element_field_values->element->identifier.type),
-						element_field_values->element->identifier.number);
+						get_FE_element_dimension(element_field_values->element),
+						element_field_values->element->identifier);
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -24642,7 +24244,7 @@ Returns the cm number of the <element> or an error if it does not have a shape.
 	cm_number=0;
 	if (element)
 	{
-		cm_number=element->identifier.number;
+		cm_number=element->identifier;
 	}
 	else
 	{
@@ -24653,68 +24255,22 @@ Returns the cm number of the <element> or an error if it does not have a shape.
 	return (cm_number);
 } /* FE_element_get_cm_number */
 
-int get_FE_element_identifier(struct FE_element *element,
-	struct CM_element_information *identifier)
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
-
-DESCRIPTION :
-Fills in the <identifier> of <element>.
-==============================================================================*/
+int get_FE_element_identifier(struct FE_element *element)
 {
-	int return_code;
+	if (element)
+		return element->identifier;
+	return -1;
+}
 
-	ENTER(get_FE_element_identifier);
-	if (element && identifier)
-	{
-		identifier->type = element->identifier.type;
-		identifier->number = element->identifier.number;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_identifier.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_identifier */
-
-int set_FE_element_identifier(struct FE_element *element,
-	struct CM_element_information *identifier)
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-Changes the identifier of <element> to <identifier>.
-Caution! Should only call for elements that are NOT in indexed lists;
-Must wrap in LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
-element is temporarily removed from all the indexed lists it is in and re-added
-afterwards. FE_region should be the only object that needs to call this.
-==============================================================================*/
+int set_FE_element_identifier(struct FE_element *element, int identifier)
 {
-	int return_code;
-
-	ENTER(set_FE_element_identifier);
-	if (element && identifier && (0 < identifier->number))
+	if (element && (identifier >= 0))
 	{
-		// GRC never change CM_element_type: it is fixed by dimension
-		// see DIMENSION_TO_CM_ELEMENT_TYPE
-		element->identifier.number = identifier->number;
-		return_code = 1;
+		element->identifier = identifier;
+		return 1;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_FE_element_identifier.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* set_FE_element_identifier */
+	return 0;
+}
 
 int FE_element_or_parent_changed(struct FE_element *element,
 	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
@@ -25525,9 +25081,9 @@ Should only be called for unmanaged elements.
 			existing_element_field_info->element_field_list))
 		{
 			display_message(ERROR_MESSAGE,
-				"define_FE_field_at_element.  Field %s already defined at %s %d",
-				field->name, CM_element_type_string(element->identifier.type),
-				element->identifier.number);
+				"define_FE_field_at_element.  Field %s already defined at %d-D element %d",
+				field->name, get_FE_element_dimension(element),
+				element->identifier);
 			return_code = 0;
 		}
 		int number_of_values = 0;
@@ -26176,7 +25732,7 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
 	if (element && multi_range)
 	{
 		return_code = Multi_range_is_value_in_range(multi_range,
-			element->identifier.number);
+			element->identifier);
 	}
 	else
 	{
@@ -26195,7 +25751,7 @@ int FE_element_add_number_to_Multi_range(
 	if (element && multi_range)
 	{
 		return_code = Multi_range_add_range(multi_range,
-			element->identifier.number, element->identifier.number);
+			element->identifier, element->identifier);
 	}
 	else
 	{
@@ -26432,7 +25988,7 @@ static int FE_element_shape_and_faces_match(struct FE_element *element1,
 						if ((!(*face1)) || (!(*face2)) ||
 							((!find_face_mesh) && (*face1 == *face2)) ||
 							((find_face_mesh) &&
-								(find_face_mesh->findElementByIdentifier((*face1)->identifier.number)
+								(find_face_mesh->findElementByIdentifier((*face1)->identifier)
 									== *face2)))
 						{
 							face1++;
@@ -26777,7 +26333,7 @@ int list_FE_element(struct FE_element *element)
 	{
 		return_code=1;
 		/* write the identifier */
-		display_message(INFORMATION_MESSAGE,"element : %d \n",element->identifier.number);
+		display_message(INFORMATION_MESSAGE,"element : %d \n",element->identifier);
 		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
 		if (element->shape)
 		{
@@ -26797,7 +26353,7 @@ int list_FE_element(struct FE_element *element)
 				{
 					if (*face)
 					{
-						display_message(INFORMATION_MESSAGE," (%d)",(*face)->identifier.number);
+						display_message(INFORMATION_MESSAGE," (%d)",(*face)->identifier);
 					}
 					else
 					{
@@ -26822,7 +26378,7 @@ int list_FE_element(struct FE_element *element)
 				{
 					if (element->parents[i])
 					{
-						sprintf(line+strlen(line)," (%d)", element->parents[i]->identifier.number);
+						sprintf(line+strlen(line)," (%d)", element->parents[i]->identifier);
 						if (70<=strlen(line))
 						{
 							display_message(INFORMATION_MESSAGE,line);
@@ -28017,7 +27573,7 @@ is checked and the <top_level_xi> calculated.
 	if (element&&xi&&top_level_element&&top_level_xi&&top_level_element_dimension)
 	{
 		return_code = 1;
-		if (CM_ELEMENT == element->identifier.type)
+		if (0 == element->number_of_parents)
 		{
 			*top_level_element = element;
 			for (i=0;i<element_dimension;i++)
@@ -28337,7 +27893,7 @@ int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeL
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
-		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+		if (calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
 			&number_of_element_field_nodes, &element_field_nodes_array,
 			/*top_level_element*/(struct FE_element *)NULL))
 		{
@@ -28373,7 +27929,7 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
-		if (calculate_FE_element_field_nodes(element, (struct FE_field *)NULL,
+		if (calculate_FE_element_field_nodes(element, /*face_number*/-1, (struct FE_field *)NULL,
 			&number_of_element_field_nodes, &element_field_nodes_array,
 			/*top_level_element*/(struct FE_element *)NULL))
 		{
@@ -28446,64 +28002,18 @@ Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
 } /* FE_element_is_dimension_3 */
 
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(FE_element_is_top_level);
 	USE_PARAMETER(dummy_void);
 	if (element)
-	{
-		return_code = (0 == element->number_of_parents);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_top_level.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_top_level */
-
-int FE_element_is_not_top_level(struct FE_element *element,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_is_not_top_level);
-	USE_PARAMETER(dummy_void);
-	if (element)
-	{
-		return_code=(CM_ELEMENT != element->identifier.type);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_not_top_level.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_not_top_level */
+		return (0 == element->number_of_parents);
+	return 0;
+}
 
 bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mesh)
 {
 	if (element && target_fe_mesh)
 	{
-		FE_element *target_element = target_fe_mesh->findElementByIdentifier(element->identifier.number);
+		FE_element *target_element = target_fe_mesh->findElementByIdentifier(element->identifier);
 		if (FE_element_shape_is_unspecified(element->shape))
 		{
 			// unspecified shape is used for nodal element:xi values when/ element is
@@ -28513,7 +28023,7 @@ bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mes
 			if (!target_element)
 			{
 				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global mesh",
-					get_FE_element_dimension(element), element->identifier.number);
+					get_FE_element_dimension(element), element->identifier);
 				return false;
 			}
 		}
@@ -28523,7 +28033,7 @@ bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mes
 			{
 				display_message(ERROR_MESSAGE,
 					"%d-D element %d shape and faces are not compatible with global element.",
-					get_FE_element_dimension(element), element->identifier.number);
+					get_FE_element_dimension(element), element->identifier);
 				return false;
 			}
 		}
@@ -28531,322 +28041,6 @@ bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mes
 	}
 	return false;
 }
-
-int ensure_FE_element_is_in_list(struct FE_element *element,
-	void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Iterator function for adding <element> to <element_list> if not currently in it.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(ensure_FE_element_is_in_list);
-	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
-	{
-		if (!FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&(element->identifier),element_list))
-		{
-			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_FE_element_is_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_FE_element_is_in_list */
-
-int ensure_FE_element_is_in_list_conditional(struct FE_element *element,
-	void *list_conditional_data_void)
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Iterator function for adding <element> to a list - if not already in it - if a
-conditional function with user_data is true.
-The element_list, conditional function and user_data are passed in a
-struct FE_element_list_conditional_data * in the second argument.
-Warning: Must not be iterating over the list being added to!
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_list_conditional_data *list_conditional_data;
-
-	ENTER(ensure_FE_element_is_in_list_conditional);
-	if (element&&(list_conditional_data=
-		(struct FE_element_list_conditional_data *)list_conditional_data_void)&&
-		list_conditional_data->element_list&&list_conditional_data->function)
-	{
-		if ((list_conditional_data->function)(element,
-			list_conditional_data->user_data))
-		{
-			if (!IS_OBJECT_IN_LIST(FE_element)(element,
-				list_conditional_data->element_list))
-			{
-				return_code=ADD_OBJECT_TO_LIST(FE_element)(element,
-					list_conditional_data->element_list);
-			}
-			else
-			{
-				return_code=1;
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_FE_element_is_in_list_conditional.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_FE_element_is_in_list_conditional */
-
-int ensure_FE_element_is_not_in_list(struct FE_element *element,
-	void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Iterator function for removing <element> from <element_list> if currently in it.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(ensure_FE_element_is_not_in_list);
-	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&(element->identifier),element_list))
-		{
-			return_code=REMOVE_OBJECT_FROM_LIST(FE_element)(element,element_list);
-		}
-		else
-		{
-			return_code=1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_FE_element_is_not_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_FE_element_is_not_in_list */
-
-int toggle_FE_element_in_list(struct FE_element *element,
-	void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-If <element> is in <element_list> it is taken out, otherwise it is added.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(toggle_FE_element_in_list);
-	if (element&&(element_list=(struct LIST(FE_element) *)element_list_void))
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element,identifier)(
-			&(element->identifier),element_list))
-		{
-			return_code=REMOVE_OBJECT_FROM_LIST(FE_element)(element,element_list);
-		}
-		else
-		{
-			return_code=ADD_OBJECT_TO_LIST(FE_element)(element,element_list);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"toggle_FE_element_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* toggle_FE_element_in_list */
-
-int add_FE_element_of_CM_element_type_to_list(struct FE_element *element,
-	void *element_list_type_data_void)
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator function which, if <element> is of the given CM_element_type, adds it
-to the element_list if not currently in it.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element_list_CM_element_type_data *element_list_type_data;
-
-	ENTER(add_FE_element_of_CM_element_type_to_list);
-	if (element && (element_list_type_data =
-		(struct FE_element_list_CM_element_type_data *)element_list_type_data_void))
-	{
-		if ((element->identifier.type == element_list_type_data->cm_element_type) &&
-			(!IS_OBJECT_IN_LIST(FE_element)(element,
-				element_list_type_data->element_list)))
-		{
-			return_code = ADD_OBJECT_TO_LIST(FE_element)(element,
-				element_list_type_data->element_list);
-		}
-		else
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"add_FE_element_of_CM_element_type_to_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_element_of_CM_element_type_to_list */
-
-int ensure_top_level_FE_element_nodes_are_in_list(struct FE_element *element,
-	void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 15 September 2000
-
-DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-ensures all its nodes are added to the <node_list> if not currently in it.
-==============================================================================*/
-{
-	int i,return_code;
-	struct FE_node **node;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(ensure_top_level_FE_element_nodes_are_in_list);
-	if (element&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		return_code=1;
-		/* only nodes in parentless elements need be added */
-		/*???SAB Mark Sagar uses CM_FACE instead of CM_ELEMENT for his toplevel
-		  elements in some meshes, hence we don't check for CM_ELEMENT here */
-		if (element->information)
-		{
-			/* note that element may have no node-based fields */
-			if (NULL != (node=element->information->nodes))
-			{
-				for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
-				{
-					if ((*node)&&(!IS_OBJECT_IN_LIST(FE_node)(*node,node_list)))
-					{
-						if (!ADD_OBJECT_TO_LIST(FE_node)(*node,node_list))
-						{
-							display_message(ERROR_MESSAGE,
-								"ensure_top_level_FE_element_nodes_are_in_list.  "
-								"Could not add node to list");
-							return_code=0;
-						}
-					}
-					node++;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_top_level_FE_element_nodes_are_in_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_top_level_FE_element_nodes_are_in_list */
-
-int ensure_top_level_FE_element_nodes_are_not_in_list(
-	struct FE_element *element,void *node_list_void)
-/*******************************************************************************
-LAST MODIFIED : 15 September 2000
-
-DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-ensures none of its nodes are in <node_list>.
-==============================================================================*/
-{
-	int i,return_code;
-	struct FE_node **node;
-	struct LIST(FE_node) *node_list;
-
-	ENTER(ensure_top_level_FE_element_nodes_are_not_in_list);
-	if (element&&(node_list=(struct LIST(FE_node) *)node_list_void))
-	{
-		return_code=1;
-		/* only nodes in parentless elements need be added */
-		if (CM_ELEMENT==element->identifier.type)
-		{
-			if (element->information)
-			{
-				/* note that element may have no node-based fields */
-				if (NULL != (node=element->information->nodes))
-				{
-					for (i=element->information->number_of_nodes;(0<i)&&return_code;i--)
-					{
-						if ((*node)&&IS_OBJECT_IN_LIST(FE_node)(*node,node_list))
-						{
-							if (!REMOVE_OBJECT_FROM_LIST(FE_node)(*node,node_list))
-							{
-								display_message(ERROR_MESSAGE,
-									"ensure_top_level_FE_element_nodes_are_not_in_list.  "
-									"Could not remove node from list");
-								return_code=0;
-							}
-						}
-						node++;
-					}
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"ensure_top_level_FE_element_nodes_are_not_in_list.  "
-					"Missing node scale field information");
-				return_code=0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"ensure_top_level_FE_element_nodes_are_not_in_list.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* ensure_top_level_FE_element_nodes_are_not_in_list */
 
 struct FE_element_parent_has_field_data
 /*******************************************************************************
@@ -31971,87 +31165,6 @@ the <increment> will contain the fraction of the increment not used.
 
 	return (return_code);
 } /* FE_element_xi_increment */
-
-struct FE_element *create_FE_element_with_line_shape(int identifier,
-	FE_mesh *fe_mesh)
-{
-	int dimension, i,j,return_code,*type,*type_entry;
-	struct CM_element_information element_identifier;
-	struct FE_element *element;
-	struct FE_element_shape *element_shape;
-
-	ENTER(create_FE_element_with_tensor_product_basis);
-	return_code=1;
-	element = (struct FE_element *)NULL;
-	if (identifier && fe_mesh && ((dimension = fe_mesh->getDimension()) > 0))
-	{
-		/* make shape */
-		element_shape=(struct FE_element_shape *)NULL;
-		/* make default n-D "square" element shape */
-		if (ALLOCATE(type,int,(dimension*(dimension+1))/2))
-		{
-			/* retrieve a "square" element of the specified dimension */
-			type_entry=type;
-			for (i=dimension-1;i>=0;i--)
-			{
-				*type_entry=LINE_SHAPE;
-				type_entry++;
-				for (j=i;j>0;j--)
-				{
-					*type_entry=0;
-					type_entry++;
-				}
-			}
-			if (NULL != (element_shape=CREATE(FE_element_shape)(dimension,type,
-					fe_mesh->get_FE_region())))
-			{
-				ACCESS(FE_element_shape)(element_shape);
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"create_FE_element_with_line_shape.  Error creating shape");
-				return_code=0;
-			}
-			DEALLOCATE(type);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"create_FE_element_with_line_shape.  Not enough memory");
-			return_code=0;
-		}
-		/* make element */
-		if (return_code)
-		{
-			element_identifier.type=CM_ELEMENT;
-			element_identifier.number=identifier;
-			if (!(element = CREATE(FE_element)(
-				&element_identifier, element_shape, fe_mesh, (struct FE_element *)NULL)))
-			{
-				display_message(ERROR_MESSAGE,
-					"create_FE_element_with_line_shape.  "
-					"Could not set element shape and field info");
-				DESTROY(FE_element)(&(element));
-				return_code=0;
-			}
-		}
-		/* deaccess shape so at most used by template element */
-		if (element_shape)
-		{
-			DEACCESS(FE_element_shape)(&element_shape);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"create_FE_element_with_line_shape.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (element);
-} /* create_FE_element_with_line_shape */
 
 int FE_element_define_tensor_product_basis(struct FE_element *element,
 	int dimension, enum FE_basis_type basis_type, struct FE_field *field)

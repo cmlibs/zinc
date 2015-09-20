@@ -25,15 +25,6 @@
 #include "general/value.h"
 
 /*
-Global defines
---------------
-*/
-
-// GRC temporary until CM_element_type removed from FE_element identifier
-#define DIMENSION_TO_CM_ELEMENT_TYPE(dimension) \
-	((dimension == 3) ? CM_ELEMENT : ((dimension == 2) ? CM_FACE : CM_LINE))
-
-/*
 Global types
 ------------
 */
@@ -243,32 +234,6 @@ calculated from the element field as required and are then destroyed.
 ==============================================================================*/
 
 DECLARE_LIST_TYPES(FE_element_field_values);
-
-enum CM_element_type
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-CM element types.
-==============================================================================*/
-{
-  CM_ELEMENT_TYPE_INVALID,
-  CM_ELEMENT,
-  CM_FACE,
-  CM_LINE
-}; /* enum CM_element_type */
-
-struct CM_element_information
-/*******************************************************************************
-LAST MODIFIED : 25 January 1999
-
-DESCRIPTION :
-Element information needed by CM.
-==============================================================================*/
-{
-  enum CM_element_type type;
-  int number;
-}; /* struct CM_element_information */
 
 enum FE_element_shape_type
 /*******************************************************************************
@@ -1721,22 +1686,22 @@ Returns true if the <element_field_values> are valid for calculating
 derivatives.
 ==============================================================================*/
 
+/**
+ * If <field> is NULL, element nodes are calculated for the coordinate field.  The
+ * function allocates an array, <*element_field_nodes_array_address> to store the
+ * pointers to the ACCESS'd element nodes.  Components that are not node-based are
+ * ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
+ * fastest in xi2 and so on).
+ * The optional <top_level_element> forces inheritance from it as needed.
+ * NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
+ * @param face_number  If non-negative, calculate nodes for face number of
+ * element, as if the face element were supplied to this function.
+ */
 int calculate_FE_element_field_nodes(struct FE_element *element,
-	struct FE_field *field,int *number_of_element_field_nodes_address,
+	int face_number, struct FE_field *field,
+	int *number_of_element_field_nodes_address,
 	struct FE_node ***element_field_nodes_array_address,
 	struct FE_element *top_level_element);
-/*******************************************************************************
-LAST MODIFIED : 12 February 2003
-
-DESCRIPTION :
-If <field> is NULL, element nodes are calculated for the coordinate field.  The
-function allocates an array, <*element_field_nodes_array_address> to store the
-pointers to the ACCESS'd element nodes.  Components that are not node-based are
-ignored.  The element nodes are ordered by increasing xi (fastest in xi1, next
-fastest in xi2 and so on).
-The optional <top_level_element> forces inheritance from it as needed.
-NB.  The nodes need to be DEACCESS'd before the nodes array is DEALLOCATE'd.
-==============================================================================*/
 
 int calculate_FE_element_field(int component_number,
 	struct FE_element_field_values *element_field_values,
@@ -1855,6 +1820,11 @@ PROTOTYPE_LIST_FUNCTIONS(FE_element_shape);
  */
 struct FE_element_shape *FE_element_shape_create_simple_type(
 	struct FE_region *fe_region, enum cmzn_element_shape_type shape_type);
+
+/**
+ * Returns the number of faces of the element shape.
+ */
+int FE_element_shape_get_number_of_faces(FE_element_shape *element_shape);
 
 /***************************************************************************//**
  * Returns a cmzn_element_shape_type describing the shape if possible.
@@ -1982,55 +1952,6 @@ The <tolerance> allows the location to go slightly outside.  If the values for
 are modified to put it on the nearest face.
 ==============================================================================*/
 
-const char *CM_element_type_string(enum CM_element_type cm_element_type);
-/*******************************************************************************
-LAST MODIFIED : 26 August 1999
-
-DESCRIPTION :
-Returns a static string describing the <cm_element_type>, eg. CM_LINE = 'line'.
-Returned string must not be deallocated!
-==============================================================================*/
-
-int FE_element_to_any_element_string(struct FE_element *element,
-	char **name_ptr);
-/*******************************************************************************
-LAST MODIFIED : 19 March 2003
-
-DESCRIPTION :
-Writes the element as an allocated string containing TYPE NUMBER. Now does not
-write element for CM_ELEMENT types.
-==============================================================================*/
-
-/**
- * Creates and returns an element with the specified <cm> identifier.
- * If <fe_mesh> is supplied a blank element with the given identifier but no
- * fields is returned. If <template_element> is supplied, a copy of it, including
- * all fields and values but with the new identifier, is returned.
- * Exactly one of <fe_mesh> or <template_element> must be supplied.
- * The <element_shape> is required unless a <template_element> is supplied.
- * The new element is set to belong to fe_mesh if supplied, or to the same master
- * FE_mesh as <template_element> if supplied.
- * Note that the element number in <cm> must be non-negative.
- */
-struct FE_element *CREATE(FE_element)(struct CM_element_information *cm,
-	struct FE_element_shape *element_shape,
-	FE_mesh *fe_mesh, struct FE_element *template_element);
-
-int DESTROY(FE_element)(struct FE_element **element_address);
-/*******************************************************************************
-LAST MODIFIED : 23 September 1995
-
-DESCRIPTION :
-Frees the memory for the element, sets <*element_address> to NULL.
-==============================================================================*/
-
-/**
- * Clear content of element and disconnect it from owning mesh.
- * Use when removing element from mesh or deleting mesh to safely orphan any
- * externally accessed elements.
- */
-void FE_element_invalidate(struct FE_element *element);
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
@@ -2111,31 +2032,23 @@ DESCRIPTION :
 Returns the cm number of the <element> or an error if it does not have a shape.
 ==============================================================================*/
 
-int get_FE_element_identifier(struct FE_element *element,
-	struct CM_element_information *identifier);
-/*******************************************************************************
-LAST MODIFIED : 29 October 2002
+/**
+ * @return  The non-negative element identifier or -1 on error.
+ */
+int get_FE_element_identifier(struct FE_element *element);
 
-DESCRIPTION :
-Fills in the <identifier> of <element>.
-==============================================================================*/
-
-int set_FE_element_identifier(struct FE_element *element,
-	struct CM_element_information *identifier);
-/*******************************************************************************
-LAST MODIFIED : 10 May 2003
-
-DESCRIPTION :
-Changes the identifier of <element> to <identifier>.
-Caution! Should only call for elements that are NOT in indexed lists, i.e.
-temporary/non-global elements that are not in FE_regions.
-To enable identifier changes, must wrap calls to this function between
-LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
-element is temporarily removed from all the indexed lists it is in and re-added
-afterwards.
-If <element> is in an FE_mesh, FE_mesh::change_FE_element_identifier should
-be called to handle the above complications.
-==============================================================================*/
+/**
+ * Changes the identifier of <element> to <identifier>.
+ * Caution! Should only call for elements that are NOT in indexed lists, i.e.
+ * temporary/non-global elements that are not in FE_regions.
+ * To enable identifier changes, must wrap calls to this function between
+ * LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
+ * element is temporarily removed from all the indexed lists it is in and re-added
+ * afterwards.
+ * If <element> is in an FE_mesh, FE_mesh::change_FE_element_identifier should
+ * be called to handle the above complications.
+ */
+int set_FE_element_identifier(struct FE_element *element, int identifier);
 
 int FE_element_or_parent_changed(struct FE_element *element,
 	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
@@ -2594,8 +2507,7 @@ int list_FE_element(struct FE_element *element);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element);
 
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier, \
-	const struct CM_element_information *);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier,int);
 
 PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator);
 
@@ -3444,21 +3356,11 @@ DESCRIPTION :
 Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
 ==============================================================================*/
 
+/**
+ * Conditional function.
+ * @return  1 if element is top-level i.e. has no parents, otherwise 0.
+ */
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if <element> is a top-level element - CM_ELEMENT/no parents.
-==============================================================================*/
-
-int FE_element_is_not_top_level(struct FE_element *element,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 20 July 2000
-
-DESCRIPTION :
-Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
-==============================================================================*/
 
 /**
  * Fetches an element with the same identifier as supplied element from the
@@ -3471,102 +3373,6 @@ Returns true if <element> is not a top-level element = CM_ELEMENT/no parents.
  * No field checks are made as element field definitions can be replaced during merge.
  */
 bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mesh);
-
-int ensure_FE_element_is_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Iterator function for adding <element> to <element_list> if not currently in it.
-==============================================================================*/
-
-struct FE_element_list_conditional_data
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Data for passing to ensure_FE_element_is_in_list_conditional.
-==============================================================================*/
-{
-	struct LIST(FE_element) *element_list;
-	LIST_CONDITIONAL_FUNCTION(FE_element) *function;
-	void *user_data;
-}; /* FE_element_list_conditional_data */
-
-int ensure_FE_element_is_in_list_conditional(struct FE_element *element,
-	void *list_conditional_data_void);
-/*******************************************************************************
-LAST MODIFIED : 4 July 2000
-
-DESCRIPTION :
-Iterator function for adding <element> to a list - if not already in it - if a
-conditional function with user_data is true.
-The element_list, conditional function and user_data are passed in a
-struct FE_element_list_conditional_data * in the second argument.
-Warning: Must not be iterating over the list being added to!
-==============================================================================*/
-
-int ensure_FE_element_is_not_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-Iterator function for removing <element> from <element_list> if currently in it.
-==============================================================================*/
-
-int toggle_FE_element_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 25 February 2000
-
-DESCRIPTION :
-If <element> is in <element_list> it is taken out, otherwise it is added.
-==============================================================================*/
-
-struct FE_element_list_CM_element_type_data
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator data for functions working with elements of a given CM_element_type
-in an element list, eg. add_FE_element_of_CM_element_type_to_list.
-==============================================================================*/
-{
-	enum CM_element_type cm_element_type;
-	struct LIST(FE_element) *element_list;
-};
-
-int add_FE_element_of_CM_element_type_to_list(struct FE_element *element,
-	void *element_list_type_data_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Iterator function which, if <element> is of the given CM_element_type, adds it
-to the element_list if not currently in it.
-==============================================================================*/
-
-int ensure_top_level_FE_element_nodes_are_in_list(struct FE_element *element,
-	void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-ensures all its nodes are added to the <node_list> if not currently in it.
-==============================================================================*/
-
-int ensure_top_level_FE_element_nodes_are_not_in_list(
-	struct FE_element *element,void *node_list_void);
-/*******************************************************************************
-LAST MODIFIED : 20 April 1999
-
-DESCRIPTION :
-Iterator function which, if <element> is top-level (ie. cm.type is CM_ELEMENT),
-ensures none of its nodes are in <node_list>.
-==============================================================================*/
 
 int FE_element_or_parent_has_field(struct FE_element *element,
 	struct FE_field *field,
@@ -4276,13 +4082,6 @@ to this element and the stepping continues using the remaining increment.  If
 no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
-
-/**
- * Creates an element that has a line shape product of the specified mesh
- * dimension.
- */
-struct FE_element *create_FE_element_with_line_shape(int identifier,
-	FE_mesh *fe_mesh);
 
 int FE_element_define_tensor_product_basis(struct FE_element *element,
 	int dimension, enum FE_basis_type basis_type, struct FE_field *field);

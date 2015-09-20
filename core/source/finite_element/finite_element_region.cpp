@@ -1021,8 +1021,6 @@ Must call FE_region_smooth_FE_node for copy_node_list afterwards.
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_element_information cm;
-	struct FE_element *copy_element;
 	struct FE_region_smooth_FE_element_data *smooth_element_data;
 
 	ENTER(FE_region_smooth_FE_element);
@@ -1034,29 +1032,35 @@ Must call FE_region_smooth_FE_node for copy_node_list afterwards.
 		if (FE_element_field_is_standard_node_based(element,
 			smooth_element_data->fe_field))
 		{
-			/*???RC Should make a copy of element with JUST fe_field - would result
-				in a more precise change message and faster response */
-			if (get_FE_element_identifier(element, &cm) &&
-				(copy_element = CREATE(FE_element)(&cm,
-					(struct FE_element_shape *)NULL, (FE_mesh *)NULL, element)))
+			FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+			if (fe_mesh)
 			{
-				ACCESS(FE_element)(copy_element);
-				if (FE_element_smooth_FE_field(copy_element,
-					smooth_element_data->fe_field,
-					smooth_element_data->time,
-					smooth_element_data->element_count_fe_field,
-					smooth_element_data->copy_node_list))
+				/*???RC Should make a copy of element with JUST fe_field - would result
+					in a more precise change message and faster response */
+				FE_element_template *fe_element_template = fe_mesh->create_FE_element_template(element);
+				if (fe_element_template)
 				{
-					if (!smooth_element_data->fe_mesh->merge_FE_element(copy_element))
+					if (FE_element_smooth_FE_field(fe_element_template->get_template_element(),
+						smooth_element_data->fe_field,
+						smooth_element_data->time,
+						smooth_element_data->element_count_fe_field,
+						smooth_element_data->copy_node_list))
+					{
+						if (!smooth_element_data->fe_mesh->merge_FE_element_template(element, fe_element_template))
+						{
+							return_code = 0;
+						}
+					}
+					else
 					{
 						return_code = 0;
 					}
+					cmzn::Deaccess(fe_element_template);
 				}
 				else
 				{
 					return_code = 0;
 				}
-				DEACCESS(FE_element)(&copy_element);
 			}
 			else
 			{

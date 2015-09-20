@@ -45,6 +45,26 @@ DsLabels::~DsLabels()
 	}
 }
 
+/** restore to initial empty, contiguous state. Keeps current name, if any */
+void DsLabels::clear()
+{
+	// can't free externally held objects, hence just invalidate for safety
+	DsLabelIterator *iterator = this->activeIterators;
+	while (iterator)
+	{
+		iterator->invalidate();
+		iterator = iterator->next;
+	}
+	this->contiguous = true;
+	this->firstFreeIdentifier = 1;
+	this->firstIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	this->lastIdentifier = DS_LABEL_IDENTIFIER_INVALID;
+	this->identifiers.clear();
+	this->identifierToIndexMap.clear();
+	this->labelsCount = 0;
+	this->indexSize = 0;
+}
+
 void DsLabels::updateFirstFreeIdentifier()
 {
 	if (this->firstFreeIdentifier != (this->lastIdentifier + 1))

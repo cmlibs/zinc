@@ -1020,14 +1020,12 @@ No Element_point_ranges object is returned without error if:
 ==============================================================================*/
 {
 	int grid_value_in_range,i,number_of_grid_values,*values;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct Element_point_ranges_identifier identifier;
 
 	ENTER(Element_point_ranges_from_grid_field_ranges);
 	element_point_ranges=(struct Element_point_ranges *)NULL;
-	if (element && get_FE_element_identifier(element, &element_identifier) &&
-		(CM_ELEMENT == element_identifier.type) && grid_field &&
+	if (element && FE_element_is_top_level(element, (void *)0) && grid_field &&
 		(1==get_FE_field_number_of_components(grid_field))&&
 		(INT_VALUE==get_FE_field_value_type(grid_field))&&ranges)
 	{
@@ -1108,11 +1106,10 @@ Note that there may legitimately be none if <grid_field> is not grid-based in
 The structure is then added to the <element_point_ranges_list>.
 select_data_void should point to a
 struct FE_element_grid_to_Element_point_ranges_list_data.
-Uses only top level elements, type CM_ELEMENT.
+Uses only top level elements.
 ==============================================================================*/
 {
 	int return_code;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges *element_point_ranges;
 	struct FE_element_grid_to_Element_point_ranges_list_data *grid_to_list_data;
 
@@ -1121,8 +1118,7 @@ Uses only top level elements, type CM_ELEMENT.
 		(struct FE_element_grid_to_Element_point_ranges_list_data *)
 		grid_to_list_data_void))
 	{
-		if (get_FE_element_identifier(element, &element_identifier) &&
-			(CM_ELEMENT == element_identifier.type) &&
+		if (FE_element_is_top_level(element, (void *)0) &&
 			(element_point_ranges=Element_point_ranges_from_grid_field_ranges(
 				element,grid_to_list_data->grid_fe_field,
 				grid_to_list_data->grid_value_ranges)))
@@ -1163,7 +1159,6 @@ If field and element_point_ranges not identically grid-based, clear
 {
 	int dimension,native,number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],i,
 		number_of_grid_values,return_code,*values;
-	struct CM_element_information element_identifier;
 	struct Element_point_ranges_grid_to_multi_range_data
 		*grid_to_multi_range_data;
 	struct FE_element *element;
@@ -1181,8 +1176,7 @@ If field and element_point_ranges not identically grid-based, clear
 		/* work out if element_point_ranges matches the native discretization of
 			 grid_fe_field in element */
 		native=0;
-		if (get_FE_element_identifier(element, &element_identifier) &&
-			(CM_ELEMENT == element_identifier.type) &&
+		if (FE_element_is_top_level(element, (void *)0) &&
 			(CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS ==
 				element_point_ranges->id.sampling_mode)&&
 			FE_element_field_is_grid_based(element,grid_fe_field))
@@ -1255,7 +1249,6 @@ in <element> to the <multi_range>.
 ==============================================================================*/
 {
 	int i,number_of_grid_values,return_code,*values;
-	struct CM_element_information element_identifier;
 	struct FE_element_grid_to_multi_range_data *grid_to_multi_range_data;
 	struct FE_field *grid_fe_field;
 	struct Multi_range *multi_range;
@@ -1270,8 +1263,7 @@ in <element> to the <multi_range>.
 		(multi_range=grid_to_multi_range_data->multi_range))
 	{
 		return_code = 1;
-		if (get_FE_element_identifier(element, &element_identifier) &&
-			(CM_ELEMENT == element_identifier.type) &&
+		if (FE_element_is_top_level(element, (void *)0) &&
 			FE_element_field_is_grid_based(element, grid_fe_field))
 		{
 			if (get_FE_element_field_component_grid_int_values(element,

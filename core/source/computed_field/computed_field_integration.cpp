@@ -695,6 +695,7 @@ time is supplied in the workingCache.
 			&& get_FE_element_shape(mapping_item->element, &shape)
 			&& FE_element_shape_is_line(shape)
 			&& calculate_FE_element_field_nodes(mapping_item->element,
+				/*inherit_face_number*/-1,
 				fe_field, &number_of_element_field_nodes,
 				&element_field_nodes_array, mapping_item->element))
 		{
@@ -1044,7 +1045,6 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 	// @TODO: resurrect the slightly more efficient old code?
 	FE_value element_to_top_level[9];
 	int return_code;
-	CM_element_information cm;
 	FE_element *top_level_element;
 
 	ENTER(Computed_field_default::is_defined_at_location);
@@ -1072,7 +1072,6 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 					/* Use the mapping from whatever time */
 				}
 				/* 1. Get top_level_element for types that must be calculated on them */
-				get_FE_element_identifier(element, &cm);
 				if (FE_element_is_top_level(element, (void *)NULL))
 				{
 					top_level_element=element;
@@ -1168,7 +1167,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		top_level_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int coordinate_dimension, element_dimension, i, j, k,
 		top_level_element_dimension = -1;
-	CM_element_information cm;
 	Computed_field *coordinate_field, *integrand;
 
 	int return_code = 1;
@@ -1201,8 +1199,6 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 		}
 		/* 1. Get top_level_element for types that must be calculated on them */
 		element_dimension=get_FE_element_dimension(element);
-		get_FE_element_identifier(element, &cm);
-		// GRC try new code for this:
 		if (FE_element_is_top_level(element, (void *)NULL))
 		{
 			top_level_element=element;
@@ -1326,7 +1322,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 				display_message(ERROR_MESSAGE,
 					"Computed_field_integration::evaluate."
 					"  Element %d not found in Xi texture coordinate mapping field %s",
-					cm.number, field->name);
+					get_FE_element_identifier(element), field->name);
 				return_code=0;
 			}
 		}
