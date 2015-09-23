@@ -546,10 +546,10 @@ TEST(ZincRegion, bifurcation)
 
 	// test writing and re-reading in FieldML format, with non-contiguous
 	// element and node identifiers to test different code used in that case
-	offset_identifiers(testFm2, /*idFirst*/2, /*idBlockSize*/6, /*idBlockSpan*/8);
+	offset_identifiers(testFm2, /*idFirst*/1, /*idBlockSize*/6, /*idBlockSpan*/8);
 	EXPECT_EQ(OK, result = testRegion2.writeFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
 	Region testRegion3 = zinc.root_region.createChild("test3");
 	EXPECT_EQ(OK, result = testRegion3.readFile(FIELDML_OUTPUT_FOLDER "/bifurcation_noncontiguous.fieldml"));
 	Fieldmodule testFm3 = testRegion3.getFieldmodule();
-	check_bifurcation(testFm3, /*idFirst*/2, /*idBlockSize*/6, /*idBlockSpan*/8);
+	check_bifurcation(testFm3, /*idFirst*/1, /*idBlockSize*/6, /*idBlockSpan*/8);
 }

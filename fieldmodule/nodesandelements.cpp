@@ -42,7 +42,7 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_NE(static_cast<cmzn_streaminformation *>(0), cube_si);
 
 	cmzn_streamresource_id cube_sr = cmzn_streaminformation_create_streamresource_file(
-		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+		cube_si, TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE));
 	EXPECT_NE(static_cast<cmzn_streamresource *>(0), cube_sr);
 
 	cmzn_streaminformation_region_id cube_si_region = cmzn_streaminformation_cast_region(
@@ -66,15 +66,16 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_TRUE(cmzn_fieldmodule_match(cubeFm, tmpFm));
 	cmzn_fieldmodule_destroy(&tmpFm);
 
-	cmzn_node_id node = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
-	EXPECT_NE(static_cast<cmzn_node *>(0), node);
+	cmzn_node_id node1 = cmzn_nodeset_find_node_by_identifier(nodeset, 1);
+	EXPECT_NE(static_cast<cmzn_node *>(0), node1);
 
-	cmzn_nodeset_id tmpNodeset = cmzn_node_get_nodeset(node);
+	cmzn_nodeset_id tmpNodeset = cmzn_node_get_nodeset(node1);
 	EXPECT_TRUE(cmzn_nodeset_match(nodeset, tmpNodeset));
 	cmzn_nodeset_destroy(&tmpNodeset);
 
-	EXPECT_EQ(CMZN_ERROR_ALREADY_EXISTS, result = cmzn_node_set_identifier(node, 3));
-	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node, 9));
+	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node1, 1)); // can always set to current identifier
+	EXPECT_EQ(CMZN_ERROR_ALREADY_EXISTS, result = cmzn_node_set_identifier(node1, 3));
+	EXPECT_EQ(CMZN_OK, result = cmzn_node_set_identifier(node1, 13));
 
 	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(cubeFm, 3);
 	EXPECT_NE(static_cast<cmzn_mesh *>(0), mesh);
@@ -83,21 +84,22 @@ TEST(nodes_elements_identifier, set_identifier)
 	EXPECT_TRUE(cmzn_fieldmodule_match(cubeFm, tmpFm));
 	cmzn_fieldmodule_destroy(&tmpFm);
 
-	cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, 1);
-	EXPECT_NE(static_cast<cmzn_element *>(0), element);
+	cmzn_element_id element1 = cmzn_mesh_find_element_by_identifier(mesh, 1);
+	EXPECT_NE(static_cast<cmzn_element *>(0), element1);
 
-	cmzn_mesh_id tmpMesh = cmzn_element_get_mesh(element);
+	cmzn_mesh_id tmpMesh = cmzn_element_get_mesh(element1);
 	EXPECT_TRUE(cmzn_mesh_match(mesh, tmpMesh));
 	cmzn_mesh_destroy(&tmpMesh);
 
-	EXPECT_EQ(CMZN_ERROR_ALREADY_EXISTS, result = cmzn_element_set_identifier(element, 1));
-	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element, 2));
+	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element1, 1)); // can always set to current identifier
+	EXPECT_EQ(CMZN_ERROR_ALREADY_EXISTS, result = cmzn_element_set_identifier(element1, 2));
+	EXPECT_EQ(CMZN_OK, result = cmzn_element_set_identifier(element1, 3));
 
-	cmzn_element_destroy(&element);
+	cmzn_element_destroy(&element1);
 	cmzn_mesh_destroy(&mesh);
 	cmzn_fieldmodule_destroy(&cubeFm);
 	cmzn_nodeset_destroy(&nodeset);
-	cmzn_node_destroy(&node);
+	cmzn_node_destroy(&node1);
 
 	cmzn_region_destroy(&cube_region);
 }
@@ -111,7 +113,7 @@ TEST(ZincNodesElements, setIdentifier)
 	EXPECT_TRUE(cubeSi.isValid());
 
 	Streamresource cubeSr = cubeSi.createStreamresourceFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_CUBE_RESOURCE));
+		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE));
 	EXPECT_TRUE(cubeSr.isValid());
 
 	// test casting of stream resources
@@ -129,26 +131,28 @@ TEST(ZincNodesElements, setIdentifier)
 
 	EXPECT_EQ(cubeFm, nodeset.getFieldmodule());
 
-	Node node = nodeset.findNodeByIdentifier(1);
-	EXPECT_TRUE(node.isValid());
+	Node node1 = nodeset.findNodeByIdentifier(1);
+	EXPECT_TRUE(node1.isValid());
 
-	EXPECT_EQ(nodeset, node.getNodeset());
+	EXPECT_EQ(nodeset, node1.getNodeset());
 
-	EXPECT_EQ(ERROR_ALREADY_EXISTS, result = node.setIdentifier(3));
-	EXPECT_EQ(OK, result = node.setIdentifier(9));
+	EXPECT_EQ(OK, result = node1.setIdentifier(1)); // can always set to current identifier
+	EXPECT_EQ(ERROR_ALREADY_EXISTS, result = node1.setIdentifier(3));
+	EXPECT_EQ(OK, result = node1.setIdentifier(13));
 
 	Mesh mesh = cubeFm.findMeshByDimension(3);
 	EXPECT_TRUE(mesh.isValid());
 
 	EXPECT_EQ(cubeFm, mesh.getFieldmodule());
 
-	Element element = mesh.findElementByIdentifier(1);
-	EXPECT_TRUE(element.isValid());
+	Element element1 = mesh.findElementByIdentifier(1);
+	EXPECT_TRUE(element1.isValid());
 
-	EXPECT_EQ(mesh, element.getMesh());
+	EXPECT_EQ(mesh, element1.getMesh());
 
-	EXPECT_EQ(ERROR_ALREADY_EXISTS, result = element.setIdentifier(1));
-	EXPECT_EQ(OK, result = element.setIdentifier(2));
+	EXPECT_EQ(OK, result = element1.setIdentifier(1)); // can always set to current identifier
+	EXPECT_EQ(ERROR_ALREADY_EXISTS, result = element1.setIdentifier(2));
+	EXPECT_EQ(OK, result = element1.setIdentifier(3));
 }
 
 TEST(ZincElementiterator, iteration)
