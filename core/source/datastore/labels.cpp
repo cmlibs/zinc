@@ -73,7 +73,7 @@ DsLabelIdentifier DsLabels::getFirstFreeIdentifier(DsLabelIdentifier startIdenti
 {
 	DsLabelIdentifier identifier =
 		(startIdentifier <= this->firstFreeIdentifier) ? this->firstFreeIdentifier : startIdentifier;
-	if (identifier < (this->lastIdentifier + 1))
+	if (identifier <= this->lastIdentifier)
 	{
 		// this can be optimised using an iterator:
 		while (DS_LABEL_INDEX_INVALID != findLabelByIdentifier(identifier))
@@ -127,7 +127,8 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 		{
 			index = this->indexSize;
 			this->lastIdentifier = identifier;
-			this->firstFreeIdentifier = this->lastIdentifier + 1;
+			if (identifier == this->firstFreeIdentifier)
+				++this->firstFreeIdentifier;
 			++this->labelsCount;
 			++this->indexSize;
 			return index;
