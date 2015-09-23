@@ -73,7 +73,7 @@ FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element *el
 	cmzn::RefCounted(),
 	mesh(mesh_in->access()),
 	element_shape(0),
-	template_element(create_FE_element_from_template(/*identifier*/-1, element))
+	template_element(create_FE_element_from_template(DS_LABEL_INDEX_INVALID, element))
 {
 }
 
@@ -103,18 +103,17 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	element_field_info_list(CREATE(LIST(FE_element_field_info))()),
 	parentMesh(0),
 	faceMesh(0),
-	fe_element_changes(0),
+	changeLog(0),
 	last_fe_element_field_info(0),
 	element_type_node_sequence_list(0),
 	definingFaces(false),
-	next_fe_element_identifier_cache(0),
 	access_count(1)
 {
 }
 
 FE_mesh::~FE_mesh()
 {
-	DESTROY(CHANGE_LOG(FE_element))(&this->fe_element_changes);
+	cmzn::Deaccess(this->changeLog);
 	this->last_fe_element_field_info = 0;
 	DESTROY(LIST(FE_element))(&(this->elementList));
 	// remove pointers to this FE_mesh as destroying
@@ -142,11 +141,11 @@ FE_mesh::~FE_mesh()
  * <field_info_element>. For changes to the contents of <element>, <field_info_element>
  * should contain the changed fields, consistent with merging it into <element>.
  */
-void FE_mesh::elementChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) change, FE_element *field_info_element)
+void FE_mesh::elementChange(FE_element *element, int change, FE_element *field_info_element)
 {
-	if (this->fe_region)
+	if (this->fe_region && this->changeLog)
 	{
-		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element, change);
+		this->changeLog->setIndexChange(get_FE_element_index(element), change);
 		// for efficiency, the following marks field changes only if field info changes
 		FE_element_log_FE_field_changes(field_info_element, fe_region->fe_field_changes, /*recurseParents*/true);
 		this->fe_region->update();
@@ -156,12 +155,12 @@ void FE_mesh::elementChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) c
 /**
  * Records change to element affecting the supplied fields.
  */
-void FE_mesh::elementFieldListChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) change,
+void FE_mesh::elementFieldListChange(FE_element *element, int change,
 	LIST(FE_field) *changed_fe_field_list)
 {
-	if (this->fe_region)
+	if (this->fe_region && this->changeLog)
 	{
-		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element, change);
+		this->changeLog->setIndexChange(get_FE_element_index(element), change);
 		FOR_EACH_OBJECT_IN_LIST(FE_field)(FE_field_log_FE_field_change,
 			(void *)this->fe_region->fe_field_changes, changed_fe_field_list);
 		this->fe_region->update();
@@ -173,10 +172,11 @@ void FE_mesh::elementFieldListChange(FE_element *element, CHANGE_LOG_CHANGE(FE_e
  */
 void FE_mesh::elementIdentifierChange(FE_element *element)
 {
-	this->next_fe_element_identifier_cache = 0;
-	CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
-		CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element));
-	this->fe_region->update();
+	if (this->fe_region && this->changeLog)
+	{
+		this->changeLog->setIndexChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_IDENTIFIER);
+		this->fe_region->update();
+	}
 }
 
 /**
@@ -185,10 +185,9 @@ void FE_mesh::elementIdentifierChange(FE_element *element)
  */
 void FE_mesh::elementFieldChange(FE_element *element, FE_field *fe_field)
 {
-	if (this->fe_region)
+	if (this->fe_region && this->changeLog)
 	{
-		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
-			CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element));
+		this->changeLog->setIndexChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_RELATED);
 		CHANGE_LOG_OBJECT_CHANGE(FE_field)(this->fe_region->fe_field_changes,
 			fe_field, CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_field));
 		this->fe_region->update();
@@ -197,10 +196,9 @@ void FE_mesh::elementFieldChange(FE_element *element, FE_field *fe_field)
 
 void FE_mesh::elementAddedChange(FE_element *element)
 {
-	if (this->fe_region)
+	if (this->fe_region && this->changeLog)
 	{
-		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
-			CHANGE_LOG_OBJECT_ADDED(FE_element));
+		this->changeLog->setIndexChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_ADD);
 		// for efficiency, the following marks field changes only if field info changes
 		FE_element_log_FE_field_changes(element, fe_region->fe_field_changes, /*recurseParents*/true);
 		this->fe_region->update();
@@ -211,28 +209,26 @@ void FE_mesh::elementRemovedChange(FE_element *element)
 {
 	if (this->fe_region)
 	{
-		this->next_fe_element_identifier_cache = 0;
-		CHANGE_LOG_OBJECT_CHANGE(FE_element)(this->fe_element_changes, element,
-			CHANGE_LOG_OBJECT_REMOVED(FE_element));
+		this->changeLog->setIndexChange(get_FE_element_index(element), DS_LABEL_CHANGE_TYPE_REMOVE);
 		// for efficiency, the following marks field changes only if field info changes
 		FE_element_log_FE_field_changes(element, fe_region->fe_field_changes, /*recurseParents*/true);
 		this->fe_region->update();
 	}
 }
 
-// NOTE! Only to be called by FE_region_clear
-// Expects change cache to be on, otherwise very inefficient
+// Only to be called by FE_region_clear, or when all elements removed to reset data structures
 void FE_mesh::clear()
 {
+	FE_region_begin_change(this->fe_region);
 	cmzn_elementiterator *iter = this->createElementiterator();
 	cmzn_element *element = 0;
 	while ((0 != (element = cmzn_elementiterator_next_non_access(iter))))
 	{
 		this->elementRemovedChange(element);
+		FE_element_invalidate(element);
 	}
 	cmzn_elementiterator_destroy(&iter);
-	REMOVE_OBJECTS_FROM_LIST_THAT(FE_element)((LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL,
-		(void *)NULL, this->elementList);
+	REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(this->elementList);
 
 	for (int i = 0; i < this->elementShapeFacesCount; ++i)
 		delete this->elementShapeFaces[i];
@@ -243,22 +239,23 @@ void FE_mesh::clear()
 	this->elementShapeMap.clear();
 
 	this->labels.clear();
+	FE_region_end_change(this->fe_region);
 }
 
 void FE_mesh::createChangeLog()
 {
-	if (this->fe_element_changes)
-		DESTROY(CHANGE_LOG(FE_element))(&this->fe_element_changes);
-	this->fe_element_changes = CREATE(CHANGE_LOG(FE_element))(this->elementList, /*max_changes*/2000);
+	cmzn::Deaccess(this->changeLog);
+	this->changeLog = DsLabelsChangeLog::create(&this->labels);
+	if (!this->changeLog)
+		display_message(ERROR_MESSAGE, "FE_mesh::createChangeLog.  Failed to create changes object");
 	this->last_fe_element_field_info = 0;
 }
 
-struct CHANGE_LOG(FE_element) *FE_mesh::extractChangeLog()
+DsLabelsChangeLog *FE_mesh::extractChangeLog()
 {
-	struct CHANGE_LOG(FE_element) *changes = this->fe_element_changes;
-	this->fe_element_changes = 0;
+	DsLabelsChangeLog *returnChangeLog = cmzn::Access(this->changeLog);
 	this->createChangeLog();
-	return changes;
+	return returnChangeLog;
 }
 
 /**
@@ -480,34 +477,6 @@ int FE_mesh::get_number_of_FE_elements()
 	return NUMBER_IN_LIST(FE_element)(this->elementList);
 }
 
-/**
- * Returns the next unused element number for elements in mesh, starting from
- * <start_identifier>.
- * @param start_identifier  Minimum number for new identifier. Pass 0 to give
- * the first available number >= 1.
- */
-int FE_mesh::get_next_FE_element_identifier(int start_identifier)
-{
-	int identifier = (start_identifier <= 0) ? 1 : start_identifier;
-	if (this->next_fe_element_identifier_cache)
-	{
-		if (this->next_fe_element_identifier_cache > identifier)
-		{
-			identifier = this->next_fe_element_identifier_cache;
-		}
-	}
-	while (FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(identifier, this->elementList))
-	{
-		++identifier;
-	}
-	if (start_identifier <= 1)
-	{
-		/* Don't cache the value if we didn't start at the beginning */
-		this->next_fe_element_identifier_cache = identifier;
-	}
-	return identifier;
-}
-
 void FE_mesh::list_btree_statistics()
 {
 	if (NUMBER_IN_LIST(FE_element)(this->elementList))
@@ -520,12 +489,6 @@ void FE_mesh::list_btree_statistics()
 bool FE_mesh::containsElement(FE_element *element)
 {
 	return (0 != IS_OBJECT_IN_LIST(FE_element)(element, this->elementList));
-}
-
-/** @return  Non-accessed element */
-FE_element *FE_mesh::findElementByIdentifier(int identifier) const
-{
-	return FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(identifier, this->elementList);
 }
 
 /**
@@ -559,31 +522,30 @@ struct LIST(FE_element) *FE_mesh::createRelatedElementList()
 
 int FE_mesh::change_FE_element_identifier(struct FE_element *element, int new_identifier)
 {
-	if (element && (new_identifier >= 0))
+	if ((FE_element_get_FE_mesh(element) == this) && (new_identifier >= 0))
 	{
 		if (IS_OBJECT_IN_LIST(FE_element)(element, this->elementList))
 		{
-			if (this->findElementByIdentifier(new_identifier))
-			{
-				display_message(ERROR_MESSAGE,
-					"FE_mesh::change_FE_element_identifier.  "
-					"Element with new identifier already exists");
-				return CMZN_ERROR_ALREADY_EXISTS;
-			}
 			// this temporarily removes the object from all indexed lists
 			if (LIST_BEGIN_IDENTIFIER_CHANGE(FE_element, identifier)(
 				this->elementList, element))
 			{
-				set_FE_element_identifier(element, new_identifier);
+				const DsLabelIndex index = get_FE_element_index(element);
+				int return_code = this->labels.setIdentifier(index, new_identifier);
 				LIST_END_IDENTIFIER_CHANGE(FE_element, identifier)(this->elementList);
-				this->elementIdentifierChange(element);
-				return CMZN_OK;
+				if (return_code == CMZN_OK)
+					this->elementIdentifierChange(element);
+				else if (return_code == CMZN_ERROR_ALREADY_EXISTS)
+					display_message(ERROR_MESSAGE, "FE_mesh::change_FE_element_identifier.  Identifier %d is already used in %d-D mesh",
+						new_identifier, this->dimension);
+				else
+					display_message(ERROR_MESSAGE, "FE_mesh::change_FE_element_identifier.  Failed to set label identifier");
+				return return_code;
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
-					"FE_mesh::change_FE_element_identifier.  "
-					"Could not safely change identifier in indexed lists");
+					"FE_mesh::change_FE_element_identifier.   Could not safely change identifier in indexed lists");
 			}
 			return CMZN_ERROR_GENERAL;
 		}
@@ -686,18 +648,29 @@ FE_element *FE_mesh::create_FE_element(int identifier, FE_element_template *elem
 	{
 		if (element_template->mesh == this)
 		{
-			int number = (identifier < 0) ? this->get_next_FE_element_identifier(0) : identifier;
-			new_element = ::create_FE_element_from_template(number, element_template->get_template_element());
-			// Future: set mapped shape here
-			if (ADD_OBJECT_TO_LIST(FE_element)(new_element, this->elementList))
+			DsLabelIndex index = (identifier < 0) ? this->labels.createLabel() : this->labels.createLabel(identifier);
+			if (index >= 0)
 			{
-				this->elementAddedChange(new_element);
+				new_element = ::create_FE_element_from_template(index, element_template->get_template_element());
+				// Future: set mapped shape here
+				if (ADD_OBJECT_TO_LIST(FE_element)(new_element, this->elementList))
+				{
+					this->elementAddedChange(new_element);
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element.  Failed to add element to list.");
+					DEACCESS(FE_element)(&new_element);
+					this->labels.removeLabel(index);
+				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_mesh::create_FE_element.  Identifier is in use.");
-				DEACCESS(FE_element)(&new_element);
+				if (this->labels.findLabelByIdentifier(identifier) >= 0)
+					display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element.  Identifier %d is already used in %d-D mesh.",
+						identifier, this->dimension);
+				else
+					display_message(ERROR_MESSAGE, "FE_mesh::create_FE_element.  Could not create label");
 			}
 		}
 		else
@@ -729,9 +702,8 @@ int FE_mesh::merge_FE_element_existing(struct FE_element *destination, struct FE
 			{
 				if (::merge_FE_element(destination, source, changed_fe_field_list))
 				{
-					this->elementFieldListChange(destination, static_cast<CHANGE_LOG_CHANGE(FE_element)>(
-						CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element) | CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element)),
-						changed_fe_field_list);
+					this->elementFieldListChange(destination,
+						DS_LABEL_CHANGE_TYPE_DEFINITION | DS_LABEL_CHANGE_TYPE_RELATED, changed_fe_field_list);
 				}
 				else
 				{
@@ -764,55 +736,6 @@ int FE_mesh::merge_FE_element_template(struct FE_element *destination, FE_elemen
 	if (fe_element_template)
 		return this->merge_FE_element_existing(destination, fe_element_template->get_template_element());
 	return CMZN_ERROR_ARGUMENT;
-}
-
-/**
- * Checks <element> is compatible with this mesh and any existing FE_element
- * using the same identifier, then merges it in.
- * If no FE_element of the same identifier exists in mesh, <element> is
- * added to mesh and returned by this function, otherwise changes are
- * merged into the existing FE_element and it is returned.
- * During the merge, any new fields from <element> are added to the existing
- * element of the same identifier, and existing fields are overwritten.
- *
- * @return  On success, the element from the region which differs from the
- * element argument if modifying an existing element, or NULL on error.
- */
-struct FE_element *FE_mesh::merge_FE_element(struct FE_element *element)
-{
-	struct FE_element *merged_element = 0;
-	if (element)
-	{
-		if (FE_element_get_FE_mesh(element) == this)
-		{
-			merged_element = FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(get_FE_element_identifier(element), this->elementList);
-			if (merged_element)
-			{
-				int return_code = this->merge_FE_element_existing(merged_element, element);
-				if (return_code != CMZN_OK)
-					merged_element = (struct FE_element *)NULL;
-			}
-			else
-			{
-				if (ADD_OBJECT_TO_LIST(FE_element)(element, this->elementList))
-				{
-					merged_element = element;
-					this->elementAddedChange(merged_element);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element.  Could not add %d-D element %d",
-						this->dimension, cmzn_element_get_identifier(merged_element));
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element.  "
-				"element %d is not of this mesh", cmzn_element_get_identifier(merged_element));
-		}
-	}
-	return merged_element;
 }
 
 /**
@@ -876,22 +799,21 @@ int FE_mesh::find_or_create_face(struct FE_element *parent_element, int face_num
 }
 
 /**
- * Merge element and faces recursively, creating and adding new faces as below.
+ * Recursively define faces for element, creating and adding them to face
+ * mesh if they don't already exist.
+ * Always call between FE_region_begin/end_define_faces.
  * Always call between FE_region_begin/end_changes.
- * 
- * If calls to this function are placed between FE_region_begin/end_define_faces,
- * then any missing faces are created and also merged into face mesh.
  * Function ensures that elements share existing faces and lines in preference to
- * creating new ones if they have matching shape and nodes.
+ * creating new ones if they have matching dimension and nodes.
  */
-int FE_mesh::merge_FE_element_and_faces(struct FE_element *element)
+int FE_mesh::define_FE_element_faces(struct FE_element *element)
 {
 	int return_code = 1;
 	if (FE_element_get_FE_mesh(element) == this)
 	{
-		int newFaceCount = 0;
 		if (this->faceMesh && this->definingFaces)
 		{
+			int newFaceCount = 0;
 			int number_of_faces;
 			get_FE_element_number_of_faces(element, &number_of_faces);
 			for (int face_number = 0; (face_number < number_of_faces) && return_code; face_number++)
@@ -913,29 +835,18 @@ int FE_mesh::merge_FE_element_and_faces(struct FE_element *element)
 				if (face)
 				{
 					// ensure the face is in the face mesh, recurse with its faces
-					return_code = this->faceMesh->merge_FE_element_and_faces(face);
+					return_code = this->faceMesh->define_FE_element_faces(face);
 				}
 			}
+			if (newFaceCount)
+				this->elementChange(element, DS_LABEL_CHANGE_TYPE_DEFINITION, element);
+			if (!return_code)
+				display_message(ERROR_MESSAGE, "FE_mesh::define_FE_element_faces.  Failed");
 		}
-		if (return_code)
-		{
-			if (this->containsElement(element))
-			{
-				if (newFaceCount)
-					this->elementChange(element, CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element), element);
-			}
-			else
-			{
-				if (!this->merge_FE_element(element))
-					return_code = 0;
-			}
-		}
-		if (!return_code)
-			display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_and_faces.  Failed");
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_and_faces.  Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "FE_mesh::define_FE_element_faces.  Element is not from this mesh");
 		return_code = 0;
 	}
 	return (return_code);
@@ -1022,7 +933,7 @@ int FE_mesh::define_faces()
 	cmzn_element_id element = 0;
 	while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
 	{
-		if (!this->merge_FE_element_and_faces(element))
+		if (!this->define_FE_element_faces(element))
 		{
 			return_code = CMZN_ERROR_GENERAL;
 			break;
@@ -1043,12 +954,12 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 	int return_code = 1;
 	if (IS_OBJECT_IN_LIST(FE_element)(element, this->elementList))
 	{
+		const DsLabelIndex index = get_FE_element_index(element);
 		/* access element in case it is only accessed here */
 		ACCESS(FE_element)(element);
 		// must notify of change before invalidating element otherwise has no fields
 		// assumes within begin/end change
 		this->elementRemovedChange(element);
-		FE_element_invalidate(element);
 		REMOVE_OBJECT_FROM_LIST(FE_element)(element, this->elementList);
 		if (this->parentMesh)
 		{
@@ -1063,10 +974,11 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 				return_code = set_FE_element_face(parent_element, face_number,
 					(struct FE_element *)NULL);
 				this->parentMesh->elementChange(parent_element,
-					CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element),
-					parent_element);
+					DS_LABEL_CHANGE_TYPE_DEFINITION, parent_element);
 			}
 		}
+		this->labels.removeLabel(index);
+		FE_element_invalidate(element);
 		if (this->faceMesh)
 		{
 			struct FE_element *face;
@@ -1076,11 +988,17 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 			for (int i = 0; (i < number_of_faces) && return_code; i++)
 				if (get_FE_element_face(element, i, &face) && face)
 				{
-					if (!cmzn_element_has_parent_in_list(face, this->elementList))
+					// must remove face since element group or client may be accessing this element
+					// so destructor won't be called to clean up in time.
+					// also stops above remove parents code from needlessly being run
+					set_FE_element_face(element, i, 0);
+					if (FE_element_has_no_parents(face))
 						return_code = this->faceMesh->remove_FE_element_private(face);
 				}
 		}
 		DEACCESS(FE_element)(&element);
+		if (0 == this->labels.getSize())
+			this->clear();
 	}
 	else
 	{
@@ -1172,11 +1090,16 @@ struct FE_mesh::Merge_FE_element_external_data
 };
 
 /**
- * Specialised version of merge_FE_element for merging elements from other
- * regions, used when reading models from files.
+ * Merge element from another mesh, used when reading models from files into
+ * temporary regions.
  * Before merging, substitutes into element an appropriate element field info
  * from this mesh, plus nodes from the corresponding FE_nodeset which have the
- * same identifiers as those currently used.
+ * same identifiers as those currently used. Scale factors and nodes are
+ * similarly converted.
+ * Since this changes information in the element the caller is required to
+ * destroy the source mesh immediately after calling this function on any
+ * elements from it. Operations such as findElementByIdentifier will no longer
+ * work as the element is given a new index for this mesh.
  */
 int FE_mesh::merge_FE_element_external(struct FE_element *element,
 	Merge_FE_element_external_data &data)
@@ -1188,7 +1111,8 @@ int FE_mesh::merge_FE_element_external(struct FE_element *element,
 	if (element && (current_element_field_info = FE_element_get_FE_element_field_info(element)) &&
 		get_FE_element_shape(element, &element_shape))
 	{
-		FE_element *global_element = this->findElementByIdentifier(get_FE_element_identifier(element));
+		const DsLabelIdentifier identifier = get_FE_element_identifier(element);
+		FE_element *global_element = this->findElementByIdentifier(identifier);
 		if (FE_element_shape_is_unspecified(element_shape))
 		{
 			if (!global_element)
@@ -1344,9 +1268,35 @@ int FE_mesh::merge_FE_element_external(struct FE_element *element,
 				{
 					return_code = 0;
 				}
-				if (!this->merge_FE_element_and_faces(element))
+				if (return_code)
 				{
-					return_code = 0;
+					if (global_element)
+					{
+						set_FE_element_index(element, get_FE_element_index(global_element));
+						if (this->merge_FE_element_existing(global_element, element) != CMZN_OK)
+							return_code = 0;
+					}
+					else
+					{
+						const DsLabelIndex index = this->labels.createLabel(identifier);
+						if (index >= 0)
+						{
+							set_FE_element_index(element, index);
+							if (ADD_OBJECT_TO_LIST(FE_element)(element, this->elementList))
+								this->elementAddedChange(element);
+							else
+							{
+								display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to add element to list.");
+								this->labels.removeLabel(index);
+								return_code = 0;
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to create new element label.");
+							return_code = 0;
+						}
+					}
 				}
 			}
 			else
@@ -1405,12 +1355,4 @@ int FE_mesh::merge(FE_mesh &source)
 		return_code = 0;
 	}
 	return return_code;
-}
-
-int FE_element_is_not_in_FE_mesh(struct FE_element *element,
-	void *fe_mesh_void)
-{
-	if (fe_mesh_void && (!static_cast<FE_mesh *>(fe_mesh_void)->containsElement(element)))
-		return 1;
-	return 0;
 }

@@ -31,6 +31,8 @@ Global types
  */
 struct FE_region;
 
+class DsLabelsChangeLog;
+
 /**
  * Structure describing FE_region field, node and element changes, for passing
  * back to owner region.
@@ -39,7 +41,7 @@ class FE_region_changes
 {
 	struct CHANGE_LOG(FE_node) *fe_node_changes[2];
 	struct CHANGE_LOG(FE_field) *fe_field_changes;
-	struct CHANGE_LOG(FE_element) *fe_element_changes[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int access_count;
 
 	FE_region_changes(struct FE_region *fe_region);
@@ -71,10 +73,10 @@ public:
 		}
 	}
 
-	struct CHANGE_LOG(FE_element) *getElementChanges(int dimension)
+	DsLabelsChangeLog *getElementChangeLog(int dimension)
 	{
 		if ((1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
-			return this->fe_element_changes[dimension - 1];
+			return this->elementChangeLogs[dimension - 1];
 		return 0;
 	}
 

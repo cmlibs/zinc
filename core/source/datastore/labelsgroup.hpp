@@ -20,7 +20,7 @@
  */
 class DsLabelsGroup : public cmzn::RefCounted
 {
-private:
+protected:
 	DsLabels *labels;
 	int labelsCount;
 	// indexLimit is at least one greater than highest index in group, updated to exact index when queried
@@ -40,12 +40,7 @@ public:
 		return this->labels;
 	}
 	
-	void clear()
-	{
-		values.clear();
-		labelsCount = 0;
-		indexLimit = 0;
-	}
+	void clear();
 
 	DsLabelIndex getSize() const
 	{
@@ -86,31 +81,12 @@ public:
 		return values.getBool(/*index*/index);
 	}
 
-	/** be careful that index is for this labels */
-	int setIndex(DsLabelIndex index, bool inGroup)
-	{
-		if (index < 0)
-			return false;
-		bool wasInGroup;
-		if (values.setBool(index, inGroup, wasInGroup))
-		{
-			if (inGroup != wasInGroup)
-			{
-				if (inGroup)
-				{
-					labelsCount++;
-					if (index >= indexLimit)
-						indexLimit = index + 1;
-				}
-				else
-				{
-					labelsCount--;
-				}
-			}
-			return 1;
-		}
-		return 0;
-	}
+	/**
+	 * Ensure index is in the group.
+	 * Be careful that index is for this labels.
+	 * @return  CMZN_OK on success, otherwise error code
+	 */
+	int setIndex(DsLabelIndex index, bool inGroup);
 
 	DsLabelIndex getFirstIndex(DsLabelIterator &iterator);
 

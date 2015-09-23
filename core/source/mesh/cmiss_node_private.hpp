@@ -122,6 +122,8 @@ public:
 
 	int getNumberOfChanges()
 	{
+		if (CHANGE_LOG_IS_ALL_CHANGE(FE_node)(this->changeLog))
+			return -1;
 		int number = 0;
 		CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_node)(this->changeLog, &number);
 		return number;

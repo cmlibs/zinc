@@ -582,12 +582,11 @@ ZINC_API cmzn_node_change_flags cmzn_nodesetchanges_get_node_change_flags(
 	cmzn_nodesetchanges_id nodesetchanges, cmzn_node_id node);
 
 /**
- * Returns the number of changes to nodes in the nodeset changes. Note this
- * can be larger than the number of nodes in the nodeset if multiple changes are
- * made to the same nodes, or nodes are removed.
+ * Returns the number of changes to nodes in the nodeset changes, or
+ * -1 if all considered changed, i.e. too many changes occurred to record.
  *
  * @param nodesetchanges  The nodeset changes to query.
- * @return  The number of changes to nodes.
+ * @return  The number of changes to nodes, or -1 if all changed.
  */
 ZINC_API int cmzn_nodesetchanges_get_number_of_changes(
 	cmzn_nodesetchanges_id nodesetchanges);

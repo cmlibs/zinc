@@ -1877,7 +1877,7 @@ Converts a 3-D element into an array of particles.
 		/* determine if the element is required */
 		if ((3==get_FE_element_dimension(element))&&
 			((!element_to_particle_data->element_number)||
-			(element_to_particle_data->element_number==FE_element_get_cm_number(element))))
+			(element_to_particle_data->element_number == get_FE_element_identifier(element))))
 		{
 			if (add_flow_particle(element_to_particle_data->list, 
 				element_to_particle_data->xi,element,

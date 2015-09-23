@@ -65,16 +65,23 @@ void DsLabels::clear()
 	this->indexSize = 0;
 }
 
-void DsLabels::updateFirstFreeIdentifier()
+/**
+ * Get the next unused identifier of at least startIdentifier,
+ * or 1 if startIdentifier is not positive.
+ */
+DsLabelIdentifier DsLabels::getFirstFreeIdentifier(DsLabelIdentifier startIdentifier)
 {
-	if (this->firstFreeIdentifier != (this->lastIdentifier + 1))
+	DsLabelIdentifier identifier =
+		(startIdentifier <= this->firstFreeIdentifier) ? this->firstFreeIdentifier : startIdentifier;
+	if (identifier < (this->lastIdentifier + 1))
 	{
-		while (DS_LABEL_INDEX_INVALID !=
-			findLabelByIdentifier(this->firstFreeIdentifier))
-		{
-			++this->firstFreeIdentifier;
-		}
+		// this can be optimised using an iterator:
+		while (DS_LABEL_INDEX_INVALID != findLabelByIdentifier(identifier))
+			++identifier;
 	}
+	if (startIdentifier <= this->firstFreeIdentifier)
+		this->firstFreeIdentifier = identifier;
+	return identifier;
 }
 
 int DsLabels::setNotContiguous()
@@ -155,8 +162,7 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 /** create with auto-generated unique identifier */
 DsLabelIndex DsLabels::createLabel()
 {
-	updateFirstFreeIdentifier();
-	return createLabelPrivate(this->firstFreeIdentifier);
+	return createLabelPrivate(this->getFirstFreeIdentifier());
 }
 
 /** fails if identifier already in use */
@@ -207,27 +213,8 @@ int DsLabels::removeLabel(DsLabelIndex index)
 {
 	if ((index < 0) || (index >= this->indexSize))
 		return 0;
-	// GRC must check not in use
 	if (this->contiguous)
-	{
-#if defined (FUTURE_CODE)
-		if (static_cast<DsLabelIdentifier>(index) == this->lastIdentifier)
-		{
-			this->lastIdentifier--;
-			this->firstFreeIdentifier--;
-			--this->labelsCount;
-			// GRC can't reduce indexSize yet: must clear parts of maps for reclaim
-			--indexSize;
-			return 1;
-		}
-		else
-		{
-			setNotContiguous();
-		}
-#else
 		setNotContiguous();
-#endif
-	}
 	DsLabelIdentifier identifier;
 	if (this->identifiers.getValue(index, identifier))
 	{
@@ -235,17 +222,13 @@ int DsLabels::removeLabel(DsLabelIndex index)
 		{
 			this->identifierToIndexMap.erase(*this, index);
 			this->identifiers.setValue(index, DS_LABEL_IDENTIFIER_INVALID);
-			if (identifier <= this->firstFreeIdentifier)
+			if (identifier < this->firstFreeIdentifier)
 				this->firstFreeIdentifier = identifier;
 			--this->labelsCount;
 			if (identifier == this->lastIdentifier)
 			{
 				if (0 == this->labelsCount)
-				{
-					this->firstIdentifier = DS_LABEL_IDENTIFIER_INVALID;
-					this->lastIdentifier = DS_LABEL_IDENTIFIER_INVALID;
-					this->firstFreeIdentifier = 1;
-				}
+					this->clear();
 				else
 				{
 					DsLabelIndex lastIndex = this->identifierToIndexMap.get_last_object();
@@ -264,6 +247,49 @@ int DsLabels::removeLabelWithIdentifier(DsLabelIdentifier identifier)
 	if (index >= 0)
 		return removeLabel(index);
 	return 0;
+}
+
+/**
+ * Safely changes the identifier at index to identifier, by removing index from
+ * the identifier-to-index map and any other related maps, then changing the
+ * identifier and re-inserting it where it was removed.
+ * @return  CMZN_OK on success, any other error code if failed.
+ */
+int DsLabels::setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier)
+{
+	if ((index < 0) || (index >= this->indexSize))
+		return CMZN_ERROR_ARGUMENT;
+	DsLabelIdentifier oldIdentifier = this->getIdentifier(index);
+	if (oldIdentifier < 0)
+		return CMZN_ERROR_ARGUMENT;
+	DsLabelIndex existingIndex = this->findLabelByIdentifier(identifier);
+	if (existingIndex != DS_LABEL_INDEX_INVALID)
+	{
+		if (existingIndex == index)
+			return CMZN_OK;
+		return CMZN_ERROR_ALREADY_EXISTS;
+	}
+	if (this->contiguous)
+	{
+		int result = this->setNotContiguous();
+		if (CMZN_OK != result)
+			return result;
+	}
+	int return_code = CMZN_OK;
+	if (this->identifierToIndexMap.begin_identifier_change(*this, index))
+	{
+		if (this->identifiers.setValue(index, identifier))
+		{
+			if (oldIdentifier < this->firstFreeIdentifier)
+				this->firstFreeIdentifier = oldIdentifier;
+		}
+		else
+			return_code = CMZN_ERROR_GENERAL;
+		this->identifierToIndexMap.end_identifier_change(*this);
+	}
+	else
+		return_code = CMZN_ERROR_GENERAL;
+	return return_code;
 }
 
 DsLabelIndex DsLabels::getFirstIndex()

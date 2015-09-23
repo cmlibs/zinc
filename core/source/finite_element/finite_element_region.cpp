@@ -44,29 +44,30 @@ FE_region_changes::FE_region_changes(struct FE_region *fe_region) :
 	for (int n = 0; n < 2; ++n)
 		this->fe_node_changes[n] = fe_region->nodesets[n]->extractChangeLog();
 	// when extracting element change logs, propagate field change summary flags
-	// from nodes and parent elements
+	// (RELATED flag) from nodes and parent elements
 	int nodeChanges;
 	CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(this->fe_node_changes[0], &nodeChanges);
 	bool parentChange = 0 != (nodeChanges & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node));
 	bool parentAllChange = CHANGE_LOG_IS_ALL_CHANGE(FE_node)(this->fe_node_changes[0]);
 	for (int dim = MAXIMUM_ELEMENT_XI_DIMENSIONS - 1; 0 <= dim; --dim)
 	{
-		this->fe_element_changes[dim] = fe_region->meshes[dim]->extractChangeLog();
-		if (parentChange)
+		if (0 != (this->elementChangeLogs[dim] = fe_region->meshes[dim]->extractChangeLog()))
 		{
-			if (parentAllChange)
-				CHANGE_LOG_ALL_CHANGE(FE_element)(this->fe_element_changes[dim], CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element));
+			if (parentChange)
+			{
+				if (parentAllChange)
+					this->elementChangeLogs[dim]->setAllChange(DS_LABEL_CHANGE_TYPE_RELATED);
+				else
+					this->elementChangeLogs[dim]->setChange(DS_LABEL_CHANGE_TYPE_RELATED);
+			}
 			else
-				CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY(FE_element)(this->fe_element_changes[dim]);
+			{
+				int elementChanges = this->elementChangeLogs[dim]->getChangeSummary();
+				parentChange = 0 != (elementChanges & DS_LABEL_CHANGE_TYPE_RELATED);
+			}
+			if (parentChange && !parentAllChange)
+				parentAllChange = this->elementChangeLogs[dim]->isAllChange();
 		}
-		else
-		{
-			int elementChanges;
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(this->fe_element_changes[dim], &elementChanges);
-			parentChange = 0 != (elementChanges & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element));
-		}
-		if (parentChange && !parentAllChange)
-			parentAllChange = CHANGE_LOG_IS_ALL_CHANGE(FE_element)(this->fe_element_changes[dim]);
 	}
 	fe_region->createChangeLogs();
 }
@@ -77,14 +78,12 @@ FE_region_changes::~FE_region_changes()
 		DESTROY(CHANGE_LOG(FE_node))(&(this->fe_node_changes[n]));
 	DESTROY(CHANGE_LOG(FE_field))(&(this->fe_field_changes));
 	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-	{
-		DESTROY(CHANGE_LOG(FE_element))(&(this->fe_element_changes[dim]));
-	}
+		cmzn::Deaccess(this->elementChangeLogs[dim]);
 }
 
 bool FE_region_changes::elementOrParentChanged(FE_element *element)
 {
-	return (0 != FE_element_or_parent_changed(element, this->fe_element_changes, this->fe_node_changes[0]));
+	return (0 != FE_element_or_parent_changed(element, this->elementChangeLogs, this->fe_node_changes[0]));
 }
 
 /**

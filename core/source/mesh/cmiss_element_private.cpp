@@ -953,16 +953,14 @@ public:
 		FE_element *element = NULL;
 		if (element_template->validate())
 		{
-			const bool definingFaces = this->fe_mesh->is_defining_faces();
-			if ((group) || definingFaces)
+			if (group)
 				FE_region_begin_change(this->fe_mesh->get_FE_region());
 			element = this->fe_mesh->create_FE_element(identifier, element_template->getElementTemplate());
-			if (definingFaces)
-				this->fe_mesh->merge_FE_element_and_faces(element);
 			if (group)
+			{
 				Computed_field_element_group_core_cast(group)->addObject(element);
-			if ((group) || definingFaces)
-				FE_region_end_change(this->fe_mesh->get_FE_region());		
+				FE_region_end_change(this->fe_mesh->get_FE_region());
+			}
 		}
 		else
 		{
@@ -2005,13 +2003,14 @@ int cmzn_mesh_scale_factor_set_set_name(
 
 cmzn_meshchanges::cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn) :
 	event(eventIn->access()),
-	changeLog(event->getFeRegionChanges()->getElementChanges(meshIn->getDimension())),
+	changeLog(cmzn::Access(eventIn->getFeRegionChanges()->getElementChangeLog(meshIn->getDimension()))),
 	access_count(1)
 {
 }
 
 cmzn_meshchanges::~cmzn_meshchanges()
 {
+	cmzn::Deaccess(this->changeLog);
 	cmzn_fieldmoduleevent::deaccess(this->event);
 }
 
@@ -2036,15 +2035,19 @@ int cmzn_meshchanges::deaccess(cmzn_meshchanges* &meshchanges)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+// Note: internal and external flags have same numerical values
 cmzn_element_change_flags cmzn_meshchanges::getElementChangeFlags(cmzn_element *element)
 {
 	int change = CMZN_ELEMENT_CHANGE_FLAG_NONE;
 	if (element)
 	{
-		CHANGE_LOG_QUERY(FE_element)(this->changeLog, element, &change);
-		if (0 == (change & CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element)) &&
-				this->event->getFeRegionChanges()->elementOrParentChanged(element))
-			change |= CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element);
+		if (this->changeLog->isIndexChange(get_FE_element_index(element)))
+			change = this->changeLog->getChangeSummary();
+		else if (this->changeLog->getChangeSummary() & CMZN_ELEMENT_CHANGE_FLAG_FIELD)
+		{
+			if (this->event->getFeRegionChanges()->elementOrParentChanged(element))
+				change |= CMZN_ELEMENT_CHANGE_FLAG_FIELD;
+		}
 	}
 	return change;
 }

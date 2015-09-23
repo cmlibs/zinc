@@ -12,10 +12,10 @@
 #define FINITE_ELEMENT_MESH_HPP
 
 #include "datastore/labels.hpp"
+#include "datastore/labelschangelog.hpp"
 #include "datastore/maparray.hpp"
 #include "finite_element/finite_element.h"
 #include "general/block_array.hpp"
-#include "general/change_log.h"
 #include "general/list.h"
 #include <vector>
 
@@ -170,8 +170,8 @@ class FE_mesh
 	FE_mesh *parentMesh; // not accessed
 	FE_mesh *faceMesh; // not accessed
 
-	/* elements added, removed or otherwise changed */
-	struct CHANGE_LOG(FE_element) *fe_element_changes;
+	/* log of elements added, removed or otherwise changed */
+	DsLabelsChangeLog *changeLog;
 	/* keep pointer to last element field information so only need to
 		 note changed fields when this changes */
 	struct FE_element_field_info *last_fe_element_field_info;
@@ -181,10 +181,6 @@ class FE_mesh
 		 are being defined */
 	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list;
 	bool definingFaces;
-
-	/* Keep a record of where we got to searching for valid identifiers.
-		We reset the cache if we delete any items */
-	int next_fe_element_identifier_cache;
 
 	// scale factor sets in use. Used as identifier for finding scale factor
 	// arrays stored with elements 
@@ -206,6 +202,10 @@ private:
 	int remove_FE_element_private(struct FE_element *element);
 
 	int merge_FE_element_existing(struct FE_element *destination, struct FE_element *source);
+
+	struct Merge_FE_element_external_data;
+	int merge_FE_element_external(struct FE_element *element,
+		Merge_FE_element_external_data &data);
 
 public:
 
@@ -245,8 +245,9 @@ public:
 		this->last_fe_element_field_info = fe_element_field_info;
 	}
 
-	void elementChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) change, FE_element *field_info_element);
-	void elementFieldListChange(FE_element *element, CHANGE_LOG_CHANGE(FE_element) change,
+	// in following change is a logical OR of values from enum DsLabelChangeType
+	void elementChange(FE_element *element, int change, FE_element *field_info_element);
+	void elementFieldListChange(FE_element *element, int change,
 		struct LIST(FE_field) *changed_fe_field_list);
 	void elementFieldChange(FE_element *element, FE_field *fe_field);
 	void elementIdentifierChange(FE_element *element);
@@ -287,11 +288,13 @@ public:
 
 	void createChangeLog();
 
-	struct CHANGE_LOG(FE_element) *extractChangeLog();
+	/** @return Accessed changes */
+	DsLabelsChangeLog *extractChangeLog();
 
-	struct CHANGE_LOG(FE_element) *getChangeLog()
+	/** @retrun non-Accessed changes */
+	DsLabelsChangeLog *getChangeLog()
 	{
-		return this->fe_element_changes;
+		return this->changeLog;
 	}
 
 	struct LIST(FE_element_field_info) *get_FE_element_field_info_list_private()
@@ -316,13 +319,32 @@ public:
 
 	int get_number_of_FE_elements();
 
-	int get_next_FE_element_identifier(int start_identifier);
+	inline DsLabelIdentifier getElementIdentifier(DsLabelIndex index) const
+	{
+		return this->labels.getIdentifier(index);
+	}
+
+	/** @ return  Non-accessed element object at index */
+	inline FE_element *getElement(DsLabelIndex index) const
+	{
+		// will be made more efficient when there is a table from index to elements
+		return this->findElementByIdentifier(this->getElementIdentifier(index));
+	}
+
+	DsLabelIdentifier get_next_FE_element_identifier(DsLabelIdentifier start_identifier)
+	{
+		return this->labels.getFirstFreeIdentifier(start_identifier);
+	}
 
 	void list_btree_statistics();
 
 	bool containsElement(FE_element *element);
 
-	FE_element *findElementByIdentifier(int identifier) const;
+	/** @return  Non-accessed element */
+	FE_element *findElementByIdentifier(DsLabelIdentifier identifier) const
+	{
+		return FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(identifier, this->elementList);
+	}
 
 	cmzn_elementiterator_id createElementiterator();
 
@@ -346,14 +368,7 @@ public:
 
 	int merge_FE_element_template(struct FE_element *destination, FE_element_template *fe_element_template);
 
-	struct FE_element *merge_FE_element(struct FE_element *element);
-
-	int merge_FE_element_and_faces(struct FE_element *element);
-
-	bool is_defining_faces() const
-	{
-		return this->definingFaces;
-	}
+	int define_FE_element_faces(struct FE_element *element);
 
 	int begin_define_faces();
 
@@ -367,18 +382,7 @@ public:
 
 	bool canMerge(FE_mesh &source);
 
-	struct Merge_FE_element_external_data;
-	int merge_FE_element_external(struct FE_element *element,
-		Merge_FE_element_external_data &data);
-
 	int merge(FE_mesh &source);
 };
-
-/**
- * List conditional function returning true if <element> is not in <fe_region>.
- * @param fe_mesh_void  void pointer to FE_mesh.
- */
-int FE_element_is_not_in_FE_mesh(struct FE_element *element,
-	void *fe_mesh_void);
 
 #endif /* !defined (FINITE_ELEMENT_MESH_HPP) */

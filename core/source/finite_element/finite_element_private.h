@@ -459,18 +459,19 @@ in <fe_field_change_log>.
 struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info);
 
 /**
- * Creates and returns a non-global element with the specified identifier,
+ * Creates and returns a non-global element with the specified index,
  * that is a copy of the supplied template element i.e. with all fields
  * and values from it.
- * The returned element is ready to be added or merged into the FE_mesh the
+ * The returned element is ready to be added into the FE_mesh the
  * template element was created by.
  * Faces are not copied from the template element.
- * @param identifier  Identifier for the new element. Must be non-negative,
- * or -1 only when called from FE_element_template::FE_element_template().
+ * @param index  Index of element in mesh, or DS_LABEL_INDEX_INVALID if used
+ * as a non-global template element i.e. when called from
+ * FE_element_template::FE_element_template().
  * @param template_element  Element to copy.
  * @return  Accessed element, or 0 on error.
  */
-struct FE_element *create_FE_element_from_template(int identifier, struct FE_element *template_element);
+struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE_element *template_element);
 
 /**
  * Clear content of element and disconnect it from owning mesh.

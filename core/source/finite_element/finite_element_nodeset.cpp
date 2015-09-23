@@ -383,11 +383,13 @@ int FE_nodeset::change_FE_node_identifier(struct FE_node *node, int new_identifi
 	{
 		if (IS_OBJECT_IN_LIST(FE_node)(node, this->nodeList))
 		{
-			if (this->findNodeByIdentifier(new_identifier))
+			FE_node *existingNode = this->findNodeByIdentifier(new_identifier);
+			if (existingNode)
 			{
+				if (existingNode == node)
+					return CMZN_OK;
 				display_message(ERROR_MESSAGE,
-					"FE_nodeset::change_FE_node_identifier.  "
-					"Node with new identifier already exists");
+					"FE_nodeset::change_FE_node_identifier.  Identifier %d is already used in nodeset", new_identifier);
 				return CMZN_ERROR_ALREADY_EXISTS;
 			}
 			// this temporarily removes the object from all indexed lists
@@ -814,7 +816,7 @@ void FE_nodeset::list_btree_statistics()
 }
 
 /**
- * Data for passing to FE_nodeset::merge_FE_element_external and
+ * Data for passing to FE_nodeset::merge_FE_node_external and
  * FE_field_add_embedded_field_to_array.
  */
 struct FE_nodeset::Merge_FE_node_external_data

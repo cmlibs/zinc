@@ -1301,7 +1301,7 @@ public:
 		return true;
 	}
 
-	bool end_identifier_change()
+	bool end_identifier_change(owner_type &owner)
 	{
 		bool result = true;
 		cmzn_btree_index *related_btree = this;
@@ -1309,7 +1309,7 @@ public:
 		{
 			if (related_btree->temp_removed_object != invalid_object)
 			{
-				if (!related_btree->insert(related_btree->temp_removed_object))
+				if (!related_btree->insert(owner, related_btree->temp_removed_object))
 					result = false;
 				related_btree->temp_removed_object = invalid_object;
 			}

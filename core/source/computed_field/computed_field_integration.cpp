@@ -1535,7 +1535,7 @@ DESCRIPTION :
 	if (field)
 	{
 		display_message(INFORMATION_MESSAGE,"    seed_element : %d\n",
-			FE_element_get_cm_number(seed_element));
+			get_FE_element_identifier(seed_element));
 		display_message(INFORMATION_MESSAGE,"    integrand field : %s\n",
 			field->source_fields[0]->name);
 		display_message(INFORMATION_MESSAGE,"    coordinate field : %s\n",
@@ -1592,7 +1592,7 @@ Returns allocated command string for reproducing field. Includes type.
 			append_string(&command_string,
 				computed_field_integration_type_string, &error);
 		}
-		sprintf(temp_string, " seed_element %d", FE_element_get_cm_number(seed_element));
+		sprintf(temp_string, " seed_element %d", get_FE_element_identifier(seed_element));
 		append_string(&command_string, temp_string, &error);
 		if (!xi_texture_coordinates)
 		{

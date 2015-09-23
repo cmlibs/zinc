@@ -969,7 +969,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 	unsigned int number_of_segments, FE_element *top_level_element)
 {
 	FE_value distance, xi;
-	int graphics_name, return_code;
+	int return_code;
 	unsigned int i, vertex_start, number_of_vertices;
 	GLfloat *floatData = 0;
 	double *data_buffer = 0;
@@ -986,12 +986,12 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 
 		/* clear coordinates in case coordinate field is not 3 component */
 
-		/* for selective editing of GT_object primitives, record element ID */
-		graphics_name = get_FE_element_identifier(element);
+		/* for selective editing of GT_object primitives, record element index */
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
 
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(graphics_name);
+		int vertex_location = array->find_first_fast_search_id_location(elementIndex);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -1002,9 +1002,9 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 		{
 			if (vertex_location < 0)
 			{
-				array->add_fast_search_id(graphics_name);
+				array->add_fast_search_id(elementIndex);
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-					1, 1, &graphics_name);
+					1, 1, &elementIndex);
 				int modificationRequired = 0;
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
 					1, 1, &modificationRequired);
@@ -1016,7 +1016,7 @@ int FE_element_add_line_to_vertex_array(struct FE_element *element,
 			{
 				array->replace_integer_vertex_buffer_at_position(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-					&graphics_name);
+					&elementIndex);
 				/* case for modification */
 				array->get_unsigned_integer_attribute(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
@@ -1202,10 +1202,10 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 			}
 			original_data = data;
 		}
-		const int identifier = get_FE_element_identifier(element);
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(identifier);
+		int vertex_location = array->find_first_fast_search_id_location(elementIndex);
 
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
@@ -1225,9 +1225,9 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 			/* for selective editing of GT_object primitives, record element ID */
 			if (vertex_location < 0)
 			{
-				array->add_fast_search_id(identifier);
+				array->add_fast_search_id(elementIndex);
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-					1, 1, &identifier);
+					1, 1, &elementIndex);
 				int modificationRequired = 0;
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
 					1, 1, &modificationRequired);
@@ -1239,7 +1239,7 @@ int FE_element_add_cylinder_to_vertex_array(struct FE_element *element,
 				/* case for modification */
 				array->replace_integer_vertex_buffer_at_position(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-					&identifier);
+					&elementIndex);
 				array->get_unsigned_integer_attribute(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
 					vertex_location, 1, &vertex_start);
@@ -1969,12 +1969,12 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 		{
 			n_data_components = Computed_field_get_number_of_components(data_field);
 		}
-		const int identifier = get_FE_element_identifier(element);
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		GLfloat *floatData = data_field ? new GLfloat[n_data_components] : 0;
 		FE_value *xi_points = new FE_value[2*number_of_points];
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(identifier);
+		int vertex_location = array->find_first_fast_search_id_location(elementIndex);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -1990,9 +1990,9 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 			/* for selective editing of GT_object primitives, record element ID */
 			if (vertex_location < 0)
 			{
-				array->add_fast_search_id(identifier);
+				array->add_fast_search_id(elementIndex);
 				array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-					1, 1, &identifier);
+					1, 1, &elementIndex);
 				vertex_start = array->get_number_of_vertices(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 				int modificationRequired = 0;
@@ -2003,7 +2003,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 			{
 				array->replace_integer_vertex_buffer_at_position(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-					&identifier);
+					&elementIndex);
 				array->get_unsigned_integer_attribute(
 					GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_ELEMENT_INDEX_START,
 					vertex_location, 1, &vertex_start);
@@ -2727,11 +2727,11 @@ int add_glyphset_vertex_from_FE_element(
 				points_to_draw = number_of_xi_points - points_to_draw;
 			}
 		}
-		/* store element number as object_name for editing GT_object primitives */
-		const int identifier = get_FE_element_identifier(element);
+		/* store element index in mesh as object_name for editing GT_object primitives */
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(identifier);
+		int vertex_location = array->find_first_fast_search_id_location(elementIndex);
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -2869,7 +2869,7 @@ int add_glyphset_vertex_from_FE_element(
 				return_code = fill_glyph_graphics_vertex_array(
 					array, vertex_location, (unsigned int)points_to_draw, point_list,
 					axis1_list, axis2_list, axis3_list, scale_list,
-					n_data_components, data, 0, identifier, names, labels, 0, 0, 0);
+					n_data_components, data, 0, elementIndex, names, labels, 0, 0, 0);
 				DEALLOCATE(point_list);
 				DEALLOCATE(axis1_list);
 				DEALLOCATE(axis2_list);

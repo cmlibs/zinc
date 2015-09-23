@@ -16,6 +16,7 @@
 #include "zinc/status.h"
 #include "finite_element/finite_element_basis.h"
 #include "finite_element/finite_element_time.h"
+#include "datastore/labels.hpp"
 #include "general/change_log.h"
 #include "general/enumerator.h"
 #include "general/geometry.h"
@@ -28,6 +29,8 @@
 Global types
 ------------
 */
+
+class DsLabelsChangeLog;
 
 /**
  * FE_node has pointer to owning FE_nodeset in shared field info.
@@ -1952,6 +1955,12 @@ The <tolerance> allows the location to go slightly outside.  If the values for
 are modified to put it on the nearest face.
 ==============================================================================*/
 
+/**
+ * List conditional function returning true if <element> has been
+ * invalidated i.e. it has no mesh/identifier.
+ */
+int FE_element_is_invalid(struct FE_element *element, void *dummy_void);
+
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
@@ -2016,55 +2025,43 @@ DESCRIPTION :
 Returns true if all fields are defined in the same way at the two elements.
 ==============================================================================*/
 
+/**
+ * @return  The dimension of the element, or 0 if it cannot be determined.
+ */
 int get_FE_element_dimension(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
-
-DESCRIPTION :
-Returns the dimension of the <element> or an error if it does not have a shape.
-==============================================================================*/
-
-int FE_element_get_cm_number(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Returns the cm number of the <element> or an error if it does not have a shape.
-==============================================================================*/
 
 /**
- * @return  The non-negative element identifier or -1 on error.
+ * @return  The non-negative element identifier, otherwise
+ * DS_LABEL_IDENTIFIER_INVALID on error or if not a true element in the mesh.
  */
-int get_FE_element_identifier(struct FE_element *element);
+DsLabelIdentifier get_FE_element_identifier(struct FE_element *element);
 
 /**
- * Changes the identifier of <element> to <identifier>.
- * Caution! Should only call for elements that are NOT in indexed lists, i.e.
- * temporary/non-global elements that are not in FE_regions.
- * To enable identifier changes, must wrap calls to this function between
- * LIST_BEGIN_IDENTIFIER_CHANGE/LIST_END_IDENTIFIER_CHANGE to ensure
- * element is temporarily removed from all the indexed lists it is in and re-added
- * afterwards.
- * If <element> is in an FE_mesh, FE_mesh::change_FE_element_identifier should
- * be called to handle the above complications.
+ * @return  The non-negative element index within the mesh otherwise
+ * DS_LABEL_INDEX_INVALID on error or if not a true element in the mesh.
  */
-int set_FE_element_identifier(struct FE_element *element, int identifier);
+DsLabelIndex get_FE_element_index(struct FE_element *element);
 
-int FE_element_or_parent_changed(struct FE_element *element,
-	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+/**
+ * Set the index of the element in the mesh. Used only by FE_mesh when
+ * merging elements from another region's mesh.
+ * @param element  The element to modify.
+ * @param index  The new index, non-negative. Value is not checked due
+ * to use by privileged caller.
+ */
+void set_FE_element_index(struct FE_element *element, DsLabelIndex index);
+
+/**
+ * Returns true if <element> or any of its parent elements is listed in the
+ * element change logs with any of IDENTIFIER, DEFINITION or REMOVED flags.
+ * Since element fields depend on node fields, the element is also considered as
+ * changed if it or any of its parents uses a node listed in the
+ * <fe_node_change_log> with OBJECT_IDENTIFIER_CHANGED and/or
+ * OBJECT_NOT_IDENTIFIER_CHANGED.
+ */
+bool FE_element_or_parent_changed(struct FE_element *element,
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 	struct CHANGE_LOG(FE_node) *fe_node_change_log);
-/*******************************************************************************
-LAST MODIFIED : 11 February 2003
-
-DESCRIPTION :
-Returns true if <element> or any of its parent elements is listed in the
-<fe_element_change_log> with any of OBJECT_IDENTIFIER_CHANGED,
-OBJECT_NOT_IDENTIFIER_CHANGED or OBJECT_REMOVED.
-Since element fields depend on node fields, the element is also considered as
-changed if it or any of its parents uses a node listed in the
-<fe_node_change_log> with OBJECT_IDENTIFIER_CHANGED and/or
-OBJECT_NOT_IDENTIFIER_CHANGED.
-==============================================================================*/
 
 int get_FE_element_number_of_fields(struct FE_element *element);
 /*******************************************************************************
@@ -2083,6 +2080,11 @@ Does not include fields inherited from parent elements.
  * @return  The number of next higher dimension elements this element is a face of.
  */
 int get_FE_element_number_of_parents(struct FE_element *element);
+
+/**
+ * @return  true if any element has no parents.
+ */
+bool FE_element_has_no_parents(cmzn_element *element);
 
 /**
  * Get a parent element of this element by index.

@@ -136,9 +136,7 @@ or otherwise modified. Since it is expensive to remember large lists of \
 changed objects the change_log remembers individual changes to objects until \
 <max_changes> is exceeded, then internal flags indicate that all objects in \
 <object_list> have changed. A negative <max_changes> places no limit on the \
-maximum number of changes; <object_list> need not be supplied in this case, \
-but it should be supplied if it is a different list to that logged by the \
-super_change_log passed to CHANGE_LOG_MERGE. \
+maximum number of changes; <object_list> need not be supplied in this case. \
 Note that the change_log maintains a pointer to the <object_list> which will \
 be owned by another object. Make sure the object_list is not destroyed first! \
 ==============================================================================*/
@@ -259,24 +257,6 @@ The OBJECT_REMOVED bit always occurs alone. \
 Unchanged objects are returned as OBJECT_UNCHANGED. \
 ==============================================================================*/
 
-#define CHANGE_LOG_MERGE_( object_type ) change_log_merge_ ## object_type
-#define CHANGE_LOG_MERGE( object_type ) CHANGE_LOG_MERGE_(object_type)
-
-#define PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION( object_type ) \
-int CHANGE_LOG_MERGE(object_type)( \
-	struct CHANGE_LOG(object_type) *change_log, \
-	struct CHANGE_LOG(object_type) *super_change_log) \
-/***************************************************************************** \
-LAST MODIFIED : 17 February 2003 \
-\
-DESCRIPTION : \
-Incorporates into <change_log> the changes from <super_change_log> that are \
-relevant to it. <super_change_log> should be a change log for the superset of \
-objects logged in <change_log>. \
-Note that both change logs should be set up identically; either both use the \
-max_changes/change_all capability or both do not. \
-==============================================================================*/
-
 #define CHANGE_LOG_FOR_EACH_OBJECT_( object_type ) \
 	change_log_for_each_object_ ## object_type
 #define CHANGE_LOG_FOR_EACH_OBJECT( object_type ) \
@@ -326,7 +306,6 @@ PROTOTYPE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_QUERY_FUNCTION(object_type); \
-PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type); \
 PROTOTYPE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION(object_type) \
 

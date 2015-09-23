@@ -15,6 +15,7 @@
 #include "zinc/element.h"
 #include "zinc/region.h"
 #include "zinc/fieldsubobjectgroup.h"
+#include "datastore/labelschangelog.hpp"
 
 struct FE_region;
 
@@ -74,7 +75,7 @@ struct cmzn_meshchanges
 {
 private:
 	cmzn_fieldmoduleevent *event; // accessed
-	CHANGE_LOG(cmzn_element) *changeLog; // just copied from event for correct mesh
+	DsLabelsChangeLog *changeLog; // Accessed from object obtained from correct mesh
 	int access_count;
 
 	cmzn_meshchanges(cmzn_fieldmoduleevent *eventIn, cmzn_mesh *meshIn);
@@ -97,16 +98,14 @@ public:
 
 	int getNumberOfChanges()
 	{
-		int number = 0;
-		CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_element)(this->changeLog, &number);
-		return number;
+		if (this->changeLog->isAllChange())
+			return -1;
+		return this->changeLog->getChangeCount();
 	}
 
 	cmzn_element_change_flags getSummaryElementChangeFlags()
 	{
-		int change = 0;
-		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(this->changeLog, &change);
-		return change;
+		return this->changeLog->getChangeSummary();
 	}
 };
 

@@ -90,6 +90,7 @@ public:
 	}
 
 	virtual int isIdentifierInList(int identifier) = 0;
+	virtual int containsIndex(DsLabelIndex index) = 0;
 
 	bool check_dependency_for_group_special()
 	{
@@ -371,6 +372,14 @@ public:
 			return (0 != findElementByIdentifier(identifier));
 		}
 
+		virtual int containsIndex(DsLabelIndex index)
+		{
+			DsLabelIdentifier identifier = cmzn_mesh_get_FE_mesh_internal(this->master_mesh)->getElementIdentifier(index);
+			if (identifier < 0) // means index is invalid i.e. destroyed
+				return 0;
+			return (0 != findElementByIdentifier(identifier));
+		}
+
 		virtual cmzn_field_change_detail *extract_change_detail()
 		{
 			if (this->change_detail.getChangeSummary() == CMZN_FIELD_GROUP_CHANGE_NONE)
@@ -480,19 +489,21 @@ public:
 			if (field)
 			{
 				FE_mesh *fe_mesh = cmzn_mesh_get_FE_mesh_internal(this->master_mesh);
-				CHANGE_LOG(cmzn_element) *fe_element_changes = fe_mesh->getChangeLog();
-				int change_summary = 0;
-				CHANGE_LOG_GET_CHANGE_SUMMARY(cmzn_element)(fe_element_changes, &change_summary);
-				if (change_summary & CHANGE_LOG_OBJECT_REMOVED(cmzn_element))
+				DsLabelsChangeLog *elementChangeLog = fe_mesh->getChangeLog();
+				if (elementChangeLog)
 				{
-					const int old_size = NUMBER_IN_LIST(cmzn_element)(object_list);
-					REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_element)(FE_element_is_not_in_FE_mesh,
-						(void *)fe_mesh, object_list);
-					const int new_size = NUMBER_IN_LIST(cmzn_element)(object_list);
-					if (new_size != old_size)
+					int changeSummary = elementChangeLog->getChangeSummary();
+					if (changeSummary & DS_LABEL_CHANGE_TYPE_REMOVE)
 					{
-						change_detail.changeRemove();
-						field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+						const int old_size = NUMBER_IN_LIST(cmzn_element)(object_list);
+						REMOVE_OBJECTS_FROM_LIST_THAT(cmzn_element)(FE_element_is_invalid,
+							(void *)0, object_list);
+						const int new_size = NUMBER_IN_LIST(cmzn_element)(object_list);
+						if (new_size != old_size)
+						{
+							change_detail.changeRemove();
+							field->setChangedPrivate(MANAGER_CHANGE_PARTIAL_RESULT(Computed_field));
+						}
 					}
 				}
 				return field->manager_change_status;
@@ -605,6 +616,13 @@ public:
 		virtual int isIdentifierInList(int identifier)
 		{
 			return (0 != findNodeByIdentifier(identifier));
+		}
+
+
+		virtual int containsIndex(DsLabelIndex index)
+		{
+			USE_PARAMETER(index);
+			return 0; // GRC unimplemented until nodes converted to use labels
 		}
 
 		virtual cmzn_field_change_detail *extract_change_detail()

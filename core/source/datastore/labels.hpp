@@ -43,6 +43,7 @@ const DsLabelIdentifier DS_LABEL_IDENTIFIER_INVALID = -1;
 typedef int DsLabelIndex;
 
 // following is used to mark an invalid index i.e. not set
+// Comment any code assuming this value with "Assumes DS_LABEL_INDEX_INVALID == -1"
 const DsLabelIndex DS_LABEL_INDEX_INVALID = -1;
 
 // following is used to mark an array of indexes as invalid
@@ -90,8 +91,6 @@ public:
 
 private:
 
-	void updateFirstFreeIdentifier();
-
 	int setNotContiguous();
 
 	DsLabelIndex createLabelPrivate(DsLabelIdentifier identifier);
@@ -131,6 +130,8 @@ public:
 	{
 		return indexSize;
 	}
+
+	DsLabelIdentifier getFirstFreeIdentifier(DsLabelIdentifier startIdentifier = 0);
 	
 	/** @return CMZN_OK on success, any other error code on failure */
 	int addLabelsRange(DsLabelIdentifier min, DsLabelIdentifier max,
@@ -148,7 +149,7 @@ public:
 
 	int removeLabelWithIdentifier(DsLabelIdentifier identifier);
 
-	DsLabelIdentifier getIdentifier(DsLabelIndex index)
+	DsLabelIdentifier getIdentifier(DsLabelIndex index) const
 	{
 		DsLabelIdentifier identifier = DS_LABEL_IDENTIFIER_INVALID;
 		if ((0 <= index) && (index < this->indexSize))
@@ -160,6 +161,8 @@ public:
 		}
 		return identifier;
 	}
+
+	int setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier);
 
 	/**
 	 * Get first label index in set or DS_LABEL_INDEX_INVALID if none.

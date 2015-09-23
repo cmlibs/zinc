@@ -913,8 +913,8 @@ parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
 {
-	/* unique identifier of element in mesh */
-	int identifier;
+	/* index into mesh labels, maps to unique identifier */
+	DsLabelIndex index;
 	/* the number of structures that point to this element.  The element cannot be
 		destroyed while this is greater than 0 */
 	int access_count;
@@ -948,24 +948,18 @@ variables.
 		return DEACCESS(FE_element)(element_address);
 	}
 
-	inline int get_identifier() const
+	inline DsLabelIdentifier get_identifier() const
 	{
-		return identifier;
+		if (this->fields)
+			return this->fields->fe_mesh->getElementIdentifier(this->index);
+		return DS_LABEL_IDENTIFIER_INVALID;
 	}
 }; /* struct FE_element */
-
-struct cmzn_element_identifier_less
-{
-	bool operator() (int identifier1, int identifier2) const
-	{
-		return (identifier1 < identifier2);
-	}
-};
 
 /** can tweak this to vary performance */
 const int CMZN_ELEMENT_BTREE_ORDER = 10;
 
-typedef cmzn_btree<cmzn_element,int,CMZN_ELEMENT_BTREE_ORDER,cmzn_element_identifier_less> cmzn_set_cmzn_element;
+typedef cmzn_btree<cmzn_element,int,CMZN_ELEMENT_BTREE_ORDER> cmzn_set_cmzn_element;
 
 struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
 {
@@ -4652,7 +4646,7 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 #if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %d-D element %d has nodes: ",
-					get_FE_element_dimension(element), element->identifier);
+					get_FE_element_dimension(element), element->get_identifier());
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
@@ -5323,7 +5317,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 												{
 													xi_dimension=embedding_element->shape->dimension;
 													display_message(INFORMATION_MESSAGE,"%d-D %d xi",
-														xi_dimension, embedding_element->identifier);
+														xi_dimension, embedding_element->get_identifier());
 													value=values_storage+sizeof(struct FE_element *);
 													for (xi_index=0;xi_index<xi_dimension;xi_index++)
 													{
@@ -5729,7 +5723,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 				"Element %d field %s component %d: local node index %d out of range %d",
-				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 				this->nodeIndex + 1, cache.numberOfElementNodes);
 			return false;
 		}
@@ -5742,7 +5736,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 					"Element %d field %s component %d: Field not defined on global node %d at local node index %d",
-					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 					node->cm_node_identifier, this->nodeIndex + 1);
 				return false;
 			}
@@ -5755,7 +5749,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 				"Element %d field %s component %d: Global node %d has no value/derivative types",
-				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 				node->cm_node_identifier);
 			return false;
 		}
@@ -5769,7 +5763,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 				"Element %d field %s component %d: Global node %d has no %s version %d",
-				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 				node->cm_node_identifier, ENUMERATOR_STRING(FE_nodal_value_type)(this->valueType),
 				this->version + 1);
 			return false;
@@ -5787,7 +5781,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluate.  "
 					"Element %d field %s component %d: Scale factor index %d is out of range %d",
-					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 					this->scaleFactorIndex + 1, cache.numberOfScaleFactors);
 				return false;
 			}
@@ -5813,7 +5807,7 @@ public:
 		{
 			display_message(ERROR_MESSAGE, "NodeToElementDOFMap::evaluateNode.  "
 				"Element %d field %s component %d: local node index %d out of range %d",
-				cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+				cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 				this->nodeIndex + 1, cache.numberOfElementNodes);
 			return false;
 		}
@@ -5949,7 +5943,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluate.  "
 					"Element %d field %s component %d:  Could not evaluate map %d of sum",
-					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 					i + 1);
 				return false;
 			}
@@ -5968,7 +5962,7 @@ public:
 			{
 				display_message(ERROR_MESSAGE, "SumElementDOFMap::evaluateNode.  "
 					"Element %d field %s component %d:  Could not evaluate map %d of sum",
-					cache.element->identifier, cache.field->name, cache.componentNumber + 1,
+					cache.element->get_identifier(), cache.field->name, cache.componentNumber + 1,
 					i + 1);
 				return false;
 			}
@@ -6110,35 +6104,35 @@ static int global_to_element_map_values(struct FE_element *element,
 											{
 												display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 													"Node %d used by field %s in element %d has no field parameters.",
-													node->cm_node_identifier, field->name, element->identifier);
+													node->cm_node_identifier, field->name, element->get_identifier());
 											}
 										}
 										else
 										{
 											display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 												"Node reference missing for field %s at element %d.",
-												field->name, element->identifier);
+												field->name, element->get_identifier());
 										}
 									}
 									else
 									{
 										display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 											"Node element map for field %s specifies a node index out of range for element %d.",
-											field->name, element->identifier);
+											field->name, element->get_identifier());
 									}
 								}
 								else
 								{
 									display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 										"No map values for element %d.",
-										element->identifier);
+										element->get_identifier());
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,"global_to_element_map_values.  "
 									"No standard node map for element %d.",
-									element->identifier);
+									element->get_identifier());
 							}
 						}
 					}
@@ -6221,7 +6215,7 @@ static int global_to_element_map_values(struct FE_element *element,
 												display_message(ERROR_MESSAGE, "global_to_element_map_values.  "
 													"Parameter '%s' not found for field %s at node %d, used from element %d",
 													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type), field->name,
-													node->cm_node_identifier, element->identifier);
+													node->cm_node_identifier, element->get_identifier());
 												return_code = 0;
 												break;
 											}
@@ -6231,7 +6225,7 @@ static int global_to_element_map_values(struct FE_element *element,
 													"Parameter '%s' version %d is out of range (%d) for field %s at node %d, used from element %d",
 													ENUMERATOR_STRING(FE_nodal_value_type)(nodal_value_type),
 													version + 1, number_of_node_versions, field->name,
-													node->cm_node_identifier, element->identifier);
+													node->cm_node_identifier, element->get_identifier());
 												return_code = 0;
 												break;
 											}
@@ -6291,7 +6285,7 @@ static int global_to_element_map_values(struct FE_element *element,
 									display_message(ERROR_MESSAGE,
 										"global_to_element_map_values.  Cannot evaluate field %s "
 										"in element %d because it is not defined at node %d",
-										field->name,element->identifier,node->cm_node_identifier);
+										field->name,element->get_identifier(),node->cm_node_identifier);
 									return_code=0;
 								}
 								standard_node_map_address++;
@@ -12306,7 +12300,7 @@ It is up to the calling function to DEALLOCATE the returned string.
 						append_string(string,"F",&error);
 					else
 						append_string(string,"E",&error);
-					sprintf(temp_string," %d",element->identifier);
+					sprintf(temp_string," %d",element->get_identifier());
 					append_string(string,temp_string,&error);
 					for (i=0;i<element->shape->dimension;i++)
 					{
@@ -12776,7 +12770,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		{
 			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  "
 				"Field %s is restricted to mesh dimension %d; cannot set location in %d-D element number %d.",
-				field->name, field->element_xi_mesh_dimension, element->shape->dimension, element->identifier);
+				field->name, field->element_xi_mesh_dimension, element->shape->dimension, element->get_identifier());
 			return_code = 0;
 		}
 	}
@@ -15131,7 +15125,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 	{
 		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 			"Field %s in %d-D element %d map cannot find global node at local node index %d",
-			field->name, get_FE_element_dimension(element), element->identifier,
+			field->name, get_FE_element_dimension(element), element->get_identifier(),
 			map->node_index + 1);
 		return false;
 	}
@@ -15151,7 +15145,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d indexes global node %d (local node index %d) "
 				"which has no parameters for that field.",
-				field->name, get_FE_element_dimension(element), element->identifier,
+				field->name, get_FE_element_dimension(element), element->get_identifier(),
 				node->cm_node_identifier, map->node_index + 1);
 			return false;
 		}
@@ -15162,7 +15156,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 		display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 			"Field %s in %d-D element %d indexes global node %d (local node index %d) "
 			"which does not have value type (derivative) labels.",
-			field->name, get_FE_element_dimension(element), element->identifier,
+			field->name, get_FE_element_dimension(element), element->get_identifier(),
 			node->cm_node_identifier, map->node_index + 1);
 		return false;
 	}
@@ -15180,7 +15174,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 			display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 				"Field %s in %d-D element %d node value index is out of range for values "
 				"stored in global node %d (local node index %d).",
-				field->name, get_FE_element_dimension(element), element->identifier,
+				field->name, get_FE_element_dimension(element), element->get_identifier(),
 				node->cm_node_identifier, map->node_index + 1);
 			return false;
 		}
@@ -15200,7 +15194,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 			{
 				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 					"Field %s in %d-D element %d addresses an 'unknown' value type in global node %d (local node %d).",
-					field->name, get_FE_element_dimension(element), element->identifier,
+					field->name, get_FE_element_dimension(element), element->get_identifier(),
 					node->cm_node_identifier, map->node_index + 1);
 				return false;
 			}
@@ -15217,7 +15211,7 @@ static bool Standard_node_to_element_map_determine_or_check_node_value_labels(
 				display_message(ERROR_MESSAGE, "Standard_node_to_element_map_determine_or_check_node_value_labels.  "
 					"Field %s in %d-D element %d uses different node value type or version labels to other elements "
 					"using the same element field template. This unexpected case is not yet handled.",
-					field->name, get_FE_element_dimension(element), element->identifier);
+					field->name, get_FE_element_dimension(element), element->get_identifier());
 				return false;
 			}
 		}
@@ -20948,7 +20942,8 @@ struct FE_element *CREATE(FE_element)()
 	struct FE_element *element;
 	if (ALLOCATE(element, struct FE_element, 1))
 	{
-		element->identifier = -1;
+		// not a global element until mesh gives a non-negative index:
+		element->index = DS_LABEL_INDEX_INVALID;
 		element->shape = (struct FE_element_shape *)NULL;
 		element->faces = (struct FE_element **)NULL;
 		element->fields = (struct FE_element_field_info *)NULL;
@@ -21035,9 +21030,10 @@ struct FE_element *create_template_FE_element(FE_element_field_info *element_fie
 	return template_element;
 }
 
-struct FE_element *create_FE_element_from_template(int identifier, struct FE_element *template_element)
+struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE_element *template_element)
 {
-	if ((identifier < -1) || (0 == template_element))
+	// Assumes DS_LABEL_INDEX_INVALID == -1
+	if ((index < DS_LABEL_INDEX_INVALID) || (0 == template_element))
 	{
 		display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Invalid argument(s)");
 		return 0;
@@ -21046,7 +21042,7 @@ struct FE_element *create_FE_element_from_template(int identifier, struct FE_ele
 	if (element)
 	{
 		bool success = true;
-		element->identifier = identifier;
+		element->index = index;
 		if (!set_FE_element_shape(element, template_element->shape))
 		{
 			display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not set shape from template element");
@@ -21079,7 +21075,16 @@ void FE_element_invalidate(struct FE_element *element)
 		if (element->information)
 			FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
 		DEACCESS(FE_element_field_info)(&(element->fields));
+		element->index = DS_LABEL_INDEX_INVALID;
 	}
+}
+
+int FE_element_is_invalid(struct FE_element *element, void *dummy_void)
+{
+	USE_PARAMETER(dummy_void);
+	if ((element) && (element->fields))
+		return 0;
+	return 1;
 }
 
 DECLARE_OBJECT_FUNCTIONS(FE_element)
@@ -21173,7 +21178,7 @@ int inherit_FE_element_field(struct FE_element *element,
 		coordinate_transformation=(FE_value *)NULL;
 #if defined (DEBUG_CODE)
 		/*???debug */
-		printf("element %d \n",element->identifier);
+		printf("element %d \n",element->get_identifier());
 #endif /* defined (DEBUG_CODE) */
 		/* check if the field is defined for the element */
 		if ((field_info = element->fields) && element->information)
@@ -21706,8 +21711,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 			return_code=1;
 #if defined (DEBUG_CODE)
 			/*???debug */
-			printf("element : %d \n",element->identifier);
-			printf("field element : %d \n",field_element->identifier);
+			printf("element : %d \n",element->get_identifier());
+			printf("field element : %d \n",field_element->get_identifier());
 #endif /* defined (DEBUG_CODE) */
 			element_dimension=element->shape->dimension;
 			field_element_dimension=field_element->shape->dimension;
@@ -22327,13 +22332,13 @@ The optional <top_level_element> forces inheritance from it as needed.
 			{
 				display_message(ERROR_MESSAGE,
 					"calculate_FE_element_field_values.  %s not defined for %d-D element %d",
-					field->name, get_FE_element_dimension(element), element->identifier);
+					field->name, get_FE_element_dimension(element), element->get_identifier());
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,"calculate_FE_element_field_values.  "
 					"No coordinate fields defined for %d-D element %d",
-					get_FE_element_dimension(element), element->identifier);
+					get_FE_element_dimension(element), element->get_identifier());
 			}
 			return_code=0;
 #if defined (DEBUG_CODE)
@@ -22966,13 +22971,13 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 			{
 				display_message(ERROR_MESSAGE,
 					"calculate_FE_element_field_nodes.  %s not defined for %d-D element %d",
-					field->name, get_FE_element_dimension(element), element->identifier);
+					field->name, get_FE_element_dimension(element), element->get_identifier());
 			}
 			else
 			{
 				display_message(ERROR_MESSAGE,
 					"calculate_FE_element_field_nodes.  No coordinate fields defined for %d-D element %d",
-					get_FE_element_dimension(element), element->identifier);
+					get_FE_element_dimension(element), element->get_identifier());
 			}
 			return_code=0;
 		}
@@ -23119,7 +23124,7 @@ the derivatives will start at the first position of <jacobian>.
 						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
 						get_FE_element_dimension(element_field_values->element),
-						element_field_values->element->identifier);
+						element_field_values->element->get_identifier());
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -23657,7 +23662,7 @@ single component, the value will be put in the first position of <values>.
 						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
 						get_FE_element_dimension(element_field_values->element),
-						element_field_values->element->identifier);
+						element_field_values->element->get_identifier());
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -23817,7 +23822,7 @@ It is up to the calling function to deallocate the returned string values.
 						"Could not calculate index field %s for field %s at %d-D element %",
 						field->indexer_field->name,field->name,
 						get_FE_element_dimension(element_field_values->element),
-						element_field_values->element->identifier);
+						element_field_values->element->get_identifier());
 				}
 				REACCESS(FE_field)(&(element_field_values->field),field);
 			} break;
@@ -24198,122 +24203,58 @@ Returns true if all fields are defined in the same way at the two elements.
 } /* equivalent_FE_fields_in_elements */
 
 int get_FE_element_dimension(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 4 November 1999
-
-DESCRIPTION :
-Returns the dimension of the <element> or an error if it does not have a shape.
-==============================================================================*/
 {
-	int dimension;
-
-	ENTER(get_FE_element_dimension);
-	dimension=0;
-	if (element)
-	{
-		if (element->shape)
-		{
-			dimension=element->shape->dimension;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"get_FE_element_dimension.  Element must have a shape");
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_element_dimension.  Missing element");
-	}
-	LEAVE;
-
-	return (dimension);
-} /* get_FE_element_dimension */
-
-int FE_element_get_cm_number(struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Returns the cm number of the <element> or an error if it does not have a shape.
-==============================================================================*/
-{
-	int cm_number;
-
-	ENTER(FE_element_get_cm_number);
-	cm_number=0;
-	if (element)
-	{
-		cm_number=element->identifier;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"FE_element_get_cm_number.  Missing element");
-	}
-	LEAVE;
-
-	return (cm_number);
-} /* FE_element_get_cm_number */
-
-int get_FE_element_identifier(struct FE_element *element)
-{
-	if (element)
-		return element->identifier;
-	return -1;
-}
-
-int set_FE_element_identifier(struct FE_element *element, int identifier)
-{
-	if (element && (identifier >= 0))
-	{
-		element->identifier = identifier;
-		return 1;
-	}
+	if (element && element->fields)
+		return element->fields->fe_mesh->getDimension();
+	display_message(ERROR_MESSAGE, "get_FE_element_dimension.  Invalid element");
 	return 0;
 }
 
-int FE_element_or_parent_changed(struct FE_element *element,
-	struct CHANGE_LOG(FE_element) *fe_element_change_log[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-	struct CHANGE_LOG(FE_node) *fe_node_change_log)
-/*******************************************************************************
-LAST MODIFIED : 26 February 2003
-
-DESCRIPTION :
-Returns true if <element> or any of its parent elements is listed in the
-<fe_element_change_log> with any of OBJECT_IDENTIFIER_CHANGED,
-OBJECT_NOT_IDENTIFIER_CHANGED or OBJECT_REMOVED.
-Since element fields depend on node fields, the element is also considered as
-changed if it or any of its parents uses a node listed in the
-<fe_node_change_log> with OBJECT_IDENTIFIER_CHANGED and/or
-OBJECT_NOT_IDENTIFIER_CHANGED.
-==============================================================================*/
+DsLabelIdentifier get_FE_element_identifier(struct FE_element *element)
 {
-	int element_change;
-	int node_change;
-	int i, number_of_nodes, return_code;
-	struct FE_node *node, **nodes;
+	if (element)
+		return element->get_identifier();
+	return DS_LABEL_IDENTIFIER_INVALID;
+}
 
-	ENTER(FE_element_or_parent_changed);
-	return_code = 0;
+DsLabelIndex get_FE_element_index(struct FE_element *element)
+{
+	if (element)
+		return element->index;
+	return DS_LABEL_INDEX_INVALID;
+}
+
+void set_FE_element_index(struct FE_element *element, DsLabelIndex index)
+{
+	if (element)
+		element->index = index;
+}
+
+bool FE_element_or_parent_changed(struct FE_element *element,
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS],
+	struct CHANGE_LOG(FE_node) *fe_node_change_log)
+{
 	int dimension = get_FE_element_dimension(element);
-	if (element && fe_element_change_log && fe_node_change_log)
+	DsLabelsChangeLog *elementChangeLog;
+	if (element && (0 < dimension) && elementChangeLogs &&
+		((elementChangeLog = elementChangeLogs[dimension - 1])) && fe_node_change_log)
 	{
-		if (CHANGE_LOG_QUERY(FE_element)(fe_element_change_log[dimension - 1],
-			element, &element_change) && element_change & (
-				CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_element) |
-				CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_element) |
-				CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element) |
-				CHANGE_LOG_OBJECT_REMOVED(FE_element)))
+		if (elementChangeLog->isIndexChange(element->index) &&
+			(elementChangeLog->getChangeSummary() & (
+				DS_LABEL_CHANGE_TYPE_IDENTIFIER | DS_LABEL_CHANGE_TYPE_DEFINITION |
+				DS_LABEL_CHANGE_TYPE_RELATED | DS_LABEL_CHANGE_TYPE_REMOVE )))
 		{
-			return_code = 1;
+			return true;
 		}
 		else
 		{
+			struct FE_node *node, **nodes;
 			/* check nodes, if any; try to make as efficient as possible */
 			if (element->information && (nodes = element->information->nodes))
 			{
-				number_of_nodes = element->information->number_of_nodes;
-				for (i = 0; (i < number_of_nodes) && (!return_code); i++)
+				int node_change;
+				int number_of_nodes = element->information->number_of_nodes;
+				for (int i = 0; i < number_of_nodes; ++i)
 				{
 					if ((node = nodes[i]) &&
 						CHANGE_LOG_QUERY(FE_node)(fe_node_change_log, node, &node_change) &&
@@ -24322,21 +24263,17 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 							CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node) |
 							CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))))
 					{
-						return_code = 1;
+						return true;
 					}
 				}
 			}
-			if (!return_code)
+			/* try parents */
+			for (int i = 0; i < element->number_of_parents; i++)
 			{
-				/* try parents */
-				for (i = 0; i < element->number_of_parents; i++)
+				if (FE_element_or_parent_changed(element->parents[i],
+					elementChangeLogs, fe_node_change_log))
 				{
-					if (FE_element_or_parent_changed(element->parents[i],
-						fe_element_change_log, fe_node_change_log))
-					{
-						return_code = 1;
-						break;
-					}
+					return true;
 				}
 			}
 		}
@@ -24346,10 +24283,8 @@ OBJECT_NOT_IDENTIFIER_CHANGED.
 		display_message(ERROR_MESSAGE,
 			"FE_element_or_parent_changed.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_or_parent_changed */
+	return false;
+}
 
 int get_FE_element_number_of_fields(struct FE_element *element)
 /*******************************************************************************
@@ -24385,6 +24320,13 @@ int get_FE_element_number_of_parents(struct FE_element *element)
 		return element->number_of_parents;
 	display_message(ERROR_MESSAGE, "get_FE_element_number_of_parents.  Invalid argument(s)");
 	return 0;
+}
+
+bool FE_element_has_no_parents(cmzn_element *element)
+{
+	if (element)
+		return (element->number_of_parents == 0);
+	return false;
 }
 
 struct FE_element *get_FE_element_parent(struct FE_element *element, int index)
@@ -25083,7 +25025,7 @@ Should only be called for unmanaged elements.
 			display_message(ERROR_MESSAGE,
 				"define_FE_field_at_element.  Field %s already defined at %d-D element %d",
 				field->name, get_FE_element_dimension(element),
-				element->identifier);
+				element->get_identifier());
 			return_code = 0;
 		}
 		int number_of_values = 0;
@@ -25732,7 +25674,7 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
 	if (element && multi_range)
 	{
 		return_code = Multi_range_is_value_in_range(multi_range,
-			element->identifier);
+			element->get_identifier());
 	}
 	else
 	{
@@ -25750,8 +25692,8 @@ int FE_element_add_number_to_Multi_range(
 	struct Multi_range *multi_range = (struct Multi_range *)multi_range_void;
 	if (element && multi_range)
 	{
-		return_code = Multi_range_add_range(multi_range,
-			element->identifier, element->identifier);
+		const DsLabelIdentifier identifier = element->get_identifier();
+		return_code = Multi_range_add_range(multi_range, identifier, identifier);
 	}
 	else
 	{
@@ -25964,12 +25906,11 @@ int FE_element_add_faces_not_in_list(struct FE_element *element,
  * Returns true if <element1> and <element2> have the same shape, and all of
  * their faces match. A face match is found if it is either:
  * - NULL on either or both of <element1> and <element2>;
- * - if <find_face_mesh> is NOT supplied, the face pointer is the same;
- * - if <find_face_mesh> is supplied, the face pointer in <element2> is the
- * same as the element from <find_face_mesh>.
+ * - matchFaceIdentifiers is true and the faces are the same OR
+ * - matchFaceIdentifiers is true and the faces have the same identifier
  */
 static int FE_element_shape_and_faces_match(struct FE_element *element1,
-	struct FE_element *element2, FE_mesh *find_face_mesh)
+	struct FE_element *element2, bool matchFaceIdentifiers)
 {
 	int i, number_of_faces, return_code;
 	struct FE_element **face1, **face2;
@@ -25986,10 +25927,8 @@ static int FE_element_shape_and_faces_match(struct FE_element *element1,
 					for (i = number_of_faces; (0 < i) && return_code; i--)
 					{
 						if ((!(*face1)) || (!(*face2)) ||
-							((!find_face_mesh) && (*face1 == *face2)) ||
-							((find_face_mesh) &&
-								(find_face_mesh->findElementByIdentifier((*face1)->identifier)
-									== *face2)))
+							((!matchFaceIdentifiers) && (*face1 == *face2)) ||
+							(matchFaceIdentifiers && ((*face1)->get_identifier() == (*face2)->get_identifier())))
 						{
 							face1++;
 							face2++;
@@ -26144,8 +26083,7 @@ int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 					}
 				}
 			}
-			else if (!FE_element_shape_and_faces_match(source, destination,
-				/*find_face_mesh*/(FE_mesh *)0))
+			else if (!FE_element_shape_and_faces_match(source, destination, /*matchFaceIdentifiers*/false))
 			{
 				display_message(ERROR_MESSAGE,
 					"merge_FE_element.  Inconsistent element shapes");
@@ -26333,7 +26271,7 @@ int list_FE_element(struct FE_element *element)
 	{
 		return_code=1;
 		/* write the identifier */
-		display_message(INFORMATION_MESSAGE,"element : %d \n",element->identifier);
+		display_message(INFORMATION_MESSAGE,"element : %d \n",element->get_identifier());
 		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
 		if (element->shape)
 		{
@@ -26353,7 +26291,7 @@ int list_FE_element(struct FE_element *element)
 				{
 					if (*face)
 					{
-						display_message(INFORMATION_MESSAGE," (%d)",(*face)->identifier);
+						display_message(INFORMATION_MESSAGE," (%d)",(*face)->get_identifier());
 					}
 					else
 					{
@@ -26378,7 +26316,7 @@ int list_FE_element(struct FE_element *element)
 				{
 					if (element->parents[i])
 					{
-						sprintf(line+strlen(line)," (%d)", element->parents[i]->identifier);
+						sprintf(line+strlen(line)," (%d)", element->parents[i]->get_identifier());
 						if (70<=strlen(line))
 						{
 							display_message(INFORMATION_MESSAGE,line);
@@ -28013,7 +27951,7 @@ bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mes
 {
 	if (element && target_fe_mesh)
 	{
-		FE_element *target_element = target_fe_mesh->findElementByIdentifier(element->identifier);
+		FE_element *target_element = target_fe_mesh->findElementByIdentifier(element->get_identifier());
 		if (FE_element_shape_is_unspecified(element->shape))
 		{
 			// unspecified shape is used for nodal element:xi values when/ element is
@@ -28023,17 +27961,17 @@ bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mes
 			if (!target_element)
 			{
 				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global mesh",
-					get_FE_element_dimension(element), element->identifier);
+					get_FE_element_dimension(element), element->get_identifier());
 				return false;
 			}
 		}
 		else if (target_element)
 		{
-			if (!FE_element_shape_and_faces_match(element, target_element, target_fe_mesh->getFaceMesh()))
+			if (!FE_element_shape_and_faces_match(element, target_element, /*matchFaceIdentifiers*/true))
 			{
 				display_message(ERROR_MESSAGE,
 					"%d-D element %d shape and faces are not compatible with global element.",
-					get_FE_element_dimension(element), element->identifier);
+					get_FE_element_dimension(element), element->get_identifier());
 				return false;
 			}
 		}

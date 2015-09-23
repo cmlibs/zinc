@@ -808,7 +808,10 @@ ZINC_API cmzn_meshchanges_id cmzn_meshchanges_access(
 ZINC_API int cmzn_meshchanges_destroy(cmzn_meshchanges_id *meshchanges_address);
 
 /**
- * Returns if and how a element has changed in the mesh changes.
+ * Returns if and how the element has changed in the mesh changes. Note that
+ * individual changes are not stored for each element, hence this function
+ * returns the summary of all element changes if the element has changed, and
+ * CHANGE_FLAG_NONE if not changed.
  *
  * @param meshchanges  The mesh changes to query.
  * @param element  The element to query about.
@@ -818,12 +821,11 @@ ZINC_API cmzn_element_change_flags cmzn_meshchanges_get_element_change_flags(
 	cmzn_meshchanges_id meshchanges, cmzn_element_id element);
 
 /**
- * Returns the number of changes to elements in the mesh changes. Note this
- * can be larger than the number of elements in the mesh if multiple changes are
- * made to the same elements, or elements are removed.
+ * Returns the number of elements recorded as changed in the mesh changes, or
+ * -1 if all considered changed, i.e. too many changes occurred to record.
  *
  * @param meshchanges  The mesh changes to query.
- * @return  The number of changes to elements.
+ * @return  The number of changes to elements, or -1 if all changed.
  */
 ZINC_API int cmzn_meshchanges_get_number_of_changes(
 	cmzn_meshchanges_id meshchanges);

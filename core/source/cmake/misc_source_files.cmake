@@ -14,11 +14,13 @@ SET( CURVE_HDRS source/curve/curve.h )
 
 SET( DATASTORE_SRCS
 	source/datastore/labels.cpp
+	source/datastore/labelschangelog.cpp
 	source/datastore/labelsgroup.cpp
 	source/datastore/map.cpp
 	source/datastore/mapindexing.cpp )
 SET( DATASTORE_HDRS
 	source/datastore/labels.hpp
+	source/datastore/labelschangelog.hpp
 	source/datastore/labelsgroup.hpp
 	source/datastore/map.hpp
 	source/datastore/maparray.hpp

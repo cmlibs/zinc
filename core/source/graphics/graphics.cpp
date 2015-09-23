@@ -1965,8 +1965,7 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 		{
 			if (graphics->seed_element)
 			{
-				sprintf(temp_string, " seed_element %d",
-					FE_element_get_cm_number(graphics->seed_element));
+				sprintf(temp_string, " seed_element %d", get_FE_element_identifier(graphics->seed_element));
 				append_string(&graphics_string, temp_string, &error);
 			}
 		}
@@ -2398,35 +2397,33 @@ SubObjectGroupHighlightFunctor *create_highlight_functor_cad_primitive(
 SubObjectGroupHighlightFunctor *create_highlight_functor_element(
 	struct Computed_field *group_field, cmzn_mesh_id mesh)
 {
-  SubObjectGroupHighlightFunctor *highlight_functor = NULL;
-  if (group_field)
-  {
-	cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
-	  if (cmzn_field_group_contains_local_region(sub_group))
-	  {
-		highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
-		highlight_functor->setContainsAll(1);
-	  }
-	  else
-	  {
-		cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(sub_group, mesh);
+	SubObjectGroupHighlightFunctor *highlight_functor = NULL;
+	if (group_field)
+	{
+		cmzn_field_group_id sub_group = cmzn_field_cast_group(group_field);
+		if (cmzn_field_group_contains_local_region(sub_group))
+		{
+			highlight_functor =	new SubObjectGroupHighlightFunctor(NULL, NULL);
+			highlight_functor->setContainsAll(1);
+		}
+		else
+		{
+			cmzn_field_element_group_id element_group = cmzn_field_group_get_field_element_group(sub_group, mesh);
 			if (element_group)
 			{
 				Computed_field_element_group *group_core =
 					Computed_field_element_group_core_cast(element_group);
 				highlight_functor =
 					new SubObjectGroupHighlightFunctor(group_core,
-					&Computed_field_subobject_group::isIdentifierInList);
+					&Computed_field_subobject_group::containsIndex);
 				cmzn_field_element_group_destroy(&element_group);
-		}
+			}
 		}
 	if (sub_group)
-	{
-	  cmzn_field_group_destroy(&sub_group);
+		cmzn_field_group_destroy(&sub_group);
 	}
-  }
 
-  return (highlight_functor);
+ 	return (highlight_functor);
 }
 
 SubObjectGroupHighlightFunctor *create_highlight_functor_nodeset(
@@ -3415,7 +3412,7 @@ cmzn_field_change_flags cmzn_graphics_get_most_significant_field_change(
 struct FE_element_as_graphics_name_has_changed_data
 {
 	FE_mesh *fe_mesh;
-	struct CHANGE_LOG(FE_element) *elementChanges[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+	DsLabelsChangeLog *elementChangeLogs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	struct CHANGE_LOG(FE_node) *nodeChanges;
 };
 
@@ -3423,15 +3420,15 @@ struct FE_element_as_graphics_name_has_changed_data
  * @param data_void  Pointer to struct FE_element_as_graphics_name_has_changed_data.
  * @return  1 if element has changed according to event.
  */
-int FE_element_as_graphics_name_has_changed(int elementIdentifier, void *data_void)
+int FE_element_as_graphics_name_has_changed(int index, void *data_void)
 {
 	FE_element_as_graphics_name_has_changed_data *data =
-		reinterpret_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
-	FE_element *element = data->fe_mesh->findElementByIdentifier(elementIdentifier);
-	// won't find element if it has been removed
-	if (element)
-		return FE_element_or_parent_changed(element, data->elementChanges, data->nodeChanges);
-	else
+		static_cast<FE_element_as_graphics_name_has_changed_data*>(data_void);
+	DsLabelIdentifier elementIdentifier = data->fe_mesh->getElementIdentifier(index);
+	if (elementIdentifier < 0)
+		return 1; // element removed
+	FE_element *element = data->fe_mesh->getElement(index);
+	if (element && FE_element_or_parent_changed(element, data->elementChangeLogs, data->nodeChanges))
 		return 1;
 	return 0;
 }
@@ -3485,15 +3482,6 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-			// rebuild all if identifiers changed, for correct picking and can't edit graphics object
-			struct CHANGE_LOG(FE_element) *elementChanges = feRegionChanges->getElementChanges(domainDimension);
-			int elementChangeSummary = 0;
-			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_element)(elementChanges, &elementChangeSummary);
-			if (elementChangeSummary & CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_element))
-			{
-				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
-				return 1;
-			}
 			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
 			{
 				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES ||
@@ -3509,10 +3497,12 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				bool tooManyElementChanges = false;
 				for (int dim = domainDimension; dim <= MAXIMUM_ELEMENT_XI_DIMENSIONS; dim++)
 				{
+					DsLabelsChangeLog *elementChangeLog = feRegionChanges->getElementChangeLog(dim);
 					int number = 0;
-					CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS(FE_element)(feRegionChanges->getElementChanges(dim), &number);
-					if (number*2 > FE_region_get_number_of_FE_elements_of_dimension(
-						cmzn_region_get_FE_region(graphics->scene->region), dim))
+					if (elementChangeLog && (elementChangeLog->isAllChange() ||
+						((number = elementChangeLog->getChangeCount())*2 >
+							FE_region_get_number_of_FE_elements_of_dimension(
+								cmzn_region_get_FE_region(graphics->scene->region), dim))))
 					{
 						tooManyElementChanges = true;
 						break;
@@ -3530,21 +3520,13 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				FE_element_as_graphics_name_has_changed_data data;
 				data.fe_mesh = FE_region_find_FE_mesh_by_dimension(
 					cmzn_region_get_FE_region(graphics->scene->region), domainDimension);
-				if (data.fe_mesh)
-				{
-					for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-						data.elementChanges[dim] = feRegionChanges->getElementChanges(dim + 1);
-					data.nodeChanges = nodeChanges;
-					/* partial rebuild for few node/element field changes */
-					GT_object_conditional_invalidate_primitives(graphics->graphics_object,
-						FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
-					cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE, "cmzn_graphics_field_change.  Missing FE_mesh");
-					return 0;
-				}
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+					data.elementChangeLogs[dim] = feRegionChanges->getElementChangeLog(dim + 1);
+				data.nodeChanges = nodeChanges;
+				/* partial rebuild for few node/element field changes */
+				GT_object_conditional_invalidate_primitives(graphics->graphics_object,
+					FE_element_as_graphics_name_has_changed, static_cast<void*>(&data));
+				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_PARTIAL_REBUILD);
 			}
 		}
 	}

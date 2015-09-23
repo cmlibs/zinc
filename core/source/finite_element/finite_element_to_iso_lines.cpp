@@ -999,7 +999,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 			{
 				Contour_lines_link_ends(contour_lines);
 				if (!Contour_lines_add_to_vertex_array(contour_lines,
-						array, get_FE_element_identifier(element)))
+						array, get_FE_element_index(element)))
 				{
 					display_message(ERROR_MESSAGE,"create_iso_lines_from_FE_element.  "
 						"Could not add lines to graphics object");

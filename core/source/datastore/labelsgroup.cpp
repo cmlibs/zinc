@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "zinc/status.h"
 #include "datastore/labelsgroup.hpp"
 
 DsLabelsGroup::DsLabelsGroup(DsLabels *labelsIn) :
@@ -26,6 +27,42 @@ DsLabelsGroup::~DsLabelsGroup()
 DsLabelsGroup *DsLabelsGroup::create(DsLabels *labelsIn)
 {
 	return new DsLabelsGroup(labelsIn);
+}
+	
+void DsLabelsGroup::clear()
+{
+	this->values.clear();
+	this->labelsCount = 0;
+	this->indexLimit = 0;
+}
+
+int DsLabelsGroup::setIndex(DsLabelIndex index, bool inGroup)
+{
+	if (index < 0)
+	{
+		display_message(ERROR_MESSAGE, "DsLabelsGroup::setIndex.  Invalid argument");
+		return CMZN_ERROR_ARGUMENT;
+	}
+	bool wasInGroup;
+	if (values.setBool(index, inGroup, wasInGroup))
+	{
+		if (inGroup != wasInGroup)
+		{
+			if (inGroup)
+			{
+				++labelsCount;
+				if (index >= indexLimit)
+					indexLimit = index + 1;
+			}
+			else
+			{
+				--labelsCount;
+			}
+		}
+		return CMZN_OK;
+	}
+	display_message(ERROR_MESSAGE, "DsLabelsGroup::setIndex.  Failed to set bool");
+	return CMZN_ERROR_MEMORY;
 }
 
 /**
