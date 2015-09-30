@@ -150,8 +150,8 @@ FE_region::~FE_region()
 		FE_nodeset::deaccess(this->nodesets[n]);
 	}
 
-	for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
-		FE_mesh::deaccess(this->meshes[dim]);
+	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
+		FE_mesh::deaccess(this->meshes[dimension - 1]);
 
 	if (this->fe_field_info)
 	{
@@ -991,93 +991,6 @@ int FE_region_for_each_FE_element(struct FE_region *fe_region,
 	return 0;
 }
 
-struct FE_region_smooth_FE_element_data
-/*******************************************************************************
-LAST MODIFIED : 12 March 2003
-
-DESCRIPTION :
-Data for FE_region_smooth_FE_element.
-==============================================================================*/
-{
-	FE_value time;
-	struct FE_field *fe_field;
-	struct FE_field *element_count_fe_field;
-	FE_mesh *fe_mesh;
-	struct LIST(FE_node) *copy_node_list;
-};
-
-static int FE_region_smooth_FE_element(struct FE_element *element,
-	void *smooth_element_data_void)
-/*******************************************************************************
-LAST MODIFIED : 16 April 2003
-
-DESCRIPTION :
-Creates a copy of element, calls FE_element_smooth_FE_field for it, then
-merges it back into its FE_region.
-Place between begin/end_change calls when used for a series of elements.
-Must call FE_region_smooth_FE_node for copy_node_list afterwards.
-<smooth_element_data_void> points at a struct FE_region_smooth_FE_element_data.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_region_smooth_FE_element_data *smooth_element_data;
-
-	ENTER(FE_region_smooth_FE_element);
-	if (element && (smooth_element_data =
-		(struct FE_region_smooth_FE_element_data *)smooth_element_data_void))
-	{
-		return_code = 1;
-		/* skip elements without field defined appropriately */
-		if (FE_element_field_is_standard_node_based(element,
-			smooth_element_data->fe_field))
-		{
-			FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
-			if (fe_mesh)
-			{
-				/*???RC Should make a copy of element with JUST fe_field - would result
-					in a more precise change message and faster response */
-				FE_element_template *fe_element_template = fe_mesh->create_FE_element_template(element);
-				if (fe_element_template)
-				{
-					if (FE_element_smooth_FE_field(fe_element_template->get_template_element(),
-						smooth_element_data->fe_field,
-						smooth_element_data->time,
-						smooth_element_data->element_count_fe_field,
-						smooth_element_data->copy_node_list))
-					{
-						if (!smooth_element_data->fe_mesh->merge_FE_element_template(element, fe_element_template))
-						{
-							return_code = 0;
-						}
-					}
-					else
-					{
-						return_code = 0;
-					}
-					cmzn::Deaccess(fe_element_template);
-				}
-				else
-				{
-					return_code = 0;
-				}
-			}
-			else
-			{
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_region_smooth_FE_element.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_region_smooth_FE_element */
-
 int FE_region_smooth_FE_field(struct FE_region *fe_region,
 	struct FE_field *fe_field, FE_value time)
 {
@@ -1091,42 +1004,52 @@ int FE_region_smooth_FE_field(struct FE_region *fe_region,
 			if (dimension)
 			{
 				FE_region_begin_change(fe_region);
-				struct FE_region_smooth_FE_element_data smooth_element_data;
-				smooth_element_data.time = time;
-				smooth_element_data.fe_field = fe_field;
 				/* create a field to store an integer value per component of fe_field */
-				smooth_element_data.element_count_fe_field =
+				FE_field *element_count_fe_field =
 					CREATE(FE_field)("cmzn_smooth_element_count", fe_region);
-				set_FE_field_number_of_components(
-					smooth_element_data.element_count_fe_field,
-					get_FE_field_number_of_components(fe_field));
-				set_FE_field_value_type(smooth_element_data.element_count_fe_field,
-					INT_VALUE);
-				ACCESS(FE_field)(smooth_element_data.element_count_fe_field);
-				smooth_element_data.fe_mesh = fe_region->meshes[dimension - 1];
-				smooth_element_data.copy_node_list = CREATE(LIST(FE_node))();
-				if (!smooth_element_data.fe_mesh->for_each_FE_element(FE_region_smooth_FE_element,
-					(void *)&smooth_element_data))
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_region_smooth_FE_field.  Error smoothing elements");
+				if (!(set_FE_field_number_of_components(element_count_fe_field,
+							get_FE_field_number_of_components(fe_field)) &&
+						set_FE_field_value_type(element_count_fe_field, INT_VALUE)))
 					return_code = 0;
+				ACCESS(FE_field)(element_count_fe_field);
+				FE_mesh *fe_mesh = fe_region->meshes[dimension - 1];
+				LIST(FE_node) *copy_node_list = CREATE(LIST(FE_node))();
+
+				cmzn_elementiterator *elementIter = fe_mesh->createElementiterator();
+				if (!((element_count_fe_field) && (copy_node_list) && (elementIter))) 
+					return_code = 0;
+				FE_element *element;
+				while (0 != (element = cmzn_elementiterator_next_non_access(elementIter)))
+				{
+					/* skip elements without field defined appropriately */
+					if (FE_element_field_is_standard_node_based(element, fe_field))
+					{
+						if (FE_element_smooth_FE_field(element, fe_field, time, element_count_fe_field, copy_node_list))
+						{
+							fe_mesh->elementFieldChange(element, fe_field);
+						}
+						else
+						{
+							return_code = 0;
+							break;
+						}
+					}
 				}
+				cmzn_elementiterator_destroy(&elementIter);
 
 				FE_nodeset *fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(fe_region,
 					CMZN_FIELD_DOMAIN_TYPE_NODES);
-				cmzn_nodeiterator *iter = CREATE_LIST_ITERATOR(FE_node)(smooth_element_data.copy_node_list);
+				cmzn_nodeiterator *nodeIter = CREATE_LIST_ITERATOR(FE_node)(copy_node_list);
 				cmzn_node *node = 0;
-				while ((0 != (node = cmzn_nodeiterator_next_non_access(iter))))
+				while ((0 != (node = cmzn_nodeiterator_next_non_access(nodeIter))))
 				{
-					FE_node_smooth_FE_field(node, fe_field,
-						time, smooth_element_data.element_count_fe_field);
+					FE_node_smooth_FE_field(node, fe_field, time, element_count_fe_field);
 					fe_nodeset->merge_FE_node(node);
 				}
-				cmzn_nodeiterator_destroy(&iter);
+				cmzn_nodeiterator_destroy(&nodeIter);
 
-				DESTROY(LIST(FE_node))(&smooth_element_data.copy_node_list);
-				DEACCESS(FE_field)(&smooth_element_data.element_count_fe_field);
+				DESTROY(LIST(FE_node))(&copy_node_list);
+				DEACCESS(FE_field)(&element_count_fe_field);
 
 				FE_region_end_change(fe_region);
 			}

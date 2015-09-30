@@ -358,8 +358,9 @@ DESCRIPTION :
 					DEALLOCATE(source);
 				}
 				/* add information for edges so that can be joined together */
-				if (get_FE_element_number_of_faces(element, &number_of_faces) &&
-					(4 == number_of_faces))
+				FE_element_shape *element_shape = get_FE_element_shape(element);
+				number_of_faces = FE_element_shape_get_number_of_faces(element_shape);
+				if (4 == number_of_faces)
 				{
 					ALLOCATE(faces_material,int,number_of_faces);
 					ALLOCATE(faces_world,int,number_of_faces);

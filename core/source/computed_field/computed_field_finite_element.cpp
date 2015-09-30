@@ -936,7 +936,6 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 		FE_value *grid_values;
 		int element_dimension, grid_map_number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
 			indices[MAXIMUM_ELEMENT_XI_DIMENSIONS], *grid_int_values, offset;
-		struct FE_element_shape *element_shape;
 
 		FE_element* element = element_xi_location->get_element();
 		const FE_value* xi = element_xi_location->get_xi();
@@ -944,6 +943,7 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 		element_dimension = get_FE_element_dimension(element);
 		if (FE_element_field_is_grid_based(element,fe_field))
 		{
+			FE_element_shape *element_shape = get_FE_element_shape(element);
 			int return_code=1;
 			for (int k = 0 ; (k < field->number_of_components) && return_code ; k++)
 			{
@@ -951,9 +951,8 @@ enum FieldAssignmentResult Computed_field_finite_element::assign(cmzn_fieldcache
 				if (get_FE_element_field_component_grid_map_number_in_xi(element,
 						fe_field, /*component_number*/k, grid_map_number_in_xi))
 				{
-					if (get_FE_element_shape(element, &element_shape) &&
-						FE_element_shape_get_indices_for_xi_location_in_cell_corners(
-							element_shape, grid_map_number_in_xi, xi, indices))
+					if (FE_element_shape_get_indices_for_xi_location_in_cell_corners(
+						element_shape, grid_map_number_in_xi, xi, indices))
 					{
 						offset = indices[element_dimension - 1];
 						for (int i = element_dimension - 2 ; i >= 0 ; i--)
@@ -2485,8 +2484,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		if (!parent)
 		  continue;
 		int face_number = get_FE_element_face_number(parent, element);
-		FE_element_shape *parentShape = 0;
-		get_FE_element_shape(parent, &parentShape);
+		FE_element_shape *parentShape = get_FE_element_shape(parent);
 		const FE_value *elementToParentXi = get_FE_element_shape_face_to_element(parentShape, face_number);
 
 		parentXi[0] = elementToParentXi[0] + elementToParentXi[1]*xi;

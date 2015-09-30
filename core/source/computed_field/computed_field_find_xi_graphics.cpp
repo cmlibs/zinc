@@ -127,7 +127,8 @@ Stores cache data for the Computed_field_find_element_xi_special routine.
 			glVertex2dv(data->values);
 
 			/* Only need to check the first dimension as this is only working for 2D */
-			if (get_FE_element_shape(element, &shape) &&
+			shape = get_FE_element_shape(element);
+			if ((shape) &&
 				get_FE_element_shape_xi_shape_type(shape,
 				/*xi_number*/0,  &shape_type) &&
 				(SIMPLEX_SHAPE == shape_type))

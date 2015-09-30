@@ -586,10 +586,10 @@ time is supplied in the workingCache.
 						xi[2] = 1.0;
 					} break;
 				}
-				if (!(get_FE_element_shape(mapping_item->element, &shape) &&
-					FE_element_shape_find_face_number_for_xi(shape, xi, &face_number)
-					&& (((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
-					&number_of_neighbour_elements, &neighbour_elements))))))
+				shape = get_FE_element_shape(mapping_item->element);
+				if (!(FE_element_shape_find_face_number_for_xi(shape, xi, &face_number) &&
+					(((CMZN_OK == adjacent_FE_element(mapping_item->element, face_number,
+						&number_of_neighbour_elements, &neighbour_elements))))))
 				{
 					number_of_neighbour_elements = 0;
 				}
@@ -691,8 +691,8 @@ time is supplied in the workingCache.
 		{
 			DESTROY(LIST(FE_field))(&fe_field_list);
 		}
+		shape = get_FE_element_shape(mapping_item->element);
 		if (node_mapping
-			&& get_FE_element_shape(mapping_item->element, &shape)
 			&& FE_element_shape_is_line(shape)
 			&& calculate_FE_element_field_nodes(mapping_item->element,
 				/*inherit_face_number*/-1,

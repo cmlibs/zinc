@@ -61,10 +61,10 @@ int cmzn_mesh_scale_factor_set::setName(const char *nameIn)
 	return CMZN_ERROR_ARGUMENT;
 }
 
-FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element_field_info *element_field_info) :
+FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element_field_info *element_field_info, FE_element_shape *element_shape_in) :
 	cmzn::RefCounted(),
 	mesh(mesh_in->access()),
-	element_shape(0),
+	element_shape(ACCESS(FE_element_shape)(element_shape_in)),
 	template_element(create_template_FE_element(element_field_info))
 {
 }
@@ -72,7 +72,7 @@ FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element_fie
 FE_element_template::FE_element_template(FE_mesh *mesh_in, struct FE_element *element) :
 	cmzn::RefCounted(),
 	mesh(mesh_in->access()),
-	element_shape(0),
+	element_shape(ACCESS(FE_element_shape)(get_FE_element_shape(element))),
 	template_element(create_FE_element_from_template(DS_LABEL_INDEX_INVALID, element))
 {
 }
@@ -85,19 +85,11 @@ FE_element_template::~FE_element_template()
 		DEACCESS(FE_element_shape)(&(this->element_shape));
 }
 
-/** @return  Boolean true on success */
-bool FE_element_template::set_element_shape(struct FE_element_shape *element_shape_in)
-{
-	this->element_shape = ACCESS(FE_element_shape)(element_shape_in);
-	return (0 != set_FE_element_shape(this->template_element, element_shape_in));
-}
-
 FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 	fe_region(fe_regionIn),
 	dimension(dimensionIn),
 	elementShapeFacesCount(0),
-	elementShapeFaces(0),
-	defaultElementShapeFacesIndex(-1), // negative == no default
+	elementShapeFacesArray(0),
 	elementShapeMap(/*default*/),
 	elementList(CREATE(LIST(FE_element)())),
 	element_field_info_list(CREATE(LIST(FE_element_field_info))()),
@@ -115,6 +107,16 @@ FE_mesh::~FE_mesh()
 {
 	cmzn::Deaccess(this->changeLog);
 	this->last_fe_element_field_info = 0;
+	// must invalidate elements since client or nodal element:xi fields may still hold them
+	// BUT! Need to leave elements that have been merged into another region
+	cmzn_elementiterator *iter = this->createElementiterator();
+	cmzn_element *element = 0;
+	while ((0 != (element = cmzn_elementiterator_next_non_access(iter))))
+	{
+		if (FE_element_get_FE_mesh(element) == this)
+			FE_element_invalidate(element);
+	}
+	cmzn_elementiterator_destroy(&iter);
 	DESTROY(LIST(FE_element))(&(this->elementList));
 	// remove pointers to this FE_mesh as destroying
 	FOR_EACH_OBJECT_IN_LIST(FE_element_field_info)(
@@ -129,8 +131,21 @@ FE_mesh::~FE_mesh()
 		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 	}
 	for (int i = 0; i < this->elementShapeFacesCount; ++i)
-		delete this->elementShapeFaces[i];
-	delete[] this->elementShapeFaces;
+		delete this->elementShapeFacesArray[i];
+	delete[] this->elementShapeFacesArray;
+}
+
+/**
+ * Call this to mark element with the supplied change.
+ * Notifies change to clients of FE_region.
+ */
+void FE_mesh::elementChange(DsLabelIndex index, int change)
+{
+	if (this->fe_region && this->changeLog)
+	{
+		this->changeLog->setIndexChange(index, change);
+		this->fe_region->update();
+	}
 }
 
 /**
@@ -231,11 +246,10 @@ void FE_mesh::clear()
 	REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(this->elementList);
 
 	for (int i = 0; i < this->elementShapeFacesCount; ++i)
-		delete this->elementShapeFaces[i];
-	delete[] this->elementShapeFaces;
+		delete this->elementShapeFacesArray[i];
+	delete[] this->elementShapeFacesArray;
 	this->elementShapeFacesCount = 0;
-	this->elementShapeFaces = 0;
-	this->defaultElementShapeFacesIndex = -1; // negative == no default
+	this->elementShapeFacesArray = 0;
 	this->elementShapeMap.clear();
 
 	this->labels.clear();
@@ -256,6 +270,70 @@ DsLabelsChangeLog *FE_mesh::extractChangeLog()
 	DsLabelsChangeLog *returnChangeLog = cmzn::Access(this->changeLog);
 	this->createChangeLog();
 	return returnChangeLog;
+}
+
+/**
+ * Set the element shape for the element at index.
+ * @param index  The index of the element in the mesh
+ * @param element_shape  The shape to set; must be of same dimension as mesh.
+ * @return  ElementShapeFaces for element with index, or 0 if failed.
+ */
+FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex index, FE_element_shape *element_shape)
+{
+	if ((index < 0) || (get_FE_element_shape_dimension(element_shape) != this->dimension))
+		return 0;
+	ElementShapeFaces *currentElementShapeFaces = this->getElementShapeFaces(index);
+	if (currentElementShapeFaces)
+	{
+		if (currentElementShapeFaces->getShape() == element_shape)
+			return currentElementShapeFaces;
+		FE_element *element = this->getElement(index); // temporary that element is needed
+		if (element)
+			clear_FE_element_faces(element, FE_element_shape_get_number_of_faces(currentElementShapeFaces->getShape()));
+	}
+	char shapeIndex = this->elementShapeFacesCount - 1;
+	while ((shapeIndex >= 0) && (this->elementShapeFacesArray[shapeIndex]->getShape() != (element_shape)))
+		--shapeIndex;
+	if (shapeIndex < 0)
+	{
+		shapeIndex = this->elementShapeFacesCount;
+		if (1 == this->elementShapeFacesCount)
+		{
+			// must now store per-element shape
+			if (!this->elementShapeMap.setValues(0, this->labels.getIndexSize() - 1, 0))
+			{
+				display_message(ERROR_MESSAGE, "FE_mesh::setElementShape  Failed to make per-element shape map");
+				return 0;
+			}
+		}
+		ElementShapeFaces *newElementShapeFaces = new ElementShapeFaces(&this->labels, element_shape);
+		if (!newElementShapeFaces)
+			return 0;
+		ElementShapeFaces **tempElementShapeFaces = new ElementShapeFaces*[this->elementShapeFacesCount + 1];
+		if (!tempElementShapeFaces)
+		{
+			delete newElementShapeFaces;
+			return 0;
+		}
+		for (int i = 0; i < this->elementShapeFacesCount; ++i)
+			tempElementShapeFaces[i] = this->elementShapeFacesArray[i];
+		tempElementShapeFaces[shapeIndex] = newElementShapeFaces;
+		delete[] this->elementShapeFacesArray;
+		this->elementShapeFacesArray = tempElementShapeFaces;
+		++this->elementShapeFacesCount;
+	}
+	if ((this->elementShapeFacesCount > (char)1) &&
+			(!this->elementShapeMap.setValue(index, shapeIndex)))
+		return 0;
+	// No change message here, assume done by callers
+	//this->elementChange(index, DS_LABEL_CHANGE_TYPE_DEFINITION);
+	return this->elementShapeFacesArray[shapeIndex];
+}
+
+bool FE_mesh::setElementShapeFromTemplate(DsLabelIndex index, FE_element_template &element_template)
+{
+	// GRC make more efficient by caching shapeIndex
+	return (0 != this->setElementShape(index, element_template.get_element_shape()));
 }
 
 /**
@@ -569,23 +647,16 @@ FE_element_template *FE_mesh::create_FE_element_template(FE_element *element)
 	if (FE_element_get_FE_mesh(element) != this)
 		return 0;
 	FE_element_template *element_template = new FE_element_template(this, element);
-	FE_element_shape *element_shape;
-	get_FE_element_shape(element, &element_shape);
-	if (element_template && !element_template->set_element_shape(element_shape))
-		cmzn::Deaccess(element_template);
 	return element_template;
 }
 
 /** @param element_shape  Element shape, must match mesh dimension */
 FE_element_template *FE_mesh::create_FE_element_template(FE_element_shape *element_shape)
 {
-	int shape_dimension = 0;
-	if (!((element_shape) && get_FE_element_shape_dimension(element_shape, &shape_dimension) &&
-			(shape_dimension == this->dimension)))
+	if (get_FE_element_shape_dimension(element_shape) != this->dimension)
 		return 0;
-	FE_element_template *element_template = new FE_element_template(this, this->get_FE_element_field_info((struct LIST(FE_element_field) *)NULL));
-	if (element_template && !element_template->set_element_shape(element_shape))
-		cmzn::Deaccess(element_template);
+	FE_element_template *element_template = new FE_element_template(this,
+		this->get_FE_element_field_info((struct LIST(FE_element_field) *)NULL), element_shape);
 	return element_template;
 }
 
@@ -603,10 +674,8 @@ struct FE_element *FE_mesh::get_or_create_FE_element_with_identifier(int identif
 	struct FE_element_shape *element_shape)
 {
 	struct FE_element *element = 0;
-	int element_shape_dimension = 0;
 	if ((-1 <= identifier) && ((!element_shape) ||
-		(get_FE_element_shape_dimension(element_shape, &element_shape_dimension) &&
-		(element_shape_dimension == this->dimension))))
+		(get_FE_element_shape_dimension(element_shape) == this->dimension)))
 	{
 		if (identifier >= 0)
 			element = this->findElementByIdentifier(identifier);
@@ -652,8 +721,8 @@ FE_element *FE_mesh::create_FE_element(int identifier, FE_element_template *elem
 			if (index >= 0)
 			{
 				new_element = ::create_FE_element_from_template(index, element_template->get_template_element());
-				// Future: set mapped shape here
-				if (ADD_OBJECT_TO_LIST(FE_element)(new_element, this->elementList))
+				if (this->setElementShapeFromTemplate(index, *element_template) &&
+					ADD_OBJECT_TO_LIST(FE_element)(new_element, this->elementList))
 				{
 					this->elementAddedChange(new_element);
 				}
@@ -734,7 +803,24 @@ int FE_mesh::merge_FE_element_existing(struct FE_element *destination, struct FE
 int FE_mesh::merge_FE_element_template(struct FE_element *destination, FE_element_template *fe_element_template)
 {
 	if (fe_element_template)
-		return this->merge_FE_element_existing(destination, fe_element_template->get_template_element());
+	{
+		const DsLabelIndex index = get_FE_element_index(destination);
+		const bool shapeChange = (!FE_element_shape_is_unspecified(fe_element_template->get_element_shape())) &&
+			(this->getElementShape(index) != fe_element_template->get_element_shape());
+		int return_code = CMZN_OK;
+		if (shapeChange)
+		{
+			FE_region_begin_change(this->fe_region);
+			// GRC make more efficient by caching shapeIndex for shape:
+			if (0 == this->setElementShape(index, fe_element_template->get_element_shape()))
+				return_code = CMZN_ERROR_GENERAL;
+		}
+		if (return_code = CMZN_OK)
+			return_code = this->merge_FE_element_existing(destination, fe_element_template->get_template_element());
+		if (shapeChange)
+			FE_region_end_change(this->fe_region);
+		return return_code;
+	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -772,8 +858,7 @@ int FE_mesh::find_or_create_face(struct FE_element *parent_element, int face_num
 		}
 		else
 		{
-			struct FE_element_shape *parent_shape;
-			get_FE_element_shape(parent_element, &parent_shape);
+			FE_element_shape *parent_shape = get_FE_element_shape(parent_element);
 			FE_element_shape *face_shape = get_FE_element_shape_of_face(parent_shape, face_number, fe_region);
 			if (!face_shape)
 				return_code = CMZN_ERROR_GENERAL;
@@ -814,32 +899,37 @@ int FE_mesh::define_FE_element_faces(struct FE_element *element)
 		if (this->faceMesh && this->definingFaces)
 		{
 			int newFaceCount = 0;
-			int number_of_faces;
-			get_FE_element_number_of_faces(element, &number_of_faces);
-			for (int face_number = 0; (face_number < number_of_faces) && return_code; face_number++)
+			ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(get_FE_element_index(element));
+			if (elementShapeFaces)
 			{
-				FE_element *face = 0;
-				if ((return_code = get_FE_element_face(element, face_number, &face)) &&
-					(!face) && this->definingFaces)
+				const int faceCount = elementShapeFaces->getFaceCount();
+				for (int face_number = 0; (face_number < faceCount) && return_code; face_number++)
 				{
-					int result = this->faceMesh->find_or_create_face(element, face_number);
-					if (result == CMZN_OK)
+					FE_element *face = 0;
+					if ((return_code = get_FE_element_face(element, face_number, &face)) &&
+						(!face) && this->definingFaces)
 					{
-						get_FE_element_face(element, face_number, &face);
-						if (face)
-							++newFaceCount;
+						int result = this->faceMesh->find_or_create_face(element, face_number);
+						if (result == CMZN_OK)
+						{
+							get_FE_element_face(element, face_number, &face);
+							if (face)
+								++newFaceCount;
+						}
+						else
+							return_code = 0;
 					}
-					else
-						return_code = 0;
+					if (face)
+					{
+						// ensure the face is in the face mesh, recurse with its faces
+						return_code = this->faceMesh->define_FE_element_faces(face);
+					}
 				}
-				if (face)
-				{
-					// ensure the face is in the face mesh, recurse with its faces
-					return_code = this->faceMesh->define_FE_element_faces(face);
-				}
+				if (newFaceCount)
+					this->elementChange(element, DS_LABEL_CHANGE_TYPE_DEFINITION, element);
 			}
-			if (newFaceCount)
-				this->elementChange(element, DS_LABEL_CHANGE_TYPE_DEFINITION, element);
+			else
+				return_code = 0;
 			if (!return_code)
 				display_message(ERROR_MESSAGE, "FE_mesh::define_FE_element_faces.  Failed");
 		}
@@ -964,7 +1054,7 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 		if (this->parentMesh)
 		{
 			/* remove face elements from all their parents;
-				 mark parent elements as OBJECT_NOT_IDENTIFIER_CHANGED */
+				 mark parent elements as DEFINITION_CHANGED */
 			int face_number;
 			struct FE_element *parent_element;
 			while (return_code && (return_code =
@@ -977,25 +1067,34 @@ int FE_mesh::remove_FE_element_private(struct FE_element *element)
 					DS_LABEL_CHANGE_TYPE_DEFINITION, parent_element);
 			}
 		}
-		this->labels.removeLabel(index);
-		FE_element_invalidate(element);
 		if (this->faceMesh)
 		{
-			struct FE_element *face;
+			ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(get_FE_element_index(element));
 			/* remove faces used by no other parent elements */
-			int number_of_faces = 0;
-			get_FE_element_number_of_faces(element, &number_of_faces);
-			for (int i = 0; (i < number_of_faces) && return_code; i++)
-				if (get_FE_element_face(element, i, &face) && face)
-				{
-					// must remove face since element group or client may be accessing this element
-					// so destructor won't be called to clean up in time.
-					// also stops above remove parents code from needlessly being run
-					set_FE_element_face(element, i, 0);
-					if (FE_element_has_no_parents(face))
-						return_code = this->faceMesh->remove_FE_element_private(face);
-				}
+			if (elementShapeFaces)
+			{
+				const int faceCount = elementShapeFaces->getFaceCount();
+				struct FE_element *face;
+				for (int i = 0; (i < faceCount) && return_code; i++)
+					if (get_FE_element_face(element, i, &face) && face)
+					{
+						// must remove face since element group or client may be accessing this element
+						// so destructor won't be called to clean up in time.
+						// also stops above remove parents code from needlessly being run
+						set_FE_element_face(element, i, 0);
+						if (FE_element_has_no_parents(face))
+							return_code = this->faceMesh->remove_FE_element_private(face);
+					}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_mesh::remove_FE_element_private.  Missing ElementShapeFaces");
+				return_code = 0;
+			}
 		}
+		FE_element_invalidate(element);
+		this->labels.removeLabel(index);
 		DEACCESS(FE_element)(&element);
 		if (0 == this->labels.getSize())
 			this->clear();
@@ -1060,16 +1159,77 @@ int FE_mesh::remove_FE_element_list(struct LIST(FE_element) *remove_element_list
 
 bool FE_mesh::canMerge(FE_mesh &source)
 {
-	cmzn_elementiterator *iter = source.createElementiterator();
-	cmzn_element *element;
-	bool result = true;
-	while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
+	if (source.dimension != this->dimension)
 	{
-		if (!FE_element_can_be_merged(element, this))
+		display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  Source mesh has wrong dimension");
+		return false;
+	}
+	bool result = true;
+	cmzn_elementiterator *iter = source.createElementiterator();
+	cmzn_element *sourceElement;
+	while (0 != (sourceElement = cmzn_elementiterator_next_non_access(iter)))
+	{
+		const DsLabelIndex sourceIndex = get_FE_element_index(sourceElement);
+		const DsLabelIdentifier identifier = source.getElementIdentifier(sourceIndex);
+		FE_element *targetElement = this->findElementByIdentifier(identifier);
+		ElementShapeFaces *sourceElementShapeFaces = source.getElementShapeFaces(sourceIndex);
+		if (!sourceElementShapeFaces)
 		{
-			display_message(ERROR_MESSAGE, "Cannot merge element into mesh due to incompatible shape or faces");
+			display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  Source %d-D element %d missing ElementShapeFaces",
+				source.dimension, identifier);
 			result = false;
 			break;
+		}
+		if (FE_element_shape_is_unspecified(sourceElementShapeFaces->getShape()))
+		{
+			// unspecified shape is used for nodal element:xi values when element is
+			// not read in from the same file, but could in future be used for
+			// reading field definitions without shape information.
+			// Must find a matching global element.
+			if (!targetElement)
+			{
+				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global mesh",
+					this->dimension, identifier);
+				result = false;
+				break;
+			}
+		}
+		else if (targetElement)
+		{
+			const DsLabelIndex targetIndex = get_FE_element_index(targetElement);
+			ElementShapeFaces *targetElementShapeFaces = this->getElementShapeFaces(targetIndex);
+			if (!sourceElementShapeFaces)
+			{
+				display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  Target %d-D element %d missing ElementShapeFaces",
+					source.dimension, identifier);
+				result = false;
+				break;
+			}
+			if (sourceElementShapeFaces->getShape() != targetElementShapeFaces->getShape())
+			{
+				display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  Cannot merge %d-D element %d with different shape",
+					source.dimension, identifier);
+				result = false;
+				break;
+			}
+			const int faceCount = sourceElementShapeFaces->getFaceCount();
+			if (faceCount > 0)
+			{
+				if (!(source.faceMesh && this->faceMesh))
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  %d-D element %d missing face meshes",
+						source.dimension, identifier);
+					result = false;
+					break;
+				}
+				if (!FE_elements_can_merge_faces(faceCount, *(this->faceMesh), targetElement, *(source.faceMesh), sourceElement))
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh::canMerge.  Source %d-D element %d has different faces",
+						source.dimension, identifier);
+					result = false;
+					break;
+				}
+			}
 		}
 	}
 	cmzn_elementiterator_destroy(&iter);
@@ -1081,12 +1241,72 @@ bool FE_mesh::canMerge(FE_mesh &source)
  */
 struct FE_mesh::Merge_FE_element_external_data
 {
-	FE_nodeset *fe_nodeset;
+	FE_mesh &source;
+	FE_nodeset &fe_nodeset;
 	/* use following array and number to build up matching pairs of old element
 		 field info what they become in the global_fe_region.
 		 Note these are ACCESSed */
-	struct FE_element_field_info **matching_element_field_info;
+	FE_element_field_info **matching_element_field_info;
 	int number_of_matching_element_field_info;
+
+	Merge_FE_element_external_data(FE_mesh &sourceIn, FE_nodeset &fe_nodeset_in) :
+		source(sourceIn),
+		fe_nodeset(fe_nodeset_in),
+		matching_element_field_info(0),
+		number_of_matching_element_field_info(0)
+	{
+	}
+
+	~Merge_FE_element_external_data()
+	{
+		if (this->matching_element_field_info)
+		{
+			for (int i = 2*this->number_of_matching_element_field_info - 1; 0 <= i; --i)
+				DEACCESS(FE_element_field_info)(&(this->matching_element_field_info[i]));
+			DEALLOCATE(this->matching_element_field_info);
+		}
+	}
+
+	FE_element_field_info *get_matching_FE_element_field_info(FE_element_field_info *source_element_field_info)
+	{
+		// 1. Convert element to use a new FE_element_field_info from this mesh
+		// fast path: check if the element_field_info has already been matched
+		FE_element_field_info **matching_element_field_info = this->matching_element_field_info;
+		FE_element_field_info *element_field_info = 0;
+		for (int i = 0; i < this->number_of_matching_element_field_info; ++i)
+		{
+			if (*matching_element_field_info == source_element_field_info)
+				return *(matching_element_field_info + 1);
+			matching_element_field_info += 2;
+		}
+		return 0;
+	}
+
+	/**
+	 * Record match between source_element_field_info and target_element_field_info.
+	 * @return  True on success.
+	 */
+	bool add_matching_FE_element_field_info(
+		FE_element_field_info *source_element_field_info, FE_element_field_info *target_element_field_info)
+	{
+		FE_element_field_info **matching_element_field_info;
+		if (REALLOCATE(matching_element_field_info,
+			this->matching_element_field_info, struct FE_element_field_info *,
+			2*(this->number_of_matching_element_field_info + 1)))
+		{
+			matching_element_field_info[this->number_of_matching_element_field_info*2] =
+				ACCESS(FE_element_field_info)(source_element_field_info);
+			matching_element_field_info[this->number_of_matching_element_field_info*2 + 1] =
+				ACCESS(FE_element_field_info)(target_element_field_info);
+			this->matching_element_field_info = matching_element_field_info;
+			++(this->number_of_matching_element_field_info);
+			return true;
+		}
+		display_message(ERROR_MESSAGE,
+			"FE_mesh::Merge_FE_element_external_data::add_matching_FE_element_field_info.  Failed");
+		return false;
+	}
+
 };
 
 /**
@@ -1105,11 +1325,10 @@ int FE_mesh::merge_FE_element_external(struct FE_element *element,
 	Merge_FE_element_external_data &data)
 {
 	int return_code = 1;
-	struct FE_element_field_info *current_element_field_info;
-	struct FE_element_shape *element_shape;
+	struct FE_element_field_info *old_element_field_info;
 
-	if (element && (current_element_field_info = FE_element_get_FE_element_field_info(element)) &&
-		get_FE_element_shape(element, &element_shape))
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if (element_shape && (old_element_field_info = FE_element_get_FE_element_field_info(element)))
 	{
 		const DsLabelIdentifier identifier = get_FE_element_identifier(element);
 		FE_element *global_element = this->findElementByIdentifier(identifier);
@@ -1119,183 +1338,69 @@ int FE_mesh::merge_FE_element_external(struct FE_element *element,
 			{
 				display_message(ERROR_MESSAGE,
 					"FE_mesh::merge_FE_element_external.  No matching embedding element");
-				return_code = 0;
+				return 0;
 			}
+			return 1;
 		}
-		else
+		const DsLabelIndex newIndex = (global_element) ? get_FE_element_index(global_element) :
+			this->labels.createLabel(identifier);
+		if (newIndex < 0)
 		{
-			return_code = 1;
-			// 1. Convert element to use a new FE_element_field_info from this mesh
-			// fast path: check if the element_field_info has already been matched
-			FE_element_field_info **matching_element_field_info = data.matching_element_field_info;
-			FE_element_field_info *element_field_info = 0;
-			for (int i = 0; i < data.number_of_matching_element_field_info; ++i)
-			{
-				if (*matching_element_field_info == current_element_field_info)
-				{
-					element_field_info = *(matching_element_field_info + 1);
-					break;
-				}
-				matching_element_field_info += 2;
-			}
-			if (!element_field_info)
-			{
-				element_field_info = this->clone_FE_element_field_info(current_element_field_info);
-				if (element_field_info)
-				{
-					/* store combination of element field info in matching list */
-					if (REALLOCATE(matching_element_field_info,
-						data.matching_element_field_info, struct FE_element_field_info *,
-						2*(data.number_of_matching_element_field_info + 1)))
-					{
-						matching_element_field_info[data.number_of_matching_element_field_info*2] =
-							ACCESS(FE_element_field_info)(current_element_field_info);
-						matching_element_field_info[data.number_of_matching_element_field_info*2 + 1] =
-							ACCESS(FE_element_field_info)(element_field_info);
-						data.matching_element_field_info = matching_element_field_info;
-						++(data.number_of_matching_element_field_info);
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_mesh::merge_FE_element_external.  Could not clone element_field_info");
-				}
-			}
+			display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to get element label.");
+			return 0;
+		}
+		ElementShapeFaces *elementShapeFaces = (global_element) ? this->getElementShapeFaces(newIndex) :
+			this->setElementShape(newIndex, element_shape);
+		if (!elementShapeFaces)
+		{
+			display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to get ElementShapeFaces");
+			return 0;
+		}
+
+		return_code = 1;
+		// 1. Convert element to use a new FE_element_field_info from this mesh
+		FE_element_field_info *element_field_info = data.get_matching_FE_element_field_info(old_element_field_info);
+		if (!element_field_info)
+		{
+			element_field_info = this->clone_FE_element_field_info(old_element_field_info);
 			if (element_field_info)
 			{
-				/* substitute the new element field info */
-				FE_element_set_FE_element_field_info(element, element_field_info);
-				/* substitute global nodes */
-				int number_of_nodes;
-				if (get_FE_element_number_of_nodes(element, &number_of_nodes))
+				if (!data.add_matching_FE_element_field_info(old_element_field_info, element_field_info))
 				{
-					struct FE_node *new_node, *old_node;
-					for (int i = 0; i < number_of_nodes; ++i)
+					DESTROY(FE_element_field_info)(&element_field_info);
+				}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"FE_mesh::merge_FE_element_external.  Could not clone element_field_info");
+			}
+		}
+		if (element_field_info)
+		{
+			/* substitute global nodes */
+			int number_of_nodes;
+			if (get_FE_element_number_of_nodes(element, &number_of_nodes))
+			{
+				struct FE_node *new_node, *old_node;
+				for (int i = 0; i < number_of_nodes; ++i)
+				{
+					if (get_FE_element_node(element, i, &old_node))
 					{
-						if (get_FE_element_node(element, i, &old_node))
+						if (old_node)
 						{
-							if (old_node)
+							new_node = data.fe_nodeset.findNodeByIdentifier(get_FE_node_identifier(old_node));
+							if (!((new_node) && set_FE_element_node(element, i, new_node)))
 							{
-								new_node = data.fe_nodeset->findNodeByIdentifier(get_FE_node_identifier(old_node));
-								if (!((new_node) && set_FE_element_node(element, i, new_node)))
-								{
-									return_code = 0;
-									break;
-								}
+								return_code = 0;
+								break;
 							}
 						}
-						else
-						{
-							return_code = 0;
-							break;
-						}
 					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-				/* substitute global scale factor set identifiers */
-				int number_of_scale_factor_sets = 0;
-				if (get_FE_element_number_of_scale_factor_sets(element, &number_of_scale_factor_sets))
-				{
-					for (int i = 0; (i < number_of_scale_factor_sets) && return_code; ++i)
+					else
 					{
-						cmzn_mesh_scale_factor_set *source_scale_factor_set =
-							get_FE_element_scale_factor_set_identifier_at_index(element, i);
-						cmzn_mesh_scale_factor_set *global_scale_factor_set = this->find_scale_factor_set_by_name(source_scale_factor_set->getName());
-						if (!global_scale_factor_set)
-						{
-							global_scale_factor_set = this->create_scale_factor_set();
-							global_scale_factor_set->setName(source_scale_factor_set->getName());
-						}
-						set_FE_element_scale_factor_set_identifier_at_index(element, i, global_scale_factor_set);
-						cmzn_mesh_scale_factor_set::deaccess(global_scale_factor_set);
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-				// substitute global faces, but add parent pointers only if this element will become global
-				bool willBeGlobal = (!global_element) || (element == global_element);
-				int number_of_faces;
-				if (get_FE_element_number_of_faces(element, &number_of_faces))
-				{
-					if ((0 < number_of_faces) && (!this->faceMesh))
-					{
-						display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Missing face mesh");
 						return_code = 0;
-					}
-					else
-					{
-						struct FE_element *new_face, *old_face;
-						for (int i = 0; i < number_of_faces; ++i)
-						{
-							if (get_FE_element_face(element, i, &old_face))
-							{
-								if (old_face)
-								{
-									new_face = this->faceMesh->findElementByIdentifier(cmzn_element_get_identifier(old_face));
-									if (new_face)
-									{
-										if (willBeGlobal)
-										{
-											if (!set_FE_element_face(element, i, new_face))
-												return_code = 0;
-										}
-										else
-										{
-											if (!set_FE_element_face_no_parents(element, i, new_face))
-												return_code = 0;
-										}
-									}
-									else
-									{
-										return_code = 0;
-									}
-								}
-							}
-							else
-							{
-								return_code = 0;
-							}
-						}
-					}
-				}
-				else
-				{
-					return_code = 0;
-				}
-				if (return_code)
-				{
-					if (global_element)
-					{
-						set_FE_element_index(element, get_FE_element_index(global_element));
-						if (this->merge_FE_element_existing(global_element, element) != CMZN_OK)
-							return_code = 0;
-					}
-					else
-					{
-						const DsLabelIndex index = this->labels.createLabel(identifier);
-						if (index >= 0)
-						{
-							set_FE_element_index(element, index);
-							if (ADD_OBJECT_TO_LIST(FE_element)(element, this->elementList))
-								this->elementAddedChange(element);
-							else
-							{
-								display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to add element to list.");
-								this->labels.removeLabel(index);
-								return_code = 0;
-							}
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to create new element label.");
-							return_code = 0;
-						}
+						break;
 					}
 				}
 			}
@@ -1303,10 +1408,106 @@ int FE_mesh::merge_FE_element_external(struct FE_element *element,
 			{
 				return_code = 0;
 			}
-			if (!return_code)
+			/* substitute global scale factor set identifiers */
+			int number_of_scale_factor_sets = 0;
+			if (get_FE_element_number_of_scale_factor_sets(element, &number_of_scale_factor_sets))
 			{
-				display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed");
+				for (int i = 0; (i < number_of_scale_factor_sets) && return_code; ++i)
+				{
+					cmzn_mesh_scale_factor_set *source_scale_factor_set =
+						get_FE_element_scale_factor_set_identifier_at_index(element, i);
+					cmzn_mesh_scale_factor_set *global_scale_factor_set = this->find_scale_factor_set_by_name(source_scale_factor_set->getName());
+					if (!global_scale_factor_set)
+					{
+						global_scale_factor_set = this->create_scale_factor_set();
+						global_scale_factor_set->setName(source_scale_factor_set->getName());
+					}
+					set_FE_element_scale_factor_set_identifier_at_index(element, i, global_scale_factor_set);
+					cmzn_mesh_scale_factor_set::deaccess(global_scale_factor_set);
+				}
 			}
+			else
+			{
+				return_code = 0;
+			}
+			// merge equivalent-identifier faces into global or soon-to-be global target element
+			// as no longer done by ::merge_FE_element
+			FE_element *targetElement = global_element ? global_element : element;
+			const int faceCount = elementShapeFaces->getFaceCount();
+			if (faceCount > 0)
+			{
+				if ((!this->faceMesh) || (!data.source.faceMesh))
+				{
+					display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Missing face mesh(es)");
+					return_code = 0;
+				}
+				else
+				{
+					struct FE_element *targetFace, *sourceFace;
+					for (int i = 0; i < faceCount; ++i)
+					{
+						if (get_FE_element_face(element, i, &sourceFace) && sourceFace)
+						{
+							// the face may have been transferred to target mesh
+							if (FE_element_get_FE_mesh(sourceFace) == this->faceMesh)
+								targetFace = sourceFace;
+							else
+							{
+								const DsLabelIdentifier identifier = data.source.faceMesh->getElementIdentifier(get_FE_element_index(sourceFace));
+								targetFace = this->faceMesh->findElementByIdentifier(identifier);
+								if (!targetFace)
+								{
+									display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Missing target face");
+									return_code = 0;
+									break;
+								}
+							}
+							if (!set_FE_element_face(targetElement, i, targetFace))
+								return_code = 0;
+						}
+					}
+					// prevent faces from having temporary element as parent
+					if (global_element)
+						clear_FE_element_faces(element, faceCount);
+				}
+			}
+			if (return_code)
+			{
+				DsLabelIndex oldIndex = get_FE_element_index(element);
+				if (global_element)
+					ACCESS(FE_element_field_info)(old_element_field_info);
+				/* substitute the new element field info */
+				FE_element_set_FE_element_field_info(element, element_field_info);
+				set_FE_element_index(element, newIndex);
+				if (global_element)
+				{
+					if (this->merge_FE_element_existing(global_element, element) != CMZN_OK)
+						return_code = 0;
+					// must restore the previous information for subsequent
+					FE_element_set_FE_element_field_info(element, old_element_field_info);
+					DEACCESS(FE_element_field_info)(&old_element_field_info);
+					set_FE_element_index(element, oldIndex);
+				}
+				else
+				{
+					if (ADD_OBJECT_TO_LIST(FE_element)(element, this->elementList))
+						this->elementAddedChange(element);
+					else
+					{
+						display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed to add element to list.");
+						this->labels.removeLabel(newIndex);
+						return_code = 0;
+					}
+				}
+			}
+		}
+		else
+		{
+			return_code = 0;
+		}
+		if (!return_code)
+		{
+			display_message(ERROR_MESSAGE, "FE_mesh::merge_FE_element_external.  Failed");
 		}
 	}
 	else
@@ -1323,14 +1524,8 @@ int FE_mesh::merge(FE_mesh &source)
 	int return_code = 1;
 	if (source.dimension == this->dimension)
 	{
-		Merge_FE_element_external_data data;
-		data.fe_nodeset = FE_region_find_FE_nodeset_by_field_domain_type(
-			this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);
-		/* use following array and number to build up matching pairs of old
-		   element field info what they become in the global_fe_region */
-		data.matching_element_field_info =
-			(struct FE_element_field_info **)NULL;
-		data.number_of_matching_element_field_info = 0;
+		Merge_FE_element_external_data data(source,
+			*FE_region_find_FE_nodeset_by_field_domain_type(this->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES));
 		cmzn_elementiterator *iter = source.createElementiterator();
 		cmzn_element *element;
 		while (0 != (element = cmzn_elementiterator_next_non_access(iter)))
@@ -1343,12 +1538,6 @@ int FE_mesh::merge(FE_mesh &source)
 			}
 		}
 		cmzn_elementiterator_destroy(&iter);
-		if (data.matching_element_field_info)
-		{
-			for (int i = 2*data.number_of_matching_element_field_info - 1; 0 <= i; --i)
-				DEACCESS(FE_element_field_info)(&(data.matching_element_field_info[i]));
-			DEALLOCATE(data.matching_element_field_info);
-		}
 	}
 	else
 	{

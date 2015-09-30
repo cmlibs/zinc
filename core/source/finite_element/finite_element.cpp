@@ -903,15 +903,13 @@ coordinates from face coordinates.
 
 FULL_DECLARE_LIST_TYPE(FE_element_shape);
 
+/**
+ * A region in space with functions defined on the region.  The region is
+ * parameterized and the functions are known in terms of the parameterized
+ * variables.
+ * Note the shape is now held by the owning FE_mesh at the index.
+ */
 struct FE_element
-/*******************************************************************************
-LAST MODIFIED : 10 October 2002
-
-DESCRIPTION :
-A region in space with functions defined on the region.  The region is
-parameterized and the functions are known in terms of the parameterized
-variables.
-==============================================================================*/
 {
 	/* index into mesh labels, maps to unique identifier */
 	DsLabelIndex index;
@@ -919,13 +917,11 @@ variables.
 		destroyed while this is greater than 0 */
 	int access_count;
 
-	/* a description of the shape/geometry of the element in Xi space */
-	struct FE_element_shape *shape;
 	/* the faces (finite elements of dimension 1 less) of the element.  The number
 		of faces is known from the <shape> */
 	struct FE_element **faces;
 
-	/* the field information for the element */
+	/* the field information for the element, also linking to owning FE_mesh */
 	struct FE_element_field_info *fields;
 	/* the nodes, scale factors and valuess for the element.  This is only set if
 		 the element has fields that require this supplemental information */
@@ -953,6 +949,14 @@ variables.
 		if (this->fields)
 			return this->fields->fe_mesh->getElementIdentifier(this->index);
 		return DS_LABEL_IDENTIFIER_INVALID;
+	}
+
+	inline int getDimension()
+	{
+		if (this->fields)
+			return this->fields->fe_mesh->getDimension();
+		display_message(ERROR_MESSAGE, "cmzn_element::getDimension.  Invalid element");
+		return 0;
 	}
 }; /* struct FE_element */
 
@@ -4607,7 +4611,7 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 				element_type_node_sequence->identifier.number_of_nodes = number_of_nodes;
 				element_type_node_sequence->identifier.node_numbers = node_numbers;
 				element_type_node_sequence->element=ACCESS(FE_element)(element);
-				element_type_node_sequence->dimension = get_FE_element_dimension(element);
+				element_type_node_sequence->dimension = element->getDimension();
 				if (face_number >= 0)
 					--(element_type_node_sequence->dimension);
 				element_type_node_sequence->access_count=0;
@@ -4646,7 +4650,7 @@ struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
 #if defined (DEBUG_CODE)
 				/*???debug*/
 				printf("FE_element_type_node_sequence  %d-D element %d has nodes: ",
-					get_FE_element_dimension(element), element->get_identifier());
+					element->getDimension(), element->get_identifier());
 				for (i=0;i<number_of_nodes;i++)
 				{
 					printf(" %d",node_numbers[i]);
@@ -5315,7 +5319,7 @@ static int list_FE_node_field(struct FE_node *node, struct FE_field *field,
 												embedding_element = *((struct FE_element **)values_storage);
 												if (embedding_element)
 												{
-													xi_dimension=embedding_element->shape->dimension;
+													xi_dimension = embedding_element->getDimension();
 													display_message(INFORMATION_MESSAGE,"%d-D %d xi",
 														xi_dimension, embedding_element->get_identifier());
 													value=values_storage+sizeof(struct FE_element *);
@@ -6871,12 +6875,11 @@ Cannot guarantee that <normal> is inward.
 {
 	double determinant,*matrix_double,norm;
 	FE_value *face_to_element,sign;
-	int dimension,i,j,k,*pivot_index,return_code;
+	int i,j,k,*pivot_index,return_code;
 
 	ENTER(face_calculate_xi_normal);
-	dimension = 0;
-	if (shape&&get_FE_element_shape_dimension(shape,&dimension)&&(0<dimension)&&
-		(0<=face_number)&&(face_number<shape->number_of_faces)&&normal)
+	const int dimension = get_FE_element_shape_dimension(shape);
+	if ((0 < dimension) && (0<=face_number) && (face_number < shape->number_of_faces) && normal)
 	{
 		return_code = 1;
 		if (1==dimension)
@@ -6975,139 +6978,117 @@ Cannot guarantee that <normal> is inward.
 	return (return_code);
 } /* face_calculate_xi_normal */
 
-static int FE_element_shape_xi_increment(struct FE_element_shape *shape,
+/**
+ * Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
+ * the step is limited to take <xi> to the boundary, <face_number> is set to be
+ * the limiting face, <fraction> is updated with the fraction of the <increment>
+ * actually used, the <increment> is updated to contain the part not used,
+ * the <xi_face> are calculated for that face and the <xi> are changed to be
+ * on the boundary of the shape.
+ */
+int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	FE_value *xi,FE_value *increment, FE_value *step_size,
 	int *face_number_address, FE_value *xi_face)
-/*******************************************************************************
-LAST MODIFIED : 16 June 2006
-
-DESCRIPTION :
-Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
-the step is limited to take <xi> to the boundary, <face_number> is set to be
-the limiting face, <fraction> is updated with the fraction of the <increment>
-actually used, the <increment> is updated to contain the part not used,
-the <xi_face> are calculated for that face and the <xi> are changed to be
-on the boundary of the shape.
-
-???DB.  Assumes that <xi> is inside
-???DB.  Needs reordering inside finite_element
-==============================================================================*/
 {
-	double determinant,*face_matrix,*face_rhs,*face_rhsB,step_size_local;
+	double determinant,step_size_local;
 	FE_value *face_to_element;
-	int face_number,i,j,k,*pivot_index,return_code;
+	int dimension,face_number,i,j,k,return_code;
 	/* While we are calculating this in doubles all the xi locations are
 		stored in floats and so when we change_element and are numerically just
 		outside it can be a value as large as this */
+	// ???DB.  Assumes that <xi> is inside
+	// ???DB.  Needs reordering inside finite_element
 #define SMALL_STEP (1e-4)
 
 	ENTER(FE_element_shape_xi_increment);
 	return_code=0;
-	int dimension = 0;
-	if (shape&&xi&&increment&&face_number_address&&
-		get_FE_element_shape_dimension(shape,&dimension)&&(0<dimension))
+	if ((shape) && (0 < (dimension = shape->dimension)) && xi && increment && face_number_address && xi_face)
 	{
 		/* working space */
-		ALLOCATE(face_matrix,double,dimension*dimension);
-		ALLOCATE(face_rhs,double,dimension);
-		ALLOCATE(face_rhsB,double,dimension);
-		ALLOCATE(pivot_index,int,dimension);
-		if (xi_face&&face_matrix&&face_rhs&&pivot_index&&face_rhsB)
+		double face_matrix[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		double face_rhs[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		int pivot_index[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		return_code=1;
+		/* check if it is in the shape */
+		face_number= -1;
+		*step_size=(FE_value)1;
+		face_to_element=shape->face_to_element;
+		for (i=0;i<shape->number_of_faces;i++)
 		{
-			return_code=1;
-			/* check if it is in the shape */
-			face_number= -1;
-			*step_size=(FE_value)1;
-			face_to_element=shape->face_to_element;
-			for (i=0;i<shape->number_of_faces;i++)
+			for (j=0;j<dimension;j++)
 			{
-				for (j=0;j<dimension;j++)
+				face_matrix[j*dimension]=(double)(-increment[j]);
+				face_rhs[j]=(double)(xi[j]-(*face_to_element));
+				face_to_element++;
+				for (k=1;k<dimension;k++)
 				{
-					face_matrix[j*dimension]=(double)(-increment[j]);
-					face_rhs[j]=(double)(xi[j]-(*face_to_element));
+					face_matrix[j*dimension+k]=(double)(*face_to_element);
 					face_to_element++;
-					for (k=1;k<dimension;k++)
+				}
+			}
+			/* Don't terminate if the LU_decompose fails as the matrix is
+				probably singular, just implying that we are travelling parallel
+				to the face */
+			if (LU_decompose(dimension,face_matrix,pivot_index,
+				&determinant,/*singular_tolerance*/1.0e-12)&&
+				LU_backsubstitute(dimension,face_matrix,
+				pivot_index,face_rhs))
+			{
+				step_size_local=face_rhs[0];
+				if ((step_size_local > -SMALL_STEP) && (step_size_local < SMALL_STEP) && ((FE_value)step_size_local<*step_size))
+				{
+					determinant = 0.0;
+					for (j = 0 ; j < dimension ; j++)
 					{
-						face_matrix[j*dimension+k]=(double)(*face_to_element);
-						face_to_element++;
+						determinant += shape->face_normals[i * dimension + j] *
+							increment[j];
+					}
+					if (determinant > -SMALL_STEP)
+					{
+						/* We are stepping out of the element so this is a boundary */
+						for (j=1;j<dimension;j++)
+						{
+							xi_face[j-1]=(FE_value)(face_rhs[j]);
+						}
+						face_number=i;
+						*step_size=(FE_value)step_size_local; /* or set to zero exactly?? */
 					}
 				}
-				/* Don't terminate if the LU_decompose fails as the matrix is
-					probably singular, just implying that we are travelling parallel
-					to the face */
-				if (LU_decompose(dimension,face_matrix,pivot_index,
-					&determinant,/*singular_tolerance*/1.0e-12)&&
-					LU_backsubstitute(dimension,face_matrix,
-					pivot_index,face_rhs))
+				else
 				{
-					step_size_local=face_rhs[0];
-					if ((step_size_local > -SMALL_STEP) && (step_size_local < SMALL_STEP) && ((FE_value)step_size_local<*step_size))
+					if ((0 < step_size_local) && ((FE_value)step_size_local<*step_size))
 					{
-						determinant = 0.0;
-						for (j = 0 ; j < dimension ; j++)
+						for (j=1;j<dimension;j++)
 						{
-							determinant += shape->face_normals[i * dimension + j] *
-								increment[j];
+							xi_face[j-1]=(FE_value)(face_rhs[j]);
 						}
-						if (determinant > -SMALL_STEP)
-						{
-							/* We are stepping out of the element so this is a boundary */
-							for (j=1;j<dimension;j++)
-							{
-								xi_face[j-1]=(FE_value)(face_rhs[j]);
-							}
-							face_number=i;
-							*step_size=(FE_value)step_size_local; /* or set to zero exactly?? */
-						}
-					}
-					else
-					{
-						if ((0 < step_size_local) && ((FE_value)step_size_local<*step_size))
-						{
-							for (j=1;j<dimension;j++)
-							{
-								xi_face[j-1]=(FE_value)(face_rhs[j]);
-							}
-							face_number=i;
-							*step_size=(FE_value)step_size_local;
-						}
+						face_number=i;
+						*step_size=(FE_value)step_size_local;
 					}
 				}
 			}
-			*face_number_address=face_number;
-			if (-1==face_number)
+		}
+		*face_number_address=face_number;
+		if (-1==face_number)
+		{
+			/* inside */
+			for (i=0;i<dimension;i++)
 			{
-				/* inside */
-				for (i=0;i<dimension;i++)
-				{
-					xi[i] += increment[i];
-					increment[i]=(FE_value)0;
-				}
-			}
-			else
-			{
-				/* not inside */
-				for (i=0;i<dimension;i++)
-				{
-					/* SAB Could use use face_to_element and face_xi to calculate
-						updated xi location instead */
-					xi[i] = xi[i] + *step_size * increment[i];
-					increment[i] *= (1. - *step_size);
-				}
+				xi[i] += increment[i];
+				increment[i]=(FE_value)0;
 			}
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE,"FE_element_shape_xi_increment.  "
-				"Could not allocate xi_face (%p), face_matrix (%p), face_rhs (%p), "
-				"pivot_index (%p), face_rhsB (%p)",xi_face,face_matrix,face_rhs,
-				pivot_index,face_rhsB);
-			return_code=0;
+			/* not inside */
+			for (i=0;i<dimension;i++)
+			{
+				/* SAB Could use use face_to_element and face_xi to calculate
+					updated xi location instead */
+				xi[i] = xi[i] + *step_size * increment[i];
+				increment[i] *= (1. - *step_size);
+			}
 		}
-		DEALLOCATE(pivot_index);
-		DEALLOCATE(face_rhs);
-		DEALLOCATE(face_rhsB);
-		DEALLOCATE(face_matrix);
 	}
 	else
 	{
@@ -9861,7 +9842,7 @@ Gets the specified global value for the <field>.
 			/* copy the element and xi out */
 			*element = *((struct FE_element **)values_storage);
 			values_storage += sizeof(struct FE_element *);
-			number_of_xi_dimensions = (*element)->shape->dimension;
+			number_of_xi_dimensions = get_FE_element_dimension(*element);
 			if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 			{
 				/* Extract the xi values */
@@ -9878,6 +9859,7 @@ Gets the specified global value for the <field>.
 				return_code=0;
 			}
 		}
+		else
 		{
 			display_message(ERROR_MESSAGE,
 				"get_FE_field_element_xi_value. no values at field");
@@ -9914,7 +9896,7 @@ The <field> must be of the correct FE_field_type to have such values and
 		&&(field->value_type==ELEMENT_XI_VALUE) && element && xi)
 	{
 		return_code=1;
-		number_of_xi_dimensions = element->shape->dimension;
+		number_of_xi_dimensions = get_FE_element_dimension(element);
 		if (number_of_xi_dimensions <= MAXIMUM_ELEMENT_XI_DIMENSIONS)
 		{
 
@@ -12287,22 +12269,23 @@ It is up to the calling function to DEALLOCATE the returned string.
 			case ELEMENT_XI_VALUE:
 			{
 				FE_value xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-				int error,i;
+				int dimension, error,i;
 				struct FE_element *element;
 
 				if (get_FE_nodal_element_xi_value(node,field,
-					component_number,version,type,&element,xi)&&element&&element->shape)
+					component_number,version,type,&element,xi) && 
+					(0 < (dimension = get_FE_element_dimension(element))))
 				{
 					error=0;
-					if (element->shape->dimension == 1)
+					if (dimension == 1)
 						append_string(string,"L",&error);
-					else if (element->shape->dimension == 2)
+					else if (dimension == 2)
 						append_string(string,"F",&error);
 					else
 						append_string(string,"E",&error);
 					sprintf(temp_string," %d",element->get_identifier());
 					append_string(string,temp_string,&error);
-					for (i=0;i<element->shape->dimension;i++)
+					for (i=0;i<dimension;i++)
 					{
 						sprintf(temp_string," %g",xi[i]);
 						append_string(string,temp_string,&error);
@@ -12722,7 +12705,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 <component> at the <node>.
 ==============================================================================*/
 {
-	int i, number_of_xi_dimensions, return_code;
+	int dimension, i, number_of_xi_dimensions, return_code;
 	struct FE_time_sequence *time_sequence;
 	Value_storage *values_storage = NULL;
 
@@ -12730,16 +12713,17 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 	return_code=0;
 	if (node && field && (field->value_type == ELEMENT_XI_VALUE) &&
 		(0 <= component_number) && (component_number < field->number_of_components) &&
-		(0 <= version) && ((!element) || (element && element->shape && xi)))
+		(0 <= version) && ((!element) || ((0 < (dimension = get_FE_element_dimension(element))) && xi)))
 	{
+		// GRC maintain fixed dimension here:
 		if ((!element) || (0 == field->element_xi_mesh_dimension) ||
-			(element->shape->dimension == field->element_xi_mesh_dimension))
+			(dimension == field->element_xi_mesh_dimension))
 		{
 			/* get the values storage */
 			if (find_FE_nodal_values_storage_dest(node,field,component_number,
 				version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 			{
-				number_of_xi_dimensions = element ? element->shape->dimension : 0;
+				number_of_xi_dimensions = element ? dimension : 0;
 				/* copy in the element_xi_value */
 				REACCESS(FE_element)((struct FE_element **)values_storage, element);
 				values_storage += sizeof(struct FE_element *);
@@ -12770,7 +12754,7 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		{
 			display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  "
 				"Field %s is restricted to mesh dimension %d; cannot set location in %d-D element number %d.",
-				field->name, field->element_xi_mesh_dimension, element->shape->dimension, element->get_identifier());
+				field->name, field->element_xi_mesh_dimension, dimension, element->get_identifier());
 			return_code = 0;
 		}
 	}
@@ -19981,7 +19965,7 @@ enum cmzn_element_shape_type FE_element_shape_get_simple_type(
 	enum cmzn_element_shape_type shape_type;
 
 	shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
-	if (element_shape)
+	if (element_shape && element_shape->type)
 	{
 		dimension = element_shape->dimension;
 		length = dimension*(dimension + 1)/2;
@@ -20156,34 +20140,10 @@ struct FE_element_shape *FE_element_shape_create_unspecified(
 	return fe_element_shape;
 }
 
-int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape)
-/*******************************************************************************
-LAST MODIFIED : 18 November 2002
-
-DESCRIPTION :
-Returns true if the only thing know about <element_shape> is its dimension.
-==============================================================================*/
+bool FE_element_shape_is_unspecified(struct FE_element_shape *element_shape)
 {
-	int return_code;
-
-	ENTER(FE_element_shape_is_unspecified);
-	return_code = 0;
-	if (element_shape)
-	{
-		if ((int *)NULL == element_shape->type)
-		{
-			return_code = 1;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_shape_is_unspecified.  Missing shape");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_shape_is_unspecified */
+	return ((0 != element_shape) && (0 == element_shape->type));
+}
 
 int FE_element_shape_is_line(struct FE_element_shape *element_shape)
 /*******************************************************************************
@@ -20382,38 +20342,12 @@ The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 	return (face_shape);
 } /* get_FE_element_shape_of_face */
 
-int get_FE_element_shape_dimension(struct FE_element_shape *element_shape,
-	int *dimension_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the dimension of <element_shape>.
-If fails, puts zero at <dimension_address>.
-==============================================================================*/
+int get_FE_element_shape_dimension(struct FE_element_shape *element_shape)
 {
-	int return_code;
-
-	ENTER(get_FE_element_shape_dimension);
-	if (element_shape && dimension_address)
-	{
-		*dimension_address = element_shape->dimension;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_shape_dimension.  Invalid argument(s)");
-		if (dimension_address)
-		{
-			*dimension_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_shape_dimension */
+	if (element_shape)
+		return element_shape->dimension;
+	return 0;
+}
 
 const FE_value *get_FE_element_shape_face_to_element(
 	struct FE_element_shape *element_shape, int face_number)
@@ -20798,13 +20732,17 @@ static struct FE_element *FE_element_get_first_parent_with_ancestor(
 static int FE_element_get_child_face_number(struct FE_element *parent,
 	struct FE_element *child)
 {
-	if ((parent) && (child) && (parent->shape) && (parent->faces))
+	if (parent && parent->fields)
 	{
-		int i;
-		for (i = 0; i < parent->shape->number_of_faces; i++)
+		FE_mesh *fe_mesh = parent->fields->fe_mesh;
+		FE_element_shape *element_shape = fe_mesh->getElementShape(parent->index);
+		if ((element_shape) && (child) && (parent->faces))
 		{
-			if (parent->faces[i] == child)
-				return (i);
+			for (int i = 0; i < element_shape->number_of_faces; i++)
+			{
+				if (parent->faces[i] == child)
+					return (i);
+			}
 		}
 	}
 	return (-1);
@@ -20829,41 +20767,25 @@ struct FE_element *FE_element_get_parent_on_face(
 	int face_number = static_cast<int>(face) - CMZN_ELEMENT_FACE_TYPE_XI1_0;
 	if (element && (0 <= face_number))
 	{
-		int i, j;
 		struct FE_element *face_element;
-
-		for (i = 0; i < element->number_of_parents; i++)
+		for (int i = 0; i < element->number_of_parents; i++)
 		{
 			if (0 == element->parents[i]->number_of_parents)
 			{
-				if (face_number < element->parents[i]->shape->number_of_faces)
-				{
-					face_element = element->parents[i]->faces[face_number];
-				}
-				else
-				{
-					face_element = NULL;
-				}
-				if ((face_element == element) && ((NULL == conditional) ||
-					(conditional)(element->parents[i], conditional_data)))
+				if (get_FE_element_face(element->parents[i], face_number, &face_element) &&
+					(face_element == element) && ((NULL == conditional) ||
+						(conditional)(element->parents[i], conditional_data)))
 				{
 					return element->parents[i];
 				}
 			}
 			else
 			{
-				for (j = 0; j < element->parents[i]->number_of_parents; j++)
+				for (int j = 0; j < element->parents[i]->number_of_parents; j++)
 				{
-					if (face_number < element->parents[i]->parents[j]->shape->number_of_faces)
-					{
-						face_element = element->parents[i]->parents[j]->faces[face_number];
-					}
-					else
-					{
-						face_element = NULL;
-					}
-					if ((face_element == element->parents[i]) && ((NULL == conditional) ||
-						(conditional)(element->parents[i]->parents[j], conditional_data)))
+					if (get_FE_element_face(element->parents[i]->parents[j], face_number, &face_element) &&
+						(face_element == element->parents[i]) && ((NULL == conditional) ||
+							(conditional)(element->parents[i]->parents[j], conditional_data)))
 					{
 						return element->parents[i];
 					}
@@ -20876,63 +20798,44 @@ struct FE_element *FE_element_get_parent_on_face(
 		display_message(ERROR_MESSAGE,
 			"FE_element_get_parent_on_face.  Invalid argument(s)");
 	}
-
 	return (NULL);
 }
 
-int set_FE_element_shape(struct FE_element *element,
-	struct FE_element_shape *shape)
+int clear_FE_element_faces(struct FE_element *element, int number_of_faces)
 {
-	int i,return_code;
-	struct FE_element **faces;
-
-	ENTER(set_FE_element_shape);
-	return_code=0;
-	if (element && shape && (0 <= shape->number_of_faces))
+	if ((element) && ((!element->faces) || (0 < number_of_faces)))
 	{
-		if ((element->shape) && (element->shape->dimension != shape->dimension))
+		if (element->faces)
 		{
-			display_message(ERROR_MESSAGE,
-				"set_FE_element_shape.  Cannot change to a different dimension shape");
+			for (int i = 0; i < number_of_faces; ++i)
+				set_FE_element_face(element, i, (struct FE_element *)NULL);
+			DEALLOCATE(element->faces);
 		}
-		else
-		{
-			faces=(struct FE_element **)NULL;
-			if ((0==shape->number_of_faces)||
-				ALLOCATE(faces,struct FE_element *,shape->number_of_faces))
-			{
-				/* clear the faces */
-				for (i=0;i<shape->number_of_faces;i++)
-				{
-					faces[i] = (struct FE_element *)NULL;
-				}
-				if (element->shape)
-				{
-					DEACCESS(FE_element_shape)(&element->shape);
-				}
-				if (element->faces)
-				{
-					DEALLOCATE(element->faces);
-				}
-				element->shape=ACCESS(FE_element_shape)(shape);
-				element->faces=faces;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"set_FE_element_shape.  Not enough memory for faces");
-			}
-		}
+		return CMZN_OK;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"set_FE_element_shape.  Invalid argument(s)");
-	}
-	LEAVE;
+	display_message(ERROR_MESSAGE, "clear_FE_element_faces.  Invalid argument(s)");
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	return (return_code);
-} /* set_FE_element_shape */
+int set_FE_element_number_of_faces(struct FE_element *element, int number_of_faces)
+{
+	if ((element) && (0 == element->faces))
+	{
+		if (0 < number_of_faces)
+		{
+			if (!ALLOCATE(element->faces, FE_element *, number_of_faces))
+			{
+				display_message(ERROR_MESSAGE, "set_FE_element_number_of_faces.  Not enough memory for faces");
+				return CMZN_ERROR_MEMORY;
+			}
+			for (int i = 0; i < number_of_faces; ++i)
+				element->faces[i] = 0;
+		}
+		return CMZN_OK;
+	}
+	display_message(ERROR_MESSAGE, "set_FE_element_number_of_faces.  Invalid argument(s)");
+	return CMZN_ERROR_ARGUMENT;
+}
 
 /**
  * Creates a blank element with access count of 1.
@@ -20944,7 +20847,6 @@ struct FE_element *CREATE(FE_element)()
 	{
 		// not a global element until mesh gives a non-negative index:
 		element->index = DS_LABEL_INDEX_INVALID;
-		element->shape = (struct FE_element_shape *)NULL;
 		element->faces = (struct FE_element **)NULL;
 		element->fields = (struct FE_element_field_info *)NULL;
 		element->information = (struct FE_element_node_scale_field_info *)NULL;
@@ -20968,7 +20870,7 @@ DESCRIPTION :
 Frees the memory for the element, sets <*element_address> to NULL.
 ==============================================================================*/
 {
-	int i,return_code;
+	int return_code;
 	struct FE_element *element;
 
 	ENTER(DESTROY(FE_element));
@@ -20976,19 +20878,7 @@ Frees the memory for the element, sets <*element_address> to NULL.
 	{
 		if (0 == element->access_count)
 		{
-			if (element->faces)
-			{
-				for (i = element->shape->number_of_faces - 1; 0 <= i; i--)
-				{
-					set_FE_element_face(element, i, (struct FE_element *)NULL);
-				}
-				DEALLOCATE(element->faces);
-			}
-			DEACCESS(FE_element_shape)(&(element->shape));
-			// following is also done by FE_element_invalidate
-			if (element->information)
-				FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
-			DEACCESS(FE_element_field_info)(&(element->fields));
+			FE_element_invalidate(element);
 			/* parent elements are not ACCESSed */
 			if (element->parents)
 			{
@@ -21043,11 +20933,6 @@ struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE
 	{
 		bool success = true;
 		element->index = index;
-		if (!set_FE_element_shape(element, template_element->shape))
-		{
-			display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not set shape from template element");
-			success = false;
-		}
 		if (!(element->fields = ACCESS(FE_element_field_info)(template_element->fields)))
 		{
 			display_message(ERROR_MESSAGE, "create_FE_element_from_template.  Could not set field info from template element");
@@ -21070,8 +20955,11 @@ struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE
 
 void FE_element_invalidate(struct FE_element *element)
 {
-	if (element)
+	if (element && element->fields)
 	{
+		FE_element_shape *element_shape = element->fields->fe_mesh->getElementShape(element->index);
+		if (element_shape)
+			clear_FE_element_faces(element, element_shape->number_of_faces);
 		if (element->information)
 			FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
 		DEACCESS(FE_element_field_info)(&(element->fields));
@@ -21163,14 +21051,14 @@ int inherit_FE_element_field(struct FE_element *element,
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(inherit_FE_element_field);
-#if defined (DEBUG_CODE)
-	/*???debug */
-	printf("enter inherit_FE_element_field\n");
-#endif /* defined (DEBUG_CODE) */
 	/* check the arguments */
-	if (element&&(element->shape)&&element_field_address&&field_element_address&&
+	FE_mesh *fe_mesh;
+	FE_element_shape *element_shape;
+	if (element && (element->fields) && (0 != (fe_mesh = element->fields->fe_mesh)) &&
+		(0 != (element_shape = fe_mesh->getElementShape(element->index))) &&
+		element_field_address&&field_element_address&&
 		coordinate_transformation_address &&
-		(inherit_face_number < element->shape->number_of_faces))
+		(inherit_face_number < element_shape->number_of_faces))
 	{
 		/* initialize values to be returned on success */
 		element_field=(struct FE_element_field *)NULL;
@@ -21248,168 +21136,158 @@ int inherit_FE_element_field(struct FE_element *element,
 			}
 			if (parent)
 			{
-				dimension=parent->shape->dimension;
-				field_element_dimension=field_element->shape->dimension;
-#if defined (DEBUG_CODE)
-				/*???debug */
-				printf("shape %p\n",parent->shape);
-				face_to_element_value=(parent->shape->face_to_element);
-				printf("face_number = %d\n",face_number);
-				for (i=0;i<parent->shape->number_of_faces;i++)
+				FE_element_shape *parent_shape = get_FE_element_shape(parent);
+				if (!parent_shape)
 				{
-					printf("face %d\n",i);
-					for (j=dimension;j>0;j--)
-					{
-						for (k=dimension;k>0;k--)
-						{
-							printf(" %g",*face_to_element_value);
-							face_to_element_value++;
-						}
-						printf("\n");
-					}
+					display_message(ERROR_MESSAGE, "inherit_FE_element_field.  Missing parent mesh or parent shape");
+					return_code = 0;
 				}
-#endif /* defined (DEBUG_CODE) */
-				if (coordinate_transformation)
+				else
 				{
-					if (ALLOCATE(new_coordinate_transformation,FE_value,
-						field_element_dimension*dimension))
+					dimension = parent_shape->dimension;
+					field_element_dimension = field_element->getDimension();
+					if (coordinate_transformation)
 					{
-						/* incorporate the face to element map in the coordinate
-							transformation */
-						face_to_element=(parent->shape->face_to_element)+
-							(face_number*dimension*dimension);
-#if defined (DEBUG_CODE)
-						/*???debug */
-						printf("face to element:\n");
-						face_to_element_value=face_to_element;
-						for (i=dimension;i>0;i--)
+						if (ALLOCATE(new_coordinate_transformation,FE_value,
+							field_element_dimension*dimension))
 						{
-							for (j=dimension;j>0;j--)
-							{
-								printf(" %g",*face_to_element_value);
-								face_to_element_value++;
-							}
-							printf("\n");
-						}
-#endif /* defined (DEBUG_CODE) */
-#if defined (DEBUG_CODE)
-						/*???debug */
-						printf("new coordinate transformation:\n");
-#endif /* defined (DEBUG_CODE) */
-						coordinate_transformation_value=coordinate_transformation;
-						new_coordinate_transformation_value=
-							new_coordinate_transformation;
-						dimension_minus_1=dimension-1;
-						for (i=field_element_dimension;i>0;i--)
-						{
-							/* calculate b entry for this row */
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-							sum=(double)(*coordinate_transformation_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-							sum= *coordinate_transformation_value;
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-							coordinate_transformation_value++;
-							face_to_element_value=face_to_element;
-							for (k=dimension;k>0;k--)
-							{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
-								sum += (double)(*coordinate_transformation_value)*
-									(double)(*face_to_element_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								sum += (*coordinate_transformation_value)*
-									(*face_to_element_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
-								coordinate_transformation_value++;
-								face_to_element_value += dimension;
-							}
-							*new_coordinate_transformation_value=(FE_value)sum;
-#if defined (DEBUG_CODE)
+							/* incorporate the face to element map in the coordinate
+								transformation */
+							face_to_element=(parent_shape->face_to_element)+
+								(face_number*dimension*dimension);
+	#if defined (DEBUG_CODE)
 							/*???debug */
-							printf(" %g",sum);
-#endif /* defined (DEBUG_CODE) */
-							new_coordinate_transformation_value++;
-							/* calculate A entries for this row */
-							for (j=dimension_minus_1;j>0;j--)
+							printf("face to element:\n");
+							face_to_element_value=face_to_element;
+							for (i=dimension;i>0;i--)
 							{
-								face_to_element++;
+								for (j=dimension;j>0;j--)
+								{
+									printf(" %g",*face_to_element_value);
+									face_to_element_value++;
+								}
+								printf("\n");
+							}
+	#endif /* defined (DEBUG_CODE) */
+	#if defined (DEBUG_CODE)
+							/*???debug */
+							printf("new coordinate transformation:\n");
+	#endif /* defined (DEBUG_CODE) */
+							coordinate_transformation_value=coordinate_transformation;
+							new_coordinate_transformation_value=
+								new_coordinate_transformation;
+							dimension_minus_1=dimension-1;
+							for (i=field_element_dimension;i>0;i--)
+							{
+								/* calculate b entry for this row */
+	#if defined (DOUBLE_FOR_DOT_PRODUCT)
+								sum=(double)(*coordinate_transformation_value);
+	#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+								sum= *coordinate_transformation_value;
+	#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+								coordinate_transformation_value++;
 								face_to_element_value=face_to_element;
-								coordinate_transformation_value -= dimension;
-								sum=0;
 								for (k=dimension;k>0;k--)
 								{
-#if defined (DOUBLE_FOR_DOT_PRODUCT)
+	#if defined (DOUBLE_FOR_DOT_PRODUCT)
 									sum += (double)(*coordinate_transformation_value)*
 										(double)(*face_to_element_value);
-#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 									sum += (*coordinate_transformation_value)*
 										(*face_to_element_value);
-#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+	#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 									coordinate_transformation_value++;
 									face_to_element_value += dimension;
 								}
 								*new_coordinate_transformation_value=(FE_value)sum;
-#if defined (DEBUG_CODE)
+	#if defined (DEBUG_CODE)
 								/*???debug */
 								printf(" %g",sum);
-#endif /* defined (DEBUG_CODE) */
+	#endif /* defined (DEBUG_CODE) */
 								new_coordinate_transformation_value++;
-							}
-#if defined (DEBUG_CODE)
-							/*???debug */
-							printf("\n");
-#endif /* defined (DEBUG_CODE) */
-							face_to_element -= dimension_minus_1;
-						}
-						DEALLOCATE(coordinate_transformation);
-						coordinate_transformation=new_coordinate_transformation;
-					}
-					else
-					{
-						display_message(ERROR_MESSAGE,
-							"inherit_FE_element_field.  Insufficient memory");
-						DEALLOCATE(coordinate_transformation);
-						return_code=0;
-					}
-				}
-				else
-				{
-#if defined (DEBUG_CODE)
-					/*???debug */
-					printf("new coordinate transformation %d %d :\n",dimension,
-						field_element_dimension);
-#endif /* defined (DEBUG_CODE) */
-					/* use the face to element map as the transformation */
-					transformation_size=field_element_dimension*dimension;
-					if (ALLOCATE(coordinate_transformation,FE_value,
-						transformation_size))
-					{
-						coordinate_transformation_value=coordinate_transformation;
-						face_to_element_value=(parent->shape->face_to_element)+
-							(face_number*transformation_size);
-						while (transformation_size>0)
-						{
-							*coordinate_transformation_value= *face_to_element_value;
-#if defined (DEBUG_CODE)
-							/*???debug */
-							printf(" %g",*face_to_element_value);
-#endif /* defined (DEBUG_CODE) */
-							coordinate_transformation_value++;
-							face_to_element_value++;
-							transformation_size--;
-#if defined (DEBUG_CODE)
-							/*???debug */
-							if (0==transformation_size%dimension)
-							{
+								/* calculate A entries for this row */
+								for (j=dimension_minus_1;j>0;j--)
+								{
+									face_to_element++;
+									face_to_element_value=face_to_element;
+									coordinate_transformation_value -= dimension;
+									sum=0;
+									for (k=dimension;k>0;k--)
+									{
+	#if defined (DOUBLE_FOR_DOT_PRODUCT)
+										sum += (double)(*coordinate_transformation_value)*
+											(double)(*face_to_element_value);
+	#else /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+										sum += (*coordinate_transformation_value)*
+											(*face_to_element_value);
+	#endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
+										coordinate_transformation_value++;
+										face_to_element_value += dimension;
+									}
+									*new_coordinate_transformation_value=(FE_value)sum;
+	#if defined (DEBUG_CODE)
+									/*???debug */
+									printf(" %g",sum);
+	#endif /* defined (DEBUG_CODE) */
+									new_coordinate_transformation_value++;
+								}
+	#if defined (DEBUG_CODE)
+								/*???debug */
 								printf("\n");
+	#endif /* defined (DEBUG_CODE) */
+								face_to_element -= dimension_minus_1;
 							}
-#endif /* defined (DEBUG_CODE) */
+							DEALLOCATE(coordinate_transformation);
+							coordinate_transformation=new_coordinate_transformation;
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"inherit_FE_element_field.  Insufficient memory");
+							DEALLOCATE(coordinate_transformation);
+							return_code=0;
 						}
 					}
 					else
 					{
-						display_message(ERROR_MESSAGE,
-							"inherit_FE_element_field.  Insufficient memory");
-						return_code=0;
+	#if defined (DEBUG_CODE)
+						/*???debug */
+						printf("new coordinate transformation %d %d :\n",dimension,
+							field_element_dimension);
+	#endif /* defined (DEBUG_CODE) */
+						/* use the face to element map as the transformation */
+						transformation_size=field_element_dimension*dimension;
+						if (ALLOCATE(coordinate_transformation,FE_value,
+							transformation_size))
+						{
+							coordinate_transformation_value=coordinate_transformation;
+							face_to_element_value=(parent_shape->face_to_element)+
+								(face_number*transformation_size);
+							while (transformation_size>0)
+							{
+								*coordinate_transformation_value= *face_to_element_value;
+	#if defined (DEBUG_CODE)
+								/*???debug */
+								printf(" %g",*face_to_element_value);
+	#endif /* defined (DEBUG_CODE) */
+								coordinate_transformation_value++;
+								face_to_element_value++;
+								transformation_size--;
+	#if defined (DEBUG_CODE)
+								/*???debug */
+								if (0==transformation_size%dimension)
+								{
+									printf("\n");
+								}
+	#endif /* defined (DEBUG_CODE) */
+							}
+						}
+						else
+						{
+							display_message(ERROR_MESSAGE,
+								"inherit_FE_element_field.  Insufficient memory");
+							return_code=0;
+						}
 					}
 				}
 			}
@@ -21437,10 +21315,6 @@ int inherit_FE_element_field(struct FE_element *element,
 			"inherit_FE_element_field.  Invalid argument(s)");
 		return_code=0;
 	}
-#if defined (DEBUG_CODE)
-	/*???debug */
-	printf("leave inherit_FE_element_field\n");
-#endif /* defined (DEBUG_CODE) */
 	LEAVE;
 
 	return (return_code);
@@ -21452,12 +21326,11 @@ int adjacent_FE_element(struct FE_element *element,
 {
 	int i, j, return_code = CMZN_OK;
 	struct FE_element *face;
-
-	if ((element) && (element->shape) && (element->faces) &&
-		(0 <= face_number) && (face_number < element->shape->number_of_faces))
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && (0 <= face_number) && (face_number < element_shape->number_of_faces))
 	{
 		j = 0;
-		if ((NULL != (face = (element->faces)[face_number])) &&
+		if ((element->faces) && (0 != (face = (element->faces)[face_number])) &&
 			(face->parents))
 		{
 			if (ALLOCATE(*adjacent_elements, struct FE_element *, face->number_of_parents))
@@ -21697,7 +21570,7 @@ The optional <top_level_element> forces inheritance from it as needed.
 	printf("enter calculate_FE_element_field_values\n");
 #endif /* defined (DEBUG_CODE) */
 	/* check the arguments */
-	if (element&&(element->shape)&&element_field_values)
+	if ((element) && (element->fields) && (element_field_values))
 	{
 		/* retrieve the element field from which this element inherits the field
 			and calculate the affine transformation from the element xi coordinates
@@ -21714,8 +21587,8 @@ The optional <top_level_element> forces inheritance from it as needed.
 			printf("element : %d \n",element->get_identifier());
 			printf("field element : %d \n",field_element->get_identifier());
 #endif /* defined (DEBUG_CODE) */
-			element_dimension=element->shape->dimension;
-			field_element_dimension=field_element->shape->dimension;
+			element_dimension = element->getDimension();
+			field_element_dimension = field_element->getDimension();
 			number_of_components=element_field->field->number_of_components;
 #if defined (DEBUG_CODE)
 			/*???debug */
@@ -22381,7 +22254,7 @@ must have already been calculated.  Currently only implemented for monomials.
 	if (element_field_values && element_field_values->derivatives_calculated)
 	{
 		return_code = 1;
-		element_dimension=element_field_values->element->shape->dimension;
+		element_dimension = element_field_values->element->getDimension();
 		for (k = 0 ; k < element_field_values->number_of_components ; k++)
 		{
 			if (monomial_basis_functions==
@@ -22802,8 +22675,8 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 	ENTER(calculate_FE_element_field_nodes);
 	return_code=0;
 	/* check the arguments */
-	if (element&&(element->shape)&&number_of_element_field_nodes_address&&
-		element_field_nodes_array_address)
+	if ((element) && (element->fields) && (number_of_element_field_nodes_address) &&
+		(element_field_nodes_array_address))
 	{
 		/* retrieve the element field from which this element inherits the field
 			and calculate the affine transformation from the element xi coordinates
@@ -22815,7 +22688,7 @@ int calculate_FE_element_field_nodes(struct FE_element *element,
 			return_code=1;
 			number_of_element_field_nodes=0;
 			element_field_nodes_array=(struct FE_node **)NULL;
-			element_dimension=element->shape->dimension;
+			element_dimension = element->getDimension();
 			if (face_number >= 0)
 				--element_dimension;
 			number_of_components=element_field->field->number_of_components;
@@ -23037,6 +22910,7 @@ the derivatives will start at the first position of <jacobian>.
 		((GENERAL_FE_FIELD != field->fe_field_type)||
 			(basis_function_values=element_field_values->basis_function_values)))
 	{
+		const int dimension = element_field_values->element->getDimension();
 		if ((0<=component_number)&&(component_number<field->number_of_components))
 		{
 			comp_no=component_number;
@@ -23067,8 +22941,7 @@ the derivatives will start at the first position of <jacobian>.
 				{
 					/* derivatives are zero for constant fields */
 					derivative=jacobian;
-					for (i=(field->number_of_components)*
-						element_field_values->element->shape->dimension;0<i;i--)
+					for (i = (field->number_of_components)*dimension; 0 < i ; --i)
 					{
 						*derivative = 0.0;
 						derivative++;
@@ -23103,8 +22976,7 @@ the derivatives will start at the first position of <jacobian>.
 						{
 							/* derivatives are zero for indexed fields */
 							derivative=jacobian;
-							for (i=(field->number_of_components)*
-								element_field_values->element->shape->dimension;0<i;i--)
+							for (i = (field->number_of_components)*dimension; 0 < i ; --i)
 							{
 								*derivative = 0.0;
 								derivative++;
@@ -23155,8 +23027,7 @@ the derivatives will start at the first position of <jacobian>.
 				component_values += comp_no;
 				component_standard_basis_function += comp_no;
 				component_standard_basis_function_arguments += comp_no;
-				number_of_xi_coordinates=
-					element_field_values->element->shape->dimension;
+				number_of_xi_coordinates = dimension;
 				int *element_value_offsets = 0;
 				int *element_value_offset = 0;
 				int number_of_values = 0;
@@ -23586,7 +23457,7 @@ single component, the value will be put in the first position of <values>.
 ==============================================================================*/
 {
 	int cn,comp_no,components_to_calculate,*element_int_values,i,*number_in_xi,
-		number_of_xi_coordinates,offset,return_code,this_comp_no,xi_offset;
+		offset,return_code,this_comp_no,xi_offset;
 	FE_value xi_coordinate;
 	struct FE_field *field;
 
@@ -23669,7 +23540,7 @@ single component, the value will be put in the first position of <values>.
 			case GENERAL_FE_FIELD:
 			{
 				return_code = 1;
-				number_of_xi_coordinates = element_field_values->element->shape->dimension;
+				const int number_of_xi_coordinates = element_field_values->element->getDimension();
 				for (cn=0;(cn<components_to_calculate)&&return_code;cn++)
 				{
 					this_comp_no = comp_no + cn;
@@ -23848,310 +23719,6 @@ It is up to the calling function to deallocate the returned string values.
 
 	return (return_code);
 } /* calculate_FE_element_field_string_values */
-
-int calculate_FE_element_anatomical(
-	struct FE_element_field_values *coordinate_element_field_values,
-	struct FE_element_field_values *anatomical_element_field_values,
-	FE_value *xi_coordinates,FE_value *x,FE_value *y,FE_value *z,FE_value a[3],
-	FE_value b[3],FE_value c[3],FE_value *dx_dxi)
-/*******************************************************************************
-LAST MODIFIED : 30 August 2001
-
-DESCRIPTION :
-Calculates the cartesian coordinates (<x>, <y> and <z>), and the fibre (<a>),
-cross-sheet (<b>) and sheet-normal (<c>) vectors from a coordinate element field
-and an anatomical element field.  The storage for the <x>, <y>, <z>, <a>, <b>
-and <c> should have been allocated outside the function.
-If later conversion of a, b and c to vectors in xi space is required, the
-optional <dx_dxi> parameter should be supplied and point to a enough memory to
-contain the nine derivatives of x,y,z w.r.t. three xi. These are returned in the
-order dx/dxi1, dx/dxi2, dx/dxi3, dy/dxi1 etc. Note that there will always be
-nine values returned, regardless of the element dimension.
-==============================================================================*/
-{
-	struct Coordinate_system *coordinate_system;
-	FE_value anatomical_result[3],a_x,a_y,a_z,b_x,b_y,b_z,coordinates[3],
-		cos_alpha,cos_beta,cos_gamma,c_x,c_y,c_z,derivative_xi[9],distance,d_xi1_0,
-		d_xi1_1,d_xi1_2,d_xi2_0,d_xi2_1,d_xi2_2,d_xi3_0,d_xi3_1,d_xi3_2,f11,
-		f12,f13,f21,f22,f23,f31,f32,f33,jacobian[9],sin_alpha,sin_beta,sin_gamma;
-	int return_code;
-	struct FE_element *element;
-
-	ENTER(calculate_FE_element_anatomical);
-	/* check the arguments */
-	if (coordinate_element_field_values&&anatomical_element_field_values&&
-		xi_coordinates&&x&&y&&z&&a&&b&&c&&(coordinate_element_field_values->field)&&
-		(CM_COORDINATE_FIELD==
-		coordinate_element_field_values->field->cm_field_type)&&
-		(anatomical_element_field_values->field)&&
-		(CM_ANATOMICAL_FIELD==
-		anatomical_element_field_values->field->cm_field_type)&&
-		(FIBRE==anatomical_element_field_values->field->coordinate_system.type)&&
-		(3>=anatomical_element_field_values->field->number_of_components)&&
-		(element=coordinate_element_field_values->element)&&
-		(element==anatomical_element_field_values->element)&&(element->shape)&&
-		((2==element->shape->dimension)||(3==element->shape->dimension))&&
-		/* must have at least as many components as xi directions! */
-		(element->shape->dimension<=
-		coordinate_element_field_values->field->number_of_components))
-	{
-		coordinate_system = get_FE_field_coordinate_system(
-			 coordinate_element_field_values->field);
-			/* calculate the coordinate field */
-			if (calculate_FE_element_field(-1,coordinate_element_field_values,
-				xi_coordinates,coordinates,derivative_xi))
-			{
-				return_code=1;
-				/* calculate the fibre field coordinate vectors - f1 (f), f2 (g) and
-					f3 (h) - in rectangular cartesian coordinates*/
-				/* calculate the base vectors for xi1 and xi2 in rectangular
-					cartesian coordinates (use f1 and f2 as temporary storage) */
-				switch (element->shape->dimension)
-				{
-					case 2:
-					{
-						d_xi1_0=derivative_xi[0];
-						d_xi1_1=derivative_xi[2];
-						d_xi2_0=derivative_xi[1];
-						d_xi2_1=derivative_xi[3];
-						if (2==coordinate_element_field_values->field->number_of_components)
-						{
-							/* clear z components of 2-component, 2-D elements */
-							coordinates[2]=0;
-							d_xi1_2=0.0;
-							d_xi2_2=0.0;
-						}
-						else
-						{
-							d_xi1_2=derivative_xi[4];
-							d_xi2_2=derivative_xi[5];
-						}
-						/* need d_xi3_d* for returning dx_dxi */
-						d_xi3_0=0.0;
-						d_xi3_1=0.0;
-						d_xi3_2=0.0;
-					} break;
-					case 3:
-					{
-						d_xi1_0=derivative_xi[0];
-						d_xi1_1=derivative_xi[3];
-						d_xi1_2=derivative_xi[6];
-						d_xi2_0=derivative_xi[1];
-						d_xi2_1=derivative_xi[4];
-						d_xi2_2=derivative_xi[7];
-						/* need d_xi3_d* for returning dx_dxi */
-						d_xi3_0=derivative_xi[2];
-						d_xi3_1=derivative_xi[5];
-						d_xi3_2=derivative_xi[8];
-					} break;
-					default:
-					{
-						d_xi1_0 = d_xi1_1 = d_xi1_2 = 0.0;
-						d_xi2_0 = d_xi2_1 = d_xi2_2 = 0.0;
-						d_xi3_0 = d_xi3_1 = d_xi3_2 = 0.0;
-					} break;
-				}
-				if (RECTANGULAR_CARTESIAN!=coordinate_system->type)
-				{
-					switch (coordinate_system->type)
-					{
-						case CYLINDRICAL_POLAR:
-						{
-							cylindrical_polar_to_cartesian(coordinates[0],
-								coordinates[1],coordinates[2],x,y,z,jacobian);
-						} break;
-						case SPHERICAL_POLAR:
-						{
-							spherical_polar_to_cartesian(coordinates[0],
-								coordinates[1],coordinates[2],x,y,z,jacobian);
-						} break;
-						case PROLATE_SPHEROIDAL:
-						{
-							prolate_spheroidal_to_cartesian(coordinates[0],
-								coordinates[1],coordinates[2],
-								coordinate_system->parameters.focus,x,y,z,jacobian);
-						} break;
-						default:
-						{
-							display_message(ERROR_MESSAGE,
-	"create_fibre_field_from_FE_element.  Invalid coordinate system");
-							return_code=0;
-						} break;
-					}
-					if (return_code)
-					{
-						f11=jacobian[0]*d_xi1_0+jacobian[1]*d_xi1_1+jacobian[2]*d_xi1_2;
-						f12=jacobian[3]*d_xi1_0+jacobian[4]*d_xi1_1+jacobian[5]*d_xi1_2;
-						f13=jacobian[6]*d_xi1_0+jacobian[7]*d_xi1_1+jacobian[8]*d_xi1_2;
-						f21=jacobian[0]*d_xi2_0+jacobian[1]*d_xi2_1+jacobian[2]*d_xi2_2;
-						f22=jacobian[3]*d_xi2_0+jacobian[4]*d_xi2_1+jacobian[5]*d_xi2_2;
-						f23=jacobian[6]*d_xi2_0+jacobian[7]*d_xi2_1+jacobian[8]*d_xi2_2;
-						/* need f3* for returning dx_dxi */
-						f31=jacobian[0]*d_xi3_0+jacobian[1]*d_xi3_1+jacobian[2]*d_xi3_2;
-						f32=jacobian[3]*d_xi3_0+jacobian[4]*d_xi3_1+jacobian[5]*d_xi3_2;
-						f33=jacobian[6]*d_xi3_0+jacobian[7]*d_xi3_1+jacobian[8]*d_xi3_2;
-					}
-					else
-					{
-						f11 = f12 = f13 = f21 = f22 = f23 = f31 = f32 = f33 = 0.0;
-					}
-				}
-				else
-				{
-					*x=coordinates[0];
-					*y=coordinates[1];
-					*z=coordinates[2];
-					f11=d_xi1_0;
-					f12=d_xi1_1;
-					f13=d_xi1_2;
-					f21=d_xi2_0;
-					f22=d_xi2_1;
-					f23=d_xi2_2;
-					/* need f3* for returning dx_dxi */
-					f31=d_xi3_0;
-					f32=d_xi3_1;
-					f33=d_xi3_2;
-				}
-				if (dx_dxi)
-				{
-					/* return the dx/dxi vectors to the calling function */
-					dx_dxi[0]=f11;
-					dx_dxi[1]=f21;
-					dx_dxi[2]=f31;
-					dx_dxi[3]=f12;
-					dx_dxi[4]=f22;
-					dx_dxi[5]=f32;
-					dx_dxi[6]=f13;
-					dx_dxi[7]=f23;
-					dx_dxi[8]=f33;
-				}
-				/* f3 is normal to the xi1-xi2 plane */
-				f31=f12*f23-f22*f13;
-				f32=f13*f21-f23*f11;
-				f33=f11*f22-f21*f12;
-				/* f1 is in the xi1 direction */
-				/* f2 is in the xi1-xi2 plane normal to f1 */
-				f21=f32*f13-f12*f33;
-				f22=f33*f11-f13*f31;
-				f23=f31*f12-f11*f32;
-				/* normalize */
-				if (0<(distance=f11*f11+f12*f12+f13*f13))
-				{
-					distance=sqrt(distance);
-					f11 /= distance;
-					f12 /= distance;
-					f13 /= distance;
-				}
-				if (0<(distance=f21*f21+f22*f22+f23*f23))
-				{
-					distance=sqrt(distance);
-					f21 /= distance;
-					f22 /= distance;
-					f23 /= distance;
-				}
-				if (0<(distance=f31*f31+f32*f32+f33*f33))
-				{
-					distance=sqrt(distance);
-					f31 /= distance;
-					f32 /= distance;
-					f33 /= distance;
-				}
-				/* calculate the fibre field */
-				if (calculate_FE_element_field(-1,anatomical_element_field_values,
-					xi_coordinates,anatomical_result,(FE_value *)NULL))
-				{
-					sin_alpha=sin(anatomical_result[0]);
-					cos_alpha=cos(anatomical_result[0]);
-					if (1<anatomical_element_field_values->field->number_of_components)
-					{
-						sin_beta=sin(anatomical_result[1]);
-						cos_beta=cos(anatomical_result[1]);
-						/*???RC following was if (1<an...) Was this an error?!? */
-						if (2<anatomical_element_field_values->field->number_of_components)
-						{
-							sin_gamma=sin(anatomical_result[2]);
-							cos_gamma=cos(anatomical_result[2]);
-						}
-						else
-						{
-							/* default gamma is 0 */
-							sin_gamma=0;
-							cos_gamma=1;
-						}
-					}
-					else
-					{
-						/* default beta is 0 */
-						sin_beta=0;
-						cos_beta=1;
-						/* default gamma is 0 */
-						sin_gamma=0;
-						cos_gamma=1;
-					}
-					/* calculate the fibre vector */
-					a_x=cos_alpha*f11+sin_alpha*f21;
-					a_y=cos_alpha*f12+sin_alpha*f22;
-					a_z=cos_alpha*f13+sin_alpha*f23;
-					b_x= -sin_alpha*f11+cos_alpha*f21;
-					b_y= -sin_alpha*f12+cos_alpha*f22;
-					b_z= -sin_alpha*f13+cos_alpha*f23;
-					f11=a_x;
-					f12=a_y;
-					f13=a_z;
-					f21=b_x;
-					f22=b_y;
-					f23=b_z;
-					/* as per KATs change 30Nov00 in back-end function ROT_COORDSYS,
-						rotate anticlockwise about axis2, not -axis2 */
-					c_x=cos_beta*f31+sin_beta*f11;
-					c_y=cos_beta*f32+sin_beta*f12;
-					c_z=cos_beta*f33+sin_beta*f13;
-					a_x= -sin_beta*f31+cos_beta*f11;
-					a_y= -sin_beta*f32+cos_beta*f12;
-					a_z= -sin_beta*f33+cos_beta*f13;
-					f31=c_x;
-					f32=c_y;
-					f33=c_z;
-					b_x=cos_gamma*f21+sin_gamma*f31;
-					b_y=cos_gamma*f22+sin_gamma*f32;
-					b_z=cos_gamma*f23+sin_gamma*f33;
-					c_x= -sin_gamma*f21+cos_gamma*f31;
-					c_y= -sin_gamma*f22+cos_gamma*f32;
-					c_z= -sin_gamma*f23+cos_gamma*f33;
-					a[0]=a_x;
-					a[1]=a_y;
-					a[2]=a_z;
-					b[0]=b_x;
-					b[1]=b_y;
-					b[2]=b_z;
-					c[0]=c_x;
-					c[1]=c_y;
-					c[2]=c_z;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-				"calculate_FE_element_anatomical.  Error calculating anatomical field");
-					return_code=0;
-				}
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-				"calculate_FE_element_anatomical.  Error calculating coordinate field");
-				return_code=0;
-			}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"calculate_FE_element_anatomical.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* calculate_FE_element_anatomical */
 
 bool equivalent_FE_field_in_elements(struct FE_field *field,
 	struct FE_element *element_1, struct FE_element *element_2)
@@ -24377,66 +23944,19 @@ int FE_element_get_first_parent(struct FE_element *element,
 	return (return_code);
 }
 
-int get_FE_element_shape(struct FE_element *element,
-	struct FE_element_shape **shape)
-/*******************************************************************************
-LAST MODIFIED : 12 October 1999
-
-DESCRIPTION :
-Returns the <shape> of the <element>, if any. Only newly created blank elements
-should have no shape.
-==============================================================================*/
+FE_element_shape *get_FE_element_shape(struct FE_element *element)
 {
-	int return_code;
-
-	ENTER(get_FE_element_shape);
-	if (element&&shape)
+	if (element)
 	{
-		*shape = element->shape;
-		return_code=1;
+		if (element->fields)
+			return element->fields->fe_mesh->getElementShape(element->index);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"get_FE_element_shape.  Invalid argument(s)");
-		return_code=0;
 	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_shape */
-
-int get_FE_element_number_of_faces(struct FE_element *element,
-	int *number_of_faces_address)
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of faces of <element>.
-If fails, puts zero at <number_of_faces_address>.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(get_FE_element_number_of_faces);
-	if (element && element->shape && number_of_faces_address)
-	{
-		*number_of_faces_address = element->shape->number_of_faces;
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_number_of_faces.  Invalid element");
-		if (number_of_faces_address)
-		{
-			*number_of_faces_address = 0;
-		}
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_number_of_faces */
+	return 0;
+}
 
 int get_FE_element_face(struct FE_element *element,int face_number,
 	struct FE_element **face_element)
@@ -24451,10 +23971,15 @@ there is no face. Element must have a shape and face.
 	int return_code;
 
 	ENTER(get_FE_element_face);
-	if (element&&element->shape&&element->faces&&(0<=face_number)&&
-		(face_number<element->shape->number_of_faces)&&face_element)
+	// Temporary:
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && (0<=face_number) &&
+		(face_number<element_shape->number_of_faces)&&face_element)
 	{
-		*face_element=element->faces[face_number];
+		if (element->faces)
+			*face_element = element->faces[face_number];
+		else
+			*face_element = 0;
 		return_code=1;
 	}
 	else
@@ -24471,10 +23996,16 @@ int set_FE_element_face(struct FE_element *element, int face_number,
 	struct FE_element *face_element)
 {
 	int return_code;
-
-	if (element && element->shape && element->faces && (0 <= face_number) &&
-		(face_number < element->shape->number_of_faces))
+	// Temporary:
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && (0 <= face_number) &&
+		(face_number < element_shape->number_of_faces))
 	{
+		if (!element->faces)
+		{
+			if (!set_FE_element_number_of_faces(element, element_shape->number_of_faces))
+				return 0;
+		}
 		return_code = 1;
 		/* check this face not already set, else following logic will fail! */
 		FE_element *old_face_element = element->faces[face_number];
@@ -24533,56 +24064,12 @@ int set_FE_element_face(struct FE_element *element, int face_number,
 	return (return_code);
 }
 
-int set_FE_element_face_no_parents(struct FE_element *element, int face_number,
-	struct FE_element *face_element)
-{
-	int return_code;
-
-	if (element && element->shape && element->faces && (0 <= face_number) &&
-		(face_number < element->shape->number_of_faces))
-	{
-		return_code = 1;
-		/* check this face not already set, else following logic will fail! */
-		FE_element *old_face_element = element->faces[face_number];
-		if (face_element != old_face_element)
-		{
-			if (old_face_element)
-			{
-				/* remove first instance of element from face->parents array */
-				for (int i = 0; i < old_face_element->number_of_parents; i++)
-				{
-					if (old_face_element->parents[i] == element)
-					{
-						old_face_element->number_of_parents--;
-						for (int j = i; j < old_face_element->number_of_parents; j++)
-						{
-							old_face_element->parents[j] = old_face_element->parents[j + 1];
-						}
-						break;
-					}
-				}
-				if (0 == old_face_element->number_of_parents)
-				{
-					DEALLOCATE(old_face_element->parents);
-				}
-			}
-			/* set the new face */
-			REACCESS(FE_element)(&(element->faces[face_number]), face_element);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "set_FE_element_face_no_parents.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
 int get_FE_element_face_number(struct FE_element *element, struct FE_element *face)
 {
-	if (element && face)
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && (element->faces) && face)
 	{
-		const int nFaces = element->shape->number_of_faces;
+		const int nFaces = element_shape->number_of_faces;
 		for (int i = 0; i < nFaces; ++i)
 		{
 			if (element->faces[i] == face)
@@ -25802,166 +25289,24 @@ they are not also faces or lines of other elements not being destroyed.
 	return (return_code);
 } /* FE_element_is_wholly_within_element_list_tree */
 
-int add_FE_element_and_faces_to_list(struct FE_element *element,
-	void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-Ensures <element>, its faces (and theirs etc.) are in <element_list>.
-Note: this function is recursive.
-==============================================================================*/
+bool FE_elements_can_merge_faces(int faceCount,
+	FE_mesh &target_face_fe_mesh, struct FE_element *targetElement,
+	FE_mesh &source_face_fe_mesh, struct FE_element *sourceElement)
 {
-	int i, return_code;
-	struct FE_element **face;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(add_FE_element_and_faces_to_list);
-	if (element && element->shape &&
-		(element_list = (struct LIST(FE_element) *)element_list_void))
+	if ((targetElement->faces) && (sourceElement->faces))
 	{
-		return_code = 1;
-		if (NULL != (face = element->faces))
+		for (int i = 0; i < faceCount; ++i)
 		{
-			for (i = element->shape->number_of_faces; (0 < i) && return_code; i--)
+			FE_element *sourceFace = sourceElement->faces[i];
+			FE_element *targetFace = targetElement->faces[i];
+			if (sourceFace && targetFace &&
+				(source_face_fe_mesh.getElementIdentifier(sourceFace->index) != target_face_fe_mesh.getElementIdentifier(targetFace->index)))
 			{
-				if (*face)
-				{
-					if (!add_FE_element_and_faces_to_list(*face, element_list_void))
-					{
-						display_message(ERROR_MESSAGE,
-							"add_FE_element_and_faces_to_list.  Could not add face");
-						return_code = 0;
-					}
-				}
-				face++;
-			}
-		}
-		if (return_code)
-		{
-			if (!IS_OBJECT_IN_LIST(FE_element)(element, element_list))
-			{
-				if (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list))
-				{
-					display_message(ERROR_MESSAGE,
-						"add_FE_element_and_faces_to_list.  Could not add element");
-					return_code = 0;
-				}
+				return false;
 			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"add_FE_element_and_faces_to_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* add_FE_element_and_faces_to_list */
-
-int FE_element_add_faces_not_in_list(struct FE_element *element,
-	void *data_void)
-{
-	int return_code;
-	struct FE_element_add_faces_not_in_list_data *data =
-		(struct FE_element_add_faces_not_in_list_data *)data_void;
-
-	ENTER(FE_element_add_faces_not_in_list);
-	if (element && element->shape && data)
-	{
-		return_code = 1;
-		struct FE_element **face = element->faces;
-		if (face)
-		{
-			for (int i = element->shape->number_of_faces; (0 < i) && return_code; i--)
-			{
-				if (*face)
-				{
-					if (!IS_OBJECT_IN_LIST(FE_element)(*face, data->current_element_list))
-					{
-						if (!IS_OBJECT_IN_LIST(FE_element)(*face, data->add_element_list))
-						{
-							return_code = ADD_OBJECT_TO_LIST(FE_element)(*face, data->add_element_list);
-						}
-					}
-				}
-				face++;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_add_faces_not_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_add_faces_not_in_list */
-
-/**
- * Returns true if <element1> and <element2> have the same shape, and all of
- * their faces match. A face match is found if it is either:
- * - NULL on either or both of <element1> and <element2>;
- * - matchFaceIdentifiers is true and the faces are the same OR
- * - matchFaceIdentifiers is true and the faces have the same identifier
- */
-static int FE_element_shape_and_faces_match(struct FE_element *element1,
-	struct FE_element *element2, bool matchFaceIdentifiers)
-{
-	int i, number_of_faces, return_code;
-	struct FE_element **face1, **face2;
-
-	if (element1 && element1->shape && element2)
-	{
-		if (element1->shape == element2->shape)
-		{
-			return_code = 1;
-			if (0 < (number_of_faces = element1->shape->number_of_faces))
-			{
-				if ((face1 = element1->faces) && (face2 = element2->faces))
-				{
-					for (i = number_of_faces; (0 < i) && return_code; i--)
-					{
-						if ((!(*face1)) || (!(*face2)) ||
-							((!matchFaceIdentifiers) && (*face1 == *face2)) ||
-							(matchFaceIdentifiers && ((*face1)->get_identifier() == (*face2)->get_identifier())))
-						{
-							face1++;
-							face2++;
-						}
-						else
-						{
-							display_message(ERROR_MESSAGE, "FE_element_shape_and_faces_match.  Different faces");
-							return_code = 0;
-						}
-					}
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"FE_element_shape_and_faces_match.  Missing face arrays");
-					return_code = 0;
-				}
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "FE_element_shape_and_faces_match.  Different shape");
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_shape_and_faces_match.  Invalid argument(s)");
-		return_code = 0;
-	}
-
-	return (return_code);
+	return true;
 }
 
 static int FE_element_field_add_FE_field_to_list(
@@ -26044,7 +25389,7 @@ static int FE_element_field_FE_field_to_list_if_uses_scale_factor_set(
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list)
 {
-	int number_of_faces, return_code, values_storage_size;
+	int return_code, values_storage_size;
 	struct FE_element_field_FE_field_to_list_if_uses_scale_factor_set_data scale_factor_set_data;
 	struct FE_element_field_info *destination_fields, *element_field_info,
 		*source_fields;
@@ -26065,37 +25410,6 @@ int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
 			FE_element_field_add_FE_field_to_list, (void *)changed_fe_field_list,
 			source_fields->element_field_list);
-
-		if (destination->shape && source->shape &&
-			(destination->shape->dimension == source->shape->dimension))
-		{
-			if ((0 == destination->shape->type) && (0 == destination->faces) &&
-				(0 != source->shape->type))
-			{
-				// dummy element, probably from element:xi location
-				set_FE_element_shape(destination, source->shape);
-				if (source->faces)
-				{
-					int number_of_faces = source->shape->number_of_faces;
-					for (int i = 0; i < number_of_faces; ++i)
-					{
-						set_FE_element_face(destination, i, source->faces[i]);
-					}
-				}
-			}
-			else if (!FE_element_shape_and_faces_match(source, destination, /*matchFaceIdentifiers*/false))
-			{
-				display_message(ERROR_MESSAGE,
-					"merge_FE_element.  Inconsistent element shapes");
-				return_code = 0;
-			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"merge_FE_element.  Missing or inconsistent element shapes or dimension");
-			return_code = 0;
-		}
 
 		/* make a merged element node scale field info without values_storage */
 		FE_element_node_scale_field_info *node_scale_field_info = 0;
@@ -26185,15 +25499,6 @@ int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 						if (NULL != (element_field_info =
 							fe_mesh->get_FE_element_field_info(element_field_list)))
 						{
-							/* merge the faces */
-							number_of_faces = source->shape->number_of_faces;
-							struct FE_element **source_face = source->faces;
-							for (int i = 0; i < number_of_faces; i++)
-							{
-								if (*source_face)
-									set_FE_element_face(destination, i, *source_face);
-								++source_face;
-							}
 							/* put values storage in node_scale_field_info */
 							if (node_scale_field_info)
 							{
@@ -26273,10 +25578,11 @@ int list_FE_element(struct FE_element *element)
 		/* write the identifier */
 		display_message(INFORMATION_MESSAGE,"element : %d \n",element->get_identifier());
 		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
-		if (element->shape)
+		FE_element_shape *element_shape = get_FE_element_shape(element);
+		if (element_shape)
 		{
-			display_message(INFORMATION_MESSAGE,"  dimension=%d\n",element->shape->dimension);
-			char *shape_description = FE_element_shape_get_EX_description(element->shape);
+			display_message(INFORMATION_MESSAGE,"  dimension=%d\n",element_shape->dimension);
+			char *shape_description = FE_element_shape_get_EX_description(element_shape);
 			if (shape_description)
 			{
 				display_message(INFORMATION_MESSAGE, "  shape=%s\n", shape_description);
@@ -26284,7 +25590,7 @@ int list_FE_element(struct FE_element *element)
 			}
 			/* write the faces */
 			if ((face=element->faces)&&
-				(0<(i=element->shape->number_of_faces)))
+				(0<(i=element_shape->number_of_faces)))
 			{
 				display_message(INFORMATION_MESSAGE,"  #faces=%d\n",i);
 				while (i>0)
@@ -27401,15 +26707,16 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 				parent = element->parents[0];
 			}
 
-			if ((parent) && (parent->shape) && (parent->shape->face_to_element) &&
+			FE_element_shape *parent_shape = get_FE_element_shape(parent);
+			if ((parent_shape) && (parent_shape->face_to_element) &&
 				(0 <= (face_number = FE_element_get_child_face_number(parent, element))) &&
 				(top_level_element = FE_element_get_top_level_element_conversion(
 					parent, check_top_level_element, conditional, conditional_data,
 					specified_face, element_to_top_level)))
 			{
-				face_to_element=parent->shape->face_to_element +
-					(face_number * parent->shape->dimension*parent->shape->dimension);
-				size=top_level_element->shape->dimension;
+				face_to_element=parent_shape->face_to_element +
+					(face_number * parent_shape->dimension*parent_shape->dimension);
+				size=top_level_element->getDimension();
 				if (parent == top_level_element)
 				{
 					/* element_to_top_level = face_to_element of appropriate face */
@@ -27530,7 +26837,7 @@ is checked and the <top_level_xi> calculated.
 				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
-				*top_level_element_dimension = (*top_level_element)->shape->dimension;
+				*top_level_element_dimension = (*top_level_element)->getDimension();
 				for (j=0;j<*top_level_element_dimension;j++)
 				{
 					top_level_xi[j] = element_to_top_level[j*(element_dimension+1)];
@@ -27762,11 +27069,11 @@ int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 	return_code = 0;
 	if (element)
 	{
-		if ((get_FE_element_dimension(element) == 2) &&
+		if ((element->getDimension() == 2) &&
 			(1 == element->number_of_parents) && (element->parents[0]))
 		{
 			return_code =
-				FE_element_shape_face_has_inward_normal(element->parents[0]->shape,
+				FE_element_shape_face_has_inward_normal(get_FE_element_shape(element->parents[0]),
 					FE_element_get_child_face_number(element->parents[0], element));
 		}
 	}
@@ -27885,99 +27192,12 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
 	return return_code;
 }
 
-int FE_element_is_dimension(struct FE_element *element,void *dimension_void)
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Returns true if <element> is of the given <dimension>.
-<dimension_void> must be a pointer to an int containing the dimension.
-==============================================================================*/
-{
-	int *dimension,return_code;
-
-	ENTER(FE_element_is_dimension);
-	if (element&&element->shape&&(dimension=(int *)dimension_void))
-	{
-		return_code = (element->shape->dimension == *dimension);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_dimension.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_dimension */
-
-int FE_element_is_dimension_3(struct FE_element *element,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_is_dimension_3);
-	USE_PARAMETER(dummy_void);
-	if (element&&element->shape)
-	{
-		return_code=(3==element->shape->dimension);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_dimension_3.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_dimension_3 */
-
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
 	if (element)
 		return (0 == element->number_of_parents);
 	return 0;
-}
-
-bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mesh)
-{
-	if (element && target_fe_mesh)
-	{
-		FE_element *target_element = target_fe_mesh->findElementByIdentifier(element->get_identifier());
-		if (FE_element_shape_is_unspecified(element->shape))
-		{
-			// unspecified shape is used for nodal element:xi values when/ element is
-			// not read in from the same file, but could in future be used for
-			// reading field definitions without shape information.
-			// Must find a matching global element.
-			if (!target_element)
-			{
-				display_message(ERROR_MESSAGE, "%d-D element %d is not found in global mesh",
-					get_FE_element_dimension(element), element->get_identifier());
-				return false;
-			}
-		}
-		else if (target_element)
-		{
-			if (!FE_element_shape_and_faces_match(element, target_element, /*matchFaceIdentifiers*/true))
-			{
-				display_message(ERROR_MESSAGE,
-					"%d-D element %d shape and faces are not compatible with global element.",
-					get_FE_element_dimension(element), element->get_identifier());
-				return false;
-			}
-		}
-		return true;
-	}
-	return false;
 }
 
 struct FE_element_parent_has_field_data
@@ -28558,9 +27778,8 @@ int get_FE_element_field_component_grid_map_number_in_xi(struct FE_element *elem
 
 	ENTER(get_FE_element_field_component_grid_map_number_in_xi);
 	return_code = 0;
-	if (element && element->fields && number_in_xi && element->shape &&
-		(dimension = element->shape->dimension) &&
-		(MAXIMUM_ELEMENT_XI_DIMENSIONS >= element->shape->dimension) &&
+	if (element && element->fields && number_in_xi &&
+		(dimension = element->fields->fe_mesh->getDimension()) &&
 		(component_number >= 0) && (component_number < field->number_of_components))
 	{
 		if ((element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
@@ -28626,8 +27845,7 @@ int get_FE_element_field_component_number_of_grid_values(struct FE_element *elem
 
 	ENTER(get_FE_element_field_component_number_of_grid_values);
 	number_of_grid_values=0;
-	if (element && element->fields &&
-		element->shape && (dimension = element->shape->dimension) &&
+	if (element && element->fields && (dimension = element->fields->fe_mesh->getDimension()) &&
 		(component_number >= 0) && (component_number < field->number_of_components))
 	{
 		if ((element_field=FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
@@ -28769,7 +27987,7 @@ It is up to the calling function to DEALLOCATE the returned values. \
 	ENTER(get_FE_element_field_component_grid_ ## macro_value_type ## _values); \
 	return_code=0; \
 	if (element && element->fields && element->information &&  \
-		element->shape&&(dimension=element->shape->dimension)&&field&& \
+		(dimension = element->fields->fe_mesh->getDimension()) && field && \
 		(0<=component_number)&&(component_number<field->number_of_components)&& \
 		(value_enum==field->value_type)&&values) \
 	{ \
@@ -28874,7 +28092,7 @@ get_FE_element_field_component_number_of_grid_values; Grids change in xi0 fastes
 	ENTER(set_FE_element_field_component_grid_ ## macro_value_type ## _values); \
 	return_code=0; \
 	if (element&&element->fields && element->information && \
-		element->shape&&(dimension=element->shape->dimension)&&field&& \
+		(dimension = element->fields->fe_mesh->getDimension()) && field && \
 		(0<=component_number)&&(component_number<field->number_of_components)&& \
 		(value_enum==field->value_type)&&values) \
 	{ \
@@ -29180,7 +28398,8 @@ int FE_element_smooth_FE_field(struct FE_element *element,
 	struct LIST(FE_field) *fe_field_list;
 
 	ENTER(FE_element_smooth_FE_field);
-	if (element && fe_field && element_count_fe_field && copy_node_list &&
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if (element_shape && fe_field && element_count_fe_field && copy_node_list &&
 		(FE_VALUE_VALUE == get_FE_field_value_type(fe_field)) &&
 		(INT_VALUE == get_FE_field_value_type(element_count_fe_field)) &&
 		(number_of_components = get_FE_field_number_of_components(fe_field)) &&
@@ -29194,7 +28413,7 @@ int FE_element_smooth_FE_field(struct FE_element *element,
 			(element_field = FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(
 				fe_field, element->fields->element_field_list)) &&
 			element_field->components &&
-			FE_element_shape_is_line(element->shape))
+			FE_element_shape_is_line(element_shape))
 		{
 			fe_field_list = (struct LIST(FE_field) *)NULL;
 			element_dimension = get_FE_element_dimension(element);
@@ -30677,42 +29896,6 @@ Called iteratively.
 	return (return_code);
 } /* fill_FE_element_order_info */
 
-int FE_element_xi_increment_within_element(struct FE_element *element,
-	FE_value *xi,FE_value *increment,FE_value *fraction,int *face_number,
-	FE_value *xi_face)
-/*******************************************************************************
-LAST MODIFIED : 20 January 2004
-
-DESCRIPTION :
-Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-the step is limited to take <xi> to the boundary, <face_number> is set to be
-the limiting face, <fraction> is updated with the fraction of the <increment>
-actually used, the <increment> is updated to contain the part not used,
-the <xi_face> are calculated for that face and the <xi> are changed to be
-on the boundary of the element.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(FE_element_xi_increment_within_element);
-	return_code=0;
-	if (element&&element->shape&&xi&&face_number&&fraction&&xi_face)
-	{
-		return_code=FE_element_shape_xi_increment(element->shape,
-			xi, increment, fraction, face_number, xi_face);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"FE_element_xi_increment_within_element.  "
-			"Invalid argument(s).  %p %p %d %p %p",element,element->shape,
-			face_number,fraction,xi_face);
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_xi_increment_within_element */
-
 int FE_element_get_number_of_change_to_adjacent_element_permutations(
 	struct FE_element *element, FE_value *xi, int face_number)
 /*******************************************************************************
@@ -30728,14 +29911,15 @@ element at face <face_number>.
 
 	ENTER(FE_element_get_number_of_change_to_adjacent_element_permutations);
 	USE_PARAMETER(xi);
-	if (element&&(0<get_FE_element_dimension(element))&&
-		(0<=face_number)&&(face_number<element->shape->number_of_faces))
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if ((element_shape) && (0 <= face_number) && (face_number < element_shape->number_of_faces))
 	{
 		number_of_permutations = 1;
+		const int face_dimension = element_shape->dimension - 1;
 		if (NULL != (face=(element->faces)[face_number]))
 		{
 			number_of_permutations = 1;
-			switch (face->shape->dimension)
+			switch (face_dimension)
 			{
 				case 1:
 				{
@@ -30743,8 +29927,9 @@ element at face <face_number>.
 				} break;
 				case 2:
 				{
-					if ((face->shape->type[0] == SIMPLEX_SHAPE)
-						&& (face->shape->type[2] == SIMPLEX_SHAPE))
+					FE_element_shape *face_shape = get_FE_element_shape(face);
+					if (face_shape && (face_shape->type[0] == SIMPLEX_SHAPE)
+						&& (face_shape->type[2] == SIMPLEX_SHAPE))
 					{
 						number_of_permutations = 6;
 					}
@@ -30785,223 +29970,205 @@ and do not take into account the relative orientation of the parents.
 ==============================================================================*/
 {
 	double dot_product;
-	FE_value *face_to_element,*local_xi_face;
+	FE_value *face_to_element;
 	int i,j,new_face_number,return_code;
 	struct FE_element *element,*face,*new_element;
 
 	ENTER(FE_element_change_to_adjacent_element);
 	return_code=0;
 	int dimension = 0;
+	FE_element_shape *element_shape;
 	if ((element_address) && (element = *element_address) &&
-		(0 < (dimension = get_FE_element_dimension(element))) &&
-		(0<=*face_number)&&(*face_number<element->shape->number_of_faces))
+		(0 != (element_shape = get_FE_element_shape(element))) &&
+		(0 < (dimension = element_shape->dimension)) &&
+		(0<=*face_number)&&(*face_number<element_shape->number_of_faces))
 	{
-		FE_value *temp_increment = 0;
-		FE_value *face_normal = 0;
-		if (increment)
+		FE_value temp_increment[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		FE_value face_normal[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		FE_value local_xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
+		FE_element_shape *face_shape;
+		if (element->faces && (0 != (face = (element->faces)[*face_number])) &&
+			(0 != (face_shape = get_FE_element_shape(face))))
 		{
-			ALLOCATE(face_normal,FE_value,dimension);
-			ALLOCATE(temp_increment,FE_value,dimension);
-		}
-		ALLOCATE(local_xi_face,FE_value,dimension-1);
-		if ((!increment) || (face_normal && temp_increment))
-		{
-			face=(element->faces)[*face_number];
-			if (face)
+			/* find the other parent */
+			new_element = (struct FE_element *)NULL;
+			for (i = 0; i < face->number_of_parents; i++)
 			{
-				/* find the other parent */
-				new_element = (struct FE_element *)NULL;
-				for (i = 0; i < face->number_of_parents; i++)
+				if (face->parents[i] != element)
 				{
-					if (face->parents[i] != element)
-					{
-						new_element = face->parents[i];
-						break;
-					}
+					new_element = face->parents[i];
+					break;
 				}
-				if (new_element)
+			}
+			if (new_element)
+			{
+				new_face_number = FE_element_get_child_face_number(new_element, face);
+				/* change xi and increment into element coordinates */
+				FE_element_shape *new_element_shape = get_FE_element_shape(new_element);
+				if ((new_element_shape) && (dimension == new_element_shape->dimension) && 
+					(0 <= new_face_number))
 				{
-					new_face_number = FE_element_get_child_face_number(new_element, face);
-					/* change xi and increment into element coordinates */
-					if (new_element&&(new_element->shape)&&(dimension==
-							get_FE_element_dimension(new_element))&&(0<=new_face_number)&&
-						(new_face_number<new_element->shape->number_of_faces))
+					return_code = 1;
+					if (xi)
 					{
-						return_code = 1;
-						if (xi)
+						if (permutation > 0)
 						{
-							if (permutation > 0)
+							/* Try rotating the face_xi coordinates */
+							/* Only implementing the cases required so far and
+								enumerated by FE_element_change_get_number_of_permutations */
+							switch (face_shape->dimension)
 							{
-								/* Try rotating the face_xi coordinates */
-								/* Only implementing the cases required so far and
-									enumerated by FE_element_change_get_number_of_permutations */
-								switch (face->shape->dimension)
+								case 1:
 								{
-									case 1:
+									if (face_shape->type[0] == LINE_SHAPE)
 									{
-										if (face->shape->type[0] == LINE_SHAPE)
-										{
-											local_xi_face[0] = 1.0 - xi_face[0];
-										}
-									} break;
-									case 2:
+										local_xi_face[0] = 1.0 - xi_face[0];
+									}
+								} break;
+								case 2:
+								{
+									if ((face_shape->type[0] == SIMPLEX_SHAPE)
+										&& (face_shape->type[2] == SIMPLEX_SHAPE))
 									{
-										if ((face->shape->type[0] == SIMPLEX_SHAPE)
-											&& (face->shape->type[2] == SIMPLEX_SHAPE))
+										switch (permutation)
 										{
-											switch (permutation)
+											case 1:
 											{
-												case 1:
-												{
-													local_xi_face[0] = xi_face[1];
-													local_xi_face[1] = 1.0 - xi_face[0] - xi_face[1];
-												} break;
-												case 2:
-												{
-													local_xi_face[0] = 1.0 - xi_face[0] - xi_face[1];
-													local_xi_face[1] = xi_face[0];
-												} break;
-												case 3:
-												{
-													local_xi_face[0] = xi_face[1];
-													local_xi_face[1] = xi_face[0];
-												} break;
-												case 4:
-												{
-													local_xi_face[0] = xi_face[0];
-													local_xi_face[1] = 1.0 - xi_face[0] - xi_face[1];
-												} break;
-												case 5:
-												{
-													local_xi_face[0] = 1.0 - xi_face[0] - xi_face[1];
-													local_xi_face[1] = xi_face[1];
-												} break;
-											}
+												local_xi_face[0] = xi_face[1];
+												local_xi_face[1] = 1.0 - xi_face[0] - xi_face[1];
+											} break;
+											case 2:
+											{
+												local_xi_face[0] = 1.0 - xi_face[0] - xi_face[1];
+												local_xi_face[1] = xi_face[0];
+											} break;
+											case 3:
+											{
+												local_xi_face[0] = xi_face[1];
+												local_xi_face[1] = xi_face[0];
+											} break;
+											case 4:
+											{
+												local_xi_face[0] = xi_face[0];
+												local_xi_face[1] = 1.0 - xi_face[0] - xi_face[1];
+											} break;
+											case 5:
+											{
+												local_xi_face[0] = 1.0 - xi_face[0] - xi_face[1];
+												local_xi_face[1] = xi_face[1];
+											} break;
 										}
-									} break;
-								}
-							}
-							else
-							{
-								for (j = 0 ; j < dimension - 1 ; j++)
-								{
-									local_xi_face[j] = xi_face[j];
-								}
-							}
-							face_to_element=(new_element->shape->face_to_element)+
-								(new_face_number*dimension*dimension);
-							for (i=0;i<dimension;i++)
-							{
-								xi[i]= *face_to_element;
-								face_to_element++;
-								for (j=0;j<dimension-1;j++)
-								{
-									xi[i] += (*face_to_element)*local_xi_face[j];
-									face_to_element++;
-								}
+									}
+								} break;
 							}
 						}
-						if (increment)
+						else
 						{
-							/* convert increment into face+normal coordinates */
-							face_to_element=(element->shape->face_to_element)+
-								(*face_number*dimension*dimension);
-							return_code = face_calculate_xi_normal(element->shape,
-								*face_number, face_normal);
+							for (j = 0 ; j < dimension - 1 ; j++)
+							{
+								local_xi_face[j] = xi_face[j];
+							}
+						}
+						face_to_element=(new_element_shape->face_to_element)+
+							(new_face_number*dimension*dimension);
+						for (i=0;i<dimension;i++)
+						{
+							xi[i]= *face_to_element;
+							face_to_element++;
+							for (j=0;j<dimension-1;j++)
+							{
+								xi[i] += (*face_to_element)*local_xi_face[j];
+								face_to_element++;
+							}
+						}
+					}
+					if (increment)
+					{
+						/* convert increment into face+normal coordinates */
+						face_to_element=(element_shape->face_to_element)+
+							(*face_number*dimension*dimension);
+						return_code = face_calculate_xi_normal(element_shape,
+							*face_number, face_normal);
+						if (return_code)
+						{
+							for (i=0;i<dimension;i++)
+							{
+								temp_increment[i]=increment[i];
+							}
+							for (i=1;i<dimension;i++)
+							{
+								dot_product=(double)0;
+								for (j=0;j<dimension;j++)
+								{
+									dot_product += (double)(temp_increment[j])*
+										(double)(face_to_element[j*dimension+i]);
+								}
+								increment[i-1]=(FE_value)dot_product;
+							}
+							dot_product=(double)0;
+							for (i=0;i<dimension;i++)
+							{
+								dot_product += (double)(temp_increment[i])*(double)(face_normal[i]);
+							}
+							increment[dimension-1]=(FE_value)dot_product;
+
+							/* Convert this back to an increment in the new element */
+							return_code = face_calculate_xi_normal(new_element_shape,
+								new_face_number, face_normal);
 							if (return_code)
 							{
 								for (i=0;i<dimension;i++)
 								{
 									temp_increment[i]=increment[i];
 								}
-								for (i=1;i<dimension;i++)
-								{
-									dot_product=(double)0;
-									for (j=0;j<dimension;j++)
-									{
-										dot_product += (double)(temp_increment[j])*
-											(double)(face_to_element[j*dimension+i]);
-									}
-									increment[i-1]=(FE_value)dot_product;
-								}
-								dot_product=(double)0;
+								face_to_element=(new_element_shape->face_to_element)+
+									(new_face_number*dimension*dimension);
 								for (i=0;i<dimension;i++)
 								{
-									dot_product += (double)(temp_increment[i])*(double)(face_normal[i]);
-								}
-								increment[dimension-1]=(FE_value)dot_product;
-
-								/* Convert this back to an increment in the new element */
-								return_code = face_calculate_xi_normal(new_element->shape,
-									new_face_number, face_normal);
-								if (return_code)
-								{
-									for (i=0;i<dimension;i++)
+									increment[i]=temp_increment[dimension-1]*face_normal[i];
+									face_to_element++;
+									for (j=0;j<dimension-1;j++)
 									{
-										temp_increment[i]=increment[i];
-									}
-									face_to_element=(new_element->shape->face_to_element)+
-										(new_face_number*dimension*dimension);
-									for (i=0;i<dimension;i++)
-									{
-										increment[i]=temp_increment[dimension-1]*face_normal[i];
+										increment[i] += (*face_to_element)*temp_increment[j];
 										face_to_element++;
-										for (j=0;j<dimension-1;j++)
-										{
-											increment[i] += (*face_to_element)*temp_increment[j];
-											face_to_element++;
-										}
 									}
-								}
-								else
-								{
-									display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-										"Unable to calculate face_normal for new element and face");
 								}
 							}
 							else
 							{
 								display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-									"Unable to calculate face_normal for old element and face");
+									"Unable to calculate face_normal for new element and face");
 							}
 						}
-						if (return_code)
+						else
 						{
-							*element_address=new_element;
-							*face_number=new_face_number;
+							display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
+								"Unable to calculate face_normal for old element and face");
 						}
 					}
-					else
+					if (return_code)
 					{
-						display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-							"Invalid new element or element shape");
+						*element_address=new_element;
+						*face_number=new_face_number;
 					}
 				}
 				else
 				{
-					/* Valid attempt to change element but there is no adjacent element found */
-					return_code = 1;
-					*face_number = -1;
+					display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
+						"Invalid new element or element shape");
 				}
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-					"Invalid face number %d or face_array", *face_number);
-				return_code=0;
+				/* Valid attempt to change element but there is no adjacent element found */
+				return_code = 1;
+				*face_number = -1;
 			}
-			if (increment)
-			{
-				DEALLOCATE(temp_increment);
-				DEALLOCATE(face_normal);
-			}
-			DEALLOCATE(local_xi_face);
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-				"Could not allocate <temp_increment> (%p), or <face_normal> (%p)",
-				temp_increment, face_normal);
+				"Invalid face number %d or face_array", *face_number);
 			return_code=0;
 		}
 	}
@@ -31031,65 +30198,59 @@ no adjacent element is found then the <xi> will be on the element boundary and
 the <increment> will contain the fraction of the increment not used.
 ==============================================================================*/
 {
-	FE_value fraction,*local_increment,*local_xi,*xi_face;
+	FE_value fraction;
 	int face_number,i,return_code;
 	struct FE_element *element;
 
 	ENTER(FE_element_xi_increment);
 	return_code=0;
 	int dimension = 0;
-	if (element_address&&(element= *element_address)&&
-		(0<(dimension=get_FE_element_dimension(element)))&&xi&&increment)
+	FE_element_shape *element_shape;
+	if (element_address && (element= *element_address) &&
+		(0 != (element_shape = get_FE_element_shape(element))) &&
+		(0 < (dimension = element_shape->dimension)) && xi && increment)
 	{
-		ALLOCATE(xi_face,FE_value,dimension);
-		ALLOCATE(local_xi,FE_value,dimension);
-		ALLOCATE(local_increment,FE_value,dimension);
-		if ((xi_face) && (local_xi) && (local_increment))
+		// working space:
+		FE_value xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		FE_value local_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		FE_value local_increment[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+		for (i = 0 ; i < dimension ; i++)
 		{
+			local_xi[i] = xi[i];
+			local_increment[i] = increment[i];
+		}
+		fraction = 0.0;
+		return_code = 1;
+		/* Continue stepping until a step within an element is able to do
+			all of the remaining increment or there is no adjacent element */
+		while (return_code && (fraction != 1.0))
+		{
+			return_code = FE_element_shape_xi_increment(element_shape,
+				local_xi, local_increment, &fraction, &face_number, xi_face);
+			if (return_code && (fraction < 1.0))
+			{
+				return_code = FE_element_change_to_adjacent_element(&element,
+					local_xi, local_increment, &face_number, xi_face, /*permutation*/0);
+				element_shape = get_FE_element_shape(element);
+				if (0 == element_shape)
+					return_code = 0;
+				if (face_number == -1)
+				{
+					/* No adjacent face could be found, so stop */
+					fraction = 1.0;
+					break;
+				}
+			}
+		}
+		if (return_code)
+		{
+			*element_address=element;
 			for (i = 0 ; i < dimension ; i++)
 			{
-				local_xi[i] = xi[i];
-				local_increment[i] = increment[i];
-			}
-			fraction = 0.0;
-			return_code = 1;
-			/* Continue stepping until a step within an element is able to do
-				all of the remaining increment or there is no adjacent element */
-			while (return_code && (fraction != 1.0))
-			{
-				return_code = FE_element_xi_increment_within_element(element, local_xi,
-					local_increment, &fraction, &face_number, xi_face);
-				if (return_code && (fraction < 1.0))
-				{
-					return_code = FE_element_change_to_adjacent_element(&element,
-						local_xi, local_increment, &face_number, xi_face, /*permutation*/0);
-					if (face_number == -1)
-					{
-						/* No adjacent face could be found, so stop */
-						fraction = 1.0;
-					}
-				}
-			}
-			if (return_code)
-			{
-				*element_address=element;
-				for (i = 0 ; i < dimension ; i++)
-				{
-					xi[i] = local_xi[i];
-					increment[i] = local_increment[i];
-				}
+				xi[i] = local_xi[i];
+				increment[i] = local_increment[i];
 			}
 		}
-		else
-		{
-			display_message(ERROR_MESSAGE, "FE_element_xi_increment.  "
-				"Could not allocate <local_xi> (%p), <local_increment> (%p) or "
-				"<xi_face) (%p).", local_xi, local_increment, xi_face);
-			return_code=0;
-		}
-		DEALLOCATE(local_xi);
-		DEALLOCATE(local_increment);
-		DEALLOCATE(xi_face);
 	}
 	else
 	{
@@ -31123,7 +30284,7 @@ int FE_element_define_tensor_product_basis(struct FE_element *element,
 		 (QUADRATIC_LAGRANGE == basis_type) ||
 		 (CUBIC_LAGRANGE == basis_type) ||
 		 (CUBIC_HERMITE == basis_type)) &&
-		(dimension == element->shape->dimension) && field)
+		(dimension == fe_mesh->getDimension()) && field)
 	{
 		/* make basis */
 		element_basis=(struct FE_basis *)NULL;

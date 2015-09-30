@@ -969,8 +969,7 @@ int FE_nodeset::merge_FE_node_external(struct FE_node *node,
 											FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(this->fe_region, dimension);
 											if (fe_mesh)
 											{
-												struct FE_element_shape *element_shape = 0;
-												get_FE_element_shape(element, &element_shape);
+												FE_element_shape *element_shape = get_FE_element_shape(element);
 												FE_element *global_element = fe_mesh->get_or_create_FE_element_with_identifier(
 													cmzn_element_get_identifier(element), element_shape);
 												if (global_element)

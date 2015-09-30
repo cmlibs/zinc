@@ -2696,15 +2696,15 @@ from a previous call to this function.
 ==============================================================================*/
 {
 	char *location;
-	int dimension,i,number_of_fields,number_of_nodes,
+	int i,number_of_fields,number_of_nodes,
 		number_of_scale_factor_sets, return_code;
 	struct FE_field *field;
 	FE_mesh *fe_mesh;
 
 	ENTER(read_FE_element_field_info);
 	FE_element_template *element_template = 0;
-	if (input_file && fe_region && element_shape && field_order_info &&
-		get_FE_element_shape_dimension(element_shape, &dimension) && (0 < dimension) &&
+	const int dimension = get_FE_element_shape_dimension(element_shape);
+	if (input_file && fe_region && (0 < dimension) && field_order_info &&
 		(fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)))
 	{
 		if (*field_order_info)
@@ -2959,17 +2959,68 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 			return_element = fe_mesh->findElementByIdentifier(element_identifier);
 			if (return_element)
 			{
-				existingElement = true;
-				ACCESS(FE_element)(return_element);
+				DsLabelIndex index = get_FE_element_index(return_element);
+				FE_element_shape *element_shape = fe_mesh->getElementShape(index);
+				if (element_shape)
+				{
+					if (element_shape != element_template->get_element_shape())
+					{
+						if (FE_element_shape_is_unspecified(element_shape))
+						{
+							if (!fe_mesh->setElementShape(index, element_template->get_element_shape()))
+							{
+								display_message(ERROR_MESSAGE, "read_FE_element.  Could not set element shape for %d-D element %d",
+									fe_mesh->getDimension(), element_identifier);
+								return_element = 0;
+							}
+						}
+						else
+						{
+							location = IO_stream_get_location_string(input_file);
+							display_message(ERROR_MESSAGE, "read_FE_element.  Inconsistent shape for %d-D element %d. %s",
+								fe_mesh->getDimension(), element_identifier, location);
+							DEALLOCATE(location);
+							return_code = 0;
+						}
+					}
+					if (return_element)
+					{
+						existingElement = true;
+						ACCESS(FE_element)(return_element);
+					}
+				}
+				else
+				{
+					display_message(ERROR_MESSAGE, "read_FE_element.  Missing element shape for %d-D element %d",
+						fe_mesh->getDimension(), element_identifier);
+					return_element = 0;
+				}
 			}
 			else
+			{
 				return_element = fe_mesh->create_FE_element(element_identifier, element_template);
+				if (!return_element)
+				{
+					display_message(ERROR_MESSAGE, "read_FE_element.  Could not create element");
+					return_code = 0;
+				}
+			}
 			if (return_element)
 			{
-				FE_element *element = existingElement ? element_template->get_template_element() : return_element;
+				FE_element *element;
 				FE_element_shape *element_shape;
-				if (get_FE_element_shape(element, &element_shape) && (element_shape) &&
-					get_FE_element_number_of_faces(element, &number_of_faces))
+				if (existingElement)
+				{
+					element = element_template->get_template_element();
+					element_shape = element_template->get_element_shape();
+				}
+				else
+				{
+					element = return_element;
+					element_shape = get_FE_element_shape(element);
+				}
+				number_of_faces = FE_element_shape_get_number_of_faces(element_shape);
+				if (element_shape)
 				{
 					/* if face_token_length > 0, then faces being read */
 					face_token_length = 0;
@@ -2980,7 +3031,7 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 						if ((!face_mesh) && (0 < number_of_faces))
 						{
 							location = IO_stream_get_location_string(input_file);
-							display_message(ERROR_MESSAGE, "read_FE_element.  Faces token without face mesh of dimension %d. %s",
+							display_message(ERROR_MESSAGE, "read_FE_element.  Faces token without face mesh of dimension %d.  %s",
 								fe_mesh->getDimension() - 1, location);
 							DEALLOCATE(location);
 							return_code = 0;
@@ -3022,11 +3073,12 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 									face_element = face_mesh->get_or_create_FE_element_with_identifier(face_identifier, face_shape);
 									if (face_element)
 									{
-										if (!set_FE_element_face(element, i, face_element))
+										// faces go directly in return element; template does not hold them
+										if (!set_FE_element_face(return_element, i, face_element))
 										{
 											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,"read_FE_element.  "
-												"Could not set face %d of %d-D element %d.  %s", i, fe_mesh->getDimension(),
+												"Could not set face %d of %d-D element %d.  %s", i + 1, fe_mesh->getDimension(),
 												element_identifier, location);
 											DEALLOCATE(location);
 											return_code = 0;
@@ -3328,14 +3380,6 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 				if (!return_code)
 					DEACCESS(FE_element)(&element);
 			}
-			else
-			{
-				location = IO_stream_get_location_string(input_file);
-				display_message(ERROR_MESSAGE,
-					"read_FE_element.  Could not create or merge element");
-				DEALLOCATE(location);
-				return_code = 0;
-			}
 		}
 	}
 	else
@@ -3593,8 +3637,7 @@ static int read_exregion_file_private(struct cmzn_region *root_region,
 								{
 									ACCESS(FE_element_shape)(element_shape);
 									/* create the initial template element for no fields */
-									int dimension;
-									get_FE_element_shape_dimension(element_shape, &dimension);
+									const int dimension = get_FE_element_shape_dimension(element_shape);
 									fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension);
 									if (fe_mesh)
 										element_template = fe_mesh->create_FE_element_template(element_shape);

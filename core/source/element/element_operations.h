@@ -42,12 +42,11 @@ public:
 	IntegrationShapePoints(FE_element_shape *shapeIn, int *numbersOfPointsIn,
 		int numPointsIn, FE_value *pointsIn, FE_value *weightsIn) :
 		shape(ACCESS(FE_element_shape)(shapeIn)),
-		dimension(0),
+		dimension(get_FE_element_shape_dimension(shapeIn)),
 		numPoints(numPointsIn),
 		points(pointsIn),
 		weights(weightsIn)
 	{
-		get_FE_element_shape_dimension(this->shape, &this->dimension);
 		for (int i = 0; i < this->dimension; ++i)
 			this->numbersOfPoints[i] = numbersOfPointsIn[i];
 	}

@@ -464,6 +464,7 @@ struct FE_element *create_template_FE_element(FE_element_field_info *element_fie
  * and values from it.
  * The returned element is ready to be added into the FE_mesh the
  * template element was created by.
+ * Shape is not set for new element as mapped in mesh.
  * Faces are not copied from the template element.
  * @param index  Index of element in mesh, or DS_LABEL_INDEX_INVALID if used
  * as a non-global template element i.e. when called from
@@ -479,6 +480,18 @@ struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE
  * externally accessed elements.
  */
 void FE_element_invalidate(struct FE_element *element);
+
+/**
+ * Temporary private function returning true if for each elements' faces
+ * either one or both of each face of source and target element is
+ * NULL or where both faces exist they have the same identifier.
+ * Used only by FE_mesh::canMerge.
+ * @param faceCount  The number of faces required for the shape. Shape must
+ * already be confirmed as the same.
+ */
+bool FE_elements_can_merge_faces(int faceCount,
+	FE_mesh &target_face_fe_mesh, struct FE_element *targetElement,
+	FE_mesh &source_face_fe_mesh, struct FE_element *sourceElement);
 
 /**
  * Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in

@@ -740,8 +740,7 @@ Isosurface_builder::Isosurface_builder(FE_element *element, cmzn_fieldcache_id f
 		last_mesh_number(-1)
 {
 	enum FE_element_shape_type shape_type1, shape_type2, shape_type3;
-	FE_element_shape *element_shape = NULL;
-	get_FE_element_shape(element, &element_shape);
+	FE_element_shape *element_shape = get_FE_element_shape(element);
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0, &shape_type1);
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/1, &shape_type2);
 	get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/2, &shape_type3);
@@ -1774,7 +1773,6 @@ int Isosurface_builder::sweep()
 
 bool Isosurface_builder::reverse_winding()
 {
-	FE_element_shape *shape;
 	FE_value result[3], winding_coordinate_derivative1[3],
 		winding_coordinate_derivative2[3], winding_coordinate_derivative3[3];
 	FE_value_triple *xi_points;
@@ -1782,7 +1780,7 @@ bool Isosurface_builder::reverse_winding()
 
 	/* Determine whether xi forms a LH or RH coordinate system in this element */
 	bool reverse_winding = false;
-	get_FE_element_shape(element, &shape);
+	FE_element_shape *shape = get_FE_element_shape(element);
 	number_in_xi[0] = 1;
 	number_in_xi[1] = 1;
 	number_in_xi[2] = 1;
@@ -1858,10 +1856,10 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 		GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_POSITION);
 	unsigned int total_number_of_triangles_to_add = 0;
 	int polygonType = (int)g_TRIANGLE;
-	const int identifier = get_FE_element_identifier(element);
+	const DsLabelIndex index = get_FE_element_index(element);
 	int current_location = 0, number_of_locations = 0, *locations = 0;
 	/* get all surface entries of this elements */
-	array->get_all_fast_search_id_locations(identifier,
+	array->get_all_fast_search_id_locations(index,
 		&number_of_locations, &locations);
 	int vertex_location = 0;
 	unsigned int number_of_available_vertices = 0, insert_vertex_location = 0;
@@ -1896,7 +1894,7 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 					/*validate these vertices */
 					array->replace_integer_vertex_buffer_at_position(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID, vertex_location, 1, 1,
-						&identifier);
+						&index);
 					int updated = 0;
 					array->replace_integer_vertex_buffer_at_position(
 						GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
@@ -1995,13 +1993,12 @@ int Isosurface_builder::fill_graphics(struct Graphics_vertex_array *array)
 	}
 	if (total_number_of_triangles_to_add > 0)
 	{
-		const int identifier = get_FE_element_identifier(element);
 		unsigned int number_of_vertices = total_number_of_triangles_to_add * 3;
 		unsigned int number_of_xi1 = total_number_of_triangles_to_add;
 		unsigned int number_of_xi2 = 3;
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_OBJECT_ID,
-			1, 1, &identifier);
-		array->add_fast_search_id(identifier);
+			1, 1, &index);
+		array->add_fast_search_id(index);
 		int modificationRequired = 0;
 		array->add_integer_attribute(GRAPHICS_VERTEX_ARRAY_ATTRIBUTE_TYPE_UPDATE_REQUIRED,
 			1, 1, &modificationRequired);
@@ -2120,7 +2117,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	struct Graphics_vertex_array *array,
 	int *number_in_xi, struct Iso_surface_specification *specification)
 {
-	ENTER(create_iso_surfaces_from_FE_element_new);
+	ENTER(create_iso_surfaces_from_FE_element);
 	int return_code = 0;
 	if ((NULL != element) && field_cache && mesh && array && (3 == get_FE_element_dimension(element)) &&
 		(NULL != number_in_xi) &&
@@ -2129,7 +2126,7 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	{
 		int replaceRequired = 0;
 		/* find if vertex already in the array */
-		int vertex_location = array->find_first_fast_search_id_location(get_FE_element_identifier(element));
+		int vertex_location = array->find_first_fast_search_id_location(get_FE_element_index(element));
 		/* vertex found in array, check if update is required */
 		if (vertex_location >= 0)
 		{
@@ -2155,10 +2152,10 @@ int create_iso_surfaces_from_FE_element(struct FE_element *element,
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"create_iso_surfaces_from_FE_element_new.  Invalid argument(s)");
+			"create_iso_surfaces_from_FE_element.  Invalid argument(s)");
 	}
 	LEAVE;
 
 	return (return_code);
-} /* create_iso_surfaces_from_FE_element_new */
+} /* create_iso_surfaces_from_FE_element */
 

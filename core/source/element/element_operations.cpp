@@ -203,8 +203,7 @@ IntegrationPointsCache::~IntegrationPointsCache()
 
 IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
 {
-	FE_element_shape *shape = 0;
-	get_FE_element_shape(element, &shape);
+	FE_element_shape *shape = get_FE_element_shape(element);
 	if (!shape)
 		return 0;
 	const int elementDimension = cmzn_element_get_dimension(element);
@@ -570,10 +569,9 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 			{
 				number_in_xi[i] = 1;
 			}
-			if (get_FE_element_shape(element, &element_shape)
-					&& FE_element_shape_get_xi_points_cell_centres(
-						element_shape, number_in_xi,
-						&number_of_xi_points, &xi_points))
+			element_shape = get_FE_element_shape(element);
+			if (FE_element_shape_get_xi_points_cell_centres(element_shape,
+				number_in_xi, &number_of_xi_points, &xi_points))
 			{
 				if (!(array_data->element_values->values &&
 					(CMZN_OK == cmzn_fieldcache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points)) &&

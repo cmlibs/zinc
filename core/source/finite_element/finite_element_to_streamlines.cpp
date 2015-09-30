@@ -199,7 +199,8 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 
 	ENTER(update_adaptive_imp_euler);
 	/* clear coordinates in case fewer than 3 components */
-	element_dimension = get_FE_element_dimension(*element);
+	FE_element_shape *element_shape = get_FE_element_shape(*element);
+	element_dimension = get_FE_element_shape_dimension(element_shape);
 	/* It is expected that the coordinate dimension and vector dimension match as
 		far as tracking is concerned,
 		the vector field may have extra components related to the cross directions
@@ -265,7 +266,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			xiA[i] = xi[i];
 			increment_xi[i] = local_step_size * deltaxi[i];
 		}
-		return_code = FE_element_xi_increment_within_element(*element, xiA, increment_xi, &fraction,
+		return_code = FE_element_shape_xi_increment(element_shape, xiA, increment_xi, &fraction,
 		   &face_number, xi_face);
 		/* If an element boundary is reached then xiA will automatically be on this boundary.
 			We want to go to the same location with the more accurate xiB integration so 
@@ -297,7 +298,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 				xiB[i] = xi[i];
 				increment_xi[i] = local_step_size*(deltaxi[i]+deltaxiA[i])/2.0;
 			}
-			return_code = FE_element_xi_increment_within_element(*element, xiB,
+			return_code = FE_element_shape_xi_increment(element_shape, xiB,
 				increment_xi, &fraction, &face_number, xi_face);
 			face_numberB = face_number;
 		}
@@ -340,7 +341,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 			xiC[i] = xi[i];
 			increment_xi[i] = local_step_size*deltaxi[i]/2.0;
 		}
-		return_code = FE_element_xi_increment_within_element(*element, xiC,
+		return_code = FE_element_shape_xi_increment(element_shape, xiC,
 			increment_xi, &fraction, &face_number, xi_face);
 		if (return_code)
 		{
@@ -369,7 +370,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 				xiD[i] = xi[i];
 				increment_xi[i] = local_step_size*(deltaxi[i]+deltaxiC[i])/4.0;
 			}
-			return_code = FE_element_xi_increment_within_element(*element, xiD,
+			return_code = FE_element_shape_xi_increment(element_shape, xiD,
 				increment_xi, &fraction, &face_number, xi_face);
 		}
 
@@ -426,7 +427,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 					xiE[i] = xiD[i];
 					increment_xi[i] = local_step_size*deltaxiD[i]/2.0;
 				}
-				return_code = FE_element_xi_increment_within_element(*element, xiE,
+				return_code = FE_element_shape_xi_increment(element_shape, xiE,
 					increment_xi, &fraction, &face_number, xi_face);
 			}
 			if (return_code)
@@ -456,7 +457,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 					xiF[i] = xiD[i];
 					increment_xi[i] = local_step_size*(deltaxiD[i]+deltaxiE[i])/4.0;
 				}
-				return_code = FE_element_xi_increment_within_element(*element, xiF,
+				return_code = FE_element_shape_xi_increment(element_shape, xiF,
 					increment_xi, &fraction, &face_number, xi_face);
 				if (face_number != -1)
 				{
@@ -566,6 +567,12 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 						}
 						coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
 						permutation++;
+					}
+					element_shape = get_FE_element_shape(*element);
+					if (!element_shape)
+					{
+						display_message(ERROR_MESSAGE, "track_streamline_from_FE_element.  Missing shape.");
+						*keep_tracking = 0;
 					}
 					if (coordinate_point_error > coordinate_tolerance)
 					{

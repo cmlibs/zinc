@@ -1768,26 +1768,6 @@ will be put in the first position of <values>.
 It is up to the calling function to deallocate the returned string values.
 ==============================================================================*/
 
-int calculate_FE_element_anatomical(
-	struct FE_element_field_values *coordinate_element_field_values,
-	struct FE_element_field_values *anatomical_element_field_values,
-	FE_value *xi_coordinates,FE_value *x,FE_value *y,FE_value *z,FE_value a[3],
-	FE_value b[3],FE_value c[3],FE_value *dx_dxi);
-/*******************************************************************************
-LAST MODIFIED : 16 November 1998
-
-DESCRIPTION :
-Calculates the cartesian coordinates (<x>, <y> and <z>), and the fibre (<a>),
-cross-sheet (<b>) and sheet-normal (<c>) vectors from a coordinate element field
-and an anatomical element field.  The storage for the <x>, <y>, <z>, <a>, <b>
-and <c> should have been allocated outside the function.
-If later conversion of a, b and c to vectors in xi space is required, the
-optional <dx_dxi> parameter should be supplied and point to a enough memory to
-contain the nine derivatives of x,y,z w.r.t. three xi. These are returned in the
-order dx/dxi1, dx/dxi2, dx/dxi3, dy/dxi1 etc. Note that there will always be
-nine values returned, regardless of the element dimension.
-==============================================================================*/
-
 struct FE_element_shape *CREATE(FE_element_shape)(int dimension,
 	const int *type, struct FE_region *fe_region);
 /*******************************************************************************
@@ -1855,13 +1835,11 @@ char *FE_element_shape_get_EX_description(struct FE_element_shape *element_shape
 struct FE_element_shape *FE_element_shape_create_unspecified(
 	struct FE_region *fe_region, int dimension);
 
-int FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
-/*******************************************************************************
-LAST MODIFIED : 18 November 2002
-
-DESCRIPTION :
-Returns true if the only thing know about <element_shape> is its dimension.
-==============================================================================*/
+/**
+ * Returns true if the only thing know about <element_shape> is its dimension.
+ * Elements are only in this state when defined for element:xi locations.
+ */
+bool FE_element_shape_is_unspecified(struct FE_element_shape *element_shape);
 
 int FE_element_shape_is_line(struct FE_element_shape *element_shape);
 /*******************************************************************************
@@ -1881,15 +1859,10 @@ From the parent <shape> returns the FE_element_shape for its face <face_number>.
 The <shape> must be of dimension 2 or 3. Faces of 2-D elements are always lines.
 ==============================================================================*/
 
-int get_FE_element_shape_dimension(struct FE_element_shape *element_shape,
-	int *dimension_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the dimension of <element_shape>.
-If fails, puts zero at <dimension_address>.
-==============================================================================*/
+/**
+ * @return  The dimension of the element shape, or 0 if error.
+ */
+int get_FE_element_shape_dimension(struct FE_element_shape *element_shape);
 
 /**
  * Return face_to_element map, a square matrix b + A xi for the face_number of
@@ -1956,6 +1929,18 @@ are modified to put it on the nearest face.
 ==============================================================================*/
 
 /**
+ * Adds the <increment> to <xi>.  If this moves <xi> outside of the shape, then
+ * the step is limited to take <xi> to the boundary, <face_number> is set to be
+ * the limiting face, <fraction> is updated with the fraction of the <increment>
+ * actually used, the <increment> is updated to contain the part not used,
+ * the <xi_face> are calculated for that face and the <xi> are changed to be
+ * on the boundary of the shape.
+ */
+int FE_element_shape_xi_increment(struct FE_element_shape *shape,
+	FE_value *xi,FE_value *increment, FE_value *step_size,
+	int *face_number_address, FE_value *xi_face);
+
+/**
  * List conditional function returning true if <element> has been
  * invalidated i.e. it has no mesh/identifier.
  */
@@ -1964,14 +1949,9 @@ int FE_element_is_invalid(struct FE_element *element, void *dummy_void);
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
-/***************************************************************************//**
- * Sets the element shape. Must match the dimension of the existing shape.
- * Beware that face mappings are lost if shape changes are merged into global
- * elements.
- * Does not propagate change messages.
- */
-int set_FE_element_shape(struct FE_element *element,
-	struct FE_element_shape *shape);
+// GRC temporary
+int clear_FE_element_faces(struct FE_element *element, int number_of_faces);
+int set_FE_element_number_of_faces(struct FE_element *element, int number_of_faces);
 
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
@@ -2113,25 +2093,11 @@ If there is no parent, a true return_code is returned but with a NULL
 <parent_element>.
 ==============================================================================*/
 
-int get_FE_element_shape(struct FE_element *element,
-	struct FE_element_shape **shape);
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-Returns the <shape> of the <element>, if any. Only newly created blank elements
-should have no shape.
-==============================================================================*/
-
-int get_FE_element_number_of_faces(struct FE_element *element,
-	int *number_of_faces_address);
-/*******************************************************************************
-LAST MODIFIED : 5 November 2002
-
-DESCRIPTION :
-Returns the number of faces of <element>.
-If fails, puts zero at <number_of_faces_address>.
-==============================================================================*/
+/**
+ * Returns the <shape> of the <element>, if any. Invalid elements (in process
+ * of being constructed or destroyed, or orphaned) have no shape.
+ */
+FE_element_shape *get_FE_element_shape(struct FE_element *element);
 
 int get_FE_element_face(struct FE_element *element,int face_number,
 	struct FE_element **face_element);
@@ -2146,20 +2112,10 @@ there is no face. Element must have a shape and face.
 /**
  * Sets face <face_number> of <element> to <face_element>, ensuring the
  * <face_element> has <element> as a parent. <face_element> may be NULL = no face.
- * Must have set the shape with set_FE_element_shape first.
+ * Must have set the element shape first.
  * Should only be called for unmanaged elements.
  */
 int set_FE_element_face(struct FE_element *element, int face_number,
-	struct FE_element *face_element);
-
-/**
- * Private variant of set_FE_element_face which does not set this element as a 
- * a parent. Used when merging elements from a temporary region.
- * If not done this way then the face_element will temporarily have both the
- * global and temporary elements as parents.
- * Must have set the shape with set_FE_element_shape first.
- */
-int set_FE_element_face_no_parents(struct FE_element *element, int face_number,
 	struct FE_element *face_element);
 
 /**
@@ -2455,37 +2411,6 @@ directly or indirectly in the <element_list> tree. Used to check if elements
 will be destroyed, since faces and lines are destroyed with their parents if
 they are not also faces or lines of other elements not being destroyed.
 ==============================================================================*/
-
-int add_FE_element_and_faces_to_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-Ensures <element>, its faces (and theirs etc.) are in <element_list>.
-Note: this function is recursive.
-==============================================================================*/
-
-struct FE_element_add_faces_not_in_list_data
-/*******************************************************************************
-LAST MODIFIED : 17 February 2003
-
-DESCRIPTION :
-Data for FE_element_add_faces_not_in_list function.
-==============================================================================*/
-{
-	struct LIST(FE_element) *add_element_list;
-	struct LIST(FE_element) *current_element_list;
-};
-
-/***************************************************************************//**
- * If any face of <element> is not in <current_element_list>, and not in
- * <add_element_list>, adds it to <add_element_list>.
- * Does not recurse over faces of faces.
- * @param data_void  A struct FE_element_add_faces_not_in_list_data.
- */
-int FE_element_add_faces_not_in_list(struct FE_element *element,
-	void *data_void);
 
 /**
  * Merges/adds fields from <source> into <destination>. Where existing fields
@@ -3341,40 +3266,11 @@ int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeL
  */
 int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList);
 
-int FE_element_is_dimension(struct FE_element *element,void *dimension_void);
-/*******************************************************************************
-LAST MODIFIED : 21 September 1998
-
-DESCRIPTION :
-Returns true if <element> is of the given <dimension>.
-<dimension_void> must be a pointer to an int containing the dimension.
-==============================================================================*/
-
-int FE_element_is_dimension_3(struct FE_element *element,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 1 December 1999
-
-DESCRIPTION :
-Returns true if <element> is a 3-D element (ie. not a 2-D face or 1-D line).
-==============================================================================*/
-
 /**
  * Conditional function.
  * @return  1 if element is top-level i.e. has no parents, otherwise 0.
  */
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
-
-/**
- * Fetches an element with the same identifier as supplied element from the
- * target mesh. Returns true if either:
- * 1. There is no namesake element and <element> has a valid shape.
- * 2. There is a namesake element and <element> has an "unspecified" shape of the
- * same dimension as it, but no fields.
- * 3. There is a namesake element with the same shape and compatible faces
- * (meaning they match or either element has no faces).
- * No field checks are made as element field definitions can be replaced during merge.
- */
-bool FE_element_can_be_merged(struct FE_element *element, FE_mesh *target_fe_mesh);
 
 int FE_element_or_parent_has_field(struct FE_element *element,
 	struct FE_field *field,
@@ -4024,20 +3920,6 @@ LAST MODIFIED : 10 January 2001
 
 DESCRIPTION :
 As FE_element to previously created FE_element_order_info (passed in dummy)
-==============================================================================*/
-
-int FE_element_xi_increment_within_element(struct FE_element *element, FE_value *xi,
-	FE_value *increment, FE_value *fraction, int *face_number, FE_value *xi_face);
-/*******************************************************************************
-LAST MODIFIED : 20 January 2004
-
-DESCRIPTION :
-Adds the <increment> to <xi>.  If this moves <xi> outside of the element, then
-the step is limited to take <xi> to the boundary, <face_number> is set to be
-the limiting face, <fraction> is updated with the fraction of the <increment>
-actually used, the <increment> is updated to contain the part not used,
-the <xi_face> are calculated for that face and the <xi> are changed to be
-on the boundary of the element.
 ==============================================================================*/
 
 int FE_element_get_number_of_change_to_adjacent_element_permutations(

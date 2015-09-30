@@ -343,8 +343,7 @@ int Computed_field_element_group::addElementFaces(cmzn_element_id parent)
 	if (!isParentElementCompatible(parent))
 		return CMZN_ERROR_ARGUMENT;
 	int return_code = CMZN_OK;
-	int number_of_faces = 0;
-	get_FE_element_number_of_faces(parent, &number_of_faces);
+	const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(parent));
 	cmzn_element_id face = 0;
 	int number_added = 0;
 	for (int i = 0; i < number_of_faces; i++)
@@ -416,11 +415,10 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 			{
 				// add nodes from this element, but remove nodes from neighbours still in group
 				return_code = cmzn_element_add_nodes_to_list(element, removeNodeList);
-				int numberOfFaces = 0;
-				get_FE_element_number_of_faces(element, &numberOfFaces);
-				if (0 < numberOfFaces)
+				const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
+				if (0 < number_of_faces)
 				{
-					for (int face = 0; (face < numberOfFaces) && (CMZN_OK == return_code); ++face)
+					for (int face = 0; (face < number_of_faces) && (CMZN_OK == return_code); ++face)
 					{
 						int adjacentElementsCount = 0;
 						cmzn_element **adjacentElements = 0;
@@ -529,8 +527,7 @@ int Computed_field_element_group::addElementFacesRecursive(cmzn_element_id eleme
 			return CMZN_ERROR_GENERAL;
 	}
 	int return_code = CMZN_OK;
-	int number_of_faces = 0;
-	get_FE_element_number_of_faces(element, &number_of_faces);
+	const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
 	cmzn_element_id face = 0;
 	int numberAdded = 0;
 	for (int i = 0; i < number_of_faces; ++i)
@@ -564,8 +561,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 {
 	if (!isParentElementCompatible(parent))
 		return CMZN_ERROR_ARGUMENT;
-	int number_of_faces = 0;
-	get_FE_element_number_of_faces(parent, &number_of_faces);
+	const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(parent));
 	cmzn_element_id face = 0;
 	int number_removed = 0;
 	for (int i = 0; i < number_of_faces; i++)
@@ -593,8 +589,7 @@ int Computed_field_element_group::removeElementFacesRecursive(cmzn_element_id el
 	if (1 < this->dimension)
 		faceElementGroup = this->ownerGroup->getElementGroupPrivate(this->dimension - 1, /*create*/false);
 	int return_code = CMZN_OK;
-	int number_of_faces = 0;
-	get_FE_element_number_of_faces(element, &number_of_faces);
+	const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
 	cmzn_element_id face = 0;
 	int numberRemoved = 0;
 	for (int i = 0; i < number_of_faces; ++i)

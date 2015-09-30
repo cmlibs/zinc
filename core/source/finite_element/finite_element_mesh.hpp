@@ -91,7 +91,7 @@ class FE_element_template : public cmzn::RefCounted
 	FE_element *template_element;
 
 	/** Caller must ensure element_shape is of same dimension as mesh */
-	FE_element_template(FE_mesh *mesh_in, struct FE_element_field_info *element_field_info);
+	FE_element_template(FE_mesh *mesh_in, struct FE_element_field_info *element_field_info, FE_element_shape *element_shape_in);
 
 	/** Creates a template copying from an existing element */
 	FE_element_template(FE_mesh *mesh_in, struct FE_element *element);
@@ -117,8 +117,6 @@ public:
 	{
 		return this->element_shape;
 	}
-
-	bool set_element_shape(struct FE_element_shape *element_shape_in);
 };
 
 /**
@@ -131,7 +129,7 @@ class FE_mesh
 	class ElementShapeFaces
 	{
 		FE_element_shape *shape;
-		cmzn_element_shape_type shape_type;
+		const cmzn_element_shape_type shape_type;
 		const int faceCount;
 		DsMapArrayLabelIndex faces; // map to connected elements of face mesh
 		DsMapArrayLabelIndex neighbours; // map to adjacent elements of this mesh
@@ -141,14 +139,29 @@ class FE_mesh
 			shape(ACCESS(FE_element_shape)(shapeIn)),
 			shape_type(FE_element_shape_get_simple_type(shapeIn)),
 			faceCount(FE_element_shape_get_number_of_faces(shapeIn)),
-			faces(labels, faceCount),
-			neighbours(labels, faceCount)
+			faces(labels, faceCount > 0 ? faceCount : 2),
+			neighbours(labels, faceCount > 0 ? faceCount : 2)
 		{
 		}
 
 		~ElementShapeFaces()
 		{
 			DEACCESS(FE_element_shape)(&this->shape);
+		}
+
+		FE_element_shape *getShape() const
+		{
+			return this->shape;
+		}
+
+		cmzn_element_shape_type getShapeType() const
+		{
+			return this->shape_type;
+		}
+
+		int getFaceCount() const
+		{
+			return this->faceCount;
 		}
 	};
 
@@ -158,10 +171,9 @@ class FE_mesh
 	DsLabels labels; // element identifiers
 
 	// element shape and face/parent mappings
-	int elementShapeFacesCount;
-	ElementShapeFaces **elementShapeFaces;
-	int defaultElementShapeFacesIndex; // index into elementShapeFaces if all shapes are the same
-	block_array<DsLabelIndex, char> elementShapeMap; // map element -> shape faces index, if not shapes are the same
+	char elementShapeFacesCount;
+	ElementShapeFaces **elementShapeFacesArray;
+	block_array<DsLabelIndex, char> elementShapeMap; // map element -> shape faces index, if not all elements have same shape
 
 	// set of elements in this mesh
 	struct LIST(FE_element) *elementList;
@@ -207,6 +219,22 @@ private:
 	int merge_FE_element_external(struct FE_element *element,
 		Merge_FE_element_external_data &data);
 
+	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex index)
+	{
+		if (index >= 0)
+		{
+			if (this->elementShapeFacesCount > (char)1)
+			{
+				char shapeIndex;
+				if (this->elementShapeMap.getValue(index, shapeIndex))
+					return this->elementShapeFacesArray[shapeIndex];
+			}
+			else if (this->elementShapeFacesArray)
+				return this->elementShapeFacesArray[0];
+		}
+		return 0;
+	}
+
 public:
 
 	static FE_mesh *create(FE_region *fe_region, int dimension)
@@ -246,6 +274,7 @@ public:
 	}
 
 	// in following change is a logical OR of values from enum DsLabelChangeType
+	void elementChange(DsLabelIndex index, int change);
 	void elementChange(FE_element *element, int change, FE_element *field_info_element);
 	void elementFieldListChange(FE_element *element, int change,
 		struct LIST(FE_field) *changed_fe_field_list);
@@ -295,6 +324,26 @@ public:
 	DsLabelsChangeLog *getChangeLog()
 	{
 		return this->changeLog;
+	}
+
+	ElementShapeFaces *setElementShape(DsLabelIndex index, FE_element_shape *element_shape);
+
+	bool setElementShapeFromTemplate(DsLabelIndex index, FE_element_template &element_template);
+
+	FE_element_shape *getElementShape(DsLabelIndex index)
+	{
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(index);
+		if (elementShapeFaces)
+			return elementShapeFaces->getShape();
+		return 0;
+	}
+
+	cmzn_element_shape_type getElementShapeType(DsLabelIndex index)
+	{
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(index);
+		if (elementShapeFaces)
+			return elementShapeFaces->getShapeType();
+		return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	}
 
 	struct LIST(FE_element_field_info) *get_FE_element_field_info_list_private()

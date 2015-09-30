@@ -1769,12 +1769,11 @@ int get_surface_element_segmentation(struct FE_element *element,
 {
 	int i, number_of_faces, return_code;
 	struct FE_element *faces[4];
-	struct FE_element_shape *element_shape;
 
 	ENTER(get_surface_element_segmentation);
 	return_code = 0;
-	if (element && (2 == get_FE_element_dimension(element)) &&
-		get_FE_element_shape(element, &element_shape) && shape_type_address)
+	FE_element_shape *element_shape = get_FE_element_shape(element);
+	if (element_shape && (2 == get_FE_element_shape_dimension(element_shape)) && shape_type_address)
 	{
 		if (get_FE_element_shape_xi_shape_type(element_shape, /*xi_number*/0,
 			shape_type_address))
@@ -1826,8 +1825,8 @@ int get_surface_element_segmentation(struct FE_element *element,
 				{
 					*number_of_points_in_xi1 = number_of_segments_in_xi1_requested + 1;
 					/* check for collapsed elements */
-					if ((LINE_SHAPE == (*shape_type_address)) &&
-						get_FE_element_number_of_faces(element, &number_of_faces))
+					if ((LINE_SHAPE == (*shape_type_address)) && (0 < (number_of_faces =
+						FE_element_shape_get_number_of_faces(element_shape))))
 					{
 						for (i = 0; (i < 4) && return_code; i++)
 						{

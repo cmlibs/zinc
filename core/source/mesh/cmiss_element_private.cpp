@@ -832,19 +832,10 @@ public:
 
 	int mergeIntoElement(cmzn_element_id element)
 	{
-		int return_code = 0;
-		if (validate())
-		{
-			if (shape_type == CMZN_ELEMENT_SHAPE_TYPE_INVALID)
-			{
-				// leave the element shape intact
-				struct FE_element_shape *element_shape = 0;
-				get_FE_element_shape(element, &element_shape);
-				this->fe_element_template->set_element_shape(element_shape);
-			}
-			return_code = FE_element_get_FE_mesh(element)->merge_FE_element_template(element, this->fe_element_template);
-		}
-		return return_code;
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		if (validate() && (fe_mesh))
+			return fe_mesh->merge_FE_element_template(element, this->fe_element_template);
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 private:
@@ -1822,9 +1813,9 @@ enum cmzn_element_shape_type cmzn_element_get_shape_type(
 	cmzn_element_shape_type shape_type = CMZN_ELEMENT_SHAPE_TYPE_INVALID;
 	if (element)
 	{
-		struct FE_element_shape *fe_element_shape = NULL;
-		get_FE_element_shape(element, &fe_element_shape);
-		shape_type = FE_element_shape_get_simple_type(fe_element_shape);
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		if (fe_mesh)
+			shape_type = fe_mesh->getElementShapeType(get_FE_element_index(element));
 	}
 	return shape_type;
 }
