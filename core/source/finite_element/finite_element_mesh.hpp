@@ -171,9 +171,9 @@ class FE_mesh
 	DsLabels labels; // element identifiers
 
 	// element shape and face/parent mappings
-	char elementShapeFacesCount;
+	unsigned int elementShapeFacesCount;
 	ElementShapeFaces **elementShapeFacesArray;
-	block_array<DsLabelIndex, char> elementShapeMap; // map element -> shape faces index, if not all elements have same shape
+	block_array<DsLabelIndex, unsigned char> elementShapeMap; // map element -> shape faces index, if not all elements have same shape
 
 	// set of elements in this mesh
 	struct LIST(FE_element) *elementList;
@@ -223,11 +223,11 @@ private:
 	{
 		if (index >= 0)
 		{
-			if (this->elementShapeFacesCount > (char)1)
+			if (this->elementShapeFacesCount > 1)
 			{
-				char shapeIndex;
+				unsigned char shapeIndex;
 				if (this->elementShapeMap.getValue(index, shapeIndex))
-					return this->elementShapeFacesArray[shapeIndex];
+					return this->elementShapeFacesArray[static_cast<unsigned int>(shapeIndex)];
 			}
 			else if (this->elementShapeFacesArray)
 				return this->elementShapeFacesArray[0];

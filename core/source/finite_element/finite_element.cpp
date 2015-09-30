@@ -7002,7 +7002,8 @@ int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 
 	ENTER(FE_element_shape_xi_increment);
 	return_code=0;
-	if ((shape) && (0 < (dimension = shape->dimension)) && xi && increment && face_number_address && xi_face)
+	if ((shape) && (0 < (dimension = shape->dimension)) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS) &&
+		xi && increment && face_number_address && xi_face)
 	{
 		/* working space */
 		double face_matrix[MAXIMUM_ELEMENT_XI_DIMENSIONS*MAXIMUM_ELEMENT_XI_DIMENSIONS];
@@ -7093,8 +7094,8 @@ int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	else
 	{
 		display_message(ERROR_MESSAGE,"FE_element_shape_xi_increment.  "
-			"Invalid argument(s).  %p %p %p %p %d",shape,xi,increment,
-			face_number_address,dimension);
+			"Invalid argument(s).  %p %p %p %p dimension %d",shape,xi,increment,
+			face_number_address, get_FE_element_shape_dimension(shape));
 		return_code=0;
 	}
 	LEAVE;
@@ -12697,20 +12698,9 @@ at the <node>.
 int set_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
 	enum FE_nodal_value_type type,struct FE_element *element, const FE_value *xi)
-/*******************************************************************************
-LAST MODIFIED : 14 September 1999
-
-DESCRIPTION :
-Sets a particular element_xi_value (<version>, <type>) for the field
-<component> at the <node>.
-==============================================================================*/
 {
-	int dimension, i, number_of_xi_dimensions, return_code;
-	struct FE_time_sequence *time_sequence;
-	Value_storage *values_storage = NULL;
-
-	ENTER(set_FE_nodal_element_xi_value);
-	return_code=0;
+	int return_code = 0;
+	int dimension = 0;
 	if (node && field && (field->value_type == ELEMENT_XI_VALUE) &&
 		(0 <= component_number) && (component_number < field->number_of_components) &&
 		(0 <= version) && ((!element) || ((0 < (dimension = get_FE_element_dimension(element))) && xi)))
@@ -12719,17 +12709,18 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 		if ((!element) || (0 == field->element_xi_mesh_dimension) ||
 			(dimension == field->element_xi_mesh_dimension))
 		{
+			Value_storage *values_storage = 0;
+			FE_time_sequence *time_sequence = 0;
 			/* get the values storage */
 			if (find_FE_nodal_values_storage_dest(node,field,component_number,
 				version,type,ELEMENT_XI_VALUE,&values_storage,&time_sequence))
 			{
-				number_of_xi_dimensions = element ? dimension : 0;
 				/* copy in the element_xi_value */
 				REACCESS(FE_element)((struct FE_element **)values_storage, element);
 				values_storage += sizeof(struct FE_element *);
-				for (i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
+				for (int i = 0 ; i < MAXIMUM_ELEMENT_XI_DIMENSIONS ; i++)
 				{
-					if (i<number_of_xi_dimensions)
+					if (i < dimension)
 					{
 						*((FE_value *)values_storage) = xi[i];
 					}
@@ -12760,13 +12751,10 @@ Sets a particular element_xi_value (<version>, <type>) for the field
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"set_FE_nodal_element_xi_value.  "
-			"Invalid argument(s)");
+		display_message(ERROR_MESSAGE, "set_FE_nodal_element_xi_value.  Invalid argument(s)");
 	}
-	LEAVE;
-
 	return (return_code);
-} /* set_FE_nodal_element_xi_value */
+}
 
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void)
 /*******************************************************************************
@@ -30011,6 +29999,8 @@ and do not take into account the relative orientation of the parents.
 					return_code = 1;
 					if (xi)
 					{
+						for (j = 0 ; j < dimension - 1 ; j++)
+							local_xi_face[j] = xi_face[j];
 						if (permutation > 0)
 						{
 							/* Try rotating the face_xi coordinates */
@@ -30060,13 +30050,6 @@ and do not take into account the relative orientation of the parents.
 										}
 									}
 								} break;
-							}
-						}
-						else
-						{
-							for (j = 0 ; j < dimension - 1 ; j++)
-							{
-								local_xi_face[j] = xi_face[j];
 							}
 						}
 						face_to_element=(new_element_shape->face_to_element)+

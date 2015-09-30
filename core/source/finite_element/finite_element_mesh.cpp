@@ -130,7 +130,7 @@ FE_mesh::~FE_mesh()
 		cmzn_mesh_scale_factor_set *scale_factor_set = this->scale_factor_sets[i];
 		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 	}
-	for (int i = 0; i < this->elementShapeFacesCount; ++i)
+	for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
 		delete this->elementShapeFacesArray[i];
 	delete[] this->elementShapeFacesArray;
 }
@@ -245,7 +245,7 @@ void FE_mesh::clear()
 	cmzn_elementiterator_destroy(&iter);
 	REMOVE_ALL_OBJECTS_FROM_LIST(FE_element)(this->elementList);
 
-	for (int i = 0; i < this->elementShapeFacesCount; ++i)
+	for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
 		delete this->elementShapeFacesArray[i];
 	delete[] this->elementShapeFacesArray;
 	this->elementShapeFacesCount = 0;
@@ -291,12 +291,12 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex index, FE_elem
 		if (element)
 			clear_FE_element_faces(element, FE_element_shape_get_number_of_faces(currentElementShapeFaces->getShape()));
 	}
-	char shapeIndex = this->elementShapeFacesCount - 1;
-	while ((shapeIndex >= 0) && (this->elementShapeFacesArray[shapeIndex]->getShape() != (element_shape)))
-		--shapeIndex;
-	if (shapeIndex < 0)
+	unsigned int shapeIndex = 0;
+	while ((shapeIndex < this->elementShapeFacesCount) &&
+			(this->elementShapeFacesArray[shapeIndex]->getShape() != element_shape))
+		++shapeIndex;
+	if (shapeIndex == this->elementShapeFacesCount)
 	{
-		shapeIndex = this->elementShapeFacesCount;
 		if (1 == this->elementShapeFacesCount)
 		{
 			// must now store per-element shape
@@ -315,7 +315,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex index, FE_elem
 			delete newElementShapeFaces;
 			return 0;
 		}
-		for (int i = 0; i < this->elementShapeFacesCount; ++i)
+		for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
 			tempElementShapeFaces[i] = this->elementShapeFacesArray[i];
 		tempElementShapeFaces[shapeIndex] = newElementShapeFaces;
 		delete[] this->elementShapeFacesArray;
@@ -815,7 +815,7 @@ int FE_mesh::merge_FE_element_template(struct FE_element *destination, FE_elemen
 			if (0 == this->setElementShape(index, fe_element_template->get_element_shape()))
 				return_code = CMZN_ERROR_GENERAL;
 		}
-		if (return_code = CMZN_OK)
+		if (CMZN_OK == return_code)
 			return_code = this->merge_FE_element_existing(destination, fe_element_template->get_template_element());
 		if (shapeChange)
 			FE_region_end_change(this->fe_region);
@@ -1272,7 +1272,6 @@ struct FE_mesh::Merge_FE_element_external_data
 		// 1. Convert element to use a new FE_element_field_info from this mesh
 		// fast path: check if the element_field_info has already been matched
 		FE_element_field_info **matching_element_field_info = this->matching_element_field_info;
-		FE_element_field_info *element_field_info = 0;
 		for (int i = 0; i < this->number_of_matching_element_field_info; ++i)
 		{
 			if (*matching_element_field_info == source_element_field_info)

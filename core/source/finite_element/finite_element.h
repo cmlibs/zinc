@@ -738,17 +738,15 @@ Gets a particular element_xi_value (<version>, <type>) for the field <component>
 should.
 ==============================================================================*/
 
+/**
+ * Sets a particular element_xi_value (<version>, <type>) for the field
+ * <component> at the <node>.
+ * SAB Note: It doesn't use a FE_field_component as I don't think any of them
+ * should.
+ */
 int set_FE_nodal_element_xi_value(struct FE_node *node,
 	struct FE_field *field, int component_number, int version,
 	enum FE_nodal_value_type type,struct FE_element *element, const FE_value *xi);
-/*******************************************************************************
-LAST MODIFIED : 23 April 1999
-
-DESCRIPTION :
-Sets a particular element_xi_value (<version>, <type>) for the field <component> at the
-<node>.  SAB Note: It doesn't use a FE_field_component as I don't think any of them
-should.
-==============================================================================*/
 
 int FE_node_is_in_Multi_range(struct FE_node *node,void *multi_range_void);
 /*******************************************************************************
