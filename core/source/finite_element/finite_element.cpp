@@ -993,8 +993,6 @@ struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
 	}
 };
 
-FULL_DECLARE_CHANGE_LOG_TYPES(FE_element);
-
 /**
  * @see struct FE_element_type_node_sequence.
  */
@@ -4546,8 +4544,6 @@ in <fe_field_change_log>.
 } /* FE_node_field_info_log_FE_field_changes */
 
 DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_node)
-
-DECLARE_CHANGE_LOG_MODULE_FUNCTIONS(FE_element)
 
 /**
  * Compare functions for listing struct FE_element_type_node_sequence in order:
@@ -21002,8 +20998,6 @@ void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_lis
 {
 	LIST_BTREE_STATISTICS(FE_element,element_list);
 }
-
-DECLARE_CHANGE_LOG_FUNCTIONS(FE_element)
 
 /**
  * If <field> is NULL, element values are calculated for the coordinate field.

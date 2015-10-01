@@ -151,7 +151,10 @@ FE_region::~FE_region()
 	}
 
 	for (int dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS; 0 < dimension; --dimension)
+	{
+		this->meshes[dimension - 1]->detach_from_FE_region();
 		FE_mesh::deaccess(this->meshes[dimension - 1]);
+	}
 
 	if (this->fe_field_info)
 	{

@@ -200,11 +200,11 @@ class FE_mesh
 
 	int access_count;
 
+	~FE_mesh();
+
 private:
 
 	FE_mesh(FE_region *fe_regionIn, int dimensionIn);
-
-	~FE_mesh();
 
 	struct FE_element_field_info *clone_FE_element_field_info(
 		struct FE_element_field_info *fe_element_field_info);
@@ -243,6 +243,8 @@ public:
 			return new FE_mesh(fe_region, dimension);
 		return 0;
 	}
+
+	void detach_from_FE_region();
 
 	FE_mesh *access()
 	{

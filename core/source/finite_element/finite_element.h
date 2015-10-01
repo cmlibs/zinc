@@ -278,8 +278,6 @@ variables.
 
 DECLARE_LIST_TYPES(FE_element);
 
-DECLARE_CHANGE_LOG_TYPES(FE_element);
-
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_face_type);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode);
@@ -2450,8 +2448,6 @@ cmzn_element_id cmzn_elementiterator_next_non_access(
  * List statistics about btree efficiency for element list.
  */
 void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_list);
-
-PROTOTYPE_CHANGE_LOG_FUNCTIONS(FE_element);
 
 int theta_closest_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,FE_value time,

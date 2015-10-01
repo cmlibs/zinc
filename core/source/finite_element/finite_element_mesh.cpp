@@ -105,6 +105,11 @@ FE_mesh::FE_mesh(FE_region *fe_regionIn, int dimensionIn) :
 
 FE_mesh::~FE_mesh()
 {
+	// safely detach from parent/face meshes
+	if (this->parentMesh)
+		this->parentMesh->setFaceMesh(0);
+	if (this->faceMesh)
+		this->faceMesh->setParentMesh(0);
 	cmzn::Deaccess(this->changeLog);
 	this->last_fe_element_field_info = 0;
 	// must invalidate elements since client or nodal element:xi fields may still hold them
@@ -133,6 +138,11 @@ FE_mesh::~FE_mesh()
 	for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
 		delete this->elementShapeFacesArray[i];
 	delete[] this->elementShapeFacesArray;
+}
+
+void FE_mesh::detach_from_FE_region()
+{
+	this->fe_region = 0;
 }
 
 /**
