@@ -40,7 +40,7 @@ void DsLabelsChangeLog::setIndexChange(DsLabelIndex index, int change)
 		const int result = DsLabelsGroup::setIndex(index, true);
 		if (result != CMZN_ERROR_ALREADY_EXISTS)
 		{
-			if ((result != CMZN_OK) || (this->maxChanges >= 0) && (this->getSize() > maxChanges))
+			if ((result != CMZN_OK) || ((this->maxChanges >= 0) && (this->getSize() > this->maxChanges)))
 				this->setAllChange(this->changeSummary);
 		}
 	}

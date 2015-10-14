@@ -642,7 +642,7 @@ int Computed_field_element_group::removeElementFaces(cmzn_element_id parent)
 		}
 	}
 	this->endChange();
-	return CMZN_OK;
+	return return_code;
 }
 
 int Computed_field_element_group::removeElementFacesRecursive(cmzn_element_id element, Computed_field_element_group& parentElementGroup)
