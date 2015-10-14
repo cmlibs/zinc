@@ -455,10 +455,11 @@ int Computed_field_group::setSubelementHandlingMode(
 	return CMZN_OK;
 }
 
-Computed_field_element_group *Computed_field_group::getElementGroupPrivate(int dimension, bool create)
+Computed_field_element_group *Computed_field_group::getElementGroupPrivate(FE_mesh *fe_mesh, bool create)
 {
-	if ((dimension < 1) || (dimension > MAXIMUM_ELEMENT_XI_DIMENSIONS))
+	if (!fe_mesh)
 		return 0;
+	const int dimension = fe_mesh->getDimension();
 	if (this->local_element_group[dimension - 1])
 		return static_cast<Computed_field_element_group *>(this->local_element_group[dimension - 1]->core);
 	if (create)
@@ -796,7 +797,8 @@ cmzn_field_element_group_id Computed_field_group::get_element_group(cmzn_mesh_id
 			element_group = cmzn_field_cast_element_group(element_group_field);
 			if (element_group)
 			{
-				if (cmzn_mesh_match(master_mesh, Computed_field_element_group_core_cast(element_group)->getMasterMesh()))
+				if (cmzn_mesh_get_FE_mesh_internal(master_mesh) == 
+						Computed_field_element_group_core_cast(element_group)->get_fe_mesh())
 					this->setLocalElementGroup(dimension - 1, element_group);
 				else // wrong mesh
 					cmzn_field_element_group_destroy(&element_group);

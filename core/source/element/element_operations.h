@@ -139,42 +139,25 @@ Note function avoids iterating through FE_region element lists as this is not
 allowed during identifier changes.
 ==============================================================================*/
 
-/***************************************************************************//**
- * Create an element list from the elements in mesh optionally restricted to
- * those within the element_ranges or where conditional_field is true in element
- * at time.
- *
- * @param mesh  Handle to the mesh.
- * @param element_ranges  Optional Multi_range of element identifiers.
- * @param conditional_field  Optional field interpreted as a boolean value which
- * must be true for an element from mesh to be included in list.
- * @param time  Time to evaluate the conditional_field at.
- * @return  The element list, or NULL on failure.
+/**
+ * @return  A conditional field returning 1 (true) for all element identifiers
+ * of fe_mesh in the given ranges. Returned field is accessed. Returns 0 on error.
  */
-struct LIST(FE_element) *cmzn_mesh_get_selected_element_list(cmzn_mesh_id mesh,
-	struct Multi_range *element_ranges, struct Computed_field *conditional_field,
-	FE_value time);
+cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
+	FE_mesh *fe_mesh, struct Multi_range *identifier_ranges);
 
-/***************************************************************************//**
- * Create an element list from those elements of dimension in the supplied
- * region, optionally restricted to any of the following conditions:
- * - element identifier is in the element_ranges;
- * - element is in the group_field;
- * - conditional field is true in the element;
- *
- * @param region  The pointer to a region
- * @param dimension  The dimension of elements to query about
- * @param element_ranges  Multi_range of elements.
- * @param group_field  Group field of the region
- * @param conditional_field  Optional field interpreted as a boolean value which
- * must be true for an element from mesh to be included in list.
- * @param time  Time to evaluate the conditional_field at.
- * @return  The element list, or NULL on failure.
+/**
+ * @param time  If other conditional fields are time-varying the result is
+ * wrapped in a time_lookup field for this time to ensure correct evaluation.
+ * @return  A conditional field that is the logical AND of an element group
+ * field formed from the optional identifier ranges with any of the 3 supplied
+ * conditional fields. Field returns true if no ranges or conditionals supplied.
+ * Returned field is accessed. Returns 0 on error.
  */
-struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
-	struct cmzn_region *region, int dimension,
-	struct Multi_range *element_ranges, struct Computed_field *group_field,
-	struct Computed_field *conditional_field, FE_value time);
+cmzn_field_id FE_mesh_create_conditional_field_from_ranges_and_selection(
+	FE_mesh *fe_mesh, struct Multi_range *identifierRanges,
+	cmzn_field_id conditionalField1, cmzn_field_id conditionalField2,
+	cmzn_field_id conditionalField3, FE_value time);
 
 /***************************************************************************//**
  * Create points in gauss_points_nodeset with embedded locations and weights

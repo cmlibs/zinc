@@ -966,44 +966,6 @@ Toggles the <element_point_ranges> in <element_point_ranges_list>.
 	return (return_code);
 } /* Element_point_ranges_toggle_in_list */
 
-int Element_point_ranges_is_wholly_within_element_list_tree(
-	struct Element_point_ranges *element_point_ranges, void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 2 March 2001
-
-DESCRIPTION :
-Returns true if either the top_level_element in the <element_point_ranges>
-identifier is in <element_list>, or if the element is wholly within the list
-tree with FE_element_is_wholly_within_element_list_tree function. Used to check
-if element or top_level_element used by element_point_ranges will be destroyed,
-since faces and lines are destroyed with their parents if they are not also
-faces or lines of other elements not being destroyed.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(Element_point_ranges_is_wholly_within_element_list_tree);
-	if (element_point_ranges &&
-		(element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		return_code = IS_OBJECT_IN_LIST(FE_element)(
-			element_point_ranges->id.top_level_element, element_list) ||
-			FE_element_is_wholly_within_element_list_tree(
-				element_point_ranges->id.element, element_list_void);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Element_point_ranges_is_wholly_within_element_list_tree.  "
-			"Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Element_point_ranges_is_wholly_within_element_list_tree */
-
 struct Element_point_ranges *Element_point_ranges_from_grid_field_ranges(
 	struct FE_element *element,struct FE_field *grid_field,
 	struct Multi_range *ranges)

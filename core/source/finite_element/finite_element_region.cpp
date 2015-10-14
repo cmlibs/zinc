@@ -847,7 +847,7 @@ int FE_region_get_number_of_FE_elements_all_dimensions(struct FE_region *fe_regi
 	{
 		for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
 		{
-			number_of_elements += fe_region->meshes[dim]->get_number_of_FE_elements();
+			number_of_elements += fe_region->meshes[dim]->getSize();
 		}
 	}
 	else
@@ -865,7 +865,7 @@ int FE_region_get_number_of_FE_elements_of_dimension(
 {
 	if (fe_region && (1 <= dimension) && (dimension <= MAXIMUM_ELEMENT_XI_DIMENSIONS))
 	{
-		return fe_region->meshes[dimension - 1]->get_number_of_FE_elements();
+		return fe_region->meshes[dimension - 1]->getSize();
 	}
 	else
 	{
@@ -879,7 +879,7 @@ int FE_region_get_highest_dimension(struct FE_region *fe_region)
 {
 	int highest_dimension = MAXIMUM_ELEMENT_XI_DIMENSIONS;
 	while (highest_dimension &&
-		(fe_region->meshes[highest_dimension - 1]->get_number_of_FE_elements() == 0))
+		(fe_region->meshes[highest_dimension - 1]->getSize() == 0))
 	{
 		--highest_dimension;
 	}

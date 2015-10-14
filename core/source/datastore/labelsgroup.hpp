@@ -22,6 +22,7 @@ class DsLabelsGroup : public cmzn::RefCounted
 {
 protected:
 	DsLabels *labels;
+	// Note: ensure all members are transferred by swap() method
 	int labelsCount;
 	// indexLimit is at least one greater than highest index in group, updated to exact index when queried
 	int indexLimit;
@@ -34,6 +35,9 @@ protected:
 
 public:
 	static DsLabelsGroup *create(DsLabels *labelsIn);
+
+	/** Swaps all data with other block_array. Cannot fail. */
+	void swap(DsLabelsGroup& other);
 
 	DsLabels *getLabels()
 	{
@@ -84,13 +88,34 @@ public:
 	/**
 	 * Ensure index is in the group.
 	 * Be careful that index is for this labels.
-	 * @return  CMZN_OK on success, otherwise error code
+	 * @return  CMZN_OK on success, CMZN_ALREADY_EXISTS if adding when already added,
+	 * CMZN_ERROR_NOT_FOUND if removing when already removed, any other error code on failure.
 	 */
 	int setIndex(DsLabelIndex index, bool inGroup);
 
 	DsLabelIndex getFirstIndex(DsLabelIterator &iterator);
 
-	bool incrementLabelIterator(DsLabelIterator &iterator);
+	/**
+	 * Create new iterator initially pointing before first label.
+	 * @return accessed iterator, or 0 if failed.
+	 */
+	DsLabelIterator *createLabelIterator();
+
+	/**
+	 * Increment index to next index in group.
+	 * Assumes index set to DS_LABEL_INDEX_INVALID (-1) before start.
+	 * @return true if index advanced to valid index in group, false if iteration over
+	 */
+	bool incrementIndex(DsLabelIndex& index)
+	{
+		++index;
+		return this->values.advanceIndexWhileFalse(index, this->labels->getIndexSize());
+	}
+
+	void invalidateLabelIterators()
+	{
+		this->labels->invalidateLabelIteratorsWithCondition(&this->values);
+	}
 
 };
 

@@ -104,13 +104,13 @@ private:
 		}
 
 		/** Finds the leaf node that should contain the object with the specified identifier */
-		BTreeNode *findLeafNode(owner_type& owner, identifier_type identifier)
+		const BTreeNode *findLeafNode(const owner_type& owner, identifier_type identifier) const
 		{
 			if (children)
 			{
 				BTreeNode **child = this->children + this->number_of_indices;
 				int i = number_of_indices;
-				object_type *object_index = this->indices + (this->number_of_indices - 1);
+				const object_type *object_index = this->indices + (this->number_of_indices - 1);
 				while ((i > 0) && !(owner.getIdentifier(*object_index) < identifier))
 				{
 					--object_index;
@@ -517,7 +517,7 @@ private:
 			int return_code = 0;
 			/* find the leaf node that should contain the object */
 			identifier_type add_identifier = owner.getIdentifier(object);
-			BTreeNode *leaf_node = (*index)->findLeafNode(owner, add_identifier);
+			BTreeNode *leaf_node = const_cast<BTreeNode*>((*index)->findLeafNode(owner, add_identifier));
 			/* check that the object is not already in the leaf node */
 			object_type *leaf_index = leaf_node->indices + (leaf_node->number_of_indices - 1);
 			int i = leaf_node->number_of_indices;
@@ -637,12 +637,11 @@ private:
 		/** Returns true if the <object> is in the BTreeNode. */
 		inline bool containsObject(owner_type &owner, object_type object)
 		{
-			
 			identifier_type identifier = owner.getIdentifier(object);
-			BTreeNode *leaf_node = findLeafNode(owner, identifier);
+			const BTreeNode *leaf_node = findLeafNode(owner, identifier);
 			if (leaf_node)
 			{
-				object_type *leaf_index = leaf_node->indices;
+				const object_type *leaf_index = leaf_node->indices;
 				int i = leaf_node->number_of_indices;
 				while ((i > 0) && (owner.getIdentifier(*leaf_index) < identifier))
 				{
@@ -658,12 +657,12 @@ private:
 		}
 
 		/** find the object with the specified identifier */
-		inline object_type findObjectByIdentifier(owner_type &owner, identifier_type identifier)
+		inline object_type findObjectByIdentifier(const owner_type &owner, identifier_type identifier) const
 		{
-			BTreeNode *leaf_node = findLeafNode(owner, identifier);
+			const BTreeNode *leaf_node = findLeafNode(owner, identifier);
 			if (leaf_node)
 			{
-				object_type *leaf_index = leaf_node->indices;
+				const object_type *leaf_index = leaf_node->indices;
 				int i = leaf_node->number_of_indices;
 				while ((i > 0) && (owner.getIdentifier(*leaf_index) < identifier))
 				{
@@ -910,7 +909,7 @@ private:
 				}
 				if (root_node)
 				{
-					this->node = root_node->findLeafNode(owner, owner.getIdentifier(object));
+					this->node = const_cast<BTreeNode *>(root_node->findLeafNode(owner, owner.getIdentifier(object)));
 					if (this->node)
 					{
 						object_type *leaf_index = this->node->indices;
@@ -960,8 +959,8 @@ public:
 
 	/**
 	 * A specialised iterator class which wraps a reference to a container and an
-	 * iterator in it, suitable for use from external API because the container
-	 * cannot be destroyed before the iterator.
+	 * iterator in it, suitable for use from external API. The container safely
+	 * invalidates all iterators when it is destroyed.
 	 */
 	struct ext_iterator
 	{
@@ -1260,7 +1259,7 @@ public:
 		return true;
 	}
 
-	inline object_type find_object_by_identifier(owner_type &owner, identifier_type identifier)
+	inline object_type find_object_by_identifier(const owner_type &owner, identifier_type identifier) const
 	{
 		if (index)
 			return index->findObjectByIdentifier(owner, identifier);

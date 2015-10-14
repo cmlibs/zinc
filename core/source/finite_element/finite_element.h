@@ -276,7 +276,8 @@ parameterized and the functions are known in terms of the parameterized
 variables.
 ==============================================================================*/
 
-DECLARE_LIST_TYPES(FE_element);
+DECLARE_LIST_CONDITIONAL_FUNCTION(FE_element);
+DECLARE_LIST_ITERATOR_FUNCTION(FE_element);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_element_face_type);
 
@@ -368,19 +369,6 @@ DESCRIPTION :
 used by all_nodes_in_list
 ==============================================================================*/
 {
-	struct LIST(FE_node) *node_list;
-};
-
-struct FE_element_list_FE_node_list_data
-/*******************************************************************************
-LAST MODIFIED : 1 June 2001
-
-DESCRIPTION :
-Structure for passing an FE_element list and an FE_node list to a list iterator
-or conditional function, eg. add_FE_element_using_node_list_to_list.
-==============================================================================*/
-{
-	struct LIST(FE_element) *element_list;
 	struct LIST(FE_node) *node_list;
 };
 
@@ -1936,12 +1924,6 @@ int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 	FE_value *xi,FE_value *increment, FE_value *step_size,
 	int *face_number_address, FE_value *xi_face);
 
-/**
- * List conditional function returning true if <element> has been
- * invalidated i.e. it has no mesh/identifier.
- */
-int FE_element_is_invalid(struct FE_element *element, void *dummy_void);
-
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
@@ -2071,12 +2053,6 @@ bool FE_element_has_no_parents(cmzn_element *element);
  * @return  Unaccessed pointer to the parent element, or 0 if none.
  */
 struct FE_element *get_FE_element_parent(struct FE_element *element, int index);
-
-/**
- * @return  true if any parent of element is in the element list.
- */
-bool cmzn_element_has_parent_in_list(cmzn_element *element,
-	LIST(cmzn_element) *elementList);
 
 int FE_element_get_first_parent(struct FE_element *element,
 	struct FE_element **parent_element_address, int *face_number_address);
@@ -2379,35 +2355,6 @@ int FE_element_number_is_in_Multi_range(struct FE_element *element,
 int FE_element_add_number_to_Multi_range(
 	struct FE_element *element, void *multi_range_void);
 
-int FE_element_is_in_list(struct FE_element *element, void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns true if <element> is in <element_list>.
-==============================================================================*/
-
-int FE_element_is_not_in_list(struct FE_element *element,
-	void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns true if <element> is not in <element_list>.
-==============================================================================*/
-
-int FE_element_is_wholly_within_element_list_tree(
-	struct FE_element *element, void *element_list_void);
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Returns true if <element> is either in <element_list> or has all its parents
-directly or indirectly in the <element_list> tree. Used to check if elements
-will be destroyed, since faces and lines are destroyed with their parents if
-they are not also faces or lines of other elements not being destroyed.
-==============================================================================*/
-
 /**
  * Merges/adds fields from <source> into <destination>. Where existing fields
  * in <destination> are passed in <source>, the <source> definition and values
@@ -2422,17 +2369,11 @@ they are not also faces or lines of other elements not being destroyed.
 int merge_FE_element(struct FE_element *destination, struct FE_element *source,
 	struct LIST(FE_field) *changed_fe_field_list);
 
-/***************************************************************************//**
+/**
  * Writes to the console the element identifier and details of the fields
  * defined over it.
  */
 int list_FE_element(struct FE_element *element);
-
-PROTOTYPE_LIST_FUNCTIONS(FE_element);
-
-PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element,identifier,int);
-
-PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator);
 
 /***************************************************************************//**
  * Internal variant of public cmzn_elementiterator_next() which does not
@@ -2443,11 +2384,6 @@ PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator);
  */
 cmzn_element_id cmzn_elementiterator_next_non_access(
 	cmzn_elementiterator_id element_iterator);
-
-/***************************************************************************//**
- * List statistics about btree efficiency for element list.
- */
-void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_list);
 
 int theta_closest_in_xi1(struct FE_element_field_component *component,
 	struct FE_element *element,struct FE_field *field,FE_value time,

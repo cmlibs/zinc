@@ -45,12 +45,6 @@ int cmzn_mesh_group_add_element_faces(cmzn_mesh_group_id mesh_group,
 int cmzn_mesh_group_remove_element_faces(cmzn_mesh_group_id mesh_group,
 	cmzn_element_id element);
 
-/** Internal use only.
- * Create a related element list to that in mesh.
- * @return  New element list.
- */
-struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mesh);
-
 /** Internal use only
  * @return non-accessed fe_region for this mesh.
  */

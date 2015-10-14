@@ -960,39 +960,6 @@ struct FE_element
 	}
 }; /* struct FE_element */
 
-/** can tweak this to vary performance */
-const int CMZN_ELEMENT_BTREE_ORDER = 10;
-
-typedef cmzn_btree<cmzn_element,int,CMZN_ELEMENT_BTREE_ORDER> cmzn_set_cmzn_element;
-
-struct cmzn_elementiterator : public cmzn_set_cmzn_element::ext_iterator
-{
-	int access_count;
-
-	cmzn_elementiterator(cmzn_set_cmzn_element *container) :
-		cmzn_set_cmzn_element::ext_iterator(container),
-		access_count(1)
-	{
-	}
-
-	cmzn_elementiterator_id access()
-	{
-		++access_count;
-		return this;
-	}
-
-	static int deaccess(cmzn_elementiterator_id &iterator)
-	{
-		if (!iterator)
-			return 0;
-		--(iterator->access_count);
-		if (iterator->access_count <= 0)
-			delete iterator;
-		iterator = 0;
-		return 1;
-	}
-};
-
 /**
  * @see struct FE_element_type_node_sequence.
  */
@@ -20951,52 +20918,42 @@ void FE_element_invalidate(struct FE_element *element)
 	}
 }
 
-int FE_element_is_invalid(struct FE_element *element, void *dummy_void)
-{
-	USE_PARAMETER(dummy_void);
-	if ((element) && (element->fields))
-		return 0;
-	return 1;
-}
-
 DECLARE_OBJECT_FUNCTIONS(FE_element)
-
-DECLARE_INDEXED_LIST_BTREE_FUNCTIONS(FE_element)
-DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_BTREE_FUNCTION(FE_element,identifier,int)
-DECLARE_INDEXED_LIST_BTREE_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier)
-DECLARE_CREATE_INDEXED_LIST_BTREE_ITERATOR_FUNCTION(FE_element,cmzn_elementiterator)
 
 cmzn_elementiterator_id cmzn_elementiterator_access(cmzn_elementiterator_id element_iterator)
 {
 	if (element_iterator)
-		return element_iterator->access();
+		return cmzn::Access(element_iterator);
 	return 0;
 }
 
 int cmzn_elementiterator_destroy(cmzn_elementiterator_id *element_iterator_address)
 {
 	if (element_iterator_address)
-		return cmzn_elementiterator::deaccess(*element_iterator_address);
-	return 0;
+	{
+		cmzn::Deaccess(*element_iterator_address);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_element_id cmzn_elementiterator_next(cmzn_elementiterator_id element_iterator)
 {
 	if (element_iterator)
-		return element_iterator->next();
+	{
+		cmzn_element *element = element_iterator->nextElement();
+		if (element)
+			element->access();
+		return element;
+	}
 	return 0;
 }
 
 cmzn_element_id cmzn_elementiterator_next_non_access(cmzn_elementiterator_id element_iterator)
 {
 	if (element_iterator)
-		return element_iterator->next_non_access();
+		return element_iterator->nextElement();
 	return 0;
-}
-
-void FE_element_list_write_btree_statistics(struct LIST(FE_element) *element_list)
-{
-	LIST_BTREE_STATISTICS(FE_element,element_list);
 }
 
 /**
@@ -23886,18 +23843,6 @@ struct FE_element *get_FE_element_parent(struct FE_element *element, int index)
 	return 0;
 }
 
-bool cmzn_element_has_parent_in_list(cmzn_element *element,
-	LIST(cmzn_element) *elementList)
-{
-	if ((element) && (elementList))
-	{
-		for (int i = 0; i < element->number_of_parents; i++)
-			if (IS_OBJECT_IN_LIST(cmzn_element)(element->parents[i], elementList))
-				return true;
-	}
-	return false;
-}
-
 int FE_element_get_first_parent(struct FE_element *element,
 	struct FE_element **parent_element_address, int *face_number_address)
 {
@@ -25172,104 +25117,6 @@ int FE_element_add_number_to_Multi_range(
 	}
 	return (return_code);
 }
-
-int FE_element_is_in_list(struct FE_element *element, void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns true if <element> is in <element_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_is_in_list);
-	if (element && (element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		return_code = IS_OBJECT_IN_LIST(FE_element)(element,element_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_in_list */
-
-int FE_element_is_not_in_list(struct FE_element *element,
-	void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 14 January 2003
-
-DESCRIPTION :
-Returns true if <element> is not in <element_list>.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_is_not_in_list);
-	if (element && (element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		return_code = !IS_OBJECT_IN_LIST(FE_element)(element, element_list);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_not_in_list.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_not_in_list */
-
-int FE_element_is_wholly_within_element_list_tree(
-	struct FE_element *element, void *element_list_void)
-/*******************************************************************************
-LAST MODIFIED : 1 March 2001
-
-DESCRIPTION :
-Returns true if <element> is either in <element_list> or has all its parents
-directly or indirectly in the <element_list> tree. Used to check if elements
-will be destroyed, since faces and lines are destroyed with their parents if
-they are not also faces or lines of other elements not being destroyed.
-==============================================================================*/
-{
-	int i, return_code;
-	struct LIST(FE_element) *element_list;
-
-	ENTER(FE_element_is_wholly_within_element_list_tree);
-	if (element && (element_list = (struct LIST(FE_element) *)element_list_void))
-	{
-		return_code = 1;
-		if (!IS_OBJECT_IN_LIST(FE_element)(element, element_list))
-		{
-			for (i = 0; i < element->number_of_parents; i++)
-			{
-				if (!FE_element_is_wholly_within_element_list_tree(
-					element->parents[i], element_list_void))
-				{
-					return_code = 0;
-					break;
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_wholly_within_element_list_tree.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_wholly_within_element_list_tree */
 
 bool FE_elements_can_merge_faces(int faceCount,
 	FE_mesh &target_face_fe_mesh, struct FE_element *targetElement,
@@ -27181,18 +27028,6 @@ int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 		return (0 == element->number_of_parents);
 	return 0;
 }
-
-struct FE_element_parent_has_field_data
-/*******************************************************************************
-LAST MODIFIED : 12 November 2002
-
-DESCRIPTION :
-Used by FE_element_parent_has_field.
-==============================================================================*/
-{
-	struct FE_field *field;
-	struct LIST(FE_element) *element_list;
-}; /* struct FE_element_parent_has_field_data */
 
 int FE_element_or_parent_has_field(struct FE_element *element,
 	struct FE_field *field,

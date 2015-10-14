@@ -2912,7 +2912,6 @@ from a previous call to this function.
  * If the element_template has nodes, values or scale factors, those
  * sections are mandatory. Faces are optional.
  */
-
 static struct FE_element *read_FE_element(struct IO_stream *input_file,
 	FE_element_template *element_template, FE_mesh *fe_mesh,
 	FE_nodeset *fe_nodeset, struct FE_field_order_info *field_order_info,

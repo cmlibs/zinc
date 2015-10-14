@@ -176,13 +176,6 @@ struct DsMapIndexing : public cmzn::RefCounted
 			return true;
 		}
 
-		inline bool incrementValuesIterator()
-		{
-			if (labelsGroup)
-				return labelsGroup->incrementLabelIterator(*valuesIterator);
-			return valuesIterator->increment();
-		}
-
 		/**
 		 * @param innerIndexing unless true, advance to first value
 		 */
@@ -197,8 +190,11 @@ struct DsMapIndexing : public cmzn::RefCounted
 				return true;
 			}
 			// must prove there is at least one value in indexing	
-			if ((this->valuesIterator = this->labels->createLabelIterator()) &&
-				this->incrementValuesIterator())
+			if (this->labelsGroup)
+				this->valuesIterator = this->labelsGroup->createLabelIterator();
+			else
+				this->valuesIterator = this->labels->createLabelIterator();
+			if ((this->valuesIterator) && this->valuesIterator->increment())			
 			{
 				if (innerIndexing)
 					this->valuesIterator->setIndex(DS_LABEL_INDEX_INVALID); // so next increment is to first
@@ -227,11 +223,11 @@ struct DsMapIndexing : public cmzn::RefCounted
 				}
 				return this->firstIndexValid;
 			}
-			if (this->incrementValuesIterator())
+			if (this->valuesIterator->increment())
 				return true;
 			// set before start and iterate to first valid object
 			valuesIterator->setIndex(DS_LABEL_INDEX_INVALID);
-			this->incrementValuesIterator();
+			this->valuesIterator->increment();
 			return false;
 		}
 

@@ -194,6 +194,14 @@ public:
 		return 0;
 	}
 
+	virtual void push_highlight_functor()
+	{
+	}
+
+	virtual void pop_highlight_functor()
+	{
+	}
+
 }; /* class Render_graphics */
 
 class Render_graphics_compile_members : public Render_graphics

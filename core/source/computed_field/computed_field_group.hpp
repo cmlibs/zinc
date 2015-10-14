@@ -192,7 +192,7 @@ public:
 	int setSubelementHandlingMode(cmzn_field_group_subelement_handling_mode mode);
 
 	// for use by subobject group only. Assumes within begin/end change if creating
-	Computed_field_element_group *getElementGroupPrivate(int dimension, bool create = false);
+	Computed_field_element_group *getElementGroupPrivate(FE_mesh *fe_mesh, bool create = false);
 
 	// for use by subobject group only. Assumes within begin/end change if creating
 	Computed_field_node_group *getNodeGroupPrivate(cmzn_field_domain_type domain_type, bool create = false);

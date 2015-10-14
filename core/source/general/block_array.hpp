@@ -87,15 +87,28 @@ public:
 		blockCount = 0;
 	}
 
+	IndexType getBlockCount() const
+	{
+		return this->blockCount;
+	}
+
+	IndexType getBlockLength() const
+	{
+		return this->blockLength;
+	}
+
 	/** Swaps all data with other block_array. Cannot fail. */
 	void swap(block_array& other)
 	{
-		EntryType **temp_blocks = blocks;
-		IndexType temp_blockCount = blockCount;
-		blocks = other.blocks;
-		blockCount = other.blockCount;
+		EntryType **temp_blocks = this->blocks;
+		IndexType temp_blockCount = this->blockCount;
+		IndexType temp_blockLength = this->blockLength;
+		this->blocks = other.blocks;
+		this->blockCount = other.blockCount;
+		this->blockLength = other.blockLength;
 		other.blocks = temp_blocks;
 		other.blockCount = temp_blockCount;
+		other.blockLength = temp_blockLength;
 	}
 
 	/**
@@ -216,6 +229,8 @@ public:
 		block_array<IndexType, unsigned int, intBlockLength>::swap(other);
 	}
 
+	using block_array<IndexType, unsigned int, intBlockLength>::getBlockCount;
+	using block_array<IndexType, unsigned int, intBlockLength>::getBlockLength;
 	using block_array<IndexType, unsigned int, intBlockLength>::getValue;
 	using block_array<IndexType, unsigned int, intBlockLength>::setValue;
 	using block_array<IndexType, unsigned int, intBlockLength>::setValues;
@@ -245,11 +260,50 @@ public:
 	bool getBool(IndexType index) const
 	{
 		IndexType intIndex = index >> 5;
-		unsigned int intValue = 0;
+		unsigned int intValue;
 		if (getValue(intIndex, intValue))
 		{
 			unsigned int mask = (1 << (index & 0x1F));
 			return (0 != (intValue & mask));
+		}
+		return false;
+	}
+
+	/**
+	 * Advance index while bool array value is false.
+	 * Efficiently skips whole blocks, and 32-bit zeroes within blocks.
+	 * @param index  The index to advance while bool value is false.
+	 * @param limit  One past the last index to check.
+	 * @return  True if index found, false if reached limit.
+	 */
+	bool advanceIndexWhileFalse(IndexType& index, IndexType limit)
+	{
+		const IndexType blockIndexSize = this->getBlockLength()*32;
+		const IndexType blockLimit = this->getBlockCount()*blockIndexSize;
+		const IndexType useLimit = (limit < blockLimit) ? limit : blockLimit;
+		while (index < useLimit)
+		{
+			const IndexType intIndex = index >> 5;
+			unsigned int intValue;
+			if (!getValue(intIndex, intValue))
+				index = ((index / blockIndexSize) + 1)*blockIndexSize; // advance to next block
+			else
+			{
+				unsigned int mask = (1 << (index & 0x1F));
+				if (intValue < mask)
+					index = (intIndex + 1) << 5; // advance to next int index
+				else
+				{
+					do
+					{
+						if (intValue & mask)
+							return true;
+						++index;
+						mask <<= 1;
+					}
+					while (index & 0x1F);
+				}
+			}
 		}
 		return false;
 	}

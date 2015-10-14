@@ -2064,7 +2064,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 	cmzn_material *material, cmzn_material *secondary_material,
 	struct cmzn_spectrum *spectrum,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
-	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
+	int draw_selected,
 	Render_graphics_opengl *renderer, bool &lighting_on,
 	Graphics_object_rendering_type rendering_type, bool pick_object_id)
 	/*******************************************************************************
@@ -2091,6 +2091,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 	int draw_all, name_selected = 0, return_code = 1;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+	SubObjectGroupHighlightFunctor *highlight_functor = renderer->highlight_functor;
 
 	if (object && object->vertex_array)
 	{
@@ -2163,6 +2164,8 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 				{
 					render_data=spectrum_start_renderGL(spectrum,material,data_values_per_vertex);
 				}
+				// disable highlighting beneath glyph set level
+				renderer->push_highlight_functor();
 				for (nodeset_index = 0; nodeset_index < nodeset_count; nodeset_index++)
 				{
 					unsigned int index_start = 0, index_count = 0;
@@ -2600,6 +2603,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 					}
 					return_code=1;
 				}
+				renderer->pop_highlight_functor();
 				if (data_buffer)
 				{
 					spectrum_end_renderGL(spectrum,render_data);
@@ -3284,7 +3288,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						draw_vertexBufferGlyphset(object,
 							material, secondary_material, spectrum,
 							//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
-							(draw_selected > 0 ), renderer->highlight_functor,
+							(draw_selected > 0 ),
 							renderer, lighting_on, rendering_type, picking_names);
 #if defined (OPENGL_API)
 						if (picking_names)

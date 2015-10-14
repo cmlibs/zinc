@@ -22,13 +22,26 @@ DsLabelsGroup::DsLabelsGroup(DsLabels *labelsIn) :
 
 DsLabelsGroup::~DsLabelsGroup()
 {
+	if (this->labels)
+		this->labels->invalidateLabelIteratorsWithCondition(&(this->values));
 }
 
 DsLabelsGroup *DsLabelsGroup::create(DsLabels *labelsIn)
 {
 	return new DsLabelsGroup(labelsIn);
 }
-	
+
+void DsLabelsGroup::swap(DsLabelsGroup& other)
+{
+	this->values.swap(other.values);
+	int temp_labelsCount = this->labelsCount;
+	int temp_indexLimit = this->indexLimit;
+	this->labelsCount = other.labelsCount;
+	this->indexLimit = other.indexLimit;
+	other.labelsCount = temp_labelsCount;
+	other.indexLimit = temp_indexLimit;
+}
+
 void DsLabelsGroup::clear()
 {
 	this->values.clear();
@@ -58,8 +71,11 @@ int DsLabelsGroup::setIndex(DsLabelIndex index, bool inGroup)
 			{
 				--labelsCount;
 			}
+			return CMZN_OK;
 		}
-		return CMZN_OK;
+		else if (inGroup)
+			return CMZN_ERROR_ALREADY_EXISTS;
+		return CMZN_ERROR_NOT_FOUND;
 	}
 	display_message(ERROR_MESSAGE, "DsLabelsGroup::setIndex.  Failed to set bool");
 	return CMZN_ERROR_MEMORY;
@@ -78,16 +94,7 @@ DsLabelIndex DsLabelsGroup::getFirstIndex(DsLabelIterator &iterator)
 	return index;
 }
 
-bool DsLabelsGroup::incrementLabelIterator(DsLabelIterator &iterator)
+DsLabelIterator *DsLabelsGroup::createLabelIterator()
 {
-	if (iterator.getLabels() != this->labels)
-		return 0;
-	// this can be made more efficient
-	DsLabelIndex index;
-	while ((index = iterator.nextIndex()) != DS_LABEL_INDEX_INVALID)
-	{
-		if (this->values.getBool(index))
-			return true;
-	}
-	return false;
+	return this->labels->createLabelIterator(&(this->values));
 }

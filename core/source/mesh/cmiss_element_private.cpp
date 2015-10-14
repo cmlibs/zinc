@@ -21,13 +21,13 @@
 #include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "computed_field/computed_field_finite_element.h"
+#include "computed_field/computed_field_subobject_group.hpp"
+#include "computed_field/differential_operator.hpp"
 #include "computed_field/field_module.hpp"
 #include "general/enumerator_conversion.hpp"
 #include "mesh/cmiss_element_private.hpp"
 #include <map>
 #include <vector>
-#include "computed_field/computed_field_subobject_group.hpp"
-#include "computed_field/differential_operator.hpp"
 
 namespace {
 
@@ -896,14 +896,19 @@ protected:
 	int access_count;
 
 	cmzn_mesh(cmzn_field_element_group_id group) :
-		fe_mesh(FE_region_find_FE_mesh_by_dimension(
-			cmzn_region_get_FE_region(Computed_field_get_region(cmzn_field_element_group_base_cast(group))),
-			Computed_field_element_group_core_cast(group)->getDimension())->access()),
+		fe_mesh(Computed_field_element_group_core_cast(group)->get_fe_mesh()->access()),
 		group(group),
 		access_count(1)
 	{
-		// GRC cmzn_field_element_group_access missing:
+		// cmzn_field_element_group_access missing:
 		cmzn_field_access(cmzn_field_element_group_base_cast(group));
+	}
+
+	~cmzn_mesh()
+	{
+		if (group)
+			cmzn_field_element_group_destroy(&group);
+		FE_mesh::deaccess(this->fe_mesh);
 	}
 
 public:
@@ -966,16 +971,21 @@ public:
 		return new cmzn_elementtemplate(this->fe_mesh);
 	}
 
-	cmzn_elementiterator_id createIterator()
+	cmzn_elementiterator_id createElementiterator()
 	{
 		if (group)
-			return Computed_field_element_group_core_cast(group)->createIterator();
+			return Computed_field_element_group_core_cast(group)->createElementiterator();
 		return this->fe_mesh->createElementiterator();
 	}
 
 	int destroyAllElements()
 	{
-		return destroyElementsConditional(/*conditional_field*/0);
+		if (this->group)
+		{
+			Computed_field_element_group *element_group = Computed_field_element_group_core_cast(this->group);
+			return this->fe_mesh->destroyElementsInGroup(element_group->getLabelsGroup());
+		}
+		return this->fe_mesh->destroyAllElements();
 	}
 
 	int destroyElement(cmzn_element_id element)
@@ -987,10 +997,30 @@ public:
 
 	int destroyElementsConditional(cmzn_field_id conditional_field)
 	{
-		struct LIST(FE_element) *remove_element_list = createElementListWithCondition(conditional_field);
-		int return_code = this->fe_mesh->remove_FE_element_list(remove_element_list);
-		DESTROY(LIST(FE_element))(&remove_element_list);
-		return return_code;
+		if (!conditional_field)
+			return CMZN_ERROR_ARGUMENT;
+		DsLabelsGroup *labelsGroup = this->fe_mesh->createLabelsGroup();
+		if (labelsGroup)
+		{
+			cmzn_region_id region = FE_region_get_cmzn_region(this->fe_mesh->get_FE_region());
+			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+			cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
+			cmzn_elementiterator_id iterator = this->createElementiterator();
+			cmzn_element_id element = 0;
+			while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
+			{
+				cmzn_fieldcache_set_element(cache, element);
+				if (cmzn_field_evaluate_boolean(conditional_field, cache))
+					labelsGroup->setIndex(get_FE_element_index(element), true);
+			}
+			cmzn::Deaccess(iterator);
+			cmzn_fieldcache_destroy(&cache);
+			cmzn_fieldmodule_destroy(&fieldmodule);
+			int return_code = this->fe_mesh->destroyElementsInGroup(*labelsGroup);
+			cmzn::Deaccess(labelsGroup);
+			return return_code;
+		}
+		return CMZN_ERROR_GENERAL;
 	}
 
 	cmzn_element_id findElementByIdentifier(int identifier) const
@@ -1061,7 +1091,7 @@ public:
 	{
 		if (group)
 			return Computed_field_element_group_core_cast(group)->getSize();
-		return this->fe_mesh->get_number_of_FE_elements();
+		return this->fe_mesh->getSize();
 	}
 
 	int isGroup()
@@ -1079,34 +1109,6 @@ public:
 	{
 		return ((this->fe_mesh == other_mesh.fe_mesh) &&
 			(group == other_mesh.group));
-	}
-
-protected:
-	~cmzn_mesh()
-	{
-		if (group)
-			cmzn_field_element_group_destroy(&group);
-		FE_mesh::deaccess(this->fe_mesh);
-	}
-
-	struct LIST(FE_element) *createElementListWithCondition(cmzn_field_id conditional_field)
-	{
-		cmzn_region_id region = FE_region_get_cmzn_region(this->fe_mesh->get_FE_region());
-		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-		cmzn_fieldcache_id cache = cmzn_fieldmodule_create_fieldcache(fieldmodule);
-		cmzn_elementiterator_id iterator = createIterator();
-		cmzn_element_id element = 0;
-		struct LIST(FE_element) *element_list = this->fe_mesh->createRelatedElementList();
-		while (0 != (element = cmzn_elementiterator_next_non_access(iterator)))
-		{
-			cmzn_fieldcache_set_element(cache, element);
-			if ((!conditional_field) || cmzn_field_evaluate_boolean(conditional_field, cache))
-				ADD_OBJECT_TO_LIST(FE_element)(element, element_list);
-		}
-		cmzn_elementiterator_destroy(&iterator);
-		cmzn_fieldcache_destroy(&cache);
-		cmzn_fieldmodule_destroy(&fieldmodule);
-		return element_list;
 	}
 
 };
@@ -1266,7 +1268,7 @@ cmzn_elementiterator_id cmzn_mesh_create_elementiterator(
 	cmzn_mesh_id mesh)
 {
 	if (mesh)
-		return mesh->createIterator();
+		return mesh->createElementiterator();
 	return 0;
 }
 
@@ -1300,9 +1302,9 @@ int cmzn_mesh_destroy_element(cmzn_mesh_id mesh, cmzn_element_id element)
 int cmzn_mesh_destroy_elements_conditional(cmzn_mesh_id mesh,
 	cmzn_field_id conditional_field)
 {
-	if (mesh && conditional_field)
+	if (mesh)
 		return mesh->destroyElementsConditional(conditional_field);
-	return 0;
+	return CMZN_ERROR_ARGUMENT;
 }
 
 cmzn_element_id cmzn_mesh_find_element_by_identifier(cmzn_mesh_id mesh,
@@ -1469,13 +1471,6 @@ cmzn_mesh_group_id cmzn_field_element_group_get_mesh_group(
 {
 	if (element_group)
 		return new cmzn_mesh_group(element_group);
-	return 0;
-}
-
-struct LIST(FE_element) *cmzn_mesh_create_element_list_internal(cmzn_mesh_id mesh)
-{
-	if (mesh)
-		return mesh->get_FE_mesh()->createRelatedElementList();
 	return 0;
 }
 

@@ -1780,41 +1780,37 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 		struct CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(fe_region);
 		int field_change_summary;
 		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(fe_field_changes, &field_change_summary);
-		bool check_field_wrappers = (0 != (field_change_summary & (~CHANGE_LOG_OBJECT_REMOVED(FE_field))));
-		bool add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
-		bool add_xi_field = FE_region_need_add_xi_field(fe_region);
-		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
-		{
-			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-			MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
 
-			if (check_field_wrappers)
-			{
-				CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
-					FE_field_to_Computed_field_change, (void *)fieldmodule);
-			}
-			if (add_cmiss_number_field)
-			{
-				const char *cmiss_number_field_name = "cmiss_number";
-				cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
-				if (!field)
-				{
-					field = Computed_field_create_cmiss_number(fieldmodule);
-					cmzn_field_set_name(field, cmiss_number_field_name);
-					cmzn_field_set_managed(field, true);
-				}
-				cmzn_field_destroy(&field);
-			}
-			if (add_xi_field)
-			{
-				cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
-				cmzn_field_destroy(&xi_field);
-			}
-			// force field update for changes to nodes/elements etc.:
-			MANAGER_EXTERNAL_CHANGE(Computed_field)(region->field_manager);
-			MANAGER_END_CACHE(Computed_field)(region->field_manager);
-			cmzn_fieldmodule_destroy(&fieldmodule);
+		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+		MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
+
+		// check field wrappers?
+		if ((0 != (field_change_summary & (~CHANGE_LOG_OBJECT_REMOVED(FE_field)))))
+		{
+			CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
+				FE_field_to_Computed_field_change, (void *)fieldmodule);
 		}
+		if (FE_region_need_add_cmiss_number_field(fe_region))
+		{
+			const char *cmiss_number_field_name = "cmiss_number";
+			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
+			if (!field)
+			{
+				field = Computed_field_create_cmiss_number(fieldmodule);
+				cmzn_field_set_name(field, cmiss_number_field_name);
+				cmzn_field_set_managed(field, true);
+			}
+			cmzn_field_destroy(&field);
+		}
+		if (FE_region_need_add_xi_field(fe_region))
+		{
+			cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
+			cmzn_field_destroy(&xi_field);
+		}
+		// force field update for changes to nodes/elements etc.:
+		MANAGER_EXTERNAL_CHANGE(Computed_field)(region->field_manager);
+		MANAGER_END_CACHE(Computed_field)(region->field_manager);
+		cmzn_fieldmodule_destroy(&fieldmodule);
 #if 0
 		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{

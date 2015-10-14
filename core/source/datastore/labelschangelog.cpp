@@ -9,6 +9,7 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "zinc/status.h"
 #include "datastore/labelschangelog.hpp"
 
 DsLabelsChangeLog::DsLabelsChangeLog(DsLabels *labelsIn, int maxChangesIn) :
@@ -36,9 +37,12 @@ void DsLabelsChangeLog::setIndexChange(DsLabelIndex index, int change)
 	this->changeSummary |= change;
 	if (!this->allChange)
 	{
-		if ((!DsLabelsGroup::setIndex(index, true)) ||
-				((this->maxChanges >= 0) && ((this->getSize() > maxChanges))))
-			this->setAllChange(this->changeSummary);
+		const int result = DsLabelsGroup::setIndex(index, true);
+		if (result != CMZN_ERROR_ALREADY_EXISTS)
+		{
+			if ((result != CMZN_OK) || (this->maxChanges >= 0) && (this->getSize() > maxChanges))
+				this->setAllChange(this->changeSummary);
+		}
 	}
 }
 

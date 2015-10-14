@@ -37,7 +37,8 @@ public:
 
 	int use_display_list;
 
-	SubObjectGroupHighlightFunctor *highlight_functor;
+	// use second pointer to save highlight_functor while it is disabled
+	SubObjectGroupHighlightFunctor *highlight_functor, *saved_highlight_functor;
 
 private:
 	// scale factor multiplying graphics render_line_width and render_point_size
@@ -60,6 +61,7 @@ public:
 		number_of_layers(1),
 		use_display_list(0),
 		highlight_functor(NULL),
+		saved_highlight_functor(NULL),
 		point_unit_size_pixels(1.0)
 	{
 	}
@@ -113,6 +115,26 @@ public:
 			delete highlight_functor;
 		highlight_functor = functor;
 		return 1;
+	}
+
+	// store current highlight_functor, if any, disabling highlighting if there is one
+	virtual void push_highlight_functor()
+	{
+		if (this->highlight_functor)
+		{
+			this->saved_highlight_functor = this->highlight_functor;
+			this->highlight_functor = 0;
+		}
+	}
+
+	// restore original highlight_functor, if any, enabling highlighting if there is one
+	virtual void pop_highlight_functor()
+	{
+		if (this->saved_highlight_functor)
+		{
+			this->highlight_functor = this->saved_highlight_functor;
+			this->saved_highlight_functor = 0;
+		}
 	}
 
 	double get_point_unit_size_pixels() const

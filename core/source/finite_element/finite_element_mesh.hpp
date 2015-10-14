@@ -173,10 +173,10 @@ class FE_mesh
 	// element shape and face/parent mappings
 	unsigned int elementShapeFacesCount;
 	ElementShapeFaces **elementShapeFacesArray;
-	block_array<DsLabelIndex, unsigned char> elementShapeMap; // map element -> shape faces index, if not all elements have same shape
+	block_array<DsLabelIndex, unsigned char> elementShapeMap; // map element index -> shape faces index, if not all elements have same shape
 
-	// set of elements in this mesh
-	struct LIST(FE_element) *elementList;
+	// map element index -> FE_element (accessed)
+	block_array<DsLabelIndex, FE_element*, 128> fe_elements;
 	struct LIST(FE_element_field_info) *element_field_info_list;
 
 	FE_mesh *parentMesh; // not accessed
@@ -197,6 +197,9 @@ class FE_mesh
 	// scale factor sets in use. Used as identifier for finding scale factor
 	// arrays stored with elements 
 	std::vector<cmzn_mesh_scale_factor_set*> scale_factor_sets;
+
+	// list of element iterators to invalidate when mesh destroyed
+	cmzn_elementiterator *activeElementIterators;
 
 	int access_count;
 
@@ -368,7 +371,11 @@ public:
 
 	bool is_FE_field_in_use(struct FE_field *fe_field);
 
-	int get_number_of_FE_elements();
+	/** get size i.e. number of elements in mesh */
+	int getSize() const
+	{
+		return this->labels.getSize();
+	}
 
 	inline DsLabelIdentifier getElementIdentifier(DsLabelIndex index) const
 	{
@@ -378,8 +385,10 @@ public:
 	/** @ return  Non-accessed element object at index */
 	inline FE_element *getElement(DsLabelIndex index) const
 	{
-		// will be made more efficient when there is a table from index to elements
-		return this->findElementByIdentifier(this->getElementIdentifier(index));
+		FE_element *element = 0;
+		if (index >= 0)
+			this->fe_elements.getValue(index, element);
+		return element;
 	}
 
 	DsLabelIdentifier get_next_FE_element_identifier(DsLabelIdentifier start_identifier)
@@ -389,22 +398,34 @@ public:
 
 	void list_btree_statistics();
 
-	bool containsElement(FE_element *element);
+	bool containsElement(FE_element *element) const
+	{
+		return (FE_element_get_FE_mesh(element) == this) && (get_FE_element_index(element) >= 0);
+	}
+
+	DsLabelIndex findIndexByIdentifier(DsLabelIdentifier identifier) const
+	{
+		return this->labels.findLabelByIdentifier(identifier);
+	}
 
 	/** @return  Non-accessed element */
 	FE_element *findElementByIdentifier(DsLabelIdentifier identifier) const
 	{
-		return FIND_BY_IDENTIFIER_IN_LIST(FE_element, identifier)(identifier, this->elementList);
+		return this->getElement(this->labels.findLabelByIdentifier(identifier));
 	}
 
-	cmzn_elementiterator_id createElementiterator();
+	void removeElementIterator(cmzn_elementiterator *iterator); // private, but needed by cmzn_elementiterator
+
+	cmzn_elementiterator *createElementiterator(DsLabelsGroup *labelsGroup = 0);
 
 	struct FE_element *get_first_FE_element_that(
 		LIST_CONDITIONAL_FUNCTION(FE_element) *conditional_function, void *user_data_void);
 
 	int for_each_FE_element(LIST_ITERATOR_FUNCTION(FE_element) iterator_function, void *user_data_void);
 
-	struct LIST(FE_element) *createRelatedElementList();
+	DsLabelsGroup *createLabelsGroup();
+
+	bool elementHasParentInLabelsGroup(DsLabelIndex index, DsLabelsGroup &labelsGroup);
 
 	int change_FE_element_identifier(struct FE_element *element, int new_identifier);
 
@@ -429,11 +450,60 @@ public:
 
 	int remove_FE_element(struct FE_element *element);
 
-	int remove_FE_element_list(struct LIST(FE_element) *remove_element_list);
+	int destroyAllElements();
+
+	int destroyElementsInGroup(DsLabelsGroup& labelsGroup);
 
 	bool canMerge(FE_mesh &source);
 
 	int merge(FE_mesh &source);
+};
+
+struct cmzn_elementiterator : public cmzn::RefCounted
+{
+	friend class FE_mesh;
+
+private:
+	FE_mesh *fe_mesh;
+	DsLabelIterator *iter;
+	cmzn_elementiterator *nextIterator; // for linked list of active iterators in FE_mesh
+
+	// takes ownership of iter_in access count
+	cmzn_elementiterator(FE_mesh *fe_mesh_in, DsLabelIterator *iter_in) :
+		fe_mesh(fe_mesh_in),
+		iter(iter_in),
+		nextIterator(0)
+	{
+	}
+
+	virtual ~cmzn_elementiterator()
+	{
+		if (this->fe_mesh)
+			this->fe_mesh->removeElementIterator(this);
+		cmzn::Deaccess(this->iter);
+	}
+
+	void invalidate()
+	{
+		// sufficient to clear fe_mesh as only called from fe_mesh destructor
+		this->fe_mesh = 0;
+	}
+
+	template<class REFCOUNTED>
+		friend inline void cmzn::Deaccess(REFCOUNTED*& elementIterator);
+
+public:
+
+	/** @return  Non-accessed element or 0 if iteration ended or iterator invalidated */
+	FE_element *nextElement()
+	{
+		if (this->fe_mesh)
+		{
+			const DsLabelIndex index = this->iter->nextIndex();
+			return this->fe_mesh->getElement(index);
+		}
+		return 0;
+	}
 };
 
 #endif /* !defined (FINITE_ELEMENT_MESH_HPP) */

@@ -22,39 +22,21 @@ DsLabels::DsLabels() :
 	lastIdentifier(DS_LABEL_IDENTIFIER_INVALID),
 	labelsCount(0),
 	indexSize(0),
-	activeIterators(0),
-	inactiveIterators(0)
+	activeIterators(0)
 {
 };
 
 DsLabels::~DsLabels()
 {
-	DsLabelIterator *iterator;
-	while (inactiveIterators)
-	{
-		iterator = inactiveIterators->next;
-		delete inactiveIterators;
-		inactiveIterators = iterator;
-	}
 	// can't free externally held objects, hence just invalidate for safety
-	iterator = activeIterators;
-	while (iterator)
-	{
-		iterator->invalidate();
-		iterator = iterator->next;
-	}
+	this->invalidateLabelIterators();
 }
 
 /** restore to initial empty, contiguous state. Keeps current name, if any */
 void DsLabels::clear()
 {
 	// can't free externally held objects, hence just invalidate for safety
-	DsLabelIterator *iterator = this->activeIterators;
-	while (iterator)
-	{
-		iterator->invalidate();
-		iterator = iterator->next;
-	}
+	this->invalidateLabelIterators();
 	this->contiguous = true;
 	this->firstFreeIdentifier = 1;
 	this->firstIdentifier = DS_LABEL_IDENTIFIER_INVALID;
@@ -111,6 +93,7 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 {
 	if (identifier < 0)
 		return DS_LABEL_INDEX_INVALID;
+	this->invalidateLabelIterators();
 	DsLabelIndex index = DS_LABEL_INDEX_INVALID;
 	if (this->contiguous)
 	{
@@ -121,7 +104,7 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 		else if ((identifier < this->firstIdentifier) || (identifier > (this->lastIdentifier + 1)))
 		{
 			if (CMZN_OK != this->setNotContiguous())
-				return index;
+				return DS_LABEL_INDEX_INVALID;
 		}
 		if (this->contiguous)
 		{
@@ -215,7 +198,12 @@ int DsLabels::removeLabel(DsLabelIndex index)
 	if ((index < 0) || (index >= this->indexSize))
 		return 0;
 	if (this->contiguous)
-		setNotContiguous();
+	{
+		const int result = setNotContiguous();
+		if (result != CMZN_OK)
+			return 0;
+	}
+	this->invalidateLabelIterators();
 	DsLabelIdentifier identifier;
 	if (this->identifiers.getValue(index, identifier))
 	{
@@ -276,6 +264,7 @@ int DsLabels::setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier)
 		if (CMZN_OK != result)
 			return result;
 	}
+	this->invalidateLabelIterators();
 	int return_code = CMZN_OK;
 	if (this->identifierToIndexMap.begin_identifier_change(*this, index))
 	{
@@ -302,23 +291,14 @@ DsLabelIndex DsLabels::getFirstIndex()
 	return this->identifierToIndexMap.get_first_object();
 }
 
-DsLabelIterator *DsLabels::createLabelIterator()
+DsLabelIterator *DsLabels::createLabelIterator(bool_array<DsLabelIndex> *condition)
 {
-	DsLabelIterator *iterator = 0;
-	if (this->inactiveIterators)
-	{
-		iterator = this->inactiveIterators;
-		iterator->access();
-		this->inactiveIterators = iterator->next;
-		if (this->inactiveIterators)
-			this->inactiveIterators->previous = 0;
-	}
-	else
-		iterator = new DsLabelIterator();
+	DsLabelIterator *iterator = new DsLabelIterator();
 	if (iterator)
 	{
 		iterator->labels = this;
 		iterator->iter = (this->contiguous) ? 0 : new DsLabelIdentifierToIndexMapIterator(&this->identifierToIndexMap);
+		iterator->condition = condition;
 		iterator->index = DS_LABEL_INDEX_INVALID;
 		iterator->next = this->activeIterators;
 		iterator->previous = 0;
@@ -329,31 +309,53 @@ DsLabelIterator *DsLabels::createLabelIterator()
 	return iterator;
 }
 
-void DsLabels::destroyLabelIterator(DsLabelIterator *&iterator)
+void DsLabels::removeLabelIterator(DsLabelIterator *iterator)
 {
 	if (iterator)
 	{
-		if (iterator->labels)
+		if (iterator->previous)
+			iterator->previous->next = iterator->next;
+		else
+			this->activeIterators = iterator->next;
+		if (iterator->next)
+			iterator->next->previous = iterator->previous;
+		// Following not necessary since only called from ~DsLabelIterator:
+		//iterator->invalidate();
+	}
+}
+
+void DsLabels::invalidateLabelIterators()
+{
+	DsLabelIterator *iterator = this->activeIterators;
+	DsLabelIterator *nextIterator;
+	while (iterator)
+	{
+		nextIterator = iterator->next;
+		iterator->invalidate();
+		iterator = nextIterator;
+	}
+	this->activeIterators = 0;
+}
+
+void DsLabels::invalidateLabelIteratorsWithCondition(bool_array<DsLabelIndex> *condition)
+{
+	DsLabelIterator *iterator = this->activeIterators;
+	while (iterator)
+	{
+		if (iterator->condition == condition)
 		{
-			// reclaim to inactiveIterators
+			DsLabelIterator *nextIterator = iterator->next;
 			if (iterator->previous)
 				iterator->previous->next = iterator->next;
+			else
+				this->activeIterators = iterator->next;
 			if (iterator->next)
 				iterator->next->previous = iterator->previous;
-			if (iterator == iterator->labels->activeIterators)
-				iterator->labels->activeIterators = iterator->next;
-			iterator->previous = 0;
-			iterator->next = iterator->labels->inactiveIterators;
-			if (iterator->next)
-				iterator->next->previous = iterator;
-			iterator->labels->inactiveIterators = iterator;
 			iterator->invalidate();
+			iterator = nextIterator;
 		}
 		else
-		{
-			delete iterator;
-		}
-		iterator = 0;
+			iterator = iterator->next;
 	}
 }
 
@@ -387,6 +389,7 @@ DsLabelIterator::DsLabelIterator() :
 	cmzn::RefCounted(),
 	labels(0),
 	iter(0),
+	condition(0),
 	index(DS_LABEL_INDEX_INVALID),
 	next(0),
 	previous(0)
@@ -395,6 +398,8 @@ DsLabelIterator::DsLabelIterator() :
 
 DsLabelIterator::~DsLabelIterator()
 {
+	if (this->labels)
+		this->labels->removeLabelIterator(this);
 	delete this->iter;
 }
 
@@ -405,5 +410,56 @@ void DsLabelIterator::invalidate()
 		delete this->iter;
 		this->iter = 0;
 		this->labels = 0;
+		this->condition = 0;
+		this->index = DS_LABEL_INDEX_INVALID;
+		this->previous = 0;
+		this->next = 0;
+	}
+}
+
+void DsLabelIterator::setIndex(DsLabelIndex newIndex)
+{
+	if (this->labels)
+	{
+		if (iter)
+		{
+			if (!iter->set_object(*labels, newIndex))
+				display_message(ERROR_MESSAGE, "DsLabelIterator::setIndex  Failed");
+		}
+		this->index = newIndex;
+	}
+	else
+		display_message(ERROR_MESSAGE, "DsLabelIterator::setIndex  Iterator has been invalidated");
+}
+
+void DsLabels::list_storage_details() const
+{
+	if (this->contiguous)
+	{
+		display_message(INFORMATION_MESSAGE, "  Size = %d\n", this->labelsCount);
+		display_message(INFORMATION_MESSAGE, "  Contiguous");
+		display_message(INFORMATION_MESSAGE, "  First identifier = %d", this->firstIdentifier);
+		display_message(INFORMATION_MESSAGE, "  Last identifier = %d", this->lastIdentifier);
+	}
+	else
+	{
+		int stem_count = 0;
+		int leaf_count = 0;
+		int min_leaf_depth = 0;
+		int max_leaf_depth = 0;
+		double mean_leaf_depth = 0.0;
+		double mean_stem_occupancy = 0.0;
+		double mean_leaf_occupancy = 0.0;
+		this->identifierToIndexMap.get_statistics(stem_count, leaf_count,
+			min_leaf_depth, max_leaf_depth, mean_leaf_depth,
+			mean_stem_occupancy, mean_leaf_occupancy);
+		display_message(INFORMATION_MESSAGE, "  Size = %d\n", this->identifierToIndexMap.size());
+		display_message(INFORMATION_MESSAGE, "  Stem count = %d\n", stem_count);
+		display_message(INFORMATION_MESSAGE, "  Leaf count = %d\n", leaf_count);
+		display_message(INFORMATION_MESSAGE, "  Min leaf depth = %d\n", min_leaf_depth);
+		display_message(INFORMATION_MESSAGE, "  Max leaf depth = %d\n", max_leaf_depth);
+		display_message(INFORMATION_MESSAGE, "  Mean leaf depth = %g\n", mean_leaf_depth);
+		display_message(INFORMATION_MESSAGE, "  Mean stem occupancy = %g\n", mean_stem_occupancy);
+		display_message(INFORMATION_MESSAGE, "  Mean leaf occupancy = %g\n", mean_leaf_occupancy);
 	}
 }
