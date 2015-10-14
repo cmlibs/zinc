@@ -1025,3 +1025,204 @@ TEST(ZincFieldGroup, issue_3852_dependency_on_mesh_or_nodeset_group)
 	EXPECT_DOUBLE_EQ(1.0, findXi[0]);
 	EXPECT_DOUBLE_EQ(1.0, findXi[1]);
 };
+
+TEST(ZincFieldElementGroup, ElementiteratorInvalidation)
+{
+	ZincTestSetupCpp zinc;
+
+	Region childRegion = zinc.root_region.createChild("temp");
+	Fieldmodule fm = childRegion.getFieldmodule();
+
+	Mesh mesh = fm.findMeshByDimension(3);
+	Elementtemplate elementTemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementTemplate.isValid());
+	EXPECT_EQ(OK, elementTemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+
+	FieldElementGroup elementGroupField = fm.createFieldElementGroup(mesh);
+	EXPECT_TRUE(elementGroupField.isValid());
+	MeshGroup meshGroup = elementGroupField.getMeshGroup();
+	EXPECT_TRUE(meshGroup.isValid());
+
+	Element element[32];
+	for (int e = 0; e < 31; ++e)
+	{
+		element[e] = meshGroup.createElement(e + 1, elementTemplate);
+		EXPECT_TRUE(element[e].isValid());
+	}
+	EXPECT_EQ(31, meshGroup.getSize());
+
+	Elementiterator iter;
+	Element el;
+
+	// test that creating a new element safely invalidates iterator
+	iter = meshGroup.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	el = iter.next();
+	EXPECT_EQ(element[0], el);
+	el = iter.next();
+	EXPECT_EQ(element[1], el);
+	element[31] = meshGroup.createElement(32, elementTemplate);
+	EXPECT_TRUE(element[31].isValid());
+	EXPECT_EQ(32, meshGroup.getSize());
+	el = iter.next();
+	EXPECT_FALSE(el.isValid());
+
+	// test that removing an element safely invalidates iterator
+	elementTemplate = Elementtemplate();
+	fm = Fieldmodule();
+	iter = meshGroup.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	el = iter.next();
+	EXPECT_EQ(element[0], el);
+	el = iter.next();
+	EXPECT_EQ(element[1], el);
+	EXPECT_EQ(OK, meshGroup.removeElement(element[3]));
+	EXPECT_EQ(31, meshGroup.getSize());
+	el = iter.next();
+	EXPECT_FALSE(el.isValid());
+
+	// test that destroying an element (even if not in group) safely invalidates iterator
+	elementTemplate = Elementtemplate();
+	fm = Fieldmodule();
+	iter = meshGroup.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	el = iter.next();
+	EXPECT_EQ(element[0], el);
+	el = iter.next();
+	EXPECT_EQ(element[1], el);
+	EXPECT_EQ(OK, mesh.destroyElement(element[5]));
+	EXPECT_EQ(31, mesh.getSize());
+	EXPECT_EQ(30, meshGroup.getSize());
+	Mesh tmpMesh = element[5].getMesh();
+	EXPECT_FALSE(tmpMesh.isValid());
+	el = iter.next();
+	EXPECT_FALSE(el.isValid());
+
+	// test that renumbering an element safely invalidates iterator
+	iter = meshGroup.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	el = iter.next();
+	EXPECT_EQ(element[0], el);
+	el = iter.next();
+	EXPECT_EQ(element[1], el);
+	EXPECT_EQ(OK, element[31].setIdentifier(55));
+	el = iter.next();
+	EXPECT_FALSE(el.isValid());
+
+	// test that destroying child region safely invalidates iterator
+	iter = meshGroup.createElementiterator();
+	EXPECT_TRUE(iter.isValid());
+	el = iter.next();
+	EXPECT_EQ(element[0], el);
+	el = iter.next();
+	EXPECT_EQ(element[1], el);
+	EXPECT_EQ(OK, zinc.root_region.removeChild(childRegion));
+	childRegion = Region(); // clear handle so it can be destroyed
+	meshGroup = MeshGroup(); // clear handle
+	elementGroupField = FieldElementGroup(); // clear handle
+	mesh = Mesh(); // clear handle
+	el = iter.next();
+	EXPECT_FALSE(el.isValid());
+	tmpMesh = element[15].getMesh();
+	EXPECT_FALSE(tmpMesh.isValid());
+}
+
+TEST(ZincFieldNodeGroup, NodeiteratorInvalidation)
+{
+	ZincTestSetupCpp zinc;
+
+	Region childRegion = zinc.root_region.createChild("temp");
+	Fieldmodule fm = childRegion.getFieldmodule();
+
+	Nodeset nodeset = fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodetemplate nodeTemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodeTemplate.isValid());
+
+	FieldNodeGroup nodeGroupField = fm.createFieldNodeGroup(nodeset);
+	EXPECT_TRUE(nodeGroupField.isValid());
+	NodesetGroup nodesetGroup = nodeGroupField.getNodesetGroup();
+	EXPECT_TRUE(nodesetGroup.isValid());
+
+	Node node[32];
+	for (int n = 0; n < 31; ++n)
+	{
+		node[n] = nodesetGroup.createNode(n + 1, nodeTemplate);
+		EXPECT_TRUE(node[n].isValid());
+	}
+	EXPECT_EQ(31, nodesetGroup.getSize());
+
+	Nodeiterator iter;
+	Node nd;
+
+	// test that creating a new node safely invalidates iterator
+	iter = nodesetGroup.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	nd = iter.next();
+	EXPECT_EQ(node[0], nd);
+	nd = iter.next();
+	EXPECT_EQ(node[1], nd);
+	node[31] = nodesetGroup.createNode(32, nodeTemplate);
+	EXPECT_TRUE(node[31].isValid());
+	EXPECT_EQ(32, nodesetGroup.getSize());
+	nd = iter.next();
+	EXPECT_FALSE(nd.isValid());
+
+	// test that removing a node safely invalidates iterator
+	nodeTemplate = Nodetemplate();
+	fm = Fieldmodule();
+	iter = nodesetGroup.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	nd = iter.next();
+	EXPECT_EQ(node[0], nd);
+	nd = iter.next();
+	EXPECT_EQ(node[1], nd);
+	EXPECT_EQ(OK, nodesetGroup.removeNode(node[3]));
+	EXPECT_EQ(31, nodesetGroup.getSize());
+	nd = iter.next();
+	EXPECT_FALSE(nd.isValid());
+
+	// test that destroying a node (even if not in group) safely invalidates iterator
+	nodeTemplate = Nodetemplate();
+	fm = Fieldmodule();
+	iter = nodesetGroup.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	nd = iter.next();
+	EXPECT_EQ(node[0], nd);
+	nd = iter.next();
+	EXPECT_EQ(node[1], nd);
+	EXPECT_EQ(OK, nodeset.destroyNode(node[5]));
+	EXPECT_EQ(31, nodeset.getSize());
+	EXPECT_EQ(30, nodesetGroup.getSize());
+	Nodeset tmpNodeset = node[5].getNodeset();
+	EXPECT_FALSE(tmpNodeset.isValid());
+	nd = iter.next();
+	EXPECT_FALSE(nd.isValid());
+
+	// test that renumbering a node safely invalidates iterator
+	iter = nodesetGroup.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	nd = iter.next();
+	EXPECT_EQ(node[0], nd);
+	nd = iter.next();
+	EXPECT_EQ(node[1], nd);
+	EXPECT_EQ(OK, node[31].setIdentifier(55));
+	nd = iter.next();
+	EXPECT_FALSE(nd.isValid());
+
+	// test that destroying child region safely invalidates iterator
+	iter = nodesetGroup.createNodeiterator();
+	EXPECT_TRUE(iter.isValid());
+	nd = iter.next();
+	EXPECT_EQ(node[0], nd);
+	nd = iter.next();
+	EXPECT_EQ(node[1], nd);
+	EXPECT_EQ(OK, zinc.root_region.removeChild(childRegion));
+	childRegion = Region(); // clear handle so it can be destroyed
+	nodesetGroup = NodesetGroup(); // clear handle
+	nodeGroupField = FieldNodeGroup(); // clear handle
+	nodeset = Nodeset(); // clear handle
+	nd = iter.next();
+	EXPECT_FALSE(nd.isValid());
+	tmpNodeset = node[15].getNodeset();
+	EXPECT_FALSE(tmpNodeset.isValid());
+}

@@ -22,6 +22,10 @@
 
 #include <zinc/context.hpp>
 #include <zinc/element.hpp>
+#include <zinc/field.hpp>
+#include <zinc/fieldconstant.hpp>
+#include <zinc/fieldlogicaloperators.hpp>
+#include <zinc/fieldmodule.hpp>
 #include <zinc/node.hpp>
 #include <zinc/status.hpp>
 #include <zinc/stream.hpp>
@@ -210,7 +214,7 @@ TEST(ZincElementiterator, invalidation)
 	Elementiterator iter;
 	Element e;
 
-	// test that creating a new node safely invalidates iterator
+	// test that creating a new element safely invalidates iterator
 	iter = mesh.createElementiterator();
 	EXPECT_TRUE(iter.isValid());
 	e = iter.next();
@@ -224,7 +228,7 @@ TEST(ZincElementiterator, invalidation)
 	e = iter.next();
 	EXPECT_FALSE(e.isValid());
 
-	// test that removing a node safely invalidates iterator
+	// test that removing an element safely invalidates iterator
 	elementTemplate = Elementtemplate();
 	fm = Fieldmodule();
 	iter = mesh.createElementiterator();
@@ -240,7 +244,7 @@ TEST(ZincElementiterator, invalidation)
 	e = iter.next();
 	EXPECT_FALSE(e.isValid());
 
-	// test that renumbering a node safely invalidates iterator
+	// test that renumbering an element safely invalidates iterator
 	iter = mesh.createElementiterator();
 	EXPECT_TRUE(iter.isValid());
 	e = iter.next();
@@ -251,7 +255,7 @@ TEST(ZincElementiterator, invalidation)
 	e = iter.next();
 	EXPECT_FALSE(e.isValid());
 
-	// test that destroying child region and safely invalidates iterator
+	// test that destroying child region safely invalidates iterator
 	iter = mesh.createElementiterator();
 	EXPECT_TRUE(iter.isValid());
 	e = iter.next();
@@ -259,7 +263,7 @@ TEST(ZincElementiterator, invalidation)
 	e = iter.next();
 	EXPECT_EQ(e2, e);
 	EXPECT_EQ(OK, zinc.root_region.removeChild(childRegion));
-	childRegion = Region(); // clear handle so it can be destoyed
+	childRegion = Region(); // clear handle so it can be destroyed
 	mesh = Mesh(); // clear handle
 	e = iter.next();
 	EXPECT_FALSE(e.isValid());
@@ -358,7 +362,7 @@ TEST(ZincNodeiterator, invalidation)
 	n = iter.next();
 	EXPECT_FALSE(n.isValid());
 
-	// test that destroying child region and safely invalidates iterator
+	// test that destroying child region safely invalidates iterator
 	iter = nodeset.createNodeiterator();
 	EXPECT_TRUE(iter.isValid());
 	n = iter.next();
@@ -366,10 +370,91 @@ TEST(ZincNodeiterator, invalidation)
 	n = iter.next();
 	EXPECT_EQ(n2, n);
 	EXPECT_EQ(OK, zinc.root_region.removeChild(childRegion));
-	childRegion = Region(); // clear handle so it can be destoyed
+	childRegion = Region(); // clear handle so it can be destroyed
 	nodeset = Nodeset(); // clear handle
 	n = iter.next();
 	EXPECT_FALSE(n.isValid());
 	tmpNodeset = n3.getNodeset();
 	EXPECT_FALSE(tmpNodeset.isValid());
+}
+
+TEST(ZincMesh, destroyElements)
+{
+	ZincTestSetupCpp zinc;
+
+	Mesh mesh = zinc.fm.findMeshByDimension(3);
+	Elementtemplate elementTemplate = mesh.createElementtemplate();
+	EXPECT_TRUE(elementTemplate.isValid());
+	EXPECT_EQ(OK, elementTemplate.setElementShapeType(Element::SHAPE_TYPE_CUBE));
+
+	Element element[32];
+	for (int e = 0; e < 32; ++e)
+	{
+		element[e] = mesh.createElement(e + 1, elementTemplate);
+		EXPECT_TRUE(element[e].isValid());
+	}
+	EXPECT_EQ(32, mesh.getSize());
+
+	Field cmiss_number = zinc.fm.findFieldByName("cmiss_number");
+	EXPECT_TRUE(cmiss_number.isValid());
+	const double midIdentifierValue = 16.5;
+	FieldConstant midIdentifier = zinc.fm.createFieldConstant(1, &midIdentifierValue);
+	EXPECT_TRUE(midIdentifier.isValid());
+	FieldGreaterThan topHalfIdentifiers = zinc.fm.createFieldGreaterThan(cmiss_number, midIdentifier);
+	EXPECT_TRUE(midIdentifier.isValid());
+
+	EXPECT_EQ(OK, mesh.destroyElementsConditional(topHalfIdentifiers));
+	EXPECT_EQ(16, mesh.getSize());
+	Mesh tmpMesh = element[16].getMesh();
+	EXPECT_FALSE(tmpMesh.isValid());
+
+	Elementiterator iter = mesh.createElementiterator();
+	Element el;
+	for (int e = 0; e < 16; ++e)
+	{
+		el = iter.next();
+		EXPECT_EQ(element[e], el);
+	}
+	EXPECT_EQ(OK, mesh.destroyAllElements());
+	EXPECT_EQ(0, mesh.getSize());
+}
+
+TEST(ZincNodeset, destroyNodes)
+{
+	ZincTestSetupCpp zinc;
+
+	Nodeset nodeset = zinc.fm.findNodesetByFieldDomainType(Field::DOMAIN_TYPE_NODES);
+	Nodetemplate nodeTemplate = nodeset.createNodetemplate();
+	EXPECT_TRUE(nodeTemplate.isValid());
+
+	Node node[32];
+	for (int n = 0; n < 32; ++n)
+	{
+		node[n] = nodeset.createNode(n + 1, nodeTemplate);
+		EXPECT_TRUE(node[n].isValid());
+	}
+	EXPECT_EQ(32, nodeset.getSize());
+
+	Field cmiss_number = zinc.fm.findFieldByName("cmiss_number");
+	EXPECT_TRUE(cmiss_number.isValid());
+	const double midIdentifierValue = 16.5;
+	FieldConstant midIdentifier = zinc.fm.createFieldConstant(1, &midIdentifierValue);
+	EXPECT_TRUE(midIdentifier.isValid());
+	FieldGreaterThan topHalfIdentifiers = zinc.fm.createFieldGreaterThan(cmiss_number, midIdentifier);
+	EXPECT_TRUE(midIdentifier.isValid());
+
+	EXPECT_EQ(OK, nodeset.destroyNodesConditional(topHalfIdentifiers));
+	EXPECT_EQ(16, nodeset.getSize());
+	Nodeset tmpNodeset = node[16].getNodeset();
+	EXPECT_FALSE(tmpNodeset.isValid());
+
+	Nodeiterator iter = nodeset.createNodeiterator();
+	Node el;
+	for (int n = 0; n < 16; ++n)
+	{
+		el = iter.next();
+		EXPECT_EQ(node[n], el);
+	}
+	EXPECT_EQ(OK, nodeset.destroyAllNodes());
+	EXPECT_EQ(0, nodeset.getSize());
 }
