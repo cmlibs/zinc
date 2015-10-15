@@ -119,25 +119,24 @@ Global functions
 ----------------
 */
 
+/**
+ * Changes the identifiers of all elements of dimension in fe_region, or
+ * restricted to optional element_group. If sort_by_field is NULL, adds
+ * element_offset to the identifiers.
+ * If sort_by_field is specified, it is evaluated at the centre of all elements
+ * in the group and the elements are sorted by it - changing fastest with the
+ * first component and keeping the current order where the field has the same
+ * values.
+ * Fails with no change if any other elements other than those being changed
+ * have any of the new identifiers.
+ * @param element_group_field  Optional element group field to change
+ * identifiers for. Must be from same region.
+ * @return  Zinc status code CMZN_OK on success, any other value on failure.
+ */
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
-	int dimension,	int element_offset,
+	int dimension, int element_offset,
 	struct Computed_field *sort_by_field, FE_value time,
-	cmzn_field_element_group_id element_group);
-/*******************************************************************************
-LAST MODIFIED : 16 January 2003
-
-DESCRIPTION :
-Changes the identifiers of all elements of <cm_type> in <fe_region>.
-If <sort_by_field> is NULL, adds <element_offset> to the identifiers.
-If <sort_by_field> is specified, it is evaluated at the centre of all elements
-in the group and the elements are sorted by it - changing fastest with the first
-component and keeping the current order where the field has the same values.
-Checks for and fails if attempting to give any of the elements in <fe_region> an
-identifier already used by an element in the same master FE_region.
-Calls to this function should be enclosed in FE_region_begin_change/end_change.
-Note function avoids iterating through FE_region element lists as this is not
-allowed during identifier changes.
-==============================================================================*/
+	cmzn_field_element_group_id element_group_field);
 
 /**
  * @return  A conditional field returning 1 (true) for all element identifiers

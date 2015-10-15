@@ -64,7 +64,7 @@ class DsLabels : public cmzn::RefCounted
 {
 	std::string name; // optional
 	bool contiguous; // true while all entries from firstIdentifier..lastIdentifier exist and are in order
-	DsLabelIdentifier firstFreeIdentifier;
+	DsLabelIdentifier firstFreeIdentifier; // exact only if contiguous, otherwise only a minimum
 	DsLabelIdentifier firstIdentifier; // used if contiguous: identifier of first index
 	DsLabelIdentifier lastIdentifier; // used if contiguous: identifier of last valid index
 	block_array<DsLabelIndex,DsLabelIdentifier> identifiers; // used only if not contiguous

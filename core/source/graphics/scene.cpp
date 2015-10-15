@@ -383,15 +383,11 @@ void cmzn_fieldmoduleevent_to_scene(cmzn_fieldmoduleevent *event, void *scene_vo
 			local_selection_changed = true;
 			scene->selectionChanged = false;
 		}
-		int changeSummary = cmzn_fieldmoduleevent_get_summary_field_change_flags(event);
-		if ((changeSummary & CMZN_FIELD_CHANGE_FLAG_RESULT) || local_selection_changed)
-		{
-			cmzn_scene_begin_change(scene);
-			struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
-			FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
-				(void *)&change_data, scene->list_of_graphics);
-			cmzn_scene_end_change(scene);
-		}
+		cmzn_scene_begin_change(scene);
+		struct cmzn_graphics_field_change_data change_data = { event, local_selection_changed };
+		FOR_EACH_OBJECT_IN_LIST(cmzn_graphics)(cmzn_graphics_field_change,
+			(void *)&change_data, scene->list_of_graphics);
+		cmzn_scene_end_change(scene);
 	}
 }
 

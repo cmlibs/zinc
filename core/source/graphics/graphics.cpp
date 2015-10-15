@@ -3461,7 +3461,7 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-			// rebuild all if identifiers changed, for correct picking and can't edit graphics object
+			// rebuild all if identifiers changed, for correct picking and editing graphics object
 			struct CHANGE_LOG(FE_node) *nodeChanges = feRegionChanges->getNodeChanges(graphics->domain_type);
 			// Note we won't get a change log for CMZN_FIELD_DOMAIN_TYPE_POINT
 			if (nodeChanges)
@@ -3482,7 +3482,20 @@ int cmzn_graphics_field_change(struct cmzn_graphics *graphics,
 				cmzn_graphics_changed(graphics, CMZN_GRAPHICS_CHANGE_FULL_REBUILD);
 				return 1;
 			}
-			if (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT)
+			bool partialUpdate = (0 != (fieldChange & CMZN_FIELD_CHANGE_FLAG_PARTIAL_RESULT));
+			if (!partialUpdate)
+			{
+				// If element identifiers have changed, cmiss_number and derived fields are
+				// not marked as changed, so need to manually trigger graphics using them to
+				// be updated. However, since renumbering is not common, it's not worth the
+				// complexity of checking such a field is being used, so always partial update.
+				// Also for the future this allows us to send an identifiers all-change
+				// message if reclaimed memory frpm DsLabels and DsMap (all indexes changed).
+				DsLabelsChangeLog *elementChanges = feRegionChanges->getElementChangeLog(domainDimension);
+				if ((elementChanges) && (elementChanges->getChangeSummary() & DS_LABEL_CHANGE_TYPE_IDENTIFIER))
+					partialUpdate = true;
+			}
+			if (partialUpdate)
 			{
 				if (graphics->graphics_type == CMZN_GRAPHICS_TYPE_STREAMLINES ||
 					graphics->graphics_type == CMZN_GRAPHICS_TYPE_POINTS)

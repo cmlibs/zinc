@@ -54,15 +54,15 @@ void DsLabels::clear()
 DsLabelIdentifier DsLabels::getFirstFreeIdentifier(DsLabelIdentifier startIdentifier)
 {
 	DsLabelIdentifier identifier =
-		(startIdentifier <= this->firstFreeIdentifier) ? this->firstFreeIdentifier : startIdentifier;
-	if (identifier <= this->lastIdentifier)
+		(startIdentifier < this->firstFreeIdentifier) ? this->firstFreeIdentifier : startIdentifier;
+	if (!this->contiguous)
 	{
 		// this can be optimised using an iterator:
 		while (DS_LABEL_INDEX_INVALID != findLabelByIdentifier(identifier))
 			++identifier;
+		if (startIdentifier <= this->firstFreeIdentifier)
+			this->firstFreeIdentifier = identifier;
 	}
-	if (startIdentifier <= this->firstFreeIdentifier)
-		this->firstFreeIdentifier = identifier;
 	return identifier;
 }
 
@@ -100,13 +100,9 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 		if (0 == this->labelsCount)
 		{
 			this->firstIdentifier = identifier;
+			this->lastIdentifier = identifier - 1; // to trigger if statement below
 		}
-		else if ((identifier < this->firstIdentifier) || (identifier > (this->lastIdentifier + 1)))
-		{
-			if (CMZN_OK != this->setNotContiguous())
-				return DS_LABEL_INDEX_INVALID;
-		}
-		if (this->contiguous)
+		if (identifier == (this->lastIdentifier + 1))
 		{
 			index = this->indexSize;
 			this->lastIdentifier = identifier;
@@ -116,6 +112,8 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 			++this->indexSize;
 			return index;
 		}
+		if (CMZN_OK != this->setNotContiguous())
+			return DS_LABEL_INDEX_INVALID;
 	}
 	// Future memory optimisation: reclaim unused indexes for new labels.
 	// Note for reclaim to work would have to clear indexes into maps
@@ -133,8 +131,6 @@ DsLabelIndex DsLabels::createLabelPrivate(DsLabelIdentifier identifier)
 			--this->indexSize;
 			return DS_LABEL_INDEX_INVALID;
 		}
-		if (identifier > this->lastIdentifier)
-			this->lastIdentifier = identifier;
 		if (identifier == this->firstFreeIdentifier)
 			++this->firstFreeIdentifier;
 	}
@@ -214,16 +210,8 @@ int DsLabels::removeLabel(DsLabelIndex index)
 			if (identifier < this->firstFreeIdentifier)
 				this->firstFreeIdentifier = identifier;
 			--this->labelsCount;
-			if (identifier == this->lastIdentifier)
-			{
-				if (0 == this->labelsCount)
-					this->clear();
-				else
-				{
-					DsLabelIndex lastIndex = this->identifierToIndexMap.get_last_object();
-					this->lastIdentifier = this->getIdentifier(lastIndex);
-				}
-			}
+			if (0 == this->labelsCount)
+				this->clear();
 			return 1;
 		}
 	}
