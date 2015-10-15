@@ -13,6 +13,11 @@ CMAKE_MINIMUM_REQUIRED( VERSION 2.8.7 )
 # This is the project name and shows up in IDEs
 PROJECT( "OpenCMISS-Zinc" )
 
+# Set the policy for allocing reading the location from a target to old.
+CMAKE_POLICY( SET CMP0026 OLD )
+# Set the policy for querying non-existent target properties to old.
+CMAKE_POLICY( SET CMP0045 OLD )
+
 # The name for the project seen in directory paths
 SET( ZINC_BASE_NAME zinc )
 
@@ -115,7 +120,7 @@ IF( EXISTS "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/InsightToolkit" )
 ELSE( EXISTS "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/InsightToolkit" )
 	SET( ZINC_ITK_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib" )
 ENDIF( EXISTS "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/InsightToolkit" )
-CACHE_VAR_WITH_DEFAULT( ZINC_ITK_DIR "${ITK_DIR}"
+CACHE_VAR_WITH_DEFAULT( ZINC_ITK_DIR "${ZINC_ITK_DIR}"
 	PATH "Where are the ITK libraries installed" )
 CACHE_VAR_WITH_DEFAULT( ZINC_PNG_DIR "${ZINC_DEPENDENCIES_INSTALL_PREFIX}/lib/cmake"
 	PATH "Where is the png CMake config file installed?" )
@@ -273,6 +278,7 @@ SET( DEPENDENT_DEFINITIONS ${DEPENDENT_DEFINITIONS} LIBXML_STATIC )
 # Libxml2 libraries are pulled in by fieldml, check the fieldml interface
 # libraries for the libxml2 location.
 GET_TARGET_PROPERTY( LIBXML2_LIBRARIES fieldml IMPORTED_LINK_INTERFACE_LIBRARIES_RELEASE )
+message(STATUS "libxml2 interface libs: ${LIBXML2_LIBRARIES}")
 
 # zlib
 IF( ZINC_USE_ZLIB )
