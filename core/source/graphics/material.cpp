@@ -152,7 +152,7 @@ int cmzn_material::deaccess(cmzn_material **materialAddress)
 		--(material->access_count);
 		if (material->access_count <= 0)
 		{
-			delete material;
+			DESTROY(cmzn_material)(&material);
 			return_code = 1;
 		}
 		else if ((!material->isManagedFlag) && (material->manager) &&

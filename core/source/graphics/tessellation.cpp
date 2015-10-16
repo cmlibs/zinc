@@ -1036,6 +1036,7 @@ int string_to_divisions(const char *input, int **values_in, int *size_in)
 		int *temp;
 		if (!REALLOCATE(temp, values, int, size))
 		{
+			DEALLOCATE(values);
 			return_code = 0;
 			break;
 		}
