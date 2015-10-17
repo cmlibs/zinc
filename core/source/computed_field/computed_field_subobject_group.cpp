@@ -148,39 +148,39 @@ int Computed_field_element_group::addElementIdentifierRange(DsLabelIdentifier fi
 	int return_code = CMZN_OK;
 	DsLabelIndex index;
 	DsLabelIdentifier identifier;
-	if ((last - first) > (labels->getSize()/2))
+	const DsLabelIndex indexSize = labels->getIndexSize();
+	if (((last - first) > indexSize) ||
+		((!labels->isContiguous()) && ((last - first) > (indexSize/10))))
 	{
-		DsLabelIterator *iter = labels->createLabelIterator();
-		if (iter)
+		for (index = 0; index < indexSize; ++index)
 		{
-			while (DS_LABEL_INDEX_INVALID != (index = iter->nextIndex()))
+			identifier = labels->getIdentifier(index);
+			// invalid identifier == deleted element; skip
+			if ((DS_LABEL_IDENTIFIER_INVALID != identifier) &&
+				(identifier >= first) && (identifier <= last))
 			{
-				identifier = labels->getIdentifier(index);
-				if ((identifier >= first) && (identifier <= last))
+				const int result = this->labelsGroup->setIndex(index, true);
+				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
 				{
-					const int result = this->labelsGroup->setIndex(index, true);
-					if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
-					{
-						return_code = result;
-						break;
-					}
+					return_code = result;
+					break;
 				}
 			}
 		}
-		else
-			return_code = CMZN_ERROR_MEMORY;
-		cmzn::Deaccess(iter);
 	}
 	else
 	{
 		for (identifier = first; identifier <= last; ++identifier)
 		{
 			index = labels->findLabelByIdentifier(identifier);
-			const int result = this->labelsGroup->setIndex(index, true);
-			if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+			if (DS_LABEL_INDEX_INVALID != index)
 			{
-				return_code = result;
-				break;
+				const int result = this->labelsGroup->setIndex(index, true);
+				if ((result != CMZN_OK) && (result != CMZN_ERROR_ALREADY_EXISTS))
+				{
+					return_code = result;
+					break;
+				}
 			}
 		}
 	}

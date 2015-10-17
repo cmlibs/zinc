@@ -1985,7 +1985,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 			(ALLOCATE(normalpoints,Triple,number_of_points)) &&
 			(!texture_coordinate_field || (ALLOCATE(tangentpoints,Triple,number_of_points))))
 		{
-			FE_value *feData = new FE_value[n_data_components];
+			FE_value *feData = data_field ? new FE_value[n_data_components] : 0;
 			/* for selective editing of GT_object primitives, record element ID */
 			if (vertex_location < 0)
 			{
@@ -2563,6 +2563,7 @@ int FE_element_add_surface_to_vertex_array(struct FE_element *element,
 					1, 1, &number_of_vertices);
 		}
 
+		delete[] floatData;
 		delete[] xi_points;
 		cmzn_differentialoperator_destroy(&d_dxi1);
 		cmzn_differentialoperator_destroy(&d_dxi2);

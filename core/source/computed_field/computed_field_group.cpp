@@ -62,7 +62,7 @@ Computed_field_group::~Computed_field_group()
 		iter != subregion_group_map.end(); ++iter)
 	{
 		cmzn_field_group_id subregion_group_field = iter->second;
-			cmzn_field_group_destroy(&subregion_group_field);
+		cmzn_field_group_destroy(&subregion_group_field);
 	}
 	std::map<Computed_field *, Computed_field *>::iterator it = domain_selection_group.begin();
 	for (;it != domain_selection_group.end(); it++)
@@ -419,7 +419,7 @@ int Computed_field_group::removeRegion(cmzn_region_id region)
 	if (subgroup)
 	{
 		Computed_field_group *group_core = Computed_field_group_core_cast(subgroup);
-		group_core->removeLocalRegion();
+		group_core->clearLocal();
 		cmzn_field_group_destroy(&subgroup);
 		return CMZN_OK;
 	}
@@ -922,18 +922,18 @@ const char* Computed_field_group::get_type_string()
 
 void Computed_field_group::remove_child_group(struct cmzn_region *child_region)
 {
-	if (cmzn_region_contains_subregion(region, child_region))
+	Region_field_map_iterator iter = this->subregion_group_map.find(child_region);
+	if (iter != this->subregion_group_map.end())
 	{
-		Region_field_map_iterator pos = subregion_group_map.find(child_region);
-		if (pos != subregion_group_map.end())
+		cmzn_field_group_id subregion_group_field = iter->second;
+		Computed_field_group *group_core = Computed_field_group_core_cast(subregion_group_field);
+		const bool nonEmptySubregionRemoved = !group_core->isEmpty();
+		subregion_group_map.erase(iter);
+		cmzn_field_group_destroy(&subregion_group_field);
+		if (nonEmptySubregionRemoved)
 		{
-			cmzn_region_id region = pos->first;
-			if (region)
-			{
-				cmzn_field_group_id temp = pos->second;
-				subregion_group_map.erase(child_region);
-				cmzn_field_group_destroy(&temp);
-			}
+			this->change_detail.changeMergeNonlocal(CMZN_FIELD_GROUP_CHANGE_REMOVE);
+			Computed_field_changed(this->field);
 		}
 	}
 }

@@ -20813,31 +20813,37 @@ struct FE_element *CREATE(FE_element)()
 	return (element);
 }
 
+/**
+ * Frees the memory for the element, sets <*element_address> to NULL.
+ */
 int DESTROY(FE_element)(struct FE_element **element_address)
-/*******************************************************************************
-LAST MODIFIED : 24 March 2003
-
-DESCRIPTION :
-Frees the memory for the element, sets <*element_address> to NULL.
-==============================================================================*/
 {
 	int return_code;
 	struct FE_element *element;
-
-	ENTER(DESTROY(FE_element));
 	if ((element_address)&&(element= *element_address))
 	{
 		if (0 == element->access_count)
 		{
-			FE_element_invalidate(element);
-			/* parent elements are not ACCESSed */
-			if (element->parents)
+			// all elements should be either templates with invalid index,
+			// or have been invalidated by mesh prior to being destroyed
+			if (DS_LABEL_IDENTIFIER_INVALID == element->index)
 			{
-				DEALLOCATE(element->parents);
+				if (element->fields) // for template elements only
+					FE_element_invalidate(element);
+				/* parent elements are not ACCESSed */
+				if (element->parents)
+					DEALLOCATE(element->parents);
+				/* free the memory associated with the element */
+				DEALLOCATE(*element_address);
+				return_code = 1;
 			}
-			/* free the memory associated with the element */
-			DEALLOCATE(*element_address);
-			return_code = 1;
+			else
+			{
+				display_message(ERROR_MESSAGE,
+					"DESTROY(FE_element).  Element has not been invalidated. Index = %d", element->index);
+				*element_address = (struct FE_element *)NULL;
+				return_code = 0;
+			}
 		}
 		else
 		{
@@ -20852,10 +20858,8 @@ Frees the memory for the element, sets <*element_address> to NULL.
 	{
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* DESTROY(FE_element) */
+}
 
 struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info)
 {

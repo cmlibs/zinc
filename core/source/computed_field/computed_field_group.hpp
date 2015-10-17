@@ -153,7 +153,7 @@ public:
 
 	virtual void subregionRemoved(cmzn_region *subregion)
 	{
-		this->removeRegion(subregion);
+		this->remove_child_group(subregion);
 	}
 
 	bool isEmptyLocal() const;

@@ -112,8 +112,8 @@ FE_mesh::~FE_mesh()
 		this->faceMesh->setParentMesh(0);
 	cmzn::Deaccess(this->changeLog);
 	this->last_fe_element_field_info = 0;
-	DsLabelIndex indexLimit = this->labels.getSize() + 1;
 
+	// remove pointers to this FE_mesh as destroying
 	cmzn_elementiterator *elementIterator = this->activeElementIterators;
 	while (elementIterator)
 	{
@@ -121,19 +121,8 @@ FE_mesh::~FE_mesh()
 		elementIterator = elementIterator->nextIterator;
 	}
 
-	FE_element *element;
-	for (DsLabelIndex index = 0; index < indexLimit; ++index)
-	{
-		if (this->fe_elements.getValue(index, element) && (element))
-		{
-			// must invalidate elements since client or nodal element:xi fields may still hold them
-			// BUT! Don't invalidate elements that have been merged into another region
-			if (FE_element_get_FE_mesh(element) == this)
-				FE_element_invalidate(element);
-			DEACCESS(FE_element)(&element);
-		}
-	}
-	this->fe_elements.clear();
+	this->clear();
+
 	// remove pointers to this FE_mesh as destroying
 	FOR_EACH_OBJECT_IN_LIST(FE_element_field_info)(
 		FE_element_field_info_clear_FE_mesh, (void *)NULL,
@@ -146,9 +135,6 @@ FE_mesh::~FE_mesh()
 		cmzn_mesh_scale_factor_set *scale_factor_set = this->scale_factor_sets[i];
 		cmzn_mesh_scale_factor_set::deaccess(scale_factor_set);
 	}
-	for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
-		delete this->elementShapeFacesArray[i];
-	delete[] this->elementShapeFacesArray;
 }
 
 void FE_mesh::detach_from_FE_region()
@@ -257,18 +243,24 @@ void FE_mesh::clear()
 {
 	FE_region_begin_change(this->fe_region);
 
-	DsLabelIndex indexLimit = this->labels.getSize() + 1;
-	FE_element *element;
-	for (DsLabelIndex index = 0; index < indexLimit; ++index)
+	if (0 < this->labels.getSize())
 	{
-		if (this->fe_elements.getValue(index, element) && (element))
+		const DsLabelIndex indexLimit = this->labels.getIndexSize();
+		FE_element *element;
+		for (DsLabelIndex index = 0; index < indexLimit; ++index)
 		{
-			this->elementChange(index, DS_LABEL_CHANGE_TYPE_REMOVE);
-			FE_element_invalidate(element);
-			DEACCESS(FE_element)(&element);
+			if (this->fe_elements.getValue(index, element) && (element))
+			{
+				// must invalidate elements since client or nodal element:xi fields may still hold them
+				// BUT! Don't invalidate elements that have been merged into another region
+				if (FE_element_get_FE_mesh(element) == this)
+					FE_element_invalidate(element);
+				DEACCESS(FE_element)(&element);
+			}
 		}
 	}
 	this->fe_elements.clear();
+
 	for (unsigned int i = 0; i < this->elementShapeFacesCount; ++i)
 		delete this->elementShapeFacesArray[i];
 	delete[] this->elementShapeFacesArray;
@@ -277,6 +269,7 @@ void FE_mesh::clear()
 	this->elementShapeMap.clear();
 
 	this->labels.clear();
+
 	FE_region_end_change(this->fe_region);
 }
 
@@ -346,7 +339,7 @@ FE_mesh::ElementShapeFaces *FE_mesh::setElementShape(DsLabelIndex index, FE_elem
 		this->elementShapeFacesArray = tempElementShapeFaces;
 		++this->elementShapeFacesCount;
 	}
-	if ((this->elementShapeFacesCount > (char)1) &&
+	if ((this->elementShapeFacesCount > 1) &&
 			(!this->elementShapeMap.setValue(index, shapeIndex)))
 		return 0;
 	// No change message here, assume done by callers

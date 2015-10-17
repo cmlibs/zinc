@@ -361,13 +361,18 @@ struct cmzn_region *CREATE(cmzn_region)(struct cmzn_region *base_region)
 /** partial cleanup of region, needed by destructor and cmzn_region_detach_fields_hierarchical */
 static void cmzn_region_detach_fields(struct cmzn_region *region)
 {
-	if (region && region->field_manager_callback_id)
+	if (region && region->field_manager)
 	{
-		MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
-		region->field_manager_callback_id = 0;
+		// following is called earlier in region destructor
+		if (region->field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
+			region->field_manager_callback_id = 0;
+		}
 		// clear region pointer otherwise get updates when finite element fields destroyed
 		FE_region_set_cmzn_region_private(region->fe_region, (cmzn_region *)0);
 		DESTROY(MANAGER(Computed_field))(&(region->field_manager));
+		region->field_manager = 0;
 		DEACCESS(FE_region)(&region->fe_region);
 	}
 }
@@ -394,8 +399,11 @@ int DESTROY(cmzn_region)(struct cmzn_region **region_address)
 			delete region->notifier_list;
 			region->notifier_list = 0;
 
-			delete region->field_caches;
-			DESTROY(LIST(Any_object))(&(region->any_object_list));
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(
+				&(region->change_callback_list));
+
+			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
+			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
 
 			// destroy child list
 			cmzn_region *next_child = region->first_child;
@@ -410,11 +418,16 @@ int DESTROY(cmzn_region)(struct cmzn_region **region_address)
 				DEACCESS(cmzn_region)(&child);
 			}
 
-			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
-			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
+			// cease receiving field manager callbacks otherwise get problems from fields being destroyed
+			// e.g. selection field accessed by scene held in any_object_list
+			if (region->field_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
+				region->field_manager_callback_id = 0;
+			}
 
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(
-				&(region->change_callback_list));
+			delete region->field_caches;
+			DESTROY(LIST(Any_object))(&(region->any_object_list));
 
 			cmzn_region_detach_fields(region);
 
