@@ -74,6 +74,7 @@ SET(INTERFACE_SRCS
 	../interface/font.i
 	../interface/glyph.i
 	../interface/graphics.i
+	../interface/light.i
 	../interface/material.i
 	../interface/optimisation.i
 	../interface/node.i

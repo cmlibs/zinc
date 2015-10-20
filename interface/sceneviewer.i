@@ -17,6 +17,7 @@
 %apply double *OUTPUT { double *x, double *y, double *z};
 %apply int *OUTPUT {int *width, int *height};
 
+%import "light.i"
 %import "scene.i"
 
 %extend OpenCMISS::Zinc::Sceneviewernotifier {

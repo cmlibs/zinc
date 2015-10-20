@@ -15,6 +15,7 @@
 
 %import "font.i"
 %import "glyph.i"
+%import "light.i"
 %import "material.i"
 %import "region.i"
 %import "scenefilter.i"
@@ -34,6 +35,7 @@
 %{
 #include "zinc/context.hpp"
 #include "zinc/font.hpp"
+#include "zinc/light.hpp"
 #include "zinc/glyph.hpp"
 #include "zinc/material.hpp"
 #include "zinc/region.hpp"
