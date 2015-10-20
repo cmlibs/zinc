@@ -13,6 +13,7 @@
 #include <zinc/sceneviewer.h>
 
 #include <zinc/context.hpp>
+#include <zinc/light.hpp>
 #include <zinc/sceneviewer.hpp>
 
 #include "zinctestsetup.hpp"
@@ -311,6 +312,45 @@ TEST(cmzn_sceneviewer, get_set)
 
 	cmzn_sceneviewer_destroy(&sv);
 	cmzn_sceneviewermodule_destroy(&svModule);
+}
+
+
+TEST(ZincSceneviewer, get_set_light)
+{
+	ZincTestSetupCpp zinc;
+
+	Sceneviewermodule svModule = zinc.context.getSceneviewermodule();
+	EXPECT_TRUE(svModule.isValid());
+
+	Sceneviewer sv = svModule.createSceneviewer(
+		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
+	EXPECT_TRUE(sv.isValid());
+
+	Light ambientLight = sv.getAmbientLight();
+	EXPECT_TRUE(ambientLight.isValid());
+
+	Lightmodule lm = zinc.context.getLightmodule();
+	EXPECT_TRUE(lm.isValid());
+
+	int result = lm.beginChange();
+	EXPECT_EQ(OK, result);
+
+	Light light = lm.createLight();
+	EXPECT_TRUE(light.isValid());
+
+	EXPECT_EQ(OK, light.setType(Light::TYPE_AMBIENT));
+
+	EXPECT_EQ(OK, sv.setAmbientLight(light));
+
+	light = lm.createLight();
+	EXPECT_TRUE(light.isValid());
+
+	EXPECT_EQ(OK, sv.addLight(light));
+	EXPECT_EQ(OK, sv.hasLight(light));
+	EXPECT_EQ(OK, sv.removeLight(light));
+
+	result = lm.endChange();
+	EXPECT_EQ(OK, result);
 }
 
 TEST(ZincSceneviewer, get_set)
