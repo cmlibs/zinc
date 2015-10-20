@@ -22,9 +22,8 @@ GL rendering calls - API specific.
 #include "graphics/glyph.hpp"
 #include "graphics/graphics.h"
 #include "graphics/graphics_object.h"
-#include "graphics/light_model.h"
 #include "graphics/mcubes.h"
-#include "graphics/light.h"
+#include "graphics/light.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
@@ -193,14 +192,9 @@ public:
 		  return Texture_execute_opengl_texture_object(texture, this);
 	  }
 
-	  int Light_execute(Light *light)
+	  int cmzn_light_execute(cmzn_light *light)
 	  {
-		  return execute_Light(light, NULL);
-	  }
-
-	  int Light_model_execute(Light_model *light_model)
-	  {
-		  return Light_model_render_opengl(light_model, this);
+		  return execute_cmzn_light(light, NULL);
 	  }
 
 	  virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem coordinate_system)

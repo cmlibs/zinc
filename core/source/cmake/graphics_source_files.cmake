@@ -114,7 +114,6 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 		source/graphics/graphics_library.cpp
 		source/graphics/graphics_object.cpp
 		source/graphics/light.cpp
-		source/graphics/light_model.cpp
 		source/graphics/render.cpp
 		source/graphics/render_gl.cpp
 		source/graphics/scenefilter.cpp
@@ -123,8 +122,7 @@ IF( ${GRAPHICS_API} MATCHES OPENGL_GRAPHICS )
 	SET( GRAPHICS_HDRS ${GRAPHICS_HDRS}
 		source/graphics/font.h
 		source/graphics/graphics_library.h
-		source/graphics/light.h
-		source/graphics/light_model.h
+		source/graphics/light.hpp
 		source/graphics/render.hpp
 		source/graphics/render_gl.h
 		source/graphics/scene_picker.hpp

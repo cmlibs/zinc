@@ -1,0 +1,128 @@
+/*******************************************************************************
+FILE : light.h
+
+LAST MODIFIED : 8 October 2002
+
+DESCRIPTION :
+The data structures used for representing graphical lights.
+==============================================================================*/
+/* OpenCMISS-Zinc Library
+*
+* This Source Code Form is subject to the terms of the Mozilla Public
+* License, v. 2.0. If a copy of the MPL was not distributed with this
+* file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#if !defined (LIGHT_HPP)
+#define LIGHT_HPP
+
+#include "general/enumerator.h"
+#include "general/list.h"
+#include "general/manager.h"
+#include "general/object.h"
+#include "graphics/colour.h"
+#include "graphics/graphics_library.h"
+#include "zinc/light.h"
+
+/*
+Global functions
+----------------
+*/
+
+DECLARE_LIST_TYPES(cmzn_light);
+DECLARE_MANAGER_TYPES(cmzn_light);
+
+PROTOTYPE_OBJECT_FUNCTIONS(cmzn_light);
+PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_light);
+
+PROTOTYPE_LIST_FUNCTIONS(cmzn_light);
+PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_light,name,const char *);
+
+PROTOTYPE_MANAGER_FUNCTIONS(cmzn_light);
+PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_light,name,const char *);
+
+PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_light_type);
+
+int cmzn_light_manager_set_owner_private(struct MANAGER(cmzn_light) *manager,
+	struct cmzn_lightmodule *lightmodule);
+
+
+struct cmzn_light_change_detail
+{
+	virtual ~cmzn_light_change_detail()
+	{
+	}
+};
+
+int list_cmzn_light(struct cmzn_light *light,void *dummy);
+/*******************************************************************************
+LAST MODIFIED : 21 September 1998
+
+DESCRIPTION :
+Writes the properties of the <light> to the command window.
+==============================================================================*/
+
+int list_cmzn_light_name(struct cmzn_light *light,void *preceding_text_void);
+/*******************************************************************************
+LAST MODIFIED : 14 October 1998
+
+DESCRIPTION :
+Writes the name of the <light> to the command window, preceded on each line by
+the optional <preceding_text> string.
+==============================================================================*/
+
+int list_cmzn_light_name_command(struct cmzn_light *light,void *preceding_text_void);
+/*******************************************************************************
+LAST MODIFIED : 22 January 2002
+
+DESCRIPTION :
+Writes the name of the <light> to the command window, preceded on each line by
+the optional <preceding_text> string. Makes sure quotes are put around the
+name of the light if it contains any special characters.
+Follows the light name with semicolon and carriage return.
+==============================================================================*/
+
+int reset_cmzn_lights(void);
+/*******************************************************************************
+LAST MODIFIED : 4 December 1997
+
+DESCRIPTION :
+Must be called at start of rendering before lights are activate with
+execute_cmzn_light. Ensures all lights are off at the start of the rendering loop,
+and makes sure the lights that are subsequently defined start at GL_LIGHT0...
+==============================================================================*/
+
+int execute_cmzn_light(struct cmzn_light *light,void *dummy_void);
+/*******************************************************************************
+LAST MODIFIED : 4 December 1997
+
+DESCRIPTION :
+Struct cmzn_light iterator function for activating the <light>.
+Does not use display lists. See comments with compile_cmzn_light, above.
+==============================================================================*/
+
+int cmzn_light_is_in_list(struct cmzn_light *light, void *light_list_void);
+/*******************************************************************************
+LAST MODIFIED : 30 May 2001
+
+DESCRIPTION :
+Returns true if <light> is in <light_list>.
+==============================================================================*/
+
+const char *get_cmzn_light_name(struct cmzn_light *light);
+
+struct cmzn_lightmodule;
+
+/**
+ * Create and return a handle to a new light module.
+ * Private; only to be called from graphics_module.
+ *
+ * @return  Handle to the newly created light module if successful,
+ * otherwise NULL.
+ */
+cmzn_lightmodule *cmzn_lightmodule_create();
+
+struct MANAGER(cmzn_light) *cmzn_lightmodule_get_manager(cmzn_lightmodule *lightmodule);
+
+/* forward declaration */
+struct cmzn_light *cmzn_light_create_private();
+
+#endif

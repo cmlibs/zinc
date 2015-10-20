@@ -8,15 +8,15 @@ The functions for manipulating lights.
 
 ???RC
 If OpenGL lights were set up half-way decently you could throw them all into
-display lists in compile_Light and then execute them with execute_Light.
+display lists in compile_cmzn_light and then execute them with execute_cmzn_light.
 However, the basic installation supports only EIGHT lights, but worse, they are
 each referenced by their own constants GL_LIGHT0..GL_LIGHT7. Hence, if you want
 all available lights in differing combinations in different windows at
 different times,you can't use display lists since the light identifier would
 be hardwired in them.
-Hence, this compile_Light does nothing, while the execute_Light routine just
-calls direct_render_Light. Before any lights are activated, however, you must
-call reset_Lights to turn all the lights off and set next_light_no to zero.
+Hence, this compile_cmzn_light does nothing, while the execute_cmzn_light routine just
+calls direct_render_cmzn_light. Before any lights are activated, however, you must
+call reset_cmzn_lights to turn all the lights off and set next_light_no to zero.
 Future improvements to OpenGL or other graphics libraries may overcome this
 problem.
 ==============================================================================*/
@@ -38,199 +38,700 @@ problem.
 #include "general/mystring.h"
 #include "general/object.h"
 #include "graphics/graphics_library.h"
-#include "graphics/light.h"
+#include "graphics/light.hpp"
 #include "general/message.h"
 #include "general/enumerator_private.hpp"
+#include "general/cmiss_set.hpp"
+#include "general/indexed_list_stl_private.hpp"
+
 
 /*
 Module types
 ------------
 */
 
-struct Light_module
+
+struct cmzn_lightmodule
 {
 
 private:
 
-	struct MANAGER(Light) *lightManager;
-	Light *defaultLight;
+	struct MANAGER(cmzn_light) *lightManager;
+	cmzn_light *defaultLight, *defaultAmbientLight;
 	int access_count;
 
-	Light_module() :
-		lightManager(CREATE(MANAGER(Light))()),
+	cmzn_lightmodule() :
+		lightManager(CREATE(MANAGER(cmzn_light))()),
 		defaultLight(0),
+		defaultAmbientLight(0),
 		access_count(1)
 	{
 	}
 
-	~Light_module()
+	~cmzn_lightmodule()
 	{
-		DEACCESS(Light)(&this->defaultLight);
-		DESTROY(MANAGER(Light))(&(this->lightManager));
+		DEACCESS(cmzn_light)(&this->defaultLight);
+		DEACCESS(cmzn_light)(&this->defaultAmbientLight);
+		DESTROY(MANAGER(cmzn_light))(&(this->lightManager));
 	}
 
 public:
 
-	static Light_module *create()
+	static cmzn_lightmodule *create()
 	{
-		return new Light_module();
+		return new cmzn_lightmodule();
 	}
 
-	Light_module *access()
+	cmzn_lightmodule *access()
 
 	{
 		++access_count;
 		return this;
 	}
 
-	static int deaccess(Light_module* &light_module)
+	static int deaccess(cmzn_lightmodule* &lightmodule)
 	{
-		if (light_module)
+		if (lightmodule)
 		{
-			--(light_module->access_count);
-			if (light_module->access_count <= 0)
+			--(lightmodule->access_count);
+			if (lightmodule->access_count <= 0)
 			{
-				delete light_module;
+				delete lightmodule;
 			}
-			light_module = 0;
+			lightmodule = 0;
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	struct MANAGER(Light) *getManager()
+	struct MANAGER(cmzn_light) *getManager()
 	{
 		return this->lightManager;
 	}
 
 	int beginChange()
 	{
-		return MANAGER_BEGIN_CACHE(Light)(this->lightManager);
+		return MANAGER_BEGIN_CACHE(cmzn_light)(this->lightManager);
 	}
 
 	int endChange()
 	{
-		return MANAGER_END_CACHE(Light)(this->lightManager);
+		return MANAGER_END_CACHE(cmzn_light)(this->lightManager);
 	}
 
-	Light *createLight()
+	cmzn_light *createLight()
 	{
-		Light *light = NULL;
+		cmzn_light *light = NULL;
 		char temp_name[20];
-		int i = NUMBER_IN_MANAGER(Light)(this->lightManager);
+		int i = NUMBER_IN_MANAGER(cmzn_light)(this->lightManager);
 		do
 		{
 			i++;
 			sprintf(temp_name, "temp%d",i);
 		}
-		while (FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(temp_name,
+		while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_light,name)(temp_name,
 			this->lightManager));
-		light = CREATE(Light)(temp_name);
-		if (!ADD_OBJECT_TO_MANAGER(Light)(light, this->lightManager))
+		light = cmzn_light_create_private();
+		cmzn_light_set_name(light, temp_name);
+		if (!ADD_OBJECT_TO_MANAGER(cmzn_light)(light, this->lightManager))
 		{
-			DEACCESS(Light)(&light);
+			DEACCESS(cmzn_light)(&light);
 		}
 		return light;
 	}
 
-	Light *findLightByName(const char *name)
+	cmzn_lightiterator *createLightiterator();
+
+	cmzn_light *findLightByName(const char *name)
 	{
-		Light *light = FIND_BY_IDENTIFIER_IN_MANAGER(Light,name)(name,
+		cmzn_light *light = FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_light,name)(name,
 			this->lightManager);
 		if (light)
 		{
-			return ACCESS(Light)(light);
+			return ACCESS(cmzn_light)(light);
 		}
 		return 0;
 	}
 
-	Light *getDefaultLight()
+	cmzn_light *getDefaultLight()
 	{
 		if (this->defaultLight)
 		{
-			ACCESS(Light)(this->defaultLight);
+			ACCESS(cmzn_light)(this->defaultLight);
 		}
 		else
 		{
 			this->beginChange();
-			Light *light = CREATE(Light)("default");
-			if (light)
-			{
-				GLfloat default_light_direction[3]={0.0,-0.5,-1.0};
-				struct Colour default_colour;
-				set_Light_type(light,INFINITE_LIGHT);
-				default_colour.red=0.9;
-				default_colour.green=0.9;
-				default_colour.blue=0.9;
-				set_Light_colour(light,&default_colour);
-				set_Light_direction(light,default_light_direction);
-				/*???DB.  Include default as part of manager ? */
-				if (!ADD_OBJECT_TO_MANAGER(Light)(light, this->lightManager))
-				{
-					DEACCESS(Light)(&light);
-				}
-			}
+			cmzn_light *light = createLight();
+			cmzn_light_set_name(light, "default");
+			double default_light_direction[3]={0.0,-0.5,-1.0};
+			double default_colour[3];
+			cmzn_light_set_type(light,CMZN_LIGHT_TYPE_DIRECTIONAL);
+			default_colour[0]=0.9;
+			default_colour[1]=0.9;
+			default_colour[2]=0.9;
+			cmzn_light_set_colour(light, &default_colour[0]);
+			cmzn_light_set_direction(light,default_light_direction);
 			this->setDefaultLight(light);
 			this->endChange();
 		}
 		return (this->defaultLight);
 	}
 
-	int setDefaultLight(Light *light)
+	int setDefaultLight(cmzn_light *light)
 	{
-		REACCESS(Light)(&this->defaultLight, light);
-		return CMZN_OK;
+		if (light)
+		{
+			enum cmzn_light_type lightType = cmzn_light_get_type(light);
+			if ((lightType != CMZN_LIGHT_TYPE_AMBIENT) &&
+				(lightType != CMZN_LIGHT_TYPE_INVALID))
+			{
+				REACCESS(cmzn_light)(&this->defaultLight, light);
+				return CMZN_OK;
+			}
+		}
+		else
+		{
+			cmzn_light_destroy(&this->defaultLight);
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	cmzn_light *getDefaultAmbientLight()
+	{
+		if (this->defaultAmbientLight)
+		{
+			ACCESS(cmzn_light)(this->defaultAmbientLight);
+		}
+		else
+		{
+			this->beginChange();
+			cmzn_light *light = createLight();
+			cmzn_light_set_name(light, "defaultAmbient");
+			double default_colour[3];
+			cmzn_light_set_type(light,CMZN_LIGHT_TYPE_AMBIENT);
+			default_colour[0]=0.1;
+			default_colour[1]=0.1;
+			default_colour[2]=0.1;
+			cmzn_light_set_colour(light,&default_colour[0]);
+			cmzn_light_set_render_side(light,CMZN_LIGHT_RENDER_SIDE_DOUBLE);
+			this->setDefaultAmbientLight(light);
+			this->endChange();
+		}
+		return (this->defaultAmbientLight);
+	}
+
+	int setDefaultAmbientLight(cmzn_light *light)
+	{
+		if (cmzn_light_get_type(light) == CMZN_LIGHT_TYPE_AMBIENT)
+		{
+			REACCESS(cmzn_light)(&this->defaultAmbientLight, light);
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
 	}
 
 };
 
-struct Light
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-The properties of a light.
-==============================================================================*/
+/***************************************************************************//**
+ * Object describing how elements / continuous field domains are tessellated
+ * or sampled into graphics.
+ */
+struct cmzn_light
 {
-	/* the name of the light */
 	const char *name;
-	/* light type: infinite, point or spot */
-	enum Light_type type;
-	struct Colour colour;
-	/* position for point and spot lights */
-	GLfloat position[3];
-	/* direction for infinite (directional) and spot lights */
-	GLfloat direction[3];
+	struct MANAGER(cmzn_light) *manager;
+	int manager_change_status;
+	enum cmzn_light_type type;
+	enum cmzn_light_render_side render_side;
+	enum cmzn_light_render_viewer_mode viewer_mode;
 	/* attenuation parameters control light falloff with distance according to
 	   1/(c + l*d + q*d*d) where d=distance, c=constant, l=linear, q=quadratic */
-	GLfloat constant_attenuation, linear_attenuation, quadratic_attenuation;
+	double constant_attenuation, linear_attenuation, quadratic_attenuation;
 	/* the angle, in degrees, between the direction of the spotlight and the ray
 		along the edge of the light cone (between 0 and 90 inclusive) */
-	GLfloat spot_cutoff;
+	double spot_cutoff;
 	/* spot_exponent controls concentration of light near its axis; 0 = none */
-	GLfloat spot_exponent;
-	/* include display list stuff although cannot use at present */
-	GLuint display_list;
-	int display_list_current;
-
+	double spot_exponent;
 	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(Light) *manager;
-	int manager_change_status;
-
-	/* the number of structures that point to this light.  The light cannot be
-		destroyed while this is greater than 0 */
+	int enabled;
+	bool is_managed_flag;
 	int access_count;
-}; /* struct Light */
+	/* position for point and spot lights */
+	double position[3];
+	/* direction for infinite (directional) and spot lights */
+	double direction[3];
+	struct Colour colour;
 
-FULL_DECLARE_LIST_TYPE(Light);
+protected:
 
-FULL_DECLARE_MANAGER_TYPE(Light);
+	cmzn_light() :
+		name(NULL),
+		manager(NULL),
+		manager_change_status(MANAGER_CHANGE_NONE(cmzn_light)),
+		type(CMZN_LIGHT_TYPE_DIRECTIONAL),
+		render_side(CMZN_LIGHT_RENDER_SIDE_DOUBLE),
+		viewer_mode(CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE),
+		constant_attenuation(1.0),
+		linear_attenuation(0.0),
+		quadratic_attenuation(0.0),
+		spot_cutoff(90.0),
+		spot_exponent(0.0),
+		enabled(1),
+		is_managed_flag(false),
+		access_count(1)
+	{
+		colour.red = 0.9;
+		colour.green = 0.9;
+		colour.blue = 0.9;
+		position[0] = 0;
+		position[1] = 0;
+		position[2] = 0;
+		direction[0] = 0;
+		direction[1] = 0;
+		direction[2] = -1;
+	}
+
+	~cmzn_light()
+	{
+		if (name)
+		{
+			DEALLOCATE(name);
+		}
+	}
+
+public:
+
+	/** must construct on the heap with this function */
+	static cmzn_light *create()
+	{
+		return new cmzn_light();
+	}
+
+	cmzn_light& operator=(const cmzn_light& source)
+	{
+		double myColour[3];
+		myColour[0] = source.colour.red;
+		myColour[1] = source.colour.green;
+		myColour[2] = source.colour.blue;
+		setColour(&myColour[0]);
+		setPosition(&source.position[0]);
+		setDirection(&source.direction[0]);
+		setType(source.type);
+		setConstantAttenuation(source.constant_attenuation);
+		setLinearAttenuation(source.linear_attenuation);
+		setQuadraticAttenuation(source.quadratic_attenuation);
+		setRenderSide(source.render_side);
+		setRenderViewerMode(source.viewer_mode);
+		setSpotCutoff(source.spot_cutoff);
+		setSpotExponent(source.spot_exponent);
+		setEnabled(source.enabled);
+		return *this;
+	}
+
+	int getColour(double *colourOut)
+	{
+		colourOut[0] = static_cast<double>(colour.red);
+		colourOut[1] = static_cast<double>(colour.green);
+		colourOut[2] = static_cast<double>(colour.blue);
+		return CMZN_OK;
+	}
+
+	int setColour(const double *colourIn)
+	{
+		colour.red = colourIn[0];
+		colour.green = colourIn[1];
+		colour.blue = colourIn[2];
+		MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+		return CMZN_OK;
+	}
+
+	enum cmzn_light_render_side getRenderSide()
+	{
+		return render_side;
+	}
+
+	int setRenderSide(enum cmzn_light_render_side renderSideIn)
+	{
+		if (renderSideIn != render_side && renderSideIn != CMZN_LIGHT_RENDER_SIDE_INVALID)
+		{
+			render_side = renderSideIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+		}
+		return CMZN_OK;
+	}
+
+	enum cmzn_light_render_viewer_mode getRenderViewerMode()
+	{
+		return viewer_mode;
+	}
+
+	int setRenderViewerMode(enum cmzn_light_render_viewer_mode renderViewerModeIn)
+	{
+		if (viewer_mode != renderViewerModeIn &&
+			renderViewerModeIn != CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID)
+		{
+			viewer_mode = renderViewerModeIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+		}
+		return CMZN_OK;
+	}
+
+	enum cmzn_light_type getType()
+	{
+		return type;
+	}
+
+	int setType(enum cmzn_light_type typeIn)
+	{
+		if (typeIn != type && typeIn != CMZN_LIGHT_TYPE_INVALID)
+		{
+			type = typeIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+		}
+		return CMZN_OK;
+	}
+
+	int getPosition(double *positionOut)
+	{
+		positionOut[0] = position[0];
+		positionOut[1] = position[1];
+		positionOut[2] = position[2];
+		return CMZN_OK;
+	}
+
+	int setPosition(const double *positionIn)
+	{
+		if (positionIn)
+		{
+			position[0] = positionIn[0];
+			position[1] = positionIn[1];
+			position[2] = positionIn[2];
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int getDirection(double *directionOut)
+	{
+		directionOut[0] = direction[0];
+		directionOut[1] = direction[1];
+		directionOut[2] = direction[2];
+		return CMZN_OK;
+	}
+
+	int setDirection(const double *directionIn)
+	{
+		if (directionIn)
+		{
+			direction[0] = directionIn[0];
+			direction[1] = directionIn[1];
+			direction[2] = directionIn[2];
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	double getSpotCutoff()
+	{
+		return spot_cutoff;
+	}
+
+	int setSpotCutoff(double spotCutoffIn)
+	{
+		if ((0.0 <= spotCutoffIn) && (90.0 >= spotCutoffIn))
+		{
+			spot_cutoff = spotCutoffIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	double getSpotExponent()
+	{
+		return spot_exponent;
+	}
+
+	int setSpotExponent(double spotExponentIn)
+	{
+		if (0.0 <= spotExponentIn)
+		{
+			spot_exponent = spotExponentIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	double getConstantAttenuation()
+	{
+		return constant_attenuation;
+	}
+
+	int setConstantAttenuation(double constantAttenuationIn)
+	{
+		if (0.0 <= constantAttenuationIn)
+		{
+			constant_attenuation = constantAttenuationIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	double getLinearAttenuation()
+	{
+		return linear_attenuation;
+	}
+
+	int setLinearAttenuation(double linearAttenuationIn)
+	{
+		if (0.0 <= linearAttenuationIn)
+		{
+			linear_attenuation = linearAttenuationIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	double getQuadraticAttenuation()
+	{
+		return linear_attenuation;
+	}
+
+	int setQuadraticAttenuation(double quadraticAttenuationIn)
+	{
+		if (0.0 <= quadraticAttenuationIn)
+		{
+			quadratic_attenuation = quadraticAttenuationIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			return CMZN_OK;
+		}
+		return CMZN_ERROR_ARGUMENT;
+	}
+
+	int setEnabled(int enabledIn)
+	{
+		if (enabled != enabledIn)
+		{
+			enabled = enabledIn;
+			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+		}
+		return CMZN_OK;
+	}
+
+	int isEnabled()
+	{
+		return enabled;
+	}
+
+	inline cmzn_light *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	/** deaccess handling is_managed_flag */
+	static inline int deaccess(cmzn_light **object_address)
+	{
+		int return_code = 1;
+		cmzn_light *object;
+		if (object_address && (object = *object_address))
+		{
+			(object->access_count)--;
+			if (object->access_count <= 0)
+			{
+				delete object;
+				object = 0;
+			}
+			else if ((!object->is_managed_flag) && (object->manager) &&
+				((1 == object->access_count) || ((2 == object->access_count) &&
+					(MANAGER_CHANGE_NONE(cmzn_light) != object->manager_change_status))))
+			{
+				return_code = REMOVE_OBJECT_FROM_MANAGER(cmzn_light)(object, object->manager);
+			}
+			*object_address = static_cast<cmzn_light *>(0);
+		}
+		else
+		{
+			return_code = 0;
+		}
+		return (return_code);
+	}
+
+	virtual cmzn_light_change_detail *extract_change_detail()
+	{
+		return NULL;
+	}
+
+}; /* struct cmzn_light */
+
+/* Only to be used from FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL function
+ * Creates a pseudo object with name identifier suitable for finding
+ * objects by identifier with cmzn_set.
+ */
+class cmzn_light_identifier : private cmzn_light
+{
+public:
+	cmzn_light_identifier(const char *name)
+	{
+		cmzn_light::name = name;
+	}
+
+	~cmzn_light_identifier()
+	{
+		cmzn_light::name = NULL;
+	}
+
+	cmzn_light *getPseudoObject()
+	{
+		return this;
+	}
+};
+
+/** functor for ordering cmzn_set<cmzn_light> by name */
+struct cmzn_light_compare_name
+{
+	bool operator() (const cmzn_light* light1, const cmzn_light* light2) const
+	{
+		return strcmp(light1->name, light2->name) < 0;
+	}
+};
+
+typedef cmzn_set<cmzn_light *,cmzn_light_compare_name> cmzn_set_cmzn_light;
+
+struct cmzn_lightiterator : public cmzn_set_cmzn_light::ext_iterator
+{
+private:
+	cmzn_lightiterator(cmzn_set_cmzn_light *container);
+	cmzn_lightiterator(const cmzn_lightiterator&);
+	~cmzn_lightiterator();
+
+public:
+
+	static cmzn_lightiterator *create(cmzn_set_cmzn_light *container)
+	{
+		return static_cast<cmzn_lightiterator *>(cmzn_set_cmzn_light::ext_iterator::create(container));
+	}
+
+	cmzn_lightiterator *access()
+	{
+		return static_cast<cmzn_lightiterator *>(this->cmzn_set_cmzn_light::ext_iterator::access());
+	}
+
+	static int deaccess(cmzn_lightiterator* &iterator)
+	{
+		cmzn_set_cmzn_light::ext_iterator* baseIterator = static_cast<cmzn_set_cmzn_light::ext_iterator*>(iterator);
+		iterator = 0;
+		return cmzn_set_cmzn_light::ext_iterator::deaccess(baseIterator);
+	}
+
+};
+
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_light, cmzn_lightmodule, cmzn_light_change_detail *);
+
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_light)
+
+inline struct cmzn_light_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_light)(
+	cmzn_light *filter)
+{
+	return filter->extract_change_detail();
+}
+
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_light)(
+	cmzn_light_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
+}
+
+struct cmzn_light *cmzn_light_create_private()
+{
+	return cmzn_light::create();
+}
+
+DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_light)
+
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_light)
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_light)
+
+PROTOTYPE_ACCESS_OBJECT_FUNCTION(cmzn_light)
+{
+	if (object)
+		return object->access();
+	return 0;
+}
+
+PROTOTYPE_DEACCESS_OBJECT_FUNCTION(cmzn_light)
+{
+	return cmzn_light::deaccess(object_address);
+}
+
+PROTOTYPE_REACCESS_OBJECT_FUNCTION(cmzn_light)
+{
+	if (object_address)
+	{
+		if (new_object)
+		{
+			new_object->access();
+		}
+		if (*object_address)
+		{
+			cmzn_light::deaccess(object_address);
+		}
+		*object_address = new_object;
+		return 1;
+	}
+	return 0;
+}
+
+DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(cmzn_light)
+
+DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_light)
+DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_light,name,const char *)
+DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_light,name)
+DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_light,cmzn_lightiterator)
+
+DECLARE_MANAGER_FUNCTIONS(cmzn_light,manager)
+DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_light,manager)
+DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_light,name,const char *,manager)
+DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_light, struct cmzn_lightmodule)
+
+
+cmzn_lightiterator *cmzn_lightmodule::createLightiterator()
+{
+	return CREATE_LIST_ITERATOR(cmzn_light)(this->lightManager->object_list);
+}
+
+int cmzn_light_manager_set_owner_private(struct MANAGER(cmzn_light) *manager,
+	struct cmzn_lightmodule *lightmodule)
+{
+	return MANAGER_SET_OWNER(cmzn_light)(manager, lightmodule);
+}
 
 /*
 Module variables
 ----------------
 */
-const char *get_Light_name(struct Light *light)
+const char *get_cmzn_light_name(struct cmzn_light *light)
 {
 	return light->name;
 }
@@ -247,9 +748,7 @@ Module functions
 ----------------
 */
 
-DECLARE_LOCAL_MANAGER_FUNCTIONS(Light)
-
-static int direct_render_Light(struct Light *light)
+static int direct_render_cmzn_light(struct cmzn_light *light)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -261,77 +760,116 @@ Directly outputs the commands to activate the <light>.
 	GLenum light_id;
 	GLfloat values[4];
 
-	ENTER(direct_render_Light);
 	if (light)
 	{
-		if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS)
+		values[0] = 0.;
+		values[1] = 0.;
+		values[2] = 0.;
+		values[3] = 1.;
+		if (light->type != CMZN_LIGHT_TYPE_INVALID)
 		{
-			light_id = light_identifiers[next_light_no];
-			values[0] = 0.;
-			values[1] = 0.;
-			values[2] = 0.;
-			values[3] = 1.;
-			glLightfv(light_id, GL_AMBIENT, values);
-			values[0] = (GLfloat)((light->colour).red);
-			values[1] = (GLfloat)((light->colour).green);
-			values[2] = (GLfloat)((light->colour).blue);
-			glLightfv(light_id, GL_DIFFUSE, values);
-			glLightfv(light_id, GL_SPECULAR, values);
-			switch (light->type)
+			if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
 			{
-				case INFINITE_LIGHT:
+				if (light->enabled == 1)
 				{
-					values[0] = -light->direction[0];
-					values[1] = -light->direction[1];
-					values[2] = -light->direction[2];
-					values[3] = 0.;
-					glLightfv(light_id, GL_POSITION, values);
-					glLightf(light_id, GL_SPOT_EXPONENT, 0.);
-					glLightf(light_id, GL_SPOT_CUTOFF, 180.);
-					glLightf(light_id, GL_CONSTANT_ATTENUATION, 1.);
-					glLightf(light_id, GL_LINEAR_ATTENUATION, 0.);
-					glLightf(light_id, GL_QUADRATIC_ATTENUATION, 0.);
-				} break;
-				case POINT_LIGHT:
+					values[0] = (GLfloat)((light->colour).red);
+					values[1] = (GLfloat)((light->colour).green);
+					values[2] = (GLfloat)((light->colour).blue);
+					glLightModelfv(GL_LIGHT_MODEL_AMBIENT,values);
+					if (CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL == light->viewer_mode)
+					{
+						glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
+					}
+					else if (CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE == light->viewer_mode)
+					{
+						glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_FALSE);
+					}
+					if (CMZN_LIGHT_RENDER_SIDE_DOUBLE==light->render_side)
+					{
+						glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
+					}
+					else
+					{
+						glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_FALSE);
+					}
+					glEnable(GL_LIGHTING);
+				}
+				else
 				{
-					values[0] = light->position[0];
-					values[1] = light->position[1];
-					values[2] = light->position[2];
-					values[3] = 1.;
-					glLightfv(light_id, GL_POSITION, values);
-					glLightf(light_id, GL_SPOT_EXPONENT, 0.);
-					glLightf(light_id, GL_SPOT_CUTOFF, 180.);
-					glLightf(light_id, GL_CONSTANT_ATTENUATION,
-						(GLfloat)(light->constant_attenuation));
-					glLightf(light_id, GL_LINEAR_ATTENUATION,
-						(GLfloat)(light->linear_attenuation));
-					glLightf(light_id, GL_QUADRATIC_ATTENUATION,
-						(GLfloat)(light->quadratic_attenuation));
-				} break;
-				case SPOT_LIGHT:
-				{
-					values[0] = light->position[0];
-					values[1] = light->position[1];
-					values[2] = light->position[2];
-					values[3] = 1.;
-					glLightfv(light_id,GL_POSITION,values);
-					values[0] = light->direction[0];
-					values[1] = light->direction[1];
-					values[2] = light->direction[2];
-					glLightfv(light_id, GL_SPOT_DIRECTION, values);
-					glLightf(light_id, GL_SPOT_EXPONENT, (GLfloat)(light->spot_exponent));
-					glLightf(light_id, GL_SPOT_CUTOFF, (GLfloat)(light->spot_cutoff));
-					glLightf(light_id, GL_CONSTANT_ATTENUATION,
-						(GLfloat)(light->constant_attenuation));
-					glLightf(light_id, GL_LINEAR_ATTENUATION,
-						(GLfloat)(light->linear_attenuation));
-					glLightf(light_id, GL_QUADRATIC_ATTENUATION,
-						(GLfloat)(light->quadratic_attenuation));
-				} break;
+					glDisable(GL_LIGHTING);
+				}
 			}
-			glEnable(light_id);
+			else
+			{
+				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS && light->enabled == 1)
+				{
+					light_id = light_identifiers[next_light_no];
+					glLightfv(light_id, GL_AMBIENT, values);
+					values[0] = (GLfloat)((light->colour).red);
+					values[1] = (GLfloat)((light->colour).green);
+					values[2] = (GLfloat)((light->colour).blue);
+					glLightfv(light_id, GL_DIFFUSE, values);
+					glLightfv(light_id, GL_SPECULAR, values);
+					switch (light->type)
+					{
+						case CMZN_LIGHT_TYPE_DIRECTIONAL:
+						{
+							values[0] = -light->direction[0];
+							values[1] = -light->direction[1];
+							values[2] = -light->direction[2];
+							values[3] = 0.;
+							glLightfv(light_id, GL_POSITION, values);
+							glLightf(light_id, GL_SPOT_EXPONENT, 0.);
+							glLightf(light_id, GL_SPOT_CUTOFF, 180.);
+							glLightf(light_id, GL_CONSTANT_ATTENUATION, 1.);
+							glLightf(light_id, GL_LINEAR_ATTENUATION, 0.);
+							glLightf(light_id, GL_QUADRATIC_ATTENUATION, 0.);
+						} break;
+						case CMZN_LIGHT_TYPE_POINT:
+						{
+							values[0] = light->position[0];
+							values[1] = light->position[1];
+							values[2] = light->position[2];
+							values[3] = 1.;
+							glLightfv(light_id, GL_POSITION, values);
+							glLightf(light_id, GL_SPOT_EXPONENT, 0.);
+							glLightf(light_id, GL_SPOT_CUTOFF, 180.);
+							glLightf(light_id, GL_CONSTANT_ATTENUATION,
+								(GLfloat)(light->constant_attenuation));
+							glLightf(light_id, GL_LINEAR_ATTENUATION,
+								(GLfloat)(light->linear_attenuation));
+							glLightf(light_id, GL_QUADRATIC_ATTENUATION,
+								(GLfloat)(light->quadratic_attenuation));
+						} break;
+						case CMZN_LIGHT_TYPE_SPOT:
+						{
+							values[0] = light->position[0];
+							values[1] = light->position[1];
+							values[2] = light->position[2];
+							values[3] = 1.;
+							glLightfv(light_id,GL_POSITION,values);
+							values[0] = light->direction[0];
+							values[1] = light->direction[1];
+							values[2] = light->direction[2];
+							glLightfv(light_id, GL_SPOT_DIRECTION, values);
+							glLightf(light_id, GL_SPOT_EXPONENT, (GLfloat)(light->spot_exponent));
+							glLightf(light_id, GL_SPOT_CUTOFF, (GLfloat)(light->spot_cutoff));
+							glLightf(light_id, GL_CONSTANT_ATTENUATION,
+								(GLfloat)(light->constant_attenuation));
+							glLightf(light_id, GL_LINEAR_ATTENUATION,
+								(GLfloat)(light->linear_attenuation));
+							glLightf(light_id, GL_QUADRATIC_ATTENUATION,
+								(GLfloat)(light->quadratic_attenuation));
+						} break;
+						default:
+						{
+						} break;
+					}
+					glEnable(light_id);
+					next_light_no++;
+				}
+			}
 			return_code = 1;
-			next_light_no++;
 		}
 		else
 		{
@@ -341,35 +879,37 @@ Directly outputs the commands to activate the <light>.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"direct_render_Light.  Missing light");
+		display_message(ERROR_MESSAGE,"direct_render_cmzn_light.  Missing light");
 		return_code=0;
 	}
-	LEAVE;
 
 	return (return_code);
-} /* direct_render_Light */
+} /* direct_render_cmzn_light */
 
 /*
 Global functions
 ----------------
 */
 
-PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Light_type)
+PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_light_type)
 {
 	const char *enumerator_string;
 
-	ENTER(ENUMERATOR_STRING(Light_type));
 	switch (enumerator_value)
 	{
-		case INFINITE_LIGHT:
+		case CMZN_LIGHT_TYPE_AMBIENT:
+		{
+			enumerator_string = "ambient";
+		} break;
+		case CMZN_LIGHT_TYPE_DIRECTIONAL:
 		{
 			enumerator_string = "infinite";
 		} break;
-		case POINT_LIGHT:
+		case CMZN_LIGHT_TYPE_POINT:
 		{
 			enumerator_string = "point";
 		} break;
-		case SPOT_LIGHT:
+		case CMZN_LIGHT_TYPE_SPOT:
 		{
 			enumerator_string = "spot";
 		} break;
@@ -378,657 +918,246 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Light_type)
 			enumerator_string = (const char *)NULL;
 		} break;
 	}
-	LEAVE;
 
 	return (enumerator_string);
-} /* ENUMERATOR_STRING(Light_type) */
+} /* ENUMERATOR_STRING(cmzn_light_type) */
 
-DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(Light_type)
+DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_light_type);
 
-struct Light *CREATE(Light)(const char *name)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Allocates memory and assigns fields for a light model.
-==============================================================================*/
+int cmzn_light_is_enabled(struct cmzn_light *light)
 {
-	struct Light *light;
-
-	ENTER(CREATE(Light));
-	if (name)
+	if (light)
 	{
-		/* allocate memory for structure */
-		if (ALLOCATE(light, struct Light, 1) &&
-			(light->name = duplicate_string(name)))
-		{
-			strcpy((char *)light->name, name);
-			light->access_count = 1;
-			light->manager = (struct MANAGER(Light) *)NULL;
-			light->manager_change_status = MANAGER_CHANGE_NONE(Light);
-			light->type=INFINITE_LIGHT;
-			(light->colour).red = 0.9;
-			(light->colour).green = 0.9;
-			(light->colour).blue = 0.9;
-			light->position[0] = 0;
-			light->position[1] = 0;
-			light->position[2] = 0;
-			light->direction[0] = 0;
-			light->direction[1] = 0;
-			light->direction[2] = -1;
-			light->constant_attenuation = 1.0;
-			light->linear_attenuation = 0.0;
-			light->quadratic_attenuation = 0.0;
-			light->spot_cutoff = 90.0;
-			light->spot_exponent = 0.0;
-			light->display_list=0;
-			light->display_list_current=0;
-		}
-		else
-		{
-			if (light)
-			{
-				DEALLOCATE(light);
-			}
-			display_message(ERROR_MESSAGE,"CREATE(Light).  Insufficient memory");
-			DEALLOCATE(light);
-		}
+		return light->isEnabled();
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"CREATE(Light).  Missing name");
-		light=(struct Light *)NULL;
-	}
-	LEAVE;
 
-	return (light);
-} /* CREATE(Light) */
+	return 0;
+}
 
-int DESTROY(Light)(struct Light **light_address)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Frees the memory for the light and sets <*light_address> to NULL.
-==============================================================================*/
+int cmzn_light_set_enabled(struct cmzn_light *light, int enabled)
 {
-	int return_code;
-	struct Light *light;
-
-	ENTER(DESTROY(Light));
-	if (light_address&&(light= *light_address))
+	if (light)
 	{
-		if (0==light->access_count)
-		{
-			DEALLOCATE(light->name);
-			if (light->display_list)
-			{
-				glDeleteLists(light->display_list,1);
-			}
-			DEALLOCATE(*light_address);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"DESTROY(Light).  Non-zero access count!");
-			return_code=0;
-		}
+		return light->setEnabled(enabled);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"DESTROY(Light).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* DESTROY(Light) */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-DECLARE_OBJECT_FUNCTIONS(Light)
-DECLARE_DEFAULT_GET_OBJECT_NAME_FUNCTION(Light)
-
-DECLARE_LIST_FUNCTIONS(Light)
-DECLARE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(Light,name,const char *,strcmp)
-DECLARE_LIST_IDENTIFIER_CHANGE_FUNCTIONS(Light,name)
-
-PROTOTYPE_MANAGER_COPY_WITH_IDENTIFIER_FUNCTION(Light,name)
+double cmzn_light_get_quadratic_attenuation(struct cmzn_light *light)
 {
-	char *name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITH_IDENTIFIER(Light,name));
-	/* check arguments */
-	if (source&&destination)
+	if (light)
 	{
-		if (source->name)
-		{
-			if (ALLOCATE(name,char,strlen(source->name)+1))
-			{
-				strcpy(name,source->name);
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Light,name).  Insufficient memory");
-				return_code=0;
-			}
-		}
-		else
-		{
-			name=(char *)NULL;
-			return_code=1;
-		}
-		if (return_code)
-		{
-			return_code = MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name)(
-				destination,source);
-			if (return_code)
-			{
-				/* copy values */
-				DEALLOCATE(destination->name);
-				destination->name=name;
-			}
-			else
-			{
-				DEALLOCATE(name);
-				display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Light,name).  Could not copy without identifier");
-			}
-		}
+		return light->getQuadraticAttenuation();
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-"MANAGER_COPY_WITH_IDENTIFIER(Light,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* MANAGER_COPY_WITH_IDENTIFIER(Light,name) */
+	return 0.0;
+}
 
-PROTOTYPE_MANAGER_COPY_WITHOUT_IDENTIFIER_FUNCTION(Light,name)
+int cmzn_light_set_quadratic_attenuation(struct cmzn_light *light, double quadratic_attenuation)
 {
-	int return_code;
-
-	ENTER(MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name));
-	if (source && destination)
+	if (light)
 	{
-		/* copy values */
-		destination->type = source->type;
-		(destination->colour).red = (source->colour).red;
-		(destination->colour).green = (source->colour).green;
-		(destination->colour).blue = (source->colour).blue;
-		destination->position[0] = source->position[0];
-		destination->position[1] = source->position[1];
-		destination->position[2] = source->position[2];
-		destination->direction[0] = source->direction[0];
-		destination->direction[1] = source->direction[1];
-		destination->direction[2] = source->direction[2];
-		destination->constant_attenuation = source->constant_attenuation;
-		destination->linear_attenuation = source->linear_attenuation;
-		destination->quadratic_attenuation = source->quadratic_attenuation;
-		destination->spot_cutoff = source->spot_cutoff;
-		destination->spot_exponent = source->spot_exponent;
-		destination->display_list_current = 0;
-		return_code = 1;
+		return light->setQuadraticAttenuation(quadratic_attenuation);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name).  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* MANAGER_COPY_WITHOUT_IDENTIFIER(Light,name) */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-PROTOTYPE_MANAGER_COPY_IDENTIFIER_FUNCTION(Light,name,const char *)
+double cmzn_light_get_linear_attenuation(struct cmzn_light *light)
 {
-	char *destination_name;
-	int return_code;
-
-	ENTER(MANAGER_COPY_IDENTIFIER(Light,name));
-	if (name&&destination)
+	if (light)
 	{
-		if (ALLOCATE(destination_name,char,strlen(name)+1))
-		{
-			strcpy(destination_name,name);
-			if (destination->name)
-			{
-				DEALLOCATE(destination->name);
-			}
-			destination->name=destination_name;
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"MANAGER_COPY_IDENTIFIER(Light,name).  Insufficient memory");
-			return_code=0;
-		}
+		return light->getLinearAttenuation();
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"MANAGER_COPY_IDENTIFIER(Light,name).  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* MANAGER_COPY_IDENTIFIER(Light,name) */
+	return 0.0;
+}
 
-DECLARE_MANAGER_FUNCTIONS(Light,manager)
-
-DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(Light,manager)
-
-DECLARE_MANAGER_IDENTIFIER_FUNCTIONS(Light,name,const char *,manager)
-
-int get_Light_attenuation(struct Light *light, GLfloat *constant_attenuation,
-	GLfloat *linear_attenuation, GLfloat *quadratic_attenuation)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Returns the constant, linear and quadratic attentuation factors which control
-the falloff in intensity of <light> according to 1/(c + l*d + q*d*d)
-where d=distance, c=constant, l=linear, q=quadratic.
-Values 1 0 0, ie. only constant attenuation of 1 gives no attenuation.
-Infinite/directional lights are not affected by these values.
-==============================================================================*/
+int cmzn_light_set_linear_attenuation(struct cmzn_light *light, double linear_attenuation)
 {
-	int return_code;
-
-	ENTER(get_Light_attenuation);
-	if (light && constant_attenuation && linear_attenuation &&
-		quadratic_attenuation)
+	if (light)
 	{
-		*constant_attenuation = light->constant_attenuation;
-		*linear_attenuation = light->linear_attenuation;
-		*quadratic_attenuation = light->quadratic_attenuation;
-		return_code = 1;
+		return light->setLinearAttenuation(linear_attenuation);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_attenuation.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_attenuation */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-int set_Light_attenuation(struct Light *light, GLfloat constant_attenuation,
-	GLfloat linear_attenuation, GLfloat quadratic_attenuation)
-/*******************************************************************************
-LAST MODIFIED : 9 October 2002
-
-DESCRIPTION :
-Sets the constant, linear and quadratic attentuation factors which control
-the falloff in intensity of <light> according to 1/(c + l*d + q*d*d)
-where d=distance, c=constant, l=linear, q=quadratic.
-Values 1 0 0, ie. only constant attenuation of 1 gives no attenuation.
-Infinite/directional lights are not affected by these values.
-==============================================================================*/
+double cmzn_light_get_constant_attenuation(struct cmzn_light *light)
 {
-	int return_code;
-
-	ENTER(set_Light_attenuation);
-	if (light && (0.0 <= constant_attenuation) && (0.0 <= linear_attenuation) &&
-		(0.0 <= quadratic_attenuation))
+	if (light)
 	{
-		light->constant_attenuation = constant_attenuation;
-		light->linear_attenuation = linear_attenuation;
-		light->quadratic_attenuation = quadratic_attenuation;
-		/* display list needs to be compiled again */
-		light->display_list_current = 0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code = 1;
+
+		return light->getConstantAttenuation();
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_attenuation.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_attenuation */
+	return 0.0;
+}
 
-int get_Light_colour(struct Light *light,struct Colour *colour)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Returns the colour of the light.
-==============================================================================*/
+int cmzn_light_set_constant_attenuation(struct cmzn_light *light, double constant_attenuation)
 {
-	int return_code;
-
-	ENTER(get_Light_colour);
-	if (light&&colour)
+	if (light)
 	{
-		colour->red=light->colour.red;
-		colour->green=light->colour.green;
-		colour->blue=light->colour.blue;
-		return_code=1;
+		return light->setConstantAttenuation(constant_attenuation);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_colour.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_colour */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-int set_Light_colour(struct Light *light,struct Colour *colour)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Sets the colour of the light.
-==============================================================================*/
+int cmzn_light_get_colour(struct cmzn_light *light, double *colour)
 {
-	int return_code;
-
-	ENTER(set_Light_colour);
-	if (light&&colour)
+	if (light)
 	{
-		light->colour.red=colour->red;
-		light->colour.green=colour->green;
-		light->colour.blue=colour->blue;
-		/* display list needs to be compiled again */
-		light->display_list_current=0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code=1;
+		return light->getColour(colour);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_colour.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_colour */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_get_colour */
 
-int get_Light_direction(struct Light *light,GLfloat direction[3])
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
+int cmzn_light_set_colour(struct cmzn_light *light, const double *colour)
 
-DESCRIPTION :
-Returns the direction of the light, relevent for infinite and spot lights.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(get_Light_direction);
-	if (light&&direction)
+	if (light)
 	{
-		direction[0]=light->direction[0];
-		direction[1]=light->direction[1];
-		direction[2]=light->direction[2];
-		return_code=1;
+		return light->setColour(colour);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_direction.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_direction */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_set_colour */
 
-int set_Light_direction(struct Light *light,GLfloat direction[3])
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Sets the direction of the light, relevent for infinite and spot lights.
-==============================================================================*/
+int cmzn_light_get_direction(struct cmzn_light *light, double *direction)
 {
-	int return_code;
-
-	ENTER(set_Light_direction);
-	if (light&&direction)
+	if (light)
 	{
-		light->direction[0]=direction[0];
-		light->direction[1]=direction[1];
-		light->direction[2]=direction[2];
-		/* display list needs to be compiled again */
-		light->display_list_current=0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code=1;
+		return light->getDirection(direction);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_direction.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_direction */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_get_position */
 
-int get_Light_position(struct Light *light,GLfloat position[3])
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Returns the position of the light, relevent for point and spot lights.
-==============================================================================*/
+int cmzn_light_set_direction(struct cmzn_light *light, const double *direction)
 {
-	int return_code;
-
-	ENTER(get_Light_position);
-	if (light&&position)
+	if (light)
 	{
-		position[0]=light->position[0];
-		position[1]=light->position[1];
-		position[2]=light->position[2];
-		return_code=1;
+		return light->setDirection(direction);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_position.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_position */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_set_direction */
 
-int set_Light_position(struct Light *light,GLfloat position[3])
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Sets the position of the light, relevent for point and spot lights.
-==============================================================================*/
+int cmzn_light_get_position(struct cmzn_light *light, double *position)
 {
-	int return_code;
-
-	ENTER(set_Light_position);
-	if (light&&position)
+	if (light)
 	{
-		light->position[0]=position[0];
-		light->position[1]=position[1];
-		light->position[2]=position[2];
-		/* display list needs to be compiled again */
-		light->display_list_current=0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code=1;
+		return light->getPosition(position);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_position.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_position */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_get_position */
 
-int get_Light_spot_cutoff(struct Light *light, GLfloat *spot_cutoff)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Returns the spotlight cutoff angle in degrees from 0 to 90.
-==============================================================================*/
+int cmzn_light_set_position(struct cmzn_light *light, const double *position)
 {
-	int return_code;
-
-	ENTER(get_Light_spot_cutoff);
-	if (light && spot_cutoff)
+	if (light)
 	{
-		*spot_cutoff = light->spot_cutoff;
-		return_code = 1;
+		return light->setPosition(position);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_spot_cutoff.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_spot_cutoff */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_set_position */
 
-int set_Light_spot_cutoff(struct Light *light, GLfloat spot_cutoff)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Sets the spotlight cutoff angle in degrees from 0 to 90.
-==============================================================================*/
+double cmzn_light_get_spot_cutoff(struct cmzn_light *light)
 {
-	int return_code;
-
-	ENTER(set_Light_spot_cutoff);
-	if (light && (0.0 <= spot_cutoff) && (90.0 >= spot_cutoff))
+	if (light)
 	{
-		light->spot_cutoff = spot_cutoff;
-		/* display list needs to be compiled again */
-		light->display_list_current = 0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code = 1;
+		return light->getSpotCutoff();
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_spot_cutoff.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_spot_cutoff */
+	return 0.0;
+}
 
-int get_Light_spot_exponent(struct Light *light, GLfloat *spot_exponent)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Returns the spotlight exponent which controls how concentrated the spotlight
-becomes as one approaches its axis. A value of 0.0 gives even illumination
-throughout the cutoff angle.
-==============================================================================*/
+int cmzn_light_set_spot_cutoff(struct cmzn_light *light, double spot_cutoff)
 {
-	int return_code;
-
-	ENTER(get_Light_spot_exponent);
-	if (light && spot_exponent)
+	if (light)
 	{
-		*spot_exponent = light->spot_exponent;
-		return_code = 1;
+		return light->setSpotCutoff(spot_cutoff);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_spot_exponent.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_spot_exponent */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-int set_Light_spot_exponent(struct Light *light, GLfloat spot_exponent)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Sets the spotlight exponent which controls how concentrated the spotlight
-becomes as one approaches its axis. A value of 0.0 gives even illumination
-throughout the cutoff angle.
-==============================================================================*/
+double cmzn_light_get_spot_exponent(struct cmzn_light *light)
 {
-	int return_code;
-
-	ENTER(set_Light_spot_exponent);
-	if (light && (0.0 <= spot_exponent))
+	if (light)
 	{
-		light->spot_exponent = spot_exponent;
-		/* display list needs to be compiled again */
-		light->display_list_current = 0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code = 1;
+		return light->getSpotExponent();
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_spot_exponent.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_spot_exponent */
+	return 0.0;
+}
 
-int get_Light_type(struct Light *light,enum Light_type *light_type)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Returns the light_type of the light (infinite/point/spot).
-==============================================================================*/
+int cmzn_light_set_spot_exponent(struct cmzn_light *light, double spot_exponent)
 {
-	int return_code;
-
-	ENTER(get_Light_type);
-	if (light&&light_type)
+	if (light)
 	{
-		*light_type=light->type;
-		return_code=1;
+		return light->setSpotExponent(spot_exponent);
 	}
-	else
+
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_light_set_spot_exponent */
+
+enum cmzn_light_render_side cmzn_light_get_render_side(struct cmzn_light *light)
+{
+	if (light)
 	{
-		display_message(ERROR_MESSAGE,
-			"get_Light_type.  Invalid argument(s)");
-		return_code=0;
+		return light->getRenderSide();
 	}
-	LEAVE;
 
-	return (return_code);
-} /* get_Light_type */
+	return CMZN_LIGHT_RENDER_SIDE_INVALID;
+}
 
-int set_Light_type(struct Light *light,enum Light_type light_type)
+int cmzn_light_set_render_side(struct cmzn_light *light, enum cmzn_light_render_side render_side)
+{
+	if (light)
+	{
+		return light->setRenderSide(render_side);
+	}
+
+	return CMZN_ERROR_ARGUMENT;
+}
+
+enum cmzn_light_render_viewer_mode cmzn_light_get_render_viewer_mode(struct cmzn_light *light)
+{
+	if (light)
+	{
+		return light->getRenderViewerMode();
+	}
+
+	return CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID;
+}
+
+int cmzn_light_set_render_viewer_mode(struct cmzn_light *light,
+	enum cmzn_light_render_viewer_mode render_viewer_mode)
+{
+	if (light)
+	{
+		return light->setRenderViewerMode(render_viewer_mode);
+	}
+
+	return CMZN_ERROR_ARGUMENT;
+}
+
+enum cmzn_light_type cmzn_light_get_type(struct cmzn_light *light)
+{
+	if (light)
+	{
+		return light->getType();
+	}
+
+	return CMZN_LIGHT_TYPE_INVALID;
+}
+
+int cmzn_light_set_type(struct cmzn_light *light, enum cmzn_light_type light_type)
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
@@ -1036,30 +1165,15 @@ DESCRIPTION :
 Sets the light_type of the light (infinite/point/spot).
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(set_Light_type);
-	if (light&&((INFINITE_LIGHT==light_type)||(POINT_LIGHT==light_type)||
-		(SPOT_LIGHT==light_type)))
+	if (light)
 	{
-		light->type=light_type;
-		/* display list needs to be compiled again */
-		light->display_list_current=0;
-		MANAGED_OBJECT_CHANGE(Light)(light,	MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(Light));
-		return_code=1;
+		return light->setType(light_type);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"set_Light_type.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* set_Light_type */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-int list_Light(struct Light *light,void *dummy)
+int list_cmzn_light(struct cmzn_light *light,void *dummy)
 /*******************************************************************************
 LAST MODIFIED : 8 October 2002
 
@@ -1069,18 +1183,47 @@ Writes the properties of the <light> to the command window.
 {
 	int return_code;
 
-	ENTER(list_Light);
+	ENTER(list_cmzn_light);
 	USE_PARAMETER(dummy);
 	if (light)
 	{
-		display_message(INFORMATION_MESSAGE, "light : %s : %s\n",
-			light->name, ENUMERATOR_STRING(Light_type)(light->type));
+		display_message(INFORMATION_MESSAGE, "light : %s : %s",
+			light->name, ENUMERATOR_STRING(cmzn_light_type)(light->type));
+		if (true == light->enabled)
+		{
+			display_message(INFORMATION_MESSAGE, " : enable");
+		}
+		else
+		{
+			display_message(INFORMATION_MESSAGE, " : disable");
+		}
+		if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
+		{
+			if (light->viewer_mode == CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL)
+			{
+				display_message(INFORMATION_MESSAGE, " : local_viewer");
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " : infinite_viewer");
+			}
+			if (light->render_side == CMZN_LIGHT_RENDER_SIDE_SINGLE)
+			{
+				display_message(INFORMATION_MESSAGE, " : single_sided");
+			}
+			else
+			{
+				display_message(INFORMATION_MESSAGE, " : double_sided");
+			}
+		}
+		display_message(INFORMATION_MESSAGE,"\n");
 		display_message(INFORMATION_MESSAGE,
 			"  colour  red = %.3g, green = %.3g, blue = %.3g\n",
 			(light->colour).red, (light->colour).green, (light->colour).blue);
+
 		switch (light->type)
 		{
-			case POINT_LIGHT: case SPOT_LIGHT:
+			case CMZN_LIGHT_TYPE_POINT: case CMZN_LIGHT_TYPE_SPOT:
 			{
 				display_message(INFORMATION_MESSAGE,
 					"  position  x = %.3g, y = %.3g, z = %.3g\n",
@@ -1092,7 +1235,7 @@ Writes the properties of the <light> to the command window.
 		}
 		switch (light->type)
 		{
-			case INFINITE_LIGHT: case SPOT_LIGHT:
+			case CMZN_LIGHT_TYPE_DIRECTIONAL: case CMZN_LIGHT_TYPE_SPOT:
 			{
 				display_message(INFORMATION_MESSAGE,
 					"  direction  x = %.3g, y = %.3g, z = %.3g\n",
@@ -1104,8 +1247,8 @@ Writes the properties of the <light> to the command window.
 		}
 		switch (light->type)
 		{
-			case POINT_LIGHT:
-			case SPOT_LIGHT:
+			case CMZN_LIGHT_TYPE_POINT:
+			case CMZN_LIGHT_TYPE_SPOT:
 			{
 				display_message(INFORMATION_MESSAGE,
 					"  attenuation  constant = %g, linear = %g, quadratic = %g\n",
@@ -1117,13 +1260,14 @@ Writes the properties of the <light> to the command window.
 			{
 			}	break;
 		}
-		if (SPOT_LIGHT == light->type)
+		if (CMZN_LIGHT_TYPE_SPOT == light->type)
 		{
 			display_message(INFORMATION_MESSAGE,
 				"  spot cutoff = %.3g degrees\n", light->spot_cutoff);
 			display_message(INFORMATION_MESSAGE,
 				"  spot exponent = %g\n", light->spot_exponent);
 		}
+
 #if defined (DEBUG_CODE)
 		display_message(INFORMATION_MESSAGE,"  access count = %d\n",
 			light->access_count);
@@ -1132,15 +1276,15 @@ Writes the properties of the <light> to the command window.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"list_Light.  Missing light");
+		display_message(ERROR_MESSAGE,"list_cmzn_light.  Missing light");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Light */
+} /* list_cmzn_light */
 
-int list_Light_name(struct Light *light,void *preceding_text_void)
+int list_cmzn_light_name(struct cmzn_light *light,void *preceding_text_void)
 /*******************************************************************************
 LAST MODIFIED : 22 January 2002
 
@@ -1153,7 +1297,7 @@ name of the light if it contains any special characters.
 	char *name,*preceding_text;
 	int return_code;
 
-	ENTER(list_Light_name);
+	ENTER(list_cmzn_light_name);
 	if (light)
 	{
 		preceding_text=(char *)preceding_text_void;
@@ -1173,15 +1317,15 @@ name of the light if it contains any special characters.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"list_Light_name.  Missing light");
+		display_message(ERROR_MESSAGE,"list_cmzn_light_name.  Missing light");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Light_name */
+} /* list_cmzn_light_name */
 
-int list_Light_name_command(struct Light *light,void *preceding_text_void)
+int list_cmzn_light_name_command(struct cmzn_light *light,void *preceding_text_void)
 /*******************************************************************************
 LAST MODIFIED : 22 January 2002
 
@@ -1195,7 +1339,6 @@ Follows the light name with semicolon and carriage return.
 	char *name,*preceding_text;
 	int return_code;
 
-	ENTER(list_Light_name_command);
 	if (light)
 	{
 		preceding_text=(char *)preceding_text_void;
@@ -1215,211 +1358,53 @@ Follows the light name with semicolon and carriage return.
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"list_Light_name_command.  Missing light");
+		display_message(ERROR_MESSAGE,"list_cmzn_light_name_command.  Missing light");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* list_Light_name_command */
+} /* list_cmzn_light_name_command */
 
-int write_Light_name_command_to_comfile(struct Light *light,void *preceding_text_void)
-/*******************************************************************************
-LAST MODIFIED : 10 August 2007
-
-DESCRIPTION :
-Writes the name of the <light> to the comfile, preceded on each line by
-the optional <preceding_text> string. Makes sure quotes are put around the
-name of the light if it contains any special characters.
-Follows the light name with semicolon and carriage return.
-==============================================================================*/
-{
-	char *name,*preceding_text;
-	int return_code;
-
-	ENTER(write_Light_name_command_to_comfile);
-	if (light)
-	{
-		preceding_text=(char *)preceding_text_void;
-		if (preceding_text)
-		{
-			write_message_to_file(INFORMATION_MESSAGE,preceding_text);
-		}
-		name=duplicate_string(light->name);
-		if (name)
-		{
-			/* put quotes around name if it contains special characters */
-			make_valid_token(&name);
-			write_message_to_file(INFORMATION_MESSAGE,"%s;\n",name);
-			DEALLOCATE(name);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"list_Light_name_command.  Missing light");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* write_Light_name_command_to_comfile */
-
-int reset_Lights(void)
+int reset_cmzn_lights(void)
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
 DESCRIPTION :
 Must be called at start of rendering before lights are activate with
-execute_Light. Ensures all lights are off at the start of the rendering loop,
+execute_cmzn_light. Ensures all lights are off at the start of the rendering loop,
 and makes sure the lights that are subsequently defined start at GL_LIGHT0...
 ==============================================================================*/
 {
 	int return_code,light_no;
 
-	ENTER(reset_Lights);
 	for (light_no=0;light_no<MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS;light_no++)
 	{
 		glDisable(light_identifiers[light_no]);
 	}
 	next_light_no=0;
 	return_code=1;
-	LEAVE;
+
 
 	return (return_code);
-} /* reset_Lights */
+} /* reset_cmzn_lights */
 
-int compile_Light(struct Light *light,void *dummy_void)
+int execute_cmzn_light(struct cmzn_light *light,void *dummy_void)
 /*******************************************************************************
 LAST MODIFIED : 4 December 1997
 
 DESCRIPTION :
-Struct Light iterator function which should make a display list for the light.
-If OpenGL lights were set up half-way decently you could throw them all into
-display lists with this function and then execute them with execute_Light.
-However, the basic installation supports only EIGHT lights, but worse, they are
-each referenced by their own constants GL_LIGHT0..GL_LIGHT7. Hence, if you want
-differing combinations of lights in different windows and at different times,
-you can't use display lists since the light identifier would be hardwired in
-them.
-Hence, this routine does *nothing*, while the execute_Light routine just calls
-direct_render_Light. Before any lights are activated, however, you must call
-reset_Lights to turn all the lights off and set next_light_no to zero.
-Future improvements to OpenGL or other graphics libraries may overcome this
-problem.
+Struct cmzn_light iterator function for activating the <light>.
+Does not use display lists. See comments with compile_cmzn_light, above.
 ==============================================================================*/
 {
-	int return_code;
-
-	ENTER(compile_Light);
 	USE_PARAMETER(dummy_void);
-	if (light)
-	{
-/*
-		if (!light->display_list_current)
-		{
-			if (light->display_list||(light->display_list=glGenLists(1)))
-			{
-				glNewList(light->display_list,GL_COMPILE);
-				direct_render_Light(light);
-				glEndList();
-				light->display_list_current=1;
-				return_code=1;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"compile_Light.  Could not generate display list");
-				return_code=0;
-			}
-		}
-		else
-		{
-			return_code=1;
-		}
-*/
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"compile_Light.  Missing light");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* compile_Light */
+	return direct_render_cmzn_light(light);
 
-int execute_Light(struct Light *light,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
+}
 
-DESCRIPTION :
-Struct Light iterator function for activating the <light>.
-Does not use display lists. See comments with compile_Light, above.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(execute_Light);
-	USE_PARAMETER(dummy_void);
-/*
-	if (light)
-	{
-		if (light->display_list_current)
-		{
-			glCallList(light->display_list);
-			return_code=1;
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"execute_Light.  display list not current");
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"execute_Light.  Missing light");
-		return_code=0;
-	}
-*/
-	return_code=direct_render_Light(light);
-	LEAVE;
-
-	return (return_code);
-} /* execute_Light */
-
-int Light_to_list(struct Light *light,void *list_of_lights_void)
-/*******************************************************************************
-LAST MODIFIED : 9 December 1997
-
-DESCRIPTION :
-Light iterator function for duplicating lists of lights.
-==============================================================================*/
-{
-	int return_code;
-	struct LIST(Light) *list_of_lights;
-
-	ENTER(Light_to_list);
-	if (light&&(list_of_lights=(struct LIST(Light) *)list_of_lights_void))
-	{
-		return_code=ADD_OBJECT_TO_LIST(Light)(light,list_of_lights);
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Light_to_list.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Light_to_list */
-
-int Light_is_in_list(struct Light *light, void *light_list_void)
+int cmzn_light_is_in_list(struct cmzn_light *light, void *light_list_void)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
@@ -1428,91 +1413,253 @@ Returns true if <light> is in <light_list>.
 ==============================================================================*/
 {
 	int return_code;
-	struct LIST(Light) *light_list;
+	struct LIST(cmzn_light) *light_list;
 
-	ENTER(Light_is_in_list);
-	if (light && (light_list = (struct LIST(Light) *)light_list_void))
+	ENTER(cmzn_light_is_in_list);
+	if (light && (light_list = (struct LIST(cmzn_light) *)light_list_void))
 	{
-		return_code = IS_OBJECT_IN_LIST(Light)(light, light_list);
+		return_code = IS_OBJECT_IN_LIST(cmzn_light)(light, light_list);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Light_is_in_list.  Invalid argument(s)");
+			"cmzn_light_is_in_list.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Light_is_in_list */
+} /* cmzn_light_is_in_list */
 
-struct MANAGER(Light) *Light_module_get_manager(Light_module *light_module)
+struct MANAGER(cmzn_light) *cmzn_lightmodule_get_manager(cmzn_lightmodule *lightmodule)
 {
-	if (light_module)
-		return light_module->getManager();
+	if (lightmodule)
+		return lightmodule->getManager();
 	return 0;
 }
 
-Light_module *Light_module_create()
+cmzn_lightmodule *cmzn_lightmodule_create()
 {
-	return Light_module::create();
+	return cmzn_lightmodule::create();
 }
 
-Light_module *Light_module_access(
-	Light_module *light_module)
+cmzn_lightmodule *cmzn_lightmodule_access(
+	cmzn_lightmodule *lightmodule)
 {
-	if (light_module)
-		return light_module->access();
+	if (lightmodule)
+		return lightmodule->access();
 	return 0;
 }
 
-int Light_module_destroy(Light_module **light_module_address)
+int cmzn_lightmodule_destroy(cmzn_lightmodule **lightmodule_address)
 {
-	if (light_module_address)
-		return Light_module::deaccess(*light_module_address);
+	if (lightmodule_address)
+		return cmzn_lightmodule::deaccess(*lightmodule_address);
 	return CMZN_ERROR_ARGUMENT;
 }
 
-Light *Light_module_create_light(
-	Light_module *light_module)
+cmzn_light *cmzn_lightmodule_create_light(
+	cmzn_lightmodule *lightmodule)
 {
-	if (light_module)
-		return light_module->createLight();
+	if (lightmodule)
+		return lightmodule->createLight();
 	return 0;
 }
 
-int Light_module_begin_change(Light_module *light_module)
+int cmzn_lightmodule_begin_change(cmzn_lightmodule *lightmodule)
 {
-	if (light_module)
-		return light_module->beginChange();
+	if (lightmodule)
+		return lightmodule->beginChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-int Light_module_end_change(Light_module *light_module)
+int cmzn_lightmodule_end_change(cmzn_lightmodule *lightmodule)
 {
-	if (light_module)
-		return light_module->endChange();
+	if (lightmodule)
+		return lightmodule->endChange();
    return CMZN_ERROR_ARGUMENT;
 }
 
-Light *Light_module_find_light_by_name(
-	Light_module *light_module, const char *name)
+cmzn_light *cmzn_lightmodule_find_light_by_name(
+	cmzn_lightmodule *lightmodule, const char *name)
 {
-	if (light_module)
-		return light_module->findLightByName(name);
+	if (lightmodule)
+		return lightmodule->findLightByName(name);
    return 0;
 }
 
-Light *Light_module_get_default_light(Light_module *light_module)
+cmzn_light *cmzn_lightmodule_get_default_light(cmzn_lightmodule *lightmodule)
 {
-	if (light_module)
-		return light_module->getDefaultLight();
+	if (lightmodule)
+		return lightmodule->getDefaultLight();
 	return 0;
 }
 
-int Light_module_set_default_light(Light_module *light_module, Light *light)
+int cmzn_lightmodule_set_default_light(cmzn_lightmodule *lightmodule, cmzn_light *light)
 {
-	if (light_module)
-		return light_module->setDefaultLight(light);
+	if (lightmodule)
+		return lightmodule->setDefaultLight(light);
+	return 0;
+}
+
+cmzn_light *cmzn_lightmodule_get_default_ambient_light(cmzn_lightmodule *lightmodule)
+{
+	if (lightmodule)
+		return lightmodule->getDefaultAmbientLight();
+	return 0;
+}
+
+int cmzn_lightmodule_set_default_ambient_light(cmzn_lightmodule *lightmodule, cmzn_light *light)
+{
+	if (lightmodule)
+		return lightmodule->setDefaultAmbientLight(light);
+	return 0;
+}
+
+cmzn_light_id cmzn_light_access(cmzn_light_id light)
+{
+	if (light)
+		return ACCESS(cmzn_light)(light);
+	return 0;
+}
+
+int cmzn_light_destroy(cmzn_light_id *light_address)
+{
+	return DEACCESS(cmzn_light)(light_address);
+}
+
+char *cmzn_light_get_name(struct cmzn_light *light)
+{
+	char *name = NULL;
+	if (light && light->name)
+	{
+		name = duplicate_string(light->name);
+	}
+	return name;
+}
+
+int cmzn_light_set_name(struct cmzn_light *light, const char *name)
+{
+	int return_code;
+
+	ENTER(cmzn_light_set_name);
+	if (light && name)
+	{
+		return_code = 1;
+		cmzn_set_cmzn_light *manager_light_list = 0;
+		bool restore_changed_object_to_lists = false;
+		if (light->manager)
+		{
+			cmzn_light *existing_light =
+				FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_light, name)(name, light->manager);
+			if (existing_light && (existing_light != light))
+			{
+				display_message(ERROR_MESSAGE, "cmzn_light_set_name.  "
+					"light named '%s' already exists.", name);
+				return_code = 0;
+			}
+			if (return_code)
+			{
+				manager_light_list = reinterpret_cast<cmzn_set_cmzn_light *>(
+					light->manager->object_list);
+				// this temporarily removes the object from all related lists
+				restore_changed_object_to_lists =
+					manager_light_list->begin_identifier_change(light);
+				if (!restore_changed_object_to_lists)
+				{
+					display_message(ERROR_MESSAGE, "cmzn_light_set_name.  "
+						"Could not safely change identifier in manager");
+					return_code = 0;
+				}
+			}
+		}
+		if (return_code)
+		{
+			char *new_name = duplicate_string(name);
+			if (new_name)
+			{
+				DEALLOCATE(light->name);
+				light->name = new_name;
+			}
+			else
+			{
+				return_code = 0;
+			}
+		}
+		if (restore_changed_object_to_lists)
+		{
+			manager_light_list->end_identifier_change();
+		}
+		if (light->manager && return_code)
+		{
+			MANAGED_OBJECT_CHANGE(cmzn_light)(light,
+				MANAGER_CHANGE_IDENTIFIER(cmzn_light));
+		}
+	}
+	else
+	{
+		if (light)
+		{
+			display_message(ERROR_MESSAGE,
+				"cmzn_light_set_name.  Invalid light name '%s'", name);
+		}
+		return_code=0;
+	}
+
+	return (return_code);
+}
+
+bool cmzn_light_is_managed(cmzn_light_id light)
+{
+	if (light)
+	{
+		return light->is_managed_flag;
+	}
+	return 0;
+}
+
+int cmzn_light_set_managed(cmzn_light_id light,
+	bool value)
+{
+	if (light)
+	{
+		bool old_value = light->is_managed_flag;
+		light->is_managed_flag = (value != 0);
+		if (value != old_value)
+		{
+			MANAGED_OBJECT_CHANGE(cmzn_light)(light,
+				MANAGER_CHANGE_DEFINITION(cmzn_light));
+		}
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+cmzn_lightiterator_id cmzn_lightmodule_create_lightiterator(
+	cmzn_lightmodule_id lightmodule)
+{
+	if (lightmodule)
+		return lightmodule->createLightiterator();
+	return 0;
+}
+
+cmzn_lightiterator_id cmzn_lightiterator_access(cmzn_lightiterator_id iterator)
+{
+	if (iterator)
+		return iterator->access();
+	return 0;
+}
+
+int cmzn_lightiterator_destroy(cmzn_lightiterator_id *iterator_address)
+{
+	if (!iterator_address)
+		return 0;
+	return cmzn_lightiterator::deaccess(*iterator_address);
+}
+
+cmzn_light_id cmzn_lightiterator_next(cmzn_lightiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next();
 	return 0;
 }

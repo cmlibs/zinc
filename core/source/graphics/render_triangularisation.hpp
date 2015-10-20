@@ -120,20 +120,11 @@ public:
 	}
 	
 	/***************************************************************************//**
-	 * Execute the Light.
+	 * Execute the cmzn_light.
 	 */
-	virtual int Light_execute(Light *light)
+	virtual int cmzn_light_execute(cmzn_light *light)
 	{
 		USE_PARAMETER(light);
-		return 1;
-	}
-	
-	/***************************************************************************//**
-	 * Execute the Light.
-	 */
-	virtual int Light_model_execute(Light_model *light_model)
-	{
-		USE_PARAMETER(light_model);
 		return 1;
 	}
 

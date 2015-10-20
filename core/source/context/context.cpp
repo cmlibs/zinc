@@ -332,6 +332,21 @@ cmzn_sceneviewermodule_id cmzn_context_get_sceneviewermodule(
 	return 0;
 }
 
+cmzn_lightmodule_id cmzn_context_get_lightmodule(
+	cmzn_context_id context)
+{
+	if (context)
+	{
+		struct cmzn_graphics_module *graphicsModule =
+			cmzn_context_get_graphics_module(context);
+		cmzn_lightmodule_id lightmodule =
+			cmzn_graphics_module_get_lightmodule(graphicsModule);
+		cmzn_graphics_module_destroy(&graphicsModule);
+		return lightmodule;
+	}
+
+	return 0;
+}
 
 cmzn_materialmodule_id cmzn_context_get_materialmodule(
 	cmzn_context_id context)

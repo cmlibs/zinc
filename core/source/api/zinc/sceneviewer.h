@@ -13,6 +13,7 @@
 
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
+#include "types/lightid.h"
 #include "types/scenefilterid.h"
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
@@ -746,6 +747,57 @@ ZINC_API int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id scenev
  */
 ZINC_API int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id sceneviewer,
 	int layers);
+
+
+/**
+ * Adds a light to the Scene_viewer list of lights.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param light  Handle to the light to be added to scene viewer.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light);
+
+/**
+ * Check if a light is on Scene_viewer list of lights.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param light  Handle to the light to be checked.
+ * @return  1 if light is on the list, 0 otherwise.
+ */
+ZINC_API int cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light);
+
+/**
+ * Remove a light from the Scene_viewer list of lights.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param light  Handle to the light to be removed from scene viewer.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light);
+
+/**
+ * Get the ambient light of the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @return  handle to the ambient light, 0 on failure.
+ */
+ZINC_API cmzn_light_id cmzn_sceneviewer_get_ambient_light(
+	cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Set the ambient light of the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param ambient_light  handle to the ambient light to be set. Must
+ * 	be of CMZN_LIGHT_TYPE_AMBIENT type.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_set_ambient_light(
+	cmzn_sceneviewer_id sceneviewer,	cmzn_light_id ambient_light);
 
 /**
  * Create a notifier for getting callbacks for changes to the scene viewer..

@@ -46,8 +46,7 @@ November 97 Created from rendering part of Drawing.
 #include "general/message.h"
 #include "graphics/colour.h"
 #include "graphics/graphics_library.h"
-#include "graphics/light.h"
-#include "graphics/light_model.h"
+#include "graphics/light.hpp"
 #include "graphics/scene.h"
 #include "graphics/scenefilter.hpp"
 #include "graphics/texture.h"
@@ -184,7 +183,7 @@ int cmzn_sceneviewerinput_set_event_type(cmzn_sceneviewerinput_id input, cmzn_sc
 
 void cmzn_sceneviewer_trigger_notifier_callback(cmzn_sceneviewer_id sceneviewer, int changeFlags)
 {
-	if (0 < sceneviewer->notifier_list->size())
+	if (sceneviewer->notifier_list && (0 < sceneviewer->notifier_list->size()))
 	{
 		cmzn_sceneviewernotifier_list notifier_list(*(sceneviewer->notifier_list));
 		cmzn_sceneviewerevent_id event = new cmzn_sceneviewerevent();
@@ -1145,10 +1144,10 @@ DESCRIPTION :
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		reset_Lights();
+		reset_cmzn_lights();
 		/* turn on lights that are part of the Scene_viewer,
 			ie. headlamps */
-		FOR_EACH_OBJECT_IN_LIST(Light)(execute_Light,(void *)NULL,
+		FOR_EACH_OBJECT_IN_LIST(cmzn_light)(execute_cmzn_light,(void *)NULL,
 			scene_viewer->list_of_lights);
 
 		glMultMatrixd(scene_viewer->modelview_matrix);
@@ -2238,15 +2237,10 @@ access this function.
 				//glEnable(GL_SCISSOR_TEST);
 
 				/* glPushAttrib(GL_VIEWPORT_BIT); */
-				reset_Lights();
+				reset_cmzn_lights();
 
 				/* light model */
-				compile_Light_model(scene_viewer->light_model);
-				rendering_data.renderer->Light_model_execute(scene_viewer->light_model);
-
-				/* compile the viewer lights */
-				FOR_EACH_OBJECT_IN_LIST(Light)(compile_Light,(void *)NULL,
-					scene_viewer->list_of_lights);
+				rendering_data.renderer->cmzn_light_execute(scene_viewer->ambient_light);
 
 				/********* CALL THE RENDERING CALLSTACK **********/
 				Scene_viewer_call_next_renderer(&rendering_data);
@@ -2522,16 +2516,12 @@ void cmzn_sceneviewermodule_scenefilter_manager_callback(
 	struct MANAGER_MESSAGE(cmzn_scenefilter) *message, void *sceneviewermodule_void);
 
 void cmzn_sceneviewermodule_light_manager_callback(
-	struct MANAGER_MESSAGE(Light) *message, void *sceneviewermodule_void);
-
-void cmzn_sceneviewermodule_light_model_manager_callback(
-	struct MANAGER_MESSAGE(Light_model) *message, void *sceneviewermodule_void);
+	struct MANAGER_MESSAGE(cmzn_light) *message, void *sceneviewermodule_void);
 
 struct cmzn_sceneviewermodule *CREATE(cmzn_sceneviewermodule)(
 	struct Colour *background_colour,
-	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	Light_module *lightModule ,struct Light *default_light,
-	Light_model_module *lightModelModule, struct Light_model *default_light_model,
+	cmzn_lightmodule *lightModule ,struct cmzn_light *default_light,
+	struct cmzn_light *default_ambient_light,
 	cmzn_scenefiltermodule_id filterModule)
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -2542,7 +2532,7 @@ Creates a cmzn_sceneviewermodule.
 {
 	struct cmzn_sceneviewermodule *sceneviewermodule;
 
-	if (background_colour && default_light_model)//-- && user_interface && interactive_tool_manager)
+	if (background_colour)//-- && user_interface && interactive_tool_manager)
 	{
 		/* allocate memory for the scene_viewer structure */
 		if (ALLOCATE(sceneviewermodule,struct cmzn_sceneviewermodule,1))
@@ -2550,11 +2540,9 @@ Creates a cmzn_sceneviewermodule.
 			sceneviewermodule->access_count = 1;
 			sceneviewermodule->graphics_buffer_package = CREATE(Graphics_buffer_package)();
 			sceneviewermodule->background_colour = *background_colour;
-			sceneviewermodule->interactive_tool_manager = interactive_tool_manager;
-			sceneviewermodule->default_light = ACCESS(Light)(default_light);
-			sceneviewermodule->default_light_model = ACCESS(Light_model)(default_light_model);
-			sceneviewermodule->lightModule = Light_module_access(lightModule);
-			sceneviewermodule->lightModelModule = Light_model_module_access(lightModelModule);
+			sceneviewermodule->default_light = cmzn_light_access(default_light);
+			sceneviewermodule->default_ambient_light = cmzn_light_access(default_ambient_light);
+			sceneviewermodule->lightModule = cmzn_lightmodule_access(lightModule);
 			sceneviewermodule->filterModule = cmzn_scenefiltermodule_access(filterModule);
 			//-- sceneviewermodule->user_interface = user_interface;
 			sceneviewermodule->scene_viewer_list = CREATE(LIST(Scene_viewer))();
@@ -2563,13 +2551,9 @@ Creates a cmzn_sceneviewermodule.
 					(void *)sceneviewermodule,
 					cmzn_scenefiltermodule_get_manager(sceneviewermodule->filterModule));
 			sceneviewermodule->light_manager_callback_id =
-				MANAGER_REGISTER(Light)(cmzn_sceneviewermodule_light_manager_callback,
+				MANAGER_REGISTER(cmzn_light)(cmzn_sceneviewermodule_light_manager_callback,
 					(void *)sceneviewermodule,
-					Light_module_get_manager(sceneviewermodule->lightModule));
-			sceneviewermodule->light_model_manager_callback_id =
-				MANAGER_REGISTER(Light_model)(cmzn_sceneviewermodule_light_model_manager_callback,
-					(void *)sceneviewermodule,
-					Light_model_module_get_manager(sceneviewermodule->lightModelModule));
+					cmzn_lightmodule_get_manager(sceneviewermodule->lightModule));
 			sceneviewermodule->destroy_callback_list=
 					CREATE(LIST(CMZN_CALLBACK_ITEM(cmzn_sceneviewermodule_callback)))();
 		}
@@ -2663,16 +2647,12 @@ Destroys the sceneviewermodule.
 			sceneviewermodule->scenefilter_manager_callback_id,
 			cmzn_scenefiltermodule_get_manager(sceneviewermodule->filterModule));
 		cmzn_scenefiltermodule_destroy(&sceneviewermodule->filterModule);
-		MANAGER_DEREGISTER(Light)(
+		MANAGER_DEREGISTER(cmzn_light)(
 			sceneviewermodule->light_manager_callback_id,
-			Light_module_get_manager(sceneviewermodule->lightModule));
-		Light_module_destroy(&sceneviewermodule->lightModule);
-		DEACCESS(Light)(&sceneviewermodule->default_light);
-		MANAGER_DEREGISTER(Light_model)(
-			sceneviewermodule->light_model_manager_callback_id,
-			Light_model_module_get_manager(sceneviewermodule->lightModelModule));
-		Light_model_module_destroy(&sceneviewermodule->lightModelModule);
-		DEACCESS(Light_model)(&sceneviewermodule->default_light_model);
+			cmzn_lightmodule_get_manager(sceneviewermodule->lightModule));
+		cmzn_lightmodule_destroy(&sceneviewermodule->lightModule);
+		cmzn_light_destroy(&sceneviewermodule->default_light);
+		cmzn_light_destroy(&sceneviewermodule->default_ambient_light);
 		DEALLOCATE(*sceneviewermodule_address);
 		return_code = 1;
 	}
@@ -2823,14 +2803,14 @@ DESCRIPTION :
 } /* Scene_viewer_get_graphics_buffer_package */
 
 
-int Scene_viewer_remove_light_in_list_iterator(struct Light *light,void *scene_viewer_void)
+int cmzn_sceneviewer_remove_light_in_list_iterator(struct cmzn_light *light,void *scene_viewer_void)
 {
 	int return_code;
 	cmzn_sceneviewer *scene_viewer = (cmzn_sceneviewer *)scene_viewer_void;
 
 	if (light && scene_viewer)
 	{
-		Scene_viewer_remove_light(scene_viewer, light);
+		cmzn_sceneviewer_remove_light(scene_viewer, light);
 		return_code=1;
 	}
 	else
@@ -2839,12 +2819,12 @@ int Scene_viewer_remove_light_in_list_iterator(struct Light *light,void *scene_v
 	}
 
 	return (return_code);
-} /* list_Light_name */
+} /* list_cmzn_light_name */
 
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
-	struct Light *default_light,
-	struct Light_model *default_light_model,
+	struct cmzn_light *default_light,
+	struct cmzn_light *default_ambient_light,
 	cmzn_scenefilter_id filter)
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -2852,7 +2832,7 @@ LAST MODIFIED : 19 September 2002
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
 Note: the parent must be an XmForm since form constraints will be applied.
-If any of light_manager, light_model_manager or scene_manager
+If any of light_manager or scene_manager
 are supplied, the scene_viewer will automatically redraw in response to changes
 of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.
@@ -2864,7 +2844,7 @@ performed in idle time so that multiple redraws are avoided.
 	int return_code,i;
 	struct Scene_viewer *scene_viewer;
 
-	if (graphics_buffer && background_colour && default_light_model &&
+	if (graphics_buffer && background_colour && default_ambient_light &&
 		Graphics_buffer_get_buffering_mode(graphics_buffer,&graphics_buffer_buffering_mode) &&
 		Graphics_buffer_get_stereo_mode(graphics_buffer, &graphics_buffer_stereo_mode))
 	{
@@ -2911,7 +2891,7 @@ performed in idle time so that multiple redraws are avoided.
 			/* allocate memory for the scene_viewer structure */
 			ALLOCATE(scene_viewer, Scene_viewer, 1);
 			if (scene_viewer &&
-				(scene_viewer->list_of_lights=CREATE(LIST(Light)())))
+				(scene_viewer->list_of_lights=CREATE(LIST(cmzn_light)())))
 			{
 				scene_viewer->access_count = 1;
 				scene_viewer->filter = cmzn_scenefilter_access(filter);
@@ -2950,7 +2930,7 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->translate_rate=1.0;
 				scene_viewer->tumble_rate=1.5;
 				scene_viewer->zoom_rate=1.0;
-				scene_viewer->light_model=ACCESS(Light_model)(default_light_model);
+				scene_viewer->ambient_light=cmzn_light_access(default_ambient_light);
 				scene_viewer->antialias = 0;
 				scene_viewer->perturb_lines = false;
 				scene_viewer->blending_mode=CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL;
@@ -2964,8 +2944,8 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
 				if (default_light)
 				{
-					ACCESS(Light)(default_light);
-					ADD_OBJECT_TO_LIST(Light)(default_light,
+					ACCESS(cmzn_light)(default_light);
+					ADD_OBJECT_TO_LIST(cmzn_light)(default_light,
 						scene_viewer->list_of_lights);
 				}
 				/* managers and callback IDs for automatic updates */
@@ -3093,10 +3073,10 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		/* send the destroy callbacks */
 
 		/* dispose of our data structure */
-		DEACCESS(Light_model)(&(scene_viewer->light_model));
-		for_each_Light_in_Scene_viewer(scene_viewer,Scene_viewer_remove_light_in_list_iterator,
+		cmzn_light_destroy(&(scene_viewer->ambient_light));
+		for_each_cmzn_light_in_Scene_viewer(scene_viewer,cmzn_sceneviewer_remove_light_in_list_iterator,
 			(void *)scene_viewer);
-		DESTROY(LIST(Light))(&(scene_viewer->list_of_lights));
+		DESTROY(LIST(cmzn_light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->order_independent_transparency_data)
 		{
 			order_independent_finalise(
@@ -3170,7 +3150,7 @@ struct Scene_viewer *create_Scene_viewer_from_module(
 		scene_viewer = CREATE(Scene_viewer)(graphics_buffer,
 			&sceneviewermodule->background_colour,
 			sceneviewermodule->default_light,
-			sceneviewermodule->default_light_model,
+			sceneviewermodule->default_ambient_light,
 			filter);
 		cmzn_scenefilter_destroy(&filter);
 		if (scene_viewer)
@@ -4092,80 +4072,47 @@ Sets the input_mode of the Scene_viewer.
 	return (return_code);
 } /* Scene_viewer_set_input_mode */
 
-int Scene_viewer_add_light(struct Scene_viewer *scene_viewer,
-	struct Light *light)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Adds a light to the Scene_viewer list_of_lights.
-==============================================================================*/
+int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light)
 {
-	int return_code;
 
-	ENTER(Scene_viewer_add_light);
-	if (scene_viewer&&light)
+	if (sceneviewer && light)
 	{
-		if (!IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights))
+		enum cmzn_light_type lightType = cmzn_light_get_type(light);
+		if ((lightType != CMZN_LIGHT_TYPE_AMBIENT) &&
+			(lightType != CMZN_LIGHT_TYPE_INVALID))
 		{
-			ACCESS(Light)(light);
-			return_code=ADD_OBJECT_TO_LIST(Light)(light,scene_viewer->list_of_lights);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_add_light.  Light already in list");
-			return_code=0;
+			if (!IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights))
+			{
+				if (ADD_OBJECT_TO_LIST(cmzn_light)(light,sceneviewer->list_of_lights))
+				{
+					cmzn_light_access(light);
+					cmzn_sceneviewer_request_changes(sceneviewer,
+						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+					return CMZN_OK;
+				}
+			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_add_light.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Scene_viewer_add_light */
+	return CMZN_ERROR_ARGUMENT;
+}
 
-int Scene_viewer_has_light(struct Scene_viewer *scene_viewer,
-	struct Light *light)
-/*******************************************************************************
-LAST MODIFIED : 12 December 1997
+int cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light)
 
-DESCRIPTION :
-Returns true if <Scene_viewer> has <light> in its list_of_lights, OR if <light>
-is NULL, returns true if <scene_viewer> has any lights.
-==============================================================================*/
 {
-	int return_code;
-
-	ENTER(Scene_viewer_has_light);
-	if (scene_viewer)
+	if (sceneviewer && light)
 	{
-		if (light)
-		{
-			return_code=IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights);
-		}
-		else
-		{
-			return_code=NUMBER_IN_LIST(Light)(scene_viewer->list_of_lights);
-		}
+		return IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights);
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_has_light.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Scene_viewer_has_light */
+	return 0;
+}
 
-int Scene_viewer_has_light_in_list(struct Scene_viewer *scene_viewer,
-	struct LIST(Light) *light_list)
+int cmzn_sceneviewer_has_light_in_list(struct Scene_viewer *scene_viewer,
+	struct LIST(cmzn_light) *light_list)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
@@ -4175,10 +4122,10 @@ Returns true if the list_of_lights in <Scene> intersects <light_list>.
 {
 	int return_code;
 
-	ENTER(Scene_viewer_has_light_in_list);
+	ENTER(cmzn_sceneviewer_has_light_in_list);
 	if (scene_viewer && light_list)
 	{
-		if (FIRST_OBJECT_IN_LIST_THAT(Light)(Light_is_in_list,
+		if (FIRST_OBJECT_IN_LIST_THAT(cmzn_light)(cmzn_light_is_in_list,
 			(void *)light_list, scene_viewer->list_of_lights))
 		{
 			return_code = 1;
@@ -4191,51 +4138,66 @@ Returns true if the list_of_lights in <Scene> intersects <light_list>.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Scene_viewer_has_light_in_list.  Invalid argument(s)");
+			"cmzn_sceneviewer_has_light_in_list.  Invalid argument(s)");
 		return_code = 0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* Scene_viewer_has_light_in_list */
+} /* cmzn_sceneviewer_has_light_in_list */
 
-int Scene_viewer_remove_light(struct Scene_viewer *scene_viewer,
-	struct Light *light)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Removes a light from the Scene_viewer list_of_lights.
-==============================================================================*/
+int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light)
 {
-	int return_code;
-
-	ENTER(Scene_viewer_remove_light);
-	if (scene_viewer&&light)
+	if (sceneviewer && light)
 	{
-		if (IS_OBJECT_IN_LIST(Light)(light,scene_viewer->list_of_lights))
+		if (IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights))
 		{
-			return_code=REMOVE_OBJECT_FROM_LIST(Light)(light,
-				scene_viewer->list_of_lights);
-			DEACCESS(Light)(&light);
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,
-				"Scene_viewer_remove_light.  Light not in list");
-			return_code=0;
+			if (REMOVE_OBJECT_FROM_LIST(cmzn_light)(light,
+				sceneviewer->list_of_lights))
+			{
+				cmzn_light_destroy(&light);
+				cmzn_sceneviewer_request_changes(sceneviewer,
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				return CMZN_OK;
+			}
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_remove_light.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
 
-	return (return_code);
-} /* Scene_viewer_remove_light */
+	return CMZN_ERROR_ARGUMENT;
+} /* cmzn_sceneviewer_remove_light */
+
+cmzn_light_id cmzn_sceneviewer_get_ambient_light(
+	cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer && sceneviewer->ambient_light)
+	{
+		return  cmzn_light_access(sceneviewer->ambient_light);
+	}
+
+	return 0;
+}
+
+int cmzn_sceneviewer_set_ambient_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id ambient_light)
+{
+	if (sceneviewer && ambient_light && (
+		cmzn_light_get_type(ambient_light) == CMZN_LIGHT_TYPE_AMBIENT))
+	{
+		if (ambient_light != sceneviewer->ambient_light)
+		{
+			cmzn_light_destroy(&(sceneviewer->ambient_light));
+			sceneviewer->ambient_light=cmzn_light_access(ambient_light);
+			cmzn_sceneviewer_request_changes(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		}
+		return CMZN_OK;
+	}
+
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int Scene_viewer_add_clip_plane(struct Scene_viewer *scene_viewer,
 	double A, double B, double C, double D)
@@ -4366,65 +4328,6 @@ int cmzn_sceneviewer_set_interact_mode(cmzn_sceneviewer_id sceneviewer,
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
-
-struct Light_model *Scene_viewer_get_light_model(
-	struct Scene_viewer *scene_viewer)
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Returns the Scene_viewer light_model.
-==============================================================================*/
-{
-	struct Light_model *return_light_model;
-
-	ENTER(Scene_viewer_get_light_model);
-	if (scene_viewer)
-	{
-		return_light_model=scene_viewer->light_model;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_get_light_model.  Invalid argument(s)");
-		return_light_model=(struct Light_model *)NULL;
-	}
-	LEAVE;
-
-	return (return_light_model);
-} /* Scene_viewer_get_light_model */
-
-int Scene_viewer_set_light_model(struct Scene_viewer *scene_viewer,
-	struct Light_model *light_model)
-/*******************************************************************************
-LAST MODIFIED : 13 December 1997
-
-DESCRIPTION :
-Sets the Scene_viewer light_model.
-==============================================================================*/
-{
-	int return_code;
-
-	ENTER(Scene_viewer_set_light_model);
-	if (scene_viewer&&light_model)
-	{
-		if (light_model != scene_viewer->light_model)
-		{
-			DEACCESS(Light_model)(&(scene_viewer->light_model));
-			scene_viewer->light_model=ACCESS(Light_model)(light_model);
-		}
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"Scene_viewer_set_light_model.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* Scene_viewer_set_light_model */
 
 int cmzn_sceneviewer_set_eye_position(cmzn_sceneviewer_id scene_viewer,
 	const double *eyeValuesIn3)
@@ -5952,34 +5855,34 @@ int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
 	return CMZN_OK;
 }
 
-int for_each_Light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
-	LIST_ITERATOR_FUNCTION(Light) *iterator_function,void *user_data)
+int for_each_cmzn_light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
+	LIST_ITERATOR_FUNCTION(cmzn_light) *iterator_function,void *user_data)
 /*******************************************************************************
 LAST MODIFIED : 18 December 1997
 
 DESCRIPTION :
 Allows clients of the <scene_viewer> to perform functions with the lights in it.
-The most common task will to list the lights in the scene with show_Light.
+The most common task will to list the lights in the scene with show_cmzn_light.
 ==============================================================================*/
 {
 	int return_code;
 
-	ENTER(for_each_Light_in_Scene_viewer);
+	ENTER(for_each_cmzn_light_in_Scene_viewer);
 	if (scene_viewer)
 	{
-		return_code=FOR_EACH_OBJECT_IN_LIST(Light)(iterator_function,user_data,
+		return_code=FOR_EACH_OBJECT_IN_LIST(cmzn_light)(iterator_function,user_data,
 			scene_viewer->list_of_lights);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"for_each_Light_in_Scene_viewer.  Missing scene_viewer");
+			"for_each_cmzn_light_in_Scene_viewer.  Missing scene_viewer");
 		return_code=0;
 	}
 	LEAVE;
 
 	return (return_code);
-} /* for_each_Light_in_Scene_viewer */
+} /* for_each_cmzn_light_in_Scene_viewer */
 
 int Scene_viewer_get_frame_pixels(struct Scene_viewer *scene_viewer,
 	enum Texture_storage_type storage, int *width, int *height,
@@ -7291,45 +7194,32 @@ int cmzn_sceneviewer_scenefilter_change(struct Scene_viewer *scene_viewer,	void 
 int cmzn_sceneviewer_light_change(struct Scene_viewer *scene_viewer,	void *message_void)
 {
 	int return_code = 1;
-	struct MANAGER_MESSAGE(Light) *message = (struct MANAGER_MESSAGE(Light) *)message_void;
+	struct MANAGER_MESSAGE(cmzn_light) *message = (struct MANAGER_MESSAGE(cmzn_light) *)message_void;
 	if (scene_viewer && message)
 	{
 		if (scene_viewer->awaken)
 		{
-			struct LIST(Light) *changed_light_list =
-				MANAGER_MESSAGE_GET_CHANGE_LIST(Light)(message, MANAGER_CHANGE_RESULT(Light));
-			if (changed_light_list)
+			if (scene_viewer->ambient_light)
 			{
-				if (Scene_viewer_has_light_in_list(scene_viewer, changed_light_list))
+				int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_light)(message,
+					scene_viewer->ambient_light);
+				if (change & MANAGER_CHANGE_RESULT(cmzn_light))
 				{
 					cmzn_sceneviewer_request_changes(scene_viewer,
 						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 				}
-				DESTROY_LIST(Light)(&changed_light_list);
 			}
-		}
-	}
-	else
-	{
-		return_code = 0;
-	}
-	return return_code;
-}
 
-int cmzn_sceneviewer_light_model_change(struct Scene_viewer *scene_viewer,	void *message_void)
-{
-	int return_code = 1;
-	struct MANAGER_MESSAGE(Light_model) *message = (struct MANAGER_MESSAGE(Light_model) *)message_void;
-	if (scene_viewer && message)
-	{
-		if (scene_viewer->awaken && scene_viewer->light_model)
-		{
-			int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(Light_model)(message,
-				scene_viewer->light_model);
-			if (change & MANAGER_CHANGE_RESULT(Light_model))
+			struct LIST(cmzn_light) *changed_light_list =
+				MANAGER_MESSAGE_GET_CHANGE_LIST(cmzn_light)(message, MANAGER_CHANGE_RESULT(cmzn_light));
+			if (changed_light_list)
 			{
-				cmzn_sceneviewer_request_changes(scene_viewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				if (cmzn_sceneviewer_has_light_in_list(scene_viewer, changed_light_list))
+				{
+					cmzn_sceneviewer_request_changes(scene_viewer,
+						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+				}
+				DESTROY_LIST(cmzn_light)(&changed_light_list);
 			}
 		}
 	}
@@ -7360,37 +7250,18 @@ void cmzn_sceneviewermodule_scenefilter_manager_callback(
 }
 
 void cmzn_sceneviewermodule_light_manager_callback(
-	struct MANAGER_MESSAGE(Light) *message, void *sceneviewermodule_void)
+	struct MANAGER_MESSAGE(cmzn_light) *message, void *sceneviewermodule_void)
 {
 	cmzn_sceneviewermodule *sceneviewermodule = (cmzn_sceneviewermodule *)sceneviewermodule_void;
 	if (message && sceneviewermodule)
 	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Light))
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_light)(message);
+		if (change_summary & MANAGER_CHANGE_RESULT(cmzn_light))
 		{
 			// minimise scene messages while updating
 			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
 			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
 				cmzn_sceneviewer_light_change,(void *)message,
-				sceneviewermodule->scene_viewer_list);
-			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
-		}
-	}
-}
-
-void cmzn_sceneviewermodule_light_model_manager_callback(
-	struct MANAGER_MESSAGE(Light_model) *message, void *sceneviewermodule_void)
-{
-	cmzn_sceneviewermodule *sceneviewermodule = (cmzn_sceneviewermodule *)sceneviewermodule_void;
-	if (message && sceneviewermodule)
-	{
-		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(Light_model)(message);
-		if (change_summary & MANAGER_CHANGE_RESULT(Light_model))
-		{
-			// minimise scene messages while updating
-			//MANAGER_BEGIN_CACHE(cmzn_scene)(graphics_module->scene_manager);
-			FOR_EACH_OBJECT_IN_LIST(Scene_viewer)(
-				cmzn_sceneviewer_light_model_change,(void *)message,
 				sceneviewermodule->scene_viewer_list);
 			//MANAGER_END_CACHE(cmzn_scene)(graphics_module->scene_manager);
 		}

@@ -18,8 +18,7 @@ struct cmzn_scene;
 struct GT_element_group;
 struct Texture;
 struct cmzn_material;
-struct Light;
-struct Light_model;
+struct cmzn_light;
 class SubObjectGroupHighlightFunctor;
 
 /***************************************************************************//**
@@ -122,24 +121,14 @@ public:
 	virtual int Texture_execute(Texture *texture) = 0;
 
 	/***************************************************************************//**
-	 * Compile the Light.
+	 * Compile the cmzn_light.
 	 */
-	virtual int Light_compile(Light *light) = 0;
+	virtual int cmzn_light_compile(cmzn_light *light) = 0;
 	
 	/***************************************************************************//**
-	 * Execute the Light.
+	 * Execute the cmzn_light.
 	 */
-	virtual int Light_execute(Light *light) = 0;
-
-	/***************************************************************************//**
-	 * Compile the Light.
-	 */
-	virtual int Light_model_compile(Light_model *light_model) = 0;
-	
-	/***************************************************************************//**
-	 * Execute the Light.
-	 */
-	virtual int Light_model_execute(Light_model *light_model) = 0;
+	virtual int cmzn_light_execute(cmzn_light *light) = 0;
 
 	cmzn_scene *get_Scene()
 	{
@@ -246,22 +235,14 @@ public:
 	}
 
 	/***************************************************************************//**
-	 * @see Render_graphics::Light_compile
+	 * @see Render_graphics::cmzn_light_compile
 	 */
-	virtual int Light_compile(Light * /*light*/)
+	virtual int cmzn_light_compile(cmzn_light * /*light*/)
 	{
 		/* No member objects */
 		return 1;
 	}
 	
-	/***************************************************************************//**
-	 * @see Render_graphics::Light_model_compile
-	 */
-	virtual int Light_model_compile(Light_model * /*light_model*/)
-	{
-		/* No member objects */
-		return 1;
-	}
 
 	void set_world_view_matrix(double *matrix)
 	{
@@ -357,12 +338,7 @@ public:
 		return 1;
 	}
 
-	virtual int Light_execute(Light * /*light*/)
-	{
-		return 1;
-	}
-
-	virtual int Light_model_execute(Light_model * /*light_model*/)
+	virtual int cmzn_light_execute(cmzn_light * /*light*/)
 	{
 		return 1;
 	}

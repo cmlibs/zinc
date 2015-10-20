@@ -11,6 +11,7 @@
 
 #include "zinc/sceneviewer.h"
 #include "zinc/context.hpp"
+#include "zinc/light.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/scenefilter.hpp"
 
@@ -538,6 +539,31 @@ public:
 	{
 		return cmzn_sceneviewer_write_image_to_file(id, file_name, force_onscreen, preferred_width,
 			preferred_height, preferred_antialias, preferred_transparency_layers);
+	}
+
+	Light getAmbientLight()
+	{
+		return Light(cmzn_sceneviewer_get_ambient_light(id));
+	}
+
+	int setAmbientLight(const Light& ambientLight)
+	{
+		return cmzn_sceneviewer_set_ambient_light(id, ambientLight.getId());
+	}
+
+	int addLight(const Light& light)
+	{
+		return cmzn_sceneviewer_add_light(id, light.getId());
+	}
+
+	int hasLight(const Light& light)
+	{
+		return cmzn_sceneviewer_has_light(id, light.getId());
+	}
+
+	int removeLight(const Light& light)
+	{
+		return cmzn_sceneviewer_remove_light(id, light.getId());
 	}
 
 	Sceneviewernotifier createSceneviewernotifier()

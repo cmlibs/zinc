@@ -29,8 +29,8 @@ translating and zooming with mouse button press and motion events.
 #include "general/image_utilities.h"
 #include "general/object.h"
 #include "graphics/colour.h"
-#include "graphics/light.h"
-#include "graphics/light_model.h"
+#include "graphics/light.hpp"
+#include "graphics/render_gl.h"
 #include <list>
 
 struct Graphics_buffer;
@@ -224,11 +224,10 @@ The default data used to create cmzn_sceneviewers.
 	int access_count;
 	struct Graphics_buffer_package *graphics_buffer_package;
 	struct Colour background_colour;
-	struct MANAGER(Interactive_tool) *interactive_tool_manager;
-	Light_module *lightModule;
-	struct Light *default_light;
-	Light_model_module *lightModelModule;
-	struct Light_model *default_light_model;
+	//struct MANAGER(Interactive_tool) *interactive_tool_manager;
+	cmzn_lightmodule *lightModule;
+	struct cmzn_light *default_light;
+	struct cmzn_light *default_ambient_light;
 	cmzn_scenefiltermodule_id filterModule;
 	//-- struct User_interface *user_interface;
 	/* List of scene_viewers created with this package,
@@ -238,7 +237,6 @@ The default data used to create cmzn_sceneviewers.
 		*destroy_callback_list;
 	void *scenefilter_manager_callback_id;
 	void *light_manager_callback_id;
-	void *light_model_manager_callback_id;
 };
 
 struct Scene_viewer_image_texture
@@ -338,9 +336,9 @@ DESCRIPTION :
 		bk_texture_height,bk_texture_max_pixels_per_polygon;
 	int bk_texture_undistort_on;
 	/* the scene_viewer must always have a light model */
-	struct Light_model *light_model;
+	struct cmzn_light *ambient_light;
 	/* lights in this list are oriented relative to the viewer */
-	struct LIST(Light) *list_of_lights;
+	struct LIST(cmzn_light) *list_of_lights;
 	/* managers and callback IDs for automatic updates */
 	/* For interpreting mouse events */
 	cmzn_sceneviewer_interact_mode interact_mode;
@@ -406,9 +404,8 @@ Global functions
 */
 struct cmzn_sceneviewermodule *CREATE(cmzn_sceneviewermodule)(
 	struct Colour *background_colour,
-	struct MANAGER(Interactive_tool) *interactive_tool_manager,
-	Light_module *lightModule ,struct Light *default_light,
-	Light_model_module *lightModelModule, struct Light_model *default_light_model,
+	cmzn_lightmodule *lightModule ,struct cmzn_light *default_light,
+	struct cmzn_light *default_ambient_light,
 	cmzn_scenefiltermodule_id filterModule);
 /*******************************************************************************
 LAST MODIFIED : 19 January 2007
@@ -447,8 +444,8 @@ DESCRIPTION :
 
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
-	struct Light *default_light,
-	struct Light_model *default_light_model,
+	struct cmzn_light *default_light,
+	struct cmzn_light *default_ambient_light,
 	cmzn_scenefilter_id filter);
 /*******************************************************************************
 LAST MODIFIED : 19 September 2002
@@ -456,7 +453,7 @@ LAST MODIFIED : 19 September 2002
 DESCRIPTION :
 Creates a Scene_viewer in the widget <parent> to display <scene>.
 Note: the parent must be an XmForm since form constraints will be applied.
-If any of light_manager, light_model_manager or scene_manager.
+If any of light_manager or scene_manager.
 are supplied, the scene_viewer will automatically redraw in response to changes
 of objects from these managers that are in use by the scene_viewer. Redraws are
 performed in idle time so that multiple redraws are avoided.
@@ -643,41 +640,13 @@ DESCRIPTION :
 Sets the input_mode of the Scene_viewer.
 ==============================================================================*/
 
-int Scene_viewer_add_light(struct Scene_viewer *scene_viewer,
-	struct Light *light);
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Adds a light to the Scene_viewer list_of_lights.
-==============================================================================*/
-
-int Scene_viewer_has_light(struct Scene_viewer *scene_viewer,
-	struct Light *light);
-/*******************************************************************************
-LAST MODIFIED : 12 December 1997
-
-DESCRIPTION :
-Returns true if <Scene_viewer> has <light> in its list_of_lights, OR if <light>
-is NULL, returns true if <scene_viewer> has any lights.
-==============================================================================*/
-
-int Scene_viewer_has_light_in_list(struct Scene_viewer *scene_viewer,
-	struct LIST(Light) *light_list);
+int cmzn_sceneviewer_has_light_in_list(struct Scene_viewer *scene_viewer,
+	struct LIST(cmzn_light) *light_list);
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
 
 DESCRIPTION :
 Returns true if the list_of_lights in <Scene> intersects <light_list>.
-==============================================================================*/
-
-int Scene_viewer_remove_light(struct Scene_viewer *scene_viewer,
-	struct Light *light);
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Removes a light from the Scene_viewer list_of_lights.
 ==============================================================================*/
 
 int Scene_viewer_add_clip_plane(struct Scene_viewer *scene_viewer,
@@ -697,24 +666,6 @@ LAST MODIFIED : 12 December 2000
 DESCRIPTION :
 Removes a clip plane that defines a plane in Modelview space, fails if the
 exact plane isn't defined as a clip plane.
-==============================================================================*/
-
-struct Light_model *Scene_viewer_get_light_model(
-	struct Scene_viewer *scene_viewer);
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Returns the Scene_viewer light_model.
-==============================================================================*/
-
-int Scene_viewer_set_light_model(struct Scene_viewer *scene_viewer,
-	struct Light_model *light_model);
-/*******************************************************************************
-LAST MODIFIED : 3 December 1997
-
-DESCRIPTION :
-Sets the Scene_viewer light_model.
 ==============================================================================*/
 
 int Scene_viewer_set_lookat_parameters(struct Scene_viewer *scene_viewer,
@@ -1013,14 +964,14 @@ int Scene_viewer_translate(struct Scene_viewer *scene_viewer, const double offse
 int Scene_viewer_rotate_about_lookat_point(struct Scene_viewer *scene_viewer,
 	const double axis[3], double angle);
 
-int for_each_Light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
-	LIST_ITERATOR_FUNCTION(Light) *iterator_function,void *user_data);
+int for_each_cmzn_light_in_Scene_viewer(struct Scene_viewer *scene_viewer,
+	LIST_ITERATOR_FUNCTION(cmzn_light) *iterator_function,void *user_data);
 /*******************************************************************************
 LAST MODIFIED : 18 December 1997
 
 DESCRIPTION :
 Allows clients of the <scene_viewer> to perform functions with the lights in it.
-The most common task will to list the lights in the scene with show_Light.
+The most common task will to list the lights in the scene with show_cmzn_light.
 ==============================================================================*/
 
 int Scene_viewer_render_scene(struct Scene_viewer *scene_viewer);

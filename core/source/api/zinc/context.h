@@ -15,6 +15,7 @@
 #include "types/contextid.h"
 #include "types/fontid.h"
 #include "types/glyphid.h"
+#include "types/lightid.h"
 #include "types/materialid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
@@ -92,6 +93,16 @@ ZINC_API cmzn_fontmodule_id cmzn_context_get_fontmodule(
  * @return  Handle to the glyph module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
+	cmzn_context_id context);
+
+/**
+ * Return the light module which manages lights used to calculate the
+ * final colour of vertices in combination with material colour.
+ *
+ * @param context  The context to request the module from.
+ * @return  Handle to the light module, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_lightmodule_id cmzn_context_get_lightmodule(
 	cmzn_context_id context);
 
 /**
