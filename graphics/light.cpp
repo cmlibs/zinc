@@ -29,19 +29,19 @@ TEST(cmzn_lightmodule_api, valid_args)
 	cmzn_light_id light = cmzn_lightmodule_get_default_light(lm);
 	EXPECT_NE(static_cast<cmzn_light *>(0), light);
 	double float_values[3] = {0.0, 0.0, 0.0};
-	result = cmzn_light_get_colour(light, &float_values[0]);
+	result = cmzn_light_get_colour_rgb(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.9, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.9, float_values[1]);
 	EXPECT_DOUBLE_EQ(0.9, float_values[2]);
 
-	result = cmzn_light_get_direction(light, &float_values[0]);
+	result = cmzn_light_get_direction3(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(-0.5, float_values[1]);
 	EXPECT_DOUBLE_EQ(-1.0, float_values[2]);
 
-	result = cmzn_light_get_position(light, &float_values[0]);
+	result = cmzn_light_get_position3(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.0, float_values[1]);
@@ -54,12 +54,12 @@ TEST(cmzn_lightmodule_api, valid_args)
 	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 0.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 90.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 0.0);
-	EXPECT_EQ(cmzn_light_is_enabled(light), 1);
+	EXPECT_TRUE(cmzn_light_is_enabled(light));
 	EXPECT_EQ(cmzn_light_destroy(&light), result);
 
 	light = cmzn_lightmodule_get_default_ambient_light(lm);
 	EXPECT_NE(static_cast<cmzn_light *>(0), light);
-	result = cmzn_light_get_colour(light, &float_values[0]);
+	result = cmzn_light_get_colour_rgb(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.1, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.1, float_values[1]);
@@ -89,7 +89,7 @@ TEST(cmzn_lightmodule_api, valid_args)
 	result = cmzn_lightmodule_set_default_light(lm, light);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_light_set_managed(light, 1);
+	result = cmzn_light_set_managed(light, true);
 	EXPECT_EQ(CMZN_OK, result);
 
 	cmzn_light_id temp_light = cmzn_lightmodule_get_default_light(lm);
@@ -123,19 +123,19 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	EXPECT_TRUE(light.isValid());
 
 	double float_values[3] = {0.0, 0.0, 0.0};
-	result = light.getColour(&float_values[0]);
+	result = light.getColourRGB(&float_values[0]);
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.9, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.9, float_values[1]);
 	EXPECT_DOUBLE_EQ(0.9, float_values[2]);
 
-	result = light.getDirection(&float_values[0]);
+	result = light.getDirection3(&float_values[0]);
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(-0.5, float_values[1]);
 	EXPECT_DOUBLE_EQ(-1.0, float_values[2]);
 
-	result = light.getPosition(&float_values[0]);
+	result = light.getPosition3(&float_values[0]);
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.0, float_values[1]);
@@ -148,11 +148,11 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	EXPECT_DOUBLE_EQ(light.getQuadraticAttenuation(), 0.0);
 	EXPECT_DOUBLE_EQ(light.getSpotCutoff(), 90.0);
 	EXPECT_DOUBLE_EQ(light.getSpotExponent(), 0.0);
-	EXPECT_EQ(light.isEnabled(), 1);
+	EXPECT_TRUE(light.isEnabled());
 
 	light = lm.getDefaultAmbientLight();
 	EXPECT_TRUE(light.isValid());
-	result = light.getColour( &float_values[0]);
+	result = light.getColourRGB( &float_values[0]);
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.1, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.1, float_values[1]);
@@ -182,7 +182,7 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	result = lm.setDefaultLight( light);
 	EXPECT_EQ(OK, result);
 
-	result = light.setManaged(1);
+	result = light.setManaged(true);
 	EXPECT_EQ(OK, result);
 
 	Light tempLight = lm.getDefaultLight();
@@ -217,49 +217,48 @@ TEST(cmzn_light_api, valid_args)
 	double inValues[3] = {0.2, 0.3, 0.4};
 	double outValues[3] = {0.0, 0.0, 0.0};
 
-	result = cmzn_light_set_colour(light, &(inValues[0]));
+	result = cmzn_light_set_colour_rgb(light, &(inValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_light_get_colour(light, &(outValues[0]));
-	EXPECT_EQ(CMZN_OK, result);
-	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
-	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
-	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
-
-	result = cmzn_light_set_direction(light, &(inValues[0]));
-	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_light_get_direction(light, &(outValues[0]));
+	result = cmzn_light_get_colour_rgb(light, &(outValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = cmzn_light_set_position(light, &(inValues[0]));
+	result = cmzn_light_set_direction3(light, &(inValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_light_get_position(light, &(outValues[0]));
+	result = cmzn_light_get_direction3(light, &(outValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = cmzn_light_set_managed(light, 1);
+	result = cmzn_light_set_position3(light, &(inValues[0]));
+	EXPECT_EQ(CMZN_OK, result);
+	result = cmzn_light_get_position3(light, &(outValues[0]));
+	EXPECT_EQ(CMZN_OK, result);
+	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
+	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
+	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
+
+	result = cmzn_light_set_managed(light, true);
 	EXPECT_EQ(CMZN_OK, result);
 
-	result = cmzn_light_is_managed(light);
-	EXPECT_EQ(1, result);
+	EXPECT_TRUE(cmzn_light_is_managed(light));
 
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_constant_attenuation(light,0.5));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_linear_attenuation(light, 1.0));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_quadratic_attenuation(light, 1.0));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_cutoff(light, 70.0));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_exponent(light, 1.0));
-	EXPECT_EQ(CMZN_OK, cmzn_light_set_enabled(light, 0));
+	EXPECT_EQ(CMZN_OK, cmzn_light_set_enabled(light, false));
 
 	EXPECT_DOUBLE_EQ(cmzn_light_get_constant_attenuation(light), 0.5);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_linear_attenuation(light), 1.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 1.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 70.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 1.0);
-	EXPECT_EQ(cmzn_light_is_enabled(light), 0);
+	EXPECT_TRUE(cmzn_light_is_enabled(light));
 
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_type(light, CMZN_LIGHT_TYPE_AMBIENT));
 	EXPECT_EQ(cmzn_light_get_type(light), CMZN_LIGHT_TYPE_AMBIENT);
@@ -298,49 +297,48 @@ TEST(cmzn_light_api, valid_args_cpp)
 	double inValues[3] = {0.2, 0.3, 0.4};
 	double outValues[3] = {0.0, 0.0, 0.0};
 
-	result = light.setColour(&(inValues[0]));
+	result = light.setColourRGB(&(inValues[0]));
 	EXPECT_EQ(OK, result);
-	result = light.getColour(&(outValues[0]));
-	EXPECT_EQ(OK, result);
-	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
-	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
-	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
-
-	result = light.setDirection(&(inValues[0]));
-	EXPECT_EQ(OK, result);
-	result = light.getDirection(&(outValues[0]));
+	result = light.getColourRGB(&(outValues[0]));
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = light.setPosition(&(inValues[0]));
+	result = light.setDirection3(&(inValues[0]));
 	EXPECT_EQ(OK, result);
-	result = light.getPosition(&(outValues[0]));
+	result = light.getDirection3(&(outValues[0]));
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = light.setManaged(0);
+	result = light.setPosition3(&(inValues[0]));
+	EXPECT_EQ(OK, result);
+	result = light.getPosition3(&(outValues[0]));
+	EXPECT_EQ(OK, result);
+	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
+	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
+	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
+
+	result = light.setManaged(false);
 	EXPECT_EQ(OK, result);
 
-	result = light.isManaged();
-	EXPECT_EQ(0, result);
+	EXPECT_FALSE(light.isManaged());
 
 	EXPECT_EQ(OK, light.setConstantAttenuation(0.5));
 	EXPECT_EQ(OK, light.setLinearAttenuation(1.0));
 	EXPECT_EQ(OK, light.setQuadraticAttenuation(1.0));
 	EXPECT_EQ(OK, light.setSpotCutoff(70.0));
 	EXPECT_EQ(OK, light.setSpotExponent(1.0));
-	EXPECT_EQ(OK, light.setEnabled(0));
+	EXPECT_EQ(OK, light.setEnabled(false));
 
 	EXPECT_DOUBLE_EQ(light.getLinearAttenuation(), 1.0);
 	EXPECT_DOUBLE_EQ(light.getQuadraticAttenuation(), 1.0);
-//	EXPECT_DOUBLE_EQ(light.getConstantAttenuation(), 0.5);
+	EXPECT_DOUBLE_EQ(light.getConstantAttenuation(), 0.5);
 	EXPECT_DOUBLE_EQ(light.getSpotCutoff(), 70.0);
 	EXPECT_DOUBLE_EQ(light.getSpotExponent(), 1.0);
-	EXPECT_EQ(light.isEnabled(), 0);
+	EXPECT_FALSE(light.isEnabled());
 
 	EXPECT_EQ(OK, light.setType(Light::TYPE_AMBIENT));
 	EXPECT_EQ(light.getType(), Light::TYPE_AMBIENT);
