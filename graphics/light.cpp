@@ -258,7 +258,7 @@ TEST(cmzn_light_api, valid_args)
 	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 1.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 70.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 1.0);
-	EXPECT_TRUE(cmzn_light_is_enabled(light));
+	EXPECT_FALSE(cmzn_light_is_enabled(light));
 
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_type(light, CMZN_LIGHT_TYPE_AMBIENT));
 	EXPECT_EQ(cmzn_light_get_type(light), CMZN_LIGHT_TYPE_AMBIENT);
