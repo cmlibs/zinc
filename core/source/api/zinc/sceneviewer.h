@@ -766,7 +766,7 @@ ZINC_API int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
  * @param light  Handle to the light to be checked.
  * @return  1 if light is on the list, 0 otherwise.
  */
-ZINC_API int cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
+ZINC_API bool cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
 	cmzn_light_id light);
 
 /**

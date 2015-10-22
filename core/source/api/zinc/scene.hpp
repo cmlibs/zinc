@@ -12,6 +12,7 @@
 #include "zinc/scene.h"
 #include "zinc/field.hpp"
 #include "zinc/graphics.hpp"
+#include "zinc/light.hpp"
 #include "zinc/region.hpp"
 #include "zinc/scenefilter.hpp"
 #include "zinc/selection.hpp"
@@ -183,6 +184,11 @@ public:
 	inline Glyphmodule getGlyphmodule()
 	{
 		return Glyphmodule(cmzn_scene_get_glyphmodule(id));
+	}
+
+	inline Lightmodule getLightmodule()
+	{
+		return Lightmodule(cmzn_scene_get_lightmodule(id));
 	}
 
 	inline Materialmodule getMaterialmodule()

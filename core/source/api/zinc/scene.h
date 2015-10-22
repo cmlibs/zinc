@@ -16,6 +16,7 @@
 #include "types/fontid.h"
 #include "types/glyphid.h"
 #include "types/graphicsid.h"
+#include "types/lightid.h"
 #include "types/materialid.h"
 #include "types/nodeid.h"
 #include "types/regionid.h"
@@ -275,6 +276,17 @@ ZINC_API cmzn_fontmodule_id cmzn_scene_get_fontmodule(cmzn_scene_id scene);
  * @return  Handle to the glyph module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_glyphmodule_id cmzn_scene_get_glyphmodule(cmzn_scene_id scene);
+
+/**
+ * Return the light module which manages light used to control lighting of the
+ * scene. Note on startup only light "default" and "default_ambient" are
+ * defined. Additional custom lights can be defined using light module functions.
+ *
+ * @param scene  The scene to request the module from.
+ * @return  Handle to the light module, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_lightmodule_id cmzn_scene_get_lightmodule(
+	cmzn_scene_id scene);
 
 /**
  * Return the material module which manages materials used to colour, texture

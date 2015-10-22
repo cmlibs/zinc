@@ -170,8 +170,8 @@ public:
 			default_colour[0]=0.9;
 			default_colour[1]=0.9;
 			default_colour[2]=0.9;
-			cmzn_light_set_colour(light, &default_colour[0]);
-			cmzn_light_set_direction(light,default_light_direction);
+			cmzn_light_set_colour_rgb(light, &default_colour[0]);
+			cmzn_light_set_direction3(light,default_light_direction);
 			this->setDefaultLight(light);
 			this->endChange();
 		}
@@ -214,7 +214,7 @@ public:
 			default_colour[0]=0.1;
 			default_colour[1]=0.1;
 			default_colour[2]=0.1;
-			cmzn_light_set_colour(light,&default_colour[0]);
+			cmzn_light_set_colour_rgb(light,&default_colour[0]);
 			cmzn_light_set_render_side(light,CMZN_LIGHT_RENDER_SIDE_DOUBLE);
 			this->setDefaultAmbientLight(light);
 			this->endChange();
@@ -255,7 +255,7 @@ struct cmzn_light
 	/* spot_exponent controls concentration of light near its axis; 0 = none */
 	double spot_exponent;
 	/* after clearing in create, following to be modified only by manager */
-	int enabled;
+	bool enabled;
 	bool is_managed_flag;
 	int access_count;
 	/* position for point and spot lights */
@@ -278,7 +278,7 @@ protected:
 		quadratic_attenuation(0.0),
 		spot_cutoff(90.0),
 		spot_exponent(0.0),
-		enabled(1),
+		enabled(true),
 		is_managed_flag(false),
 		access_count(1)
 	{
@@ -527,7 +527,7 @@ public:
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	int setEnabled(int enabledIn)
+	int setEnabled(bool enabledIn)
 	{
 		if (enabled != enabledIn)
 		{
@@ -538,7 +538,7 @@ public:
 		return CMZN_OK;
 	}
 
-	int isEnabled()
+	bool isEnabled()
 	{
 		return enabled;
 	}
@@ -770,7 +770,7 @@ Directly outputs the commands to activate the <light>.
 		{
 			if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
 			{
-				if (light->enabled == 1)
+				if (light->enabled == true)
 				{
 					values[0] = (GLfloat)((light->colour).red);
 					values[1] = (GLfloat)((light->colour).green);
@@ -801,7 +801,7 @@ Directly outputs the commands to activate the <light>.
 			}
 			else
 			{
-				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS && light->enabled == 1)
+				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS && light->enabled == true)
 				{
 					light_id = light_identifiers[next_light_no];
 					glLightfv(light_id, GL_AMBIENT, values);
@@ -924,7 +924,7 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_light_type)
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_light_type);
 
-int cmzn_light_is_enabled(struct cmzn_light *light)
+bool cmzn_light_is_enabled(struct cmzn_light *light)
 {
 	if (light)
 	{
@@ -934,7 +934,7 @@ int cmzn_light_is_enabled(struct cmzn_light *light)
 	return 0;
 }
 
-int cmzn_light_set_enabled(struct cmzn_light *light, int enabled)
+int cmzn_light_set_enabled(struct cmzn_light *light, bool enabled)
 {
 	if (light)
 	{
@@ -1005,7 +1005,7 @@ int cmzn_light_set_constant_attenuation(struct cmzn_light *light, double constan
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_light_get_colour(struct cmzn_light *light, double *colour)
+int cmzn_light_get_colour_rgb(struct cmzn_light *light, double *colour)
 {
 	if (light)
 	{
@@ -1013,9 +1013,9 @@ int cmzn_light_get_colour(struct cmzn_light *light, double *colour)
 	}
 
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_get_colour */
+} /* cmzn_light_get_colour_rgb */
 
-int cmzn_light_set_colour(struct cmzn_light *light, const double *colour)
+int cmzn_light_set_colour_rgb(struct cmzn_light *light, const double *colour)
 
 {
 	if (light)
@@ -1024,9 +1024,9 @@ int cmzn_light_set_colour(struct cmzn_light *light, const double *colour)
 	}
 
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_colour */
+} /* cmzn_light_set_colour_rgb */
 
-int cmzn_light_get_direction(struct cmzn_light *light, double *direction)
+int cmzn_light_get_direction3(struct cmzn_light *light, double *direction)
 {
 	if (light)
 	{
@@ -1034,9 +1034,9 @@ int cmzn_light_get_direction(struct cmzn_light *light, double *direction)
 	}
 
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_get_position */
+} /* cmzn_light_get_position3 */
 
-int cmzn_light_set_direction(struct cmzn_light *light, const double *direction)
+int cmzn_light_set_direction3(struct cmzn_light *light, const double *direction)
 {
 	if (light)
 	{
@@ -1044,9 +1044,9 @@ int cmzn_light_set_direction(struct cmzn_light *light, const double *direction)
 	}
 
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_direction */
+} /* cmzn_light_set_direction3 */
 
-int cmzn_light_get_position(struct cmzn_light *light, double *position)
+int cmzn_light_get_position3(struct cmzn_light *light, double *position)
 {
 	if (light)
 	{
@@ -1054,9 +1054,9 @@ int cmzn_light_get_position(struct cmzn_light *light, double *position)
 	}
 
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_get_position */
+} /* cmzn_light_get_position3 */
 
-int cmzn_light_set_position(struct cmzn_light *light, const double *position)
+int cmzn_light_set_position3(struct cmzn_light *light, const double *position)
 {
 	if (light)
 	{
@@ -1064,7 +1064,7 @@ int cmzn_light_set_position(struct cmzn_light *light, const double *position)
 	}
 
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_position */
+} /* cmzn_light_set_position3 */
 
 double cmzn_light_get_spot_cutoff(struct cmzn_light *light)
 {

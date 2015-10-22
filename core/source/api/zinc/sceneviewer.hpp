@@ -556,7 +556,7 @@ public:
 		return cmzn_sceneviewer_add_light(id, light.getId());
 	}
 
-	int hasLight(const Light& light)
+	bool hasLight(const Light& light)
 	{
 		return cmzn_sceneviewer_has_light(id, light.getId());
 	}

@@ -4099,7 +4099,7 @@ int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-int cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
+bool cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
 	cmzn_light_id light)
 
 {
@@ -4108,7 +4108,7 @@ int cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
 		return IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights);
 	}
 
-	return 0;
+	return false;
 }
 
 int cmzn_sceneviewer_has_light_in_list(struct Scene_viewer *scene_viewer,

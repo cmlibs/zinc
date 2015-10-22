@@ -128,7 +128,7 @@ public:
 		return cmzn_light_set_name(id, name);
 	}
 
-	int getConstantAttenuation()
+	double getConstantAttenuation()
 	{
 		return cmzn_light_get_constant_attenuation(id);
 	}
@@ -138,7 +138,7 @@ public:
 		return cmzn_light_set_constant_attenuation(id, constantAttenuation);
 	}
 
-	int getLinearAttenuation()
+	double getLinearAttenuation()
 	{
 		return cmzn_light_get_linear_attenuation(id);
 	}
@@ -148,7 +148,7 @@ public:
 		return cmzn_light_set_linear_attenuation(id, linearAttenuation);
 	}
 
-	int getQuadraticAttenuation()
+	double getQuadraticAttenuation()
 	{
 		return cmzn_light_get_quadratic_attenuation(id);
 	}
@@ -158,52 +158,52 @@ public:
 		return cmzn_light_set_quadratic_attenuation(id, quadraticAttenuation);
 	}
 
-	int getColour(double *valuesOut3)
+	int getColourRGB(double *valuesOut3)
 	{
-		return cmzn_light_get_colour(id, valuesOut3);
+		return cmzn_light_get_colour_rgb(id, valuesOut3);
 	}
 
-	int setColour(const double *valuesIn3)
+	int setColourRGB(const double *valuesIn3)
 	{
-		return cmzn_light_set_colour(id, valuesIn3);
+		return cmzn_light_set_colour_rgb(id, valuesIn3);
 	}
 
-	int getDirection(double *valuesOut3)
+	int getDirection3(double *valuesOut3)
 	{
-		return cmzn_light_get_direction(id, valuesOut3);
+		return cmzn_light_get_direction3(id, valuesOut3);
 	}
 
-	int setDirection(const double *valuesIn3)
+	int setDirection3(const double *valuesIn3)
 	{
-		return cmzn_light_set_direction(id, valuesIn3);
+		return cmzn_light_set_direction3(id, valuesIn3);
 	}
 
-	int getPosition(double *valuesOut3)
+	int getPosition3(double *valuesOut3)
 	{
-		return cmzn_light_get_position(id, valuesOut3);
+		return cmzn_light_get_position3(id, valuesOut3);
 	}
 
-	int setPosition(const double *valuesIn3)
+	int setPosition3(const double *valuesIn3)
 	{
-		return cmzn_light_set_position(id, valuesIn3);
+		return cmzn_light_set_position3(id, valuesIn3);
 	}
 
-	int getSpotCutoff()
+	double getSpotCutoff()
 	{
 		return cmzn_light_get_spot_cutoff(id);
 	}
 
-	double setSpotCutoff(double cutoff)
+	int setSpotCutoff(double cutoff)
 	{
 		return cmzn_light_set_spot_cutoff(id, cutoff);
 	}
 
-	int getSpotExponent()
+	double getSpotExponent()
 	{
 		return cmzn_light_get_spot_exponent(id);
 	}
 
-	double setSpotExponent(double exponent)
+	int setSpotExponent(double exponent)
 	{
 		return cmzn_light_set_spot_exponent(id, exponent);
 	}

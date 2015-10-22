@@ -103,14 +103,4 @@ enum cmzn_light_type
 	 * calculating the final colour. */
 };
 
-/**
- * @brief An iterator for looping through all the lights in a
- * light module.
- *
- * An iterator for looping through all the lights in a light
- * module.
- */
-struct cmzn_lightiterator;
-typedef struct cmzn_lightiterator * cmzn_lightiterator_id;
-
 #endif

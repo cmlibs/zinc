@@ -2601,6 +2601,13 @@ cmzn_materialmodule_id cmzn_scene_get_materialmodule(cmzn_scene_id scene)
 	return 0;
 }
 
+cmzn_lightmodule_id cmzn_scene_get_lightmodule(cmzn_scene_id scene)
+{
+	if (scene)
+		return cmzn_graphics_module_get_lightmodule(scene->graphics_module);
+	return 0;
+}
+
 cmzn_scenefiltermodule_id cmzn_scene_get_scenefiltermodule(cmzn_scene_id scene)
 {
 	if (scene)

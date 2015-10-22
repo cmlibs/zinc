@@ -108,7 +108,7 @@ ZINC_API cmzn_light_id cmzn_lightmodule_find_light_by_name(
  * @param light  cmzn_light to be checked.
  * @return  1 if light is enabled, or 0 if otherwise.
  */
-ZINC_API int cmzn_light_is_enabled(struct cmzn_light *light);
+ZINC_API bool cmzn_light_is_enabled(struct cmzn_light *light);
 
 /**
  * Enable/disable the light when it is used in scene.
@@ -117,7 +117,7 @@ ZINC_API int cmzn_light_is_enabled(struct cmzn_light *light);
  * @param enabled  Value to set: true to mark as enabled, false for disabled.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_set_enabled(struct cmzn_light *light, int enabled);
+ZINC_API int cmzn_light_set_enabled(struct cmzn_light *light, bool enabled);
 
 /**
  * Get the default light to be used in sceneviewer. If there is none,
@@ -420,7 +420,7 @@ ZINC_API int cmzn_light_set_render_side(cmzn_light_id light,
  *   for 3 components.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_get_colour(cmzn_light_id light, double *colour);
+ZINC_API int cmzn_light_get_colour_rgb(cmzn_light_id light, double *colour);
 
 /**
  * Set the colour of the light using a 3 components vector which represents
@@ -431,7 +431,7 @@ ZINC_API int cmzn_light_get_colour(cmzn_light_id light, double *colour);
  *   vectors storing the rgb value.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_set_colour(cmzn_light_id light, const double *colour);
+ZINC_API int cmzn_light_set_colour_rgb(cmzn_light_id light, const double *colour);
 
 /**
  * Get a 3 components vector which represent the direction of the light. It
@@ -443,7 +443,7 @@ ZINC_API int cmzn_light_set_colour(cmzn_light_id light, const double *colour);
  *   for 3 components.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_get_direction(cmzn_light_id light,
+ZINC_API int cmzn_light_get_direction3(cmzn_light_id light,
 	double *direction);
 
 /**
@@ -455,7 +455,7 @@ ZINC_API int cmzn_light_get_direction(cmzn_light_id light,
  *   vectors storing the direction value.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_set_direction(cmzn_light_id light,
+ZINC_API int cmzn_light_set_direction3(cmzn_light_id light,
 	const double *direction);
 
 /**
@@ -468,7 +468,7 @@ ZINC_API int cmzn_light_set_direction(cmzn_light_id light,
  *   for 3 components.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_get_position(cmzn_light_id light, double *position);
+ZINC_API int cmzn_light_get_position3(cmzn_light_id light, double *position);
 
 /**
  * Set the position of the light using a 3 components vector. It
@@ -479,7 +479,7 @@ ZINC_API int cmzn_light_get_position(cmzn_light_id light, double *position);
  *   vectors storing the position value.
  * @return  Status CMZN_OK on success, any other value on failure.
  */
-ZINC_API int cmzn_light_set_position(cmzn_light_id light,
+ZINC_API int cmzn_light_set_position3(cmzn_light_id light,
 	const double *position);
 
 /**
@@ -524,70 +524,6 @@ ZINC_API double cmzn_light_get_spot_exponent(cmzn_light_id light);
  */
 ZINC_API int cmzn_light_set_spot_exponent(cmzn_light_id light,
 	double spot_exponent);
-
-/**
-* Returns a new reference to the light module with reference count
-* incremented. Caller is responsible for destroying the new reference.
-*
-* @param lightmodule  The light module to obtain a new reference to.
-* @return  cmzn_light module with incremented reference count.
-*/
-ZINC_API cmzn_lightmodule_id cmzn_lightmodule_access(
-	cmzn_lightmodule_id lightmodule);
-
-/**
-* Destroys this reference to the light module (and sets it to NULL).
-* Internally this just decrements the reference count.
-*
-* @param lightmodule_address  Address of handle to light module
-*   to destroy.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
-ZINC_API int cmzn_lightmodule_destroy(
-	cmzn_lightmodule_id *lightmodule_address);
-
-/**
- * Create and return a handle to a new light.
- *
- * @param lightmodule  The handle to the light module the
- * light will belong to.
- * @return  Handle to the newly created light if successful, otherwise NULL.
- */
-ZINC_API cmzn_light_id cmzn_lightmodule_create_light(
-	cmzn_lightmodule_id lightmodule);
-
-/**
-* Begin caching or increment cache level for this light module. Call this
-* function before making multiple changes to minimise number of change messages
-* sent to clients. Must remember to end_change after completing changes.
-* @see cmzn_lightmodule_end_change
-*
-* @param lightmodule  The lightmodule to begin change cache on.
-* @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
-*/
-ZINC_API int cmzn_lightmodule_begin_change(cmzn_lightmodule_id lightmodule);
-
-/**
-* Decrement cache level or end caching of changes for the light module.
-* Call cmzn_lightmodule_begin_change before making multiple changes
-* and call this afterwards. When change level is restored to zero,
-* cached change messages are sent out to clients.
-*
-* @param lightmodule  The light module to end change cache on.
-* @return  Status CMZN_OK on success, any other value on failure.
-*/
-ZINC_API int cmzn_lightmodule_end_change(cmzn_lightmodule_id lightmodule);
-
-/**
-* Find the light with the specified name, if any.
-*
-* @param lightmodule  cmzn_light module to search.
-* @param name  The name of the light.
-* @return  Handle to the light of that name, or 0 if not found.
-* 	Up to caller to destroy returned handle.
-*/
-cmzn_light_id cmzn_lightmodule_find_light_by_name(
-	cmzn_lightmodule_id lightmodule, const char *name);
 
 #ifdef __cplusplus
 }
