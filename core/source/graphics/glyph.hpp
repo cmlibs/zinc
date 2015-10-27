@@ -131,6 +131,11 @@ public:
 	{
 	}
 
+	virtual int setGraphicsObject(GT_object *)
+	{
+		return false;
+	}
+
 	// override for glyphs that use their own materials
 	virtual void materialChange(struct MANAGER_MESSAGE(cmzn_material) *)
 	{
@@ -264,6 +269,29 @@ public:
 		return 0;
 	}
 
+	virtual int setGraphicsObject(GT_object *object)
+	{
+		int objectChanged = 0;
+		if (graphicsObject)
+		{
+			DEACCESS(GT_object)(&graphicsObject);
+			objectChanged = 1;
+		}
+		if (object)
+		{
+			graphicsObject = ACCESS(GT_object)(object);
+			objectChanged = 1;
+		}
+		if (objectChanged)
+		{
+			if (this->manager)
+				MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_glyph));
+			return true;
+		}
+
+		return false;
+	}
+
 	virtual bool isTimeVarying()
 	{
 		return (1 < GT_object_get_number_of_times(graphicsObject));
@@ -345,6 +373,8 @@ public:
 
 	cmzn_glyphiterator *createGlyphiterator();
 
+	cmzn_glyph *createStaticGlyphFromGraphics(cmzn_graphics *graphics);
+
 	int defineStandardGlyphs();
 
 	int defineStandardCmguiGlyphs();
@@ -419,5 +449,7 @@ int cmzn_glyphmodule_define_standard_cmgui_glyphs(
  */
 cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 	cmzn_glyphmodule_id glyphModule, GT_object *graphicsObject);
+
+int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject);
 
 #endif /* !defined (GLYPH_HPP) */

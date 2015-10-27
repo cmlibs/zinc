@@ -33,6 +33,7 @@
 #include "graphics/glyph.hpp"
 #include "graphics/glyph_axes.hpp"
 #include "graphics/glyph_circular.hpp"
+#include "graphics/graphics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/spectrum.h"
@@ -1844,6 +1845,35 @@ void cmzn_glyphmodule::addGlyph(cmzn_glyph *glyph)
 	ADD_OBJECT_TO_MANAGER(cmzn_glyph)(glyph, this->manager);
 }
 
+cmzn_glyph *cmzn_glyphmodule::createStaticGlyphFromGraphics(cmzn_graphics *graphics)
+{
+	if (graphics)
+	{
+		GT_object *graphicsObject = cmzn_graphics_copy_graphics_object(graphics);
+		if (graphicsObject)
+		{
+			char temp_name[20];
+			int i = NUMBER_IN_MANAGER(cmzn_glyph)(this->manager);
+			do
+			{
+				i++;
+				sprintf(temp_name, "temp%d",i);
+			}
+			while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(temp_name,
+				this->manager));
+			cmzn_glyph *glyph = cmzn_glyph_static::create(graphicsObject);
+			glyph->setType(CMZN_GLYPH_SHAPE_TYPE_INVALID);
+			glyph->setName(temp_name);
+			glyph->setManaged(false);
+			set_GT_object_default_material(graphicsObject, 0);
+			this->addGlyph(glyph);
+			DEACCESS(GT_object)(&graphicsObject);
+			return glyph;
+		}
+	}
+	return 0;
+}
+
 int cmzn_glyphmodule::defineStandardGlyphs()
 {
 	beginChange();
@@ -2109,6 +2139,17 @@ cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 	return 0;
 }
 
+cmzn_glyph_id cmzn_glyphmodule_create_static_glyph_from_graphics(
+	cmzn_glyphmodule_id glyphmodule, cmzn_graphics_id graphics)
+{
+	if (glyphmodule && graphics)
+	{
+		cmzn_glyph *glyph = glyphmodule->createStaticGlyphFromGraphics(graphics);
+		return glyph;
+	}
+	return 0;
+}
+
 cmzn_glyphiterator_id cmzn_glyphiterator_access(cmzn_glyphiterator_id iterator)
 {
 	if (iterator)
@@ -2135,4 +2176,11 @@ cmzn_glyph_id cmzn_glyphiterator_next_non_access(cmzn_glyphiterator_id iterator)
 	if (iterator)
 		return iterator->next_non_access();
 	return 0;
+}
+
+int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject)
+{
+	if (glyph)
+		return glyph->setGraphicsObject(graphicsObject);
+	return CMZN_ERROR_ARGUMENT;
 }

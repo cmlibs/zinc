@@ -14,6 +14,7 @@
 #define CMZN_GLYPH_H__
 
 #include "types/glyphid.h"
+#include "types/graphicsid.h"
 #include "types/materialid.h"
 #include "types/spectrumid.h"
 
@@ -595,10 +596,22 @@ ZINC_API int cmzn_glyphiterator_destroy(cmzn_glyphiterator_id *iterator_address)
  * advances the iterator position. The caller is required to destroy the
  * returned glyph handle.
  *
- * @param iterator  Material iterator to query and advance.
+ * @param iterator  Glyph iterator to query and advance.
  * @return  Handle to the next glyph, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphiterator_next(cmzn_glyphiterator_id iterator);
+
+/**
+ * Create and return a handle to the glyph which is a static copy of the vertices
+ * of the specified graphics.
+ *
+ * @param glyphmodule  The glyph module to create the glyph in.
+ * @param graphics  Handle to the graphics which vertices will be copied into
+ * 	the newly created glyph.
+ * @return  Handle to the newly created glyph on success, otherwise 0.
+ */
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_static_glyph_from_graphics(
+	cmzn_glyphmodule_id glyphmodule, cmzn_graphics_id graphics);
 
 #ifdef __cplusplus
 }

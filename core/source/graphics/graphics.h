@@ -606,4 +606,6 @@ int cmzn_graphics_flag_for_full_rebuild(
 
 enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics *graphics);
 
+struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graphics);
+
 #endif

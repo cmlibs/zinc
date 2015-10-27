@@ -21,6 +21,7 @@ namespace Zinc
 
 class GlyphAxes;
 class GlyphColourBar;
+class Graphics;
 
 class Glyph
 {
@@ -443,6 +444,8 @@ public:
 	{
 		return cmzn_glyphmodule_set_default_point_glyph(id, glyph.getId());
 	}
+
+	inline Glyph createStaticGlyphFromGraphics(const Graphics& graphics);
 
 };
 
