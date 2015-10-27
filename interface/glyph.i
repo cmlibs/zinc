@@ -24,6 +24,7 @@
 
 %{
 #include "zinc/glyph.hpp"
+#include "zinc/graphics.hpp"
 %}
 
 %include "zinc/glyph.hpp"
