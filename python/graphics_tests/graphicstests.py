@@ -112,6 +112,17 @@ class GraphicsTestCase(unittest.TestCase):
         stringLoc = outputstring.find('vertices')
         self.assertNotEqual(-1, stringLoc, 'keyword \'vertices\' not found')
         
+    def testGraphicsToGlyph(self):
+        self.root_region.readFile('resource/cube.exformat')
+        surfaces = self.scene.createGraphicsSurfaces()
+        coordinatesField = self.root_region.getFieldmodule().findFieldByName("coordinates");
+        result = surfaces.setCoordinateField(coordinatesField)
+        self.assertEqual(1, result)
+        glyphModule = self.context.getGlyphmodule()
+        glyph = glyphModule.createStaticGlyphFromGraphics(surfaces)
+        self.assertTrue(glyph.isValid())
+
+        
 def suite():
     #import ImportTestCase
     tests = unittest.TestSuite()
