@@ -2802,25 +2802,6 @@ DESCRIPTION :
 	return (graphics_buffer_package);
 } /* Scene_viewer_get_graphics_buffer_package */
 
-
-int cmzn_sceneviewer_remove_light_in_list_iterator(struct cmzn_light *light,void *scene_viewer_void)
-{
-	int return_code;
-	cmzn_sceneviewer *scene_viewer = (cmzn_sceneviewer *)scene_viewer_void;
-
-	if (light && scene_viewer)
-	{
-		cmzn_sceneviewer_remove_light(scene_viewer, light);
-		return_code=1;
-	}
-	else
-	{
-		return_code=0;
-	}
-
-	return (return_code);
-} /* list_cmzn_light_name */
-
 struct Scene_viewer *CREATE(Scene_viewer)(struct Graphics_buffer *graphics_buffer,
 	struct Colour *background_colour,
 	struct cmzn_light *default_light,
@@ -2944,7 +2925,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
 				if (default_light)
 				{
-					ACCESS(cmzn_light)(default_light);
 					ADD_OBJECT_TO_LIST(cmzn_light)(default_light,
 						scene_viewer->list_of_lights);
 				}
@@ -3074,8 +3054,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 
 		/* dispose of our data structure */
 		cmzn_light_destroy(&(scene_viewer->ambient_light));
-		for_each_cmzn_light_in_Scene_viewer(scene_viewer,cmzn_sceneviewer_remove_light_in_list_iterator,
-			(void *)scene_viewer);
 		DESTROY(LIST(cmzn_light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->order_independent_transparency_data)
 		{
@@ -4075,39 +4053,31 @@ Sets the input_mode of the Scene_viewer.
 int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
 	cmzn_light_id light)
 {
-
 	if (sceneviewer && light)
 	{
 		enum cmzn_light_type lightType = cmzn_light_get_type(light);
 		if ((lightType != CMZN_LIGHT_TYPE_AMBIENT) &&
 			(lightType != CMZN_LIGHT_TYPE_INVALID))
 		{
-			if (!IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights))
-			{
-				if (ADD_OBJECT_TO_LIST(cmzn_light)(light,sceneviewer->list_of_lights))
-				{
-					cmzn_light_access(light);
-					cmzn_sceneviewer_request_changes(sceneviewer,
-						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-					return CMZN_OK;
-				}
-			}
+			if (IS_OBJECT_IN_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+				return CMZN_ERROR_ALREADY_EXISTS;
+			if (!ADD_OBJECT_TO_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+				return CMZN_ERROR_GENERAL;
+			cmzn_sceneviewer_request_changes(sceneviewer,
+				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+			return CMZN_OK;
 		}
 	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
 bool cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
 	cmzn_light_id light)
-
 {
 	if (sceneviewer && light)
 	{
-		return IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights);
+		return (0 != IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights));
 	}
-
 	return false;
 }
 
@@ -4151,31 +4121,24 @@ int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
 {
 	if (sceneviewer && light)
 	{
-		if (IS_OBJECT_IN_LIST(cmzn_light)(light,sceneviewer->list_of_lights))
-		{
-			if (REMOVE_OBJECT_FROM_LIST(cmzn_light)(light,
-				sceneviewer->list_of_lights))
-			{
-				cmzn_light_destroy(&light);
-				cmzn_sceneviewer_request_changes(sceneviewer,
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-					CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-				return CMZN_OK;
-			}
-		}
+		if (!IS_OBJECT_IN_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_NOT_FOUND;
+		if (!REMOVE_OBJECT_FROM_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_GENERAL;
+		cmzn_sceneviewer_request_changes(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		return CMZN_OK;
 	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_sceneviewer_remove_light */
+}
 
 cmzn_light_id cmzn_sceneviewer_get_ambient_light(
 	cmzn_sceneviewer_id sceneviewer)
 {
 	if (sceneviewer && sceneviewer->ambient_light)
 	{
-		return  cmzn_light_access(sceneviewer->ambient_light);
+		return cmzn_light_access(sceneviewer->ambient_light);
 	}
-
 	return 0;
 }
 
@@ -4187,15 +4150,13 @@ int cmzn_sceneviewer_set_ambient_light(cmzn_sceneviewer_id sceneviewer,
 	{
 		if (ambient_light != sceneviewer->ambient_light)
 		{
-			cmzn_light_destroy(&(sceneviewer->ambient_light));
-			sceneviewer->ambient_light=cmzn_light_access(ambient_light);
+			REACCESS(cmzn_light)(&(sceneviewer->ambient_light), ambient_light);
 			cmzn_sceneviewer_request_changes(sceneviewer,
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
 				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
 		}
 		return CMZN_OK;
 	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 

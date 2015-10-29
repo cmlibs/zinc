@@ -591,7 +591,6 @@ ZINC_API int cmzn_sceneviewer_get_frame_pixels(cmzn_sceneviewer_id  sceneviewer,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 
-
 /**
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
  *
@@ -748,7 +747,6 @@ ZINC_API int cmzn_sceneviewer_get_transparency_layers(cmzn_sceneviewer_id scenev
 ZINC_API int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id sceneviewer,
 	int layers);
 
-
 /**
  * Adds a light to the Scene_viewer list of lights.
  *
@@ -797,7 +795,7 @@ ZINC_API cmzn_light_id cmzn_sceneviewer_get_ambient_light(
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_sceneviewer_set_ambient_light(
-	cmzn_sceneviewer_id sceneviewer,	cmzn_light_id ambient_light);
+	cmzn_sceneviewer_id sceneviewer, cmzn_light_id ambient_light);
 
 /**
  * Create a notifier for getting callbacks for changes to the scene viewer..
