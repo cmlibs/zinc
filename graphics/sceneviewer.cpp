@@ -314,7 +314,6 @@ TEST(cmzn_sceneviewer, get_set)
 	cmzn_sceneviewermodule_destroy(&svModule);
 }
 
-
 TEST(ZincSceneviewer, get_set_light)
 {
 	ZincTestSetupCpp zinc;
@@ -345,9 +344,13 @@ TEST(ZincSceneviewer, get_set_light)
 	light = lm.createLight();
 	EXPECT_TRUE(light.isValid());
 
+	EXPECT_FALSE(sv.hasLight(light));
 	EXPECT_EQ(OK, sv.addLight(light));
-	EXPECT_EQ(OK, sv.hasLight(light));
+	EXPECT_TRUE(sv.hasLight(light));
+	EXPECT_EQ(ERROR_ALREADY_EXISTS, sv.addLight(light));
 	EXPECT_EQ(OK, sv.removeLight(light));
+	EXPECT_FALSE(sv.hasLight(light));
+	EXPECT_EQ(ERROR_NOT_FOUND, sv.removeLight(light));
 
 	result = lm.endChange();
 	EXPECT_EQ(OK, result);
