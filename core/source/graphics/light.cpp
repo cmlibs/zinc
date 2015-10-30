@@ -208,7 +208,7 @@ public:
 		{
 			this->beginChange();
 			cmzn_light *light = createLight();
-			cmzn_light_set_name(light, "defaultAmbient");
+			cmzn_light_set_name(light, "default_ambient");
 			double default_colour[3];
 			cmzn_light_set_type(light,CMZN_LIGHT_TYPE_AMBIENT);
 			default_colour[0]=0.1;
