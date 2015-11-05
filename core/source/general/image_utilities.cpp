@@ -819,6 +819,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		{
 			enumerator_string = "analyze";
 		} break;
+		case ANALYZE_OBJECT_MAP_FORMAT:
+		{
+			enumerator_string = "obj";
+		} break;
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -890,6 +894,10 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 		case ANALYZE_FILE_FORMAT:
 		{
 			file_format_extension = "hdr";
+		} break;
+		case ANALYZE_OBJECT_MAP_FORMAT:
+		{
+			file_format_extension = "obj";
 		} break;
 		default:
 		{
@@ -7255,6 +7263,10 @@ and other parameters for formats that require them.
 						case ANALYZE_FILE_FORMAT:
 						{
 							file_name_prefix = "aze:";
+						} break;
+						case ANALYZE_OBJECT_MAP_FORMAT:
+						{
+							file_name_prefix = "obj:";
 						} break;
 						default:
 						{

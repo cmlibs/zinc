@@ -63,6 +63,7 @@ Must ensure the ENUMERATOR_STRING function returns a string for each value here.
 	TIFF_FILE_FORMAT,
 	YUV_FILE_FORMAT,
 	ANALYZE_FILE_FORMAT,
+	ANALYZE_OBJECT_MAP_FORMAT,
 	/* following used to indicate that the format has not been specified */
 	UNKNOWN_IMAGE_FILE_FORMAT
 }; /* enum Image_file_format */

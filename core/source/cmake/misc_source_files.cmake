@@ -65,10 +65,12 @@ SET( FIELD_IO_HDRS
 	source/field_io/write_fieldml.hpp )
 
 SET( IMAGE_IO_SRCS
-	source/image_io/analyze.cpp )
+	source/image_io/analyze.cpp
+	source/image_io/analyze_object_map.cpp )
 SET( IMAGE_IO_HDRS
 	source/image_io/analyze.h
-	source/image_io/analyze_header.h )
+	source/image_io/analyze_header.h
+	source/image_io/analyze_object_map.hpp )
 
 SET( LICENSE_HDRS source/license.h )
 

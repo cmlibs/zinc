@@ -87,4 +87,18 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 	struct Cmgui_image_information *cmgui_image_information,
 	enum cmzn_streaminformation_data_compression_type data_compression_type);
 
+typedef ::size_t      BufferSizeType;
+
+void SwapRange2(void *void_p, BufferSizeType n);
+void SwapRange4(void *void_p, BufferSizeType n);
+void SwapRange8(void *void_p, BufferSizeType n);
+
+enum EndianEnum
+{
+	EndianBig,
+	EndianLittle
+};
+
+enum EndianEnum systemEndianTest();
+
 #endif /* IMAGE_IO_ANALYZE_H_ */
