@@ -171,7 +171,7 @@ public:
 			default_colour[1]=0.9;
 			default_colour[2]=0.9;
 			cmzn_light_set_colour_rgb(light, &default_colour[0]);
-			cmzn_light_set_direction3(light,default_light_direction);
+			cmzn_light_set_direction(light, default_light_direction);
 			this->setDefaultLight(light);
 			this->endChange();
 		}
@@ -1026,45 +1026,33 @@ int cmzn_light_set_colour_rgb(struct cmzn_light *light, const double *colour)
 	return CMZN_ERROR_ARGUMENT;
 } /* cmzn_light_set_colour_rgb */
 
-int cmzn_light_get_direction3(struct cmzn_light *light, double *direction)
+int cmzn_light_get_direction(struct cmzn_light *light, double *direction)
 {
 	if (light)
-	{
 		return light->getDirection(direction);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_get_position3 */
+}
 
-int cmzn_light_set_direction3(struct cmzn_light *light, const double *direction)
+int cmzn_light_set_direction(struct cmzn_light *light, const double *direction)
 {
 	if (light)
-	{
 		return light->setDirection(direction);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_direction3 */
+}
 
-int cmzn_light_get_position3(struct cmzn_light *light, double *position)
+int cmzn_light_get_position(struct cmzn_light *light, double *position)
 {
 	if (light)
-	{
 		return light->getPosition(position);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_get_position3 */
+}
 
-int cmzn_light_set_position3(struct cmzn_light *light, const double *position)
+int cmzn_light_set_position(struct cmzn_light *light, const double *position)
 {
 	if (light)
-	{
 		return light->setPosition(position);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_position3 */
+}
 
 double cmzn_light_get_spot_cutoff(struct cmzn_light *light)
 {

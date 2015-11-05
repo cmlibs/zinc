@@ -103,7 +103,7 @@ ZINC_API cmzn_light_id cmzn_lightmodule_find_light_by_name(
 	cmzn_lightmodule_id lightmodule, const char *name);
 
 /**
- * Check if light is enabled.
+ * Query whether the light is enabled.
  *
  * @param light  cmzn_light to be checked.
  * @return  1 if light is enabled, or 0 if otherwise.
@@ -121,8 +121,9 @@ ZINC_API int cmzn_light_set_enabled(struct cmzn_light *light, bool enabled);
 
 /**
  * Get the default light to be used in sceneviewer. If there is none,
- * one is automatically created with RGB value of [0.9, 0.9, 0.9],
- * [0.0, 0.0, 0.0] for its position and [0.0, 0.0, -1.0] for its direction.
+ * a default directional light is automatically created with RGB value of
+ * [0.9, 0.9, 0.9], [0.0, 0.0, 0.0] for its position and [0.0, -0.5, -1.0] for
+ * its direction i.e. into the screen and slightly down.
  *
  * @param lightmodule  cmzn_light module to query.
  * @return  Handle to default light, or NULL/invalid handle if none or failed.
@@ -137,7 +138,6 @@ ZINC_API cmzn_light_id cmzn_lightmodule_get_default_light(
  * @param lightmodule  cmzn_light module to modify.
  * @param light  The light to set as the default light, it must not be
  * ambient or invalid type.
- *
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_lightmodule_set_default_light(
@@ -147,7 +147,6 @@ ZINC_API int cmzn_lightmodule_set_default_light(
  * Get the default ambient light to be used in sceneviewer. If there is none,
  * one is automatically created with RGB value of [0.1, 0.1, 0.1],
  * double_sided and infinite viewer mode.
- *
  *
  * @param lightmodule  cmzn_light module to query.
  * @return  Handle to default ambient light, or NULL/invalid handle if
@@ -192,15 +191,15 @@ ZINC_API int cmzn_light_destroy(cmzn_light_id *light_address);
  * @see cmzn_light_set_managed
  *
  * @param light  The light to query.
- * @return  1 (true) if light is managed, otherwise 0 (false).
+ * @return  True if light is managed, otherwise false.
  */
 ZINC_API bool cmzn_light_is_managed(cmzn_light_id light);
 
 /**
  * Set managed status of light in its owning light module.
- * If set (managed) the light will remain indefinitely in the light
+ * If true (managed) the light will remain indefinitely in the light
  * module even if no external references are held.
- * If not set (unmanaged) the light will be automatically removed from the
+ * If false (unmanaged) the light will be automatically removed from the
  * module when no longer referenced externally, effectively marking it as
  * pending destruction.
  * All new objects are unmanaged unless stated otherwise.
@@ -209,8 +208,7 @@ ZINC_API bool cmzn_light_is_managed(cmzn_light_id light);
  * @param value  The new value for the managed flag: true or false.
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_light_set_managed(cmzn_light_id light,
-	bool value);
+ZINC_API int cmzn_light_set_managed(cmzn_light_id light, bool value);
 
 /**
  * Return an allocated string containing light name.
@@ -230,6 +228,268 @@ ZINC_API char *cmzn_light_get_name(cmzn_light_id light);
  * any other value on failure.
  */
 ZINC_API int cmzn_light_set_name(cmzn_light_id light, const char *name);
+
+/**
+ * Returns the value of the constant attenuation. Attenuation is the loss
+ * of light intensity over a distance. It only applies to spot and point lights.
+ *
+ * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
+ * constant, linear, quadratic attenuation and distance respectively.
+ *
+ * @param light  The light to query.
+ * @return  Value of the constant attenuation on success, 0 on failure.
+ */
+ZINC_API double cmzn_light_get_constant_attenuation(cmzn_light_id light);
+
+/**
+ * Set the value of the constant attenuation. Attenuation is the loss
+ * of light intensity over a distance. It only applies to spot and point lights.
+ *
+ * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
+ * constant, linear, quadratic attenuation and distance respectively.
+ *
+ * @param light  The light to modify.
+ * @param constant_attenuation  Non-negative float representing the value
+ *   of constant attenuation to be set.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_light_set_constant_attenuation(cmzn_light_id light,
+	double constant_attenuation);
+
+/**
+ * Returns the value of the linear attenuation. Attenuation is the loss
+ * of light intensity over a distance. It only applies to spot and point lights.
+ *
+ * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
+ * constant, linear, quadratic attenuation and distance respectively.
+ *
+ * @param light  The light to query.
+ * @return  Value of the linear attenuation on success, 0 on failure.
+ */
+ZINC_API double cmzn_light_get_linear_attenuation(cmzn_light_id light);
+
+/**
+ * Set the value of the linear attenuation. Attenuation is the loss
+ * of light intensity over a distance. It only applies to spot and point lights.
+ *
+ * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
+ * constant, linear, quadratic attenuation and distance respectively.
+ *
+ * @param light  The light to modify.
+ * @param linear_attenuation  non-negative float representing the value
+ *   of linear attenuation to be set.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_light_set_linear_attenuation(cmzn_light_id light,
+	double linear_attenuation);
+
+/**
+ * Returns the value of the quadratic attenuation. Attenuation is the loss
+ * of light intensity over a distance. It only applies to spot and point lights.
+ *
+ * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
+ * constant, linear, quadratic attenuation and distance respectively.
+ *
+ * @param light  The light to query.
+ * @return  Value of the quadratic attenuation on success, 0 on failure.
+ */
+ZINC_API double cmzn_light_get_quadratic_attenuation(cmzn_light_id light);
+
+/**
+ * Set the value of the quadratic attenuation. Attenuation is the loss
+ * of light intensity over a distance. It only applies to spot and point lights.
+ *
+ * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
+ * constant, linear, quadratic attenuation and distance respectively.
+ *
+ * @param light  The light to modify.
+ * @param quadratic_attenuation  Non-negative float representing the value
+ *   of quadratic attenuation to be set.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_light_set_quadratic_attenuation(cmzn_light_id light,
+	double quadratic_attenuation);
+
+/**
+ * Gets the type of the light: AMBIENT, DIRECTIONAL, POINT or SPOT.
+ *
+ * @param light  The light to query.
+ * @return  type of the light, otherwise CMZN_LIGHT_TYPE_INVALID.
+ */
+ZINC_API enum cmzn_light_type cmzn_light_get_type(cmzn_light_id light);
+
+/**
+ * Sets the type of the light: AMBIENT, DIRECTIONAL, POINT or SPOT.
+ *
+ * @param light  The light to modify.
+ * @param light_type  type to be set for the specified light.
+ *
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_light_set_type(cmzn_light_id light,
+	enum cmzn_light_type light_type);
+
+/**
+ * Get the viewer mode of a light, it only affects ambient light.
+ * Infinite ambient light provide a faster bust less accurate lighting while
+ * local ambient light is slower but more accurate.
+ *
+ * @param light  The light to query.
+ * @return  current render vierwer mode, otherwise
+ *   CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID.
+ */
+ZINC_API enum cmzn_light_render_viewer_mode cmzn_light_get_render_viewer_mode(
+	cmzn_light_id light);
+
+/**
+ * Set the viewer mode of a light, it only affects ambient light.
+ * Infinite ambient light provide a faster bust less accurate lighting while
+ * local ambient light is slower but more accurate.
+ *
+ * @param light  The light to modify.
+ * @oaram render_viewer_mode  new render viewer mode to be set.
+ * @return  current render vierwer mode, otherwise
+ *   CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID.
+ */
+ZINC_API int cmzn_light_set_render_viewer_mode(cmzn_light_id light,
+	enum cmzn_light_render_viewer_mode render_viewer_mode);
+
+/**
+ * Get the render side of a light, it only affects ambient light. Single sided
+ * light will only lit surfaces with outward normals while double sided will
+ * lit both outward and inward normal.
+ *
+ * @param light The light to query.
+ * @return  current cmzn_light_render_side,
+ *   otherwise CMZN_LIGHT_RENDER_SIDE_INVALID.
+ */
+ZINC_API enum cmzn_light_render_side cmzn_light_get_render_side(
+	cmzn_light_id light);
+
+/**
+ * Set the render side of a light, it only affects ambient light. Single sided
+ * light will only lit surfaces with outward normals while double sided will
+ * lit both outward and inward normal.
+ *
+ * @param light  The light to modify.
+ * @oaram render_side  new render_side to be set.
+ * @return  CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_set_render_side(cmzn_light_id light,
+	enum cmzn_light_render_side render_side);
+
+/**
+ * Get the 3 component real vector giving the RGB colour of the light.
+ *
+ * @param light  The light to query.
+ * @param colour  Values of the colour will be output into this
+ *   3 component vector. It should be allocated with enough space
+ *   for 3 components.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_get_colour_rgb(cmzn_light_id light, double *colour);
+
+/**
+ * Set the colour of the light using a 3 component vector of the RGB values.
+ *
+ * @param light  The light to modify.
+ * @param colour  Values of the colour to be set, it must be a 3 component
+ *   vector storing the RGB value.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_set_colour_rgb(cmzn_light_id light, const double *colour);
+
+/**
+ * Get the 3 component vector giving the direction of the light. It
+ * only applies to infinite and spot lights.
+ *
+ * @param light  The light to query.
+ * @param direction  Values of the direction will be output into this
+ *   3 component vector. It should be allocated with enough space
+ *   for 3 components.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_get_direction(cmzn_light_id light,
+	double *direction);
+
+/**
+ * Set the direction of the light using a 3 component vector. It
+ * only applies to infinite and spot lights.
+ *
+ * @param light  The light to modify.
+ * @param direction  Values of the direction to set, must be a 3 component
+ *   vector storing the direction value.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_set_direction(cmzn_light_id light,
+	const double *direction);
+
+/**
+ * Get the 3 component vector giving the position of the light. It
+ * only applies to point and spot lights.
+ *
+ * @param light  The light to query.
+ * @param position  Values of the position will be output into this
+ *   3 component vector. It should be allocated with enough space
+ *   for 3 components.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_get_position(cmzn_light_id light, double *position);
+
+/**
+ * Set the position of the light using a 3 component vector. It
+ * only applies to point and spot lights.
+ *
+ * @param light  The light to modify.
+ * @param position  Values of the position to set, must be a 3 component
+ *   vector storing the position value.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_set_position(cmzn_light_id light,
+	const double *position);
+
+/**
+ * Gets the spotlight cutoff angle in degrees from 0 to 90.
+ * It only applies to spot light.
+ *
+ * @param light  The light to query.
+ * @return  Value of the spot cutoff on success, 0 on failure.
+ */
+ZINC_API double cmzn_light_get_spot_cutoff(cmzn_light_id light);
+
+/**
+ * Sets the spotlight cutoff angle in degrees from 0 to 90.
+ * It only applies to spot light.
+ *
+ * @param light  The light to modify.
+ * @param spot_cutoff  New value to set, the value must be between
+ *   0.0 and 90.0.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_set_spot_cutoff(cmzn_light_id light,
+	double spot_cutoff);
+
+/**
+ * Gets the spotlight exponent which controls how concentrated the spotlight
+ * becomes as one approaches its axis. A value of 0.0 gives even illumination
+ * throughout the cutoff angle. It only applies to spot light.
+ *
+ * @param light  The light to query.
+ * @return  Value of the spot exponent on success, 0 on failure.
+ */
+ZINC_API double cmzn_light_get_spot_exponent(cmzn_light_id light);
+
+/**
+ * Sets the spotlight exponent which controls how concentrated the spotlight
+ * becomes as one approaches its axis. A value of 0.0 gives even illumination
+ * throughout the cutoff angle. It only applies to spot light.
+ *
+ * @param light  The light to modify.
+ * @param spot_exponent  New spot exponent value to be set for light.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_light_set_spot_exponent(cmzn_light_id light,
+	double spot_exponent);
 
 /**
  * Returns a new handle to the iterator with reference count incremented.
@@ -260,270 +520,6 @@ ZINC_API int cmzn_lightiterator_destroy(cmzn_lightiterator_id *iterator_address)
  * failed.
  */
 ZINC_API cmzn_light_id cmzn_lightiterator_next(cmzn_lightiterator_id iterator);
-
-/**
- * Returns the value of the constant attenuation. Attenuation is the loss
- * of light intensity over a distance. It only applies to spot and point light.
- *
- * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
- * constant, linear, quadratic attenuation and distance respectively.
- *
- * @param light  handle to the cmzn light.
- * @return  value of the constant attenuation on success, 0 on failure.
- */
-ZINC_API double cmzn_light_get_constant_attenuation(cmzn_light_id light);
-
-/**
- * Set the value of the constant attenuation. Attenuation is the loss
- * of light intensity over a distance. It only applies to spot and point light.
- *
- * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
- * constant, linear, quadratic attenuation and distance respectively.
- *
- * @param light  handle to the cmzn light.
- * @param constant_attenuation  non-negative float representing the value
- *   of constant attenuation to be set.
- * @return   Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_light_set_constant_attenuation(cmzn_light_id light,
-	double constant_attenuation);
-
-/**
- * Returns the value of the linear attenuation. Attenuation is the loss
- * of light intensity over a distance. It only applies to spot and point light.
- *
- * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
- * constant, linear, quadratic attenuation and distance respectively.
- *
- * @param light  handle to the cmzn light.
- * @return  value of the linear attenuation on success, 0 on failure.
- */
-ZINC_API double cmzn_light_get_linear_attenuation(cmzn_light_id light);
-
-/**
- * Set the value of the linear attenuation. Attenuation is the loss
- * of light intensity over a distance. It only applies to spot and point light.
- *
- * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
- * constant, linear, quadratic attenuation and distance respectively.
- *
- * @param light  handle to the cmzn light.
- * @param linear_attenuation  non-negative float representing the value
- *   of linear attenuation to be set.
- * @return   Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_light_set_linear_attenuation(cmzn_light_id light,
-	double linear_attenuation);
-
-/**
- * Returns the value of the quadratic attenuation. Attenuation is the loss
- * of light intensity over a distance. It only applies to spot and point light.
- *
- * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
- * constant, linear, quadratic attenuation and distance respectively.
- *
- * @param light  handle to the cmzn light.
- * @return  value of the quadratic attenuation on success, 0 on failure.
- */
-ZINC_API double cmzn_light_get_quadratic_attenuation(cmzn_light_id light);
-
-/**
- * Set the value of the quadratic attenuation. Attenuation is the loss
- * of light intensity over a distance. It only applies to spot and point light.
- *
- * attenuation factor: 1 / (c + k * l + k * q * q) where c, l, q and k is
- * constant, linear, quadratic attenuation and distance respectively.
- *
- * @param light  handle to the cmzn light.
- * @param quadratic_attenuation  non-negative float representing the value
- *   of quadratic attenuation to be set.
- * @return   Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_light_set_quadratic_attenuation(cmzn_light_id light,
-	double quadratic_attenuation);
-
-/**
- * Returns the light_type of the light.
- *
- * @param light  handle to the cmzn light.
- * @return  type of the light, otherwise CMZN_LIGHT_TYPE_INVALID.
- */
-ZINC_API enum cmzn_light_type cmzn_light_get_type(cmzn_light_id light);
-
-/**
- * Sets the light_type of the light.
- *
- * @param light  handle to the cmzn light.
- * @param light_type  type to be set for the specified light.
- *
- * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
- */
-ZINC_API int cmzn_light_set_type(cmzn_light_id light,
-	enum cmzn_light_type light_type);
-
-/**
- * Get the viewer mode of a light, it only affects ambient light.
- * Infinite ambient light provide a faster bust less accurate lighting while
- * local ambient light is slower but more accurate.
- *
- * @param light  handle to the cmzn light.
- * @return  current render vierwer mode, otherwise
- *   CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID.
- */
-ZINC_API enum cmzn_light_render_viewer_mode cmzn_light_get_render_viewer_mode(
-	cmzn_light_id light);
-
-/**
- * Set the viewer mode of a light, it only affects ambient light.
- * Infinite ambient light provide a faster bust less accurate lighting while
- * local ambient light is slower but more accurate.
- *
- * @param light  handle to the cmzn light.
- * @oaram render_viewer_mode  new render viewer mode to be set.
- * @return  current render vierwer mode, otherwise
- *   CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID.
- */
-ZINC_API int cmzn_light_set_render_viewer_mode(cmzn_light_id light,
-	enum cmzn_light_render_viewer_mode render_viewer_mode);
-
-/**
- * Get the render side of a light, it only affects ambient light. Single sided
- * light will only lit surfaces with outward normals while double sided will
- * lit both outward and inward normal.
- *
- * @param light  handle to the cmzn light.
- * @return  current cmzn_light_render_side,
- *   otherwise CMZN_LIGHT_RENDER_SIDE_INVALID.
- */
-ZINC_API enum cmzn_light_render_side cmzn_light_get_render_side(
-	cmzn_light_id light);
-
-/**
- * Set the render side of a light, it only affects ambient light. Single sided
- * light will only lit surfaces with outward normals while double sided will
- * lit both outward and inward normal.
- *
- * @param light  handle to the cmzn light.
- * @oaram render_side  new render_side to be set.
- * @return  CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_set_render_side(cmzn_light_id light,
-	enum cmzn_light_render_side render_side);
-
-/**
- * Get a 3 components vector which represent the RGB value
- * of the light.
- *
- * @param light  Handle to the zinc light.
- * @param colour  values of the colour will be output into this
- *   3 component vectors. It should be allocated with enough space
- *   for 3 components.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_get_colour_rgb(cmzn_light_id light, double *colour);
-
-/**
- * Set the colour of the light using a 3 components vector which represents
- * the rgb values.
- *
- * @param light  Handle to the zinc light.
- * @param colour  values of the colour to be set, it must be a 3 component
- *   vectors storing the rgb value.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_set_colour_rgb(cmzn_light_id light, const double *colour);
-
-/**
- * Get a 3 components vector which represent the direction of the light. It
- * only applies to infinite and spot lights.
- *
- * @param light  Handle to the zinc light.
- * @param direction  values of the direction will be output into this
- *   3 component vectors. It should be allocated with enough space
- *   for 3 components.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_get_direction3(cmzn_light_id light,
-	double *direction);
-
-/**
- * Set the direction of the light using a 3 components vector. It
- * only applies to infinite and spot lights.
- *
- * @param light  Handle to the zinc light.
- * @param direction  values of the direction to be set to, it must be a 3 component
- *   vectors storing the direction value.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_set_direction3(cmzn_light_id light,
-	const double *direction);
-
-/**
- * Get a 3 components vector which represent the position of the light. It
- * only applies to point and spot lights.
- *
- * @param light  Handle to the zinc light.
- * @param position  values of the position will be output into this
- *   3 component vectors. It should be allocated with enough space
- *   for 3 components.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_get_position3(cmzn_light_id light, double *position);
-
-/**
- * Set the position of the light using a 3 components vector. It
- * only applies to point and spot lights.
- *
- * @param light  Handle to the zinc light.
- * @param position  values of the position to be set to, it must be a 3 component
- *   vectors storing the position value.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_set_position3(cmzn_light_id light,
-	const double *position);
-
-/**
- * Returns the spotlight cutoff angle in degrees from 0 to 90.
- * It only applies to spot light.
- *
- * @param light  handle to the cmzn light.
- * @return  value of the spot cutoff on success, 0 on failure.
- */
-ZINC_API double cmzn_light_get_spot_cutoff(cmzn_light_id light);
-
-/**
- * Returns the spotlight cutoff angle in degrees from 0 to 90.
- * It only applies to spot light.
- *
- * @param light  handle to the cmzn light.
- * @param spot_cutoff  new value to set, the value must be between
- *   0.0 and 90.0.
- * @return  value of the spot cutoff on success, 0 on failure.
- */
-ZINC_API int cmzn_light_set_spot_cutoff(cmzn_light_id light,
-	double spot_cutoff);
-
-/**
- * Returns the spotlight exponent which controls how concentrated the spotlight
- * becomes as one approaches its axis. A value of 0.0 gives even illumination
- * throughout the cutoff angle. It only applies to spot light.
- *
- * @param light  handle to the cmzn light.
- * @return  value of the spot exponent on success, 0 on failure.
- */
-ZINC_API double cmzn_light_get_spot_exponent(cmzn_light_id light);
-
-/**
- * Sets the spotlight exponent which controls how concentrated the spotlight
- * becomes as one approaches its axis. A value of 0.0 gives even illumination
- * throughout the cutoff angle. It only applies to spot light.
- *
- * @param light  handle to the cmzn light.
- * @param spot_exponent  new spot exponent value to be set for light.
- * @return  value of the constant attenuation on success, 0 on failure.
- */
-ZINC_API int cmzn_light_set_spot_exponent(cmzn_light_id light,
-	double spot_exponent);
 
 #ifdef __cplusplus
 }

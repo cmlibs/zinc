@@ -168,24 +168,24 @@ public:
 		return cmzn_light_set_colour_rgb(id, valuesIn3);
 	}
 
-	int getDirection3(double *valuesOut3)
+	int getDirection(double *valuesOut3)
 	{
-		return cmzn_light_get_direction3(id, valuesOut3);
+		return cmzn_light_get_direction(id, valuesOut3);
 	}
 
-	int setDirection3(const double *valuesIn3)
+	int setDirection(const double *valuesIn3)
 	{
-		return cmzn_light_set_direction3(id, valuesIn3);
+		return cmzn_light_set_direction(id, valuesIn3);
 	}
 
-	int getPosition3(double *valuesOut3)
+	int getPosition(double *valuesOut3)
 	{
-		return cmzn_light_get_position3(id, valuesOut3);
+		return cmzn_light_get_position(id, valuesOut3);
 	}
 
-	int setPosition3(const double *valuesIn3)
+	int setPosition(const double *valuesIn3)
 	{
-		return cmzn_light_set_position3(id, valuesIn3);
+		return cmzn_light_set_position(id, valuesIn3);
 	}
 
 	double getSpotCutoff()
