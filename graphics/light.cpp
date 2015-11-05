@@ -35,13 +35,13 @@ TEST(cmzn_lightmodule_api, valid_args)
 	EXPECT_DOUBLE_EQ(0.9, float_values[1]);
 	EXPECT_DOUBLE_EQ(0.9, float_values[2]);
 
-	result = cmzn_light_get_direction3(light, &float_values[0]);
+	result = cmzn_light_get_direction(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(-0.5, float_values[1]);
 	EXPECT_DOUBLE_EQ(-1.0, float_values[2]);
 
-	result = cmzn_light_get_position3(light, &float_values[0]);
+	result = cmzn_light_get_position(light, &float_values[0]);
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.0, float_values[1]);
@@ -129,13 +129,13 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	EXPECT_DOUBLE_EQ(0.9, float_values[1]);
 	EXPECT_DOUBLE_EQ(0.9, float_values[2]);
 
-	result = light.getDirection3(&float_values[0]);
+	result = light.getDirection(&float_values[0]);
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(-0.5, float_values[1]);
 	EXPECT_DOUBLE_EQ(-1.0, float_values[2]);
 
-	result = light.getPosition3(&float_values[0]);
+	result = light.getPosition(&float_values[0]);
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.0, float_values[0]);
 	EXPECT_DOUBLE_EQ(0.0, float_values[1]);
@@ -225,17 +225,17 @@ TEST(cmzn_light_api, valid_args)
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = cmzn_light_set_direction3(light, &(inValues[0]));
+	result = cmzn_light_set_direction(light, &(inValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_light_get_direction3(light, &(outValues[0]));
+	result = cmzn_light_get_direction(light, &(outValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = cmzn_light_set_position3(light, &(inValues[0]));
+	result = cmzn_light_set_position(light, &(inValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
-	result = cmzn_light_get_position3(light, &(outValues[0]));
+	result = cmzn_light_get_position(light, &(outValues[0]));
 	EXPECT_EQ(CMZN_OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
@@ -305,17 +305,17 @@ TEST(cmzn_light_api, valid_args_cpp)
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = light.setDirection3(&(inValues[0]));
+	result = light.setDirection(&(inValues[0]));
 	EXPECT_EQ(OK, result);
-	result = light.getDirection3(&(outValues[0]));
+	result = light.getDirection(&(outValues[0]));
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
 	EXPECT_DOUBLE_EQ(0.4, outValues[2]);
 
-	result = light.setPosition3(&(inValues[0]));
+	result = light.setPosition(&(inValues[0]));
 	EXPECT_EQ(OK, result);
-	result = light.getPosition3(&(outValues[0]));
+	result = light.getPosition(&(outValues[0]));
 	EXPECT_EQ(OK, result);
 	EXPECT_DOUBLE_EQ(0.2, outValues[0]);
 	EXPECT_DOUBLE_EQ(0.3, outValues[1]);
