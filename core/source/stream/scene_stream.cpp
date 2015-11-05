@@ -157,13 +157,20 @@ int cmzn_scene_import_scene(cmzn_scene_id scene,
 						void *source = malloc(size + 1);
 						if (source)
 						{
-							fread(source, size, 1, import_file);
+							long sizeRead = static_cast<long>(fread(source, size, 1, import_file));
 							fclose(import_file);
-							char *jsonString = (char *)source;
-							jsonString[size] = 0;
-							SceneJsonImport sceneImport(scene, overwrite);
-							std::string inputString(jsonString);
-							return_code = sceneImport.import(inputString);
+							if (sizeRead == size)
+							{
+								char *jsonString = (char *)source;
+								jsonString[size] = 0;
+								SceneJsonImport sceneImport(scene, overwrite);
+								std::string inputString(jsonString);
+								return_code = sceneImport.import(inputString);
+							}
+							else
+							{
+								return_code = CMZN_ERROR_GENERAL;
+							}
 							free(source);
 						}
 						else
