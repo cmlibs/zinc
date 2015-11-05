@@ -5871,8 +5871,8 @@ graphics window on screen.
 		original_left, original_right, original_bottom, original_top,
 		original_near_plane, original_far_plane, right, top = 0.0,
 		viewport_left, viewport_top = 0.0, viewport_pixels_per_x = 0.0, viewport_pixels_per_y = 0.0,
-		original_viewport_left, original_viewport_top,
-		original_viewport_pixels_per_x, original_viewport_pixels_per_y,
+		original_viewport_left = 0.0, original_viewport_top = 0.0,
+		original_viewport_pixels_per_x = 0.0, original_viewport_pixels_per_y = 0.0,
 		real_left, real_right, real_bottom, real_top,
 		scaled_NDC_width,scaled_NDC_height ;
 #if defined (OPENGL_API) && defined (USE_MSAA)

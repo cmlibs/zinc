@@ -293,12 +293,10 @@ protected:
 		direction[2] = -1;
 	}
 
-	~cmzn_light()
+	virtual ~cmzn_light()
 	{
 		if (name)
-		{
 			DEALLOCATE(name);
-		}
 	}
 
 public:

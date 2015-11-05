@@ -2665,13 +2665,11 @@ static int cmzn_mesh_to_graphics(cmzn_mesh_id mesh, cmzn_graphics_to_graphics_ob
 int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *graphics,
 	cmzn_graphics_to_graphics_object_data *graphics_to_object_data)
 {
-	int return_code;
+	int return_code = 1;
 	enum GT_object_type graphics_object_type;
 	char *graphics_string;
 	if (graphics && graphics_to_object_data)
 	{
-		return_code = 1;
-
 		if (graphics->graphics_changed)
 		{
 			cmzn_fieldcache_clear_location(graphics_to_object_data->field_cache);
@@ -3200,7 +3198,8 @@ int cmzn_graphics_to_graphics_object_no_check_on_filter(struct cmzn_graphics *gr
 			graphics->selected_graphics_changed = 0;
 		}
 	}
-
+	else
+		return_code = 0;
 	return return_code;
 }
 
