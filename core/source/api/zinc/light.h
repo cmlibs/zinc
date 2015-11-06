@@ -103,23 +103,6 @@ ZINC_API cmzn_light_id cmzn_lightmodule_find_light_by_name(
 	cmzn_lightmodule_id lightmodule, const char *name);
 
 /**
- * Query whether the light is enabled.
- *
- * @param light  cmzn_light to be checked.
- * @return  1 if light is enabled, or 0 if otherwise.
- */
-ZINC_API bool cmzn_light_is_enabled(struct cmzn_light *light);
-
-/**
- * Enable/disable the light when it is used in scene.
- *
- * @param light  cmzn_light to be enabled or disabled.
- * @param enabled  Value to set: true to mark as enabled, false for disabled.
- * @return  Status CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_set_enabled(struct cmzn_light *light, bool enabled);
-
-/**
  * Get the default light to be used in sceneviewer. If there is none,
  * a default directional light is automatically created with RGB value of
  * [0.9, 0.9, 0.9], [0.0, 0.0, 0.0] for its position and [0.0, -0.5, -1.0] for

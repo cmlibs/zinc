@@ -98,16 +98,6 @@ public:
 		return cmzn_light_set_managed(id, value);
 	}
 
-	bool isEnabled()
-	{
-		return cmzn_light_is_enabled(id);
-	}
-
-	int setEnabled(bool value)
-	{
-		return cmzn_light_set_enabled(id, value);
-	}
-
 	enum Type getType()
 	{
 		return static_cast<Type>(cmzn_light_get_type(id));

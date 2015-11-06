@@ -255,7 +255,6 @@ struct cmzn_light
 	/* spot_exponent controls concentration of light near its axis; 0 = none */
 	double spot_exponent;
 	/* after clearing in create, following to be modified only by manager */
-	bool enabled;
 	bool is_managed_flag;
 	int access_count;
 	/* position for point and spot lights */
@@ -278,7 +277,6 @@ protected:
 		quadratic_attenuation(0.0),
 		spot_cutoff(90.0),
 		spot_exponent(0.0),
-		enabled(true),
 		is_managed_flag(false),
 		access_count(1)
 	{
@@ -324,7 +322,6 @@ public:
 		setRenderViewerMode(source.viewer_mode);
 		setSpotCutoff(source.spot_cutoff);
 		setSpotExponent(source.spot_exponent);
-		setEnabled(source.enabled);
 		return *this;
 	}
 
@@ -523,22 +520,6 @@ public:
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
-	}
-
-	int setEnabled(bool enabledIn)
-	{
-		if (enabled != enabledIn)
-		{
-			enabled = enabledIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
-		}
-		return CMZN_OK;
-	}
-
-	bool isEnabled()
-	{
-		return enabled;
 	}
 
 	inline cmzn_light *access()
@@ -768,38 +749,31 @@ Directly outputs the commands to activate the <light>.
 		{
 			if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
 			{
-				if (light->enabled == true)
+				values[0] = (GLfloat)((light->colour).red);
+				values[1] = (GLfloat)((light->colour).green);
+				values[2] = (GLfloat)((light->colour).blue);
+				glLightModelfv(GL_LIGHT_MODEL_AMBIENT,values);
+				if (CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL == light->viewer_mode)
 				{
-					values[0] = (GLfloat)((light->colour).red);
-					values[1] = (GLfloat)((light->colour).green);
-					values[2] = (GLfloat)((light->colour).blue);
-					glLightModelfv(GL_LIGHT_MODEL_AMBIENT,values);
-					if (CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL == light->viewer_mode)
-					{
-						glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
-					}
-					else if (CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE == light->viewer_mode)
-					{
-						glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_FALSE);
-					}
-					if (CMZN_LIGHT_RENDER_SIDE_DOUBLE==light->render_side)
-					{
-						glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
-					}
-					else
-					{
-						glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_FALSE);
-					}
-					glEnable(GL_LIGHTING);
+					glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
+				}
+				else if (CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE == light->viewer_mode)
+				{
+					glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_FALSE);
+				}
+				if (CMZN_LIGHT_RENDER_SIDE_DOUBLE==light->render_side)
+				{
+					glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
 				}
 				else
 				{
-					glDisable(GL_LIGHTING);
+					glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_FALSE);
 				}
+				glEnable(GL_LIGHTING);
 			}
 			else
 			{
-				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS && light->enabled == true)
+				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS)
 				{
 					light_id = light_identifiers[next_light_no];
 					glLightfv(light_id, GL_AMBIENT, values);
@@ -921,26 +895,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_light_type)
 } /* ENUMERATOR_STRING(cmzn_light_type) */
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_light_type);
-
-bool cmzn_light_is_enabled(struct cmzn_light *light)
-{
-	if (light)
-	{
-		return light->isEnabled();
-	}
-
-	return 0;
-}
-
-int cmzn_light_set_enabled(struct cmzn_light *light, bool enabled)
-{
-	if (light)
-	{
-		return light->setEnabled(enabled);
-	}
-
-	return CMZN_ERROR_ARGUMENT;
-}
 
 double cmzn_light_get_quadratic_attenuation(struct cmzn_light *light)
 {
@@ -1175,14 +1129,6 @@ Writes the properties of the <light> to the command window.
 	{
 		display_message(INFORMATION_MESSAGE, "light : %s : %s",
 			light->name, ENUMERATOR_STRING(cmzn_light_type)(light->type));
-		if (true == light->enabled)
-		{
-			display_message(INFORMATION_MESSAGE, " : enable");
-		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE, " : disable");
-		}
 		if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
 		{
 			if (light->viewer_mode == CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL)
