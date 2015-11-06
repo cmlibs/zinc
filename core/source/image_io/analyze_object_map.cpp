@@ -395,7 +395,7 @@ void AnalyzeObjectMapHandler::printInformation()
 {
 	display_message(INFORMATION_MESSAGE, "Object Map version: %d, dimension: %d\n", version, numberOfDimensions);
 	display_message(INFORMATION_MESSAGE, "Width: %d, Height: %d, Depth: %d\n", width, height, depth);
-	display_message(INFORMATION_MESSAGE, "Number Of Objects\n", numberOfObjects);
+	display_message(INFORMATION_MESSAGE, "Number Of Objects: %d\n", numberOfObjects);
 }
 
 struct Cmgui_image_information_memory_block AnalyzeObjectMapHandler::getImageMemoryBlock(int index)
