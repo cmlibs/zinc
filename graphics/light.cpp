@@ -54,7 +54,6 @@ TEST(cmzn_lightmodule_api, valid_args)
 	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 0.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 90.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 0.0);
-	EXPECT_TRUE(cmzn_light_is_enabled(light));
 	EXPECT_EQ(cmzn_light_destroy(&light), result);
 
 	light = cmzn_lightmodule_get_default_ambient_light(lm);
@@ -148,7 +147,6 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	EXPECT_DOUBLE_EQ(light.getQuadraticAttenuation(), 0.0);
 	EXPECT_DOUBLE_EQ(light.getSpotCutoff(), 90.0);
 	EXPECT_DOUBLE_EQ(light.getSpotExponent(), 0.0);
-	EXPECT_TRUE(light.isEnabled());
 
 	light = lm.getDefaultAmbientLight();
 	EXPECT_TRUE(light.isValid());
@@ -251,14 +249,12 @@ TEST(cmzn_light_api, valid_args)
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_quadratic_attenuation(light, 1.0));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_cutoff(light, 70.0));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_exponent(light, 1.0));
-	EXPECT_EQ(CMZN_OK, cmzn_light_set_enabled(light, false));
 
 	EXPECT_DOUBLE_EQ(cmzn_light_get_constant_attenuation(light), 0.5);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_linear_attenuation(light), 1.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 1.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 70.0);
 	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 1.0);
-	EXPECT_FALSE(cmzn_light_is_enabled(light));
 
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_type(light, CMZN_LIGHT_TYPE_AMBIENT));
 	EXPECT_EQ(cmzn_light_get_type(light), CMZN_LIGHT_TYPE_AMBIENT);
@@ -331,14 +327,12 @@ TEST(cmzn_light_api, valid_args_cpp)
 	EXPECT_EQ(OK, light.setQuadraticAttenuation(1.0));
 	EXPECT_EQ(OK, light.setSpotCutoff(70.0));
 	EXPECT_EQ(OK, light.setSpotExponent(1.0));
-	EXPECT_EQ(OK, light.setEnabled(false));
 
 	EXPECT_DOUBLE_EQ(light.getLinearAttenuation(), 1.0);
 	EXPECT_DOUBLE_EQ(light.getQuadraticAttenuation(), 1.0);
 	EXPECT_DOUBLE_EQ(light.getConstantAttenuation(), 0.5);
 	EXPECT_DOUBLE_EQ(light.getSpotCutoff(), 70.0);
 	EXPECT_DOUBLE_EQ(light.getSpotExponent(), 1.0);
-	EXPECT_FALSE(light.isEnabled());
 
 	EXPECT_EQ(OK, light.setType(Light::TYPE_AMBIENT));
 	EXPECT_EQ(light.getType(), Light::TYPE_AMBIENT);
