@@ -7,7 +7,7 @@ DESCRIPTION :
 The functions for manipulating lights.
 
 ???RC
-If OpenGL lights were set up half-way decently you could throw them all into
+If OpenGL lights were set up half-way decent you could throw them all into
 display lists in compile_cmzn_light and then execute them with execute_cmzn_light.
 However, the basic installation supports only EIGHT lights, but worse, they are
 each referenced by their own constants GL_LIGHT0..GL_LIGHT7. Hence, if you want
@@ -215,7 +215,6 @@ public:
 			default_colour[1]=0.1;
 			default_colour[2]=0.1;
 			cmzn_light_set_colour_rgb(light,&default_colour[0]);
-			cmzn_light_set_render_side(light,CMZN_LIGHT_RENDER_SIDE_DOUBLE);
 			this->setDefaultAmbientLight(light);
 			this->endChange();
 		}
@@ -244,8 +243,6 @@ struct cmzn_light
 	struct MANAGER(cmzn_light) *manager;
 	int manager_change_status;
 	enum cmzn_light_type type;
-	enum cmzn_light_render_side render_side;
-	enum cmzn_light_render_viewer_mode viewer_mode;
 	/* attenuation parameters control light falloff with distance according to
 	   1/(c + l*d + q*d*d) where d=distance, c=constant, l=linear, q=quadratic */
 	double constant_attenuation, linear_attenuation, quadratic_attenuation;
@@ -270,8 +267,6 @@ protected:
 		manager(NULL),
 		manager_change_status(MANAGER_CHANGE_NONE(cmzn_light)),
 		type(CMZN_LIGHT_TYPE_DIRECTIONAL),
-		render_side(CMZN_LIGHT_RENDER_SIDE_DOUBLE),
-		viewer_mode(CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE),
 		constant_attenuation(1.0),
 		linear_attenuation(0.0),
 		quadratic_attenuation(0.0),
@@ -318,14 +313,12 @@ public:
 		setConstantAttenuation(source.constant_attenuation);
 		setLinearAttenuation(source.linear_attenuation);
 		setQuadraticAttenuation(source.quadratic_attenuation);
-		setRenderSide(source.render_side);
-		setRenderViewerMode(source.viewer_mode);
 		setSpotCutoff(source.spot_cutoff);
 		setSpotExponent(source.spot_exponent);
 		return *this;
 	}
 
-	int getColour(double *colourOut)
+	int getColour(double *colourOut) const
 	{
 		colourOut[0] = static_cast<double>(colour.red);
 		colourOut[1] = static_cast<double>(colour.green);
@@ -335,68 +328,53 @@ public:
 
 	int setColour(const double *colourIn)
 	{
-		colour.red = colourIn[0];
-		colour.green = colourIn[1];
-		colour.blue = colourIn[2];
-		MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-			MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
-		return CMZN_OK;
-	}
-
-	enum cmzn_light_render_side getRenderSide()
-	{
-		return render_side;
-	}
-
-	int setRenderSide(enum cmzn_light_render_side renderSideIn)
-	{
-		if (renderSideIn != render_side && renderSideIn != CMZN_LIGHT_RENDER_SIDE_INVALID)
+		if ((colourIn[0] != this->colour.red) ||
+			(colourIn[1] != this->colour.green) ||
+			(colourIn[2] != this->colour.blue))
 		{
-			render_side = renderSideIn;
+			colour.red = colourIn[0];
+			colour.green = colourIn[1];
+			colour.blue = colourIn[2];
 			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
 				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
 		}
 		return CMZN_OK;
 	}
 
-	enum cmzn_light_render_viewer_mode getRenderViewerMode()
+	enum cmzn_light_type getType() const
 	{
-		return viewer_mode;
-	}
-
-	int setRenderViewerMode(enum cmzn_light_render_viewer_mode renderViewerModeIn)
-	{
-		if (viewer_mode != renderViewerModeIn &&
-			renderViewerModeIn != CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID)
-		{
-			viewer_mode = renderViewerModeIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
-		}
-		return CMZN_OK;
-	}
-
-	enum cmzn_light_type getType()
-	{
-		return type;
+		return this->type;
 	}
 
 	int setType(enum cmzn_light_type typeIn)
 	{
-		if (typeIn != type && typeIn != CMZN_LIGHT_TYPE_INVALID)
+		switch (typeIn)
 		{
-			type = typeIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			case CMZN_LIGHT_TYPE_INVALID:
+			{
+			} break;
+			case CMZN_LIGHT_TYPE_AMBIENT:
+			case CMZN_LIGHT_TYPE_DIRECTIONAL:
+			case CMZN_LIGHT_TYPE_POINT:
+			case CMZN_LIGHT_TYPE_SPOT:
+			{
+				if (typeIn != this->type)
+				{
+					this->type = typeIn;
+					MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+						MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+				}
+				return CMZN_OK;
+			} break;
 		}
-		return CMZN_OK;
+		return CMZN_ERROR_ARGUMENT;
 	}
 
-	int getPosition(double *positionOut)
+	int getPosition(double *positionOut) const
 	{
-		positionOut[0] = position[0];
-		positionOut[1] = position[1];
-		positionOut[2] = position[2];
+		positionOut[0] = this->position[0];
+		positionOut[1] = this->position[1];
+		positionOut[2] = this->position[2];
 		return CMZN_OK;
 	}
 
@@ -404,21 +382,26 @@ public:
 	{
 		if (positionIn)
 		{
-			position[0] = positionIn[0];
-			position[1] = positionIn[1];
-			position[2] = positionIn[2];
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if ((positionIn[0] != this->position[0]) ||
+				(positionIn[1] != this->position[1]) ||
+				(positionIn[2] != this->position[2]))
+			{
+				this->position[0] = positionIn[0];
+				this->position[1] = positionIn[1];
+				this->position[2] = positionIn[2];
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	int getDirection(double *directionOut)
+	int getDirection(double *directionOut) const
 	{
-		directionOut[0] = direction[0];
-		directionOut[1] = direction[1];
-		directionOut[2] = direction[2];
+		directionOut[0] = this->direction[0];
+		directionOut[1] = this->direction[1];
+		directionOut[2] = this->direction[2];
 		return CMZN_OK;
 	}
 
@@ -426,97 +409,116 @@ public:
 	{
 		if (directionIn)
 		{
-			direction[0] = directionIn[0];
-			direction[1] = directionIn[1];
-			direction[2] = directionIn[2];
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if ((directionIn[0] != this->direction[0]) ||
+				(directionIn[1] != this->direction[1]) ||
+				(directionIn[2] != this->direction[2]))
+			{
+				this->direction[0] = directionIn[0];
+				this->direction[1] = directionIn[1];
+				this->direction[2] = directionIn[2];
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	double getSpotCutoff()
+	double getSpotCutoff() const
 	{
-		return spot_cutoff;
+		return this->spot_cutoff;
 	}
 
 	int setSpotCutoff(double spotCutoffIn)
 	{
 		if ((0.0 <= spotCutoffIn) && (90.0 >= spotCutoffIn))
 		{
-			spot_cutoff = spotCutoffIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if (spotCutoffIn != this->spot_cutoff)
+			{
+				this->spot_cutoff = spotCutoffIn;
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	double getSpotExponent()
+	double getSpotExponent() const
 	{
-		return spot_exponent;
+		return this->spot_exponent;
 	}
 
 	int setSpotExponent(double spotExponentIn)
 	{
 		if (0.0 <= spotExponentIn)
 		{
-			spot_exponent = spotExponentIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if (spotExponentIn != this->spot_exponent)
+			{
+				this->spot_exponent = spotExponentIn;
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
-
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	double getConstantAttenuation()
+	double getConstantAttenuation() const
 	{
-		return constant_attenuation;
+		return this->constant_attenuation;
 	}
 
 	int setConstantAttenuation(double constantAttenuationIn)
 	{
 		if (0.0 <= constantAttenuationIn)
 		{
-			constant_attenuation = constantAttenuationIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if (constantAttenuationIn != this->constant_attenuation)
+			{
+				this->constant_attenuation = constantAttenuationIn;
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	double getLinearAttenuation()
+	double getLinearAttenuation() const
 	{
-		return linear_attenuation;
+		return this->linear_attenuation;
 	}
 
 	int setLinearAttenuation(double linearAttenuationIn)
 	{
 		if (0.0 <= linearAttenuationIn)
 		{
-			linear_attenuation = linearAttenuationIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if (linearAttenuationIn != this->linear_attenuation)
+			{
+				this->linear_attenuation = linearAttenuationIn;
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
 	}
 
-	double getQuadraticAttenuation()
+	double getQuadraticAttenuation() const
 	{
-		return linear_attenuation;
+		return this->quadratic_attenuation;
 	}
 
 	int setQuadraticAttenuation(double quadraticAttenuationIn)
 	{
 		if (0.0 <= quadraticAttenuationIn)
 		{
-			quadratic_attenuation = quadraticAttenuationIn;
-			MANAGED_OBJECT_CHANGE(cmzn_light)(this,
-				MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			if (quadraticAttenuationIn != this->quadratic_attenuation)
+			{
+				this->quadratic_attenuation = quadraticAttenuationIn;
+				MANAGED_OBJECT_CHANGE(cmzn_light)(this,
+					MANAGER_CHANGE_OBJECT_NOT_IDENTIFIER(cmzn_light));
+			}
 			return CMZN_OK;
 		}
 		return CMZN_ERROR_ARGUMENT;
@@ -710,12 +712,11 @@ int cmzn_light_manager_set_owner_private(struct MANAGER(cmzn_light) *manager,
 Module variables
 ----------------
 */
-const char *get_cmzn_light_name(struct cmzn_light *light)
-{
-	return light->name;
-}
+
 static int next_light_no=0;
+
 #define MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS 8
+
 static GLenum light_identifiers[MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS]=
 {
 	GL_LIGHT0,GL_LIGHT1,GL_LIGHT2,GL_LIGHT3,GL_LIGHT4,GL_LIGHT5,GL_LIGHT6,
@@ -737,45 +738,23 @@ Directly outputs the commands to activate the <light>.
 {
 	int return_code;
 	GLenum light_id;
-	GLfloat values[4];
 
 	if (light)
 	{
-		values[0] = 0.;
-		values[1] = 0.;
-		values[2] = 0.;
-		values[3] = 1.;
 		if (light->type != CMZN_LIGHT_TYPE_INVALID)
 		{
 			if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
 			{
-				values[0] = (GLfloat)((light->colour).red);
-				values[1] = (GLfloat)((light->colour).green);
-				values[2] = (GLfloat)((light->colour).blue);
-				glLightModelfv(GL_LIGHT_MODEL_AMBIENT,values);
-				if (CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL == light->viewer_mode)
-				{
-					glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_TRUE);
-				}
-				else if (CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE == light->viewer_mode)
-				{
-					glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER,GL_FALSE);
-				}
-				if (CMZN_LIGHT_RENDER_SIDE_DOUBLE==light->render_side)
-				{
-					glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_TRUE);
-				}
-				else
-				{
-					glLightModeli(GL_LIGHT_MODEL_TWO_SIDE,GL_FALSE);
-				}
-				glEnable(GL_LIGHTING);
+				// not output an OpenGL light
+				// accumulated separately into light model ambient colour
 			}
 			else
 			{
 				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS)
 				{
+					GLfloat values[4] = { 0.0, 0.0, 0.0, 1.0 };
 					light_id = light_identifiers[next_light_no];
+					// ambient lighting comes from separate ambient lights, as above
 					glLightfv(light_id, GL_AMBIENT, values);
 					values[0] = (GLfloat)((light->colour).red);
 					values[1] = (GLfloat)((light->colour).green);
@@ -899,84 +878,58 @@ DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_light_type);
 double cmzn_light_get_quadratic_attenuation(struct cmzn_light *light)
 {
 	if (light)
-	{
 		return light->getQuadraticAttenuation();
-	}
-
 	return 0.0;
 }
 
 int cmzn_light_set_quadratic_attenuation(struct cmzn_light *light, double quadratic_attenuation)
 {
 	if (light)
-	{
 		return light->setQuadraticAttenuation(quadratic_attenuation);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_light_get_linear_attenuation(struct cmzn_light *light)
 {
 	if (light)
-	{
 		return light->getLinearAttenuation();
-	}
-
 	return 0.0;
 }
 
 int cmzn_light_set_linear_attenuation(struct cmzn_light *light, double linear_attenuation)
 {
 	if (light)
-	{
 		return light->setLinearAttenuation(linear_attenuation);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_light_get_constant_attenuation(struct cmzn_light *light)
 {
 	if (light)
-	{
-
 		return light->getConstantAttenuation();
-	}
-
 	return 0.0;
 }
 
 int cmzn_light_set_constant_attenuation(struct cmzn_light *light, double constant_attenuation)
 {
 	if (light)
-	{
 		return light->setConstantAttenuation(constant_attenuation);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
 int cmzn_light_get_colour_rgb(struct cmzn_light *light, double *colour)
 {
 	if (light)
-	{
 		return light->getColour(colour);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_get_colour_rgb */
+}
 
 int cmzn_light_set_colour_rgb(struct cmzn_light *light, const double *colour)
-
 {
 	if (light)
-	{
 		return light->setColour(colour);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_colour_rgb */
+}
 
 int cmzn_light_get_direction(struct cmzn_light *light, double *direction)
 {
@@ -1009,107 +962,42 @@ int cmzn_light_set_position(struct cmzn_light *light, const double *position)
 double cmzn_light_get_spot_cutoff(struct cmzn_light *light)
 {
 	if (light)
-	{
 		return light->getSpotCutoff();
-	}
-
 	return 0.0;
 }
 
 int cmzn_light_set_spot_cutoff(struct cmzn_light *light, double spot_cutoff)
 {
 	if (light)
-	{
 		return light->setSpotCutoff(spot_cutoff);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
 double cmzn_light_get_spot_exponent(struct cmzn_light *light)
 {
 	if (light)
-	{
 		return light->getSpotExponent();
-	}
-
 	return 0.0;
 }
 
 int cmzn_light_set_spot_exponent(struct cmzn_light *light, double spot_exponent)
 {
 	if (light)
-	{
 		return light->setSpotExponent(spot_exponent);
-	}
-
-	return CMZN_ERROR_ARGUMENT;
-} /* cmzn_light_set_spot_exponent */
-
-enum cmzn_light_render_side cmzn_light_get_render_side(struct cmzn_light *light)
-{
-	if (light)
-	{
-		return light->getRenderSide();
-	}
-
-	return CMZN_LIGHT_RENDER_SIDE_INVALID;
-}
-
-int cmzn_light_set_render_side(struct cmzn_light *light, enum cmzn_light_render_side render_side)
-{
-	if (light)
-	{
-		return light->setRenderSide(render_side);
-	}
-
-	return CMZN_ERROR_ARGUMENT;
-}
-
-enum cmzn_light_render_viewer_mode cmzn_light_get_render_viewer_mode(struct cmzn_light *light)
-{
-	if (light)
-	{
-		return light->getRenderViewerMode();
-	}
-
-	return CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID;
-}
-
-int cmzn_light_set_render_viewer_mode(struct cmzn_light *light,
-	enum cmzn_light_render_viewer_mode render_viewer_mode)
-{
-	if (light)
-	{
-		return light->setRenderViewerMode(render_viewer_mode);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
 enum cmzn_light_type cmzn_light_get_type(struct cmzn_light *light)
 {
 	if (light)
-	{
 		return light->getType();
-	}
-
 	return CMZN_LIGHT_TYPE_INVALID;
 }
 
 int cmzn_light_set_type(struct cmzn_light *light, enum cmzn_light_type light_type)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Sets the light_type of the light (infinite/point/spot).
-==============================================================================*/
 {
 	if (light)
-	{
 		return light->setType(light_type);
-	}
-
 	return CMZN_ERROR_ARGUMENT;
 }
 
@@ -1129,25 +1017,6 @@ Writes the properties of the <light> to the command window.
 	{
 		display_message(INFORMATION_MESSAGE, "light : %s : %s",
 			light->name, ENUMERATOR_STRING(cmzn_light_type)(light->type));
-		if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
-		{
-			if (light->viewer_mode == CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL)
-			{
-				display_message(INFORMATION_MESSAGE, " : local_viewer");
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " : infinite_viewer");
-			}
-			if (light->render_side == CMZN_LIGHT_RENDER_SIDE_SINGLE)
-			{
-				display_message(INFORMATION_MESSAGE, " : single_sided");
-			}
-			else
-			{
-				display_message(INFORMATION_MESSAGE, " : double_sided");
-			}
-		}
 		display_message(INFORMATION_MESSAGE,"\n");
 		display_message(INFORMATION_MESSAGE,
 			"  colour  red = %.3g, green = %.3g, blue = %.3g\n",
@@ -1298,28 +1167,12 @@ Follows the light name with semicolon and carriage return.
 	return (return_code);
 } /* list_cmzn_light_name_command */
 
-int reset_cmzn_lights(void)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Must be called at start of rendering before lights are activate with
-execute_cmzn_light. Ensures all lights are off at the start of the rendering loop,
-and makes sure the lights that are subsequently defined start at GL_LIGHT0...
-==============================================================================*/
+void reset_cmzn_lights(void)
 {
-	int return_code,light_no;
-
-	for (light_no=0;light_no<MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS;light_no++)
-	{
+	for (int light_no = 0; light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS; ++light_no)
 		glDisable(light_identifiers[light_no]);
-	}
-	next_light_no=0;
-	return_code=1;
-
-
-	return (return_code);
-} /* reset_cmzn_lights */
+	next_light_no=0; // GRC dodgy static!!!
+}
 
 int execute_cmzn_light(struct cmzn_light *light,void *dummy_void)
 /*******************************************************************************
@@ -1331,9 +1184,7 @@ Does not use display lists. See comments with compile_cmzn_light, above.
 ==============================================================================*/
 {
 	USE_PARAMETER(dummy_void);
-
 	return direct_render_cmzn_light(light);
-
 }
 
 int cmzn_light_is_in_list(struct cmzn_light *light, void *light_list_void)
@@ -1595,3 +1446,29 @@ cmzn_light_id cmzn_lightiterator_next(cmzn_lightiterator_id iterator)
 		return iterator->next();
 	return 0;
 }
+
+Colour Light_list_get_total_ambient_colour(struct LIST(cmzn_light) *light_list)
+{
+	Colour ambientColour = { 0.0, 0.0, 0.0 };
+	cmzn_lightiterator *iter = CREATE_LIST_ITERATOR(cmzn_light)(light_list);
+	if (!iter)
+	{
+		display_message(ERROR_MESSAGE, "Light_list_get_total_ambient_colour.  Failed");
+	}
+	else
+	{
+		cmzn_light *light;
+		while (0 != (light = iter->next_non_access()))
+		{
+			if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
+			{
+				ambientColour.red += light->colour.red;
+				ambientColour.green += light->colour.green;
+				ambientColour.blue += light->colour.blue;
+			}
+		}
+		cmzn_lightiterator_destroy(&iter);
+	}
+	return ambientColour;
+}
+

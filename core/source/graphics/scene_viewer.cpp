@@ -78,6 +78,30 @@ FULL_DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
 Module functions
 ----------------
 */
+
+// forward declaration
+void cmzn_sceneviewer_request_changes(cmzn_sceneviewer_id sceneviewer, int changeFlags);
+
+void cmzn_sceneviewer::setLightingLocalViewer(bool value)
+{
+	if (value != this->lightingLocalViewer)
+	{
+		this->lightingLocalViewer = value;
+		cmzn_sceneviewer_request_changes(this,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	}
+}
+
+void cmzn_sceneviewer::setLightingTwoSided(bool value)
+{
+	if (value != this->lightingTwoSided)
+	{
+		this->lightingTwoSided = value;
+		cmzn_sceneviewer_request_changes(this,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+	}
+}
+
 cmzn_sceneviewerinput_id cmzn_sceneviewer_create_sceneviewerinput(struct Scene_viewer *scene_viewer)
 {
 	cmzn_sceneviewerinput_id input = 0;
@@ -2240,7 +2264,15 @@ access this function.
 				reset_cmzn_lights();
 
 				/* light model */
-				rendering_data.renderer->cmzn_light_execute(scene_viewer->ambient_light);
+				if (0 < NUMBER_IN_LIST(cmzn_light)(scene_viewer->list_of_lights))
+				{
+					Colour ambientColour = Light_list_get_total_ambient_colour(scene_viewer->list_of_lights);
+					rendering_data.renderer->Light_model_enable(ambientColour, scene_viewer->isLightingLocalViewer(), scene_viewer->isLightingTwoSided());
+				}
+				else
+				{
+					rendering_data.renderer->Light_model_disable();
+				}
 
 				/********* CALL THE RENDERING CALLSTACK **********/
 				Scene_viewer_call_next_renderer(&rendering_data);
@@ -2911,7 +2943,6 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->translate_rate=1.0;
 				scene_viewer->tumble_rate=1.5;
 				scene_viewer->zoom_rate=1.0;
-				scene_viewer->ambient_light=cmzn_light_access(default_ambient_light);
 				scene_viewer->antialias = 0;
 				scene_viewer->perturb_lines = false;
 				scene_viewer->blending_mode=CMZN_SCENEVIEWER_BLENDING_MODE_NORMAL;
@@ -2924,10 +2955,11 @@ performed in idle time so that multiple redraws are avoided.
 				scene_viewer->cache = 0;
 				scene_viewer->changes = CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_NONE;
 				if (default_light)
-				{
-					ADD_OBJECT_TO_LIST(cmzn_light)(default_light,
-						scene_viewer->list_of_lights);
-				}
+					ADD_OBJECT_TO_LIST(cmzn_light)(default_light, scene_viewer->list_of_lights);
+				if (default_ambient_light)
+					ADD_OBJECT_TO_LIST(cmzn_light)(default_ambient_light, scene_viewer->list_of_lights);
+				scene_viewer->lightingLocalViewer = false;
+				scene_viewer->lightingTwoSided = true;
 				/* managers and callback IDs for automatic updates */
 				(scene_viewer->image_texture).texture=(struct Texture *)NULL;
 				(scene_viewer->image_texture).manager = NULL;
@@ -3053,7 +3085,6 @@ Closes the scene_viewer and disposes of the scene_viewer data structure.
 		/* send the destroy callbacks */
 
 		/* dispose of our data structure */
-		cmzn_light_destroy(&(scene_viewer->ambient_light));
 		DESTROY(LIST(cmzn_light))(&(scene_viewer->list_of_lights));
 		if (scene_viewer->order_independent_transparency_data)
 		{
@@ -4055,18 +4086,13 @@ int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
 {
 	if (sceneviewer && light)
 	{
-		enum cmzn_light_type lightType = cmzn_light_get_type(light);
-		if ((lightType != CMZN_LIGHT_TYPE_AMBIENT) &&
-			(lightType != CMZN_LIGHT_TYPE_INVALID))
-		{
-			if (IS_OBJECT_IN_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
-				return CMZN_ERROR_ALREADY_EXISTS;
-			if (!ADD_OBJECT_TO_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
-				return CMZN_ERROR_GENERAL;
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-			return CMZN_OK;
-		}
+		if (IS_OBJECT_IN_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_ALREADY_EXISTS;
+		if (!ADD_OBJECT_TO_LIST(cmzn_light)(light, sceneviewer->list_of_lights))
+			return CMZN_ERROR_GENERAL;
+		cmzn_sceneviewer_request_changes(sceneviewer,
+			CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
+		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
@@ -4132,29 +4158,39 @@ int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-cmzn_light_id cmzn_sceneviewer_get_ambient_light(
+bool cmzn_sceneviewer_is_lighting_local_viewer(
 	cmzn_sceneviewer_id sceneviewer)
 {
-	if (sceneviewer && sceneviewer->ambient_light)
-	{
-		return cmzn_light_access(sceneviewer->ambient_light);
-	}
-	return 0;
+	if (sceneviewer)
+		return sceneviewer->isLightingLocalViewer();
+	return false;
 }
 
-int cmzn_sceneviewer_set_ambient_light(cmzn_sceneviewer_id sceneviewer,
-	cmzn_light_id ambient_light)
+int cmzn_sceneviewer_set_lighting_local_viewer(
+	cmzn_sceneviewer_id sceneviewer, bool value)
 {
-	if (sceneviewer && ambient_light && (
-		cmzn_light_get_type(ambient_light) == CMZN_LIGHT_TYPE_AMBIENT))
+	if (sceneviewer)
 	{
-		if (ambient_light != sceneviewer->ambient_light)
-		{
-			REACCESS(cmzn_light)(&(sceneviewer->ambient_light), ambient_light);
-			cmzn_sceneviewer_request_changes(sceneviewer,
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_TRANSFORM|
-				CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-		}
+		sceneviewer->setLightingLocalViewer(value);
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+bool cmzn_sceneviewer_is_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+		return sceneviewer->isLightingTwoSided();
+	return false;
+}
+
+int cmzn_sceneviewer_set_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer, bool value)
+{
+	if (sceneviewer)
+	{
+		sceneviewer->setLightingTwoSided(value);
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
@@ -7160,17 +7196,6 @@ int cmzn_sceneviewer_light_change(struct Scene_viewer *scene_viewer,	void *messa
 	{
 		if (scene_viewer->awaken)
 		{
-			if (scene_viewer->ambient_light)
-			{
-				int change = MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_light)(message,
-					scene_viewer->ambient_light);
-				if (change & MANAGER_CHANGE_RESULT(cmzn_light))
-				{
-					cmzn_sceneviewer_request_changes(scene_viewer,
-						CMZN_SCENEVIEWEREVENT_CHANGE_FLAG_REPAINT_REQUIRED);
-				}
-			}
-
 			struct LIST(cmzn_light) *changed_light_list =
 				MANAGER_MESSAGE_GET_CHANGE_LIST(cmzn_light)(message, MANAGER_CHANGE_RESULT(cmzn_light));
 			if (changed_light_list)

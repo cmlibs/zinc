@@ -953,10 +953,15 @@ cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
 		}
 		cmzn_set_cmzn_tessellation *all_tessellations =
 			reinterpret_cast<cmzn_set_cmzn_tessellation *>(tessellationmodule->getManager()->object_list);
+		cmzn_tessellation *default_points_tessellation =
+			cmzn_tessellationmodule_get_default_points_tessellation(tessellationmodule);
 		for (cmzn_set_cmzn_tessellation::iterator iter = all_tessellations->begin();
 			iter != all_tessellations->end(); ++iter)
 		{
 			cmzn_tessellation_id tempTessellation = *iter;
+			// don't want to use default_points tessellation
+			if (tempTessellation == default_points_tessellation)
+				continue;
 			bool match = (tempTessellation->circleDivisions == useCircleDivisions);
 			if (match)
 			{
@@ -993,6 +998,7 @@ cmzn_tessellation_id cmzn_tessellationmodule_find_or_create_fixed_tessellation(
 				}
 			}
 		}
+		cmzn_tessellation_destroy(&default_points_tessellation);
 		if (!tessellation)
 		{
 			tessellationmodule->beginChange();

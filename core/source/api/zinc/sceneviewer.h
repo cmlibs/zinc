@@ -778,27 +778,64 @@ ZINC_API int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
 	cmzn_light_id light);
 
 /**
- * Get the ambient light of the scene viewer.
+ * Queries whether local viewer lighting is used by the scene viewer.
+ * @see cmzn_sceneviewer_set_lighting_local_viewer
  *
- * @param sceneviewer  Handle to the scene viewer.
- * @return  handle to the ambient light, 0 on failure.
+ * @param sceneviewer  The scene viewer to query.
+ * @return  Boolean true if local viewer lighting is set, false if not or bad
+ *   argument.
  */
-ZINC_API cmzn_light_id cmzn_sceneviewer_get_ambient_light(
+ZINC_API bool cmzn_sceneviewer_is_lighting_local_viewer(
 	cmzn_sceneviewer_id sceneviewer);
 
 /**
- * Set the ambient light of the scene viewer.
+ * Sets whether local viewer lighting is used by the scene viewer.
+ * If true, the angle of view from the eye to the graphics vertex is used to
+ * give more realistic lighting, at slightly greater rendering expense.
+ * If false (default) infinite lighting is assumed, which gives faster
+ * rendering.
+ * The difference becomes apparent when viewing a plane close up with specular
+ * colour: with local viewer lighting (and sufficient tessellation divisions)
+ * rounded specular highlighting can be seen; with infinite viewer lighting
+ * the specular highlighting is even across the plane.
  *
- * @param sceneviewer  Handle to the scene viewer.
- * @param ambient_light  handle to the ambient light to be set. Must
- * 	be of CMZN_LIGHT_TYPE_AMBIENT type.
- * @return  Status CMZN_OK on success, any other value on failure.
+ * @param sceneviewer  The scene viewer to modify.
+ * @param value  The new state of the local viewer lighting flag.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
-ZINC_API int cmzn_sceneviewer_set_ambient_light(
-	cmzn_sceneviewer_id sceneviewer, cmzn_light_id ambient_light);
+ZINC_API int cmzn_sceneviewer_set_lighting_local_viewer(
+	cmzn_sceneviewer_id sceneviewer, bool value);
 
 /**
- * Create a notifier for getting callbacks for changes to the scene viewer..
+ * Queries whether two-sided lighting is used for rendering polygons.
+ * @see cmzn_sceneviewer_set_lighting_two_sided
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  Boolean true if lighting is on, false if not or bad argument.
+ */
+ZINC_API bool cmzn_sceneviewer_is_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Sets whether two-sided lighting is used for rendering polygons.
+ * If true (default) then back surfaces are lit with reversed normals.
+ * If false i.e. one-sided then back surfaces are only lit by ambient lights.
+ * One-sided lighting is useful for finding problems with element definitions
+ * in 3-D: exterior faces should have outward normals, so if these are not
+ * lit on the outside with one-sided lighting, then the element has a
+ * left-handed coordinate system i.e. negative volume. Note that interior
+ * faces' normals should only be outward with respect to their first parent
+ * element, and inward with respect to their second parent.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param value  The new state of the two-sided lighting flag.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_sceneviewer_set_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer, bool value);
+
+/**
+ * Create a notifier for getting callbacks for changes to the scene viewer.
  *
  * @param sceneviewer  Handle to the scene viewer to get notifications for.
  * @return  Handle to new sceneviewer notifier, or NULL/invalid handle on failure.

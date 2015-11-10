@@ -120,6 +120,16 @@ public:
 	 */
 	virtual int Texture_execute(Texture *texture) = 0;
 
+	/**
+	 * Enable lighting, set light model parameters, set ambient colour
+	 */
+	virtual void Light_model_enable(Colour& ambientColour, bool lightingLocalViewer, bool lightingTwoSided) = 0;
+
+	/**
+	 * Disable lighting so simple colouring used instead
+	 */
+	virtual void Light_model_disable() = 0;
+
 	/***************************************************************************//**
 	 * Compile the cmzn_light.
 	 */
@@ -232,6 +242,16 @@ public:
 	{
 		/* No member objects */
 		return 1;
+	}
+
+	/** Not relevant to renderer */
+	virtual void Light_model_enable(Colour&, bool, bool)
+	{
+	}
+
+	/** Not relevant to renderer */
+	virtual void Light_model_disable()
+	{
 	}
 
 	/***************************************************************************//**

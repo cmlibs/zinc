@@ -80,15 +80,12 @@ name of the light if it contains any special characters.
 Follows the light name with semicolon and carriage return.
 ==============================================================================*/
 
-int reset_cmzn_lights(void);
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Must be called at start of rendering before lights are activate with
-execute_cmzn_light. Ensures all lights are off at the start of the rendering loop,
-and makes sure the lights that are subsequently defined start at GL_LIGHT0...
-==============================================================================*/
+/**
+ * Must be called at start of rendering before lights are activate with
+ * execute_cmzn_light. Ensures all lights are off at the start of rendering loop
+ * and makes sure the lights that are subsequently defined start at GL_LIGHT0...
+ */
+void reset_cmzn_lights(void);
 
 int execute_cmzn_light(struct cmzn_light *light,void *dummy_void);
 /*******************************************************************************
@@ -107,8 +104,6 @@ DESCRIPTION :
 Returns true if <light> is in <light_list>.
 ==============================================================================*/
 
-const char *get_cmzn_light_name(struct cmzn_light *light);
-
 struct cmzn_lightmodule;
 
 /**
@@ -124,5 +119,10 @@ struct MANAGER(cmzn_light) *cmzn_lightmodule_get_manager(cmzn_lightmodule *light
 
 /* forward declaration */
 struct cmzn_light *cmzn_light_create_private();
+
+/**
+ * Get the total ambient colour as the sum of ambient lights' colours in the list.
+ */
+Colour Light_list_get_total_ambient_colour(struct LIST(cmzn_light) *light_list);
 
 #endif

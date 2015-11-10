@@ -541,16 +541,6 @@ public:
 			preferred_height, preferred_antialias, preferred_transparency_layers);
 	}
 
-	Light getAmbientLight()
-	{
-		return Light(cmzn_sceneviewer_get_ambient_light(id));
-	}
-
-	int setAmbientLight(const Light& ambientLight)
-	{
-		return cmzn_sceneviewer_set_ambient_light(id, ambientLight.getId());
-	}
-
 	int addLight(const Light& light)
 	{
 		return cmzn_sceneviewer_add_light(id, light.getId());
@@ -564,6 +554,26 @@ public:
 	int removeLight(const Light& light)
 	{
 		return cmzn_sceneviewer_remove_light(id, light.getId());
+	}
+
+	bool isLightingLocalViewer()
+	{
+		return cmzn_sceneviewer_is_lighting_local_viewer(this->id);
+	}
+
+	int setLightingLocalViewer(bool value)
+	{
+		return cmzn_sceneviewer_set_lighting_local_viewer(this->id, value);
+	}
+
+	bool isLightingTwoSided()
+	{
+		return cmzn_sceneviewer_is_lighting_two_sided(this->id);
+	}
+
+	int setLightingTwoSided(bool value)
+	{
+		return cmzn_sceneviewer_set_lighting_two_sided(this->id, value);
 	}
 
 	Sceneviewernotifier createSceneviewernotifier()

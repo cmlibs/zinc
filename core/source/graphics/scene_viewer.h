@@ -261,12 +261,7 @@ struct cmzn_sceneviewerinput
 	cmzn_sceneviewerinput_modifier_flags modifiers;
 };
 
-struct Scene_viewer
-/*******************************************************************************
-LAST MODIFIED : 12 July 2000
-
-DESCRIPTION :
-==============================================================================*/
+struct cmzn_sceneviewer
 {
 	int access_count;
 	/* The buffer into which this scene viewer is rendering */
@@ -335,9 +330,7 @@ DESCRIPTION :
 	double bk_texture_left,bk_texture_top,bk_texture_width,
 		bk_texture_height,bk_texture_max_pixels_per_polygon;
 	int bk_texture_undistort_on;
-	/* the scene_viewer must always have a light model */
-	struct cmzn_light *ambient_light;
-	/* lights in this list are oriented relative to the viewer */
+	/* non-ambient lights in this list are oriented relative to the viewer */
 	struct LIST(cmzn_light) *list_of_lights;
 	/* managers and callback IDs for automatic updates */
 	/* For interpreting mouse events */
@@ -390,7 +383,28 @@ DESCRIPTION :
 	cmzn_sceneviewermodule *module;
 	int cache;
 	int changes;
-}; /* struct Scene_viewer */
+	// if true (default) then back surfaces are lit with reversed normals
+	// if false then back surfaces are only lit by ambient lighting
+	bool lightingTwoSided;
+	// if true, angle of view from the eye is used to give better lighting, at more expense
+	// if false (default) infinite lighting is assumed
+	bool lightingLocalViewer;
+
+	bool isLightingLocalViewer()
+	{
+		return this->lightingLocalViewer;
+	}
+
+	void setLightingLocalViewer(bool value);
+
+	bool isLightingTwoSided()
+	{
+		return this->lightingTwoSided;
+	}
+
+	void setLightingTwoSided(bool value);
+
+}; /* struct cmzn_sceneviewer */
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
 	struct cmzn_sceneviewermodule *, void *, void);

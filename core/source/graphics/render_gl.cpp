@@ -192,6 +192,27 @@ public:
 		  return Texture_execute_opengl_texture_object(texture, this);
 	  }
 
+		// enable lighting model with supplied ambient colour and other parameters
+		void Light_model_enable(Colour& ambientColour, bool lightingLocalViewer, bool lightingTwoSided)
+		{
+			GLfloat ambientColourFloat[3] =
+			{
+				static_cast<GLfloat>(ambientColour.red),
+				static_cast<GLfloat>(ambientColour.green),
+				static_cast<GLfloat>(ambientColour.blue)
+			};
+			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColourFloat);
+			glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, lightingLocalViewer ? GL_TRUE : GL_FALSE);
+			glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, lightingTwoSided ? GL_TRUE : GL_FALSE);
+			glEnable(GL_LIGHTING);
+		}
+
+		// disable lighting for flat colouring
+		void Light_model_disable()
+		{
+			glDisable(GL_LIGHTING);
+		}
+
 	  int cmzn_light_execute(cmzn_light *light)
 	  {
 		  return execute_cmzn_light(light, NULL);

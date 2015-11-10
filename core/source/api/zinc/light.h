@@ -43,10 +43,11 @@ ZINC_API int cmzn_lightmodule_destroy(
 	cmzn_lightmodule_id *lightmodule_address);
 
 /**
- * Create and return a new light.
+ * Create a new light, initialised with default settings.
+ * Following creation, the caller is expected to set the type and settings
+ * such as colour, direction and/or position as appropriate for the type.
  *
- * @param lightmodule  The handle to the light module the
- * light will belong to.
+ * @param lightmodule  The light module the new light will belong to.
  * @return  Handle to new light, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_light_id cmzn_lightmodule_create_light(
@@ -105,8 +106,8 @@ ZINC_API cmzn_light_id cmzn_lightmodule_find_light_by_name(
 /**
  * Get the default light to be used in sceneviewer. If there is none,
  * a default directional light is automatically created with RGB value of
- * [0.9, 0.9, 0.9], [0.0, 0.0, 0.0] for its position and [0.0, -0.5, -1.0] for
- * its direction i.e. into the screen and slightly down.
+ * [0.9, 0.9, 0.9] and [0.0, -0.5, -1.0] for its direction i.e. into the
+ * screen and slightly down.
  *
  * @param lightmodule  cmzn_light module to query.
  * @return  Handle to default light, or NULL/invalid handle if none or failed.
@@ -116,20 +117,19 @@ ZINC_API cmzn_light_id cmzn_lightmodule_get_default_light(
 
 /**
  * Set the default light, this default light will be used by any
- * sceneviewer created afterward.
+ * sceneviewer created afterward. Typically this is expected to be a
+ * directional light; not expected to be of ambient type.
  *
  * @param lightmodule  cmzn_light module to modify.
- * @param light  The light to set as the default light, it must not be
- * ambient or invalid type.
+ * @param light  The light to set as the default light.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_lightmodule_set_default_light(
 	cmzn_lightmodule_id lightmodule, cmzn_light_id light);
 
 /**
- * Get the default ambient light to be used in sceneviewer. If there is none,
- * one is automatically created with RGB value of [0.1, 0.1, 0.1],
- * double_sided and infinite viewer mode.
+ * Get the default ambient light to be used in new scene viewers. If none,
+ * one is automatically created with RGB colour value of [0.1, 0.1, 0.1].
  *
  * @param lightmodule  cmzn_light module to query.
  * @return  Handle to default ambient light, or NULL/invalid handle if
@@ -140,16 +140,14 @@ ZINC_API cmzn_light_id cmzn_lightmodule_get_default_ambient_light(
 
 /**
  * Set the default ambient light, this default ambient light will be
- * used by any sceneviewer created afterward.
+ * used by any scene viewers created afterward.
  *
  * @param lightmodule  cmzn_light module to modify.
- * @param light  The light to set as default ambient light, it must be
- * 	ambient type.
+ * @param light  The light to set as default ambient light.
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_lightmodule_set_default_ambient_light(
-	cmzn_lightmodule_id lightmodule,
-	cmzn_light_id light);
+	cmzn_lightmodule_id lightmodule, cmzn_light_id light);
 
 /**
  * Returns a new handle to the light with reference count incremented.
@@ -313,55 +311,6 @@ ZINC_API int cmzn_light_set_type(cmzn_light_id light,
 	enum cmzn_light_type light_type);
 
 /**
- * Get the viewer mode of a light, it only affects ambient light.
- * Infinite ambient light provide a faster bust less accurate lighting while
- * local ambient light is slower but more accurate.
- *
- * @param light  The light to query.
- * @return  current render vierwer mode, otherwise
- *   CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID.
- */
-ZINC_API enum cmzn_light_render_viewer_mode cmzn_light_get_render_viewer_mode(
-	cmzn_light_id light);
-
-/**
- * Set the viewer mode of a light, it only affects ambient light.
- * Infinite ambient light provide a faster bust less accurate lighting while
- * local ambient light is slower but more accurate.
- *
- * @param light  The light to modify.
- * @oaram render_viewer_mode  new render viewer mode to be set.
- * @return  current render vierwer mode, otherwise
- *   CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID.
- */
-ZINC_API int cmzn_light_set_render_viewer_mode(cmzn_light_id light,
-	enum cmzn_light_render_viewer_mode render_viewer_mode);
-
-/**
- * Get the render side of a light, it only affects ambient light. Single sided
- * light will only lit surfaces with outward normals while double sided will
- * lit both outward and inward normal.
- *
- * @param light The light to query.
- * @return  current cmzn_light_render_side,
- *   otherwise CMZN_LIGHT_RENDER_SIDE_INVALID.
- */
-ZINC_API enum cmzn_light_render_side cmzn_light_get_render_side(
-	cmzn_light_id light);
-
-/**
- * Set the render side of a light, it only affects ambient light. Single sided
- * light will only lit surfaces with outward normals while double sided will
- * lit both outward and inward normal.
- *
- * @param light  The light to modify.
- * @oaram render_side  new render_side to be set.
- * @return  CMZN_OK on success, any other value on failure.
- */
-ZINC_API int cmzn_light_set_render_side(cmzn_light_id light,
-	enum cmzn_light_render_side render_side);
-
-/**
  * Get the 3 component real vector giving the RGB colour of the light.
  *
  * @param light  The light to query.
@@ -374,10 +323,14 @@ ZINC_API int cmzn_light_get_colour_rgb(cmzn_light_id light, double *colour);
 
 /**
  * Set the colour of the light using a 3 component vector of the RGB values.
+ * For ambient light type, the colour applies to ambient lighting calculations,
+ * blending with the ambient colour of materials.
+ * For all other light types, the colour applies to diffuse and specular
+ * lighting, blending with materials' diffuse and specular colours.
  *
  * @param light  The light to modify.
  * @param colour  Values of the colour to be set, it must be a 3 component
- *   vector storing the RGB value.
+ *   vector storing the RGB value. Colour values range from 0.0 to 1.0 (max).
  * @return  Status CMZN_OK on success, any other value on failure.
  */
 ZINC_API int cmzn_light_set_colour_rgb(cmzn_light_id light, const double *colour);

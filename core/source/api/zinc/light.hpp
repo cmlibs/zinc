@@ -69,20 +69,6 @@ public:
 		TYPE_SPOT = CMZN_LIGHT_TYPE_SPOT
 	};
 
-	enum RenderSide
-	{
-		RENDER_SIDE_INVALID = CMZN_LIGHT_RENDER_SIDE_INVALID,
-		RENDER_SIDE_SINGLE = CMZN_LIGHT_RENDER_SIDE_SINGLE,
-		RENDER_SIDE_DOUBLE = CMZN_LIGHT_RENDER_SIDE_DOUBLE
-	};
-
-	enum RenderViewerMode
-	{
-		RENDER_VIEWER_MODE_INVALID = CMZN_LIGHT_RENDER_VIEWER_MODE_INVALID,
-		RENDER_VIEWER_MODE_LOCAL = CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL,
-		RENDER_VIEWER_MODE_INFINITE = CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE
-	};
-
 	cmzn_light_id getId() const
 	{
 		return id;
@@ -196,28 +182,6 @@ public:
 	int setSpotExponent(double exponent)
 	{
 		return cmzn_light_set_spot_exponent(id, exponent);
-	}
-
-	enum RenderSide getRenderSide()
-	{
-		return static_cast<RenderSide>(cmzn_light_get_render_side(id));
-	}
-
-	int setRenderSide(enum RenderSide renderSide)
-	{
-		return cmzn_light_set_render_side(id,
-			static_cast<cmzn_light_render_side>(renderSide));
-	}
-
-	enum RenderViewerMode getRenderViewerMode()
-	{
-		return static_cast<RenderViewerMode>(cmzn_light_get_render_viewer_mode(id));
-	}
-
-	int setRenderViewerMode(enum RenderViewerMode renderViewerMode)
-	{
-		return cmzn_light_set_render_viewer_mode(id,
-			static_cast<cmzn_light_render_viewer_mode>(renderViewerMode));
 	}
 
 };
