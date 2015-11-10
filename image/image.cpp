@@ -357,7 +357,7 @@ TEST(ByteSwap, size4)
 	EXPECT_EQ(1048576, values[2]);
 	EXPECT_EQ(65536, values[1]);
 
-	float fvalue = 0.12;
+	float fvalue = 0.12f;
 	test::ByteSwap<float>(&fvalue);
 	EXPECT_EQ(-1.92243393014834230422427828262E-29, fvalue);
 }

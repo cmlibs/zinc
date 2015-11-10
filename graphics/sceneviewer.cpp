@@ -325,24 +325,36 @@ TEST(ZincSceneviewer, get_set_light)
 		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
 	EXPECT_TRUE(sv.isValid());
 
-	Light ambientLight = sv.getAmbientLight();
-	EXPECT_TRUE(ambientLight.isValid());
+	EXPECT_FALSE(sv.isLightingLocalViewer());
+	EXPECT_EQ(OK, sv.setLightingLocalViewer(true));
+	EXPECT_TRUE(sv.isLightingLocalViewer());
+
+	EXPECT_TRUE(sv.isLightingTwoSided());
+	EXPECT_EQ(OK, sv.setLightingTwoSided(false));
+	EXPECT_FALSE(sv.isLightingTwoSided());
 
 	Lightmodule lm = zinc.context.getLightmodule();
 	EXPECT_TRUE(lm.isValid());
+
+	Light defaultLight = lm.getDefaultLight();
+	EXPECT_TRUE(defaultLight.isValid());
+	EXPECT_TRUE(sv.hasLight(defaultLight));
+
+	Light defaultAmbientLight = lm.getDefaultAmbientLight();
+	EXPECT_TRUE(defaultAmbientLight.isValid());
+	EXPECT_TRUE(sv.hasLight(defaultAmbientLight));
+	EXPECT_EQ(OK, sv.removeLight(defaultAmbientLight));
+	EXPECT_FALSE(sv.hasLight(defaultAmbientLight));
 
 	int result = lm.beginChange();
 	EXPECT_EQ(OK, result);
 
 	Light light = lm.createLight();
 	EXPECT_TRUE(light.isValid());
-
 	EXPECT_EQ(OK, light.setType(Light::TYPE_AMBIENT));
 
-	EXPECT_EQ(OK, sv.setAmbientLight(light));
-
-	light = lm.createLight();
-	EXPECT_TRUE(light.isValid());
+	result = lm.endChange();
+	EXPECT_EQ(OK, result);
 
 	EXPECT_FALSE(sv.hasLight(light));
 	EXPECT_EQ(OK, sv.addLight(light));
@@ -351,9 +363,6 @@ TEST(ZincSceneviewer, get_set_light)
 	EXPECT_EQ(OK, sv.removeLight(light));
 	EXPECT_FALSE(sv.hasLight(light));
 	EXPECT_EQ(ERROR_NOT_FOUND, sv.removeLight(light));
-
-	result = lm.endChange();
-	EXPECT_EQ(OK, result);
 }
 
 TEST(ZincSceneviewer, get_set)

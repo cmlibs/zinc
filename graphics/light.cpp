@@ -49,11 +49,11 @@ TEST(cmzn_lightmodule_api, valid_args)
 
 	enum cmzn_light_type light_type = cmzn_light_get_type(light);
 	EXPECT_EQ(CMZN_LIGHT_TYPE_DIRECTIONAL, light_type);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_constant_attenuation(light), 1.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_linear_attenuation(light), 0.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 0.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 90.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 0.0);
+	EXPECT_DOUBLE_EQ(1.0, cmzn_light_get_constant_attenuation(light));
+	EXPECT_DOUBLE_EQ(0.0, cmzn_light_get_linear_attenuation(light));
+	EXPECT_DOUBLE_EQ(0.0, cmzn_light_get_quadratic_attenuation(light));
+	EXPECT_DOUBLE_EQ(90.0, cmzn_light_get_spot_cutoff(light));
+	EXPECT_DOUBLE_EQ(0.0, cmzn_light_get_spot_exponent(light));
 	EXPECT_EQ(cmzn_light_destroy(&light), result);
 
 	light = cmzn_lightmodule_get_default_ambient_light(lm);
@@ -65,10 +65,6 @@ TEST(cmzn_lightmodule_api, valid_args)
 	EXPECT_DOUBLE_EQ(0.1, float_values[2]);
 	light_type = cmzn_light_get_type(light);
 	EXPECT_EQ(CMZN_LIGHT_TYPE_AMBIENT, light_type);
-	enum cmzn_light_render_viewer_mode viewer_mode = cmzn_light_get_render_viewer_mode(light);
-	EXPECT_EQ(CMZN_LIGHT_RENDER_VIEWER_MODE_INFINITE, viewer_mode);
-	enum cmzn_light_render_side render_side = cmzn_light_get_render_side(light);
-	EXPECT_EQ(CMZN_LIGHT_RENDER_SIDE_DOUBLE, render_side);
 	EXPECT_EQ(cmzn_light_destroy(&light), result);
 
 	// following should destroy default light as not managed and not used
@@ -142,11 +138,11 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 
 	enum Light::Type lightType = light.getType();
 	EXPECT_EQ(Light::TYPE_DIRECTIONAL, lightType);
-	EXPECT_DOUBLE_EQ(light.getConstantAttenuation(), 1.0);
-	EXPECT_DOUBLE_EQ(light.getLinearAttenuation(), 0.0);
-	EXPECT_DOUBLE_EQ(light.getQuadraticAttenuation(), 0.0);
-	EXPECT_DOUBLE_EQ(light.getSpotCutoff(), 90.0);
-	EXPECT_DOUBLE_EQ(light.getSpotExponent(), 0.0);
+	EXPECT_DOUBLE_EQ(1.0, light.getConstantAttenuation());
+	EXPECT_DOUBLE_EQ(0.0, light.getLinearAttenuation());
+	EXPECT_DOUBLE_EQ(0.0, light.getQuadraticAttenuation());
+	EXPECT_DOUBLE_EQ(90.0, light.getSpotCutoff());
+	EXPECT_DOUBLE_EQ(0.0, light.getSpotExponent());
 
 	light = lm.getDefaultAmbientLight();
 	EXPECT_TRUE(light.isValid());
@@ -157,10 +153,6 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	EXPECT_DOUBLE_EQ(0.1, float_values[2]);
 	lightType = light.getType();
 	EXPECT_EQ(Light::TYPE_AMBIENT, lightType);
-	enum Light::RenderViewerMode viewerMode = light.getRenderViewerMode();
-	EXPECT_EQ(Light::RENDER_VIEWER_MODE_INFINITE, viewerMode);
-	enum Light::RenderSide renderSide = light.getRenderSide();
-	EXPECT_EQ(Light::RENDER_SIDE_DOUBLE, renderSide);
 
 	// following should destroy default light as not managed and not used
 	// otherwise it isn't possible to create a light named "default" below
@@ -246,24 +238,18 @@ TEST(cmzn_light_api, valid_args)
 
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_constant_attenuation(light,0.5));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_linear_attenuation(light, 1.0));
-	EXPECT_EQ(CMZN_OK, cmzn_light_set_quadratic_attenuation(light, 1.0));
+	EXPECT_EQ(CMZN_OK, cmzn_light_set_quadratic_attenuation(light, 0.9));
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_cutoff(light, 70.0));
-	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_exponent(light, 1.0));
+	EXPECT_EQ(CMZN_OK, cmzn_light_set_spot_exponent(light, 0.95));
 
-	EXPECT_DOUBLE_EQ(cmzn_light_get_constant_attenuation(light), 0.5);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_linear_attenuation(light), 1.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_quadratic_attenuation(light), 1.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_cutoff(light), 70.0);
-	EXPECT_DOUBLE_EQ(cmzn_light_get_spot_exponent(light), 1.0);
+	EXPECT_DOUBLE_EQ(0.5, cmzn_light_get_constant_attenuation(light));
+	EXPECT_DOUBLE_EQ(1.0, cmzn_light_get_linear_attenuation(light));
+	EXPECT_DOUBLE_EQ(0.9, cmzn_light_get_quadratic_attenuation(light));
+	EXPECT_DOUBLE_EQ(70.0, cmzn_light_get_spot_cutoff(light));
+	EXPECT_DOUBLE_EQ(0.95, cmzn_light_get_spot_exponent(light));
 
 	EXPECT_EQ(CMZN_OK, cmzn_light_set_type(light, CMZN_LIGHT_TYPE_AMBIENT));
 	EXPECT_EQ(cmzn_light_get_type(light), CMZN_LIGHT_TYPE_AMBIENT);
-
-	EXPECT_EQ(CMZN_OK, cmzn_light_set_render_viewer_mode(light, CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL));
-	EXPECT_EQ(cmzn_light_get_render_viewer_mode(light), CMZN_LIGHT_RENDER_VIEWER_MODE_LOCAL);
-
-	EXPECT_EQ(CMZN_OK, cmzn_light_set_render_side(light, CMZN_LIGHT_RENDER_SIDE_SINGLE));
-	EXPECT_EQ( cmzn_light_get_render_side(light), CMZN_LIGHT_RENDER_SIDE_SINGLE);
 
 	cmzn_light_destroy(&light);
 
@@ -324,24 +310,18 @@ TEST(cmzn_light_api, valid_args_cpp)
 
 	EXPECT_EQ(OK, light.setConstantAttenuation(0.5));
 	EXPECT_EQ(OK, light.setLinearAttenuation(1.0));
-	EXPECT_EQ(OK, light.setQuadraticAttenuation(1.0));
+	EXPECT_EQ(OK, light.setQuadraticAttenuation(0.9));
 	EXPECT_EQ(OK, light.setSpotCutoff(70.0));
-	EXPECT_EQ(OK, light.setSpotExponent(1.0));
+	EXPECT_EQ(OK, light.setSpotExponent(0.95));
 
-	EXPECT_DOUBLE_EQ(light.getLinearAttenuation(), 1.0);
-	EXPECT_DOUBLE_EQ(light.getQuadraticAttenuation(), 1.0);
-	EXPECT_DOUBLE_EQ(light.getConstantAttenuation(), 0.5);
-	EXPECT_DOUBLE_EQ(light.getSpotCutoff(), 70.0);
-	EXPECT_DOUBLE_EQ(light.getSpotExponent(), 1.0);
+	EXPECT_DOUBLE_EQ(1.0, light.getLinearAttenuation());
+	EXPECT_DOUBLE_EQ(0.9, light.getQuadraticAttenuation());
+	EXPECT_DOUBLE_EQ(0.5, light.getConstantAttenuation());
+	EXPECT_DOUBLE_EQ(70.0, light.getSpotCutoff());
+	EXPECT_DOUBLE_EQ(0.95, light.getSpotExponent());
 
 	EXPECT_EQ(OK, light.setType(Light::TYPE_AMBIENT));
 	EXPECT_EQ(light.getType(), Light::TYPE_AMBIENT);
-
-	EXPECT_EQ(OK, light.setRenderViewerMode(Light::RENDER_VIEWER_MODE_LOCAL));
-	EXPECT_EQ(light.getRenderViewerMode(), Light::RENDER_VIEWER_MODE_LOCAL);
-
-	EXPECT_EQ(OK, light.setRenderSide(Light::RENDER_SIDE_SINGLE));
-	EXPECT_EQ( light.getRenderSide(), Light::RENDER_SIDE_SINGLE);
 }
 
 TEST(ZincLightiterator, iteration)
