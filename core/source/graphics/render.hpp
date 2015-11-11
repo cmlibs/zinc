@@ -244,16 +244,6 @@ public:
 		return 1;
 	}
 
-	/** Not relevant to renderer */
-	virtual void Light_model_enable(Colour&, bool, bool)
-	{
-	}
-
-	/** Not relevant to renderer */
-	virtual void Light_model_disable()
-	{
-	}
-
 	/***************************************************************************//**
 	 * @see Render_graphics::cmzn_light_compile
 	 */
@@ -356,6 +346,16 @@ public:
 	virtual int Texture_execute(Texture * /*texture*/)
 	{
 		return 1;
+	}
+
+	/** Not relevant to renderer */
+	virtual void Light_model_enable(Colour&, bool, bool)
+	{
+	}
+
+	/** Not relevant to renderer */
+	virtual void Light_model_disable()
+	{
 	}
 
 	virtual int cmzn_light_execute(cmzn_light * /*light*/)

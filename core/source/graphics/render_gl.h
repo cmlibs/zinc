@@ -45,7 +45,12 @@ private:
 	// to get size in pixels. Set it so high resolution output has thick enough
 	// lines and visible points compared with on-screen resolution.
 	double point_unit_size_pixels;
-	
+
+protected:
+	// reset to zero then incremented for each OpenGL light so can map
+	// to fixed enumerations GL_LIGHT0 .. GL_LIGHT7
+	unsigned int next_light_no;
+
 public:
 	Render_graphics_opengl() :
 		picking(0),
@@ -62,7 +67,8 @@ public:
 		use_display_list(0),
 		highlight_functor(NULL),
 		saved_highlight_functor(NULL),
-		point_unit_size_pixels(1.0)
+		point_unit_size_pixels(1.0),
+		next_light_no(0)
 	{
 	}
 
@@ -152,6 +158,13 @@ public:
 
 	// override to avoid including fixed point size and line width in display lists
 	virtual void Graphics_object_execute_point_size(GT_object *graphics_object);
+
+	/**
+	 * Must be called at start of rendering before lights are activate with
+	 * cmzn_light_execute. Ensures all lights are off at the start of rendering loop
+	 * and makes sure the lights that are subsequently defined start at GL_LIGHT0...
+	 */
+	void reset_lights();
 
 }; /* class Render_graphics_opengl */
 

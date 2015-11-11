@@ -38,7 +38,26 @@ GL rendering calls - API specific.
 #include "graphics/threejs_export.hpp"
 #include "graphics/webgl_export.hpp"
 
+/*
+Module variables
+----------------
+*/
+
+// limitation of OpenGL fixed pipeline:
+#define MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS 8
+
+static GLenum light_identifiers[MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS]=
+{
+	GL_LIGHT0,GL_LIGHT1,GL_LIGHT2,GL_LIGHT3,GL_LIGHT4,GL_LIGHT5,GL_LIGHT6,
+	GL_LIGHT7
+};
+
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
+
+/*
+Module types
+------------
+*/
 
 /**
  * Specifies the rendering type for this graphics_object.  The render function
@@ -117,6 +136,13 @@ void Render_graphics_opengl::Graphics_object_execute_point_size(GT_object *graph
 	{
 		glPointSize(static_cast<GLfloat>(graphics_object->render_point_size*this->get_point_unit_size_pixels()));
 	}
+}
+
+void Render_graphics_opengl::reset_lights()
+{
+	for (unsigned int light_no = 0; light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS; ++light_no)
+		glDisable(light_identifiers[light_no]);
+	this->next_light_no = 0;
 }
 
 /**
@@ -213,10 +239,16 @@ public:
 			glDisable(GL_LIGHTING);
 		}
 
-	  int cmzn_light_execute(cmzn_light *light)
-	  {
-		  return execute_cmzn_light(light, NULL);
-	  }
+		int cmzn_light_execute(cmzn_light *light)
+		{
+			int return_code;
+			const GLenum gl_light_id = (this->next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS) ?
+				light_identifiers[this->next_light_no] : GL_INVALID_ENUM;
+			return_code = direct_render_cmzn_light(light, static_cast<unsigned int>(gl_light_id));
+			if (return_code == 1)
+				++this->next_light_no;
+			return return_code;
+		}
 
 	  virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem coordinate_system)
 	  {

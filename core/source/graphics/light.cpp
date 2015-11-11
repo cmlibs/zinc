@@ -5,20 +5,6 @@ LAST MODIFIED : 9 October 2002
 
 DESCRIPTION :
 The functions for manipulating lights.
-
-???RC
-If OpenGL lights were set up half-way decent you could throw them all into
-display lists in compile_cmzn_light and then execute them with execute_cmzn_light.
-However, the basic installation supports only EIGHT lights, but worse, they are
-each referenced by their own constants GL_LIGHT0..GL_LIGHT7. Hence, if you want
-all available lights in differing combinations in different windows at
-different times,you can't use display lists since the light identifier would
-be hardwired in them.
-Hence, this compile_cmzn_light does nothing, while the execute_cmzn_light routine just
-calls direct_render_cmzn_light. Before any lights are activated, however, you must
-call reset_cmzn_lights to turn all the lights off and set next_light_no to zero.
-Future improvements to OpenGL or other graphics libraries may overcome this
-problem.
 ==============================================================================*/
 /* OpenCMISS-Zinc Library
 *
@@ -696,7 +682,6 @@ DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_light,manager)
 DECLARE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_light,name,const char *,manager)
 DECLARE_MANAGER_OWNER_FUNCTIONS(cmzn_light, struct cmzn_lightmodule)
 
-
 cmzn_lightiterator *cmzn_lightmodule::createLightiterator()
 {
 	return CREATE_LIST_ITERATOR(cmzn_light)(this->lightManager->object_list);
@@ -709,138 +694,108 @@ int cmzn_light_manager_set_owner_private(struct MANAGER(cmzn_light) *manager,
 }
 
 /*
-Module variables
+Global functions
 ----------------
 */
 
-static int next_light_no=0;
-
-#define MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS 8
-
-static GLenum light_identifiers[MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS]=
+int direct_render_cmzn_light(struct cmzn_light *light, unsigned int int_light_id)
 {
-	GL_LIGHT0,GL_LIGHT1,GL_LIGHT2,GL_LIGHT3,GL_LIGHT4,GL_LIGHT5,GL_LIGHT6,
-	GL_LIGHT7
-};
-
-/*
-Module functions
-----------------
-*/
-
-static int direct_render_cmzn_light(struct cmzn_light *light)
-/*******************************************************************************
-LAST MODIFIED : 8 October 2002
-
-DESCRIPTION :
-Directly outputs the commands to activate the <light>.
-==============================================================================*/
-{
-	int return_code;
-	GLenum light_id;
-
+	int return_code = 1;
+	GLenum light_id = static_cast<GLenum>(int_light_id);
 	if (light)
 	{
-		if (light->type != CMZN_LIGHT_TYPE_INVALID)
+		if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
 		{
-			if (light->type == CMZN_LIGHT_TYPE_AMBIENT)
-			{
-				// not output an OpenGL light
-				// accumulated separately into light model ambient colour
-			}
-			else
-			{
-				if (next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS)
-				{
-					GLfloat values[4] = { 0.0, 0.0, 0.0, 1.0 };
-					light_id = light_identifiers[next_light_no];
-					// ambient lighting comes from separate ambient lights, as above
-					glLightfv(light_id, GL_AMBIENT, values);
-					values[0] = (GLfloat)((light->colour).red);
-					values[1] = (GLfloat)((light->colour).green);
-					values[2] = (GLfloat)((light->colour).blue);
-					glLightfv(light_id, GL_DIFFUSE, values);
-					glLightfv(light_id, GL_SPECULAR, values);
-					switch (light->type)
-					{
-						case CMZN_LIGHT_TYPE_DIRECTIONAL:
-						{
-							values[0] = -light->direction[0];
-							values[1] = -light->direction[1];
-							values[2] = -light->direction[2];
-							values[3] = 0.;
-							glLightfv(light_id, GL_POSITION, values);
-							glLightf(light_id, GL_SPOT_EXPONENT, 0.);
-							glLightf(light_id, GL_SPOT_CUTOFF, 180.);
-							glLightf(light_id, GL_CONSTANT_ATTENUATION, 1.);
-							glLightf(light_id, GL_LINEAR_ATTENUATION, 0.);
-							glLightf(light_id, GL_QUADRATIC_ATTENUATION, 0.);
-						} break;
-						case CMZN_LIGHT_TYPE_POINT:
-						{
-							values[0] = light->position[0];
-							values[1] = light->position[1];
-							values[2] = light->position[2];
-							values[3] = 1.;
-							glLightfv(light_id, GL_POSITION, values);
-							glLightf(light_id, GL_SPOT_EXPONENT, 0.);
-							glLightf(light_id, GL_SPOT_CUTOFF, 180.);
-							glLightf(light_id, GL_CONSTANT_ATTENUATION,
-								(GLfloat)(light->constant_attenuation));
-							glLightf(light_id, GL_LINEAR_ATTENUATION,
-								(GLfloat)(light->linear_attenuation));
-							glLightf(light_id, GL_QUADRATIC_ATTENUATION,
-								(GLfloat)(light->quadratic_attenuation));
-						} break;
-						case CMZN_LIGHT_TYPE_SPOT:
-						{
-							values[0] = light->position[0];
-							values[1] = light->position[1];
-							values[2] = light->position[2];
-							values[3] = 1.;
-							glLightfv(light_id,GL_POSITION,values);
-							values[0] = light->direction[0];
-							values[1] = light->direction[1];
-							values[2] = light->direction[2];
-							glLightfv(light_id, GL_SPOT_DIRECTION, values);
-							glLightf(light_id, GL_SPOT_EXPONENT, (GLfloat)(light->spot_exponent));
-							glLightf(light_id, GL_SPOT_CUTOFF, (GLfloat)(light->spot_cutoff));
-							glLightf(light_id, GL_CONSTANT_ATTENUATION,
-								(GLfloat)(light->constant_attenuation));
-							glLightf(light_id, GL_LINEAR_ATTENUATION,
-								(GLfloat)(light->linear_attenuation));
-							glLightf(light_id, GL_QUADRATIC_ATTENUATION,
-								(GLfloat)(light->quadratic_attenuation));
-						} break;
-						default:
-						{
-						} break;
-					}
-					glEnable(light_id);
-					next_light_no++;
-				}
-			}
-			return_code = 1;
+			// not output as an OpenGL light
+			// accumulated separately into light model ambient colour
+			return_code = -1;
+		}
+		else if (light_id == GL_INVALID_ENUM)
+		{
+			display_message(WARNING_MESSAGE, "Reached maximum number of lights: light '%s' not used", light->name);
+			return_code = 0;
 		}
 		else
 		{
-			display_message(ERROR_MESSAGE, "Cannot have any more lights on");
-			return_code = 0;
+			GLfloat values[4] = { 0.0, 0.0, 0.0, 1.0 };
+			// ambient lighting comes from separate ambient lights, as above
+			glLightfv(light_id, GL_AMBIENT, values);
+			values[0] = (GLfloat)((light->colour).red);
+			values[1] = (GLfloat)((light->colour).green);
+			values[2] = (GLfloat)((light->colour).blue);
+			glLightfv(light_id, GL_DIFFUSE, values);
+			glLightfv(light_id, GL_SPECULAR, values);
+			switch (light->type)
+			{
+				case CMZN_LIGHT_TYPE_DIRECTIONAL:
+				{
+					values[0] = -light->direction[0];
+					values[1] = -light->direction[1];
+					values[2] = -light->direction[2];
+					values[3] = 0.;
+					glLightfv(light_id, GL_POSITION, values);
+					glLightf(light_id, GL_SPOT_EXPONENT, 0.);
+					glLightf(light_id, GL_SPOT_CUTOFF, 180.);
+					glLightf(light_id, GL_CONSTANT_ATTENUATION, 1.);
+					glLightf(light_id, GL_LINEAR_ATTENUATION, 0.);
+					glLightf(light_id, GL_QUADRATIC_ATTENUATION, 0.);
+				} break;
+				case CMZN_LIGHT_TYPE_POINT:
+				{
+					values[0] = light->position[0];
+					values[1] = light->position[1];
+					values[2] = light->position[2];
+					values[3] = 1.;
+					glLightfv(light_id, GL_POSITION, values);
+					glLightf(light_id, GL_SPOT_EXPONENT, 0.);
+					glLightf(light_id, GL_SPOT_CUTOFF, 180.);
+					glLightf(light_id, GL_CONSTANT_ATTENUATION,
+						(GLfloat)(light->constant_attenuation));
+					glLightf(light_id, GL_LINEAR_ATTENUATION,
+						(GLfloat)(light->linear_attenuation));
+					glLightf(light_id, GL_QUADRATIC_ATTENUATION,
+						(GLfloat)(light->quadratic_attenuation));
+				} break;
+				case CMZN_LIGHT_TYPE_SPOT:
+				{
+					values[0] = light->position[0];
+					values[1] = light->position[1];
+					values[2] = light->position[2];
+					values[3] = 1.;
+					glLightfv(light_id,GL_POSITION,values);
+					values[0] = light->direction[0];
+					values[1] = light->direction[1];
+					values[2] = light->direction[2];
+					glLightfv(light_id, GL_SPOT_DIRECTION, values);
+					glLightf(light_id, GL_SPOT_EXPONENT, (GLfloat)(light->spot_exponent));
+					glLightf(light_id, GL_SPOT_CUTOFF, (GLfloat)(light->spot_cutoff));
+					glLightf(light_id, GL_CONSTANT_ATTENUATION,
+						(GLfloat)(light->constant_attenuation));
+					glLightf(light_id, GL_LINEAR_ATTENUATION,
+						(GLfloat)(light->linear_attenuation));
+					glLightf(light_id, GL_QUADRATIC_ATTENUATION,
+						(GLfloat)(light->quadratic_attenuation));
+				} break;
+				case CMZN_LIGHT_TYPE_AMBIENT:
+				{
+					// case handled already
+				} break;
+				case CMZN_LIGHT_TYPE_INVALID:
+				{
+					display_message(ERROR_MESSAGE, "direct_render_cmzn_light.  Invalid light '%s'", light->name);
+					return_code = 0;
+				} break;
+			}
+			glEnable(light_id);
 		}
 	}
 	else
 	{
-		display_message(ERROR_MESSAGE,"direct_render_cmzn_light.  Missing light");
-		return_code=0;
+		display_message(ERROR_MESSAGE, "direct_render_cmzn_light.  Missing light");
+		return_code = 0;
 	}
-
 	return (return_code);
 } /* direct_render_cmzn_light */
-
-/*
-Global functions
-----------------
-*/
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_light_type)
 {
@@ -1167,26 +1122,6 @@ Follows the light name with semicolon and carriage return.
 	return (return_code);
 } /* list_cmzn_light_name_command */
 
-void reset_cmzn_lights(void)
-{
-	for (int light_no = 0; light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS; ++light_no)
-		glDisable(light_identifiers[light_no]);
-	next_light_no=0; // GRC dodgy static!!!
-}
-
-int execute_cmzn_light(struct cmzn_light *light,void *dummy_void)
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Struct cmzn_light iterator function for activating the <light>.
-Does not use display lists. See comments with compile_cmzn_light, above.
-==============================================================================*/
-{
-	USE_PARAMETER(dummy_void);
-	return direct_render_cmzn_light(light);
-}
-
 int cmzn_light_is_in_list(struct cmzn_light *light, void *light_list_void)
 /*******************************************************************************
 LAST MODIFIED : 30 May 2001
@@ -1444,6 +1379,13 @@ cmzn_light_id cmzn_lightiterator_next(cmzn_lightiterator_id iterator)
 {
 	if (iterator)
 		return iterator->next();
+	return 0;
+}
+
+cmzn_light_id cmzn_lightiterator_next_non_access(cmzn_lightiterator_id iterator)
+{
+	if (iterator)
+		return iterator->next_non_access();
 	return 0;
 }
 

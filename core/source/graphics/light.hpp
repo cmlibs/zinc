@@ -35,15 +35,25 @@ PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_light);
 
 PROTOTYPE_LIST_FUNCTIONS(cmzn_light);
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(cmzn_light,name,const char *);
+PROTOTYPE_CREATE_LIST_ITERATOR_FUNCTION(cmzn_light,cmzn_lightiterator);
 
 PROTOTYPE_MANAGER_FUNCTIONS(cmzn_light);
 PROTOTYPE_MANAGER_IDENTIFIER_WITHOUT_MODIFY_FUNCTIONS(cmzn_light,name,const char *);
 
 PROTOTYPE_ENUMERATOR_FUNCTIONS(cmzn_light_type);
 
+/**
+ * Directly outputs the OpenGL commands to activate the <light> with the
+ * given light_id.
+ * @param light  The light to output.
+ * @param int_light_id  Enum of OpenGL light to set: GL_LIGHT0..GL_LIGHT7, or
+ * GL_INVALID_ENUM if all lights used up, which doesn't affect ambient.
+ * @return  1 if a glLight created, -1 if light was ambient, 0 if failed.
+ */
+int direct_render_cmzn_light(cmzn_light *light, unsigned int int_light_id);
+
 int cmzn_light_manager_set_owner_private(struct MANAGER(cmzn_light) *manager,
 	struct cmzn_lightmodule *lightmodule);
-
 
 struct cmzn_light_change_detail
 {
@@ -81,28 +91,9 @@ Follows the light name with semicolon and carriage return.
 ==============================================================================*/
 
 /**
- * Must be called at start of rendering before lights are activate with
- * execute_cmzn_light. Ensures all lights are off at the start of rendering loop
- * and makes sure the lights that are subsequently defined start at GL_LIGHT0...
+ * Returns true if <light> is in <light_list>.
  */
-void reset_cmzn_lights(void);
-
-int execute_cmzn_light(struct cmzn_light *light,void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 4 December 1997
-
-DESCRIPTION :
-Struct cmzn_light iterator function for activating the <light>.
-Does not use display lists. See comments with compile_cmzn_light, above.
-==============================================================================*/
-
 int cmzn_light_is_in_list(struct cmzn_light *light, void *light_list_void);
-/*******************************************************************************
-LAST MODIFIED : 30 May 2001
-
-DESCRIPTION :
-Returns true if <light> is in <light_list>.
-==============================================================================*/
 
 struct cmzn_lightmodule;
 
@@ -119,6 +110,16 @@ struct MANAGER(cmzn_light) *cmzn_lightmodule_get_manager(cmzn_lightmodule *light
 
 /* forward declaration */
 struct cmzn_light *cmzn_light_create_private();
+
+/**
+ * Internal variant of public cmzn_lightiterator_next() which does not access
+ * the returned light, for more efficient if less safe usage.
+ *
+ * @param iterator  Light iterator to query and advance.
+ * @return  Non-accessed pointer to the next light, or NULL if none remaining.
+ */
+cmzn_light_id cmzn_lightiterator_next_non_access(
+	cmzn_lightiterator_id iterator);
 
 /**
  * Get the total ambient colour as the sum of ambient lights' colours in the list.

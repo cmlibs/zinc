@@ -1168,11 +1168,16 @@ DESCRIPTION :
 		glMatrixMode(GL_MODELVIEW);
 		glLoadIdentity();
 
-		reset_cmzn_lights();
+		rendering_data->renderer->reset_lights();
 		/* turn on lights that are part of the Scene_viewer,
 			ie. headlamps */
-		FOR_EACH_OBJECT_IN_LIST(cmzn_light)(execute_cmzn_light,(void *)NULL,
-			scene_viewer->list_of_lights);
+		cmzn_lightiterator *lightIter = CREATE_LIST_ITERATOR(cmzn_light)(scene_viewer->list_of_lights);
+		cmzn_light *light;
+		while (0 != (light = cmzn_lightiterator_next_non_access(lightIter)))
+		{
+			rendering_data->renderer->cmzn_light_execute(light);
+		}
+		cmzn_lightiterator_destroy(&lightIter);
 
 		glMultMatrixd(scene_viewer->modelview_matrix);
 		/* turn on lights that are part of the Scene and fixed relative
@@ -2261,7 +2266,8 @@ access this function.
 				//glEnable(GL_SCISSOR_TEST);
 
 				/* glPushAttrib(GL_VIEWPORT_BIT); */
-				reset_cmzn_lights();
+
+				rendering_data.renderer->reset_lights();
 
 				/* light model */
 				if (0 < NUMBER_IN_LIST(cmzn_light)(scene_viewer->list_of_lights))

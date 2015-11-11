@@ -17,8 +17,8 @@
 
 struct Graphics_buffer;
 
-/***************************************************************************//**
- * Common code for all OpenGL based implementations.
+/**
+ * Renderer that converts graphics to triangles e.g. for output to STL.
  */
 class Render_graphics_triangularisation : public Render_graphics_compile_members
 {
@@ -117,6 +117,16 @@ public:
 	{
 		USE_PARAMETER(texture);
 		return 1;
+	}
+
+	/** Not relevant to renderer */
+	virtual void Light_model_enable(Colour&, bool, bool)
+	{
+	}
+
+	/** Not relevant to renderer */
+	virtual void Light_model_disable()
+	{
 	}
 	
 	/***************************************************************************//**
