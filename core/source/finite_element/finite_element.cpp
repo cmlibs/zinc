@@ -26386,7 +26386,6 @@ static bool FE_element_shape_face_has_inward_normal(struct FE_element_shape *sha
 
 bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 {
-	int return_code = 0;
 	if (element && element->fields)
 	{
 		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();

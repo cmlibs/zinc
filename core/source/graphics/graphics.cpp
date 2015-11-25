@@ -503,7 +503,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 {
 	FE_value initial_xi[3];
 	int i, number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS],
-		number_of_xi_points, return_code;
+		number_of_xi_points, return_code = 1;
 	struct Element_point_ranges_identifier element_point_ranges_identifier;
 	struct FE_element *top_level_element;
 	struct cmzn_graphics *graphics;
