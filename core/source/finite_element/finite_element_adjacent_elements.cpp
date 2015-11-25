@@ -119,7 +119,6 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	struct FE_node *node;
 	struct Index_multi_range *node_elements;
 
-	ENTER(adjacent_FE_element_from_nodes);
 	if (element && node_element_list && mesh)
 	{
 		return_code = 1;
@@ -204,7 +203,7 @@ correct size and should be DEALLOCATED when calls to this function are finished.
 	LEAVE;
 
 	return (return_code);
-} /* adjacent_FE_element_from_nodes */
+}
 
 struct LIST(Index_multi_range) *create_node_element_list(cmzn_mesh_id mesh)
 {

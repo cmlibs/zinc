@@ -917,21 +917,11 @@ struct FE_element
 		destroyed while this is greater than 0 */
 	int access_count;
 
-	/* the faces (finite elements of dimension 1 less) of the element.  The number
-		of faces is known from the <shape> */
-	struct FE_element **faces;
-
 	/* the field information for the element, also linking to owning FE_mesh */
 	struct FE_element_field_info *fields;
-	/* the nodes, scale factors and valuess for the element.  This is only set if
+	/* the nodes, scale factors and values for the element.  This is only set if
 		 the element has fields that require this supplemental information */
 	struct FE_element_node_scale_field_info *information;
-
-	/* the parent elements are of dimension 1 greater and are the elements for
-		which this element is a face */
-	/* parent pointers are non-ACCESSed so parent element able to be destroyed */
-	struct FE_element **parents;
-	int number_of_parents;
 
 	inline FE_element *access()
 	{
@@ -20641,153 +20631,6 @@ are modified to put it on the nearest face.
 	return (return_code);
 } /* FE_element_shape_limit_xi_to_element */
 
-/*******************************************************************************
- * @return  1 if element has a parent matching or descended from ancestor, 0 if not.
- */
-static int FE_element_ancestor_matches_recursive(
-	struct FE_element *element, struct FE_element *ancestor)
-{
-	int i;
-	for (i = 0; i < element->number_of_parents; i++)
-	{
-		if ((element->parents[i] == ancestor) || ((element->parents[i]->parents) &&
-			FE_element_ancestor_matches_recursive(element->parents[i], ancestor)))
-			return 1;
-	}
-	return 0;
-}
-
-/*******************************************************************************
- * @return  first parent element matching or descending from ancestor, or
- * NULL if none or no match.
- */
-static struct FE_element *FE_element_get_first_parent_with_ancestor(
-	struct FE_element *element, struct FE_element *ancestor)
-{
-	int i;
-	for (i = 0; i < element->number_of_parents; i++)
-	{
-		if ((element->parents[i] == ancestor) ||
-				FE_element_ancestor_matches_recursive(element->parents[i], ancestor))
-			return (element->parents[i]);
-	}
-	return NULL;
-}
-
-/***************************************************************************//**
- * WARNING: only returns face_number of first instance of that child as face
- * of parent.
- * @return  Face number of child in parent (from 0 to shape->number_of_faces),
- * or -1 if not in face list.
- */
-static int FE_element_get_child_face_number(struct FE_element *parent,
-	struct FE_element *child)
-{
-	if (parent && parent->fields)
-	{
-		FE_mesh *fe_mesh = parent->fields->fe_mesh;
-		FE_element_shape *element_shape = fe_mesh->getElementShape(parent->index);
-		if ((element_shape) && (child) && (parent->faces))
-		{
-			for (int i = 0; i < element_shape->number_of_faces; i++)
-			{
-				if (parent->faces[i] == child)
-					return (i);
-			}
-		}
-	}
-	return (-1);
-}
-
-/**
- * Get first parent of element that is on <face> of a top-level
- * element, or which has any parent in this state, with optional conditional
- * check on which top-level element qualify.
- *
- * @param element  Element to get parent from
- * @param face  from 0 to top_level_element->shape->number_of_faces-1
- * @param conditional  Optional conditional function. If supplied, limits search to
- * top-level elements for which this function passes.
- * @param  conditional_data  User data to pass to optional conditional function.
- * @return  Parent element matching criteria, or NULL if none found.
- */
-struct FE_element *FE_element_get_parent_on_face(
-	struct FE_element *element, cmzn_element_face_type face,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
-{
-	int face_number = static_cast<int>(face) - CMZN_ELEMENT_FACE_TYPE_XI1_0;
-	if (element && (0 <= face_number))
-	{
-		struct FE_element *face_element;
-		for (int i = 0; i < element->number_of_parents; i++)
-		{
-			if (0 == element->parents[i]->number_of_parents)
-			{
-				if (get_FE_element_face(element->parents[i], face_number, &face_element) &&
-					(face_element == element) && ((NULL == conditional) ||
-						(conditional)(element->parents[i], conditional_data)))
-				{
-					return element->parents[i];
-				}
-			}
-			else
-			{
-				for (int j = 0; j < element->parents[i]->number_of_parents; j++)
-				{
-					if (get_FE_element_face(element->parents[i]->parents[j], face_number, &face_element) &&
-						(face_element == element->parents[i]) && ((NULL == conditional) ||
-							(conditional)(element->parents[i]->parents[j], conditional_data)))
-					{
-						return element->parents[i];
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_get_parent_on_face.  Invalid argument(s)");
-	}
-	return (NULL);
-}
-
-int clear_FE_element_faces(struct FE_element *element, int number_of_faces)
-{
-	if ((element) && ((!element->faces) || (0 < number_of_faces)))
-	{
-		if (element->faces)
-		{
-			for (int i = 0; i < number_of_faces; ++i)
-				set_FE_element_face(element, i, (struct FE_element *)NULL);
-			DEALLOCATE(element->faces);
-		}
-		return CMZN_OK;
-	}
-	display_message(ERROR_MESSAGE, "clear_FE_element_faces.  Invalid argument(s)");
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int set_FE_element_number_of_faces(struct FE_element *element, int number_of_faces)
-{
-	if ((element) && (0 == element->faces))
-	{
-		if (0 < number_of_faces)
-		{
-			if (!ALLOCATE(element->faces, FE_element *, number_of_faces))
-			{
-				display_message(ERROR_MESSAGE, "set_FE_element_number_of_faces.  Not enough memory for faces");
-				return CMZN_ERROR_MEMORY;
-			}
-			for (int i = 0; i < number_of_faces; ++i)
-				element->faces[i] = 0;
-		}
-		return CMZN_OK;
-	}
-	display_message(ERROR_MESSAGE, "set_FE_element_number_of_faces.  Invalid argument(s)");
-	return CMZN_ERROR_ARGUMENT;
-}
-
 /**
  * Creates a blank element with access count of 1.
  */
@@ -20798,12 +20641,9 @@ struct FE_element *CREATE(FE_element)()
 	{
 		// not a global element until mesh gives a non-negative index:
 		element->index = DS_LABEL_INDEX_INVALID;
-		element->faces = (struct FE_element **)NULL;
+		element->access_count = 1;
 		element->fields = (struct FE_element_field_info *)NULL;
 		element->information = (struct FE_element_node_scale_field_info *)NULL;
-		element->parents = (struct FE_element **)NULL;
-		element->number_of_parents = 0;
-		element->access_count = 1;
 	}
 	else
 	{
@@ -20830,9 +20670,6 @@ int DESTROY(FE_element)(struct FE_element **element_address)
 			{
 				if (element->fields) // for template elements only
 					FE_element_invalidate(element);
-				/* parent elements are not ACCESSed */
-				if (element->parents)
-					DEALLOCATE(element->parents);
 				/* free the memory associated with the element */
 				DEALLOCATE(*element_address);
 				return_code = 1;
@@ -20912,9 +20749,7 @@ void FE_element_invalidate(struct FE_element *element)
 {
 	if (element && element->fields)
 	{
-		FE_element_shape *element_shape = element->fields->fe_mesh->getElementShape(element->index);
-		if (element_shape)
-			clear_FE_element_faces(element, element_shape->number_of_faces);
+		element->fields->fe_mesh->clearElementFaces(element->index);
 		if (element->information)
 			FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
 		DEACCESS(FE_element_field_info)(&(element->fields));
@@ -20983,7 +20818,7 @@ int inherit_FE_element_field(struct FE_element *element,
 		*face_to_element,*face_to_element_value,*new_coordinate_transformation,
 		*new_coordinate_transformation_value;
 	int dimension,dimension_minus_1,field_element_dimension,i,j,k,
-		parent_number, return_code,transformation_size;
+		return_code,transformation_size;
 	struct FE_element *field_element;
 	struct FE_element_field *element_field;
 	struct FE_element_field_info *field_info;
@@ -20994,14 +20829,14 @@ int inherit_FE_element_field(struct FE_element *element,
 #endif /* defined (DOUBLE_FOR_DOT_PRODUCT) */
 
 	ENTER(inherit_FE_element_field);
-	/* check the arguments */
 	FE_mesh *fe_mesh;
-	FE_element_shape *element_shape;
-	if (element && (element->fields) && (0 != (fe_mesh = element->fields->fe_mesh)) &&
-		(0 != (element_shape = fe_mesh->getElementShape(element->index))) &&
+	const FE_mesh::ElementShapeFaces *elementShapeFaces;
+	if (element && (element->fields) && (fe_mesh = element->fields->fe_mesh) &&
+		(elementShapeFaces = fe_mesh->getElementShapeFacesConst(element->index)) &&
 		element_field_address&&field_element_address&&
 		coordinate_transformation_address &&
-		(inherit_face_number < element_shape->number_of_faces))
+		(inherit_face_number < elementShapeFaces->getFaceCount()) &&
+		((!top_level_element) || (top_level_element->fields)))
 	{
 		/* initialize values to be returned on success */
 		element_field=(struct FE_element_field *)NULL;
@@ -21016,7 +20851,6 @@ int inherit_FE_element_field(struct FE_element *element,
 		{
 			if (!field)
 			{
-				// non-inheriting part of get_FE_element_default_coordinate_field
 				FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
 					FE_element_field_get_first_coordinate_field,
 					(void *)&field, field_info->element_field_list);
@@ -21044,9 +20878,9 @@ int inherit_FE_element_field(struct FE_element *element,
 			}
 			else if (parent)
 			{
-				// inherit from parent's parent
-				if (!(((NULL == top_level_element) || (parent == top_level_element) ||
-						FE_element_ancestor_matches_recursive(parent, top_level_element)) &&
+				// inherit from parent
+				if (!(((0 == top_level_element) || (parent == top_level_element) ||
+					top_level_element->fields->fe_mesh->isElementAncestor(top_level_element->index, fe_mesh, parent->index)) &&
 					inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
 						&element_field, &field_element, &coordinate_transformation, top_level_element)))
 				{
@@ -21057,25 +20891,30 @@ int inherit_FE_element_field(struct FE_element *element,
 			else
 			{
 				return_code = 0;
-				/* check if the field is defined for any of the element's parents */
-				for (parent_number = 0; parent_number < element->number_of_parents; parent_number++)
+				FE_mesh *parentMesh = fe_mesh->getParentMesh();
+				if (parentMesh)
 				{
-					parent = element->parents[parent_number];
-					if ((NULL == top_level_element) || (parent == top_level_element) ||
-						FE_element_ancestor_matches_recursive(parent, top_level_element))
+					const DsLabelIndex faceIndex = element->index;
+					DsLabelIndex parentIndex = fe_mesh->getElementFirstParent(element->index);
+					while (parentIndex >= 0)
 					{
-						return_code = inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
-							&element_field, &field_element, &coordinate_transformation, top_level_element);
-						if (return_code)
+						if ((0 == top_level_element) ||
+							top_level_element->fields->fe_mesh->isElementAncestor(top_level_element->index, parentMesh, parentIndex))
 						{
-							break;
+							parent = parentMesh->getElement(parentIndex);
+							return_code = inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
+								&element_field, &field_element, &coordinate_transformation, top_level_element);
+							if (return_code)
+							{
+								face_number = parentMesh->getElementFaceNumber(parentIndex, faceIndex);
+								break;
+							}
 						}
+						parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, faceIndex);
 					}
+					if (parentIndex < 0)
+						parent = 0;
 				}
-				if (return_code)
-					face_number = FE_element_get_child_face_number(parent, element);
-				else
-					parent = 0;
 			}
 			if (parent)
 			{
@@ -21263,53 +21102,82 @@ int inherit_FE_element_field(struct FE_element *element,
 	return (return_code);
 } /* inherit_FE_element_field */
 
+// Note this does not clean up elements array after use
+class GetParentElements
+{
+public:
+	FE_mesh &fe_mesh;
+	DsLabelIndex excludeIndex;
+	int elementsCount;
+	int allocatedCount;
+	FE_element **elements;
+
+	GetParentElements(FE_mesh &fe_mesh_in, DsLabelIndex excludeIndexIn = DS_LABEL_INDEX_INVALID) :
+		fe_mesh(fe_mesh_in),
+		excludeIndex(excludeIndexIn),
+		elementsCount(0),
+		allocatedCount(0),
+		elements(0)
+	{
+	}
+
+	int operator()(DsLabelIndex elementIndex, int /*faceNumber*/)
+	{
+		if (elementIndex == this->excludeIndex)
+			return CMZN_OK;
+		if (this->elementsCount >= this->allocatedCount)
+		{
+			FE_element **tmp;
+			this->allocatedCount += 10;
+			REALLOCATE(tmp, this->elements, FE_element *, this->allocatedCount);
+			if (!tmp)
+			{
+				this->elementsCount = 0;
+				this->allocatedCount = 0;
+				DEALLOCATE(this->elements);
+				return CMZN_ERROR_MEMORY;
+			}
+			this->elements = tmp;
+		}
+		this->elements[this->elementsCount++] = this->fe_mesh.getElement(elementIndex);
+		return CMZN_OK;
+	}
+};
+
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements)
 {
-	int i, j, return_code = CMZN_OK;
-	struct FE_element *face;
-	FE_element_shape *element_shape = get_FE_element_shape(element);
-	if ((element_shape) && (0 <= face_number) && (face_number < element_shape->number_of_faces))
+	if (element && (element->fields))
 	{
-		j = 0;
-		if ((element->faces) && (0 != (face = (element->faces)[face_number])) &&
-			(face->parents))
+		FE_mesh& fe_mesh = *element->fields->fe_mesh;
+		DsLabelIndex faceIndex = fe_mesh.getElementFace(element->index, face_number);
+		if (faceIndex >= 0)
 		{
-			if (ALLOCATE(*adjacent_elements, struct FE_element *, face->number_of_parents))
-			{
-				for (i = 0; i < face->number_of_parents; ++i)
-				{
-					if ((face->parents[i]) && (face->parents[i] != element))
-					{
-						(*adjacent_elements)[j] = face->parents[i];
-						++j;
-					}
-				}
-				return_code = CMZN_OK;
-			}
-			else
-			{
-				display_message(ERROR_MESSAGE,
-					"adjacent_FE_element.  Unable to allocate array");
-				return_code = CMZN_ERROR_MEMORY;
-			}
+			GetParentElements getParentElements(fe_mesh, element->index);
+			int return_code = fe_mesh.forEachParentElement(faceIndex, getParentElements);
+			*number_of_adjacent_elements = getParentElements.elementsCount;
+			*adjacent_elements = getParentElements.elements;
+			return return_code;
 		}
-		else
-		{
-			*adjacent_elements = 0;
-			return_code = CMZN_ERROR_NOT_FOUND;
-		}
-		*number_of_adjacent_elements = j;
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"adjacent_FE_element.  Invalid argument(s)");
-		return_code = CMZN_ERROR_ARGUMENT;
-	}
+	return CMZN_ERROR_ARGUMENT;
+}
 
-	return (return_code);
-} /* adjacent_FE_element */
+int FE_element_get_parents(struct FE_element *element,
+	int *number_of_parents, struct FE_element ***parents)
+{
+	FE_mesh *parentMesh;
+	if (element && (element->fields) && (parentMesh = element->fields->fe_mesh->getParentMesh()))
+	{
+		GetParentElements getParentElements(*parentMesh);
+		int return_code = parentMesh->forEachParentElement(element->index, getParentElements);
+		*number_of_parents = getParentElements.elementsCount;
+		*parents = getParentElements.elements;
+		return return_code;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
 
 int FE_element_log_FE_field_changes(struct FE_element *element,
 	struct CHANGE_LOG(FE_field) *fe_field_change_log, bool recurseParents)
@@ -21335,15 +21203,18 @@ int FE_element_log_FE_field_changes(struct FE_element *element,
 					element->fields->fe_mesh->set_last_fe_element_field_info(element->fields);
 				}
 			}
-			if (recurseParents)
+			FE_mesh *parentMesh;
+			if (recurseParents && (parentMesh = element->fields->fe_mesh->getParentMesh()))
 			{
-				for (int i = 0; i < element->number_of_parents; i++)
+				DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
+				while (parentIndex >= 0)
 				{
-					if (!FE_element_log_FE_field_changes(element->parents[i], fe_field_change_log, recurseParents))
+					if (!FE_element_log_FE_field_changes(parentMesh->getElement(parentIndex), fe_field_change_log, recurseParents))
 					{
 						return_code = 0;
 						break;
 					}
+					parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
 				}
 			}
 		}
@@ -21353,64 +21224,6 @@ int FE_element_log_FE_field_changes(struct FE_element *element,
 		display_message(ERROR_MESSAGE,
 			"FE_element_log_FE_field_changes.  Invalid argument(s)");
 		return_code = 0;
-	}
-	return (return_code);
-}
-
-int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, cmzn_element_face_type face,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
-{
-	int i, return_code;
-
-	return_code = 0;
-	if (element)
-	{
-		if (dimension == get_FE_element_dimension(element))
-		{
-			return_code = 1;
-			if (0 < element->number_of_parents)
-			{
-				/* test for exterior element */
-				if (exterior)
-				{
-					if (1 != element->number_of_parents)
-					{
-						return_code = 0;
-						if (1 == dimension)
-						{
-							for (i = 0; i < element->number_of_parents; i++)
-							{
-								/* following is not <= 1 so 'exterior' works appropriately on 2-D meshes */
-								if (element->parents[i]->number_of_parents == 1)
-								{
-									return_code = 1;
-									break;
-								}
-							}
-						}
-					}
-				}
-				/* test for on correct face */
-				if (return_code && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= face))
-				{
-					if (NULL == FE_element_get_parent_on_face(
-						element, face, conditional, conditional_data))
-					{
-						return_code = 0;
-					}
-				}
-			}
-			else if (exterior || (CMZN_ELEMENT_FACE_TYPE_INVALID != face))
-			{
-				return_code = 0;
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_meets_topological_criteria.  Invalid argument(s)");
 	}
 	return (return_code);
 }
@@ -23746,7 +23559,7 @@ bool FE_element_or_parent_changed(struct FE_element *element,
 {
 	int dimension = get_FE_element_dimension(element);
 	DsLabelsChangeLog *elementChangeLog;
-	if (element && (0 < dimension) && elementChangeLogs &&
+	if (element && element->fields && (0 < dimension) && elementChangeLogs &&
 		((elementChangeLog = elementChangeLogs[dimension - 1])) && fe_node_change_log)
 	{
 		if (elementChangeLog->isIndexChange(element->index) &&
@@ -23756,35 +23569,35 @@ bool FE_element_or_parent_changed(struct FE_element *element,
 		{
 			return true;
 		}
-		else
+		struct FE_node **nodes;
+		/* check nodes, if any; try to make as efficient as possible */
+		if (element->information && (nodes = element->information->nodes))
 		{
-			struct FE_node *node, **nodes;
-			/* check nodes, if any; try to make as efficient as possible */
-			if (element->information && (nodes = element->information->nodes))
+			int node_change;
+			int number_of_nodes = element->information->number_of_nodes;
+			for (int i = 0; i < number_of_nodes; ++i)
 			{
-				int node_change;
-				int number_of_nodes = element->information->number_of_nodes;
-				for (int i = 0; i < number_of_nodes; ++i)
-				{
-					if ((node = nodes[i]) &&
-						CHANGE_LOG_QUERY(FE_node)(fe_node_change_log, node, &node_change) &&
-						(node_change & (
-							CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_node) |
-							CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node) |
-							CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))))
-					{
-						return true;
-					}
-				}
-			}
-			/* try parents */
-			for (int i = 0; i < element->number_of_parents; i++)
-			{
-				if (FE_element_or_parent_changed(element->parents[i],
-					elementChangeLogs, fe_node_change_log))
+				if (CHANGE_LOG_QUERY(FE_node)(fe_node_change_log, nodes[i], &node_change) &&
+					(node_change & (
+						CHANGE_LOG_OBJECT_NOT_IDENTIFIER_CHANGED(FE_node) |
+						CHANGE_LOG_RELATED_OBJECT_CHANGED(FE_node) |
+						CHANGE_LOG_OBJECT_IDENTIFIER_CHANGED(FE_node))))
 				{
 					return true;
 				}
+			}
+		}
+		/* try parents */
+		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		if (parentMesh)
+		{
+			DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
+			while (parentIndex >= 0)
+			{
+				if (FE_element_or_parent_changed(parentMesh->getElement(parentIndex),
+						elementChangeLogs, fe_node_change_log))
+					return true;
+				parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
 			}
 		}
 	}
@@ -23824,55 +23637,24 @@ Does not include fields inherited from parent elements.
 	return (number_of_fields);
 } /* get_FE_element_number_of_fields */
 
-int get_FE_element_number_of_parents(struct FE_element *element)
+bool FE_element_is_not_interior(struct FE_element *element)
 {
-	if (element)
-		return element->number_of_parents;
-	display_message(ERROR_MESSAGE, "get_FE_element_number_of_parents.  Invalid argument(s)");
-	return 0;
-}
-
-bool FE_element_has_no_parents(cmzn_element *element)
-{
-	if (element)
-		return (element->number_of_parents == 0);
+	if (element && (element->fields))
+	{
+		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		if (parentMesh)
+		{
+			DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
+			if (parentIndex >= 0)
+			{
+				parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
+				return (parentIndex < 0);
+			}
+		}
+		return true;
+	}
+	display_message(ERROR_MESSAGE, "FE_element_is_not_interior.  Invalid argument(s)");
 	return false;
-}
-
-struct FE_element *get_FE_element_parent(struct FE_element *element, int index)
-{
-	if ((element) && (0 <= index) && (index < element->number_of_parents))
-		return element->parents[index];
-	display_message(ERROR_MESSAGE, "get_FE_element_parent.  Invalid argument(s)");
-	return 0;
-}
-
-int FE_element_get_first_parent(struct FE_element *element,
-	struct FE_element **parent_element_address, int *face_number_address)
-{
-	int return_code;
-	if ((element) && (parent_element_address) && (face_number_address))
-	{
-		if ((element->parents) && (0 < element->number_of_parents))
-		{
-			*parent_element_address = element->parents[0];
-			*face_number_address =
-				FE_element_get_child_face_number(*parent_element_address, element);
-		}
-		else
-		{
-			*parent_element_address = (struct FE_element *)NULL;
-			*face_number_address = 0;
-		}
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_get_first_parent.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
 }
 
 FE_element_shape *get_FE_element_shape(struct FE_element *element)
@@ -23889,127 +23671,22 @@ FE_element_shape *get_FE_element_shape(struct FE_element *element)
 	return 0;
 }
 
-int get_FE_element_face(struct FE_element *element,int face_number,
-	struct FE_element **face_element)
-/*******************************************************************************
-LAST MODIFIED : 12 October 1999
-
-DESCRIPTION :
-Returns the <face_element> for face <face_number> of <element>, where NULL means
-there is no face. Element must have a shape and face.
-==============================================================================*/
+struct FE_element *get_FE_element_face(struct FE_element *element, int face_number)
 {
-	int return_code;
-
-	ENTER(get_FE_element_face);
-	// Temporary:
-	FE_element_shape *element_shape = get_FE_element_shape(element);
-	if ((element_shape) && (0<=face_number) &&
-		(face_number<element_shape->number_of_faces)&&face_element)
+	if ((element) && (element->fields))
 	{
-		if (element->faces)
-			*face_element = element->faces[face_number];
-		else
-			*face_element = 0;
-		return_code=1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,"get_FE_element_face.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* get_FE_element_face */
-
-int set_FE_element_face(struct FE_element *element, int face_number,
-	struct FE_element *face_element)
-{
-	int return_code;
-	// Temporary:
-	FE_element_shape *element_shape = get_FE_element_shape(element);
-	if ((element_shape) && (0 <= face_number) &&
-		(face_number < element_shape->number_of_faces))
-	{
-		if (!element->faces)
+		const FE_mesh::ElementShapeFaces *shapeFaces = element->fields->fe_mesh->getElementShapeFacesConst(element->index);
+		FE_mesh *faceMesh = element->fields->fe_mesh->getFaceMesh();
+		if ((shapeFaces) && (0 <= face_number) && (face_number < shapeFaces->getFaceCount()) && (faceMesh))
 		{
-			if (!set_FE_element_number_of_faces(element, element_shape->number_of_faces))
-				return 0;
-		}
-		return_code = 1;
-		/* check this face not already set, else following logic will fail! */
-		FE_element *old_face_element = element->faces[face_number];
-		if (face_element != old_face_element)
-		{
-			if (face_element)
-			{
-				/* set up new face->parent relationship */
-				FE_element **new_parents;
-				if (REALLOCATE(new_parents, face_element->parents,
-					struct FE_element *, face_element->number_of_parents + 1))
-				{
-					face_element->parents = new_parents;
-					face_element->parents[face_element->number_of_parents] = element;
-					(face_element->number_of_parents)++;
-				}
-				else
-				{
-					display_message(ERROR_MESSAGE,
-						"set_FE_element_face.  Could not set element as parent of face");
-					return_code = 0;
-				}
-			}
-			if (return_code)
-			{
-				if (old_face_element)
-				{
-					/* remove first instance of element from face->parents array */
-					for (int i = 0; i < old_face_element->number_of_parents; i++)
-					{
-						if (old_face_element->parents[i] == element)
-						{
-							old_face_element->number_of_parents--;
-							for (int j = i; j < old_face_element->number_of_parents; j++)
-							{
-								old_face_element->parents[j] = old_face_element->parents[j + 1];
-							}
-							break;
-						}
-					}
-					if (0 == old_face_element->number_of_parents)
-					{
-						DEALLOCATE(old_face_element->parents);
-					}
-				}
-				/* set the new face */
-				REACCESS(FE_element)(&(element->faces[face_number]), face_element);
-			}
+			const DsLabelIndex *faces = shapeFaces->getElementFaces(element->index);
+			if (faces)
+				return faceMesh->getElement(faces[face_number]);
+			return 0;
 		}
 	}
-	else
-	{
-		display_message(ERROR_MESSAGE, "set_FE_element_face.  Invalid argument(s)");
-		return_code = 0;
-	}
-	return (return_code);
-}
-
-int get_FE_element_face_number(struct FE_element *element, struct FE_element *face)
-{
-	FE_element_shape *element_shape = get_FE_element_shape(element);
-	if ((element_shape) && (element->faces) && face)
-	{
-		const int nFaces = element_shape->number_of_faces;
-		for (int i = 0; i < nFaces; ++i)
-		{
-			if (element->faces[i] == face)
-				return i;
-		}
-	}
-	else
-		display_message(ERROR_MESSAGE, "get_FE_element_face_number.  Invalid argument(s)");
-	return -1;
+	display_message(ERROR_MESSAGE, "get_FE_element_face.  Invalid argument(s)");
+	return 0;
 }
 
 int set_FE_element_number_of_nodes(struct FE_element *element,
@@ -25018,72 +24695,6 @@ int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	return (return_code);
 }
 
-struct FE_field *get_FE_element_default_coordinate_field(
-	struct FE_element *element)
-{
-	struct FE_field *default_coordinate_field;
-
-	ENTER(get_FE_element_default_coordinate_field);
-	default_coordinate_field = (struct FE_field *)NULL;
-	if (element && element->fields)
-	{
-		FOR_EACH_OBJECT_IN_LIST(FE_element_field)(
-			FE_element_field_get_first_coordinate_field,
-			(void *)&default_coordinate_field, element->fields->element_field_list);
-		if ((!default_coordinate_field) &&
-			element->parents && (0 < element->number_of_parents))
-		{
-			default_coordinate_field =
-				get_FE_element_default_coordinate_field(element->parents[0]);
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"get_FE_element_default_coordinate_field.  Invalid element");
-	}
-	LEAVE;
-
-	return (default_coordinate_field);
-}
-
-int FE_element_find_default_coordinate_field_iterator(
-	struct FE_element *element, void *fe_field_ptr_void)
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-An FE_element iterator that returns 1 when an appropriate default_coordinate
-fe_field is found.  The fe_field found is returned as fe_field_void.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_field *field;
-
-	ENTER(FE_element_find_default_coordinate_field_iterator);
-	if (element)
-	{
-		if (NULL != (field = get_FE_element_default_coordinate_field(element)))
-		{
-			*((struct FE_field **)fe_field_ptr_void) = field;
-			return_code = 1;
-		}
-		else
-		{
-			return_code = 0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_find_default_coordinate_field_iterator.  Missing element");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_find_default_coordinate_field_iterator */
-
 int FE_element_number_is_in_Multi_range(struct FE_element *element,
 	void *multi_range_void)
 {
@@ -25120,26 +24731,6 @@ int FE_element_add_number_to_Multi_range(
 		return_code = 0;
 	}
 	return (return_code);
-}
-
-bool FE_elements_can_merge_faces(int faceCount,
-	FE_mesh &target_face_fe_mesh, struct FE_element *targetElement,
-	FE_mesh &source_face_fe_mesh, struct FE_element *sourceElement)
-{
-	if ((targetElement->faces) && (sourceElement->faces))
-	{
-		for (int i = 0; i < faceCount; ++i)
-		{
-			FE_element *sourceFace = sourceElement->faces[i];
-			FE_element *targetFace = targetElement->faces[i];
-			if (sourceFace && targetFace &&
-				(source_face_fe_mesh.getElementIdentifier(sourceFace->index) != target_face_fe_mesh.getElementIdentifier(targetFace->index)))
-			{
-				return false;
-			}
-		}
-	}
-	return true;
 }
 
 static int FE_element_field_add_FE_field_to_list(
@@ -25402,74 +24993,68 @@ int list_FE_element(struct FE_element *element)
 	char line[93];
 	FE_value *scale_factor;
 	int i,return_code;
-	struct FE_element **face;
 
-	ENTER(list_FE_element);
-	if (element)
+	if (element && element->fields)
 	{
+		FE_mesh *fe_mesh = element->fields->fe_mesh;
 		return_code=1;
 		/* write the identifier */
 		display_message(INFORMATION_MESSAGE,"element : %d \n",element->get_identifier());
 		display_message(INFORMATION_MESSAGE,"  access count=%d\n",element->access_count);
-		FE_element_shape *element_shape = get_FE_element_shape(element);
-		if (element_shape)
+		display_message(INFORMATION_MESSAGE,"  dimension=%d\n", fe_mesh->getDimension());
+		const FE_mesh::ElementShapeFaces *elementShapeFaces = fe_mesh->getElementShapeFacesConst(element->index);
+		if (!elementShapeFaces)
 		{
-			display_message(INFORMATION_MESSAGE,"  dimension=%d\n",element_shape->dimension);
-			char *shape_description = FE_element_shape_get_EX_description(element_shape);
+			display_message(ERROR_MESSAGE, "list_FE_element.  Missing ElementShapeFaces");
+			return_code = 0;
+		}
+		else
+		{
+			char *shape_description = FE_element_shape_get_EX_description(elementShapeFaces->getShape());
 			if (shape_description)
 			{
 				display_message(INFORMATION_MESSAGE, "  shape=%s\n", shape_description);
 				DEALLOCATE(shape_description);
 			}
 			/* write the faces */
-			if ((face=element->faces)&&
-				(0<(i=element_shape->number_of_faces)))
+			const int faceCount = elementShapeFaces->getFaceCount();
+			if (0 < faceCount)
 			{
-				display_message(INFORMATION_MESSAGE,"  #faces=%d\n",i);
-				while (i>0)
+				display_message(INFORMATION_MESSAGE, "  Faces=%d:\n", faceCount);
+				FE_mesh *faceMesh = fe_mesh->getFaceMesh();
+				const DsLabelIndex *faces = elementShapeFaces->getElementFaces(element->index);
+				if (faces && faceMesh)
 				{
-					if (*face)
+					for (int i = 0; i < faceCount; ++i)
 					{
-						display_message(INFORMATION_MESSAGE," (%d)",(*face)->get_identifier());
+						if (faces[i] >= 0)
+							display_message(INFORMATION_MESSAGE, " %d", faceMesh->getElementIdentifier(faces[i]));
+						else
+							display_message(INFORMATION_MESSAGE, " -");
 					}
-					else
-					{
-						display_message(INFORMATION_MESSAGE," (0 0 0)");
-					}
-					face++;
-					i--;
+					display_message(INFORMATION_MESSAGE, "\n");
 				}
-				display_message(INFORMATION_MESSAGE,"\n");
+				else
+				{
+					display_message(INFORMATION_MESSAGE, " No faces set\n");
+				}
 			}
 			else
 			{
-				display_message(INFORMATION_MESSAGE,"  No faces\n");
+				display_message(INFORMATION_MESSAGE, "  No faces\n");
 			}
 			/* write the parents */
-			if ((0 < element->number_of_parents) && (element->parents))
+			FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+			DsLabelIndex parentIndex;
+			if (parentMesh && (0 <= (parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index))))
 			{
-				display_message(INFORMATION_MESSAGE,"  parents\n");
-#if !defined (WINDOWS_DEV_FLAG)
-				*line='\0';
-				for (i = 0; i < element->number_of_parents; i++)
+				display_message(INFORMATION_MESSAGE, "  Parents:\n");
+				while (parentIndex >= 0)
 				{
-					if (element->parents[i])
-					{
-						sprintf(line+strlen(line)," (%d)", element->parents[i]->get_identifier());
-						if (70<=strlen(line))
-						{
-							display_message(INFORMATION_MESSAGE,line);
-							display_message(INFORMATION_MESSAGE,"\n");
-							*line='\0';
-						}
-					}
+					display_message(INFORMATION_MESSAGE, " %d", parentMesh->getElementIdentifier(parentIndex));
+					parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
 				}
-				if (0<strlen(line))
-				{
-					display_message(INFORMATION_MESSAGE,line);
-					display_message(INFORMATION_MESSAGE,"\n");
-				}
-#endif /* !defined (WINDOWS_DEV_FLAG) */
+				display_message(INFORMATION_MESSAGE, "\n");
 			}
 			else
 			{
@@ -25529,20 +25114,14 @@ int list_FE_element(struct FE_element *element)
 				display_message(INFORMATION_MESSAGE, "\n");
 			}
 		}
-		else
-		{
-			display_message(INFORMATION_MESSAGE,"  Missing shape\n");
-		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,"list_FE_element.  Invalid argument");
 		return_code=0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* list_FE_element */
+}
 
 enum Modify_theta_in_xi1_mode
 {
@@ -26424,138 +26003,74 @@ struct FE_region *FE_element_get_FE_region(struct FE_element *element)
 	return 0;
 }
 
-int FE_element_has_top_level_element(struct FE_element *element,
-	void *top_level_element_void)
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Returns true if <top_level_element> is indeed a top_level parent of <element>.
-==============================================================================*/
-{
-	int return_code;
-	struct FE_element *top_level_element;
-
-	ENTER(FE_element_has_top_level_element);
-	if (element&&(top_level_element=(struct FE_element *)top_level_element_void)&&
-		(0 == top_level_element->number_of_parents))
-	{
-		if ((element==top_level_element)||
-			FE_element_ancestor_matches_recursive(element, top_level_element))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_has_top_level_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_has_top_level_element */
-
 int FE_element_is_top_level_parent_of_element(
-	struct FE_element *top_level_element,void *element_void)
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Returns true if <top_level_element> is a top_level parent of <element>.
-==============================================================================*/
+	struct FE_element *element, void *other_element_void)
 {
-	int return_code;
-	struct FE_element *element;
-
-	ENTER(FE_element_is_top_level_parent_of_element);
-	if (top_level_element&&(element=(struct FE_element *)element_void))
+	FE_element *other_element = static_cast<FE_element*>(other_element_void);
+	if (element && (element->fields) && other_element && (other_element->fields))
 	{
-		if ((0 == top_level_element->number_of_parents) &&
-			((element==top_level_element)||
-				FE_element_ancestor_matches_recursive(element, top_level_element)))
-		{
-			return_code=1;
-		}
-		else
-		{
-			return_code=0;
-		}
+		// top level element has no parents:
+		if ((element->fields->fe_mesh->getElementFirstParent(element->index) < 0) &&
+				(element->fields->fe_mesh->isElementAncestor(element->index,
+					other_element->fields->fe_mesh, other_element->index)))
+			return 1;
 	}
 	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_is_top_level_parent_of_element.  Invalid argument(s)");
-		return_code=0;
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_is_top_level_parent_of_element */
+		display_message(ERROR_MESSAGE, "FE_element_is_top_level_parent_of_element.  Invalid argument(s)");
+	return 0;
+}
 
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
 	cmzn_element_face_type specified_face, FE_value *element_to_top_level)
 {
-	int face_number, i,  size;
-	FE_value *face_to_element;
-	struct FE_element *parent, *top_level_element;
-
-	if (element&&element_to_top_level)
+	struct FE_element *top_level_element;
+	if (element && element->fields && element_to_top_level)
 	{
-		if (0 < element->number_of_parents)
+		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		DsLabelIndex firstParentIndex;
+		if ((!parentMesh) || (0 > (firstParentIndex = element->fields->fe_mesh->getElementFirstParent(element->index))))
 		{
-			parent = NULL;
-			if (check_top_level_element)
+			/* no parents */
+			top_level_element = element;
+		}
+		else
+		{
+			DsLabelIndex parentIndex = DS_LABEL_INDEX_INVALID;
+			if (check_top_level_element && check_top_level_element->fields)
 			{
-				parent = FE_element_get_first_parent_with_ancestor(element, check_top_level_element);
+				FE_mesh *topLevelMesh = check_top_level_element->fields->fe_mesh;
+				const DsLabelIndex checkTopLevelElementIndex = check_top_level_element->index;
+				parentIndex = firstParentIndex;
+				do {
+					if (((parentMesh == topLevelMesh) && (parentIndex == checkTopLevelElementIndex)) ||
+							topLevelMesh->isElementAncestor(checkTopLevelElementIndex, parentMesh, parentIndex))
+						break;
+					parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
+				} while (parentIndex >= 0);
 			}
-			if (!parent)
-			{
-				if (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= specified_face)
-				{
-					parent = FE_element_get_parent_on_face(
-						element, specified_face, conditional, conditional_data);
-				}
-				else if (conditional)
-				{
-					for (i = 0; i < element->number_of_parents; i++)
-					{
-						if ((conditional)(element->parents[i], conditional_data))
-						{
-							parent = element->parents[i];
-							break;
-						}
-					}
-				}
-			}
-			if (!parent)
-			{
-				parent = element->parents[0];
-			}
+			if ((parentIndex < 0) && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= specified_face))
+				parentIndex = element->fields->fe_mesh->getElementParentOnFace(element->index, specified_face);
+			if (parentIndex < 0)
+				parentIndex = firstParentIndex;
+			FE_element *parent = parentMesh->getElement(parentIndex);
 
-			FE_element_shape *parent_shape = get_FE_element_shape(parent);
+			int face_number;
+			FE_element_shape *parent_shape = parentMesh->getElementShape(parentIndex);
 			if ((parent_shape) && (parent_shape->face_to_element) &&
-				(0 <= (face_number = FE_element_get_child_face_number(parent, element))) &&
+				(0 <= (face_number = parentMesh->getElementFaceNumber(parentIndex, element->index))) &&
 				(top_level_element = FE_element_get_top_level_element_conversion(
-					parent, check_top_level_element, conditional, conditional_data,
-					specified_face, element_to_top_level)))
+					parent, check_top_level_element, specified_face, element_to_top_level)))
 			{
-				face_to_element=parent_shape->face_to_element +
+				FE_value *face_to_element = parent_shape->face_to_element +
 					(face_number * parent_shape->dimension*parent_shape->dimension);
-				size=top_level_element->getDimension();
+				const int size = top_level_element->getDimension();
 				if (parent == top_level_element)
 				{
 					/* element_to_top_level = face_to_element of appropriate face */
-					for (i=size*size-1;0<=i;i--)
+					for (int i = size*size - 1; 0 <= i; --i)
 					{
-						element_to_top_level[i]=face_to_element[i];
+						element_to_top_level[i] = face_to_element[i];
 					}
 				}
 				else
@@ -26577,7 +26092,7 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 							element_to_top_level[7],element_to_top_level[8]);
 					}
 #endif /* defined (DEBUG_CODE) */
-					for (i=0;i<size;i++)
+					for (int i = 0; i < size; ++i)
 					{
 						element_to_top_level[i*2  ] = element_to_top_level[i*size] +
 							element_to_top_level[i*size+1]*face_to_element[0]+
@@ -26615,11 +26130,6 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 				top_level_element=(struct FE_element *)NULL;
 			}
 		}
-		else
-		{
-			/* no parents */
-			top_level_element=element;
-		}
 	}
 	else
 	{
@@ -26627,9 +26137,8 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			"FE_element_get_top_level_element_conversion.  Invalid argument(s)");
 		top_level_element=(struct FE_element *)NULL;
 	}
-
 	return (top_level_element);
-} /* FE_element_get_top_level_element_conversion */
+}
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element,
 	const FE_value *xi, int element_dimension,
@@ -26648,10 +26157,11 @@ is checked and the <top_level_xi> calculated.
 	int i,j,k,return_code;
 
 	ENTER(FE_element_get_top_level_element_and_xi);
-	if (element&&xi&&top_level_element&&top_level_xi&&top_level_element_dimension)
+	if (element && element->fields && xi && top_level_element && top_level_xi &&
+		top_level_element_dimension)
 	{
 		return_code = 1;
-		if (0 == element->number_of_parents)
+		if (element->fields->fe_mesh->getElementFirstParent(element->index) < 0)
 		{
 			*top_level_element = element;
 			for (i=0;i<element_dimension;i++)
@@ -26666,7 +26176,6 @@ is checked and the <top_level_xi> calculated.
 			/* check or get top_level element and xi coordinates for it */
 			if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
 				element,*top_level_element,
-				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
@@ -26704,17 +26213,6 @@ is checked and the <top_level_xi> calculated.
 int get_FE_element_discretization_from_top_level(struct FE_element *element,
 	int *number_in_xi,struct FE_element *top_level_element,
 	int *top_level_number_in_xi,FE_value *element_to_top_level)
-/*******************************************************************************
-LAST MODIFIED : 3 May 2001
-
-DESCRIPTION :
-Returns in <number_in_xi> the equivalent discretization of <element> for its
-position - element, face or line - in <top_level_element>. Uses
-<element_to_top_level> array for line/face conversion as returned by
-FE_element_get_top_level_element_conversion.
-<number_in_xi> must have space at lease MAXIMUM_ELEMENT_XI_DIMENSIONS integers,
-as remaining values up to this size are cleared to zero.
-==============================================================================*/
 {
 	int dimension,i,j,maximum_number_in_xi,return_code,top_level_dimension;
 
@@ -26793,9 +26291,8 @@ int get_FE_element_discretization(struct FE_element *element,
 	ENTER(get_FE_element_discretization);
 	if (element&&top_level_number_in_xi&&top_level_element&&number_in_xi)
 	{
-		if (NULL != (*top_level_element=FE_element_get_top_level_element_conversion(
-			element,*top_level_element,conditional,conditional_data,face,
-			element_to_top_level)))
+		if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
+			element, *top_level_element, face, element_to_top_level)))
 		{
 			/* get the discretization requested for top-level element, from native
 				 discretization field if not NULL and is element based in element */
@@ -26847,27 +26344,23 @@ int get_FE_element_discretization(struct FE_element *element,
 	return (return_code);
 } /* get_FE_element_discretization */
 
-/***************************************************************************//**
+/**
  * Return whether the shape-face mapping for the supplied face number gives the
  * face an inward normal.
  *
  * @param shape  The shape - must be 3 dimensional.
  * @param face_number  Face index from 0 to (shape->number_of_faces - 1).
- * @return  1 if face has inward normal, 0 otherwise.
+ * @return  True if face has inward normal, otherwise false.
  */
-int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
+static bool FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 	int face_number)
 {
-	int return_code;
-
-	ENTER(FE_element_shape_face_has_inward_normal);
-	return_code = 0;
 	if (shape && (3 == shape->dimension) &&
 		(0 <= face_number) && (face_number <= shape->number_of_faces))
 	{
-		FE_value *face_to_element, *outward_face_normal, result;
+		FE_value *outward_face_normal;
 		FE_value face_xi1[3], face_xi2[3], actual_face_normal[3];
-		face_to_element = shape->face_to_element +
+		FE_value *face_to_element = shape->face_to_element +
 			face_number*shape->dimension*shape->dimension;
 		face_xi1[0] = face_to_element[1];
 		face_xi1[1] = face_to_element[4];
@@ -26877,37 +26370,35 @@ int FE_element_shape_face_has_inward_normal(struct FE_element_shape *shape,
 		face_xi2[2] = face_to_element[8];
 		cross_product_FE_value_vector3(face_xi1, face_xi2, actual_face_normal);
 		outward_face_normal = shape->face_normals + face_number*shape->dimension;
-		result = actual_face_normal[0]*outward_face_normal[0] +
+		FE_value result = actual_face_normal[0]*outward_face_normal[0] +
 			actual_face_normal[1]*outward_face_normal[1] +
 			actual_face_normal[2]*outward_face_normal[2];
 		if (result < 0.0)
-		{
-			return_code = 1;
-		}
+			return true;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_shape_face_has_inward_normal.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
+	return false;
 }
 
-int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
+bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 {
-	int return_code;
-	ENTER(FE_element_is_exterior_face_with_inward_normal);
-	return_code = 0;
-	if (element)
+	int return_code = 0;
+	if (element && element->fields)
 	{
-		if ((element->getDimension() == 2) &&
-			(1 == element->number_of_parents) && (element->parents[0]))
+		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		if (parentMesh && (parentMesh->getDimension() == 3))
 		{
-			return_code =
-				FE_element_shape_face_has_inward_normal(get_FE_element_shape(element->parents[0]),
-					FE_element_get_child_face_number(element->parents[0], element));
+			const DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
+			if (parentIndex >= 0)
+			{
+				const int faceNumber = parentMesh->getElementFaceNumber(parentIndex, element->index);
+				if (parentMesh->getElementFirstNeighbour(parentIndex, faceNumber) < 0)
+					return FE_element_shape_face_has_inward_normal(parentMesh->getElementShape(parentIndex), faceNumber);
+			}
 		}
 	}
 	else
@@ -26915,9 +26406,7 @@ int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 		display_message(ERROR_MESSAGE,
 			"FE_element_is_exterior_face_with_inward_normal.  Invalid argument(s)");
 	}
-	LEAVE;
-
-	return (return_code);
+	return false;
 }
 
 int cmzn_element_add_stored_nodes_to_list(cmzn_element *element,
@@ -26949,7 +26438,7 @@ int cmzn_element_add_stored_nodes_to_list(cmzn_element *element,
 
 int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeList)
 {
-	if (!(element && nodeList))
+	if (!(element && element->fields && nodeList))
 		return CMZN_ERROR_ARGUMENT;
 	int return_code = CMZN_OK;
 	cmzn_node *node;
@@ -26967,7 +26456,7 @@ int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeL
 			}
 		}
 	}
-	if (0 < element->number_of_parents)
+	if (element->fields->fe_mesh->getElementFirstParent(element->index) >= 0)
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
@@ -26993,7 +26482,7 @@ int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeL
 
 int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *nodeList)
 {
-	if (!(element && nodeList))
+	if (!(element && element->fields && nodeList))
 		return CMZN_ERROR_ARGUMENT;
 	int return_code = CMZN_OK;
 	cmzn_node *node;
@@ -27003,7 +26492,7 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
 		for (int i = 0; i < localNodesCount; i++)
 			REMOVE_OBJECT_FROM_LIST(cmzn_node)(element->information->nodes[i], nodeList);
 	}
-	if (0 < element->number_of_parents)
+	if (element->fields->fe_mesh->getElementFirstParent(element->index) >= 0)
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
@@ -27028,51 +26517,10 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
-	if (element)
-		return (0 == element->number_of_parents);
+	if (element && (element->fields))
+		return (element->fields->fe_mesh->getElementFirstParent(element->index) < 0) ? 1 : 0;
 	return 0;
 }
-
-int FE_element_or_parent_has_field(struct FE_element *element,
-	struct FE_field *field,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data)
-{
-	int i, return_code;
-
-	ENTER(FE_element_or_parent_has_field);
-	return_code = 0;
-	if (element && field && element->fields)
-	{
-		if ((!conditional) || (conditional)(element, conditional_data))
-		{
-			if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-				element->fields->element_field_list))
-			{
-				return_code = 1;
-			}
-			else
-			{
-				for (i = 0; i < element->number_of_parents; i++)
-				{
-					if (FE_element_or_parent_has_field(element->parents[i], field,
-						conditional, conditional_data))
-					{
-						return_code = 1;
-						break;
-					}
-				}
-			}
-		}
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"FE_element_or_parent_has_field.  Invalid argument(s)");
-	}
-	LEAVE;
-
-	return (return_code);
-} /* FE_element_or_parent_has_field */
 
 int FE_node_get_position_cartesian(struct FE_node *node,
 	struct FE_field *coordinate_field, FE_value *node_x, FE_value *node_y,
@@ -27489,35 +26937,23 @@ FE_node iterator version of FE_field_is_defined_at_node.
 	return (return_code);
 } /* FE_node_field_is_not_defined */
 
-int FE_field_is_defined_in_element(struct FE_field *field,
+bool FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element)
-/*******************************************************************************
-LAST MODIFIED : 27 February 2003
-
-DESCRIPTION :
-Returns true if the <field> is defined for the <element>.
-==============================================================================*/
 {
-	int i, return_code;
-
-	ENTER(FE_field_is_defined_in_element);
-	return_code = 0;
 	if (element && element->fields && field)
 	{
 		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-			element->fields->element_field_list))
+				element->fields->element_field_list))
+			return true;
+		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
+		if (parentMesh)
 		{
-			return_code = 1;
-		}
-		else
-		{
-			for (i = 0; i < element->number_of_parents; i++)
+			DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
+			while (parentIndex >= 0)
 			{
-				if (FE_field_is_defined_in_element(field, element->parents[i]))
-				{
-					return_code = 1;
-					break;
-				}
+				if (FE_field_is_defined_in_element(field, parentMesh->getElement(parentIndex)))
+					return true;
+				parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
 			}
 		}
 	}
@@ -27526,27 +26962,15 @@ Returns true if the <field> is defined for the <element>.
 		display_message(ERROR_MESSAGE,
 			"FE_field_is_defined_in_element.  Invalid argument(s)");
 	}
-	LEAVE;
+	return false;
+}
 
-	return (return_code);
-} /* FE_field_is_defined_in_element */
-
-int FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
+bool FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
 	struct FE_element *element)
 {
-	int return_code;
-
-	return_code = 0;
-	if (element && element->fields)
-	{
-		if (FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
-			element->fields->element_field_list))
-		{
-			return_code = 1;
-		}
-	}
-
-	return (return_code);
+	return ((element) && (element->fields) &&
+		(0 != FIND_BY_IDENTIFIER_IN_LIST(FE_element_field,field)(field,
+			element->fields->element_field_list)));
 }
 
 int FE_element_field_is_grid_based(struct FE_element *element,
@@ -29728,19 +29152,18 @@ element at face <face_number>.
 ==============================================================================*/
 {
 	int number_of_permutations;
-	struct FE_element *face;
 
-	ENTER(FE_element_get_number_of_change_to_adjacent_element_permutations);
 	USE_PARAMETER(xi);
-	FE_element_shape *element_shape = get_FE_element_shape(element);
-	if ((element_shape) && (0 <= face_number) && (face_number < element_shape->number_of_faces))
+	FE_mesh *faceMesh, *fe_mesh;
+	if ((element) && (element->fields) && (fe_mesh = element->fields->fe_mesh) &&
+		(faceMesh = fe_mesh->getFaceMesh()))
 	{
 		number_of_permutations = 1;
-		const int face_dimension = element_shape->dimension - 1;
-		if (NULL != (face=(element->faces)[face_number]))
+		DsLabelIndex faceIndex = fe_mesh->getElementFace(element->index, face_number);
+		if (faceIndex >= 0)
 		{
 			number_of_permutations = 1;
-			switch (face_dimension)
+			switch (faceMesh->getDimension())
 			{
 				case 1:
 				{
@@ -29748,7 +29171,9 @@ element at face <face_number>.
 				} break;
 				case 2:
 				{
-					FE_element_shape *face_shape = get_FE_element_shape(face);
+					// doesn't yet support all [8] permutations for square faces...
+					// need to implement in FE_element_change_to_adjacent_element
+					FE_element_shape *face_shape = faceMesh->getElementShape(faceIndex);
 					if (face_shape && (face_shape->type[0] == SIMPLEX_SHAPE)
 						&& (face_shape->type[2] == SIMPLEX_SHAPE))
 					{
@@ -29764,10 +29189,8 @@ element at face <face_number>.
 			"Invalid argument(s).");
 		number_of_permutations = 0;
 	}
-	LEAVE;
-
 	return (number_of_permutations);
-} /* FE_element_get_number_of_change_to_adjacent_element_permutations */
+}
 
 int FE_element_change_to_adjacent_element(struct FE_element **element_address,
 	FE_value *xi, FE_value *increment, int *face_number, FE_value *xi_face,
@@ -29790,49 +29213,45 @@ The shape mapping from parents are reused for all elements of the same shape
 and do not take into account the relative orientation of the parents.
 ==============================================================================*/
 {
-	double dot_product;
-	FE_value *face_to_element;
-	int i,j,new_face_number,return_code;
-	struct FE_element *element,*face,*new_element;
-
-	ENTER(FE_element_change_to_adjacent_element);
-	return_code=0;
+	int return_code = 0;
 	int dimension = 0;
+	struct FE_element *element;
 	FE_element_shape *element_shape;
-	if ((element_address) && (element = *element_address) &&
+	FE_mesh *faceMesh, *fe_mesh;
+	if ((element_address) && (element = *element_address) && (element->fields) &&
+		(fe_mesh = element->fields->fe_mesh) &&
+		(faceMesh = element->fields->fe_mesh->getFaceMesh()) &&
 		(0 != (element_shape = get_FE_element_shape(element))) &&
 		(0 < (dimension = element_shape->dimension)) &&
 		(0<=*face_number)&&(*face_number<element_shape->number_of_faces))
 	{
-		FE_value temp_increment[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-		FE_value face_normal[MAXIMUM_ELEMENT_XI_DIMENSIONS];
-		FE_value local_xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
-		FE_element_shape *face_shape;
-		if (element->faces && (0 != (face = (element->faces)[*face_number])) &&
-			(0 != (face_shape = get_FE_element_shape(face))))
+		DsLabelIndex newElementIndex = fe_mesh->getElementFirstNeighbour(element->index, *face_number);
+		if (newElementIndex < 0)
 		{
-			/* find the other parent */
-			new_element = (struct FE_element *)NULL;
-			for (i = 0; i < face->number_of_parents; i++)
+			/* no adjacent element found */
+			*face_number = -1;
+			return_code = 1;
+		}
+		else
+		{
+			DsLabelIndex faceIndex = fe_mesh->getElementFace(element->index, *face_number);
+			FE_element_shape *face_shape = faceMesh->getElementShape(faceIndex);
+			FE_element *new_element = fe_mesh->getElement(newElementIndex);
+			if (face_shape && new_element)
 			{
-				if (face->parents[i] != element)
-				{
-					new_element = face->parents[i];
-					break;
-				}
-			}
-			if (new_element)
-			{
-				new_face_number = FE_element_get_child_face_number(new_element, face);
+				FE_value temp_increment[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+				FE_value face_normal[MAXIMUM_ELEMENT_XI_DIMENSIONS];
+				FE_value local_xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
 				/* change xi and increment into element coordinates */
 				FE_element_shape *new_element_shape = get_FE_element_shape(new_element);
+				int new_face_number = fe_mesh->getElementFaceNumber(newElementIndex, faceIndex);
 				if ((new_element_shape) && (dimension == new_element_shape->dimension) && 
 					(0 <= new_face_number))
 				{
 					return_code = 1;
 					if (xi)
 					{
-						for (j = 0 ; j < dimension - 1 ; j++)
+						for (int j = 0 ; j < dimension - 1 ; j++)
 							local_xi_face[j] = xi_face[j];
 						if (permutation > 0)
 						{
@@ -29885,13 +29304,13 @@ and do not take into account the relative orientation of the parents.
 								} break;
 							}
 						}
-						face_to_element=(new_element_shape->face_to_element)+
+						FE_value *face_to_element = (new_element_shape->face_to_element)+
 							(new_face_number*dimension*dimension);
-						for (i=0;i<dimension;i++)
+						for (int i=0;i<dimension;i++)
 						{
 							xi[i]= *face_to_element;
 							face_to_element++;
-							for (j=0;j<dimension-1;j++)
+							for (int j=0;j<dimension-1;j++)
 							{
 								xi[i] += (*face_to_element)*local_xi_face[j];
 								face_to_element++;
@@ -29901,20 +29320,21 @@ and do not take into account the relative orientation of the parents.
 					if (increment)
 					{
 						/* convert increment into face+normal coordinates */
-						face_to_element=(element_shape->face_to_element)+
+						FE_value *face_to_element = (element_shape->face_to_element)+
 							(*face_number*dimension*dimension);
 						return_code = face_calculate_xi_normal(element_shape,
 							*face_number, face_normal);
 						if (return_code)
 						{
-							for (i=0;i<dimension;i++)
+							double dot_product;
+							for (int i=0;i<dimension;i++)
 							{
 								temp_increment[i]=increment[i];
 							}
-							for (i=1;i<dimension;i++)
+							for (int i=1;i<dimension;i++)
 							{
 								dot_product=(double)0;
-								for (j=0;j<dimension;j++)
+								for (int j=0;j<dimension;j++)
 								{
 									dot_product += (double)(temp_increment[j])*
 										(double)(face_to_element[j*dimension+i]);
@@ -29922,7 +29342,7 @@ and do not take into account the relative orientation of the parents.
 								increment[i-1]=(FE_value)dot_product;
 							}
 							dot_product=(double)0;
-							for (i=0;i<dimension;i++)
+							for (int i=0;i<dimension;i++)
 							{
 								dot_product += (double)(temp_increment[i])*(double)(face_normal[i]);
 							}
@@ -29933,17 +29353,17 @@ and do not take into account the relative orientation of the parents.
 								new_face_number, face_normal);
 							if (return_code)
 							{
-								for (i=0;i<dimension;i++)
+								for (int i=0;i<dimension;i++)
 								{
 									temp_increment[i]=increment[i];
 								}
 								face_to_element=(new_element_shape->face_to_element)+
 									(new_face_number*dimension*dimension);
-								for (i=0;i<dimension;i++)
+								for (int i=0;i<dimension;i++)
 								{
 									increment[i]=temp_increment[dimension-1]*face_normal[i];
 									face_to_element++;
-									for (j=0;j<dimension-1;j++)
+									for (int j=0;j<dimension-1;j++)
 									{
 										increment[i] += (*face_to_element)*temp_increment[j];
 										face_to_element++;
@@ -29971,21 +29391,16 @@ and do not take into account the relative orientation of the parents.
 				else
 				{
 					display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-						"Invalid new element or element shape");
+						"Invalid new element shape or face number");
+					return_code = 0;
 				}
 			}
 			else
 			{
-				/* Valid attempt to change element but there is no adjacent element found */
-				return_code = 1;
-				*face_number = -1;
+				display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
+					"Invalid new element or element shape");
+				return_code = 0;
 			}
-		}
-		else
-		{
-			display_message(ERROR_MESSAGE,"FE_element_change_to_adjacent_element.  "
-				"Invalid face number %d or face_array", *face_number);
-			return_code=0;
 		}
 	}
 	else
@@ -29994,12 +29409,10 @@ and do not take into account the relative orientation of the parents.
 			"Invalid argument(s).  %p %p %d %p %p %d %p",element_address,
 			element_address ? *element_address : 0, dimension,
 			xi,increment,*face_number,xi_face);
-		return_code=0;
+		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* FE_element_change_to_adjacent_element */
+}
 
 int FE_element_xi_increment(struct FE_element **element_address,FE_value *xi,
 	FE_value *increment)

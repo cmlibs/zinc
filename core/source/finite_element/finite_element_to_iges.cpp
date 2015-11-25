@@ -217,7 +217,7 @@ DESCRIPTION :
 		return_code=1;
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
 		if ((2==get_FE_element_dimension(element))&&
-			(1 >= get_FE_element_number_of_parents(element)) &&
+			(FE_element_is_not_interior(element)) &&
 			(coordinate_field=get_data->fe_field)&&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
@@ -375,7 +375,8 @@ DESCRIPTION :
 						i=0;
 						while (return_code&&(i<number_of_faces))
 						{
-							if (get_FE_element_face(element, i, &face) && (face))
+							face = get_FE_element_face(element, i);
+							if (face)
 							{
 								int face_dimension = get_FE_element_dimension(face);
 								int face_identifier = get_FE_element_identifier(face);
@@ -720,7 +721,7 @@ basis type, however every element type will be converted to a cubic.
 	{
 		return_code = 1;
 		if ((2 == get_FE_element_dimension(element)) &&
-			(1 >= get_FE_element_number_of_parents(element)))
+			(FE_element_is_not_interior(element)))
 		{
 			/* Create the node and element templates */
 			if (!get_data->element)
@@ -840,8 +841,8 @@ basis type, however every element type will be converted to a cubic.
 			/* Set the correct element numbers into the faces */
 			for (i = 0 ; i < 4 ; i++)
 			{
-				get_FE_element_face(element, i, &true_face);
-				get_FE_element_face(get_data->element, i, &face);
+				true_face	= get_FE_element_face(element, i);
+				face = get_FE_element_face(get_data->element, i);
 				int face_identifier;
 				if (true_face)
 					face_identifier = get_FE_element_identifier(true_face);

@@ -1927,44 +1927,23 @@ int FE_element_shape_xi_increment(struct FE_element_shape *shape,
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element);
 PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 
-// GRC temporary
-int clear_FE_element_faces(struct FE_element *element, int number_of_faces);
-int set_FE_element_number_of_faces(struct FE_element *element, int number_of_faces);
-
+/**
+ * Returns the list of <adjacent_elements> not including <element> which share
+ * the face indicated by <face_number>.
+ * On success, caller must DEALLOCATE element array.
+ * @return  CMZN_OK on success, any error on failure.
+ */
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements);
-/*******************************************************************************
-LAST MODIFIED : 13 March 2003
-
-DESCRIPTION :
-Returns the list of <adjacent_elements> not including <element> which share the
-face indicated by <face_number>.  <adjacent_elements> is ALLOCATED to the
-correct size and should be DEALLOCATED when finished with.
-==============================================================================*/
 
 /**
- * Returns true if <element> meets all the supplied criteria:
- * - it has the given <dimension>;
- * - it is an exterior face or line of its contiguous mesh if <exterior> set;
- * - it is on the <face> of a parent element if <face>
- *   non-negative
- * - parent satisfies conditional function, if supplied.
- * Note that <exterior> and <face_number> requirements are ignored if they
- * make no sense for the element, eg. for n-D elements in an n-D mesh.
- * Only complete up to 3-D.
- *
- * @param element  The element to test against.
- * @param dimension  The dimension to test for.
- * @param exterior  Is an exterior face or line.
- * @param face  The face of the parent element.
- * @param conditional  Optional conditional function. If supplied, limits search to
- * parent elements for which this function passes.
- * @param conditional_data  User data to pass to optional conditional function.
+ * Returns the number and array of parent elements.
+ * On success, caller must DEALLOCATE element array.
+ * @return  CMZN_OK on success, any error on failure.
  */
-int FE_element_meets_topological_criteria(struct FE_element *element,
-	int dimension, int exterior, cmzn_element_face_type face,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
+int FE_element_get_parents(struct FE_element *element,
+	int *number_of_parents, struct FE_element ***parents);
 
 /**
  * Returns true if <field> is equivalently listed in the field information for
@@ -2031,39 +2010,9 @@ Does not include fields inherited from parent elements.
 ==============================================================================*/
 
 /**
- * Get the number of parent elements this element has, i.e. how many elements
- * of dimension 1 higher which this element is a face of.
- *
- * @param element  The element to query.
- * @return  The number of next higher dimension elements this element is a face of.
+ * Returns true if element has zero or one parents, i.e. it is not interior.
  */
-int get_FE_element_number_of_parents(struct FE_element *element);
-
-/**
- * @return  true if any element has no parents.
- */
-bool FE_element_has_no_parents(cmzn_element *element);
-
-/**
- * Get a parent element of this element by index.
- * @see get_FE_element_number_of_parents.
- *
- * @param element  The element to query.
- * @param index  The index of the parent, from 0 to number_of_parents - 1.
- * @return  Unaccessed pointer to the parent element, or 0 if none.
- */
-struct FE_element *get_FE_element_parent(struct FE_element *element, int index);
-
-int FE_element_get_first_parent(struct FE_element *element,
-	struct FE_element **parent_element_address, int *face_number_address);
-/*******************************************************************************
-LAST MODIFIED : 7 April 2003
-
-DESCRIPTION :
-Returns the first <parent_element> of <element> and the <face_number> it is at.
-If there is no parent, a true return_code is returned but with a NULL
-<parent_element>.
-==============================================================================*/
+bool FE_element_is_not_interior(struct FE_element *element);
 
 /**
  * Returns the <shape> of the <element>, if any. Invalid elements (in process
@@ -2071,29 +2020,11 @@ If there is no parent, a true return_code is returned but with a NULL
  */
 FE_element_shape *get_FE_element_shape(struct FE_element *element);
 
-int get_FE_element_face(struct FE_element *element,int face_number,
-	struct FE_element **face_element);
-/*******************************************************************************
-LAST MODIFIED : 7 October 1999
-
-DESCRIPTION :
-Returns the <face_element> for face <face_number> of <element>, where NULL means
-there is no face. Element must have a shape and face.
-==============================================================================*/
-
 /**
- * Sets face <face_number> of <element> to <face_element>, ensuring the
- * <face_element> has <element> as a parent. <face_element> may be NULL = no face.
- * Must have set the element shape first.
- * Should only be called for unmanaged elements.
+ * Returns the <face_element> for face <face_number> of <element>, where NULL
+ * means there is no face. Element must have a shape and face.
  */
-int set_FE_element_face(struct FE_element *element, int face_number,
-	struct FE_element *face_element);
-
-/**
- * Return the face number of the face in element >= 0, or -1 if not found.
- */
-int get_FE_element_face_number(struct FE_element *element, struct FE_element *face);
+struct FE_element *get_FE_element_face(struct FE_element *element, int face_number);
 
 int set_FE_element_number_of_nodes(struct FE_element *element,
 	int number_of_nodes);
@@ -2320,25 +2251,6 @@ Calls the <iterator> for each field defined at the <element> until the
 int for_each_FE_field_at_element_alphabetical_indexer_priority(
 	FE_element_field_iterator_function *iterator,void *user_data,
 	struct FE_element *element);
-
-/***************************************************************************//**
- * Returns the first coordinate field define over the element, currently in
- * alphabetical order. Recursively gets it from its first parent if it has no
- * node scale field information. Not reliable for finding the correct coordinate
- * field if multiple defined such as reference, deformed, texture coordinates.
- */
-struct FE_field *get_FE_element_default_coordinate_field(
-	struct FE_element *element);
-
-int FE_element_find_default_coordinate_field_iterator(
-	struct FE_element *element, void *fe_field_void);
-/*******************************************************************************
-LAST MODIFIED : 30 November 2001
-
-DESCRIPTION :
-An FE_element iterator that returns 1 when an appropriate default_coordinate
-fe_field is found.  The fe_field found is returned as fe_field_void.
-==============================================================================*/
 
 /***************************************************************************//**
  * Conditional function returning true if <element> number is in the
@@ -3071,30 +2983,17 @@ FE_mesh *FE_element_get_FE_mesh(struct FE_element *element);
  */
 struct FE_region *FE_element_get_FE_region(struct FE_element *element);
 
-int FE_element_has_top_level_element(struct FE_element *element,
-	void *top_level_element_void);
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Returns true if <top_level_element> is indeed a top_level parent of <element>.
-==============================================================================*/
-
+/**
+ * Returns true if <top_level_element> is a top_level parent of <element>.
+ */
 int FE_element_is_top_level_parent_of_element(
-	struct FE_element *top_level_element,void *element_void);
-/*******************************************************************************
-LAST MODIFIED : 8 June 2000
-
-DESCRIPTION :
-Returns true if <top_level_element> is a top_level parent of <element>.
-==============================================================================*/
+	struct FE_element *element, void *other_element_void);
 
 /**
  * Returns the/a top level [ultimate parent] element for <element>. If supplied,
  * the function attempts to verify that the <check_top_level_element> is in
  * fact a valid top_level_element for <element>, otherwise it tries to find one
- * passing the <condition> function with <conditional_data>, and with <element>
- * on its <face_number> (if positive), if either are specified.
+ * with the specified face, if supplied.
  *
  * If the returned element is different to <element> (ie. is of higher dimension),
  * then this function also fills the matrix <element_to_top_level> with values for
@@ -3113,7 +3012,6 @@ Returns true if <top_level_element> is a top_level parent of <element>.
  */
 struct FE_element *FE_element_get_top_level_element_conversion(
 	struct FE_element *element,struct FE_element *check_top_level_element,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
 	cmzn_element_face_type specified_face, FE_value *element_to_top_level);
 
 int FE_element_get_top_level_element_and_xi(struct FE_element *element,
@@ -3129,20 +3027,17 @@ for the given <element> and <xi>.  If <top_level_element> is already set it
 is checked and the <top_level_xi> calculated.
 ==============================================================================*/
 
+/**
+ * Returns in <number_in_xi> the equivalent discretization of <element> for its
+ * position - element, face or line - in <top_level_element>. Uses
+ * <element_to_top_level> array for line/face conversion as returned by
+ * FE_element_get_top_level_element_conversion.
+ * <number_in_xi> must have space at least MAXIMUM_ELEMENT_XI_DIMENSIONS
+ * integers, as remaining values up to this size are cleared to zero.
+ */
 int get_FE_element_discretization_from_top_level(struct FE_element *element,
-	int *number_in_xi,struct FE_element *top_level_element,
-	int *top_level_number_in_xi,FE_value *element_to_top_level);
-/*******************************************************************************
-LAST MODIFIED : 21 December 1999
-
-DESCRIPTION :
-Returns in <number_in_xi> the equivalent discretization of <element> for its
-position - element, face or line - in <top_level_element>. Uses
-<element_to_top_level> array for line/face conversion as returned by
-FE_element_get_top_level_element_conversion.
-<number_in_xi> must have space at lease MAXIMUM_ELEMENT_XI_DIMENSIONS integers,
-as remaining values up to this size are cleared to zero.
-==============================================================================*/
+	int *number_in_xi, struct FE_element *top_level_element,
+	int *top_level_number_in_xi, FE_value *element_to_top_level);
 
 /**
  * Returns the discretization in <number_in_xi> for displaying graphics over
@@ -3168,9 +3063,9 @@ int get_FE_element_discretization(struct FE_element *element,
  * inward normal.
  *
  * @param element  The element to test.
- * @return  1 if element is an exterior face with inward normal, 0 otherwise.
+ * @return  True if element is an exterior face with inward normal, otherwise false.
  */
-int FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
+bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element);
 
 /**
  * Add nodes directly referenced in element information to the node list.
@@ -3201,17 +3096,6 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
  * @return  1 if element is top-level i.e. has no parents, otherwise 0.
  */
 int FE_element_is_top_level(struct FE_element *element,void *dummy_void);
-
-int FE_element_or_parent_has_field(struct FE_element *element,
-	struct FE_field *field,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data);
-/***************************************************************************//**
- * Returns true if the <element> or any of its parents has the <field> defined
- * over it.
- * @param conditional  Optional conditional function. If supplied, limits
- * search to ancestor elements for which it returns true.
- * @param conditional_data  User data to pass to conditional function.
- */
 
 /***************************************************************************//**
  * Evaluates the supplied coordinate_field. Sets non-present components to zero
@@ -3296,20 +3180,17 @@ DESCRIPTION :
 FE_node iterator version of FE_field_is_defined_at_node.
 ==============================================================================*/
 
-int FE_field_is_defined_in_element(struct FE_field *field,
+/**
+ * Returns true if the <field> is defined for the <element>.
+ */
+bool FE_field_is_defined_in_element(struct FE_field *field,
 	struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 May 1999
 
-DESCRIPTION :
-Returns true if the <field> is defined for the <element>.
-==============================================================================*/
-
-/***************************************************************************//**
+/**
  * Returns true if <field> is defined in <element> directly, not inherited from
  * a parent element it is a face of.
  */
-int FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
+bool FE_field_is_defined_in_element_not_inherited(struct FE_field *field,
 	struct FE_element *element);
 
 int FE_element_field_is_grid_based(struct FE_element *element,

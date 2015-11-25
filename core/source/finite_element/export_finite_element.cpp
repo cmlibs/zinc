@@ -1314,12 +1314,12 @@ Notes:
 	int field_no, i, number_of_fields,
 		number_of_nodes, number_of_scale_factors, return_code,
 		total_number_of_scale_factors;
-	struct FE_element *face;
 	struct FE_field *field;
 	struct FE_node *node;
 
 	ENTER(write_FE_element);
-	if (output_file && element &&
+	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	if (output_file && fe_mesh &&
 		((0 == output_number_of_nodes) || output_node_indices) &&
 		((0 == output_number_of_scale_factors) || output_scale_factor_indices))
 	{
@@ -1331,24 +1331,37 @@ Notes:
 		/* only write faces if writing fields i.e. not with groups */
 		if (!field_order_info || (get_FE_field_order_info_number_of_fields(field_order_info) > 0))
 		{
-			const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
-			if (0 < number_of_faces)
+			const DsLabelIndex elementIndex = get_FE_element_index(element);
+			const FE_mesh::ElementShapeFaces *elementShapeFaces = fe_mesh->getElementShapeFacesConst(elementIndex);
+			FE_mesh *faceMesh = fe_mesh->getFaceMesh();
+			if (!elementShapeFaces)
 			{
-				/* write the faces */
-				(*output_file) << " Faces:\n";
-				for (i = 0; i < number_of_faces; i++)
+				display_message(ERROR_MESSAGE, "write_FE_element.  Missing ElementShapeFaces");
+				return_code = 0;
+			}
+			else if (faceMesh)
+			{
+				const int faceCount = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
+				const DsLabelIndex *faces;
+				if ((0 < faceCount) && (faces = elementShapeFaces->getElementFaces(elementIndex)))
 				{
-					(*output_file) << " ";
-					if (get_FE_element_face(element, i, &face) && face)
+					/* write the faces */
+					(*output_file) << " Faces:\n";
+					for (i = 0; i < faceCount; i++)
 					{
-						write_FE_element_identifier(output_file, face);
+						(*output_file) << " ";
+						struct FE_element *face;
+						if ((faces[i] >= 0) && (face = faceMesh->getElement(faces[i])))
+						{
+							write_FE_element_identifier(output_file, face);
+						}
+						else
+						{
+							/* no face = no number, for compatibility with read_FE_element */
+							(*output_file) << "0 0 0";
+						}
+						(*output_file) << "\n";
 					}
-					else
-					{
-						/* no face = no number, for compatibility with read_FE_element */
-						(*output_file) << "0 0 0";
-					}
-					(*output_file) << "\n";
 				}
 			}
 		}
@@ -1500,8 +1513,7 @@ Returns true if the <write_criterion> -- some options of which require the
 				for (i = 0; (i < number_of_fields) && return_code; i++)
 				{
 					if (!((field = get_FE_field_order_info_field(field_order_info, i)) &&
-						FE_element_or_parent_has_field(element, field,
-							(LIST_CONDITIONAL_FUNCTION(FE_element) *)0, (void *)0)))
+						FE_field_is_defined_in_element(field, element)))
 					{
 						return_code = 0;
 					}
@@ -1524,8 +1536,7 @@ Returns true if the <write_criterion> -- some options of which require the
 				for (i = 0; (i < number_of_fields) && (!return_code); i++)
 				{
 					if ((field = get_FE_field_order_info_field(field_order_info, i)) &&
-						FE_element_or_parent_has_field(element, field,
-							(LIST_CONDITIONAL_FUNCTION(FE_element) *)0, (void *)0))
+						FE_field_is_defined_in_element(field, element))
 					{
 						return_code = 1;
 					}

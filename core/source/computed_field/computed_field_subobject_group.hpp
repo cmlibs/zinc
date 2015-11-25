@@ -420,13 +420,13 @@ public:
 		 * only call with this->ownerGroup set, and between begin/end change */
 		int removeSubelementsList(DsLabelsGroup &removedlabelsGroup);
 
-		/** Adds faces of element to element group, and their faces to related group
+		/** Adds faces of parent element to element group, and their faces to related group
 		 * recursively. Only call with this->ownerGroup set, and between begin/end change */
-		int addElementFacesRecursive(cmzn_element_id element);
+		int addElementFacesRecursive(FE_mesh& parentMesh, DsLabelIndex parentIndex);
 
-		/** Removes faces of element from element group, and their faces from related group
+		/** Removes faces of parent element from element group, and their faces from related group
 		 * recursively. Only call with this->ownerGroup set, and between begin/end change */
-		int removeElementFacesRecursive(cmzn_element_id element, Computed_field_element_group& parentElementGroup);
+		int removeElementFacesRecursive(Computed_field_element_group& parentElementGroup, DsLabelIndex parentIndex);
 
 		Computed_field_core* copy()
 		{

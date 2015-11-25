@@ -2048,7 +2048,6 @@ a return value here indicates that the xi_points have been converted.
 		{
 			if ((temp_element = FE_element_get_top_level_element_conversion(
 				element, top_level_element,
-				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)) &&
 				(temp_element == top_level_element) &&
 				calculate_grid_field_offsets(element_dimension,

@@ -542,6 +542,7 @@ If <reverse_track> is true, the reverse of vector field is tracked.
 							(point1[i] - point3[i]);
 					}
 					coordinate_point_error = sqrt(coordinate_point_error) / coordinate_length;
+					// this permutation loop is inefficient; should extract common adjacent element code
 					number_of_permutations =
 						FE_element_get_number_of_change_to_adjacent_element_permutations(
 							*element, xiF, face_number);

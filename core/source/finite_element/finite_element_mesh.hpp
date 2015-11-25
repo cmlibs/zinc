@@ -124,6 +124,7 @@ public:
  */
 class FE_mesh
 {
+public:
 
 	/** Stores element shape and face/neighbour maps for that shape */
 	class ElementShapeFaces
@@ -139,8 +140,8 @@ class FE_mesh
 			shape(ACCESS(FE_element_shape)(shapeIn)),
 			shape_type(FE_element_shape_get_simple_type(shapeIn)),
 			faceCount(FE_element_shape_get_number_of_faces(shapeIn)),
-			faces(labels, faceCount > 0 ? faceCount : 2),
-			neighbours(labels, faceCount > 0 ? faceCount : 2)
+			faces(labels, faceCount > 0 ? faceCount : 2, DS_LABEL_INDEX_UNALLOCATED, DS_LABEL_INDEX_INVALID),
+			neighbours(labels, faceCount > 0 ? faceCount : 2, DS_LABEL_INDEX_UNALLOCATED, DS_LABEL_INDEX_INVALID)
 		{
 		}
 
@@ -163,7 +164,76 @@ class FE_mesh
 		{
 			return this->faceCount;
 		}
+
+		/** return face number for face type, or negative if invalid */
+		int faceTypeToNumber(cmzn_element_face_type faceType)
+		{
+			// temporary, until other element shape face type enums and mappings to face numbers are supported:
+			int faceNumber = static_cast<int>(faceType) - CMZN_ELEMENT_FACE_TYPE_XI1_0;
+			if (faceNumber < this->faceCount)
+				return faceNumber;
+			return -1;
+		}
+
+		/** clear face element indexes held for elementIndex */
+		void clearElementFaces(DsLabelIndex elementIndex)
+		{
+			this->faces.clearArray(elementIndex);
+		}
+
+		/** @return  Array of faceCount face element indexes, or 0 if not allocated. NOT to be freed. */
+		DsLabelIndex *getElementFaces(DsLabelIndex elementIndex)
+		{
+			return this->faces.getArray(elementIndex);
+		}
+
+		/** @return  Array of faceCount face element indexes, or 0 if not allocated. NOT to be freed. */
+		const DsLabelIndex *getElementFaces(DsLabelIndex elementIndex) const
+		{
+			return this->faces.getArray(elementIndex);
+		}
+
+		/** @return  Existing or new array of faceCount face element indexes, or 0 if failed. NOT to be freed.
+		 * New array contents are initialised to DS_LABEL_INDEX_INVALID. */
+		DsLabelIndex *getOrCreateElementFaces(DsLabelIndex elementIndex)
+		{
+			return this->faces.getOrCreateArray(elementIndex);
+		}
+
+		/** convenient function for getting a single face for an element */
+		DsLabelIndex getElementFace(DsLabelIndex elementIndex, int faceNumber);
+
+		/** convenient function for setting a single face for an element */
+		int setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIndex faceIndex);
+
+		/** clear neighbour element indexes held for elementIndex */
+		void clearElementNeighbours(DsLabelIndex elementIndex)
+		{
+			this->neighbours.clearArray(elementIndex);
+		}
+
+		/** @return  Array of faceCount neighbour element indexes, or 0 if not allocated. NOT to be freed. */
+		DsLabelIndex *getElementNeighbours(DsLabelIndex elementIndex)
+		{
+			return this->neighbours.getArray(elementIndex);
+		}
+
+		/** @return  Array of faceCount neighbour element indexes, or 0 if not allocated. NOT to be freed. */
+		const DsLabelIndex *getElementNeighbours(DsLabelIndex elementIndex) const
+		{
+			return this->neighbours.getArray(elementIndex);
+		}
+
+		/** @return  Existing or new array of faceCount neighbour element indexes, or 0 if failed. NOT to be freed.
+		 * New array contents are initialised to DS_LABEL_INDEX_INVALID. */
+		DsLabelIndex *getOrCreateElementNeighbours(DsLabelIndex elementIndex)
+		{
+			return this->neighbours.getOrCreateArray(elementIndex);
+		}
+
 	};
+
+private:
 
 	FE_region *fe_region; // not accessed
 	int dimension;
@@ -174,6 +244,7 @@ class FE_mesh
 	unsigned int elementShapeFacesCount;
 	ElementShapeFaces **elementShapeFacesArray;
 	block_array<DsLabelIndex, unsigned char> elementShapeMap; // map element index -> shape faces index, if not all elements have same shape
+	block_array<DsLabelIndex,DsLabelIndex> firstParent; // map to first parent element index in parentMesh; other parents are neighbours with same face element
 
 	// map element index -> FE_element (accessed)
 	block_array<DsLabelIndex, FE_element*, 128> fe_elements;
@@ -203,16 +274,16 @@ class FE_mesh
 
 	int access_count;
 
-	~FE_mesh();
-
 private:
 
 	FE_mesh(FE_region *fe_regionIn, int dimensionIn);
 
+	~FE_mesh();
+
 	struct FE_element_field_info *clone_FE_element_field_info(
 		struct FE_element_field_info *fe_element_field_info);
 
-	int find_or_create_face(struct FE_element *parent_element, int face_number);
+	int findOrCreateFace(DsLabelIndex parentIndex, int faceNumber, DsLabelIndex& faceIndex);
 
 	int remove_FE_element_private(struct FE_element *element);
 
@@ -222,20 +293,25 @@ private:
 	int merge_FE_element_external(struct FE_element *element,
 		Merge_FE_element_external_data &data);
 
-	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex index)
+	inline ElementShapeFaces *getElementShapeFaces(DsLabelIndex elementIndex)
 	{
-		if (index >= 0)
+		if (elementIndex >= 0)
 		{
 			if (this->elementShapeFacesCount > 1)
 			{
 				unsigned char shapeIndex;
-				if (this->elementShapeMap.getValue(index, shapeIndex))
+				if (this->elementShapeMap.getValue(elementIndex, shapeIndex))
 					return this->elementShapeFacesArray[static_cast<unsigned int>(shapeIndex)];
 			}
 			else if (this->elementShapeFacesArray)
 				return this->elementShapeFacesArray[0];
 		}
 		return 0;
+	}
+
+	bool setElementFirstParent(DsLabelIndex elementIndex, DsLabelIndex parentIndex)
+	{
+		return this->firstParent.setValue(elementIndex, parentIndex);
 	}
 
 public:
@@ -279,8 +355,8 @@ public:
 	}
 
 	// in following change is a logical OR of values from enum DsLabelChangeType
-	void elementChange(DsLabelIndex index, int change);
-	void elementChange(FE_element *element, int change, FE_element *field_info_element);
+	void elementChange(DsLabelIndex elementIndex, int change);
+	void elementChange(DsLabelIndex elementIndex, int change, FE_element *field_info_element);
 	void elementFieldListChange(FE_element *element, int change,
 		struct LIST(FE_field) *changed_fe_field_list);
 	void elementFieldChange(FE_element *element, FE_field *fe_field);
@@ -331,21 +407,26 @@ public:
 		return this->changeLog;
 	}
 
-	ElementShapeFaces *setElementShape(DsLabelIndex index, FE_element_shape *element_shape);
+	ElementShapeFaces *setElementShape(DsLabelIndex elementIndex, FE_element_shape *element_shape);
 
-	bool setElementShapeFromTemplate(DsLabelIndex index, FE_element_template &element_template);
+	bool setElementShapeFromTemplate(DsLabelIndex elementIndex, FE_element_template &element_template);
 
-	FE_element_shape *getElementShape(DsLabelIndex index)
+	inline const ElementShapeFaces *getElementShapeFacesConst(DsLabelIndex elementIndex) const
 	{
-		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(index);
+		return const_cast<FE_mesh*>(this)->getElementShapeFaces(elementIndex);
+	}
+
+	FE_element_shape *getElementShape(DsLabelIndex elementIndex)
+	{
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 		if (elementShapeFaces)
 			return elementShapeFaces->getShape();
 		return 0;
 	}
 
-	cmzn_element_shape_type getElementShapeType(DsLabelIndex index)
+	cmzn_element_shape_type getElementShapeType(DsLabelIndex elementIndex)
 	{
-		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(index);
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
 		if (elementShapeFaces)
 			return elementShapeFaces->getShapeType();
 		return CMZN_ELEMENT_SHAPE_TYPE_INVALID;
@@ -377,17 +458,17 @@ public:
 		return this->labels.getSize();
 	}
 
-	inline DsLabelIdentifier getElementIdentifier(DsLabelIndex index) const
+	inline DsLabelIdentifier getElementIdentifier(DsLabelIndex elementIndex) const
 	{
-		return this->labels.getIdentifier(index);
+		return this->labels.getIdentifier(elementIndex);
 	}
 
 	/** @ return  Non-accessed element object at index */
-	inline FE_element *getElement(DsLabelIndex index) const
+	inline FE_element *getElement(DsLabelIndex elementIndex) const
 	{
 		FE_element *element = 0;
-		if (index >= 0)
-			this->fe_elements.getValue(index, element);
+		if (elementIndex >= 0)
+			this->fe_elements.getValue(elementIndex, element);
 		return element;
 	}
 
@@ -425,7 +506,7 @@ public:
 
 	DsLabelsGroup *createLabelsGroup();
 
-	bool elementHasParentInLabelsGroup(DsLabelIndex index, DsLabelsGroup &labelsGroup);
+	bool hasParentElementsInLabelsGroup(DsLabelIndex faceIndex, DsLabelsGroup &labelsGroup);
 
 	int change_FE_element_identifier(struct FE_element *element, int new_identifier);
 
@@ -440,7 +521,87 @@ public:
 
 	int merge_FE_element_template(struct FE_element *destination, FE_element_template *fe_element_template);
 
-	int define_FE_element_faces(struct FE_element *element);
+	void clearElementFaces(DsLabelIndex elementIndex);
+
+	DsLabelIndex getElementFirstParent(DsLabelIndex elementIndex)
+	{
+		DsLabelIndex firstParentElement = DS_LABEL_INDEX_INVALID;
+		this->firstParent.getValue(elementIndex, firstParentElement);
+		return firstParentElement;
+	}
+
+	DsLabelIndex getElementFace(DsLabelIndex elementIndex, int faceNumber)
+	{
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+		if (!elementShapeFaces)
+			return DS_LABEL_INDEX_INVALID;
+		return elementShapeFaces->getElementFace(elementIndex, faceNumber);
+	}
+
+	int setElementFace(DsLabelIndex elementIndex, int faceNumber, DsLabelIndex faceIndex);
+
+	int getElementFaceNumber(DsLabelIndex elementIndex, DsLabelIndex faceIndex);
+
+	bool isElementAncestor(DsLabelIndex elementIndex, FE_mesh *descendantMesh, DsLabelIndex descendantIndex);
+
+	/** return true if element or parent has exactly 1 parent element */
+	bool isElementExterior(DsLabelIndex elementIndex);
+
+	/** return true if elementIndex has faceIndex on the given face. If not, advance elementIndex to next neighbour */
+	bool isElementFaceOfTypeOrFindNextNeighbour(DsLabelIndex& elementIndex, DsLabelIndex faceIndex, cmzn_element_face_type faceType)
+	{
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+		if (elementShapeFaces)
+		{
+			const DsLabelIndex *faces = elementShapeFaces->getElementFaces(elementIndex);
+			if (faces)
+			{
+				const int faceNumber = elementShapeFaces->faceTypeToNumber(faceType);
+				if ((0 <= faceNumber) && (faces[faceNumber] == faceIndex))
+					return true;
+				const DsLabelIndex *neighbours = elementShapeFaces->getElementNeighbours(elementIndex);
+				if (neighbours)
+				{
+					for (int i = elementShapeFaces->getFaceCount() - 1; i >= 0; --i)
+						if (faces[i] == faceIndex)
+						{
+							elementIndex = neighbours[i];
+							return false;
+						}
+				}
+			}
+		}
+		elementIndex = 0;
+		return false;
+	}
+
+	/** return index of parent element that either this element is on the given face of,
+		* or the parent is on the given face of a top-level element. */
+	DsLabelIndex getElementParentOnFace(DsLabelIndex elementIndex, cmzn_element_face_type faceType);
+
+	DsLabelIndex getElementFirstNeighbour(DsLabelIndex elementIndex, int faceNumber);
+
+	/** return the index of neighbour element on face with faceIndex
+	 * @param faceNumber  On success, set to face number that neighbour is on.
+	 */
+	inline DsLabelIndex findElementNeighbourByIndex(DsLabelIndex elementIndex, DsLabelIndex faceIndex)
+	{
+		ElementShapeFaces *elementShapeFaces;
+		const DsLabelIndex *faces, *neighbours;
+		if ((elementShapeFaces = this->getElementShapeFaces(elementIndex)) &&
+			(faces = elementShapeFaces->getElementFaces(elementIndex)) &&
+			(neighbours = elementShapeFaces->getElementNeighbours(elementIndex)))
+		{
+			for (int faceNumber = elementShapeFaces->getFaceCount() - 1; faceNumber >= 0; --faceNumber)
+				if (faces[faceNumber] == faceIndex)
+					return neighbours[faceNumber];
+		}
+		return DS_LABEL_INDEX_INVALID;
+	}
+
+	int defineElementFaces(DsLabelIndex elementIndex);
+
+	template <class Process> int forEachParentElement(DsLabelIndex faceIndex, Process &process);
 
 	int begin_define_faces();
 
@@ -499,11 +660,47 @@ public:
 	{
 		if (this->fe_mesh)
 		{
-			const DsLabelIndex index = this->iter->nextIndex();
-			return this->fe_mesh->getElement(index);
+			const DsLabelIndex elementIndex = this->iter->nextIndex();
+			return this->fe_mesh->getElement(elementIndex);
 		}
 		return 0;
 	}
 };
+
+/** Calls Process::operator()(DsLabelIndex elementIndex, int faceNumber)
+ * for each element in this mesh which is a parent of the given faceIndex from this->faceMesh.
+ * faceNumber is the face number which faceIndex is on in the element.
+ * Process function must return CMZN_OK to continue iterating. Any other error quits. */
+template <class Process> int FE_mesh::forEachParentElement(DsLabelIndex faceIndex, Process &process)
+{
+	if ((!this->faceMesh) || (faceIndex < 0))
+		return CMZN_ERROR_ARGUMENT;
+	DsLabelIndex elementIndex = this->faceMesh->getElementFirstParent(faceIndex);
+	while (elementIndex >= 0)
+	{
+		ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
+		if (!elementShapeFaces)
+			return CMZN_ERROR_GENERAL;
+		const DsLabelIndex *faces = elementShapeFaces->getElementFaces(elementIndex);
+		if (!faces)
+			return CMZN_ERROR_GENERAL;
+		int faceNumber = elementShapeFaces->getFaceCount() - 1;
+		for (; faceNumber >= 0; --faceNumber)
+		{
+			if (faces[faceNumber] == faceIndex)
+				break;
+		}
+		if (faceNumber < 0)
+			return CMZN_ERROR_GENERAL;
+		int return_code = process(elementIndex, faceNumber);
+		if (CMZN_OK != return_code)
+			return return_code;
+		const DsLabelIndex *neighbours = elementShapeFaces->getElementNeighbours(elementIndex);
+		if (!neighbours)
+			return CMZN_ERROR_GENERAL;
+		elementIndex = neighbours[faceNumber];
+	}
+	return CMZN_OK;
+}
 
 #endif /* !defined (FINITE_ELEMENT_MESH_HPP) */

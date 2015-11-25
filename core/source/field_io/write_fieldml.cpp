@@ -1842,7 +1842,7 @@ int FieldMLWriter::writeMeshFields(int meshDimension)
 		for (int f = 0; (f < outputFieldsCount) && (CMZN_OK == return_code); ++f)
 		{
 			OutputFieldData& outputField = outputFields[f];
-			outputFields[f].isDefined = (0 != FE_field_is_defined_in_element_not_inherited(outputFields[f].feField, element));
+			outputFields[f].isDefined = FE_field_is_defined_in_element_not_inherited(outputFields[f].feField, element);
 			if (!outputField.isDefined)
 				continue;
 			for (int c = 0; c < outputField.componentCount; ++c)

@@ -389,7 +389,7 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		cmzn_elementtemplate_set_node(elementtemplate, 3, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[3] + initial_identifier - 1));
 		cmzn_elementtemplate_set_node(elementtemplate, 4, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[2] + initial_identifier - 1));
 		cmzn_element_id element = cmzn_mesh_create_element(cmesh, /*identifier*/-1, elementtemplate);
-		fe_mesh->define_FE_element_faces(element);
+		fe_mesh->defineElementFaces(get_FE_element_index(element));
 		cmzn_element_destroy(&element);
 	}
 	cmzn_elementbasis_destroy(&elementbasis);

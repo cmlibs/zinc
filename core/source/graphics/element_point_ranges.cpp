@@ -233,9 +233,8 @@ Writes what is invalid about the identifier.
 	ENTER(Element_point_ranges_identifier_is_valid);
 	if (identifier)
 	{
-		if (identifier->element&&identifier->top_level_element&&
-			FE_element_has_top_level_element(identifier->element,
-				(void *)identifier->top_level_element))
+		if (identifier->element && identifier->top_level_element &&
+			FE_element_is_top_level_parent_of_element(identifier->top_level_element, identifier->element))
 		{
 			return_code=1;
 			dimension=get_FE_element_dimension(identifier->element);
@@ -399,7 +398,6 @@ top_level. Assumes <identifier> has been validated.
 		{
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
-				(LIST_CONDITIONAL_FUNCTION(FE_element) *)NULL, (void *)NULL,
 				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&

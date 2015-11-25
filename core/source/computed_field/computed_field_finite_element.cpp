@@ -21,6 +21,7 @@ Implements a number of basic component wise operations on computed fields.
 #include "computed_field/computed_field_set.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_time.h"
 #include "general/debug.h"
@@ -519,7 +520,7 @@ bool Computed_field_finite_element::is_defined_at_location(cmzn_fieldcache& cach
 	Field_node_location *node_location;
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		return (0 != FE_field_is_defined_in_element(fe_field, element_xi_location->get_element()));
+		return FE_field_is_defined_in_element(fe_field, element_xi_location->get_element());
 	}
 	else if (0 != (node_location = dynamic_cast<Field_node_location*>(cache.getLocation())))
 	{
@@ -2452,6 +2453,12 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	cmzn_element *element = element_xi_location->get_element();
 	if (1 != get_FE_element_dimension(element))
 		return 0;
+	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+	if (!fe_mesh)
+		return 0;
+	FE_mesh *parent_mesh = fe_mesh->getParentMesh();
+	if (!parent_mesh)
+		return 0;
 	const FE_value xi = *(element_xi_location->get_xi());
 	cmzn_field *sourceField = getSourceField(0);
 	RealFieldValueCache *sourceValueCache;
@@ -2462,13 +2469,16 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	if (!sourceValueCache)
 		return 0;
 	const FE_value *sourceValues = sourceValueCache->values;
-
 	RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 	cmzn_fieldcache& extraCache = *valueCache.getExtraCache();
 	extraCache.setTime(cache.getTime());
 
 	cmzn_field *conditionalField = this->getConditionalField();
-	const int numberOfParents = get_FE_element_number_of_parents(element);
+	int numberOfParents = 0;
+	FE_element **parents = 0;
+	FE_element_get_parents(element, &numberOfParents, &parents);
+	if (numberOfParents < 2) // must be at least 2 parents to work.
+		numberOfParents = 0;
 	FE_value parentXi[2];
 	const int numberOfComponents = field->number_of_components;
 	// Future: put in type-specific value cache to save allocations here
@@ -2478,15 +2488,21 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		{ &parent1SourceValueCache, &parent2SourceValueCache };
 	const FE_value *elementToParentsXi[2];
 	int qualifyingParents = 0;
+	DsLabelIndex elementIndex = get_FE_element_index(element);
 	for (int i = 0; (i < numberOfParents) && (qualifyingParents < 2); ++i)
 	{
-		cmzn_element *parent = get_FE_element_parent(element, i);
+		cmzn_element *parent = parents[i];
 		if (!parent)
 		  continue;
-		int face_number = get_FE_element_face_number(parent, element);
+		DsLabelIndex parentIndex = get_FE_element_index(parent);
+		int face_number = parent_mesh->getElementFaceNumber(parentIndex, elementIndex);
 		FE_element_shape *parentShape = get_FE_element_shape(parent);
 		const FE_value *elementToParentXi = get_FE_element_shape_face_to_element(parentShape, face_number);
-
+		if (!elementToParentXi)
+		{
+			qualifyingParents = 0;
+			break;
+		}
 		parentXi[0] = elementToParentXi[0] + elementToParentXi[1]*xi;
 		parentXi[1] = elementToParentXi[2] + elementToParentXi[3]*xi;
 		extraCache.setMeshLocation(parent, parentXi);
@@ -2592,6 +2608,8 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		for (int n = 0; n < numberOfComponents; ++n)
 			valueCache.values[n] = 0.0;
 	}
+	if (parents)
+		DEALLOCATE(parents);
 	valueCache.derivatives_valid = 0;
 	return 1;
 }
@@ -3662,7 +3680,7 @@ bool Computed_field_basis_derivative::is_defined_at_location(cmzn_fieldcache& ca
 	Field_element_xi_location *element_xi_location;
 	if (0 != (element_xi_location = dynamic_cast<Field_element_xi_location*>(cache.getLocation())))
 	{
-		return (0 != FE_field_is_defined_in_element(fe_field, element_xi_location->get_element()));
+		return FE_field_is_defined_in_element(fe_field, element_xi_location->get_element());
 	}
 	return false;
 }
@@ -4437,17 +4455,13 @@ int Computed_field_is_exterior::evaluate(cmzn_fieldcache& cache, FieldValueCache
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_element* element = element_xi_location->get_element();
-		const int dimension = get_FE_element_dimension(element);
-		if (FE_element_meets_topological_criteria(element, dimension,
-			/*exterior*/1, CMZN_ELEMENT_FACE_TYPE_INVALID, /*conditional*/0, /*conditional_data*/0))
-		{
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		if (fe_mesh && fe_mesh->isElementExterior(get_FE_element_index(element)))
 			valueCache.values[0] = 1.0;
-		}
 		else
-		{
 			valueCache.values[0] = 0.0;
-		}
 		FE_value *temp = valueCache.derivatives;
+		const int dimension = fe_mesh ? fe_mesh->getDimension() : 0;
 		for (int j = 0; j < dimension; ++j)
 			temp[j] = 0.0;
 		valueCache.derivatives_valid = 1;
@@ -4531,17 +4545,13 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 	{
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_element* element = element_xi_location->get_element();
-		const int dimension = get_FE_element_dimension(element);
-		if (FE_element_meets_topological_criteria(element, dimension,
-			/*exterior*/0, this->faceType, /*conditional*/0, /*conditional_data*/0))
-		{
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		if (fe_mesh && (0 <= fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->faceType)))
 			valueCache.values[0] = 1.0;
-		}
 		else
-		{
 			valueCache.values[0] = 0.0;
-		}
 		FE_value *temp = valueCache.derivatives;
+		const int dimension = fe_mesh ? fe_mesh->getDimension() : 0;
 		for (int j = 0; j < dimension; ++j)
 			temp[j] = 0.0;
 		valueCache.derivatives_valid = 1;

@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : block_array.hpp
  * 
  * Implements an array container allocated in blocks.
@@ -14,7 +14,10 @@
 
 #include "general/debug.h"
 
-template <typename IndexType, typename EntryType, IndexType defaultBlockLength = 256 >
+// IndexType = array index type
+// EntryType = values held in array
+// DefaultBlockLength = default block length if not set in constructor
+template <typename IndexType, typename EntryType, IndexType DefaultBlockLength = 256>
 	class block_array
 {
 private:
@@ -22,6 +25,7 @@ private:
 	EntryType **blocks;
 	IndexType blockCount;
 	IndexType blockLength;
+	const EntryType allocInitValue;
 
 	EntryType* getOrCreateBlock(IndexType blockIndex)
 	{
@@ -30,7 +34,7 @@ private:
 			IndexType newBlockCount = blockIndex + 1;
 			if (newBlockCount < blockCount*2)
 			{
-				newBlockCount = blockCount*2;
+				newBlockCount = blockCount*2; // double number of blocks each time
 			}
 			EntryType **newBlocks;
 			if (!REALLOCATE(newBlocks, blocks, EntryType *, newBlockCount))
@@ -48,9 +52,7 @@ private:
 			if (ALLOCATE(block, EntryType, blockLength))
 			{
 				for (IndexType i = 0; i < blockLength; i++)
-				{
-					block[i] = 0; // only works for numeric or pointer types
-				}
+					block[i] = this->allocInitValue;
 				blocks[blockIndex] = block;
 			}
 		}
@@ -59,10 +61,15 @@ private:
 
 public:
 	
-	block_array(IndexType blockLengthIn = defaultBlockLength) :
+	/**
+	 * @param allocInitValue = value each array entry is set to on initialisation.
+	 * Default 0 only OK for numeric and pointer types.
+	 */
+	block_array(IndexType blockLengthIn = DefaultBlockLength, EntryType allocInitValueIn = 0) :
 		blocks(0),
 		blockCount(0),
-		blockLength(blockLengthIn)
+		blockLength(blockLengthIn),
+		allocInitValue(allocInitValueIn)
 	{
 	}
 
@@ -128,38 +135,34 @@ public:
 	}
 
 	/**
-	 * Iff no block exists for index, create and initialise it as described below
-	 * then return the address of value for index as for getAddress(). Caller
-	 * is expected to have called and obtained 0 for getAddress() first.
+	 * Gets or creates block containing values at index and returns address of index.
+	 * If block is newly created it is initialised as described below.
 	 * @param index  The index of the address to create.
 	 * @param initValue  Value to initialise entries in block to.
 	 * @param initIndexSpacing  Spacing of value to be initialised; 0 or negative to
 	 * not initialise values, 1 to set all, any other value is amount offset from 0 to
 	 * blockLength to set to initValue, e.g. 10 initialises:
 	 * 0 10 20 ... blockLength (truncated to nearest multiple of 10)
-	 * @return  The address for value for given index, or 0 if already exists of failed.
+	 * @return  The address for value for given index, or 0 if failed.
 	 */
-	EntryType *createAddressInitialise(IndexType index, EntryType initValue = 0, IndexType initIndexSpacing = 0)
+	EntryType *getOrCreateAddress(IndexType index, EntryType initValue = 0, IndexType initIndexSpacing = 0)
 	{
 		IndexType blockIndex = index / blockLength;
+		EntryType *block = 0;
 		if (blockIndex < blockCount)
+			block = blocks[blockIndex];
+		if (!block)
 		{
-			EntryType *block = blocks[blockIndex];
+			block = getOrCreateBlock(blockIndex);
 			if (!block)
+				return 0;
+			if (initIndexSpacing > 0)
 			{
-				block = getOrCreateBlock(blockIndex);
-				if (block)
-				{
-					if (initIndexSpacing > 0)
-					{
-						for (IndexType i = 0; i < blockLength; i += initIndexSpacing)
-							block[i] = initValue;
-					}
-					return block + (index % blockLength);
-				}
+				for (IndexType i = 0; i < blockLength; i += initIndexSpacing)
+					block[i] = initValue;
 			}
 		}
-		return 0;
+		return block + (index % blockLength);
 	}
 
 	/**

@@ -3065,15 +3065,12 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 								/* face number of 0 means no face. GRC problem since 0 is legal identifier */
 								if (0 != face_identifier)
 								{
-									/* get existing face and check it has the dimension less 1,
-										 or create a dummy face element with unspecified shape and
-										 with dimension one less than parent element */
-									FE_element_shape *face_shape = get_FE_element_shape_of_face(element_shape, i, fe_mesh->get_FE_region());
-									face_element = face_mesh->get_or_create_FE_element_with_identifier(face_identifier, face_shape);
+									face_element = face_mesh->findElementByIdentifier(face_identifier);
 									if (face_element)
 									{
 										// faces go directly in return element; template does not hold them
-										if (!set_FE_element_face(return_element, i, face_element))
+										if (CMZN_OK != fe_mesh->setElementFace(
+											get_FE_element_index(return_element), i, get_FE_element_index(face_element)))
 										{
 											location = IO_stream_get_location_string(input_file);
 											display_message(ERROR_MESSAGE,"read_FE_element.  "
@@ -3082,14 +3079,12 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 											DEALLOCATE(location);
 											return_code = 0;
 										}
-										DEACCESS(FE_element)(&face_element);
 									}
 									else
 									{
 										location = IO_stream_get_location_string(input_file);
-										display_message(ERROR_MESSAGE, "read_FE_element.  "
-											"Could not get or create face element.  %s",
-											location);
+										display_message(ERROR_MESSAGE, "read_FE_element.  Could not find %d-D face element %d.  %s",
+											face_mesh->getDimension(), face_identifier, location);
 										DEALLOCATE(location);
 										return_code = 0;
 									}

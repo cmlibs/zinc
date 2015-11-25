@@ -876,7 +876,6 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 		isoscalar_field&&(1==Computed_field_get_number_of_components(isoscalar_field))&&
 		array)
 	{
-		return_code=1;
 		if (data_field)
 		{
 			n_data_components=Computed_field_get_number_of_components(data_field);
@@ -889,7 +888,7 @@ int create_iso_lines_from_FE_element(struct FE_element *element,
 			 3 component */
 		coordinates[1]=0.0;
 		coordinates[2]=0.0;
-		get_surface_element_segmentation(element,
+		return_code = get_surface_element_segmentation(element,
 			number_of_segments_in_xi1_requested,number_of_segments_in_xi2_requested,
 			&number_of_points_in_xi1,&number_of_points_in_xi2,
 			&number_of_points,&number_of_polygon_vertices,&polygon_type,

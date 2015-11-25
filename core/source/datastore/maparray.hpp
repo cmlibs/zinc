@@ -16,32 +16,36 @@
 #include "datastore/labels.hpp"
 #include "general/block_array.hpp"
 
-// First value in array is initialised to UnallocatedValue if not allocated,
-// any other value if it is in use. Hence this cannot be a valid value for the
-// supplied ValueType.
-// InvalidValue is not used yet.
 // IndexType is normally DsLabelIndex, but must be raised to 64-bit integer
-// once arraySize*number-of-lables exceeds 2^31.
-template <typename IndexType, typename ValueType, ValueType UnallocatedValue, ValueType InvalidValue>
+// once arraySize*number-of-labels exceeds 2^31.
+template <typename IndexType, typename ValueType>
 class DsMapArray
 {
 	DsLabels *labels;
 	const IndexType arraySize;
 	const IndexType arraysPerBlock;
-	block_array<IndexType, ValueType> values;
+	block_array<IndexType, ValueType, 256> values;
+	// First value in array is initialised to this->unallocatedValue if not allocated,
+	// any other value if it is in use. Hence this cannot be a valid value for the
+	// supplied ValueType.
+	ValueType unallocatedValue;
+	// value to initialise all other array members to.
+	ValueType initValue;
 
 	DsMapArray(const DsMapArray&); // not implemented
 	DsMapArray& operator=(const DsMapArray&); // not implemented
 
 public:
 
-	DsMapArray(DsLabels *labelsIn, DsLabelIndex arraySizeIn) :
+	DsMapArray(DsLabels *labelsIn, DsLabelIndex arraySizeIn, ValueType unallocatedValueIn = 0, ValueType initValueIn = 0) :
 		labels(Access(labelsIn)),
 		// array blocks must be multiple of arraySize
 		// use exact size if large enough to prevent wastage when sparse
 		arraySize(static_cast<IndexType>(arraySizeIn)),
 		arraysPerBlock(arraySizeIn >= 32 ? 1 : (256 / arraySizeIn)),
-		values(arraysPerBlock*arraySizeIn)
+		values(arraysPerBlock*arraySizeIn, initValueIn),
+		unallocatedValue(unallocatedValueIn),
+		initValue(initValueIn)
 	{
 	}
 
@@ -51,28 +55,50 @@ public:
 	}
 
 	/**
+	 * Clear array held for index, if any. Does not free memory.
+	 */
+	void clearArray(DsLabelIndex index)
+	{
+		IndexType arrayIndex = index*this->arraySize;
+		ValueType *array = this->values.getAddress(arrayIndex);
+		if (array && (*array != this->unallocatedValue))
+		{
+			*array = this->unallocatedValue;
+			for (IndexType i = 1; i < this->arraySize; ++i)
+				array[i] = this->initValue;
+		}
+	}
+
+	/**
 	 * @return address of array for the given labels index, or 0 if unallocated.
 	 */
 	ValueType *getArray(DsLabelIndex index) const
 	{
 		IndexType arrayIndex = index*this->arraySize;
 		ValueType *array = this->values.getAddress(arrayIndex);
-		if (array && (*array != UnallocatedValue))
+		if (array && (*array != this->unallocatedValue))
 			return array;
 		return 0;
 	}
 
-	// caller must get 0 return for getArray first
-	// caller must initialise contents of array, particularly setting first
-	// element to anything other than UnallocatedValue
-	ValueType *createArray(DsLabelIndex index)
+	/**
+	 * @return address of existing or new array for the given labels index, or 0 if failed.
+	 */
+	ValueType *getOrCreateArray(DsLabelIndex index)
 	{
 		IndexType arrayIndex = index*this->arraySize;
-		return this->values.createAddressInitialise(arrayIndex, UnallocatedValue, this->arraySize);
+		ValueType *array = this->values.getOrCreateAddress(arrayIndex, this->unallocatedValue, this->arraySize);
+		if (array && (*array == this->unallocatedValue))
+		{
+			// first value is initially this->unallocatedValue: change so marked as allocated
+			// all other values already equal this->initValue
+			*array = this->initValue;
+		}
+		return array;
 	}
 
 };
 
-typedef DsMapArray<DsLabelIndex, DsLabelIndex, DS_LABEL_INDEX_UNALLOCATED, DS_LABEL_INDEX_INVALID> DsMapArrayLabelIndex;
+typedef DsMapArray<DsLabelIndex, DsLabelIndex> DsMapArrayLabelIndex;
 
 #endif // CMZN_DATASTORE_MAPARRAY_HPP

@@ -482,18 +482,6 @@ struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE
 void FE_element_invalidate(struct FE_element *element);
 
 /**
- * Temporary private function returning true if for each elements' faces
- * either one or both of each face of source and target element is
- * NULL or where both faces exist they have the same identifier.
- * Used only by FE_mesh::canMerge.
- * @param faceCount  The number of faces required for the shape. Shape must
- * already be confirmed as the same.
- */
-bool FE_elements_can_merge_faces(int faceCount,
-	FE_mesh &target_face_fe_mesh, struct FE_element *targetElement,
-	FE_mesh &source_face_fe_mesh, struct FE_element *sourceElement);
-
-/**
  * Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
  * <fe_field_change_log>.
  * @param recurseParents  Set to true to recursively mark parent element fields
