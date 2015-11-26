@@ -468,13 +468,14 @@ int Computed_field_element_group::addSubelements(cmzn_element_id element)
 int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 {
 	int return_code = CMZN_OK;
+	const DsLabelIndex elementIndex = get_FE_element_index(element);
 	FE_mesh *faceMesh = this->fe_mesh->getFaceMesh();
 	if (faceMesh)
 	{
 		Computed_field_element_group *faceElementGroup =
 			this->ownerGroup->getElementGroupPrivate(faceMesh);
 		if (faceElementGroup)
-			return_code = faceElementGroup->removeElementFacesRecursive(*this, get_FE_element_index(element));
+			return_code = faceElementGroup->removeElementFacesRecursive(*this, elementIndex);
 	}
 	if (CMZN_OK == return_code)
 	{
@@ -482,32 +483,29 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 		if (nodeGroup)
 		{
 			LIST(cmzn_node) *removeNodeList = nodeGroup->createRelatedNodeList();
-			if (removeNodeList)
+			// add nodes from this element, but remove nodes from neighbours still in group
+			return_code = cmzn_element_add_nodes_to_list(element, removeNodeList);
+			if (CMZN_OK == return_code)
 			{
-				// add nodes from this element, but remove nodes from neighbours still in group
-				return_code = cmzn_element_add_nodes_to_list(element, removeNodeList);
-				const int number_of_faces = FE_element_shape_get_number_of_faces(get_FE_element_shape(element));
-				if (0 < number_of_faces)
+				if (faceMesh)
 				{
-					for (int face = 0; (face < number_of_faces) && (CMZN_OK == return_code); ++face)
+					const FE_mesh::ElementShapeFaces *elementShapeFaces = this->fe_mesh->getElementShapeFacesConst(elementIndex);
+					const DsLabelIndex *faces;
+					if ((elementShapeFaces) && (faces = elementShapeFaces->getElementFaces(elementIndex)))
 					{
-						int adjacentElementsCount = 0;
-						cmzn_element **adjacentElements = 0;
-						return_code = adjacent_FE_element(element, face, &adjacentElementsCount, &adjacentElements);
-						if (return_code == CMZN_OK)
+						const int faceCount = elementShapeFaces->getFaceCount();
+						for (int f = 0; f < faceCount; ++f)
 						{
-							for (int i = 0; i < adjacentElementsCount; ++i)
-								if (this->containsObject(adjacentElements[i]))
+							const DsLabelIndex *parents;
+							const int parentsCount = faceMesh->getElementParents(faces[f], parents);
+							for (int p = 0; p < parentsCount; ++p)
+								if ((parents[p] != elementIndex) && this->containsIndex(parents[p]))
 								{
-									return_code = cmzn_element_remove_nodes_from_list(adjacentElements[i], removeNodeList);
+									return_code = cmzn_element_remove_nodes_from_list(this->fe_mesh->getElement(parents[p]), removeNodeList);
 									if (CMZN_OK != return_code)
 										break;
 								}
-							if (adjacentElementsCount)
-								DEALLOCATE(adjacentElements);
 						}
-						else
-							return_code = CMZN_ERROR_GENERAL;
 					}
 				}
 				else if (1 == this->fe_mesh->getDimension())
@@ -525,8 +523,6 @@ int Computed_field_element_group::removeSubelements(cmzn_element_id element)
 					return_code = nodeGroup->removeNodesInList(removeNodeList);
 				DESTROY(LIST(cmzn_node))(&removeNodeList);
 			}
-			else
-			  return_code = CMZN_ERROR_MEMORY;
 		}
 	}
 	return return_code;
@@ -698,7 +694,16 @@ int Computed_field_element_group::removeElementFacesRecursive(
 	{
 		if (faces[i] >= 0)
 		{
-			if (parentMesh->hasParentElementsInLabelsGroup(faces[i], *(parentElementGroup.labelsGroup)))
+			const DsLabelIndex *parents;
+			const int parentsCount = this->fe_mesh->getElementParents(faces[i], parents);
+			bool keepFace = false;
+			for (int p = 0; p < parentsCount; ++p)
+				if (parentElementGroup.labelsGroup->hasIndex(parents[p]))
+				{
+					keepFace = true;
+					break;
+				}
+			if (keepFace)
 				continue;
 			const int result = this->labelsGroup->setIndex(faces[i], false);
 			if (CMZN_OK == result)

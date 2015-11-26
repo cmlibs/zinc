@@ -216,8 +216,10 @@ DESCRIPTION :
 	{
 		return_code=1;
 		coordinate_element_field_values = (struct FE_element_field_values *)NULL;
-		if ((2==get_FE_element_dimension(element))&&
-			(FE_element_is_not_interior(element)) &&
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
+		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
+			(1 >= fe_mesh->getElementParentsCount(elementIndex)) &&
 			(coordinate_field=get_data->fe_field)&&
 			(3==get_FE_field_number_of_components(coordinate_field))&&
 			(coordinate_element_field_values = CREATE(FE_element_field_values)()) &&
@@ -720,8 +722,10 @@ basis type, however every element type will be converted to a cubic.
 	if (element && get_data)
 	{
 		return_code = 1;
-		if ((2 == get_FE_element_dimension(element)) &&
-			(FE_element_is_not_interior(element)))
+		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
+		const DsLabelIndex elementIndex = get_FE_element_index(element);
+		if ((fe_mesh) && (2 == fe_mesh->getDimension()) &&
+			(1 >= fe_mesh->getElementParentsCount(elementIndex)))
 		{
 			/* Create the node and element templates */
 			if (!get_data->element)

@@ -1930,20 +1930,13 @@ PROTOTYPE_COPY_OBJECT_FUNCTION(FE_element);
 /**
  * Returns the list of <adjacent_elements> not including <element> which share
  * the face indicated by <face_number>.
+ * Limitation: does not handle element being connected to itself.
  * On success, caller must DEALLOCATE element array.
  * @return  CMZN_OK on success, any error on failure.
  */
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements);
-
-/**
- * Returns the number and array of parent elements.
- * On success, caller must DEALLOCATE element array.
- * @return  CMZN_OK on success, any error on failure.
- */
-int FE_element_get_parents(struct FE_element *element,
-	int *number_of_parents, struct FE_element ***parents);
 
 /**
  * Returns true if <field> is equivalently listed in the field information for
@@ -2008,11 +2001,6 @@ DESCRIPTION :
 Returns the number of fields defined at <element>.
 Does not include fields inherited from parent elements.
 ==============================================================================*/
-
-/**
- * Returns true if element has zero or one parents, i.e. it is not interior.
- */
-bool FE_element_is_not_interior(struct FE_element *element);
 
 /**
  * Returns the <shape> of the <element>, if any. Invalid elements (in process

@@ -3066,6 +3066,13 @@ static struct FE_element *read_FE_element(struct IO_stream *input_file,
 								if (0 != face_identifier)
 								{
 									face_element = face_mesh->findElementByIdentifier(face_identifier);
+									if (!face_element)
+									{
+										// create a face of the expected shape
+										FE_element_shape *face_shape = get_FE_element_shape_of_face(element_shape, i, fe_mesh->get_FE_region());
+										face_element = face_mesh->get_or_create_FE_element_with_identifier(face_identifier, face_shape);
+									}
+									face_element = face_mesh->findElementByIdentifier(face_identifier);
 									if (face_element)
 									{
 										// faces go directly in return element; template does not hold them

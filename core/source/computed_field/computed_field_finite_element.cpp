@@ -2456,8 +2456,8 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
 	if (!fe_mesh)
 		return 0;
-	FE_mesh *parent_mesh = fe_mesh->getParentMesh();
-	if (!parent_mesh)
+	FE_mesh *parentMesh = fe_mesh->getParentMesh();
+	if (!parentMesh)
 		return 0;
 	const FE_value xi = *(element_xi_location->get_xi());
 	cmzn_field *sourceField = getSourceField(0);
@@ -2474,11 +2474,11 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 	extraCache.setTime(cache.getTime());
 
 	cmzn_field *conditionalField = this->getConditionalField();
-	int numberOfParents = 0;
-	FE_element **parents = 0;
-	FE_element_get_parents(element, &numberOfParents, &parents);
-	if (numberOfParents < 2) // must be at least 2 parents to work.
-		numberOfParents = 0;
+	const DsLabelIndex elementIndex = get_FE_element_index(element);
+	const DsLabelIndex *parents;
+	int parentsCount = fe_mesh->getElementParents(elementIndex, parents);
+	if (parentsCount < 2) // must be at least 2 parents to work.
+		parentsCount = 0;
 	FE_value parentXi[2];
 	const int numberOfComponents = field->number_of_components;
 	// Future: put in type-specific value cache to save allocations here
@@ -2488,14 +2488,12 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		{ &parent1SourceValueCache, &parent2SourceValueCache };
 	const FE_value *elementToParentsXi[2];
 	int qualifyingParents = 0;
-	DsLabelIndex elementIndex = get_FE_element_index(element);
-	for (int i = 0; (i < numberOfParents) && (qualifyingParents < 2); ++i)
+	for (int i = 0; (i < parentsCount) && (qualifyingParents < 2); ++i)
 	{
-		cmzn_element *parent = parents[i];
+		cmzn_element *parent = parentMesh->getElement(parents[i]);
 		if (!parent)
 		  continue;
-		DsLabelIndex parentIndex = get_FE_element_index(parent);
-		int face_number = parent_mesh->getElementFaceNumber(parentIndex, elementIndex);
+		int face_number = parentMesh->getElementFaceNumber(parents[i], elementIndex);
 		FE_element_shape *parentShape = get_FE_element_shape(parent);
 		const FE_value *elementToParentXi = get_FE_element_shape_face_to_element(parentShape, face_number);
 		if (!elementToParentXi)
@@ -2608,8 +2606,6 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 		for (int n = 0; n < numberOfComponents; ++n)
 			valueCache.values[n] = 0.0;
 	}
-	if (parents)
-		DEALLOCATE(parents);
 	valueCache.derivatives_valid = 0;
 	return 1;
 }

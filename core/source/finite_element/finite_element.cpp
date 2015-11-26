@@ -20749,7 +20749,6 @@ void FE_element_invalidate(struct FE_element *element)
 {
 	if (element && element->fields)
 	{
-		element->fields->fe_mesh->clearElementFaces(element->index);
 		if (element->information)
 			FE_element_node_scale_field_info::destroyDynamic(element->information, element->fields);
 		DEACCESS(FE_element_field_info)(&(element->fields));
@@ -20885,7 +20884,6 @@ int inherit_FE_element_field(struct FE_element *element,
 						&element_field, &field_element, &coordinate_transformation, top_level_element)))
 				{
 					return_code = 0;
-					parent = 0;
 				}
 			}
 			else
@@ -20894,29 +20892,27 @@ int inherit_FE_element_field(struct FE_element *element,
 				FE_mesh *parentMesh = fe_mesh->getParentMesh();
 				if (parentMesh)
 				{
-					const DsLabelIndex faceIndex = element->index;
-					DsLabelIndex parentIndex = fe_mesh->getElementFirstParent(element->index);
-					while (parentIndex >= 0)
+					/* try to inherit field from any of the element's parents */
+					const DsLabelIndex *parents;
+					const int parentsCount = fe_mesh->getElementParents(element->index, parents);
+					for (int p = 0; p < parentsCount; ++p)
 					{
 						if ((0 == top_level_element) ||
-							top_level_element->fields->fe_mesh->isElementAncestor(top_level_element->index, parentMesh, parentIndex))
+							top_level_element->fields->fe_mesh->isElementAncestor(top_level_element->index, parentMesh, parents[p]))
 						{
-							parent = parentMesh->getElement(parentIndex);
+							parent = parentMesh->getElement(parents[p]);
 							return_code = inherit_FE_element_field(parent, /*inherit_face_number*/-1, field,
 								&element_field, &field_element, &coordinate_transformation, top_level_element);
 							if (return_code)
 							{
-								face_number = parentMesh->getElementFaceNumber(parentIndex, faceIndex);
+								face_number = parentMesh->getElementFaceNumber(parents[p], element->index);
 								break;
 							}
 						}
-						parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, faceIndex);
 					}
-					if (parentIndex < 0)
-						parent = 0;
 				}
 			}
-			if (parent)
+			if ((return_code) && (parent))
 			{
 				FE_element_shape *parent_shape = get_FE_element_shape(parent);
 				if (!parent_shape)
@@ -21102,81 +21098,44 @@ int inherit_FE_element_field(struct FE_element *element,
 	return (return_code);
 } /* inherit_FE_element_field */
 
-// Note this does not clean up elements array after use
-class GetParentElements
-{
-public:
-	FE_mesh &fe_mesh;
-	DsLabelIndex excludeIndex;
-	int elementsCount;
-	int allocatedCount;
-	FE_element **elements;
-
-	GetParentElements(FE_mesh &fe_mesh_in, DsLabelIndex excludeIndexIn = DS_LABEL_INDEX_INVALID) :
-		fe_mesh(fe_mesh_in),
-		excludeIndex(excludeIndexIn),
-		elementsCount(0),
-		allocatedCount(0),
-		elements(0)
-	{
-	}
-
-	int operator()(DsLabelIndex elementIndex, int /*faceNumber*/)
-	{
-		if (elementIndex == this->excludeIndex)
-			return CMZN_OK;
-		if (this->elementsCount >= this->allocatedCount)
-		{
-			FE_element **tmp;
-			this->allocatedCount += 10;
-			REALLOCATE(tmp, this->elements, FE_element *, this->allocatedCount);
-			if (!tmp)
-			{
-				this->elementsCount = 0;
-				this->allocatedCount = 0;
-				DEALLOCATE(this->elements);
-				return CMZN_ERROR_MEMORY;
-			}
-			this->elements = tmp;
-		}
-		this->elements[this->elementsCount++] = this->fe_mesh.getElement(elementIndex);
-		return CMZN_OK;
-	}
-};
-
 int adjacent_FE_element(struct FE_element *element,
 	int face_number, int *number_of_adjacent_elements,
 	struct FE_element ***adjacent_elements)
 {
+	int return_code = CMZN_OK;
 	if (element && (element->fields))
 	{
-		FE_mesh& fe_mesh = *element->fields->fe_mesh;
-		DsLabelIndex faceIndex = fe_mesh.getElementFace(element->index, face_number);
-		if (faceIndex >= 0)
+		int j = 0;
+		FE_mesh *fe_mesh = element->fields->fe_mesh;
+		FE_mesh *faceMesh = fe_mesh->getFaceMesh();
+		DsLabelIndex faceIndex;
+		if ((faceMesh) && (0 <= (faceIndex = fe_mesh->getElementFace(element->index, face_number))))
 		{
-			GetParentElements getParentElements(fe_mesh, element->index);
-			int return_code = fe_mesh.forEachParentElement(faceIndex, getParentElements);
-			*number_of_adjacent_elements = getParentElements.elementsCount;
-			*adjacent_elements = getParentElements.elements;
-			return return_code;
+			const DsLabelIndex *parents;
+			const int parentsCount = faceMesh->getElementParents(faceIndex, parents);
+			if (ALLOCATE(*adjacent_elements, struct FE_element *, parentsCount))
+			{
+				for (int p = 0; p < parentsCount; ++p)
+					if (parents[p] != element->index)
+					{
+						(*adjacent_elements)[j] = fe_mesh->getElement(parents[p]);
+						++j;
+					}
+			}
+			else
+			{
+				display_message(ERROR_MESSAGE, "adjacent_FE_element.  Unable to allocate array");
+				return_code = CMZN_ERROR_MEMORY;
+			}
 		}
+		*number_of_adjacent_elements = j;
 	}
-	return CMZN_ERROR_ARGUMENT;
-}
-
-int FE_element_get_parents(struct FE_element *element,
-	int *number_of_parents, struct FE_element ***parents)
-{
-	FE_mesh *parentMesh;
-	if (element && (element->fields) && (parentMesh = element->fields->fe_mesh->getParentMesh()))
+	else
 	{
-		GetParentElements getParentElements(*parentMesh);
-		int return_code = parentMesh->forEachParentElement(element->index, getParentElements);
-		*number_of_parents = getParentElements.elementsCount;
-		*parents = getParentElements.elements;
-		return return_code;
+		display_message(ERROR_MESSAGE, "adjacent_FE_element.  Invalid argument(s)");
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	return CMZN_ERROR_ARGUMENT;
+	return return_code;
 }
 
 int FE_element_log_FE_field_changes(struct FE_element *element,
@@ -21206,15 +21165,15 @@ int FE_element_log_FE_field_changes(struct FE_element *element,
 			FE_mesh *parentMesh;
 			if (recurseParents && (parentMesh = element->fields->fe_mesh->getParentMesh()))
 			{
-				DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
-				while (parentIndex >= 0)
+				const DsLabelIndex *parents;
+				const int parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents);
+				for (int i = 0; i < parentsCount; i++)
 				{
-					if (!FE_element_log_FE_field_changes(parentMesh->getElement(parentIndex), fe_field_change_log, recurseParents))
+					if (!FE_element_log_FE_field_changes(parentMesh->getElement(parents[i]), fe_field_change_log, recurseParents))
 					{
 						return_code = 0;
 						break;
 					}
-					parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
 				}
 			}
 		}
@@ -23591,13 +23550,13 @@ bool FE_element_or_parent_changed(struct FE_element *element,
 		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
 		if (parentMesh)
 		{
-			DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
-			while (parentIndex >= 0)
+			const DsLabelIndex *parents;
+			const int parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents);
+			for (int p = 0; p < parentsCount; ++p)
 			{
-				if (FE_element_or_parent_changed(parentMesh->getElement(parentIndex),
+				if (FE_element_or_parent_changed(parentMesh->getElement(parents[p]),
 						elementChangeLogs, fe_node_change_log))
 					return true;
-				parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
 			}
 		}
 	}
@@ -23636,26 +23595,6 @@ Does not include fields inherited from parent elements.
 
 	return (number_of_fields);
 } /* get_FE_element_number_of_fields */
-
-bool FE_element_is_not_interior(struct FE_element *element)
-{
-	if (element && (element->fields))
-	{
-		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-		if (parentMesh)
-		{
-			DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
-			if (parentIndex >= 0)
-			{
-				parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
-				return (parentIndex < 0);
-			}
-		}
-		return true;
-	}
-	display_message(ERROR_MESSAGE, "FE_element_is_not_interior.  Invalid argument(s)");
-	return false;
-}
 
 FE_element_shape *get_FE_element_shape(struct FE_element *element)
 {
@@ -25045,15 +24984,13 @@ int list_FE_element(struct FE_element *element)
 			}
 			/* write the parents */
 			FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-			DsLabelIndex parentIndex;
-			if (parentMesh && (0 <= (parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index))))
+			const DsLabelIndex *parents;
+			int parentsCount;
+			if ((parentMesh) && (parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents)))
 			{
 				display_message(INFORMATION_MESSAGE, "  Parents:\n");
-				while (parentIndex >= 0)
-				{
-					display_message(INFORMATION_MESSAGE, " %d", parentMesh->getElementIdentifier(parentIndex));
-					parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
-				}
+				for (int p = 0; p < parentsCount; ++p)
+					display_message(INFORMATION_MESSAGE, " %d", parentMesh->getElementIdentifier(parents[p]));
 				display_message(INFORMATION_MESSAGE, "\n");
 			}
 			else
@@ -26009,8 +25946,7 @@ int FE_element_is_top_level_parent_of_element(
 	FE_element *other_element = static_cast<FE_element*>(other_element_void);
 	if (element && (element->fields) && other_element && (other_element->fields))
 	{
-		// top level element has no parents:
-		if ((element->fields->fe_mesh->getElementFirstParent(element->index) < 0) &&
+		if ((element->fields->fe_mesh->getElementParentsCount(element->index) == 0) &&
 				(element->fields->fe_mesh->isElementAncestor(element->index,
 					other_element->fields->fe_mesh, other_element->index)))
 			return 1;
@@ -26028,8 +25964,9 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 	if (element && element->fields && element_to_top_level)
 	{
 		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-		DsLabelIndex firstParentIndex;
-		if ((!parentMesh) || (0 > (firstParentIndex = element->fields->fe_mesh->getElementFirstParent(element->index))))
+		const DsLabelIndex *parents;
+		int parentsCount;
+		if ((!parentMesh) || (0 == (parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents))))
 		{
 			/* no parents */
 			top_level_element = element;
@@ -26041,18 +25978,20 @@ struct FE_element *FE_element_get_top_level_element_conversion(
 			{
 				FE_mesh *topLevelMesh = check_top_level_element->fields->fe_mesh;
 				const DsLabelIndex checkTopLevelElementIndex = check_top_level_element->index;
-				parentIndex = firstParentIndex;
-				do {
-					if (((parentMesh == topLevelMesh) && (parentIndex == checkTopLevelElementIndex)) ||
-							topLevelMesh->isElementAncestor(checkTopLevelElementIndex, parentMesh, parentIndex))
+				for (int p = 0; p < parentsCount; ++p)
+				{
+					if (((parentMesh == topLevelMesh) && (parents[p] == checkTopLevelElementIndex)) ||
+						topLevelMesh->isElementAncestor(checkTopLevelElementIndex, parentMesh, parents[p]))
+					{
+						parentIndex = parents[p];
 						break;
-					parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
-				} while (parentIndex >= 0);
+					}
+				}
 			}
 			if ((parentIndex < 0) && (CMZN_ELEMENT_FACE_TYPE_XI1_0 <= specified_face))
 				parentIndex = element->fields->fe_mesh->getElementParentOnFace(element->index, specified_face);
 			if (parentIndex < 0)
-				parentIndex = firstParentIndex;
+				parentIndex = parents[0];
 			FE_element *parent = parentMesh->getElement(parentIndex);
 
 			int face_number;
@@ -26161,7 +26100,7 @@ is checked and the <top_level_xi> calculated.
 		top_level_element_dimension)
 	{
 		return_code = 1;
-		if (element->fields->fe_mesh->getElementFirstParent(element->index) < 0)
+		if (element->fields->fe_mesh->getElementParentsCount(element->index) == 0)
 		{
 			*top_level_element = element;
 			for (i=0;i<element_dimension;i++)
@@ -26389,15 +26328,13 @@ bool FE_element_is_exterior_face_with_inward_normal(struct FE_element *element)
 	if (element && element->fields)
 	{
 		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
-		if (parentMesh && (parentMesh->getDimension() == 3))
+		const DsLabelIndex *parents;
+		if ((parentMesh) && (parentMesh->getDimension() == 3) &&
+			(1 == element->fields->fe_mesh->getElementParents(element->index, parents)))
 		{
-			const DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
-			if (parentIndex >= 0)
-			{
-				const int faceNumber = parentMesh->getElementFaceNumber(parentIndex, element->index);
-				if (parentMesh->getElementFirstNeighbour(parentIndex, faceNumber) < 0)
-					return FE_element_shape_face_has_inward_normal(parentMesh->getElementShape(parentIndex), faceNumber);
-			}
+			if (FE_element_shape_face_has_inward_normal(parentMesh->getElementShape(parents[0]),
+					parentMesh->getElementFaceNumber(parents[0], element->index)))
+				return true;
 		}
 	}
 	else
@@ -26455,7 +26392,7 @@ int cmzn_element_add_nodes_to_list(cmzn_element *element, LIST(cmzn_node) *nodeL
 			}
 		}
 	}
-	if (element->fields->fe_mesh->getElementFirstParent(element->index) >= 0)
+	if (element->fields->fe_mesh->getElementParentsCount(element->index) > 0)
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
@@ -26491,7 +26428,7 @@ int cmzn_element_remove_nodes_from_list(cmzn_element *element, LIST(cmzn_node) *
 		for (int i = 0; i < localNodesCount; i++)
 			REMOVE_OBJECT_FROM_LIST(cmzn_node)(element->information->nodes[i], nodeList);
 	}
-	if (element->fields->fe_mesh->getElementFirstParent(element->index) >= 0)
+	if (element->fields->fe_mesh->getElementParentsCount(element->index) > 0)
 	{
 		int number_of_element_field_nodes;
 		cmzn_node_id *element_field_nodes_array;
@@ -26517,7 +26454,7 @@ int FE_element_is_top_level(struct FE_element *element,void *dummy_void)
 {
 	USE_PARAMETER(dummy_void);
 	if (element && (element->fields))
-		return (element->fields->fe_mesh->getElementFirstParent(element->index) < 0) ? 1 : 0;
+		return (0 == element->fields->fe_mesh->getElementParentsCount(element->index));
 	return 0;
 }
 
@@ -26947,13 +26884,11 @@ bool FE_field_is_defined_in_element(struct FE_field *field,
 		FE_mesh *parentMesh = element->fields->fe_mesh->getParentMesh();
 		if (parentMesh)
 		{
-			DsLabelIndex parentIndex = element->fields->fe_mesh->getElementFirstParent(element->index);
-			while (parentIndex >= 0)
-			{
-				if (FE_field_is_defined_in_element(field, parentMesh->getElement(parentIndex)))
+			const DsLabelIndex *parents;
+			const int parentsCount = element->fields->fe_mesh->getElementParents(element->index, parents);
+			for (int p = 0; p < parentsCount; ++p)
+				if (FE_field_is_defined_in_element(field, parentMesh->getElement(parents[p])))
 					return true;
-				parentIndex = parentMesh->findElementNeighbourByIndex(parentIndex, element->index);
-			}
 		}
 	}
 	else
@@ -29224,7 +29159,8 @@ and do not take into account the relative orientation of the parents.
 		(0 < (dimension = element_shape->dimension)) &&
 		(0<=*face_number)&&(*face_number<element_shape->number_of_faces))
 	{
-		DsLabelIndex newElementIndex = fe_mesh->getElementFirstNeighbour(element->index, *face_number);
+		int new_face_number;
+		DsLabelIndex newElementIndex = fe_mesh->getElementFirstNeighbour(element->index, *face_number, new_face_number);
 		if (newElementIndex < 0)
 		{
 			/* no adjacent element found */
@@ -29243,7 +29179,6 @@ and do not take into account the relative orientation of the parents.
 				FE_value local_xi_face[MAXIMUM_ELEMENT_XI_DIMENSIONS - 1];
 				/* change xi and increment into element coordinates */
 				FE_element_shape *new_element_shape = get_FE_element_shape(new_element);
-				int new_face_number = fe_mesh->getElementFaceNumber(newElementIndex, faceIndex);
 				if ((new_element_shape) && (dimension == new_element_shape->dimension) && 
 					(0 <= new_face_number))
 				{
