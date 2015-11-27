@@ -3029,9 +3029,8 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
 
 /**
  * Returns the discretization in <number_in_xi> for displaying graphics over
- * <element>, subject to its ancestors satisfying the <conditional> function
- * with <conditional_data>, and with the <face_number> and suggested
- * <*top_level_element>. If <native_discretization_field> is defined over the
+ * <element>, using the suggested <*top_level_element> if any.
+ * If <native_discretization_field> is defined over the
  * element and is grid-based, it's native discretization is used in preference
  * to the <top_level_number_in_xi>.
  * <*top_level_element> can be NULL; final element used will be returned.
@@ -3040,7 +3039,6 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
  * in either case the top_level_number_in_xi used is returned.
  */
 int get_FE_element_discretization(struct FE_element *element,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
 	cmzn_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi);

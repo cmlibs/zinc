@@ -1011,13 +1011,16 @@ void FE_mesh::clearElementFaces(DsLabelIndex elementIndex)
 		return;
 	const int faceCount = elementShapeFaces->getFaceCount();
 	for (int i = 0; i < faceCount; ++i)
-		if (faces[i] != DS_LABEL_INDEX_INVALID)
+	{
+		DsLabelIndex faceIndex = faces[i]; // must put in local variable since cleared by setElementFace
+		if (faceIndex >= 0)
 		{
 			this->setElementFace(elementIndex, i, DS_LABEL_INDEX_INVALID); // could be more efficient; finds faces again
 			const DsLabelIndex *parents;
-			if (0 == this->faceMesh->getElementParents(faces[i], parents))
-				this->faceMesh->remove_FE_element_private(this->faceMesh->getElement(faces[i]));
+			if (0 == this->faceMesh->getElementParents(faceIndex, parents))
+				this->faceMesh->remove_FE_element_private(this->faceMesh->getElement(faceIndex));
 		}
+	}
 }
 
 // set index of face element (from face mesh)

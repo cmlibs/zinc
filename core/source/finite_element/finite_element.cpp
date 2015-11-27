@@ -13770,6 +13770,7 @@ int FE_field_get_node_parameter_labels(FE_field *field, FE_node *node, FE_value 
 	FE_node *lastNode, int *componentParameterCounts, int **componentDerivatives, 
 	int **componentVersions, bool &isHomogeneous)
 {
+	USE_PARAMETER(time);
 	if (!(field && node))
 		return CMZN_ERROR_ARGUMENT;
 	if (lastNode && (node->fields == lastNode->fields))
@@ -26219,7 +26220,6 @@ int get_FE_element_discretization_from_top_level(struct FE_element *element,
 } /* get_FE_element_discretization_from_top_level */
 
 int get_FE_element_discretization(struct FE_element *element,
-	LIST_CONDITIONAL_FUNCTION(FE_element) *conditional, void *conditional_data,
 	cmzn_element_face_type face, struct FE_field *native_discretization_field,
 	int *top_level_number_in_xi,struct FE_element **top_level_element,
 	int *number_in_xi)

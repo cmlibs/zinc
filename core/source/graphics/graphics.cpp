@@ -471,6 +471,8 @@ int cmzn_graphics_get_domain_dimension(struct cmzn_graphics *graphics)
 	return (dimension);
 }
 
+#ifdef OLD_CODE
+// was used to inherit discretisation from an ancestor element satisfying this
 struct cmzn_element_conditional_field_data
 {
 	cmzn_fieldcache_id field_cache;
@@ -491,6 +493,7 @@ int cmzn_element_conditional_field_is_true(cmzn_element_id element,
 	}
 	return 0;
 }
+#endif // OLD_CODE
 
 /**
  * Converts a finite element into a graphics object with the supplied graphics.
@@ -534,7 +537,7 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 			if (!cmzn_field_evaluate_boolean(graphics->subgroup_field, graphics_to_object_data->field_cache))
 				return 1;
 		}
-		cmzn_element_conditional_field_data conditional_field_data = { graphics_to_object_data->field_cache, graphics->subgroup_field };
+		//cmzn_element_conditional_field_data conditional_field_data = { graphics_to_object_data->field_cache, graphics->subgroup_field };
 		bool name_selected = false;
 		if ((CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED == graphics->select_mode) ||
 			(CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED == graphics->select_mode))
@@ -560,8 +563,6 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 			Computed_field_get_type_finite_element(graphics->tessellation_field, &native_discretization_field);
 		}
 		if (get_FE_element_discretization(element,
-			graphics->subgroup_field ? cmzn_element_conditional_field_is_true : 0,
-			graphics->subgroup_field ? (void *)&conditional_field_data : 0,
 			graphics->face, native_discretization_field, top_level_number_in_xi,
 			&top_level_element, number_in_xi))
 		{
