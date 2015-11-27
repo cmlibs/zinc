@@ -986,7 +986,7 @@ void FE_mesh::clearElementParents(DsLabelIndex elementIndex)
 	// remove element from all parents; mark parent elements as DEFINITION_CHANGED
 	int parentsCount;
 	const DsLabelIndex *parents;
-	while (parentsCount = this->getElementParents(elementIndex, parents))
+	while (0 < (parentsCount = this->getElementParents(elementIndex, parents)))
 	{
 		const int faceNumber = this->parentMesh->getElementFaceNumber(parents[0], elementIndex);
 		if (CMZN_OK != this->parentMesh->setElementFace(parents[0], faceNumber, DS_LABEL_INDEX_INVALID))
@@ -1068,26 +1068,28 @@ bool FE_mesh::isElementAncestor(DsLabelIndex elementIndex,
 		return false;
 	if (this == descendantMesh)
 		return (elementIndex == descendantIndex);
-	const ElementShapeFaces *elementShapeFaces = this->getElementShapeFaces(elementIndex);
-	if (!elementShapeFaces)
+	if (!descendantMesh->parentMesh)
 		return false;
-	const int faceCount = elementShapeFaces->getFaceCount();
-	if (faceCount == 0)
+	const DsLabelIndex *parents;
+	const int parentsCount = descendantMesh->getElementParents(descendantIndex, parents);
+	if (0 == parentsCount)
 		return false;
-	const DsLabelIndex *faces = elementShapeFaces->getElementFaces(elementIndex);
-	if (!faces)
-		return false;
-	if (this->faceMesh == descendantMesh)
+	if (descendantMesh->parentMesh == this)
 	{
-		for (int faceNumber = faceCount - 1; faceNumber >= 0; --faceNumber)
-			if (faces[faceNumber] == descendantIndex)
+		for (int p = 0; p < parentsCount; ++p)
+			if (parents[p] == elementIndex)
 				return true;
 	}
-	else if ((this->faceMesh) && (this->faceMesh->faceMesh))
+	else if (descendantMesh->parentMesh->parentMesh == this)
 	{
-		for (int faceNumber = faceCount - 1; faceNumber >= 0; --faceNumber)
-			if (this->faceMesh->isElementAncestor(faces[faceNumber], descendantMesh, descendantIndex))
-				return true;
+		for (int p = 0; p < parentsCount; ++p)
+		{
+			const DsLabelIndex *parentsParents;
+			const int parentsParentsCount = descendantMesh->parentMesh->getElementParents(parents[p], parentsParents);
+			for (int pp = 0; pp < parentsParentsCount; ++pp)
+				if (parentsParents[pp] == elementIndex)
+					return true;
+		}
 	}
 	return false;
 }

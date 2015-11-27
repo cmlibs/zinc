@@ -2475,7 +2475,7 @@ int Computed_field_edge_discontinuity::evaluate(cmzn_fieldcache& cache, FieldVal
 
 	cmzn_field *conditionalField = this->getConditionalField();
 	const DsLabelIndex elementIndex = get_FE_element_index(element);
-	const DsLabelIndex *parents;
+	const DsLabelIndex *parents = 0;
 	int parentsCount = fe_mesh->getElementParents(elementIndex, parents);
 	if (parentsCount < 2) // must be at least 2 parents to work.
 		parentsCount = 0;
