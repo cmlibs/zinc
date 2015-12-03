@@ -444,7 +444,7 @@ TEST(cmzn_scene, threejs_export_cpp)
 
 	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
 
-	EXPECT_EQ(CMZN_OK, result = zinc.scene.exportScene(si));
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
 	char *memory_buffer;
 	unsigned int size = 0;
@@ -496,7 +496,7 @@ TEST(cmzn_scene, threejs_export)
 
 	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_memory(streaminformation);
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_scene_export_scene(zinc.scene, scene_si));
+	EXPECT_EQ(CMZN_OK, result = cmzn_scene_write(zinc.scene, scene_si));
 
 	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		data_sr);
@@ -544,13 +544,13 @@ TEST(cmzn_scene, graphics_description_cpp)
 	StreaminformationScene si = zinc.scene.createStreaminformationScene();
 	EXPECT_TRUE(si.isValid());
 
-	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_GRAPHICS_DESCRIPTION));
+	EXPECT_EQ(CMZN_OK, result = si.setIOFormat(si.IO_FORMAT_DESCRIPTION));
 
 	EXPECT_EQ(1, result = si.getNumberOfResourcesRequired());
 
 	StreamresourceMemory memeory_sr = si.createStreamresourceMemory();
 
-	EXPECT_EQ(CMZN_OK, result = zinc.scene.exportScene(si));
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.write(si));
 
 	char *memory_buffer;
 	unsigned int size = 0;
@@ -575,11 +575,11 @@ TEST(cmzn_scene, graphics_description_cpp)
 	StreamresourceMemory memeory_sr2 = si2.createStreamresourceMemoryBuffer((void *)memory_buffer, size);
 	EXPECT_TRUE(memeory_sr2.isValid());
 
-	EXPECT_EQ(CMZN_OK, result = si2.setIOFormat(si.IO_FORMAT_GRAPHICS_DESCRIPTION));
+	EXPECT_EQ(CMZN_OK, result = si2.setIOFormat(si.IO_FORMAT_DESCRIPTION));
 
 	EXPECT_EQ(CMZN_OK, result = si2.setOverwriteSceneGraphics(1));
 
-	EXPECT_EQ(CMZN_OK, result = zinc.scene.importScene(si2));
+	EXPECT_EQ(CMZN_OK, result = zinc.scene.read(si2));
 
 	EXPECT_EQ(2, result = zinc.scene.getNumberOfGraphics());
 
@@ -611,13 +611,13 @@ TEST(cmzn_scene, graphics_description)
 	EXPECT_NE(static_cast<cmzn_streaminformation_scene_id>(0), scene_si);
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_streaminformation_scene_set_io_format(
-		scene_si, CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION));
+		scene_si, CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION));
 
 	EXPECT_EQ(1, result = cmzn_streaminformation_scene_get_number_of_resources_required(scene_si));
 
 	cmzn_streamresource_id data_sr = cmzn_streaminformation_create_streamresource_memory(streaminformation);
 
-	EXPECT_EQ(CMZN_OK, result = cmzn_scene_export_scene(zinc.scene, scene_si));
+	EXPECT_EQ(CMZN_OK, result = cmzn_scene_write(zinc.scene, scene_si));
 
 	cmzn_streamresource_memory_id memeory_sr = cmzn_streamresource_cast_memory(
 		data_sr);
