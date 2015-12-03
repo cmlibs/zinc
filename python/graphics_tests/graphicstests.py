@@ -105,7 +105,7 @@ class GraphicsTestCase(unittest.TestCase):
         result = si.setIODataType(si.IO_DATA_TYPE_COLOUR)
         self.assertEqual(1, result)
         memeory_sr = si.createStreamresourceMemory();
-        result = self.scene.exportScene(si)
+        result = self.scene.write(si)
         self.assertEqual(1, result)
         result, outputstring = memeory_sr.getBuffer()
         self.assertEqual(1, result)
