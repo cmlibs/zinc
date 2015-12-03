@@ -30,7 +30,7 @@ extern "C" {
  * @return  New handle to tessellation module, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellationmodule_id cmzn_tessellationmodule_access(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Destroys this handle to the tessellation module (and sets it to NULL).
@@ -41,7 +41,7 @@ ZINC_API cmzn_tessellationmodule_id cmzn_tessellationmodule_access(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellationmodule_destroy(
-	cmzn_tessellationmodule_id *tessellationmodule_address);
+    cmzn_tessellationmodule_id *tessellationmodule_address);
 
 /**
  * Create and return a new tessellation.
@@ -51,7 +51,7 @@ ZINC_API int cmzn_tessellationmodule_destroy(
  * @return  Handle to new tessellation, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Create a tessellation iterator object for iterating through the
@@ -67,7 +67,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_create_tessellation(
  * @return  Handle to tessellation iterator, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_tessellationiterator_id cmzn_tessellationmodule_create_tessellationiterator(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Begin caching or increment cache level for this tessellation module. Call this
@@ -101,7 +101,7 @@ ZINC_API int cmzn_tessellationmodule_end_change(cmzn_tessellationmodule_id tesse
  * @return  Handle to tessellation, or NULL/invalid handle if not found or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
-	cmzn_tessellationmodule_id tessellationmodule, const char *name);
+    cmzn_tessellationmodule_id tessellationmodule, const char *name);
 
 /**
  * Get the default tessellation to be used by new lines, surfaces and
@@ -113,7 +113,7 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_find_tessellation_by_name(
  * @return  Handle to default tessellation, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Set the default tessellation to be used by new lines, surfaces and
@@ -124,8 +124,8 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_tessellation(
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellationmodule_set_default_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule,
-	cmzn_tessellation_id tessellation);
+    cmzn_tessellationmodule_id tessellationmodule,
+    cmzn_tessellation_id tessellation);
 
 /**
  * Get the default tessellation to be used by new points and streamlines
@@ -138,7 +138,7 @@ ZINC_API int cmzn_tessellationmodule_set_default_tessellation(
  * none or failed.
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_points_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule);
+    cmzn_tessellationmodule_id tessellationmodule);
 
 /**
  * Set the default tessellation to be used by new points and streamlines
@@ -149,8 +149,8 @@ ZINC_API cmzn_tessellation_id cmzn_tessellationmodule_get_default_points_tessell
  * @return  CMZN_OK on success otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellationmodule_set_default_points_tessellation(
-	cmzn_tessellationmodule_id tessellationmodule,
-	cmzn_tessellation_id tessellation);
+    cmzn_tessellationmodule_id tessellationmodule,
+    cmzn_tessellation_id tessellation);
 
 /**
  * Returns a new handle to the tessellation with reference count incremented.
@@ -179,7 +179,7 @@ ZINC_API int cmzn_tessellation_destroy(cmzn_tessellation_id *tessellation_addres
  * @return  The number of circle divisions, or 0 on error.
  */
 ZINC_API int cmzn_tessellation_get_circle_divisions(
-	cmzn_tessellation_id tessellation);
+    cmzn_tessellation_id tessellation);
 
 /**
  * Sets the number of line segments used to approximate circles in graphics
@@ -192,7 +192,7 @@ ZINC_API int cmzn_tessellation_get_circle_divisions(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_circle_divisions(
-	cmzn_tessellation_id tessellation, int circleDivisions);
+    cmzn_tessellation_id tessellation, int circleDivisions);
 
 /**
  * Get managed status of tessellation in its owning tessellation module.
@@ -217,7 +217,7 @@ ZINC_API bool cmzn_tessellation_is_managed(cmzn_tessellation_id tessellation);
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_managed(cmzn_tessellation_id tessellation,
-	bool value);
+    bool value);
 
 /**
  * Return an allocated string containing tessellation name.
@@ -253,7 +253,7 @@ ZINC_API int cmzn_tessellation_set_name(cmzn_tessellation_id tessellation, const
  * larger array. Returns 0 on error.
  */
 ZINC_API int cmzn_tessellation_get_minimum_divisions(
-	cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
+    cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the minimum number of line segments used to approximate curves in each
@@ -269,7 +269,7 @@ ZINC_API int cmzn_tessellation_get_minimum_divisions(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_minimum_divisions(
-	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+    cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 /**
  * Gets the refinements to be used in product with the minimum divisions
@@ -286,7 +286,7 @@ ZINC_API int cmzn_tessellation_set_minimum_divisions(
  * larger array. Returns 0 on error.
  */
 ZINC_API int cmzn_tessellation_get_refinement_factors(
-	cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
+    cmzn_tessellation_id tessellation, int valuesCount, int *valuesOut);
 
 /**
  * Sets the refinements to be used in product with the minimum divisions
@@ -307,7 +307,7 @@ ZINC_API int cmzn_tessellation_get_refinement_factors(
  * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
  */
 ZINC_API int cmzn_tessellation_set_refinement_factors(
-	cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
+    cmzn_tessellation_id tessellation, int valuesCount, const int *valuesIn);
 
 /**
  * Returns a new handle to the iterator with reference count incremented.
@@ -317,7 +317,7 @@ ZINC_API int cmzn_tessellation_set_refinement_factors(
  * failure.
  */
 ZINC_API cmzn_tessellationiterator_id cmzn_tessellationiterator_access(
-	cmzn_tessellationiterator_id iterator);
+    cmzn_tessellationiterator_id iterator);
 
 /**
  * Destroys this handle to the tessellation iterator and sets it to NULL.
@@ -333,7 +333,7 @@ ZINC_API int cmzn_tessellationiterator_destroy(cmzn_tessellationiterator_id *ite
  * over then advances the iterator position. The caller is required to destroy
  * the returned tessellation handle.
  *
- * @param iterator  Material iterator to query and advance.
+ * @param iterator  Tessellation iterator to query and advance.
  * @return  Handle to the next tessellation, or NULL/invalid handle if none or
  * failed.
  */

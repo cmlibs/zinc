@@ -41,20 +41,31 @@ DESCRIPTION :
 Spectrum type is private.
 ==============================================================================*/
 {
-	ZnReal maximum,minimum;
-	char *name;
-	bool overwrite_colour;
-	struct LIST(cmzn_spectrumcomponent) *list_of_components;
+    ZnReal maximum,minimum;
+    const char *name;
+    bool overwrite_colour;
+    struct LIST(cmzn_spectrumcomponent) *list_of_components;
 
-	struct Texture *colour_lookup_texture;
-	int cache, changed;
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(cmzn_spectrum) *manager;
-	int manager_change_status;
-	bool is_managed_flag;
-	/* the number of structures that point to this spectrum.  The spectrum
-		cannot be destroyed while this is greater than 0 */
-	int access_count;
+    struct Texture *colour_lookup_texture;
+    int cache, changed;
+    bool is_managed_flag;
+    /* the number of structures that point to this spectrum.  The spectrum
+        cannot be destroyed while this is greater than 0 */
+    int access_count;
+
+    /* after clearing in create, following to be modified only by manager */
+    struct MANAGER(cmzn_spectrum) *manager;
+    int manager_change_status;
+
+    inline cmzn_spectrum *access()
+    {
+        ++access_count;
+        return this;
+    }
+
+    static int deaccess(cmzn_spectrum **spectrumAddress);
+
+    int setName(const char *newName);
 }; /* struct cmzn_spectrum */
 
 DECLARE_LIST_TYPES(cmzn_spectrum);
@@ -71,22 +82,22 @@ DESCRIPTION :
 Used to identify the colour components modified by a spectrum.
 ==============================================================================*/
 {
-	SPECTRUM_COMPONENT_NONE = 0,
-	SPECTRUM_COMPONENT_RED = 1,
-	SPECTRUM_COMPONENT_GREEN = 2,
-	SPECTRUM_COMPONENT_BLUE = 4,
-	SPECTRUM_COMPONENT_MONOCHROME = 8,
-	SPECTRUM_COMPONENT_ALPHA = 16
+    SPECTRUM_COMPONENT_NONE = 0,
+    SPECTRUM_COMPONENT_RED = 1,
+    SPECTRUM_COMPONENT_GREEN = 2,
+    SPECTRUM_COMPONENT_BLUE = 4,
+    SPECTRUM_COMPONENT_MONOCHROME = 8,
+    SPECTRUM_COMPONENT_ALPHA = 16
 };
 
 enum Spectrum_simple_type
 {
-	UNKNOWN_SPECTRUM,
-	RED_TO_BLUE_SPECTRUM,
-	BLUE_TO_RED_SPECTRUM,
-	LOG_RED_TO_BLUE_SPECTRUM,
-	LOG_BLUE_TO_RED_SPECTRUM,
-	BLUE_WHITE_RED_SPECTRUM
+    UNKNOWN_SPECTRUM,
+    RED_TO_BLUE_SPECTRUM,
+    BLUE_TO_RED_SPECTRUM,
+    LOG_RED_TO_BLUE_SPECTRUM,
+    LOG_BLUE_TO_RED_SPECTRUM,
+    BLUE_WHITE_RED_SPECTRUM
 };
 
 /*
@@ -108,7 +119,7 @@ PROTOTYPE_MANAGER_FUNCTIONS(cmzn_spectrum);
 PROTOTYPE_MANAGER_IDENTIFIER_FUNCTIONS(cmzn_spectrum,name,const char *);
 
 struct cmzn_spectrumcomponent *cmzn_spectrum_get_component_at_position(
-	 struct cmzn_spectrum *spectrum,int position);
+     struct cmzn_spectrum *spectrum,int position);
 /*******************************************************************************
 LAST MODIFIED : 30 August 2007
 
@@ -117,7 +128,7 @@ Wrapper for accessing the component in <spectrum>.
 ==============================================================================*/
 
 int Spectrum_set_simple_type(struct cmzn_spectrum *spectrum,
-	enum Spectrum_simple_type type);
+    enum Spectrum_simple_type type);
 /*******************************************************************************
 LAST MODIFIED : 15 January 2001
 
@@ -137,7 +148,7 @@ it returns UNKNOWN_SPECTRUM
 ==============================================================================*/
 
 int Spectrum_add_component(struct cmzn_spectrum *spectrum,
-	struct cmzn_spectrumcomponent *component,int position);
+    struct cmzn_spectrumcomponent *component,int position);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -149,7 +160,7 @@ position one greater than the last.
 ==============================================================================*/
 
 int cmzn_spectrum_get_component_position(struct cmzn_spectrum *spectrum,
-	struct cmzn_spectrumcomponent *component);
+    struct cmzn_spectrumcomponent *component);
 /*******************************************************************************
 LAST MODIFIED : 24 July 1998
 
@@ -200,7 +211,7 @@ the minimum and maximum contained inside it.
 ==============================================================================*/
 
 int Spectrum_set_minimum_and_maximum(struct cmzn_spectrum *spectrum,
-	ZnReal minimum, ZnReal maximum);
+    ZnReal minimum, ZnReal maximum);
 /*******************************************************************************
 LAST MODIFIED : 29 July 1998
 
@@ -209,7 +220,7 @@ Expands the range of this spectrum by adjusting the range of each component
 it contains.  The ratios of the different component are preserved.
 ==============================================================================*/
 
-char *Spectrum_get_name(struct cmzn_spectrum *spectrum);
+const char *Spectrum_get_name(struct cmzn_spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 28 August 2007
 
@@ -218,8 +229,8 @@ Returns the string of the spectrum.
 ==============================================================================*/
 
 int Spectrum_render_value_on_material(struct cmzn_spectrum *spectrum,
-	struct cmzn_material *material, int number_of_data_components,
-	GLfloat *data);
+    struct cmzn_material *material, int number_of_data_components,
+    GLfloat *data);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -229,7 +240,7 @@ Uses the <spectrum> to modify the <material> to represent the <number_of_data_co
 ==============================================================================*/
 
 int Spectrum_value_to_rgba(struct cmzn_spectrum *spectrum,int number_of_data_components,
-	FE_value *data, ZnReal *rgba);
+    FE_value *data, ZnReal *rgba);
 /*******************************************************************************
 LAST MODIFIED : 4 October 2006
 
@@ -248,7 +259,7 @@ Resets the caches and graphics state after rendering values.
 ==============================================================================*/
 
 struct LIST(cmzn_spectrumcomponent) *get_cmzn_spectrumcomponent_list(
-	struct cmzn_spectrum *spectrum );
+    struct cmzn_spectrum *spectrum );
 /*******************************************************************************
 LAST MODIFIED : 12 March 1998
 
@@ -267,14 +278,14 @@ Allocates memory and assigns fields for a Spectrum object.
 ==============================================================================*/
 
 struct MANAGER(cmzn_spectrum) *cmzn_spectrummodule_get_manager(
-	cmzn_spectrummodule_id spectrummodule);
+    cmzn_spectrummodule_id spectrummodule);
 
 struct cmzn_spectrummodule *cmzn_spectrummodule_create();
 
 PROTOTYPE_GET_OBJECT_NAME_FUNCTION(cmzn_spectrum);
 
 int Spectrum_get_colour_lookup_sizes(struct cmzn_spectrum *spectrum,
-	int *lookup_dimension, int **lookup_sizes);
+    int *lookup_dimension, int **lookup_sizes);
 /*******************************************************************************
 LAST MODIFIED : 2 May 2007
 
@@ -283,7 +294,7 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 ==============================================================================*/
 
 int Spectrum_manager_set_owner(struct MANAGER(cmzn_spectrum) *manager,
-	struct cmzn_graphics_module *graphics_module);
+    struct cmzn_graphics_module *graphics_module);
 
 int cmzn_spectrum_changed(cmzn_spectrum_id spectrum);
 
