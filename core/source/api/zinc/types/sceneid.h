@@ -57,8 +57,8 @@ enum cmzn_streaminformation_scene_io_format
 	/*!< Unspecified attribute */
 	CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_THREEJS = 1,
 	/*!< Export scene into ThreeJS compatible JSON file.*/
-	CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION = 2
-	/*!< Import/export graphics configurations into */
+	CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION = 2
+	/*!< Import/export scene configurations into the scene */
 };
 
 #endif

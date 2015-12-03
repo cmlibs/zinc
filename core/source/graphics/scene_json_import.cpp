@@ -25,6 +25,7 @@ int SceneJsonImport::import(std::string &jsonString)
 
 	if (Json::Reader().parse(jsonString, root, true))
 	{
+		scene.beginChange();
 		if (overwrite == 1)
 		{
 			scene.removeAllGraphics();
@@ -41,6 +42,7 @@ int SceneJsonImport::import(std::string &jsonString)
 		}
 
 		return_code = CMZN_OK;
+		scene.endChange();
 	}
 
 	return return_code;

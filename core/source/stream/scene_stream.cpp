@@ -19,7 +19,7 @@
 #include "graphics/scene_json_import.hpp"
 #include "stream/scene_stream.hpp"
 
-int cmzn_scene_export_scene(cmzn_scene_id scene,
+int cmzn_scene_write(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene)
 {
 	int return_code = CMZN_OK;
@@ -52,7 +52,7 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 				);
 				cmzn_scenefilter_destroy(&scenefilter);
 			}
-			else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
+			else if (streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION)
 			{
 				number_of_entries = 1;
 				SceneJsonExport jsonExport(scene);
@@ -118,13 +118,13 @@ int cmzn_scene_export_scene(cmzn_scene_id scene,
 	return return_code;
 }
 
-int cmzn_scene_import_scene(cmzn_scene_id scene,
+int cmzn_scene_read(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene)
 {
 	int return_code = CMZN_OK;
 
 	if (scene && streaminformation_scene &&
-		streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
+		streaminformation_scene->getIOFormat() == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION)
 	{
 		const cmzn_stream_properties_list streams_list = streaminformation_scene->getResourcesList();
 		if (!(streams_list.empty()))

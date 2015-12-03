@@ -469,7 +469,7 @@ ZINC_API cmzn_scenepicker_id cmzn_scene_create_scenepicker(cmzn_scene_id scene);
  * @return  Status CMZN_OK if data is successfully written out, any other value
  * on failure.
  */
-ZINC_API int cmzn_scene_export_scene(cmzn_scene_id scene,
+ZINC_API int cmzn_scene_write(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene);
 
 /**
@@ -482,7 +482,7 @@ ZINC_API int cmzn_scene_export_scene(cmzn_scene_id scene,
  * @return  Status CMZN_OK if data is successfully imported, any other value
  * 	on failure.
  */
-ZINC_API int cmzn_scene_import_scene(cmzn_scene_id scene,
+ZINC_API int cmzn_scene_read(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene);
 
 #ifdef __cplusplus
