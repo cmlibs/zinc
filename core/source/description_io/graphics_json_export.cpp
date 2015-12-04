@@ -13,7 +13,7 @@
 //#include "zinc/spectrum.h"
 //#include "zinc/spectrum.hpp"
 #include "general/debug.h"
-#include "graphics/graphics_json_export.hpp"
+#include "description_io/graphics_json_export.hpp"
 #include "graphics/graphics.h"
 
 void GraphicsJsonExport::addEntries()

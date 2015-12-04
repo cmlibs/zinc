@@ -15,8 +15,8 @@
 #include "general/mystring.h"
 #include "general/message.h"
 #include "general/enumerator_conversion.hpp"
-#include "graphics/scene_json_export.hpp"
-#include "graphics/scene_json_import.hpp"
+#include "description_io/scene_json_export.hpp"
+#include "description_io/scene_json_import.hpp"
 #include "stream/scene_stream.hpp"
 
 int cmzn_scene_write(cmzn_scene_id scene,

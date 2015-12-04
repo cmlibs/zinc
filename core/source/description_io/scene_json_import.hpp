@@ -28,7 +28,7 @@ public:
 		overwrite(overwrite_in)
 	{  }
 
-	int import(std::string &jsonString);
+	int import(const std::string &jsonString);
 
 	void importGraphics(Json::Value &graphicsJson);
 

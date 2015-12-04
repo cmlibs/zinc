@@ -12,7 +12,7 @@
 
 #include "general/debug.h"
 #include "zinc/graphics.hpp"
-#include "graphics/graphics_json_import.hpp"
+#include "description_io/graphics_json_import.hpp"
 #include "zinc/status.h"
 
 int GraphicsJsonImport::import()
@@ -24,5 +24,4 @@ int GraphicsJsonImport::import()
 	ioAttributesEntries(graphicsJson);
 
 	return CMZN_OK;
-
 }

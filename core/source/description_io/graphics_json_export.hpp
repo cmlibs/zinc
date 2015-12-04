@@ -16,7 +16,7 @@
 #include "zinc/graphics.h"
 #include "zinc/graphics.hpp"
 #include "jsoncpp/json.h"
-#include "graphics/graphics_json_io.hpp"
+#include "description_io/graphics_json_io.hpp"
 #include <string>
 
 class GraphicsJsonExport : GraphicsJsonIO

@@ -12,12 +12,12 @@
 
 #include "general/debug.h"
 #include "zinc/graphics.hpp"
-#include "graphics/graphics_json_import.hpp"
-#include "graphics/scene_json_import.hpp"
+#include "description_io/graphics_json_import.hpp"
+#include "description_io/scene_json_import.hpp"
 #include "graphics/scene.h"
 #include "zinc/status.h"
 
-int SceneJsonImport::import(std::string &jsonString)
+int SceneJsonImport::import(const std::string &jsonString)
 {
 	int return_code = CMZN_ERROR_ARGUMENT;
 	std::string returned_string;
@@ -32,12 +32,13 @@ int SceneJsonImport::import(std::string &jsonString)
 		}
 		if (root.isObject())
 		{
-			for (unsigned int index = 1; index < (root.size() + 1); ++index )
+			Json::Value sceneJson = root["Scene"];
+			if (sceneJson["VisibilityFlag"].isBool())
+				scene.setVisibilityFlag(sceneJson["VisibilityFlag"].asBool());
+			Json::Value graphicsSettings = sceneJson["Graphics"];
+			for (unsigned int index = 0; index < graphicsSettings.size(); ++index )
 			{
-				char temp_id[10];
-				sprintf(temp_id, "%d", index);
-				Json::Value graphicsJson = root[temp_id];
-				importGraphics(graphicsJson);
+				importGraphics(graphicsSettings[index]);
 			}
 		}
 

@@ -14,7 +14,7 @@
 #include "zinc/scene.hpp"
 #include "zinc/fieldmodule.hpp"
 #include "general/debug.h"
-#include "graphics/graphics_json_export.hpp"
+#include "description_io/graphics_json_export.hpp"
 #include <string.h>
 
 OpenCMISS::Zinc::Field getFieldByName(OpenCMISS::Zinc::Graphics &graphics, const char *name)
@@ -97,14 +97,14 @@ void GraphicsJsonIO::ioGeneralBoolEntries(Json::Value &graphicsSettings)
 		graphicsSettings["VisibilityFlag"] = value;
 
 		value = graphics.isExterior();
-		graphicsSettings["isExterior"] = value;
+		graphicsSettings["Exterior"] = value;
 	}
 	else
 	{
 		if (graphicsSettings["VisibilityFlag"].isBool())
 			graphics.setVisibilityFlag(graphicsSettings["VisibilityFlag"].asBool());
-		if (graphicsSettings["isExterior"].isBool())
-			graphics.setExterior(graphicsSettings["isExterior"].asBool());
+		if (graphicsSettings["Exterior"].isBool())
+			graphics.setExterior(graphicsSettings["Exterior"].asBool());
 	}
 }
 
@@ -236,6 +236,7 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 
 void GraphicsJsonIO::ioGeneralEntries(Json::Value &graphicsSettings)
 {
+	ioGeneralBoolEntries(graphicsSettings);
 	ioGeneralFieldEntries(graphicsSettings);
 	ioGeneralDobuleEntries(graphicsSettings);
 	ioGeneralEnumEntries(graphicsSettings);
