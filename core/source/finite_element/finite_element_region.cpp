@@ -88,17 +88,45 @@ bool FE_region_changes::elementOrParentChanged(FE_element *element)
 
 /**
  * Tells parent region about changes to fields, nodes and elements.
- * No messages sent if change counter is positive.
- * Only call this function if changes have actually been made.
+ * No messages sent if change level is positive, or no changes have been made.
  */
 void FE_region::update()
 {
-	if (!this->change_level)
+	if (this->change_level <= 0)
 	{
 		// note this only informs region of change; change logs are extracted
 		// on demand when computed field manager change is sent to region
 		if (this->cmiss_region)
-			cmzn_region_FE_region_change(this->cmiss_region);
+		{
+			// only inform if fields, nodes or elements changed
+			int fieldChangeSummary = 0;
+			CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(this->fe_field_changes, &fieldChangeSummary);
+			bool changed = (fieldChangeSummary != 0);
+			if (!changed)
+				for (int n = 0; n < 2; ++n)
+				{
+					CHANGE_LOG(FE_node) *changeLog = this->nodesets[n]->getChangeLog();
+					int nodeChangeSummary;
+					if (CHANGE_LOG_GET_CHANGE_SUMMARY(FE_node)(changeLog, &nodeChangeSummary) &&
+						(nodeChangeSummary != 0))
+					{
+						changed = true;
+						break;
+					}
+				}
+			if (!changed)
+				for (int dim = 0; dim < MAXIMUM_ELEMENT_XI_DIMENSIONS; ++dim)
+				{
+					int elementChangeSummary = this->meshes[dim]->getChangeLog()->getChangeSummary();
+					if (elementChangeSummary != 0)
+					{
+						changed = true;
+						break;
+					}
+				}
+			if (changed)
+				cmzn_region_FE_region_change(this->cmiss_region);
+		}
 	}
 }
 
