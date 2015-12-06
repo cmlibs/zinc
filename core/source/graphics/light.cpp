@@ -65,7 +65,13 @@ public:
 
 	static cmzn_lightmodule *create()
 	{
-		return new cmzn_lightmodule();
+		cmzn_lightmodule *lightModule = new cmzn_lightmodule();
+		cmzn_light *default_light = cmzn_lightmodule_get_default_light(lightModule);
+		cmzn_light *default_ambient_light =
+			cmzn_lightmodule_get_default_ambient_light(lightModule);
+		cmzn_light_destroy(&default_light);
+		cmzn_light_destroy(&default_ambient_light);
+		return lightModule;
 	}
 
 	cmzn_lightmodule *access()

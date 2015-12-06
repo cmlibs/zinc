@@ -57,7 +57,12 @@ public:
 
 	static cmzn_tessellationmodule *create()
 	{
-		return new cmzn_tessellationmodule();
+		cmzn_tessellationmodule *tessellationModule = new cmzn_tessellationmodule();
+		cmzn_tessellation_id tessellation = tessellationModule->getDefaultTessellation();
+		cmzn_tessellation_id pointTessellation = tessellationModule->getDefaultPointsTessellation();
+		cmzn_tessellation_destroy(&tessellation);
+		cmzn_tessellation_destroy(&pointTessellation);
+		return tessellationModule;
 	}
 
 	cmzn_tessellationmodule *access()

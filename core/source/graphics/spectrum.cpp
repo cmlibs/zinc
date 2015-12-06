@@ -70,7 +70,10 @@ public:
 
     static cmzn_spectrummodule *create()
     {
-        return new cmzn_spectrummodule();
+   	 cmzn_spectrummodule *spectrumModule = new cmzn_spectrummodule();
+   	 cmzn_spectrum_id spectrum = spectrumModule->getDefaultSpectrum();
+   	 cmzn_spectrum_destroy(&spectrum);
+   	 return spectrumModule;
     }
 
     cmzn_spectrummodule *access()

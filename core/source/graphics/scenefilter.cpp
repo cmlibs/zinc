@@ -605,7 +605,10 @@ public:
 
 	static cmzn_scenefiltermodule *create()
 	{
-		return new cmzn_scenefiltermodule();
+		cmzn_scenefiltermodule *filtermodule = new cmzn_scenefiltermodule();
+		cmzn_scenefilter_id filter = filtermodule->getDefaultFilter();
+		cmzn_scenefilter_destroy(&filter);
+		return filtermodule;
 	}
 
 	cmzn_scenefiltermodule *access()
