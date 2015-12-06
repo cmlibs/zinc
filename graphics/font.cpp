@@ -29,7 +29,7 @@ TEST(cmzn_fontmodule_api, valid_args)
 	cmzn_font_id font = cmzn_fontmodule_create_font(fontmodule);
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
-	result = cmzn_font_set_name(font, "default");
+	result = cmzn_font_set_name(font, "new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_fontmodule_end_change(fontmodule);
@@ -40,7 +40,7 @@ TEST(cmzn_fontmodule_api, valid_args)
 
 	cmzn_font_destroy(&font);
 
-	font = cmzn_fontmodule_find_font_by_name(fontmodule, "default");
+	font = cmzn_fontmodule_find_font_by_name(fontmodule, "new_default");
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
 	cmzn_font_destroy(&font);
@@ -66,7 +66,7 @@ TEST(cmzn_fontmodule_api, valid_args_cpp)
 	Font font = fontmodule.createFont();
 	EXPECT_TRUE(font.isValid());
 
-	result = font.setName("default");
+	result = font.setName("new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = fontmodule.endChange();
@@ -75,7 +75,7 @@ TEST(cmzn_fontmodule_api, valid_args_cpp)
 	result = fontmodule.setDefaultFont( font);
 	EXPECT_EQ(CMZN_OK, result);
 
-	font = fontmodule.findFontByName("default");
+	font = fontmodule.findFontByName("new_default");
 	EXPECT_TRUE(font.isValid());
 
 	font = fontmodule.getDefaultFont();
@@ -95,7 +95,7 @@ TEST(cmzn_font_api, valid_args)
 	cmzn_font_id font = cmzn_fontmodule_create_font(fontmodule);
 	EXPECT_NE(static_cast<cmzn_font *>(0), font);
 
-	result = cmzn_font_set_name(font, "default");
+	result = cmzn_font_set_name(font, "new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_fontmodule_end_change(fontmodule);
@@ -154,7 +154,7 @@ TEST(cmzn_font_api, valid_args_cpp)
 	Font font = fontmodule.createFont();
 	EXPECT_TRUE(font.isValid());
 
-	result = font.setName("default");
+	result = font.setName("new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = fontmodule.endChange();

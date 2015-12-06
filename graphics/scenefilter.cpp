@@ -30,7 +30,7 @@ TEST(cmzn_scenefiltermodule_api, valid_args)
 	cmzn_scenefilter_id filter = cmzn_scenefiltermodule_create_scenefilter_visibility_flags(sfm);
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), filter);
 
-	result = cmzn_scenefilter_set_name(filter, "default");
+	result = cmzn_scenefilter_set_name(filter, "new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_scenefiltermodule_end_change(sfm);
@@ -44,7 +44,7 @@ TEST(cmzn_scenefiltermodule_api, valid_args)
 
 	cmzn_scenefilter_destroy(&filter);
 
-	filter = cmzn_scenefiltermodule_find_scenefilter_by_name(sfm, "default");
+	filter = cmzn_scenefiltermodule_find_scenefilter_by_name(sfm, "new_default");
 	EXPECT_NE(static_cast<cmzn_scenefilter *>(0), filter);
 
 	cmzn_scenefilter_destroy(&filter);
@@ -105,7 +105,7 @@ TEST(cmzn_scenefiltermodule_api, valid_args_cpp)
 	Scenefilter filter = sfm.createScenefilterVisibilityFlags();
 	EXPECT_TRUE(filter.isValid());
 
-	result = filter.setName("default");
+	result = filter.setName("new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = sfm.endChange();
@@ -117,7 +117,7 @@ TEST(cmzn_scenefiltermodule_api, valid_args_cpp)
 	result = filter.setManaged(true);
 	EXPECT_EQ(CMZN_OK, result);
 
-	filter = sfm.findScenefilterByName("default");
+	filter = sfm.findScenefilterByName("new_default");
 	EXPECT_TRUE(filter.isValid());
 
 	filter = sfm.getDefaultScenefilter();

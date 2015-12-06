@@ -29,7 +29,7 @@ TEST(cmzn_spectrummodule_api, valid_args)
     cmzn_spectrum_id spectrum = cmzn_spectrummodule_create_spectrum(sm);
     EXPECT_NE(static_cast<cmzn_spectrum *>(0), spectrum);
 
-    result = cmzn_spectrum_set_name(spectrum, "default");
+    result = cmzn_spectrum_set_name(spectrum, "new_default");
     EXPECT_EQ(CMZN_OK, result);
 
     result = cmzn_spectrummodule_end_change(sm);
@@ -43,7 +43,7 @@ TEST(cmzn_spectrummodule_api, valid_args)
 
     cmzn_spectrum_destroy(&spectrum);
 
-    spectrum = cmzn_spectrummodule_find_spectrum_by_name(sm, "default");
+    spectrum = cmzn_spectrummodule_find_spectrum_by_name(sm, "new_default");
     EXPECT_NE(static_cast<cmzn_spectrum *>(0), spectrum);
 
     cmzn_spectrum_destroy(&spectrum);
@@ -69,7 +69,7 @@ TEST(cmzn_spectrummodule_api, valid_args_cpp)
     Spectrum spectrum = sm.createSpectrum();
     EXPECT_TRUE(spectrum.isValid());
 
-    result = spectrum.setName("default");
+    result = spectrum.setName("new_default");
     EXPECT_EQ(CMZN_OK, result);
 
     result = sm.endChange();
@@ -81,7 +81,7 @@ TEST(cmzn_spectrummodule_api, valid_args_cpp)
     result = spectrum.setManaged(true);
     EXPECT_EQ(CMZN_OK, result);
 
-    spectrum = sm.findSpectrumByName("default");
+    spectrum = sm.findSpectrumByName("new_default");
     EXPECT_TRUE(spectrum.isValid());
 
     spectrum = sm.getDefaultSpectrum();
@@ -101,7 +101,7 @@ TEST(cmzn_spectrum_api, valid_args)
     cmzn_spectrum_id spectrum = cmzn_spectrummodule_create_spectrum(sm);
     EXPECT_NE(static_cast<cmzn_spectrum *>(0), spectrum);
 
-    result = cmzn_spectrum_set_name(spectrum, "default");
+    result = cmzn_spectrum_set_name(spectrum, "new_default");
     EXPECT_EQ(CMZN_OK, result);
 
     result = cmzn_spectrummodule_end_change(sm);
@@ -221,7 +221,7 @@ TEST(cmzn_spectrum_api, valid_args_cpp)
     Spectrum spectrum = sm.createSpectrum();
     EXPECT_TRUE(spectrum.isValid());
 
-    result = spectrum.setName("default");
+    result = spectrum.setName("new_default");
     EXPECT_EQ(CMZN_OK, result);
 
     result = sm.endChange();

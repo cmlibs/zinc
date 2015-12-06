@@ -59,7 +59,7 @@ TEST(cmzn_tessellationmodule_api, valid_args)
 	tessellation = cmzn_tessellationmodule_create_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 
-	result = cmzn_tessellation_set_name(tessellation, "default");
+	result = cmzn_tessellation_set_name(tessellation, "new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_tessellationmodule_end_change(tm);
@@ -75,7 +75,7 @@ TEST(cmzn_tessellationmodule_api, valid_args)
 	EXPECT_EQ(tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 
-	temp_tessellation = cmzn_tessellationmodule_find_tessellation_by_name(tm, "default");
+	temp_tessellation = cmzn_tessellationmodule_find_tessellation_by_name(tm, "new_default");
 	EXPECT_EQ(tessellation, temp_tessellation);
 	cmzn_tessellation_destroy(&temp_tessellation);
 
@@ -130,7 +130,7 @@ TEST(cmzn_tessellationmodule_api, valid_args_cpp)
 	tessellation = tm.createTessellation();
 	EXPECT_TRUE(tessellation.isValid());
 
-	result = tessellation.setName("default");
+	result = tessellation.setName("new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = tm.endChange();
@@ -145,7 +145,7 @@ TEST(cmzn_tessellationmodule_api, valid_args_cpp)
 	Tessellation tempTessellation = tm.getDefaultTessellation();
 	EXPECT_EQ(tessellation.getId(), tempTessellation.getId());
 
-	tempTessellation = tm.findTessellationByName("default");
+	tempTessellation = tm.findTessellationByName("new_default");
 	EXPECT_EQ(tessellation.getId(), tempTessellation.getId());
 
 	tessellation = tm.getDefaultTessellation();
@@ -165,7 +165,7 @@ TEST(cmzn_tessellation_api, valid_args)
 	cmzn_tessellation_id tessellation = cmzn_tessellationmodule_create_tessellation(tm);
 	EXPECT_NE(static_cast<cmzn_tessellation *>(0), tessellation);
 
-	result = cmzn_tessellation_set_name(tessellation, "default");
+	result = cmzn_tessellation_set_name(tessellation, "new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_tessellationmodule_end_change(tm);
@@ -217,7 +217,7 @@ TEST(cmzn_tessellation_api, valid_args_cpp)
 	Tessellation tessellation = tm.createTessellation();
 	EXPECT_TRUE(tessellation.isValid());
 
-	result = tessellation.setName("default");
+	result = tessellation.setName("new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = tm.endChange();

@@ -163,7 +163,7 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	light = lm.createLight();
 	EXPECT_TRUE(light.isValid());
 
-	result = light.setName("default");
+	result = light.setName("new_default");
 	EXPECT_EQ(OK, result);
 
 	result = lm.endChange();
@@ -178,7 +178,7 @@ TEST(cmzn_lightmodule_api, valid_args_cpp)
 	Light tempLight = lm.getDefaultLight();
 	EXPECT_EQ(light.getId(), tempLight.getId());
 
-	tempLight = lm.findLightByName("default");
+	tempLight = lm.findLightByName("new_default");
 	EXPECT_EQ(light.getId(), tempLight.getId());
 
 	light = lm.getDefaultLight();
@@ -198,7 +198,7 @@ TEST(cmzn_light_api, valid_args)
 	cmzn_light_id light = cmzn_lightmodule_create_light(lm);
 	EXPECT_NE(static_cast<cmzn_light *>(0), light);
 
-	result = cmzn_light_set_name(light, "default");
+	result = cmzn_light_set_name(light, "new_default");
 	EXPECT_EQ(CMZN_OK, result);
 
 	result = cmzn_lightmodule_end_change(lm);
@@ -269,7 +269,7 @@ TEST(cmzn_light_api, valid_args_cpp)
 	Light light = lm.createLight();
 	EXPECT_TRUE(light.isValid());
 
-	result = light.setName("default");
+	result = light.setName("new_default");
 	EXPECT_EQ(OK, result);
 
 	result = lm.endChange();
