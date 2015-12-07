@@ -835,6 +835,27 @@ ZINC_API int cmzn_sceneviewer_set_lighting_two_sided(
 	cmzn_sceneviewer_id sceneviewer, bool value);
 
 /**
+ * Transforms coordinates between scene coordinate systems relative to this
+ * scene viewer.
+ * Note: this function only works once there is an OpenGL rendering context!
+ * @param sceneviewer  The scene viewer to query.
+ * @param in_coordinate_system  The coordinate system of the input values.
+ * @param out_coordinate_system  The coordinate system of the output values.
+ * @param local_scene  Optional local scene, relative to top scene of scene
+ * viewer from which the local-to-world transformation is obtained. If omitted
+ * the identity transformation is assumed. Only used with scene local
+ * coordinate systems, relative to world.
+ * @param inValues3  The input coordinates, 3-component.
+ * @param outValues3  The output coordinates to set, 3-component.
+ * @return  Status CMZN_OK on success, otherwise any error code.
+ */
+ZINC_API int cmzn_sceneviewer_transform_coordinates(
+	cmzn_sceneviewer_id sceneviewer,
+  enum cmzn_scenecoordinatesystem in_coordinate_system,
+  enum cmzn_scenecoordinatesystem out_coordinate_system,
+	cmzn_scene_id local_scene, const double *valuesIn3, double *valuesOut3);
+
+/**
  * Create a notifier for getting callbacks for changes to the scene viewer.
  *
  * @param sceneviewer  Handle to the scene viewer to get notifications for.

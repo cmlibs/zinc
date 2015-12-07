@@ -576,6 +576,16 @@ public:
 		return cmzn_sceneviewer_set_lighting_two_sided(this->id, value);
 	}
 
+	int transformCoordinates(Scenecoordinatesystem inCoordinateSystem,
+		Scenecoordinatesystem outCoordinateSystem, const Scene& localScene,
+		const double *valuesIn3, double *valuesOut3)
+	{
+		return cmzn_sceneviewer_transform_coordinates(id,
+			static_cast<cmzn_scenecoordinatesystem>(inCoordinateSystem),
+			static_cast<cmzn_scenecoordinatesystem>(outCoordinateSystem),
+			localScene.getId(), valuesIn3, valuesOut3);
+	}
+
 	Sceneviewernotifier createSceneviewernotifier()
 	{
 		return Sceneviewernotifier(cmzn_sceneviewer_create_sceneviewernotifier(id));

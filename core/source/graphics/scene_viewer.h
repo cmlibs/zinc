@@ -404,6 +404,16 @@ struct cmzn_sceneviewer
 
 	void setLightingTwoSided(bool value);
 
+	/**
+	 * @param  localToWorldTransformationMatrix  Optional.
+	 * @return CMZN_OK on success, any other error on failure
+	 */
+	int getTransformationMatrix(
+		enum cmzn_scenecoordinatesystem fromCoordinateSystem,
+		enum cmzn_scenecoordinatesystem toCoordinateSystem,
+		const gtMatrix *localToWorldTransformationMatrix,
+		double *transformationMatrix16);
+
 }; /* struct cmzn_sceneviewer */
 
 DECLARE_CMZN_CALLBACK_TYPES(cmzn_sceneviewermodule_callback, \
@@ -760,16 +770,17 @@ NDC_height is important. In ABSOLUTE viewport_mode, the top and left values
 are used to position the intended viewing volume in user coordinates.
 ==============================================================================*/
 
-/***************************************************************************//**
+/**
  * Gets matrix transforming coordinate system to
  * CMZN_SCENECOORDINATESYSTEM_NORMALISED_WINDOW_FILL
  * Note this is a right-handed coordinate system with each coordinate on [-1,+1]
  * and farthest z = -1, nearest at z = +1. Compare with OpenGL normalised device
  * coordinates which reverse z so are left-handed.
+ * @param local_transformation_matrix  Optional local to world transformation.
  */
 int Scene_viewer_get_transformation_to_window(struct Scene_viewer *scene_viewer,
 	enum cmzn_scenecoordinatesystem coordinate_system,
-	gtMatrix *local_transformation_matrix, double *projection);
+	const gtMatrix *local_transformation_matrix, double *projection);
 
 int Scene_viewer_get_projection_mode(struct Scene_viewer *scene_viewer,
 	enum Scene_viewer_projection_mode *projection_mode);
