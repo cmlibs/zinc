@@ -19,6 +19,8 @@
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
+#include "test_resources.h"
+
 TEST(cmzn_sceneviewer_api, destroy_context_before_scene_viewer)
 {
 	 cmzn_context_id context = cmzn_context_create("test");
@@ -363,6 +365,87 @@ TEST(ZincSceneviewer, get_set_light)
 	EXPECT_EQ(OK, sv.removeLight(light));
 	EXPECT_FALSE(sv.hasLight(light));
 	EXPECT_EQ(ERROR_NOT_FOUND, sv.removeLight(light));
+}
+
+TEST(ZincSceneviewer, description_io)
+{
+	ZincTestSetupCpp zinc;
+
+	Sceneviewermodule svModule = zinc.context.getSceneviewermodule();
+	EXPECT_TRUE(svModule.isValid());
+	Sceneviewer sv = svModule.createSceneviewer(
+		Sceneviewer::BUFFERING_MODE_DEFAULT, Sceneviewer::STEREO_MODE_DEFAULT);
+	EXPECT_TRUE(sv.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::SCENEVIEWER_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+	  fseek (f, 0, SEEK_END);
+	  length = ftell (f);
+	  fseek (f, 0, SEEK_SET);
+	  buffer = malloc (length);
+	  if (buffer)
+	  {
+	    fread (buffer, 1, length, f);
+	  }
+	  fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, sv.readDescription((char *)buffer));
+
+	double valuesOut3[3];
+	EXPECT_EQ(CMZN_OK, sv.getBackgroundColourRGB(&valuesOut3[0]));
+	EXPECT_DOUBLE_EQ(0.6, valuesOut3[0]);
+	EXPECT_DOUBLE_EQ(0.55, valuesOut3[1]);
+	EXPECT_DOUBLE_EQ(0.4, valuesOut3[2]);
+
+	EXPECT_EQ(CMZN_OK, sv.getEyePosition(&valuesOut3[0]));
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[0]);
+	EXPECT_DOUBLE_EQ(1.0, valuesOut3[1]);
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[2]);
+
+	EXPECT_EQ(CMZN_OK, sv.getLookatPosition(&valuesOut3[0]));
+	EXPECT_DOUBLE_EQ(1.0, valuesOut3[0]);
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[1]);
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[2]);
+
+	EXPECT_EQ(CMZN_OK, sv.getUpVector(&valuesOut3[0]));
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[0]);
+	EXPECT_DOUBLE_EQ(0.0, valuesOut3[1]);
+	EXPECT_DOUBLE_EQ(1.0, valuesOut3[2]);
+
+	EXPECT_TRUE(sv.isLightingLocalViewer());
+
+	EXPECT_FALSE(sv.isLightingTwoSided());
+
+	EXPECT_EQ(Sceneviewer::PROJECTION_MODE_PARALLEL, sv.getProjectionMode());
+
+	EXPECT_EQ(Sceneviewer::TRANSPARENCY_MODE_SLOW, sv.getTransparencyMode());
+
+	double value;
+	EXPECT_DOUBLE_EQ(0.3, value = sv.getViewAngle());
+
+	int number;
+	EXPECT_EQ(8, number = sv.getAntialiasSampling());
+
+	EXPECT_TRUE(sv.getPerturbLinesFlag());
+
+	EXPECT_DOUBLE_EQ(2.0, value = sv.getTranslationRate());
+
+	EXPECT_DOUBLE_EQ(3.0, value = sv.getTumbleRate());
+
+	EXPECT_DOUBLE_EQ(4.0, value = sv.getZoomRate());
+
+	EXPECT_DOUBLE_EQ(700.0, value = sv.getFarClippingPlane());
+
+	EXPECT_DOUBLE_EQ(100.0, value = sv.getNearClippingPlane());
+
+	char *return_string = sv.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
 }
 
 TEST(ZincSceneviewer, get_set)
