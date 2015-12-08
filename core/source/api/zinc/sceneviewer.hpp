@@ -586,6 +586,16 @@ public:
 			localScene.getId(), valuesIn3, valuesOut3);
 	}
 
+	int readDescription(const char *description)
+	{
+		return cmzn_sceneviewer_read_description(this->id, description);
+	}
+
+	char *writeDescription()
+	{
+		return cmzn_sceneviewer_write_description(this->id);
+	}
+
 	Sceneviewernotifier createSceneviewernotifier()
 	{
 		return Sceneviewernotifier(cmzn_sceneviewer_create_sceneviewernotifier(id));

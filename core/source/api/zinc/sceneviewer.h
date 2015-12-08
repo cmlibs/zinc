@@ -856,6 +856,26 @@ ZINC_API int cmzn_sceneviewer_transform_coordinates(
 	cmzn_scene_id local_scene, const double *valuesIn3, double *valuesOut3);
 
 /**
+ * Read the json description to the scene viewer. This will change
+ * the settings of the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_sceneviewer_read_description(
+	cmzn_sceneviewer_id sceneviewer, const char *description);
+
+/**
+ * Write the json file describing settings of the scene viewer, which can
+ * be used to store the current settings.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @return  c string containing the json description of scene viewer, otherwise 0;
+ */
+ZINC_API char *cmzn_sceneviewer_write_description(cmzn_sceneviewer_id sceneviewer);
+
+/**
  * Create a notifier for getting callbacks for changes to the scene viewer.
  *
  * @param sceneviewer  Handle to the scene viewer to get notifications for.

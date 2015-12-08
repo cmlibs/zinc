@@ -12,7 +12,6 @@
 #include <string>
 #include "graphics/graphics_object.h"
 #include "graphics/render.hpp"
-#include "graphics/scene.h"
 #include "graphics/graphics_object_highlight.hpp"
 
 struct cmzn_graphics;

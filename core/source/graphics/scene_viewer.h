@@ -114,10 +114,6 @@ public:
 
 typedef std::list<cmzn_sceneviewernotifier *> cmzn_sceneviewernotifier_list;
 
-/*
-struct Scene;
-struct MANAGER(Scene);
-*/
 struct cmzn_sceneviewermodule;
 
 /*

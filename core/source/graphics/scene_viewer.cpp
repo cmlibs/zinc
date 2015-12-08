@@ -31,10 +31,12 @@ November 97 Created from rendering part of Drawing.
 #include "zinc/sceneviewerinput.h"
 #include "zinc/status.h"
 #include "computed_field/computed_field_image.h"
+#include "description_io/sceneviewer_json_io.hpp"
 #include "general/compare.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "general/enumerator_conversion.hpp"
 #include "general/enumerator_private.hpp"
 #include "general/geometry.h"
 #include "general/image_utilities.h"
@@ -7730,4 +7732,98 @@ cmzn_sceneviewerevent_change_flags cmzn_sceneviewerevent_get_change_flags(
 	cmzn_sceneviewerevent_id event)
 {
 	return event->changeFlags;
+}
+
+class cmzn_sceneviewer_projection_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_sceneviewer_projection_mode projection_mode)
+	{
+		const char *enum_string = 0;
+		switch (projection_mode)
+		{
+			case CMZN_SCENEVIEWER_PROJECTION_MODE_PARALLEL:
+				enum_string = "PARALLEL";
+				break;
+			case CMZN_SCENEVIEWER_PROJECTION_MODE_PERSPECTIVE:
+				enum_string = "PERSPECTIVE";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_sceneviewer_projection_mode
+	cmzn_sceneviewer_projection_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_sceneviewer_projection_mode,
+		cmzn_sceneviewer_projection_mode_conversion>(string);
+}
+
+char *cmzn_sceneviewer_projection_mode_enum_to_string(
+	enum cmzn_sceneviewer_projection_mode mode)
+{
+	const char *mode_string = cmzn_sceneviewer_projection_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+
+class cmzn_sceneviewer_transparency_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_sceneviewer_transparency_mode transparency_mode)
+	{
+		const char *enum_string = 0;
+		switch (transparency_mode)
+		{
+			case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_FAST:
+				enum_string = "FAST";
+				break;
+			case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_SLOW:
+				enum_string = "SLOW";
+				break;
+			case CMZN_SCENEVIEWER_TRANSPARENCY_MODE_ORDER_INDEPENDENT:
+				enum_string = "ORDER_INDEPENDENT";
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_sceneviewer_transparency_mode
+	cmzn_sceneviewer_transparency_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_sceneviewer_transparency_mode,
+		cmzn_sceneviewer_transparency_mode_conversion>(string);
+}
+
+char *cmzn_sceneviewer_transparency_mode_enum_to_string(
+	enum cmzn_sceneviewer_transparency_mode mode)
+{
+	const char *mode_string = cmzn_sceneviewer_transparency_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+int cmzn_sceneviewer_read_description(cmzn_sceneviewer_id sceneviewer, const char *description)
+{
+	if (sceneviewer && description)
+	{
+		SceneviewerJsonImport jsonImport(sceneviewer);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_sceneviewer_write_description(cmzn_sceneviewer_id sceneviewer)
+{
+	if (sceneviewer)
+	{
+		SceneviewerJsonExport jsonExport(sceneviewer);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
+	return 0;
 }

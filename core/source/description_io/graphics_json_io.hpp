@@ -48,8 +48,6 @@ protected:
 	int order;
 	IOMode mode;
 
-	void ioEntries();
-
 	void ioGeneralEntries(Json::Value &graphicsSettings);
 
 	void ioGeneralBoolEntries(Json::Value &graphicsSettings);
