@@ -14,6 +14,7 @@ SET( GRAPHICS_SRCS
 	source/description_io/scene_json_export.cpp
 	source/description_io/scene_json_import.cpp
 	source/description_io/sceneviewer_json_io.cpp
+	source/description_io/spectrum_json_io.cpp
 	source/graphics/auxiliary_graphics_types.cpp
 	source/graphics/graphics.cpp
 	source/graphics/graphics_module.cpp
@@ -59,6 +60,7 @@ SET( GRAPHICS_HDRS
 	source/description_io/scene_json_export.hpp
 	source/description_io/scene_json_import.hpp
 	source/description_io/sceneviewer_json_io.hpp
+	source/description_io/spectrum_json_io.hpp
 	source/graphics/auxiliary_graphics_types.h
 	source/graphics/graphics.h
 	source/graphics/graphics_module.h

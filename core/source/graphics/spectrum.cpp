@@ -18,6 +18,7 @@ Spectrum functions and support code.
 #include <math.h>
 #include "zinc/spectrum.h"
 #include "zinc/status.h"
+#include "description_io/spectrum_json_io.hpp"
 #include "general/debug.h"
 #include "general/indexed_list_private.h"
 #include "general/indexed_list_stl_private.hpp"
@@ -2509,4 +2510,27 @@ cmzn_spectrum_id cmzn_spectrumiterator_next_non_access(cmzn_spectrumiterator_id 
     if (iterator)
         return iterator->next_non_access();
     return 0;
+}
+
+
+int cmzn_spectrummodule_read_description(cmzn_spectrummodule_id spectrummodule,
+	const char *description)
+{
+	if (spectrummodule && description)
+	{
+		SpectrummoduleJsonImport jsonImport(spectrummodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_spectrummodule_write_description(cmzn_spectrummodule_id spectrummodule)
+{
+	if (spectrummodule)
+	{
+		SpectrummoduleJsonExport jsonExport(spectrummodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
+	return 0;
 }

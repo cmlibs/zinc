@@ -149,6 +149,42 @@ char *cmzn_spectrumcomponent_colour_mapping_type_enum_to_string(
 	return (colour_string ? duplicate_string(colour_string) : 0);
 }
 
+
+class cmzn_spectrumcomponent_scale_type_conversion
+{
+public:
+    static const char *to_string(enum cmzn_spectrumcomponent_scale_type colour)
+    {
+        const char *enum_string = 0;
+        switch (colour)
+        {
+        case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR:
+            enum_string = "LINEAR";
+            break;
+        case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG:
+            enum_string = "LOG";
+            break;
+        default:
+            break;
+        }
+        return enum_string;
+    }
+};
+
+enum cmzn_spectrumcomponent_scale_type cmzn_spectrumcomponent_scale_type_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_spectrumcomponent_scale_type,
+		cmzn_spectrumcomponent_scale_type_conversion>(string);
+}
+
+char *cmzn_spectrumcomponent_scale_type_enum_to_string(
+	enum cmzn_spectrumcomponent_scale_type scale_type)
+{
+	const char *type_string = cmzn_spectrumcomponent_scale_type_conversion::to_string(scale_type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
 /*
 Global functions
 ----------------
@@ -1833,7 +1869,7 @@ double cmzn_spectrumcomponent_get_banded_ratio(cmzn_spectrumcomponent_id compone
 	if (component)
 	{
 		int proportion = cmzn_spectrumcomponent_get_black_band_proportion(component);
-		return ((double) proportion / (double)1021.0);
+		return ((double) proportion / (double)1000.0);
 	}
 	return 0.0;
 }
@@ -1846,7 +1882,7 @@ int cmzn_spectrumcomponent_set_banded_ratio(cmzn_spectrumcomponent_id component,
 		if (((value > 0.0) || (value <= 1.0)))
 		{
 			return cmzn_spectrumcomponent_set_black_band_proportion(component,
-				(int)(value * 1021.0));
+				(int)(value * 1000.0+0.5));
 		}
 	}
 	return CMZN_ERROR_ARGUMENT;

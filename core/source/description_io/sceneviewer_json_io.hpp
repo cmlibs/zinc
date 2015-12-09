@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : scene_json_import.hpp
+ * FILE : sceneviewer_json_io.hpp
  *
- * The interface to scene_json_export.
+ * The interface to sceneviewer_json_io.
  *
  */
 /* OpenCMISS-Zinc Library

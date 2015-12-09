@@ -122,6 +122,26 @@ ZINC_API int cmzn_spectrummodule_set_default_spectrum(
     cmzn_spectrummodule_id spectrummodule, cmzn_spectrum_id spectrum);
 
 /**
+ * Read the json description to the spectrum module. This will change
+ * the spectrums in the pectrum module.
+ *
+ * @param spectrummodule  Handle to the spectrum module.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_spectrummodule_read_description(
+	cmzn_spectrummodule_id spectrummodule, const char *description);
+
+/**
+ * Write the json file describing the spectrums in the spectrum module, which can
+ * be used to store the current spectrum settings.
+ *
+ * @param spectrummodule  Handle to the spectrum module.
+ * @return  c string containing the json description of spectrum module, otherwise 0;
+ */
+ZINC_API char *cmzn_spectrummodule_write_description(cmzn_spectrummodule_id spectrummodule);
+
+/**
  * Get new handle to spectrum. Increments the reference count.
  *
  * @param spectrum  Handle to spectrum.

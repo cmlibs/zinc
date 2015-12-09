@@ -1,7 +1,7 @@
 /***************************************************************************//**
- * FILE : scene_json_import.cpp
+ * FILE : sceneviewer_json_io.cpp
  *
- * The definition to scene_json_import.
+ * The definition to sceneviewer_json_io.
  *
  */
 /* OpenCMISS-Zinc Library

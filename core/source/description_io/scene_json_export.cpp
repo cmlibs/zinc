@@ -19,7 +19,6 @@
 std::string SceneJsonExport::getExportString()
 {
 	std::string returned_string;
-	int currentNumber = 1;
 
 	Json::Value scene_settings;
 	bool visibility = scene.getVisibilityFlag();
@@ -30,11 +29,8 @@ std::string SceneJsonExport::getExportString()
 	{
 		GraphicsJsonExport graphicsJsonExport = GraphicsJsonExport(graphics, -1);
 		Json::Value *tempValue = graphicsJsonExport.exportJsonValue();
-		char order_string[5];
-		sprintf(order_string, "%d", currentNumber);
 		graphics_settings.append(*tempValue);
 		graphics = scene.getNextGraphics(graphics);
-		currentNumber++;
 	}
 	scene_settings["Graphics"] = graphics_settings;
 	root["Scene"]= scene_settings;

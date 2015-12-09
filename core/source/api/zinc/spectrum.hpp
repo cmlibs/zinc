@@ -533,6 +533,16 @@ public:
     {
         return cmzn_spectrummodule_set_default_spectrum(id, spectrum.getId());
     }
+
+ 	int readDescription(const char *description)
+ 	{
+ 		return cmzn_spectrummodule_read_description(this->id, description);
+ 	}
+
+ 	char *writeDescription()
+ 	{
+ 		return cmzn_spectrummodule_write_description(this->id);
+ 	}
 };
 
 inline Spectrummodule Context::getSpectrummodule()
