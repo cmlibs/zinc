@@ -396,6 +396,8 @@ TEST(ZincSceneviewer, description_io)
 	EXPECT_TRUE(buffer != 0);
 	EXPECT_EQ(CMZN_OK, sv.readDescription((char *)buffer));
 
+	free(buffer);
+
 	double valuesOut3[3];
 	EXPECT_EQ(CMZN_OK, sv.getBackgroundColourRGB(&valuesOut3[0]));
 	EXPECT_DOUBLE_EQ(0.6, valuesOut3[0]);

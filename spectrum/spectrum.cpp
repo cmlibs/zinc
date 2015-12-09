@@ -16,6 +16,9 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/spectrum.hpp"
 
+#include "test_resources.h"
+
+
 TEST(cmzn_spectrummodule_api, valid_args)
 {
     ZincTestSetup zinc;
@@ -312,6 +315,92 @@ TEST(cmzn_spectrum_api, valid_args_cpp)
     colour_mapping_type = component1.getColourMappingType();
     EXPECT_EQ(Spectrumcomponent::COLOUR_MAPPING_TYPE_MONOCHROME, colour_mapping_type);
 
+}
+
+TEST(cmzn_spectrum_api, description_io_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Spectrummodule sm = zinc.context.getSpectrummodule();
+	EXPECT_TRUE(sm.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::SPECTRUM_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, sm.readDescription((char *)buffer));
+	free(buffer);
+
+	Spectrum spectrum = sm.findSpectrumByName("default");
+	EXPECT_TRUE(spectrum.isValid());
+	EXPECT_TRUE(spectrum.isManaged());
+
+	spectrum = sm.findSpectrumByName("new_default");
+	EXPECT_TRUE(spectrum.isValid());
+	EXPECT_TRUE(spectrum.isManaged());
+
+	EXPECT_FALSE(spectrum.isMaterialOverwrite());
+
+	EXPECT_EQ(2, spectrum.getNumberOfSpectrumcomponents());
+
+	Spectrumcomponent component1 = spectrum.getFirstSpectrumcomponent();
+	EXPECT_TRUE(component1.isValid());
+
+	Spectrumcomponent component2 = spectrum.getNextSpectrumcomponent(component1);
+	EXPECT_TRUE(component2.isValid());
+
+	Spectrumcomponent component3 = spectrum.getNextSpectrumcomponent(component2);
+	EXPECT_FALSE(component3.isValid());
+
+	Spectrumcomponent component1_clone = spectrum.getPreviousSpectrumcomponent(component2);
+	EXPECT_EQ(component1_clone.getId(), component1.getId());
+
+	EXPECT_DOUBLE_EQ(20.0, component1.getRangeMaximum());
+
+	EXPECT_DOUBLE_EQ(5.0, component1.getRangeMinimum());
+
+	EXPECT_DOUBLE_EQ(0.5, component1.getColourMaximum());
+
+	EXPECT_DOUBLE_EQ(0.4, component1.getColourMinimum());
+
+	EXPECT_DOUBLE_EQ(0.4, component1.getBandedRatio());
+
+	EXPECT_DOUBLE_EQ(10, component1.getStepValue());
+
+	EXPECT_DOUBLE_EQ(2.0, component1.getExaggeration());
+
+	EXPECT_FALSE(component1.isActive());
+
+	EXPECT_TRUE(component1.isColourReverse());
+
+	EXPECT_FALSE(component1.isExtendAbove());
+
+	EXPECT_FALSE(component1.isExtendBelow());
+
+	EXPECT_EQ(2, component1.getFieldComponent());
+
+	EXPECT_EQ(6, component1.getNumberOfBands());
+
+	EXPECT_EQ(Spectrumcomponent::SCALE_TYPE_LOG, component1.getScaleType());
+
+	EXPECT_EQ(Spectrumcomponent::COLOUR_MAPPING_TYPE_MONOCHROME, component1.getColourMappingType());
+
+	char *return_string = sm.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
 }
 
 TEST(cmzn_spectrum_api, iteration_cpp)
