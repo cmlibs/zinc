@@ -29,6 +29,8 @@ FILE : scene.cpp
 #include "computed_field/computed_field_set.h"
 #include "computed_field/computed_field_wrappers.h"
 #include "computed_field/field_module.hpp"
+#include "description_io/scene_json_import.hpp"
+#include "description_io/scene_json_export.hpp"
 #include "region/cmiss_region.h"
 #include "finite_element/finite_element_region.h"
 #include "graphics/graphics.h"
@@ -3677,4 +3679,27 @@ int Scene_get_number_of_graphics_with_surface_vertices_in_tree(cmzn_scene_id sce
 		return data.number_of_graphics;
 	}
 	return 0;
+}
+
+char *cmzn_scene_write_description(cmzn_scene_id scene)
+{
+	if (scene)
+	{
+		SceneJsonExport jsonExport(scene);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
+	return 0;
+}
+
+int cmzn_scene_read_description(
+	cmzn_scene_id scene, const char *description, bool overwrite)
+{
+	if (scene && description)
+	{
+		SceneJsonImport sceneImport(scene, overwrite);
+		std::string inputString(description);
+		return sceneImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+
 }

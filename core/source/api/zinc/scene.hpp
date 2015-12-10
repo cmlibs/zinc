@@ -260,6 +260,16 @@ public:
 		return cmzn_scene_remove_graphics(id, graphics.getId());
 	}
 
+	char *writeDescription()
+	{
+		return cmzn_scene_write_description(id);
+	}
+
+	int readDescription(const char *description, bool overwrite)
+	{
+		return cmzn_scene_read_description(id, description, overwrite);
+	}
+
 	inline Scenepicker createScenepicker();
 
 	inline int write(const StreaminformationScene& streaminformationScene);

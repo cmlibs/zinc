@@ -485,6 +485,28 @@ ZINC_API int cmzn_scene_write(cmzn_scene_id scene,
 ZINC_API int cmzn_scene_read(cmzn_scene_id scene,
 	cmzn_streaminformation_scene_id streaminformation_scene);
 
+/**
+ * Write the json file describing the scene and its graphics, which can
+ * be used to store the current scene settings.
+ *
+ * @param scene  Handle to the scene.
+ * @return  c string containing the json description of scene, otherwise 0;
+ */
+ZINC_API char *cmzn_scene_write_description(cmzn_scene_id scene);
+
+/**
+ * Read the json description to the scene and graphics. This will change
+ * the settings in scene and its graphics.
+ *
+ * @param scene  Handle to the scene.
+ * @description  The string containing json description
+ * @overwrite  old graphics will be replaced when set to true or new graphics
+ * 	will be added to the existing graphics when set to false
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_scene_read_description(
+	cmzn_scene_id scene, const char *description, bool overwrite);
+
 #ifdef __cplusplus
 }
 #endif
