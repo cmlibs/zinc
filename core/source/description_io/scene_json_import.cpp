@@ -32,10 +32,9 @@ int SceneJsonImport::import(const std::string &jsonString)
 		}
 		if (root.isObject())
 		{
-			Json::Value sceneJson = root["Scene"];
-			if (sceneJson["VisibilityFlag"].isBool())
-				scene.setVisibilityFlag(sceneJson["VisibilityFlag"].asBool());
-			Json::Value graphicsSettings = sceneJson["Graphics"];
+			if (root["VisibilityFlag"].isBool())
+				scene.setVisibilityFlag(root["VisibilityFlag"].asBool());
+			Json::Value graphicsSettings = root["Graphics"];
 			for (unsigned int index = 0; index < graphicsSettings.size(); ++index )
 			{
 				importGraphics(graphicsSettings[index]);

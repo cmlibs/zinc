@@ -231,7 +231,7 @@ int SceneviewerJsonImport::import(const std::string &jsonString)
 		sceneviewer.beginChange();
 		if (root.isObject())
 		{
-			ioEntries(root["Sceneviewer"]);
+			ioEntries(root);
 		}
 
 		return_code = CMZN_OK;
@@ -245,7 +245,7 @@ std::string SceneviewerJsonExport::getExportString()
 {
 	std::string returned_string;
 	Json::Value sceneviewerSettings;
-	ioEntries(sceneviewerSettings["Sceneviewer"]);
+	ioEntries(sceneviewerSettings);
 	returned_string = Json::StyledWriter().write(sceneviewerSettings);
 
 	return returned_string;

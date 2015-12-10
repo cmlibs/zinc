@@ -15,7 +15,6 @@
 #include "zinc/spectrum.hpp"
 #include "zinc/status.h"
 
-
 void SpectrumcomponentJsonIO::ioEntries(Json::Value &componentSettings)
 {
 	ioBoolEntries(componentSettings);
@@ -165,7 +164,11 @@ int SpectrummoduleJsonImport::import(const std::string &jsonString)
 				importSpectrum(spectrumJson[index]);
 			}
 		}
-
+		if (root["DefaultSpectrum"].isString())
+		{
+			spectrummodule.setDefaultSpectrum(spectrummodule.findSpectrumByName(
+				root["DefaultSpectrum"].asCString()));
+		}
 		return_code = CMZN_OK;
 		spectrummodule.endChange();
 	}
@@ -187,7 +190,6 @@ void SpectrummoduleJsonImport::importSpectrum(Json::Value &spectrumSettings)
 
 std::string SpectrummoduleJsonExport::getExportString()
 {
-	std::string returned_string;
 	Json::Value root;
 
 	OpenCMISS::Zinc::Spectrumiterator spectrumiterator =
@@ -200,7 +202,9 @@ std::string SpectrummoduleJsonExport::getExportString()
 		root["Spectrum"].append(spectrumSettings);
 		spectrum = spectrumiterator.next();
 	}
+	char *defaultSpectrumName = spectrummodule.getDefaultSpectrum().getName();
+	root["DefaultSpectrum"] = defaultSpectrumName;
+	DEALLOCATE(defaultSpectrumName);
 
-	returned_string = Json::StyledWriter().write(root);
-	return returned_string;
+	return Json::StyledWriter().write(root);
 }

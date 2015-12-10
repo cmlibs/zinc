@@ -22,7 +22,7 @@ std::string SceneJsonExport::getExportString()
 
 	Json::Value scene_settings;
 	bool visibility = scene.getVisibilityFlag();
-	scene_settings["VisibilityFlag"] = visibility;
+	root["VisibilityFlag"] = visibility;
 	Json::Value graphics_settings;
 	OpenCMISS::Zinc::Graphics graphics = scene.getFirstGraphics();
 	while (graphics.isValid())
@@ -32,8 +32,7 @@ std::string SceneJsonExport::getExportString()
 		graphics_settings.append(*tempValue);
 		graphics = scene.getNextGraphics(graphics);
 	}
-	scene_settings["Graphics"] = graphics_settings;
-	root["Scene"]= scene_settings;
+	root["Graphics"] = graphics_settings;
 	returned_string = Json::StyledWriter().write(root);
 
 	return returned_string;
