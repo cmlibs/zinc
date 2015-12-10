@@ -352,6 +352,10 @@ TEST(cmzn_spectrum_api, description_io_cpp)
 	EXPECT_TRUE(spectrum.isValid());
 	EXPECT_TRUE(spectrum.isManaged());
 
+	char *name = sm.getDefaultSpectrum().getName();
+	EXPECT_EQ(0, strcmp("new_default", name));
+	cmzn_deallocate(name);
+
 	EXPECT_FALSE(spectrum.isMaterialOverwrite());
 
 	EXPECT_EQ(2, spectrum.getNumberOfSpectrumcomponents());

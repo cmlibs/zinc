@@ -1,4 +1,5 @@
 {
+   "DefaultSpectrum" : "new_default",
    "Spectrum" : [
       {
          "Components" : [
@@ -32,7 +33,7 @@
                "ColourMaximum" : 0.5,
                "ColourMinimum" : 0.4,
                "ColourReverse" : true,
-               "Exaggeration" : 2.0,
+               "Exaggeration" : 2,
                "ExtendAbove" : false,
                "ExtendBelow" : false,
                "FieldComponent" : 2,
