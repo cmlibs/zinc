@@ -165,6 +165,18 @@ cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory_buffe
 	return NULL;
 }
 
+cmzn_streamresource_id cmzn_streaminformation_create_streamresource_memory_buffer_copy(
+	cmzn_streaminformation_id streaminformation,
+	const void *buffer, unsigned int buffer_length)
+{
+	if (streaminformation)
+	{
+		return streaminformation->createStreamresourceMemoryBufferCopy(buffer,
+			buffer_length);
+	}
+	return NULL;
+}
+
 enum cmzn_streaminformation_data_compression_type cmzn_streaminformation_get_resource_data_compression_type(
 	cmzn_streaminformation_id streaminformation, cmzn_streamresource_id resource)
 {

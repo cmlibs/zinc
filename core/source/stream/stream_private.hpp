@@ -157,6 +157,22 @@ protected:
 	cmzn_stream_memory_block *memory_block;
 };
 
+struct cmzn_streamresource_memory_copy : public cmzn_streamresource_memory
+{
+public:
+
+	cmzn_streamresource_memory_copy(const void *buffer, int buffer_size) :
+		cmzn_streamresource_memory()
+	{
+		memory_block->to_be_deallocated = 1;
+		char *new_block = 0;
+		ALLOCATE(new_block, char, buffer_size);
+		memcpy (new_block, buffer, buffer_size);
+		memory_block->memory_buffer = (void *)new_block;
+		memory_block->memory_buffer_size = buffer_size;
+	}
+};
+
 struct cmzn_resource_properties
 {
 public:
@@ -283,6 +299,19 @@ public:
 		if (memory_block && block_length)
 		{
 			cmzn_streamresource_id stream = new cmzn_streamresource_memory(
+				memory_block, block_length);
+			appendResourceProperties(createResourceProperties(stream));
+			return stream;
+		}
+		return NULL;
+	}
+
+	cmzn_streamresource_id createStreamresourceMemoryBufferCopy(const void *memory_block,
+		unsigned int block_length)
+	{
+		if (memory_block && block_length)
+		{
+			cmzn_streamresource_id stream = new cmzn_streamresource_memory_copy(
 				memory_block, block_length);
 			appendResourceProperties(createResourceProperties(stream));
 			return stream;
