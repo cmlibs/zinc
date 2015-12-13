@@ -153,6 +153,27 @@ ZINC_API int cmzn_tessellationmodule_set_default_points_tessellation(
     cmzn_tessellation_id tessellation);
 
 /**
+ * Read the json description to the tessellation module. This will change
+ * the tessellations in the tessellation module.
+ *
+ * @param tessellationmodule  Handle to the spectrum module.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_tessellationmodule_read_description(
+	cmzn_tessellationmodule_id tessellationmodule, const char *description);
+
+/**
+ * Write the json file describing the tessellations in the tessellation module,
+ * which can be used to store the current tessellation settings.
+ *
+ * @param tessellationmodule  Handle to the tessellation module.
+ * @return  c string containing the json description of tessellation module, otherwise 0;
+ */
+ZINC_API char *cmzn_tessellationmodule_write_description(
+	cmzn_tessellationmodule_id tessellationmodule);
+
+/**
  * Returns a new handle to the tessellation with reference count incremented.
  *
  * @param tessellation  Handle to tessellation.

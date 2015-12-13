@@ -11,6 +11,7 @@
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 #include <cstdlib>
 #include "zinc/status.h"
+#include "description_io/tessellation_json_io.hpp"
 #include "general/debug.h"
 #include "general/manager_private.h"
 #include "general/mystring.h"
@@ -1111,5 +1112,28 @@ cmzn_tessellation_id cmzn_tessellationiterator_next_non_access(cmzn_tessellation
 {
 	if (iterator)
 		return iterator->next_non_access();
+	return 0;
+}
+
+
+int cmzn_tessellationmodule_read_description(cmzn_tessellationmodule_id tessellationmodule,
+	const char *description)
+{
+	if (tessellationmodule && description)
+	{
+		TessellationmoduleJsonImport jsonImport(tessellationmodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_tessellationmodule_write_description(cmzn_tessellationmodule_id tessellationmodule)
+{
+	if (tessellationmodule)
+	{
+		TessellationmoduleJsonExport jsonExport(tessellationmodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
 	return 0;
 }

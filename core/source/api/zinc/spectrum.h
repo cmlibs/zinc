@@ -123,7 +123,7 @@ ZINC_API int cmzn_spectrummodule_set_default_spectrum(
 
 /**
  * Read the json description to the spectrum module. This will change
- * the spectrums in the pectrum module.
+ * the spectrums in the spectrum module.
  *
  * @param spectrummodule  Handle to the spectrum module.
  * @description  The string containing json description

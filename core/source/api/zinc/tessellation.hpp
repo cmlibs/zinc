@@ -266,6 +266,16 @@ public:
 	{
 		return cmzn_tessellationmodule_set_default_points_tessellation(id, tessellation.getId());
 	}
+
+ 	int readDescription(const char *description)
+ 	{
+ 		return cmzn_tessellationmodule_read_description(this->id, description);
+ 	}
+
+ 	char *writeDescription()
+ 	{
+ 		return cmzn_tessellationmodule_write_description(this->id);
+ 	}
 };
 
 inline Tessellationmodule Context::getTessellationmodule()
