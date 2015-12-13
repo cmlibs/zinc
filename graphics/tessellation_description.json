@@ -1,0 +1,24 @@
+{
+   "DefaultPointsTessellation" : "default",
+   "DefaultTessellation" : "new_default",
+   "Tessellation" : [
+      {
+         "CircleDivisions" : 12,
+         "MinimumDivisions" : [ 1 ],
+         "Name" : "default",
+         "RefinementFactors" : [ 4 ]
+      },
+      {
+         "CircleDivisions" : 12,
+         "MinimumDivisions" : [ 1 ],
+         "Name" : "default_points",
+         "RefinementFactors" : [ 1 ]
+      },
+      {
+         "CircleDivisions" : 10,
+         "MinimumDivisions" : [ 2, 6 ],
+         "Name" : "new_default",
+         "RefinementFactors" : [ 3, 5, 7 ]
+      }
+   ]
+}

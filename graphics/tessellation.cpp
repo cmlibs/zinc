@@ -16,6 +16,8 @@
 #include "zinctestsetupcpp.hpp"
 #include "zinc/tessellation.hpp"
 
+#include "test_resources.h"
+
 TEST(cmzn_tessellationmodule_api, valid_args)
 {
 	ZincTestSetup zinc;
@@ -249,6 +251,76 @@ TEST(cmzn_tessellation_api, valid_args_cpp)
 
 	result = tessellation.getRefinementFactors(3, &outValues[0]);
 	EXPECT_EQ(3, result);
+
+}
+
+
+TEST(cmzn_tessellation_api, description_io_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Tessellationmodule tm = zinc.context.getTessellationmodule();
+	EXPECT_TRUE(tm.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::TESSELLATION_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, tm.readDescription((char *)buffer));
+	free(buffer);
+
+	Tessellation tessellation = tm.findTessellationByName("default");
+	EXPECT_TRUE(tessellation.isValid());
+	EXPECT_TRUE(tessellation.isManaged());
+
+	tessellation = tm.findTessellationByName("default_points");
+	EXPECT_TRUE(tessellation.isValid());
+	EXPECT_TRUE(tessellation.isManaged());
+
+	tessellation = tm.findTessellationByName("new_default");
+	EXPECT_TRUE(tessellation.isValid());
+	EXPECT_TRUE(tessellation.isManaged());
+
+	char *name = tm.getDefaultTessellation().getName();
+	EXPECT_EQ(0, strcmp("new_default", name));
+	cmzn_deallocate(name);
+
+	name = tm.getDefaultPointsTessellation().getName();
+	EXPECT_EQ(0, strcmp("default", name));
+	cmzn_deallocate(name);
+
+	EXPECT_EQ(10, tessellation.getCircleDivisions());
+
+	int intValues[3];
+	int returnedValue = 0;
+
+	returnedValue = tessellation.getMinimumDivisions(2, &intValues[0]);
+	EXPECT_EQ(2, returnedValue);
+	EXPECT_EQ(2, intValues[0]);
+	EXPECT_EQ(6, intValues[1]);
+
+	returnedValue = tessellation.getRefinementFactors(3, &intValues[0]);
+	EXPECT_EQ(3, returnedValue);
+	EXPECT_EQ(3, intValues[0]);
+	EXPECT_EQ(5, intValues[1]);
+	EXPECT_EQ(7, intValues[2]);
+
+	char *return_string = tm.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
 }
 
 TEST(ZincTessellationiterator, iteration)
