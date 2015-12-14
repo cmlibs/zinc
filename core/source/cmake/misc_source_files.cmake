@@ -98,9 +98,11 @@ SET( SELECTION_HDRS source/selection/any_object_selection.h
 	source/selection/element_point_ranges_selection.h )
 
 SET( TIME_SRCS
+	source/description_io/timekeeper_json_io.cpp
 	source/time/time.cpp
 	source/time/time_keeper.cpp )
 SET( TIME_HDRS
+	source/description_io/timekeeper_json_io.hpp
 	source/time/time.h
 	source/time/time_keeper.hpp
 	source/time/time_private.h )

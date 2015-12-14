@@ -156,7 +156,7 @@ ZINC_API int cmzn_tessellationmodule_set_default_points_tessellation(
  * Read the json description to the tessellation module. This will change
  * the tessellations in the tessellation module.
  *
- * @param tessellationmodule  Handle to the spectrum module.
+ * @param tessellationmodule  Handle to the tessellation module.
  * @description  The string containing json description
  * @return  CMZN_OK on success, otherwise ERROR status.
  */

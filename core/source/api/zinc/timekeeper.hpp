@@ -165,6 +165,16 @@ public:
 		return Timekeeper(cmzn_timekeepermodule_get_default_timekeeper(id));
 	}
 
+ 	int readDescription(const char *description)
+ 	{
+ 		return cmzn_timekeepermodule_read_description(this->id, description);
+ 	}
+
+ 	char *writeDescription()
+ 	{
+ 		return cmzn_timekeepermodule_write_description(this->id);
+ 	}
+
 };
 
 inline Timekeepermodule Context::getTimekeepermodule()

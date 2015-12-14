@@ -16,6 +16,7 @@ This is intended to be multithreaded......
 #include <math.h>
 #include <stdio.h>
 
+#include "description_io/timekeeper_json_io.hpp"
 #include "zinc/status.h"
 #include "zinc/timekeeper.h"
 #include "general/debug.h"
@@ -406,5 +407,27 @@ cmzn_timekeeper_id cmzn_timekeepermodule_get_default_timekeeper(
 {
 	if (timekeepermodule)
 		return timekeepermodule->getDefaultTimekeeper()->access();
+	return 0;
+}
+
+int cmzn_timekeepermodule_read_description(cmzn_timekeepermodule_id timekeepermodule,
+	const char *description)
+{
+	if (timekeepermodule && description)
+	{
+		TimekeepermoduleJsonImport jsonImport(timekeepermodule);
+		std::string inputString(description);
+		return jsonImport.import(inputString);
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+char *cmzn_timekeepermodule_write_description(cmzn_timekeepermodule_id timekeepermodule)
+{
+	if (timekeepermodule)
+	{
+		TimekeepermoduleJsonExport jsonExport(timekeepermodule);
+		return duplicate_string(jsonExport.getExportString().c_str());
+	}
 	return 0;
 }
