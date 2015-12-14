@@ -8,6 +8,8 @@
 
 #include <gtest/gtest.h>
 
+#include <zinc/core.h>
+
 #include <zinc/timekeeper.h>
 #include <zinc/timenotifier.h>
 
@@ -16,6 +18,8 @@
 
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
+
+#include "test_resources.h"
 
 void timeNotifierCallback(cmzn_timenotifierevent_id event, void *storeTimeAddressVoid)
 {
@@ -112,6 +116,46 @@ TEST(ZincTimekeeper, api)
 	ASSERT_DOUBLE_EQ(3.99, thisCallback.lastEvent.getTime());
 	EXPECT_EQ(CMZN_OK, result = timenotifier.clearCallback());
 }
+
+TEST(ZincTimekeeper, description_io_cpp)
+{
+	ZincTestSetupCpp zinc;
+
+	Timekeepermodule tkm = zinc.context.getTimekeepermodule();
+	EXPECT_TRUE(tkm.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::TIMEKEEPER_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, tkm.readDescription((char *)buffer));
+	free(buffer);
+
+	Timekeeper timekeeper = tkm.getDefaultTimekeeper();
+	EXPECT_TRUE(timekeeper.isValid());
+
+	EXPECT_DOUBLE_EQ(-1.0, timekeeper.getMinimumTime());
+	EXPECT_DOUBLE_EQ(5.0, timekeeper.getMaximumTime());
+	EXPECT_DOUBLE_EQ(3.99, timekeeper.getTime());
+
+	char *return_string = tkm.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
+}
+
 
 TEST(ZincTimekeeper, getNextCallback)
 {
