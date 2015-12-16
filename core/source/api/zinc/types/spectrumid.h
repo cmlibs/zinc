@@ -128,4 +128,51 @@ enum cmzn_spectrumcomponent_colour_mapping_type
      */
 };
 
+/**
+ * Bit flags summarising changes to a spectrum or spectrums in a spectrummodule.
+ */
+enum cmzn_spectrum_change_flag
+{
+	CMZN_SPECTRUM_CHANGE_FLAG_NONE = 0,
+		/*!< spectrum(s) not changed */
+	CMZN_SPECTRUM_CHANGE_FLAG_ADD = 1,
+		/*!< one or more spectrums added */
+	CMZN_SPECTRUM_CHANGE_FLAG_REMOVE = 2,
+		/*!< one or more spectrums removed */
+	CMZN_SPECTRUM_CHANGE_FLAG_IDENTIFIER = 4,
+		/*!< spectrum identifier changed */
+	CMZN_SPECTRUM_CHANGE_FLAG_DEFINITION = 8,
+		/*!< change to spectrum attributes other than identifier. */
+	CMZN_SPECTRUM_CHANGE_FLAG_FULL_RESULT = 16,
+		/*!< all resultant values of spectrum changed. */
+	CMZN_SPECTRUM_CHANGE_FLAG_FINAL = 32768
+		/*!< final notification: owning spectrum module i.e. spectrum module
+		 * has been destroyed */
+};
+
+/**
+ * Type for passing logical OR of #cmzn_spectrum_change_flag
+ */
+typedef int cmzn_spectrum_change_flags;
+
+/**
+ * @brief Manages individual user notification of changes with a spectrum module.
+ *
+ * Manages individual user notification of changes with a spectrum module.
+ */
+struct cmzn_spectrummodulenotifier;
+typedef struct cmzn_spectrummodulenotifier *cmzn_spectrummodulenotifier_id;
+
+/**
+ * @brief Information about changes to spectrums in the spectrum module.
+ *
+ * Information about changes to spectrums in the spectrum module,
+ * sent with each callback from the spectrummodule notifier.
+ */
+struct cmzn_spectrummoduleevent;
+typedef struct cmzn_spectrummoduleevent *cmzn_spectrummoduleevent_id;
+
+typedef void (*cmzn_spectrummodulenotifier_callback_function)(
+	cmzn_spectrummoduleevent_id event, void *client_data);
+
 #endif

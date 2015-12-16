@@ -15,6 +15,9 @@ Spectrum functions and support code.
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <algorithm>
+#include <list>
+#include <vector>
 #include <math.h>
 #include "zinc/spectrum.h"
 #include "zinc/status.h"
@@ -40,34 +43,55 @@ Module types
 ------------
 */
 
+typedef std::list<cmzn_spectrummodulenotifier *> cmzn_spectrummodulenotifier_list;
+
 struct cmzn_spectrum *cmzn_spectrum_create_private();
+
+static void cmzn_spectrummodule_Spectrum_change(
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *region_void);
 
 struct cmzn_spectrummodule
 {
-
 private:
 
     struct MANAGER(cmzn_spectrum) *spectrumManager;
     cmzn_spectrum *defaultSpectrum;
     int access_count;
+    void *manager_callback_id;
 
     cmzn_spectrummodule() :
-        spectrumManager(CREATE(MANAGER(cmzn_spectrum))()),
-        defaultSpectrum(0),
-        access_count(1)
+   	 spectrumManager(CREATE(MANAGER(cmzn_spectrum))()),
+   	 defaultSpectrum(0),
+   	 access_count(1)
     {
+   	 notifier_list = new cmzn_spectrummodulenotifier_list();
+   	 MANAGER_REGISTER(cmzn_spectrum)(
+   		 cmzn_spectrummodule_Spectrum_change, (void *)this, spectrumManager);
     }
 
     ~cmzn_spectrummodule()
     {
-        if (defaultSpectrum)
-        {
-            DEACCESS(cmzn_spectrum)(&(this->defaultSpectrum));
-        }
-        DESTROY(MANAGER(cmzn_spectrum))(&(this->spectrumManager));
+   	 MANAGER_DEREGISTER(cmzn_spectrum)(manager_callback_id, spectrumManager);
+   	 manager_callback_id = 0;
+   	 for (cmzn_spectrummodulenotifier_list::iterator iter = notifier_list->begin();
+   		 iter != notifier_list->end(); ++iter)
+   	 {
+   		 cmzn_spectrummodulenotifier *notifier = *iter;
+   		 notifier->spectrummoduleDestroyed();
+   		 cmzn_spectrummodulenotifier::deaccess(notifier);
+   	 }
+   	 delete notifier_list;
+   	 notifier_list = 0;
+   	 if (defaultSpectrum)
+   	 {
+   		 DEACCESS(cmzn_spectrum)(&(this->defaultSpectrum));
+   	 }
+   	 DESTROY(MANAGER(cmzn_spectrum))(&(this->spectrumManager));
     }
 
 public:
+
+    cmzn_spectrummodulenotifier_list *notifier_list;
 
     static cmzn_spectrummodule *create()
     {
@@ -78,7 +102,6 @@ public:
     }
 
     cmzn_spectrummodule *access()
-
     {
         ++access_count;
         return this;
@@ -182,6 +205,25 @@ public:
         return CMZN_OK;
     }
 
+    void addNotifier(cmzn_spectrummodulenotifier *notifier)
+    {
+   	 notifier_list->push_back(notifier->access());
+    }
+
+    void removeNotifier(cmzn_spectrummodulenotifier *notifier)
+    {
+   	 if (notifier)
+   	 {
+   		 cmzn_spectrummodulenotifier_list::iterator iter = std::find(
+   			 notifier_list->begin(), notifier_list->end(), notifier);
+   		 if (iter != notifier_list->end())
+   		 {
+   			 cmzn_spectrummodulenotifier::deaccess(notifier);
+   			 notifier_list->erase(iter);
+   		 }
+   	 }
+    }
+
 };
 
 cmzn_spectrummodule_id cmzn_spectrummodule_create()
@@ -267,14 +309,7 @@ int cmzn_spectrummodule_set_default_spectrum(
     return 0;
 }
 
-
 struct cmzn_spectrum *cmzn_spectrum_create_private()
-/*******************************************************************************
-LAST MODIFIED : 14 May 1998
-
-DESCRIPTION :
-Allocates memory and assigns fields for a Spectrum object.
-==============================================================================*/
 {
     struct cmzn_spectrum *spectrum = 0;
     if (ALLOCATE(spectrum,struct cmzn_spectrum,1))
@@ -407,7 +442,27 @@ public:
 
 };
 
-FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_spectrum, cmzn_spectrummodule, void *);
+FULL_DECLARE_MANAGER_TYPE_WITH_OWNER(cmzn_spectrum, cmzn_spectrummodule, cmzn_spectrum_change_detail *);
+
+DECLARE_DEFAULT_MANAGER_UPDATE_DEPENDENCIES_FUNCTION(cmzn_spectrum);
+
+DECLARE_MANAGER_FIND_CLIENT_FUNCTION(cmzn_spectrum);
+
+DECLARE_MANAGED_OBJECT_NOT_IN_USE_CONDITIONAL_FUNCTION(cmzn_spectrum);
+
+inline cmzn_spectrum_change_detail *MANAGER_EXTRACT_CHANGE_DETAIL(cmzn_spectrum)(
+	struct cmzn_spectrum *spectrum)
+{
+	return spectrum->extractChangeDetail();
+}
+
+inline void MANAGER_CLEANUP_CHANGE_DETAIL(cmzn_spectrum)(
+	cmzn_spectrum_change_detail **change_detail_address)
+{
+	delete *change_detail_address;
+}
+
+DECLARE_MANAGER_UPDATE_FUNCTION(cmzn_spectrum);
 
 /*
 Module functions
@@ -650,8 +705,6 @@ DECLARE_INDEXED_LIST_STL_FUNCTIONS(cmzn_spectrum)
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_STL_FUNCTION(cmzn_spectrum,name,const char *)
 DECLARE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(cmzn_spectrum,name)
 DECLARE_CREATE_INDEXED_LIST_STL_ITERATOR_FUNCTION(cmzn_spectrum,cmzn_spectrumiterator)
-
-DECLARE_LOCAL_MANAGER_FUNCTIONS(cmzn_spectrum)
 
 DECLARE_MANAGER_FUNCTIONS(cmzn_spectrum,manager)
 DECLARE_DEFAULT_MANAGED_OBJECT_NOT_IN_USE_FUNCTION(cmzn_spectrum,manager)
@@ -1700,6 +1753,7 @@ int cmzn_spectrum_changed(cmzn_spectrum_id spectrum)
     if (spectrum)
     {
         spectrum->changed = 1;
+        spectrum->changeDetail.setChanged();
         if (0 == spectrum->cache)
         {
             return cmzn_spectrum_inform_clients(spectrum);
@@ -2255,6 +2309,212 @@ Returns the sizes used for the colour lookup spectrums internal texture.
 
     return (return_code);
 } /* Spectrum_get_colour_lookup_sizes */
+
+/**
+ * Spectrum manager callback. Calls notifier callbacks.
+ *
+ * @param message  The changes to the sepctrum in the spectrum manager.
+ * @param spectrummodule_void  Void pointer to changed spectrummodule).
+ */
+static void cmzn_spectrummodule_Spectrum_change(
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *spectrummodule_void)
+{
+	cmzn_spectrummodule *spectrummodule = (cmzn_spectrummodule *)spectrummodule_void;
+	if (message && spectrummodule)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_spectrum)(message);
+
+		if (0 < spectrummodule->notifier_list->size())
+		{
+			cmzn_spectrummoduleevent_id event = cmzn_spectrummoduleevent::create(spectrummodule);
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
+			for (cmzn_spectrummodulenotifier_list::iterator iter = spectrummodule->notifier_list->begin();
+				iter != spectrummodule->notifier_list->end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_spectrummoduleevent::deaccess(event);
+		}
+	}
+}
+
+cmzn_spectrummodulenotifier_id cmzn_spectrummodule_create_spectrummodulenotifier(
+	cmzn_spectrummodule_id spectrummodule)
+{
+	return cmzn_spectrummodulenotifier::create(spectrummodule);
+}
+
+cmzn_spectrummodulenotifier::cmzn_spectrummodulenotifier(cmzn_spectrummodule *spectrummodule) :
+	module(spectrummodule),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	spectrummodule->addNotifier(this);
+}
+
+cmzn_spectrummodulenotifier::~cmzn_spectrummodulenotifier()
+{
+}
+
+int cmzn_spectrummodulenotifier::deaccess(cmzn_spectrummodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->module)
+			notifier->module->removeNotifier(notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_spectrummodulenotifier::setCallback(cmzn_spectrummodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_spectrummodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_spectrummodulenotifier::spectrummoduleDestroyed()
+{
+	this->module = 0;
+	if (this->function)
+	{
+		cmzn_spectrummoduleevent_id event = cmzn_spectrummoduleevent::create(static_cast<cmzn_spectrummodule*>(0));
+		event->setChangeFlags(CMZN_SPECTRUM_CHANGE_FLAG_FINAL);
+		(this->function)(event, this->user_data);
+		cmzn_spectrummoduleevent::deaccess(event);
+		this->clearCallback();
+	}
+}
+
+cmzn_spectrummoduleevent::cmzn_spectrummoduleevent(cmzn_spectrummodule *spectrummoduleIn) :
+	module(cmzn_spectrummodule_access(spectrummoduleIn)),
+	changeFlags(CMZN_SPECTRUM_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	access_count(1)
+{
+}
+
+cmzn_spectrummoduleevent::~cmzn_spectrummoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(cmzn_spectrum)(&(this->managerMessage));
+	cmzn_spectrummodule_destroy(&this->module);
+}
+
+cmzn_spectrum_change_flags cmzn_spectrummoduleevent::getSpectrumChangeFlags(cmzn_spectrum *spectrum) const
+{
+	if (spectrum && this->managerMessage)
+		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_spectrum)(this->managerMessage, spectrum);
+	return CMZN_SPECTRUM_CHANGE_FLAG_NONE;
+}
+
+void cmzn_spectrummoduleevent::setManagerMessage(
+	struct MANAGER_MESSAGE(cmzn_spectrum) *managerMessageIn)
+{
+	this->managerMessage = MANAGER_MESSAGE_ACCESS(cmzn_spectrum)(managerMessageIn);
+}
+
+struct MANAGER_MESSAGE(cmzn_spectrum) *cmzn_spectrummoduleevent::getManagerMessage()
+{
+	return this->managerMessage;
+}
+
+int cmzn_spectrummoduleevent::deaccess(cmzn_spectrummoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_spectrummodulenotifier_clear_callback(cmzn_spectrummodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_spectrummodulenotifier_set_callback(cmzn_spectrummodulenotifier_id notifier,
+	cmzn_spectrummodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_spectrummodulenotifier_get_callback_user_data(
+ cmzn_spectrummodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_spectrummodulenotifier_id cmzn_spectrummodulenotifier_access(
+	cmzn_spectrummodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->access();
+	return 0;
+}
+
+int cmzn_spectrummodulenotifier_destroy(cmzn_spectrummodulenotifier_id *notifier_address)
+{
+	return cmzn_spectrummodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_spectrummoduleevent_id cmzn_spectrummoduleevent_access(
+	cmzn_spectrummoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_spectrummoduleevent_destroy(cmzn_spectrummoduleevent_id *event_address)
+{
+	return cmzn_spectrummoduleevent::deaccess(*event_address);
+}
+
+cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_summary_spectrum_change_flags(
+	cmzn_spectrummoduleevent_id event)
+{
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_SPECTRUM_CHANGE_FLAG_NONE;
+}
+
+cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_spectrum_change_flags(
+	cmzn_spectrummoduleevent_id event, cmzn_spectrum_id spectrum)
+{
+	if (event)
+		return event->getSpectrumChangeFlags(spectrum);
+	return CMZN_SPECTRUM_CHANGE_FLAG_NONE;
+}
 
 double cmzn_spectrum_get_minimum(cmzn_spectrum_id spectrum)
 {

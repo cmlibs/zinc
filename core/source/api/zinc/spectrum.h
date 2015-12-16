@@ -770,6 +770,111 @@ ZINC_API int cmzn_spectrumiterator_destroy(cmzn_spectrumiterator_id *iterator_ad
  */
 ZINC_API cmzn_spectrum_id cmzn_spectrumiterator_next(cmzn_spectrumiterator_id iterator);
 
+/**
+ * Create a notifier for getting callbacks for changes to the spectrums in the
+ * spectrum module.
+ *
+ * @param spectrummodule  Handle to the spectrum module to get notifications for.
+ * @return  Handle to new spectrum module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_spectrummodulenotifier_id cmzn_spectrummodule_create_spectrummodulenotifier(
+	cmzn_spectrummodule_id spectrummodule);
+
+/**
+ * Returns a new handle to the spectrum module notifier with reference count
+ * incremented.
+ *
+ * @param notifier  The spectrum module notifier to obtain a new handle to.
+ * @return  New handle to spectrum module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_spectrummodulenotifier_id cmzn_spectrummodulenotifier_access(
+	cmzn_spectrummodulenotifier_id notifier);
+
+/**
+ * Destroys handle to the spectrum module notifier and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param notifier_address  Address of spectrum module notifier handle to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_spectrummodulenotifier_destroy(cmzn_spectrummodulenotifier_id *notifier_address);
+
+/**
+ * Stop and clear spectrum module callback. This will stop the callback and also
+ * remove the callback function from the spectrummodule notifier.
+ *
+ * @param notifier  Handle to the spectrummodule notifier.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_spectrummodulenotifier_clear_callback(cmzn_spectrummodulenotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the spectrummodule notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_spectrummodulenotifier_callback_function
+ * @param notifier  Handle to the spectrummodule notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_spectrummodulenotifier_set_callback(cmzn_spectrummodulenotifier_id notifier,
+	cmzn_spectrummodulenotifier_callback_function function, void *user_data_in);
+
+/**
+ * Get the user data set when establishing the callback.
+ * @see cmzn_spectrummodulenotifier_set_callback
+ *
+ * @see cmzn_spectrummodulenotifier_set_callback
+ * @param notifier  Handle to the spectrum module notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_spectrummodulenotifier_get_callback_user_data(
+ cmzn_spectrummodulenotifier_id notifier);
+
+/**
+ * Returns a new handle to the spectrummodule event with reference count incremented.
+ *
+ * @param event  The spectrum module event to obtain a new handle to.
+ * @return  New handle to spectrum module event, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_spectrummoduleevent_id cmzn_spectrummoduleevent_access(
+	cmzn_spectrummoduleevent_id event);
+
+/**
+ * Destroys this handle to the spectrummodule event and sets it to NULL.
+ * Internally this decrements the reference count.
+ * Note: Do not destroy the event argument passed to the user callback function.
+ *
+ * @param event_address  Address of spectrum module event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_spectrummoduleevent_destroy(cmzn_spectrummoduleevent_id *event_address);
+
+/**
+ * Get logical OR of flags indicating how spectrums in the spectrum module have changed.
+ * @see cmzn_spectrum_change_flag
+ *
+ * @param event  Handle to the spectrum module event.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_spectrum_change_flag values.
+ */
+ZINC_API cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_summary_spectrum_change_flags(
+	cmzn_spectrummoduleevent_id event);
+
+/**
+ * Get logical OR of flags indicating how the spectrum has changed.
+ * @see cmzn_spectrum_change_flag
+ *
+ * @param event  Handle to the spectrum module event to query.
+ * @param spectrum  The spectrum to query about.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_spectrum_change_flag values. Returns
+ * CMZN_SPECTRUM_CHANGE_FLAG_NONE in case of invalid arguments.
+ */
+ZINC_API cmzn_spectrum_change_flags cmzn_spectrummoduleevent_get_spectrum_change_flags(
+	cmzn_spectrummoduleevent_id event, cmzn_spectrum_id spectrum);
 
 #ifdef __cplusplus
 }

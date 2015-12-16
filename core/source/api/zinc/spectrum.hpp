@@ -17,6 +17,8 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Spectrummodulenotifier;
+
 class Spectrumcomponent
 {
 protected:
@@ -295,6 +297,23 @@ public:
         }
     }
 
+    enum ChangeFlag
+    {
+   	 CHANGE_FLAG_NONE = CMZN_SPECTRUM_CHANGE_FLAG_NONE,
+   	 CHANGE_FLAG_ADD = CMZN_SPECTRUM_CHANGE_FLAG_ADD,
+   	 CHANGE_FLAG_REMOVE = CMZN_SPECTRUM_CHANGE_FLAG_REMOVE,
+   	 CHANGE_FLAG_IDENTIFIER = CMZN_SPECTRUM_CHANGE_FLAG_IDENTIFIER,
+   	 CHANGE_FLAG_DEFINITION = CMZN_SPECTRUM_CHANGE_FLAG_DEFINITION,
+   	 CHANGE_FLAG_FULL_RESULT = CMZN_SPECTRUM_CHANGE_FLAG_FULL_RESULT,
+   	 CHANGE_FLAG_FINAL = CMZN_SPECTRUM_CHANGE_FLAG_FINAL
+    };
+
+ 	/**
+ 	 * Type for passing logical OR of #ChangeFlag
+ 	 * @see Spectrummoduleevent::getSpectrumChangeFlags
+ 	 */
+ 	typedef int ChangeFlags;
+
     bool isValid() const
     {
         return (0 != id);
@@ -543,7 +562,165 @@ public:
  	{
  		return cmzn_spectrummodule_write_description(this->id);
  	}
+
+ 	inline Spectrummodulenotifier createSpectrummodulenotifier();
+
 };
+
+class Spectrummoduleevent
+{
+protected:
+	cmzn_spectrummoduleevent_id id;
+
+public:
+
+	Spectrummoduleevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Spectrummoduleevent(cmzn_spectrummoduleevent_id in_spectrummodule_event_id) :
+		id(in_spectrummodule_event_id)
+	{  }
+
+	Spectrummoduleevent(const Spectrummoduleevent& spectrummoduleEvent) :
+		id(cmzn_spectrummoduleevent_access(spectrummoduleEvent.id))
+	{  }
+
+	Spectrummoduleevent& operator=(const Spectrummoduleevent& spectrummoduleEvent)
+	{
+		cmzn_spectrummoduleevent_id temp_id = cmzn_spectrummoduleevent_access(spectrummoduleEvent.id);
+		if (0 != id)
+			cmzn_spectrummoduleevent_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Spectrummoduleevent()
+	{
+		if (0 != id)
+		{
+			cmzn_spectrummoduleevent_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_spectrummoduleevent_id getId() const
+	{
+		return id;
+	}
+
+	Spectrum::ChangeFlags getSpectrumChangeFlags(const Spectrum& spectrum) const
+	{
+		return cmzn_spectrummoduleevent_get_spectrum_change_flags(id, spectrum.getId());
+	}
+
+	Spectrum::ChangeFlags getSummarySpectrumChangeFlags() const
+	{
+		return cmzn_spectrummoduleevent_get_summary_spectrum_change_flags(id);
+	}
+
+};
+
+/**
+ * @brief Base class functor for spectrum module notifier callbacks
+ *
+ * Base class functor for spectrum module notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Spectrummoduleevent&) to handle callback.
+ * @see Spectrummodulenotifier::setCallback()
+ */
+class Spectrummodulecallback
+{
+friend class Spectrummodulenotifier;
+private:
+	Spectrummodulecallback(const Spectrummodulecallback&); // not implemented
+	Spectrummodulecallback& operator=(const Spectrummodulecallback&); // not implemented
+
+	static void C_callback(cmzn_spectrummoduleevent_id spectrummoduleevent_id, void *callbackVoid)
+	{
+		Spectrummoduleevent spectrummoduleevent(cmzn_spectrummoduleevent_access(spectrummoduleevent_id));
+		Spectrummodulecallback *callback = reinterpret_cast<Spectrummodulecallback *>(callbackVoid);
+		(*callback)(spectrummoduleevent);
+	}
+
+  virtual void operator()(const Spectrummoduleevent &spectrummoduleevent) = 0;
+
+protected:
+	Spectrummodulecallback()
+	{ }
+
+public:
+	virtual ~Spectrummodulecallback()
+	{ }
+};
+
+class Spectrummodulenotifier
+{
+protected:
+	cmzn_spectrummodulenotifier_id id;
+
+public:
+
+	Spectrummodulenotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Spectrummodulenotifier(cmzn_spectrummodulenotifier_id in_spectrummodulenotifier_id) :
+		id(in_spectrummodulenotifier_id)
+	{  }
+
+	Spectrummodulenotifier(const Spectrummodulenotifier& spectrummoduleNotifier) :
+		id(cmzn_spectrummodulenotifier_access(spectrummoduleNotifier.id))
+	{  }
+
+	Spectrummodulenotifier& operator=(const Spectrummodulenotifier& spectrummoduleNotifier)
+	{
+		cmzn_spectrummodulenotifier_id temp_id = cmzn_spectrummodulenotifier_access(spectrummoduleNotifier.id);
+		if (0 != id)
+		{
+			cmzn_spectrummodulenotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Spectrummodulenotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_spectrummodulenotifier_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_spectrummodulenotifier_id getId() const
+	{
+		return id;
+	}
+
+	int setCallback(Spectrummodulecallback& callback)
+	{
+		return cmzn_spectrummodulenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_spectrummodulenotifier_clear_callback(id);
+	}
+};
+
+inline Spectrummodulenotifier Spectrummodule::createSpectrummodulenotifier()
+{
+	return Spectrummodulenotifier(cmzn_spectrummodule_create_spectrummodulenotifier(id));
+}
 
 inline Spectrummodule Context::getSpectrummodule()
 {
