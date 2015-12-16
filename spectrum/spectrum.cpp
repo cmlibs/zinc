@@ -437,3 +437,68 @@ TEST(cmzn_spectrum_api, iteration_cpp)
     EXPECT_EQ(zzz, s = iter.next());
     EXPECT_FALSE((s = iter.next()).isValid());
 }
+
+
+class SpectrumcallbackRecordChange : public Spectrummodulecallback
+{
+	int changeFlags;
+
+	virtual void operator()(const Spectrummoduleevent &spectrummoduleevent)
+	{
+		this->changeFlags = spectrummoduleevent.getSummarySpectrumChangeFlags();
+	}
+
+public:
+	SpectrumcallbackRecordChange() :
+		Spectrummodulecallback(),
+			changeFlags(Spectrum::CHANGE_FLAG_NONE)
+	{ }
+
+	void clear()
+	{
+		changeFlags = Spectrum::CHANGE_FLAG_NONE;
+	}
+
+	int getChangeSummary() const
+	{
+		return this->changeFlags;
+	}
+
+};
+
+TEST(ZincSpectrummodulenotifier, changeCallback)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+   Spectrummodule sm = zinc.context.getSpectrummodule();
+   EXPECT_TRUE(sm.isValid());
+
+   Spectrummodulenotifier spectrummodulenotifier = sm.createSpectrummodulenotifier();
+	EXPECT_TRUE(spectrummodulenotifier.isValid());
+
+	SpectrumcallbackRecordChange callback;
+	EXPECT_EQ(CMZN_OK, result = spectrummodulenotifier.setCallback(callback));
+
+	Spectrum spectrum = sm.getDefaultSpectrum();
+	EXPECT_TRUE(spectrum.isValid());
+
+	Spectrumcomponent component = spectrum.getFirstSpectrumcomponent();
+	EXPECT_EQ(CMZN_OK, component.isValid());
+
+	Spectrum new_spectrum = sm.createSpectrum();
+	EXPECT_TRUE(new_spectrum.isValid());
+	EXPECT_EQ(Spectrum::CHANGE_FLAG_ADD, callback.getChangeSummary());
+
+	new_spectrum = Spectrum();
+	EXPECT_FALSE(new_spectrum.isValid());
+	EXPECT_EQ(Spectrum::CHANGE_FLAG_REMOVE, callback.getChangeSummary());
+
+	component = spectrum.getFirstSpectrumcomponent();
+	EXPECT_EQ(CMZN_OK, component.isValid());
+
+	EXPECT_EQ(CMZN_OK, component.setColourMaximum(0.9));
+	EXPECT_EQ(Spectrum::CHANGE_FLAG_FULL_RESULT |Spectrum::CHANGE_FLAG_DEFINITION,
+		callback.getChangeSummary());
+
+}
