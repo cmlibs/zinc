@@ -17,6 +17,8 @@ namespace OpenCMISS
 namespace Zinc
 {
 
+class Tessellationmodulenotifier;
+
 class Tessellation
 {
 protected:
@@ -54,6 +56,23 @@ public:
 			cmzn_tessellation_destroy(&id);
 		}
 	}
+
+   enum ChangeFlag
+   {
+  	 CHANGE_FLAG_NONE = CMZN_TESSELLATION_CHANGE_FLAG_NONE,
+  	 CHANGE_FLAG_ADD = CMZN_TESSELLATION_CHANGE_FLAG_ADD,
+  	 CHANGE_FLAG_REMOVE = CMZN_TESSELLATION_CHANGE_FLAG_REMOVE,
+  	 CHANGE_FLAG_IDENTIFIER = CMZN_TESSELLATION_CHANGE_FLAG_IDENTIFIER,
+  	 CHANGE_FLAG_DEFINITION = CMZN_TESSELLATION_CHANGE_FLAG_DEFINITION,
+  	 CHANGE_FLAG_FULL_RESULT = CMZN_TESSELLATION_CHANGE_FLAG_FULL_RESULT,
+  	 CHANGE_FLAG_FINAL = CMZN_TESSELLATION_CHANGE_FLAG_FINAL
+   };
+
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 * @see Tessellationmoduleevent::getTessellationChangeFlags
+	 */
+	typedef int ChangeFlags;
 
 	bool isValid() const
 	{
@@ -276,7 +295,166 @@ public:
  	{
  		return cmzn_tessellationmodule_write_description(this->id);
  	}
+
+ 	inline Tessellationmodulenotifier createTessellationmodulenotifier();
 };
+
+
+class Tessellationmoduleevent
+{
+protected:
+	cmzn_tessellationmoduleevent_id id;
+
+public:
+
+	Tessellationmoduleevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Tessellationmoduleevent(cmzn_tessellationmoduleevent_id in_tessellationmodule_event_id) :
+		id(in_tessellationmodule_event_id)
+	{  }
+
+	Tessellationmoduleevent(const Tessellationmoduleevent& tessellationmoduleEvent) :
+		id(cmzn_tessellationmoduleevent_access(tessellationmoduleEvent.id))
+	{  }
+
+	Tessellationmoduleevent& operator=(const Tessellationmoduleevent& tessellationmoduleEvent)
+	{
+		cmzn_tessellationmoduleevent_id temp_id = cmzn_tessellationmoduleevent_access(tessellationmoduleEvent.id);
+		if (0 != id)
+			cmzn_tessellationmoduleevent_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Tessellationmoduleevent()
+	{
+		if (0 != id)
+		{
+			cmzn_tessellationmoduleevent_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_tessellationmoduleevent_id getId() const
+	{
+		return id;
+	}
+
+	Tessellation::ChangeFlags getTessellationChangeFlags(const Tessellation& tessellation) const
+	{
+		return cmzn_tessellationmoduleevent_get_tessellation_change_flags(id, tessellation.getId());
+	}
+
+	Tessellation::ChangeFlags getSummaryTessellationChangeFlags() const
+	{
+		return cmzn_tessellationmoduleevent_get_summary_tessellation_change_flags(id);
+	}
+
+};
+
+/**
+ * @brief Base class functor for tessellation module notifier callbacks
+ *
+ * Base class functor for tessellation module notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Tessellationmoduleevent&) to handle callback.
+ * @see Tessellationmodulenotifier::setCallback()
+ */
+class Tessellationmodulecallback
+{
+friend class Tessellationmodulenotifier;
+private:
+	Tessellationmodulecallback(const Tessellationmodulecallback&); // not implemented
+	Tessellationmodulecallback& operator=(const Tessellationmodulecallback&); // not implemented
+
+	static void C_callback(cmzn_tessellationmoduleevent_id tessellationmoduleevent_id, void *callbackVoid)
+	{
+		Tessellationmoduleevent tessellationmoduleevent(cmzn_tessellationmoduleevent_access(tessellationmoduleevent_id));
+		Tessellationmodulecallback *callback = reinterpret_cast<Tessellationmodulecallback *>(callbackVoid);
+		(*callback)(tessellationmoduleevent);
+	}
+
+  virtual void operator()(const Tessellationmoduleevent &tessellationmoduleevent) = 0;
+
+protected:
+	Tessellationmodulecallback()
+	{ }
+
+public:
+	virtual ~Tessellationmodulecallback()
+	{ }
+};
+
+class Tessellationmodulenotifier
+{
+protected:
+	cmzn_tessellationmodulenotifier_id id;
+
+public:
+
+	Tessellationmodulenotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Tessellationmodulenotifier(cmzn_tessellationmodulenotifier_id in_tessellationmodulenotifier_id) :
+		id(in_tessellationmodulenotifier_id)
+	{  }
+
+	Tessellationmodulenotifier(const Tessellationmodulenotifier& tessellationmoduleNotifier) :
+		id(cmzn_tessellationmodulenotifier_access(tessellationmoduleNotifier.id))
+	{  }
+
+	Tessellationmodulenotifier& operator=(const Tessellationmodulenotifier& tessellationmoduleNotifier)
+	{
+		cmzn_tessellationmodulenotifier_id temp_id = cmzn_tessellationmodulenotifier_access(tessellationmoduleNotifier.id);
+		if (0 != id)
+		{
+			cmzn_tessellationmodulenotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Tessellationmodulenotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_tessellationmodulenotifier_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_tessellationmodulenotifier_id getId() const
+	{
+		return id;
+	}
+
+	int setCallback(Tessellationmodulecallback& callback)
+	{
+		return cmzn_tessellationmodulenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_tessellationmodulenotifier_clear_callback(id);
+	}
+};
+
+inline Tessellationmodulenotifier Tessellationmodule::createTessellationmodulenotifier()
+{
+	return Tessellationmodulenotifier(cmzn_tessellationmodule_create_tessellationmodulenotifier(id));
+}
+
 
 inline Tessellationmodule Context::getTessellationmodule()
 {

@@ -360,6 +360,115 @@ ZINC_API int cmzn_tessellationiterator_destroy(cmzn_tessellationiterator_id *ite
  */
 ZINC_API cmzn_tessellation_id cmzn_tessellationiterator_next(cmzn_tessellationiterator_id iterator);
 
+/**
+ * Create a notifier for getting callbacks for changes to the tessellations in the
+ * tessellation module.
+ *
+ * @param tessellationmodule  Handle to the tessellation module to get notifications for.
+ * @return  Handle to new tessellation module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationmodulenotifier_id cmzn_tessellationmodule_create_tessellationmodulenotifier(
+	cmzn_tessellationmodule_id tessellationmodule);
+
+/**
+ * Returns a new handle to the tessellation module notifier with reference count
+ * incremented.
+ *
+ * @param notifier  The tessellation module notifier to obtain a new handle to.
+ * @return  New handle to tessellation module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationmodulenotifier_id cmzn_tessellationmodulenotifier_access(
+	cmzn_tessellationmodulenotifier_id notifier);
+
+/**
+ * Destroys handle to the tessellation module notifier and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param notifier_address  Address of tessellation module notifier handle to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_tessellationmodulenotifier_destroy(
+	cmzn_tessellationmodulenotifier_id *notifier_address);
+
+/**
+ * Stop and clear tessellation module callback. This will stop the callback and also
+ * remove the callback function from the tessellationmodule notifier.
+ *
+ * @param notifier  Handle to the tessellationmodule notifier.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_tessellationmodulenotifier_clear_callback(
+	cmzn_tessellationmodulenotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the tessellationmodule notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_tessellationmodulenotifier_callback_function
+ * @param notifier  Handle to the tessellationmodule notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_tessellationmodulenotifier_set_callback(
+	cmzn_tessellationmodulenotifier_id notifier,
+	cmzn_tessellationmodulenotifier_callback_function function, void *user_data_in);
+
+/**
+ * Get the user data set when establishing the callback.
+ * @see cmzn_tessellationmodulenotifier_set_callback
+ *
+ * @see cmzn_tessellationmodulenotifier_set_callback
+ * @param notifier  Handle to the tessellation module notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_tessellationmodulenotifier_get_callback_user_data(
+ cmzn_tessellationmodulenotifier_id notifier);
+
+/**
+ * Returns a new handle to the tessellationmodule event with reference count incremented.
+ *
+ * @param event  The tessellation module event to obtain a new handle to.
+ * @return  New handle to tessellation module event, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_tessellationmoduleevent_id cmzn_tessellationmoduleevent_access(
+	cmzn_tessellationmoduleevent_id event);
+
+/**
+ * Destroys this handle to the tessellationmodule event and sets it to NULL.
+ * Internally this decrements the reference count.
+ * Note: Do not destroy the event argument passed to the user callback function.
+ *
+ * @param event_address  Address of tessellation module event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_tessellationmoduleevent_destroy(cmzn_tessellationmoduleevent_id *event_address);
+
+/**
+ * Get logical OR of flags indicating how tessellations in the tessellation module have changed.
+ * @see cmzn_tessellation_change_flag
+ *
+ * @param event  Handle to the tessellation module event.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_tessellation_change_flag values.
+ */
+ZINC_API cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_summary_tessellation_change_flags(
+	cmzn_tessellationmoduleevent_id event);
+
+/**
+ * Get logical OR of flags indicating how the tessellation has changed.
+ * @see cmzn_tessellation_change_flag
+ *
+ * @param event  Handle to the tessellation module event to query.
+ * @param tessellation  The tessellation to query about.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_tessellation_change_flag values. Returns
+ * CMZN_SPECTRUM_CHANGE_FLAG_NONE in case of invalid arguments.
+ */
+ZINC_API cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_tessellation_change_flags(
+	cmzn_tessellationmoduleevent_id event, cmzn_tessellation_id tessellation);
+
 #ifdef __cplusplus
 }
 #endif

@@ -48,7 +48,7 @@ typedef std::list<cmzn_spectrummodulenotifier *> cmzn_spectrummodulenotifier_lis
 struct cmzn_spectrum *cmzn_spectrum_create_private();
 
 static void cmzn_spectrummodule_Spectrum_change(
-	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *region_void);
+	struct MANAGER_MESSAGE(cmzn_spectrum) *message, void *spectrum_module_void);
 
 struct cmzn_spectrummodule
 {
@@ -65,7 +65,7 @@ private:
    	 access_count(1)
     {
    	 notifier_list = new cmzn_spectrummodulenotifier_list();
-   	 MANAGER_REGISTER(cmzn_spectrum)(
+   	 manager_callback_id = MANAGER_REGISTER(cmzn_spectrum)(
    		 cmzn_spectrummodule_Spectrum_change, (void *)this, spectrumManager);
     }
 
