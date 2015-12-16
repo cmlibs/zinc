@@ -438,7 +438,6 @@ TEST(cmzn_spectrum_api, iteration_cpp)
     EXPECT_FALSE((s = iter.next()).isValid());
 }
 
-
 class SpectrumcallbackRecordChange : public Spectrummodulecallback
 {
 	int changeFlags;
@@ -500,5 +499,4 @@ TEST(ZincSpectrummodulenotifier, changeCallback)
 	EXPECT_EQ(CMZN_OK, component.setColourMaximum(0.9));
 	EXPECT_EQ(Spectrum::CHANGE_FLAG_FULL_RESULT |Spectrum::CHANGE_FLAG_DEFINITION,
 		callback.getChangeSummary());
-
 }

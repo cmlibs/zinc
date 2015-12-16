@@ -323,6 +323,7 @@ TEST(cmzn_tessellation_api, description_io_cpp)
 	cmzn_deallocate(return_string);
 }
 
+
 TEST(ZincTessellationiterator, iteration)
 {
 	ZincTestSetupCpp zinc;
@@ -360,4 +361,62 @@ TEST(ZincTessellationiterator, iteration)
 	EXPECT_EQ(zzz, g = iter.next());
 	g = iter.next();
 	EXPECT_FALSE(g.isValid());
+}
+
+class TessellationcallbackRecordChange : public Tessellationmodulecallback
+{
+	int changeFlags;
+
+	virtual void operator()(const Tessellationmoduleevent &tessellationmoduleevent)
+	{
+		this->changeFlags = tessellationmoduleevent.getSummaryTessellationChangeFlags();
+	}
+
+public:
+	TessellationcallbackRecordChange() :
+		Tessellationmodulecallback(),
+			changeFlags(Tessellation::CHANGE_FLAG_NONE)
+	{ }
+
+	void clear()
+	{
+		changeFlags = Tessellation::CHANGE_FLAG_NONE;
+	}
+
+	int getChangeSummary() const
+	{
+		return this->changeFlags;
+	}
+
+};
+
+TEST(ZincTessellationmodulenotifier, changeCallback)
+{
+	ZincTestSetupCpp zinc;
+	int result;
+
+   Tessellationmodule tm = zinc.context.getTessellationmodule();
+   EXPECT_TRUE(tm.isValid());
+
+   Tessellationmodulenotifier tessellationmodulenotifier = tm.createTessellationmodulenotifier();
+	EXPECT_TRUE(tessellationmodulenotifier.isValid());
+
+	TessellationcallbackRecordChange callback;
+	EXPECT_EQ(CMZN_OK, result = tessellationmodulenotifier.setCallback(callback));
+
+	Tessellation tessellation = tm.getDefaultTessellation();
+	EXPECT_TRUE(tessellation.isValid());
+
+	Tessellation new_tessellation = tm.createTessellation();
+	EXPECT_TRUE(new_tessellation.isValid());
+	EXPECT_EQ(Tessellation::CHANGE_FLAG_ADD, callback.getChangeSummary());
+
+	new_tessellation = Tessellation();
+	EXPECT_FALSE(new_tessellation.isValid());
+	EXPECT_EQ(Tessellation::CHANGE_FLAG_REMOVE, callback.getChangeSummary());
+
+	EXPECT_EQ(CMZN_OK, tessellation.setCircleDivisions(6));
+	EXPECT_EQ(Tessellation::CHANGE_FLAG_FULL_RESULT |Tessellation::CHANGE_FLAG_DEFINITION,
+		callback.getChangeSummary());
+
 }
