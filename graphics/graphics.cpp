@@ -1087,6 +1087,63 @@ TEST(cmzn_graphics_api, point_attributes_label_cpp)
 		EXPECT_STREQ(text, outText);
 		cmzn_deallocate(outText);
 	}
+
+}
+
+TEST(cmzn_graphics, point_description_io)
+{
+	ZincTestSetupCpp zinc;
+
+	double values[] = { 1.0, 2.0, 3.0 };
+	Field labelField = zinc.fm.createFieldConstant(sizeof(values)/sizeof(double), values);
+	labelField.setName("my_label");
+	EXPECT_TRUE(labelField.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::GRAPHICS_POINTS_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	free(buffer);
+
+	Graphics gr = zinc.scene.getFirstGraphics();
+	EXPECT_TRUE(gr.isValid());
+
+	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
+	EXPECT_TRUE(pointattr.isValid());
+
+	Field tempLabelField = pointattr.getLabelField();
+	EXPECT_EQ(tempLabelField.getId(), labelField.getId());
+
+	double outputValues[3];
+	EXPECT_EQ(OK, pointattr.getLabelOffset(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(0.0, outputValues[2]);
+
+	for (int labelNumber = 1; labelNumber <= 3; ++labelNumber)
+	{
+		char *outText = pointattr.getLabelText(labelNumber);
+		EXPECT_STREQ("ABC", outText);
+		cmzn_deallocate(outText);
+	}
+
+	char *return_string = zinc.scene.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
 }
 
 TEST(cmzn_graphics, render_polygon_mode)
