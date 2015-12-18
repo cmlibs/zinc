@@ -1,0 +1,35 @@
+{
+   "Graphics" : [
+      {
+         "ElementFaceType" : "",
+         "Exterior" : false,
+         "FieldDomainType" : "HIGHEST_DIMENSION",
+         "LineAttributes" : {
+            "BaseSize" : [ 0, 0 ],
+            "ScaleFactors" : [ 1, 1 ],
+            "ShapeType" : "LINE"
+         },
+         "Material" : "default",
+         "RenderLineWidth" : 1,
+         "RenderPointSize" : 1,
+         "RenderPolygonMode" : "RENDER_POLYGON_SHADED",
+         "SamplingAttributes" : {
+         	"DensityField" : "my_density",
+            "ElementPointSamplingMode" : "SET_LOCATION",
+            "Location" : [ 0.5, 0.2, 0.8 ]
+         },
+         "Scenecoordinatesystem" : "LOCAL",
+         "SelectMode" : "ON",
+         "SelectedMaterial" : "default_selected",
+         "Streamlines" : {
+            "ColourDataType" : "MAGNITUDE",
+            "TrackDirection" : "REVERSE",
+            "TrackLength" : 2
+         },
+         "Tessellation" : "default_points",
+         "Type" : "STREAMLINES",
+         "VisibilityFlag" : true
+      }
+   ],
+   "VisibilityFlag" : true
+}

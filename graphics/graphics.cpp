@@ -24,6 +24,8 @@
 #include "zinc/fieldconstant.hpp"
 #include "zinc/font.hpp"
 
+#include "test_resources.h"
+
 TEST(cmzn_graphics, create_type)
 {
 	ZincTestSetup zinc;
@@ -1231,6 +1233,64 @@ TEST(cmzn_graphics_api, line_attributes_cpp)
 	EXPECT_EQ(OK, lineattr.getScaleFactors(2, outputValues));
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
+
+}
+
+TEST(cmzn_graphics_api, line_attributes_description_io)
+{
+	ZincTestSetupCpp zinc;
+
+	double value = 1.0;
+	Field orientationScaleField = zinc.fm.createFieldConstant(1, &value);
+	orientationScaleField.setName("my_orientation_field");
+	EXPECT_TRUE(orientationScaleField.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::GRAPHICS_LINE_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	free(buffer);
+
+	Graphics gr = zinc.scene.getFirstGraphics();
+
+	Graphicslineattributes lineattr = gr.getGraphicslineattributes();
+	EXPECT_TRUE(lineattr.isValid());
+
+	EXPECT_EQ(Graphicslineattributes::SHAPE_TYPE_CIRCLE_EXTRUSION, lineattr.getShapeType());
+
+	EXPECT_TRUE(lineattr.getOrientationScaleField().isValid());
+
+	Field tempOrientationScaleField = lineattr.getOrientationScaleField();
+	EXPECT_EQ(tempOrientationScaleField.getId(), orientationScaleField.getId());
+
+	const double values[] = { 0.5, 1.2 };
+	double outputValues[2];
+
+	EXPECT_EQ(OK, lineattr.getBaseSize(2, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
+
+	EXPECT_EQ(OK, lineattr.getScaleFactors(2, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[0], outputValues[1]); // lines/cylinders currently constrained to equal values
+
+	char *return_string = zinc.scene.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
 }
 
 TEST(cmzn_graphics_api, visibility_flag)
@@ -1356,4 +1416,65 @@ TEST(cmzn_graphics_api, sampling_attributes_cpp)
 	EXPECT_EQ(values[0], outputValues[0]);
 	EXPECT_EQ(values[1], outputValues[1]);
 	EXPECT_EQ(values[2], outputValues[2]);
+}
+
+TEST(cmzn_graphics_api, sampling_attributes_description_io)
+{
+	ZincTestSetupCpp zinc;
+
+	double value = 1.0;
+	Field densityField = zinc.fm.createFieldConstant(1, &value);
+	densityField.setName("my_density");
+	EXPECT_TRUE(densityField.isValid());
+
+	void *buffer = 0;
+	long length;
+	FILE * f = fopen (TestResources::getLocation(TestResources::GRAPHICS_STREAMLINES_DESCRIPTION_JSON_RESOURCE), "rb");
+	if (f)
+	{
+		fseek (f, 0, SEEK_END);
+		length = ftell (f);
+		fseek (f, 0, SEEK_SET);
+		buffer = malloc (length);
+		if (buffer)
+		{
+			fread (buffer, 1, length, f);
+		}
+		fclose (f);
+	}
+
+	EXPECT_TRUE(buffer != 0);
+	EXPECT_EQ(CMZN_OK, zinc.scene.readDescription((char *)buffer, true));
+	free(buffer);
+
+	Graphics gr = zinc.scene.getFirstGraphics();
+	EXPECT_TRUE(gr.isValid());
+
+	Graphicssamplingattributes sampling = gr.getGraphicssamplingattributes();
+	EXPECT_TRUE(sampling.isValid());
+
+	EXPECT_EQ(Element::POINT_SAMPLING_MODE_SET_LOCATION, sampling.getElementPointSamplingMode());
+
+	Field tempField = sampling.getDensityField();
+	tempField = sampling.getDensityField();
+	EXPECT_EQ(densityField.getId(), tempField.getId());
+
+	EXPECT_EQ(Element::POINT_SAMPLING_MODE_SET_LOCATION, sampling.getElementPointSamplingMode());
+
+	const double values[] = { 0.5, 0.20, 0.8 };
+	double outputValues[3];
+	// check default values = 0.0
+	EXPECT_EQ(OK, sampling.getLocation(3, outputValues));
+	EXPECT_EQ(values[0], outputValues[0]);
+	EXPECT_EQ(values[1], outputValues[1]);
+	EXPECT_EQ(values[2], outputValues[2]);
+
+	GraphicsStreamlines streamlines = gr.castStreamlines();
+	EXPECT_EQ(2.0, streamlines.getTrackLength());
+	EXPECT_EQ(GraphicsStreamlines::COLOUR_DATA_TYPE_MAGNITUDE, streamlines.getColourDataType());
+	EXPECT_EQ(GraphicsStreamlines::TRACK_DIRECTION_REVERSE, streamlines.getTrackDirection());
+
+	char *return_string = zinc.scene.writeDescription();
+	EXPECT_TRUE(return_string != 0);
+	cmzn_deallocate(return_string);
 }
