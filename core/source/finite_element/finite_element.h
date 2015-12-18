@@ -3773,4 +3773,22 @@ DESCRIPTION :
 Defines a tensor product basis on <element> with the specified <dimension>
 and <basis_type>.  This does not support mixed basis types in the tensor product.
 ==============================================================================*/
+
+enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
+	const char *string);
+
+char *cmzn_field_domain_type_enum_to_string(enum cmzn_field_domain_type type);
+
+enum cmzn_element_face_type cmzn_element_face_type_enum_from_string(
+	const char *string);
+
+char *cmzn_element_face_type_enum_to_string(enum cmzn_element_face_type type);
+
+enum cmzn_element_point_sampling_mode cmzn_element_point_sampling_mode_enum_from_string(
+	const char *string);
+
+char *cmzn_element_point_sampling_mode_enum_to_string(
+	enum cmzn_element_point_sampling_mode mode);
+
+
 #endif /* !defined (FINITE_ELEMENT_H) */

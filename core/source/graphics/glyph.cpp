@@ -27,6 +27,7 @@
 #include "zinc/material.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
+#include "general/enumerator_conversion.hpp"
 #include "general/manager_private.h"
 #include "general/message.h"
 #include "general/mystring.h"
@@ -723,6 +724,145 @@ bool cmzn_glyph_repeat_mode_glyph_number_has_label(
 			break;
 	}
 	return false;
+}
+
+class cmzn_glyph_repeat_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_glyph_repeat_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+			case CMZN_GLYPH_REPEAT_MODE_NONE:
+				enum_string = "NONE";
+				break;
+			case CMZN_GLYPH_REPEAT_MODE_MIRROR:
+				enum_string = "MIRROR";
+				break;
+			case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
+				enum_string = "AXES_2D";
+				break;
+			case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
+				enum_string = "AXES_3D";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_glyph_repeat_mode, cmzn_glyph_repeat_mode_conversion>(string);
+}
+
+char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode)
+{
+	const char *mode_string = cmzn_glyph_repeat_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+class cmzn_glyph_shape_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_glyph_shape_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMZN_GLYPH_REPEAT_MODE_NONE:
+				enum_string = "NONE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_ARROW:
+				enum_string = "ARROW";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_ARROW_SOLID:
+				enum_string = "ARROW_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXIS:
+				enum_string = "AXIS";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXIS_SOLID:
+				enum_string = "AXIS_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CONE:
+				enum_string = "CONE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CONE_SOLID:
+				enum_string = "CONE_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CROSS:
+				enum_string = "CROSS";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CUBE_SOLID:
+				enum_string = "CUBE_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CUBE_WIREFRAME:
+				enum_string = "CUBE_WIREFRAME";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CYLINDER:
+				enum_string = "CYLINDER";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CYLINDER_SOLID:
+				enum_string = "CYLINDER_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_DIAMOND:
+				enum_string = "DIAMOND";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_LINE:
+				enum_string = "LINE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_POINT:
+				enum_string = "POINT";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_SHEET:
+				enum_string = "SHEET";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_SPHERE:
+				enum_string = "SPHERE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES:
+				enum_string = "AXES";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_123:
+				enum_string = "AXES_123";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_XYZ:
+				enum_string = "AXES_XYZ";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_COLOUR:
+				enum_string = "AXES_COLOUR";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID:
+				enum_string = "AXES_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_123:
+				enum_string = "AXES_SOLID_123";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_XYZ:
+				enum_string = "AXES_SOLID_XYZ";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_COLOUR:
+				enum_string = "AXES_SOLID_COLOUR";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_glyph_shape_type, cmzn_glyph_shape_type_conversion>(string);
+}
+
+char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type)
+{
+	const char *type_string = cmzn_glyph_shape_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }
 
 void resolve_glyph_axes(

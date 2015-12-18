@@ -31,6 +31,7 @@
 #include "general/compare.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
+#include "general/enumerator_conversion.hpp"
 #include "general/indexed_list_private.h"
 #include "general/list_private.h"
 #include "general/matrix_vector.h"
@@ -10210,6 +10211,55 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_face_type)
 	return 0;
 }
 
+class cmzn_element_face_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_element_face_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMZN_ELEMENT_FACE_TYPE_ALL:
+			enum_string = "ALL";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI1_0:
+			enum_string = "XI1_0";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI1_1:
+			enum_string = "XI1_1";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI2_0:
+			enum_string = "XI2_0";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI2_1:
+			enum_string = "XI2_1";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI3_0:
+			enum_string = "XI3_0";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_XI3_1:
+			enum_string = "XI3_1";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_element_face_type cmzn_element_face_type_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_element_face_type,
+		cmzn_element_face_type_conversion>(string);
+}
+
+char *cmzn_element_face_type_enum_to_string(enum cmzn_element_face_type type)
+{
+	const char *string = cmzn_element_face_type_conversion::to_string(type);
+	return (string ? duplicate_string(string) : 0);
+}
+
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sampling_mode)
 {
 	switch (enumerator_value)
@@ -10236,6 +10286,49 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_point_sampling_mode)
 }
 
 DEFINE_DEFAULT_ENUMERATOR_FUNCTIONS(cmzn_element_point_sampling_mode)
+
+class cmzn_element_point_sampling_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_element_point_sampling_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CENTRES:
+			enum_string = "CELL_CENTRES";
+			break;
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_CORNERS:
+			enum_string = "CELL_CORNERS";
+			break;
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_CELL_POISSON:
+			enum_string = "CELL_POISSON";
+			break;
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_SET_LOCATION:
+			enum_string = "SET_LOCATION";
+			break;
+		case CMZN_ELEMENT_POINT_SAMPLING_MODE_GAUSSIAN_QUADRATURE:
+			enum_string = "GAUSSIAN_QUADRATURE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_element_point_sampling_mode cmzn_element_point_sampling_mode_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_element_point_sampling_mode,
+		cmzn_element_point_sampling_mode_conversion>(string);
+}
+
+char *cmzn_element_point_sampling_mode_enum_to_string(enum cmzn_element_point_sampling_mode mode)
+{
+	const char *string = cmzn_element_point_sampling_mode_conversion::to_string(mode);
+	return (string ? duplicate_string(string) : 0);
+}
 
 PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_quadrature_rule)
 {
@@ -10333,6 +10426,57 @@ const char **ENUMERATOR_GET_VALID_STRINGS(cmzn_field_domain_type)(
 		value = static_cast<cmzn_field_domain_type>(2*value);
 	}
 	return valid_strings;
+}
+
+class cmzn_field_domain_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_field_domain_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMZN_FIELD_DOMAIN_TYPE_POINT:
+			enum_string = "POINT";
+			break;
+		case CMZN_FIELD_DOMAIN_TYPE_NODES:
+			enum_string = "NDOES";
+			break;
+		case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
+			enum_string = "DATAPOINTS";
+			break;
+		case CMZN_FIELD_DOMAIN_TYPE_MESH1D:
+			enum_string = "MESH1D";
+			break;
+		case CMZN_FIELD_DOMAIN_TYPE_MESH2D:
+			enum_string = "MESH2D";
+			break;
+		case CMZN_FIELD_DOMAIN_TYPE_MESH3D:
+			enum_string = "MESH3D";
+			break;
+		case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
+			enum_string = "HIGHEST_DIMENSION";
+			break;
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_field_domain_type,
+		cmzn_field_domain_type_conversion>(string);
+}
+
+char *cmzn_field_domain_type_enum_to_string(
+	enum cmzn_field_domain_type type)
+{
+	const char *string = cmzn_field_domain_type_conversion::to_string(type);
+	return (string ? duplicate_string(string) : 0);
 }
 
 struct FE_node_field_creator *CREATE(FE_node_field_creator)(

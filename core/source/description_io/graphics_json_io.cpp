@@ -10,6 +10,8 @@
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include "graphics/glyph.hpp"
+#include "graphics/graphics.h"
 #include "zinc/spectrum.hpp"
 #include "zinc/scene.hpp"
 #include "zinc/fieldmodule.hpp"
@@ -195,42 +197,92 @@ void GraphicsJsonIO::ioGeneralEnumEntries(Json::Value &graphicsSettings)
 {
 	if (mode == IO_MODE_EXPORT)
 	{
-		int enumInt = (int)graphics.getRenderPolygonMode();
-		graphicsSettings["RenderPolygonMode"] = enumInt;
+		char *enumString = 0;
+		enumString = cmzn_graphics_render_polygon_mode_enum_to_string(
+			(enum cmzn_graphics_render_polygon_mode)graphics.getRenderPolygonMode());
+		if (enumString)
+		{
+			graphicsSettings["RenderPolygonMode"] = enumString;
+			DEALLOCATE(enumString);
+		}
+		else
+		{
+			graphicsSettings["RenderPolygonMode"] = "";
+		}
 
-		enumInt = (int)graphics.getSelectMode();
-		graphicsSettings["SelectMode"] = enumInt;
+		enumString = cmzn_graphics_select_mode_enum_to_string(
+			(enum cmzn_graphics_select_mode)graphics.getRenderPolygonMode());
+		if (enumString)
+		{
+			graphicsSettings["SelectMode"] = enumString;
+			DEALLOCATE(enumString);
+		}
+		else
+		{
+			graphicsSettings["SelectMode"] = "";
+		}
 
-		enumInt = (int)graphics.getScenecoordinatesystem();
-		graphicsSettings["Scenecoordinatesystem"] = enumInt;
+		enumString = cmzn_scenecoordinatesystem_enum_to_string(
+			(enum cmzn_scenecoordinatesystem)graphics.getScenecoordinatesystem());
+		if (enumString)
+		{
+			graphicsSettings["Scenecoordinatesystem"] = enumString;
+			DEALLOCATE(enumString);
+		}
+		else
+		{
+			graphicsSettings["Scenecoordinatesystem"] = "";
+		}
 
-		enumInt = (int)graphics.getFieldDomainType();
-		graphicsSettings["FieldDomainType"] = enumInt;
-
-		enumInt = (int)graphics.getElementFaceType();
-		graphicsSettings["ElementFaceType"] = enumInt;
+		enumString = cmzn_field_domain_type_enum_to_string(
+			(enum cmzn_field_domain_type)graphics.getFieldDomainType());
+		if (enumString)
+		{
+			graphicsSettings["FieldDomainType"] = enumString;
+			DEALLOCATE(enumString);
+		}
+		else
+		{
+			graphicsSettings["FieldDomainType"] = "";
+		}
+		enumString = cmzn_element_face_type_enum_to_string(
+			(enum cmzn_element_face_type)graphics.getElementFaceType());
+		if (enumString)
+		{
+			graphicsSettings["ElementFaceType"] = enumString;
+			DEALLOCATE(enumString);
+		}
+		else
+		{
+			graphicsSettings["ElementFaceType"] = "";
+		}
 	}
 	else
 	{
-		if (graphicsSettings["RenderPolygonMode"].isInt())
-			graphics.setRenderPolygonMode(static_cast<enum OpenCMISS::Zinc::Graphics::RenderPolygonMode>(
-				graphicsSettings["RenderPolygonMode"].asInt()));
+		if (graphicsSettings["RenderPolygonMode"].isString())
+			cmzn_graphics_set_render_polygon_mode(graphics.getId(),
+				cmzn_graphics_render_polygon_mode_enum_from_string(
+					graphicsSettings["RenderPolygonMode"].asCString()));
 
-		if (graphicsSettings["SelectMode"].isInt())
-			graphics.setSelectMode(static_cast<enum OpenCMISS::Zinc::Graphics::SelectMode>(
-				graphicsSettings["SelectMode"].asInt()));
+		if (graphicsSettings["SelectMode"].isString())
+			cmzn_graphics_set_select_mode(graphics.getId(),
+				cmzn_graphics_select_mode_enum_from_string(
+					graphicsSettings["SelectMode"].asCString()));
 
-		if (graphicsSettings["Scenecoordinatesystem"].isInt())
-			graphics.setScenecoordinatesystem(static_cast<enum OpenCMISS::Zinc::Scenecoordinatesystem>(
-				graphicsSettings["Scenecoordinatesystem"].asInt()));
+		if (graphicsSettings["Scenecoordinatesystem"].isString())
+			cmzn_graphics_set_scenecoordinatesystem(graphics.getId(),
+				cmzn_scenecoordinatesystem_enum_from_string(
+				graphicsSettings["Scenecoordinatesystem"].asCString()));
 
-		if (graphicsSettings["FieldDomainType"].isInt())
-			graphics.setFieldDomainType(static_cast<enum OpenCMISS::Zinc::Field::DomainType>(
-				graphicsSettings["FieldDomainType"].asInt()));
+		if (graphicsSettings["FieldDomainType"].isString())
+			cmzn_graphics_set_field_domain_type(graphics.getId(),
+				cmzn_field_domain_type_enum_from_string(
+					graphicsSettings["FieldDomainType"].asCString()));
 
-		if (graphicsSettings["ElementFaceType"].isInt())
-			graphics.setElementFaceType(static_cast<enum OpenCMISS::Zinc::Element::FaceType>(
-				graphicsSettings["ElementFaceType"].asInt()));
+		if (graphicsSettings["ElementFaceType"].isString())
+			cmzn_graphics_set_element_face_type(graphics.getId(),
+				cmzn_element_face_type_enum_from_string(
+					graphicsSettings["ElementFaceType"].asCString()));
 	}
 }
 
@@ -266,8 +318,17 @@ void GraphicsJsonIO::ioLineAttributesEntries(Json::Value &graphicsSettings)
 			lineAttributes.getScaleFactors(2, &(values[0]));
 			attributesSettings["ScaleFactors"].append(values[0]);
 			attributesSettings["ScaleFactors"].append(values[1]);
-			int enumType = (int)lineAttributes.getShapeType();
-			attributesSettings["ShapeType"] = enumType;
+			char *enumString = cmzn_graphicslineattributes_shape_type_enum_to_string(
+				(enum cmzn_graphicslineattributes_shape_type)lineAttributes.getShapeType());
+			if (enumString)
+			{
+				attributesSettings["ShapeType"] = enumString;
+				DEALLOCATE(enumString);
+			}
+			else
+			{
+				attributesSettings["ShapeType"] = "";
+			}
 			graphicsSettings["LineAttributes"] = attributesSettings;
 		}
 		else if (graphicsSettings["LineAttributes"].isObject())
@@ -292,9 +353,10 @@ void GraphicsJsonIO::ioLineAttributesEntries(Json::Value &graphicsSettings)
 				values[1] = attributesSettings["ScaleFactors"][1].asDouble();
 				lineAttributes.setScaleFactors(2, &(values[0]));
 			}
-			if (attributesSettings["ShapeType"].isInt())
+			if (attributesSettings["ShapeType"].isString())
 				lineAttributes.setShapeType(static_cast<enum OpenCMISS::Zinc::Graphicslineattributes::ShapeType>(
-					attributesSettings["ShapeType"].asInt()));
+					cmzn_graphicslineattributes_shape_type_enum_from_string(
+						attributesSettings["ShapeType"].asCString())));
 		}
 	}
 }
@@ -332,10 +394,28 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 			attributesSettings["GlyphOffset"].append(values[0]);
 			attributesSettings["GlyphOffset"].append(values[1]);
 			attributesSettings["GlyphOffset"].append(values[2]);
-			int enumType = (int) pointAttributes.getGlyphRepeatMode();
-			attributesSettings["GlyphRepeatMode"] = enumType;
-			enumType = (int) pointAttributes.getGlyphShapeType();
-			attributesSettings["GlyphShapeType"] = enumType;
+			char *enumString = cmzn_glyph_repeat_mode_enum_to_string(
+				(enum cmzn_glyph_repeat_mode)pointAttributes.getGlyphRepeatMode());
+			if (enumString)
+			{
+				attributesSettings["GlyphRepeatMode"] = enumString;
+				DEALLOCATE(enumString);
+			}
+			else
+			{
+				attributesSettings["GlyphRepeatMode"] = "";
+			}
+			enumString = cmzn_glyph_shape_type_enum_to_string(
+				(enum cmzn_glyph_shape_type)pointAttributes.getGlyphShapeType());
+			if (enumString)
+			{
+				attributesSettings["GlyphShapeType"] = enumString;
+				DEALLOCATE(enumString);
+			}
+			else
+			{
+				attributesSettings["GlyphShapeType"] = "";
+			}
 			OpenCMISS::Zinc::Field field = pointAttributes.getLabelField();
 			if (field.isValid())
 			{
@@ -413,15 +493,17 @@ void GraphicsJsonIO::ioPointAttributesEntries(Json::Value &graphicsSettings)
 				values[2] = attributesSettings["GlyphOffset"][2].asDouble();
 				pointAttributes.setGlyphOffset(3, &(values[0]));
 			}
-			if (attributesSettings["GlyphRepeatMode"].isInt())
+			if (attributesSettings["GlyphRepeatMode"].isString())
 			{
 				pointAttributes.setGlyphRepeatMode(static_cast<OpenCMISS::Zinc::Glyph::RepeatMode>(
-					attributesSettings["GlyphRepeatMode"].asInt()));
+					cmzn_glyph_repeat_mode_enum_from_string(
+						attributesSettings["GlyphRepeatMode"].asCString())));
 			}
-			if (attributesSettings["GlyphShapeType"].isInt())
+			if (attributesSettings["GlyphShapeType"].isString())
 			{
 				pointAttributes.setGlyphShapeType(static_cast<OpenCMISS::Zinc::Glyph::ShapeType>(
-					attributesSettings["GlyphShapeType"].asInt()));
+					cmzn_glyph_shape_type_enum_from_string(
+						attributesSettings["GlyphShapeType"].asCString())));
 			}
 			if (attributesSettings["LabelField"].isString())
 				pointAttributes.setLabelField(getFieldByName(graphics,
@@ -490,8 +572,17 @@ void GraphicsJsonIO::ioSamplingAttributesEntries(Json::Value &graphicsSettings)
 			attributesSettings["Location"].append(values[0]);
 			attributesSettings["Location"].append(values[1]);
 			attributesSettings["Location"].append(values[2]);
-			int enumType = (int)samplingAttributes.getElementPointSamplingMode();
-			attributesSettings["ElementPointSamplingMode"] = enumType;
+			char *enumString = cmzn_element_point_sampling_mode_enum_to_string(
+				(enum cmzn_element_point_sampling_mode)samplingAttributes.getElementPointSamplingMode());
+			if (enumString)
+			{
+				attributesSettings["ElementPointSamplingMode"] = enumString;
+				DEALLOCATE(enumString);
+			}
+			else
+			{
+				attributesSettings["ElementPointSamplingMode"] = "";
+			}
 			graphicsSettings["SamplingAttributes"] = attributesSettings;
 		}
 		else if (graphicsSettings["SamplingAttributes"].isObject())
@@ -509,10 +600,11 @@ void GraphicsJsonIO::ioSamplingAttributesEntries(Json::Value &graphicsSettings)
 				values[2] = attributesSettings["Location"][2].asDouble();
 				samplingAttributes.setLocation(3, &(values[0]));
 			}
-			if (attributesSettings["ElementPointSamplingMode"].isInt())
+			if (attributesSettings["ElementPointSamplingMode"].isString())
 				samplingAttributes.setElementPointSamplingMode(
-					static_cast<OpenCMISS::Zinc::Element::PointSamplingMode>
-					(attributesSettings["ElementPointSamplingMode"].asInt()));
+					static_cast<OpenCMISS::Zinc::Element::PointSamplingMode>(
+						cmzn_element_point_sampling_mode_enum_from_string(
+							attributesSettings["ElementPointSamplingMode"].asCString())));
 		}
 	}
 }
@@ -635,8 +727,28 @@ void GraphicsJsonIO::ioStreamlinesEntries(Json::Value &graphicsSettings)
 				attributesSettings["StreamVectorField"] = name;
 				DEALLOCATE(name);
 			}
-			int enumType = (int)streamlines.getTrackDirection();
-			attributesSettings["TrackDirection"] = enumType;
+			char *enumString = cmzn_graphics_streamlines_track_direction_enum_to_string(
+				(enum cmzn_graphics_streamlines_track_direction)streamlines.getTrackDirection());
+			if (enumString)
+			{
+				attributesSettings["TrackDirection"] = enumString;
+				DEALLOCATE(enumString);
+			}
+			else
+			{
+				attributesSettings["TrackDirection"] = "";
+			}
+			enumString = cmzn_graphics_streamlines_colour_data_type_enum_to_string(
+				(enum cmzn_graphics_streamlines_colour_data_type)streamlines.getColourDataType());
+			if (enumString)
+			{
+				attributesSettings["ColourDataType"] = enumString;
+				DEALLOCATE(enumString);
+			}
+			else
+			{
+				attributesSettings["ColourDataType"] = "";
+			}
 			double value = streamlines.getTrackLength();
 			attributesSettings["TrackLength"] = value;
 			graphicsSettings["Streamlines"] = attributesSettings;
@@ -647,10 +759,16 @@ void GraphicsJsonIO::ioStreamlinesEntries(Json::Value &graphicsSettings)
 			if (attributesSettings["StreamVectorField"].isString())
 				streamlines.setStreamVectorField(getFieldByName(graphics,
 					attributesSettings["StreamVectorField"].asCString()));
-			if (attributesSettings["TrackDirection"].isInt())
+			if (attributesSettings["TrackDirection"].isString())
 				streamlines.setTrackDirection(
 					static_cast<OpenCMISS::Zinc::GraphicsStreamlines::TrackDirection>(
-						attributesSettings["TrackDirection"].asInt()));
+						cmzn_graphics_streamlines_track_direction_enum_from_string(
+							attributesSettings["TrackDirection"].asCString())));
+			if (attributesSettings["ColourDataType"].isString())
+				streamlines.setColourDataType(
+					static_cast<OpenCMISS::Zinc::GraphicsStreamlines::ColourDataType>(
+						cmzn_graphics_streamlines_colour_data_type_enum_from_string(
+							attributesSettings["ColourDataType"].asCString())));
 			if (attributesSettings["TrackLength"].isDouble())
 				streamlines.setTrackLength(attributesSettings["TrackLength"].asDouble());
 		}

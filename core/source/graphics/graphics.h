@@ -608,4 +608,25 @@ enum GT_object_type cmzn_graphics_get_graphics_object_type(struct cmzn_graphics 
 
 struct GT_object *cmzn_graphics_copy_graphics_object(struct cmzn_graphics *graphics);
 
+enum cmzn_graphics_select_mode cmzn_graphics_select_mode_enum_from_string(
+	const char *string);
+
+char *cmzn_graphics_select_mode_enum_to_string(enum cmzn_graphics_select_mode type);
+
+enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *string);
+
+char *cmzn_graphicslineattributes_shape_type_enum_to_string(enum cmzn_graphicslineattributes_shape_type type);
+
+enum cmzn_graphics_streamlines_track_direction cmzn_graphics_streamlines_track_direction_enum_from_string(
+	const char *string);
+
+char *cmzn_graphics_streamlines_track_direction_enum_to_string(
+	enum cmzn_graphics_streamlines_track_direction direction);
+
+enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour_data_type_enum_from_string(
+	const char *string);
+
+char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
+	enum cmzn_graphics_streamlines_colour_data_type type);
+
 #endif

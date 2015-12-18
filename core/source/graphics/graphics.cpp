@@ -5185,6 +5185,84 @@ char *cmzn_graphics_type_enum_to_string(enum cmzn_graphics_type type)
 	return (type_string ? duplicate_string(type_string) : 0);
 }
 
+class cmzn_graphicslineattributes_shape_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphicslineattributes_shape_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE:
+				enum_string = "LINE";
+				break;
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_RIBBON:
+				enum_string = "RIBBON";
+				break;
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_CIRCLE_EXTRUSION:
+				enum_string = "CIRCLE_EXTRUSION";
+				break;
+			case CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_SQUARE_EXTRUSION:
+				enum_string = "SQUARE_EXTRUSION";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphicslineattributes_shape_type cmzn_graphicslineattributes_shape_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_graphicslineattributes_shape_type, cmzn_graphicslineattributes_shape_type_conversion>(string);
+}
+
+char *cmzn_graphicslineattributes_shape_type_enum_to_string(enum cmzn_graphicslineattributes_shape_type type)
+{
+	const char *type_string = cmzn_graphicslineattributes_shape_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+class cmzn_graphics_select_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphics_select_mode type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMZN_GRAPHICS_SELECT_MODE_ON:
+			enum_string = "ON";
+			break;
+		case CMZN_GRAPHICS_SELECT_MODE_OFF:
+			enum_string = "OFF";
+			break;
+		case CMZN_GRAPHICS_SELECT_MODE_DRAW_SELECTED:
+			enum_string = "DRAW_SELECTED";
+			break;
+		case CMZN_GRAPHICS_SELECT_MODE_DRAW_UNSELECTED:
+			enum_string = "DRAW_UNSELECTED";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphics_select_mode cmzn_graphics_select_mode_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_graphics_select_mode,
+		cmzn_graphics_select_mode_conversion>(string);
+}
+
+char *cmzn_graphics_select_mode_enum_to_string(enum cmzn_graphics_select_mode type)
+{
+	const char *type_string = cmzn_graphics_select_mode_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
+}
+
 class cmzn_graphics_render_polygon_mode_conversion
 {
 public:
@@ -5218,6 +5296,79 @@ char *cmzn_graphics_render_polygon_mode_enum_to_string(
 {
 	const char *type_string = cmzn_graphics_render_polygon_mode_conversion::to_string(type);
 	return (type_string ? duplicate_string(type_string) : 0);
+}
+
+class cmzn_graphics_streamlines_track_direction_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphics_streamlines_track_direction direction)
+	{
+		const char *enum_string = 0;
+		switch (direction)
+		{
+		case CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_FORWARD:
+			enum_string = "FORWARD";
+			break;
+		case CMZN_GRAPHICS_STREAMLINES_TRACK_DIRECTION_REVERSE:
+			enum_string = "REVERSE";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphics_streamlines_track_direction cmzn_graphics_streamlines_track_direction_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_graphics_streamlines_track_direction,
+		cmzn_graphics_streamlines_track_direction_conversion>(string);
+}
+
+char *cmzn_graphics_streamlines_track_direction_enum_to_string(
+	enum cmzn_graphics_streamlines_track_direction direction)
+{
+	const char *string = cmzn_graphics_streamlines_track_direction_conversion::to_string(direction);
+	return (string ? duplicate_string(string) : 0);
+}
+
+class cmzn_graphics_streamlines_colour_data_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_graphics_streamlines_colour_data_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_FIELD:
+			enum_string = "FIELD";
+			break;
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_MAGNITUDE:
+			enum_string = "MAGNITUDE";
+			break;
+		case CMZN_GRAPHICS_STREAMLINES_COLOUR_DATA_TYPE_TRAVEL_TIME:
+			enum_string = "TRAVEL_TIME";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_graphics_streamlines_colour_data_type cmzn_graphics_streamlines_colour_data_type_enum_from_string(
+	const char *string)
+{
+	return string_to_enum<enum cmzn_graphics_streamlines_colour_data_type,
+		cmzn_graphics_streamlines_colour_data_type_conversion>(string);
+}
+
+char *cmzn_graphics_streamlines_colour_data_type_enum_to_string(
+	enum cmzn_graphics_streamlines_colour_data_type type)
+{
+	const char *string = cmzn_graphics_streamlines_colour_data_type_conversion::to_string(type);
+	return (string ? duplicate_string(string) : 0);
 }
 
 enum cmzn_field_domain_type cmzn_graphics_get_field_domain_type(
