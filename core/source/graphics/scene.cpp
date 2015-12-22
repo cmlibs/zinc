@@ -457,7 +457,7 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 	return (scene);
 }
 
-void cmzn_scene_add_child_region(struct cmzn_scene *scene,
+void cmzn_scene_add_scenes_to_region_tree(struct cmzn_scene *scene,
 	struct cmzn_region *child_region)
 {
 	struct cmzn_scene *child_scene;
@@ -472,7 +472,7 @@ void cmzn_scene_add_child_region(struct cmzn_scene *scene,
 		{
 			if (!cmzn_region_has_scene(temp_region))
 			{
-				cmzn_scene_add_child_region(child_scene,
+				cmzn_scene_add_scenes_to_region_tree(child_scene,
 					temp_region);
 			}
 			cmzn_region_reaccess_next_sibling(&temp_region);
@@ -494,7 +494,7 @@ int cmzn_scene_update_child_scene(struct cmzn_scene *scene)
 		{
 			if (!cmzn_region_has_scene(child_region))
 			{
-				cmzn_scene_add_child_region(scene,
+				cmzn_scene_add_scenes_to_region_tree(scene,
 					child_region);
 			}
 			cmzn_region_reaccess_next_sibling(&child_region);
@@ -529,7 +529,7 @@ static void cmzn_scene_region_change(struct cmzn_region *region,
 			if (region_changes->child_added)
 			{
 				child_region = region_changes->child_added;
-				cmzn_scene_add_child_region(scene, child_region);
+				cmzn_scene_add_scenes_to_region_tree(scene, child_region);
 				cmzn_scene_changed(scene);
 			}
 			else if (region_changes->child_removed)
@@ -3701,5 +3701,4 @@ int cmzn_scene_read_description(
 		return sceneImport.import(inputString);
 	}
 	return CMZN_ERROR_ARGUMENT;
-
 }

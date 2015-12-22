@@ -14,6 +14,7 @@
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
+#include "zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
@@ -22,6 +23,7 @@
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
 #include "finite_element/finite_element_region.h"
@@ -546,7 +548,15 @@ struct cmzn_region *cmzn_region_create_region(struct cmzn_region *base_region)
 {
 	if (!base_region)
 		return 0;
-	return CREATE(cmzn_region)(base_region);
+	cmzn_region *region = CREATE(cmzn_region)(base_region);
+	// enable scene on new region
+	cmzn_scene *base_scene = cmzn_region_get_scene(base_region);
+	if (base_scene)
+	{
+		cmzn_scene_add_scenes_to_region_tree(base_scene, region);
+		cmzn_scene_destroy(&base_scene);
+	}
+	return region;
 }
 
 struct cmzn_region *cmzn_region_create_child(struct cmzn_region *parent_region,
