@@ -643,3 +643,27 @@ TEST(cmzn_scene, graphics_description)
 	cmzn_graphics_destroy(&surfaces);
 	cmzn_graphics_destroy(&points);
 }
+
+TEST(cmzn_scene, new_region_has_scene)
+{
+	ZincTestSetup zinc;
+
+	cmzn_scene *root_scene = cmzn_region_get_scene(zinc.root_region);
+	EXPECT_NE(static_cast<cmzn_scene*>(0), root_scene);
+	cmzn_scene_destroy(&root_scene);
+
+	cmzn_region *region1 = cmzn_context_create_region(zinc.context);
+	EXPECT_NE(static_cast<cmzn_region*>(0), region1);
+	cmzn_scene *scene1 = cmzn_region_get_scene(region1);
+	EXPECT_NE(static_cast<cmzn_scene*>(0), scene1);
+
+	cmzn_region *region2 = cmzn_region_create_region(region1);
+	EXPECT_NE(static_cast<cmzn_region*>(0), region2);
+	cmzn_scene *scene2 = cmzn_region_get_scene(region2);
+	EXPECT_NE(static_cast<cmzn_scene*>(0), scene2);
+
+	cmzn_scene_destroy(&scene2);
+	cmzn_region_destroy(&region2);
+	cmzn_scene_destroy(&scene1);
+	cmzn_region_destroy(&region1);
+}
