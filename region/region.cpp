@@ -140,3 +140,33 @@ TEST(ZincRegion, Fieldmodule_getRegion)
 	Fieldmodule fm = region.getFieldmodule();
 	EXPECT_EQ(zinc.fm, fm);
 }
+
+TEST(ZincRegion, append_insert_region)
+{
+	ZincTestSetupCpp zinc;
+
+	Region r1 = zinc.root_region.createRegion();
+	EXPECT_TRUE(r1.isValid());
+	Region r2 = zinc.root_region.createRegion();
+	EXPECT_TRUE(r2.isValid());
+
+	EXPECT_EQ(ERROR_ARGUMENT, zinc.root_region.appendChild(r1));
+	EXPECT_EQ(OK, r1.setName("r1"));
+	EXPECT_EQ(OK, zinc.root_region.appendChild(r1));
+	EXPECT_EQ(OK, r2.setName("r1"));
+	EXPECT_EQ(ERROR_ARGUMENT, zinc.root_region.appendChild(r2));
+	EXPECT_EQ(ERROR_ARGUMENT, zinc.root_region.insertChildBefore(r2, r1));
+	EXPECT_EQ(OK, r2.setName("r2"));
+	EXPECT_EQ(OK, zinc.root_region.appendChild(r2));
+	EXPECT_EQ(r1, zinc.root_region.getFirstChild());
+	EXPECT_EQ(OK, zinc.root_region.insertChildBefore(r2, r1));
+	EXPECT_EQ(r2, zinc.root_region.getFirstChild());
+
+	Context otherContext = Context("other");
+	Region or1 = otherContext.createRegion();
+	EXPECT_TRUE(or1.isValid());
+	EXPECT_EQ(OK, or1.setName("or1"));
+
+	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, zinc.root_region.appendChild(or1));
+	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, zinc.root_region.insertChildBefore(or1, r2));
+}

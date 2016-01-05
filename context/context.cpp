@@ -9,6 +9,7 @@
 #include <gtest/gtest.h>
 
 #include "zinc/core.h"
+#include <zinc/region.hpp>
 #include "zinctestsetup.hpp"
 #include "zinctestsetupcpp.hpp"
 
@@ -42,4 +43,25 @@ TEST(ZincContext, getVersion)
 	char *versionString = zinc.context.getVersionString();
 	EXPECT_NE(versionString, (char *)0);
 	cmzn_deallocate(versionString);
+}
+
+TEST(ZincContext, default_region)
+{
+	ZincTestSetupCpp zinc;
+
+	Region r1 = zinc.context.getDefaultRegion();
+	EXPECT_TRUE(r1.isValid());
+	Region r2 = zinc.context.createRegion();
+	EXPECT_TRUE(r2.isValid());
+	EXPECT_EQ(OK, zinc.context.setDefaultRegion(r2));
+	Region r3 = zinc.context.getDefaultRegion();
+	EXPECT_EQ(r2, r3);
+
+	Context nullContext;
+	Region nullRegion;
+	EXPECT_EQ(nullRegion, nullContext.getDefaultRegion());
+	EXPECT_EQ(ERROR_ARGUMENT, nullContext.setDefaultRegion(r1));
+
+	Context otherContext = Context("other");
+	EXPECT_EQ(ERROR_ARGUMENT_CONTEXT, otherContext.setDefaultRegion(r1));
 }
