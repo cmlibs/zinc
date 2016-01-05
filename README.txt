@@ -11,3 +11,10 @@ Zinc is currently built and tested on Windows, Mac OS X and Linux.  Developer an
 Further information, downloads, examples and help pages are available at:
 http://www.physiomeproject.org/software/zinclibrary/
 http://www.opencmiss.org/zinc/
+
+Installation
+------------
+
+For instructions on how to build zinc (and any required libraries), see the `OpenCMISS build environment`_.
+
+.. _OpenCMISS build environment: https://github.com/OpenCMISS/manage/raw/v1.0/OpenCMISSBuildEnvironment.docx.pdf
