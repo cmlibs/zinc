@@ -544,8 +544,13 @@ void cmzn_region_detach_fields_hierarchical(struct cmzn_region *region)
 
 cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region)
 {
-	if (base_region && base_region->context)
-		return base_region->context->createRegion();
+	if (base_region)
+	{
+		if (base_region->context)
+			return base_region->context->createRegion();
+		// curve creates regions without context/graphics_module with following:
+		return cmzn_region_create_internal(base_region);
+	}
 	return 0;
 }
 
