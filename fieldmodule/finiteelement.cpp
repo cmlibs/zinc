@@ -484,34 +484,32 @@ TEST(ZincFieldIsExterior, evaluate3d)
 	}
 }
 
-TEST(ZincFieldIsOnFace, evaluate3d)
+TEST(ZincFieldIsOnFace, evaluate)
 {
 	ZincTestSetupCpp zinc;
 	int result;
 
 	EXPECT_EQ(OK, result = zinc.root_region.readFile(
-		TestResources::getLocation(TestResources::FIELDMODULE_TWO_CUBES_RESOURCE)));
+		TestResources::getLocation(TestResources::FIELDMODULE_CUBESQUARELINE_RESOURCE)));
 
 	Fieldcache cache = zinc.fm.createFieldcache();
 	double value;
 
 	int size1, size2, size3;
 	Mesh mesh3d = zinc.fm.findMeshByDimension(3);
-	EXPECT_EQ(2, size3 = mesh3d.getSize());
+	EXPECT_EQ(1, size3 = mesh3d.getSize());
 	Mesh mesh2d = zinc.fm.findMeshByDimension(2);
-	EXPECT_EQ(11, size2 = mesh2d.getSize());
+	EXPECT_EQ(7, size2 = mesh2d.getSize());
 	Mesh mesh1d = zinc.fm.findMeshByDimension(1);
-	EXPECT_EQ(20, size1 = mesh1d.getSize());
+	EXPECT_EQ(16, size1 = mesh1d.getSize());
 
-	const int expectedFaces[6][2] = {
-		{ 1, 2 }, { 2, 3}, { 4, 6 }, { 5, 7 }, { 8, 10 }, { 9, 11 } };
-	const int expectedLines[6][8] = {
-		{  1,  2,  3,  4,  7,  8,  9, 10 },
-		{  3,  4,  5,  6,  9, 10, 11, 12 },
-		{  1,  3,  5, 13, 14, 17, 18,  0 },
-		{  2,  4,  6, 15, 16, 19, 20,  0 },
-		{  7,  9, 11, 13, 15, 17, 19,  0 },
-		{  8, 10, 12, 14, 16, 18, 20,  0 } };
+	const int expectedLines[6][5] = {
+		{  2,  3,  4,  7, 10 },
+		{  4,  5,  8, 11, 13 },
+		{  1,  3,  5,  9, 14 },
+		{  6,  7,  8, 12, 15 },
+		{  1,  2,  4,  6,  0 },
+		{  9, 10, 11, 12,  0 } };
 	int f, i, j;
 	for (f = 0; f < 6; ++f)
 	{
@@ -527,19 +525,17 @@ TEST(ZincFieldIsOnFace, evaluate3d)
 			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
 			EXPECT_EQ(0.0, value);
 		}
-
 		for (i = 1; i <= size2; ++i)
 		{
 			Element element = mesh2d.findElementByIdentifier(i);
 			EXPECT_TRUE(element.isValid());
 			EXPECT_EQ(OK, result = cache.setElement(element));
 			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
-			if ((i == expectedFaces[f][0]) || (i == expectedFaces[f][1]))
+			if (f + 1 == i)
 				EXPECT_EQ(1.0, value);
 			else
 				EXPECT_EQ(0.0, value);
 		}
-
 		for (i = 1; i <= size1; ++i)
 		{
 			Element element = mesh1d.findElementByIdentifier(i);
@@ -547,12 +543,12 @@ TEST(ZincFieldIsOnFace, evaluate3d)
 			EXPECT_EQ(OK, result = cache.setElement(element));
 			EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
 			bool expectOnFace = false;
-			for (j = 0; j < 8; ++j)
-			if (expectedLines[f][j] == i)
-			{
-				expectOnFace = true;
-				break;
-			}
+			for (j = 0; j < 5; ++j)
+				if (expectedLines[f][j] == i)
+				{
+					expectOnFace = true;
+					break;
+				}
 			if (expectOnFace)
 				EXPECT_EQ(1.0, value);
 			else
@@ -560,29 +556,44 @@ TEST(ZincFieldIsOnFace, evaluate3d)
 		}
 	}
 
-	// FACE_TYPE_ALL is true on any element that is a face of another element
-	FieldIsOnFace isOnFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_ALL);
-	EXPECT_TRUE(isOnFaceField.isValid());
+	FieldIsOnFace allFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_ALL);
+	EXPECT_TRUE(allFaceField.isValid());
+	FieldIsOnFace anyFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_ANY_FACE);
+	EXPECT_TRUE(anyFaceField.isValid());
+	FieldIsOnFace noFaceField = zinc.fm.createFieldIsOnFace(Element::FACE_TYPE_NO_FACE);
+	EXPECT_TRUE(noFaceField.isValid());
 	for (i = 1; i <= size3; ++i)
 	{
 		Element element = mesh3d.findElementByIdentifier(i);
 		EXPECT_EQ(OK, result = cache.setElement(element));
-		EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, result = allFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(1.0, value);
+		EXPECT_EQ(OK, result = anyFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(0.0, value);
+		EXPECT_EQ(OK, result = noFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(1.0, value);
 	}
 	for (i = 1; i <= size2; ++i)
 	{
 		Element element = mesh2d.findElementByIdentifier(i);
 		EXPECT_EQ(OK, result = cache.setElement(element));
-		EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, result = allFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(1.0, value);
+		EXPECT_EQ(OK, result = anyFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ((i != 7) ? 1.0 : 0.0, value);
+		EXPECT_EQ(OK, result = noFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ((i == 7) ? 1.0 : 0.0, value);
 	}
 	for (i = 1; i <= size1; ++i)
 	{
 		Element element = mesh1d.findElementByIdentifier(i);
 		EXPECT_EQ(OK, result = cache.setElement(element));
-		EXPECT_EQ(OK, result = isOnFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ(OK, result = allFaceField.evaluateReal(cache, 1, &value));
 		EXPECT_EQ(1.0, value);
+		EXPECT_EQ(OK, result = anyFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ((i != 16) ? 1.0 : 0.0, value);
+		EXPECT_EQ(OK, result = noFaceField.evaluateReal(cache, 1, &value));
+		EXPECT_EQ((i == 16) ? 1.0 : 0.0, value);
 	}
 }
 
