@@ -10184,8 +10184,16 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_face_type)
 {
 	switch (enumerator_value)
 	{
+		case CMZN_ELEMENT_FACE_TYPE_INVALID:
+			break;
 		case CMZN_ELEMENT_FACE_TYPE_ALL:
 			return "all";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_ANY_FACE:
+			return "any_face";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_NO_FACE:
+			return "no_face";
 			break;
 		case CMZN_ELEMENT_FACE_TYPE_XI1_0:
 			return "xi1_0";
@@ -10205,8 +10213,6 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(cmzn_element_face_type)
 		case CMZN_ELEMENT_FACE_TYPE_XI3_1:
 			return "xi3_1";
 			break;
-		case CMZN_ELEMENT_FACE_TYPE_INVALID:
-			break;
 	}
 	return 0;
 }
@@ -10219,8 +10225,16 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
+		case CMZN_ELEMENT_FACE_TYPE_INVALID:
+			break;
 		case CMZN_ELEMENT_FACE_TYPE_ALL:
 			enum_string = "ALL";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_ANY_FACE:
+			enum_string = "ANY_FACE";
+			break;
+		case CMZN_ELEMENT_FACE_TYPE_NO_FACE:
+			enum_string = "NO_FACE";
 			break;
 		case CMZN_ELEMENT_FACE_TYPE_XI1_0:
 			enum_string = "XI1_0";
@@ -10239,8 +10253,6 @@ public:
 			break;
 		case CMZN_ELEMENT_FACE_TYPE_XI3_1:
 			enum_string = "XI3_1";
-			break;
-		default:
 			break;
 		}
 		return enum_string;
@@ -10436,11 +10448,13 @@ public:
 		const char *enum_string = 0;
 		switch (type)
 		{
+		case CMZN_FIELD_DOMAIN_TYPE_INVALID:
+			break;
 		case CMZN_FIELD_DOMAIN_TYPE_POINT:
 			enum_string = "POINT";
 			break;
 		case CMZN_FIELD_DOMAIN_TYPE_NODES:
-			enum_string = "NDOES";
+			enum_string = "NODES";
 			break;
 		case CMZN_FIELD_DOMAIN_TYPE_DATAPOINTS:
 			enum_string = "DATAPOINTS";
@@ -10455,10 +10469,7 @@ public:
 			enum_string = "MESH3D";
 			break;
 		case CMZN_FIELD_DOMAIN_TYPE_MESH_HIGHEST_DIMENSION:
-			enum_string = "HIGHEST_DIMENSION";
-			break;
-			break;
-		default:
+			enum_string = "MESH_HIGHEST_DIMENSION";
 			break;
 		}
 		return enum_string;
@@ -26260,7 +26271,7 @@ is checked and the <top_level_xi> calculated.
 			/* check or get top_level element and xi coordinates for it */
 			if (NULL != (*top_level_element = FE_element_get_top_level_element_conversion(
 				element,*top_level_element,
-				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)))
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)))
 			{
 				/* convert xi to top_level_xi */
 				*top_level_element_dimension = (*top_level_element)->getDimension();

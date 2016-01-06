@@ -4542,7 +4542,12 @@ int Computed_field_is_on_face::evaluate(cmzn_fieldcache& cache, FieldValueCache&
 		RealFieldValueCache& valueCache = RealFieldValueCache::cast(inValueCache);
 		cmzn_element* element = element_xi_location->get_element();
 		FE_mesh *fe_mesh = FE_element_get_FE_mesh(element);
-		if (fe_mesh && (0 <= fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->faceType)))
+		if (fe_mesh &&
+				((CMZN_ELEMENT_FACE_TYPE_ALL == this->faceType) ||
+				((CMZN_ELEMENT_FACE_TYPE_NO_FACE == this->faceType) &&
+					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), CMZN_ELEMENT_FACE_TYPE_ANY_FACE) < 0)) ||
+				((CMZN_ELEMENT_FACE_TYPE_NO_FACE != this->faceType) &&
+					(fe_mesh->getElementParentOnFace(get_FE_element_index(element), this->faceType) >= 0))))
 			valueCache.values[0] = 1.0;
 		else
 			valueCache.values[0] = 0.0;

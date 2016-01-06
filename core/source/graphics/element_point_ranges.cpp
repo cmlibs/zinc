@@ -398,7 +398,7 @@ top_level. Assumes <identifier> has been validated.
 		{
 			if ((top_level_element=FE_element_get_top_level_element_conversion(
 				identifier->element,identifier->top_level_element,
-				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)) &&
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)) &&
 				(top_level_element==identifier->top_level_element)&&
 				(element_dimension=get_FE_element_dimension(identifier->element))&&
 				FE_element_get_numbered_xi_point(identifier->element,

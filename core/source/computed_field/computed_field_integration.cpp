@@ -1082,7 +1082,7 @@ bool Computed_field_integration::is_defined_at_location(cmzn_fieldcache& cache)
 						we don't have a top_level element to test with */
 					if (!(top_level_element=FE_element_get_top_level_element_conversion(
 						element,(struct FE_element *)NULL,
-						CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level)))
+						CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level)))
 					{
 						return_code=0;
 					}
@@ -1213,7 +1213,7 @@ int Computed_field_integration::evaluate(cmzn_fieldcache& cache, FieldValueCache
 			/* check or get top_level element and xi coordinates for it */
 			top_level_element=FE_element_get_top_level_element_conversion(
 				element, top_level_element,
-				CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level);
+				CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level);
 			if (top_level_element != 0)
 			{
 				/* convert xi to top_level_xi */

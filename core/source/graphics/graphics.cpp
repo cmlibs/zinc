@@ -192,7 +192,7 @@ struct cmzn_graphics *CREATE(cmzn_graphics)(
 			graphics->texture_coordinate_field=(struct Computed_field *)NULL;
 			/* for 1-D and 2-D elements only */
 			graphics->exterior = false;
-			graphics->face=CMZN_ELEMENT_FACE_TYPE_INVALID; /* do not check face */
+			graphics->face = CMZN_ELEMENT_FACE_TYPE_ALL; /* match all elements, face or no face */
 
 			/* line attributes */
 			graphics->line_shape = CMZN_GRAPHICSLINEATTRIBUTES_SHAPE_TYPE_LINE;
@@ -527,9 +527,16 @@ static int FE_element_to_graphics_object(struct FE_element *element,
 		{
 			if ((graphics->exterior) && (!fe_mesh->isElementExterior(elementIndex)))
 				return 1;
-			if ((CMZN_ELEMENT_FACE_TYPE_INVALID != graphics->face) &&
-					(0 > fe_mesh->getElementParentOnFace(elementIndex, graphics->face)))
-				return 1;
+			if (CMZN_ELEMENT_FACE_TYPE_ALL != graphics->face)
+			{
+				if (CMZN_ELEMENT_FACE_TYPE_NO_FACE == graphics->face)
+				{
+					if (fe_mesh->getElementParentOnFace(elementIndex, CMZN_ELEMENT_FACE_TYPE_ANY_FACE) >= 0)
+						return 1;
+				}
+				else if (fe_mesh->getElementParentOnFace(elementIndex, graphics->face) < 0)
+					return 1;
+			}
 		}
 		cmzn_fieldcache_set_element(graphics_to_object_data->field_cache, element);
 		if (graphics->subgroup_field && (graphics_to_object_data->iteration_mesh == graphics_to_object_data->master_mesh))
@@ -1627,11 +1634,8 @@ char *cmzn_graphics_string(struct cmzn_graphics *graphics,
 			{
 				append_string(&graphics_string, " exterior", &error);
 			}
-			if (CMZN_ELEMENT_FACE_TYPE_INVALID != graphics->face)
-			{
-				append_string(&graphics_string, " face ", &error);
-				append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
-			}
+			append_string(&graphics_string, " face ", &error);
+			append_string(&graphics_string, ENUMERATOR_STRING(cmzn_element_face_type)(graphics->face), &error);
 		}
 
 		append_string(&graphics_string, " tessellation ", &error);

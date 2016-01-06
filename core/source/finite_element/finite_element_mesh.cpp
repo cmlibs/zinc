@@ -1128,7 +1128,7 @@ DsLabelIndex FE_mesh::getElementParentOnFace(DsLabelIndex elementIndex, cmzn_ele
 	const int parentsCount = this->getElementParents(elementIndex, parents);
 	if (0 == parentsCount)
 		return DS_LABEL_INDEX_INVALID;
-	if (CMZN_ELEMENT_FACE_TYPE_ALL == faceType)
+	if ((CMZN_ELEMENT_FACE_TYPE_ANY_FACE == faceType) || (CMZN_ELEMENT_FACE_TYPE_ALL == faceType))
 		return parents[0];
 	FE_mesh *parentParentMesh = this->parentMesh->parentMesh;
 	for (int i = 0; i < parentsCount; ++i)
