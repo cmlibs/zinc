@@ -54,12 +54,24 @@ ZINC_API cmzn_context_id cmzn_context_access(cmzn_context_id context);
 ZINC_API int cmzn_context_destroy(cmzn_context_id *context_address);
 
 /**
- * Returns the default region in the context.
+ * Returns the default region in the context. A convenience for applications that
+ * need only one region tree.
  *
  * @param context  Handle to a context object.
  * @return  Handle to region, or NULL/invalid handle on failure.
  */
 ZINC_API cmzn_region_id cmzn_context_get_default_region(cmzn_context_id context);
+
+/**
+ * Sets the default region in the context. A convenience for applications that
+ * need only one region tree.
+ *
+ * @param context  Handle to a context object.
+ * @param region  The new default region.
+ * @return  CMZN_OK on success, otherwise any other status code.
+ */
+ZINC_API int cmzn_context_set_default_region(cmzn_context_id context,
+	cmzn_region_id region);
 
 /**
  * Create a new region and return a handle to it. Use this function to create

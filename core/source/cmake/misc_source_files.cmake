@@ -92,10 +92,8 @@ SET( REGION_HDRS source/region/cmiss_region.h
 	source/stream/region_stream.hpp
 	source/region/cmiss_region_write_info.h )
 
-SET( SELECTION_SRCS source/selection/any_object_selection.cpp
-	source/selection/element_point_ranges_selection.cpp )
-SET( SELECTION_HDRS source/selection/any_object_selection.h
-	source/selection/element_point_ranges_selection.h )
+SET( SELECTION_SRCS source/selection/element_point_ranges_selection.cpp )
+SET( SELECTION_HDRS source/selection/element_point_ranges_selection.h )
 
 SET( TIME_SRCS
 	source/description_io/timekeeper_json_io.cpp

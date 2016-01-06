@@ -109,6 +109,8 @@ public:
 
 	inline Region getDefaultRegion();
 
+	inline int setDefaultRegion(const Region& region);
+
 	inline Fontmodule getFontmodule();
 
 	inline Glyphmodule getGlyphmodule();

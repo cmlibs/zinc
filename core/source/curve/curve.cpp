@@ -389,7 +389,7 @@ but it is at least destroyable when returned from this function.
 			curve->value_nodes_per_element=0;
 			curve->value_derivatives_per_node=0;
 
-			curve->region=cmzn_region_create_internal();
+			curve->region = cmzn_region_create_internal((cmzn_region *)0);
 			curve->fe_region=ACCESS(FE_region)(cmzn_region_get_FE_region(curve->region));
 			curve->fe_mesh=FE_region_find_FE_mesh_by_dimension(curve->fe_region, 1);
 			curve->fe_nodeset=FE_region_find_FE_nodeset_by_field_domain_type(curve->fe_region, CMZN_FIELD_DOMAIN_TYPE_NODES);

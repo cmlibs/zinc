@@ -204,7 +204,7 @@ void cmzn_graphics_module_font_manager_callback(
 }
 
 struct cmzn_graphics_module *cmzn_graphics_module_create(
-	struct Context *context)
+	cmzn_context *context)
 {
 	struct cmzn_graphics_module *module;
 

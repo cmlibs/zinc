@@ -39,7 +39,7 @@ struct cmzn_graphics_module;
  * @param default_spectrum  Default spectrum
  * @return  If successfully constructed, return the cmzn_scene
  */
-struct cmzn_graphics_module *cmzn_graphics_module_create(struct Context *context);
+struct cmzn_graphics_module *cmzn_graphics_module_create(cmzn_context *context);
 
 /***************************************************************************//**
  * Return an additional handle to the graphics module. Increments the
