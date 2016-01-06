@@ -28,13 +28,13 @@
 #include "region/cmiss_region_private.h"
 
 cmzn_context::cmzn_context(const char *idIn) :
-	graphics_module(0),
-	root_region(0),
 	id(duplicate_string(idIn)),
+	root_region(0),
 	element_point_ranges_selection(0),
 	io_stream_package(0),
-	curve_manager(0),
 	timekeepermodule(cmzn_timekeepermodule::create()),
+	curve_manager(0),
+	graphics_module(0),
 	access_count(1)
 {
 }

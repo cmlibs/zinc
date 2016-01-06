@@ -19,12 +19,8 @@
 
 struct cmzn_context
 {
-	int access_count;
 	const char *id;
 	struct cmzn_region *root_region;
-	/* Always want the entry for graphics_buffer_package even if it will
-		not be available on this implementation */
-	struct cmzn_graphics_module *graphics_module;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;
 	struct IO_stream_package *io_stream_package;
@@ -33,6 +29,8 @@ struct cmzn_context
 
 private:
 	std::list<cmzn_region *> allRegions; // list of regions created for context, not accessed
+	struct cmzn_graphics_module *graphics_module;
+	int access_count;
 
 	cmzn_context(const char *idIn);
 	~cmzn_context();
