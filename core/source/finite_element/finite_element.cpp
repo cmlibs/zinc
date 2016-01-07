@@ -10479,7 +10479,7 @@ public:
 enum cmzn_field_domain_type cmzn_field_domain_type_enum_from_string(
 	const char *string)
 {
-	return string_to_enum<enum cmzn_field_domain_type,
+	return string_to_enum_bitshift<enum cmzn_field_domain_type,
 		cmzn_field_domain_type_conversion>(string);
 }
 
