@@ -1122,6 +1122,8 @@ TEST(cmzn_graphics, point_description_io)
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());
 
+	EXPECT_EQ(Field::DOMAIN_TYPE_POINT, gr.getFieldDomainType());
+
 	Graphicspointattributes pointattr = gr.getGraphicspointattributes();
 	EXPECT_TRUE(pointattr.isValid());
 
@@ -1324,6 +1326,8 @@ TEST(cmzn_graphics_api, line_attributes_description_io)
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 
+	EXPECT_EQ(Field::DOMAIN_TYPE_MESH1D, gr.getFieldDomainType());
+
 	Graphicslineattributes lineattr = gr.getGraphicslineattributes();
 	EXPECT_TRUE(lineattr.isValid());
 
@@ -1506,6 +1510,8 @@ TEST(cmzn_graphics_api, sampling_attributes_description_io)
 
 	Graphics gr = zinc.scene.getFirstGraphics();
 	EXPECT_TRUE(gr.isValid());
+
+	EXPECT_EQ(Field::DOMAIN_TYPE_MESH_HIGHEST_DIMENSION, gr.getFieldDomainType());
 
 	Graphicssamplingattributes sampling = gr.getGraphicssamplingattributes();
 	EXPECT_TRUE(sampling.isValid());

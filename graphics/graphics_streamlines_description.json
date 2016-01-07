@@ -1,9 +1,9 @@
 {
    "Graphics" : [
       {
-         "ElementFaceType" : "",
+         "ElementFaceType" : "ALL",
          "Exterior" : false,
-         "FieldDomainType" : "HIGHEST_DIMENSION",
+         "FieldDomainType" : "MESH_HIGHEST_DIMENSION",
          "LineAttributes" : {
             "BaseSize" : [ 0, 0 ],
             "ScaleFactors" : [ 1, 1 ],

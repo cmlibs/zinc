@@ -1,7 +1,7 @@
 {
    "Graphics" : [
       {
-         "ElementFaceType" : "",
+         "ElementFaceType" : "ALL",
          "Exterior" : false,
          "FieldDomainType" : "POINT",
          "Material" : "default",
