@@ -53,16 +53,16 @@ typedef struct cmzn_element *cmzn_element_id;
  */
 enum cmzn_element_face_type
 {
-	CMZN_ELEMENT_FACE_TYPE_INVALID = -1, /*!< invalid element face type */
-	CMZN_ELEMENT_FACE_TYPE_ALL,          /*!< match all elements whether faces of parent elements or not */
-	CMZN_ELEMENT_FACE_TYPE_ANY_FACE,     /*!< element on any face of a higher dimension element */
-	CMZN_ELEMENT_FACE_TYPE_NO_FACE,      /*!< not a face of a higher dimension element; top-level elements only */
-	CMZN_ELEMENT_FACE_TYPE_XI1_0,        /*!< element on face where top-level xi1 = 0 */
-	CMZN_ELEMENT_FACE_TYPE_XI1_1,        /*!< element on face where top-level xi1 = 1 */
-	CMZN_ELEMENT_FACE_TYPE_XI2_0,        /*!< element on face where top-level xi2 = 0 */
-	CMZN_ELEMENT_FACE_TYPE_XI2_1,        /*!< element on face where top-level xi2 = 1 */
-	CMZN_ELEMENT_FACE_TYPE_XI3_0,        /*!< element on face where top-level xi3 = 0 */
-	CMZN_ELEMENT_FACE_TYPE_XI3_1         /*!< element on face where top-level xi3 = 1 */
+	CMZN_ELEMENT_FACE_TYPE_INVALID = 0,  /*!< invalid element face type */
+	CMZN_ELEMENT_FACE_TYPE_ALL = 1,      /*!< match all elements whether faces of parent elements or not */
+	CMZN_ELEMENT_FACE_TYPE_ANY_FACE = 2, /*!< element on any face of a higher dimension element */
+	CMZN_ELEMENT_FACE_TYPE_NO_FACE = 3,  /*!< not a face of a higher dimension element; top-level elements only */
+	CMZN_ELEMENT_FACE_TYPE_XI1_0 = 4,    /*!< element on face where top-level xi1 = 0 */
+	CMZN_ELEMENT_FACE_TYPE_XI1_1 = 5,    /*!< element on face where top-level xi1 = 1 */
+	CMZN_ELEMENT_FACE_TYPE_XI2_0 = 6,    /*!< element on face where top-level xi2 = 0 */
+	CMZN_ELEMENT_FACE_TYPE_XI2_1 = 7,    /*!< element on face where top-level xi2 = 1 */
+	CMZN_ELEMENT_FACE_TYPE_XI3_0 = 8,    /*!< element on face where top-level xi3 = 0 */
+	CMZN_ELEMENT_FACE_TYPE_XI3_1 = 9     /*!< element on face where top-level xi3 = 1 */
 };
 
 /**

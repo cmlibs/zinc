@@ -46,7 +46,7 @@ enum cmzn_sceneviewerinput_button_type
  */
 enum cmzn_sceneviewerinput_event_type
 {
-	CMZN_SCENEVIEWERINPUT_EVENT_TYPE_INVALID,
+	CMZN_SCENEVIEWERINPUT_EVENT_TYPE_INVALID = 0,
 	/*!< Unspecified scene viewer input event type. */
 	CMZN_SCENEVIEWERINPUT_EVENT_TYPE_MOTION_NOTIFY,
 	/*!< indicates the cursor has moved. */
