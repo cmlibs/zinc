@@ -457,92 +457,14 @@ struct cmzn_scene *cmzn_scene_create_internal(struct cmzn_region *cmiss_region,
 	return (scene);
 }
 
-void cmzn_scene_add_scenes_to_region_tree(struct cmzn_scene *scene,
-	struct cmzn_region *child_region)
-{
-	struct cmzn_scene *child_scene;
-	if (scene && child_region &&
-		(NULL != (child_scene = cmzn_scene_create_internal(
-			child_region, scene->graphics_module))))
-	{
-		cmzn_scene_set_position(child_scene,	GET_UNIQUE_SCENE_NAME());
-		struct cmzn_region *temp_region = cmzn_region_get_first_child(
-			child_region);
-		while (temp_region)
-		{
-			if (!cmzn_region_has_scene(temp_region))
-			{
-				cmzn_scene_add_scenes_to_region_tree(child_scene,
-					temp_region);
-			}
-			cmzn_region_reaccess_next_sibling(&temp_region);
-		}
-	}
-}
-
-int cmzn_scene_update_child_scene(struct cmzn_scene *scene)
-{
-	int return_code;
-
-	ENTER(cmzn_scene_update_child_scene);
-	if (scene)
-	{
-		cmzn_scene_begin_change(scene);
-		/* ensure we have a graphical element for each child region */
-		struct cmzn_region *child_region = cmzn_region_get_first_child(scene->region);
-		while (child_region)
-		{
-			if (!cmzn_region_has_scene(child_region))
-			{
-				cmzn_scene_add_scenes_to_region_tree(scene,
-					child_region);
-			}
-			cmzn_region_reaccess_next_sibling(&child_region);
-		}
-		cmzn_scene_end_change(scene);
-		return_code = 1;
-	}
-	else
-	{
-		display_message(ERROR_MESSAGE,
-			"cmzn_scene_update_child_scene.  Invalid argument(s)");
-		return_code = 0;
-	}
-	LEAVE;
-
-	return (return_code);
-}
-
 static void cmzn_scene_region_change(struct cmzn_region *region,
 	struct cmzn_region_changes *region_changes, void *scene_void)
 {
-	struct cmzn_region *child_region;
-	struct cmzn_scene *scene;
-
-	ENTER(Scene_cmzn_region_change);
-
-	if (region && region_changes && (scene = (struct cmzn_scene *)scene_void))
+	cmzn_scene *scene = static_cast<cmzn_scene *>(scene_void);
+	if (region && region_changes && scene)
 	{
 		if (region_changes->children_changed)
-		{
-			cmzn_scene_begin_change(scene);
-			if (region_changes->child_added)
-			{
-				child_region = region_changes->child_added;
-				cmzn_scene_add_scenes_to_region_tree(scene, child_region);
 				cmzn_scene_changed(scene);
-			}
-			else if (region_changes->child_removed)
-			{
-				/* flag it as changed to trigger callback on scene */
-				cmzn_scene_changed(scene);
-			}
-			else
-			{
-				cmzn_scene_update_child_scene(scene);
-			}
-			cmzn_scene_end_change(scene);
-		}
 	}
 	else
 	{

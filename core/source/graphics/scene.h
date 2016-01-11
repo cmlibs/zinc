@@ -120,12 +120,6 @@ int cmzn_scene_set_position(struct cmzn_scene *scene, unsigned int position);
  */
 struct cmzn_scene *cmzn_region_get_scene_private(struct cmzn_region *region);
 
-/**
- * Ensure region and all subregions have scenes.
- */
-void cmzn_scene_add_scenes_to_region_tree(struct cmzn_scene *scene,
-	struct cmzn_region *region);
-
 /***************************************************************************//**
  * Deaccess the scene of the region
  * @param region The region to deaccess scene from
