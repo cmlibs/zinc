@@ -27,10 +27,11 @@
 #include <zinc/fieldconstant.hpp>
 #include <zinc/fieldvectoroperators.hpp>
 #include <zinc/graphics.hpp>
-#include "zinc/scenefilter.hpp"
-#include "zinc/sceneviewer.hpp"
-#include "zinc/spectrum.hpp"
-#include "zinc/streamscene.hpp"
+#include <zinc/scene.hpp>
+#include <zinc/scenefilter.hpp>
+#include <zinc/sceneviewer.hpp>
+#include <zinc/spectrum.hpp>
+#include <zinc/streamscene.hpp>
 
 #include "test_resources.h"
 #include "zinctestsetup.hpp"
@@ -666,4 +667,25 @@ TEST(cmzn_scene, new_region_has_scene)
 	cmzn_region_destroy(&region2);
 	cmzn_scene_destroy(&scene1);
 	cmzn_region_destroy(&region1);
+}
+
+TEST(ZincScene, issue_3954_adding_child_region_destroys_its_scene)
+{
+	ZincTestSetupCpp zinc;
+
+	Region r1 = zinc.root_region.createChild("bob");
+	EXPECT_TRUE(r1.isValid());
+	Region r2 = zinc.root_region.createRegion();
+	EXPECT_TRUE(r2.isValid());
+	EXPECT_EQ(OK, r2.setName("fred"));
+
+	Scene s2 = r2.getScene();
+	EXPECT_TRUE(s2.isValid());
+	Graphics gr = s2.createGraphicsPoints();
+	EXPECT_TRUE(gr.isValid());
+	EXPECT_EQ(1, s2.getNumberOfGraphics());
+	zinc.root_region.insertChildBefore(r2, r1);
+	Scene s2b = r2.getScene();
+	EXPECT_EQ(s2, s2b);
+	EXPECT_EQ(1, s2b.getNumberOfGraphics());
 }
