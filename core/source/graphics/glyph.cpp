@@ -18,6 +18,8 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include <algorithm>
+#include <iterator>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -1878,12 +1880,197 @@ int cmzn_glyph_set_managed(cmzn_glyph_id glyph, bool value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_glyphmodulenotifier_id cmzn_glyphmodule_create_glyphmodulenotifier(
+	cmzn_glyphmodule_id glyphmodule)
+{
+	return cmzn_glyphmodulenotifier::create(glyphmodule);
+}
+
+cmzn_glyphmodulenotifier::cmzn_glyphmodulenotifier(
+	cmzn_glyphmodule *glyphmodule) :
+	module(glyphmodule),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	glyphmodule->addNotifier(this);
+}
+
+cmzn_glyphmodulenotifier::~cmzn_glyphmodulenotifier()
+{
+}
+
+int cmzn_glyphmodulenotifier::deaccess(cmzn_glyphmodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->module)
+			notifier->module->removeNotifier(notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_glyphmodulenotifier::setCallback(cmzn_glyphmodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_glyphmodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_glyphmodulenotifier::glyphmoduleDestroyed()
+{
+	this->module = 0;
+	if (this->function)
+	{
+		cmzn_glyphmoduleevent_id event = cmzn_glyphmoduleevent::create(
+			static_cast<cmzn_glyphmodule*>(0));
+		event->setChangeFlags(CMZN_SPECTRUM_CHANGE_FLAG_FINAL);
+		(this->function)(event, this->user_data);
+		cmzn_glyphmoduleevent::deaccess(event);
+		this->clearCallback();
+	}
+}
+
+cmzn_glyphmoduleevent::cmzn_glyphmoduleevent(
+	cmzn_glyphmodule *glyphmoduleIn) :
+	module(cmzn_glyphmodule_access(glyphmoduleIn)),
+	changeFlags(CMZN_TESSELLATION_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	access_count(1)
+{
+}
+
+cmzn_glyphmoduleevent::~cmzn_glyphmoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(cmzn_glyph)(&(this->managerMessage));
+	cmzn_glyphmodule_destroy(&this->module);
+}
+
+cmzn_glyph_change_flags cmzn_glyphmoduleevent::getGlyphChangeFlags(
+	cmzn_glyph *glyph) const
+{
+	if (glyph && this->managerMessage)
+		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_glyph)(this->managerMessage, glyph);
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
+void cmzn_glyphmoduleevent::setManagerMessage(
+	struct MANAGER_MESSAGE(cmzn_glyph) *managerMessageIn)
+{
+	this->managerMessage = MANAGER_MESSAGE_ACCESS(cmzn_glyph)(managerMessageIn);
+}
+
+struct MANAGER_MESSAGE(cmzn_glyph) *cmzn_glyphmoduleevent::getManagerMessage()
+{
+	return this->managerMessage;
+}
+
+int cmzn_glyphmoduleevent::deaccess(cmzn_glyphmoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_glyphmodulenotifier_clear_callback(
+	cmzn_glyphmodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_glyphmodulenotifier_set_callback(cmzn_glyphmodulenotifier_id notifier,
+	cmzn_glyphmodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_glyphmodulenotifier_get_callback_user_data(
+ cmzn_glyphmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_glyphmodulenotifier_id cmzn_glyphmodulenotifier_access(
+	cmzn_glyphmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->access();
+	return 0;
+}
+
+int cmzn_glyphmodulenotifier_destroy(cmzn_glyphmodulenotifier_id *notifier_address)
+{
+	return cmzn_glyphmodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_glyphmoduleevent_id cmzn_glyphmoduleevent_access(
+	cmzn_glyphmoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_glyphmoduleevent_destroy(cmzn_glyphmoduleevent_id *event_address)
+{
+	return cmzn_glyphmoduleevent::deaccess(*event_address);
+}
+
+cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_summary_glyph_change_flags(
+	cmzn_glyphmoduleevent_id event)
+{
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
+cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_glyph_change_flags(
+	cmzn_glyphmoduleevent_id event, cmzn_glyph_id glyph)
+{
+	if (event)
+		return event->getGlyphChangeFlags(glyph);
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
 cmzn_glyphmodule::cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn) :
 	materialModule(cmzn_materialmodule_access(materialModuleIn)),
 	manager(CREATE(MANAGER(cmzn_glyph))()),
+	manager_callback_id(0),
 	defaultPointGlyph(0),
 	access_count(1)
 {
+	this->manager_callback_id = MANAGER_REGISTER(cmzn_glyph)(
+		cmzn_glyphmodule::glyph_manager_change, (void *)this, this->manager);
 }
 
 cmzn_glyphmodule::~cmzn_glyphmodule()
@@ -1893,7 +2080,45 @@ cmzn_glyphmodule::~cmzn_glyphmodule()
 	{
 		DEACCESS(cmzn_glyph)(&(this->defaultPointGlyph));
 	}
+	MANAGER_DEREGISTER(cmzn_glyph)(this->manager_callback_id, this->manager);
+	for (cmzn_glyphmodulenotifier_list::iterator iter = this->notifier_list.begin();
+		iter != this->notifier_list.end(); ++iter)
+	{
+		cmzn_glyphmodulenotifier *notifier = *iter;
+		notifier->glyphmoduleDestroyed();
+		cmzn_glyphmodulenotifier::deaccess(notifier);
+	}
 	DESTROY(MANAGER(cmzn_glyph))(&(this->manager));
+}
+
+/**
+ * Glyph manager callback. Calls notifier callbacks.
+ *
+ * @param message  The changes to the glyphs in the glyph manager.
+ * @param glyphmodule_void  Void pointer to changed glyphmodule).
+ */
+void cmzn_glyphmodule::glyph_manager_change(
+	struct MANAGER_MESSAGE(cmzn_glyph) *message, void *glyphmodule_void)
+{
+	cmzn_glyphmodule *glyphmodule = (cmzn_glyphmodule *)glyphmodule_void;
+	if (message && glyphmodule)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_glyph)(message);
+
+		if (0 < glyphmodule->notifier_list.size())
+		{
+			cmzn_glyphmoduleevent_id event = cmzn_glyphmoduleevent::create(glyphmodule);
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
+			for (cmzn_glyphmodulenotifier_list::iterator iter =
+				glyphmodule->notifier_list.begin();
+				iter != glyphmodule->notifier_list.end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_glyphmoduleevent::deaccess(event);
+		}
+	}
 }
 
 cmzn_glyphiterator *cmzn_glyphmodule::createGlyphiterator()
@@ -2151,6 +2376,25 @@ int cmzn_glyphmodule::defineStandardCmguiGlyphs()
 cmzn_set_cmzn_glyph *cmzn_glyphmodule::getGlyphListPrivate()
 {
 	return reinterpret_cast<cmzn_set_cmzn_glyph *>(this->manager->object_list);
+}
+
+void cmzn_glyphmodule::addNotifier(cmzn_glyphmodulenotifier *notifier)
+{
+	this->notifier_list.push_back(notifier->access());
+}
+
+void cmzn_glyphmodule::removeNotifier(cmzn_glyphmodulenotifier *notifier)
+{
+	if (notifier)
+	{
+		cmzn_glyphmodulenotifier_list::iterator iter =
+			std::find(this->notifier_list.begin(), this->notifier_list.end(), notifier);
+		if (iter != this->notifier_list.end())
+		{
+			cmzn_glyphmodulenotifier::deaccess(notifier);
+			this->notifier_list.erase(iter);
+		}
+	}
 }
 
 cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_materialmodule *materialModule)

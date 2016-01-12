@@ -13,7 +13,6 @@
 #include <algorithm>
 #include <iterator>
 #include <list>
-#include <vector>
 #include <cstdlib>
 #include "zinc/status.h"
 #include "description_io/tessellation_json_io.hpp"
@@ -42,7 +41,7 @@ struct cmzn_tessellationmodule
 
 private:
 
-   void *manager_callback_id;
+	void *manager_callback_id;
 	struct MANAGER(cmzn_tessellation) *tessellationManager;
 	cmzn_tessellation *defaultTessellation;
 	cmzn_tessellation *defaultPointsTessellation;
@@ -79,7 +78,7 @@ private:
 
 public:
 
-   cmzn_tessellationmodulenotifier_list *notifier_list;
+	cmzn_tessellationmodulenotifier_list *notifier_list;
 
 	static cmzn_tessellationmodule *create()
 	{
@@ -664,8 +663,8 @@ int cmzn_tessellation_manager_message_get_object_change_and_detail(
 /**
  * Tessellation manager callback. Calls notifier callbacks.
  *
- * @param message  The changes to the sepctrum in the spectrum manager.
- * @param spectrummodule_void  Void pointer to changed spectrummodule).
+ * @param message  The changes to the tessellations in the tessellation manager.
+ * @param tessellationmodule_void  Void pointer to changed tessellationmodule).
  */
 static void cmzn_tessellationmodule_Tessellation_change(
 	struct MANAGER_MESSAGE(cmzn_tessellation) *message, void *tessellationmodule_void)
@@ -873,7 +872,6 @@ cmzn_tessellation_change_flags cmzn_tessellationmoduleevent_get_tessellation_cha
 		return event->getTessellationChangeFlags(tessellation);
 	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
 }
-
 
 cmzn_tessellationmodule_id cmzn_tessellationmodule_create()
 {

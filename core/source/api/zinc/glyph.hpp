@@ -21,6 +21,7 @@ namespace Zinc
 
 class GlyphAxes;
 class GlyphColourBar;
+class Glyphmodulenotifier;
 class Graphics;
 
 class Glyph
@@ -70,6 +71,23 @@ public:
 	{
 		return id;
 	}
+
+	enum ChangeFlag
+	{
+		CHANGE_FLAG_NONE = CMZN_GLYPH_CHANGE_FLAG_NONE,
+		CHANGE_FLAG_ADD = CMZN_GLYPH_CHANGE_FLAG_ADD,
+		CHANGE_FLAG_REMOVE = CMZN_GLYPH_CHANGE_FLAG_REMOVE,
+		CHANGE_FLAG_IDENTIFIER = CMZN_GLYPH_CHANGE_FLAG_IDENTIFIER,
+		CHANGE_FLAG_DEFINITION = CMZN_GLYPH_CHANGE_FLAG_DEFINITION,
+		CHANGE_FLAG_FULL_RESULT = CMZN_GLYPH_CHANGE_FLAG_FULL_RESULT,
+		CHANGE_FLAG_FINAL = CMZN_GLYPH_CHANGE_FLAG_FINAL
+	};
+
+	/**
+	 * Type for passing logical OR of #ChangeFlag
+	 * @see Glyphmoduleevent::getGlyphChangeFlags
+	 */
+	typedef int ChangeFlags;
 
 	enum RepeatMode
 	{
@@ -447,7 +465,164 @@ public:
 
 	inline Glyph createStaticGlyphFromGraphics(const Graphics& graphics);
 
+	inline Glyphmodulenotifier createGlyphmodulenotifier();
+
 };
+
+class Glyphmoduleevent
+{
+protected:
+	cmzn_glyphmoduleevent_id id;
+
+public:
+
+	Glyphmoduleevent() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Glyphmoduleevent(cmzn_glyphmoduleevent_id in_glyphmodule_event_id) :
+		id(in_glyphmodule_event_id)
+	{  }
+
+	Glyphmoduleevent(const Glyphmoduleevent& glyphmoduleEvent) :
+		id(cmzn_glyphmoduleevent_access(glyphmoduleEvent.id))
+	{  }
+
+	Glyphmoduleevent& operator=(const Glyphmoduleevent& glyphmoduleEvent)
+	{
+		cmzn_glyphmoduleevent_id temp_id = cmzn_glyphmoduleevent_access(glyphmoduleEvent.id);
+		if (0 != id)
+			cmzn_glyphmoduleevent_destroy(&id);
+		id = temp_id;
+		return *this;
+	}
+
+	~Glyphmoduleevent()
+	{
+		if (0 != id)
+		{
+			cmzn_glyphmoduleevent_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_glyphmoduleevent_id getId() const
+	{
+		return id;
+	}
+
+	Glyph::ChangeFlags getGlyphChangeFlags(const Glyph& glyph) const
+	{
+		return cmzn_glyphmoduleevent_get_glyph_change_flags(id, glyph.getId());
+	}
+
+	Glyph::ChangeFlags getSummaryGlyphChangeFlags() const
+	{
+		return cmzn_glyphmoduleevent_get_summary_glyph_change_flags(id);
+	}
+
+};
+
+/**
+ * @brief Base class functor for glyph module notifier callbacks
+ *
+ * Base class functor for glyph module notifier callbacks:
+ * - Derive from this class adding any user data required.
+ * - Implement virtual operator()(const Glyphmoduleevent&) to handle callback.
+ * @see Glyphmodulenotifier::setCallback()
+ */
+class Glyphmodulecallback
+{
+friend class Glyphmodulenotifier;
+private:
+	Glyphmodulecallback(const Glyphmodulecallback&); // not implemented
+	Glyphmodulecallback& operator=(const Glyphmodulecallback&); // not implemented
+
+	static void C_callback(cmzn_glyphmoduleevent_id glyphmoduleevent_id, void *callbackVoid)
+	{
+		Glyphmoduleevent glyphmoduleevent(cmzn_glyphmoduleevent_access(glyphmoduleevent_id));
+		Glyphmodulecallback *callback = reinterpret_cast<Glyphmodulecallback *>(callbackVoid);
+		(*callback)(glyphmoduleevent);
+	}
+
+  virtual void operator()(const Glyphmoduleevent &glyphmoduleevent) = 0;
+
+protected:
+	Glyphmodulecallback()
+	{ }
+
+public:
+	virtual ~Glyphmodulecallback()
+	{ }
+};
+
+class Glyphmodulenotifier
+{
+protected:
+	cmzn_glyphmodulenotifier_id id;
+
+public:
+
+	Glyphmodulenotifier() : id(0)
+	{  }
+
+	// takes ownership of C handle, responsibility for destroying it
+	explicit Glyphmodulenotifier(cmzn_glyphmodulenotifier_id in_glyphmodulenotifier_id) :
+		id(in_glyphmodulenotifier_id)
+	{  }
+
+	Glyphmodulenotifier(const Glyphmodulenotifier& glyphmoduleNotifier) :
+		id(cmzn_glyphmodulenotifier_access(glyphmoduleNotifier.id))
+	{  }
+
+	Glyphmodulenotifier& operator=(const Glyphmodulenotifier& glyphmoduleNotifier)
+	{
+		cmzn_glyphmodulenotifier_id temp_id = cmzn_glyphmodulenotifier_access(glyphmoduleNotifier.id);
+		if (0 != id)
+		{
+			cmzn_glyphmodulenotifier_destroy(&id);
+		}
+		id = temp_id;
+		return *this;
+	}
+
+	~Glyphmodulenotifier()
+	{
+		if (0 != id)
+		{
+			cmzn_glyphmodulenotifier_destroy(&id);
+		}
+	}
+
+	bool isValid() const
+	{
+		return (0 != id);
+	}
+
+	cmzn_glyphmodulenotifier_id getId() const
+	{
+		return id;
+	}
+
+	int setCallback(Glyphmodulecallback& callback)
+	{
+		return cmzn_glyphmodulenotifier_set_callback(id, callback.C_callback, static_cast<void*>(&callback));
+	}
+
+	int clearCallback()
+	{
+		return cmzn_glyphmodulenotifier_clear_callback(id);
+	}
+};
+
+inline Glyphmodulenotifier Glyphmodule::createGlyphmodulenotifier()
+{
+	return Glyphmodulenotifier(cmzn_glyphmodule_create_glyphmodulenotifier(id));
+}
 
 inline Glyphmodule Context::getGlyphmodule()
 {

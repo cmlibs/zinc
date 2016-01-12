@@ -11,6 +11,7 @@
 #if !defined (GLYPH_HPP)
 #define GLYPH_HPP
 
+#include <list>
 #include "zinc/glyph.h"
 #include "general/cmiss_set.hpp"
 #include "general/enumerator.h"
@@ -315,16 +316,122 @@ public:
 	virtual void materialChange(struct MANAGER_MESSAGE(cmzn_material) *message);
 };
 
+struct cmzn_glyphmodulenotifier
+{
+private:
+	cmzn_glyphmodule_id module; // not accessed
+	cmzn_glyphmodulenotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_glyphmodulenotifier(cmzn_glyphmodule *glyphmodule);
+
+	~cmzn_glyphmodulenotifier();
+
+public:
+
+	/** private: external code must use cmzn_glyphmodule_create_notifier */
+	static cmzn_glyphmodulenotifier *create(cmzn_glyphmodule *glyphmodule)
+	{
+		if (glyphmodule)
+			return new cmzn_glyphmodulenotifier(glyphmodule);
+		return 0;
+	}
+
+	cmzn_glyphmodulenotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_glyphmodulenotifier* &notifier);
+
+	int setCallback(cmzn_glyphmodulenotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void glyphmoduleDestroyed();
+
+	void notify(cmzn_glyphmoduleevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+struct cmzn_glyphmoduleevent
+{
+private:
+	cmzn_glyphmodule *module;
+	cmzn_glyph_change_flags changeFlags;
+	struct MANAGER_MESSAGE(cmzn_glyph) *managerMessage;
+	int access_count;
+
+	cmzn_glyphmoduleevent(cmzn_glyphmodule *glyphmoduleIn);
+	~cmzn_glyphmoduleevent();
+
+public:
+
+	/** @param glyphmoduleIn  Owning glyphmodule; can be NULL for FINAL event */
+	static cmzn_glyphmoduleevent *create(cmzn_glyphmodule *glyphmoduleIn)
+	{
+		return new cmzn_glyphmoduleevent(glyphmoduleIn);
+	}
+
+	cmzn_glyphmoduleevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_glyphmoduleevent* &event);
+
+	cmzn_glyph_change_flags getChangeFlags() const
+	{
+		return this->changeFlags;
+	}
+
+	void setChangeFlags(cmzn_glyph_change_flags changeFlagsIn)
+	{
+		this->changeFlags = changeFlagsIn;
+	}
+
+	cmzn_glyph_change_flags getGlyphChangeFlags(cmzn_glyph *glyph) const;
+
+	struct MANAGER_MESSAGE(cmzn_glyph) *getManagerMessage();
+
+	void setManagerMessage(struct MANAGER_MESSAGE(cmzn_glyph) *managerMessageIn);
+
+	cmzn_glyphmodule *getGlyphmodule()
+	{
+		return this->module;
+	}
+};
+
+typedef std::list<cmzn_glyphmodulenotifier *> cmzn_glyphmodulenotifier_list;
+
 struct cmzn_glyphmodule
 {
 private:
 	cmzn_materialmodule *materialModule;
 	struct MANAGER(cmzn_glyph) *manager;
+	void *manager_callback_id;
 	cmzn_glyph *defaultPointGlyph;
+	cmzn_glyphmodulenotifier_list notifier_list;
 	int access_count;
 
 	cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn);
 	~cmzn_glyphmodule();
+
+	static void cmzn_glyphmodule::glyph_manager_change(
+		struct MANAGER_MESSAGE(cmzn_glyph) *message, void *glyphmodule_void);
 
 	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_shape_type type);
 
@@ -404,6 +511,10 @@ public:
 	{
 		REACCESS(cmzn_glyph)(&this->defaultPointGlyph, glyph);
 	}
+
+	void addNotifier(cmzn_glyphmodulenotifier *notifier);
+
+	void removeNotifier(cmzn_glyphmodulenotifier *notifier);
 
 };
 
