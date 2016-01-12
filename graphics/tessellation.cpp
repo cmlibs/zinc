@@ -395,10 +395,10 @@ TEST(ZincTessellationmodulenotifier, changeCallback)
 	ZincTestSetupCpp zinc;
 	int result;
 
-   Tessellationmodule tm = zinc.context.getTessellationmodule();
-   EXPECT_TRUE(tm.isValid());
+	Tessellationmodule tm = zinc.context.getTessellationmodule();
+	EXPECT_TRUE(tm.isValid());
 
-   Tessellationmodulenotifier tessellationmodulenotifier = tm.createTessellationmodulenotifier();
+	Tessellationmodulenotifier tessellationmodulenotifier = tm.createTessellationmodulenotifier();
 	EXPECT_TRUE(tessellationmodulenotifier.isValid());
 
 	TessellationcallbackRecordChange callback;
@@ -418,5 +418,4 @@ TEST(ZincTessellationmodulenotifier, changeCallback)
 	EXPECT_EQ(CMZN_OK, tessellation.setCircleDivisions(6));
 	EXPECT_EQ(Tessellation::CHANGE_FLAG_FULL_RESULT |Tessellation::CHANGE_FLAG_DEFINITION,
 		callback.getChangeSummary());
-
 }
