@@ -430,7 +430,7 @@ private:
 	cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn);
 	~cmzn_glyphmodule();
 
-	static void cmzn_glyphmodule::glyph_manager_change(
+	static void glyph_manager_change(
 		struct MANAGER_MESSAGE(cmzn_glyph) *message, void *glyphmodule_void);
 
 	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_shape_type type);
