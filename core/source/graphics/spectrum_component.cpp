@@ -90,49 +90,49 @@ bool cmzn_spectrumcomponent_is_active(cmzn_spectrumcomponent_id component)
 class cmzn_spectrumcomponent_colour_mapping_type_conversion
 {
 public:
-    static const char *to_string(enum cmzn_spectrumcomponent_colour_mapping_type colour)
-    {
-        const char *enum_string = 0;
-        switch (colour)
-        {
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
-            enum_string = "ALPHA";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
-            enum_string = "BANDED";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
-            enum_string = "BLUE";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
-            enum_string = "GREEN";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
-            enum_string = "MONOCHROME";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
-            enum_string = "RAINBOW";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
-            enum_string = "RED";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
-            enum_string = "STEP";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
-            enum_string = "WHITE_TO_BLUE";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
-            enum_string = "WHITE_TO_RED";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
-            enum_string = "WHITE_TO_GREEN";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum cmzn_spectrumcomponent_colour_mapping_type colour)
+	{
+		const char *enum_string = 0;
+		switch (colour)
+		{
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_ALPHA:
+			enum_string = "ALPHA";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BANDED:
+			enum_string = "BANDED";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_BLUE:
+			enum_string = "BLUE";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_GREEN:
+			enum_string = "GREEN";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_MONOCHROME:
+			enum_string = "MONOCHROME";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RAINBOW:
+			enum_string = "RAINBOW";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_RED:
+			enum_string = "RED";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_STEP:
+			enum_string = "STEP";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_BLUE:
+			enum_string = "WHITE_TO_BLUE";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_RED:
+			enum_string = "WHITE_TO_RED";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_COLOUR_MAPPING_TYPE_WHITE_TO_GREEN:
+			enum_string = "WHITE_TO_GREEN";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum cmzn_spectrumcomponent_colour_mapping_type cmzn_spectrumcomponent_colour_mapping_type_enum_from_string(
@@ -153,22 +153,22 @@ char *cmzn_spectrumcomponent_colour_mapping_type_enum_to_string(
 class cmzn_spectrumcomponent_scale_type_conversion
 {
 public:
-    static const char *to_string(enum cmzn_spectrumcomponent_scale_type colour)
-    {
-        const char *enum_string = 0;
-        switch (colour)
-        {
-        case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR:
-            enum_string = "LINEAR";
-            break;
-        case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG:
-            enum_string = "LOG";
-            break;
-        default:
-            break;
-        }
-        return enum_string;
-    }
+	static const char *to_string(enum cmzn_spectrumcomponent_scale_type colour)
+	{
+		const char *enum_string = 0;
+		switch (colour)
+		{
+		case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR:
+			enum_string = "LINEAR";
+			break;
+		case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG:
+			enum_string = "LOG";
+			break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
 };
 
 enum cmzn_spectrumcomponent_scale_type cmzn_spectrumcomponent_scale_type_enum_from_string(
@@ -853,14 +853,14 @@ int cmzn_spectrumcomponent_set_extend_below(cmzn_spectrumcomponent_id component,
 	return CMZN_ERROR_ARGUMENT;
 }
 
-bool cmzn_spectrumcomponent_get_fix_minimum_flag(struct cmzn_spectrumcomponent *component)
+bool cmzn_spectrumcomponent_is_fix_minimum(struct cmzn_spectrumcomponent *component)
 {
 	if (component)
 		return component->fix_minimum;
 	return false;
 }
 
-int cmzn_spectrumcomponent_set_fix_minimum_flag(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_fix_minimum(struct cmzn_spectrumcomponent *component,
 	bool fix_minimum)
 {
 	if (component)
@@ -868,21 +868,21 @@ int cmzn_spectrumcomponent_set_fix_minimum_flag(struct cmzn_spectrumcomponent *c
 		if (fix_minimum != component->fix_minimum)
 		{
 			component->fix_minimum = fix_minimum;
-			component->changed = 1;
+			cmzn_spectrumcomponent_changed(component);
 		}
 		return CMZN_OK;
 	}
 	return CMZN_ERROR_ARGUMENT;
 }
 
-bool cmzn_spectrumcomponent_get_fix_maximum_flag(struct cmzn_spectrumcomponent *component)
+bool cmzn_spectrumcomponent_is_fix_maximum(struct cmzn_spectrumcomponent *component)
 {
 	if (component)
 		return component->fix_maximum;
 	return false;
 }
 
-int cmzn_spectrumcomponent_set_fix_maximum_flag(struct cmzn_spectrumcomponent *component,
+int cmzn_spectrumcomponent_set_fix_maximum(struct cmzn_spectrumcomponent *component,
 	bool fix_maximum)
 {
 	if (component)
@@ -890,7 +890,7 @@ int cmzn_spectrumcomponent_set_fix_maximum_flag(struct cmzn_spectrumcomponent *c
 		if (fix_maximum != component->fix_maximum)
 		{
 			component->fix_maximum = fix_maximum;
-			component->changed = 1;
+			cmzn_spectrumcomponent_changed(component);
 		}
 		return CMZN_OK;
 	}
@@ -1564,8 +1564,8 @@ passed in render data.
 						{
 							case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LINEAR:
 							{
-										value=(data_component-component->minimum)/
-											 (component->maximum-component->minimum);
+								value=(data_component-component->minimum)/
+									(component->maximum-component->minimum);
 							} break;
 							case CMZN_SPECTRUMCOMPONENT_SCALE_TYPE_LOG:
 							{
