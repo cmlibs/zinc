@@ -1,7 +1,7 @@
 {
    "DefaultPointsTessellation" : "default",
    "DefaultTessellation" : "new_default",
-   "Tessellation" : [
+   "Tessellations" : [
       {
          "CircleDivisions" : 12,
          "MinimumDivisions" : [ 1 ],
