@@ -296,6 +296,11 @@ public:
 		return cmzn_glyph_colour_bar_set_side_axis(getDerivedId(), valuesCount, valuesIn);
 	}
 
+	Spectrum getSpectrum()
+	{
+		return Spectrum(cmzn_glyph_colour_bar_get_spectrum(getDerivedId()));
+	}
+
 	double getTickLength() 
 	{
 		return cmzn_glyph_colour_bar_get_tick_length(getDerivedId());

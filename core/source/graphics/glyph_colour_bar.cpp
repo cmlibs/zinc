@@ -773,6 +773,14 @@ int cmzn_glyph_colour_bar_set_side_axis(
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_spectrum_id cmzn_glyph_colour_bar_get_spectrum(
+	cmzn_glyph_colour_bar_id colour_bar)
+{
+	if (colour_bar)
+		return cmzn_spectrum_access(colour_bar->getSpectrum());
+	return 0;
+}
+
 double cmzn_glyph_colour_bar_get_tick_length(
 	cmzn_glyph_colour_bar_id colour_bar)
 {

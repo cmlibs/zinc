@@ -539,6 +539,15 @@ ZINC_API int cmzn_glyph_colour_bar_get_side_axis(
 	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
 
 /**
+ * Gets the spectrum shown by the colour bar.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  Handle to spectrum, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_spectrum_id cmzn_glyph_colour_bar_get_spectrum(
+	cmzn_glyph_colour_bar_id colour_bar);
+
+/**
  * Sets the vector defining the side/tick axis of the colour bar. The magnitude
  * of this vector gives the diameter of the bar.
  * The default side axis is (0.1,0,0) for vertical bar and horizontal ticks in
