@@ -84,7 +84,7 @@ int TessellationmoduleJsonImport::import(const std::string &jsonString)
 		tessellationmodule.beginChange();
 		if (root.isObject())
 		{
-			Json::Value tessellationJson = root["Tessellation"];
+			Json::Value tessellationJson = root["Tessellations"];
 			for (unsigned int index = 0; index < tessellationJson.size(); ++index )
 			{
 				importTessellation(tessellationJson[index]);
@@ -130,7 +130,7 @@ std::string TessellationmoduleJsonExport::getExportString()
 	{
 		Json::Value tessellationSettings;
 		TessellationJsonIO(tessellation, IO_MODE_EXPORT).ioEntries(tessellationSettings);
-		root["Tessellation"].append(tessellationSettings);
+		root["Tessellations"].append(tessellationSettings);
 		tessellation = tessellationiterator.next();
 	}
 	char *defaultTessellationName = tessellationmodule.getDefaultTessellation().getName();

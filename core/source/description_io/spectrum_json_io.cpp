@@ -158,7 +158,7 @@ int SpectrummoduleJsonImport::import(const std::string &jsonString)
 		spectrummodule.beginChange();
 		if (root.isObject())
 		{
-			Json::Value spectrumJson = root["Spectrum"];
+			Json::Value spectrumJson = root["Spectrums"];
 			for (unsigned int index = 0; index < spectrumJson.size(); ++index )
 			{
 				importSpectrum(spectrumJson[index]);
@@ -199,7 +199,7 @@ std::string SpectrummoduleJsonExport::getExportString()
 	{
 		Json::Value spectrumSettings;
 		SpectrumJsonIO(spectrum, IO_MODE_EXPORT).ioEntries(spectrumSettings);
-		root["Spectrum"].append(spectrumSettings);
+		root["Spectrums"].append(spectrumSettings);
 		spectrum = spectrumiterator.next();
 	}
 	char *defaultSpectrumName = spectrummodule.getDefaultSpectrum().getName();
