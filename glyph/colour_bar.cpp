@@ -64,6 +64,9 @@ TEST(cmzn_glyph_colour_bar, create_cast)
 	EXPECT_NE(static_cast<cmzn_glyph_id>(0), glyph);
 	cmzn_glyph_colour_bar_id colourBar = cmzn_glyph_cast_colour_bar(glyph);
 	EXPECT_EQ(reinterpret_cast<cmzn_glyph_colour_bar *>(glyph), colourBar);
+	cmzn_spectrum_id tmpSpectrum = cmzn_glyph_colour_bar_get_spectrum(colourBar);
+	EXPECT_EQ(zinc.defaultSpectrum, tmpSpectrum);
+	cmzn_spectrum_destroy(&tmpSpectrum);
 	EXPECT_EQ(glyph, cmzn_glyph_colour_bar_base_cast(colourBar));
 	cmzn_glyph_colour_bar_destroy(&colourBar);
 	cmzn_glyph_destroy(&glyph);
@@ -77,6 +80,8 @@ TEST(ZincGlyphColourBar, create_cast)
 	EXPECT_TRUE(glyph.isValid());
 	GlyphColourBar colourBar = glyph.castColourBar();
 	EXPECT_TRUE(colourBar.isValid());
+	Spectrum tmpSpectrum = colourBar.getSpectrum();
+	EXPECT_EQ(zinc.defaultSpectrum, tmpSpectrum);
 	// try any base class API
 	EXPECT_EQ(CMZN_OK, colourBar.setManaged(true));
 }
