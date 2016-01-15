@@ -1162,6 +1162,7 @@ of all subsequent component.
 				}
 				DEACCESS(cmzn_spectrumcomponent)(&component);
 			}
+			cmzn_spectrum_changed(spectrum);
 		}
 		else
 		{
@@ -1173,13 +1174,12 @@ of all subsequent component.
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"cmzn_spectrum_remove_all_spectrumcomponents.  Invalid argument(s)");
+			"cmzn_spectrum_remove_spectrumcomponent.  Invalid argument(s)");
 		return_code=0;
 	}
 
 	return (return_code);
-} /* cmzn_spectrum_remove_all_spectrumcomponents */
-
+} /* cmzn_spectrum_remove_spectrumcomponent */
 
 int cmzn_spectrum_get_component_position(struct cmzn_spectrum *spectrum,
 	struct cmzn_spectrumcomponent *component)

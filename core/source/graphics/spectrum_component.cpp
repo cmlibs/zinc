@@ -517,7 +517,7 @@ int cmzn_spectrumcomponent_get_field_component(
 int cmzn_spectrumcomponent_set_field_component(
 	cmzn_spectrumcomponent_id component, int component_number)
 {
-	if (component)
+	if (component && (component_number > 0))
 	{
 		if (component->component_number != (component_number - 1))
 		{
