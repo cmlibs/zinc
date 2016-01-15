@@ -595,8 +595,11 @@ Sets the colour mapping of the cmzn_spectrumcomponent <component>.
 
 	if (component)
 	{
-		component->colour_mapping_type = type;
-		cmzn_spectrumcomponent_changed(component);
+		if (type != component->colour_mapping_type)
+		{
+			component->colour_mapping_type = type;
+			cmzn_spectrumcomponent_changed(component);
+		}
 		return_code = 1;
 	}
 	else
@@ -700,8 +703,11 @@ DESCRIPTION :
 
 	if (component)
 	{
-		component->black_band_proportion = proportion;
-		cmzn_spectrumcomponent_changed(component);
+		if (proportion != component->black_band_proportion)
+		{
+			component->black_band_proportion = proportion;
+			cmzn_spectrumcomponent_changed(component);
+		}
 		return_code = 1;
 	}
 	else
@@ -761,7 +767,7 @@ int cmzn_spectrumcomponent_set_range_minimum(cmzn_spectrumcomponent_id component
 {
 	if (component)
 	{
-		if(!component->fix_minimum && (value != component->minimum))
+		if (value != component->minimum)
 		{
 			component->minimum = value;
 			if ( component->step_value <= component->minimum
@@ -793,7 +799,7 @@ int cmzn_spectrumcomponent_set_range_maximum(cmzn_spectrumcomponent_id component
 {
 	if (component)
 	{
-		if(!component->fix_maximum && (value != component->maximum))
+		if (value != component->maximum)
 		{
 			component->maximum = value;
 			if ( component->step_value <= component->minimum
@@ -939,7 +945,7 @@ double cmzn_spectrumcomponent_get_colour_maximum(
 }
 
 int cmzn_spectrumcomponent_set_colour_maximum(
-	cmzn_spectrumcomponent_id component,	double value)
+	cmzn_spectrumcomponent_id component, double value)
 {
 	if (component && value <= 1.0 && value >= 0.0)
 	{
