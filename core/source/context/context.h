@@ -15,11 +15,13 @@
 #include <list>
 #include "zinc/context.h"
 #include "zinc/status.h"
+#include "general/message_log.hpp"
 #include "general/manager.h"
 
 struct cmzn_context
 {
 	const char *id;
+	cmzn_logger *logger;
 	struct cmzn_region *root_region;
 	struct Element_point_ranges_selection *element_point_ranges_selection;
 	//-- struct Event_dispatcher *event_dispatcher;

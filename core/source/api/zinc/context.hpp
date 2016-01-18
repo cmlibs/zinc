@@ -29,6 +29,7 @@ namespace Zinc
 class Fontmodule;
 class Glyphmodule;
 class Lightmodule;
+class Logger;
 class Materialmodule;
 class Region;
 class Scenefiltermodule;
@@ -116,6 +117,8 @@ public:
 	inline Glyphmodule getGlyphmodule();
 
 	inline Lightmodule getLightmodule();
+
+	inline Logger getLogger();
 
 	inline Materialmodule getMaterialmodule();
 

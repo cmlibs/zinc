@@ -29,6 +29,7 @@
 
 cmzn_context::cmzn_context(const char *idIn) :
 	id(duplicate_string(idIn)),
+	logger(cmzn_logger::create()),
 	root_region(0),
 	element_point_ranges_selection(0),
 	io_stream_package(0),
@@ -412,6 +413,16 @@ cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
 			cmzn_graphics_module_get_glyphmodule(graphicsModule);
 		cmzn_graphics_module_destroy(&graphicsModule);
 		return glyphmodule;
+	}
+
+	return 0;
+}
+
+cmzn_logger_id cmzn_context_get_logger(cmzn_context_id context)
+{
+	if (context)
+	{
+		return cmzn_logger_access(context->logger);
 	}
 
 	return 0;

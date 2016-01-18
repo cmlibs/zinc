@@ -749,7 +749,7 @@ void cmzn_tessellationmodulenotifier::tessellationmoduleDestroyed()
 	{
 		cmzn_tessellationmoduleevent_id event = cmzn_tessellationmoduleevent::create(
 			static_cast<cmzn_tessellationmodule*>(0));
-		event->setChangeFlags(CMZN_SPECTRUM_CHANGE_FLAG_FINAL);
+		event->setChangeFlags(CMZN_TESSELLATION_CHANGE_FLAG_FINAL);
 		(this->function)(event, this->user_data);
 		cmzn_tessellationmoduleevent::deaccess(event);
 		this->clearCallback();

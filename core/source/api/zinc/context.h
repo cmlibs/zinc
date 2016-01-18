@@ -16,6 +16,7 @@
 #include "types/fontid.h"
 #include "types/glyphid.h"
 #include "types/lightid.h"
+#include "types/loggerid.h"
 #include "types/materialid.h"
 #include "types/regionid.h"
 #include "types/scenefilterid.h"
@@ -116,6 +117,14 @@ ZINC_API cmzn_glyphmodule_id cmzn_context_get_glyphmodule(
  */
 ZINC_API cmzn_lightmodule_id cmzn_context_get_lightmodule(
 	cmzn_context_id context);
+
+/**
+ * Return the logger which logs debug messages.
+ *
+ * @param context  The context to request the logger from.
+ * @return  Handle to the logger, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_logger_id cmzn_context_get_logger(cmzn_context_id context);
 
 /**
  * Return the material module which manages materials used to colour, texture
