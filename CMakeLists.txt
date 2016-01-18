@@ -44,6 +44,7 @@ INCLUDE(selection/tests.cmake)
 INCLUDE(spectrum/tests.cmake)
 INCLUDE(time/tests.cmake)
 INCLUDE(image/tests.cmake)
+INCLUDE(logger/tests.cmake)
 
 SET(TEST_RESOURCE_HEADER ${CMAKE_CURRENT_BINARY_DIR}/test_resources.h)
 CONFIGURE_FILE(${CMAKE_CURRENT_SOURCE_DIR}/test_resources.h.cmake
