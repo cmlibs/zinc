@@ -30,6 +30,12 @@ class ImportTestCase(unittest.TestCase):
     
     def testImportGraphics(self):
         from opencmiss.zinc import graphics
+        
+    def testImportLight(self):
+        from opencmiss.zinc import light
+        
+    def testImportLogger(self):
+        from opencmiss.zinc import logger
     
     def testImportMaterial(self):
         from opencmiss.zinc import material

@@ -24,6 +24,9 @@ def suite():
     from field_tests import fieldtests
     tests.addTests(fieldtests.suite())
     
+    from logger_tests import loggertests
+    tests.addTests(loggertests.suite())
+    
     from sceneviewer_tests import sceneviewertests
     tests.addTests(sceneviewertests.suite())
     
