@@ -17,7 +17,6 @@ cannot reside in finite element modules.
 
 #include "computed_field/computed_field.h"
 #include "finite_element/finite_element.h"
-#include "finite_element/finite_element_region.h"
 #include "general/multi_range.h"
 
 /*

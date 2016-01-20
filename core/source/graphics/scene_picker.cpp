@@ -305,7 +305,7 @@ cmzn_element_id cmzn_scenepicker::getNearestElement()
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element number
+			 * select_buffer[5] = element index
 			 * select_buffer[6] = point number
 			 */
 			select_buffer_ptr = next_select_buffer;
@@ -346,11 +346,11 @@ cmzn_element_id cmzn_scenepicker::getNearestElement()
 								{
 									cmzn_scene_destroy(&picked_scene);
 								}
-
-								cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh,
-									(int)(select_buffer_ptr[5]));
+								FE_mesh *fe_mesh = cmzn_mesh_get_FE_mesh_internal(mesh);
+								cmzn_element_id element = fe_mesh->getElement(select_buffer_ptr[5]);
 								if (element)
 								{
+									ACCESS(FE_element)(element);
 									if (nearest_element)
 										cmzn_element_destroy(&nearest_element);
 									nearest_element = element;
@@ -391,7 +391,7 @@ cmzn_node_id cmzn_scenepicker::getNearestNode()
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element number
+			 * select_buffer[5] = element index
 			 * select_buffer[6] = point number
 			 */
 			select_buffer_ptr = next_select_buffer;
@@ -468,7 +468,7 @@ cmzn_graphics_id cmzn_scenepicker::getNearestGraphics(enum cmzn_scenepicker_obje
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element number
+			 * select_buffer[5] = element index
 			 * select_buffer[6] = point number
 			 */
 			select_buffer_ptr = next_select_buffer;
@@ -530,7 +530,7 @@ int cmzn_scenepicker::addPickedElementsToFieldGroup(cmzn_field_group_id group)
 			 * select_buffer[2] = furthest
 			 * select_buffer[3] = scene
 			 * select_buffer[4] = graphics position
-			 * select_buffer[5] = element number
+			 * select_buffer[5] = element index
 			 * select_buffer[6] = point number
 			 */
 			select_buffer_ptr = next_select_buffer;
@@ -566,9 +566,9 @@ int cmzn_scenepicker::addPickedElementsToFieldGroup(cmzn_field_group_id group)
 							cmzn_scene_destroy(&picked_scene);
 						if (mesh && meshGroup)
 						{
-							cmzn_element_id element = cmzn_mesh_find_element_by_identifier(mesh, (int)(select_buffer_ptr[5]));
+							FE_mesh *fe_mesh = cmzn_mesh_get_FE_mesh_internal(mesh);
+							cmzn_element_id element = fe_mesh->getElement(select_buffer_ptr[5]);
 							cmzn_mesh_group_add_element(meshGroup, element);
-							cmzn_element_destroy(&element);
 						}
 					}
 					cmzn_graphics_destroy(&graphics);

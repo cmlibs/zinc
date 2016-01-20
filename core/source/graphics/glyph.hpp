@@ -11,6 +11,7 @@
 #if !defined (GLYPH_HPP)
 #define GLYPH_HPP
 
+#include <list>
 #include "zinc/glyph.h"
 #include "general/cmiss_set.hpp"
 #include "general/enumerator.h"
@@ -129,6 +130,11 @@ public:
 	// override for glyphs that use the font from the graphics
 	virtual void fontChange()
 	{
+	}
+
+	virtual int setGraphicsObject(GT_object *)
+	{
+		return false;
 	}
 
 	// override for glyphs that use their own materials
@@ -264,6 +270,29 @@ public:
 		return 0;
 	}
 
+	virtual int setGraphicsObject(GT_object *object)
+	{
+		int objectChanged = 0;
+		if (graphicsObject)
+		{
+			DEACCESS(GT_object)(&graphicsObject);
+			objectChanged = 1;
+		}
+		if (object)
+		{
+			graphicsObject = ACCESS(GT_object)(object);
+			objectChanged = 1;
+		}
+		if (objectChanged)
+		{
+			if (this->manager)
+				MANAGED_OBJECT_CHANGE(cmzn_glyph)(this, MANAGER_CHANGE_IDENTIFIER(cmzn_glyph));
+			return true;
+		}
+
+		return false;
+	}
+
 	virtual bool isTimeVarying()
 	{
 		return (1 < GT_object_get_number_of_times(graphicsObject));
@@ -287,16 +316,122 @@ public:
 	virtual void materialChange(struct MANAGER_MESSAGE(cmzn_material) *message);
 };
 
+struct cmzn_glyphmodulenotifier
+{
+private:
+	cmzn_glyphmodule_id module; // not accessed
+	cmzn_glyphmodulenotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_glyphmodulenotifier(cmzn_glyphmodule *glyphmodule);
+
+	~cmzn_glyphmodulenotifier();
+
+public:
+
+	/** private: external code must use cmzn_glyphmodule_create_notifier */
+	static cmzn_glyphmodulenotifier *create(cmzn_glyphmodule *glyphmodule)
+	{
+		if (glyphmodule)
+			return new cmzn_glyphmodulenotifier(glyphmodule);
+		return 0;
+	}
+
+	cmzn_glyphmodulenotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_glyphmodulenotifier* &notifier);
+
+	int setCallback(cmzn_glyphmodulenotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void glyphmoduleDestroyed();
+
+	void notify(cmzn_glyphmoduleevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+struct cmzn_glyphmoduleevent
+{
+private:
+	cmzn_glyphmodule *module;
+	cmzn_glyph_change_flags changeFlags;
+	struct MANAGER_MESSAGE(cmzn_glyph) *managerMessage;
+	int access_count;
+
+	cmzn_glyphmoduleevent(cmzn_glyphmodule *glyphmoduleIn);
+	~cmzn_glyphmoduleevent();
+
+public:
+
+	/** @param glyphmoduleIn  Owning glyphmodule; can be NULL for FINAL event */
+	static cmzn_glyphmoduleevent *create(cmzn_glyphmodule *glyphmoduleIn)
+	{
+		return new cmzn_glyphmoduleevent(glyphmoduleIn);
+	}
+
+	cmzn_glyphmoduleevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_glyphmoduleevent* &event);
+
+	cmzn_glyph_change_flags getChangeFlags() const
+	{
+		return this->changeFlags;
+	}
+
+	void setChangeFlags(cmzn_glyph_change_flags changeFlagsIn)
+	{
+		this->changeFlags = changeFlagsIn;
+	}
+
+	cmzn_glyph_change_flags getGlyphChangeFlags(cmzn_glyph *glyph) const;
+
+	struct MANAGER_MESSAGE(cmzn_glyph) *getManagerMessage();
+
+	void setManagerMessage(struct MANAGER_MESSAGE(cmzn_glyph) *managerMessageIn);
+
+	cmzn_glyphmodule *getGlyphmodule()
+	{
+		return this->module;
+	}
+};
+
+typedef std::list<cmzn_glyphmodulenotifier *> cmzn_glyphmodulenotifier_list;
+
 struct cmzn_glyphmodule
 {
 private:
 	cmzn_materialmodule *materialModule;
 	struct MANAGER(cmzn_glyph) *manager;
+	void *manager_callback_id;
 	cmzn_glyph *defaultPointGlyph;
+	cmzn_glyphmodulenotifier_list notifier_list;
 	int access_count;
 
 	cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn);
 	~cmzn_glyphmodule();
+
+	static void glyph_manager_change(
+		struct MANAGER_MESSAGE(cmzn_glyph) *message, void *glyphmodule_void);
 
 	void defineGlyph(const char *name, cmzn_glyph *glyph, cmzn_glyph_shape_type type);
 
@@ -345,6 +480,8 @@ public:
 
 	cmzn_glyphiterator *createGlyphiterator();
 
+	cmzn_glyph *createStaticGlyphFromGraphics(cmzn_graphics *graphics);
+
 	int defineStandardGlyphs();
 
 	int defineStandardCmguiGlyphs();
@@ -374,6 +511,10 @@ public:
 	{
 		REACCESS(cmzn_glyph)(&this->defaultPointGlyph, glyph);
 	}
+
+	void addNotifier(cmzn_glyphmodulenotifier *notifier);
+
+	void removeNotifier(cmzn_glyphmodulenotifier *notifier);
 
 };
 
@@ -419,5 +560,15 @@ int cmzn_glyphmodule_define_standard_cmgui_glyphs(
  */
 cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 	cmzn_glyphmodule_id glyphModule, GT_object *graphicsObject);
+
+int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject);
+
+enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string);
+
+char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode);
+
+enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string);
+
+char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type);
 
 #endif /* !defined (GLYPH_HPP) */

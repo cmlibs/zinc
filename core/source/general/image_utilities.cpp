@@ -819,6 +819,10 @@ PROTOTYPE_ENUMERATOR_STRING_FUNCTION(Image_file_format)
 		{
 			enumerator_string = "analyze";
 		} break;
+		case ANALYZE_OBJECT_MAP_FORMAT:
+		{
+			enumerator_string = "obj";
+		} break;
 		default:
 		{
 			enumerator_string = (const char *)NULL;
@@ -890,6 +894,10 @@ but extra characters may follow. This is especially true for .tif/.tiff and
 		case ANALYZE_FILE_FORMAT:
 		{
 			file_format_extension = "hdr";
+		} break;
+		case ANALYZE_OBJECT_MAP_FORMAT:
+		{
+			file_format_extension = "obj";
 		} break;
 		default:
 		{
@@ -1056,7 +1064,7 @@ Returns 1 if a size is successfully determined, and zero without error if not.
 } /* get_yuv_resolution_from_file_size */
 
 #if ! defined (USE_IMAGEMAGICK)
-int write_rgb_image_file(const char *file_name,
+int write_rgb_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	long unsigned *image)
@@ -1278,7 +1286,7 @@ Writes an image in SGI rgb file format.
 	return (return_code);
 } /* write_rgb_image_file */
 
-int write_postscript_image_file(const char *file_name,
+int write_postscript_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	ZnReal pixel_aspect_ratio,
@@ -1932,7 +1940,7 @@ Uses pack bits compression to compress a stream of bytes to a file.
 #if defined (USE_PNG)
 #include <png.h>
 
-int write_png_image_file(const char *file_name,
+int write_png_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	unsigned long *image)
@@ -2031,7 +2039,7 @@ int write_png_image_file(const char *file_name,
 }
 #endif /* defined (USE_PNG) */
 
-int write_tiff_image_file(const char *file_name,
+int write_tiff_image_file(char *file_name,
 	int number_of_components, int number_of_bytes_per_component,
 	int number_of_columns, int number_of_rows, int row_padding,
 	enum Tiff_image_compression compression, long unsigned *image)
@@ -4690,7 +4698,7 @@ If just the width is specified, the height is computed from the file size.
 #if defined (SAVE_CODE)
 
 #if defined (USE_IMAGEMAGICK)
-int read_image_file(const char *filename,int *number_of_components,
+int read_image_file(char *filename,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,
 	long int *width, long unsigned **image)
 /*******************************************************************************
@@ -4831,7 +4839,7 @@ be specified in the <width> and <height> arguments.
 	return (return_code);
 } /* read_image_file */
 #else /* defined (USE_IMAGEMAGICK) */
-int read_image_file(const char *file_name,int *number_of_components,
+int read_image_file(char *file_name,int *number_of_components,
 	int *number_of_bytes_per_component,long int *height,long int *width,
 	enum Raw_image_storage raw_image_storage, long unsigned **image)
 /*******************************************************************************
@@ -5441,7 +5449,7 @@ enum Image_file_format Cmgui_image_information_get_image_file_format(
 }
 
 int Cmgui_image_information_add_file_name(
-	struct Cmgui_image_information *cmgui_image_information, const char *file_name)
+	struct Cmgui_image_information *cmgui_image_information, char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 5 March 2002
 
@@ -5504,7 +5512,7 @@ Clears 'valid' flag if fails.
 
 int Cmgui_image_information_set_file_name_series(
 	struct Cmgui_image_information *cmgui_image_information,
-	char *file_name_template, const char *file_number_pattern, int start_file_number,
+	char *file_name_template, char *file_number_pattern, int start_file_number,
 	int stop_file_number, int file_number_increment)
 /*******************************************************************************
 LAST MODIFIED : 19 March 2002
@@ -5520,8 +5528,8 @@ replaces andy existing file list in the <cmgui_image_information>.
 Clears 'valid' flag if fails.
 ==============================================================================*/
 {
-	char *file_number_string, format[20], *pattern_position, *prefix, *suffix,
-		*temp_file_name, **temp_file_names;
+	char *file_number_string, format[20], *pattern_position, *prefix,
+		*temp_file_name, **temp_file_names, *suffix;
 	int error, file_number, i, new_number_of_file_names, pattern_width, return_code;
 
 	ENTER(Cmgui_image_information_set_file_name_series);
@@ -5638,7 +5646,7 @@ Clears 'valid' flag if fails.
 
 int Cmgui_image_information_set_file_name(
 	struct Cmgui_image_information *cmgui_image_information,
-	int file_name_number, const char *file_name)
+	int file_name_number, char *file_name)
 /*******************************************************************************
 LAST MODIFIED : 18 February 2002
 
@@ -7255,6 +7263,10 @@ and other parameters for formats that require them.
 						case ANALYZE_FILE_FORMAT:
 						{
 							file_name_prefix = "aze:";
+						} break;
+						case ANALYZE_OBJECT_MAP_FORMAT:
+						{
+							file_name_prefix = "obj:";
 						} break;
 						default:
 						{

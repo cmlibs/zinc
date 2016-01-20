@@ -9,9 +9,8 @@
 #include <sstream>
 #include <fstream>
 #include <stdint.h>
-#include <zlib.h>
-#include <bzlib.h>
 #include "general/debug.h"
+#include "general/io_stream.h"
 #include "analyze.h"
 #include "zinc/types/streamid.h"
 #include "general/image_utilities.h"
@@ -42,150 +41,6 @@
  * @return 4 byte IEEE754 representation of half float value
  */
 float halffloat2float(uint16_t source);
-
-int open_gzip_stream(void *buffer, unsigned int length, char **bufferOut)
-{
-	if (buffer && length > 0 && bufferOut)
-	{
-	   int ret;
-	   z_stream strm;
-		int buffer_chunk_size = 10000;
-	   strm.zalloc = Z_NULL;
-	   strm.zfree = Z_NULL;
-	   strm.opaque = Z_NULL;
-	   strm.avail_in = 0;
-	   strm.next_in = Z_NULL;
-	   ret = inflateInit2(&strm, MAX_WBITS+16);
-
-	   if (ret != Z_OK)
-	   	return 0;
-	   int remaining = length;
-	   char *output_buffer = 0;
-	   int data_length = buffer_chunk_size;
-	   ALLOCATE(output_buffer, char, buffer_chunk_size);
-	   int characters_read = 0;
-   	int return_code = 1;
-	   do
-	   {
-	   	strm.avail_in = buffer_chunk_size;
-	   	strm.next_in = ((Bytef *)buffer + length - remaining);
-	   	remaining -= buffer_chunk_size;
-	   	/* run inflate() on input until output buffer not full */
-	   	do
-	   	{
-	   		char *new_data = 0;
-	   		if (characters_read + buffer_chunk_size > data_length)
-	   		{
-	   			if (REALLOCATE(new_data, output_buffer, char, data_length + buffer_chunk_size))
-	   			{
-	   				output_buffer = new_data;
-	   				data_length += buffer_chunk_size;
-	   			}
-	   		}
-	   		strm.avail_out = buffer_chunk_size;
-	   		strm.next_out = (Bytef *)output_buffer + characters_read;
-	   		ret = inflate(&strm, Z_NO_FLUSH);
-	   		int read_characters_here = buffer_chunk_size - strm.avail_out;
-	   		if ((ret != Z_STREAM_END ) &&	(ret != Z_OK))
-	   		{
-	   			return_code = 0;
-	   		}
-	   		characters_read += read_characters_here;
-	   	} while (strm.avail_out == 0 && return_code == 1);
-	   } while (remaining > 0 && return_code == 1);
-	   /* done when inflate() says it's done */
-	   inflateEnd(&strm);
-	   if (data_length != characters_read)
-		{
-			REALLOCATE(output_buffer, output_buffer, char, characters_read);
-		}
-	   if (return_code == 0)
-	   {
-	   	characters_read = 0;
-	   	DEALLOCATE(output_buffer);
-	   	output_buffer = 0;
-	   }
-		*bufferOut =  output_buffer;
-	   return characters_read;
-	}
-	return 0;
-}
-
-
-int open_bzip2_stream(void *buffer, unsigned int length, char **bufferOut)
-{
-	if (buffer && length > 0 && bufferOut)
-	{
-	   int ret = 0;
-	   bz_stream bz2_memory_stream;
-		int buffer_chunk_size = 10000;
-		bz2_memory_stream.next_in = (char *)NULL;
-		bz2_memory_stream.avail_in = 0;
-		bz2_memory_stream.total_in_lo32 = 0;
-		bz2_memory_stream.total_in_hi32 = 0;
-		bz2_memory_stream.next_out = (char *)NULL;
-		bz2_memory_stream.avail_out = 0;
-		bz2_memory_stream.total_out_lo32 = 0;
-		bz2_memory_stream.total_out_hi32 = 0;
-		bz2_memory_stream.state = NULL;
-		bz2_memory_stream.bzalloc = NULL;
-		bz2_memory_stream.bzfree = NULL;
-		bz2_memory_stream.opaque = NULL;
-		if (BZ_OK != BZ2_bzDecompressInit(&bz2_memory_stream,
-			/*debug*/0, /*small_memory*/0))
-		{
-			return 0;
-		}
-	   int remaining = length;
-	   char *output_buffer = 0;
-	   int data_length = buffer_chunk_size;
-	   ALLOCATE(output_buffer, char, buffer_chunk_size);
-	   int characters_read = 0;
-   	int return_code = 1;
-	   do
-	   {
-	   	bz2_memory_stream.avail_in = buffer_chunk_size;
-	   	bz2_memory_stream.next_in = ((char *)buffer + length - remaining);
-	   	remaining -= buffer_chunk_size;
-	   	/* run inflate() on input until output buffer not full */
-	   	do
-	   	{
-	   		char *new_data = 0;
-	   		if (characters_read + buffer_chunk_size > data_length)
-	   		{
-	   			if (REALLOCATE(new_data, output_buffer, char, data_length + buffer_chunk_size))
-	   			{
-	   				output_buffer = new_data;
-	   				data_length += buffer_chunk_size;
-	   			}
-	   		}
-	   		bz2_memory_stream.avail_out = buffer_chunk_size;
-	   		bz2_memory_stream.next_out = output_buffer + characters_read;
-	   		ret = BZ2_bzDecompress(&bz2_memory_stream);
-	   		int read_characters_here = buffer_chunk_size - bz2_memory_stream.avail_out;
-	   		if ((ret != BZ_STREAM_END ) &&	(ret != BZ_OK))
-	   		{
-	   			return_code = 0;
-	   		}
-	   		characters_read += read_characters_here;
-	   	} while (bz2_memory_stream.avail_out == 0 && return_code == 1);
-	   } while (remaining > 0 && return_code == 1);
-	   BZ2_bzDecompressEnd(&bz2_memory_stream);
-	   if (data_length != characters_read)
-		{
-			REALLOCATE(output_buffer, output_buffer, char, characters_read);
-		}
-	   if (return_code == 0)
-	   {
-	   	characters_read = 0;
-	   	DEALLOCATE(output_buffer);
-	   	output_buffer = 0;
-	   }
-		*bufferOut =  output_buffer;
-	   return characters_read;
-	}
-	return 0;
-}
 
 struct Analyze_stream
 {
@@ -499,12 +354,6 @@ struct Cmgui_image *Cmgui_image_read_analyze(
 	return cmgui_image;
 }
 
-enum EndianEnum
-{
-	EndianBig,
-	EndianLittle
-};
-
 enum EndianEnum systemEndianTest()
 {
 	unsigned char swapTest[2] = { 1, 0 };
@@ -549,8 +398,6 @@ bool AnalyzeImageHandler::testFileEndianSystemEndianMatch()
 
 	return match;
 }
-
-typedef ::size_t      BufferSizeType;
 
 void SwapRange2(void *void_p, BufferSizeType n)
 {

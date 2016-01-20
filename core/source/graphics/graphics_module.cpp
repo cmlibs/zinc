@@ -22,7 +22,6 @@
 #include "graphics/scene_viewer.h"
 #include "graphics/spectrum.h"
 #include "graphics/graphics_module.h"
-#include "graphics/light_model.h"
 #include "graphics/scenefilter.hpp"
 #include "graphics/tessellation.hpp"
 #include "region/cmiss_region_private.h"
@@ -37,8 +36,7 @@ struct cmzn_graphics_module
 	void *font_manager_callback_id;
 	struct cmzn_glyphmodule *glyphmodule;
 	void *glyph_manager_callback_id;
-	Light_module *light_module;
-	Light_model_module *light_model_module;
+	cmzn_lightmodule *lightmodule;
 	cmzn_materialmodule *materialmodule;
 	void *material_manager_callback_id;
 	cmzn_scenefiltermodule *scenefiltermodule;
@@ -206,7 +204,7 @@ void cmzn_graphics_module_font_manager_callback(
 }
 
 struct cmzn_graphics_module *cmzn_graphics_module_create(
-	struct Context *context)
+	cmzn_context *context)
 {
 	struct cmzn_graphics_module *module;
 
@@ -215,8 +213,7 @@ struct cmzn_graphics_module *cmzn_graphics_module_create(
 	{
 		if (ALLOCATE(module, struct cmzn_graphics_module, 1))
 		{
-			module->light_module = Light_module_create();
-			module->light_model_module = Light_model_module_create();
+			module->lightmodule = cmzn_lightmodule_create();
 			module->materialmodule = NULL;
 			module->sceneviewermodule = NULL;
 			module->spectrummodule=cmzn_spectrummodule_create();
@@ -340,10 +337,8 @@ int cmzn_graphics_module_destroy(
 				cmzn_fontmodule_get_manager(graphics_module->fontmodule));
 			/* This will remove all callbacks used by the scene_viewer projection_field callback */
 			cmzn_glyphmodule_destroy(&graphics_module->glyphmodule);
-			if (graphics_module->light_module)
-				Light_module_destroy(&graphics_module->light_module);
-			if (graphics_module->light_model_module)
-				Light_model_module_destroy(&graphics_module->light_model_module);
+			if (graphics_module->lightmodule)
+				cmzn_lightmodule_destroy(&graphics_module->lightmodule);
 			if (graphics_module->spectrummodule)
 				cmzn_spectrummodule_destroy(&graphics_module->spectrummodule);
 			if (graphics_module->fontmodule)
@@ -491,10 +486,10 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 	{
 		if (!graphics_module->sceneviewermodule)
 		{
-			Light *default_light =
-				Light_module_get_default_light(graphics_module->light_module);
-			Light_model *default_light_model =
-				Light_model_module_get_default_light_model(graphics_module->light_model_module);
+			cmzn_light *default_light =
+				cmzn_lightmodule_get_default_light(graphics_module->lightmodule);
+			cmzn_light *default_ambient_light =
+				cmzn_lightmodule_get_default_ambient_light(graphics_module->lightmodule);
 			Colour default_background_colour;
 			default_background_colour.red = 0.0;
 			default_background_colour.green = 0.0;
@@ -502,13 +497,12 @@ cmzn_sceneviewermodule_id cmzn_graphics_module_get_sceneviewermodule(
 			cmzn_scenefiltermodule_id filterModule = cmzn_graphics_module_get_scenefiltermodule(graphics_module);
 			graphics_module->sceneviewermodule = CREATE(cmzn_sceneviewermodule)(
 				&default_background_colour,
-				/* interactive_tool_manager */0,
-				graphics_module->light_module, default_light,
-				graphics_module->light_model_module, default_light_model,
+				graphics_module->lightmodule, default_light,
+				default_ambient_light,
 				filterModule);
 			cmzn_scenefiltermodule_destroy(&filterModule);
-			DEACCESS(Light_model)(&default_light_model);
-			DEACCESS(Light)(&default_light);
+			cmzn_light_destroy(&default_ambient_light);
+			cmzn_light_destroy(&default_light);
 		}
 		sceneviewermodule = cmzn_sceneviewermodule_access(graphics_module->sceneviewermodule);
 	}
@@ -653,23 +647,12 @@ struct MANAGER(cmzn_scenefilter) *cmzn_graphics_module_get_filter_manager(
 	return 0;
 }
 
-Light_module *cmzn_graphics_module_get_light_module(
+cmzn_lightmodule *cmzn_graphics_module_get_lightmodule(
 	struct cmzn_graphics_module *graphics_module)
 {
-	if (graphics_module && graphics_module->light_module)
+	if (graphics_module && graphics_module->lightmodule)
 	{
-		return Light_module_access(graphics_module->light_module);
-	}
-
-	return 0;
-}
-
-Light_model_module *cmzn_graphics_module_get_light_model_module(
-	struct cmzn_graphics_module *graphics_module)
-{
-	if (graphics_module && graphics_module->light_model_module)
-	{
-		return Light_model_module_access(graphics_module->light_model_module);
+		return cmzn_lightmodule_access(graphics_module->lightmodule);
 	}
 
 	return 0;

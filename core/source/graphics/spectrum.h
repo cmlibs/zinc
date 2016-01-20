@@ -33,6 +33,34 @@ Global types
 ------------
 */
 
+
+class cmzn_spectrum_change_detail
+{
+	bool changed;
+
+public:
+
+	cmzn_spectrum_change_detail() :
+		changed(false)
+	{ }
+
+	void clear()
+	{
+		changed = false;
+	}
+
+	bool isChanged() const
+	{
+		return changed;
+	}
+
+	void setChanged()
+	{
+		changed = true;
+	}
+
+};
+
 struct cmzn_spectrum
 /*******************************************************************************
 LAST MODIFIED : 14 May 1998
@@ -42,19 +70,39 @@ Spectrum type is private.
 ==============================================================================*/
 {
 	ZnReal maximum,minimum;
-	char *name;
+	const char *name;
 	bool overwrite_colour;
 	struct LIST(cmzn_spectrumcomponent) *list_of_components;
 
 	struct Texture *colour_lookup_texture;
 	int cache, changed;
-	/* after clearing in create, following to be modified only by manager */
-	struct MANAGER(cmzn_spectrum) *manager;
-	int manager_change_status;
 	bool is_managed_flag;
 	/* the number of structures that point to this spectrum.  The spectrum
 		cannot be destroyed while this is greater than 0 */
 	int access_count;
+
+	cmzn_spectrum_change_detail changeDetail;
+
+	/* after clearing in create, following to be modified only by manager */
+	struct MANAGER(cmzn_spectrum) *manager;
+	int manager_change_status;
+
+	inline cmzn_spectrum *access()
+	{
+		++access_count;
+		return this;
+	}
+
+	cmzn_spectrum_change_detail *extractChangeDetail()
+	{
+		cmzn_spectrum_change_detail *change_detail = new cmzn_spectrum_change_detail(this->changeDetail);
+		this->changeDetail.clear();
+		return change_detail;
+	}
+
+	static int deaccess(cmzn_spectrum **spectrumAddress);
+
+	int setName(const char *newName);
 }; /* struct cmzn_spectrum */
 
 DECLARE_LIST_TYPES(cmzn_spectrum);
@@ -209,7 +257,7 @@ Expands the range of this spectrum by adjusting the range of each component
 it contains.  The ratios of the different component are preserved.
 ==============================================================================*/
 
-char *Spectrum_get_name(struct cmzn_spectrum *spectrum);
+const char *Spectrum_get_name(struct cmzn_spectrum *spectrum);
 /*******************************************************************************
 LAST MODIFIED : 28 August 2007
 
@@ -313,5 +361,105 @@ double cmzn_spectrum_get_minimum(cmzn_spectrum_id spectrum);
  * @return  the maximum value, 0.0 on failure.
  */
 double cmzn_spectrum_get_maximum(cmzn_spectrum_id spectrum);
+
+
+struct cmzn_spectrummodulenotifier
+{
+private:
+	cmzn_spectrummodule_id module; // not accessed
+	cmzn_spectrummodulenotifier_callback_function function;
+	void *user_data;
+	int access_count;
+
+	cmzn_spectrummodulenotifier(cmzn_spectrummodule *spectrummodule);
+
+	~cmzn_spectrummodulenotifier();
+
+public:
+
+	/** private: external code must use cmzn_spectrummodule_create_notifier */
+	static cmzn_spectrummodulenotifier *create(cmzn_spectrummodule *spectrummodule)
+	{
+		if (spectrummodule)
+			return new cmzn_spectrummodulenotifier(spectrummodule);
+		return 0;
+	}
+
+	cmzn_spectrummodulenotifier *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_spectrummodulenotifier* &notifier);
+
+	int setCallback(cmzn_spectrummodulenotifier_callback_function function_in,
+		void *user_data_in);
+
+	void *getUserData()
+	{
+		return this->user_data;
+	}
+
+	void clearCallback();
+
+	void spectrummoduleDestroyed();
+
+	void notify(cmzn_spectrummoduleevent *event)
+	{
+		if (this->function && event)
+			(this->function)(event, this->user_data);
+	}
+
+};
+
+struct cmzn_spectrummoduleevent
+{
+private:
+	cmzn_spectrummodule *module;
+	cmzn_spectrum_change_flags changeFlags;
+	struct MANAGER_MESSAGE(cmzn_spectrum) *managerMessage;
+	int access_count;
+
+	cmzn_spectrummoduleevent(cmzn_spectrummodule *spectrummoduleIn);
+	~cmzn_spectrummoduleevent();
+
+public:
+
+	/** @param spectrummoduleIn  Owning spectrummodule; can be NULL for FINAL event */
+	static cmzn_spectrummoduleevent *create(cmzn_spectrummodule *spectrummoduleIn)
+	{
+		return new cmzn_spectrummoduleevent(spectrummoduleIn);
+	}
+
+	cmzn_spectrummoduleevent *access()
+	{
+		++(this->access_count);
+		return this;
+	}
+
+	static int deaccess(cmzn_spectrummoduleevent* &event);
+
+	cmzn_spectrum_change_flags getChangeFlags() const
+	{
+		return this->changeFlags;
+	}
+
+	void setChangeFlags(cmzn_spectrum_change_flags changeFlagsIn)
+	{
+		this->changeFlags = changeFlagsIn;
+	}
+
+	cmzn_spectrum_change_flags getSpectrumChangeFlags(cmzn_spectrum *spectrum) const;
+
+	struct MANAGER_MESSAGE(cmzn_spectrum) *getManagerMessage();
+
+	void setManagerMessage(struct MANAGER_MESSAGE(cmzn_spectrum) *managerMessageIn);
+
+	cmzn_spectrummodule *getSpectrummodule()
+	{
+		return this->module;
+	}
+};
 
 #endif /* !defined(SPECTRUM_H) */

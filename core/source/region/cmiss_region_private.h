@@ -84,6 +84,21 @@ void cmzn_region_remove_fieldmodulenotifier(cmzn_region *region,
 	cmzn_fieldmodulenotifier *notifier);
 
 /**
+ * Returns pointer to context this region was created for. Can be NULL if
+ * context is destroyed already during clean-up.
+ *
+ * @param region  The region to query.
+ * @return  Non-accessed pointer to cmzn_context or NULL if none/cleared.
+ */
+cmzn_context *cmzn_region_get_context_private(cmzn_region *region);
+
+/**
+ * Record the context this region was created for.
+ * Should only be set by context / region creation functions.
+ */
+void cmzn_region_set_context_private(cmzn_region *region, cmzn_context *context);
+
+/**
  * Callback for changes to FE_region attached to region.
  * Updates definitions of Computed_field wrappers for changed FE_fields in the
  * region.

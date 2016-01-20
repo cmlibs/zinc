@@ -855,6 +855,11 @@ public:
 
 };
 
+inline Glyph Glyphmodule::createStaticGlyphFromGraphics(const Graphics& graphics)
+{
+	return Glyph(cmzn_glyphmodule_create_static_glyph_from_graphics(id, graphics.getId()));
+}
+
 inline Graphicssamplingattributes Graphics::getGraphicssamplingattributes()
 {
 	return Graphicssamplingattributes(cmzn_graphics_get_graphicssamplingattributes(id));

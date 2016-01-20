@@ -13,10 +13,11 @@
 #if !defined (CMZN_DATASTORE_LABELS_HPP)
 #define CMZN_DATASTORE_LABELS_HPP
 
-#include <map>
 #include <string>
 #include <vector>
 #include "general/block_array.hpp"
+#include "general/cmiss_btree_index.hpp"
+#include "general/message.h"
 #include "general/refcounted.hpp"
 #include "general/refhandle.hpp"
 
@@ -41,11 +42,17 @@ const DsLabelIdentifier DS_LABEL_IDENTIFIER_INVALID = -1;
  */
 typedef int DsLabelIndex;
 
+// following is used to mark an invalid index i.e. not set
+// Comment any code assuming this value with "Assumes DS_LABEL_INDEX_INVALID == -1"
 const DsLabelIndex DS_LABEL_INDEX_INVALID = -1;
 
-typedef std::map<DsLabelIdentifier,DsLabelIndex> DsLabelIdentifierMap;
-typedef std::map<DsLabelIdentifier,DsLabelIndex>::iterator DsLabelIdentifierMapIterator;
-typedef std::map<DsLabelIdentifier,DsLabelIndex>::reverse_iterator DsLabelIdentifierMapReverseIterator;
+// following is used to mark an array of indexes as invalid
+const DsLabelIndex DS_LABEL_INDEX_UNALLOCATED = -2;
+
+class DsLabels;
+
+typedef cmzn_btree_index<DsLabels, DsLabelIndex, DsLabelIdentifier, DS_LABEL_INDEX_INVALID> DsLabelIdentifierToIndexMap;
+typedef cmzn_btree_index<DsLabels, DsLabelIndex, DsLabelIdentifier, DS_LABEL_INDEX_INVALID>::ext_iterator DsLabelIdentifierToIndexMapIterator;
 
 class DsLabelIterator;
 
@@ -57,21 +64,17 @@ class DsLabels : public cmzn::RefCounted
 {
 	std::string name; // optional
 	bool contiguous; // true while all entries from firstIdentifier..lastIdentifier exist and are in order
-	DsLabelIdentifier firstFreeIdentifier;
+	DsLabelIdentifier firstFreeIdentifier; // exact only if contiguous, otherwise only a minimum
 	DsLabelIdentifier firstIdentifier; // used if contiguous: identifier of first index
 	DsLabelIdentifier lastIdentifier; // used if contiguous: identifier of last valid index
 	block_array<DsLabelIndex,DsLabelIdentifier> identifiers; // used only if not contiguous
-	DsLabelIdentifierMap identifierMap; // used only if not contiguous
+	DsLabelIdentifierToIndexMap identifierToIndexMap; // used only if not contiguous
 	int labelsCount; // number of valid labels
 	int indexSize; // allocated label array size; can have holes where labels removed
 
-	// linked-lists of active iterators for updating when defragmenting memory,
-	// and inactive iterators ready for use without allocating on the heap
+	// linked-lists of active iterators, to invalidate when labels set changes
+	// including eventually when defragmenting memory
 	DsLabelIterator *activeIterators;
-	DsLabelIterator *inactiveIterators;
-
-	template<class REFCOUNTED>
-		friend inline void cmzn::Deaccess(REFCOUNTED*& labelIterator);
 
 public:
 
@@ -80,19 +83,17 @@ public:
 	~DsLabels();
 	DsLabels& operator=(const DsLabels&); // not implemented
 
+	void clear();
+
 private:
 
-	void updateFirstFreeIdentifier();
-
-	void setNotContiguous();
+	int setNotContiguous();
 
 	DsLabelIndex createLabelPrivate(DsLabelIdentifier identifier);
 
-	static void destroyLabelIterator(DsLabelIterator *&iterator);
-
 public:
 
-	bool isContiguous()
+	bool isContiguous() const
 	{
 		return this->contiguous;
 	}
@@ -113,16 +114,18 @@ public:
 	}
 
 	/** @return  true if any indexes are unused, false if all are valid */
-	bool hasUnusedIndexes()
+	bool hasUnusedIndexes() const
 	{
 		return (labelsCount < indexSize);
 	}
 
 	/** @return  maximum index which has ever existed; entry may be void */
-	DsLabelIndex getIndexSize()
+	DsLabelIndex getIndexSize() const
 	{
 		return indexSize;
 	}
+
+	DsLabelIdentifier getFirstFreeIdentifier(DsLabelIdentifier startIdentifier = 0);
 	
 	/** @return CMZN_OK on success, any other error code on failure */
 	int addLabelsRange(DsLabelIdentifier min, DsLabelIdentifier max,
@@ -134,29 +137,49 @@ public:
 
 	DsLabelIndex findOrCreateLabel(DsLabelIdentifier identifier);
 
-	DsLabelIndex findLabelByIdentifier(DsLabelIdentifier identifier);
+	DsLabelIndex findLabelByIdentifier(DsLabelIdentifier identifier) const;
 
 	int removeLabel(DsLabelIndex index);
 
 	int removeLabelWithIdentifier(DsLabelIdentifier identifier);
 
-	DsLabelIdentifier getLabelIdentifier(DsLabelIndex index);
+	DsLabelIdentifier getIdentifier(DsLabelIndex index) const
+	{
+		DsLabelIdentifier identifier = DS_LABEL_IDENTIFIER_INVALID;
+		if ((0 <= index) && (index < this->indexSize))
+		{
+			if (this->contiguous)
+				identifier = this->firstIdentifier + static_cast<DsLabelIdentifier>(index);
+			else
+				this->identifiers.getValue(index, identifier);
+		}
+		return identifier;
+	}
+
+	int setIdentifier(DsLabelIndex index, DsLabelIdentifier identifier);
 
 	/**
 	 * Get first label index in set or DS_LABEL_INDEX_INVALID if none.
 	 * Currently returns index with the lowest identifier in set
 	 */
 	DsLabelIndex getFirstIndex();
-	DsLabelIndex getNextIndex(DsLabelIndex index);
-	DsLabelIndex getNextIndexBoolTrue(DsLabelIndex index, bool_array<DsLabelIndex>& boolArray);
 
 	/**
 	 * Create new iterator initially pointing before first label.
+	 * @param  condition  Boolean array which must be true for given index to include.
 	 * @return accessed iterator, or 0 if failed.
 	 */
-	DsLabelIterator *createLabelIterator();
+	DsLabelIterator *createLabelIterator(bool_array<DsLabelIndex> *condition = 0);
+
+	void removeLabelIterator(DsLabelIterator *iterator); // only used by ~DsLabelIterator;
+
+	void invalidateLabelIterators();
+
+	void invalidateLabelIteratorsWithCondition(bool_array<DsLabelIndex> *condition); // used from DsLabelsGroup
 
 	int getIdentifierRanges(DsLabelIdentifierRanges& ranges);
+
+	void list_storage_details() const;
 };
 
 typedef cmzn::RefHandle<DsLabels> HDsLabels;
@@ -168,10 +191,11 @@ typedef cmzn::RefHandle<DsLabels> HDsLabels;
 class DsLabelIterator : public cmzn::RefCounted
 {
 	friend class DsLabels;
-	friend class DsLabelsGroup;
 	
 private:
 	DsLabels *labels;
+	DsLabelIdentifierToIndexMapIterator *iter; // set and used only if non-contiguous iteration
+	bool_array<DsLabelIndex> *condition; // set and used if iterating over DsLabelsGroup
 	DsLabelIndex index;
 	DsLabelIterator *next, *previous; // for linked-list in owning DsLabels
 
@@ -180,70 +204,74 @@ private:
 	virtual ~DsLabelIterator();
 	DsLabelIterator& operator=(const DsLabelIterator&); // not implemented
 
+	void invalidate();
 public:
 
-	// caller must check valid index
-	void setIndex(DsLabelIndex newIndex)
-	{
-		this->index = newIndex;
-	}
+	// caller must check valid index, use DS_LABEL_INDEX_INVALID to reset to before start
+	void setIndex(DsLabelIndex newIndex);
 
-	bool isValid() const { return (this->index != 0); }
 	DsLabels *getLabels() const { return this->labels; }
+
 	DsLabelIndex getIndex() const { return this->index; }
+
 	DsLabelIdentifier getIdentifier() const
 	{
-		return this->labels->getLabelIdentifier(this->index);
+		return this->labels->getIdentifier(this->index);
 	}
 
-	bool increment()
+	// return next index or DS_LABEL_INDEX_INVALID if finished
+	inline DsLabelIndex nextIndex()
 	{
-		if (this->labels)
+		if (!this->labels)
 		{
-			this->index = this->labels->getNextIndex(this->index);
-			return (this->index >= 0);
+			display_message(ERROR_MESSAGE, "DsLabelIterator::nextIndex  Iterator has been invalidated");
+			return DS_LABEL_INDEX_INVALID;
 		}
-		return false;
-	}
-};
-
-namespace cmzn
-{
-
-// specialisation to handle ownership by DsLabels
-template<> inline void Deaccess(::DsLabelIterator*& labelIterator)
-{
-	if (labelIterator)
-	{
-		--labelIterator->access_count;
-		if (labelIterator->access_count <= 0)
-			::DsLabels::destroyLabelIterator(labelIterator);
-		labelIterator = 0;
-	}
-}
-
-}
-
-typedef cmzn::RefHandle<DsLabelIterator> HDsLabelIterator;
-
-inline DsLabelIndex DsLabels::findLabelByIdentifier(DsLabelIdentifier identifier)
-{
-	DsLabelIndex index = DS_LABEL_INDEX_INVALID;
-	if (identifier >= 0)
-	{
-		if (this->contiguous)
+		if (this->iter) // non-contiguous identifier order:
 		{
-			if ((identifier >= this->firstIdentifier) && (identifier <= this->lastIdentifier))
-				index = static_cast<DsLabelIndex>(identifier - this->firstIdentifier);
+			this->index = this->iter->next();
+			if (this->condition)
+			{
+				// quite expensive for small sub-groups
+				while ((this->index != DS_LABEL_INDEX_INVALID) && (!this->condition->getBool(this->index)))
+					this->index = this->iter->next();
+			}
 		}
 		else
 		{
-			DsLabelIdentifierMapIterator iter = identifierMap.find(identifier);
-			if (iter != identifierMap.end())
-				index = iter->second;
+			if (this->index < (this->labels->getIndexSize() - 1))
+				++this->index;
+			else
+				this->index = DS_LABEL_INDEX_INVALID;
+			if ((this->condition) && (this->index != DS_LABEL_INDEX_INVALID))
+				if (!this->condition->advanceIndexWhileFalse(this->index, this->labels->getIndexSize()))
+					this->index = DS_LABEL_INDEX_INVALID;
 		}
+		return this->index;
 	}
-	return index;
+
+	// return true if valid index, false if reached end
+	inline bool increment()
+	{
+		return this->nextIndex() != DS_LABEL_INDEX_INVALID;
+	}
+
+};
+
+typedef cmzn::RefHandle<DsLabelIterator> HDsLabelIterator;
+
+inline DsLabelIndex DsLabels::findLabelByIdentifier(DsLabelIdentifier identifier) const
+{
+	if (this->contiguous)
+	{
+		if ((identifier >= this->firstIdentifier) && (identifier <= this->lastIdentifier))
+			return static_cast<DsLabelIndex>(identifier - this->firstIdentifier);
+	}
+	else
+	{
+		return this->identifierToIndexMap.find_object_by_identifier(*this, identifier);
+	}
+	return DS_LABEL_INDEX_INVALID;
 }
 
 #endif /* !defined (CMZN_DATASTORE_LABELS_HPP) */

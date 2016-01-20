@@ -15,7 +15,6 @@
 #include "graphics/graphics_library.h"
 #include "graphics/font.h"
 #include "graphics/graphics_object.h"
-#include "graphics/light_model.h"
 #include "graphics/mcubes.h"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"

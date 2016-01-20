@@ -216,9 +216,12 @@ enum cmzn_streaminformation_image_file_format
 	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_TIFF = 7,
 	/*!< Specify the file to be reading in or writing to as
 	 * tiff image. */
-	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE = 8
+	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE = 8,
 	/*!< Specify the file to be reading in or writing to as
 	 * Analyze image. */
+	CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE_OBJECT_MAP = 9
+	/*!< Specify the file to be reading in or writing to as
+	 * Analyze object map. */
 };
 
 /**

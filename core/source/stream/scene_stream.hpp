@@ -72,7 +72,7 @@ public:
 			return Scene_get_number_of_graphics_with_surface_vertices_in_tree(
 				scene, scenefilter);
 		}
-		else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_GRAPHICS_DESCRIPTION)
+		else if (format == CMZN_STREAMINFORMATION_SCENE_IO_FORMAT_DESCRIPTION)
 			return 1;
 		else
 			return 0;

@@ -14,13 +14,16 @@ SET( CURVE_HDRS source/curve/curve.h )
 
 SET( DATASTORE_SRCS
 	source/datastore/labels.cpp
+	source/datastore/labelschangelog.cpp
 	source/datastore/labelsgroup.cpp
 	source/datastore/map.cpp
 	source/datastore/mapindexing.cpp )
 SET( DATASTORE_HDRS
 	source/datastore/labels.hpp
+	source/datastore/labelschangelog.hpp
 	source/datastore/labelsgroup.hpp
 	source/datastore/map.hpp
+	source/datastore/maparray.hpp
 	source/datastore/mapindexing.hpp )
 
 SET( ELEMENT_SRCS
@@ -62,10 +65,12 @@ SET( FIELD_IO_HDRS
 	source/field_io/write_fieldml.hpp )
 
 SET( IMAGE_IO_SRCS
-	source/image_io/analyze.cpp )
+	source/image_io/analyze.cpp
+	source/image_io/analyze_object_map.cpp )
 SET( IMAGE_IO_HDRS
 	source/image_io/analyze.h
-	source/image_io/analyze_header.h )
+	source/image_io/analyze_header.h
+	source/image_io/analyze_object_map.hpp )
 
 SET( LICENSE_HDRS source/license.h )
 
@@ -87,15 +92,15 @@ SET( REGION_HDRS source/region/cmiss_region.h
 	source/stream/region_stream.hpp
 	source/region/cmiss_region_write_info.h )
 
-SET( SELECTION_SRCS source/selection/any_object_selection.cpp
-	source/selection/element_point_ranges_selection.cpp )
-SET( SELECTION_HDRS source/selection/any_object_selection.h
-	source/selection/element_point_ranges_selection.h )
+SET( SELECTION_SRCS source/selection/element_point_ranges_selection.cpp )
+SET( SELECTION_HDRS source/selection/element_point_ranges_selection.h )
 
 SET( TIME_SRCS
+	source/description_io/timekeeper_json_io.cpp
 	source/time/time.cpp
 	source/time/time_keeper.cpp )
 SET( TIME_HDRS
+	source/description_io/timekeeper_json_io.hpp
 	source/time/time.h
 	source/time/time_keeper.hpp
 	source/time/time_private.h )

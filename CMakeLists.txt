@@ -274,9 +274,9 @@ WRITE_BASIC_PACKAGE_VERSION_FILE(${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_N
     COMPATIBILITY AnyNewerVersion)
 set(DEPFILE ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-dependencies.cmake)
 set(ZINC_DEPS PNG JPEG FTGL NETGEN FIELDML-API
-    IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
-file(WRITE ${DEPFILE} 
-    "include(CMakeFindDependencyMacro)\r\n"
+	IMAGEMAGICK OPTPP GLEW TIFF ZLIB ITK)
+file(WRITE ${DEPFILE}
+	"include(CMakeFindDependencyMacro)\r\n"
 	"set(${PROJECT_NAME}_IMPORT_PREFIX \${_IMPORT_PREFIX})\r\n"
 )
 foreach(ZINCDEP ${ZINC_DEPS})
@@ -285,7 +285,7 @@ foreach(ZINCDEP ${ZINC_DEPS})
     endif()
 endforeach()
 file(APPEND ${DEPFILE} "set(_IMPORT_PREFIX \${${PROJECT_NAME}_IMPORT_PREFIX})")
-install(FILES 
+install(FILES
         ${CMAKE_CURRENT_BINARY_DIR}/${ZINC_EXPORT_SET_NAME}-version.cmake
         ${DEPFILE}
         DESTINATION ${PACKAGE_CONFIG_DIR}
@@ -331,9 +331,8 @@ if(ZINC_PRINT_CONFIG_SUMMARY)
 			endif()
 			string(SUBSTRING "${DEPLIB}              " 0 11 DEPLIB_FIXED_SIZE)
 			message(STATUS "         ${DEPLIB_FIXED_SIZE}: '${TARGET_ILR}'")
-		endif() 
+		endif()
 	endforeach()
 	message(STATUS "=====================================================")
 	message(STATUS "")
 endif()
-

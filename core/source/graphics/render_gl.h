@@ -12,7 +12,6 @@
 #include <string>
 #include "graphics/graphics_object.h"
 #include "graphics/render.hpp"
-#include "graphics/scene.h"
 #include "graphics/graphics_object_highlight.hpp"
 
 struct cmzn_graphics;
@@ -37,14 +36,20 @@ public:
 
 	int use_display_list;
 
-	SubObjectGroupHighlightFunctor *highlight_functor;
+	// use second pointer to save highlight_functor while it is disabled
+	SubObjectGroupHighlightFunctor *highlight_functor, *saved_highlight_functor;
 
 private:
 	// scale factor multiplying graphics render_line_width and render_point_size
 	// to get size in pixels. Set it so high resolution output has thick enough
 	// lines and visible points compared with on-screen resolution.
 	double point_unit_size_pixels;
-	
+
+protected:
+	// reset to zero then incremented for each OpenGL light so can map
+	// to fixed enumerations GL_LIGHT0 .. GL_LIGHT7
+	unsigned int next_light_no;
+
 public:
 	Render_graphics_opengl() :
 		picking(0),
@@ -60,7 +65,9 @@ public:
 		number_of_layers(1),
 		use_display_list(0),
 		highlight_functor(NULL),
-		point_unit_size_pixels(1.0)
+		saved_highlight_functor(NULL),
+		point_unit_size_pixels(1.0),
+		next_light_no(0)
 	{
 	}
 
@@ -115,6 +122,26 @@ public:
 		return 1;
 	}
 
+	// store current highlight_functor, if any, disabling highlighting if there is one
+	virtual void push_highlight_functor()
+	{
+		if (this->highlight_functor)
+		{
+			this->saved_highlight_functor = this->highlight_functor;
+			this->highlight_functor = 0;
+		}
+	}
+
+	// restore original highlight_functor, if any, enabling highlighting if there is one
+	virtual void pop_highlight_functor()
+	{
+		if (this->saved_highlight_functor)
+		{
+			this->highlight_functor = this->saved_highlight_functor;
+			this->saved_highlight_functor = 0;
+		}
+	}
+
 	double get_point_unit_size_pixels() const
 	{
 		return this->point_unit_size_pixels;
@@ -130,6 +157,13 @@ public:
 
 	// override to avoid including fixed point size and line width in display lists
 	virtual void Graphics_object_execute_point_size(GT_object *graphics_object);
+
+	/**
+	 * Must be called at start of rendering before lights are activate with
+	 * cmzn_light_execute. Ensures all lights are off at the start of rendering loop
+	 * and makes sure the lights that are subsequently defined start at GL_LIGHT0...
+	 */
+	void reset_lights();
 
 }; /* class Render_graphics_opengl */
 

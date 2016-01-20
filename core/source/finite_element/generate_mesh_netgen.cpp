@@ -26,6 +26,8 @@ the volume mesh, CMGUI will visualize them to the user.
 #include "general/mystring.h"
 #include "finite_element/generate_mesh_netgen.h"
 #include "finite_element/finite_element.h"
+#include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_helper.h"
 #include "computed_field/computed_field.h"
@@ -362,7 +364,8 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 	cmzn_nodetemplate_destroy(&nodetemplate);
 
 	// establish mode which automates creation of shared faces
-	FE_region_begin_define_faces(cmzn_region_get_FE_region(region), /*all dimensions*/-1);
+	FE_region_begin_define_faces(cmzn_region_get_FE_region(region));
+	FE_mesh *fe_mesh = FE_region_find_FE_mesh_by_dimension(cmzn_region_get_FE_region(region), 3);
 
 	cmzn_mesh_id cmesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, 3);
 	cmzn_elementtemplate_id elementtemplate = cmzn_mesh_create_elementtemplate(cmesh);
@@ -375,7 +378,7 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		elementbasis, 4, local_node_indexes);
 
 	const int number_of_elements = Ng_GetNE(mesh);
-	int nodal_idx[4];   
+	int nodal_idx[4];
 	for (i = 0 ; i < number_of_elements; i++)
 	{
 		Ng_GetVolumeElement (mesh, i+1, nodal_idx);
@@ -385,7 +388,9 @@ int generate_mesh_netgen(cmzn_region *region, void *netgen_para_void)
 		cmzn_elementtemplate_set_node(elementtemplate, 2, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[1] + initial_identifier - 1));
 		cmzn_elementtemplate_set_node(elementtemplate, 3, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[3] + initial_identifier - 1));
 		cmzn_elementtemplate_set_node(elementtemplate, 4, cmzn_nodeset_find_node_by_identifier(nodeset, nodal_idx[2] + initial_identifier - 1));
-		cmzn_mesh_define_element(cmesh, /*identifier*/-1, elementtemplate);
+		cmzn_element_id element = cmzn_mesh_create_element(cmesh, /*identifier*/-1, elementtemplate);
+		fe_mesh->defineElementFaces(get_FE_element_index(element));
+		cmzn_element_destroy(&element);
 	}
 	cmzn_elementbasis_destroy(&elementbasis);
 	cmzn_elementtemplate_destroy(&elementtemplate);

@@ -141,55 +141,6 @@ Note the CREATE for CHANGE_LOG_ENTRY is in the ADD function. \
 	return (return_code); \
 } /* DESTROY_CHANGE_LOG_ENTRY(object_type) */
 
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_ENTRY_OBJECT_CHANGE( object_type ) \
-	change_log_entry_object_change_ ## object_type
-#else
-#define CHANGE_LOG_ENTRY_OBJECT_CHANGE( object_type ) cleoc_ ## object_type
-#endif
-
-#define DECLARE_CHANGE_LOG_ENTRY_OBJECT_CHANGE_FUNCTION( object_type ) \
-static int CHANGE_LOG_ENTRY_OBJECT_CHANGE(object_type)( \
-	struct CHANGE_LOG_ENTRY(object_type) *entry, void *change_log_void) \
-/***************************************************************************** \
-LAST MODIFIED : 25 March 2003 \
-\
-DESCRIPTION : \
-Calls CHANGE_LOG_OBJECT_CHANGE with <change_log> and the object in <entry>. \
-Used for merging change_log entry_list. \
-If <change_log> has a pointer to the object_list it is logging changes for, \
-only merges changes for objects that are in the object_list. \
-============================================================================*/ \
-{ \
-	int return_code; \
-	struct CHANGE_LOG(object_type) *change_log; \
-\
-	ENTER(CHANGE_LOG_ENTRY_OBJECT_CHANGE(object_type)); \
-	if (entry && \
-		(change_log = (struct CHANGE_LOG(object_type) *)change_log_void)) \
-	{ \
-		if ((!(change_log->object_list)) || IS_OBJECT_IN_LIST(object_type)( \
-			entry->the_object, change_log->object_list)) \
-		{ \
-			return_code = CHANGE_LOG_OBJECT_CHANGE(object_type)(change_log, \
-				entry->the_object, entry->change); \
-		} \
-		else \
-		{ \
-			return_code = 1; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, "CHANGE_LOG_ENTRY_OBJECT_CHANGE(" \
-			#object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* CHANGE_LOG_ENTRY_OBJECT_CHANGE(object_type) */
-
 #define DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION( object_type ) \
 static int object_type ## _pointers_match(struct object_type *object, \
    void *object_void ) \
@@ -207,69 +158,6 @@ examine the identifier. \
    return_code =  object == object_void; \
     return (return_code); \
 } /* object_type ## _pointer_match */
-
-#if defined (OLD_CODE_TO_KEEP)
-
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_CONDITIONAL_DATA( object_type ) change_log_conditional_data_ ## object_type
-#else
-#define CHANGE_LOG_CONDITIONAL_DATA( object_type ) clcd_ ## object_type
-#endif
-
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_CONDITIONAL( object_type ) change_log_conditional_ ## object_type
-#else
-#define CHANGE_LOG_CONDITIONAL( object_type ) clcn_ ## object_type
-#endif
-
-#define DEFINE_CHANGE_LOG_CONDITIONAL_DATA_AND_FUNCTION( object_type ) \
-struct CHANGE_LOG_CONDITIONAL_DATA(object_type) \
-{ \
-	CHANGE_LOG_CONDITIONAL_FUNCTION(object_type) *conditional_function; \
-	void *user_data; \
-}; \
-\
-static int CHANGE_LOG_CONDITIONAL(object_type)( \
-	struct CHANGE_LOG_ENTRY(object_type) *entry, void *data_void) \
-/***************************************************************************** \
-LAST MODIFIED : 9 December 2002 \
-\
-DESCRIPTION : \
-Returns, for the object in <entry>, the return value from the change_log \
-conditional_function with user_data from the <data>. \
-Returns 1 if no conditional_function is supplied. \
-<data_void> points at a struct CHANGE_LOG_CONDITIONAL_DATA(object_type). \
-============================================================================*/ \
-{ \
-	int return_code; \
-	struct CHANGE_LOG_CONDITIONAL_DATA(object_type) *data; \
-\
-	ENTER(CHANGE_LOG_CONDITIONAL(object_type)); \
-	if (entry && \
-		(data = (struct CHANGE_LOG_CONDITIONAL_DATA(object_type) *)data_void)) \
-	{ \
-		if (data->conditional_function) \
-		{ \
-			return_code = (data->conditional_function)(entry->the_object, \
-				entry->change, data->user_data); \
-		} \
-		else \
-		{ \
-			return_code = 1; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"CHANGE_LOG_CONDITIONAL(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* CHANGE_LOG_CONDITIONAL(object_type) */
-
-#endif /* defined (OLD_CODE_TO_KEEP) */
 
 #define CHANGE_LOG_ITERATOR_DATA( object_type ) change_log_iterator_data_ ## object_type
 
@@ -332,9 +220,7 @@ or otherwise modified. Since it is expensive to remember large lists of \
 changed objects the change_log remembers individual changes to objects until \
 <max_changes> is exceeded, then internal flags indicate that all objects in \
 <object_list> have changed. A negative <max_changes> places no limit on the \
-maximum number of changes; <object_list> need not be supplied in this case, \
-but it should be supplied if it is a different list to that logged by the \
-super_change_log passed to CHANGE_LOG_MERGE. \
+maximum number of changes; <object_list> need not be supplied in this case. \
 Note that the change_log maintains a pointer to the <object_list> which will \
 be owned by another object. Make sure the object_list is not destroyed first! \
 ============================================================================*/ \
@@ -757,119 +643,6 @@ Unchanged objects are returned as OBJECT_UNCHANGED. \
 	return (return_code); \
 } /* CHANGE_LOG_QUERY(object_type) */
 
-#define DECLARE_CHANGE_LOG_MERGE_FUNCTION( object_type ) \
-PROTOTYPE_CHANGE_LOG_MERGE_FUNCTION(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 20 February 2003 \
-\
-DESCRIPTION : \
-Incorporates into <change_log> the changes from <super_change_log> that are \
-relevant to it. <super_change_log> should be a change log for the superset of \
-objects logged in <change_log>. \
-Note that both change logs should be set up identically; either both use the \
-max_changes/change_all capability or both do not. \
-============================================================================*/ \
-{ \
-	int return_code; \
-\
-	ENTER(CHANGE_LOG_MERGE(object_type)); \
-	if (change_log && super_change_log && ( \
-		((change_log->max_changes < 0) && (super_change_log->max_changes < 0)) || \
-		((change_log->max_changes >= 0) && (super_change_log->max_changes >= 0)))) \
-	{ \
-		if (super_change_log->all_change || change_log->all_change) \
-		{ \
-			return_code = CHANGE_LOG_ALL_CHANGE(object_type)(change_log, \
-				super_change_log->change_summary); \
-		} \
-		else \
-		{ \
-			return_code = FOR_EACH_OBJECT_IN_LIST(CHANGE_LOG_ENTRY(object_type))( \
-				CHANGE_LOG_ENTRY_OBJECT_CHANGE(object_type), (void *)change_log, \
-				super_change_log->entry_list); \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"CHANGE_LOG_MERGE(" #object_type ").  Invalid argument(s)"); \
-		return_code = 0; \
-	} \
-	LEAVE; \
-\
-	return (return_code); \
-} /* CHANGE_LOG_MERGE(object_type) */
-
-#if defined (OLD_CODE_TO_KEEP)
-
-#if ! defined (SHORT_NAMES)
-#define CHANGE_LOG_FIRST_OBJECT_THAT_( object_type ) \
-	change_log_first_object_that_ ## object_type
-#else
-#define CHANGE_LOG_FIRST_OBJECT_THAT_( object_type ) clfot_ ## object_type
-#endif
-#define CHANGE_LOG_FIRST_OBJECT_THAT( object_type ) \
-	CHANGE_LOG_FIRST_OBJECT_THAT_(object_type)
-
-#define PROTOTYPE_CHANGE_LOG_FIRST_OBJECT_THAT_FUNCTION( object_type ) \
-struct object_type *CHANGE_LOG_FIRST_OBJECT_THAT(object_type)( \
-	struct CHANGE_LOG(object_type) *change_log, \
-	CHANGE_LOG_CONDITIONAL_FUNCTION(object_type) *conditional_function, \
-	void *user_data) \
-/***************************************************************************** \
-LAST MODIFIED : 9 December 2002 \
-\
-DESCRIPTION : \
-Returns the first object in <change_log> for which <conditional_function> \
-with <user_data> returns true, or the first object in <change_log> if \
-<conditional_function> is NULL. Otherwise NULL object. \
-Note the special format of the CHANGE_LOG_CONDITIONAL_FUNCTION(object_type), \
-which has an additional middle argument of the object's change status. \
-==============================================================================*/
-
-#define DECLARE_CHANGE_LOG_FIRST_OBJECT_THAT_FUNCTION( object_type ) \
-PROTOTYPE_CHANGE_LOG_FIRST_OBJECT_THAT_FUNCTION(object_type) \
-/***************************************************************************** \
-LAST MODIFIED : 9 December 2002 \
-\
-DESCRIPTION : \
-Returns the first object in <change_log> for which <conditional_function> \
-with <user_data> returns true, or the first object in <change_log> if \
-<conditional_function> is NULL. Otherwise NULL object. \
-Note the special format of the CHANGE_LOG_CONDITIONAL_FUNCTION(object_type), \
-which has an additional middle argument of the object's change status. \
-============================================================================*/ \
-{ \
-	struct CHANGE_LOG_CONDITIONAL_DATA(object_type) data; \
-	struct CHANGE_LOG_ENTRY(object_type) *entry; \
-	struct object_type *object; \
-\
-	ENTER(CHANGE_LOG_FIRST_OBJECT_THAT(object_type)); \
-	object = (struct object_type *)NULL; \
-	if (change_log) \
-	{ \
-		data.conditional_function = conditional_function; \
-		data.user_data = user_data; \
-		if (entry = FIRST_OBJECT_IN_LIST_THAT(CHANGE_LOG_ENTRY(object_type))( \
-			CHANGE_LOG_CONDITIONAL(object_type), (void *)&data, \
-			change_log->entry_list)) \
-		{ \
-			object = entry->the_object; \
-		} \
-	} \
-	else \
-	{ \
-		display_message(ERROR_MESSAGE, \
-			"CHANGE_LOG_FIRST_OBJECT_THAT(" #object_type \
-			").  Invalid argument(s)"); \
-	} \
-	LEAVE; \
-\
-	return (object); \
-} /* CHANGE_LOG_FIRST_OBJECT_THAT(object_type) */
-
-#endif /* defined (OLD_CODE_TO_KEEP) */
-
 #define DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION( object_type ) \
 PROTOTYPE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type) \
 /***************************************************************************** \
@@ -928,7 +701,6 @@ DECLARE_INDEXED_LIST_FUNCTIONS(CHANGE_LOG_ENTRY(object_type)) \
 DECLARE_FIND_BY_IDENTIFIER_IN_INDEXED_LIST_FUNCTION( \
 	CHANGE_LOG_ENTRY(object_type), the_object, struct object_type *, \
 	compare_pointer) \
-DECLARE_CHANGE_LOG_ENTRY_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_POINTERS_MATCH_FUNCTION(object_type) \
 DEFINE_CHANGE_LOG_ITERATOR_DATA_AND_FUNCTION(object_type)
 
@@ -942,7 +714,6 @@ DECLARE_CHANGE_LOG_OBJECT_CHANGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_CHANGE_SUMMARY_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_GET_NUMBER_OF_CHANGED_OBJECTS_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_QUERY_FUNCTION(object_type) \
-DECLARE_CHANGE_LOG_MERGE_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_FOR_EACH_OBJECT_FUNCTION(object_type) \
 DECLARE_CHANGE_LOG_PROPAGATE_PARENT_CHANGE_SUMMARY_FUNCTION(object_type)
 

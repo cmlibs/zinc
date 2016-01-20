@@ -22,9 +22,8 @@ GL rendering calls - API specific.
 #include "graphics/glyph.hpp"
 #include "graphics/graphics.h"
 #include "graphics/graphics_object.h"
-#include "graphics/light_model.h"
 #include "graphics/mcubes.h"
-#include "graphics/light.h"
+#include "graphics/light.hpp"
 #include "graphics/spectrum.h"
 #include "graphics/tile_graphics_objects.h"
 #include "general/message.h"
@@ -39,7 +38,26 @@ GL rendering calls - API specific.
 #include "graphics/threejs_export.hpp"
 #include "graphics/webgl_export.hpp"
 
+/*
+Module variables
+----------------
+*/
+
+// limitation of OpenGL fixed pipeline:
+#define MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS 8
+
+static GLenum light_identifiers[MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS]=
+{
+	GL_LIGHT0,GL_LIGHT1,GL_LIGHT2,GL_LIGHT3,GL_LIGHT4,GL_LIGHT5,GL_LIGHT6,
+	GL_LIGHT7
+};
+
 #define BUFFER_OFFSET(bytes) ((GLubyte*) NULL + (bytes))
+
+/*
+Module types
+------------
+*/
 
 /**
  * Specifies the rendering type for this graphics_object.  The render function
@@ -120,6 +138,13 @@ void Render_graphics_opengl::Graphics_object_execute_point_size(GT_object *graph
 	}
 }
 
+void Render_graphics_opengl::reset_lights()
+{
+	for (unsigned int light_no = 0; light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS; ++light_no)
+		glDisable(light_identifiers[light_no]);
+	this->next_light_no = 0;
+}
+
 /**
  * An implementation of a render class that uses immediate mode glBegin/glEnd.
  */
@@ -193,15 +218,37 @@ public:
 		  return Texture_execute_opengl_texture_object(texture, this);
 	  }
 
-	  int Light_execute(Light *light)
-	  {
-		  return execute_Light(light, NULL);
-	  }
+		// enable lighting model with supplied ambient colour and other parameters
+		void Light_model_enable(Colour& ambientColour, bool lightingLocalViewer, bool lightingTwoSided)
+		{
+			GLfloat ambientColourFloat[3] =
+			{
+				static_cast<GLfloat>(ambientColour.red),
+				static_cast<GLfloat>(ambientColour.green),
+				static_cast<GLfloat>(ambientColour.blue)
+			};
+			glLightModelfv(GL_LIGHT_MODEL_AMBIENT, ambientColourFloat);
+			glLightModeli(GL_LIGHT_MODEL_LOCAL_VIEWER, lightingLocalViewer ? GL_TRUE : GL_FALSE);
+			glLightModeli(GL_LIGHT_MODEL_TWO_SIDE, lightingTwoSided ? GL_TRUE : GL_FALSE);
+			glEnable(GL_LIGHTING);
+		}
 
-	  int Light_model_execute(Light_model *light_model)
-	  {
-		  return Light_model_render_opengl(light_model, this);
-	  }
+		// disable lighting for flat colouring
+		void Light_model_disable()
+		{
+			glDisable(GL_LIGHTING);
+		}
+
+		int cmzn_light_execute(cmzn_light *light)
+		{
+			int return_code;
+			const GLenum gl_light_id = (this->next_light_no < MAXIMUM_NUMBER_OF_ACTIVE_LIGHTS) ?
+				light_identifiers[this->next_light_no] : GL_INVALID_ENUM;
+			return_code = direct_render_cmzn_light(light, static_cast<unsigned int>(gl_light_id));
+			if (return_code == 1)
+				++this->next_light_no;
+			return return_code;
+		}
 
 	  virtual int begin_coordinate_system(enum cmzn_scenecoordinatesystem coordinate_system)
 	  {
@@ -2064,7 +2111,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 	cmzn_material *material, cmzn_material *secondary_material,
 	struct cmzn_spectrum *spectrum,
 	//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
-	int draw_selected, SubObjectGroupHighlightFunctor *highlight_functor,
+	int draw_selected,
 	Render_graphics_opengl *renderer, bool &lighting_on,
 	Graphics_object_rendering_type rendering_type, bool pick_object_id)
 	/*******************************************************************************
@@ -2091,6 +2138,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 	int draw_all, name_selected = 0, return_code = 1;
 	struct Spectrum_render_data *render_data = NULL;
 	Triple temp_axis1, temp_axis2, temp_axis3, temp_point;
+	SubObjectGroupHighlightFunctor *highlight_functor = renderer->highlight_functor;
 
 	if (object && object->vertex_array)
 	{
@@ -2163,6 +2211,8 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 				{
 					render_data=spectrum_start_renderGL(spectrum,material,data_values_per_vertex);
 				}
+				// disable highlighting beneath glyph set level
+				renderer->push_highlight_functor();
 				for (nodeset_index = 0; nodeset_index < nodeset_count; nodeset_index++)
 				{
 					unsigned int index_start = 0, index_count = 0;
@@ -2600,6 +2650,7 @@ static int draw_vertexBufferGlyphset(gtObject *object,
 					}
 					return_code=1;
 				}
+				renderer->pop_highlight_functor();
 				if (data_buffer)
 				{
 					spectrum_end_renderGL(spectrum,render_data);
@@ -3284,7 +3335,7 @@ static int render_GT_object_opengl_immediate(gtObject *object,
 						draw_vertexBufferGlyphset(object,
 							material, secondary_material, spectrum,
 							//int draw_selected, int some_selected,struct Multi_range *selected_name_ranges,
-							(draw_selected > 0 ), renderer->highlight_functor,
+							(draw_selected > 0 ),
 							renderer, lighting_on, rendering_type, picking_names);
 #if defined (OPENGL_API)
 						if (picking_names)

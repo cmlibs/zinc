@@ -38,7 +38,7 @@ long lround(ZnReal d)
 #include "general/myio.h"
 #include "general/mystring.h"
 #include "general/object.h"
-#include "graphics/light.h"
+#include "graphics/light.hpp"
 #include "graphics/graphics_library.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "graphics/texture.h"

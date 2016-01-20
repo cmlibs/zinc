@@ -180,4 +180,9 @@ LAST MODIFIED : 4 August 2004
 
 DESCRIPTION :
 ==============================================================================*/
+
+int open_gzip_stream(void *buffer, unsigned int length, char **bufferOut);
+
+int open_bzip2_stream(void *buffer, unsigned int length, char **bufferOut);
+
 #endif /* !defined (IO_STREAM_H) */

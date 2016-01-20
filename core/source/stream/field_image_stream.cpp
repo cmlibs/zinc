@@ -21,6 +21,7 @@
 #include "general/enumerator_conversion.hpp"
 #include "stream/field_image_stream.hpp"
 #include "image_io/analyze.h"
+#include "image_io/analyze_object_map.hpp"
 
 int cmzn_field_image_read(cmzn_field_image_id image_field,
 	cmzn_streaminformation_image_id streaminformation_image)
@@ -108,6 +109,10 @@ int cmzn_field_image_read(cmzn_field_image_id image_field,
 				if (Cmgui_image_information_get_image_file_format(image_information) == ANALYZE_FILE_FORMAT)
 				{
 					cmgui_image = Cmgui_image_read_analyze(image_information, data_compression_type);
+				}
+				else if (Cmgui_image_information_get_image_file_format(image_information) == ANALYZE_OBJECT_MAP_FORMAT)
+				{
+					cmgui_image = Cmgui_image_read_analyze_object_map(image_information, data_compression_type);
 				}
 				else
 				{
@@ -552,6 +557,10 @@ int cmzn_streaminformation_image_set_file_format(
 			{
 				cmgui_file_format = ANALYZE_FILE_FORMAT;
 			} break;
+			case CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE_OBJECT_MAP:
+			{
+				cmgui_file_format = ANALYZE_OBJECT_MAP_FORMAT;
+			} break;
 			default:
 			{
 				display_message(ERROR_MESSAGE,
@@ -599,6 +608,9 @@ public:
 				break;
 			case CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE:
 				enum_string = "ANALYZE";
+				break;
+			case CMZN_STREAMINFORMATION_IMAGE_FILE_FORMAT_ANALYZE_OBJECT_MAP:
+				enum_string = "ANALYZE_OBJECT_MAP";
 				break;
 			default:
 				break;

@@ -63,8 +63,6 @@ Global functions
  * <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
  * the xi coordinates supplied. If <reverse_track> is true, the reverse of the
  * stream vector is tracked, and the travel_scalar is made negative.
- * If <fe_region> is not NULL then the function will restrict itself to elements
- * in that region.
  * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
  */
@@ -73,7 +71,7 @@ int create_polyline_streamline_FE_element_vertex_array(
 	cmzn_fieldcache_id field_cache, struct Computed_field *coordinate_field,
 	struct Computed_field *stream_vector_field,int reverse_track,
 	FE_value length, enum cmzn_graphics_streamlines_colour_data_type colour_data_type,
-	struct Computed_field *data_field, struct FE_region *fe_region,
+	struct Computed_field *data_field,
 	struct Graphics_vertex_array *array);
 
 /**
@@ -81,8 +79,6 @@ int create_polyline_streamline_FE_element_vertex_array(
  * <stream_vector_field> (with 3, 6 or 9 components) starting in the element and at
  * the xi coordinates supplied. If <reverse_track> is true, the reverse of the
  * stream vector is tracked, and the travel_scalar is made negative.
- * If <fe_region> is not NULL then the function will restrict itself to elements
- * in that region.
  * @param field_cache  cmzn_fieldcache for evaluating fields with. Time is
  * expected to have been set in the field_cache if needed.
  * @param line_shape  LINE, RIBBON, CIRCLE_EXTRUSION or SQUARE_EXTRUSION.
@@ -98,7 +94,7 @@ int create_surface_streamribbon_FE_element_vertex_array(
 	FE_value *line_base_size, FE_value *line_scale_factors,
 	struct Computed_field *line_orientation_scale_field,
 	enum cmzn_graphics_streamlines_colour_data_type colour_data_type, struct Computed_field *data_field,
-	struct FE_region *fe_region, struct Graphics_vertex_array *array);
+	struct Graphics_vertex_array *array);
 
 int add_flow_particle(struct Streampoint **list,FE_value *xi,
 	struct FE_element *element,Triple **pointlist,int index,

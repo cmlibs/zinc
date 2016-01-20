@@ -16,12 +16,16 @@
 #include <cmath>
 #include <cstdlib>
 #include "zinc/fieldcache.h"
+#include "zinc/fieldconstant.h"
 #include "zinc/fieldlogicaloperators.h"
 #include "zinc/fieldsubobjectgroup.h"
+#include "zinc/fieldtime.h"
 #include "computed_field/computed_field.h"
-#include "computed_field/computed_field_group.hpp"
+#include "computed_field/computed_field_subobject_group.hpp"
 #include "element/element_operations.h"
+#include "finite_element/finite_element.h"
 #include "finite_element/finite_element_discretization.h"
+#include "finite_element/finite_element_mesh.hpp"
 #include "general/debug.h"
 #include "graphics/auxiliary_graphics_types.h"
 #include "general/message.h"
@@ -201,8 +205,7 @@ IntegrationPointsCache::~IntegrationPointsCache()
 
 IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
 {
-	FE_element_shape *shape = 0;
-	get_FE_element_shape(element, &shape);
+	FE_element_shape *shape = get_FE_element_shape(element);
 	if (!shape)
 		return 0;
 	const int elementDimension = cmzn_element_get_dimension(element);
@@ -212,8 +215,8 @@ IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
 	{
 		FE_value element_to_top_level[9];
 		cmzn_element *top_level_element = FE_element_get_top_level_element_conversion(
-			element, /*check_top_level_element*/0, (LIST_CONDITIONAL_FUNCTION(cmzn_element) *)0, 0,
-			CMZN_ELEMENT_FACE_TYPE_INVALID, element_to_top_level);
+			element, /*check_top_level_element*/0,
+			CMZN_ELEMENT_FACE_TYPE_ALL, element_to_top_level);
 		if (top_level_element != element)
 		{
 			get_FE_element_discretization_from_top_level(element, inheritedNumbersOfPoints,
@@ -459,20 +462,6 @@ IntegrationShapePoints *IntegrationPointsCache::getPoints(cmzn_element *element)
  ----------------
  */
 
-struct FE_element_fe_region_selection_ranges_condition_data
-/*******************************************************************************
- LAST MODIFIED : 15 May 2006
-
- DESCRIPTION :
- ==============================================================================*/
-{
-	struct FE_region *fe_region;
-	struct Multi_range *element_ranges;
-	struct Computed_field *conditional_field, *group_field;
-	FE_value conditional_field_time;
-	struct LIST(FE_element) *element_list;
-}; /* struct FE_element_fe_region_selection_ranges_condition_data */
-
 struct FE_element_values_number
 /*******************************************************************************
  LAST MODIFIED : 22 December 2000
@@ -537,32 +526,21 @@ struct FE_element_and_values_to_array_data
 	cmzn_fieldcache_id field_cache;
 	struct FE_element_values_number *element_values;
 	struct Computed_field *sort_by_field;
-}; /* FE_element_and_values_to_array_data */
+};
 
 static int FE_element_and_values_to_array(struct FE_element *element,
-		void *array_data_void)
-/*******************************************************************************
- LAST MODIFIED : 16 January 2003
-
- DESCRIPTION :
- ==============================================================================*/
+	FE_element_and_values_to_array_data& array_data)
 {
-	struct CM_element_information cm_element_identifier;
 	int number_in_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], number_of_xi_points;
 	int dimension, i, return_code;
-	struct FE_element_and_values_to_array_data *array_data;
 	struct FE_element_shape *element_shape;
 	FE_value_triple *xi_points;
 
-	ENTER(FE_element_and_values_to_array);
-	if (element && get_FE_element_identifier(element, &cm_element_identifier)
-			&& (array_data
-				= (struct FE_element_and_values_to_array_data *) array_data_void)
-			&& array_data->element_values)
+	if (element)
 	{
 		return_code = 1;
-		array_data->element_values->element = element;
-		if (array_data->sort_by_field)
+		array_data.element_values->element = element;
+		if (array_data.sort_by_field)
 		{
 			/* get the centre point of the element */
 			dimension = get_FE_element_dimension(element);
@@ -570,15 +548,14 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 			{
 				number_in_xi[i] = 1;
 			}
-			if (get_FE_element_shape(element, &element_shape)
-					&& FE_element_shape_get_xi_points_cell_centres(
-						element_shape, number_in_xi,
-						&number_of_xi_points, &xi_points))
+			element_shape = get_FE_element_shape(element);
+			if (FE_element_shape_get_xi_points_cell_centres(element_shape,
+				number_in_xi, &number_of_xi_points, &xi_points))
 			{
-				if (!(array_data->element_values->values &&
-					(CMZN_OK == cmzn_fieldcache_set_mesh_location(array_data->field_cache, element, dimension, *xi_points)) &&
-					(CMZN_OK == cmzn_field_evaluate_real(array_data->sort_by_field, array_data->field_cache,
-						cmzn_field_get_number_of_components(array_data->sort_by_field), array_data->element_values->values))))
+				if (!(array_data.element_values->values &&
+					(CMZN_OK == cmzn_fieldcache_set_mesh_location(array_data.field_cache, element, dimension, *xi_points)) &&
+					(CMZN_OK == cmzn_field_evaluate_real(array_data.sort_by_field, array_data.field_cache,
+						cmzn_field_get_number_of_components(array_data.sort_by_field), array_data.element_values->values))))
 				{
 					display_message(ERROR_MESSAGE,
 						"FE_element_and_values_to_array.  "
@@ -594,80 +571,55 @@ static int FE_element_and_values_to_array(struct FE_element *element,
 				return_code = 0;
 			}
 		}
-		(array_data->element_values)++;
+		(array_data.element_values)++;
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_element_and_values_to_array.  Invalid argument(s)");
 		return_code = 0;
-	}LEAVE;
-
+	}
 	return (return_code);
-} /* FE_element_and_values_to_array */
+}
 
 int FE_region_change_element_identifiers(struct FE_region *fe_region,
 	int dimension, int element_offset,
 	struct Computed_field *sort_by_field, FE_value time,
-	cmzn_field_element_group_id element_group)
-/*******************************************************************************
- LAST MODIFIED : 18 February 2003
-
- DESCRIPTION :
- Changes the identifiers of all elements of <dimension> in <fe_region>.
- If <sort_by_field> is NULL, adds <element_offset> to the identifiers.
- If <sort_by_field> is specified, it is evaluated at the centre of all elements
- in <fe_region> and they are sorted by it - changing fastest with the first
- component and keeping the current order where the field has the same values.
- Checks for and fails if attempting to give any of the elements in <fe_region> an
- identifier already used by an element in the same master FE_region.
- Calls to this function should be enclosed in FE_region_begin_change/end_change.
- Note function avoids iterating through FE_region element lists as this is not
- allowed during identifier changes.
- ==============================================================================*/
+	cmzn_field_element_group_id element_group_field)
 {
-	int i, number_of_elements, number_of_values, return_code;
-	struct FE_element *element_with_identifier;
-	struct FE_element_values_number *element_values;
-
-	ENTER(FE_region_change_element_identifiers);
-	if (fe_region)
+	int return_code = CMZN_OK;
+	FE_mesh *fe_mesh;
+	Computed_field_element_group *element_group = 0;
+	if (element_group_field)
+		element_group = Computed_field_element_group_core_cast(element_group_field);
+	if (fe_region && (fe_mesh = FE_region_find_FE_mesh_by_dimension(fe_region, dimension)) &&
+		((!element_group) || (element_group->get_fe_mesh() == fe_mesh)))
 	{
-		return_code = 1;
-		number_of_elements = FE_region_get_number_of_FE_elements_of_dimension(
-			fe_region, dimension);
-		if ((0 < number_of_elements) && return_code)
+		FE_region_begin_change(fe_region);
+		const int number_of_elements = (element_group) ? element_group->getSize() : fe_mesh->getSize();
+		if (0 < number_of_elements)
 		{
-			if (sort_by_field)
+			const int number_of_values = (sort_by_field) ? Computed_field_get_number_of_components(sort_by_field) : 0;
+			struct FE_element_values_number *element_values;
+			if (ALLOCATE(element_values, struct FE_element_values_number, number_of_elements))
 			{
-				number_of_values = Computed_field_get_number_of_components(
-					sort_by_field);
-			}
-			else
-			{
-				number_of_values = 0;
-			}
-			if (ALLOCATE(element_values, struct FE_element_values_number,
-				number_of_elements))
-			{
-				for (i = 0; i < number_of_elements; i++)
+				for (int i = 0; i < number_of_elements; ++i)
 				{
 					element_values[i].number_of_values = number_of_values;
 					element_values[i].values = (FE_value *) NULL;
 				}
 				if (sort_by_field)
 				{
-					for (i = 0; (i < number_of_elements) && return_code; i++)
+					for (int i = 0; i < number_of_elements; ++i)
 					{
 						if (!ALLOCATE(element_values[i].values, FE_value, number_of_values))
 						{
-							display_message(ERROR_MESSAGE,
-								"FE_region_change_element_identifiers.  Not enough memory");
-							return_code = 0;
+							return_code = CMZN_ERROR_MEMORY;
+							break;
 						}
 					}
 				}
-				if (return_code)
+				if (CMZN_OK == return_code)
 				{
 					/* make a linear array of elements in the group in current order */
 					struct FE_element_and_values_to_array_data array_data;
@@ -677,274 +629,243 @@ int FE_region_change_element_identifiers(struct FE_region *fe_region,
 					array_data.field_cache = field_cache;
 					array_data.element_values = element_values;
 					array_data.sort_by_field = sort_by_field;
-					if (!FE_region_for_each_FE_element_of_dimension(fe_region,
-						dimension, FE_element_and_values_to_array,
-						(void *) &array_data))
+					cmzn_elementiterator *iter = (element_group) ? element_group->createElementiterator() : fe_mesh->createElementiterator();
+					if (!iter)
 					{
 						display_message(ERROR_MESSAGE,
-							"FE_region_change_element_identifiers.  "
-							"Could not build element/field values array");
-						return_code = 0;
+							"FE_region_change_element_identifiers.  Failed to create element iterator");
+						return_code = CMZN_ERROR_MEMORY;
 					}
+					else
+					{
+						cmzn_element *element;
+						while (0 != (element = iter->nextElement()))
+						{
+							if (!FE_element_and_values_to_array(element, array_data))
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_region_change_element_identifiers.  Could not build element/field values array");
+								return_code = CMZN_ERROR_GENERAL;
+								break;
+							}
+						}
+					}
+					cmzn::Deaccess(iter);
 					cmzn_fieldcache_destroy(&field_cache);
 					cmzn_fieldmodule_destroy(&field_module);
 				}
-				if (return_code)
+				if (CMZN_OK == return_code)
 				{
 					if (sort_by_field)
 					{
 						/* sort by field values with higher components more significant */
-						qsort(element_values, number_of_elements,
-							sizeof(struct FE_element_values_number),
+						qsort(element_values, number_of_elements, sizeof(struct FE_element_values_number),
 							compare_FE_element_values_number_values);
 						/* give the elements sequential values starting at element_offset */
-						for (i = 0; i < number_of_elements; i++)
-						{
+						for (int i = 0; i < number_of_elements; ++i)
 							element_values[i].new_number = element_offset + i;
-						}
 					}
 					else
 					{
 						/* offset element numbers by element_offset */
-						for (i = 0; (i < number_of_elements) && return_code; i++)
+						for (int i = 0; i < number_of_elements; ++i)
+							element_values[i].new_number = get_FE_element_identifier(element_values[i].element) + element_offset;
+					}
+					/* check element numbers are positive, ascending and no element not being renumbered is using new identifier */
+					for (int i = 0; i < number_of_elements; ++i)
+					{
+						if (0 > element_values[i].new_number)
 						{
-							struct CM_element_information tmp_cm;
-							if (get_FE_element_identifier(
-								element_values[i].element, &tmp_cm))
+							display_message(ERROR_MESSAGE,
+								"FE_region_change_element_identifiers.  Element offset gives negative element numbers");
+							return_code = CMZN_ERROR_ARGUMENT;
+							break;
+						}
+						if ((0 < i) && (element_values[i].new_number <= element_values[i - 1].new_number))
+						{
+							display_message(ERROR_MESSAGE,
+								"FE_region_change_element_identifiers.  Element numbers are not strictly increasing");
+							return_code = CMZN_ERROR_GENERAL;
+							break;
+						}
+						if (element_group)
+						{
+							FE_element *element_with_identifier = fe_mesh->findElementByIdentifier(element_values[i].new_number);
+							if (element_with_identifier && (!element_group->containsObject(element_with_identifier)))
 							{
-								element_values[i].new_number = tmp_cm.number
-									+ element_offset;
+								display_message(ERROR_MESSAGE,
+									"FE_region_change_element_identifiers.  Elements not in group are using the new identifiers");
+								return_code = CMZN_ERROR_GENERAL;
+								break;
 							}
 						}
 					}
-					/* check element numbers are positive and ascending */
-					for (i = 0; (i < number_of_elements) && return_code; i++)
-					{
-						if (0 >= element_values[i].new_number)
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_region_change_element_identifiers.  "
-								"element_offset gives negative element numbers");
-							return_code = 0;
-						}
-						else if ((0 < i) && (element_values[i].new_number
-							<= element_values[i - 1].new_number))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_region_change_element_identifiers.  "
-								"Element numbers are not strictly increasing");
-							return_code = 0;
-						}
-					}
 				}
-				if (return_code)
-				{
-					/* check none of the new numbers are in use by other elements
-					 in the fe_region */
-					for (i = 0; (i < number_of_elements) && return_code; i++)
-					{
-						element_with_identifier = FE_region_get_FE_element_from_identifier(
-							fe_region, dimension, element_values[i].new_number);
-						if ((element_with_identifier) &&
-							(!FE_region_contains_FE_element(fe_region,
-								element_with_identifier)))
-						{
-							display_message(ERROR_MESSAGE,
-								"FE_region_change_element_identifiers.  "
-								"Element using new number already exists in master region");
-							return_code = 0;
-						}
-					}
-				}
-
-				if (return_code)
+				if (CMZN_OK == return_code)
 				{
 					/* change identifiers */
 					/* maintain next_spare_element_number to renumber elements in same
 					 group which already have the same number as the new_number */
-					int next_spare_element_number =
-						element_values[number_of_elements - 1].new_number + 1;
-					cmzn_mesh_group_id mesh = cmzn_field_element_group_get_mesh_group(element_group);
-					for (i = 0; (i < number_of_elements) && return_code; i++)
+					int next_spare_element_number = element_values[number_of_elements - 1].new_number + 1;
+					for (int i = 0; i < number_of_elements; ++i)
 					{
-						element_with_identifier = FE_region_get_FE_element_from_identifier(
-							fe_region, dimension, element_values[i].new_number);
+						cmzn_element *element_with_identifier = fe_mesh->findElementByIdentifier(element_values[i].new_number);
 						/* only modify if element doesn't already have correct identifier */
-						if (element_with_identifier
-							!= element_values[i].element)
+						if (element_with_identifier != element_values[i].element)
 						{
-							if ((mesh == NULL) || (((element_with_identifier == NULL) ||
-								cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(mesh),
-									element_with_identifier)) &&
-								(cmzn_mesh_contains_element(cmzn_mesh_group_base_cast(mesh),
-									element_values[i].element))))
+							if (element_with_identifier)
 							{
-								if (element_with_identifier)
-								{
-									while ((struct FE_element *)NULL !=
-										FE_region_get_FE_element_from_identifier(
-											fe_region, dimension, next_spare_element_number))
-									{
-										++next_spare_element_number;
-									}
-									if (!FE_region_change_FE_element_identifier(fe_region,
-										element_with_identifier, next_spare_element_number))
-									{
-										return_code = 0;
-									}
-								}
-								if (!FE_region_change_FE_element_identifier(fe_region,
-									element_values[i].element, element_values[i].new_number))
+								next_spare_element_number = fe_mesh->get_next_FE_element_identifier(next_spare_element_number);
+								return_code = fe_mesh->change_FE_element_identifier(element_with_identifier, next_spare_element_number);
+								if (return_code != CMZN_OK)
 								{
 									display_message(ERROR_MESSAGE,
-										"FE_region_change_element_identifiers.  "
-										"Could not change element identifier");
-									return_code = 0;
+										"FE_region_change_element_identifiers.  Could not change identifier of element currently using identifier");
+									break;
 								}
+							}
+							return_code = fe_mesh->change_FE_element_identifier(element_values[i].element, element_values[i].new_number);
+							if (return_code != CMZN_OK)
+							{
+								display_message(ERROR_MESSAGE,
+									"FE_region_change_element_identifiers.  Could not change element identifier");
+								break;
 							}
 						}
 					}
-					cmzn_mesh_group_destroy(&mesh);
 				}
-				for (i = 0; i < number_of_elements; i++)
+				for (int i = 0; i < number_of_elements; ++i)
 				{
 					if (element_values[i].values)
-					{
 						DEALLOCATE(element_values[i].values);
-					}
 				}
 				DEALLOCATE(element_values);
 			}
 			else
 			{
-				display_message(ERROR_MESSAGE,
-					"FE_region_change_element_identifiers.  Not enough memory");
-				return_code = 0;
+				display_message(ERROR_MESSAGE, "FE_region_change_element_identifiers.  Not enough memory");
+				return_code = CMZN_ERROR_MEMORY;
 			}
 		}
+		FE_region_end_change(fe_region);
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
 			"FE_region_change_element_identifiers.  Invalid argument(s)");
-		return_code = 0;
+		return_code = CMZN_ERROR_ARGUMENT;
 	}
-	LEAVE;
-
 	return (return_code);
 }
 
-/***************************************************************************//**
- * Create an element list from the elements in mesh optionally restricted to
- * those within the element_ranges or where conditional_field is true at time.
- *
- * @param mesh  Handle to the mesh.
- * @param element_ranges  Optional Multi_range of elements.
- * @param conditional_field  Field interpreted as a boolean value which must be
- * true for an element from mesh to be included.
- * @param time  Time to evaluate the conditional_field at.
- * @return  The element list, or NULL on failure.
- */
-struct LIST(FE_element) *cmzn_mesh_get_selected_element_list(cmzn_mesh_id mesh,
-	struct Multi_range *element_ranges, struct Computed_field *conditional_field,
-	FE_value time)
+cmzn_field_id FE_mesh_create_conditional_field_from_identifier_ranges(
+	FE_mesh *fe_mesh, struct Multi_range *identifierRanges)
 {
-	if (!mesh)
+	if (!(fe_mesh && identifierRanges))
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh_create_conditional_field_from_identifier_ranges.  Invalid argument(s)");
 		return 0;
-	struct LIST(FE_element) *element_list = cmzn_mesh_create_element_list_internal(mesh);
-	cmzn_element_id element = 0;
-	cmzn_fieldcache_id field_cache = 0;
-	if (conditional_field)
-	{
-		cmzn_fieldmodule_id field_module = cmzn_field_get_fieldmodule(conditional_field);
-		field_cache = cmzn_fieldmodule_create_fieldcache(field_module);
-		cmzn_fieldcache_set_time(field_cache, (double)time);
-		cmzn_fieldmodule_destroy(&field_module);
 	}
-	if (element_ranges && (2*Multi_range_get_total_number_in_ranges(element_ranges) < cmzn_mesh_get_size(mesh)))
+	FE_region *fe_region = fe_mesh->get_FE_region();
+	cmzn_region *region = FE_region_get_cmzn_region(fe_region);
+	cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
+	cmzn_mesh_id masterMesh = cmzn_fieldmodule_find_mesh_by_dimension(fieldmodule, fe_mesh->getDimension());
+	cmzn_field *conditionalField = cmzn_fieldmodule_create_field_element_group(fieldmodule, masterMesh);
+	cmzn_field_element_group *elementGroupField = cmzn_field_cast_element_group(conditionalField);
+	Computed_field_element_group *elementGroup = Computed_field_element_group_core_cast(elementGroupField);
+	if (elementGroup)
 	{
-		const int number_of_ranges = Multi_range_get_number_of_ranges(element_ranges);
-		for (int i = 0; (i < number_of_ranges) && element_list; ++i)
+		const int number_of_ranges = Multi_range_get_number_of_ranges(identifierRanges);
+		for (int i = 0; i < number_of_ranges; ++i)
 		{
 			int start, stop;
-			Multi_range_get_range(element_ranges, i, &start, &stop);
-			for (int identifier = start; (identifier <= stop) && element_list; ++identifier)
+			Multi_range_get_range(identifierRanges, i, &start, &stop);
+			if (CMZN_OK != elementGroup->addElementIdentifierRange(start, stop))
 			{
-				element = cmzn_mesh_find_element_by_identifier(mesh, identifier);
-				if (element)
-				{
-					bool add = true;
-					if (conditional_field)
-					{
-						cmzn_fieldcache_set_element(field_cache, element);
-						add = cmzn_field_evaluate_boolean(conditional_field, field_cache) == 1;
-					}
-					if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
-					{
-						DESTROY(LIST(FE_element))(&element_list);
-					}
-					cmzn_element_destroy(&element);
-				}
+				cmzn_field_destroy(&conditionalField);
+				break;
 			}
 		}
 	}
 	else
-	{
-		cmzn_elementiterator_id iterator = cmzn_mesh_create_elementiterator(mesh);
-		while (element_list && (0 != (element = cmzn_elementiterator_next(iterator))))
-		{
-			bool add = true;
-			if (element_ranges)
-			{
-				add = Multi_range_is_value_in_range(element_ranges, cmzn_element_get_identifier(element)) == 1;
-			}
-			if (add && conditional_field)
-			{
-				cmzn_fieldcache_set_element(field_cache, element);
-				add = cmzn_field_evaluate_boolean(conditional_field, field_cache) == 1;
-			}
-			if (add && (!ADD_OBJECT_TO_LIST(FE_element)(element, element_list)))
-			{
-				DESTROY(LIST(FE_element))(&element_list);
-			}
-			cmzn_element_destroy(&element);
-		}
-		cmzn_elementiterator_destroy(&iterator);
-	}
-	cmzn_fieldcache_destroy(&field_cache);
-	return element_list;
+		cmzn_field_destroy(&conditionalField);
+	cmzn_field_element_group_destroy(&elementGroupField);
+	cmzn_mesh_destroy(&masterMesh);
+	cmzn_fieldmodule_destroy(&fieldmodule);
+	if (!conditionalField)
+		display_message(ERROR_MESSAGE, "FE_mesh_create_conditional_field_from_identifier_ranges.  Failed");
+	return conditionalField;
 }
 
-struct LIST(FE_element) *FE_element_list_from_region_and_selection_group(
-	struct cmzn_region *region, int dimension,
-	struct Multi_range *element_ranges, struct Computed_field *group_field,
-	struct Computed_field *conditional_field, FE_value time)
+cmzn_field_id FE_mesh_create_conditional_field_from_ranges_and_selection(
+	FE_mesh *fe_mesh, struct Multi_range *identifierRanges,
+	cmzn_field_id conditionalField1, cmzn_field_id conditionalField2,
+	cmzn_field_id conditionalField3, FE_value time)
 {
-	cmzn_fieldmodule_id field_module = cmzn_region_get_fieldmodule(region);
-	cmzn_fieldmodule_begin_change(field_module);
-	cmzn_mesh_id mesh = cmzn_fieldmodule_find_mesh_by_dimension(field_module, dimension);
-	cmzn_field_id use_conditional_field = 0;
-	if (group_field && conditional_field)
-		use_conditional_field = cmzn_fieldmodule_create_field_and(field_module, group_field, conditional_field);
-	else if (group_field)
-		use_conditional_field = cmzn_field_access(group_field);
-	else if (conditional_field)
-		use_conditional_field = cmzn_field_access(conditional_field);
-	struct LIST(FE_element) *element_list = 0;
-	if (((!group_field) && (!conditional_field)) || use_conditional_field)
+	if (!fe_mesh)
+		return 0;
+	bool time_varying = false;
+	cmzn_field *returnField = 0;
+	bool error = false;
+	FE_region *fe_region = fe_mesh->get_FE_region();
+	cmzn_region *region = FE_region_get_cmzn_region(fe_region);
+	cmzn_fieldmodule *fieldmodule = cmzn_region_get_fieldmodule(region);
+	if (identifierRanges && (Multi_range_get_number_of_ranges(identifierRanges) > 0)) // empty ranges mean not specified
 	{
-		// code assumes no ranges = ranges not specified.
-		struct Multi_range *use_element_ranges = (Multi_range_get_number_of_ranges(element_ranges) > 0) ? element_ranges : 0;
-		element_list = cmzn_mesh_get_selected_element_list(mesh, use_element_ranges, use_conditional_field, time);
+		returnField = FE_mesh_create_conditional_field_from_identifier_ranges(fe_mesh, identifierRanges);
+		if (!returnField)
+			error = true;
 	}
-	if (use_conditional_field)
+	cmzn_field *conditionalFields[3] = { conditionalField1, conditionalField2, conditionalField3 };
+	for (int i = 0; i < 3; ++i)
 	{
-		cmzn_field_destroy(&use_conditional_field);
+		if (conditionalFields[i])
+		{
+			if (Computed_field_has_multiple_times(conditionalFields[i]))
+				time_varying = true;
+			if (returnField)
+			{
+				cmzn_field *tmpField = returnField;
+				returnField = cmzn_fieldmodule_create_field_and(fieldmodule, tmpField, conditionalFields[i]);
+				cmzn_field_destroy(&tmpField);
+				if (!returnField)
+				{
+					error = true;
+					break;
+				}
+			}
+			else
+				returnField = cmzn_field_access(conditionalFields[i]);
+		}
 	}
-	cmzn_mesh_destroy(&mesh);
-	cmzn_fieldmodule_end_change(field_module);
-	cmzn_fieldmodule_destroy(&field_module);
-	return element_list;
+	if (returnField)
+	{
+		if (time_varying)
+		{
+			cmzn_field *tmpField = returnField;
+			cmzn_field *timeField = cmzn_fieldmodule_create_field_constant(fieldmodule, 1, &time);
+			returnField = cmzn_fieldmodule_create_field_time_lookup(fieldmodule, tmpField, timeField);
+			cmzn_field_destroy(&tmpField);
+			if (!returnField)
+				error = true;
+			cmzn_field_destroy(&timeField);
+		}
+	}
+	else
+	{
+		// create an always true conditional field
+		const double one = 1;
+		returnField = cmzn_fieldmodule_create_field_constant(fieldmodule, 1, &one);
+		if (!returnField)
+			error = true;
+	}
+	cmzn_fieldmodule_destroy(&fieldmodule);
+	if (error)
+	{
+		display_message(ERROR_MESSAGE, "FE_mesh_create_conditional_field_from_ranges_and_selection.  Failed");
+		cmzn_field_destroy(&returnField);
+	}
+	return returnField;
 }
 
 int cmzn_mesh_create_gauss_points(cmzn_mesh_id mesh, int order,

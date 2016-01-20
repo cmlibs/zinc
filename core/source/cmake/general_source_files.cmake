@@ -22,6 +22,7 @@ SET( GENERAL_SRCS
 	source/general/machine.cpp
 	source/general/matrix_vector.cpp
 	source/general/message.cpp
+	source/general/message_log.cpp
 	source/general/multi_range.cpp
 	source/general/myio.cpp
 	source/general/mystring.cpp
@@ -67,6 +68,7 @@ SET( GENERAL_HDRS
 	source/general/math.h
 	source/general/matrix_vector.h
 	source/general/message.h
+	source/general/message_log.hpp
 	source/general/multi_range.h
 	source/general/myio.h
 	source/general/mystring.h

@@ -14,14 +14,17 @@
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
 #include "zinc/node.h"
+#include "zinc/scene.h"
 #include "computed_field/computed_field.h"
 #include "computed_field/computed_field_private.hpp"
 #include "computed_field/field_cache.hpp"
 #include "computed_field/field_module.hpp"
 #include "computed_field/computed_field_finite_element.h"
+#include "context/context.h"
 #include "general/callback_private.h"
 #include "general/debug.h"
 #include "general/mystring.h"
+#include "graphics/scene.h"
 #include "region/cmiss_region.h"
 #include "region/cmiss_region_private.h"
 #include "finite_element/finite_element_region.h"
@@ -48,6 +51,8 @@ typedef std::list<cmzn_fieldmodulenotifier *> cmzn_fieldmodulenotifier_list;
 struct cmzn_region
 {
 	char *name;
+	/* non-accessed pointer to context region belongs to */
+	cmzn_context *context;
 	/* non-accessed pointer to parent region, or NULL if root */
 	cmzn_region *parent;
 	/* accessed first child and next sibling for building region tree */
@@ -305,18 +310,15 @@ struct cmzn_region *cmzn_region_find_subregion_at_path_internal(
 	return (subregion);
 }
 
-/***************************************************************************//**
- * Private constructor. Creates an empty cmzn_region with field containers.
- * Region is created with an access_count of 1; DEACCESS to destroy.
- * @base_region  Optional region to share element shape and basis data with.
- * If NULL, creates independent lists of shape and basis information.
- */
-struct cmzn_region *CREATE(cmzn_region)(struct cmzn_region *base_region)
+} // anonymous namespace
+
+cmzn_region *cmzn_region_create_internal(cmzn_region *base_region)
 {
 	struct cmzn_region *region;
 	if (ALLOCATE(region, struct cmzn_region, 1))
 	{
 		region->name = NULL;
+		region->context = 0;
 		region->parent = NULL;
 		region->first_child = NULL;
 		region->next_sibling = NULL;
@@ -346,28 +348,35 @@ struct cmzn_region *CREATE(cmzn_region)(struct cmzn_region *base_region)
 			region->field_manager && region->field_manager_callback_id &&
 			region->fe_region))
 		{
-			display_message(ERROR_MESSAGE, "CREATE(cmzn_region).  Could not build region");
+			display_message(ERROR_MESSAGE, "cmzn_region_create_internal.  Could not build region");
 			DEACCESS(cmzn_region)(&region);
 		}
 	}
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"CREATE(cmzn_region).  Could not allocate memory");
+			"cmzn_region_create_internal.  Could not allocate memory");
 	}
 	return (region);
 }
 
+namespace {
+
 /** partial cleanup of region, needed by destructor and cmzn_region_detach_fields_hierarchical */
 static void cmzn_region_detach_fields(struct cmzn_region *region)
 {
-	if (region && region->field_manager_callback_id)
+	if (region && region->field_manager)
 	{
-		MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
-		region->field_manager_callback_id = 0;
+		// following is called earlier in region destructor
+		if (region->field_manager_callback_id)
+		{
+			MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
+			region->field_manager_callback_id = 0;
+		}
 		// clear region pointer otherwise get updates when finite element fields destroyed
 		FE_region_set_cmzn_region_private(region->fe_region, (cmzn_region *)0);
 		DESTROY(MANAGER(Computed_field))(&(region->field_manager));
+		region->field_manager = 0;
 		DEACCESS(FE_region)(&region->fe_region);
 	}
 }
@@ -394,8 +403,11 @@ int DESTROY(cmzn_region)(struct cmzn_region **region_address)
 			delete region->notifier_list;
 			region->notifier_list = 0;
 
-			delete region->field_caches;
-			DESTROY(LIST(Any_object))(&(region->any_object_list));
+			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(
+				&(region->change_callback_list));
+
+			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
+			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
 
 			// destroy child list
 			cmzn_region *next_child = region->first_child;
@@ -410,18 +422,24 @@ int DESTROY(cmzn_region)(struct cmzn_region **region_address)
 				DEACCESS(cmzn_region)(&child);
 			}
 
-			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
-			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
+			// cease receiving field manager callbacks otherwise get problems from fields being destroyed
+			// e.g. selection field accessed by scene held in any_object_list
+			if (region->field_manager_callback_id)
+			{
+				MANAGER_DEREGISTER(Computed_field)(region->field_manager_callback_id, region->field_manager);
+				region->field_manager_callback_id = 0;
+			}
 
-			DESTROY(LIST(CMZN_CALLBACK_ITEM(cmzn_region_change)))(
-				&(region->change_callback_list));
+			delete region->field_caches;
+			DESTROY(LIST(Any_object))(&(region->any_object_list));
 
 			cmzn_region_detach_fields(region);
 
+			if (region->context)
+				region->context->removeRegion(region);
 			if (region->name)
-			{
 				DEALLOCATE(region->name);
-			}
+
 			DEALLOCATE(*region_address);
 			return_code = 1;
 		}
@@ -524,32 +542,29 @@ void cmzn_region_detach_fields_hierarchical(struct cmzn_region *region)
 	}
 }
 
-struct cmzn_region *cmzn_region_create_internal(void)
+cmzn_region_id cmzn_region_create_region(cmzn_region_id base_region)
 {
-	return CREATE(cmzn_region)(/*base_region*/NULL);
-}
-
-struct cmzn_region *cmzn_region_create_region(struct cmzn_region *base_region)
-{
-	if (!base_region)
-		return 0;
-	return CREATE(cmzn_region)(base_region);
+	if (base_region)
+	{
+		if (base_region->context)
+			return base_region->context->createRegion();
+		// curve creates regions without context/graphics_module with following:
+		return cmzn_region_create_internal(base_region);
+	}
+	return 0;
 }
 
 struct cmzn_region *cmzn_region_create_child(struct cmzn_region *parent_region,
 	const char *name)
 {
-	struct cmzn_region *region = NULL;
-	if (parent_region)
+	cmzn_region *region = cmzn_region_create_region(parent_region);
+	if (cmzn_region_set_name(region, name) &&
+		cmzn_region_append_child(parent_region, region))
 	{
-		region = cmzn_region_create_region(parent_region);
-		if ((!cmzn_region_set_name(region, name)) ||
-			(!cmzn_region_append_child(parent_region, region)))
-		{
-			cmzn_region_destroy(&region);
-		}
+		return region;
 	}
-	return region;
+	cmzn_region_destroy(&region);
+	return 0;
 }
 
 struct cmzn_region *cmzn_region_create_subregion(
@@ -837,6 +852,19 @@ Removes the callback calling <function> with <user_data> from <region>.
 	return (return_code);
 } /* cmzn_region_remove_callback */
 
+cmzn_context *cmzn_region_get_context_private(cmzn_region *region)
+{
+	if (region)
+		return region->context;
+	return 0;
+}
+
+void cmzn_region_set_context_private(cmzn_region *region, cmzn_context *context)
+{
+	if (region)
+		region->context = context;
+}
+
 char *cmzn_region_get_name(struct cmzn_region *region)
 {
 	char *name = NULL;
@@ -987,7 +1015,6 @@ int cmzn_region_append_child(struct cmzn_region *region,
 int cmzn_region_insert_child_before(struct cmzn_region *region,
 	struct cmzn_region *new_child, struct cmzn_region *ref_child)
 {
-	int return_code = 1;
 	if (!(region && new_child &&
 		((NULL == ref_child) || (ref_child->parent == region)) &&
 		(!cmzn_region_contains_subregion(new_child, region)) &&
@@ -995,67 +1022,69 @@ int cmzn_region_insert_child_before(struct cmzn_region *region,
 		(NULL == cmzn_region_find_child_by_name_internal(region,
 			new_child->name))))))
 	{
-		return_code = 0;
+		return CMZN_ERROR_ARGUMENT;
 	}
-	if (return_code)
+	if (new_child->context != region->context)
 	{
-		int delta_change_level = cmzn_region_get_sum_hierarchical_change_level(region);
-		cmzn_region_begin_change(region);
-		if (new_child->parent)
-		{
-			delta_change_level -= cmzn_region_get_sum_hierarchical_change_level(new_child->parent);
-			cmzn_region_remove_child(new_child->parent, new_child);
-		}
-		new_child->parent = region;
-		if (ref_child)
-		{
-			new_child->next_sibling = ref_child;
-			new_child->previous_sibling = ref_child->previous_sibling;
-			ref_child->previous_sibling = new_child;
-			if (new_child->previous_sibling)
-			{
-				new_child->previous_sibling->next_sibling = ACCESS(cmzn_region)(new_child);
-			}
-			else
-			{
-				region->first_child = ACCESS(cmzn_region)(new_child);
-			}
-		}
-		else
-		{
-			if (region->first_child)
-			{
-				cmzn_region *last_child = region->first_child;
-				while (last_child->next_sibling)
-				{
-					last_child = last_child->next_sibling;
-				}
-				last_child->next_sibling = ACCESS(cmzn_region)(new_child);
-				new_child->previous_sibling = last_child;
-			}
-			else
-			{
-				region->first_child = ACCESS(cmzn_region)(new_child);
-			}
-		}
-		if (!region->changes.children_changed)
-		{
-			region->changes.children_changed = 1;
-			region->changes.child_added = ACCESS(cmzn_region)(new_child);
-		}
-		else
-		{
-			/* multiple changes */
-			REACCESS(cmzn_region)(&region->changes.child_added, NULL);
-			REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
-		}
-		if (delta_change_level != 0)
-		{
-			cmzn_region_tree_change(new_child, delta_change_level);
-		}
-		cmzn_region_end_change(region);
+		display_message(ERROR_MESSAGE, "Zinc Region appendChild()/insertChildBefore():  Child region is from a different context");	
+		return CMZN_ERROR_ARGUMENT_CONTEXT;
 	}
-	return (return_code);
+	int delta_change_level = cmzn_region_get_sum_hierarchical_change_level(region);
+	cmzn_region_begin_change(region);
+	if (new_child->parent)
+	{
+		delta_change_level -= cmzn_region_get_sum_hierarchical_change_level(new_child->parent);
+		cmzn_region_remove_child(new_child->parent, new_child);
+	}
+	new_child->parent = region;
+	if (ref_child)
+	{
+		new_child->next_sibling = ref_child;
+		new_child->previous_sibling = ref_child->previous_sibling;
+		ref_child->previous_sibling = new_child;
+		if (new_child->previous_sibling)
+		{
+			new_child->previous_sibling->next_sibling = ACCESS(cmzn_region)(new_child);
+		}
+		else
+		{
+			region->first_child = ACCESS(cmzn_region)(new_child);
+		}
+	}
+	else
+	{
+		if (region->first_child)
+		{
+			cmzn_region *last_child = region->first_child;
+			while (last_child->next_sibling)
+			{
+				last_child = last_child->next_sibling;
+			}
+			last_child->next_sibling = ACCESS(cmzn_region)(new_child);
+			new_child->previous_sibling = last_child;
+		}
+		else
+		{
+			region->first_child = ACCESS(cmzn_region)(new_child);
+		}
+	}
+	if (!region->changes.children_changed)
+	{
+		region->changes.children_changed = 1;
+		region->changes.child_added = ACCESS(cmzn_region)(new_child);
+	}
+	else
+	{
+		/* multiple changes */
+		REACCESS(cmzn_region)(&region->changes.child_added, NULL);
+		REACCESS(cmzn_region)(&region->changes.child_removed, NULL);
+	}
+	if (delta_change_level != 0)
+	{
+		cmzn_region_tree_change(new_child, delta_change_level);
+	}
+	cmzn_region_end_change(region);
+	return CMZN_OK;
 }
 
 int cmzn_region_remove_child(struct cmzn_region *region,
@@ -1635,7 +1664,7 @@ static int cmzn_region_merge_fields(cmzn_region_id target_region,
 }
 
 static int cmzn_region_merge_private(cmzn_region_id target_region,
-	cmzn_region_id source_region, cmzn_region_id root_region)
+	cmzn_region_id source_region)
 {
 	int return_code = 1;
 	cmzn_region_begin_change_no_notify(source_region);
@@ -1643,7 +1672,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 	// merge FE_region
 	FE_region *target_fe_region = cmzn_region_get_FE_region(target_region);
 	FE_region *source_fe_region = cmzn_region_get_FE_region(source_region);
-	if (!FE_region_merge(target_fe_region, source_fe_region, cmzn_region_get_FE_region(root_region)))
+	if (!FE_region_merge(target_fe_region, source_fe_region))
 	{
 		char *target_path = cmzn_region_get_path(target_region);
 		char *source_path = cmzn_region_get_path(source_region);
@@ -1666,7 +1695,7 @@ static int cmzn_region_merge_private(cmzn_region_id target_region,
 		cmzn_region_id target_child = cmzn_region_find_child_by_name(target_region, source_child->name);
 		if (target_child)
 		{
-			return_code = cmzn_region_merge_private(target_child, source_child, root_region);
+			return_code = cmzn_region_merge_private(target_child, source_child);
 			cmzn_region_reaccess_next_sibling(&source_child);
 		}
 		else
@@ -1688,7 +1717,7 @@ int cmzn_region_merge(cmzn_region_id target_region, cmzn_region_id source_region
 	if (!target_region || !source_region)
 		return 0;
 	cmzn_region_begin_hierarchical_change(target_region);
-	int return_code = cmzn_region_merge_private(target_region, source_region, /*root_region*/target_region);
+	int return_code = cmzn_region_merge_private(target_region, source_region);
 	cmzn_region_end_hierarchical_change(target_region);
 	return return_code;
 }
@@ -1780,41 +1809,37 @@ void cmzn_region_FE_region_change(cmzn_region *region)
 		struct CHANGE_LOG(FE_field) *fe_field_changes = FE_region_get_FE_field_changes(fe_region);
 		int field_change_summary;
 		CHANGE_LOG_GET_CHANGE_SUMMARY(FE_field)(fe_field_changes, &field_change_summary);
-		bool check_field_wrappers = (0 != (field_change_summary & (~CHANGE_LOG_OBJECT_REMOVED(FE_field))));
-		bool add_cmiss_number_field = FE_region_need_add_cmiss_number_field(fe_region);
-		bool add_xi_field = FE_region_need_add_xi_field(fe_region);
-		if (check_field_wrappers || add_cmiss_number_field || add_xi_field)
-		{
-			cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
-			MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
 
-			if (check_field_wrappers)
-			{
-				CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
-					FE_field_to_Computed_field_change, (void *)fieldmodule);
-			}
-			if (add_cmiss_number_field)
-			{
-				const char *cmiss_number_field_name = "cmiss_number";
-				cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
-				if (!field)
-				{
-					field = Computed_field_create_cmiss_number(fieldmodule);
-					cmzn_field_set_name(field, cmiss_number_field_name);
-					cmzn_field_set_managed(field, true);
-				}
-				cmzn_field_destroy(&field);
-			}
-			if (add_xi_field)
-			{
-				cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
-				cmzn_field_destroy(&xi_field);
-			}
-			// force field update for changes to nodes/elements etc.:
-			MANAGER_EXTERNAL_CHANGE(Computed_field)(region->field_manager);
-			MANAGER_END_CACHE(Computed_field)(region->field_manager);
-			cmzn_fieldmodule_destroy(&fieldmodule);
+		cmzn_fieldmodule_id fieldmodule = cmzn_region_get_fieldmodule(region);
+		MANAGER_BEGIN_CACHE(Computed_field)(region->field_manager);
+
+		// check field wrappers?
+		if ((0 != (field_change_summary & (~CHANGE_LOG_OBJECT_REMOVED(FE_field)))))
+		{
+			CHANGE_LOG_FOR_EACH_OBJECT(FE_field)(fe_field_changes,
+				FE_field_to_Computed_field_change, (void *)fieldmodule);
 		}
+		if (FE_region_need_add_cmiss_number_field(fe_region))
+		{
+			const char *cmiss_number_field_name = "cmiss_number";
+			cmzn_field_id field = cmzn_fieldmodule_find_field_by_name(fieldmodule, cmiss_number_field_name);
+			if (!field)
+			{
+				field = Computed_field_create_cmiss_number(fieldmodule);
+				cmzn_field_set_name(field, cmiss_number_field_name);
+				cmzn_field_set_managed(field, true);
+			}
+			cmzn_field_destroy(&field);
+		}
+		if (FE_region_need_add_xi_field(fe_region))
+		{
+			cmzn_field_id xi_field = cmzn_fieldmodule_get_or_create_xi_field(fieldmodule);
+			cmzn_field_destroy(&xi_field);
+		}
+		// force field update for changes to nodes/elements etc.:
+		MANAGER_EXTERNAL_CHANGE(Computed_field)(region->field_manager);
+		MANAGER_END_CACHE(Computed_field)(region->field_manager);
+		cmzn_fieldmodule_destroy(&fieldmodule);
 #if 0
 		if (field_change_summary & CHANGE_LOG_OBJECT_REMOVED(FE_field))
 		{

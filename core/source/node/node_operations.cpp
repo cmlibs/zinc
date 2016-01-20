@@ -18,6 +18,8 @@ cannot reside in finite element modules.
 #include "zinc/fieldcache.h"
 #include "zinc/fieldmodule.h"
 #include "zinc/fieldsubobjectgroup.h"
+#include "finite_element/finite_element_nodeset.hpp"
+#include "finite_element/finite_element_region.h"
 #include "general/debug.h"
 #include "mesh/cmiss_node_private.hpp"
 #include "node/node_operations.h"

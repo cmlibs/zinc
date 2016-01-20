@@ -68,7 +68,7 @@ int Computed_field_iterative_element_conditional(struct FE_element *element,
 			{
 				values = data->found_values;
 				derivatives = data->found_derivatives;
-				get_FE_element_shape(element, &shape);
+				shape = get_FE_element_shape(element);
 				if (data->start_with_data_xi)
 				{
 					for (i = 0 ; i < number_of_xi ; i++)

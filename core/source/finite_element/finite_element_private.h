@@ -26,15 +26,6 @@ Global types
 ------------
 */
 
-struct FE_region;
-/*******************************************************************************
-LAST MODIFIED : 28 January 2003
-
-DESCRIPTION :
-Forward declaration of FE_region for FE_node and FE_element to maintain a
-pointer to it -- indirectly through their FE_node/element_field_info.
-==============================================================================*/
-
 struct FE_node_field;
 /*******************************************************************************
 LAST MODIFIED : 27 February 2003
@@ -95,7 +86,7 @@ Structure for storing an element with its identifier being its cm_type and the
 number and list - in ascending order - of the nodes referred to by the default
 coordinate field of the element. Indexed lists, indexed using function
 compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
+face with the same nodes is extremely rapid. FE_mesh
 uses them to find faces and lines for elements without them, if they exist.
 ==============================================================================*/
 
@@ -364,32 +355,29 @@ PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_field,field, \
 /**
  * Returns a new FE_element_field list that is identical to <element_field_list>
  * except that it references equivalent same-name fields and scale factor sets
- * from <fe_region>.
+ * from <fe_mesh>.
  * It is an error if an equivalent FE_field is not found.
  */
 struct LIST(FE_element_field) *FE_element_field_list_clone_for_FE_region(
-	struct LIST(FE_element_field) *element_field_list, struct FE_region *fe_region);
+	struct LIST(FE_element_field) *element_field_list, FE_mesh *fe_mesh);
 
+/**
+ * Creates a struct FE_element_field_info with a pointer to <fe_region> and a
+ * copy of the <fe_element_field_list>.
+ * Fails if more than one FE_element_field in the list references the same field.
+ * If <fe_element_field_list> is omitted, an empty list is assumed.
+ * Note:
+ * This should only be called by FE_region functions, and the FE_region must be
+ * its own master. The returned object is added to the list of
+ * FE_element_field_info in the FE_region and is therefore owned by the FE_region.
+ * It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
+ * will clear before it is destroyed. If it becomes necessary to have other owners
+ * of these objects, the common parts of it and FE_region should be extracted to a
+ * common object.
+ */
 struct FE_element_field_info *CREATE(FE_element_field_info)(
-	struct FE_region *fe_region, 
+	FE_mesh *fe_mesh,
 	struct LIST(FE_element_field) *fe_element_field_list);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Creates a struct FE_element_field_info with a pointer to <fe_region> and a copy
-of the <fe_element_field_list>.
-Fails if more than one FE_element_field in the list references the same field.
-If <fe_element_field_list> is omitted, an empty list is assumed.
-Note:
-This should only be called by FE_region functions, and the FE_region must be
-its own master. The returned object is added to the list of
-FE_element_field_info in the FE_region and is therefore owned by the FE_region.
-It maintains a non-ACCESSed pointer to its owning FE_region which the FE_region
-will clear before it is destroyed. If it becomes necessary to have other owners
-of these objects, the common parts of it and FE_region should be extracted to a
-common object.
-==============================================================================*/
 
 int DESTROY(FE_element_field_info)(
 	struct FE_element_field_info **fe_element_field_info_address);
@@ -405,15 +393,12 @@ PROTOTYPE_OBJECT_FUNCTIONS(FE_element_field_info);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element_field_info);
 
-int FE_element_field_info_clear_FE_region(
+/**
+ * Clears the pointer to FE_mesh in <element_field_info>.
+ * Private function only to be called by ~FE_mesh.
+ */
+int FE_element_field_info_clear_FE_mesh(
 	struct FE_element_field_info *element_field_info, void *dummy_void);
-/*******************************************************************************
-LAST MODIFIED : 2 April 2003
-
-DESCRIPTION :
-Clears the pointer to FE_region in <element_field_info>.
-Private function only to be called by destroy_FE_region.
-==============================================================================*/
 
 int FE_element_field_info_has_FE_field(
 	struct FE_element_field_info *element_field_info, void *fe_field_void);
@@ -464,19 +449,48 @@ Marks each FE_field in <fe_element_field_info> as RELATED_OBJECT_CHANGED
 in <fe_field_change_log>.
 ==============================================================================*/
 
-int FE_element_log_FE_field_changes(struct FE_element *element,
-	struct CHANGE_LOG(FE_field) *fe_field_change_log,
-	struct FE_element_field_info **last_fe_element_field_info_address);
-/*******************************************************************************
-LAST MODIFIED : 14 April 2003
+/**
+ * Creates and returns a non-global element to be used as a template for
+ * creating other elements in the supplied mesh.
+ * @param element_field_info  A struct FE_element_field_info linking to the
+ * mesh. Should have no fields.
+ * @return  Accessed element, or 0 on error. Do not merge into FE_mesh!
+ */
+struct FE_element *create_template_FE_element(FE_element_field_info *element_field_info);
 
-DESCRIPTION :
-Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
-<fe_field_change_log>. Recursively calls the same for each parent element.
-For efficiency, maintains in <last_fe_element_field_info_address> the last
-FE_element_field_info which had fields in it and was output. The last such
-output FE_element_field_info is expected to be at this address too.
-==============================================================================*/
+/**
+ * Creates and returns a non-global element with the specified index,
+ * that is a copy of the supplied template element i.e. with all fields
+ * and values from it.
+ * The returned element is ready to be added into the FE_mesh the
+ * template element was created by.
+ * Shape is not set for new element as mapped in mesh.
+ * Faces are not copied from the template element.
+ * @param index  Index of element in mesh, or DS_LABEL_INDEX_INVALID if used
+ * as a non-global template element i.e. when called from
+ * FE_element_template::FE_element_template().
+ * @param template_element  Element to copy.
+ * @return  Accessed element, or 0 on error.
+ */
+struct FE_element *create_FE_element_from_template(DsLabelIndex index, struct FE_element *template_element);
+
+/**
+ * Clear content of element and disconnect it from owning mesh.
+ * Use when removing element from mesh or deleting mesh to safely orphan any
+ * externally accessed elements.
+ */
+void FE_element_invalidate(struct FE_element *element);
+
+/**
+ * Marks each FE_field defined in <element> as RELATED_OBJECT_CHANGED in
+ * <fe_field_change_log>.
+ * @param recurseParents  Set to true to recursively mark parent element fields
+ * as changed. This is only needed if element is being added or removed since
+ * graphics built on mesh of element dimension may be affected due to using
+ * inherited fields.
+ */
+int FE_element_log_FE_field_changes(struct FE_element *element,
+	struct CHANGE_LOG(FE_field) *fe_field_change_log, bool recurseParents);
 
 PROTOTYPE_INDEXED_LIST_STL_IDENTIFIER_CHANGE_FUNCTIONS(FE_element,identifier);
 
@@ -501,19 +515,41 @@ structures describe the same data layout in the element information!
 Private function only to be called by FE_region when merging FE_regions!
 ==============================================================================*/
 
-struct FE_element_type_node_sequence
-	*CREATE(FE_element_type_node_sequence)(struct FE_element *element);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
+/**
+ * Check that each Standard_node_to_element_map used to define field has
+ * node_value/version labels as well as offsets into component DOFs and if not
+ * find them and check they are consistently used for all elements i.e. that
+ * each use of the same array offset in an element refers to the same
+ * node_value/version.
+ * @param element_field_info  The FE_element_field_info to check against.
+ * @param field  The FE_field to check/update.
+ * @param target_fe_region  Optional FE_region where nodes and equivalent field
+ * of same name can be found. Used if field not defined on node in same region.
+ * @return  CMZN_OK if labels are complete and consistent, any other status if
+ * failed. Failure can occur if nodal value labels are absent at the nodes, or
+ * if the implementation discovers the same element field component uses the
+ * same offsets for different nodal labels but is unable to fix it.
+ */
+int FE_element_field_info_check_field_node_value_labels(
+	struct FE_element_field_info *element_field_info, FE_field *field,
+	struct FE_region *target_fe_region);
 
-DESCRIPTION :
-Structure for storing an element with its identifier being its cm_type and the
-number and list - in ascending order - of the nodes referred to by the default
-coordinate field of the element. Indexed lists, indexed using function
-compare_FE_element_type_node_sequence_identifier ensure that recalling a line or
-face with the same nodes is extremely rapid. add_FE_element_and_faces_to_manager
-uses them to find faces and lines for elements without them, if they exist.
-==============================================================================*/
+/**
+ * Create structure storing an element with its identifier being its cm_type
+ * and the number and list - in ascending order - of the nodes referred to by
+ * the default coordinate field of the element. Indexed lists, indexed using
+ * function compare_FE_element_type_node_sequence_identifier ensure that
+ * recalling a line or face with the same nodes is extremely rapid.
+ * FE_mesh uses them to find faces and lines for elements without them,
+ * if they exist.
+ * @param face_number  If non-negative, calculate nodes for face number of
+ * element, as if the face element were supplied to this function. If so, the
+ * returned structure accesses the supplied element. It is assumed this is
+ * only used when creating new faces, and the face should be set as soon as
+ * created.
+ */
+struct FE_element_type_node_sequence *CREATE(FE_element_type_node_sequence)(
+	struct FE_element *element, int face_number = -1);
 
 int DESTROY(FE_element_type_node_sequence)(
 	struct FE_element_type_node_sequence **element_type_node_sequence_address);
@@ -538,41 +574,34 @@ array twice, facilitating the simple logic in this function. If they were, then
 this function would have to be modified extensively.
 ==============================================================================*/
 
+/**
+ * Gets the FE_element from the <element_type_node_sequence>.
+ */
 struct FE_element *FE_element_type_node_sequence_get_FE_element(
 	struct FE_element_type_node_sequence *element_type_node_sequence);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
 
-DESCRIPTION :
-Returns the FE_element from the <element_type_node_sequence>.
-==============================================================================*/
+/**
+ * Sets the FE_element in the <element_type_node_sequence>. Use only to
+ * substitute face element when sequence was created from face number of
+ * parent element.
+ */
+void FE_element_type_node_sequence_set_FE_element(
+	struct FE_element_type_node_sequence *element_type_node_sequence,
+	struct FE_element *element);
 
-struct FE_element_type_node_sequence_identifier
-	*FE_element_type_node_sequence_get_identifier(
-		struct FE_element_type_node_sequence *element_type_node_sequence);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Returns a pointer to the identifier of the <element_type_node_sequence>.
-==============================================================================*/
-
-int FE_element_face_line_to_element_type_node_sequence_list(
-	struct FE_element *element,void *element_type_node_sequence_list_void);
-/*******************************************************************************
-LAST MODIFIED : 13 February 2003
-
-DESCRIPTION :
-Iterator function; if <element> is type CM_LINE or CM_FACE, creates a struct
-FE_element_type_node_sequence for it and adds it to the given list. Note that
-function fails if two faces have the same shape and share the same nodes.
-==============================================================================*/
+/**
+ * Returns existing FE_element_type_node_sequence from list with matching
+ * identifier to supplied one.
+ */
+FE_element_type_node_sequence *FE_element_type_node_sequence_list_find_match(
+	struct LIST(FE_element_type_node_sequence) *element_type_node_sequence_list,
+	FE_element_type_node_sequence *element_type_node_sequence);
 
 PROTOTYPE_OBJECT_FUNCTIONS(FE_element_type_node_sequence);
 
 PROTOTYPE_LIST_FUNCTIONS(FE_element_type_node_sequence);
 
 PROTOTYPE_FIND_BY_IDENTIFIER_IN_LIST_FUNCTION(FE_element_type_node_sequence, \
-	identifier, struct FE_element_type_node_sequence_identifier *);
+	identifier, FE_element_type_node_sequence_identifier&);
 
 #endif /* !defined (FINITE_ELEMENT_PRIVATE_H) */

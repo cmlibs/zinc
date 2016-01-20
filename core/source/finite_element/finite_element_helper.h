@@ -25,20 +25,6 @@ FE_field *FE_field_create_coordinate_3d(struct FE_region* fe_region,
 	const char *name);
 
 /***************************************************************************//**
- * Creates an element with a simplex shape: triangle or tetrahedron.
- * The returned element is for fe_region but not yet merged into it, suitable
- * for use as a template for creating further elements in the region.
- * Caller generally needs to establish the number of nodes and define fields
- * before using it as a template. Use DEACCESS to clean up reference to element.
- * 
- * @param fe_region  The region the element is created for use with.
- * @param dimension  Dimension: Must be 2 for triangle, 3 for tetrahedron.
- * @return  The element with access count of 1, or NULL if failed.
- */
-struct FE_element *FE_element_create_with_simplex_shape(
-	struct FE_region *fe_region, int dimension);
-
-/***************************************************************************//**
  * Defines a nodal interpolated field over element using the supplied basis
  * function for all field components on each element coordinate dimension.
  * Local nodes are assumed to be listed by the element in the order expected by

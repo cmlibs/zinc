@@ -24,6 +24,9 @@ Simulation/animation parameters are controlled over time by these curves.
 Global types
 ------------
 */
+
+class FE_element_template;
+
 enum Curve_extend_mode
 /*******************************************************************************
 LAST MODIFIED : 10 November 1999
@@ -110,9 +113,11 @@ It is designed to be flexible rather than fast.
 	/* each Curve is represented by fields in a private region */
 	struct cmzn_region *region;
 	struct FE_region *fe_region;
+	FE_mesh *fe_mesh;
+	FE_nodeset *fe_nodeset;
 	struct FE_field *parameter_field,*value_field;
 	struct FE_node *template_node;
-	struct FE_element *template_element;
+	FE_element_template *element_template;
 
 	/* information useful for editing Curve */
 	FE_value *max_value,*min_value;

@@ -63,34 +63,6 @@ FE_field *FE_field_create_coordinate_3d(struct FE_region* fe_region,
 	return (return_field);
 }
 
-struct FE_element *FE_element_create_with_simplex_shape(
-	struct FE_region *fe_region, int dimension)
-{
-	ENTER(FE_element_create_with_simplex_shape);
-	FE_element *element = (struct FE_element *)NULL;
-	if (fe_region && ((dimension == 2) || (dimension == 3)))
-	{
-		const int triangle_shape_type[] = { SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE };
-		const int tetrahedron_shape_type[] = { SIMPLEX_SHAPE, 1, 1, SIMPLEX_SHAPE, 1, SIMPLEX_SHAPE };
-		FE_element_shape *element_shape = CREATE(FE_element_shape)(dimension,
-			(dimension == 2) ? triangle_shape_type : tetrahedron_shape_type,
-			fe_region); 
-		ACCESS(FE_element_shape)(element_shape);
-
-		CM_element_information element_identifier;
-		element_identifier.type = CM_ELEMENT;
-		element_identifier.number = 1;
-		element = CREATE(FE_element)(&element_identifier, element_shape, fe_region,
-			/*template_element*/(FE_element *)NULL);
-		ACCESS(FE_element)(element);
-	
-		DEACCESS(FE_element_shape)(&element_shape);
-	}
-	LEAVE;
-
-	return (element);
-}
-
 int FE_element_define_field_simple(struct FE_element *element,
 	struct FE_field *field, enum FE_basis_type basis_type)
 {

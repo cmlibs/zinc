@@ -13,6 +13,7 @@
 
 #include "types/fieldid.h"
 #include "types/fieldimageid.h"
+#include "types/lightid.h"
 #include "types/scenefilterid.h"
 #include "types/sceneid.h"
 #include "types/sceneviewerid.h"
@@ -590,7 +591,6 @@ ZINC_API int cmzn_sceneviewer_get_frame_pixels(cmzn_sceneviewer_id  sceneviewer,
 	int preferred_antialias, int preferred_transparency_layers,
 	unsigned char **frame_data, int force_onscreen);
 
-
 /**
  * Destroys this handle to the scene viewer inpit, and sets it to NULL.
  *
@@ -748,7 +748,135 @@ ZINC_API int cmzn_sceneviewer_set_transparency_layers(cmzn_sceneviewer_id scenev
 	int layers);
 
 /**
- * Create a notifier for getting callbacks for changes to the scene viewer..
+ * Adds a light to the Scene_viewer list of lights.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param light  Handle to the light to be added to scene viewer.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_add_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light);
+
+/**
+ * Check if a light is on Scene_viewer list of lights.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param light  Handle to the light to be checked.
+ * @return  1 if light is on the list, 0 otherwise.
+ */
+ZINC_API bool cmzn_sceneviewer_has_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light);
+
+/**
+ * Remove a light from the Scene_viewer list of lights.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @param light  Handle to the light to be removed from scene viewer.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_sceneviewer_remove_light(cmzn_sceneviewer_id sceneviewer,
+	cmzn_light_id light);
+
+/**
+ * Queries whether local viewer lighting is used by the scene viewer.
+ * @see cmzn_sceneviewer_set_lighting_local_viewer
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  Boolean true if local viewer lighting is set, false if not or bad
+ *   argument.
+ */
+ZINC_API bool cmzn_sceneviewer_is_lighting_local_viewer(
+	cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Sets whether local viewer lighting is used by the scene viewer.
+ * If true, the angle of view from the eye to the graphics vertex is used to
+ * give more realistic lighting, at slightly greater rendering expense.
+ * If false (default) infinite lighting is assumed, which gives faster
+ * rendering.
+ * The difference becomes apparent when viewing a plane close up with specular
+ * colour: with local viewer lighting (and sufficient tessellation divisions)
+ * rounded specular highlighting can be seen; with infinite viewer lighting
+ * the specular highlighting is even across the plane.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param value  The new state of the local viewer lighting flag.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_sceneviewer_set_lighting_local_viewer(
+	cmzn_sceneviewer_id sceneviewer, bool value);
+
+/**
+ * Queries whether two-sided lighting is used for rendering polygons.
+ * @see cmzn_sceneviewer_set_lighting_two_sided
+ *
+ * @param sceneviewer  The scene viewer to query.
+ * @return  Boolean true if lighting is on, false if not or bad argument.
+ */
+ZINC_API bool cmzn_sceneviewer_is_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Sets whether two-sided lighting is used for rendering polygons.
+ * If true (default) then back surfaces are lit with reversed normals.
+ * If false i.e. one-sided then back surfaces are only lit by ambient lights.
+ * One-sided lighting is useful for finding problems with element definitions
+ * in 3-D: exterior faces should have outward normals, so if these are not
+ * lit on the outside with one-sided lighting, then the element has a
+ * left-handed coordinate system i.e. negative volume. Note that interior
+ * faces' normals should only be outward with respect to their first parent
+ * element, and inward with respect to their second parent.
+ *
+ * @param sceneviewer  The scene viewer to modify.
+ * @param value  The new state of the two-sided lighting flag.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_sceneviewer_set_lighting_two_sided(
+	cmzn_sceneviewer_id sceneviewer, bool value);
+
+/**
+ * Transforms coordinates between scene coordinate systems relative to this
+ * scene viewer.
+ * Note: this function only works once there is an OpenGL rendering context!
+ * @param sceneviewer  The scene viewer to query.
+ * @param in_coordinate_system  The coordinate system of the input values.
+ * @param out_coordinate_system  The coordinate system of the output values.
+ * @param local_scene  Optional local scene, relative to top scene of scene
+ * viewer from which the local-to-world transformation is obtained. If omitted
+ * the identity transformation is assumed. Only used with scene local
+ * coordinate systems, relative to world.
+ * @param inValues3  The input coordinates, 3-component.
+ * @param outValues3  The output coordinates to set, 3-component.
+ * @return  Status CMZN_OK on success, otherwise any error code.
+ */
+ZINC_API int cmzn_sceneviewer_transform_coordinates(
+	cmzn_sceneviewer_id sceneviewer,
+  enum cmzn_scenecoordinatesystem in_coordinate_system,
+  enum cmzn_scenecoordinatesystem out_coordinate_system,
+	cmzn_scene_id local_scene, const double *valuesIn3, double *valuesOut3);
+
+/**
+ * Read the json description to the scene viewer. This will change
+ * the settings of the scene viewer.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @description  The string containing json description
+ * @return  CMZN_OK on success, otherwise ERROR status.
+ */
+ZINC_API int cmzn_sceneviewer_read_description(
+	cmzn_sceneviewer_id sceneviewer, const char *description);
+
+/**
+ * Write the json file describing settings of the scene viewer, which can
+ * be used to store the current settings.
+ *
+ * @param sceneviewer  Handle to the scene viewer.
+ * @return  c string containing the json description of scene viewer, otherwise 0;
+ */
+ZINC_API char *cmzn_sceneviewer_write_description(cmzn_sceneviewer_id sceneviewer);
+
+/**
+ * Create a notifier for getting callbacks for changes to the scene viewer.
  *
  * @param sceneviewer  Handle to the scene viewer to get notifications for.
  * @return  Handle to new sceneviewer notifier, or NULL/invalid handle on failure.

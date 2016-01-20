@@ -1290,10 +1290,9 @@ int cmzn_field_assign_string(cmzn_field_id field, cmzn_fieldcache_id cache,
 }
 
 // Internal function
-// Note this returns 0 for undefined as well as false. Not ready to expose in
+// Note this also returns false for undefined. Not ready to expose in
 // external API until this is deemed reasonable.
-// Follow older functions and change name to 'evaluates_as_true'?
-int cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_fieldcache_id cache)
+bool cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_fieldcache_id cache)
 {
 	const FE_value zero_tolerance = 1e-6;
 	if (cmzn_fieldcache_check(field, cache) && field->isNumerical())
@@ -1307,12 +1306,12 @@ int cmzn_field_evaluate_boolean(cmzn_field_id field, cmzn_fieldcache_id cache)
 				if ((realValueCache.values[i] < -zero_tolerance) ||
 					(realValueCache.values[i] > zero_tolerance))
 				{
-					return 1;
+					return true;
 				}
 			}
 		}
 	}
-	return 0;
+	return false;
 }
 
 // External API

@@ -1,4 +1,4 @@
-/***************************************************************************//**
+/**
  * FILE : block_array.hpp
  * 
  * Implements an array container allocated in blocks.
@@ -14,13 +14,18 @@
 
 #include "general/debug.h"
 
-template <typename IndexType, typename EntryType, int blockLength = 256 >
+// IndexType = array index type
+// EntryType = values held in array
+// DefaultBlockLength = default block length if not set in constructor
+template <typename IndexType, typename EntryType, IndexType DefaultBlockLength = 256>
 	class block_array
 {
 private:
 	// Note: any new attributes must be handled by swap()
 	EntryType **blocks;
 	IndexType blockCount;
+	IndexType blockLength;
+	const EntryType allocInitValue;
 
 	EntryType* getOrCreateBlock(IndexType blockIndex)
 	{
@@ -29,7 +34,7 @@ private:
 			IndexType newBlockCount = blockIndex + 1;
 			if (newBlockCount < blockCount*2)
 			{
-				newBlockCount = blockCount*2;
+				newBlockCount = blockCount*2; // double number of blocks each time
 			}
 			EntryType **newBlocks;
 			if (!REALLOCATE(newBlocks, blocks, EntryType *, newBlockCount))
@@ -47,9 +52,7 @@ private:
 			if (ALLOCATE(block, EntryType, blockLength))
 			{
 				for (IndexType i = 0; i < blockLength; i++)
-				{
-					block[i] = 0; // only works for numeric or pointer types
-				}
+					block[i] = this->allocInitValue;
 				blocks[blockIndex] = block;
 			}
 		}
@@ -58,9 +61,15 @@ private:
 
 public:
 	
-	block_array() :
+	/**
+	 * @param allocInitValue = value each array entry is set to on initialisation.
+	 * Default 0 only OK for numeric and pointer types.
+	 */
+	block_array(IndexType blockLengthIn = DefaultBlockLength, EntryType allocInitValueIn = 0) :
 		blocks(0),
-		blockCount(0)
+		blockCount(0),
+		blockLength(blockLengthIn),
+		allocInitValue(allocInitValueIn)
 	{
 	}
 
@@ -85,24 +94,84 @@ public:
 		blockCount = 0;
 	}
 
+	IndexType getBlockCount() const
+	{
+		return this->blockCount;
+	}
+
+	IndexType getBlockLength() const
+	{
+		return this->blockLength;
+	}
+
 	/** Swaps all data with other block_array. Cannot fail. */
 	void swap(block_array& other)
 	{
-		EntryType **temp_blocks = blocks;
-		IndexType temp_blockCount = blockCount;
-		blocks = other.blocks;
-		blockCount = other.blockCount;
+		EntryType **temp_blocks = this->blocks;
+		IndexType temp_blockCount = this->blockCount;
+		IndexType temp_blockLength = this->blockLength;
+		this->blocks = other.blocks;
+		this->blockCount = other.blockCount;
+		this->blockLength = other.blockLength;
 		other.blocks = temp_blocks;
 		other.blockCount = temp_blockCount;
+		other.blockLength = temp_blockLength;
+	}
+
+	/**
+	 * @param index  The index of the address to retrieve, starting at 0.
+	 * @return  The address for value for given index, or 0 if none.
+	 */
+	EntryType *getAddress(IndexType index) const
+	{
+		IndexType blockIndex = index / blockLength;
+		if (blockIndex < blockCount)
+		{
+			EntryType *block = blocks[blockIndex];
+			if (block)
+				return block + (index % blockLength);
+		}
+		return 0;
+	}
+
+	/**
+	 * Gets or creates block containing values at index and returns address of index.
+	 * If block is newly created it is initialised as described below.
+	 * @param index  The index of the address to create.
+	 * @param initValue  Value to initialise entries in block to.
+	 * @param initIndexSpacing  Spacing of value to be initialised; 0 or negative to
+	 * not initialise values, 1 to set all, any other value is amount offset from 0 to
+	 * blockLength to set to initValue, e.g. 10 initialises:
+	 * 0 10 20 ... blockLength (truncated to nearest multiple of 10)
+	 * @return  The address for value for given index, or 0 if failed.
+	 */
+	EntryType *getOrCreateAddress(IndexType index, EntryType initValue = 0, IndexType initIndexSpacing = 0)
+	{
+		IndexType blockIndex = index / blockLength;
+		EntryType *block = 0;
+		if (blockIndex < blockCount)
+			block = blocks[blockIndex];
+		if (!block)
+		{
+			block = getOrCreateBlock(blockIndex);
+			if (!block)
+				return 0;
+			if (initIndexSpacing > 0)
+			{
+				for (IndexType i = 0; i < blockLength; i += initIndexSpacing)
+					block[i] = initValue;
+			}
+		}
+		return block + (index % blockLength);
 	}
 
 	/**
 	 * Get a value from the block_array.
 	 * @param index  The index of the value to retrieve, starting at 0.
 	 * @param value  On success, filled with value held at index.
-	 * @return  1 if value returned, 0 if no value at index.
+	 * @return  Boolean true if value returned, false if no value at index.
 	 */
-	int getValue(IndexType index, EntryType& value) const
+	bool getValue(IndexType index, EntryType& value) const
 	{
 		IndexType blockIndex = index / blockLength;
 		if (blockIndex < blockCount)
@@ -112,27 +181,27 @@ public:
 			{
 				IndexType entryIndex = index % blockLength;
 				value = block[entryIndex];
-				return 1;
+				return true;
 			}
 		}
-		return 0;
+		return false;
 	}
 
 	/**
 	 * Set a value in the block_array.
 	 * @param index  The index of the value to set, starting at 0.
 	 * @param value  Value to set at index.
-	 * @return  1 if value set, 0 if failed.
+	 * @return  Boolean true on success, false on failure.
 	 */
-	int setValue(IndexType index, EntryType value)
+	bool setValue(IndexType index, EntryType value)
 	{
 		IndexType blockIndex = index / blockLength;
 		EntryType* block = getOrCreateBlock(blockIndex);
 		if (!block)
-			return 0;
+			return false;
 		IndexType entryIndex = index % blockLength;
 		block[entryIndex] = value;
-		return 1;
+		return true;
 	}
 
 	bool setValues(IndexType minIndex, IndexType maxIndex, EntryType value)
@@ -149,7 +218,7 @@ public:
 };
 
 /** stores boolean values as individual bits, with no value equivalent to false */
-template <typename IndexType, int intBlockLength = 32>
+template <typename IndexType, IndexType intBlockLength = 32>
 	class bool_array : private block_array<IndexType, unsigned int, intBlockLength>
 {
 public:
@@ -163,16 +232,18 @@ public:
 		block_array<IndexType, unsigned int, intBlockLength>::swap(other);
 	}
 
+	using block_array<IndexType, unsigned int, intBlockLength>::getBlockCount;
+	using block_array<IndexType, unsigned int, intBlockLength>::getBlockLength;
 	using block_array<IndexType, unsigned int, intBlockLength>::getValue;
 	using block_array<IndexType, unsigned int, intBlockLength>::setValue;
 	using block_array<IndexType, unsigned int, intBlockLength>::setValues;
 
 	/** @param oldValue  Returns old value so client can determine if status changed */
-	int setBool(IndexType index, bool value, bool& oldValue)
+	bool setBool(IndexType index, bool value, bool& oldValue)
 	{
 		IndexType intIndex = index >> 5;
 		unsigned int intValue = 0;
-		int hasValue = getValue(intIndex, intValue);
+		bool hasValue = getValue(intIndex, intValue);
 		if (hasValue || value)
 		{
 			unsigned int mask = (1 << (index & 0x1F));
@@ -186,17 +257,56 @@ public:
 		{
 			oldValue = false;
 		}
-		return 1;
+		return true;
 	}
 
 	bool getBool(IndexType index) const
 	{
 		IndexType intIndex = index >> 5;
-		unsigned int intValue = 0;
+		unsigned int intValue;
 		if (getValue(intIndex, intValue))
 		{
 			unsigned int mask = (1 << (index & 0x1F));
 			return (0 != (intValue & mask));
+		}
+		return false;
+	}
+
+	/**
+	 * Advance index while bool array value is false.
+	 * Efficiently skips whole blocks, and 32-bit zeroes within blocks.
+	 * @param index  The index to advance while bool value is false.
+	 * @param limit  One past the last index to check.
+	 * @return  True if index found, false if reached limit.
+	 */
+	bool advanceIndexWhileFalse(IndexType& index, IndexType limit)
+	{
+		const IndexType blockIndexSize = this->getBlockLength()*32;
+		const IndexType blockLimit = this->getBlockCount()*blockIndexSize;
+		const IndexType useLimit = (limit < blockLimit) ? limit : blockLimit;
+		while (index < useLimit)
+		{
+			const IndexType intIndex = index >> 5;
+			unsigned int intValue;
+			if (!getValue(intIndex, intValue))
+				index = ((index / blockIndexSize) + 1)*blockIndexSize; // advance to next block
+			else
+			{
+				unsigned int mask = (1 << (index & 0x1F));
+				if (intValue < mask)
+					index = (intIndex + 1) << 5; // advance to next int index
+				else
+				{
+					do
+					{
+						if (intValue & mask)
+							return true;
+						++index;
+						mask <<= 1;
+					}
+					while (index & 0x1F);
+				}
+			}
 		}
 		return false;
 	}

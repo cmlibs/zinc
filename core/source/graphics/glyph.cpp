@@ -18,6 +18,8 @@
 * This Source Code Form is subject to the terms of the Mozilla Public
 * License, v. 2.0. If a copy of the MPL was not distributed with this
 * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+#include <algorithm>
+#include <iterator>
 #include <cstdlib>
 #include <cstdio>
 #include <cstring>
@@ -27,12 +29,14 @@
 #include "zinc/material.h"
 #include "general/debug.h"
 #include "general/enumerator_private.hpp"
+#include "general/enumerator_conversion.hpp"
 #include "general/manager_private.h"
 #include "general/message.h"
 #include "general/mystring.h"
 #include "graphics/glyph.hpp"
 #include "graphics/glyph_axes.hpp"
 #include "graphics/glyph_circular.hpp"
+#include "graphics/graphics.h"
 #include "graphics/graphics_object.h"
 #include "graphics/graphics_object_private.hpp"
 #include "graphics/spectrum.h"
@@ -722,6 +726,145 @@ bool cmzn_glyph_repeat_mode_glyph_number_has_label(
 			break;
 	}
 	return false;
+}
+
+class cmzn_glyph_repeat_mode_conversion
+{
+public:
+	static const char *to_string(enum cmzn_glyph_repeat_mode mode)
+	{
+		const char *enum_string = 0;
+		switch (mode)
+		{
+			case CMZN_GLYPH_REPEAT_MODE_NONE:
+				enum_string = "NONE";
+				break;
+			case CMZN_GLYPH_REPEAT_MODE_MIRROR:
+				enum_string = "MIRROR";
+				break;
+			case CMZN_GLYPH_REPEAT_MODE_AXES_2D:
+				enum_string = "AXES_2D";
+				break;
+			case CMZN_GLYPH_REPEAT_MODE_AXES_3D:
+				enum_string = "AXES_3D";
+				break;
+		default:
+			break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_glyph_repeat_mode cmzn_glyph_repeat_mode_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_glyph_repeat_mode, cmzn_glyph_repeat_mode_conversion>(string);
+}
+
+char *cmzn_glyph_repeat_mode_enum_to_string(enum cmzn_glyph_repeat_mode mode)
+{
+	const char *mode_string = cmzn_glyph_repeat_mode_conversion::to_string(mode);
+	return (mode_string ? duplicate_string(mode_string) : 0);
+}
+
+class cmzn_glyph_shape_type_conversion
+{
+public:
+	static const char *to_string(enum cmzn_glyph_shape_type type)
+	{
+		const char *enum_string = 0;
+		switch (type)
+		{
+			case CMZN_GLYPH_REPEAT_MODE_NONE:
+				enum_string = "NONE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_ARROW:
+				enum_string = "ARROW";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_ARROW_SOLID:
+				enum_string = "ARROW_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXIS:
+				enum_string = "AXIS";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXIS_SOLID:
+				enum_string = "AXIS_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CONE:
+				enum_string = "CONE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CONE_SOLID:
+				enum_string = "CONE_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CROSS:
+				enum_string = "CROSS";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CUBE_SOLID:
+				enum_string = "CUBE_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CUBE_WIREFRAME:
+				enum_string = "CUBE_WIREFRAME";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CYLINDER:
+				enum_string = "CYLINDER";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_CYLINDER_SOLID:
+				enum_string = "CYLINDER_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_DIAMOND:
+				enum_string = "DIAMOND";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_LINE:
+				enum_string = "LINE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_POINT:
+				enum_string = "POINT";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_SHEET:
+				enum_string = "SHEET";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_SPHERE:
+				enum_string = "SPHERE";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES:
+				enum_string = "AXES";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_123:
+				enum_string = "AXES_123";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_XYZ:
+				enum_string = "AXES_XYZ";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_COLOUR:
+				enum_string = "AXES_COLOUR";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID:
+				enum_string = "AXES_SOLID";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_123:
+				enum_string = "AXES_SOLID_123";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_XYZ:
+				enum_string = "AXES_SOLID_XYZ";
+				break;
+			case CMZN_GLYPH_SHAPE_TYPE_AXES_SOLID_COLOUR:
+				enum_string = "AXES_SOLID_COLOUR";
+				break;
+			default:
+				break;
+		}
+		return enum_string;
+	}
+};
+
+enum cmzn_glyph_shape_type cmzn_glyph_shape_type_enum_from_string(const char *string)
+{
+	return string_to_enum<enum cmzn_glyph_shape_type, cmzn_glyph_shape_type_conversion>(string);
+}
+
+char *cmzn_glyph_shape_type_enum_to_string(enum cmzn_glyph_shape_type type)
+{
+	const char *type_string = cmzn_glyph_shape_type_conversion::to_string(type);
+	return (type_string ? duplicate_string(type_string) : 0);
 }
 
 void resolve_glyph_axes(
@@ -1737,12 +1880,197 @@ int cmzn_glyph_set_managed(cmzn_glyph_id glyph, bool value)
 	return CMZN_ERROR_ARGUMENT;
 }
 
+cmzn_glyphmodulenotifier_id cmzn_glyphmodule_create_glyphmodulenotifier(
+	cmzn_glyphmodule_id glyphmodule)
+{
+	return cmzn_glyphmodulenotifier::create(glyphmodule);
+}
+
+cmzn_glyphmodulenotifier::cmzn_glyphmodulenotifier(
+	cmzn_glyphmodule *glyphmodule) :
+	module(glyphmodule),
+	function(0),
+	user_data(0),
+	access_count(1)
+{
+	glyphmodule->addNotifier(this);
+}
+
+cmzn_glyphmodulenotifier::~cmzn_glyphmodulenotifier()
+{
+}
+
+int cmzn_glyphmodulenotifier::deaccess(cmzn_glyphmodulenotifier* &notifier)
+{
+	if (notifier)
+	{
+		--(notifier->access_count);
+		if (notifier->access_count <= 0)
+			delete notifier;
+		else if ((1 == notifier->access_count) && notifier->module)
+			notifier->module->removeNotifier(notifier);
+		notifier = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_glyphmodulenotifier::setCallback(cmzn_glyphmodulenotifier_callback_function function_in,
+	void *user_data_in)
+{
+	if (!function_in)
+		return CMZN_ERROR_ARGUMENT;
+	this->function = function_in;
+	this->user_data = user_data_in;
+	return CMZN_OK;
+}
+
+void cmzn_glyphmodulenotifier::clearCallback()
+{
+	this->function = 0;
+	this->user_data = 0;
+}
+
+void cmzn_glyphmodulenotifier::glyphmoduleDestroyed()
+{
+	this->module = 0;
+	if (this->function)
+	{
+		cmzn_glyphmoduleevent_id event = cmzn_glyphmoduleevent::create(
+			static_cast<cmzn_glyphmodule*>(0));
+		event->setChangeFlags(CMZN_SPECTRUM_CHANGE_FLAG_FINAL);
+		(this->function)(event, this->user_data);
+		cmzn_glyphmoduleevent::deaccess(event);
+		this->clearCallback();
+	}
+}
+
+cmzn_glyphmoduleevent::cmzn_glyphmoduleevent(
+	cmzn_glyphmodule *glyphmoduleIn) :
+	module(cmzn_glyphmodule_access(glyphmoduleIn)),
+	changeFlags(CMZN_TESSELLATION_CHANGE_FLAG_NONE),
+	managerMessage(0),
+	access_count(1)
+{
+}
+
+cmzn_glyphmoduleevent::~cmzn_glyphmoduleevent()
+{
+	if (managerMessage)
+		MANAGER_MESSAGE_DEACCESS(cmzn_glyph)(&(this->managerMessage));
+	cmzn_glyphmodule_destroy(&this->module);
+}
+
+cmzn_glyph_change_flags cmzn_glyphmoduleevent::getGlyphChangeFlags(
+	cmzn_glyph *glyph) const
+{
+	if (glyph && this->managerMessage)
+		return MANAGER_MESSAGE_GET_OBJECT_CHANGE(cmzn_glyph)(this->managerMessage, glyph);
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
+void cmzn_glyphmoduleevent::setManagerMessage(
+	struct MANAGER_MESSAGE(cmzn_glyph) *managerMessageIn)
+{
+	this->managerMessage = MANAGER_MESSAGE_ACCESS(cmzn_glyph)(managerMessageIn);
+}
+
+struct MANAGER_MESSAGE(cmzn_glyph) *cmzn_glyphmoduleevent::getManagerMessage()
+{
+	return this->managerMessage;
+}
+
+int cmzn_glyphmoduleevent::deaccess(cmzn_glyphmoduleevent* &event)
+{
+	if (event)
+	{
+		--(event->access_count);
+		if (event->access_count <= 0)
+			delete event;
+		event = 0;
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_glyphmodulenotifier_clear_callback(
+	cmzn_glyphmodulenotifier_id notifier)
+{
+	if (notifier)
+	{
+		notifier->clearCallback();
+		return CMZN_OK;
+	}
+	return CMZN_ERROR_ARGUMENT;
+}
+
+int cmzn_glyphmodulenotifier_set_callback(cmzn_glyphmodulenotifier_id notifier,
+	cmzn_glyphmodulenotifier_callback_function function_in, void *user_data_in)
+{
+	if (notifier && function_in)
+		return notifier->setCallback(function_in, user_data_in);
+	return CMZN_ERROR_ARGUMENT;
+}
+
+void *cmzn_glyphmodulenotifier_get_callback_user_data(
+ cmzn_glyphmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->getUserData();
+	return 0;
+}
+
+cmzn_glyphmodulenotifier_id cmzn_glyphmodulenotifier_access(
+	cmzn_glyphmodulenotifier_id notifier)
+{
+	if (notifier)
+		return notifier->access();
+	return 0;
+}
+
+int cmzn_glyphmodulenotifier_destroy(cmzn_glyphmodulenotifier_id *notifier_address)
+{
+	return cmzn_glyphmodulenotifier::deaccess(*notifier_address);
+}
+
+cmzn_glyphmoduleevent_id cmzn_glyphmoduleevent_access(
+	cmzn_glyphmoduleevent_id event)
+{
+	if (event)
+		return event->access();
+	return 0;
+}
+
+int cmzn_glyphmoduleevent_destroy(cmzn_glyphmoduleevent_id *event_address)
+{
+	return cmzn_glyphmoduleevent::deaccess(*event_address);
+}
+
+cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_summary_glyph_change_flags(
+	cmzn_glyphmoduleevent_id event)
+{
+	if (event)
+		return event->getChangeFlags();
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
+cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_glyph_change_flags(
+	cmzn_glyphmoduleevent_id event, cmzn_glyph_id glyph)
+{
+	if (event)
+		return event->getGlyphChangeFlags(glyph);
+	return CMZN_TESSELLATION_CHANGE_FLAG_NONE;
+}
+
 cmzn_glyphmodule::cmzn_glyphmodule(cmzn_materialmodule *materialModuleIn) :
 	materialModule(cmzn_materialmodule_access(materialModuleIn)),
 	manager(CREATE(MANAGER(cmzn_glyph))()),
+	manager_callback_id(0),
 	defaultPointGlyph(0),
 	access_count(1)
 {
+	this->manager_callback_id = MANAGER_REGISTER(cmzn_glyph)(
+		cmzn_glyphmodule::glyph_manager_change, (void *)this, this->manager);
 }
 
 cmzn_glyphmodule::~cmzn_glyphmodule()
@@ -1752,7 +2080,45 @@ cmzn_glyphmodule::~cmzn_glyphmodule()
 	{
 		DEACCESS(cmzn_glyph)(&(this->defaultPointGlyph));
 	}
+	MANAGER_DEREGISTER(cmzn_glyph)(this->manager_callback_id, this->manager);
+	for (cmzn_glyphmodulenotifier_list::iterator iter = this->notifier_list.begin();
+		iter != this->notifier_list.end(); ++iter)
+	{
+		cmzn_glyphmodulenotifier *notifier = *iter;
+		notifier->glyphmoduleDestroyed();
+		cmzn_glyphmodulenotifier::deaccess(notifier);
+	}
 	DESTROY(MANAGER(cmzn_glyph))(&(this->manager));
+}
+
+/**
+ * Glyph manager callback. Calls notifier callbacks.
+ *
+ * @param message  The changes to the glyphs in the glyph manager.
+ * @param glyphmodule_void  Void pointer to changed glyphmodule).
+ */
+void cmzn_glyphmodule::glyph_manager_change(
+	struct MANAGER_MESSAGE(cmzn_glyph) *message, void *glyphmodule_void)
+{
+	cmzn_glyphmodule *glyphmodule = (cmzn_glyphmodule *)glyphmodule_void;
+	if (message && glyphmodule)
+	{
+		int change_summary = MANAGER_MESSAGE_GET_CHANGE_SUMMARY(cmzn_glyph)(message);
+
+		if (0 < glyphmodule->notifier_list.size())
+		{
+			cmzn_glyphmoduleevent_id event = cmzn_glyphmoduleevent::create(glyphmodule);
+			event->setChangeFlags(change_summary);
+			event->setManagerMessage(message);
+			for (cmzn_glyphmodulenotifier_list::iterator iter =
+				glyphmodule->notifier_list.begin();
+				iter != glyphmodule->notifier_list.end(); ++iter)
+			{
+				(*iter)->notify(event);
+			}
+			cmzn_glyphmoduleevent::deaccess(event);
+		}
+	}
 }
 
 cmzn_glyphiterator *cmzn_glyphmodule::createGlyphiterator()
@@ -1842,6 +2208,35 @@ void cmzn_glyphmodule::addGlyph(cmzn_glyph *glyph)
 		glyph->setName(tempName);
 	}
 	ADD_OBJECT_TO_MANAGER(cmzn_glyph)(glyph, this->manager);
+}
+
+cmzn_glyph *cmzn_glyphmodule::createStaticGlyphFromGraphics(cmzn_graphics *graphics)
+{
+	if (graphics)
+	{
+		GT_object *graphicsObject = cmzn_graphics_copy_graphics_object(graphics);
+		if (graphicsObject)
+		{
+			char temp_name[20];
+			int i = NUMBER_IN_MANAGER(cmzn_glyph)(this->manager);
+			do
+			{
+				i++;
+				sprintf(temp_name, "temp%d",i);
+			}
+			while (FIND_BY_IDENTIFIER_IN_MANAGER(cmzn_glyph,name)(temp_name,
+				this->manager));
+			cmzn_glyph *glyph = cmzn_glyph_static::create(graphicsObject);
+			glyph->setType(CMZN_GLYPH_SHAPE_TYPE_INVALID);
+			glyph->setName(temp_name);
+			glyph->setManaged(false);
+			set_GT_object_default_material(graphicsObject, 0);
+			this->addGlyph(glyph);
+			DEACCESS(GT_object)(&graphicsObject);
+			return glyph;
+		}
+	}
+	return 0;
 }
 
 int cmzn_glyphmodule::defineStandardGlyphs()
@@ -1983,6 +2378,25 @@ cmzn_set_cmzn_glyph *cmzn_glyphmodule::getGlyphListPrivate()
 	return reinterpret_cast<cmzn_set_cmzn_glyph *>(this->manager->object_list);
 }
 
+void cmzn_glyphmodule::addNotifier(cmzn_glyphmodulenotifier *notifier)
+{
+	this->notifier_list.push_back(notifier->access());
+}
+
+void cmzn_glyphmodule::removeNotifier(cmzn_glyphmodulenotifier *notifier)
+{
+	if (notifier)
+	{
+		cmzn_glyphmodulenotifier_list::iterator iter =
+			std::find(this->notifier_list.begin(), this->notifier_list.end(), notifier);
+		if (iter != this->notifier_list.end())
+		{
+			cmzn_glyphmodulenotifier::deaccess(notifier);
+			this->notifier_list.erase(iter);
+		}
+	}
+}
+
 cmzn_glyphmodule_id cmzn_glyphmodule_create(cmzn_materialmodule *materialModule)
 {
 	return cmzn_glyphmodule::create(materialModule);
@@ -2109,6 +2523,17 @@ cmzn_glyph *cmzn_glyphmodule_create_glyph_static(
 	return 0;
 }
 
+cmzn_glyph_id cmzn_glyphmodule_create_static_glyph_from_graphics(
+	cmzn_glyphmodule_id glyphmodule, cmzn_graphics_id graphics)
+{
+	if (glyphmodule && graphics)
+	{
+		cmzn_glyph *glyph = glyphmodule->createStaticGlyphFromGraphics(graphics);
+		return glyph;
+	}
+	return 0;
+}
+
 cmzn_glyphiterator_id cmzn_glyphiterator_access(cmzn_glyphiterator_id iterator)
 {
 	if (iterator)
@@ -2135,4 +2560,11 @@ cmzn_glyph_id cmzn_glyphiterator_next_non_access(cmzn_glyphiterator_id iterator)
 	if (iterator)
 		return iterator->next_non_access();
 	return 0;
+}
+
+int cmzn_glyph_set_graphics_object(cmzn_glyph *glyph, GT_object *graphicsObject)
+{
+	if (glyph)
+		return glyph->setGraphicsObject(graphicsObject);
+	return CMZN_ERROR_ARGUMENT;
 }

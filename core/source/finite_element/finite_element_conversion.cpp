@@ -24,6 +24,8 @@ Functions for converting one finite_element representation to another.
 #include "computed_field/computed_field_wrappers.h"
 #include "finite_element/finite_element.h"
 #include "finite_element/finite_element_helper.h"
+#include "finite_element/finite_element_mesh.hpp"
+#include "finite_element/finite_element_nodeset.hpp"
 #include "finite_element/finite_element_region.h"
 #include "finite_element/finite_element_conversion.h"
 #include "general/debug.h"
@@ -48,7 +50,7 @@ struct Convert_finite_elements_data
 	struct Octree *octree;
 	struct LIST(Octree_object) *nearby_nodes;
 	struct FE_node *template_node;
-	struct FE_element *template_element;
+	FE_element_template *element_template;
 	int number_of_fields;
 	struct Computed_field **field_array;
 	struct FE_field **destination_fe_fields;
@@ -74,7 +76,7 @@ struct Convert_finite_elements_data
 		octree(CREATE(Octree)()),
 		nearby_nodes(CREATE(LIST(Octree_object))()),
 		template_node((struct FE_node *)NULL),
-		template_element((struct FE_element *)NULL),
+		element_template(0),
 		number_of_fields(0),
 		field_array(0),
 		destination_fe_fields(NULL),
@@ -105,10 +107,7 @@ struct Convert_finite_elements_data
 
 	~Convert_finite_elements_data()
 	{
-		if (template_element)
-		{
-			DESTROY(FE_element)(&template_element);
-		}
+		cmzn::Deaccess(this->element_template);
 		if (template_node)
 		{
 			DESTROY(FE_node)(&template_node);
@@ -169,7 +168,6 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 	FE_value base_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS], *values, *derivatives,
 		*nodal_values, source_xi[MAXIMUM_ELEMENT_XI_DIMENSIONS];
 	int i, j, k, number_of_components, number_of_values, return_code = 1;
-	struct CM_element_information identifier;
 	struct FE_element *new_element;
 	struct FE_node *nodes[MAX_NUMBER_OF_NODES];
 
@@ -247,12 +245,10 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					}
 				}
 			}
-			identifier.type = CM_ELEMENT;
-			identifier.number =  FE_region_get_next_FE_element_identifier(
-				destination_fe_region, mode_dimension, element_number);
-			element_number = identifier.number;
-			if ((new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
-					(struct FE_region *)NULL, template_element)))
+			FE_mesh *destination_mesh = FE_region_find_FE_mesh_by_dimension(destination_fe_region, mode_dimension);
+			this->element_number = destination_mesh->get_next_FE_element_identifier(element_number);
+			new_element = destination_mesh->create_FE_element(this->element_number, this->element_template);
+			if (new_element)
 			{
 				/* The FE_element_define_tensor_product_basis function does not merge the
 					nodes used to make it simple to add and a field to and existing node so
@@ -270,17 +266,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 						}
 					}
 				}
-				if (return_code)
-				{
-					if (!FE_region_merge_FE_element(destination_fe_region,
-						new_element))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_convert_element.  "
-							"Could not merge node into region");
-						return_code = 0;
-					}
-				}
+				DEACCESS(FE_element)(&new_element);
 			}
 			else
 			{
@@ -383,12 +369,11 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 					}
 				}
 			}
-			identifier.type = CM_ELEMENT;
-			identifier.number =  FE_region_get_next_FE_element_identifier(
-				destination_fe_region, mode_dimension, element_number);
-			element_number = identifier.number;
-			if ((new_element = CREATE(FE_element)(&identifier, (struct FE_element_shape *)NULL,
-					(struct FE_region *)NULL, template_element)))
+
+			FE_mesh *destination_mesh = FE_region_find_FE_mesh_by_dimension(destination_fe_region, mode_dimension);
+			this->element_number = destination_mesh->get_next_FE_element_identifier(element_number);
+			new_element = destination_mesh->create_FE_element(this->element_number, this->element_template);
+			if (new_element)
 			{
 				/* The FE_element_define_tensor_product_basis function does not merge the
 					nodes used to make it simple to add and a field to and existing node so
@@ -407,17 +392,7 @@ int Convert_finite_elements_data::convert_subelement(struct FE_element *element,
 						}
 					}
 				}
-				if (return_code)
-				{
-					if (!FE_region_merge_FE_element(destination_fe_region,
-						new_element))
-					{
-						display_message(ERROR_MESSAGE,
-							"FE_element_convert_element.  "
-							"Could not merge node into region");
-						return_code = 0;
-					}
-				}
+				DEACCESS(FE_element)(&new_element);
 			}
 			else
 			{
@@ -623,13 +598,15 @@ int finite_element_conversion(struct cmzn_region *source_region,
 				}
 				if (return_code)
 				{
-					/* Make template element defining all the fields in the field list */
-					if ((data.template_element = create_FE_element_with_line_shape(/*element_number*/1,
-						destination_fe_region, /*dimension*/2)))
+					int shape_type[3] = { LINE_SHAPE, 0, LINE_SHAPE };
+					FE_element_shape *element_shape = CREATE(FE_element_shape)(/*dimension*/2, shape_type, destination_fe_region);
+					FE_mesh *destination_fe_mesh = FE_region_find_FE_mesh_by_dimension(destination_fe_region, 2);
+					if ((destination_fe_mesh) &&
+						(0 != (data.element_template = destination_fe_mesh->create_FE_element_template(element_shape))))
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
 						{
-							return_code = FE_element_define_tensor_product_basis(data.template_element,
+							return_code = FE_element_define_tensor_product_basis(data.element_template->get_template_element(),
 								/*dimension*/2, CUBIC_HERMITE, data.destination_fe_fields[i]);
 						}
 					}
@@ -693,13 +670,16 @@ int finite_element_conversion(struct cmzn_region *source_region,
 					const int number_of_nodes =
 						(mode == CONVERT_TO_FINITE_ELEMENTS_TRILINEAR) ? 8 : 27;
 					/* Make template element defining all the fields in the field list */
-					if ((data.template_element = create_FE_element_with_line_shape(/*element_number*/1,
-						destination_fe_region, /*dimension*/3)) &&
-						set_FE_element_number_of_nodes(data.template_element, number_of_nodes))
+					int shape_type[6] = { LINE_SHAPE, 0, 0, LINE_SHAPE, 0, LINE_SHAPE };
+					FE_element_shape *element_shape = CREATE(FE_element_shape)(/*dimension*/3, shape_type, destination_fe_region);
+					FE_mesh *destination_fe_mesh = FE_region_find_FE_mesh_by_dimension(destination_fe_region, 3);
+					if ((destination_fe_mesh) &&
+						(0 != (data.element_template = destination_fe_mesh->create_FE_element_template(element_shape))) &&
+						set_FE_element_number_of_nodes(data.element_template->get_template_element(), number_of_nodes))
 					{
 						for (i = 0 ; return_code && (i < data.number_of_fields) ; i++)
 						{
-							return_code = FE_element_define_field_simple(data.template_element,
+							return_code = FE_element_define_field_simple(data.element_template->get_template_element(),
 								data.destination_fe_fields[i], fe_basis_type);
 						}
 					}
@@ -723,8 +703,8 @@ int finite_element_conversion(struct cmzn_region *source_region,
 
 		if (return_code)
 		{
-			return_code = FE_region_for_each_FE_element_of_dimension(source_fe_region,
-				data.mode_dimension, FE_element_convert_element, (void *)&data);
+			FE_mesh *source_mesh = FE_region_find_FE_mesh_by_dimension(source_fe_region, data.mode_dimension);
+			return_code = source_mesh->for_each_FE_element(FE_element_convert_element, (void *)&data);
 		}
 
 		FE_region_end_change(destination_fe_region);

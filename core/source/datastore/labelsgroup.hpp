@@ -20,8 +20,9 @@
  */
 class DsLabelsGroup : public cmzn::RefCounted
 {
-private:
+protected:
 	DsLabels *labels;
+	// Note: ensure all members are transferred by swap() method
 	int labelsCount;
 	// indexLimit is at least one greater than highest index in group, updated to exact index when queried
 	int indexLimit;
@@ -35,17 +36,15 @@ private:
 public:
 	static DsLabelsGroup *create(DsLabels *labelsIn);
 
+	/** Swaps all data with other block_array. Cannot fail. */
+	void swap(DsLabelsGroup& other);
+
 	DsLabels *getLabels()
 	{
 		return this->labels;
 	}
 	
-	void clear()
-	{
-		values.clear();
-		labelsCount = 0;
-		indexLimit = 0;
-	}
+	void clear();
 
 	DsLabelIndex getSize() const
 	{
@@ -86,50 +85,37 @@ public:
 		return values.getBool(/*index*/index);
 	}
 
-	/** be careful that index is for this labels */
-	int setIndex(DsLabelIndex index, bool inGroup)
-	{
-		if (index < 0)
-			return false;
-		bool wasInGroup;
-		if (values.setBool(index, inGroup, wasInGroup))
-		{
-			if (inGroup != wasInGroup)
-			{
-				if (inGroup)
-				{
-					labelsCount++;
-					if (index >= indexLimit)
-						indexLimit = index + 1;
-				}
-				else
-				{
-					labelsCount--;
-				}
-			}
-			return 1;
-		}
-		return 0;
-	}
+	/**
+	 * Ensure index is in the group.
+	 * Be careful that index is for this labels.
+	 * @return  CMZN_OK on success, CMZN_ALREADY_EXISTS if adding when already added,
+	 * CMZN_ERROR_NOT_FOUND if removing when already removed, any other error code on failure.
+	 */
+	int setIndex(DsLabelIndex index, bool inGroup);
+
+	DsLabelIndex getFirstIndex(DsLabelIterator &iterator);
 
 	/**
-	 * Get first label index in group or DS_LABEL_INDEX_INVALID if none.
-	 * Currently returns index with the lowest identifier in set
+	 * Create new iterator initially pointing before first label.
+	 * @return accessed iterator, or 0 if failed.
 	 */
-	DsLabelIndex getFirstIndex()
+	DsLabelIterator *createLabelIterator();
+
+	/**
+	 * Increment index to next index in group.
+	 * Assumes index set to DS_LABEL_INDEX_INVALID (-1) before start.
+	 * @return true if index advanced to valid index in group, false if iteration over
+	 */
+	bool incrementIndex(DsLabelIndex& index)
 	{
-		DsLabelIndex index = this->labels->getFirstIndex();
-		if (this->hasIndex(index))
-			return index;
-		return this->labels->getNextIndexBoolTrue(index, values);
+		++index;
+		return this->values.advanceIndexWhileFalse(index, this->labels->getIndexSize());
 	}
 
-	DsLabelIndex getNextIndex(DsLabelIndex index)
+	void invalidateLabelIterators()
 	{
-		return this->labels->getNextIndexBoolTrue(index, values);
+		this->labels->invalidateLabelIteratorsWithCondition(&this->values);
 	}
-
-	int incrementLabelIterator(DsLabelIterator *iterator);
 
 };
 

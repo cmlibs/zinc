@@ -14,6 +14,7 @@
 #define CMZN_GLYPH_H__
 
 #include "types/glyphid.h"
+#include "types/graphicsid.h"
 #include "types/materialid.h"
 #include "types/spectrumid.h"
 
@@ -538,6 +539,15 @@ ZINC_API int cmzn_glyph_colour_bar_get_side_axis(
 	cmzn_glyph_colour_bar_id colour_bar, int valuesCount, double *valuesOut);
 
 /**
+ * Gets the spectrum shown by the colour bar.
+ *
+ * @param colour_bar  The colour bar glyph to query.
+ * @return  Handle to spectrum, or NULL/invalid handle if none or failed.
+ */
+ZINC_API cmzn_spectrum_id cmzn_glyph_colour_bar_get_spectrum(
+	cmzn_glyph_colour_bar_id colour_bar);
+
+/**
  * Sets the vector defining the side/tick axis of the colour bar. The magnitude
  * of this vector gives the diameter of the bar.
  * The default side axis is (0.1,0,0) for vertical bar and horizontal ticks in
@@ -595,10 +605,131 @@ ZINC_API int cmzn_glyphiterator_destroy(cmzn_glyphiterator_id *iterator_address)
  * advances the iterator position. The caller is required to destroy the
  * returned glyph handle.
  *
- * @param iterator  Material iterator to query and advance.
+ * @param iterator  Glyph iterator to query and advance.
  * @return  Handle to the next glyph, or NULL/invalid handle if none or failed.
  */
 ZINC_API cmzn_glyph_id cmzn_glyphiterator_next(cmzn_glyphiterator_id iterator);
+
+/**
+ * Create and return a handle to the glyph which is a static copy of the vertices
+ * of the specified graphics.
+ *
+ * @param glyphmodule  The glyph module to create the glyph in.
+ * @param graphics  Handle to the graphics which vertices will be copied into
+ * 	the newly created glyph.
+ * @return  Handle to the newly created glyph on success, otherwise 0.
+ */
+ZINC_API cmzn_glyph_id cmzn_glyphmodule_create_static_glyph_from_graphics(
+	cmzn_glyphmodule_id glyphmodule, cmzn_graphics_id graphics);
+
+/**
+ * Create a notifier for getting callbacks for changes to the glyphs in the
+ * glyph module.
+ *
+ * @param glyphmodule  Handle to the glyph module to get notifications for.
+ * @return  Handle to new glyph module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_glyphmodulenotifier_id cmzn_glyphmodule_create_glyphmodulenotifier(
+	cmzn_glyphmodule_id glyphmodule);
+
+/**
+ * Returns a new handle to the glyph module notifier with reference count
+ * incremented.
+ *
+ * @param notifier  The glyph module notifier to obtain a new handle to.
+ * @return  New handle to glyph module notifier, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_glyphmodulenotifier_id cmzn_glyphmodulenotifier_access(
+	cmzn_glyphmodulenotifier_id notifier);
+
+/**
+ * Destroys handle to the glyph module notifier and sets it to NULL.
+ * Internally this decrements the reference count.
+ *
+ * @param notifier_address  Address of glyph module notifier handle to destroy.
+ * @return  Status CMZN_OK on success, otherwise CMZN_ERROR_ARGUMENT.
+ */
+ZINC_API int cmzn_glyphmodulenotifier_destroy(
+	cmzn_glyphmodulenotifier_id *notifier_address);
+
+/**
+ * Stop and clear glyph module callback. This will stop the callback and also
+ * remove the callback function from the glyphmodule notifier.
+ *
+ * @param notifier  Handle to the glyphmodule notifier.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_glyphmodulenotifier_clear_callback(
+	cmzn_glyphmodulenotifier_id notifier);
+
+/**
+ * Assign the callback function and user data for the glyphmodule notifier.
+ * This function also starts the callback.
+ *
+ * @see cmzn_glyphmodulenotifier_callback_function
+ * @param notifier  Handle to the glyphmodule notifier.
+ * @param function  function to be called when event is triggered.
+ * @param user_data_in  Void pointer to user object. User must ensure this
+ * object's lifetime exceeds the duration for which callbacks are active.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_glyphmodulenotifier_set_callback(
+	cmzn_glyphmodulenotifier_id notifier,
+	cmzn_glyphmodulenotifier_callback_function function, void *user_data_in);
+
+/**
+ * Get the user data set when establishing the callback.
+ * @see cmzn_glyphmodulenotifier_set_callback
+ *
+ * @see cmzn_glyphmodulenotifier_set_callback
+ * @param notifier  Handle to the glyph module notifier.
+ * @return  user data or NULL on failure or not set.
+ */
+ZINC_API void *cmzn_glyphmodulenotifier_get_callback_user_data(
+ cmzn_glyphmodulenotifier_id notifier);
+
+/**
+ * Returns a new handle to the glyphmodule event with reference count incremented.
+ *
+ * @param event  The glyph module event to obtain a new handle to.
+ * @return  New handle to glyph module event, or NULL/invalid handle on failure.
+ */
+ZINC_API cmzn_glyphmoduleevent_id cmzn_glyphmoduleevent_access(
+	cmzn_glyphmoduleevent_id event);
+
+/**
+ * Destroys this handle to the glyphmodule event and sets it to NULL.
+ * Internally this decrements the reference count.
+ * Note: Do not destroy the event argument passed to the user callback function.
+ *
+ * @param event_address  Address of glyph module event handle to destroy.
+ * @return  Status CMZN_OK on success, any other value on failure.
+ */
+ZINC_API int cmzn_glyphmoduleevent_destroy(cmzn_glyphmoduleevent_id *event_address);
+
+/**
+ * Get logical OR of flags indicating how glyphs in the glyph module have changed.
+ * @see cmzn_glyph_change_flag
+ *
+ * @param event  Handle to the glyph module event.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_glyph_change_flag values.
+ */
+ZINC_API cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_summary_glyph_change_flags(
+	cmzn_glyphmoduleevent_id event);
+
+/**
+ * Get logical OR of flags indicating how the glyph has changed.
+ * @see cmzn_glyph_change_flag
+ *
+ * @param event  Handle to the glyph module event to query.
+ * @param glyph  The glyph to query about.
+ * @return  The change flags summarising the change: logical OR of
+ * enum cmzn_glyph_change_flag values. Returns
+ * CMZN_SPECTRUM_CHANGE_FLAG_NONE in case of invalid arguments.
+ */
+ZINC_API cmzn_glyph_change_flags cmzn_glyphmoduleevent_get_glyph_change_flags(
+	cmzn_glyphmoduleevent_id event, cmzn_glyph_id glyph);
 
 #ifdef __cplusplus
 }

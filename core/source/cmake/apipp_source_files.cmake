@@ -39,6 +39,8 @@ SET( APIPP_HDRS
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/glyph.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/graphics.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/font.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/light.hpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/logger.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/material.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/node.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/source/api/zinc/optimisation.hpp

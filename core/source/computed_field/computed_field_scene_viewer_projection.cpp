@@ -126,13 +126,7 @@ private:
 };
 
 int Computed_field_scene_viewer_projection::calculate_matrix()
-/*******************************************************************************
-LAST MODIFIED : 25 August 2006
-
-DESCRIPTION :
-==============================================================================*/
 {
-	ENTER(Computed_field_scene_viewer_projection_calculate_matrix);
 	int return_code = 0;
 	change_required = 0;
 	if (field)
@@ -154,235 +148,16 @@ DESCRIPTION :
 			{
 				add_transformation_callback();
 			}
-
-			double from_projection[16], inverse_to_projection[16];
-			if (from_coordinate_system == to_coordinate_system)
-			{
-				/* identity_projection */
-				for (int i=0;i<16;i++)
-				{
-					if (i % 5)
-					{
-						projection_matrix[i] = 0;
-					}
-					else
-					{
-						projection_matrix[i] = 1;
-					}
-				}
-				return return_code;
-			}
-			if (Scene_viewer_get_transformation_to_window(scene_viewer, from_coordinate_system,
-				current_local_transformation, from_projection) &&
-				Scene_viewer_get_transformation_to_window(scene_viewer, to_coordinate_system,
-					current_local_transformation, inverse_to_projection))
-			{
-				double lu_d, temp;
-				int i, j, lu_index[4];
-				if (LU_decompose(/*dimension*/4, inverse_to_projection,
-					lu_index, &lu_d,/*singular_tolerance*/1.0e-12))
-				{
-					double to_projection[16];
-					for (i = 0 ; i < 4 ; i++)
-					{
-						for (j = 0 ; j < 4 ; j++)
-						{
-							to_projection[i * 4 + j] = 0.0;
-						}
-						to_projection[i * 4 + i] = 1.0;
-						LU_backsubstitute(/*dimension*/4, inverse_to_projection,
-							lu_index, to_projection + i * 4);
-					}
-					/* transpose */
-					for (i = 0 ; i < 4 ; i++)
-					{
-						for (j = i + 1 ; j < 4 ; j++)
-						{
-							temp = to_projection[i*4 + j];
-							to_projection[i*4 + j] = to_projection[j*4 + i];
-							to_projection[j*4 + i] = temp;
-						}
-					}
-					multiply_matrix(4, 4, 4, to_projection, from_projection, projection_matrix);
-				}
-			}
-#if defined (TEXTURE_PROJECTION)
-			if (Scene_viewer_get_modelview_matrix(scene_viewer,modelview_matrix)&&
-				Scene_viewer_get_window_projection_matrix(scene_viewer,
-					window_projection_matrix))
-			{
-				/* Multiply these matrices */
-				for (i=0;i<4;i++)
-				{
-					for (j=0;j<4;j++)
-					{
-						total_projection_matrix[i * 4 + j] = 0.0;
-						for (k=0;k<4;k++)
-						{
-							total_projection_matrix[i * 4 + j] +=
-								window_projection_matrix[i * 4 + k]	*
-								modelview_matrix[k * 4 + j];
-						}
-					}
-				}
-
-				/* Get the viewport transformation too */
-				Scene_viewer_get_viewport_info(scene_viewer,
-					&viewport_left, &viewport_top,
-					&viewport_pixels_per_unit_x, &viewport_pixels_per_unit_y);
-				Scene_viewer_get_viewport_size(scene_viewer,
-					&viewport_width, &viewport_height);
-				/* Multiply total_projection by viewport matrices */
-				for (i=0;i<4;i++)
-				{
-					for (j=0;j<4;j++)
-					{
-						viewport_matrix[i * 4 + j] = 0.0;
-						for (k=0;k<4;k++)
-						{
-							if ((i == 0) && (k == 0))
-							{
-								viewport_matrix[i * 4 + j] +=
-									0.5 * viewport_width / viewport_pixels_per_unit_x  *
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 1) && (k == 1))
-							{
-								viewport_matrix[i * 4 + j] +=
-									0.5 * viewport_height / viewport_pixels_per_unit_y *
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 0) && (k == 3))
-							{
-								viewport_matrix[i * 4 + j] +=
-									(viewport_left + 0.5 * viewport_width
-										/ viewport_pixels_per_unit_x) *
-										total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 1) && (k == 3))
-							{
-								viewport_matrix[i * 4 + j] +=
-									(viewport_top - 0.5 * viewport_height
-										/ viewport_pixels_per_unit_y) *
-										total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 2) && (k == 2))
-							{
-								viewport_matrix[i * 4 + j] +=
-									total_projection_matrix[k * 4 + j];
-							}
-							else if((i == 3) && (k == 3))
-							{
-								viewport_matrix[i * 4 + j] +=
-									total_projection_matrix[k * 4 + j];
-							}
-							else
-							{
-								viewport_matrix[i * 4 + j] += 0.0;
-							}
-						}
-
-					}
-				}
-				/* texture_projection */
-				Scene_viewer_get_background_texture_info(scene_viewer,
-					&bk_texture_left, &bk_texture_top, &bk_texture_width, &bk_texture_height,
-					&bk_texture_undistort_on, &bk_texture_max_pixels_per_polygon);
-				cmzn_field_image_id image_field=
-					Scene_viewer_get_background_image_field(scene_viewer);
-				texture = cmzn_field_image_get_texture(image_field);
-				cmzn_field_image_destroy(&image_field);
-				if (texture)
-				{
-					Texture_get_distortion_info(texture, &distortion_centre_x,
-						&distortion_centre_y, &distortion_factor_k1);
-					Texture_get_physical_size(texture, &texture_width,
-						&texture_height, &texture_depth);
-					if (bk_texture_undistort_on && distortion_factor_k1)
-					{
-						display_message(ERROR_MESSAGE,
-							"gfx_apply_projection.  Distortion corrected textures are not supported yet");
-						return_code=0;
-						/* identity_projection */
-						for (i=0;i<16;i++)
-						{
-							if (i % 5)
-							{
-								projection_matrix[i] = 0;
-							}
-							else
-							{
-								projection_matrix[i] = 1;
-							}
-						}
-					}
-					else
-					{
-						/* Multiply viewport_matrix by background texture */
-						for (i=0;i<4;i++)
-						{
-							for (j=0;j<4;j++)
-							{
-								texture_projection_matrix[i * 4 + j] = 0.0;
-								for (k=0;k<4;k++)
-								{
-									if ((i == 0) && (k == 0))
-									{
-										texture_projection_matrix[i * 4 + j] +=
-											(texture_width / bk_texture_width) *
-											viewport_matrix[k * 4 + j];
-									}
-									else if((i == 1) && (k == 1))
-									{
-										texture_projection_matrix[i * 4 + j] +=
-											(texture_height / bk_texture_height) *
-											viewport_matrix[k * 4 + j];
-									}
-									else if((i == 0) && (k == 3))
-									{
-										texture_projection_matrix[i * 4 + j] +=
-											(-bk_texture_left *
-												(texture_width / bk_texture_width)) *
-												viewport_matrix[k * 4 + j];
-									}
-									else if((i == 1) && (k == 3))
-									{
-										texture_projection_matrix[i * 4 + j] +=
-											(- bk_texture_top *
-												(texture_height / bk_texture_height)
-												+ texture_height) *
-												viewport_matrix[k * 4 + j];
-									}
-									else if((i == 2) && (k == 2))
-									{
-										texture_projection_matrix[i * 4 + j] +=
-											viewport_matrix[k * 4 + j];
-									}
-									else if((i == 3) && (k == 3))
-									{
-										texture_projection_matrix[i * 4 + j] +=
-											viewport_matrix[k * 4 + j];
-									}
-									else
-									{
-										texture_projection_matrix[i * 4 + j] += 0.0;
-									}
-								}
-							}
-						}
-						for (i=0;i<16;i++)
-						{
-							projection_matrix[i] = texture_projection_matrix[i];
-						}
-					}
-				}
-			}
-#endif
+			int result = this->scene_viewer->getTransformationMatrix(
+				this->from_coordinate_system, this->to_coordinate_system, this->current_local_transformation,
+				projection_matrix);
+			if (CMZN_OK != result)
+				return_code = 0;
 		}
 		else
 		{
 			display_message(ERROR_MESSAGE,
-				"Computed_field_scene_viewer_projection_calculate_matrix.  "
+				"Computed_field_scene_viewer_projection::calculate_matrix.  "
 				"Not enough memory for matrix");
 			return_code = 0;
 		}
@@ -399,14 +174,12 @@ DESCRIPTION :
 	else
 	{
 		display_message(ERROR_MESSAGE,
-			"Computed_field_scene_viewer_projection_calculate_matrix.  "
+			"Computed_field_scene_viewer_projection::calculate_matrix.  "
 			"Invalid arguments.");
 		return_code = 0;
 	}
-	LEAVE;
-
 	return (return_code);
-} /* Computed_field_scene_viewer_projection_calculate_matrix */
+}
 
 Computed_field_scene_viewer_projection::~Computed_field_scene_viewer_projection()
 /*******************************************************************************
