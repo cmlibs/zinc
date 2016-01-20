@@ -1,0 +1,27 @@
+{
+   "Graphics" : [
+      {
+         "ElementFaceType" : "ALL",
+         "Exterior" : false,
+         "FieldDomainType" : "MESH1D",
+         "LineAttributes" : {
+            "BaseSize" : [ 0.5, 0.5 ],
+            "OrientationScaleField" : "my_orientation_field",
+            "ScaleFactors" : [ 0.5, 0.5 ],
+            "ShapeType" : "CIRCLE_EXTRUSION"
+         },
+         "Lines" : {},
+         "Material" : "default",
+         "RenderLineWidth" : 1,
+         "RenderPointSize" : 1,
+         "RenderPolygonMode" : "RENDER_POLYGON_SHADED",
+         "Scenecoordinatesystem" : "LOCAL",
+         "SelectMode" : "ON",
+         "SelectedMaterial" : "default_selected",
+         "Tessellation" : "default",
+         "Type" : "LINES",
+         "VisibilityFlag" : true
+      }
+   ],
+   "VisibilityFlag" : true
+}

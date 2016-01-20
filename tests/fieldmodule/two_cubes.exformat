@@ -1,0 +1,349 @@
+Region: /
+ !#nodeset nodes
+ #Fields=1
+ 1) coordinates, coordinate, rectangular cartesian, #Components=3
+  x.  Value index=1, #Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2), #Versions=1
+  y.  Value index=5, #Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2), #Versions=1
+  z.  Value index=9, #Derivatives=3 (d/ds1,d/ds2,d2/ds1ds2), #Versions=1
+ Node: 1
+ 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 2
+ 1.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 3
+ 2.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 4
+ 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 5
+ 1.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 6
+ 2.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 7
+ 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 8
+ 1.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 9
+ 2.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 0.000000000000000e+000 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 10
+ 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 11
+ 1.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Node: 12
+ 2.000000000000000e+001 1.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 1.000000000000000e+000 0.000000000000000e+000
+ 1.000000000000000e+001 0.000000000000000e+000 0.000000000000000e+000 0.000000000000000e+000
+ Shape. Dimension=1, line
+ #Scale factor sets=0
+ #Nodes=0
+ #Fields=0
+ Element: 0 0 1
+ Element: 0 0 2
+ Element: 0 0 3
+ Element: 0 0 4
+ Element: 0 0 5
+ Element: 0 0 6
+ Element: 0 0 7
+ Element: 0 0 8
+ Element: 0 0 9
+ Element: 0 0 10
+ Element: 0 0 11
+ Element: 0 0 12
+ Element: 0 0 13
+ Element: 0 0 14
+ Element: 0 0 15
+ Element: 0 0 16
+ Element: 0 0 17
+ Element: 0 0 18
+ Element: 0 0 19
+ Element: 0 0 20
+ Shape. Dimension=2, line*line
+ Element: 0 1 0
+ Faces:
+ 0 0 1
+ 0 0 2
+ 0 0 7
+ 0 0 8
+ Element: 0 2 0
+ Faces:
+ 0 0 3
+ 0 0 4
+ 0 0 9
+ 0 0 10
+ Element: 0 3 0
+ Faces:
+ 0 0 5
+ 0 0 6
+ 0 0 11
+ 0 0 12
+ Element: 0 4 0
+ Faces:
+ 0 0 13
+ 0 0 14
+ 0 0 1
+ 0 0 3
+ Element: 0 5 0
+ Faces:
+ 0 0 15
+ 0 0 16
+ 0 0 2
+ 0 0 4
+ Element: 0 6 0
+ Faces:
+ 0 0 17
+ 0 0 18
+ 0 0 3
+ 0 0 5
+ Element: 0 7 0
+ Faces:
+ 0 0 19
+ 0 0 20
+ 0 0 4
+ 0 0 6
+ Element: 0 8 0
+ Faces:
+ 0 0 7
+ 0 0 9
+ 0 0 13
+ 0 0 15
+ Element: 0 9 0
+ Faces:
+ 0 0 8
+ 0 0 10
+ 0 0 14
+ 0 0 16
+ Element: 0 10 0
+ Faces:
+ 0 0 9
+ 0 0 11
+ 0 0 17
+ 0 0 19
+ Element: 0 11 0
+ Faces:
+ 0 0 10
+ 0 0 12
+ 0 0 18
+ 0 0 20
+ Shape. Dimension=3, line*line*line
+ #Scale factor sets=1
+ c.Hermite*c.Hermite*l.Lagrange, #Scale factors=32
+ #Nodes=8
+ #Fields=1
+ 1) coordinates, coordinate, rectangular cartesian, #Components=3
+ x. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 29 30 31 32
+ y. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 29 30 31 32
+ z. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 29 30 31 32
+ Element: 1 0 0
+ Faces:
+ 0 1 0
+ 0 2 0
+ 0 4 0
+ 0 5 0
+ 0 8 0
+ 0 9 0
+ Nodes:
+ 1 2 4 5 7 8 10 11
+ Scale factors:
+ 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000
+ 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001
+ 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001
+ 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002
+ 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000
+ 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001
+ 1.000000000000000e+001 1.000000000000000e+002
+ #Scale factor sets=1
+ c.Hermite*c.Hermite*l.Lagrange, #Scale factors=32
+ #Nodes=8
+ #Fields=1
+ 1) coordinates, coordinate, rectangular cartesian, #Components=3
+ x. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 29 30 31 32
+ y. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 29 30 31 32
+ z. c.Hermite*c.Hermite*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 1 2 3 4
+   2. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 5 6 7 8
+   3. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 9 10 11 12
+   4. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 13 14 15 16
+   5. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 17 18 19 20
+   6. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 21 22 23 24
+   7. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 25 26 27 28
+   8. #Values=4
+     Value indices: 1 2 3 4
+     Scale factor indices: 29 30 31 32
+ Element: 2 0 0
+ Faces:
+ 0 2 0
+ 0 3 0
+ 0 6 0
+ 0 7 0
+ 0 10 0
+ 0 11 0
+ Nodes:
+ 2 3 5 6 8 9 11 12
+ Scale factors:
+ 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000
+ 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001
+ 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001
+ 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002
+ 1.000000000000000e+000 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000
+ 1.000000000000000e+001 1.000000000000000e+001 1.000000000000000e+002 1.000000000000000e+000 1.000000000000000e+001
+ 1.000000000000000e+001 1.000000000000000e+002

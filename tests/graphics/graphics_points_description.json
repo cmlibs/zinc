@@ -1,0 +1,37 @@
+{
+   "Graphics" : [
+      {
+         "ElementFaceType" : "ALL",
+         "Exterior" : false,
+         "FieldDomainType" : "POINT",
+         "Material" : "default",
+         "PointAttributes" : {
+            "BaseSize" : [ 0, 0, 0 ],
+            "Font" : "default",
+            "Glyph" : "point",
+            "GlyphOffset" : [ 0, 0, 0 ],
+            "GlyphRepeatMode" : "NONE",
+            "GlyphShapeType" : "POINT",
+            "LabelField" : "my_label",
+            "LabelOffset" : [ 1, 2, 0 ],
+            "LabelText" : [ "ABC", "ABC", "ABC" ],
+            "ScaleFactors" : [ 1, 1, 1 ]
+         },
+         "Points" : {},
+         "RenderLineWidth" : 1,
+         "RenderPointSize" : 1,
+         "RenderPolygonMode" : "RENDER_POLYGON_SHADED",
+         "SamplingAttributes" : {
+            "ElementPointSamplingMode" : "CELL_CENTRES",
+            "Location" : [ 0, 0, 0 ]
+         },
+         "Scenecoordinatesystem" : "LOCAL",
+         "SelectMode" : "ON",
+         "SelectedMaterial" : "default_selected",
+         "Tessellation" : "default_points",
+         "Type" : "POINTS",
+         "VisibilityFlag" : true
+      }
+   ],
+   "VisibilityFlag" : true
+}

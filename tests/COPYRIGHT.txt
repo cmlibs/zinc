@@ -1,0 +1,9 @@
+OpenCMISS-Zinc Library Unit Tests
+
+The Initial Developer is:
+Auckland UniServices Ltd, Auckland, New Zealand.
+ 
+Portions created by the Initial Developer are Copyright (C) 2012-2013
+the Initial Developer. All Rights Reserved.
+
+See separate LICENSE.txt

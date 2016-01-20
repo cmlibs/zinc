@@ -1,0 +1,30 @@
+ Region: /
+ Shape.  Dimension=3
+ #Scale factor sets=0
+ #Nodes=0
+ #Fields=1
+ 1) potential, field, real, #Components=1
+ value. l.Lagrange*l.Lagrange*l.Lagrange, no modify, grid based.
+ #xi1=2, #xi2=3, #xi3=4
+Element: 1 0 0
+  Values:
+0	1	2
+0.5	1.5	2.5
+1	2	3
+1.5	2.5	3.5
+2	3	4
+2.5	3.5	4.5
+3	4	5
+3.5	4.5	5.5
+4	5	6
+4.5	5.5	6.5
+5	6	7
+5.5	6.5	7.5
+6	7	8
+6.5	7.5	8.5
+7	8	9
+7.5	8.5	9.5
+8	9	10
+8.5	9.5	10.5
+9	10	11
+9.5	10.5	11.5

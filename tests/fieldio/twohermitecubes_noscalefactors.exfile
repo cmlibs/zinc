@@ -1,0 +1,185 @@
+Region: /
+ !#nodeset nodes
+ #Fields=2
+ 1) coordinates, coordinate, rectangular cartesian, #Components=3
+  x.  Value index=1, #Derivatives=7 (d/ds1,d/ds2,d2/ds1ds2,d/ds3,d2/ds1ds3,d2/ds2ds3,d3/ds1ds2ds3), #Versions=1
+  y.  Value index=9, #Derivatives=7 (d/ds1,d/ds2,d2/ds1ds2,d/ds3,d2/ds1ds3,d2/ds2ds3,d3/ds1ds2ds3), #Versions=1
+  z.  Value index=17, #Derivatives=7 (d/ds1,d/ds2,d2/ds1ds2,d/ds3,d2/ds1ds3,d2/ds2ds3,d3/ds1ds2ds3), #Versions=1
+ 2) pressure, field, real, #Components=1
+  p.  Value index=18, #Derivatives=0, #Versions=1
+ Node: 1
+ 0 1 0 0 0 0 0 0
+ 0 0 1 0 0 0 0 0
+ 0 0 0 0 1 0 0 0
+ 80000.0
+ Node: 2
+ 1 1 0 0 0 0 0 0
+ 0 0 1 0 0 0 0 0
+ 0 0 0 0 1 0 0 0
+ 90000.0
+ Node: 3
+ 2 1 0 0 0 0 0 0
+ 0 0 1 0 0 0 0 0
+ 0 0 0 0 1 0 0 0
+ 100000.0
+ Node: 4
+ 0 1 0 0 0 0 0 0
+ 1 0 1 0 0 0 0 0
+ 0 0 0 0 1 0 0 0
+ 80000.0
+ Node: 5
+ 1 1 0 0 0 0 0 0
+ 1 0 1 0 0 0 0 0
+ 0 0 0 0 1 0 0 0
+ 90000.0
+ Node: 6
+ 2 1 0 0 0 0 0 0
+ 1 0 1 0 0 0 0 0
+ 0 0 0 0 1 0 0 0
+ 100000.0
+ Node: 7
+ 0 1 0 0 0 0 0 0
+ 0 0 1 0 0 0 0 0
+ 1 0 0 0 1 0 0 0
+ 80000.0
+ Node: 8
+ 1 1 0 0 0 0 0 0
+ 0 0 1 0 0 0 0 0
+ 1 0 0 0 1 0 0 0
+ 90000.0
+ Node: 9
+ 2 1 0 0 0 0 0 0
+ 0 0 1 0 0 0 0 0
+ 1 0 0 0 1 0 0 0
+ 100000.0
+ Node: 10
+ 0 1 0 0 0 0 0 0
+ 1 0 1 0 0 0 0 0
+ 1 0 0 0 1 0 0 0
+ 80000.0
+ Node: 11
+ 1 1 0 0 0 0 0 0
+ 1 0 1 0 0 0 0 0
+ 1 0 0 0 1 0 0 0
+ 90000.0
+ Node: 12
+ 2 1 0 0 0 0 0 0
+ 1 0 1 0 0 0 0 0
+ 1 0 0 0 1 0 0 0
+ 100000.0
+ Shape. Dimension=3, line*line*line
+ #Scale factor sets=0
+ #Nodes=8
+ #Fields=2
+ 1) coordinates, coordinate, rectangular cartesian, #Components=3
+ x. c.Hermite*c.Hermite*c.Hermite, no modify, standard node based.
+   #Nodes=8
+   1. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   2. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   3. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   4. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   5. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   6. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   7. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   8. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+ y. c.Hermite*c.Hermite*c.Hermite, no modify, standard node based.
+   #Nodes=8
+   1. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   2. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   3. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   4. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   5. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   6. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   7. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   8. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+ z. c.Hermite*c.Hermite*c.Hermite, no modify, standard node based.
+   #Nodes=8
+   1. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   2. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   3. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   4. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   5. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   6. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   7. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+   8. #Values=8
+     Value indices: 1 2 3 4 5 6 7 8
+     Scale factor indices: 0 0 0 0 0 0 0 0
+ 2) pressure, field, real, #Components=1
+ p. l.Lagrange*l.Lagrange*l.Lagrange, no modify, standard node based.
+   #Nodes=8
+   1. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   2. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   3. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   4. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   5. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   6. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   7. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+   8. #Values=1
+     Value indices: 1
+     Scale factor indices: 0
+ Element: 1 0 0
+ Nodes:
+ 1 2 4 5 7 8 10 11
+ Element: 2 0 0
+ Nodes:
+ 2 3 5 6 8 9 11 12
