@@ -19,11 +19,13 @@ TEST(cmzn_context, getVersion)
 
 	int version[3];
 	int result = CMZN_ERROR_ARGUMENT;
+	const char *revision;
 
 	EXPECT_EQ(CMZN_OK, result = cmzn_context_get_version(zinc.context, &version[0]));
 	EXPECT_GE(version[0], 2);
 
-	EXPECT_GE(result = cmzn_context_get_revision(zinc.context), 10000);
+	EXPECT_EQ(cmzn_context_get_revision(0), (const char *)0);
+	EXPECT_STRNE(revision = cmzn_context_get_revision(zinc.context), "");
 	char *versionString = cmzn_context_get_version_string(zinc.context);
 	EXPECT_NE(versionString, (char *)0);
 	cmzn_deallocate(versionString);
@@ -38,7 +40,7 @@ TEST(ZincContext, getVersion)
 	EXPECT_EQ(CMZN_OK, result = zinc.context.getVersion(&version[0]));
 	EXPECT_GE(version[0], 2);
 
-	EXPECT_GE(zinc.context.getRevision(), 10000);
+	EXPECT_STRNE(zinc.context.getRevision(), "");
 
 	char *versionString = zinc.context.getVersionString();
 	EXPECT_NE(versionString, (char *)0);
